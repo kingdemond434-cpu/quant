@@ -65,6 +65,11 @@
     "desks/mt5/prop/prop_fleet.py": {
       "CHILD_TIMEOUT_S": 600,
       "PROCESS_ENV": "QUANT_PROP_ACCOUNT"
+    },
+    "libs/portfolio/execution_cost.py": {
+      "CHARGED_AT_SOURCE": "CHARGED_AT_SOURCE",
+      "TABLE_BASIS": "fill_hour_surface_table",
+      "REPLAY_CHARGES_ENTRY_HOUR": false
     }
   },
   "superset": {
@@ -231,6 +236,12 @@
       "main(argv=)": "None",
       "run_role(data=)": "None",
       "run_role(popen=)": "subprocess.Popen"
+    },
+    "libs/portfolio/execution_cost.py": {
+      "costs_for(charged_at_source=)": "REPLAY_CHARGES_ENTRY_HOUR"
+    },
+    "desks/mt5/mt5desk/universe_registry.py": {
+      "MEDIAN_SPREAD_PRODUCERS": "('realized_fills', 'fusion_zero_m1_tape', 'cost_surface_symbol_p50', 'h1_spread_median', 'download_all_symbols')"
     }
   }
 }

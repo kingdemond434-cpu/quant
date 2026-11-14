@@ -2098,18 +2098,132 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
 
 #: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
 #: of these, by reason, so an input that appeared is never reported as bar growth.
-READMIT_CAUSES = ("input_appeared", "bars_appeared", "retry_days", "bar_growth", "max_age")
+READMIT_CAUSES = ("reader_fixed", "input_appeared", "bars_appeared", "retry_days", "bar_growth",
+                  "max_age")
+
+
+#: INPUT READERS THAT WERE BROKEN AND ARE FIXED, and the families they fed (2026-10-29).
+#:
+#: THE DEFECT THIS CLASS EXISTS FOR. Every tape reader took the last 30 file NAMES under
+#: data/tape/ticks/<SYM>/, and the second writer's compact names sort after the first writer's
+#: dashed ones, so `orthogonal_sweep._tape_series` opened only files with no `ts` column and
+#: returned None for every symbol while the recorder was live. 66k liquidity_regime and
+#: orderflow_imbalance cells were judged on an empty tape: 0 judged_total, UNKNOWN by the tens of
+#: thousands, parked as never_fires. Nothing re-asked them when the reader was fixed (ca6a2960):
+#: a never-firing cell returns on bar growth or after READMIT_MAX_DAYS, and the BARS never moved.
+#: A verdict reached on an input the reader could not see is not evidence about the spec.
+#:
+#: THE RULE. One row per fix: `families` it fed, the `reader` file the JUDGE reads that input
+#: through (repo-relative) and a `marker` that is in that file only once the fix is. A fix is
+#: LIVE when the marker is present on this tree, so a row lands with the fix's PR and does nothing
+#: until the box runs the fixed reader. The first pass that sees it live stamps `live_since`
+#: (READER_FIXES_LIVE, beside the bank); from then on every parked cell of those families that
+#: carries no stamp of the fix comes back with cause `reader_fixed`. A cell parked or re-named
+#: after READER_FIX_GRACE_H past `live_since` was judged by a sweep that started on the fixed
+#: reader, so it is stamped and stays parked on its own evidence. Trials are not touched here.
+READER_FIXES: tuple[dict[str, Any], ...] = (
+    {"id": "tape_reader_two_writers_ca6a2960",
+     "families": ("liquidity_regime", "orderflow_imbalance"),
+     "reader": "desks/mt5/research/orthogonal_sweep.py",
+     "marker": "from mt5desk.tape_days import recent_quotes"},
+)
+#: When each registered fix was first seen live here; written under the bank's lock.
+READER_FIXES_LIVE = HYP / "reader_fixes_live.json"
+#: A sweep that STARTED before the fix went live runs the broken reader to its end (a process
+#: keeps the code it imported), and the longest measured sweep is under a day. Cells named inside
+#: this window are still re-asked.
+READER_FIX_GRACE_H = 24.0
+#: The repository root a fix's `reader` path is relative to.
+_REPO = BASE.parent.parent
+
+
+def _reader_fix_present(fix: dict[str, Any], root: Path | None = None) -> bool:
+    """True when the fixed reader is on this tree (its file holds the fix's marker)."""
+    try:
+        text = ((root or _REPO) / str(fix.get("reader") or "")).read_text("utf-8")
+    except (OSError, ValueError):
+        return False
+    return str(fix.get("marker") or "\0") in text
+
+
+def reader_fixes_live(at: str, *, path: Path | None = None,
+                      fixes: tuple[dict[str, Any], ...] | None = None,
+                      root: Path | None = None, write: bool = True,
+                      txn: Any = None, lock_path: Path | None = None) -> dict[str, Any]:
+    """family -> {"id", "live_since"} for every registered fix live on this tree.
+
+    Only a stamp that is ON DISK counts: a stamp this pass could not write would be re-taken as
+    "now" next pass and re-admit the same cells every hour, so a fix whose first stamp did not land
+    is left out until it does. An unreadable state file is never overwritten; it reads as no fixes
+    live (nothing re-admitted) and is reported `UNREADABLE`.
+    """
+    target = path or READER_FIXES_LIVE
+    state = "MEASURED"
+    try:
+        raw = json.loads(target.read_text("utf-8")) if target.exists() else {}
+        stamps = raw if isinstance(raw, dict) else None
+    except (OSError, ValueError):
+        stamps = None
+    if stamps is None:
+        return {"families": {}, "state": "UNREADABLE", "stamped_now": []}
+    live = [f for f in (READER_FIXES if fixes is None else fixes)
+            if _reader_fix_present(f, root)]
+    fresh = [str(f["id"]) for f in live if not _ts((stamps.get(str(f["id"])) or {})
+                                                     .get("live_since"))]
+    if fresh:
+        new = {**stamps, **{i: {"live_since": at} for i in fresh}}
+        written = False
+        if write:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if txn is None:
+                    tmp = target.with_name(target.name + ".tmp")
+                    tmp.write_text(json.dumps(new, indent=1), "utf-8")
+                    _replace_retry(tmp, target)
+                else:
+                    txn.put_text(target, json.dumps(new, indent=1))
+                    txn.guard(lock_path or target, target)
+                written = True
+            except OSError:
+                written = False
+        if written:
+            stamps = new
+        else:
+            state = "STAMP_WRITE_FAILED"
+    families: dict[str, dict[str, str]] = {}
+    for f in live:
+        since = (stamps.get(str(f["id"])) or {}).get("live_since")
+        if _ts(since) is None:
+            continue
+        for fam in f.get("families") or ():
+            families[str(fam)] = {"id": str(f["id"]), "live_since": str(since)}
+    return {"families": families, "state": state,
+            "stamped_now": fresh if state == "MEASURED" else []}
+
+
+def _reader_fix_judged(fix: dict[str, str], at: datetime | None) -> bool:
+    """True when a cell named at `at` was judged by a sweep that started on the fixed reader."""
+    since = _ts(fix.get("live_since"))
+    return (since is not None and at is not None
+            and (at.timestamp() - since.timestamp()) / 3600.0 >= READER_FIX_GRACE_H)
 
 
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
-                bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
+                bar_sizes: dict[tuple[str, str], int] | None = None,
+                reader_fixed: dict[str, dict[str, str]] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
-    return readmit_cause(row, now=now, bar_sizes=bar_sizes) is not None
+    return readmit_cause(row, now=now, bar_sizes=bar_sizes,
+                         reader_fixed=reader_fixed) is not None
 
 
 def readmit_cause(row: dict[str, Any], *, now: datetime | None = None,
-                  bar_sizes: dict[tuple[str, str], int] | None = None) -> str | None:
+                  bar_sizes: dict[tuple[str, str], int] | None = None,
+                  reader_fixed: dict[str, dict[str, str]] | None = None) -> str | None:
     """WHY a parked cell is due back (one of READMIT_CAUSES), or None while it stays parked."""
+    fix = (reader_fixed or {}).get(str(row.get("family") or ""))
+    if fix and fix["id"] not in (row.get("reader_fixes") or ()):
+        # PARKED ON AN INPUT THE READER COULD NOT SEE (READER_FIXES): its verdict is no evidence.
+        return "reader_fixed"
     parked_bytes = int(row.get("bar_bytes") or 0)
     key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
     _tn = now or datetime.now(tz=UTC)
@@ -2486,11 +2600,16 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     with _bank_lock(out_path, at, txn) as locked:
         bank = unrunnable_bank(target)
         causes: dict[str, str] = {}
+        fixes = (reader_fixes_live(at, path=target.parent / READER_FIXES_LIVE.name, txn=txn,
+                                   lock_path=out_path)
+                 if locked else {"families": {}, "state": "LOCKED", "stamped_now": []})
+        fixed_fams: dict[str, dict[str, str]] = fixes["families"]
         if locked:
             for cell, row in bank.items():
                 if cell in parkable:
                     continue
-                cause = readmit_cause(row, now=now_ts, bar_sizes=bar_sizes)
+                cause = readmit_cause(row, now=now_ts, bar_sizes=bar_sizes,
+                                      reader_fixed=fixed_fams)
                 if cause is not None:
                     causes[cell] = cause
         readmitted = list(causes)
@@ -2539,6 +2658,12 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
             is_nt = row.get("reason") in NOT_TESTABLE_REASONS
             entry = {**row, "parked_at": prev.get("parked_at") or at}
+            _stamps = set(prev.get("reader_fixes") or ())
+            _fix = fixed_fams.get(str(row.get("family") or ""))
+            if _fix and _reader_fix_judged(_fix, now_ts):
+                _stamps.add(_fix["id"])     # named by a sweep that ran the fixed reader
+            if _stamps:
+                entry["reader_fixes"] = sorted(_stamps)
             if is_nt:
                 entry["not_testable_since"] = ((prev.get("not_testable_since") or at)
                                                if was_nt else at)
@@ -2695,7 +2820,19 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 fh.write(json.dumps(line) + "\n")
     except OSError:
         pass
-    return {"parked_this_pass": added,
+    # A FIX THAT RE-ADMITS NOTHING IS A DEFECT (READER_FIXES): past the grace window every cell of
+    # a fixed family still parked without the fix's stamp is one the readmission failed to reach.
+    stranded: dict[str, int] = {}
+    for row in bank.values():
+        _fx = fixed_fams.get(str(row.get("family") or "")) if isinstance(row, dict) else None
+        if (_fx and _reader_fix_judged(_fx, now_ts)
+                and _fx["id"] not in (row.get("reader_fixes") or ())):
+            stranded[_fx["id"]] = stranded.get(_fx["id"], 0) + 1
+    return {"reader_fixes": {"state": fixes["state"], "live": fixed_fams,
+                             "stamped_now": fixes["stamped_now"], "stranded": stranded,
+                             "status": ("RED" if stranded or fixes["state"] in (
+                                 "UNREADABLE", "STAMP_WRITE_FAILED") else "OK")},
+            "parked_this_pass": added,
             # Bar growth ONLY (audit S2): an input that appeared or an aged-out row is booked
             # under its own cause below, never here.
             "readmitted_on_bar_growth": sum(by_cause.get(c, 0)
@@ -3941,6 +4078,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "not_testable_total": sum(not_testable.values()),
         "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
+        # BROKEN INPUT READERS SINCE FIXED, and what their fix re-admitted or left stranded.
+        "reader_fixes": unrunnable.get("reader_fixes"),
         # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
         # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
         "judging_failures": failures,

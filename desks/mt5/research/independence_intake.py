@@ -404,6 +404,49 @@ def tune_mix(gain: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
     return doc
 
 
+def required_params(family: str) -> frozenset[str]:
+    """The constructor's REQUIRED keyword-only arguments, `symbol` aside; empty when the family
+    does not resolve or declares none.
+
+    A DONOR MUST CARRY ITS RULE WHOLE (2026-11-14). `seasonal_window` declares `start_md`,
+    `end_md` and `side_bias` with no default, because a crop window is the mechanism and must
+    never be guessed. A row minted without them (a converted mention: `{"selector": ...}`) is
+    still a non-empty params dict, so it passed the donor query, and the transplant carried it
+    to every empty cell the grid named: 288 local candidates and 787 warm deferrals the judge's
+    prewarm refused every sweep. Only a donor that satisfies its own constructor can be moved.
+    """
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        import inspect
+
+        from mt5desk.executables import resolve_family
+        fn = resolve_family(family)
+        if fn is None:
+            return frozenset()
+        sig = inspect.signature(fn)
+    except Exception:
+        return frozenset()
+    return frozenset(n for n, p in sig.parameters.items()
+                     if p.kind is inspect.Parameter.KEYWORD_ONLY
+                     and p.default is inspect.Parameter.empty and n != "symbol")
+
+
+def carries_its_rule(family: str, params: dict[str, Any],
+                     _cache: dict[str, frozenset[str]] | None = None) -> bool:
+    """True when `params` holds every argument the family's constructor requires."""
+    need = _cache.get(family) if _cache is not None else None
+    if need is None:
+        need = required_params(family)
+        if _cache is not None:
+            _cache[family] = need
+    return need <= set(params)
+
+
+#: How many of a family's most recent rows are searched for a whole donor when its newest is not.
+DONOR_SEARCH_DEPTH = 200
+
+
 def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
     """One real, param-carrying candidate per family: the rule a transplant carries with it.
 
@@ -444,18 +487,48 @@ def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
             "and lower(coalesce(origin,'')) != ? "
             "and lower(coalesce(generator,'')) != ? group by 1", (SOURCE, SOURCE))
         out: dict[str, dict[str, Any]] = {}
-        for key, fam, sym, hor, params, mech, gen, prod, disc, reg, _seq in cur:
+        need: dict[str, frozenset[str]] = {}
+        partial: list[str] = []
+
+        def donor(row: tuple[Any, ...]) -> dict[str, Any] | None:
+            _key, fam, sym, hor, params, mech, gen, prod, disc, reg = row[:10]
             try:
                 parsed = json.loads(params)
             except (TypeError, ValueError):
-                continue
-            if isinstance(parsed, dict) and parsed:
-                out[str(key)] = {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
-                                 "params": parsed, "mechanism": str(mech or ""),
-                                 "generator": str(gen or "") or None,
-                                 "producer": str(prod or "") or None,
-                                 "discovery_id": str(disc or "") or None,
-                                 "region": str(reg or "") or None}
+                return None
+            if not (isinstance(parsed, dict) and parsed):
+                return None
+            if not carries_its_rule(str(fam), parsed, need):
+                return None
+            return {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
+                    "params": parsed, "mechanism": str(mech or ""),
+                    "generator": str(gen or "") or None,
+                    "producer": str(prod or "") or None,
+                    "discovery_id": str(disc or "") or None,
+                    "region": str(reg or "") or None}
+
+        for row in cur.fetchall():
+            got = donor(row)
+            if got is not None:
+                out[str(row[0])] = got
+            else:
+                partial.append(str(row[0]))
+        # The newest row was not whole: look further back in that family for one that is. A
+        # family with no whole row anywhere in its recent history has no donor, and is skipped.
+        for key in partial:
+            older = con.execute(
+                "select lower(coalesce(nullif(family,''),'?')), family, symbol, "
+                "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, "
+                "generator, producer, discovery_id, region from research_candidates "
+                "where lower(coalesce(nullif(family,''),'?')) = ? "
+                "and params_json is not null and params_json not in ('', '{}') "
+                "and lower(coalesce(origin,'')) != ? and lower(coalesce(generator,'')) != ? "
+                "order by seq desc limit ?", (key, SOURCE, SOURCE, DONOR_SEARCH_DEPTH))
+            for row in older:
+                got = donor(row)
+                if got is not None:
+                    out[key] = got
+                    break
         return out
     except sqlite3.Error:
         return {}

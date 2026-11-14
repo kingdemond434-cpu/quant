@@ -185,7 +185,7 @@ def measure_memory() -> dict[str, Any]:
                            commit_limit_mb=int(st.ullTotalPageFile // mb),
                            commit_free_mb=int(st.ullAvailPageFile // mb))
         except Exception as exc:
-            out["why"] = f"{type(exc).__name__}: {exc}"
+            out["why"] = _why(exc)
         return out
     try:
         fields: dict[str, int] = {}
@@ -204,7 +204,7 @@ def measure_memory() -> dict[str, Any]:
                        commit_free_mb=(max(0, limit - used)
                                        if limit is not None and used is not None else UNMEASURED))
     except Exception as exc:
-        out["why"] = f"{type(exc).__name__}: {exc}"
+        out["why"] = _why(exc)
     return out
 
 
@@ -237,7 +237,7 @@ def measure_terminal() -> dict[str, Any]:
         out.update(terminal_running=term > 0, gateway_running=gate > 0, n_python=pyn,
                    terminal_source="psutil")
     except Exception as exc:
-        out["terminal_why"] = f"{type(exc).__name__}: {exc}"
+        out["terminal_why"] = _why(exc)
     return out
 
 
@@ -327,7 +327,7 @@ def measure_cpu(sample_s: float = CPU_SAMPLE_S) -> dict[str, Any]:
         out.update(cpu_source="psutil", busy_other_cores=round(other, 2),
                    busy_judge_cores=round(judge, 2), cpu_sample_s=float(sample_s))
     except Exception as exc:
-        out["cpu_why"] = f"{type(exc).__name__}: {exc}"
+        out["cpu_why"] = _why(exc)
     return out
 
 
@@ -483,6 +483,48 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
 #: `research/judge_coverage.py`. Read here, never written here: that organ owns the number and
 #: this one owns the response to it.
 JUDGE_COVERAGE = BASE / "reports" / "JUDGE_COVERAGE.json"
+#: JUDGE_COVERAGE is hourly; two hours of silence means its leg did not complete, and a backlog
+#: read off it then would be a number from a clock that stopped.
+COVERAGE_MAX_AGE_S = 7200
+
+
+def _eta_missing_inputs(backlog: Any, cov: Any, unjudged: Any, cov_age_s: float | None,
+                        queue: dict[str, Any], ver: dict[str, Any], cre: dict[str, Any],
+                        ledger: Path | None, registry: Path | None) -> list[dict[str, str]]:
+    """NAME THE INPUT THAT IS MISSING, never a guess at it.
+
+    Until 2026-10-14 every unmeasured backlog was reported as "GAUNTLET_BACKPRESSURE.json
+    absent". It was not absent (its last write was 2026-10-03) and it was never the input that
+    mattered: a backpressure reading is one sweep's remainder, which this function refuses as
+    the backlog on purpose. The backlog comes from JUDGE_COVERAGE.json, and it was THAT file
+    which had gone stale -- so the published reason pointed the next session at the wrong organ.
+    """
+    out: list[dict[str, str]] = []
+    if not isinstance(backlog, int):
+        if not isinstance(cov, dict) or not cov:
+            cw = "absent or unreadable"
+        elif not isinstance(unjudged, int):
+            cw = "carries no totals.unjudged_total"
+        elif cov_age_s is None:
+            cw = "has no timezone-aware 'at'"
+        elif cov_age_s < 0:
+            cw = "is stamped in the future"
+        else:
+            cw = (f"stale: {cov_age_s / 3600.0:.1f}h old, past the "
+                  f"{COVERAGE_MAX_AGE_S / 3600.0:.0f}h lease (leg judge_coverage did not complete)")
+        out.append({"input": JUDGE_COVERAGE.name, "why": cw})
+        if queue.get("depth_scope") == "sweep":
+            bw = "one sweep's remainder, never the full backlog (refused as a fallback)"
+        else:
+            bw = str(queue.get("why") or "no queue depth")
+        out.append({"input": BACKPRESSURE.name, "why": bw})
+    if ver.get("status") != "MEASURED":
+        out.append({"input": (ledger.name if ledger else "gate_verdict_ledger.jsonl"),
+                    "why": str(ver.get("why") or "verdict rate UNMEASURED")})
+    if cre.get("status") != "MEASURED":
+        out.append({"input": (registry.name if registry else REGISTRY.name),
+                    "why": str(cre.get("why") or "creation rate UNMEASURED")})
+    return out or [{"input": "UNKNOWN", "why": "an input was unmeasured and none was named"}]
 
 
 def _value_at_risk() -> dict[str, Any]:
@@ -749,6 +791,19 @@ _APPLY_DEADLINE: list[float] = []
 _MACHINE_ENV_KEY = r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
 
 
+class ApplyBudgetSpent(TimeoutError):
+    """The apply deadline was spent, so the call was skipped. Raised by this module only."""
+
+
+def _why(exc: BaseException) -> str:
+    """What a published document says about an exception: its type, never its text (a path or a
+    host can ride in the text). The one exception is this module's own budget sentinel, whose
+    meaning is fixed here and carries nothing from outside."""
+    if isinstance(exc, ApplyBudgetSpent):
+        return f"{type(exc).__name__}: apply budget spent, call skipped"
+    return type(exc).__name__
+
+
 def _sub_timeout(cap: float | None = None) -> float:
     """Seconds the next subprocess may take: its own cap, never past the apply deadline."""
     import time as _time
@@ -757,7 +812,7 @@ def _sub_timeout(cap: float | None = None) -> float:
         return cap
     left = _APPLY_DEADLINE[0] - _time.monotonic()
     if left <= 1.0:
-        raise TimeoutError("apply budget spent; the call was skipped and is recorded as such")
+        raise ApplyBudgetSpent("apply budget spent; the call was skipped and is recorded as such")
     return min(cap, left)
 
 
@@ -1124,7 +1179,7 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
                            timeout=_sub_timeout())
             done[k] = v
         except Exception as exc:
-            failed[k] = f"{type(exc).__name__}: {exc}"
+            failed[k] = _why(exc)
     retired: dict[str, str] = {}
     for k in RETIRED_MACHINE_KEYS:
         try:
@@ -1133,7 +1188,7 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
                                check=False)
             retired[k] = "DELETED" if r.returncode == 0 else "ABSENT"
         except Exception as exc:
-            retired[k] = f"FAILED: {type(exc).__name__}: {exc}"
+            retired[k] = f"FAILED: {_why(exc)}"
     status = ("FAILED" if failed and not done and not unchanged
               else "PARTIAL" if failed else "APPLIED")
     return {"status": status, "set": done, "unchanged": unchanged, "failed": failed,
@@ -1221,10 +1276,10 @@ def _change_with_retry(minutes: int) -> tuple[bool, list[str]]:
                            check=True, capture_output=True, timeout=_sub_timeout(cap))
             return True, errors
         except TimeoutError as exc:      # the apply budget is spent: stop, never hang
-            errors.append(f"attempt {i + 1}: {exc}")
+            errors.append(f"attempt {i + 1}: {_why(exc)}")
             break
         except Exception as exc:
-            errors.append(f"attempt {i + 1}: {type(exc).__name__}: {exc}")
+            errors.append(f"attempt {i + 1}: {_why(exc)}")
             if i + 1 < len(CADENCE_ATTEMPT_TIMEOUTS_S):
                 _time.sleep(1.0)
     return False, errors
@@ -1306,11 +1361,12 @@ def apply_cadence_once(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
 
 def _attempt_module() -> Any:
     """The attempt marker's module, under whichever name this module itself was imported."""
+    import importlib
+
     try:
-        from research import judging_rate_attempt as mod
+        return importlib.import_module("research.judging_rate_attempt")
     except ImportError:
-        from desks.mt5.research import judging_rate_attempt as mod  # type: ignore[no-redef]
-    return mod
+        return importlib.import_module("desks.mt5.research.judging_rate_attempt")
 
 
 def _write_atomic(path: Path, doc: Any) -> None:
@@ -1325,11 +1381,20 @@ def _write_atomic(path: Path, doc: Any) -> None:
 #: None means "beside RATE_OUT" (reports/JUDGING_RATE.attempt.json), so anything that points the
 #: rate elsewhere -- a test, a dry run on another box -- moves the marker with it.
 ATTEMPT_OUT: Path | None = None
+#: THE PUBLISHED MARKER IS NAMED HERE, IN THE SCHEDULED ORGAN (v1.1). `judging_rate_attempt` only
+#: supplies the writer and the reader and names no artifact of its own, so the dead-architecture
+#: census attributes the marker to this hourly leg instead of counting a clockless new organ.
+ATTEMPT_PUBLISHED = BASE / "reports" / "JUDGING_RATE.attempt.json"
+_RATE_PUBLISHED = RATE_OUT
 
 
 def _attempt_path() -> Path:
-    return ATTEMPT_OUT if ATTEMPT_OUT is not None else RATE_OUT.with_name(
-        RATE_OUT.stem + ".attempt.json")
+    if ATTEMPT_OUT is not None:
+        return ATTEMPT_OUT
+    if RATE_OUT == _RATE_PUBLISHED:
+        ATTEMPT_PUBLISHED.parent.mkdir(parents=True, exist_ok=True)
+        return ATTEMPT_PUBLISHED
+    return RATE_OUT.with_name(RATE_OUT.stem + ".attempt" + RATE_OUT.suffix)
 #: Wall clock the verdict-ledger stream may spend. On overrun the rate is UNMEASURED with the
 #: reason, never a partial count read as a whole one. Inside the leg's 300 s `--budget-s` with
 #: room for everything else the pass does; never used to change the leg's own budget.
@@ -1376,14 +1441,24 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         _parse_utc(_resident.get("last_sweep_ended_utc") if isinstance(_resident, dict) else None))
     _cuts = regime_cuts(_step_state)
     try:
-        rate = measure_rate(queue, decision, now, deadline_s=_budget, extra_cuts=_cuts)
+        rate = measure_rate(queue, decision, now, deadline_s=_budget, extra_cuts=_cuts,
+                            previous=_read_json(RATE_OUT, {}) or {})
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
-                "why": f"{type(exc).__name__}: {exc}"}
+                "why": _why(exc)}
     if write:
         rate["attempt"] = attempt.pointer()
-        _write_atomic(RATE_OUT, rate)
-        attempt.phase("rate_written")
+        # GUARDED (v1.1): a failed rate write must not cost the env file and JUDGING_THROUGHPUT,
+        # which on the old order were written first. The failure rides the marker, so the rate on
+        # disk reads STALE with the error instead of silently old.
+        try:
+            _write_atomic(RATE_OUT, rate)
+        except Exception as exc:
+            rate_write_error = _why(exc)
+            attempt.note(rate_write_error=rate_write_error)
+            attempt.phase("rate_write_failed")
+        else:
+            attempt.phase("rate_written")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
@@ -1432,7 +1507,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             except OSError as exc:
                 # LOUD, NOT SUPPRESSED (audit S3): an unwritten state re-bootstraps every pass
                 # and the controller never steps.
-                decision["build_step"]["state_written"] = f"FAILED: {type(exc).__name__}: {exc}"
+                decision["build_step"]["state_written"] = f"FAILED: {_why(exc)}"
     _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, _step)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
@@ -1465,7 +1540,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         payload["blas_single_thread"] = blas_threads.status()
     except Exception as exc:
         payload["blas_single_thread"] = {"active": False, "why": (
-            f"{UNMEASURED}: switch unreadable ({type(exc).__name__}: {exc})"[:300])}
+            f"{UNMEASURED}: switch unreadable ({_why(exc)})"[:300])}
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
@@ -1512,7 +1587,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                 try:
                     applied[name] = fn()
                 except Exception as exc:   # best effort: the measurement is already published
-                    applied[name] = {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+                    applied[name] = {"status": "FAILED", "why": _why(exc)}
         finally:
             _APPLY_DEADLINE[:] = []
     else:
@@ -1528,7 +1603,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                      code=a.get("code"), owner=a.get("owner"),
                      file_age_s=a.get("file_age_seconds"), sweep_age_s=a.get("sweep_age_seconds"))
             except Exception as exc:
-                payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+                payload["events"] = f"UNMEASURED: {_why(exc)}"
         attempt.phase("applied" if apply else "written", done=True,
                       seconds=payload["seconds"])
         try:
@@ -1536,20 +1611,124 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),
                        limiting=decision["limiting_resource"], queue_depth=queue.get("depth"))
         except Exception as exc:
-            payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+            payload["events"] = f"UNMEASURED: {_why(exc)}"
     return payload
 
 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
+
+#: THE WRITER'S OWN ROW, READ WITHOUT A JSON PARSE (2026-11-14). `external_gauntlet.
+#: _append_gate_ledger` writes `json.dumps` of a dict whose first eight keys are fixed, in this
+#: order, and every one of them a scalar. A line that is EXACTLY those eight keys, closed, and
+#: nothing after them is therefore that row (a row carrying more keys -- an UNKNOWN reason, a
+#: pre-registration stamp -- or any damaged tail takes the parse, audit of 80c9e6e7 SF1), and its `at`, `cell`, `passed`, `terminal_gate` and `downstream_status`
+#: are read here exactly as `json.loads` would read them: a string group holds no backslash
+#: (one that does falls to the slow path, so no escape is ever left undecoded), and `at` is
+#: second-precision UTC, so it IS its own normalised form. ANY other line -- an older layout, a
+#: `Z` stamp, a fraction of a second, an escaped character, a non-scalar value -- takes the
+#: original parse, so the counts are identical row for row; only the cost changes.
+#: Measured on the box 2026-11-14 00:42Z: the parse-every-row stream overran its 150 s deadline
+#: after 1,241,088 of ~1.64 M rows, so verdicts/hour -- and with it the drain ETA -- read
+#: UNMEASURED every pass.
+_STR = r'"([^"\\]*)"'
+_OPT = r'(?:null|"[^"\\]*")'
+_FAST_ROW = re.compile(
+    r'\{"at": "(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+00:00)", "cell": ' + _STR
+    + r', "graph_id": ' + _OPT + r', "sym": ' + _OPT + r', "family": ' + _OPT
+    + r', "passed": (true|false), "terminal_gate": ' + _STR
+    + r', "downstream_status": (?:null|' + _STR + r')\}\s*\Z')
 
 
 #: Rows between deadline checks: one `time.monotonic()` per this many lines is noise.
 _DEADLINE_EVERY = 4096
 
 
+#: THE STREAM RESUMES WHERE IT STOPPED (2026-11-14). The ledger is append-only, so a pass need
+#: only read the rows written since the last one. This checkpoint holds the exact state the full
+#: stream would have built up to a byte offset: rows read, rows unstamped, the latest stamp, the
+#: raw and first-ruling counts per second-precision stamp (the writer stamps a whole append batch
+#: with one `now`, so there are few distinct keys), and the cells already ruled -- as 16-byte
+#: BLAKE2b digests in a side file, appended in step, since ~1.6 M cell names in JSON would cost
+#: more to rewrite every hour than the tail costs to read. A pass that runs out of its deadline
+#: SAVES ITS PROGRESS and the next pass resumes from that row, so the first full read is spread
+#: over as many passes as the box needs and is never thrown away. Counts are published only from
+#: a stream that reached the end of the file: a prefix is still never a rate.
+#: Measured on the box 2026-11-14 00:42Z: the full stream overran its 150 s deadline after
+#: 1,241,088 of ~1.64 M rows every pass, so verdicts/hour and the drain ETA read UNMEASURED.
+#: Discarded (a full re-read follows) when the ledger shrinks, its first bytes change, the file
+#: is unreadable or of another schema, or the side file is shorter than the count it claims.
+#: Beside the ledger it describes, named at call time so a test that moves GATE_LEDGER moves it.
+VERDICT_CKPT_NAME = "gate_verdict_rate_ckpt.json"
+_CKPT_SCHEMA = "verdict_rate_ckpt/1"
+_HEAD_BYTES = 65536
+_DIGEST = 16
+
+
+def _cell_digest(cell: str) -> bytes:
+    import hashlib
+    return hashlib.blake2b(cell.encode("utf-8", "surrogatepass"), digest_size=_DIGEST).digest()
+
+
+def _head_hash(fh: Any, n: int) -> str:
+    """sha256 of the ledger's first `n` bytes (at most 64 KiB): a rewritten file differs here."""
+    import hashlib
+    fh.seek(0)
+    return hashlib.sha256(fh.read(min(n, _HEAD_BYTES))).hexdigest()
+
+
+def _load_ckpt(ckpt: Path, ledger_name: str, size: int, fh: Any) -> dict[str, Any] | None:
+    """The saved state if it still describes a prefix of THIS ledger, else None (re-read)."""
+    try:
+        doc = json.loads(ckpt.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("schema") != _CKPT_SCHEMA:
+        return None
+    try:
+        offset, n_cells = int(doc["offset"]), int(doc["n_cells"])
+        raw, first = dict(doc["raw"]), dict(doc["first"])
+        total, unstamped = int(doc["rows_total"]), int(doc["rows_unstamped"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    # The head covers the first min(offset, 64 KiB) bytes as saved; the same span must hash the
+    # same now, or this is another file under the same name.
+    if (doc.get("ledger") != ledger_name or offset < 0 or offset > size
+            or doc.get("head") != _head_hash(fh, offset)):
+        return None
+    try:
+        blob = ckpt.with_suffix(".cells").read_bytes()
+    except OSError:
+        return None
+    if len(blob) < n_cells * _DIGEST:
+        return None
+    return {"offset": offset, "raw": raw, "first": first, "rows_total": total,
+            "rows_unstamped": unstamped, "last": str(doc.get("last") or ""),
+            "cells": {blob[i:i + _DIGEST] for i in range(0, n_cells * _DIGEST, _DIGEST)},
+            "n_cells": n_cells}
+
+
+def _save_ckpt(ckpt: Path, doc: dict[str, Any], new_digests: list[bytes], keep: int) -> str | None:
+    """Append the digests, then replace the JSON that counts them. A crash between the two
+    leaves extra digests the count does not claim, which the next save truncates."""
+    try:
+        cells = ckpt.with_suffix(".cells")
+        mode = "r+b" if cells.exists() else "w+b"
+        with cells.open(mode) as fh:
+            fh.truncate(keep * _DIGEST)
+            fh.seek(keep * _DIGEST)
+            fh.write(b"".join(new_digests))
+        tmp = ckpt.with_name(ckpt.name + ".tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
+        os.replace(tmp, ckpt)
+    except OSError as exc:
+        return _why(exc)
+    return None
+
+
 def _verdict_counts(now: datetime, path: Path | None = None,
                     deadline_s: float | None = None,
-                    extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+                    extra_cuts: dict[str, str] | None = None,
+                    checkpoint: Path | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
@@ -1557,15 +1736,19 @@ def _verdict_counts(now: datetime, path: Path | None = None,
 
     BOUNDED BY `deadline_s` (2026-10-21). On a box paging at ~1.6 GB free the ~970k-row stream is
     the slowest step of the pass; past the deadline it stops and the counts are UNMEASURED with
-    the rows read and the reason -- a prefix of the ledger is never published as its rate."""
+    the rows read and the reason -- a prefix of the ledger is never published as its rate.
+
+    RESUMABLE (2026-11-14): the desk's own ledger (`path` None) keeps a checkpoint beside it
+    (`VERDICT_CKPT_NAME`), so a pass reads only the rows appended since the last and an overrun
+    keeps its progress; an explicit `checkpoint` does the same for any ledger. Every count is
+    identical to a full stream's."""
     import time as _time
 
-    try:
-        from research.judging_burndown import classify
-    except ImportError:
-        from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
+    from research.judging_burndown import NOT_JUDGED_PREFIX, classify
 
     p = GATE_LEDGER if path is None else path
+    ckpt = checkpoint if checkpoint is not None else (
+        p.with_name(VERDICT_CKPT_NAME) if path is None else None)
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
@@ -1576,25 +1759,89 @@ def _verdict_counts(now: datetime, path: Path | None = None,
         t_cut = _parse_utc(cut)
         if t_cut is not None and w not in cuts:
             cuts[w] = t_cut.astimezone(UTC).isoformat(timespec="seconds")
-    counts = dict.fromkeys(cuts, 0)
-    first_counts = dict.fromkeys(cuts, 0)
-    first_terminal_cells: set[str] = set()
-    total, unstamped, last = 0, 0, ""
+    # `stamp > now` on the fast path, as a string: a whole-second stamp is later than `now`
+    # exactly when it is later than `now` truncated to the second.
+    now_s = now.astimezone(UTC).isoformat(timespec="seconds")
     t_start = _time.monotonic()
-    stop_at = None if deadline_s is None else t_start + float(deadline_s)
+    budget_s = None if deadline_s is None else float(deadline_s)
+    stop_at = None if budget_s is None else t_start + budget_s
+    resumed_from = 0
+    ckpt_note: str | None = None
     try:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for n_line, line in enumerate(fh):
+        with p.open("rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            state = _load_ckpt(ckpt, p.name, size, fh) if ckpt is not None else None
+            if state is None:
+                state = {"offset": 0, "raw": {}, "first": {}, "rows_total": 0,
+                         "rows_unstamped": 0, "last": "", "cells": set(), "n_cells": 0}
+            raw: dict[str, int] = state["raw"]
+            first: dict[str, int] = state["first"]
+            total, unstamped, last = state["rows_total"], state["rows_unstamped"], state["last"]
+            seen: set[bytes] = state["cells"]
+            resumed_from = total
+            new_digests: list[bytes] = []
+            offset = state["offset"]
+            # The state that may be SAVED: everything up to the first row a later pass could
+            # read differently (a stamp still in the future, a line not yet terminated).
+            frozen: dict[str, Any] | None = None
+
+            def _snap(at_offset: int | None = None, rows: int | None = None) -> dict[str, Any]:
+                return {"offset": offset if at_offset is None else at_offset,
+                        "raw": dict(raw), "first": dict(first),
+                        "rows_total": total if rows is None else rows,
+                        "rows_unstamped": unstamped, "last": last, "n_new": len(new_digests)}
+            fh.seek(offset)
+            n_line = 0
+            for bline in fh:
+                # The original check, row 0 included: a deadline already spent (a checkpoint
+                # load that outlasted it, a budget <= 0) reads UNMEASURED and saves the
+                # checkpoint unchanged. Each pass with time left advances, so it converges.
                 if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
                         and _time.monotonic() > stop_at):
+                    if ckpt is not None:
+                        ckpt_note = _persist(ckpt, p, fh, frozen or _snap(), state, new_digests)
                     return {"status": UNMEASURED, "rows_read": total,
-                            "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
+                            "resumed_from_row": resumed_from,
+                            **({"checkpoint": (f"saved at row {total:,}; the next pass "
+                                               "resumes there") if not ckpt_note
+                                else f"not saved ({ckpt_note})"} if ckpt is not None else {}),
+                            "why": (f"{p.name} stream overran its {budget_s or 0.0:.0f} s "
                                     f"deadline after {total:,} rows "
                                     f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
                                     "UNMEASURED this pass, never a partial count")}
+                n_line += 1
+                start = offset
+                offset += len(bline)
+                if frozen is None and not bline.endswith(b"\n"):
+                    frozen = _snap(start)
+                line = bline.decode("utf-8", "replace")
                 if not line.strip():
                     continue
                 total += 1
+                f = _FAST_ROW.match(line)
+                if f is not None:
+                    at = f.group(1)
+                    if at > now_s:
+                        if frozen is None:
+                            frozen = _snap(start, total - 1)
+                        unstamped += 1
+                        continue
+                    last = max(last, at)
+                    raw[at] = raw.get(at, 0) + 1
+                    cell = f.group(2)
+                    status = f.group(5) or ""
+                    gate = f.group(4)
+                    # judging_burndown.classify(row) == "ruled", on the same three fields
+                    if (not cell or status.startswith(NOT_JUDGED_PREFIX)
+                            or not (f.group(3) == "true" or (gate and gate != "UNKNOWN"))):
+                        continue
+                    d = _cell_digest(cell)
+                    if d in seen:
+                        continue
+                    seen.add(d)
+                    new_digests.append(d)
+                    first[at] = first.get(at, 0) + 1
+                    continue
                 m = _AT.search(line)
                 if not m:
                     unstamped += 1
@@ -1602,6 +1849,8 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 try:
                     stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
                     if stamp.tzinfo is None or stamp > now:
+                        if stamp.tzinfo is not None and frozen is None:
+                            frozen = _snap(start, total - 1)
                         unstamped += 1
                         continue
                     at = stamp.astimezone(UTC).isoformat(timespec="seconds")
@@ -1609,9 +1858,7 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                     unstamped += 1
                     continue
                 last = max(last, at)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        counts[w] += 1
+                raw[at] = raw.get(at, 0) + 1
                 # The writer appends only when a terminal verdict changes. Repeated cells
                 # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
                 # completed evidence judgements either. Preserve the raw event count above.
@@ -1624,38 +1871,91 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 cell = str(row.get("cell", ""))
                 if not cell or classify(row) != "ruled":
                     continue
-                if cell in first_terminal_cells:
+                d = _cell_digest(cell)
+                if d in seen:
                     continue
-                first_terminal_cells.add(cell)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        first_counts[w] += 1
+                seen.add(d)
+                new_digests.append(d)
+                first[at] = first.get(at, 0) + 1
     except OSError as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
-            "last_verdict_at": last or None, "counts": counts,
-            "count_basis": "changed verdict events; unchanged retests do not append",
-            "first_terminal_counts": first_counts,
-            "first_terminal_cells": len(first_terminal_cells),
-            "first_terminal_per_hour": {
-                "1h": float(first_counts["1h"]),
-                "24h": round(first_counts["24h"] / 24.0, 3),
-                "7d": round(first_counts["7d"] / 168.0, 3)},
-            "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
-                         "7d": round(counts["7d"] / 168.0, 3)}}
+        return {"status": UNMEASURED, "why": _why(exc)}
+    if ckpt is not None:
+        try:
+            with p.open("rb") as fh2:
+                ckpt_note = _persist(ckpt, p, fh2, frozen or _snap(), state, new_digests)
+        except OSError as exc:
+            ckpt_note = _why(exc)
+    counts = {w: sum(n for at, n in raw.items() if at >= cut) for w, cut in cuts.items()}
+    first_counts = {w: sum(n for at, n in first.items() if at >= cut) for w, cut in cuts.items()}
+    out: dict[str, Any] = {
+        "status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
+        "last_verdict_at": last or None, "counts": counts,
+        "count_basis": "changed verdict events; unchanged retests do not append",
+        "first_terminal_counts": first_counts,
+        "first_terminal_cells": len(seen),
+        "first_terminal_per_hour": {
+            "1h": float(first_counts["1h"]),
+            "24h": round(first_counts["24h"] / 24.0, 3),
+            "7d": round(first_counts["7d"] / 168.0, 3)},
+        "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
+                     "7d": round(counts["7d"] / 168.0, 3)}}
+    if ckpt is not None:
+        out["resumed_from_row"] = resumed_from
+        out["checkpoint"] = "saved" if not ckpt_note else f"not saved ({ckpt_note})"
+    return out
 
 
-def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
-    """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at."""
+def _persist(ckpt: Path, p: Path, fh: Any, snap: dict[str, Any], state: dict[str, Any],
+             new_digests: list[bytes]) -> str | None:
+    """Save `snap` -- the stream's exact state at a line boundary -- as the resume point."""
+    return _save_ckpt(ckpt, {
+        "schema": _CKPT_SCHEMA, "ledger": p.name, "offset": snap["offset"],
+        "head": _head_hash(fh, snap["offset"]),
+        "rows_total": snap["rows_total"], "rows_unstamped": snap["rows_unstamped"],
+        "last": snap["last"], "raw": snap["raw"], "first": snap["first"],
+        "n_cells": state["n_cells"] + snap["n_new"]},
+        new_digests[:snap["n_new"]], state["n_cells"])
+
+
+#: Wall clock the registry's creation count may spend (v1.1), on top of the ledger stream's own.
+CREATION_BUDGET_S = 30.0
+#: SQLite VM instructions between deadline checks.
+_SQLITE_PROGRESS_EVERY = 1000
+
+
+def _creation_counts(now: datetime, path: Path | None = None,
+                     deadline_s: float | None = None) -> dict[str, Any]:
+    """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at.
+
+    BOUNDED BY `deadline_s` (v1.1), like `_verdict_counts`: the busy timeout is capped by it and a
+    progress handler interrupts the scan past it, so an overrun is UNMEASURED with the reason --
+    a count is never published from a query that did not finish."""
     import sqlite3
+    import time as _time
 
     p = REGISTRY if path is None else path
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: creation rate is UNMEASURED"}
+    t_start = _time.monotonic()
+    budget_s = None if deadline_s is None else float(deadline_s)
+    stop_at = None if budget_s is None else t_start + budget_s
+
+    def _overran() -> dict[str, Any]:
+        return {"status": UNMEASURED,
+                "why": (f"{p.name} creation count overran its {budget_s or 0.0:.0f} s deadline "
+                        f"({_time.monotonic() - t_start:.0f} s): creation rate is UNMEASURED "
+                        "this pass, never a partial count")}
+
+    if stop_at is not None and _time.monotonic() > stop_at:
+        return _overran()
+    busy_s = 30.0 if budget_s is None else max(0.0, min(30.0, budget_s))
     try:
-        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=30)
+        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=busy_s)
     except sqlite3.Error as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": UNMEASURED, "why": _why(exc)}
+    if stop_at is not None:
+        _stop = stop_at
+        c.set_progress_handler(lambda: int(_time.monotonic() > _stop), _SQLITE_PROGRESS_EVERY)
     try:
         cut_24h = (now - timedelta(hours=24)).isoformat(timespec="seconds")
         cut_7d = (now - timedelta(hours=168)).isoformat(timespec="seconds")
@@ -1668,7 +1968,9 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
         ).fetchone()
         out = {"24h": int(n_24h), "7d": int(n_7d)}
     except sqlite3.Error as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        if stop_at is not None and _time.monotonic() > stop_at:
+            return _overran()
+        return {"status": UNMEASURED, "why": _why(exc)}
     finally:
         c.close()
     return {"status": "MEASURED", "counts": out,
@@ -1679,7 +1981,8 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
                  now: datetime | None = None, *, ledger: Path | None = None,
                  registry: Path | None = None,
                  deadline_s: float | None = None,
-                 extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+                 extra_cuts: dict[str, str] | None = None,
+                 previous: dict[str, Any] | None = None) -> dict[str, Any]:
     """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
 
     ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
@@ -1687,7 +1990,8 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
     ver = _verdict_counts(t, ledger, deadline_s=deadline_s, extra_cuts=extra_cuts)
-    cre = _creation_counts(t, registry)
+    cre = _creation_counts(t, registry, deadline_s=(
+        None if deadline_s is None else min(float(deadline_s), CREATION_BUDGET_S)))
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.
     backlog = (UNMEASURED if queue.get("depth_scope") == "sweep"
@@ -1701,9 +2005,12 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     _unj = ((_cov.get("totals") or {}).get("unjudged_total")
             if isinstance(_cov, dict) else None)
     # Require a timezone-aware content timestamp; touching the file is not freshness.
+    cov_age_s: float | None = None
     try:
         cov_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
-        coverage_fresh = cov_at.tzinfo is not None and 0 <= (t - cov_at).total_seconds() <= 7200
+        if cov_at.tzinfo is not None:
+            cov_age_s = (t - cov_at).total_seconds()
+        coverage_fresh = cov_age_s is not None and 0 <= cov_age_s <= COVERAGE_MAX_AGE_S
     except (ValueError, TypeError, AttributeError):
         coverage_fresh = False
     if isinstance(_unj, int) and coverage_fresh:
@@ -1724,10 +2031,27 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
             eta = {"status": "GROWING", "hours": None, "net_per_day": round(net * 24.0, 1),
                    "why": ("the judge returns fewer verdicts an hour than the desk creates cells; "
                            "the backlog cannot drain at this rate")}
-    elif not isinstance(backlog, int):
-        eta["why"] = "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
     else:
-        eta["why"] = "verdict or creation rate UNMEASURED"
+        missing = _eta_missing_inputs(backlog, _cov, _unj, cov_age_s, queue, ver, cre,
+                                      ledger, registry)
+        eta["why"] = "; ".join(f"{m['input']}: {m['why']}" for m in missing)
+        eta["missing_inputs"] = [m["input"] for m in missing]
+    if eta["status"] == UNMEASURED:
+        # HOW LONG HAS IT BEEN UNMEASURED. One UNMEASURED reading is a pass that came up short;
+        # two in a row is a clock that stopped, and `scripts/check_judge_coverage.py` fails on it
+        # (L1.28a). The count rides on this artifact so the fence needs no state of its own. A
+        # previous reading from before the counter existed was still a reading: it counts as one.
+        prev_eta = ((previous or {}).get("eta_to_drain") if isinstance(previous, dict)
+                    else None) or {}
+        if isinstance(prev_eta, dict) and prev_eta.get("status") == UNMEASURED:
+            n_prev = prev_eta.get("unmeasured_readings")
+            n_prev = n_prev if isinstance(n_prev, int) and n_prev > 0 else 1
+            since = prev_eta.get("unmeasured_since") or (previous or {}).get("at")
+            eta["unmeasured_readings"] = n_prev + 1
+            eta["unmeasured_since"] = since or t.isoformat(timespec="seconds")
+        else:
+            eta["unmeasured_readings"] = 1
+            eta["unmeasured_since"] = t.isoformat(timespec="seconds")
     return {
         "at": t.isoformat(timespec="seconds"),
         # The verdict count is this artifact's measurement: when it is UNMEASURED (absent ledger,

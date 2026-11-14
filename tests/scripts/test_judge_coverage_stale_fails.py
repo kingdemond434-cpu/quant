@@ -41,6 +41,11 @@ def _healthy(at: Any) -> dict[str, Any]:
 def _write(tmp: Path, doc: dict[str, Any]) -> Path:
     p = tmp / "JUDGE_COVERAGE.json"
     p.write_text(json.dumps(doc), "utf-8")
+    # The ETA fence (check 8) reads JUDGING_RATE.json beside the report and, on the box, FAILS
+    # without a fresh measured one; these tests are about the report's own lease, so they hand it
+    # a healthy rate and leave the ETA's own cases to desks/mt5/tests/test_judge_eta_fence.py.
+    (tmp / "JUDGING_RATE.json").write_text(json.dumps(
+        {"at": NOW.isoformat(), "eta_to_drain": {"status": "DRAINING", "hours": 10.0}}), "utf-8")
     return p
 
 

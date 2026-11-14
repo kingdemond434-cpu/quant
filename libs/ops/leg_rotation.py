@@ -538,15 +538,33 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "why": dec.why,
         "attendance": att.to_json(),
     }
-    out = path or RECORD
-    try:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = out.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-        tmp.replace(out)
-    except OSError as exc:
-        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    # ONE FILE PER PLAN (box read HP3, 2026-11-11). The department residents run this same
+    # cycle under HOURLY_PLAN="dept:<name>" and wrote RECORD too, so the last writer won: a
+    # one-leg "dept:asean" pass at 01:27Z replaced the 162-leg hourly plan of 00:30Z and the
+    # hourly admitted/deferred rows were unauditable. A department plan now writes only its own
+    # LEG_ROTATION.<plan>.json; the hourly plans keep RECORD (the fence's file) and a copy.
+    outs = [path] if path is not None else (
+        [plan_record(dec.plan)] if is_department_plan(dec.plan)
+        else [RECORD, plan_record(dec.plan)])
+    for out in outs:
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            tmp = out.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+            tmp.replace(out)
+        except OSError as exc:
+            doc["write_error"] = f"{type(exc).__name__}: {exc}"
     return doc
+
+
+def is_department_plan(plan: str) -> bool:
+    return str(plan).startswith("dept:")
+
+
+def plan_record(plan: str) -> Path:
+    """reports/LEG_ROTATION.<plan>.json, with the plan name made filename-safe."""
+    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(plan or "unknown"))
+    return RECORD.with_name(f"LEG_ROTATION.{safe}.json")
 
 
 def load_record(path: Path | None = None) -> dict[str, Any]:

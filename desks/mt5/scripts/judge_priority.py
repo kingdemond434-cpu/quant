@@ -632,32 +632,67 @@ def _spill(lines: list[dict[str, Any]], path: Path | None = None) -> str:
 UNSPILLED_HISTORY = 50
 
 
+def _line_key(x: dict[str, Any]) -> tuple[Any, ...]:
+    return (x.get("at"), x.get("pid"), x.get("create_time"), x.get("by"))
+
+
+def _count(v: Any) -> int | None:
+    """A recorded `n_dropped`: a finite non-negative whole count, or None when it is malformed
+    (a string, a bool, NaN, an infinity, a negative) -- which the reader reads as UNMEASURED."""
+    if isinstance(v, bool):
+        return None
+    if v is None:
+        return 0
+    if isinstance(v, int):
+        return v if v >= 0 else None
+    if isinstance(v, float) and v == v and v not in (float("inf"), float("-inf")):
+        return int(v) if v >= 0 and v == int(v) else None
+    return None
+
+
 def carry_unspilled(prior: Any, block: Any, cap: int = UNSPILLED_HISTORY) -> dict[str, Any] | None:
-    """The `unspilled` record after `block` is published over `prior` (audit of f54ac4dd007).
+    """The `unspilled` record after `block` is published over `prior` (audits of f54ac4dd007 and
+    d3b07717db1).
 
     `prior` is the record's previous `unspilled` value, `block` any newly published block. A block
-    whose `spill` reads FAILED holds the only copy of its lines, so they are appended; anything past
-    `cap` is dropped oldest first and its count accumulated in `n_dropped`. Returns None when there
-    is nothing to keep."""
+    whose `spill` reads FAILED holds the only copy of its lines, so they are appended once (by
+    at/pid/create_time/by); anything past `cap` is dropped oldest first and its count accumulated
+    in `n_dropped`. `dropped_through` is the newest `at` ever dropped: a line at or before it that
+    is not kept was already counted, so republishing the same block never counts it twice. A
+    malformed prior count is kept as UNMEASURED (never raised, never reset to zero). Returns None
+    when there is nothing to keep. Never raises."""
     kept = prior if isinstance(prior, dict) else {}
     old = [x for x in kept.get("missed_growth") or [] if isinstance(x, dict)]
-    dropped = int(kept.get("n_dropped") or 0)
+    dropped: int | None = _count(kept.get("n_dropped"))
+    through = kept.get("dropped_through")
+    through = through if isinstance(through, str) else None
     spill = kept.get("spill")
     if isinstance(block, dict) and str(block.get("spill", "")).startswith("FAILED"):
         spill = block["spill"]
-        seen = {(x.get("at"), x.get("pid"), x.get("create_time"), x.get("by")) for x in old}
+        seen = {_line_key(x) for x in old}
         for x in block.get("missed_growth") or []:
-            if isinstance(x, dict):
-                k = (x.get("at"), x.get("pid"), x.get("create_time"), x.get("by"))
-                if k not in seen:
-                    seen.add(k)
-                    old.append(x)
-    if not old and not dropped:
+            if not isinstance(x, dict) or _line_key(x) in seen:
+                continue
+            if through is not None and str(x.get("at") or "") <= through:
+                continue                        # dropped earlier and already counted
+            seen.add(_line_key(x))
+            old.append(x)
+    if not old and dropped == 0 and "n_dropped" not in kept:
         return None
     if len(old) > cap:
-        dropped += len(old) - cap
+        gone = old[: len(old) - cap]
         old = old[-cap:]
-    return {"spill": spill or "FAILED: carried", "missed_growth": old, "n_dropped": dropped}
+        if dropped is not None:
+            dropped += len(gone)
+        newest = max(str(x.get("at") or "") for x in gone)
+        through = newest if through is None or newest > through else through
+    out: dict[str, Any] = {"spill": spill or "FAILED: carried", "missed_growth": old,
+                           "n_dropped": UNMEASURED if dropped is None else dropped}
+    if dropped is None:
+        out["n_dropped_malformed"] = repr(kept.get("n_dropped"))[:80]
+    if through is not None:
+        out["dropped_through"] = through
+    return out
 
 
 def account(
@@ -814,19 +849,28 @@ def main(argv: list[str] | None = None) -> int:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         # A MANUAL --apply NEVER OVERWRITES A KEPT LINE (audit of f54ac4dd007): the previous
         # report's failed-spill lines (its `accounted` block and its own `unspilled`) are carried.
-        prior: dict[str, Any] = {}
-        try:
-            got = json.loads(REPORT.read_text("utf-8"))
-            prior = got if isinstance(got, dict) else {}
-        except (OSError, ValueError):
-            prior = {}
-        carried = carry_unspilled(prior.get("unspilled"), prior.get("accounted"))
-        carried = carry_unspilled(carried, accounted)
-        if carried is not None:
-            doc["unspilled"] = carried
-        tmp = REPORT.with_name(f"{REPORT.name}.{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-        os.replace(tmp, REPORT)
+        # The read-modify-replace runs under the report's own lock (audit of d3b07717db1), so two
+        # manual runs cannot each drop the other's kept line. Not held -> NOT written, said, rc 1.
+        from libs.research.artifact_chain import _locked
+
+        with _locked(REPORT, SPILL_LOCK_S * 2) as held:
+            if not held:
+                print(f"judge_priority: {REPORT.name} NOT written (lock not held); "
+                      f"accounted: {json.dumps(accounted, default=str)}", file=sys.stderr)
+                return 1
+            prior: dict[str, Any] = {}
+            try:
+                got = json.loads(REPORT.read_text("utf-8"))
+                prior = got if isinstance(got, dict) else {}
+            except (OSError, ValueError):
+                prior = {}
+            carried = carry_unspilled(prior.get("unspilled"), prior.get("accounted"))
+            carried = carry_unspilled(carried, accounted)
+            if carried is not None:
+                doc["unspilled"] = carried
+            tmp = REPORT.with_name(f"{REPORT.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            os.replace(tmp, REPORT)
     return 0
 
 

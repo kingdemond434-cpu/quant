@@ -306,6 +306,12 @@ def _row(organ: str, state: str = "NEVER") -> dict:
             "artifact_age_s": None, "artifact_bytes": 0}
 
 
+def _merged(tmp_path: Path) -> dict:
+    doc = ra.load_attestation(ra.Paths.at(tmp_path))
+    assert doc is not None
+    return doc
+
+
 def _as_host(monkeypatch, name: str = "vmi3571445", mid: str = "box-machine-id") -> None:
     monkeypatch.setattr(ra.socket, "gethostname", lambda: name)
     monkeypatch.setattr(ra, "_machine_id", lambda: mid)
@@ -333,10 +339,11 @@ def _committed(tmp_path: Path, machine_id: str | None = None) -> Path:
     return p.out_json
 
 
-def test_only_missing_appends_new_organs_and_leaves_existing_rows_byte_identical(
+def test_only_missing_writes_sidecars_and_leaves_the_monolith_byte_identical(
         tmp_path: Path, monkeypatch) -> None:
     _as_host(monkeypatch)
     path = _committed(tmp_path, machine_id="box-machine-id")
+    raw_file = path.read_bytes()
     before = json.loads(path.read_text(encoding="utf-8"))
     raw_before = [json.dumps(r, indent=1) for r in before["organs"]]
     # the live pass would FLIP both existing rows; --only-missing must not let it
@@ -344,38 +351,90 @@ def test_only_missing_appends_new_organs_and_leaves_existing_rows_byte_identical
              _row("new_d", "LIVE")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    after = json.loads(path.read_text(encoding="utf-8"))
+    p = ra.Paths.at(tmp_path)
+    assert path.read_bytes() == raw_file             # the monolith is not edited at all
+    assert not p.out_md.exists()                     # nor is the rendered view written
+    assert not p.ratchet.exists()                    # the ratchet is not touched
+    assert sorted(f.name for f in p.sidecars.iterdir()) == sorted(
+        ra.sidecar_name(o) for o in ("new_c", "new_d"))
+    after = _merged(tmp_path)
     assert [json.dumps(r, indent=1) for r in after["organs"][:2]] == raw_before
-    assert [r["organ"] for r in after["organs"][2:]] == ["new_c", "new_d"]
+    assert sorted(r["organ"] for r in after["organs"][2:]) == ["new_c", "new_d"]
     assert after["census"]["LIVE"] == 2 and after["census"]["NEVER"] == 1
     assert after["census"]["STALE"] == 1 and after["census"]["MISSING"] == 0
-    assert after["scope"]["attested"] == 4
+    assert after["scope"]["attested"] == 4 and after["scope"]["sidecar_rows"] == 2
     for k in ("generated_at", "attests_to_host", "host"):
         assert after[k] == before[k]
-    assert not ra.Paths.at(tmp_path).ratchet.exists()          # the ratchet is not touched
-    md = ra.Paths.at(tmp_path).out_md.read_text(encoding="utf-8")
-    assert "new_c" in md and "new_d" in md
-    # each existing row's serialized text is still in the file, unchanged
-    text_after = path.read_text(encoding="utf-8")
-    for r in before["organs"]:
-        block = json.dumps(r, indent=1, default=str).replace("\n", "\n  ")
-        assert block in text_after
+    assert not fence.measure(tmp_path)["failures"]
+
+
+def test_two_prs_adding_different_organs_touch_disjoint_files(
+        tmp_path: Path, monkeypatch) -> None:
+    """The point of the sidecars: PR A and PR B each add an organ and share no file, so neither
+    merge re-conflicts the other (25 of 100 open PRs collided on the monolith, 2026-11-14)."""
+    _committed(tmp_path)
+    p = ra.Paths.at(tmp_path)
+    written = []
+    for organ in ("pr_a_organ", "pr_b_organ"):
+        monkeypatch.setattr(ra, "organ_rows",
+                            lambda paths, budget_s, o=organ: ([_row(o)], {}))
+        before = set(p.sidecars.iterdir()) if p.sidecars.is_dir() else set()
+        assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+        written.append(set(p.sidecars.iterdir()) - before)
+    assert all(len(w) == 1 for w in written) and not (written[0] & written[1])
+
+
+def test_the_monolith_row_wins_over_a_sidecar_once_the_host_attests_the_organ(
+        tmp_path: Path) -> None:
+    path = _committed(tmp_path)
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    side = dict(_row("old_a", "NEVER"), measured_on="vm",
+                only_missing={"on_attesting_host": False})
+    (p.sidecars / ra.sidecar_name("old_a")).write_text(json.dumps(side), encoding="utf-8")
+    merged = _merged(tmp_path)
+    assert [r["state"] for r in merged["organs"] if r["organ"] == "old_a"] == ["LIVE"]
+    assert merged["census"] == json.loads(path.read_text(encoding="utf-8"))["census"]
+
+
+def test_the_fence_fails_a_malformed_or_overclaiming_sidecar(tmp_path: Path) -> None:
+    _committed(tmp_path)
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    (p.sidecars / "junk.json").write_text("{}", encoding="utf-8")
+    live = dict(_row("x_live", "LIVE"), measured_on="vm",
+                only_missing={"on_attesting_host": False})
+    (p.sidecars / ra.sidecar_name("x_live")).write_text(json.dumps(live), encoding="utf-8")
+    misnamed = dict(_row("y", "NEVER"), measured_on="vm",
+                    only_missing={"on_attesting_host": False})
+    (p.sidecars / ra.sidecar_name("z")).write_text(json.dumps(misnamed), encoding="utf-8")
+    fails = " | ".join(fence.measure(tmp_path)["failures"])
+    assert "junk.json: not a sidecar row" in fails
+    assert "measured off the attesting host yet reads LIVE" in fails
+    assert "named for another organ" in fails
+
+
+def test_a_sidecar_name_is_legal_on_ntfs_and_distinct_per_organ() -> None:
+    a, b = ra.sidecar_name("task:MT5-FTMO-Allocator"), ra.sidecar_name("task~MT5-FTMO-Allocator")
+    assert a != b and not set(a) & set('<>:"/\\|?*')
 
 def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
     path = _committed(tmp_path)
+    raw = path.read_bytes()
     fresh = [_row("old_a"), _row("new_c")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    once = path.read_bytes()
-    md_once = ra.Paths.at(tmp_path).out_md.read_bytes()
+    side = ra.Paths.at(tmp_path).sidecars
+    once = {f.name: f.read_bytes() for f in side.iterdir()}
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    assert path.read_bytes() == once
-    assert ra.Paths.at(tmp_path).out_md.read_bytes() == md_once
+    assert {f.name: f.read_bytes() for f in side.iterdir()} == once and len(once) == 1
+    assert path.read_bytes() == raw
 
 
 def test_only_missing_refuses_without_a_committed_attestation(tmp_path: Path) -> None:
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 1
     assert not ra.Paths.at(tmp_path).out_json.exists()
+    assert not ra.Paths.at(tmp_path).sidecars.exists()
 
 
 def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
@@ -388,7 +447,7 @@ def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
              _row("new_missing", "MISSING"), _row("new_never", "NEVER")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    after = json.loads(path.read_text(encoding="utf-8"))
+    after = _merged(tmp_path)
     new = {r["organ"]: r for r in after["organs"][2:]}
     assert {k: r["state"] for k, r in new.items()} == {
         "new_live": ra.UNMEASURED, "new_stale": ra.UNMEASURED,
@@ -397,7 +456,7 @@ def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
                for r in new.values())
     assert after["census"][ra.UNMEASURED] == 3 and after["census"]["NEVER"] == 1
     assert after["census"]["LIVE"] == 1 and after["census"]["STALE"] == 1  # untouched
-    assert after["scope"]["only_missing_appended"][-1]["on_attesting_host"] is False
+    assert all(r["only_missing"]["on_attesting_host"] is False for r in new.values())
     # the fence still reads it as a report about the box, with no host drift
     assert not any("host drift" in f for f in fence.measure(tmp_path)["failures"])
 
@@ -405,25 +464,20 @@ def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
 def test_only_missing_on_the_attesting_host_keeps_its_measured_state(
         tmp_path: Path, monkeypatch) -> None:
     _as_host(monkeypatch)                                   # the box, by name AND machine id
-    path = _committed(tmp_path, machine_id="box-machine-id")
+    _committed(tmp_path, machine_id="box-machine-id")
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    row = json.loads(path.read_text(encoding="utf-8"))["organs"][-1]
+    row = _merged(tmp_path)["organs"][-1]
     assert row["state"] == "LIVE" and row["measured_on"] == socket.gethostname()
 
 
-def test_only_missing_trims_only_the_appended_rows(tmp_path: Path, monkeypatch) -> None:
+def test_only_missing_never_trims_the_monolith(tmp_path: Path, monkeypatch) -> None:
+    """The size trim is the monolith's; sidecars never grow it, so nothing in it is trimmed."""
     _as_host(monkeypatch)
     path = _committed(tmp_path, machine_id="box-machine-id")
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    for r in doc["organs"]:
-        r["summary"] = {"status": "keep-me"}
-    doc["scope"]["summaries_trimmed"] = 2
-    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    raw_before = [json.dumps(r, indent=1) for r in doc["organs"]]
-    base = len(json.dumps(doc, default=str))
-    monkeypatch.setattr(ra, "MAX_JSON_BYTES", base + 600)
+    raw = path.read_bytes()
+    monkeypatch.setattr(ra, "MAX_JSON_BYTES", len(raw) + 10)
     fresh = []
     for i in range(6):
         r = _row(f"new_{i}", "LIVE")
@@ -431,10 +485,9 @@ def test_only_missing_trims_only_the_appended_rows(tmp_path: Path, monkeypatch) 
         fresh.append(r)
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    after = json.loads(path.read_text(encoding="utf-8"))
-    assert [json.dumps(r, indent=1) for r in after["organs"][:2]] == raw_before
-    trimmed = [r for r in after["organs"][2:] if "trimmed" in str(r["summary"].get("_", ""))]
-    assert trimmed and after["scope"]["summaries_trimmed"] == 2 + len(trimmed)
+    assert path.read_bytes() == raw
+    rows = [r for r in _merged(tmp_path)["organs"] if r["organ"].startswith("new_")]
+    assert len(rows) == 6 and all(r["summary"]["status"] == "x" * 40 for r in rows)
 
 
 def test_a_cloud_vm_is_off_host_even_when_name_and_machine_id_match(
@@ -448,7 +501,7 @@ def test_a_cloud_vm_is_off_host_even_when_name_and_machine_id_match(
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    row = json.loads(path.read_text(encoding="utf-8"))["organs"][-1]
+    row = _merged(tmp_path)["organs"][-1]
     assert row["state"] == ra.UNMEASURED and row["measured_on"] == "vm"
 
 
@@ -471,7 +524,7 @@ def test_an_old_format_stamp_is_unverifiable_not_breakage(tmp_path: Path, monkey
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_never", "NEVER")], {}))
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    after = json.loads(path.read_text(encoding="utf-8"))
+    after = _merged(tmp_path)
     assert after["organs"][:2] == before["organs"] and after["host"] == before["host"]
     assert after["organs"][-1]["state"] == "NEVER"
     assert not any("host drift" in f or "role" in f for f in fence.measure(tmp_path)["failures"])

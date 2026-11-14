@@ -66,6 +66,12 @@ POPULATION: Path = _ROOT / "data" / "archaeology" / "population.jsonl"
 #: mined with that fact attached. `may_fetch` is the door and it refuses the five acts only.
 ALLOWED, FORBIDDEN, UNKNOWN = "allowed", "forbidden", "unknown"
 
+#: Governance wayback-youtube-ruling-2026-11-14: the Internet Archive's terms limit use to
+#: scholarship and research purposes only, so it is not an archaeology ground for this desk.
+_WAYBACK_REFUSED = ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and "
+                    "research purposes only; missed_growth: pages whose originals are gone are "
+                    "not read through captures (a gap, not a zero)")
+
 #: What a record is worth before anything is inferred from it.
 VERIFICATION: dict[str, float] = {
     "broker_verified": 0.90,      # the broker/regulated venue publishes the statement
@@ -279,9 +285,9 @@ PLATFORMS: tuple[Platform, ...] = (
              note="public filings: lawfully observable FUNCTIONS only, never undisclosed "
                   "positions"),
     # ---- the archive of everything above, when the original is gone -----------------------
-    Platform("wayback", "https://web.archive.org/web", "archive", ALLOWED, "unverified",
+    Platform("wayback", "https://web.archive.org/web", "archive", FORBIDDEN, "unverified",
              ("url", "timestamp", "status"), parser="json_rows", family="forum_archaeology",
-             note="the deep-forest miner already owns the wayback route"),
+             note=_WAYBACK_REFUSED),
 )
 BY_NAME: dict[str, Platform] = {p.name: p for p in PLATFORMS}
 
@@ -318,8 +324,7 @@ class Ground:
 #: be a blank. "We have not looked there" and "there is nothing there" are different facts
 #: (L1.28a), and only a named absence keeps them apart.
 ARCHIVE_LAYER: tuple[Ground, ...] = (
-    Ground("global", "historical_pages", "wayback_machine", "https://web.archive.org/web",
-           note="the deep-forest miner already owns this route"),
+    Ground("global", "historical_pages", "wayback_machine", note=_WAYBACK_REFUSED),
     Ground("global", "abandoned_code_repos", "github_archived",
            "https://api.github.com/search/repositories", access_label="LICENSED",
            credibility="RELIABLE", note="archived:true is a first-class query, not an omission"),
@@ -330,7 +335,7 @@ ARCHIVE_LAYER: tuple[Ground, ...] = (
            "https://www.mql5.com/en/signals", access_label="PUBLIC_WITH_TERMS",
            credibility="RELIABLE", note="the watchtower's disappearances ARE this ground"),
     Ground("global", "public_performance_archives", "archived_leaderboards",
-           "https://web.archive.org/web", note="leaderboards as they stood, via the archive"),
+           note=_WAYBACK_REFUSED),
     Ground("us", "dead_forums", "elitetrader_archive",
            "https://www.elitetrader.com/et/forums", access_label="ACCESS_UNCLEAR",
            note="terms unread: MINED with that label attached (LAWS 5e, 2026-09-23)"),
