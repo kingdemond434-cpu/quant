@@ -158,13 +158,28 @@ def _calendar_module() -> Any:
 
 
 def _rows_from_disk(kind: str, lo: date, hi: date) -> list[dict[str, Any]] | None:
-    """Calendar rows of `kind` dated in [lo, hi] from the artifact, or None if unreadable."""
+    """Calendar rows of `kind` dated in [lo, hi] from the artifact, or None if unreadable.
+
+    NONE ALSO WHEN THE ARTIFACT DOES NOT COVER [lo, hi] (2026-10-13). The hourly leg writes a
+    400-days-back window, so a backtest over years of bars read the artifact, found that year's
+    rows, and silently judged the mechanism on ~13 months of events -- every older event simply
+    did not exist. A partial artifact is not "the calendar"; the rules are, so the caller falls
+    back to computing the whole span.
+    """
     try:
         doc = json.loads(CALENDAR_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     rows = doc.get("events") if isinstance(doc, dict) else None
     if not isinstance(rows, list):
+        return None
+    span = doc.get("range") if isinstance(doc.get("range"), dict) else {}
+    try:
+        covers = (date.fromisoformat(str(span.get("start"))) <= lo
+                  and date.fromisoformat(str(span.get("end"))) >= hi)
+    except ValueError:
+        covers = False
+    if not covers:
         return None
     out: list[dict[str, Any]] = []
     for row in rows:

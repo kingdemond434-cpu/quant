@@ -345,6 +345,10 @@ libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
+desks/mt5/mt5desk/flowcal.py
+desks/mt5/research/countries/__init__.py
+desks/mt5/research/countries/cn/pack.py
+libs/research/country_lab.py
 desks/mt5/research/decay_regime.py
 libs/ops/env_keys.py
 libs/ops/env_secret.py

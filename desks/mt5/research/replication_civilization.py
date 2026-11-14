@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import json
 import os
 import sys
@@ -72,6 +73,13 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: THE COUNT IS A FLOOR, THE BUDGET IS THE CEILING (2026-10-29). `max_per_pass // 2` certificates a
+#: pass was ALSO the most a pass ever judged, while a pass used ~300 s of its 900 s budget: 8
+#: certificates an hour against 1,204, so 80 never-judged gap_decay certificates waited since
+#: 2026-09-25 and 295 certificates sat clockless at the admission door (FORWARD_ENROLMENT.json
+#: 2026-10-29, n_held 295). Past the floor the certificate lane keeps judging certificates that HAVE
+#: a written rule until it has spent this share of the budget; the forward lane keeps the rest.
+CERT_BUDGET_SHARE = 0.5
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -99,7 +107,11 @@ UNMEASURED = "UNMEASURED"
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "lead_replication", "shadow_forward", "external_shadow",
+    # the formula, residual and modifier code the three families of `replication_families`
+    # would otherwise reuse: their rules are rebuilt from the written text, never imported
+    "alpha_grammar", "mt5desk.cell_modifiers", "mt5desk.causal_residual",
+    "mt5desk.families_vector", "mt5desk.family_formula")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -146,6 +158,10 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: the broker's per-bar spread and tick volume when the parquet carries them (the formula
+    #: rule's `spread` / `activity` terminals); None when it does not
+    spread: np.ndarray | None = None
+    tick_volume: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,16 +180,22 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, spread: np.ndarray | None = None,
+                     tick_volume: np.ndarray | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
+    # one bar per stamp, the LAST one written (a re-fetched bar supersedes the earlier copy)
+    last = np.concatenate([t[1:] != t[:-1], [True]]) if len(t) else np.zeros(0, bool)
+    order, t = order[last], t[last]
     gaps = np.diff(t) if len(t) > 1 else np.asarray([3_600_000_000_000])
     gaps = gaps[gaps > 0]
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
+    extra = [None if x is None else np.asarray(x, dtype="float64")[order]
+             for x in (spread, tick_volume)]
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000), extra[0], extra[1])
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +243,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = [frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 if k in cols and cols[k] in frame.columns else None
+                 for k in ("spread", "tick_volume")]
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, *extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -262,6 +287,14 @@ def rsi(close: np.ndarray, n: int) -> np.ndarray:
 
 
 # ------------------------------------------------------------------------------- the rules
+class RuleRefusal(Exception):
+    """A written rule that cannot be evaluated on the inputs at hand: a column the bars do not
+    carry, too short a history, an expression that does not evaluate. It is UNMEASURED by name.
+    Returning no orders instead would read as "the rebuild produced NO fill", which the forward
+    lane judges MISMATCH and quarantines -- so a box whose parquet lacks a column would quarantine
+    healthy clocks (AUDIT HOLD c21afd792, 2026-11-03)."""
+
+
 @dataclass
 class Order:
     """One signal as the rule book states it: the bar it is known at, the side, the protective
@@ -274,6 +307,9 @@ class Order:
     ttl_bars: int
     trigger: float | None = None
     wait_bars: int = 1
+    #: the written fill rule of the families in `replication_families`: an order whose next-open
+    #: fill already lies at or beyond its stop or its target is UNFILLED, never a trade
+    unfilled_if_crossed: bool = False
 
 
 @dataclass
@@ -286,6 +322,10 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The session is the cell's own `session` param (never the selector), the side is a rule
+    #: param the build applies itself (a fade flips it per signal), and a variant modifier with
+    #: no written meaning here is refused rather than silently dropped.
+    params_own_session_and_side: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -413,6 +453,92 @@ def _build_overnight_drift(b: Bars, p: dict[str, Any]) -> list[Order]:
     return out
 
 
+#: The plumbing moments a clock-transition cell may name. The rule reads only the STAMP HOUR the
+#: cell carries; the label must be one of these or the cell names no cause and is not a rule.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+
+
+#: The ladder of charts a frame can be, in minutes.
+CHART_MINUTES = frozenset({1, 5, 15, 30, 60, 240, 1440})
+
+
+def _bars_per_day(b: Bars, default: int = 24) -> int:
+    """How many bars of THIS frame's chart make a 24-hour day, measured from the frame's own
+    modal bar gap (it must be at least half of all gaps and a ladder chart); `default` when the
+    frame is not a regular chart. Written from the spec, not imported: "sixty days of history,
+    on whatever chart this is" (audit on #487: `1440 // minutes` trusted the declared chart)."""
+    if b.t.size < 3:
+        return default
+    gaps = np.diff(b.t.astype("int64"))
+    gaps = gaps[gaps > 0]
+    if gaps.size == 0:
+        return default
+    vals, counts = np.unique(gaps, return_counts=True)
+    span = int(vals[int(np.argmax(counts))])
+    if counts.max() / gaps.size < 0.5 or span % 60_000_000_000:
+        return default
+    minutes = span // 60_000_000_000
+    return max(1, 1440 // minutes) if minutes in CHART_MINUTES else default
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    side, mode = int(p["side"]), str(p["mode"])
+    stamp = int(p["stamp_hour"])
+    if (str(p.get("label") or "") not in CLOCK_LABELS or mode not in ("into", "out_of", "fade")
+            or side not in (1, -1) or not 0 <= stamp <= 23):
+        return []
+    if len(b) < _bars_per_day(b) * 60:
+        return []
+    hour = b.hour
+    at = np.flatnonzero(hour == stamp)
+    if at.size < 40:
+        return []
+    a = atr(b, int(p["atr_n"]))
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            j = int(i) - lead
+            if j < 1:
+                continue
+            entry, ttl, s = j, lead, side
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+#: Variant keys and the values that leave a rule unchanged. Any other value names a variant the
+#: written rule does not describe, and that certificate is not rebuilt (UNMEASURED by name).
+NO_OP_MODIFIERS: dict[str, frozenset[str]] = {
+    "regime": frozenset({"", "unconditional", "all", "any"}),
+    "side_mode": frozenset({"", "follow"}),
+    "entry_timing": frozenset({"", "instant"}),
+    "execution_style": frozenset({"", "market"}),
+    "entry_style": frozenset({"", "market"}),
+}
+#: Keys that only label a cell's coordinate and change nothing about how it trades.
+LABEL_KEYS = frozenset({"representation", "timeframe", "selector", "session"})
+VARIANT_KEYS = frozenset({"cost_aware", "residual", "residual_tag", "conditioner", "macro_axis",
+                          "macro_state", "publication_lag_d", "transform"})
+
+
 SPEC_BOOK: dict[str, RuleSpec] = {
     "overnight_gap_decay": RuleSpec(
         "overnight_gap_decay",
@@ -459,6 +585,19 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "fade it: entry next open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"anchor_hour": 0, "hold_bars": 8, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
         _build_overnight_drift),
+    "clock_transition": RuleSpec(
+        "clock_transition",
+        "One named plumbing moment (label, from the catalogue) at broker stamp hour stamp_hour. "
+        "Only when the bars hold at least 60 days and at least 40 bars at that hour. At each bar "
+        "i stamped stamp_hour: mode into -- signal at bar i - lead_bars, side, held lead_bars; "
+        "out_of -- signal at bar i, side, held hold_bars; fade -- signal at bar i, side x the "
+        "opposite of the sign of close[i] - close[i - lead_bars] (no signal when it is 0), held "
+        "hold_bars. Stop stop_atr x ATR(atr_n) from the signal bar's close, target rr x that "
+        "distance; entry next open, time exit after the hold. The cell's `session` keeps only "
+        "signals whose bar hour is inside that session.",
+        {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+         "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+        _build_clock_transition, params_own_session_and_side=True),
 }
 
 #: Breakout selector -> window parameters, written into the spec text above.
@@ -800,7 +939,8 @@ class Fill:
 def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[Fill]:
     """The written fill rule: entry at the open of the first bar STRICTLY after the signal bar
     (or at the resting trigger if it is touched within wait_bars bars from there); the stop is
-    checked before the target on every bar, both intrabar; a target is not taken on the fill bar
+    checked before the target on every bar, both intrabar, and a bar after the fill bar that
+    OPENS through the stop exits at that open; a target is not taken on the fill bar
     of a limit entry; time exit at the open of bar fill+ttl; one position at a time; R is the
     move over the initial stop distance less the round-trip cost over the same distance."""
     n = len(b)
@@ -828,6 +968,13 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
                 continue
             fill_bar, entry = hit, tgt
         side, stop, target = order.side, float(order.stop), float(order.target)
+        if order.unfilled_if_crossed:
+            lv = (entry, stop, target)
+            tol = 8.0 * float(np.spacing(max(abs(x) for x in lv))) if all(
+                np.isfinite(x) for x in lv) else 0.0
+            if not all(np.isfinite(x) for x in lv) or side * (entry - stop) <= tol \
+                    or side * (target - entry) <= tol:
+                continue
         sd = abs(entry - stop)
         if sd <= 0:
             continue
@@ -836,7 +983,14 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
         for j in range(fill_bar, min(n, fill_bar + max(1, order.ttl_bars))):
             held = j - fill_bar + 1
             hi, lo = float(b.h[j]), float(b.low[j])
+            # A BAR THAT OPENS THROUGH THE STOP FILLS AT ITS OPEN (engine 28ae39d90, 2026-11-11):
+            # a touched stop is a market order and a gap's first tradeable price is the open.
+            # The fill bar is exempt -- its open is the entry, or the entry is a trigger inside it.
+            gap_open = float(b.o[j]) if j > fill_bar else None
             if side > 0:
+                if gap_open is not None and gap_open <= stop:
+                    exit_px, reason = gap_open, "stop"
+                    break
                 if lo <= stop:
                     exit_px, reason = stop, "stop"
                     break
@@ -844,6 +998,9 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
                     exit_px, reason = target, "target"
                     break
             else:
+                if gap_open is not None and gap_open >= stop:
+                    exit_px, reason = gap_open, "stop"
+                    break
                 if hi >= stop:
                     exit_px, reason = stop, "stop"
                     break
@@ -886,8 +1043,28 @@ def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
 def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | None,
                  side: str | int | None, *, symbol: str | None = None,
                  condition: str | None = None) -> tuple[dict[str, Any] | None, str]:
-    """The parameters the written rule names, with the selector's window (breakouts) or session
-    (everything else) applied, or the reason there is no written rule."""
+    """The parameters the written rule names, with the selector's window (breakouts) applied, and
+    the cell's session and side filtered EXACTLY as the desk's forward call filters them -- or the
+    reason there is no written rule.
+
+    THE DESK'S CALL IS THE SPEC FOR SIDE AND SESSION (2026-10-29, found by the cert hunt's
+    builder). `family_call.signals` passes no side on a LONG certificate, so a family emits every
+    signal it would emit; it passes side=-1 on a SHORT one; and it filters by the cell's own
+    `session` param, never by the selector. This function used to filter a LONG certificate to
+    longs and to the selector's session, so a fade family that trades both ways was rebuilt as a
+    different strategy and judged MISMATCH or UNMEASURED, and its clock stayed shut at the door.
+    A param the written rule does not name is refused by name, never dropped: dropping it rebuilds
+    a different strategy and calls the comparison a replication.
+
+    The rules the spec book took from the desk's hunt16 and carry lanes (`OWN_SIDE_RULES`) keep
+    their own call: their selector names a signal hour or a swap side, their params are read
+    by the rule itself, and the side filter is the certificate's.
+    """
+
+    own = OWN_RESOLVERS.get(str(family or ""))
+    if own is not None:                 # replication_families: strict, wrappers by name
+        resolved: tuple[dict[str, Any] | None, str] = own(params, selector, side)
+        return resolved
     spec = SPEC_BOOK.get(str(family or ""))
     if spec is None:
         return None, f"no written specification in the spec book for family {family!r}"
@@ -895,12 +1072,50 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     sel = str(selector or "").lower()
     if spec.selector_params and sel in WINDOWS:
         p.update(WINDOWS[sel])
-    for k, v in dict(params or {}).items():
+    raw = dict(params or {})
+    for k, v in raw.items():
         if k in p or k in ("range_start", "range_end", "signal_at", "wait_bars"):
             p[k] = v
+            continue
+        if k in LABEL_KEYS or family in OWN_SIDE_RULES:
+            continue
+        val = str(v if v is not None else "").strip().lower()
+        if k in NO_OP_MODIFIERS:
+            if val not in NO_OP_MODIFIERS[k]:
+                return None, (f"variant {k}={v!r} has no written rule in the spec book for "
+                              f"{family!r}")
+            continue
+        if k in VARIANT_KEYS:
+            return None, f"variant {k}={v!r} has no written rule in the spec book"
+        return None, f"param {k!r} is not named by the written rule for {family!r}"
+    # THE RULE'S SIDE IS THE CERTIFICATE'S (audit on 03984943c): a clock_transition cell whose
+    # params write no `side` took the rule default +1, so a SHORT certificate was rebuilt long,
+    # judged a different strategy and could be quarantined. An absent certificate side is LONG,
+    # the convention the canon and the forward clock read (`spec.get("side") or "LONG"`); a side
+    # that is present but neither LONG nor SHORT is UNMEASURED by name, never assumed.
+    cert_side = ({"LONG": 1, "1": 1, "SHORT": -1, "-1": -1}.get(str(side).strip().upper())
+                 if side not in (None, "") else 1)
+    if cert_side is None and family not in OWN_SIDE_RULES:
+        return None, f"certificate side {side!r} is not LONG or SHORT"
+    if spec.params_own_session_and_side:
+        if "side" not in raw:
+            p["side"] = cert_side
+        try:
+            p["side"] = int(p["side"])
+        except (TypeError, ValueError):
+            return None, f"side {p.get('side')!r} is not +1 or -1"
+        if p["side"] not in (1, -1):
+            return None, f"side {p.get('side')!r} is not +1 or -1"
+    session = str(raw.get("session") or "all").strip().lower()
+    if session not in SESSIONS and family not in OWN_SIDE_RULES:
+        return None, f"session {session!r} has no written window"
+    p["_session"] = SESSIONS.get(session)
     s = str(side or "").upper()
-    p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
-    p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    if family in OWN_SIDE_RULES:
+        p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
+        p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    else:
+        p["_side"] = -1 if s in ("SHORT", "-1") and not spec.params_own_session_and_side else 0
     # The rules that need them read these; every other rule ignores them (hunt16 selectors name
     # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
@@ -911,6 +1126,24 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
 
 #: Families whose selector names a hunt16 signal hour, not a session window to filter on.
 HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
+#: Rules that read side, selector and params themselves (see resolve_spec).
+OWN_SIDE_RULES = HUNT16_FAMILIES | {"carry"}
+
+
+def _guarded(lane: str, key: str, judge: Callable[..., dict[str, Any]], *args: Any,
+             loaders: Mapping[str, Callable[[], Any]] | None = None,
+             **kwargs: Any) -> dict[str, Any]:
+    """One row that raises (its bars and ledger loaders included) is UNMEASURED by name and
+    marked `raised`; it never aborts the pass and its artifact. The pass counts those rows
+    (`rows_raised`), so a leg whose every row is a code error cannot pass as merely unmeasured."""
+    try:
+        for name, load in dict(loaders or {}).items():
+            kwargs[name] = load()
+        return judge(*args, **kwargs)
+    except Exception as exc:
+        return {"lane": lane, "key": key, "certificate": key if lane == "certificate" else None,
+                "verdict": UNMEASURED, "why": [f"row raised {type(exc).__name__}: {exc}"],
+                "raised": type(exc).__name__, "ours": {}, "theirs": {}}
 
 
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
@@ -1073,8 +1306,41 @@ def ledger_for(key: str, identity: Mapping[str, Any], shadow_dir: Path = SHADOW_
     return []
 
 
+TF_BY_MINUTES = {1: "M1", 5: "M5", 15: "M15", 30: "M30", 60: "H1", 240: "H4", 1440: "D1"}
+
+
+def attach_inputs(family: str, params: Mapping[str, Any] | None, p: dict[str, Any],
+                  inputs_loader: Callable[[str, str], Bars | None] | None = None,
+                  own: Bars | None = None) -> str | None:
+    """Load the other symbols' bars a rule reads (factors, a peer) through THIS lane's loader,
+    on the chart of the bars being judged (`own`), into `p["_inputs"]`; the named reason when
+    one is absent. One chart for both: an input on a coarser chart than the target would join
+    an M15 row to an H1 bar whose close lies in that row's future."""
+    names = input_symbols(family, params)
+    if not names:
+        return None
+    tf = (TF_BY_MINUTES.get(int(own.minutes)) if own is not None
+          else str(dict(params or {}).get("timeframe") or "H1"))
+    if tf is None:
+        return f"target bars at {own.minutes if own is not None else '?'} minutes name no chart"
+    loader = inputs_loader or load_bars
+    got = []
+    for name in names:
+        bars = loader(name, tf)
+        if bars is None or len(bars) < MIN_BARS:
+            return (f"input {name} {tf} bars absent or shorter than {MIN_BARS} rows: a partial "
+                    "basket is a different model")
+        if own is not None and int(bars.minutes) != int(own.minutes):
+            return f"input {name} is on {bars.minutes}-minute bars, the target on {own.minutes}"
+        got.append(bars)
+    p["_inputs"] = got
+    return None
+
+
 def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
-                          bars: Bars | None) -> dict[str, Any]:
+                          bars: Bars | None,
+                          inputs_loader: Callable[[str, str], Bars | None] | None = None
+                          ) -> dict[str, Any]:
     spec = dict(row.get("shadow_spec") or {})
     fam, sym = str(spec.get("family") or ""), str(spec.get("symbol") or row.get("sym") or "")
     out: dict[str, Any] = {"lane": "certificate", "key": str(row.get("cell") or f"{sym} {fam}"),
@@ -1089,8 +1355,16 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
+    missing = attach_inputs(fam, spec.get("params"), p, inputs_loader, own=bars)
+    if missing:
+        out["why"] = [missing]
+        return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except RuleRefusal as exc:
+        out["why"] = [f"rule refused: {exc}"]
+        return out
     ours, n_days = sharpe(fills)
     gates = row.get("gates") if isinstance(row.get("gates"), dict) else {}
     iss = gates.get("in_sample_screen") if isinstance(gates.get("in_sample_screen"), dict) else {}
@@ -1100,13 +1374,16 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
                ours={"sharpe": None if ours is None else round(ours, 4), "n_fills": len(fills),
                      "n_days": n_days, "cost_price_units": cost.price_units,
                      "cost_basis": cost.basis, "spec": SPEC_BOOK[fam].text,
-                     "params": {k: v for k, v in p.items() if not k.startswith("_")}},
+                     "params": {k: v for k, v in p.items() if not k.startswith("_")},
+                     "inputs": input_symbols(fam, spec.get("params"))},
                theirs={"sharpe": recorded, "days": row.get("days")})
     return out
 
 
 def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: Bars | None,
-                      ledger: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+                      ledger: Sequence[Mapping[str, Any]],
+                      inputs_loader: Callable[[str, str], Bars | None] | None = None
+                      ) -> dict[str, Any]:
     ident = dict(row.get("identity") or {})
     fam, sym = str(ident.get("family") or ""), str(ident.get("symbol") or "")
     out: dict[str, Any] = {"lane": "forward", "key": str(row.get("key") or ""), "symbol": sym,
@@ -1124,8 +1401,16 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
+    missing = attach_inputs(fam, ident.get("params"), p, inputs_loader, own=bars)
+    if missing:
+        out["why"] = [missing]
+        return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except RuleRefusal as exc:
+        out["why"] = [f"rule refused: {exc}"]
+        return out
     start = str(row.get("forward_start") or "")
     try:
         t0 = int(np.datetime64(start.replace(" ", "T").split("+")[0], "ns").astype("int64"))
@@ -1246,25 +1531,50 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                   if book.get(certificate_id(r)) and
                   (book[certificate_id(r)].get("sharpe_metric_version")
                    != SHARPE_METRIC_VERSION)]
-    pending = old_metric + [i for i, r in enumerate(certs)
-                            if i not in set(old_metric) and
-                            (book.get(certificate_id(r)) or {}).get("fp")
-                            != certificate_fp(r)]
+    old_set = set(old_metric)
+    unjudged = [i for i, r in enumerate(certs)
+                if i not in old_set and
+                (book.get(certificate_id(r)) or {}).get("fp") != certificate_fp(r)]
+
+    def _has_rule(i: int) -> bool:
+        return SPEC_BOOK.get(str((certs[i].get("shadow_spec") or {}).get("family") or "")) \
+            is not None
+
+    # A NEVER-JUDGED CERTIFICATE WITH A WRITTEN RULE GOES FIRST: it is the one a REPLICATED
+    # verdict lets start a forward clock. Old-metric rechecks follow it, and a certificate whose
+    # family the book has no rule for comes last -- its verdict is UNMEASURED whatever the bars
+    # say, so judging it first only delays the certificates that can actually clear.
+    pending = ([i for i in unjudged if _has_rule(i)] + [i for i in old_metric if _has_rule(i)]
+               + [i for i in unjudged if not _has_rule(i)]
+               + [i for i in old_metric if not _has_rule(i)])
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
     first = list(dict.fromkeys(priority + pending))
     order = first + [i for i in rotation if i not in set(first)]
-    for n, idx in enumerate(order[:per_lane]):
+    cert_deadline = t0 + max(1.0, float(budget_s)) * CERT_BUDGET_SHARE
+    taken = 0
+    for n, idx in enumerate(order):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
+        if taken >= per_lane:
+            if time.monotonic() > cert_deadline:
+                notes.append("budget: certificate share spent; the rest wait for the next pass")
+                break
+            if not _has_rule(idx):
+                continue
         row = certs[idx]
         spec = row.get("shadow_spec") or {}
         sym = str(spec.get("symbol") or row.get("sym") or "")
         tf = str((spec.get("params") or {}).get("timeframe") or "H1")
-        rows.append(replicate_certificate(row, meta=dict(meta_all.get(sym) or {}),
-                                          bars=bars_loader(sym, tf)))
+        # bars only for a rule that can read them: a family with no written rule resolves to
+        # UNMEASURED before the bars are touched, so opening its parquet was pure cost
+        rows.append(_guarded("certificate", certificate_id(row), replicate_certificate, row,
+                             meta=dict(meta_all.get(sym) or {}),
+                             loaders={"bars": functools.partial(bars_loader, sym, tf)
+                                      if _has_rule(idx) else (lambda: None)}))
+        taken += 1
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
     for k in range(min(per_lane, len(fwd))):
@@ -1274,9 +1584,11 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         row = fwd[(fi + k) % len(fwd)]
         ident = row.get("identity") or {}
         sym, tf = str(ident.get("symbol") or ""), str(ident.get("timeframe") or "H1")
-        rows.append(replicate_forward(row, meta=dict(meta_all.get(sym) or {}),
-                                      bars=bars_loader(sym, tf),
-                                      ledger=ledger_loader(str(row.get("key") or ""), ident)))
+        rows.append(_guarded("forward", str(row.get("key") or ""), replicate_forward, row,
+                             meta=dict(meta_all.get(sym) or {}),
+                             loaders={"bars": functools.partial(bars_loader, sym, tf),
+                                      "ledger": functools.partial(
+                                          ledger_loader, str(row.get("key") or ""), ident)}))
         cursor["forward"] = (fi + k + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
     counts = {v: sum(1 for r in rows if r["verdict"] == v)
@@ -1286,7 +1598,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "sharpe_metric_version": SHARPE_METRIC_VERSION,
         "population": {"certificates": len(certs), "forward_rows": len(fwd),
                        "spec_book": sorted(SPEC_BOOK)},
-        "n": len(rows), "counts": counts, "verdicts": rows,
+        "n": len(rows), "counts": counts,
+        "rows_raised": sum(1 for r in rows if r.get("raised")), "verdicts": rows,
         "quarantined": [r["key"] for r in rows if r["verdict"] == MISMATCH],
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
@@ -1309,7 +1622,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
-                           "judged_first_this_pass": min(len(pending), per_lane)}
+                           "judged_first_this_pass": min(len(pending), taken)}
     return doc
 
 
@@ -1346,6 +1659,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"  -> {REPORT}")
     return 0
+
+
+# THE THREE FAMILIES WRITTEN IN `replication_families` (2026-10-29): formula,
+# cross_asset_residual, relative_value. That module builds on this one's Bars/Order/atr, so it is
+# imported last, with this module registered under its own name first -- run as a script this is
+# `__main__`, and without the alias the import would load a second copy of this file.
+sys.modules.setdefault("replication_civilization", sys.modules[__name__])
+from replication_families import OWN_RESOLVERS, SPECS, input_symbols  # noqa: E402
+
+SPEC_BOOK.update(SPECS)
 
 
 if __name__ == "__main__":

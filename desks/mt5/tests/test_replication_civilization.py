@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
@@ -112,7 +113,7 @@ def test_an_honest_certificate_is_replicated_and_a_misspecified_one_is_quarantin
     inflated = rc.replicate_certificate(_certificate(ours * 5.0), meta=META, bars=bars)
     assert inflated["verdict"] == rc.MISMATCH and "MAGNITUDE" in inflated["why"][0]
     unknown = rc.replicate_certificate({"shadow_spec": {"symbol": "TESTFX",
-                                                        "family": "relative_value"},
+                                                        "family": "no_written_rule"},
                                         "gates": {}}, meta=META, bars=bars)
     assert unknown["verdict"] == rc.UNMEASURED and "spec book" in unknown["why"][0]
 
@@ -177,7 +178,10 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
 
 
 def test_the_lane_never_imports_the_original_implementation() -> None:
-    src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
+    # BOTH FILES OF THE LANE: the written rules in `replication_families` are bound by the
+    # same rule as the lane that registers them
+    src = "\n".join((DESK / "research" / name).read_text("utf-8")
+                    for name in ("replication_civilization.py", "replication_families.py"))
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)
     for name in imports:
         for banned in rc.FORBIDDEN_IMPORTS:
@@ -190,7 +194,10 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
     poisoned = {}
     for name in ("mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.engine",
                  "mt5desk.family_call", "research.proposer_common", "proposer_common",
-                 "external_gauntlet", "lead_replication", "shadow_forward"):
+                 "external_gauntlet", "lead_replication", "shadow_forward",
+                 "libs.research.alpha_grammar", "mt5desk.cell_modifiers",
+                 "mt5desk.causal_residual", "mt5desk.families_vector",
+                 "mt5desk.family_formula"):
         mod = types.ModuleType(name)
         mod.__getattr__ = lambda attr, _n=name: (_ for _ in ()).throw(  # type: ignore[assignment]
             AssertionError(f"{_n}.{attr} was reached by the replication lane"))
@@ -204,6 +211,18 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
                        forward=[], universe_meta={"TESTFX": META},
                        bars_loader=lambda s, t: bars)
         assert doc["counts"][rc.REPLICATED] == 1
+        # and the three families of `replication_families`, wrappers included
+        fp, why = rc.resolve_spec("formula", {"expr": ["neg", ["mean", "range", 5]],
+                                              "session": "asia", "entry_timing": "delayed",
+                                              "regime": "low_vol"}, "asia", "LONG")
+        assert fp is not None, why
+        rc.rebuild("formula", bars, fp, 0.0)
+        for fam, extra in (("cross_asset_residual", {"factor_symbols": ["A", "B"]}),
+                           ("relative_value", {"peer_symbol": "A"})):
+            q, why = rc.resolve_spec(fam, {**extra, "lookback": 48}, "asia", "LONG")
+            assert q is not None, why
+            assert rc.attach_inputs(fam, extra, q, lambda s, t: bars) is None
+            rc.rebuild(fam, bars, q, 0.0)
     finally:
         for name, old in poisoned.items():
             if old is None:
@@ -268,3 +287,184 @@ def test_load_bars_reads_a_parquet_whose_time_is_a_plain_column(tmp_path: Path) 
     frame.to_parquet(path, index=False)
     bars = rc.load_bars("TESTFY", "H1", universe=tmp_path)
     assert bars is not None and len(bars) == n and bars.minutes == 60
+
+
+def test_the_count_is_a_floor_and_rule_bearing_unjudged_certificates_go_first(
+        tmp_path: Path, monkeypatch) -> None:
+    """295 certificates sat clockless because the lane judged 8 a pass and stopped with two
+    thirds of its budget unspent. Past the floor it keeps judging certificates that HAVE a
+    written rule; a family with no rule is neither judged ahead of them nor opens its bars."""
+    seen: list[str] = []
+    loaded: list[str] = []
+
+    def fake_replicate(row, *, meta, bars):
+        seen.append(row["certificate"])
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", fake_replicate)
+    monkeypatch.setattr(rc, "certificate_fp", lambda row: "fp")
+    ruled = [{"certificate": f"G{i}", "shadow_spec": {"symbol": f"S{i}",
+                                                      "family": "overnight_gap_decay"}}
+             for i in range(6)]
+    unruled = [{"certificate": f"U{i}", "shadow_spec": {"symbol": f"U{i}",
+                                                        "family": "no_such_family"}}
+               for i in range(4)]
+    doc = rc.build(certificates=unruled + ruled, forward=[], universe_meta={},
+                   bars_loader=lambda sym, _tf: loaded.append(sym),
+                   cursor_path=tmp_path / "cursor.json", dry_run=True, max_per_pass=4,
+                   budget_s=600)
+    assert seen[:6] == [f"G{i}" for i in range(6)]       # all six, past the floor of two
+    assert not any(s.startswith("U") for s in loaded)     # no rule, no parquet opened
+    assert doc["n"] == len(seen)
+
+
+def test_a_row_that_raises_is_unmeasured_and_the_pass_still_writes(tmp_path: Path,
+                                                                    monkeypatch) -> None:
+    """One malformed certificate used to abort build() with no artifact at all."""
+    def boom(row, *, meta, bars):
+        if row["certificate"] == "BAD":
+            raise TypeError("float() argument must be a string or a real number, not 'NoneType'")
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", boom)
+    certs = [{"certificate": k, "shadow_spec": {"symbol": "TESTFX",
+                                                "family": "overnight_gap_decay"}}
+             for k in ("BAD", "OK")]
+    doc = rc.build(certificates=certs, forward=[], universe_meta={},
+                   bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
+                   dry_run=True, max_per_pass=4)
+    rows = {r["key"]: r for r in doc["verdicts"]}
+    assert doc["counts"][rc.UNMEASURED] == 2 and doc["rows_raised"] == 1
+    assert "TypeError" in rows["BAD"]["why"][0] and rows["BAD"]["raised"] == "TypeError"
+
+
+def test_a_ledger_read_that_raises_is_one_unmeasured_row(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(rc, "replicate_forward", lambda row, *, meta, bars, ledger: {
+        "lane": "forward", "key": row["key"], "verdict": rc.UNMEASURED, "why": []})
+
+    def ledger(key, ident):
+        if key == "BAD":
+            raise OSError("ledger torn")
+        return []
+
+    fwd = [{"key": k, "identity": {"symbol": "TESTFX", "family": "overnight_gap_decay"}}
+           for k in ("BAD", "OK")]
+    doc = rc.build(certificates=[], forward=fwd, universe_meta={}, bars_loader=lambda *_: None,
+                   ledger_loader=ledger, cursor_path=tmp_path / "cursor.json", dry_run=True,
+                   max_per_pass=4)
+    assert doc["rows_raised"] == 1 and doc["counts"][rc.UNMEASURED] == 2
+
+
+def _walk_bars(days: int = 90, seed: int = 3) -> tuple[rc.Bars, Any]:
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    n = days * 24
+    idx = pd.date_range("2025-01-01", periods=n, freq="h", tz="UTC")
+    close = 1.1 * np.exp(np.cumsum(rng.normal(0, 0.0008, n)))
+    open_ = np.concatenate([[1.1], close[:-1]])
+    high = np.maximum(open_, close) * 1.0004
+    low = np.minimum(open_, close) * 0.9996
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close}, index=idx)
+    t = idx.as_unit("ns").asi8
+    return rc.bars_from_arrays(t, open_, high, low, close), df
+
+
+@pytest.mark.parametrize("mode", ["into", "out_of", "fade"])
+def test_the_written_clock_transition_rule_emits_the_desks_signals(mode: str) -> None:
+    """The spec text, read by this lane, must emit what the desk's family emits; the test may
+    import the original, the lane may not."""
+    from mt5desk.family_clock_transition import family_clock_transition
+    bars, df = _walk_bars()
+    params = {"label": "london_fix", "stamp_hour": 18, "mode": mode, "side": -1,
+              "lead_bars": 3, "hold_bars": 5}
+    p, why = rc.resolve_spec("clock_transition", params, "asia", "LONG")
+    assert p is not None, why
+    ours = rc._build_clock_transition(bars, p)
+    theirs = family_clock_transition(df, **params)
+    assert len(ours) == len(theirs) > 40
+    for o, s in zip(ours, theirs, strict=True):
+        assert o.t_ns == s.time.value and o.side == s.side and o.ttl_bars == s.ttl_bars
+        assert o.stop == pytest.approx(s.stop) and o.target == pytest.approx(s.target)
+
+
+def test_clock_transition_session_is_the_cells_and_a_real_variant_is_refused() -> None:
+    p, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                "session": "ny"}, "asia", "LONG")
+    assert p is not None and p["_session"] == rc.SESSIONS["ny"] and p["_side"] == 0
+    noop, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                   "entry_timing": "instant",
+                                                   "representation": "x"}, "asia", "LONG")
+    assert noop is not None
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "entry_timing": "delayed"}, "asia", "LONG")
+    assert refused is None and "entry_timing" in why
+
+
+def test_clock_transition_refuses_a_param_its_rule_does_not_name() -> None:
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "warp_factor": 3}, "asia", "LONG")
+    assert refused is None and "warp_factor" in why
+
+
+def test_bars_per_day_is_measured_from_the_frame_not_its_declared_chart() -> None:
+    bars, _ = _walk_bars()
+    assert rc._bars_per_day(bars) == 24
+    m5 = rc.bars_from_arrays(np.arange(10, dtype="int64") * 300_000_000_000,
+                             *([np.ones(10)] * 4))
+    assert rc._bars_per_day(m5) == 288
+    irregular = rc.bars_from_arrays(np.array([0, 7, 19, 40, 77], dtype="int64") * 60_000_000_000,
+                                    *([np.ones(5)] * 4))
+    assert rc._bars_per_day(irregular) == 24
+
+
+def _frame(b: rc.Bars) -> Any:
+    import pandas as pd
+    idx = pd.to_datetime(b.t, utc=True)
+    return pd.DataFrame({"open": b.o, "high": b.h, "low": b.low, "close": b.c}, index=idx)
+
+
+@pytest.mark.parametrize("session", [None, "asia"])
+def test_a_long_certificate_is_rebuilt_as_the_desk_calls_it_both_sides_and_its_own_session(
+        session: str | None) -> None:
+    """The desk's forward call passes no side on a LONG certificate and filters by the cell's
+    `session` param; the rebuild used to keep longs only and filter by the selector, so a fade
+    that trades both ways was rebuilt as a different strategy (found 2026-10-29)."""
+    from mt5desk.families_orthogonal import family_overnight_gap_decay
+    from mt5desk.family_call import signals
+    bars = _gap_bars()
+    params = {"session": session} if session else {}
+    p, why = rc.resolve_spec("overnight_gap_decay", params, "london_am", "LONG")
+    assert p is not None, why
+    assert p["_side"] == 0 and p["_session"] == (rc.SESSIONS[session] if session else None)
+    orders, _ = rc.rebuild("overnight_gap_decay", bars, p, 0.0)
+    desk = signals(family_overnight_gap_decay, _frame(bars), side=1, params=params)
+    assert len(orders) == len(desk) > 20
+    assert sorted(o.side for o in orders) == sorted(s.side for s in desk)
+    assert {o.side for o in orders} == {1, -1}
+
+
+def test_a_short_certificate_is_filtered_short_and_an_unnamed_param_is_refused() -> None:
+    p, _ = rc.resolve_spec("overnight_gap_decay", {}, "asia", "SHORT")
+    assert p is not None and p["_side"] == -1
+    refused, why = rc.resolve_spec("overnight_gap_decay", {"lookback": 5}, "asia", "LONG")
+    assert refused is None and "lookback" in why
+    label, _ = rc.resolve_spec("overnight_gap_decay", {"representation": "x", "selector": "asia"},
+                               "asia", "LONG")
+    assert label is not None
+
+
+def test_the_rules_own_side_is_the_certificates_when_the_cell_writes_none() -> None:
+    """Audit on 03984943c: a SHORT clock_transition cell with no `side` param took the rule
+    default +1 and was rebuilt long. Absent certificate side stays LONG (the canon's reading);
+    a side that is neither is UNMEASURED by name."""
+    cell = {"label": "tokyo_open", "stamp_hour": 0}
+    short, _ = rc.resolve_spec("clock_transition", cell, "asia", "SHORT")
+    assert short is not None and short["side"] == -1
+    absent, _ = rc.resolve_spec("clock_transition", cell, "asia", None)
+    assert absent is not None and absent["side"] == 1
+    written, _ = rc.resolve_spec("clock_transition", {**cell, "side": 1}, "asia", "SHORT")
+    assert written is not None and written["side"] == 1
+    odd, why = rc.resolve_spec("overnight_gap_decay", {}, "asia", "SIDEWAYS")
+    assert odd is None and "SIDEWAYS" in why
