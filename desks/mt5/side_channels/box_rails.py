@@ -93,6 +93,7 @@ REFUSED_HOSTS: dict[str, str] = {
     "cmegroup.com": "CME: exchange options OI, terms-refused",
     "nasdaq.com": "Nasdaq: exchange options OI, terms-refused",
     "theocc.com": "OCC: exchange options OI, terms-refused",
+    "dukascopy.com": "Dukascopy: terms refuse automated use",
     "archive.org": ("Internet Archive: terms-refused for automated desk use "
                     "(wayback ruling 2026-11-14)"),
     "comtrade.un.org": "UN Comtrade: licence s.5 refuses automated use",
