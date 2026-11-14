@@ -103,8 +103,9 @@ def build_curve(contracts: list[pd.DataFrame], root: str) -> pd.DataFrame:
     return frame.merge(pair[["date", "calendar_spread", "annualized_roll_yield"]], on="date")
 
 
-def held_panels(out: Path = OUT) -> list[dict]:
+def held_panels(out: Path | None = None) -> list[dict]:
     """The curve panels already on disk, left exactly as they are: name, rows, last date."""
+    out = OUT if out is None else out
     rows = []
     for path in sorted(out.glob("*_curve.parquet")) if out.exists() else []:
         try:
