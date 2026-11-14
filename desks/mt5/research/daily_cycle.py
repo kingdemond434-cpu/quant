@@ -465,17 +465,41 @@ def _world_miners() -> None:
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
 
 
+#: THE BANDIT'S WALL-CLOCK CAP INSIDE THE DAILY CHAIN (2026-11-14). On 11-13 the step after
+#: factor_residual ran from 01:18Z until the scheduler's 10 h limit killed MT5-Daily at ~07:50Z
+#: (LastTaskResult 0x41306), so every step behind it -- world_miners through loss_replace --
+#: did not run that day. It is the whole-graph read `bandit.graph_rows` documents (11-09 was the
+#: same nine-hour silence); the streamed reader fixes the cause, but the graph keeps growing and
+#: one stalled step must never starve the rest of the chain. So the bandit runs as its own
+#: process with a cap, killed at the cap, and the chain moves on. 11-12 took 1.5 h, so the cap
+#: is 2 h: it never cuts a run the desk has measured finishing. A killed run publishes nothing,
+#: so the last published shares stand -- the readers already treat the budget as a dated file.
+BANDIT_WALL_S = 2 * 3600
+
+
 def _research_bandit() -> None:
     """Which research directions earn the next unit of compute -- written before the proposers
-    and the deepening worker read it."""
+    and the deepening worker read it. Runs `research_bandit.py` in a child process under
+    `BANDIT_WALL_S`; a timeout raises so `run_step` records the step FAILED and the chain goes on.
+    """
+    import subprocess
+    script = BASE / "research" / "research_bandit.py"
     try:
-        import research_bandit
-        d = research_bandit.run()
-        research_bandit.publish(d)
-        top = sorted(d["shares"].items(), key=lambda kv: -kv[1])[:3]
-        dlog("research bandit: " + ", ".join(f"{a}={s:.0%}" for a, s in top))
-    except Exception as exc:
+        r = subprocess.run([sys.executable, str(script)], cwd=str(BASE), capture_output=True,
+                           text=True, timeout=BANDIT_WALL_S, check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"research_bandit killed at its {BANDIT_WALL_S}s wall-clock cap; "
+                           "the last published shares stand") from exc
+    except OSError as exc:
         dlog(f"research_bandit FAILED (non-fatal): {type(exc).__name__}: {exc}")
+        return
+    if r.returncode != 0:
+        tail = (r.stderr or "").strip().splitlines()[-1:] or ["no stderr"]
+        dlog(f"research_bandit FAILED (non-fatal): rc {r.returncode}: {tail[0][:200]}")
+        return
+    top = [ln.split()[0] + "=" + ln.split("share=")[1].split()[0]
+           for ln in (r.stdout or "").splitlines() if "share=" in ln][:3]
+    dlog("research bandit: " + (", ".join(top) or "ran, no shares printed"))
 
 
 def _state_research_feedback() -> None:

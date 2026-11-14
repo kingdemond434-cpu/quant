@@ -85,6 +85,26 @@ PHYSICS_TRADITIONS: tuple[str, ...] = tuple(PHYSICS_REGISTRY)
 #: The engines' slice of the pass budget (law discovery, model competition, MDL, primitive
 #: invention, ... on the first panel with this pass's admitted objects).
 ENGINE_SHARE = 0.08
+#: THE WALL CLOCK GOVERNS EVERY PHASE, NOT ONLY THE JUDGE (2026-11-11). On the box this leg ended
+#: FAILED TIMEOUT at its 720 s cap against `--budget-s 600` (11-10): the scientists ran in a pool
+#: with no wall deadline (their per-tradition budgets are advisory, and measured 2-5x over on a
+#: build-box run), so the judge's own deadline was already behind it and the tail -- dedup,
+#: donation, registry, engines, the report -- never reached `_atomic(OUT, report)`. Now:
+#:   * a scientist starts no tradition, and no panel within one, after SCIENCE_SHARE of the pass;
+#:     the traditions not reached run FIRST next pass (`cursor_path`), so every tradition is
+#:     reached within a lap and none is reached never;
+#:   * the judge keeps its 0.80 deadline (judging volume is the desk's goal, so the tail's room
+#:     is taken from the scientists, not the judge -- audit 2026-11-11); an unjudged object is
+#:     still admitted, registered and donated unranked, exactly as before;
+#:   * the engines take what is left before STOP_SHARE, and the report is written after them.
+#: The tail (0.80 -> 0.85, 36 s of a 720 s cap) is UNMEASURED on the box: no pass has reached it
+#: since the box began timing out. The first pass under this file records it in the report's
+#: `shares`/`partial` fields and, on a timeout, the runner's stdout/stderr tails name the stall.
+#: A pass that deferred anything says `partial: true`; every object evaluated is charged.
+SCIENCE_SHARE = 0.45
+JUDGE_SHARE = 0.80
+STOP_SHARE = 0.85
+NOT_REACHED = "NOT_REACHED"
 
 SEED = 20260917
 #: Compute share floor per tradition. Two-sided above it; never zero, so a tradition that stops
@@ -744,23 +764,60 @@ def _copy_panel(panel: Panel) -> Panel:
                  source=panel.source, residual_discovery_id=panel.residual_discovery_id)
 
 
+def leg_budget_s(cli: float | None, default: float = 3000.0,
+                 env: dict[str, str] | None = None) -> float:
+    """The smaller of the pass's own `--budget-s` and the cycle's exported kill cap
+    (`QUANT_LEG_BUDGET_S`, which the pricer moves hourly)."""
+    env = os.environ if env is None else env
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    own = float(cli) if cli and float(cli) > 0 else (cap if cap > 0 else float(default))
+    return min(own, cap) if cap > 0 else own
+
+
+def cursor_path() -> Path:
+    """Beside the report (reports/ is untracked), so a test that redirects OUT moves it too."""
+    return OUT.with_name(OUT.stem + ".cursor.json")
+
+
+def resume_order(chosen: list[str], cursor: dict[str, Any] | None) -> list[str]:
+    """The traditions the last pass did not reach go FIRST, in the order they were due."""
+    first = [t for t in (cursor or {}).get("not_reached") or [] if t in chosen]
+    return first + [t for t in chosen if t not in first]
+
+
 def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: dict[str, Any],
-                   census: dict[str, int]) -> dict[str, Any]:
-    """One tradition over every panel. NEVER RAISES: a failing scientist costs its own leg only."""
-    started = time.monotonic()
+                   census: dict[str, int], deadline: float | None = None,
+                   clock: Any = None) -> dict[str, Any]:
+    """One tradition over every panel. NEVER RAISES: a failing scientist costs its own leg only.
+
+    `deadline` (on `clock`) is the scientists' wall stop: a tradition dequeued after it does
+    nothing and says NOT_REACHED, and one running stops before its next panel, naming the panels
+    it did not reach. Its proposals so far are kept and charged."""
+    clock = clock or time.monotonic
+    started = clock()
     result: dict[str, Any] = {"tradition": tradition, "objects": [], "panels": [],
                               "evaluated": 0, "distinct": set(), "unmeasured": [], "minted": [],
-                              "status": "OK"}
+                              "status": "OK", "panels_not_reached": []}
+    if deadline is not None and started >= deadline:
+        result["status"] = NOT_REACHED
+        result["compute_s"] = 0.0
+        return result
     try:
         kwargs = {"roi": roi, "operators_used": census} if tradition == "meta_mathematics" else {}
         scientist = S.build(tradition, **kwargs)
     except Exception as exc:
         result["status"] = "FAILED"
         result["why"] = f"{type(exc).__name__}: {exc}"
-        result["compute_s"] = round(time.monotonic() - started, 3)
+        result["compute_s"] = round(clock() - started, 3)
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
-    for panel in panels:
+    for i, panel in enumerate(panels):
+        if deadline is not None and clock() >= deadline:
+            result["panels_not_reached"] = [p.target for p in panels[i:]]
+            break
         view = _copy_panel(panel)
         try:
             objects = scientist.propose(view, per_panel, np.random.default_rng(
@@ -784,7 +841,7 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         result["distinct"] |= scientist.distinct
         result["unmeasured"].extend(scientist.unmeasured)
         result["minted"].extend([(name, view) for name in scientist.minted])
-    result["compute_s"] = round(time.monotonic() - started, 3)
+    result["compute_s"] = round(clock() - started, 3)
     return result
 
 
@@ -965,6 +1022,8 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 except Exception:
                     pass
         for tradition, row in per_tradition.items():
+            if row.get("status") == NOT_REACHED:
+                continue                 # it evaluated nothing this pass, so nothing to charge
             try:
                 reg.generator_yield_update(
                     f"math:{tradition}", generated=int(row.get("proposed", 0)),
@@ -1016,9 +1075,18 @@ def dedup(objects: list[MathObject]) -> tuple[list[MathObject], dict[str, Any]]:
 
 def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         traditions: list[str] | None = None, max_targets: int = MAX_TARGETS,
-        permutations: int = B.PERMUTATIONS) -> dict[str, Any]:
-    """One pass of the mathematics civilization. Returns the report it also writes."""
-    started = time.monotonic()
+        permutations: int = B.PERMUTATIONS, cursor: dict[str, Any] | None = None,
+        clock: Any = None) -> dict[str, Any]:
+    """One pass of the mathematics civilization. Returns the report it also writes.
+
+    `cursor` is the persisted resume state (`cursor_path`); None reads it from disk on a real
+    run. The new cursor is written after the report (never on a dry run)."""
+    clock = clock or time.monotonic
+    started = clock()
+    if cursor is None:
+        cursor = {} if dry_run else (_read_json(cursor_path()) or {})
+    science_deadline = started + SCIENCE_SHARE * budget_s
+    stop_at = started + STOP_SHARE * budget_s
     chosen = [t for t in (traditions or list(all_traditions())) if t in S.REGISTRY]
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
     panels, panel_status = build_panels(max_targets)
@@ -1039,9 +1107,12 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
         "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
     results: dict[str, dict[str, Any]] = {}
+    # The pool starts traditions in submission order, so the ones the last pass did not reach
+    # are submitted first.
     with ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen)))) as pool:
-        futures = {pool.submit(_run_tradition, t, panels, budgets[t], roi, census): t
-                   for t in chosen}
+        futures = {pool.submit(_run_tradition, t, panels, budgets[t], roi, census,
+                               science_deadline, clock): t
+                   for t in resume_order(chosen, cursor)}
         for future, tradition in futures.items():
             try:
                 results[tradition] = future.result()
@@ -1059,7 +1130,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     # cut before `_atomic(OUT, report)` and MATH_LAB.json was never written from the clock,
     # which is the definition of an idle organ. The judge now stops at its share of the same
     # budget and the objects it did not reach are named UNMEASURED by count.
-    judge_deadline = started + 0.80 * budget_s
+    judge_deadline = started + JUDGE_SHARE * budget_s
     unjudged = 0
     per_tradition: dict[str, dict[str, Any]] = {}
     judged: list[MathObject] = []
@@ -1082,7 +1153,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             # burden is a RANK, so an object that could not be ranked rides at the back of the
             # queue with an UNMEASURED score; it is the gauntlet's ten gates that decide it, and
             # they measure it themselves from the spec.
-            if time.monotonic() > judge_deadline:
+            if clock() > judge_deadline:
                 unjudged += 1
                 obj.notes.append(f"{UNMEASURED}: the lab's own burden was not measured for this "
                                  f"object (judge deadline); donated unranked -- the ten gates "
@@ -1116,6 +1187,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             "passed_burden": passed, "minted_representations": len(result.get("minted") or []),
             "compute_s": float(result.get("compute_s", 0.0)),
             "panels": result.get("panels") or [],
+            "panels_not_reached": result.get("panels_not_reached") or [],
             "target": (result.get("panels") or [""])[0],
             "unmeasured": result.get("unmeasured") or [],
         }
@@ -1129,7 +1201,10 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     # touches `interpretation.status`, and the object is judged and donated exactly as it would
     # be without the seat. {} on a box with no panel, so this is a no-op there.
     seat_named = 0
+    seat_skipped = clock() >= stop_at - 0.05 * budget_s
     try:
+        if seat_skipped:
+            raise TimeoutError("the pass is at its stop; the optional seat is skipped")
         from libs.research import proposer_seat as _ps
         _open = [o for o in admitted if o.interpretation.status != "interpreted"][:12]
         _names = _ps.names_for("math_lab",
@@ -1204,7 +1279,13 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             plan["traditions"][tradition]["lifetime_trials"] = (
                 lifetime.get(tradition, 0) + int(row.get("distinct", 0)))
         _atomic(ALLOCATION, plan)
-    engines = run_engines(panels[0], admitted, max(4.0, budget_s * ENGINE_SHARE))
+    engines = run_engines(panels[0], admitted,
+                          max(4.0, min(budget_s * ENGINE_SHARE, stop_at - clock())))
+    not_reached = [t for t in resume_order(chosen, cursor)
+                   if (results.get(t) or {}).get("status") == NOT_REACHED]
+    panels_short = {t: row["panels_not_reached"] for t, row in per_tradition.items()
+                    if row.get("panels_not_reached")}
+    partial = bool(not_reached or panels_short or unjudged)
     wiring = I.wiring_proof(
         {t: {**row, "passed": row.get("passed_burden", 0)} for t, row in per_tradition.items()},
         engines, chosen, list(MATHLAB_ENGINES))
@@ -1213,7 +1294,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                      per_tradition, admitted, dedup_status, donation, representations, registry,
                      dry_run,
                      ([f"budget: {unjudged} proposed objects carry no internal burden score this "
-                       f"pass (judge deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s "
+                       f"pass (judge deadline {JUDGE_SHARE * budget_s:.0f}s of a "
+                       f"{budget_s:.0f}s "
                        f"budget) -- they are admitted, registered QUEUED and donated unranked "
                        f"anyway; the ten gates measure them from the spec"]
                       if unjudged else []) +
@@ -1223,8 +1305,19 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                        "was judged exactly as it is without the seat"]),
                      simplified_away=simplified_away, engines=engines,
                      wiring=wiring)
+    # A PARTIAL PASS IS NEVER A FULL ONE: it names what it deferred and where it resumes.
+    report["partial"] = partial
+    report["resume"] = {"traditions_not_reached": not_reached,
+                        "panels_not_reached": panels_short, "objects_unjudged": unjudged,
+                        "seat_skipped_for_time": seat_skipped,
+                        "shares": {"science": SCIENCE_SHARE, "judge": JUDGE_SHARE,
+                                   "stop": STOP_SHARE},
+                        "budget_s": budget_s}
     if not dry_run:
         _atomic(OUT, report)
+        # THE CURSOR LAST: a pass killed before this resumes from the previous one.
+        _atomic(cursor_path(), {"at": now_iso(), "not_reached": not_reached,
+                                "panels_not_reached": panels_short})
     return report
 
 
@@ -1294,7 +1387,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-targets", type=int, default=MAX_TARGETS)
     a = ap.parse_args(argv)
     chosen = [t.strip() for t in a.traditions.split(",") if t.strip()] or None
-    report = run(budget_s=a.budget_s, dry_run=a.dry_run, traditions=chosen,
+    report = run(budget_s=leg_budget_s(a.budget_s), dry_run=a.dry_run, traditions=chosen,
                  max_targets=a.max_targets)
     print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
                       "traditions": len(report["traditions_run"]),
