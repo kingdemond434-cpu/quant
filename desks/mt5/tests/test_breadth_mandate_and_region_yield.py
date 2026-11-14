@@ -523,3 +523,19 @@ def test_an_unreadable_ledger_publishes_its_type_never_its_path(tmp_path, monkey
     assert counts is None
     assert basis == "ledger.jsonl unreadable: PermissionError"
     assert str(tmp_path) not in basis and "secret_dir" not in basis
+
+
+def test_an_unimportable_forcer_publishes_its_type_never_its_path(monkeypatch):
+    """Audit HOLD on #1038: an ImportError's repr names the module's absolute path, and
+    empty_cluster_basis is published in JUDGE_COVERAGE.json."""
+    from research import empty_cluster_forcer as ecf
+    from research import judge_coverage as jc
+
+    def _boom():
+        raise ImportError("cannot import name X from Y (/opt/secret_dir/y.py)")
+    monkeypatch.setattr(ecf, "forced_families", _boom)
+    backlog = {"jump": 10}
+    rows = [{"family": "jump", "timeframe": "H1"} for _ in range(10)]
+    [row] = jc.rank_by_value(backlog, rows, 100)
+    assert row["empty_cluster_basis"] == "empty_cluster_forcer unimportable: ImportError"
+    assert row["empty_cluster_factor"] == 1.0

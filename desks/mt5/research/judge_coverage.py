@@ -2928,7 +2928,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         from research import empty_cluster_forcer as _ecf
         _forced, _forced_why = _ecf.forced_families()
     except Exception as exc:
-        _forced, _forced_why = frozenset(), f"empty_cluster_forcer unimportable: {exc!r}"[:200]
+        _forced, _forced_why = frozenset(), f"empty_cluster_forcer unimportable: {type(exc).__name__}"
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
