@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T02:55:00Z",
+ "updated_at": "2026-11-14T04:00:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -367,6 +367,53 @@
     "common risk-on factor"
    ],
    "separating_test": "lunch against matched non-lunch Asian hours, contemporaneous co-movement partialled out",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-735",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "UST10Y"
+   ],
+   "traditions": [
+    "linear_response",
+    "causal"
+   ],
+   "mechanism": "The XAUUSD reaction to the 08:30 ET US CPI surprise conditioned on the pre-release UST10Y CFD tick imbalance: rates-led pricing (positioning already taken in rates shrinks the gold surprise beta) against gold-specific flow (the beta does not depend on the rates imbalance). Separating test: the surprise x pre-release imbalance interaction on the 1-30 minute XAUUSD move. CPI-gold is crowded at bar level, so any edge must come from the interaction. Own tick tape only",
+   "falsifier": "the surprise x pre-release rates-imbalance interaction on the 1-30 minute gold move is zero after costs",
+   "competing_explanations": [
+    "rates-led pricing",
+    "gold-specific flow"
+   ],
+   "separating_test": "surprise x pre-release UST10Y tick imbalance interaction on the 1-30 minute XAUUSD move",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial; the CPI surprise needs a consensus series, UNMEASURED until one passes terms and robots (as IQ-726)"
+  },
+  {
+   "id": "IQ-736",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "USDJPY"
+   ],
+   "traditions": [
+    "causal",
+    "survival_hazard"
+   ],
+   "mechanism": "US500 CFD drift at the broker's Sunday reopen conditioned on Friday's last-hour cash-close tick imbalance and on Sunday's first-hour USDJPY move: weekend news repriced through JPY against Friday flow continuation. Separating test: regress the reopen gap and drift on both regressors jointly; news loads on USDJPY, continuation on the Friday imbalance. Broker-specific CFD reopen, so the gap is measured on our own venue. Own tick tape only",
+   "falsifier": "neither the Friday imbalance nor the Sunday first-hour USDJPY move loads on the reopen gap after costs",
+   "competing_explanations": [
+    "weekend news repriced through JPY",
+    "Friday flow continuation"
+   ],
+   "separating_test": "joint regression of the reopen gap on the Friday last-hour imbalance and the Sunday first-hour USDJPY move",
    "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
