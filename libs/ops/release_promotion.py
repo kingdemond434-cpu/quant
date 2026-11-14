@@ -411,9 +411,40 @@ def adoption_decision(git: Git, *, tip: str, release_sha: str | None, release_re
         return mk("HOLD", None, f"tip {tip[:12]} carries {len(unreleased)} code path(s) no green "
                   f"run has released, and this box already runs release {release_sha[:12]}; "
                   "waiting for CI", unreleased)
+    target = state_extension(git, release_sha, tip)
+    if target != release_sha:
+        return mk("ADOPT_RELEASE", target, f"tip {tip[:12]} carries {len(unreleased)} unreleased "
+                  f"code path(s); adopting the newest green release {release_sha[:12]} through "
+                  f"{target[:12]}, the last commit after it that adds only seal/state paths "
+                  "(so the ADOPT_CLEARS rows landed for it ride along)", unreleased)
     return mk("ADOPT_RELEASE", release_sha, f"tip {tip[:12]} carries {len(unreleased)} unreleased "
               f"code path(s); adopting the newest green release {release_sha[:12]} instead",
               unreleased)
+
+
+def state_extension(git: Git, release_sha: str, tip: str) -> str:
+    """The newest commit on the tip's first-parent line that is still `release_sha` plus
+    seal/state paths only; `release_sha` itself when there is none, or when git cannot say.
+
+    THE OFF-BY-ONE (Autonomy 2026-11-14 00:45Z). The Auditor's ADOPT CLEAR row for a code merge is
+    landed on LIVE as a state-only commit AFTER that merge, and the guard counts only the rows in
+    the adopted commit's own tree. While code kept merging behind every seal, ADOPT_RELEASE took the
+    sealed commit exactly, which never carries its own row, so every release was refused (1879c7f4c,
+    724a8ce41). Its state-only descendants run byte-identical code (the same rule ADOPT_TIP uses)
+    and carry the rows; the walk stops at the first commit that changes code."""
+    try:
+        line = git.out("rev-list", "--first-parent", "--reverse", f"{release_sha}..{tip}").split()
+    except GitError:
+        return release_sha
+    best = release_sha
+    for sha in line:
+        try:
+            if not git.is_ancestor(release_sha, sha) or code_paths(git.changed(release_sha, sha)):
+                break
+        except GitError:
+            break
+        best = sha
+    return best
 
 
 def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",

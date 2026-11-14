@@ -452,3 +452,33 @@ def test_windows_launcher_never_converts_gate_failure_to_tip_authority() -> None
     assert '"ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP"' in s
     r = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-Release.ps1").read_text(encoding="utf-8")
     assert "[string] $Target" in r
+
+
+def test_adopt_release_rides_the_state_only_commits_after_it(world: dict[str, Path],
+                                                            box: Path) -> None:
+    """The ADOPT row lands after the sealed merge and before the next code merge: the box adopts
+    the release THROUGH that row (same code), never past the next code commit."""
+    dev = world["dev"]
+    rel = _commit(dev, {"libs/a.py": "A = 5\n"}, "released code")
+    _g(dev, "push", "-q", "origin", f"HEAD:refs/heads/{LIVE}")
+    rp.promote(dev, rel, _ev(rel))
+    row = _commit(dev, {"desks/mt5/data/ADOPT_CLEARS.jsonl": "{}\n"}, "the Auditor's row")
+    _commit(dev, {"libs/a.py": "A = 6\n"}, "next code merge, not yet green")
+    tip = _commit(dev, {"desks/mt5/data/state.json": "{\"n\": 3}\n"}, "box state")
+    _g(dev, "push", "-q", "origin", f"HEAD:refs/heads/{LIVE}")
+    d = rp.gate(box)
+    assert (d.decision, d.target, d.release_sha, d.tip) == ("ADOPT_RELEASE", row, rel, tip)
+    assert "ride along" in d.reason and d.unreleased_code == ["libs/a.py"]
+    _g(box, "merge", "-q", "--ff-only", row)             # the box took it: nothing more to do
+    held = rp.gate(box)
+    assert (held.decision, held.target) == ("HOLD", None)
+
+
+def test_state_extension_stops_at_code_and_survives_git_errors(world: dict[str, Path]) -> None:
+    dev = world["dev"]
+    rel = _g(dev, "rev-parse", "HEAD")
+    code = _commit(dev, {"libs/a.py": "A = 9\n"}, "code first")
+    _commit(dev, {"desks/mt5/data/state.json": "{\"n\": 4}\n"}, "state after code")
+    git = rp.Git(dev)
+    assert rp.state_extension(git, rel, code) == rel     # the first step is code: none
+    assert rp.state_extension(git, rel, "f" * 40) == rel  # unknown tip: git errors, no move
