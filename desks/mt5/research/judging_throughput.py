@@ -1604,14 +1604,117 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
+#: THE WRITER'S OWN ROW, READ WITHOUT A JSON PARSE (2026-11-14). `external_gauntlet.
+#: _append_gate_ledger` writes `json.dumps` of a dict whose first eight keys are fixed, in this
+#: order, and every one of them a scalar. A line that matches this anchored prefix in full is
+#: therefore that row, and its `at`, `cell`, `passed`, `terminal_gate` and `downstream_status`
+#: are read here exactly as `json.loads` would read them: a string group holds no backslash
+#: (one that does falls to the slow path, so no escape is ever left undecoded), and `at` is
+#: second-precision UTC, so it IS its own normalised form. ANY other line -- an older layout, a
+#: `Z` stamp, a fraction of a second, an escaped character, a non-scalar value -- takes the
+#: original parse, so the counts are identical row for row; only the cost changes.
+#: Measured on the box 2026-11-14 00:42Z: the parse-every-row stream overran its 150 s deadline
+#: after 1,241,088 of ~1.64 M rows, so verdicts/hour -- and with it the drain ETA -- read
+#: UNMEASURED every pass.
+_STR = r'"([^"\\]*)"'
+_OPT = r'(?:null|"[^"\\]*")'
+_FAST_ROW = re.compile(
+    r'\{"at": "(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+00:00)", "cell": ' + _STR
+    + r', "graph_id": ' + _OPT + r', "sym": ' + _OPT + r', "family": ' + _OPT
+    + r', "passed": (true|false), "terminal_gate": ' + _STR
+    + r', "downstream_status": (?:null|' + _STR + r')[,}]')
+
 
 #: Rows between deadline checks: one `time.monotonic()` per this many lines is noise.
 _DEADLINE_EVERY = 4096
 
 
+#: THE STREAM RESUMES WHERE IT STOPPED (2026-11-14). The ledger is append-only, so a pass need
+#: only read the rows written since the last one. This checkpoint holds the exact state the full
+#: stream would have built up to a byte offset: rows read, rows unstamped, the latest stamp, the
+#: raw and first-ruling counts per second-precision stamp (the writer stamps a whole append batch
+#: with one `now`, so there are few distinct keys), and the cells already ruled -- as 16-byte
+#: BLAKE2b digests in a side file, appended in step, since ~1.6 M cell names in JSON would cost
+#: more to rewrite every hour than the tail costs to read. A pass that runs out of its deadline
+#: SAVES ITS PROGRESS and the next pass resumes from that row, so the first full read is spread
+#: over as many passes as the box needs and is never thrown away. Counts are published only from
+#: a stream that reached the end of the file: a prefix is still never a rate.
+#: Measured on the box 2026-11-14 00:42Z: the full stream overran its 150 s deadline after
+#: 1,241,088 of ~1.64 M rows every pass, so verdicts/hour and the drain ETA read UNMEASURED.
+#: Discarded (a full re-read follows) when the ledger shrinks, its first bytes change, the file
+#: is unreadable or of another schema, or the side file is shorter than the count it claims.
+#: Beside the ledger it describes, named at call time so a test that moves GATE_LEDGER moves it.
+VERDICT_CKPT_NAME = "gate_verdict_rate_ckpt.json"
+_CKPT_SCHEMA = "verdict_rate_ckpt/1"
+_HEAD_BYTES = 65536
+_DIGEST = 16
+
+
+def _cell_digest(cell: str) -> bytes:
+    import hashlib
+    return hashlib.blake2b(cell.encode("utf-8", "surrogatepass"), digest_size=_DIGEST).digest()
+
+
+def _head_hash(fh: Any, n: int) -> str:
+    """sha256 of the ledger's first `n` bytes (at most 64 KiB): a rewritten file differs here."""
+    import hashlib
+    fh.seek(0)
+    return hashlib.sha256(fh.read(min(n, _HEAD_BYTES))).hexdigest()
+
+
+def _load_ckpt(ckpt: Path, ledger_name: str, size: int, fh: Any) -> dict[str, Any] | None:
+    """The saved state if it still describes a prefix of THIS ledger, else None (re-read)."""
+    try:
+        doc = json.loads(ckpt.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("schema") != _CKPT_SCHEMA:
+        return None
+    try:
+        offset, n_cells = int(doc["offset"]), int(doc["n_cells"])
+        raw, first = dict(doc["raw"]), dict(doc["first"])
+        total, unstamped = int(doc["rows_total"]), int(doc["rows_unstamped"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    # The head covers the first min(offset, 64 KiB) bytes as saved; the same span must hash the
+    # same now, or this is another file under the same name.
+    if (doc.get("ledger") != ledger_name or offset < 0 or offset > size
+            or doc.get("head") != _head_hash(fh, offset)):
+        return None
+    try:
+        blob = ckpt.with_suffix(".cells").read_bytes()
+    except OSError:
+        return None
+    if len(blob) < n_cells * _DIGEST:
+        return None
+    return {"offset": offset, "raw": raw, "first": first, "rows_total": total,
+            "rows_unstamped": unstamped, "last": str(doc.get("last") or ""),
+            "cells": {blob[i:i + _DIGEST] for i in range(0, n_cells * _DIGEST, _DIGEST)},
+            "n_cells": n_cells}
+
+
+def _save_ckpt(ckpt: Path, doc: dict[str, Any], new_digests: list[bytes], keep: int) -> str | None:
+    """Append the digests, then replace the JSON that counts them. A crash between the two
+    leaves extra digests the count does not claim, which the next save truncates."""
+    try:
+        cells = ckpt.with_suffix(".cells")
+        mode = "r+b" if cells.exists() else "w+b"
+        with cells.open(mode) as fh:
+            fh.truncate(keep * _DIGEST)
+            fh.seek(keep * _DIGEST)
+            fh.write(b"".join(new_digests))
+        tmp = ckpt.with_name(ckpt.name + ".tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
+        os.replace(tmp, ckpt)
+    except OSError as exc:
+        return f"{type(exc).__name__}: {exc}"
+    return None
+
+
 def _verdict_counts(now: datetime, path: Path | None = None,
                     deadline_s: float | None = None,
-                    extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+                    extra_cuts: dict[str, str] | None = None,
+                    checkpoint: Path | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
@@ -1619,12 +1722,19 @@ def _verdict_counts(now: datetime, path: Path | None = None,
 
     BOUNDED BY `deadline_s` (2026-10-21). On a box paging at ~1.6 GB free the ~970k-row stream is
     the slowest step of the pass; past the deadline it stops and the counts are UNMEASURED with
-    the rows read and the reason -- a prefix of the ledger is never published as its rate."""
+    the rows read and the reason -- a prefix of the ledger is never published as its rate.
+
+    RESUMABLE (2026-11-14): the desk's own ledger (`path` None) keeps a checkpoint beside it
+    (`VERDICT_CKPT_NAME`), so a pass reads only the rows appended since the last and an overrun
+    keeps its progress; an explicit `checkpoint` does the same for any ledger. Every count is
+    identical to a full stream's."""
     import time as _time
 
-    from research.judging_burndown import classify
+    from research.judging_burndown import NOT_JUDGED_PREFIX, classify
 
     p = GATE_LEDGER if path is None else path
+    ckpt = checkpoint if checkpoint is not None else (
+        p.with_name(VERDICT_CKPT_NAME) if path is None else None)
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
@@ -1635,26 +1745,88 @@ def _verdict_counts(now: datetime, path: Path | None = None,
         t_cut = _parse_utc(cut)
         if t_cut is not None and w not in cuts:
             cuts[w] = t_cut.astimezone(UTC).isoformat(timespec="seconds")
-    counts = dict.fromkeys(cuts, 0)
-    first_counts = dict.fromkeys(cuts, 0)
-    first_terminal_cells: set[str] = set()
-    total, unstamped, last = 0, 0, ""
+    # `stamp > now` on the fast path, as a string: a whole-second stamp is later than `now`
+    # exactly when it is later than `now` truncated to the second.
+    now_s = now.astimezone(UTC).isoformat(timespec="seconds")
     t_start = _time.monotonic()
     budget_s = None if deadline_s is None else float(deadline_s)
     stop_at = None if budget_s is None else t_start + budget_s
+    resumed_from = 0
+    ckpt_note: str | None = None
     try:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for n_line, line in enumerate(fh):
-                if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
+        with p.open("rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            state = _load_ckpt(ckpt, p.name, size, fh) if ckpt is not None else None
+            if state is None:
+                state = {"offset": 0, "raw": {}, "first": {}, "rows_total": 0,
+                         "rows_unstamped": 0, "last": "", "cells": set(), "n_cells": 0}
+            raw: dict[str, int] = state["raw"]
+            first: dict[str, int] = state["first"]
+            total, unstamped, last = state["rows_total"], state["rows_unstamped"], state["last"]
+            seen: set[bytes] = state["cells"]
+            resumed_from = total
+            new_digests: list[bytes] = []
+            offset = state["offset"]
+            # The state that may be SAVED: everything up to the first row a later pass could
+            # read differently (a stamp still in the future, a line not yet terminated).
+            frozen: dict[str, Any] | None = None
+
+            def _snap(at_offset: int | None = None, rows: int | None = None) -> dict[str, Any]:
+                return {"offset": offset if at_offset is None else at_offset,
+                        "raw": dict(raw), "first": dict(first),
+                        "rows_total": total if rows is None else rows,
+                        "rows_unstamped": unstamped, "last": last, "n_new": len(new_digests)}
+            fh.seek(offset)
+            n_line = 0
+            for bline in fh:
+                # Never on the first line: a pass whose checkpoint load alone outlasts the
+                # deadline still advances at least _DEADLINE_EVERY rows, so it always converges.
+                if (stop_at is not None and n_line and n_line % _DEADLINE_EVERY == 0
                         and _time.monotonic() > stop_at):
+                    if ckpt is not None:
+                        ckpt_note = _persist(ckpt, p, fh, frozen or _snap(), state, new_digests)
                     return {"status": UNMEASURED, "rows_read": total,
+                            "resumed_from_row": resumed_from,
+                            **({"checkpoint": (f"saved at row {total:,}; the next pass "
+                                               "resumes there") if not ckpt_note
+                                else f"not saved ({ckpt_note})"} if ckpt is not None else {}),
                             "why": (f"{p.name} stream overran its {budget_s or 0.0:.0f} s "
                                     f"deadline after {total:,} rows "
                                     f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
                                     "UNMEASURED this pass, never a partial count")}
+                n_line += 1
+                start = offset
+                offset += len(bline)
+                if frozen is None and not bline.endswith(b"\n"):
+                    frozen = _snap(start)
+                line = bline.decode("utf-8", "replace")
                 if not line.strip():
                     continue
                 total += 1
+                f = _FAST_ROW.match(line)
+                if f is not None:
+                    at = f.group(1)
+                    if at > now_s:
+                        if frozen is None:
+                            frozen = _snap(start, total - 1)
+                        unstamped += 1
+                        continue
+                    last = max(last, at)
+                    raw[at] = raw.get(at, 0) + 1
+                    cell = f.group(2)
+                    status = f.group(5) or ""
+                    gate = f.group(4)
+                    # judging_burndown.classify(row) == "ruled", on the same three fields
+                    if (not cell or status.startswith(NOT_JUDGED_PREFIX)
+                            or not (f.group(3) == "true" or (gate and gate != "UNKNOWN"))):
+                        continue
+                    d = _cell_digest(cell)
+                    if d in seen:
+                        continue
+                    seen.add(d)
+                    new_digests.append(d)
+                    first[at] = first.get(at, 0) + 1
+                    continue
                 m = _AT.search(line)
                 if not m:
                     unstamped += 1
@@ -1662,6 +1834,8 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 try:
                     stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
                     if stamp.tzinfo is None or stamp > now:
+                        if stamp.tzinfo is not None and frozen is None:
+                            frozen = _snap(start, total - 1)
                         unstamped += 1
                         continue
                     at = stamp.astimezone(UTC).isoformat(timespec="seconds")
@@ -1669,9 +1843,7 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                     unstamped += 1
                     continue
                 last = max(last, at)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        counts[w] += 1
+                raw[at] = raw.get(at, 0) + 1
                 # The writer appends only when a terminal verdict changes. Repeated cells
                 # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
                 # completed evidence judgements either. Preserve the raw event count above.
@@ -1684,25 +1856,50 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 cell = str(row.get("cell", ""))
                 if not cell or classify(row) != "ruled":
                     continue
-                if cell in first_terminal_cells:
+                d = _cell_digest(cell)
+                if d in seen:
                     continue
-                first_terminal_cells.add(cell)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        first_counts[w] += 1
+                seen.add(d)
+                new_digests.append(d)
+                first[at] = first.get(at, 0) + 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
-            "last_verdict_at": last or None, "counts": counts,
-            "count_basis": "changed verdict events; unchanged retests do not append",
-            "first_terminal_counts": first_counts,
-            "first_terminal_cells": len(first_terminal_cells),
-            "first_terminal_per_hour": {
-                "1h": float(first_counts["1h"]),
-                "24h": round(first_counts["24h"] / 24.0, 3),
-                "7d": round(first_counts["7d"] / 168.0, 3)},
-            "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
-                         "7d": round(counts["7d"] / 168.0, 3)}}
+    if ckpt is not None:
+        try:
+            with p.open("rb") as fh2:
+                ckpt_note = _persist(ckpt, p, fh2, frozen or _snap(), state, new_digests)
+        except OSError as exc:
+            ckpt_note = f"{type(exc).__name__}: {exc}"
+    counts = {w: sum(n for at, n in raw.items() if at >= cut) for w, cut in cuts.items()}
+    first_counts = {w: sum(n for at, n in first.items() if at >= cut) for w, cut in cuts.items()}
+    out: dict[str, Any] = {
+        "status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
+        "last_verdict_at": last or None, "counts": counts,
+        "count_basis": "changed verdict events; unchanged retests do not append",
+        "first_terminal_counts": first_counts,
+        "first_terminal_cells": len(seen),
+        "first_terminal_per_hour": {
+            "1h": float(first_counts["1h"]),
+            "24h": round(first_counts["24h"] / 24.0, 3),
+            "7d": round(first_counts["7d"] / 168.0, 3)},
+        "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
+                     "7d": round(counts["7d"] / 168.0, 3)}}
+    if ckpt is not None:
+        out["resumed_from_row"] = resumed_from
+        out["checkpoint"] = "saved" if not ckpt_note else f"not saved ({ckpt_note})"
+    return out
+
+
+def _persist(ckpt: Path, p: Path, fh: Any, snap: dict[str, Any], state: dict[str, Any],
+             new_digests: list[bytes]) -> str | None:
+    """Save `snap` -- the stream's exact state at a line boundary -- as the resume point."""
+    return _save_ckpt(ckpt, {
+        "schema": _CKPT_SCHEMA, "ledger": p.name, "offset": snap["offset"],
+        "head": _head_hash(fh, snap["offset"]),
+        "rows_total": snap["rows_total"], "rows_unstamped": snap["rows_unstamped"],
+        "last": snap["last"], "raw": snap["raw"], "first": snap["first"],
+        "n_cells": state["n_cells"] + snap["n_new"]},
+        new_digests[:snap["n_new"]], state["n_cells"])
 
 
 #: Wall clock the registry's creation count may spend (v1.1), on top of the ledger stream's own.
