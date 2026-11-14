@@ -1,11 +1,20 @@
 {
   "upstream": "@{u}",
-  "ahead": 1641,
-  "merges": 592,
-  "non_merge": 1049,
-  "state_only": 761,
-  "code_touching": 288,
+  "ahead": 1652,
+  "merges": 593,
+  "non_merge": 1059,
+  "state_only": 762,
+  "code_touching": 297,
   "code_commits": [
+    "b78e2ec03fda364ebac15b6c61bf5d273806ada8",
+    "a0e32664fd10ef984c14321df3d85091ca9ae01b",
+    "bc933dc8c8554364c5b78930b7d04a955f9ba4cd",
+    "48f2b7225cba06b28de96923da7937721b7be9d0",
+    "55b5a9aa92e284aaf8880aaf073357e66805a57c",
+    "6109ad0d0d8048728511924fb4695f03fcfac3be",
+    "a91d4165ed1d6b555910eb368341a6202588c61f",
+    "8b16ac6ea5cde1b250c6cb9e4b7d9c47a707f417",
+    "ec992d08829ebf6e94136c6e94a82e5448d8efb7",
     "da5f48ab378433fa03e0dc50c8b4da5b33423a25",
     "169f385ccc59d194ef9131dbf96c455b9cea2928",
     "5de0361b51b63e41ecf16a788102e7e643708ee2",
@@ -196,53 +205,157 @@
     "ad05ca7973d13a0e702ef47ba590ba1c6288b734",
     "ecc871f553b1ba4b6a03789cda62416670775920",
     "cf00d7a3692dceac078a6fef977cac1e7f39366d",
-    "99072a6c79886374efaa7c14b990dc540fff93d4",
-    "8338360978a2056b0956e585a4e08ec02322fb93",
-    "65b3bc15d68828641331eb14ef451f356459b2fb",
-    "41852552e7a5aa8af30c7a5899348c146fe3daa9",
-    "ebdd75f2283632031f0187f2d72777cf05a73e95",
-    "69b4a105096b01f23dee829c5fb837c10a89931e",
-    "0e8dfa9ecca4828a4f9322ee20228a32fa6817e8",
-    "058e7b310491d52f0fa3f3a5f4936ec3799b3210",
-    "2de0a172281c58311c74442fdc53b0fa673bdb16",
-    "233c8ee46cf6044bd0f3d94efe3c862b52537173"
+    "99072a6c79886374efaa7c14b990dc540fff93d4"
   ],
-  "code_paths_touched": 2535,
+  "code_paths_touched": 2549,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-09T20:36:37+00:00",
-  "code_paths_differing": 0,
-  "code_paths": [],
+  "measured_at": "2026-11-13T17:38:07+00:00",
+  "code_paths_differing": 8,
+  "code_paths": [
+    "desks/mt5/mt5desk/tape.py",
+    "desks/mt5/recorders/tick_source.py",
+    "desks/mt5/research/mt5_session.py",
+    "desks/mt5/scripts/download_all_symbols.py",
+    "desks/mt5/tests/test_desk_cycle.py",
+    "desks/mt5/tests/test_mt5_session.py",
+    "tests/ops/test_hung_writer_reaper.py",
+    "tests/ops/test_published_state_withholds_login.py"
+  ],
   "skipped": [
+    {
+      "path": ".github/scripts/audit_gate.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": ".gitignore",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/mt5desk/decision_core.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/mt5desk/families_orthogonal.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/mt5desk/gateway.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
     {
       "path": "desks/mt5/ops/box_tasks.manifest",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/prop/e8_executor.py",
+      "path": "desks/mt5/prop/e8_gold.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/research/factor_residual_engine.py",
+      "path": "desks/mt5/prop/ftmo_follower.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/research/hourly_cycle.py",
+      "path": "desks/mt5/proposals/fusion_deadman.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/research/local_converter.py",
+      "path": "desks/mt5/research/axis_registry.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/research/merge_hypotheses.py",
+      "path": "desks/mt5/research/conversion_maximiser.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/scripts/sync_shadow_to_git.ps1",
+      "path": "desks/mt5/research/cross_sectional_breadth.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/tests/test_factor_residual_book.py",
+      "path": "desks/mt5/research/decay_monitor.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/futures_state.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/futures_state_sources.json",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/index_discovery.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/judging_throughput.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/pf_allocator.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/prop_challenge_allocator.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/qd_frontier.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/tier_s.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/scripts/Adopt-And-Seal.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/scripts/install_ftmo_executor_task.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/side_channels/seed_miners.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_allocator_liveness.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_axis_registry.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_cross_sectional_breadth.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_decision_core.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_frontier_audit_lane.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_ftmo_follower.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_fusion_equity_reference.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_fusion_minlot_book.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_futures_state.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_gold_oco.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -250,44 +363,97 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/tests/test_judging_unlimited_task.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_prop_challenge_allocator.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "libs/ops/leg_rotation.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "ops/release/authority/authority.py",
+      "path": "libs/research/bandit.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "ops/release/publisher/publish.py",
+      "path": "libs/research/hypothesis_graph.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "scripts/check_dead_architecture.py",
+      "path": "ops/bridge/bridge_status.ps1",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "scripts/mine_channel_transcripts.py",
+      "path": "ops/bridge/bridge_watchdog.ps1",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "scripts/run_law_gate.py",
+      "path": "ops/bridge/install_bridge_watchdog.ps1",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "tests/ops/test_release_authority.py",
+      "path": "ops/money_closure.txt",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "tests/ops/test_state_publisher.py",
+      "path": "ops/release/independent_review.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/run_frontier_audit.cmd",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_desk_module_drift.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_own_clock_legs.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_producer_yield.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_research_health.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/libs/test_leg_rotation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_audit_gate.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_bridge_watchdog.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     }
   ],
   "denied_paths": [],
   "secret_screen_hits": [],
-  "withheld_paths": [],
-  "blob_digest": "e3b0c44298fc1c14",
+  "withheld_paths": [
+    "desks/mt5/research/bar_clock_probe.py",
+    "desks/mt5/research/fetch_gold_scalp.py",
+    "desks/mt5/research/h1_source.py",
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/job_lock.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/shadow_cycle.py",
+    "desks/mt5/scripts/Run-DeskCycle.ps1",
+    "desks/mt5/tests/test_certificate_single_writer.py",
+    "desks/mt5/tests/test_job_lock_liveness.py",
+    "libs/ops/git_writer_lock.py",
+    "libs/research/layers.py"
+  ],
+  "blob_digest": "23afda4977c44645",
   "push": {
     "pushed": false,
-    "why": "nothing to drain: no box-only code differs"
+    "why": "dry run (no --push)"
   }
 }

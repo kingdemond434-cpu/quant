@@ -1,51 +1,57 @@
 {
  "schema": 1,
- "started_at": "2026-11-11T13:59:47+00:00",
- "pid": 3508,
- "phase": "written",
- "phase_at": "2026-11-11T14:04:07+00:00",
- "done": false,
+ "started_at": "2026-11-14T04:42:47+00:00",
+ "pid": 3208,
+ "phase": "applied",
+ "phase_at": "2026-11-14T04:48:02+00:00",
+ "done": true,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-11-11T13:59:47+00:00",
+   "at": "2026-11-14T04:42:47+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-11-11T13:59:47+00:00",
+   "at": "2026-11-14T04:42:47+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "queue",
-   "at": "2026-11-11T14:02:18+00:00",
-   "elapsed_s": 151.5
+   "at": "2026-11-14T04:44:31+00:00",
+   "elapsed_s": 104.1
   },
   {
    "phase": "plan",
-   "at": "2026-11-11T14:02:18+00:00",
-   "elapsed_s": 151.5
+   "at": "2026-11-14T04:44:31+00:00",
+   "elapsed_s": 104.1
   },
   {
    "phase": "rate",
-   "at": "2026-11-11T14:02:18+00:00",
-   "elapsed_s": 151.5
+   "at": "2026-11-14T04:44:31+00:00",
+   "elapsed_s": 104.1
   },
   {
    "phase": "rate_written",
-   "at": "2026-11-11T14:03:59+00:00",
-   "elapsed_s": 252.4
+   "at": "2026-11-14T04:46:26+00:00",
+   "elapsed_s": 219.1
   },
   {
    "phase": "task_limit",
-   "at": "2026-11-11T14:04:07+00:00",
-   "elapsed_s": 260.5
+   "at": "2026-11-14T04:46:30+00:00",
+   "elapsed_s": 223.2
   },
   {
    "phase": "written",
-   "at": "2026-11-11T14:04:07+00:00",
-   "elapsed_s": 260.6
+   "at": "2026-11-14T04:46:31+00:00",
+   "elapsed_s": 223.9
+  },
+  {
+   "phase": "applied",
+   "at": "2026-11-14T04:48:02+00:00",
+   "elapsed_s": 314.7
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
+ "seconds": 314.7
 }

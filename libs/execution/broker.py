@@ -82,14 +82,32 @@ class MT5Broker:  # pragma: no cover - requires a live Windows MT5 terminal
     volume, price) and is reported as `rejected`, the same as a broker refusal.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, path: str | None = None, expected_prefix: str | None = None) -> None:
+        """Attach to ``path`` (default: the desk's ``data/terminal_path.txt``) and refuse an
+        account whose server does not start with ``expected_prefix`` (default: the desk's).
+
+        PINNED (2026-11-11): the box runs Fusion and FTMO side by side; a pathless
+        ``initialize()`` took whichever terminal the bridge saw first.
+        """
         try:
             import MetaTrader5 as mt5
         except ImportError as exc:
             raise BrokerError("the MetaTrader5 package is not installed") from exc
         self._mt5 = _order_door().guard(mt5, caller="libs.execution.broker")
-        if not mt5.initialize():
+        from research.mt5_session import (  # type: ignore[import-not-found,unused-ignore]
+            attach_or_initialize,  # on sys.path via _order_door()
+            venue_refusal,
+        )
+        if path is None:
+            from mt5desk.config import terminal_path
+            path = terminal_path()
+        if not attach_or_initialize(mt5, path=path, timeout=15000):
             raise BrokerError(f"MT5 initialize() failed: {mt5.last_error()}")
+        venue = {"expected_prefix": expected_prefix} if expected_prefix else {}
+        why = venue_refusal(mt5, path, **venue)
+        if why is not None:
+            mt5.shutdown()
+            raise BrokerError(f"MT5 wrong venue, refused: {why}")
 
     def place_order(self, request: OrderRequest) -> BrokerOrderResult:
         mt5 = self._mt5
