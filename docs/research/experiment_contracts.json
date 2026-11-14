@@ -295,6 +295,21 @@
     "threshold": 0,
     "after": "14 days after per-key forward ledgers (claude/forward-ledger-per-key) land on the box: every cluster clock still UNMEASURED means the clocks' own series never reached the judge"
    }
+  },
+  "tape_deepen": {
+   "hypothesis": "Copying the Fusion terminal's own tick store backwards, a bounded slice every hour, adds broker-native symbol-days below the first day the forward writers recorded, so symbols reach the 66-day tape bar the order-flow families wait on sooner than the forward clock alone would take them there.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "days_added",
+    "better": "up",
+    "organ": "report:TAPE_DEEPEN.json"
+   },
+   "falsifier": {
+    "metric": "at_or_above_bar",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days of passes with no symbol at or above the 66-day bar: the terminal's store holds less than the bar and the forward clock is the only route"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
@@ -383,7 +398,6 @@
   "discovery_compiler",
   "dislocation_lab",
   "drawdown_alpha_miner",
-  "dukascopy_backfill",
   "duty_cycle",
   "edge_confidence",
   "edge_reliability",

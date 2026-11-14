@@ -1634,15 +1634,24 @@ def extract(text: str, *, max_claims: int = 40,
     # sentence one; the mechanism is sentence three and says "it". A claim that names no
     # instrument inherits the document's, marked as context so the reader knows it was inherited.
     doc_inst = resolve_instruments((text or "").lower(), universe)
+    # WHERE A PAGE'S TEXT IS LOST (2026-11-13). 1,164 forest vectors were reached and yielded
+    # no claim, with nothing saying which fence took the text. Each counter is the number of
+    # sentences that got past the previous stage; the reader adds them up per ground.
+    funnel = dict.fromkeys(FUNNEL_STAGES, 0)
+    funnel["chars"] = len(text or "")
+    langs: dict[str, int] = {}
     for raw in _SPLIT.split(text or ""):
         s = re.sub(r"\s+", " ", raw).strip()
         if not s:
             continue
+        funnel["sentences"] += 1
         lang = language_of(s)
+        langs[lang] = langs.get(lang, 0) + 1
         dense = lang in _SUBSTRING_LANGS
         lo, hi = (10, 400) if dense else (20, 400)
         if not (lo <= len(s) <= hi):
             continue
+        funnel["in_length"] += 1
         low = s.lower()
         if forbidden_venue(low):
             dropped_venue += 1
@@ -1656,8 +1665,12 @@ def extract(text: str, *, max_claims: int = 40,
             else _hits_en(DIRECTION_EN, low)
         h = _dedupe(_hits(lang, hv, low) + _hits_en(HORIZON_EN, low)) if lang != "en" \
             else _hits_en(HORIZON_EN, low)
+        funnel["has_quantity"] += bool(q)
+        funnel["has_direction"] += bool(d)
+        funnel["has_horizon"] += bool(h)
         if not (q and d and h):
             continue
+        funnel["all_three"] += 1
         digest = hashlib.sha256(s.encode("utf-8")).hexdigest()[:12]
         if digest in seen:
             continue
@@ -1671,6 +1684,7 @@ def extract(text: str, *, max_claims: int = 40,
         if not (inst["analogues"] or inst["transfer_only"] or inst["indirect"]):
             dropped_unmappable += 1                     # a summary nobody can test
             continue
+        funnel["mapped"] += 1
         # AN IMPOSSIBLE STATED NUMBER IS A PARSE OR A LIE, never a claim (metric_fence): a
         # "win rate 2296%" is refused here, counted by reason, before it can be scored or keyed.
         perf = performance(s)
@@ -1701,7 +1715,13 @@ def extract(text: str, *, max_claims: int = 40,
     return {"claims": out, "dropped_venue": dropped_venue,
             "dropped_unmappable": dropped_unmappable, "duplicate_mechanisms": duplicates,
             "dropped_impossible_metric": dropped_impossible,
-            "impossible_metric_reasons": impossible_reasons}
+            "impossible_metric_reasons": impossible_reasons,
+            "funnel": {**funnel, "claims": len(out)}, "languages": langs}
+
+
+#: The extract funnel's stages, in order; `chars` is the text's length.
+FUNNEL_STAGES = ("chars", "sentences", "in_length", "has_quantity", "has_direction",
+                 "has_horizon", "all_three", "mapped")
 
 
 def claim_score(c: dict[str, Any]) -> float:
