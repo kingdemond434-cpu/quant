@@ -337,7 +337,8 @@ def run(
 
         att = _att
     except ImportError as exc:
-        report["queue"] = f"UNMEASURED: gate_policy.ATTESTATION unimportable ({exc}); not written"
+        report["queue"] = (f"UNMEASURED: gate_policy.ATTESTATION unimportable "
+                           f"({type(exc).__name__}); not written")
     if write and att is not None:
         old = _read_json(PRIORITY_REMINT)
         old = old if isinstance(old, dict) else {}

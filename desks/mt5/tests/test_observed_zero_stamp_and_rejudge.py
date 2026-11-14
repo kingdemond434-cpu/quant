@@ -217,6 +217,18 @@ def test_a_moved_number_queues_what_the_basis_decided_after_the_cache_rolls(desk
     assert r["n_dropped_after_hold"] == 2 and r["n_queued"] == 0 and _queue(desk)["cells"] == []
 
 
+def test_an_unimportable_attestation_names_its_type_never_its_text(desk, monkeypatch):
+    """The report is published: an import error's text (a module path, a host) never reaches it."""
+    import types
+
+    fake = types.ModuleType("research.gate_policy")
+    fake.__file__ = r"C:\opt\secret-host\research\gate_policy.py"
+    monkeypatch.setitem(sys.modules, "research.gate_policy", fake)
+    r = cbr.run(universe=desk, gate=None)
+    assert r["queue"] == "UNMEASURED: gate_policy.ATTESTATION unimportable (ImportError); not written"
+    assert "secret-host" not in json.dumps(r)
+
+
 def test_another_producers_queue_is_kept(desk):
     from research.gate_policy import ATTESTATION
 

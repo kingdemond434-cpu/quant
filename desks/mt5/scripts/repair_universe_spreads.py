@@ -596,7 +596,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"{rr.get('n_released')} held={rr.get('n_held_for_the_cache')} "
                   f"{rr.get('queue') or rr.get('why') or ''}")
         except Exception as exc:        # its own artifact says why; never fails the leg
-            print(f"  cost-basis re-judge: UNMEASURED ({type(exc).__name__}: {exc})")
+            print(f"  cost-basis re-judge: UNMEASURED ({type(exc).__name__})")
     return 0
 
 
