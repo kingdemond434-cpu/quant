@@ -152,8 +152,12 @@ def _run_main(fence, tmp_path, monkeypatch, capsys, argv: list[str], rep: dict) 
     report = tmp_path / "JUDGE_COVERAGE.json"
     report.write_text(json.dumps(rep), "utf-8")
     monkeypatch.setattr(fence, "REPORT", report)
-    monkeypatch.setattr(fence, "RATE", _healthy_rate(tmp_path / "JUDGING_RATE.json",
-                                                     datetime.now(tz=UTC)))
+    # One rate file per test: the runs compared below must read the SAME inputs, and the ETA
+    # check's `why` names the rate's own stamp, so a rewrite between runs would differ by it.
+    rate = tmp_path / "JUDGING_RATE.json"
+    if not rate.exists():
+        _healthy_rate(rate, datetime.now(tz=UTC))
+    monkeypatch.setattr(fence, "RATE", rate)
     monkeypatch.setattr(fence, "ROOT", tmp_path)
     ch = Channel()
     monkeypatch.setattr(fence, "_default_page_sender", lambda root: ch)
