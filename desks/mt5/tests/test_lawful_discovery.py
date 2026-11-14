@@ -464,7 +464,10 @@ def test_youtube_is_discovered_through_the_indexes_never_contacted(tmp_path: Pat
 
 @pytest.mark.parametrize("site", ["fred.stlouisfed.org", "finance.yahoo.com", "www.cboe.com",
                                   "www.cmegroup.com", "www.nasdaq.com", "www.theocc.com",
-                                  "mp.weixin.qq.com", "www.baidu.com"])
+                                  "mp.weixin.qq.com", "www.baidu.com", "comtrade.un.org",
+                                  "comtradeplus.un.org", "comtradeapi.un.org",
+                                  "www.miaxglobal.com", "www.m-x.ca", "www.asx.com.au",
+                                  "www.eurex.com"])
 def test_refused_grounds_are_disabled_with_a_reason(tmp_path: Path, site: str) -> None:
     """Terms-refused and off-limits hosts: no request on any backend, every record SKIPPED
     with the stated reason -- disabled and said, never silently dropped."""
@@ -485,3 +488,21 @@ def test_refused_hosts_are_not_harvested_from_a_keyword_index(tmp_path: Path) ->
     assert "https://news.test/lira" in urls and not any("yahoo" in u for u in urls)
     assert db.never_contact("https://www.nasdaq.com/x").startswith("REFUSED")
     assert db.never_contact("https://example.org/x") == ""
+
+
+def test_a_transport_message_never_reaches_a_record_or_errors(tmp_path: Path) -> None:
+    """Auditor MF2 on #1168: a transport error's free text (host, path, key) is cut to the
+    exception type at the Fetched boundary, so no record, errors() or stdout can carry it."""
+    leak = "secret-host.test/private/path?key=abc123"
+
+    def net(url: str) -> db.Fetched:
+        return db.Fetched(url=url, status=None, error=f"URLError: <urlopen error {leak}>")
+
+    d = db.LawfulDiscovery(net, holds=tmp_path / "holds.json", lock_dir=tmp_path / "locks",
+                           sleep=lambda s: None).discover("lira", site="news.test")
+    text = json.dumps([r.why for r in d.records]) + json.dumps(d.errors())
+    assert d.records and "secret-host" not in text and "abc123" not in text
+    assert db.safe_error("HTTP 503") == "HTTP 503"
+    assert db.safe_error("TimeoutError: timed out after 25s at x.test") == "TimeoutError"
+    assert db.safe_error("<urlopen error x.test>") == "transport_error"
+    assert db.Fetched(url="u", status=None, error=f"OSError: {leak}").error == "OSError"

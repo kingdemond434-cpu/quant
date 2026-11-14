@@ -717,7 +717,9 @@ def test_refused_hosts_are_never_fetched_on_any_route(monkeypatch) -> None:
     import pytest
     for url in ("https://fred.stlouisfed.org/categories", "https://alfred.stlouisfed.org/",
                 "https://www.cmegroup.com/market-data/volume-open-interest.html",
-                "https://www.cboe.com/insights/"):
+                "https://www.cboe.com/insights/", "https://comtradeplus.un.org/",
+                "https://www.miaxglobal.com/", "https://www.m-x.ca/en", "https://www.asx.com.au/",
+                "https://www.eurex.com/ex-en/data/statistics"):
         assert dfm._refused_ground({"url": url}, "http").startswith("REFUSED")
     assert dfm._refused_ground({"url": "https://x.test/", "alt": ["https://www.cboe.com/a"]},
                                "render").startswith("REFUSED")

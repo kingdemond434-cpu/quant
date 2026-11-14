@@ -110,6 +110,12 @@ NEVER_CONTACT: dict[str, str] = {
     "yahoo.com": f"{_TERMS} (Yahoo)",
     "cboe.com": f"{_OI} (Cboe)", "cmegroup.com": f"{_OI} (CME)",
     "nasdaq.com": f"{_OI} (Nasdaq)", "theocc.com": f"{_OI} (OCC)",
+    "miaxglobal.com": f"{_OI} (MIAX)", "m-x.ca": f"{_OI} (Montreal Exchange)",
+    "asx.com.au": f"{_OI} (ASX)",
+    "eurex.com": "terms unread, and an unread term is a refusal (Eurex)",
+    "comtrade.un.org": f"{_TERMS} (UN Comtrade: licence s.5 refuses automated use, 2026-11-14)",
+    "comtradeplus.un.org": f"{_TERMS} (UN Comtrade)",
+    "comtradeapi.un.org": f"{_TERMS} (UN Comtrade)",
     "weixin.qq.com": _OFF_LIMITS, "wechat.com": _OFF_LIMITS, "baidu.com": _OFF_LIMITS,
 }
 #: Of those, the hosts whose URLs are not even TAKEN from an index: a discovered row is followed
@@ -163,6 +169,22 @@ LANG_TO_GDELT: dict[str, str] = {
 
 
 # --------------------------------------------------------------------------- transport
+_HTTP_STATUS = re.compile(r"^HTTP \d{3}$")
+_TYPE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+
+
+def safe_error(error: object) -> str:
+    """`HTTP <status>`, or the exception type name before any `: message`, or "transport_error".
+    Never the free text of the message."""
+    e = str(error or "").strip()
+    if not e:
+        return ""
+    if _HTTP_STATUS.match(e):
+        return e
+    head = e.split(":", 1)[0].strip()
+    return head if _TYPE_NAME.match(head) else "transport_error"
+
+
 @dataclass
 class Fetched:
     """What one GET came back with. `status` is None for a transport failure."""
@@ -173,6 +195,12 @@ class Fetched:
     error: str = ""
     #: The URL that actually answered, after redirects ("" = the url asked for).
     final_url: str = ""
+
+    def __post_init__(self) -> None:
+        # Only an exception TYPE name or `HTTP <status>` is ever carried (Auditor MF2 on #1168):
+        # a transport message can hold a host, a path or a key, and this field reaches records,
+        # errors() and the leg's stdout.
+        self.error = safe_error(self.error)
 
     @property
     def ok(self) -> bool:
@@ -727,8 +755,8 @@ class LawfulDiscovery:
             self.holds.hold(host, status, url, rec.backend)
         except HoldWriteError as exc:
             with _STATS_LOCK:
-                _HOLD_ERRORS.append(f"{_now()} {exc}")
-            rec.why = f"{rec.why}; HOLD WRITE FAILED: {exc}".strip("; ")
+                _HOLD_ERRORS.append(f"{_now()} {type(exc).__name__}")
+            rec.why = f"{rec.why}; HOLD WRITE FAILED: {type(exc).__name__}".strip("; ")
 
     def get(self, url: str, rec: BackendRecord) -> Fetched | None:
         """Hold -> robots -> slot -> GET -> (redirect target: hold + robots again) -> hold the
