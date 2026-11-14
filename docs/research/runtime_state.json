@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 834,
+  "NEVER": 836,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1058,
+  "attested": 1060,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -713,7 +713,18 @@
     ]
    },
    {
-    "at": "2026-11-14T02:52:59+00:00",
+    "at": "2026-11-14T02:41:03+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:cluster_judge",
+     "leg:decay_verdicts"
+    ]
+   },
+   {
+    "at": "2026-11-14T05:21:43+00:00",
     "host": "vm",
     "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
     "on_attesting_host": false,
@@ -27848,6 +27859,62 @@
    "measured_at": "2026-11-11T18:04:02+00:00"
   },
   {
+   "organ": "leg:cluster_judge",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/cluster_judge.py"
+   ],
+   "clock": "hourly_cycle:cluster_judge",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CLUSTER_JUDGE.json",
+   "artifact_declared": "desks/mt5/reports/CLUSTER_JUDGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "none yet by design: a person reads it; the allocator / E8 independence count may",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
+   "organ": "leg:decay_verdicts",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/decay_verdicts.py"
+   ],
+   "clock": "hourly_cycle:decay_verdicts",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DECAY_VERDICTS.json",
+   "artifact_declared": "desks/mt5/reports/DECAY_VERDICTS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/desk_dashboard_state.py (each LIVE sleeve's verdict on the pr",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
    "organ": "leg:account_parity",
    "kind": "leg",
    "code": [
@@ -27873,7 +27940,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T02:52:59+00:00"
+   "measured_at": "2026-11-14T05:21:43+00:00"
   },
   {
    "organ": "leg:redteam_counts",
@@ -27901,7 +27968,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T02:52:59+00:00"
+   "measured_at": "2026-11-14T05:21:43+00:00"
   }
  ],
  "ratchet": {
