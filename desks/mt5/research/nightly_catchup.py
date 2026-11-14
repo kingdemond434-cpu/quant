@@ -368,6 +368,12 @@ STEPS: tuple[tuple[str, Any, str, tuple[str, ...]], ...] = (
     # host with no terminal this is a no-op that still reports the gap.
     ("acquire_bars", bar_coverage,
      "scripts/download_remaining.py", ()),
+    # PROPOSALS BEFORE THE COMPILER (2026-11-11). `act_on_findings` appends to the proposal queue
+    # every day and its one compiler had no scheduled caller once the free-research loop was
+    # retired, so nothing turned a queued proposal into a cell. It donates EXACT_RECIPE rows
+    # into the miner contract, which is why it runs before `compile_miners` reads that contract.
+    ("compile_proposals", lambda: {"note": "queued proposals -> instrumented generic cells"},
+     "scripts/compile_proposals.py", ()),
     ("compile_miners", miner_conversion,
      "research/miner_candidate_compiler.py", ()),
     ("compile_anomalies", lambda: {"note": "anomaly rows -> executable candidates"},

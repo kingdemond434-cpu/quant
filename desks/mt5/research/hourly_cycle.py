@@ -1235,6 +1235,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    # ORDER-SENSITIVE DECAY (R0312): a reader of the lane state files and the per-sleeve ledgers,
+    # seconds; it runs every hour beside the fused reliability column it complements.
+    "decay_verdicts",
+    # THE TIER-S CLUSTER JUDGED AS ONE HYPOTHESIS (P8-J1): reads the lane state files and each
+    # clock's own per-key ledger, seconds; a report, so it rides the core clock beside decay.
+    "cluster_judge",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
@@ -1454,7 +1460,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration", "decay_verdicts", "cluster_judge"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -6335,6 +6341,24 @@ def main() -> None:
         "opportunity_forecast", "research/opportunity_forecast.py"))
     erl = _costed("edge_reliability", lambda: _producer(
         "edge_reliability", "research/edge_reliability.py"))
+    # ORDER-SENSITIVE DECAY ON EVERY LIVE AND FORWARD-CLOCK SLEEVE (R0312, SARES archaeology).
+    # Every statistic above is invariant to the ORDER of a sleeve's trades; this one is not. The
+    # realised R series is cut into pre-registered equal-count blocks by trade index (frozen in
+    # code, identical for every sleeve), one-sided p per block, Edgington mean-p early vs late.
+    # Below 20 trades the row is UNMEASURED_TOO_FEW_TRADES by name. A demote/shrink INPUT only:
+    # it sizes nothing and gates nothing (reports/DECAY_VERDICTS.json; the sizing hook is the
+    # Max-growth thread's and is published as NOT_WIRED).
+    dcv = _costed("decay_verdicts", lambda: _producer(
+        "decay_verdicts", "research/decay_verdicts.py"))
+    # THE TIER-S CLUSTER, JUDGED AS ONE HYPOTHESIS (P8-J1, 2026-10-14). The forward clocks at
+    # n >= 5 and t >= the Tier S bar are one mechanism on correlated crosses; judged one by one
+    # they count one bet many times. This leg reads each clock's OWN ledger (a shared legacy
+    # file is UNMEASURED_SHARED_LEDGER by name), measures pairwise correlation with overlap
+    # counts, hierarchical clusters and eigenvalue N_eff, and the cluster's composite t against
+    # the SAME bar with one trial for the record. A report: no sizing, no gate, no trial write
+    # (reports/CLUSTER_JUDGE.json; promotion_input is NOT_WIRED, the Max-growth thread's).
+    clj = _costed("cluster_judge", lambda: _producer(
+        "cluster_judge", "research/cluster_judge.py"))
     # LIVE TRUTH, CLOSED INTO RESEARCH CREDIT AND KEPT AS A SERIES (Tier-1 audit, 2026-09-29):
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
@@ -6649,7 +6673,9 @@ def main() -> None:
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
-                    "edge_reliability": erl, "arena": ar, "session_capital": scap,
+                    "edge_reliability": erl, "decay_verdicts": dcv,
+                    "cluster_judge": clj, "arena": ar,
+                    "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
