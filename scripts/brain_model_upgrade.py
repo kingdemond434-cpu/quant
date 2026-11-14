@@ -56,6 +56,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.data.keyed_sources import keyed_urlopen  # noqa: E402
 from libs.ops.agent_denials import append_jsonl, denial_rows, parse_stream  # noqa: E402
 
 STATE = ROOT / "data/brain_model_upgrade.json"
@@ -323,7 +324,7 @@ def available_models() -> tuple[list[str], str]:
                     "source ops/brain_env.sh first")
     try:
         req = urllib.request.Request(MODELS_URL, headers=headers)
-        with urllib.request.urlopen(req, timeout=30, context=CTX) as r:
+        with keyed_urlopen(req, timeout=30, context=CTX) as r:
             data = json.loads(r.read()).get("data", [])
     except urllib.error.HTTPError as e:
         return [], f"models API HTTP {e.code}"

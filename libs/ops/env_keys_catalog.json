@@ -1083,6 +1083,30 @@
    "signup": "https://developer.adzuna.com/signup",
    "unlocks": "Adzuna app id, paired with ADZUNA_APP_KEY",
    "note": "PENDING: shown on the same Adzuna dashboard page as the key"
+  },
+  {
+   "name": "CENSUS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://api.census.gov/data/key_signup.html",
+   "unlocks": "US Census EITS/MARTS advance retail sales ex-autos (the API answers 'Missing Key' without one since 2026-11)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Tier S research institution build"
+  },
+  {
+   "name": "ARCGIS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://location.arcgis.com/sign-up/ (ArcGIS Location Platform free tier, then Developer credentials > API key)",
+   "unlocks": "IMF PortWatch daily port calls and chokepoint transits (the FeatureServer answers 499 Token Required since 2026-11); UNVERIFIED that a Location Platform key is accepted by IMF's hosted layer",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Tier S research institution build"
   }
  ],
  "config": [
