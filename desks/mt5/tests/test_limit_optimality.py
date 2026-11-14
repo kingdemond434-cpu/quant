@@ -1,9 +1,16 @@
 """Idea 737: current vs growth-optimal limit per account, read off the prop solve's frontier."""
 from __future__ import annotations
 
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
-import limit_optimality as lo
+DESK = Path(__file__).resolve().parents[1]
+for _p in (str(DESK), str(DESK / "research"), str(DESK.parents[1])):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import limit_optimality as lo  # noqa: E402
 
 NOW = datetime(2026, 11, 14, 4, 0, tzinfo=UTC)
 
