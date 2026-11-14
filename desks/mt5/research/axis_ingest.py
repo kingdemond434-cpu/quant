@@ -31,6 +31,7 @@ runs the other way.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import io
 import json
@@ -255,38 +256,26 @@ FRED_SERIES = {
     "BAMLH0A0HYM2": "US high-yield OAS -- credit appetite",
     "VIXCLS": "VIX",
 }
-FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-
-#: FRED'S EDGE ALLOWLISTS THE CLIENT TOKEN, AND `UA` IS NOT ON IT -- which is why this axis read
-#: 0 series for its entire life while the other three worked on the same clock, the same box and
-#: the same IP.
-#:
-#: MEASURED ON THE TRADING BOX 2026-09-24, one series (DGS10), same URL, same process, back to
-#: back -- the only variable is this header:
-#:
-#:     "quant-desk-axis-ingest/1.0 (research)"      ConnectionResetError 10054 after 19.2 s
-#:     "curl/8.4.0"                                 HTTP 200, 268,823 B, 0.04 s
-#:     "curl/8.4.0 quant-desk-axis-ingest/1.0"      HTTP 200, 268,823 B, 0.04 s
-#:     "quant-desk-axis-ingest/1.0 curl/8.4.0"      TimeoutError after 30.0 s
-#:     "python-urllib/3.14"                         HTTP 200, 268,823 B, 0.11 s
-#:
-#: The FIRST token decides: an Akamai edge accepts the TLS handshake, then tarpits or resets the
-#: response body for a token it does not recognise. No HTTP status is ever returned, so the
-#: failure arrives as a timeout and reads exactly like a network fault -- which is how it survived
-#: as "FRED currently times out and resets from this box's IP (7/7)", a fact about the publisher.
-#: It was a fact about this string.
-#:
-#: AN HONEST TOKEN, NEVER ANOTHER CLIENT'S (audit of #138, MF2). The first token is the client
-#: this request actually comes from -- urllib's own `Python-urllib/<version>`, exactly what
-#: urllib sends with no header at all, and measured above at HTTP 200 -- and the desk's identity
-#: is the second token so the publisher can see who is asking. Claiming to be `curl` to clear an
-#: edge filter would be impersonating another client to pass that filter, which the desk's
-#: no-bypassing data rule forbids even where, as here, the data itself is keyless and public.
-#:
-#: SCOPED TO FRED ON PURPOSE. `UA` is shared with BIS, COT and ECB, which were ingesting 85.9 MB,
-#: 1.1 MB and 786 KB on this exact header; changing it globally would put three working axes at
-#: risk to repair a fourth.
-FRED_UA = f"Python-urllib/{urllib.request.__version__} quant-desk-axis-ingest/1.0"
+#: FRED IS TERMS-REFUSED FOR EVERY AUTOMATED FETCH (governance/fred-terms-ruling-2026-11-13.md;
+#: Audit thread, 2026-11-14). The key, the keyless fredgraph.csv and any client token are all
+#: irrelevant: the owner's terms refuse automated access. So this axis opens NO socket. The
+#: fetch and its edge-allowlisted client token are removed rather than left switched off, so no
+#: later session re-enables them by flipping a flag. Held `data/axes/fred.json` stays, labelled;
+#: `axis_ingest_all` never overwrites a populated axis with this empty document.
+#: Lawful routes, per the ruling: the public-domain series from their primary publishers (DGS10,
+#: DGS2, T10Y2Y from Treasury's daily par yield curve; DTWEXBGS from the Fed's H.10; T10YIE from
+#: Treasury nominal and real curves), and the third-party ones (VIXCLS is Cboe's, BAMLH0A0HYM2 is
+#: ICE BofA's) only from their owners under their owners' terms, or fenced as missed growth.
+FRED_TERMS = ("BLOCKED_ON_TERMS: FRED (stlouisfed.org) refuses automated fetches on every "
+              "route, keyed or keyless (governance FRED ruling 2026-11-13)")
+FRED_MISSED_GROWTH = {
+    "mechanism": "fred_terms_refusal",
+    "lost": "the macro_state axis refresh: rates, term spread, broad dollar, breakevens, "
+            "high-yield OAS and VIX for the nine shadow_institutional mechanisms that read it",
+    "stand_in": "held data/axes/fred.json (labelled, not refreshed); primary-publisher routes "
+                "for the public-domain series; VIX and OAS only from their owners or fenced",
+    "verdict": "a gap, not a zero",
+}
 
 ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
            "?lastNObservations={n}&format=csvdata")
@@ -367,52 +356,20 @@ def _csv_series(text, date_col, val_col):
     return sorted(out)
 
 
-
-
-def _terms_refused(url: str) -> str | None:
-    """libs.data.terms_refused.refused, importable however this file was launched."""
-    import sys as _sys
-    _root = str(Path(__file__).resolve().parents[3])
-    if _root not in _sys.path:
-        _sys.path.append(_root)
-    from libs.data.terms_refused import refused
-    return refused(url)
-
-
 def ingest_fred():
-    """US rates, spreads, dollar, breakevens, credit and vol -- the macro STATE series.
+    """The FRED macro_state axis is REFUSED ON TERMS and opens no socket (see FRED_TERMS).
 
-    THE VINTAGE CAVEAT IS REAL AND RECORDED. fredgraph.csv serves the CURRENT vintage, so a
-    revised series silently back-dates knowledge. For DAILY MARKET series -- yields, the dollar
-    index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
-    negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
-    """
-    why = _terms_refused(FRED_URL)
-    if why:
-        # raises before any write: main() reports INGEST FAILED and the held axis file stays
-        raise RuntimeError(f"BLOCKED_TERMS: {why}")
-    series, failed = {}, {}
-    for sid, what in FRED_SERIES.items():
-        try:
-            req = urllib.request.Request(FRED_URL.format(sid=sid),
-                                         headers={"User-Agent": FRED_UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-                text = r.read().decode("utf-8", "replace")
-            hdr = text.splitlines()[0].split(",")
-            pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
-            if pts:
-                series[sid] = {"what": what, "n": len(pts), "first": pts[0][0],
-                               "last": pts[-1][0],
-                               "points": [{"d": d, "v": v} for d, v in pts]}
-        except Exception as exc:
-            failed[sid] = f"{type(exc).__name__}: {str(exc)[:60]}"
+    Returns the axis's refusal record: zero series, every listed series named as refused, the
+    terms clause and the missed-growth line. `blocked_on_terms` tells `main` never to publish it,
+    and `axis_ingest_all` never overwrites a populated axis with an empty document, so the held
+    file stays as it is, labelled."""
     return {"axis": "macro_state", "id": "fred_series", "source": "fredgraph.csv",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "n_series": len(series), "n_failed": len(failed), "failed": failed,
-            "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
-                             "or national-accounts series is in this list on purpose."),
+            "n_series": 0, "n_failed": len(FRED_SERIES),
+            "failed": dict.fromkeys(FRED_SERIES, FRED_TERMS),
+            "blocked_on_terms": FRED_TERMS, "missed_growth": FRED_MISSED_GROWTH,
             "shape": "series[sid].points -- one dated state variable each",
-            "series": series}
+            "series": {}}
 
 
 def ingest_ecb():
@@ -453,6 +410,183 @@ def ingest_attention_forecast():
     """The attention miner's walk-forward next-day forecast, same shape and same clock."""
     import learned_miners
     return learned_miners.forecast_axis("attention")
+
+
+# ------------------------------------------------------------------ axis -> lake -> cells
+#: WHY THE BIS AND ECB AXES REACHED NO CELL (2026-11-11). They were ingested faithfully -- 464,803
+#: BIS policy-rate rows across 33 pairs, three ECB series -- and then only DESCRIBED: the axis
+#: files are read by reporters (alpha_dsl's field catalogue, counterfactual attribution, the
+#: causal lab, the pit audit), and no registered family takes `data/axes/*.json` as an input. COT
+#: reaches `cot_positioning` through `family_inputs`; nothing did the same for these.
+#:
+#: THE EXISTING DOOR FOR A DATED EXOGENOUS SERIES IS THE LAKE. `family_exogenous_conditioner`
+#: loads `data/lake/series/<source>.(parquet|csv)` by name, joins it on its own `available_time`
+#: and lags it a publication day before it may condition a bar -- the sealed gauntlet and the
+#: forward clock rebuild the same signals from the cell's params alone. So an axis becomes cells
+#: by being WRITTEN THERE in that frame (`publish_lake`), and minted as exogenous_conditioner
+#: cells on the instruments it bears on (`lake_cells`). No family is invented and no input
+#: resolver is touched.
+#:
+#: WHICH INSTRUMENTS, STATED: a per-pair axis (BIS carry) conditions its OWN pair; a one-currency
+#: state (ECB: euro area; FRED: United States) conditions every hypothesis-lane two-leg symbol
+#: carrying that currency. COT is left out on purpose: `cot_positioning` already consumes it.
+LAKE_DIR = DESK / "data" / "lake" / "series"
+LAKE_AXES: dict[str, dict] = {
+    "bis": {"fields": ("carry_differential",)},
+    "ecb": {"currency": "EUR"},
+}
+#: Axes NEVER published to the lake and never minted into cells, with the ruling that says why.
+#: FRED (2026-11-13 terms ruling): automated fetches are refused, and third-party series in it
+#: (VIXCLS from Cboe, the ICE BofA OAS) may come only from their owners under the owners' terms,
+#: so no tradeable cell is built on the FRED axis.
+REFUSED_LAKE_AXES: dict[str, str] = {
+    "fred": ("FRED axis refused (2026-11-13 terms ruling): no automated fetch, and its "
+             "third-party series only from their owners under the owners' terms"),
+}
+#: How each cell reads its column: level and change, each at a 1-sigma extreme of its own history,
+#: and BOTH signs of the stance -- the direction is the gauntlet's to find, never a preference.
+LAKE_TRANSFORMS: tuple[str, ...] = ("level_z", "delta_z")
+LAKE_SIDES: tuple[int, ...] = (1, -1)
+LAKE_THRESHOLD = 1.0
+
+
+def lake_source(axis: str) -> str:
+    """The lake id an axis is published under; the cell's `source` param."""
+    return f"axis_{axis}"
+
+
+def _available(day: str):
+    """When a dated value was knowable: the day AFTER the date it describes (a monthly value: the
+    day after its month ends). The family then lags it another publication day on top."""
+    import pandas as pd
+    day = str(day).strip()
+    try:
+        if len(day) == 7:
+            return (pd.Period(day, freq="M").end_time.normalize()
+                    + pd.Timedelta(days=1)).tz_localize("UTC")
+        return pd.Timestamp(day[:10], tz="UTC") + pd.Timedelta(days=1)
+    except (ValueError, TypeError):
+        return None
+
+
+def lake_frame(axis: str, doc: dict):
+    """The axis as ONE wide frame: `available_time` plus one numeric column per series, named
+    exactly as `axis_proposer.axis_series` keys them after the `<axis>:` prefix. None when the
+    axis is not a lake axis or carries nothing."""
+    import pandas as pd
+    spec = LAKE_AXES.get(axis)
+    if spec is None or not isinstance(doc, dict):
+        return None
+    cols: dict[str, pd.Series] = {}
+    for name, ser in (doc.get("series") or {}).items():
+        pts = (ser or {}).get("points") or []
+        idx = [_available(p.get("d")) for p in pts]
+        vals = pd.to_numeric([p.get("v") for p in pts], errors="coerce")
+        s = pd.Series(vals, index=pd.DatetimeIndex(idx)).dropna()
+        s = s[s.index.notna()]
+        if len(s):
+            cols[str(name)] = s[~s.index.duplicated(keep="last")].sort_index()
+    rows = doc.get("rows") or []
+    fields = tuple(spec.get("fields") or ())
+    if fields and rows:
+        by_sym: dict[str, list[dict]] = {}
+        for r in rows:
+            if isinstance(r, dict) and r.get("symbol") and r.get("knowable_at"):
+                by_sym.setdefault(str(r["symbol"]), []).append(r)
+        for sym, rs in by_sym.items():
+            # A daily print supersedes the monthly one for the same instrument; a symbol the
+            # publisher only reports monthly keeps its monthly values.
+            daily = [r for r in rs if len(str(r["knowable_at"]).strip()) >= 10]
+            use = daily or rs
+            idx = pd.DatetimeIndex([_available(r["knowable_at"]) for r in use])
+            for f in fields:
+                s = pd.Series(pd.to_numeric([r.get(f) for r in use], errors="coerce"),
+                              index=idx).dropna()
+                s = s[s.index.notna()]
+                if len(s):
+                    cols[f"{sym}.{f}"] = s[~s.index.duplicated(keep="last")].sort_index()
+    if not cols:
+        return None
+    frame = pd.DataFrame(cols).sort_index()
+    frame.index.name = "available_time"
+    return frame.reset_index()
+
+
+def publish_lake(axis: str, doc: dict, out_dir: Path | None = None) -> dict:
+    """Write the axis's lake frame atomically; report what landed. Never raises."""
+    import os
+    try:
+        frame = lake_frame(axis, doc)
+    except Exception as exc:                       # a malformed axis is UNMEASURED, not fatal
+        return {"axis": axis, "written": False, "why": f"{type(exc).__name__}: {exc}"[:200]}
+    if frame is None or frame.empty:
+        return {"axis": axis, "written": False, "why": "no dated numeric series in the axis"}
+    base = out_dir or LAKE_DIR
+    path = base / f"{lake_source(axis)}.csv"
+    tmp = path.with_suffix(".csv.tmp")
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(tmp, index=False, date_format="%Y-%m-%dT%H:%M:%SZ")
+        os.replace(tmp, path)
+    except OSError as exc:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return {"axis": axis, "written": False, "why": f"{type(exc).__name__}: {exc}"[:200]}
+    signals = [c for c in frame.columns if c != "available_time"]
+    return {"axis": axis, "written": True, "path": str(path), "source": lake_source(axis),
+            "rows": len(frame), "signals": signals}
+
+
+def lake_targets(axis: str, signal: str, universe: set[str]) -> list[str]:
+    """The instruments one lake column bears on, by the rule stated above, lane-filtered."""
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:                                # pragma: no cover - desk-root runs
+        def may_hypothesise(_s, _f=None):            # type: ignore[misc]
+            return True
+    spec = LAKE_AXES.get(axis) or {}
+    if spec.get("fields"):
+        sym = signal.split(".", 1)[0]
+        cand = [sym] if sym in universe else []
+    else:
+        ccy = str(spec.get("currency") or "")
+        cand = sorted(s for s in universe
+                      if len(s) == 6 and s.isupper() and ccy in (s[:3], s[3:]))
+    out = []
+    for s in cand:
+        try:
+            if may_hypothesise(s, "exogenous_conditioner"):
+                out.append(s)
+        except Exception:
+            out.append(s)
+    return out
+
+
+def lake_cells(axis: str, signals: list[str], universe: set[str],
+               transforms: tuple[str, ...] = LAKE_TRANSFORMS) -> list[dict]:
+    """exogenous_conditioner cells for every (column, target, transform, side) of one axis."""
+    if axis in REFUSED_LAKE_AXES or axis not in LAKE_AXES:
+        return []
+    src = lake_source(axis)
+    out: list[dict] = []
+    for sig in signals:
+        for sym in lake_targets(axis, sig, universe):
+            for tr in transforms:
+                for side in LAKE_SIDES:
+                    out.append({
+                        "source": "axis_ingest_all", "kind": "hypothesis", "symbol": sym,
+                        "family": "exogenous_conditioner",
+                        "params": {"source": src, "signal": sig, "transform": tr,
+                                   "threshold": LAKE_THRESHOLD, "side_when_high": side},
+                        "mechanism": (f"the {axis} axis series {sig} ({tr}) at a 1-sigma extreme "
+                                      f"of its own history conditions {sym}; stance "
+                                      f"{'with' if side > 0 else 'against'} the extreme"),
+                        "title": f"{axis}:{sig} -> {sym}", "url": "",
+                        "falsifier": ("no net forward return on the bars where the series sits "
+                                      "beyond 1 sigma, after cost, out of sample"),
+                        "required_data": [f"data/lake/series/{src}.csv"],
+                        "lineage": {"axis": axis, "axis_file": f"data/axes/{axis}.json"}})
+    return out
 
 
 INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
@@ -507,6 +641,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    {k:<14} FAILED {v[:58]}")
     if not a.apply:
         print("  --apply not given; nothing written")
+        return 0
+    if doc.get("blocked_on_terms"):
+        print(f"  {doc['blocked_on_terms']}; held axis left as it is, nothing written")
         return 0
     out = publish(a.axis, doc)
     print(f"-> {out}")

@@ -452,7 +452,112 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
             "measurement_note": mc.verdict() if mc else "no contract recorded for this event",
             "data_source": rec.get("data_source"), "kill": rec.get("kill"),
             "lens": rec.get("lens"),
+            # THE INSTRUMENTS, so the cell is a hypothesis a door can admit (see `_with_symbols`).
+            **_symbols_for(text),
+            "kind": "hypothesis",
             "promotion_authority": False}
+
+
+# ------------------------------------------------------------------ cells a door can admit
+#: WHY A COMPILED PROPOSAL REACHED NO GAUNTLET (2026-11-11). Every cell this compiler wrote was a
+#: COORDINATE with no instrument: `family`, `params` and prose, and no `symbol`/`symbols`. The
+#: miner compiler can only mint a cell on an instrument, so the 98 cells in
+#: `compiled_proposals.json` compiled to EMPTY_CAPTURE (no instrument, no body text), and nothing
+#: read the file into the docket anyway -- its one consumer was the retired research loop. The
+#: compiler itself had no scheduled caller once `run_free_research` was retired, so the queue
+#: `act_on_findings` appends to every day was compiled by nobody.
+#:
+#: NOW: a cell names the instruments its proposal names (read mechanically from the proposal's
+#: own text against the broker registry), and a proposal that names none is tested on the
+#: DECLARED CORE SET below. `symbol_basis` says which, so attribution can separate the two.
+#: The cells are donated to `data/intelligence/compile_proposals/` through
+#: `family_donation.donate_per_family` (one contract file per
+#: trial family, charged after the compiler's own chart x session expansion), and the compiler
+#: admits them as EXACT_RECIPE because `generic` is a registered family with exact params.
+#:
+#: THE CORE SET IS DECLARED, NEVER SELECTED ON OUTCOME: the six USD-basket majors and gold that
+#: the desk's residual factors are built from (`standing_questions`). A generic coordinate makes a
+#: claim about a market state, not an instrument; testing it where the desk measures that state
+#: best is a stated choice, and every cell it costs is charged.
+CORE_SET: tuple[str, ...] = ("EURUSD", "GBPUSD", "AUDUSD", "USDJPY", "USDCAD", "USDCHF",
+                             "XAUUSD")
+SOURCE = "compile_proposals"
+_SYMBOL_TOKEN = re.compile(r"[A-Za-z0-9]{5,}")
+_UNIVERSE: set[str] | None = None
+
+
+def _universe() -> set[str]:
+    global _UNIVERSE
+    if _UNIVERSE is None:
+        try:
+            from research.miner_candidate_compiler import known_symbols
+            _UNIVERSE = set(known_symbols())
+        except Exception:
+            _UNIVERSE = set()
+    return _UNIVERSE
+
+
+def _may_hypothesise(symbol: str) -> bool:
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        return True          # no policy is not a refusal; the donation door re-checks the lane
+    try:
+        return bool(may_hypothesise(symbol, "generic"))
+    except Exception:
+        return True
+
+
+def _symbols_for(text: str) -> dict[str, Any]:
+    """The instruments a proposal's own text names, else the declared core set.
+
+    A token counts only when it IS a registry symbol: written in the registry's own case, or
+    upper-case and five-plus characters (so "the" never resolves and `eurusd` in prose does not
+    either -- a proposal names an instrument the way the desk writes it). Share CFDs are dropped
+    here by the two-lane rule: `generic` is not a cross-sectional class family."""
+    uni = _universe()
+    folded = {s.upper(): s for s in uni}
+    named = sorted({folded[t.upper()] for t in _SYMBOL_TOKEN.findall(text.replace("/", ""))
+                    if t.upper() in folded and (t.isupper() or t == folded[t.upper()])})
+    named = [s for s in named if _may_hypothesise(s)]
+    if named:
+        return {"symbols": named, "symbol_basis": "named_in_proposal"}
+    core = [s for s in CORE_SET if (not uni or s in uni) and _may_hypothesise(s)]
+    return {"symbols": core, "symbol_basis": "declared_core_set"}
+
+
+def _cell_key(cell: dict[str, Any]) -> str:
+    return f"{cell.get('name')}|{cell.get('coordinate')}"
+
+
+def _with_symbols(cell: dict[str, Any]) -> dict[str, Any]:
+    """A stock cell written before cells carried instruments, given them from its own text."""
+    if isinstance(cell.get("symbols"), list) and cell["symbols"]:
+        return {**cell, "kind": cell.get("kind") or "hypothesis"}
+    text = " ".join(str(cell.get(k) or "") for k in ("name", "data_source", "kill", "lens"))
+    return {**cell, **_symbols_for(text), "kind": "hypothesis"}
+
+
+def donation_rows(cells: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One EXACT_RECIPE row per (cell, instrument) in the miner-discovery contract."""
+    rows: list[dict[str, Any]] = []
+    for c in cells:
+        if not c.get("compiled") or not isinstance(c.get("params"), dict):
+            continue
+        for sym in c.get("symbols") or []:
+            rows.append({"source": SOURCE, "kind": "hypothesis", "symbol": sym,
+                         "family": str(c.get("family") or "generic"),
+                         "params": dict(c["params"]),
+                         "mechanism": (f"proposal {c.get('name')}: {c.get('coordinate')} "
+                                       f"({c.get('lens') or 'no lens'})"),
+                         "title": str(c.get("name") or "")[:200], "url": "",
+                         "falsifier": c.get("kill"), "data_source": c.get("data_source"),
+                         "symbol_basis": c.get("symbol_basis"),
+                         "coordinate": c.get("coordinate"),
+                         "evidence": {"origin": "compiled_proposals.json",
+                                      "measurement_class": c.get("measurement_class"),
+                                      "attribution_allowed": c.get("attribution_allowed")}})
+    return rows
 
 
 def main() -> int:
@@ -528,11 +633,32 @@ def main() -> int:
         print(f"    --   {str(r.get('name'))[:34]:36s} [{miss}]")
         print(f"         {r['why'][:120]}")
 
+    # THE STOCK IS KEPT. A coordinate compiled on an earlier run is refused on this one as a
+    # duplicate of itself (it is in the docket now), so writing only this run's `ok` erased every
+    # earlier cell -- and an absent queue wrote an empty file over all of them. Stock cells are
+    # carried forward and given instruments from their own text; this run's cells join them.
+    stock: list[dict[str, Any]] = []
+    try:
+        stock = [c for c in json.loads(COMPILED.read_text("utf-8")).get("cells") or []
+                 if isinstance(c, dict) and c.get("compiled")]
+    except (OSError, ValueError, AttributeError):
+        stock = []
+    merged: dict[str, dict[str, Any]] = {_cell_key(c): _with_symbols(c) for c in stock}
+    merged.update({_cell_key(c): _with_symbols(c) for c in ok})
+    cells = list(merged.values())
+
+    from research import family_donation as fdn
+    donation = fdn.donate_per_family(SOURCE, donation_rows(cells),
+                                     ledger=fdn.DONATION_LEDGERS / f"{SOURCE}.jsonl")
+    print(f"  DONATED {donation['donated_total']} cell(s) ({donation['already_charged']} already "
+          f"charged); tests_run by family {donation['tests_run_by_family']}")
+
     COMPILED.parent.mkdir(parents=True, exist_ok=True)
     COMPILED.write_text(json.dumps({"built_at": now.isoformat(timespec="seconds"),
-                                    "cells": ok}, indent=1), "utf-8")
+                                    "cells": cells}, indent=1), "utf-8")
     OUT.write_text(json.dumps({"ran_at": now.isoformat(timespec="seconds"),
                                "compiled": len(ok), "refused": len(refused),
+                               "cells_held": len(cells), "donation": donation,
                                "refusals": refused,
                                "missing_capabilities": sorted({m for r in refused
                                                                for m in (r.get("missing_capability")
