@@ -71,7 +71,7 @@ AUTHORITY_GLOBS = (
     "*live_sleeve_policy*", "*sleeve_registry*", "*approv*", "*authority*",
     "*_enabled*", "*_disabled*", "*_enforce*", "*_off", "*_off.*", "deactivate*",
     "principal_*", "*kill*", "*_halt*", "*_stop", "*_stop.*", "*override*", "*clears.jsonl",
-    "armed_*", "*armed_*",
+    "armed_*", "*armed_*", "release_identity*", "gateway_loaded*", "*adopt_*",
 )  # fmt: skip
 GATE = ".github/scripts/audit_gate.py"
 

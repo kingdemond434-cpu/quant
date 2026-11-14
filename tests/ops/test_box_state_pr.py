@@ -111,6 +111,9 @@ class FakeApi:
     ("ops/notes.txt", False),                           # not state per release.py
     ("desks/mt5/data/merge_clears.jsonl", False),       # the gate's *clears.jsonl
     ("desks/mt5/data/armed_sleeves.json", False),       # the gate's *armed_*
+    ("desks/mt5/data/release_identity.json", False),    # Governance, 2026-11-14 14:18Z
+    ("desks/mt5/data/GATEWAY_LOADED.json", False),
+    ("desks/mt5/data/last_adopt_rows.jsonl", False),
 ])  # fmt: skip
 def test_pr_ok_lets_only_ungoverned_data_state_through(rel: str, ok: bool) -> None:
     assert bsp.pr_ok(rel, REL) is ok
@@ -150,6 +153,8 @@ def test_state_goes_by_pr_and_authority_keeps_its_route(tmp_path: Path) -> None:
     assert "desks/mt5/data/RELEASE.json" not in by_path
     commit = api.of("POST", "/git/commits")[0][2]
     assert commit["parents"] == ["tip0"] and commit["tree"] == "newtree"
+    # no custom author or committer: GitHub makes the App both, and signs it (#1218 audit)
+    assert "author" not in commit and "committer" not in commit
     ref = api.of("POST", "/git/refs")[0][2]
     assert ref == {"ref": "refs/heads/box-state/vmi-x-20261114T120000Z", "sha": "newcommit"}
     pr = api.of("POST", "/pulls")[0][2]
