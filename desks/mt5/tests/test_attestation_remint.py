@@ -115,6 +115,30 @@ def test_apply_appends_in_place_once_and_the_cells_are_stamped(desk: Path) -> No
     assert prio["cells"] == [doc["_targets"][0]["cell_id"]]
 
 
+def test_apply_keeps_the_cost_basis_producers_cells(desk: Path) -> None:
+    """Two producers write priority_remint.json (2026-11-14): this leg must not drop the cells
+    cost_basis_rejudge queued under the same attestation, and must drop them under another."""
+    _stores(desk, STALE_POLICY, {"external.A": _row("AUDUSD", OLD)})
+    prio_path = desk / "data" / "hypotheses" / "priority_remint.json"
+    prio_path.parent.mkdir(parents=True, exist_ok=True)
+    _write(prio_path, {"attestation": ATTESTATION, "cells": ["cb1", "cb2"],
+                       "stale_certificate_keys": [], "cost_basis_cells": ["cb1", "cb2"],
+                       "cost_basis_producer": "research/cost_basis_rejudge.py"})
+    doc = ar.build(T0 + timedelta(hours=1), previous={}, git_time=T0, patched=False)
+    ar.apply(doc, T0 + timedelta(hours=1))
+    prio = json.loads(prio_path.read_text())
+    mine = doc["_targets"][0]["cell_id"]
+    assert prio["cells"] == sorted({mine, "cb1", "cb2"})
+    assert prio["cost_basis_cells"] == ["cb1", "cb2"]
+    assert prio["producer"] == "research/attestation_remint.py"
+
+    _write(prio_path, {"attestation": STALE_POLICY, "cells": ["old"],
+                       "cost_basis_cells": ["old"]})
+    ar.apply(doc, T0 + timedelta(hours=2))
+    prio = json.loads(prio_path.read_text())
+    assert prio["cells"] == [mine] and "cost_basis_cells" not in prio
+
+
 def test_a_restamped_row_is_a_breach_the_moment_it_appears(desk: Path) -> None:
     """The unpatched writer's failure: current header, evidence from before it."""
     _stores(desk, dict(ATTESTATION), {"external.A": _row("AUDUSD", OLD),

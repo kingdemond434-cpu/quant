@@ -535,11 +535,20 @@ def apply(doc: dict[str, Any], now: datetime | None = None, docket: Path | None 
     att, _ = _policy()
     fp = doc["attestation_fingerprint"]
     targets = doc.get("_targets") or []
+    # THE QUEUE HAS TWO PRODUCERS (2026-11-14): research/cost_basis_rejudge.py lists the cells
+    # whose cost basis changed under `cost_basis_*`, and merges this producer's cells when it
+    # writes. This write keeps its block in turn, under the same attestation only, so neither
+    # hourly leg drops the other's re-judges whichever runs last.
+    prior = _read(priority)
+    prior = prior if isinstance(prior, dict) and prior.get("attestation") == att else {}
+    cost_cells = [str(c) for c in (prior.get("cost_basis_cells") or [])]
+    cost_block = {k: v for k, v in prior.items() if str(k).startswith("cost_basis_")}
     _atomic_json(priority, {
+        **cost_block,
         "at": doc["at"], "producer": "research/attestation_remint.py",
         "attestation": att, "attestation_fingerprint": fp,
         "in_force_since": doc["in_force_since"],
-        "cells": sorted(x["cell_id"] for x in targets),
+        "cells": sorted({x["cell_id"] for x in targets} | set(cost_cells)),
         "certificate_keys": {x["key"]: x["cell_id"] for x in targets},
         "stale_certificate_keys": sorted(
             set(doc.get("restamped_not_rejudged") or [])

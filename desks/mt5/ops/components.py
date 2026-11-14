@@ -950,6 +950,29 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="optional", resource_budget={"budget_s": 60},
             schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
             notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
+        ComponentSpec(
+            # THE COST-BASIS RE-JUDGE, DECLARED SO ITS CONSUMER IS NAMED (zero-spread v2.1). The
+            # reach walk already puts it on the spread_provenance leg's clock through
+            # repair_universe_spreads.main; what a reached library cannot carry is who reads its
+            # queue: the judge's re-mint tier (external_gauntlet.remint_cells) reads
+            # priority_remint.json ahead of the never-judged tier.
+            component_id="library:desks/mt5/research/cost_basis_rejudge.py",
+            kind="library", host="box",
+            code_paths=("desks/mt5/research/cost_basis_rejudge.py",),
+            inputs=("desks/mt5/data/universe/universe.json",
+                    "desks/mt5/data/hypotheses/gate_verdict_index.json",
+                    "desks/mt5/data/cost_basis_state.json"),
+            outputs=("desks/mt5/reports/COST_BASIS_REJUDGE.json",
+                     "desks/mt5/data/hypotheses/priority_remint.json"),
+            consumers=("desks/mt5/scripts/external_gauntlet.py: remint_cells",),
+            cadence_s=3600, timeout_s=None, progress_metric="queued",
+            expected_artifact_schema="desks/mt5/reports/COST_BASIS_REJUDGE.json",
+            owner="leg:spread_provenance", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={},
+            schedule="import:desks/mt5/scripts/repair_universe_spreads.py",
+            artifact_class="hourly",
+            notes=("runs inside leg spread_provenance (repair_universe_spreads.main; "
+                   "--no-rejudge skips it)")),
     ]
 
 

@@ -40,10 +40,16 @@ cut-over. Every M1 bar it holds carries ticks (measured: 0 no-tick bars over 248
 OPEN market: EURUSD/AUDUSD/GBPUSD/USDJPY quote bid == ask, `symbol_info.spread == 0`. That is
 what a Zero account is: commission instead of spread. Dropping those bars is what produced 50.0.
 
-BUT A ZERO IS NEVER WRITTEN. A registry spread of 0.0 prices an instrument at no cost at all and
-lets a non-edge certify -- the desk already carries nine such symbols. A symbol whose central
-value lands on 0 at this venue's integer-point resolution is UNMEASURED here: it keeps its old
-value and is named. Absence never resolves to a clean verdict (L1.28a / WS-005).
+A ZERO IS WRITTEN ONLY AS AN OBSERVED ZERO, AND STAMPED AS ONE (2026-10-21). Until then no zero
+was ever written: a registry 0.0 prices the spread leg at nothing, and the registry's unstamped
+zeros cannot be told from a `symbol_info.spread` read before any tick arrived (a STUB -- a read
+artifact, not a measurement). That rule left every major this account quotes at zero priced by
+nobody: the gauntlet's swap_cost gate refused them as UNMEASURED although the engine charged
+them in full through commission (Fusion ZERO, principal 2026-08-29). The fix belongs HERE, in
+the source of record, not in the gate: the tape records the zero it OBSERVED, on real ticks,
+over enough independent days, with a stamp that says so (`observed_zero`), and the sealed gate
+accepts only a zero carrying that stamp. A zero short of that evidence is still UNMEASURED: it
+keeps its old value and is named. Absence never resolves to a clean verdict (L1.28a / WS-005).
 
 THE WINDOW IS THE INSTRUMENT'S OWN. The session filter is `cost_surface`'s -- days carrying at
 least SESSION_SHARE of the symbol's OWN measured session, never a fixed bar count -- so the
@@ -69,8 +75,13 @@ the finding, and averaging it would destroy it.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
+import re
+import stat
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -99,6 +110,269 @@ MIN_SESSION_BARS_FALLBACK = 2
 DISAGREE_RATIO = 3.0
 
 MEASURED, UNMEASURED = "MEASURED", "UNMEASURED"
+
+#: THE OBSERVED-ZERO FLOOR, DERIVED, NOT CHOSEN (2026-10-21). "The spread is 0" is the claim that
+#: the instrument's median quote is zero -- that more than half of what it quotes is bid == ask.
+#: It is tested on the DAY, not the bar: minutes inside one day share a session, a rollover and
+#: its news, so a day of 1,440 zero minutes is one observation, not 1,440. A full-session day
+#: (cost_surface's own session filter) votes zero when ITS OWN median spread is 0, and the zero is
+#: OBSERVED only when the Wilson lower bound of the zero-voting share of days clears 1/2 at a
+#: one-sided family-wise ZERO_ALPHA spread over every symbol measured in the same pass
+#: (Bonferroni: z = Phi^-1(1 - ZERO_ALPHA / n_symbols); 3.54 for this registry's 251). So the day
+#: floor is not a constant: even a tape whose every day votes zero needs more than z^2 days (13
+#: at 251 symbols) before its zero may be written. The bar floor is MIN_OBS, shared with
+#: cost_surface, as for any value; and the bars must CARRY TICKS (a parquet with no tick_volume
+#: column cannot show a zero was quoted rather than absent, so its zero is never written).
+ZERO_ALPHA = 0.05
+#: What the observed-zero stamp is called in the row and in the registry's provenance.
+ZERO_STAMP = "observed_zero"
+
+
+def zero_z(n_tests: int) -> float:
+    """The one-sided Bonferroni z for ZERO_ALPHA over `n_tests` symbols (at least one)."""
+    from statistics import NormalDist
+    return float(NormalDist().inv_cdf(1.0 - ZERO_ALPHA / max(1, int(n_tests))))
+
+
+def wilson_lower(k: int, n: int, z: float) -> float:
+    """The Wilson score interval's lower bound for k successes in n trials (0.0 at n = 0)."""
+    if n <= 0:
+        return 0.0
+    p = k / n
+    den = 1.0 + z * z / n
+    centre = p + z * z / (2 * n)
+    spread = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5)
+    return max(0.0, (centre - spread) / den)
+
+
+#: THE LIVE CONFIRMATION (v2.1, audit strengthen; v2.1.1 audit ruling). The bar vote says what
+#: the terminal STORED; the live book says what it QUOTES. A zero is written only when both
+#: agree. The live vote's unit is the DAY, exactly as the bar vote's is (v2.1.1): one sample per
+#: symbol per UTC date-hour is recorded (the leg is hourly; a second reading inside an hour is
+#: the same book), a day votes zero when MORE than half of its fresh hourly samples quote
+#: bid == ask, and the share of zero-voting days must clear 1/2 by the SAME Wilson rule at the
+#: SAME family-wise z -- so at least z^2 live days, never z^2 hours of one day. No live tick, or
+#: a ledger that cannot be read whole, is UNMEASURED, never a pass and never "zero evidence".
+LIVE_SAMPLES_NAME = "live_quote_samples.json"
+LIVE_SAMPLES_SCHEMA = "live_quote_samples/1"
+#: Days of hourly samples kept per symbol. Above the 13 days the vote needs at 251 symbols, with
+#: room for weekends and shut sessions.
+LIVE_KEEP_DAYS = 45
+#: Hourly samples kept per symbol (the bound the prune enforces).
+LIVE_KEEP_PER_SYMBOL = 24 * LIVE_KEEP_DAYS
+#: Retries for the atomic replace on Windows, where a scanner or an open reader can hold the
+#: destination for a moment and os.replace raises PermissionError (WinError 5).
+LIVE_WRITE_TRIES = 5
+_HOUR_KEY = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}$")
+#: The four UTC sessions a live vote must span. A zero read only in one session -- the Asian
+#: lull, say -- says nothing about what the spread is when London opens.
+LIVE_SESSIONS: tuple[tuple[str, int, int], ...] = (
+    ("asia", 0, 7), ("london", 7, 13), ("new_york", 13, 21), ("late", 21, 24))
+#: Distinct sessions a live vote must cover (of the four above).
+LIVE_MIN_SESSIONS = 3
+
+
+def session_of(hour: int) -> str:
+    """The UTC session an hour belongs to."""
+    for name, lo, hi in LIVE_SESSIONS:
+        if lo <= int(hour) < hi:
+            return name
+    return "late"
+
+
+def live_sample(one: dict[str, Any] | None) -> int | None:
+    """1 when a FRESH, MEASURED live reading quotes bid == ask, 0 when it quotes a spread, None
+    when it is no evidence at all (unmeasured, stale, or no book)."""
+    if not isinstance(one, dict) or one.get("status") != MEASURED or one.get("fresh") is not True:
+        return None
+    eq = one.get("bid_eq_ask")
+    if isinstance(eq, bool):
+        return int(eq)
+    book = one.get("book_pts")
+    return int(float(book) == 0.0) if isinstance(book, (int, float)) else None
+
+
+def read_live_ledger(path: Path) -> tuple[dict[str, dict[str, int]] | None, str]:
+    """(samples, status) for the ledger: {symbol: {"YYYY-MM-DDTHH": 0|1}}.
+
+    THREE OUTCOMES, NEVER TWO (v2.1.1 audit). ABSENT is a ledger not started yet: ({}, "ABSENT"),
+    no evidence. A ledger that cannot be read WHOLE -- a torn write, bad JSON, a foreign schema, or
+    any entry that is not an hour key mapped to 0 or 1 -- is (None, "UNMEASURED: ..."): it is not
+    filtered down to what parses, because a half-read ledger is a smaller, different answer that
+    looks like a real one. Readable: (samples, "MEASURED")."""
+    if not path.exists():
+        return {}, "ABSENT"
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, f"UNMEASURED: the live ledger is unreadable ({type(exc).__name__})"
+    if not isinstance(doc, dict) or doc.get("schema") != LIVE_SAMPLES_SCHEMA:
+        return None, "UNMEASURED: the live ledger carries no recognised schema"
+    syms = doc.get("symbols")
+    if not isinstance(syms, dict):
+        return None, "UNMEASURED: the live ledger has no symbol map"
+    out: dict[str, dict[str, int]] = {}
+    for k, v in syms.items():
+        if not isinstance(v, dict) or not all(
+                isinstance(h, str) and _HOUR_KEY.match(h) and type(b) is int and b in (0, 1)
+                for h, b in v.items()):
+            return None, f"UNMEASURED: the live ledger's entry for {str(k)[:32]} is malformed"
+        out[str(k)] = dict(v)
+    return out, "MEASURED"
+
+
+def load_live_samples(path: Path) -> dict[str, dict[str, int]]:
+    """The samples alone; an absent ledger is {} and an unreadable one is ALSO {} here, so a
+    caller that needs to tell them apart (every judge) uses `read_live_ledger`."""
+    samples, _status = read_live_ledger(path)
+    return samples or {}
+
+
+def write_live_ledger(path: Path, samples: dict[str, dict[str, int]], at: str | None) -> None:
+    """Atomically: a tmp file in the same directory, then os.replace, retried on Windows.
+
+    THE FILE HOLDS NO LOGIN, PATH OR HOST: a schema, the snapshot's UTC time, and per symbol the
+    UTC hours sampled with one bit each. It is gitignored as well (box state, read on the box)."""
+    text = json.dumps({"schema": LIVE_SAMPLES_SCHEMA, "at": at, "symbols": samples},
+                      sort_keys=True, separators=(",", ":")) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, "utf-8")
+    for attempt in range(LIVE_WRITE_TRIES):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == LIVE_WRITE_TRIES - 1:
+                tmp.unlink(missing_ok=True)
+                raise
+            # A READ-ONLY destination is the WinError 5 os.replace cannot pass on Windows; make
+            # it writable (a no-op where it already is) and wait out a transient holder.
+            with contextlib.suppress(OSError):
+                os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+            time.sleep(0.2 * (attempt + 1))
+
+
+def merge_live_samples(samples: dict[str, dict[str, int]], live: dict[str, Any],
+                       symbols: list[str]) -> dict[str, dict[str, int]]:
+    """A NEW map: `samples` plus one sample per symbol from this snapshot (keyed by the
+    snapshot's own UTC date-hour), pruned to the most recent LIVE_KEEP_PER_SYMBOL keys."""
+    out = {k: dict(v) for k, v in samples.items()}
+    if live.get("status") != MEASURED or not live.get("at"):
+        return out
+    try:
+        at = datetime.fromisoformat(str(live["at"])).astimezone(UTC)
+    except ValueError:
+        return out
+    key = at.strftime("%Y-%m-%dT%H")
+    for sym in symbols:
+        bit = live_sample((live.get("symbols") or {}).get(sym))
+        if bit is None:
+            continue
+        cur = out.setdefault(sym, {})
+        cur.setdefault(key, bit)              # the first reading of the hour stands
+        if len(cur) > LIVE_KEEP_PER_SYMBOL:
+            out[sym] = dict(sorted(cur.items())[-LIVE_KEEP_PER_SYMBOL:])
+    return out
+
+
+def live_vote(samples: dict[str, int] | None, z: float,
+              ledger_status: str = "MEASURED") -> dict[str, Any]:
+    """The live half of the zero's evidence, voted BY DAY: a day votes zero when more than half
+    of its fresh hourly samples quote bid == ask; `live_n` is days and `live_zero` zero-voting
+    days, with the Wilson bound at `z` over days. `samples` None means the ledger could not be
+    read: UNMEASURED, with no counts at all (never a zero count)."""
+    if samples is None:
+        return {"live_status": UNMEASURED, "live_ledger": ledger_status, "live_n": None,
+                "live_zero": None, "live_wilson_lower": None, "live_hours": None,
+                "live_hours_zero": None, "live_sessions": [], "live_first": None,
+                "live_last": None, "live_unit": "day"}
+    hours = sorted(samples)
+    by_day: dict[str, list[int]] = {}
+    for h in hours:
+        by_day.setdefault(h[:10], []).append(int(samples[h]))
+    n = len(by_day)
+    k = sum(1 for bits in by_day.values() if 2 * sum(bits) > len(bits))
+    sessions = sorted({session_of(int(h[-2:])) for h in hours if h[-2:].isdigit()})
+    lb = wilson_lower(k, n, z)
+    return {"live_status": MEASURED if n else UNMEASURED, "live_ledger": ledger_status,
+            "live_n": n, "live_zero": k, "live_wilson_lower": round(lb, 4),
+            "live_hours": len(hours), "live_hours_zero": sum(samples.values()),
+            "live_sessions": sessions, "live_first": hours[0] if hours else None,
+            "live_last": hours[-1] if hours else None, "live_unit": "day"}
+
+
+def observed_zero(tape: dict[str, Any], stability: dict[str, Any] | None,
+                  n_tests: int = 1,
+                  live_samples: dict[str, int] | None = None,
+                  live_ledger: str = "MEASURED"
+                  ) -> tuple[bool, dict[str, Any], str]:
+    """(observed, evidence, why): is this tape's zero central value a MEASURED zero?
+
+    Positive evidence only; every clause must hold, and the first that does not is the reason:
+      * the tape is MEASURED (at least MIN_OBS ticked bars on full-session days) and its median
+        is exactly 0;
+      * the bars carried ticks -- the parquet had a tick_volume column, so a zero is a quote;
+      * the day vote: the Wilson lower bound of the share of full-session days whose own median
+        is 0 clears 1/2 at the family-wise z for `n_tests` symbols;
+      * the longer M5 window, where it is measured, does not read a positive median -- "what the
+        spread ALWAYS is" is a claim about time, and a window that disagrees refutes it;
+      * the LIVE book agrees (v2.1): fresh live ticks exist (none is UNMEASURED, never a pass),
+        they span at least LIVE_MIN_SESSIONS UTC sessions, and the Wilson lower bound of the
+        share quoting bid == ask clears 1/2 at the same z as the day vote.
+    """
+    z = zero_z(n_tests)
+    days = int(tape.get("days_full") or 0)
+    zdays = int(tape.get("days_zero_median") or 0)
+    lb = wilson_lower(zdays, days, z)
+    stab_p50 = ((stability or {}).get("p50")
+                if (stability or {}).get("status") == MEASURED else None)
+    ev: dict[str, Any] = {
+        "stamp": ZERO_STAMP, "n_bars": tape.get("n"), "zero_frac": tape.get("zero_frac"),
+        "ticks_measured": bool(tape.get("ticks_measured")),
+        "days_full": days, "days_zero_median": zdays,
+        "day_share_wilson_lower": round(lb, 4), "z": round(z, 3), "n_tests": int(n_tests),
+        "alpha_family": ZERO_ALPHA, "min_days_implied": int(z * z) + 1,
+        f"{STABILITY_TF}_p50": stab_p50, "first": tape.get("first"), "last": tape.get("last")}
+    live = live_vote(live_samples, z, live_ledger)
+    ev.update(live)
+    if tape.get("status") != MEASURED or tape.get("p50") is None:
+        return False, ev, "the tape is not MEASURED"
+    if float(tape["p50"]) != 0.0:
+        return False, ev, f"the central value is {tape['p50']}, not 0"
+    if not ev["ticks_measured"]:
+        return False, ev, ("the parquet carries no tick_volume column, so a 0 bar cannot be told "
+                           "from a minute nothing quoted")
+    if not lb > 0.5:
+        return False, ev, (f"{zdays} of {days} full-session days quote a median of 0: Wilson lower "
+                           f"bound {lb:.3f} at z={z:.2f} does not clear 1/2 (needs more than "
+                           f"{int(z * z)} days even if every one votes zero)")
+    if stab_p50 is not None and float(stab_p50) > 0:
+        return False, ev, (f"the {STABILITY_TF} long window reads a median of {stab_p50}: the zero "
+                           "is not what this spread always is")
+    if live["live_n"] is None:
+        return False, ev, (f"UNMEASURED live confirmation: {live_ledger}; an unreadable ledger is "
+                           "no evidence either way, so the bars' zero is not confirmed")
+    if not live["live_n"]:
+        return False, ev, ("UNMEASURED live confirmation: no fresh live tick has been sampled for "
+                           "this symbol, so the bars' zero is not confirmed by the book")
+    if len(live["live_sessions"]) < LIVE_MIN_SESSIONS:
+        return False, ev, (f"the live samples span {len(live['live_sessions'])} UTC session(s) "
+                           f"({', '.join(live['live_sessions'])}), fewer than {LIVE_MIN_SESSIONS}")
+    if not live["live_wilson_lower"] > 0.5:
+        return False, ev, (f"{live['live_zero']} of {live['live_n']} live days vote bid == ask "
+                           f"(by their fresh hourly ticks): Wilson lower bound "
+                           f"{live['live_wilson_lower']:.3f} at z={z:.2f} does not clear 1/2, so "
+                           f"the live book does not confirm it (needs more than {int(z * z)} live "
+                           "days even if every one votes zero)")
+    return True, ev, (f"observed zero: {zdays} of {days} full-session days quote a median of 0 "
+                      f"(Wilson lower bound {lb:.3f} > 1/2 at z={z:.2f}, family-wise "
+                      f"{ZERO_ALPHA:.0%} over {int(n_tests)} symbol(s)), {tape.get('n')} ticked "
+                      f"bars, {float(tape.get('zero_frac') or 0):.0%} of them zero; confirmed live "
+                      f"by {live['live_zero']} of {live['live_n']} live days voting bid == ask "
+                      f"({live['live_hours_zero']} of {live['live_hours']} fresh hourly ticks; "
+                      f"Wilson lower bound {live['live_wilson_lower']:.3f}), sessions "
+                      f"{', '.join(live['live_sessions'])}")
 
 
 def _shared() -> tuple[int, float, int, Any]:
@@ -158,12 +432,14 @@ def read_tape(universe: Path, sym: str, timeframe: str = PRIMARY_TF) -> dict[str
     f = universe / f"{sym}_{timeframe}.parquet"
     if not f.exists():
         return {"status": UNMEASURED, "why": f"no local {timeframe} bars on this box"}
+    ticks_measured = True
     try:
         df = pd.read_parquet(f, columns=["spread", "tick_volume"])
     except (OSError, ValueError, KeyError):
         try:
             df = pd.read_parquet(f, columns=["spread"])
             df["tick_volume"] = 1
+            ticks_measured = False        # every bar ASSUMED ticked: a zero here proves nothing
         except (OSError, ValueError, KeyError):
             return {"status": UNMEASURED, "why": f"no spread column in the {timeframe} parquet"}
     if df.empty:
@@ -192,6 +468,7 @@ def read_tape(universe: Path, sym: str, timeframe: str = PRIMARY_TF) -> dict[str
         return {"status": UNMEASURED,
                 "why": (f"{int(kept.size)} ticked bars on full-session days, below the "
                         f"{min_obs} floor -- no number is emitted, so no consumer can read one")}
+    day_p50 = kept.groupby(kept_idx.date).median()
     hours = {str(h): {"p50": round(float(v.median()), 2),
                       "p90": round(float(v.quantile(0.90)), 2), "n": int(v.size)}
              for h, v in kept.groupby(kept_idx.hour)}
@@ -202,6 +479,9 @@ def read_tape(universe: Path, sym: str, timeframe: str = PRIMARY_TF) -> dict[str
         "zero_frac": round(float((kept == 0).mean()), 4),
         "session_bars": int(sess), "session_threshold": int(thr),
         "days_full": int(np.unique(kept_idx.date).size),
+        # the day vote `observed_zero` tests: full-session days whose OWN median is 0
+        "days_zero_median": int((day_p50 == 0).sum()),
+        "ticks_measured": ticks_measured,
         "days_total": int(np.unique(idx.date).size),
         "first": str(kept_idx.min()), "last": str(kept_idx.max()),
         "hours_traded": sorted(int(h) for h in hours),
@@ -312,6 +592,10 @@ def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - n
                 "spread_float": bool(info.spread_float),
                 "book_pts": (round((ask - bid) / info.point, 2)
                              if (bid is not None and ask is not None and info.point) else None),
+                # THE LIVE ZERO, read off the book itself rather than `symbol_info.spread`
+                # (which a stub can carry before any tick arrives).
+                "bid_eq_ask": (bool(bid == ask) if (bid is not None and ask is not None
+                                                    and bid > 0) else None),
                 # NEGATIVE means the server clock is AHEAD of UTC, which is how this venue's
                 # +3 offset shows up; a large POSITIVE age is a shut market.
                 "tick_age_s": (round(now - float(tick.time)) if tick is not None else None)}
@@ -346,15 +630,18 @@ def _ratio(a: float | None, b: float | None) -> float | None:
 
 
 def judge(sym: str, tape: dict[str, Any], stability: dict[str, Any],
-          live: dict[str, Any], fills: dict[str, Any], old: float | None) -> dict[str, Any]:
+          live: dict[str, Any], fills: dict[str, Any], old: float | None,
+          n_tests: int = 1, live_samples: dict[str, int] | None = None,
+          live_ledger: str = "MEASURED") -> dict[str, Any]:
     """One symbol's verdict: the value, its dispersion, and every source that disagrees.
 
     THE ONLY TWO REFUSALS, both of them the principal's rule and neither of them a cap:
 
       * an UNMEASURED tape -- no bars, too few bars, no session -- keeps the old value.
-      * a central value of 0.0 keeps the old value. A zero prices the instrument at no cost and
-        lets a non-edge certify; at this venue's integer-point resolution it is also the shape a
-        sub-point book takes, so it is honestly UNMEASURED rather than honestly free.
+      * a central value of 0.0 WITHOUT the evidence of an observed zero (`observed_zero`) keeps
+        the old value. With it, the zero is MEASURED and stamped: on Fusion ZERO the spread leg
+        is genuinely 0 and the instrument is still costed, through commission. A 0 point is a
+        book under one point (sub-0.1 pip on a 5-digit FX quote), not a free one.
 
     A material disagreement is NOT a refusal. It is published per symbol -- the tape is the
     source of record and the disagreement is the finding, so burying it behind a refusal would
@@ -399,24 +686,33 @@ def judge(sym: str, tape: dict[str, Any], stability: dict[str, Any],
                         f"p25..p99 band of {tape['p25']}..{tape['p99']}")
     row["disagreements"] = disagree
     if value <= 0:
-        row.update({"status": UNMEASURED, "new": None,
-                    "why": (f"the central value is 0.0 over {tape['n']} ticked bars "
-                            f"({tape['zero_frac']:.0%} of them zero). A registry spread of 0.0 "
-                            "prices this instrument at no cost at all and lets a non-edge "
-                            f"certify, so it keeps its old value {old}. Its tail is real and is "
-                            f"published: p90 {tape['p90']}, p99 {tape['p99']}, max "
-                            f"{tape['max']}")})
-        return row
-    row.update({"status": MEASURED, "new": value,
-                "why": (f"median of {tape['n']} ticked bars on full-session days "
-                        f"({tape['days_full']}/{tape['days_total']} days, "
-                        f"{tape['first']}..{tape['last']}), by cost_surface's own exclusions")})
+        seen, evidence, zwhy = observed_zero(tape, stability, n_tests, live_samples, live_ledger)
+        row["zero_evidence"] = evidence
+        if not seen or value < 0:
+            row.update({"status": UNMEASURED, "new": None,
+                        "why": (f"the central value is 0.0 over {tape['n']} ticked bars "
+                                f"({tape['zero_frac']:.0%} of them zero) but it is not an "
+                                f"observed zero: {zwhy}. An unproven 0.0 would price the spread "
+                                "leg at no cost at all and could be a no-tick stub, so it keeps "
+                                f"its old value {old}. Its tail is real and is published: p90 "
+                                f"{tape['p90']}, p99 {tape['p99']}, max {tape['max']}")})
+            return row
+        row.update({"status": MEASURED, "new": 0.0, "zero_spread": True,
+                    "why": (f"{zwhy}; the cost is commission (Fusion ZERO). Tail published: "
+                            f"p90 {tape['p90']}, p99 {tape['p99']}, max {tape['max']}")})
+    else:
+        row.update({"status": MEASURED, "new": value,
+                    "why": (f"median of {tape['n']} ticked bars on full-session days "
+                            f"({tape['days_full']}/{tape['days_total']} days, "
+                            f"{tape['first']}..{tape['last']}), by cost_surface's own "
+                            "exclusions")})
+    value = float(row["new"])
     if old is not None and old > 0:
         row["move"] = round(value / old, 4)
         row["direction"] = ("dearer" if value > old else
                             "cheaper" if value < old else "unchanged")
     elif old == 0:
-        row["direction"] = "priced_from_zero"
+        row["direction"] = "unchanged" if value == 0 else "priced_from_zero"
     if row.get("direction") == "cheaper":
         row.update(corroborate_cheapening(float(old or 0.0), live, fills, stability))
     return row
@@ -475,6 +771,9 @@ def applicable(row: dict[str, Any]) -> tuple[float | None, str]:
     """
     if row.get("status") != MEASURED or row.get("new") is None:
         return None, str(row.get("why") or "unmeasured")
+    if float(row["new"]) == 0.0 and not (row.get("zero_spread") is True
+                                         and isinstance(row.get("zero_evidence"), dict)):
+        return None, "a 0.0 without the tape's observed-zero evidence is never written"
     if row.get("corroboration") == "CONTRADICTED":
         return None, str(row.get("why_refused") or "cheapening contradicted by every other source")
     return float(row["new"]), str(row.get("why") or "")
@@ -515,8 +814,13 @@ def mark_fresh(live: dict[str, Any]) -> dict[str, Any]:
 
 
 def measure(root: Path, symbols: list[str] | None = None,
-            with_terminal: bool = True) -> dict[str, Any]:
-    """Every symbol in the registry, priced from the tape and cross-checked against the venue."""
+            with_terminal: bool = True, record_live: bool = False) -> dict[str, Any]:
+    """Every symbol in the registry, priced from the tape and cross-checked against the venue.
+
+    `record_live` persists this pass's fresh live samples to the bounded ledger
+    (desks/mt5/data/live_quote_samples.json) for the zero candidates (tape median 0) and for any
+    symbol already in it. Off by default, so a read-only check never writes; the hourly
+    spread_provenance leg turns it on through repair_universe_spreads.load_tape(write=True)."""
     desk = root / "desks" / "mt5"
     universe = desk / "data" / "universe"
     try:
@@ -531,6 +835,16 @@ def measure(root: Path, symbols: list[str] | None = None,
                                                       "why": "terminal not asked for"}
     baseline = mark_fresh(live)
     deals = deals_from_terminal() if with_terminal else []
+    samples_path = desk / "data" / LIVE_SAMPLES_NAME
+    read, ledger_status = read_live_ledger(samples_path)
+    prior = read or {}
+    merged = merge_live_samples(prior, live, syms)
+    # THE FAMILY IS THE REGISTRY, NEVER THE REQUESTED SUBSET (v2.1 must-fix). The zero is a claim
+    # the desk makes about every symbol it prices, so a `--symbols EURUSD` probe is one test out
+    # of the registry's 251, not one out of one: at n=1 the z is 1.645 and five zero days clear
+    # the bound. max() so a symbol requested but absent from the registry still counts.
+    n_tests = max(len(rows), len(syms))
+    candidates: set[str] = set()
     out_rows: dict[str, Any] = {}
     for sym in syms:
         meta = rows.get(sym) if isinstance(rows.get(sym), dict) else {}
@@ -541,7 +855,33 @@ def measure(root: Path, symbols: list[str] | None = None,
         fills = quote_at_fill_minutes(universe, sym, deals)
         one_live = (live.get("symbols") or {}).get(sym, {}) if live.get("status") == MEASURED \
             else {}
-        out_rows[sym] = judge(sym, tape, stability, one_live, fills, old)
+        if tape.get("status") == MEASURED and tape.get("p50") is not None \
+                and float(tape["p50"]) <= 0:
+            candidates.add(sym)
+        # AN UNREADABLE LEDGER JUDGES NOTHING THIS PASS: not even this pass's own fresh sample,
+        # which alone would read as one day of evidence where the history is simply unknown.
+        out_rows[sym] = judge(sym, tape, stability, one_live, fills, old, n_tests=n_tests,
+                              live_samples=(merged.get(sym, {}) if read is not None else None),
+                              live_ledger=ledger_status)
+    live_ledger: dict[str, Any] = {"path": f"desks/mt5/data/{LIVE_SAMPLES_NAME}",
+                                   "status": ledger_status, "recorded": False,
+                                   "n_symbols": len(merged), "unit": "day",
+                                   "keep_days": LIVE_KEEP_DAYS}
+    if record_live and live.get("status") == MEASURED:
+        keep = {s: v for s, v in merged.items() if s in candidates or s in prior}
+        try:
+            if read is None:
+                # The unreadable bytes are kept beside it, never silently overwritten: they are
+                # the only record of what the ledger held. Accumulation restarts from this pass.
+                with contextlib.suppress(OSError):
+                    samples_path.with_name(f"{samples_path.name}.unreadable").write_bytes(
+                        samples_path.read_bytes())
+            write_live_ledger(samples_path, keep, live.get("at"))
+            live_ledger.update({"recorded": True, "n_symbols": len(keep)})
+        except OSError as exc:
+            live_ledger["why"] = f"not recorded: {type(exc).__name__}"
+    elif record_live:
+        live_ledger["why"] = f"not recorded: the terminal is {live.get('status')}"
     measured = [r for r in out_rows.values() if r["status"] == MEASURED]
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -550,13 +890,16 @@ def measure(root: Path, symbols: list[str] | None = None,
         "stability_timeframe": STABILITY_TF,
         "account": live.get("account"), "terminal_status": live.get("status"),
         "terminal_why": live.get("why"), "live_freshness": baseline,
-        "n_symbols": len(syms), "n_measured": len(measured),
+        "n_symbols": len(syms), "n_tests": n_tests, "live_samples": live_ledger,
+        "n_measured": len(measured),
         "n_unmeasured": len(syms) - len(measured),
         "n_dearer": sum(1 for r in measured if r.get("direction") == "dearer"),
         "n_cheaper": sum(1 for r in measured if r.get("direction") == "cheaper"),
         "n_unchanged": sum(1 for r in measured if r.get("direction") == "unchanged"),
         "n_priced_from_zero": sum(1 for r in measured
                                   if r.get("direction") == "priced_from_zero"),
+        "n_observed_zero": sum(1 for r in measured if r.get("zero_spread") is True),
+        "observed_zero": sorted(s for s, r in out_rows.items() if r.get("zero_spread") is True),
         "n_cheaper_contradicted": sum(1 for r in measured
                                       if r.get("corroboration") == "CONTRADICTED"),
         "n_cheaper_tape_only": sum(1 for r in measured
@@ -570,7 +913,12 @@ def measure(root: Path, symbols: list[str] | None = None,
         "rule": ("median_spread_pts is the median of the symbol's own M1 spread column over "
                  "ticked bars on full-session days, by cost_surface's exclusions, with zero-spread "
                  "ticked bars KEPT (on a raw account a 0-point quote is the reading) and a zero "
-                 "central value never WRITTEN (it would price the instrument at no cost). The "
+                 "central value WRITTEN only as an observed zero (`observed_zero`: ticked bars, "
+                 "a family-wise Wilson day vote above 1/2 over the WHOLE registry, no "
+                 "contradicting M5 window, "
+                 "and live DAYS voting bid == ask by their fresh hourly ticks, by the same "
+                 f"Wilson rule, across at least {LIVE_MIN_SESSIONS} UTC sessions), stamped "
+                 "zero_spread=True; any other zero keeps the old value. The "
                  "live snapshot, the quote at the desk's own fills and the longer M5 window are "
                  "cross-checks and are never averaged into the value."),
     }
@@ -592,13 +940,16 @@ def main(argv: list[str] | None = None) -> int:
                     help="skip the live snapshot and the deal history")
     ap.add_argument("--json", action="store_true", help="dump the whole artifact")
     ap.add_argument("--out", type=Path, default=None, help="write the artifact here")
+    ap.add_argument("--record-live", action="store_true",
+                    help="append this pass's fresh live samples to the bounded ledger "
+                         "(off by default: a check stays read-only)")
     a = ap.parse_args(argv)
     for p in (str(a.root), str(a.root / "desks" / "mt5"),
               str(a.root / "desks" / "mt5" / "research")):
         if p not in sys.path:
             sys.path.insert(0, p)
     doc = measure(a.root, [s for s in a.symbols.split(",") if s] or None,
-                  with_terminal=not a.no_terminal)
+                  with_terminal=not a.no_terminal, record_live=a.record_live)
     if a.out:
         a.out.parent.mkdir(parents=True, exist_ok=True)
         a.out.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
