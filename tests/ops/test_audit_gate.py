@@ -168,7 +168,23 @@ def test_ci_passes_only_when_every_run_finished_and_the_gating_jobs_succeeded() 
 def test_a_skipped_gating_job_is_not_a_success() -> None:
     runs = [_r("quality", conclusion="skipped"), _r("mt5-money-path"), _r("coverage-floor")]
     state, why = ag.checks(runs)
-    assert state == "fail" and "quality" in why
+    # never a pass; since 2026-11-14 a draft's skipped run WAITS (pending) for the run that marking
+    # it ready starts, instead of failing -- a fail would quarantine every no-comment draft
+    assert state == "pending" and "quality" in why and "draft" in why
+
+
+def test_a_skipped_gating_job_never_masks_a_real_failure() -> None:
+    runs = [_r("quality", conclusion="skipped"), _r("mt5-money-path", conclusion="failure"),
+            _r("coverage-floor", conclusion="skipped")]
+    assert ag.checks(runs)[0] == "fail"
+
+
+def test_the_box_marks_a_cleared_draft_ready_before_waiting_for_green() -> None:
+    src = Path(ag.__file__).read_text("utf-8")
+    ready = src.index('if p.get("draft") and box and not low:')
+    assert ready > src.index('_status(repo, head, "success", why)')  # only once CLEAR covers head
+    assert ready > src.index('if state == "pass":\n            break')  # green drafts merge now
+    assert ready < src.index('if state == "fail" and REVIEWER in need:')
 
 
 def test_a_rerun_job_is_read_by_its_newest_run() -> None:
@@ -513,6 +529,34 @@ def test_the_box_needs_no_label_and_marks_a_draft_ready_for_any_cleared_pr(
     assert f"sha={A}" in merge
     assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
     assert not any("dispatches" in w[1] for w in h.writes)
+
+
+def test_the_box_marks_a_cleared_draft_with_skipped_checks_ready_and_merges_nothing(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-14: a draft runs no gating job, so its checks read skipped; the box marks it ready
+    (which starts the full CI) and the next look merges it. Nothing merges on a skipped run."""
+    skipped = [_r(n, conclusion="skipped") for n in ("quality", "mt5-money-path", "coverage-floor")]
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], draft=True, labels=(),
+            runs=skipped)
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
+    assert not _merges(h)
+
+
+def test_the_box_never_marks_an_unaudited_low_tier_draft_ready(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Autonomy review of #1173: the LOW/AUTO paths carry no CLEAR, so a draft there stays a
+    draft (a session may still be pushing to it) and its skipped checks start nothing."""
+    skipped = [_r(n, conclusion="skipped") for n in ("quality", "mt5-money-path", "coverage-floor")]
+    h = low_hub(comments=[], draft=True, runs=skipped)
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    assert ran == [] and not _merges(h)
 
 
 def test_sweep_needs_box() -> None:

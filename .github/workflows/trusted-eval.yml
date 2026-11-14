@@ -37,7 +37,8 @@ concurrency:
 
 jobs:
   trusted-eval:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # drafts: none (ci.yml quality says why); ready_for_review starts it
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

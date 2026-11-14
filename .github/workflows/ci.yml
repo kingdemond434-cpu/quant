@@ -52,6 +52,8 @@ on:
       - "desks/mt5/data/*_ENABLED*"
       - "desks/mt5/data/*_DISABLED*"
   pull_request:
+    # ready_for_review: a draft runs no gating job, so marking it ready must start the run
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 concurrency:
@@ -67,6 +69,10 @@ concurrency:
 
 jobs:
   quality:
+    # A DRAFT runs nothing here (2026-11-14, zuck: "y does the tests ques take so long"). 570 of
+    # 597 open PRs were drafts that could not merge, and each push ran the full suite. Marking a
+    # PR ready (the gate does it for a CLEARed draft) runs everything; draft-lint.yml lints drafts.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     # RAISED FROM 20, 2026-09-05, because 20 had started FAILING THE MERGE ON THE CLOCK rather
     # than on anything about the code. Measured on 806c98fa: the job began at 20:14:35, spent
@@ -171,6 +177,7 @@ jobs:
   # producer on the desk reaches a decision (capability graph) and ingested rows carry
   # point-in-time provenance (PIT census, ratcheted). Any of the four failing blocks the merge.
   mt5-money-path:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft  # drafts: see quality
     runs-on: ubuntu-latest
     # 60, NOT 30 (2026-11-03): green runs took 18-29 min, so a slow runner hit the 30 min cap
     # and the LIVE run on 26b861921 was cancelled at 30:25, which holds every box release.

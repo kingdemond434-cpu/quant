@@ -13,6 +13,8 @@ name: release-gates
 
 on:
   pull_request:
+    # a draft runs none of these (ci.yml quality says why); marking it ready starts them
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
 
 # A new head supersedes the old head's run, queued or running: only the head's checks count.
@@ -28,7 +30,7 @@ permissions:
 
 jobs:
   risk-invariants:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -67,7 +69,7 @@ jobs:
         run: xargs -a "$RUNNER_TEMP/suites" pytest -q -p no:randomly -p no:cacheprovider --timeout=600
 
   replay-shadow:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -168,7 +170,7 @@ jobs:
           --changed "$RUNNER_TEMP/changed.txt" --report "$RUNNER_TEMP/replay_shadow.json"
 
   independent-review:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     # Free and keyless (ops/release/independent_review.py): open-weight models run on this runner
     # under a sha256-pinned Ollama, each asked only when its manifest matches the pin in
     # ops/release/local_models.json. No key, no account, no paid call. The two optional key rungs
