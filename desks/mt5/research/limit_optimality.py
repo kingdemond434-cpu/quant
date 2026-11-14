@@ -161,7 +161,7 @@ def _firm(venue: str) -> dict[str, Any]:
         return {"rules": r.name, "daily_loss": r.daily_loss, "max_loss": r.max_loss,
                 "profit_cap": r.profit_cap, "source": r.source}
     except Exception as exc:                                   # pragma: no cover - import guard
-        return {"unreadable": f"{type(exc).__name__}: {exc}"}
+        return {"unreadable": type(exc).__name__}
 
 
 def e8_solve(now: datetime, *, run: bool = True) -> Any:
@@ -172,7 +172,7 @@ def e8_solve(now: datetime, *, run: bool = True) -> Any:
         return doc
     try:
         import prop_challenge_allocator as pca
-        fresh = pca.solve("e8", n_paths=E8_PATHS)
+        fresh = pca.solve("e8", n_paths=E8_PATHS, gap_requests=False)
         fresh["paths"] = E8_PATHS
         fresh["report_only"] = True
         fresh["note"] = "run by limit_optimality for the E8 row; no book is applied from it"
@@ -180,7 +180,7 @@ def e8_solve(now: datetime, *, run: bool = True) -> Any:
         return fresh
     except Exception as exc:
         return {"generated_at": now.isoformat(timespec="seconds"),
-                "status": f"SOLVE_FAILED: {type(exc).__name__}: {exc}"}
+                "status": f"SOLVE_FAILED: {type(exc).__name__}"}
 
 
 def build(now: datetime | None = None, *, run_e8: bool = True) -> dict[str, Any]:
