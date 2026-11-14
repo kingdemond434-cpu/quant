@@ -151,3 +151,36 @@
 {"commit":"019fc76d13847d2d863718a351166bd22b29e744","verdict":"CLEAR","report":"reports/audit/2026-11-14/adopt_clear_pr1017_019fc76d1.md","report_sha256":"c619a21e2a0b99cad9d67ddc3713015860462f1515fae999f8f4bc90dac232aa","paths":{".gitignore":"e301cad4c15b3653e05772156cc7dbd797efe83e","context/decision_journal.jsonl":"cab63d02e227ff973a9016f2f9d0e8113b3847d5","desks/mt5/research/conversion_handoff_children.py":"2f1b384dbf44b45edd4f17d961f031844e006f1f","desks/mt5/research/conversion_handoff_common.py":"c67d8b32faaf489f288c39b0fd9eef0cfa500654","desks/mt5/research/conversion_handoff_converter.py":"8cbdfe1608ad6ebb3c6b696bfc6fe3981e63e4b1","desks/mt5/research/conversion_handoff_io.py":"410793d776f05b9e4ec50c9dea143ed7756399b2","desks/mt5/research/conversion_handoff_routes.py":"a226ff91fca47a090445065fe2c1c894ec094c1f","desks/mt5/research/conversion_handoff_steer.py":"a65d278ba7ba31e01bb9a78b845502f9288c8af7","desks/mt5/research/hourly_cycle.py":"ea184dad67981a318b7431c2f557ea6bd96596a4","desks/mt5/research/issue_board.py":"1a31870dd33b14ea68dedb7950c7c7d8b83a6bec","desks/mt5/tests/test_conversion_handoff_converter.py":"87884dceac1511dd26ec3a271eeb43ed8adf8c32","libs/research/layers.py":"c7eab777459e5f0509d341970eeb039e852c66b9"}}
 {"commit": "e01e3e416c53fa2e52f8c72ccdae9eef995a33c8", "verdict": "CLEAR", "reason": "post-hoc review of a direct push, Governance ruling 2026-11-14", "report": "reports/audit/2026-11-14/adopt_posthoc_directpush_e01e3e416.md", "report_sha256": "e4089a1d8d47f4a83a673821196d8415bf619ca78efd4fcb61c08e10e928faed", "paths": {"desks/mt5/research/gauntlet_backpressure.py": "a3bf1b9ccfe1431e57c7c54dc13f60100aa720ab", "desks/mt5/tests/test_gauntlet_backpressure.py": "a3e88eb8c1211fd3a81959a7f7b45cf085f87226", "libs/ops/controller_continuity.py": "96694196dcbd4df277c6b03523d0e7ff90dae5a1", "scripts/check_scheduled_tasks.py": "9ca1194d47312ae58464d44a169ecf7841b065ff", "tests/ops/test_controller_continuity.py": "6f382b27e6eadbf51671e813139e4c5d07c3d52a", "tests/ops/test_cro_lanes_are_a_declared_clock.py": "e9e7625f8bf266c0a4ac23573a9ad1dccf45751e"}}
 {"commit": "e01e3e416c53fa2e52f8c72ccdae9eef995a33c8", "verdict": "CLEAR", "report": "reports/audit/2026-11-14/adopt_clear_backfill_tip_e01e3e416.md", "report_sha256": "83f02f1b6408460bbaa61d0dcaf79400ed9a76f41db95ebd5fd765cf615ed3b8", "paths": {".github/scripts/desk_alerts_relay.py": "9b85296f01826889d1955f87a33b054eea61f9e8", ".github/workflows/audit-gate.yml": "725516caddb1244ddee576b7df09cc6dc72843ac", ".github/workflows/desk-alerts-relay.yml": "8dcb8b09a7e8a13cfb44d6981f6c8da38876acb7", ".github/workflows/youtube-corpus.yml": "4ddc571ef5f1f10568fda53547e8ea85d9878c17", "desks/mt5/mt5desk/markout.py": "9f412b7794d737f22402d752326371bb3a866829", "desks/mt5/mt5desk/release_identity.py": "c3faa4789cf2458ee00fd4422bc3367146e8e44a", "desks/mt5/research/attestation_remint.py": "d30f070687ca005ed398e269f823415c862ff7b2", "desks/mt5/research/markout_v2.py": "a219716bd69158e29d546f84e9578339c590d4a1", "desks/mt5/research/tier_s.py": "4411d6d0fda3710f9af00e2a2a88eaa1d83319a4", "desks/mt5/tests/test_attestation_remint.py": "84f117702c3cd1efa291e9ebe7aedd456a5ed3db", "desks/mt5/tests/test_execution_attribution.py": "2370a28745b6fc28d6a7b844defa2e644f80c533", "desks/mt5/tests/test_markout.py": "d52d28f2d50511513643f74b1c47a5c47ce11884", "desks/mt5/tests/test_markout_v2.py": "1d0d63c96cd9ddf788bb7e5e85777360eaf4de1b", "desks/mt5/tests/test_restamp_promotion_hold.py": "b32e8cd5ea3508cfa830c964a12dbae86e6b6134", "desks/mt5/tests/test_tier_s_emit_rotation.py": "3adf786c22760a18917f6aa2ee6e575f5f09b556", "libs/ops/adopt_guard.py": "d04099c87e3fd5655bf1fa99ada8220026abe48b", "libs/ops/process_supervisor.py": "32281f62e37654b9696085639929593e70de3599", "ops/release/ceilings.json": "ced2bd2c502188b15dd7a475a74c60f128fde2d2", "ops/release/independent_review.py": "3db26f1b0e3be7100214d41518bb3c9c60cf3f6d", "scripts/check_producer_yield.py": "1cf342806324975edac4d798defe78161b253109", "scripts/max_audit.py": "479e0b7d54f01910910d17ac2fc40c8d72f3b479", "scripts/merge_pipeline_watch.py": "049a235b9dfe3f24254ac78e223c464c3c606515", "scripts/reap_hung_git_writers.py": "709ca54afb294d2abf436a1906c9d0f66639fee7", "tests/ops/test_adopt_guard.py": "b43dc298f993ba2a7a6fb23d94613bad5543bc3b", "tests/ops/test_ci_throughput.py": "9636db07f5153337975648a325ef834ebb07d202", "tests/ops/test_desk_alerts_relay.py": "bbfef91a6e8b3cfb7031852942a33b75bf5e3155", "tests/ops/test_gate_refuses_seal_carriers.py": "337d5b202f80ca0e64e37e34295190453fd87620", "tests/ops/test_merge_watch_bounded.py": "8a42117c545d6fd92b9c1ba57dd276f595a4ceb9", "tests/ops/test_process_supervisor.py": "e04085df087ec291b886a786f1a5ce71143cc5f5", "tests/ops/test_reviewer_call_timeout.py": "f6b009716f989a5c36c334c9928c12c99a4b3f8e", "tests/test_producer_yield_fence.py": "bf41139e9143b803203045485d1361567670c105"}}
+{
+ "commit": "e01e3e416c53fa2e52f8c72ccdae9eef995a33c8",
+ "verdict": "CLEAR",
+ "report": "reports/audit/2026-11-14/adopt_clear_mergeinc_tip_e01e3e416.md",
+ "report_sha256": "fe16fc73461f79e0f478dfbc92be5b9a876915513050103aaf355592d2879e73",
+ "paths": {
+  ".github/scripts/audit_gate.py": "713cdc89f9eca4b94579e49121d3207784e90c10",
+  ".gitignore": "bb53001a2fce5c149c9c018c9dc5f4c67014f7a3",
+  "desks/mt5/ops/box_tasks.manifest": "9921490c1e8a28b11bba1e497a6a51f3b3f0ce87",
+  "desks/mt5/research/daily_cycle.py": "92d8771a3d11326415b65b97fa564c98b2ef1be7",
+  "desks/mt5/research/forward_reconcile.py": "09e4a3cedff762f0549f661bba02ebc59150ea26",
+  "desks/mt5/research/shadow_forward.py": "e5b4f34057c5ae2328c6fb9a98a9ad81c0381fdb",
+  "desks/mt5/scripts/install_rotate_logs_task.ps1": "9bfc028eae86c0f9890dcc2b92edd3cbbd840c1c",
+  "desks/mt5/scripts/run_sharded_gauntlet.py": "1e75d4ce58aa353b2b1021694fe51fb6bf07934f",
+  "desks/mt5/scripts/sync_shadow_to_git.ps1": "1be76500738fae91bc8e2e2f80d5b7c5e358a8c7",
+  "desks/mt5/tests/conftest.py": "af9f73233748276a77624690ac1bfdca175b2c58",
+  "desks/mt5/tests/test_run_sharded_gauntlet.py": "0ed0beebfab5187b6a4e5a34b413776a0a9d1726",
+  "libs/research/public_strategy_hunter.py": "b32233be46ada1ee8c549fc84d7960ffdeea01c1",
+  "ops/bridge/Repair-ClaudeSettings.ps1": "4ebe5ea147e1f5669a5bd3085e9b137bd7cc87cd",
+  "ops/claude_settings_health.py": "774c91da2c881d8febf1484c3cb54556d479e545",
+  "ops/process_health.py": "539d10fee331b7e49d5050285f57a3d72d546da4",
+  "ops/release/authority/ROOT_POLICY.json": "019445a861f973d62c9894f946792d59d65654ed",
+  "ops/release/authority/policy.py": "98925a038345a3916da299eb570f02012461fb2c",
+  "ops/rotate_logs.py": "88746e1cdf4905efd11884202895f202b69191f1",
+  "tests/conftest.py": "1f38c90906c38290e1d3f011606c19797bd1b5a6",
+  "tests/ops/test_claude_settings_health.py": "bd1ad553d3d1b3e5a3cd1d83ed9527bf11f7e1fa",
+  "tests/ops/test_control_plane_paths_isolated.py": "72059ddcaafc3e46e77de0fecb6aa194a943fca6",
+  "tests/ops/test_release_authority.py": "1302d9f79d446013c845059013958184bc72c0bb",
+  "tests/ops/test_release_promotion.py": "3ab63b3aceff77ab38ac71eb423b5b768ae82ae1",
+  "tests/ops/test_rotate_logs.py": "68978a33807c5ca59c573e251f35fdd25ab094f1",
+  "tests/ops/test_standing_merge_approval.py": "afb4965ae7b365aad14b7d5a96328817a3a18248"
+ }
+}
