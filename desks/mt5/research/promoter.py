@@ -2023,6 +2023,52 @@ def _after(a: str, b: str) -> bool:
         return False
 
 
+#: Held readings kept on the row for missed_growth to bill (newest last).
+HOLD_LINES_KEPT = 48
+
+
+#: The term a pre-existing hold is given when the bounded-hold rule lands (audit 2026-11-11):
+#: the expiry, not the deploy, ends an order already standing on the box.
+LEGACY_HOLD_DAYS = 14
+
+
+def migrate_legacy_hold(row: dict, *, now: datetime | None = None) -> bool:
+    """ONE-TIME: a hold written before holds were bounded carries `standby_reason` alone. Stamp
+    it with its orderer (the recorded reason names the order) and a LEGACY_HOLD_DAYS expiry,
+    so landing this rule never silently reverses a recorded order. A row that already has
+    either field is not legacy and is left to `ordered_hold`. Returns True when it stamped."""
+    reason = str(row.get("standby_reason") or "").strip()
+    if not reason or "standby_ordered_by" in row or "standby_until" in row:
+        return False
+    t = now or datetime.now(tz=UTC)
+    row["standby_ordered_by"] = f"recorded order (legacy hold): {reason[:160]}"
+    row["standby_until"] = (t + timedelta(days=LEGACY_HOLD_DAYS)).isoformat(timespec="seconds")
+    row["standby_migrated_at"] = t.isoformat(timespec="seconds")
+    return True
+
+
+def ordered_hold(row: dict, *, now: datetime | None = None) -> tuple[bool, str]:
+    """(holds, why_not). An ordered STANDBY binds only with a reason, a named orderer and an
+    unexpired `standby_until`. A row with no `standby_reason` is not a hold at all (why_not is
+    empty); a hold missing its orderer or expiry, or past it, does not bind and says why, so the
+    automatic-promotion order is never stopped indefinitely by a field anyone can write."""
+    reason = str(row.get("standby_reason") or "").strip()
+    if not reason:
+        return False, ""
+    by = str(row.get("standby_ordered_by") or "").strip()
+    if not by:
+        return False, "standby_reason without standby_ordered_by"
+    try:
+        until = datetime.fromisoformat(str(row.get("standby_until") or ""))
+    except ValueError:
+        return False, f"standby_until {row.get('standby_until')!r} is not an ISO time"
+    if until.tzinfo is None:
+        return False, f"standby_until {row.get('standby_until')!r} has no timezone"
+    if until <= (now or datetime.now(tz=UTC)):
+        return False, f"hold ordered by {by} expired at {until.isoformat()}"
+    return True, ""
+
+
 def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
                       only: set[str] | None = None) -> bool:
     """Move every standing row toward what the CURRENT solve says, in both directions.
@@ -2112,12 +2158,43 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             # reason stands on it so the gap is visible rather than silent.
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
+        if status == "STANDBY" and migrate_legacy_hold(s, now=now):
+            plog(f"MIGRATED legacy hold on {s['name']}: bounded until {s['standby_until']} "
+                 f"(ordered by: {s['standby_ordered_by'][:120]})")
+        hold, hold_why = ordered_hold(s, now=now)
+        if cap["status"] == "LIVE" and status == "STANDBY" and hold:
+            # A STANDBY SOMEONE ORDERED IS NOT THE PROMOTER'S TO LIFT -- UNTIL IT EXPIRES
+            # (2026-10-14; bounded 2026-11-11 under the automatic-promotion order). The promoter
+            # writes its own demotions as `demote_reason` and reverses them on evidence; an
+            # ordered hold carries `standby_reason`, `standby_ordered_by` and `standby_until`,
+            # and only a hold with all three, unexpired, keeps an admitted row out. Every held
+            # reading books what it forwent (Rule 1): the allocator's marginal dE[log W] and the
+            # fraction it would have funded, read by research/missed_growth.py.
+            lines = [x for x in (s.get("hold_missed_growth") or []) if isinstance(x, dict)]
+            lines.append({"at": stamp, "scan": scan, "verdict": "COSTS_GROWTH",
+                          "delta_elogw_per_day": cap.get("delta_elogw_per_day"),
+                          "risk_frac_foregone": cap.get("risk_frac"),
+                          "ordered_by": s.get("standby_ordered_by"),
+                          "until": s.get("standby_until")})
+            s["hold_missed_growth"] = lines[-HOLD_LINES_KEPT:]
+            plog(f"HELD {s['name']} at STANDBY despite an admitting reading until "
+                 f"{s.get('standby_until')} (ordered by {s.get('standby_ordered_by')}): "
+                 f"forgoing {cap.get('risk_frac')} risk -- {str(s.get('standby_reason'))[:120]}")
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
+        if hold_why and cap["status"] == "LIVE" and status == "STANDBY":
+            plog(f"HOLD NOT HONOURED on {s['name']}: {hold_why}; promotion proceeds")
         if cap["status"] == "LIVE" and status == "STANDBY":
             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
                       "risk_frac_source": "allocator_marginal",
                       "restored_at": stamp, "restore_reason": cap["why"]})
             s.pop("demoted_at", None)
             s.pop("demote_reason", None)
+            if hold_why:
+                s["hold_lapsed"] = {"at": stamp, "why": hold_why,
+                                    "standby_reason": s.pop("standby_reason", None),
+                                    "standby_ordered_by": s.pop("standby_ordered_by", None),
+                                    "standby_until": s.pop("standby_until", None)}
             plog(f"RESTORED {s['name']} -> LIVE at {cap['risk_frac']:.2%} risk after "
                  f"{cap['streak']} consecutive positive reading(s) -- {cap['why']}")
             note_door(

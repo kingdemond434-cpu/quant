@@ -1085,6 +1085,39 @@ MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measu
 
 
 # --------------------------------------------------------------------------- the ledger
+def ordered_hold_lines(path: Path | None = None, *, recent: int = 20) -> dict[str, Any]:
+    """WHAT ORDERED STANDBY HOLDS COST (Rule 1, audit 2026-11-11). `promoter.reconcile_capital`
+    keeps an allocator-admitted row at STANDBY while a named, unexpired hold stands, and books
+    each such reading on the row (`hold_missed_growth`): the marginal dE[log W]/day and the
+    fraction the allocator would have funded. Summed here per row's latest reading, beside the
+    rails. No sleeves file -> UNMEASURED; no held reading anywhere -> NOT_BINDING."""
+    doc = _json(path or SLEEVES)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [], "why": "no sleeves.json on this host"}
+    rows = doc.get("sleeves") if isinstance(doc.get("sleeves"), list) else []
+    lines: list[dict[str, Any]] = []
+    latest: dict[str, float] = {}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        held = [x for x in (r.get("hold_missed_growth") or []) if isinstance(x, dict)]
+        for x in held:
+            lines.append({"sleeve": r.get("name"), **x})
+        d = _num(held[-1].get("delta_elogw_per_day")) if held else None
+        if d is not None and str(r.get("status") or "").upper() == "STANDBY" \
+                and r.get("standby_reason"):
+            latest[str(r.get("name"))] = d
+    lines = sorted(lines, key=lambda x: str(x.get("at") or ""))[-recent:]
+    if not lines:
+        return {"verdict": NOT_BINDING, "lines": [], "source": "data/sleeves.json",
+                "why": "no ordered hold has kept an admitted row out"}
+    return {"verdict": COSTS if latest else NOT_BINDING, "source": "data/sleeves.json",
+            "lines": lines, "n_lines": len(lines), "rows_held_now": sorted(latest),
+            "lost_elogw_per_day": round(sum(latest.values()), 8) if latest else 0.0,
+            "why": "sum of the allocator's marginal dE[log W]/day over rows an ordered hold "
+                   "keeps out on their latest reading"}
+
+
 def _rows() -> list[dict]:
     try:
         return [json.loads(ln) for ln in LEDGER.read_text("utf-8").splitlines() if ln.strip()]
@@ -1213,7 +1246,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "ordered_standby_holds": ordered_hold_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

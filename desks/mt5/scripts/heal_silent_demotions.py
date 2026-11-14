@@ -44,7 +44,15 @@ SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
 #: Fields any organ demoting for cause is expected to leave behind. If none carries text, the
 #: demotion recorded nothing and this fixer treats it as an accident rather than a decision.
 REASON_FIELDS = ("retire_reason", "status_reason", "reason", "why", "demoted_reason",
-                 "retired_reason", "gate_reason", "demote_reason")
+                 "retired_reason", "gate_reason", "demote_reason", "standby_reason")
+
+#: THE FIXER UNDID A STOP ORDER (measured 2026-10-14). The 2026-10-13 21:30Z stop-the-bleed set
+#: the AUDCHF/EURZAR/USDZAR gap-decay principals to STANDBY with `standby_reason` naming the
+#: principal's order -- a field this list did not carry -- and the three were lifted back to LIVE
+#: within four hours. `standby_reason` is now on the list. The list stays EXPLICIT (audit
+#: 2026-11-11): a `*_reason` wildcard would let any stale key on a silently demoted row stop it
+#: from ever being restored. Whether an ordered hold still binds is the promoter's call
+#: (`promoter.ordered_hold`: orderer plus unexpired `standby_until`).
 
 
 def _admission_reason(row: dict) -> str:
