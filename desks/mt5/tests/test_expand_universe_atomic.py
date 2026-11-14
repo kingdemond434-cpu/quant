@@ -19,7 +19,12 @@ def test_collector_publishes_complete_chart_or_preserves_previous(tmp_path, monk
     old = pd.DataFrame({'close': [1.0]}, index=pd.to_datetime(['2026-01-01'], utc=True))
     old.to_parquet(dest)
     original = dest.read_bytes()
-    fake = SimpleNamespace(initialize=lambda: True, shutdown=lambda: None,
+    # The desk's own terminal, attached and on Fusion's server (the venue pin, 2026-11-11).
+    from mt5desk import config
+    monkeypatch.setattr(config, 'terminal_path', lambda: r'C:\T\terminal64.exe')
+    fake = SimpleNamespace(initialize=lambda **kw: True, shutdown=lambda: None,
+                           terminal_info=lambda: SimpleNamespace(path=r'C:\T'),
+                           account_info=lambda: SimpleNamespace(server='FusionMarkets-Live'),
                            symbols_get=lambda: [SimpleNamespace(name='EURUSD', trade_mode=4)],
                            symbol_select=lambda *a: True, symbol_info=lambda *a: None,
                            TIMEFRAME_H1=1)

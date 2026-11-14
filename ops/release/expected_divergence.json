@@ -1,0 +1,4 @@
+{
+  "_doc": "THE AUDITOR'S DECLARED FUSION-ROSTER DIVERGENCES (ops/release/replay_shadow.py MATCHES_DECLARED; ops/release/authority/policy.py declared_replay). One row per PR and FULL 40-hex head sha; its admit/refuse sets must equal the measured flips exactly, and every refusal carries a missed_growth line. Read from the BASE only, so a PR can never declare its own divergence. A match is never PASS: the release authority judges it as at least CONTROLLER (base-run trusted-eval and the veto window). Zero, book and e8 diffs are never declarable.",
+  "rows": []
+}

@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **1054** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **1059** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 830 | no artifact and no run record on this host |
+| **NEVER** | 835 | no artifact and no run record on this host |
 | **UNMEASURED** | 43 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (830)
+## NEVER (835)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1049,7 +1049,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:halt_rail` | `hourly_cycle:halt_rail` | UNMEASURED UNMEASURED | `desks/mt5/reports/HALT_RAIL_INTEGRITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:index_discovery` | `hourly_cycle:index_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/INDEX_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `battery:scripts/check_keys.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:credential_coverage` | `hourly_cycle:credential_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/CREDENTIAL_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:keyed_sources` | `hourly_cycle:keyed_sources` | UNMEASURED UNMEASURED | `desks/mt5/reports/KEYED_SOURCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:libs/ops/keys_needed.py` | `import:desks/mt5/research/credential_coverage.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/KEYS_NEEDED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:cluster_judge` | `hourly_cycle:cluster_judge` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLUSTER_JUDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:decay_verdicts` | `hourly_cycle:decay_verdicts` | UNMEASURED UNMEASURED | `desks/mt5/reports/DECAY_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:critical_slowing` | `hourly_cycle:critical_slowing` | UNMEASURED UNMEASURED | `desks/mt5/reports/CRITICAL_SLOWING.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
