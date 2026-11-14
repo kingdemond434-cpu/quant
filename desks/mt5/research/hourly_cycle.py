@@ -6388,6 +6388,12 @@ def main() -> None:
     # A report only -- the money path carries the cited values. Each value passes a two-sided
     # robustness gate (adopt/adopted_value); missed_growth (daily cycle) reads the report and
     # carries every held move's published missed-growth line into MISSED_GROWTH.json.
+    # LIMIT OPTIMALITY PER ACCOUNT (principal 2026-11-14 03:29Z, idea 737): the book's risk now
+    # against the growth-optimal point on each prop solve's own frontier inside the survival
+    # margin, with the breach probability and the objective delta. Reads FTMO_ALLOCATOR.json and
+    # runs a cached E8 solve; report only, nothing sizes from it.
+    lop = _costed("limit_optimality", lambda: _producer(
+        "limit_optimality", "research/limit_optimality.py"))
     sgd = _costed("stop_geometry_derivation", lambda: _producer(
         "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
@@ -6668,7 +6674,7 @@ def main() -> None:
                     "cluster_judge": clj, "arena": ar,
                     "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "kelly_survival": kls, "prop_challenge_allocator": fta, "limit_optimality": lop,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,

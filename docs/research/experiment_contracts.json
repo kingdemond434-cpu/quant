@@ -295,6 +295,21 @@
     "threshold": 0,
     "after": "14 days after per-key forward ledgers (claude/forward-ledger-per-key) land on the box: every cluster clock still UNMEASURED means the clocks' own series never reached the judge"
    }
+  },
+  "limit_optimality": {
+   "hypothesis": "Publishing, per prop account, the book's current total risk against the highest-objective point on the solver's own frontier whose breach probability stays inside the survival margin gives every autonomous limit change a measured delta: where the optimum sits above scale 1 the desk is leaving pass-speed x pass-probability (or funded E[log W]) on the table at no extra ruin.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "n_measured",
+    "better": "up",
+    "organ": "report:LIMIT_OPTIMALITY.json"
+   },
+   "falsifier": {
+    "metric": "n_measured",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no account ever measured (no FTMO frontier, no E8 solve), so the report gives a limit setter nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

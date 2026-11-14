@@ -867,7 +867,9 @@ def frontier(world: World, h: np.ndarray, rules: VenueRules, phase: str, st: Acc
 
 
 def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
-          state: AccountState | None = None) -> dict[str, Any]:
+          state: AccountState | None = None, gap_requests: bool = True) -> dict[str, Any]:
+    """`gap_requests` False: a reader solve (limit_optimality's E8 row) leaves the FTMO gap file
+    to its one writer, this module's own hourly run."""
     import kelly_survival as ks
     from mt5desk.sizing import MAX_RISK_FRAC
 
@@ -894,7 +896,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     uni = build_universe(seed)
     doc["universe"] = {k: uni.get(k) for k in ("status", "columns", "costs", "posterior",
                                                "listing_source", "unpriced")}
-    doc["gap_requests"] = write_gap_requests(uni, now)
+    doc["gap_requests"] = write_gap_requests(uni, now) if gap_requests else "NOT_WRITTEN: reader solve"
     if uni["status"] != "OK":
         doc["status"] = uni["status"]
         doc["validation_score"] = 0.0
