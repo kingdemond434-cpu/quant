@@ -110,8 +110,25 @@ def robots_refusal(url: str, agent: str = UA, get: Getter | None = None) -> str 
     return None if rp.can_fetch(agent, url) else "robots.txt disallows this path"
 
 
+class PinnedHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect only to the SAME host over https. Anything else is not followed, so it
+    surfaces as the 30x HTTPError and the pass reads UNMEASURED: a POST carrying the key is never
+    replayed to wherever a Location points, and robots.txt is never read from another host."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        was, now = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
+        if ((was.hostname or "").lower() != (now.hostname or "").lower()
+                or now.scheme != "https" or req.data is not None):
+            return None
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(PinnedHostRedirect())
+
+
 def _http(req: urllib.request.Request) -> bytes:
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with _OPENER.open(req, timeout=TIMEOUT) as r:
         data: bytes = r.read(5_000_000)
     return data
 
@@ -133,8 +150,10 @@ def parse_bls(body: bytes) -> tuple[dict[str, dict[str, float]], str]:
     except ValueError:
         return {}, "BLS answered something that is not JSON"
     if not isinstance(doc, dict) or str(doc.get("status")) != "REQUEST_SUCCEEDED":
-        msg = doc.get("message") if isinstance(doc, dict) else None
-        return {}, f"BLS status {doc.get('status') if isinstance(doc, dict) else '?'}: {msg}"[:300]
+        # Only BLS's status code is published, never its free-text `message`.
+        status = str(doc.get("status") if isinstance(doc, dict) else "?")
+        status = "".join(c for c in status if c.isalnum() or c == "_")[:40] or "?"
+        return {}, f"BLS status {status}: the request was not served"
     out: dict[str, dict[str, float]] = {}
     for s in (doc.get("Results") or {}).get("series") or []:
         sid = str((s or {}).get("seriesID") or "")

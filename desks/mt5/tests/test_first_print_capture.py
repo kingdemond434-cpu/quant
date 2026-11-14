@@ -150,3 +150,64 @@ def test_the_bls_table_matches_release_vintages_where_it_exists() -> None:
 def test_the_leg_is_on_the_hourly_clock() -> None:
     src = (Path(fpc.__file__).parent / "hourly_cycle.py").read_text("utf-8")
     assert '"research/first_print_capture.py", "--once"' in src
+
+
+def _redirecting_server(target: str):
+    """A local https-less 302 server: every request is answered with a Location to `target`."""
+    import http.server
+    import threading
+
+    hits: list[str] = []
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def _go(self) -> None:
+            hits.append(self.path)
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.end_headers()
+
+        do_GET = do_POST = _go
+
+        def log_message(self, *_a) -> None:
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, hits
+
+
+@pytest.mark.parametrize("method_body", [None, b"{}"])
+def test_a_cross_host_redirect_is_never_followed(monkeypatch, method_body) -> None:
+    """Auditor MF2: a 30x to another host sends no second request -- it is an HTTPError."""
+    srv, hits = _redirecting_server("https://elsewhere.example/steal")
+    sent: list[str] = []
+    real = urllib.request.HTTPSHandler.https_open
+    monkeypatch.setattr(urllib.request.HTTPSHandler, "https_open",
+                        lambda self, req: sent.append(req.full_url) or real(self, req))
+    try:
+        url = f"http://127.0.0.1:{srv.server_address[1]}/publicAPI/v2/timeseries/data/"
+        req = urllib.request.Request(url, data=method_body, headers={"User-Agent": fpc.UA})
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            fpc._http(req)
+        assert exc.value.code == 302
+        assert len(hits) == 1 and sent == [], "the redirect target was contacted"
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_a_same_host_https_get_redirect_is_followed() -> None:
+    h = fpc.PinnedHostRedirect()
+    req = urllib.request.Request("https://api.bls.gov/robots.txt")
+    assert h.redirect_request(req, None, 301, "x", {}, "https://api.bls.gov/robots.txt") is not None
+    post = urllib.request.Request("https://api.bls.gov/a", data=b"{}")
+    assert h.redirect_request(post, None, 307, "x", {}, "https://api.bls.gov/b") is None
+    assert h.redirect_request(req, None, 301, "x", {}, "http://api.bls.gov/robots.txt") is None
+
+
+def test_bls_free_text_never_reaches_the_report(tmp_path) -> None:
+    net = _Net(b"", json.dumps({"status": "REQUEST_NOT_PROCESSED",
+                                "message": ["call me at https://evil.example"]}).encode())
+    _run(tmp_path, net, "2026-11-07")
+    text = (tmp_path / "rep.json").read_text("utf-8")
+    assert "evil.example" not in text and "REQUEST_NOT_PROCESSED" in text
