@@ -49,13 +49,48 @@ def _git(*args: str) -> str:
     return r.stdout.rstrip("\n") if r.returncode == 0 else ""
 
 
-#: Paths whose dirtiness says nothing about what CODE was tested. Mirrors
-#: `libs/ops/release.py:STATE_PREFIXES`, duplicated so this script runs on a bare checkout.
-_STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
-                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
-                   "data/", "reports/", "logs/", "web/", "docs/")
-_STATE_FILES = frozenset({"desks/mt5/swap_exposure.json",
-                          "desks/mt5/docs/TRADE_PATH_REPORT.md"})
+#: Paths whose dirtiness says nothing about what CODE was tested.
+#:
+#: IMPORTED FROM THE CANONICAL LISTS, because the copy that used to live here HAD DRIFTED AND
+#: THAT IS THE THIRD TIME THIS FILE'S OWN COMMENTS RECORD THIS BUG-CLASS. Measured 2026-11-14:
+#: the literal below forgave 2 state files against `release.py:STATE_FILES`' 11, so nine canonical
+#: state paths were counted as dirty CODE. `tree_clean` was false and `dirty_paths` 6 on every box
+#: run -- against a tree whose only non-prefix changes were five `backups/moat/` registries and
+#: `context/decision_journal.jsonl`, not one of them importable. `release.py` states the law this
+#: file broke: "a mirror that can drift is not a mirror".
+#:
+#: The literals are the BARE-CHECKOUT FALLBACK ONLY (the reason the duplicate existed: this
+#: script must run where `libs` is not importable). `tests/ops/test_gate_attestation_mirror.py`
+#: pins the fallback equal to the canonical lists, so the next drift fails the suite instead of
+#: silently converting "the desk's ledgers moved" into "the code under test is unknown".
+_FALLBACK_STATE_PREFIXES: tuple[str, ...] = (
+    "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+    "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
+    "data/", "reports/", "logs/", "web/", "docs/", "backups/",
+)
+_FALLBACK_STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
+    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
+    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
+    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+    "desks/mt5/swap_exposure.json",
+    "desks/mt5/docs/TRADE_PATH_REPORT.md",
+})
+
+_STATE_PREFIXES: tuple[str, ...]
+_STATE_FILES: frozenset[str]
+
+if str(ROOT) not in sys.path:  # `python scripts/gate_attestation.py` puts scripts/ first, not ROOT
+    sys.path.insert(0, str(ROOT))
+try:
+    from libs.ops import release as _release
+except Exception:  # bare checkout: no package tree. The fallback is pinned equal by its test.
+    _STATE_PREFIXES = _FALLBACK_STATE_PREFIXES
+    _STATE_FILES = _FALLBACK_STATE_FILES
+else:
+    _STATE_PREFIXES = _release.STATE_PREFIXES
+    _STATE_FILES = _release.STATE_FILES
 
 
 def _is_state(rel: str) -> bool:

@@ -145,6 +145,69 @@ SLEEVES: list[tuple[str, str]] = []
 #: the run that just happened. Only certificates WITHOUT a clock are ever here.
 HELD_AT_INTEGRITY: list[dict] = []
 
+#: RE-STAMPED, NEVER RE-JUDGED (2026-11-13). The lockbox ledger (`research/lockbox_recert.py`)
+#: rules a certificate RESTAMPED when it sits under the attestation in force still carrying the
+#: gated_at it was judged on BEFORE that attestation existed: a header was flipped over it, no
+#: judge ran. Seven such rows were found on the box (USDJPY and XAUUSD session_range_breakout,
+#: all gated 2026-08-26). Their clocks keep running -- forward evidence is still worth having --
+#: but none of them may become a PROMOTION CANDIDATE until a sweep re-judges it under the header
+#: it wears (`attestation_remint` queues them). Positive evidence only: an absent or unreadable
+#: ledger holds nothing, exactly as an absent ledger never voids a gold retirement.
+LOCKBOX_RECERT_FILE = BASE / "reports" / "LOCKBOX_RECERT.json"
+REMINT_STATUS_FILE = BASE / "reports" / "REMINT_STATUS.json"
+RESTAMP_HOLD = "HELD_RESTAMPED_NOT_REJUDGED"
+#: clock key -> certificate key, for every clock enrolled from a re-stamped certificate this pass.
+RESTAMP_HELD: dict[str, str] = {}
+#: GROWTH RULE 1: the hold is a veto on PROMOTE, so every held verdict writes what it forgoes.
+MISSED_GROWTH_LEDGER = BASE / "data" / "missed_growth.jsonl"
+RESTAMP_RAIL = "restamp_promotion_hold"
+
+
+def restamped_certificates(lockbox: Path | None = None,
+                           remint: Path | None = None) -> set[str]:
+    """Certificate keys the desk has POSITIVE evidence were re-stamped without a re-judge."""
+    out: set[str] = set()
+    try:
+        doc = json.loads((lockbox or LOCKBOX_RECERT_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    for k, row in ((doc or {}).get("certificates") or {}).items() if isinstance(doc, dict) else ():
+        after = row.get("after") if isinstance(row, dict) else None
+        if isinstance(after, dict) and after.get("state") == "RESTAMPED":
+            out.add(str(after.get("key") or k))
+    try:
+        rem = json.loads((remint or REMINT_STATUS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rem = None
+    if isinstance(rem, dict):
+        out.update(str(k) for k in (rem.get("restamped_not_rejudged") or []))
+    return out
+
+
+def restamp_hold(key: str, st: dict) -> bool:
+    """Hold `key`'s promotion if its certificate is re-stamped; release a stale hold otherwise.
+
+    Returns True when the clock is held. It holds the NEXT verdict only: a clock already a
+    PROMOTION CANDIDATE keeps its status and is only marked, because un-promoting a row the
+    promoter may already have written LIVE is a change to the live book, which no session makes
+    on its own (the mark is what the report and the principal read)."""
+    cert = RESTAMP_HELD.get(key)
+    if cert is None:
+        if st.get("promotion_hold") == RESTAMP_HOLD:
+            st.pop("promotion_hold", None)
+            st.pop("promotion_hold_certificate", None)
+            st.pop("promotion_hold_since", None)
+        return False
+    if st.get("promotion_hold") != RESTAMP_HOLD or not st.get("promotion_hold_since"):
+        st["promotion_hold_since"] = datetime.now(UTC).isoformat(timespec="seconds")
+    st["promotion_hold"] = RESTAMP_HOLD
+    st["promotion_hold_certificate"] = cert
+    if st.get("status") == "PROMOTION CANDIDATE":
+        slog(f"{key}: ALREADY A PROMOTION CANDIDATE on certificate {cert}, which was re-stamped "
+             f"and never re-judged -- marked; its status is left as it is (a live-book change "
+             f"is not a session's)")
+    return True
+
 
 def _integrity_door() -> tuple[object | None, set[str], str]:
     """(gate, keys that already own a clock, why).
@@ -179,6 +242,50 @@ def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str)
                      params=run.get("params"))
 
 
+def record_restamp_missed_growth(key: str, st: dict, now: datetime | None = None,
+                                 ledger: Path | None = None) -> bool:
+    """One missed-growth line per held PROMOTE verdict per day (Growth Rule 1).
+
+    `value` is the clock's own forward expectancy in R, floored at 0: what the held promotion
+    would have earned per trade had the certificate been re-judged already. Returns True when a
+    NEW line was written; never raises (a ledger it cannot write is logged, not fatal)."""
+    path = ledger or MISSED_GROWTH_LEDGER
+    stamp = now or datetime.now(UTC)
+    day = stamp.date().isoformat()
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if RESTAMP_RAIL in line and day in line and key in line:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if (row.get("rail") == RESTAMP_RAIL and row.get("day") == day
+                        and row.get("cell") == key):
+                    return False
+    except OSError:
+        pass
+    try:
+        exp = float(st.get("exp_r") or 0.0)
+    except (TypeError, ValueError):
+        exp = 0.0
+    row = {"day": day, "rail": RESTAMP_RAIL, "value": max(exp, 0.0),
+           "at": stamp.isoformat(timespec="seconds"), "cell": key,
+           "certificate": st.get("promotion_hold_certificate"), "n": st.get("n"),
+           "exp_r": st.get("exp_r"), "max_dd_r": st.get("max_dd_r"),
+           "held_since": st.get("promotion_hold_since"),
+           "why": "PROMOTE verdict held: certificate re-stamped under the attestation in force, "
+                  "never re-judged; releases on the pass after its re-judge",
+           "two_sided": True}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+    except OSError as exc:
+        slog(f"missed-growth ledger not written ({type(exc).__name__})")
+        return False
+    return True
+
+
 def certified_sleeves() -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
 
@@ -193,6 +300,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     """
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
+    RESTAMP_HELD.clear()
+    restamped = restamped_certificates()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -221,6 +330,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                               "key": key, "reason": reason})
                     slog(f"HELD {key}: {reason}")
                     continue
+                if str(run.get("certificate") or "") in restamped:
+                    RESTAMP_HELD[key] = str(run["certificate"])
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -256,6 +367,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                                           "reason": reason})
                 slog(f"HELD {key}: {reason}")
                 continue
+            if str(run.get("certificate") or "") in restamped:
+                RESTAMP_HELD[key] = str(run["certificate"])
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
@@ -1581,8 +1694,15 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
+            held = restamp_hold(key, st)
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
-                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                if held and st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    # Only the PROMOTE verdict waits on the re-judge; a KILL is the clock's own
+                    # forward record and needs no certificate to stand.
+                    slog(f"{key}: VERDICT PROMOTE HELD ({RESTAMP_HOLD}) n={st['n']} "
+                         f"exp={st['exp_r']:.3f}R")
+                    record_restamp_missed_growth(key, st)
+                elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                     st["status"] = "PROMOTION CANDIDATE"
                     slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")
