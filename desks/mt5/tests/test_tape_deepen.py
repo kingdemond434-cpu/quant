@@ -147,6 +147,13 @@ def test_the_budget_bounds_a_pass_and_the_next_resumes(tmp_path):
     assert rep2["days_added"] == 120 - before
 
 
+def test_the_cycle_cap_bounds_the_pass():
+    assert td.effective_budget(300, None) == 300
+    assert td.effective_budget(300, "200") == 200 - td.CAP_MARGIN_S
+    assert td.effective_budget(0, "420") == 420 - td.CAP_MARGIN_S
+    assert td.effective_budget(0, None) == 0
+
+
 def test_nearest_the_bar_goes_first():
     assert td.order(["A", "B", "C", "D"], {"A": 10, "B": 60, "C": 90, "D": 70}) == \
         ["B", "A", "D", "C"]

@@ -390,6 +390,23 @@ def deepen(src: TickHistory, symbols: list[str], *, budget_s: float, today: date
     }
 
 
+#: Seconds kept back from the cycle's cap so the state and the report are written before it.
+CAP_MARGIN_S = 45.0
+
+
+def effective_budget(asked: float, cap_env: str | None) -> float:
+    """The pass's seconds: what was asked, inside the cycle's cap less a margin when it set one.
+    0 (run to exhaustion) is honoured only when no cap is set."""
+    try:
+        cap = float(cap_env) if cap_env else 0.0
+    except ValueError:
+        cap = 0.0
+    if cap <= 0:
+        return asked
+    room = max(cap - CAP_MARGIN_S, 1.0)
+    return room if asked <= 0 else min(asked, room)
+
+
 def universe_symbols(path: Path = UNIVERSE) -> list[str]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
@@ -414,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="seconds for this pass; 0 runs until every symbol is exhausted")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, call no terminal")
     args = ap.parse_args(argv)
+    budget = effective_budget(args.budget_s, os.environ.get("QUANT_LEG_BUDGET_S"))
 
     symbols = universe_symbols()
     if args.dry_run:
@@ -442,7 +460,7 @@ def main(argv: list[str] | None = None) -> int:
                   "status": STATUS_VENUE, "why": why, "days_added": 0})
         print(f"tape_deepen: refused, {why}")
         return 3
-    report = deepen(Mt5History(mt5), symbols, budget_s=args.budget_s, today=_today_broker())
+    report = deepen(Mt5History(mt5), symbols, budget_s=budget, today=_today_broker())
     _publish(report)
     print(f"tape_deepen {report['status']}: +{report['days_added']} symbol-days, "
           f"+{report['ticks_added']:,} ticks; {report['at_or_above_bar']}/{report['symbols']} "
