@@ -845,6 +845,16 @@ NODES: tuple[Node, ...] = (
     Node("acceptance", "scripts/check_acceptance_properties.py",
          writes=("docs/research/tier1_program.json",
                  "desks/mt5/reports/acceptance_properties.json")),
+    # The hourly `cost_state_fresh` leg (hourly_cycle.cost_state_fresh -> this script). It reads
+    # each cost artifact's OWN stamp -- desks/mt5/data/cost_surface.json (`built_at`),
+    # data/carry_state.json (`generated_at`) and data/tape/triangle_executable.json (`at`),
+    # check_cost_state_fresh.py:33-38 -- plus the runner's log lines (logs/MT5-CostState.log,
+    # :28). Those reads are NOT declared here: their producers (research/cost_surface.py,
+    # research/carry_state.py, mt5desk/triangle_tape.py) are not graph nodes yet, so declaring
+    # them would report DEAD_CONSUMER for artifacts that do have writers. When those producers
+    # gain nodes, the three artifacts join this `reads`. Its report is HUMAN_READ (below).
+    Node("cost_state_fresh", "scripts/check_cost_state_fresh.py",
+         writes=("desks/mt5/reports/COST_STATE_FRESHNESS.json",)),
     Node("alpha_rl", "desks/mt5/research/alpha_rl_run.py",
          writes=("desks/mt5/reports/ALPHA_RL.json",)),
     Node("asia_collector", "desks/mt5/research/asia_collector.py",
@@ -1010,6 +1020,10 @@ HUMAN_READ = frozenset({
     # The release-identity verdict and the box smoke test: read by every brain through the
     # box's git sync and by the dashboard; the gateway consumes the verdict in-process.
     "desks/mt5/data/release_identity.json", "desks/mt5/reports/release_smoke.json",
+    # Whether the cost surface, carry table and triangle tape are current: a freshness report
+    # for a person (published off the box through libs/ops/release.py's state wire, and the
+    # leg's own exit code turns it red). No decision node reads it; it sizes and gates nothing.
+    "desks/mt5/reports/COST_STATE_FRESHNESS.json",
     # The hourly discovery pass's own bookkeeping: per-organ status for the fence and a person,
     # and the staleness order the next pass reads. The organs' donations reach decisions through
     # the compiler; this pass only schedules them.

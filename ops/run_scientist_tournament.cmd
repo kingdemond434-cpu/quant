@@ -17,5 +17,7 @@ set "QUANT_FREE_TIER=1"
 set "SSL_CERT_FILE=C:\Program Files\Python314\Lib\site-packages\certifi\cacert.pem"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-ScientistTournament.log"
 cd /d C:\opt\quant
+rem THE EXIT IS THE STEP'S, NOT A CONSTANT (2026-10-14). This file ended `exit /b 0`, so the scheduler
+rem read success whatever the step returned and process_health could never report it FAILING.
 "C:\Program Files\Python314\python.exe" -u "desks\mt5\research\scientist_tournament.py" --apply --subjects 1 >>"%LOG%" 2>&1
-exit /b 0
+exit /b %ERRORLEVEL%
