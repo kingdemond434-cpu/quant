@@ -1,21 +1,21 @@
 {
- "at": "2026-11-13T12:01:01+00:00",
+ "at": "2026-11-14T01:46:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 7.12,
-   "why": "no new verdict for 7.1h (last 2026-11-13T04:53:44+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 3.68,
+   "why": "no new verdict for 3.7h (last 2026-11-13T22:05:00+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
-   "open": false,
+   "open": true,
    "low": true,
    "floor": 4.0,
-   "docket_depth": null,
-   "busy_judge_cores": 0.01,
-   "busy_other_cores": 15.44,
-   "why": "judge tree at 0.01 cores (others 15.44) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.9h (limit 1h)",
-   "low_since": "2026-11-13T11:06:10+00:00",
-   "hours": 0.92
+   "docket_depth": 1626712,
+   "busy_judge_cores": 0.59,
+   "busy_other_cores": 15.98,
+   "why": "judge tree at 0.59 cores (others 15.98) with a docket pending (resident SWEEPING, queue depth 1626712); floor 4; under the floor on every reading for 2.3h (limit 1h)",
+   "low_since": "2026-11-13T23:26:29+00:00",
+   "hours": 2.33
   },
   "resident_dead": {
    "open": false,
@@ -25,25 +25,25 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 1.9,
+   "hours": 3.17,
    "limit_h": 25.59,
-   "why": "1.9h since the last sweep ended (2026-11-13T10:07:15+00:00), status SWEEPING; limit 25.59h"
+   "why": "3.2h since the last sweep ended (2026-11-13T22:36:03+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "why": "last sweep rc 124: not a completed sweep"
+   "why": "last sweep rc 75: not a completed sweep"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 2956,
-   "why": "sweep child pid 2956 alive"
+   "pid": 11840,
+   "why": "sweep child pid 11840 alive"
   },
   "phase_overrun": {
    "open": false,
    "phase": "prewarm",
-   "hours": 1.56,
+   "hours": 2.96,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 1.6h since 2026-11-13T10:27:14+00:00 (limit 5.86h)"
+   "why": "sweep phase prewarm has run 3.0h since 2026-11-13T22:48:37+00:00 (limit 8.56h)"
   },
   "host_unreadable": {
    "open": false,
@@ -63,11 +63,11 @@
    "collect_and_cut": 1.0,
    "rule_shards": 1.0,
    "merge_and_publish": 3.0,
-   "prewarm": 5.86,
+   "prewarm": 8.56,
    "plan_handoff": 1.0,
    "done": 1.0
   },
-  "prewarm_budget_s": 12960.0,
+  "prewarm_budget_s": 19440.0,
   "prewarm_budget_source": "JUDGING_THROUGHPUT.json decision.fresh_budget_s",
   "unknown_phase_limit_h": 18.0,
   "sweep_overdue_h": 25.59,
@@ -82,20 +82,22 @@
   "cores_gap_max_min": 15.0
  },
  "last_verdict": {
-  "at": "2026-11-13T04:53:44+00:00",
+  "at": "2026-11-13T22:05:00+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 1624,
-  "heartbeat_utc": "2026-11-13T12:00:56+00:00",
-  "last_sweep_ended_utc": "2026-11-13T10:07:15+00:00",
-  "last_rc": 124
+  "heartbeat_utc": "2026-11-14T01:45:56+00:00",
+  "last_sweep_ended_utc": "2026-11-13T22:36:03+00:00",
+  "last_rc": 75
  },
  "host": "trading box",
  "page": {
   "sent": false,
-  "open": [],
+  "open": [
+   "cores_idle"
+  ],
   "opened": [],
   "reminded": [],
   "resolved": []
