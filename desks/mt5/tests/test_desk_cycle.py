@@ -406,3 +406,23 @@ def test_the_agent_may_never_skip_the_hooks() -> None:
     for pattern in ("Bash(git push --no-verify:*)", "Bash(git push origin --no-verify:*)",
                     "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)"):
         assert f'"{pattern}"' in denied
+
+
+# ------------------------------------------- a pass never pushes code to a shared branch (2026-11-14)
+def test_a_pass_pushes_only_its_cro_branch_and_opens_a_pr() -> None:
+    """2026-11-14 13:12Z: a noon pass followed "push to that branch" and landed five code commits
+    on LIVE with no PR, CLEAR or APPROVE. The brief and the allowlist now say the same thing:
+    the pass pushes its own cro/ branch and opens a draft PR; the gate is the only way in."""
+    src = LAUNCHER.read_text("utf-8")
+    args = _claude_args(src)
+    allowed = args[args.index('"--allowedTools"'):args.index('"--disallowedTools"')]
+    allowed = "\n".join(ln for ln in allowed.splitlines() if not ln.strip().startswith("#"))
+    assert '"Bash(git push origin:*)"' not in allowed
+    assert '"Bash(git push -u origin cro/:*)"' in allowed and '"Bash(gh pr create:*)"' in allowed
+    denied = src.split('"--disallowedTools"', 1)[1].split("elseif", 1)[0]
+    for pattern in ('"Bash(git push origin claude/:*)"', '"Bash(git push origin HEAD:claude/:*)"',
+                    '"Bash(git push origin desk-sync-clean:*)"'):
+        assert pattern in denied, pattern
+    assert "<box branch> and push to that branch" not in src
+    assert "NEVER PUSH CODE TO <box branch> OR desk-sync-clean" in src
+    assert "gh pr create --draft --base <box branch>" in src
