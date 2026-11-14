@@ -1307,3 +1307,90 @@ def test_the_tree_revert_pauses_between_walks(monkeypatch) -> None:
     rsg._launch_revert(change, process={100: child}.__getitem__)
     assert pauses == [rsg.LAUNCH_REVERT_PAUSE_S] * (rsg.LAUNCH_REVERT_CLEAN_WALKS - 1)
     assert 0 < rsg.LAUNCH_REVERT_PAUSE_S <= 0.25
+
+
+# ------------------------------- 10. v5.2 (audit of d3b07717db1): malformed, finite, once, locked
+def test_a_malformed_n_dropped_is_kept_unmeasured_and_never_raises(tmp_path) -> None:
+    import missed_growth as mg
+
+    for bad in ("abc", float("nan"), float("inf"), -3, 2.5, True):
+        out = jp.carry_unspilled(
+            {"spill": "FAILED: x", "missed_growth": [], "n_dropped": bad},
+            {"spill": "FAILED: y", "missed_growth": [{"at": "a", "pid": 1}]},
+        )
+        assert out is not None and out["n_dropped"] == jp.UNMEASURED, bad
+        rec = tmp_path / "rec.json"
+        rec.write_text(json.dumps({"unspilled": {"n_dropped": bad}}), "utf-8")
+        art = tmp_path / "JUDGE_PRIORITY_RAISES.json"
+        art.write_text(json.dumps({"missed_growth": []}), "utf-8")
+        got = mg.organ_published_lines(art, spill=jp.spill_path(art), unspilled=(rec,))
+        assert got["verdict"] == mg.UNMEASURED and got["unspilled_dropped_malformed"] == 1, bad
+
+
+def test_republishing_a_block_never_counts_its_dropped_lines_twice() -> None:
+    block = {
+        "spill": "FAILED: disk",
+        "missed_growth": [{"at": f"2026-10-20T00:00:0{i}+00:00", "pid": i} for i in range(5)],
+    }
+    u = jp.carry_unspilled(None, block, cap=3)
+    assert u["n_dropped"] == 2 and [x["pid"] for x in u["missed_growth"]] == [2, 3, 4]
+    for _ in range(3):
+        u = jp.carry_unspilled(u, block, cap=3)
+    assert u["n_dropped"] == 2 and [x["pid"] for x in u["missed_growth"]] == [2, 3, 4]
+    new = {
+        "spill": "FAILED: disk",
+        "missed_growth": [{"at": "2026-10-20T00:00:09+00:00", "pid": 9}],
+    }
+    u = jp.carry_unspilled(u, new, cap=3)
+    assert u["n_dropped"] == 3 and [x["pid"] for x in u["missed_growth"]] == [3, 4, 9]
+
+
+def test_the_manual_report_write_is_locked(monkeypatch, tmp_path) -> None:
+    import contextlib
+
+    import libs.research.artifact_chain as ac
+
+    report = tmp_path / "JUDGE_PRIORITY.json"
+    report.write_text(json.dumps({"keep": 1}), "utf-8")
+    monkeypatch.setattr(jp, "REPORT", report)
+    rows = _raisable_box(judge_nice=BN)
+    monkeypatch.setattr(jp, "registered_live_rank", lambda *a, **k: R[AN])
+    monkeypatch.setattr(jp, "snapshot", lambda *a, **k: rows)
+    monkeypatch.setattr(jp, "RAISES", tmp_path / "JUDGE_PRIORITY_RAISES.json")
+    monkeypatch.setattr(jp, "record_raises", lambda *a, **k: 1)
+    monkeypatch.setattr(jp, "_default_setter", lambda pid, k, row: None)
+    seen: list[Path] = []
+    real = ac._locked
+
+    @contextlib.contextmanager
+    def spy(path, timeout_s=10.0):
+        seen.append(path)
+        with real(path, timeout_s) as h:
+            yield h
+
+    monkeypatch.setattr(ac, "_locked", spy)
+    assert jp.main(["--apply", "--sample-s", "0"]) == 0 and report in seen
+
+    @contextlib.contextmanager
+    def never(path, timeout_s=10.0):
+        yield False
+
+    monkeypatch.setattr(ac, "_locked", never)
+    report.write_text(json.dumps({"keep": 2}), "utf-8")
+    assert jp.main(["--apply", "--sample-s", "0"]) == 1
+    assert json.loads(report.read_text("utf-8")) == {"keep": 2}
+
+
+def test_publish_priority_never_raises_when_its_imports_fail(monkeypatch, tmp_path) -> None:
+    import builtins
+
+    monkeypatch.setattr(rsg, "JUDGE_PRIORITY_DECISION", tmp_path / "JUDGE_PRIORITY_SWEEP.json")
+    real = builtins.__import__
+
+    def boom(name, *a, **k):
+        if name == "libs.research.artifact_chain":
+            raise ImportError("gone")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", boom)
+    assert rsg._publish_priority("child", {"x": 1}).startswith("FAILED: ImportError")

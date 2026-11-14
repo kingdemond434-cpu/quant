@@ -16,6 +16,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+_R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
+
 _SECRETS = Path("data/secrets/netlify.json")
 _API = "https://api.netlify.com/api/v1"
 
@@ -23,7 +27,8 @@ _API = "https://api.netlify.com/api/v1"
 def _req(method: str, url: str, token: str, data: bytes | None = None) -> Any:
     req = urllib.request.Request(url, data=data, method=method, headers={
         "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=30) as r:
         body = r.read()
         return json.loads(body) if body else None
 
