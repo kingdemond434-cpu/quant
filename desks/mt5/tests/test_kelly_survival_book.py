@@ -48,7 +48,6 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(ks, "BOOK_STARTS", 2)
     monkeypatch.setattr(ks, "BOOK_STEPS", (0.02, 0.005))
     monkeypatch.setattr(ks, "TERMS_FENCED_CELLS", tmp_path / "absent_fence.json")
-    monkeypatch.setattr(ks, "RESEARCH_QUEUE", tmp_path / "absent_queue.json")
     return ks
 
 
@@ -96,19 +95,20 @@ def test_unpriced_certificates_are_replayed_and_join(desk, tmp_path, monkeypatch
     assert "1 joined" in doc["unpriced"]
 
 
-def test_a_cell_only_reddit_proposed_never_enters_the_book(desk, tmp_path, monkeypatch):
-    queue = tmp_path / "queue.json"
-    queue.write_text(json.dumps([
-        {"geneology_id": "external:ext_reddit_AAA_carry"},
-        {"geneology_id": "external:ext_reddit_BBB_carry"},
-        {"geneology_id": "external:ext_forexfactory_BBB_carry"}]), encoding="utf-8")
-    monkeypatch.setattr(desk, "RESEARCH_QUEUE", queue)
+def test_an_ideas_origin_never_fences_only_its_input_data_does(desk, tmp_path, monkeypatch):
+    """Principal 2026-10-13: a Reddit-proposed idea that trades MT5 prices enters the book."""
     doc = desk.solve_book()
     why = {r["certificate"]: r.get("excluded") for r in doc["screen"]}
-    assert why["a"].startswith("TERMS_FENCED")
-    assert why["b"] is None                           # a lawful source also proposes it
-    assert "AAA_carry_asia" not in doc["fusion"]["heat"]
-    fence = tmp_path / "fence.json"                   # the published index wins over genealogy
-    fence.write_text(json.dumps({"cells": ["BBB.carry"]}), encoding="utf-8")
+    assert why["a"] is None
+    assert doc["terms_fence"]["status"] == "UNMEASURED"      # absent is never read as clean
+    fence = tmp_path / "fence.json"
+    fence.write_text(json.dumps({"cells": ["AAA.carry"]}), encoding="utf-8")
     monkeypatch.setattr(desk, "TERMS_FENCED_CELLS", fence)
-    assert desk.terms_fenced_cells()[0] == {"BBB.carry"}
+    assert desk.terms_fenced_cells()[0] == set()      # no input-data basis: never a fence
+    assert desk.terms_fence_state()["status"] == "UNMEASURED"
+    fence.write_text(json.dumps({"basis": "input_data", "cells": ["AAA.carry"]}),
+                     encoding="utf-8")
+    assert desk.terms_fenced_cells()[0] == {"AAA.carry"}
+    assert desk.terms_fence_state() == {"status": "MEASURED", "source": fence.name, "n_cells": 1}
+    why = {r["certificate"]: r.get("excluded") for r in desk.solve_book()["screen"]}
+    assert why["a"].startswith("TERMS_FENCED")
