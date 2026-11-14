@@ -202,6 +202,73 @@ CANON_ALPHA101_IDS: dict[str, str] = {
 }
 
 
+# ==============================================================================================
+# THE TONGDAXIN (通达信) INDICATOR CANON, as QUANTAXIS writes it (2026-10-01).
+#
+# Source: github.com/yutiansut/QUANTAXIS `QUANTAXIS/QAIndicator/indicators.py` (MIT, Copyright
+# (c) 2016-2021 yutiansut/QUANTAXIS). These are the formulas every Chinese retail terminal ships
+# and the A-share retail crowd watches (KDJ, BIAS, CCI, PSY, VR, ARBR, BBI, CHO ...): the most
+# watched oscillators in the world's largest retail market, and none of them was in this canon,
+# so a search that found one scored it as new. Each is re-said in this grammar; the translation
+# is stated where it changes the quantity.
+#
+#   TDX `SMA(X,N,1)` and `EMA` -> `mean`.  The grammar has no exponential smoother; a simple mean
+#   over the same window is the nearest shape, and the desk's own windows replace TDX's defaults
+#   (9 -> 8, 6 -> 5, 26 -> 24).
+#   `REF(X,1)` -> `ret`.  The grammar's shortest window is 2; a one-bar change enters through the
+#   `ret` terminal, whose sign is the sign TDX tests.
+#   `volume` -> `activity` (tick counts), as for the alpha101 set.
+#   VR's up-volume / down-volume ratio -> the net signed share sum(activity x sign(ret)) /
+#   sum(activity): (VR - 1) / (VR + 1) on bars that move, a monotone transform.
+#   AVEDEV in CCI -> the standard deviation (`zscore`).  CHO's cumulative money-flow line, read
+#   as a difference of two of its moving averages, is a recency-weighted sum of its increments:
+#   `decay`.
+#   Left out, and why: WR is 1 - RSV (the KDJ row); MFI collapses to VR on tick counts; BR and CR
+#   need the previous bar's close or mid, which on a continuous FX bar is its open, so they
+#   collapse to AR; AR itself (SUM(H - O) / SUM(O - L)) measured 0.994 correlated with `trend_24`
+#   on continuous bars and ROC 0.977 with the RSI row, so neither is a separate reference; DMI,
+#   ADTM and ASI exceed MAX_DEPTH.
+# ==============================================================================================
+_TDX_RSV_8: Expr = ["div", ["sub", "close", ["min", "low", 8]],
+                    ["sub", ["max", "high", 8], ["min", "low", 8]]]
+_TDX_SHADOW: Expr = ["div", ["sub", ["sub", ["min2", "open", "close"], "low"],
+                             ["sub", "high", ["max2", "open", "close"]]],
+                     ["sub", "high", "low"]]
+CANON_TDX: dict[str, Expr] = {
+    # KDJ_K = SMA(RSV, 3), RSV = (C - LLV(L, 9)) / (HHV(H, 9) - LLV(L, 9))
+    "tdx_kdj_k_8": ["mean", _TDX_RSV_8, 3],
+    # SKDJ: the K line smoothed again
+    "tdx_skdj_8": ["mean", ["mean", _TDX_RSV_8, 3], 3],
+    # BIAS = (C - MA(C, N)) / MA(C, N)
+    "tdx_bias_24": ["div", ["sub", "close", ["mean", "close", 24]], ["mean", "close", 24]],
+    # CCI = (TYP - MA(TYP, N)) / (0.015 AVEDEV(TYP, N)), TYP = (H + L + C) / 3
+    "tdx_cci_12": ["zscore", ["add", ["add", "high", "low"], "close"], 12],
+    # DMA: AMA = MA(MA(C, 10) - MA(C, 50), 10)
+    "tdx_dma_12_48": ["mean", ["sub", ["mean", "close", 12], ["mean", "close", 48]], 12],
+    # MTMMA = MA(C - REF(C, 12), 6)
+    "tdx_mtm_12": ["mean", ["delta", "close", 12], 5],
+    # RSI = SMA(MAX(C - LC, 0)) / SMA(ABS(C - LC)); MAX(x, 0) = (x + |x|) / 2
+    "tdx_rsi_12": ["div", ["mean", ["add", "ret", ["abs", "ret"]], 12],
+                   ["mean", ["abs", "ret"], 12]],
+    # PSY: the share of up bars (TDX's 心理线; not in QUANTAXIS, in every TDX install)
+    "tdx_psy_12": ["mean", ["sign", "ret"], 12],
+    # VR, as the net signed activity share
+    "tdx_vr_24": ["div", ["sum", ["mul", "activity", ["sign", "ret"]], 24],
+                  ["sum", "activity", 24]],
+    # BBI = (MA3 + MA6 + MA12 + MA24) / 4, read as close over four times BBI
+    "tdx_bbi_ratio": ["div", "close", ["add", ["add", ["mean", "close", 3], ["mean", "close", 5]],
+                                       ["add", ["mean", "close", 12],
+                                        ["mean", "close", 24]]]],
+    # CHO: money flow VOL x (2C - H - L) / (H + L), accumulated
+    "tdx_cho_24": ["decay", ["mul", "activity",
+                             ["div", ["sub", ["sub", "close", "low"], ["sub", "high", "close"]],
+                              ["add", "high", "low"]]], 24],
+    # QA_indicator_shadow: lower shadow minus upper shadow over the range
+    "tdx_shadow_balance_5": ["mean", _TDX_SHADOW, 5],
+}
+CANON.update(CANON_TDX)
+
+
 # --------------------------------------------------------------------------- frames
 def terminal_frames(bars: pd.DataFrame, raw: pd.DataFrame | None = None,
                     drivers: dict[str, pd.DataFrame] | None = None,

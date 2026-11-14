@@ -1148,6 +1148,19 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "measurement rather than an absence.",
     ),
     DestructivePath(
+        path_id="analyst_panel.forward_clock",
+        module="desks/mt5/research/analyst_panel.py",
+        function="run",
+        removes="pending model proposals popped from the panel's own forward clock "
+                "(state['pending'] in data/analyst_panel_state.json)",
+        reference="the post-proposal screen measured on the same pass",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a proposal leaves `pending` when its post-proposal screen "
+             "has MIN_TRADES trades and either clears (donated, kept in state['cells']) or does "
+             "not (kept in state['retired'] as FAILED_FORWARD with the screen). Unreadable bars, "
+             "a missing cost model, a screen error or too few trades leave it pending.",
+    ),
+    DestructivePath(
         path_id="judge_coverage.txn_drop_dirs",
         module="desks/mt5/research/judge_coverage.py",
         function="_drop_dirs",

@@ -1,0 +1,229 @@
+{
+ "system_id": "gh_waditu_czsc",
+ "run_id": "queued_repo_cards_2026-10-06_gh_waditu_czsc",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "EURUSD",
+   "family": "regime_split",
+   "params": {
+    "base_family": "multi_speed_trend",
+    "trend": "trend"
+   },
+   "mechanism": "Trend-to-noise ratio TNR = |close_t - close_{t-n}| / sum|diff(close)| over n=14 (Kaufman efficiency ratio); bar_tnr_V230630 labels noise falling when TNR_t > mean(TNR over last k=3), V230629 deciles TNR over the last 100 bars.",
+   "title": "EURUSD regime_split (QR-A-CZSC-001)",
+   "card_id": "QR-A-CZSC-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no tercile of ER separates net expectancy at the deflated threshold across the base grid"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "regime_split",
+   "params": {
+    "base_family": "multi_speed_trend",
+    "trend": "trend"
+   },
+   "mechanism": "Trend-to-noise ratio TNR = |close_t - close_{t-n}| / sum|diff(close)| over n=14 (Kaufman efficiency ratio); bar_tnr_V230630 labels noise falling when TNR_t > mean(TNR over last k=3), V230629 deciles TNR over the last 100 bars.",
+   "title": "XAUUSD regime_split (QR-A-CZSC-001)",
+   "card_id": "QR-A-CZSC-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no tercile of ER separates net expectancy at the deflated threshold across the base grid"
+  },
+  {
+   "symbol": "US500",
+   "family": "regime_split",
+   "params": {
+    "base_family": "multi_speed_trend",
+    "trend": "trend"
+   },
+   "mechanism": "Trend-to-noise ratio TNR = |close_t - close_{t-n}| / sum|diff(close)| over n=14 (Kaufman efficiency ratio); bar_tnr_V230630 labels noise falling when TNR_t > mean(TNR over last k=3), V230629 deciles TNR over the last 100 bars.",
+   "title": "US500 regime_split (QR-A-CZSC-001)",
+   "card_id": "QR-A-CZSC-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no tercile of ER separates net expectancy at the deflated threshold across the base grid"
+  },
+  {
+   "symbol": "GER40",
+   "family": "regime_split",
+   "params": {
+    "base_family": "multi_speed_trend",
+    "trend": "trend"
+   },
+   "mechanism": "Trend-to-noise ratio TNR = |close_t - close_{t-n}| / sum|diff(close)| over n=14 (Kaufman efficiency ratio); bar_tnr_V230630 labels noise falling when TNR_t > mean(TNR over last k=3), V230629 deciles TNR over the last 100 bars.",
+   "title": "GER40 regime_split (QR-A-CZSC-001)",
+   "card_id": "QR-A-CZSC-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no tercile of ER separates net expectancy at the deflated threshold across the base grid"
+  },
+  {
+   "symbol": "US500",
+   "family": "heikin_ashi_reversal",
+   "params": {
+    "run": 5,
+    "mode": "fade"
+   },
+   "mechanism": "Window acceleration (bar_accelerate_V221110): in the last window=10 bars, close in the top 20% of the window's high-low range AND >= 80% of bars are up bars -> \u4e0a\u6da8; mirror -> \u4e0b\u8dcc.",
+   "title": "US500 heikin_ashi_reversal (QR-A-CZSC-005)",
+   "card_id": "QR-A-CZSC-005",
+   "licence": "Apache-2.0",
+   "falsifier": "neither mode clears the deflated threshold on any class"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "heikin_ashi_reversal",
+   "params": {
+    "run": 5,
+    "mode": "fade"
+   },
+   "mechanism": "Window acceleration (bar_accelerate_V221110): in the last window=10 bars, close in the top 20% of the window's high-low range AND >= 80% of bars are up bars -> \u4e0a\u6da8; mirror -> \u4e0b\u8dcc.",
+   "title": "NAS100 heikin_ashi_reversal (QR-A-CZSC-005)",
+   "card_id": "QR-A-CZSC-005",
+   "licence": "Apache-2.0",
+   "falsifier": "neither mode clears the deflated threshold on any class"
+  },
+  {
+   "symbol": "GER40",
+   "family": "heikin_ashi_reversal",
+   "params": {
+    "run": 5,
+    "mode": "fade"
+   },
+   "mechanism": "Window acceleration (bar_accelerate_V221110): in the last window=10 bars, close in the top 20% of the window's high-low range AND >= 80% of bars are up bars -> \u4e0a\u6da8; mirror -> \u4e0b\u8dcc.",
+   "title": "GER40 heikin_ashi_reversal (QR-A-CZSC-005)",
+   "card_id": "QR-A-CZSC-005",
+   "licence": "Apache-2.0",
+   "falsifier": "neither mode clears the deflated threshold on any class"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "heikin_ashi_reversal",
+   "params": {
+    "run": 5,
+    "mode": "fade"
+   },
+   "mechanism": "Window acceleration (bar_accelerate_V221110): in the last window=10 bars, close in the top 20% of the window's high-low range AND >= 80% of bars are up bars -> \u4e0a\u6da8; mirror -> \u4e0b\u8dcc.",
+   "title": "XAUUSD heikin_ashi_reversal (QR-A-CZSC-005)",
+   "card_id": "QR-A-CZSC-005",
+   "licence": "Apache-2.0",
+   "falsifier": "neither mode clears the deflated threshold on any class"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "carver_accel",
+   "params": {
+    "fast": 16,
+    "thresh": 0.5
+   },
+   "mechanism": "Convexity classification (bar_polyfit_V240428): fit close over w=20 bars with degree 1 (slope p1) and degree 2 (quadratic coefficient p2); sign pairs give \u52a0\u901f\u4e0a\u6da8/\u51cf\u901f\u4e0a\u6da8/\u52a0\u901f\u4e0b\u8dcc/\u51cf\u901f\u4e0b\u8dcc.",
+   "title": "XAUUSD carver_accel (QR-A-CZSC-006)",
+   "card_id": "QR-A-CZSC-006",
+   "licence": "Apache-2.0",
+   "falsifier": "polyfit-gated cells beat carver_accel by more than the deflated margin (would promote a new variant)"
+  },
+  {
+   "symbol": "US500",
+   "family": "carver_accel",
+   "params": {
+    "fast": 16,
+    "thresh": 0.5
+   },
+   "mechanism": "Convexity classification (bar_polyfit_V240428): fit close over w=20 bars with degree 1 (slope p1) and degree 2 (quadratic coefficient p2); sign pairs give \u52a0\u901f\u4e0a\u6da8/\u51cf\u901f\u4e0a\u6da8/\u52a0\u901f\u4e0b\u8dcc/\u51cf\u901f\u4e0b\u8dcc.",
+   "title": "US500 carver_accel (QR-A-CZSC-006)",
+   "card_id": "QR-A-CZSC-006",
+   "licence": "Apache-2.0",
+   "falsifier": "polyfit-gated cells beat carver_accel by more than the deflated margin (would promote a new variant)"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "carver_accel",
+   "params": {
+    "fast": 16,
+    "thresh": 0.5
+   },
+   "mechanism": "Convexity classification (bar_polyfit_V240428): fit close over w=20 bars with degree 1 (slope p1) and degree 2 (quadratic coefficient p2); sign pairs give \u52a0\u901f\u4e0a\u6da8/\u51cf\u901f\u4e0a\u6da8/\u52a0\u901f\u4e0b\u8dcc/\u51cf\u901f\u4e0b\u8dcc.",
+   "title": "EURUSD carver_accel (QR-A-CZSC-006)",
+   "card_id": "QR-A-CZSC-006",
+   "licence": "Apache-2.0",
+   "falsifier": "polyfit-gated cells beat carver_accel by more than the deflated margin (would promote a new variant)"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "carver_accel",
+   "params": {
+    "fast": 16,
+    "thresh": 0.5
+   },
+   "mechanism": "Convexity classification (bar_polyfit_V240428): fit close over w=20 bars with degree 1 (slope p1) and degree 2 (quadratic coefficient p2); sign pairs give \u52a0\u901f\u4e0a\u6da8/\u51cf\u901f\u4e0a\u6da8/\u52a0\u901f\u4e0b\u8dcc/\u51cf\u901f\u4e0b\u8dcc.",
+   "title": "USDJPY carver_accel (QR-A-CZSC-006)",
+   "card_id": "QR-A-CZSC-006",
+   "licence": "Apache-2.0",
+   "falsifier": "polyfit-gated cells beat carver_accel by more than the deflated margin (would promote a new variant)"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "htf_anchor_trend",
+   "params": {
+    "anchor_mult": 4,
+    "anchor_n": 50,
+    "entry_fast": 12,
+    "entry_slow": 36
+   },
+   "mechanism": "Two-timeframe MACD handshake (cat_macd_V230518): after the higher frequency's latest MACD golden cross, require exactly one lower-frequency golden cross since then -> long; mirror for death cross.",
+   "title": "XAUUSD htf_anchor_trend (QR-A-CZSC-011)",
+   "card_id": "QR-A-CZSC-011",
+   "licence": "Apache-2.0",
+   "falsifier": "the first-LTF-cross trigger beats the MA-cross trigger at the deflated threshold"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "htf_anchor_trend",
+   "params": {
+    "anchor_mult": 4,
+    "anchor_n": 50,
+    "entry_fast": 12,
+    "entry_slow": 36
+   },
+   "mechanism": "Two-timeframe MACD handshake (cat_macd_V230518): after the higher frequency's latest MACD golden cross, require exactly one lower-frequency golden cross since then -> long; mirror for death cross.",
+   "title": "EURUSD htf_anchor_trend (QR-A-CZSC-011)",
+   "card_id": "QR-A-CZSC-011",
+   "licence": "Apache-2.0",
+   "falsifier": "the first-LTF-cross trigger beats the MA-cross trigger at the deflated threshold"
+  },
+  {
+   "symbol": "US500",
+   "family": "htf_anchor_trend",
+   "params": {
+    "anchor_mult": 4,
+    "anchor_n": 50,
+    "entry_fast": 12,
+    "entry_slow": 36
+   },
+   "mechanism": "Two-timeframe MACD handshake (cat_macd_V230518): after the higher frequency's latest MACD golden cross, require exactly one lower-frequency golden cross since then -> long; mirror for death cross.",
+   "title": "US500 htf_anchor_trend (QR-A-CZSC-011)",
+   "card_id": "QR-A-CZSC-011",
+   "licence": "Apache-2.0",
+   "falsifier": "the first-LTF-cross trigger beats the MA-cross trigger at the deflated threshold"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "htf_anchor_trend",
+   "params": {
+    "anchor_mult": 4,
+    "anchor_n": 50,
+    "entry_fast": 12,
+    "entry_slow": 36
+   },
+   "mechanism": "Two-timeframe MACD handshake (cat_macd_V230518): after the higher frequency's latest MACD golden cross, require exactly one lower-frequency golden cross since then -> long; mirror for death cross.",
+   "title": "NAS100 htf_anchor_trend (QR-A-CZSC-011)",
+   "card_id": "QR-A-CZSC-011",
+   "licence": "Apache-2.0",
+   "falsifier": "the first-LTF-cross trigger beats the MA-cross trigger at the deflated threshold"
+  }
+ ],
+ "trials_charged": 16,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

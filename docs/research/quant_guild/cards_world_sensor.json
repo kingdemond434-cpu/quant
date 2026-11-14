@@ -1,0 +1,993 @@
+[
+ {
+  "id": "QG25-05",
+  "title": "Implied-vol percentile regime and IV-RV premium as a conditioner",
+  "lectures": [
+   23,
+   41,
+   47,
+   52,
+   54
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/41. How to Build a Volatility Trading Dashboard in Python with Interactive Brokers/dashboard.py",
+     "sha256": "6fad5b0bde506d637ba6ffc05ab99b95f22460269badbeb9522f1ed440cb56a9"
+    },
+    {
+     "path": "2025 Video Lectures/41. How to Build a Volatility Trading Dashboard in Python with Interactive Brokers/option_trading_dashboard.py",
+     "sha256": "dba3138eaa219973bbb3cc6637f7e9c0efcd5d89b8d6edd7826a924c72bbe671"
+    },
+    {
+     "path": "2025 Video Lectures/23. How to Trade Option Implied Volatility/HowToTradeOptionImpliedVolatility-main/How to Trade Option Implied Volatility.ipynb",
+     "sha256": "ef3c799bf612bcf517cd7fa5310d7999dc01c795f6b0434528fa0feaed2fc516"
+    },
+    {
+     "path": "2025 Video Lectures/23. How to Trade Option Implied Volatility/HowToTradeOptionImpliedVolatility-main/Query Volatility.py",
+     "sha256": "1c62616aef6a8ee9f35d2d37e496105a6b9259dbe496eb3fba2576b6e862dc05"
+    },
+    {
+     "path": "2025 Video Lectures/47. Master Volatility with ARCH & GARCH Models/arch_garch.ipynb",
+     "sha256": "984e24d392a53a57c756284b30aec0ee4e35898b0b5704c3850a682a6d243762"
+    },
+    {
+     "path": "2025 Video Lectures/47. Master Volatility with ARCH & GARCH Models/ib_vol.py",
+     "sha256": "a6511b46723d922242be451e2a79c752cc0434b5f31e3848ce96c3f2a7882484"
+    }
+   ]
+  },
+  "mechanism": "Rank today's implied vol against its trailing 252-day window (percentile bands 20/40/60/80 -> LOW..HIGH); regress forward 30-day mean IV on current IV and take the fixed point slope/intercept (IV* = b/(1-a)) as the mean-reversion level, with separate slopes above and below it; IV above ~80th percentile is read as 'expect reversion down', and IV persistently above realized vol as the variance risk premium.",
+  "causal_rationale": "Implied vol embeds an insurance premium that is richest when fear is high, and vol is mean-reverting; the state therefore carries information about the forward path of realized vol and about drift (leverage effect) of the underlying.",
+  "original_universe": "US single stocks / SPY via IBKR OPTION_IMPLIED_VOLATILITY bars",
+  "original_horizon": "30 days forward",
+  "original_data": "IBKR historical implied-vol bars, daily",
+  "original_implementation": "Tkinter dashboard; full-sample regression of forward IV on current IV (overlapping 30-day windows), percentile via rolling rank",
+  "weaknesses": "Regression uses overlapping forward windows (serially correlated residuals, inflated R^2) and full-sample fit; the option leg it suggests (sell ATM straddles) is not tradable on MT5; donor's analyzer has a theta bug (adds put delta instead of put theta in one version).",
+  "mt5_translation": "State/conditioning feature for the underlying CFD: IV percentile and IV - RV(broker bars) for ^VIX->US500/NAS100, ^VXN->NAS100, ^GVZ->XAUUSD, ^OVX->XTIUSD/XBRUSD. The desk already archives exactly this join; it needs a consumer (alt_conditioned / exogenous_conditioner gating, or the allocator's vol state).",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "XAUUSD",
+   "XTIUSD",
+   "XBRUSD"
+  ],
+  "pit_requirements": "Use only vol_archive vintages (as-of snapshots) or next-session availability for public CBOE closes; percentile window strictly trailing.",
+  "feature_representation": "iv_pct_252 in [0,1]; vrp = IV - RV20(broker H1, annualised); fixed point IV* re-estimated on an expanding window with non-overlapping 30-day targets.",
+  "hypothesis": "For XAUUSD and US500, existing price-only cells gated off when the paired implied-vol percentile > 0.8 (or gated on, for mean-reversion cells) show a forward E[log W] difference versus ungated cells larger than the same gate built on a date-shuffled IV series.",
+  "entry_exit": "Conditioner only: base family's own entries/exits.",
+  "execution": "n/a (state feature)",
+  "costs": "none added",
+  "leakage_risks": "Overlapping forward windows; restated CBOE history instead of the as-of vintage; percentile computed over the full sample.",
+  "selection_risks": "Many base cells x 4 IV series x bands = large trial count; route through alt_conditioned so the charge is counted once per cell.",
+  "baseline": "ungated base cell.",
+  "falsifier": "Gate effect indistinguishable from the shuffled-IV gate across the judged cells.",
+  "expected_orthogonality": "High vs price-only volatility features if IV-RV carries premium information beyond RV; low if IV percentile is just a lagged RV percentile (test G).",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "ungated base cell",
+   "B": "IV pct > 0.8 hard gate",
+   "C": "IV pct + VRP sign, trailing windows, as-of vintages",
+   "D": "IV series shuffled by date",
+   "E": "IV lagged 5 sessions",
+   "F": "random gate with matched open fraction",
+   "G": "RV percentile of the CFD itself",
+   "H": "regime_split vol tercile / skew_premium",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "EXISTS_UNWIRED",
+   "evidence": "desks/mt5/recorders/vol_archive.py:1-40,103 archives ^VIX/^GVZ/^OVX/^VXN against this broker's realised vol (scheduled as MT5-VolArchive, desks/mt5/recorders/install_tape_tasks.ps1:121) but grep for 'vol_archive/observations|VOL_ARCHIVE|read_archive' finds only libs/ops/capability_graph.py:677,951,1018 -- no family, gate or allocator reads it."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P0",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-06",
+  "title": "Event implied move vs realised move (IV crush) around earnings and macro releases",
+  "lectures": [
+   43,
+   45,
+   55
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/43. How to Trade Implied Volatility Crush/how_to_trade_volatility_crush_option_strategy.ipynb",
+     "sha256": "8ddfad97b4350d19c053cd29b1630a364de1c4a29b6f5f489ececc19262265bd"
+    },
+    {
+     "path": "2025 Video Lectures/45. How to Build an Options Volatility Trading Tool in Python with Interactive Brokers/analyzer.py",
+     "sha256": "c7aaddb9bde2d3d0b1fe4f61fe8252412c3cfa5ec33370a06a655150b89c2aed"
+    },
+    {
+     "path": "2025 Video Lectures/45. How to Build an Options Volatility Trading Tool in Python with Interactive Brokers/vol_crush_trade_analyzer.py",
+     "sha256": "ae8c61634674c0d06bb0a9cab48387f7dac1961b2878e3b604aeea8f3f1d2a8c"
+    },
+    {
+     "path": "2025 Video Lectures/55. How to Build an Earnings Event Trading Dashboard in Python (Interactive Brokers API)/earnings_trading_dashboard.py",
+     "sha256": "a95ad5d1cb4e74732aabbd3f6c74855ae61b8587000603d0563bdbd737a95699"
+    }
+   ]
+  },
+  "mechanism": "Before a scheduled event (earnings, PCE) option IV is inflated relative to the move that follows; short ATM straddle captures the IV collapse when the realised move is smaller than priced. Dashboard measures pre/post IV, straddle repricing, overnight gap and total move.",
+  "causal_rationale": "Event uncertainty is systematically overpriced (insurance premium); after the print the uncertainty resolves and IV drops mechanically.",
+  "original_universe": "US single stocks (NVDA, DELL, ZS) and their options",
+  "original_horizon": "1 day around the event",
+  "original_data": "IBKR daily price, IV bars, VIX",
+  "original_implementation": "Black-Scholes repricing of an ATM straddle with pre and post IV; post price = average of next-day open and close",
+  "weaknesses": "Post price averages next-day open and close (look-ahead for any decision taken at the open); fallback IV from VIX*1.2 is invented; one-event anecdotes; the option trade itself is not available on MT5.",
+  "mt5_translation": "Two state features in the news/earnings lane: (a) implied_move = pre-event straddle/spot, and (b) ratio realised_move/implied_move history per name or index. For share CFDs (event lane only) and indices, condition event_reaction fade/follow on whether the market historically over- or under-priced this event's move.",
+  "candidate_symbols": [
+   "NVIDIA",
+   "Apple",
+   "Microsoft",
+   "Amazon",
+   "Meta",
+   "Tesla",
+   "US500",
+   "NAS100"
+  ],
+  "pit_requirements": "Pre-event IV must be stamped before the release; earnings dates as first-known; realised move measured only after the release bar closes.",
+  "feature_representation": "implied_move_pct, realised_over_implied (rolling mean over the last 8 events of the same name).",
+  "hypothesis": "For share CFDs whose last-8-event realised/implied ratio < 0.8, fading the first post-earnings H1 move (event_reaction fade=True) has positive net expectancy, and the ratio sorts expectancy monotonically.",
+  "entry_exit": "Event-lane: base event_reaction entry after react_bars=1; exit TTL 6-24 bars.",
+  "execution": "Share CFDs trade only in cash hours; avoid the opening auction bar.",
+  "costs": "Share CFD commission/spread; gap risk on the stop.",
+  "leakage_risks": "Donor's open/close averaging; IV snapshots taken after the release; earnings-date revisions.",
+  "selection_risks": "Single names chosen for being famous earnings movers.",
+  "baseline": "event_reaction fade without the implied-move conditioner.",
+  "falsifier": "No monotone relation between realised/implied history and post-event fade expectancy.",
+  "expected_orthogonality": "High vs price-only sleeves (event clock).",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "event_reaction unconditioned",
+   "B": "short straddle (not executable; record only)",
+   "C": "ratio-conditioned fade/follow",
+   "D": "ratios shuffled across names",
+   "E": "ratio from events lagged by one quarter",
+   "F": "random ratio",
+   "G": "index-level VIX pre/post change from vol_archive",
+   "H": "event_response_atlas conditioners",
+   "I": "LLM summary of guidance tone as a second conditioner"
+  },
+  "diff_first": {
+   "verdict": "EXTERNALLY_BLOCKED",
+   "evidence": "grep -rilE 'implied.move|straddle|iv.crush|vol.crush' desks/mt5 libs -> only the vol_mean_reversion docstring (families_orthogonal.py:833); no single-name options IV feed on the desk; index-level IV exists via desks/mt5/recorders/vol_archive.py; event reactions exist in desks/mt5/research/event_response_atlas.py and event_surprise.py (consensus z), not implied-move based."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P2",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-25",
+  "title": "Text sentiment (finance lexicon, negation n-grams, NER, emojis) for cross-sectional share books",
+  "lectures": [
+   65,
+   53,
+   54,
+   56
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/65. Natural Language Processing for Quant Finance/nlp.ipynb",
+     "sha256": "b06182783c3cdb2bff7402847fdf97180c15f5a47d43cd1ed835139c13e952ec"
+    },
+    {
+     "path": "2025 Video Lectures/53. Emojis Predict Future Stock Returns/Is a Picture Worth  - UCSD.pdf",
+     "sha256": "62c1812c1292608eef4f75276533d095f648700b841c75d1f46c9a4b4c9a96bc"
+    },
+    {
+     "path": "2025 Video Lectures/54. Quant vs Discretionary Trading/quant_disc.ipynb",
+     "sha256": "93215891536e546f613ad0f3978a0bab372ac0cc697899eac3a5bce90d1f3821"
+    }
+   ]
+  },
+  "mechanism": "Score social posts with a finance-specific lexicon (buy/sell carry meaning), handle negation with n-grams, map mentions to tickers with NER (ambiguity: 'APPLE was delicious'), aggregate per name per day and trade a market-neutral long/short on the cross-section of sentiment; lecture 53 slides (author's own talk) model stock returns with emoji usage in posts.",
+  "causal_rationale": "Retail attention and sentiment move prices short term and are partially predictable cross-sectionally; emojis carry tone that dictionary methods miss.",
+  "original_universe": "US single stocks (and crypto tickers in examples, out of mandate)",
+  "original_horizon": "daily",
+  "original_data": "synthetic tweets; social posts in the talk",
+  "original_implementation": "toy doc-term vectors, cosine similarity, VADER, spaCy NER; no backtest in the notebook",
+  "weaknesses": "No backtest; the lecture-53 PDF uses an embedded font encoding that could only be partially decoded here; alpha claims are anecdotal.",
+  "mt5_translation": "Share CFDs are allowed only in cross-sectional class books or the news/earnings lane: a daily per-name sentiment z ranked against the equity peer class, as an input to a cross-sectional class book; the desk's NLP organ is per-country/macro today.",
+  "candidate_symbols": [
+   "NVIDIA",
+   "Apple",
+   "Microsoft",
+   "Amazon",
+   "Meta",
+   "Tesla",
+   "Alphabet-A",
+   "MicronTechnology"
+  ],
+  "pit_requirements": "Post timestamps as first-seen; entity mapping frozen per vintage; no later-edited text.",
+  "feature_representation": "daily sentiment z per name, cross-sectionally ranked within the equity class.",
+  "hypothesis": "Top-minus-bottom quintile of daily social sentiment within the share-CFD equity class earns positive next-day return net of costs, beyond cross_sectional_class_reversal/momentum.",
+  "entry_exit": "Daily rebalance at the cash open; hold 1 day.",
+  "execution": "Share CFDs in cash hours only.",
+  "costs": "Share CFD spreads/commission x 2 per day; turnover high.",
+  "leakage_risks": "Ticker mapping using hindsight; deleted posts; timezone of post vs bar.",
+  "selection_risks": "Large-cap names with heavy coverage.",
+  "baseline": "cross_sectional_class_reversal on the same names.",
+  "falsifier": "No net-of-cost spread or explained by reversal/momentum.",
+  "expected_orthogonality": "Moderate-high vs price-only cross-sectional books.",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "cross-sectional reversal",
+   "B": "lexicon sentiment",
+   "C": "LLM sentiment with negation and NER, PIT",
+   "D": "sentiment shuffled across names",
+   "E": "lagged 2 days",
+   "F": "random scores",
+   "G": "attention_ts",
+   "H": "nlp_event_factors (country level)",
+   "I": "LLM scoring is the natural arm"
+  },
+  "diff_first": {
+   "verdict": "EXISTS_INCOMPLETE",
+   "evidence": "desks/mt5/research/nlp_event_factors.py:1-14 builds PIT text factors per COUNTRY (macro/policy), not per share; families cross_sectional_class_* exist for shares; grep -rli emoji desks libs -> none."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P2",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-26",
+  "title": "Priced-in-ness: scale event reactions by the pre-event implied probability",
+  "lectures": [
+   42,
+   58,
+   54
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/42. Quant on Trading and Investing/quant_on_trading_investing_market.ipynb",
+     "sha256": "039e3839c5a1cba40bba70dae922f24eceed3231bcf904ddc50fd116273d5030"
+    },
+    {
+     "path": "2025 Video Lectures/58. Why Quant Models Break/why_models_break.ipynb",
+     "sha256": "9c069142dd2a1b7e7760c4a68aaf8bdbe25866ce24e8e713835e41eef111f3a1"
+    }
+   ]
+  },
+  "mechanism": "Implied probabilities (Polymarket, betting odds, rate-cut pricing) measure how priced-in an outcome is; the market reaction to the realised outcome should scale with 1 - implied probability, so a 90%-priced rate cut moves price little and a surprise moves it a lot.",
+  "causal_rationale": "Prices move on the unexpected component of news.",
+  "original_universe": "sports, elections, rate cuts",
+  "original_horizon": "event",
+  "original_data": "illustrative",
+  "original_implementation": "simulations",
+  "weaknesses": "No empirical test.",
+  "mt5_translation": "For macro events with a prediction-market or futures-implied probability, define surprise_pm = outcome - p_implied (pre-event, first-seen) and condition event_reaction follow/fade on |surprise_pm| on FX/indices/gold.",
+  "candidate_symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD",
+   "US500",
+   "NAS100",
+   "UST10Y"
+  ],
+  "pit_requirements": "Implied probability snapshot strictly before the release; outcome resolution time.",
+  "feature_representation": "surprise_pm in [-1,1].",
+  "hypothesis": "For FOMC/CPI-type events, the absolute 1-hour reaction of USDJPY/XAUUSD/US500 is increasing in |outcome - p_implied|, and following the reaction when |surprise_pm| > 0.5 has positive net expectancy.",
+  "entry_exit": "event_reaction(fade=False) gated on |surprise_pm|.",
+  "execution": "Spread widens on release; enter after the first bar.",
+  "costs": "release-bar spread.",
+  "leakage_risks": "Using the post-release market price as 'implied'.",
+  "selection_risks": "Few events per year; pool across event kinds.",
+  "baseline": "consensus z (event_surprise).",
+  "falsifier": "No monotone relation between |surprise_pm| and reaction size.",
+  "expected_orthogonality": "Complements consensus-based surprise.",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "event_reaction unconditioned",
+   "B": "implied-prob scaling",
+   "C": "PM probability calibrated per category, first-seen",
+   "D": "probabilities shuffled",
+   "E": "probabilities from a day earlier",
+   "F": "random p",
+   "G": "consensus z",
+   "H": "event_surprise",
+   "I": "LLM reads market commentary to estimate 'priced-in' when no market exists"
+  },
+  "diff_first": {
+   "verdict": "EXISTS_INCOMPLETE",
+   "evidence": "desks/mt5/research/prediction_markets.py:2-15 (forecast source, calibration, wired hourly in desks/mt5/research/hourly_cycle.py:4747); desks/mt5/research/event_surprise.py:1-14 consensus z surprise (hourly_cycle.py:3951); no join of pre-event implied probability with reaction size found."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P1",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-29",
+  "title": "Options-venue-only mechanisms (model mispricing, delta-hedged vol arb, Greeks books, smile butterflies, exotics pricing)",
+  "lectures": [
+   6,
+   9,
+   11,
+   13,
+   19,
+   30,
+   32,
+   38,
+   39,
+   67,
+   73
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/6. How to Trade with the Black-Scholes Model/Black-ScholesTrading.ipynb",
+     "sha256": "43093a1827a666976e5d7876aa4232256991cb0dc6481d7363ad1367081ff90b"
+    },
+    {
+     "path": "2025 Video Lectures/9. Delta Hedging and Black-Scholes Prices/Delta Hedging Trading Strategy.ipynb",
+     "sha256": "87a9d7ce7f450a70c7fd28b06050e21e6237b86db4d0ab7bd4c2180af0093458"
+    },
+    {
+     "path": "2025 Video Lectures/30. Trading with the Black-Scholes Implied Volatility Surface/the_implied_volatility_surface.ipynb",
+     "sha256": "ddd58ab7a81dfa5b17ee9e5cca61da2bff14e07218245265212191f683397f9a"
+    },
+    {
+     "path": "2025 Video Lectures/32. How to Price Exotic Options/how_trading_desks_price_exotics.ipynb",
+     "sha256": "4b2b301eba40ade179f73c1313082e32a9a25cf64f588c94abf1567925b8ddc9"
+    },
+    {
+     "path": "2025 Video Lectures/39. Heston Stochastic Volatility Model and Fast Fourier Transforms/heston_fft.ipynb",
+     "sha256": "11d558e6f8192841387a032815ad10a76b7330be26e0930385b46ddff8679534"
+    }
+   ]
+  },
+  "mechanism": "Buy/sell options when model price differs from the quote; delta-hedge to monetise an implied-vs-forecast vol view (P/L converges to the premium as hedging becomes continuous); manage Greeks; inconsistent constant-vol quotes across strikes create butterfly arbitrage; price exotics by calibrating Heston to the surface and simulating; Carr-Madan FFT; finite differences.",
+  "causal_rationale": "Option premia embed model and risk premia; consistency across strikes is enforceable by arbitrage.",
+  "original_universe": "equity options",
+  "original_horizon": "to expiry",
+  "original_data": "simulated / illustrative surfaces",
+  "original_implementation": "pricing notebooks",
+  "weaknesses": "No MT5 venue for options; nothing executable here.",
+  "mt5_translation": "Only as state for the underlying (skew, term structure, IV level) which belongs to QG25-05 and the World sensor thread.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "n/a",
+  "hypothesis": "n/a",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "n/a",
+  "falsifier": "n/a",
+  "expected_orthogonality": "n/a",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "n/a",
+   "B": "n/a",
+   "C": "n/a",
+   "D": "n/a",
+   "E": "n/a",
+   "F": "n/a",
+   "G": "n/a",
+   "H": "skew_premium (price-only skew)",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "EXTERNALLY_BLOCKED",
+   "evidence": "Universe is MT5/Fusion CFDs only (CLAUDE.md MT5 UNIVERSE MANDATE); no option instruments in desks/mt5/data/universe/universe.json asset classes (Equities, Crypto, Forex, Forex Exotics, Indices, Soft Commodity, Bonds, Commodities, Energy)."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "none",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG26-07-live-iv-surface-skew-term-state",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/84. How to Build a Live Volatility Surface in Python (Interactive Brokers)/quant_guild_live_iVol_source_code.py",
+    "lecture": "84. How to Build a Live Volatility Surface in Python (Interactive Brokers)",
+    "sha256": "797f35fcdefa94b8151279918cb31727602fc9a94d8cfc3bd494b8cc4a8d6c9e"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/84. How to Build a Live Volatility Surface in Python (Interactive Brokers)/video_code.py",
+    "lecture": "84. How to Build a Live Volatility Surface in Python (Interactive Brokers)",
+    "sha256": "2e0d0bfb2b4935a8047a1c7b84e9f6bc8eb679b39507ed533c67dab294eb7164"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/89. Black-Scholes Implied Volatility in 3 Minutes/bsiv.ipynb",
+    "lecture": "89. Black-Scholes Implied Volatility in 3 Minutes",
+    "sha256": "a3fda6b635125224909f95ed01a076f32b24bac4a85a995aaa09d8416d29c717"
+   }
+  ],
+  "mechanism": "Stream broker-computed implied vols for the next six expiries and strikes within +-2% of spot, pivot to an expiry x strike surface (linear fill), and read the front-month skew and the ATM term structure. Skew and term slope are the market's price of crash risk and of near-term versus later uncertainty.",
+  "causal_rationale": "Hedgers pay for downside protection; when demand for near-dated puts spikes, front skew steepens and the term structure inverts, which precedes or coincides with realised stress in the underlying.",
+  "original_universe": "SPY options via IBKR",
+  "original_horizon": "live snapshot, intraday",
+  "original_data": "IBKR option chain parameters + tickOptionComputation implied vol",
+  "original_implementation": "Desktop live 3D surface + front-month skew plot; no signal.",
+  "weaknesses": "Only +-2% strikes (no wings, so 'skew' is near-ATM slope); interpolation fills gaps silently; no archive, no PIT history; IBKR market data entitlement needed.",
+  "mt5_translation": "Options do not trade on MT5. Use keyless public analogues as STATE features for the underlying CFD: VIX9D/VIX/VIX3M term slope and inversion flag, CBOE SKEW as a skew proxy for US500, GVZ for XAUUSD, OVX for XTIUSD, VXN for NAS100, as conditioners of existing price families.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "XAUUSD",
+   "XTIUSD",
+   "US30"
+  ],
+  "pit_requirements": "Use the desk's own hourly vintage (vol_archive observations) as of the decision bar, never the restated daily series.",
+  "feature_representation": "term_slope_short, term_slope_long, term_shape (contango/inverted), skew_proxy rank.",
+  "hypothesis": "US500 drawdown_conditional entries taken when VIX term structure is in contango (VIX3M > VIX) have higher net expectancy than those taken when it is inverted.",
+  "entry_exit": "Conditioner on a base price family (e.g., drawdown_conditional, overnight_gap_decay).",
+  "execution": "Existing.",
+  "costs": "Existing.",
+  "leakage_risks": "Using end-of-day CBOE closes for an intraday decision; restated values.",
+  "selection_risks": "Several state variables x several base families; charge each pairing.",
+  "baseline": "base family unconditioned; realised-vol regime_split.",
+  "falsifier": "No expectancy difference between term-shape buckets in walk-forward on the archived vintages.",
+  "expected_orthogonality": "Partly redundant with realised-vol state (H: regime_split vol axis).",
+  "control_matrix": {
+   "A": "base family unconditioned",
+   "B": "term-shape conditioner from vol_archive",
+   "C": "skew rank + term slope jointly, vintage-correct",
+   "D": "term shapes shuffled across days",
+   "E": "state lagged 1 day",
+   "F": "random state with the same bucket frequencies",
+   "G": "realised-vol tercile conditioner",
+   "H": "regime_split vol axis; macro_view VIX lean",
+   "I": "N/A"
+  },
+  "diff_first": "EXISTS_INCOMPLETE",
+  "evidence": "desks/mt5/recorders/vol_archive.py:59,134-145,298-302,435-445 archives VIX term (^VIX9D,^VIX,^VIX3M,^VIX6M), term_shape and ^SKEW proxy hourly (MT5-VolArchive task, recorders/install_tape_tasks.ps1:121). grep 'vol_archive' in desks/mt5/mt5desk = 0: no family or conditioner consumes the archive.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG26-08-model-free-implied-variance-strip",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/91. How Goldman Sachs Prices Variance Swaps/qg-volatility_swaps_final.pdf",
+    "lecture": "91. How Goldman Sachs Prices Variance Swaps",
+    "sha256": "78d0c9913537e08ababf04d5a84fc419e6cf02eacd3a50e3ac0312975085c80c"
+   }
+  ],
+  "mechanism": "Fair variance-swap strike from log-contract replication: realised variance equals twice the hedged log payoff, and the log payoff is spanned by a 1/K^2-weighted strip of OTM puts and calls (Carr-Madan, Demeterfi-Derman-Kamal-Zou); the discrete strip is the VIX formula. Practitioner caveats: strike truncation biases it low, skew extrapolation is needed, jumps break the replication.",
+  "causal_rationale": "Gives a model-free implied variance to compare with realised variance (the VRP, QG26-09).",
+  "original_universe": "index options",
+  "original_horizon": "30-day variance",
+  "original_data": "option chain",
+  "original_implementation": "Research note (PDF), no code.",
+  "weaknesses": "Requires a full option chain; truncation and jump error.",
+  "mt5_translation": "Do not rebuild: the CBOE indices the desk archives (VIX, VXN, GVZ, OVX) ARE this discrete strip. Use them as implied variance for the VRP state.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "pit_requirements": "Archived vintage values.",
+  "feature_representation": "implied variance = (index/100)^2.",
+  "hypothesis": "No new hypothesis; input to QG26-09.",
+  "entry_exit": "N/A",
+  "execution": "N/A",
+  "costs": "N/A",
+  "leakage_risks": "N/A",
+  "selection_risks": "N/A",
+  "baseline": "published CBOE index",
+  "falsifier": "N/A",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "N/A",
+   "B": "own strip from a chain",
+   "C": "published index (already the strip)",
+   "D": "N/A",
+   "E": "N/A",
+   "F": "N/A",
+   "G": "ATM implied vol squared",
+   "H": "recorders/vol_archive.py",
+   "I": "N/A"
+  },
+  "diff_first": "NOT_WORTH_IT",
+  "evidence": "desks/mt5/recorders/vol_archive.py:26-30 (^VIX, ^GVZ, ^OVX, ^VXN archived as reference history); grep 'variance.swap|model.free.implied' finds only libs/research/external_federation.py:759 (the donor registration). Computing an own strip needs an options chain the desk cannot trade on MT5.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "none"
+ },
+ {
+  "id": "QG26-09-vrp-iv-rv-spread-state",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/119. Volatility Risk Premium How Options Markets Price Fear/riveot.ipynb",
+    "lecture": "119. Volatility Risk Premium How Options Markets Price Fear",
+    "sha256": "81ba5f7f957f91ce25e784b66469916715441675f9b82e041fe2f540f7d31601"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/138. How to Protect your Stock Portfolio Against a Market Crash/crash.ipynb",
+    "lecture": "138. How to Protect your Stock Portfolio Against a Market Crash",
+    "sha256": "b1245db927565dd4ab573657902b917c61746f09c36425f07eb8964c7df2378e"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/124. When Does a Trading Strategy Actually Need to be Secret/wtsds.ipynb",
+    "lecture": "124. When Does a Trading Strategy Actually Need to be Secret",
+    "sha256": "1bb53cc76bdf95821c4623a9cc18912f0aef71c47a45b05958b7471dfc068e23"
+   }
+  ],
+  "mechanism": "Implied vol exceeds subsequently realised vol on average (insurance premium); the donor regresses forward 30-day realised variance on today's implied variance and shows both 'selling insurance' and 'buying insurance' can be profitable depending on timing (crash states). The spread IV^2 - RV^2 and the regression residual are state variables: a wide premium is compensation available to a short-vol carrier; a collapsed or negative premium marks stress.",
+  "causal_rationale": "Hedgers who cannot bear tails pay a premium to transfer them; the premium widens after shocks and compresses in complacent markets.",
+  "original_universe": "SPX implied (30d) vs realised vol, 10 years",
+  "original_horizon": "daily, 30-day forward",
+  "original_data": "csv of SPX option-implied and realised vol",
+  "original_implementation": "Plots, rolling expectation windows, scatter of IV vs forward RV with OLS line, toy insurance-seller vs insured equity simulation.",
+  "weaknesses": "No out-of-sample test; the profitable seller curve is a stylised simulation; ignores that the trade needs options.",
+  "mt5_translation": "State/conditioning feature for index, gold and oil CFDs: vrp = IV(index)^2 - RV(this broker's bars)^2 on matched horizons from vol_archive; use (a) as a conditioner on short-horizon reversion families (trade reversion when vrp rank is high: dealers long gamma, moves dampen), and (b) as a crash-state flag when vrp < 0.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "pit_requirements": "Implied from the desk's hourly vintage; RV from bars closed before the decision; forward RV never enters a feature.",
+  "feature_representation": "vrp_level, vrp_rank_252, vrp_negative flag, forward-RV regression residual.",
+  "hypothesis": "On US500/NAS100 H1, vol_mean_reversion and overnight_gap_decay entries taken when vrp_rank_252 >= 0.7 have higher net expectancy than entries when vrp_rank_252 <= 0.3; and vrp < 0 days have more negative 5-day forward returns than vrp > 0 days.",
+  "entry_exit": "Conditioner on the base family; for the crash flag, a state passed to the allocator.",
+  "execution": "Existing.",
+  "costs": "Existing.",
+  "leakage_risks": "Matching IV to RV computed over the FORWARD window (the regression target) is the classic leak.",
+  "selection_risks": "Two markets with deep implied history (the census notes the class died on breadth); charge every family x bucket.",
+  "baseline": "base family unconditioned; realised-vol tercile (regime_split).",
+  "falsifier": "Bucket expectancy difference not significant after the multiplicity charge on the archived vintage, or vanishes once realised-vol tercile is controlled.",
+  "expected_orthogonality": "Partially overlaps realised-vol regime; the implied leg is information price data lacks.",
+  "control_matrix": {
+   "A": "base family unconditioned",
+   "B": "vrp rank conditioner",
+   "C": "vintage-correct vrp + vol-tercile control",
+   "D": "vrp series shuffled by day",
+   "E": "vrp lagged 5 days",
+   "F": "random buckets same frequency",
+   "G": "VIX level rank alone",
+   "H": "regime_split vol axis; macro_view.py:137 VIX lean",
+   "I": "N/A"
+  },
+  "diff_first": "EXISTS_UNWIRED",
+  "evidence": "desks/mt5/recorders/vol_archive.py:307,453 computes variance_risk_premium = iv - cc every hour; libs/research/volatility_signals.py:184-241 prediction_premium/premium_signal exist; libs/research/mechanism_census.py:300-320 ranks VRP priority 3 ('best measured IC +0.06, died on BREADTH'). No mt5desk family reads vol_archive (grep = 0). NOTE: that census row lists 'Deribit public options chains' as its data source, which the MT5 mandate forbids; the CBOE indices are the admissible ground.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P0"
+ },
+ {
+  "id": "QG26-17-put-overlay-portfolio-insurance",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/138. How to Protect your Stock Portfolio Against a Market Crash/crash.ipynb",
+    "lecture": "138. How to Protect your Stock Portfolio Against a Market Crash",
+    "sha256": "b1245db927565dd4ab573657902b917c61746f09c36425f07eb8964c7df2378e"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/116. The S&P 500 Lie Retail Investors Believe/haqep.ipynb",
+    "lecture": "116. The S&P 500 Lie Retail Investors Believe",
+    "sha256": "8fadf4e1ae7b6530f07c3a11f03ee45637eadfd58f103080bbf6ed9d91caf105"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/120. I Met a Jane Street Quant at the Gym (He Got This Wrong)/dvh.ipynb",
+    "lecture": "120. I Met a Jane Street Quant at the Gym (He Got This Wrong)",
+    "sha256": "e34ea0c7c72be233d9de60fee2a285a5daf5875eb062cfdc1c85b8db87bf7d16"
+   }
+  ],
+  "mechanism": "Diversification is statistical and fails along the first principal direction in a crash; a long put is contractual and pays exactly then. The donor spends ~2.5% of capital on ATM puts and reinvests put proceeds into the index after the crash.",
+  "causal_rationale": "Convex payoff independent of crisis correlation.",
+  "original_universe": "SPY, CAT/NVDA",
+  "original_horizon": "annual",
+  "original_data": "daily prices; simulated put payoffs",
+  "original_implementation": "Notebooks: PCA loadings, put overlay with reinvestment vs buy-and-hold vs timing.",
+  "weaknesses": "Option pricing simplified; VRP bleed acknowledged but not measured.",
+  "mt5_translation": "Options are not tradable on MT5. Closest admissible convexity: fast-speed trend (crisis-alpha) sleeves and short-index/long-JPY/long-gold defensive class books; the option-implied state goes to the world sensor.",
+  "candidate_symbols": [
+   "US500",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "pit_requirements": "N/A",
+  "feature_representation": "N/A",
+  "hypothesis": "No MT5 cell beyond the existing crisis-alpha trend variant.",
+  "entry_exit": "N/A",
+  "execution": "N/A",
+  "costs": "N/A",
+  "leakage_risks": "N/A",
+  "selection_risks": "N/A",
+  "baseline": "multi_speed_trend crisis_only",
+  "falsifier": "N/A",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "N/A",
+   "B": "long puts (not on MT5)",
+   "C": "crisis-alpha trend / defensive class book",
+   "D": "N/A",
+   "E": "N/A",
+   "F": "N/A",
+   "G": "short-index stop overlay",
+   "H": "family_multi_speed_trend.py:19 crisis_only; crisis_only_class_defensive",
+   "I": "N/A"
+  },
+  "diff_first": "EXTERNALLY_BLOCKED",
+  "evidence": "No listed options on the MT5/Fusion venue. Proxy exists: desks/mt5/mt5desk/family_multi_speed_trend.py:1-20 (crisis_only variant) and registered crisis_only_class_defensive.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "none"
+ },
+ {
+  "id": "QG-ADH-001",
+  "repo": "romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+  "licence": "MIT",
+  "source": "github:romanmichaelpaolucci/Algorithmic_Delta_Hedging@2ecbfb70bd683d529d0e3ac06302421c9b1b3b29:options/euro_option_analysis.py (sha256 b2b28424e3a81c9a...)",
+  "mechanism": "Discrete delta hedging of a European call: Black-Scholes price and delta recomputed each step as the underlying moves and time decays; the hedge error (option P&L minus delta x underlying P&L) is the state a dealer manages.",
+  "causal_rationale": "A short-gamma dealer must buy into rallies and sell into declines to stay delta-neutral; aggregated, that rebalancing amplifies moves (negative dealer gamma) or dampens them (positive dealer gamma) near large open-interest strikes and into the close.",
+  "original_universe": "one hypothetical stock (S=64.5, K=65, vol 40%)",
+  "original_horizon": "daily steps to expiry",
+  "original_data": "simulated prices",
+  "original_implementation": "EuropeanCall/EuropeanPut classes; matplotlib FuncAnimation of price, delta, underlying vs strike",
+  "weaknesses": "Visualiser, not a hedger: no hedge P&L is computed; wall-clock time to expiry; price shock unscaled by vol (QG-ADH-003).",
+  "mt5_translation": "Options never trade. Dealer-gamma state (sign and size of aggregate dealer gamma near spot, from public OI) becomes a STATE feature for index and gold CFDs; existing price proxies (closing-hour displacement with elevated realised vol) are the H arm.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "US2000",
+   "XAUUSD"
+  ],
+  "pit_requirements": "OI snapshot dated at its publication (end-of-day OI is known next morning); spot at the CFD bar",
+  "feature_representation": "GEX_t = sum over strikes of OI x gamma x sign(dealer side) x S^2 / 100, scaled by ADV; regime = sign(GEX)",
+  "hypothesis": "When estimated dealer gamma on SPY/QQQ is negative, US500/NAS100 rest-of-day displacement continues into the close more often than when it is positive.",
+  "entry_exit": "as hedging_demand_close, gated by GEX sign",
+  "execution": "CFD market at the closing hour",
+  "costs": "index CFD spread at close",
+  "leakage_risks": "OI is end-of-day; using same-day OI is look-ahead",
+  "selection_risks": "dealer-side sign assumption (customers long puts / short calls) is a convention",
+  "baseline": "hedging_demand_close with require_elevated_vol proxy",
+  "falsifier": "no difference in continuation rate between GEX<0 and GEX>0 days (two-sided, n>=250 days)",
+  "expected_orthogonality": "moderate: replaces a vol proxy with a positioning measure",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ROUTED",
+  "control_matrix": {
+   "A": "hedging_demand_close without gamma gate",
+   "B": "donor BS delta path (no state)",
+   "C": "GEX-sign gate from public OI",
+   "D": "GEX sign shuffled across days",
+   "E": "GEX lagged 2 days",
+   "F": "random gate same frequency",
+   "G": "realised-vol gate only",
+   "H": "hedging_demand_close require_elevated_vol / liquidity_gamma_reversal",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "desks/mt5/mt5desk/families_edge_queue.py:53 family_hedging_demand_close ('this desk has no options data, and a proxy wearing the name of the thing it proxies is a lie'); :214 family_liquidity_gamma_reversal; no options-OI ingestion"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG-ADH-003",
+  "repo": "romanmichaelpaolucci/Algorithmic_Delta_Hedging",
+  "licence": "MIT",
+  "source": "github:romanmichaelpaolucci/Algorithmic_Delta_Hedging@2ecbfb70bd683d529d0e3ac06302421c9b1b3b29:options/euro_option_analysis.py:LiveOptionsGraph.time_step (sha256 b2b28424e3a81c9a...)",
+  "mechanism": "Model clock read from the wall clock: time to expiry is np.busday_count(date.today(), expiry) inside a simulation; the price shock is N(0, sqrt(T_remaining)) in PRICE units with no vol; exercise_prob mixes a real-world drift into a risk-neutral price.",
+  "causal_rationale": "Any quantity computed from 'today' instead of the bar's timestamp makes a backtest depend on when it is run, and P-measure vs Q-measure mixing makes option-implied probabilities look like forecasts.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "options/euro_option_analysis.py:LiveOptionsGraph.time_step",
+  "weaknesses": "Non-reproducible; dt hits 0 at expiry; wrong noise scale; P/Q confusion.",
+  "mt5_translation": "(1) Every model clock is the bar's timestamp, injected; (2) option-implied probabilities consumed by the World sensor are labelled risk-neutral and carry a risk-premium adjustment before any use as a forecast.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Re-running a backtest on another day yields byte-identical output; no implied probability enters a family without a P/Q label.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "FAILURE_TO_AVOID",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "clock injection is standard (desks/mt5/mt5desk/order_door.py clock=now param; libs/data/pit.py); grep 'risk.?neutral' over desks/mt5 + libs: 0 files"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P2"
+ },
+ {
+  "id": "QG-QFIN-005",
+  "repo": "romanmichaelpaolucci/Q-Fin",
+  "licence": "MIT",
+  "source": "github:romanmichaelpaolucci/Q-Fin@1014d0ae1084a42664d1739b85f32d97b53838cf:QFin/options.py + QFin/simulations.py (sha256 e6ad0490089556d3...)",
+  "mechanism": "Closed-form and MC defects in a published pricing library: gamma uses norm.cdf(d1) instead of norm.pdf(d1); BlackScholesPut.put_price returns K e^{-rT} N(d1) - S N(d2) (wrong sign/args); MC inst_var = sqrt(sigma) instead of sigma^2; extendible SVM ignores the extension; barrier MC n^2 loop.",
+  "causal_rationale": "Greeks and implied quantities that feed a state organ must be verified, or every downstream feature inherits a silent formula error.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "QFin/options.py + QFin/simulations.py",
+  "weaknesses": "Unverified math shipped to PyPI.",
+  "mt5_translation": "When the World sensor computes Greeks/IV (e.g. for dealer-gamma state, QG-ADH-001), its pricer passes put-call parity, finite-difference Greeks and MC cross-checks in tests.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "|C - P - (S - K e^{-rT})| < 1e-8; |gamma - FD gamma| < 1e-4 on a grid; MC within 3 s.e. of closed form.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "FAILURE_TO_AVOID",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "MISSING",
+   "evidence": "grep 'black.?scholes|def bs_' finds only desks/mt5/research/countries/np/pack.py (text); the desk has no pricer yet -- this binds whoever builds one"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P2"
+ },
+ {
+  "id": "QG-OT-002",
+  "repo": "ErTasselli/OpenTerminal",
+  "licence": "MIT",
+  "source": "github:ErTasselli/OpenTerminal@e67b674aae52b06210bc1784a9788d244970ccb1:server/src/providers/econcalendar.ts:actualFor + FRED_MATCHERS (sha256 b455eaaba05b169a...)",
+  "mechanism": "Backfill the released 'actual' of the highest-visibility releases (Fed funds target, ECB MRO and DFR, NFP change, unemployment, CPI and core CPI m/m and y/y) from FRED, accepting it only when FRED's own observation date matches the release's REFERENCE PERIOD (monthly) or the decision date (rates).",
+  "causal_rationale": "Surprise = actual - consensus moves FX/indices/gold at release; the desk has consensus (Forex Factory) but documents that it lacks 'actual'.",
+  "original_universe": "US/EU macro releases",
+  "original_horizon": "per release",
+  "original_data": "nfs.faireconomy.media weekly JSON (forecast, previous) + fred.stlouisfed.org fredgraph.csv",
+  "original_implementation": "regex title matcher -> FRED series; freshness by reference period",
+  "weaknesses": "Uses FRED CURRENT vintage (PAYEMS/CPI get revised: first-print surprise needs ALFRED vintages); CPI y/y computed from SA CPIAUCSL while consensus is the NSA headline; NFP 'change' rounded from level differences of revised data.",
+  "mt5_translation": "Register a FRED/ALFRED 'actual' half-row source in event_consensus_sources.json for the nine matchers (first-release vintage via ALFRED realtime_start), joined by the existing event_surprise.join_sides on reference period; feed event_reaction and the event-state surprise field.",
+  "candidate_symbols": [
+   "EURUSD",
+   "USDJPY",
+   "GBPUSD",
+   "XAUUSD",
+   "US500",
+   "NAS100",
+   "UST10Y",
+   "USDX"
+  ],
+  "pit_requirements": "actual stamped at ALFRED realtime_start of the FIRST vintage (not today's value); pair stamped at the later of the two halves (event_surprise rule)",
+  "feature_representation": "surprise_z = (actual_first - consensus) / rolling sd of past surprises",
+  "hypothesis": "EURUSD H1 return in the release hour has the sign of -(US surprise_z) for NFP and CPI with hit rate > 55% over >= 100 releases, and the effect scales with |surprise_z|.",
+  "entry_exit": "event_reaction on the release clock, follow (fade=False) when |z| > 1",
+  "execution": "market at first bar after release; event-window spread distribution",
+  "costs": "release-hour spreads (widened); slippage on the first bar",
+  "leakage_risks": "current-vintage actuals (revisions) masquerading as first prints; FRED posting lag",
+  "selection_risks": "nine releases chosen for visibility",
+  "baseline": "event_reaction without surprise sign",
+  "falsifier": "surprise-signed reaction no better than unsigned over >= 100 events",
+  "expected_orthogonality": "high vs price families; this is the macro-surprise axis itself",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ROUTED",
+  "control_matrix": {
+   "A": "event_reaction unsigned",
+   "B": "OpenTerminal current-vintage actual",
+   "C": "ALFRED first-print actual, z-scored",
+   "D": "surprise sign shuffled across events",
+   "E": "surprise lagged one release",
+   "F": "random sign same frequency",
+   "G": "forecast-vs-previous (expected change) sign",
+   "H": "libs/regime/event_state.py expected-change field",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "libs/regime/event_state.py:31-36 'SURPRISE IS NOT AVAILABLE ... there is no actual'; desks/mt5/research/event_surprise.py:426 join_sides pairs consensus and actual on reference period, but desks/mt5/data/event_consensus_sources.json registers only ff_calendar_thisweek/nextweek, tradingeconomics_calendar and a blank bloomberg row -- no FRED/ALFRED actual source"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P0"
+ },
+ {
+  "id": "QG-OT-003",
+  "repo": "ErTasselli/OpenTerminal",
+  "licence": "MIT",
+  "source": "github:ErTasselli/OpenTerminal@e67b674aae52b06210bc1784a9788d244970ccb1:server/src/providers/econcalendar.ts:weeklyEvents (comment) (sha256 b455eaaba05b169a...)",
+  "mechanism": "Forex Factory's public export exists only as a 'this week' snapshot; there is no next-week file, and the feed never carries the released actual.",
+  "causal_rationale": "A registered source that always 404s is an organ that is wired but idle; a declared 'actual' field on a feed that never carries it produces only half-rows.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "server/src/providers/econcalendar.ts:weeklyEvents (comment)",
+  "weaknesses": "Donor states this as an observed fact (not verified from this container: no outbound fetch done).",
+  "mt5_translation": "Retire or re-point the desk's ff_calendar_nextweek registration and stop declaring an 'actual' field map on the FF rows (or keep it, documented as always-empty).",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Every registered event source has fetched at least once successfully within its cadence, or is listed as dead.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DEFECT_FOUND",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_STALE",
+   "evidence": "desks/mt5/data/event_consensus_sources.json registers ff_calendar_nextweek with an 'actual' field; desks/mt5/side_channels/forexfactory_miner.py:22 CALENDAR_NEXT_URL; the desk's own desks/mt5/side_channels/data/intelligence/latest_discoveries.json:1398 records '404 ... ff_calendar_nextweek.json'"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG-OT-005",
+  "repo": "ErTasselli/OpenTerminal",
+  "licence": "MIT",
+  "source": "github:ErTasselli/OpenTerminal@e67b674aae52b06210bc1784a9788d244970ccb1:server/src/providers/nasdaq.ts:optionChain + yahoo.ts:options + web OptionsWidget.tsx (sha256 849c235487aef9bb...)",
+  "mechanism": "Free option chains (strike, bid/ask, volume, OI, IV) for US names and ETFs -> put/call OI and volume ratios, ATM IV, skew and dealer-gamma inputs for the ETF proxies of CFD underlyings (SPY, QQQ, IWM, GLD, SLV, USO, UNG, TLT, UUP, FXE, FXY).",
+  "causal_rationale": "Options positioning and implied skew carry forward-looking information about tail demand and dealer hedging that bars do not.",
+  "original_universe": "US equities/ETFs",
+  "original_horizon": "snapshot",
+  "original_data": "api.nasdaq.com option-chain; query2.finance.yahoo.com v7 options (crumb)",
+  "original_implementation": "display only; IV only from Yahoo",
+  "weaknesses": "Snapshots, no history: an archive must be accumulated forward (no backtest until vintages exist).",
+  "mt5_translation": "State features only (options never trade): ETF chain -> P/C OI ratio, 25d skew proxy, GEX sign, mapped GLD->XAUUSD, SPY->US500, QQQ->NAS100, IWM->US2000, USO->XTIUSD, UNG->XNGUSD, TLT->UST10Y, UUP->USDX, FXE->EURUSD, FXY->USDJPY.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "US2000",
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "UST10Y",
+   "USDX",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "pit_requirements": "snapshot time recorded at fetch; OI is prior-day; forward-only archive",
+  "feature_representation": "pc_oi_ratio, atm_iv, skew = IV(0.9S) - IV(1.1S) for front expiry, gex_sign",
+  "hypothesis": "(forward-only) GLD front-month skew percentile predicts XAUUSD 5-day realised vol rank.",
+  "entry_exit": "state gate only",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "OI date vs snapshot date; Yahoo crumb session failures returning partial chains",
+  "selection_risks": "ETF proxy != CFD underlying (GLD vs spot gold timing)",
+  "baseline": "vol_archive CBOE index IVs (VIX/GVZ/OVX/VXN)",
+  "falsifier": "no incremental predictive power over VIX/GVZ/OVX levels after 250 forward observations",
+  "expected_orthogonality": "moderate (overlaps implied-vol indices already archived)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ROUTED",
+  "control_matrix": {
+   "A": "vol_archive index IV only",
+   "B": "donor chain display",
+   "C": "ETF chain state archive",
+   "D": "shuffled dates",
+   "E": "lagged 5 days",
+   "F": "random state",
+   "G": "realised vol rank",
+   "H": "desks/mt5/recorders/vol_archive.py (^VIX ^GVZ ^OVX ^VXN)",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "desks/mt5/recorders/vol_archive.py archives CBOE IV indices via Yahoo v8 chart (line 220); libs/data/dtcc_fx_options.py (FX options prints); no equity/ETF option chain ingestion (grep 'option-chain' only hits nseindia in asia_sources.json; 'v7/finance/options' 0 files)"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "World sensor and macro surprise"
+  },
+  "priority": "P1"
+ }
+]

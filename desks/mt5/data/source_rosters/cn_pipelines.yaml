@@ -1,0 +1,223 @@
+# CN-culture data pipelines mined 2026-10-01: dkl0707/QuantDatabase (TuShare + Shenwan) and the data layer of
+# ZhuLinsen/daily_stock_analysis (Tencent, TWSE/TPEx 三大法人). Deduped against AkShare (adapter calls only
+# stock_zh_a_hist, futures_main_sina, macro_china_cpi), TuShare (licensed free key) and fushare_cn_futures.yaml.
+# QuantBox/QuantBox.DataReceiver is a C# CTP tick receiver: it needs a CN futures broker account, so it adds no
+# source (its h5 tick-archive layout is noted in the gap table). Shapers: Breadth.
+sources:
+- id: qdb_sws_industry_index
+  name: Shenwan (申万) industry indices, daily OHLC for every SW level-1/2 industry (swsresearch index_publish/trend
+    API)
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: public endpoint; terms confirmed by the owner thread before fetch (terms gate fails closed);
+    this container's network policy refuses the host, so the check runs on the box
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://www.swsresearch.com/institute-sw/api/index_publish/trend/?swindexcode=<code>&period=DAY
+  note: 'NEW. The CN sector map the mainland buy side uses: SW non-ferrous metals vs copper, SW coal/steel
+    vs iron-ore AUD, SW banks vs CHINAH. Sector-rotation conditioner for CHINAH/HK50 and the commodity
+    transfer channels.'
+  mt5_assets:
+  - CHINAH
+  - HK50
+  - XCUUSD
+  - AUDUSD
+  - USDCNH
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: 'github.com/dkl0707/QuantDatabase (no licence file: endpoints only)'
+- id: qdb_tushare_fut_holding
+  name: 'TuShare fut_holding: daily member positions for every CN futures contract'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: TuShare free registered key (licensed access per the 2026-09-30 ruling)
+  terms_status: LICENSED_FREE_KEY
+  config:
+    url: tushare:fut_holding
+  note: 'A LICENSED-KEY ROUTE to the same member rankings as fs_*_member_rank, which are BLOCKED_ON_TERMS
+    on the exchange pages: TuShare is a free key the desk registers itself (data-access ruling 2026-09-30).
+    Points tier not verified here.'
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XAUUSD
+  - XAGUSD
+  - XTIUSD
+  - AUDUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: 'github.com/dkl0707/QuantDatabase (no licence file: endpoints only)'
+  dedupe: same data as fushare_cn_futures.yaml fs_*_member_rank; prefer this route while those are blocked
+    on terms
+- id: qdb_tushare_fut_wsr
+  name: 'TuShare fut_wsr: daily warehouse receipts per commodity and warehouse'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: TuShare free registered key (licensed access per the 2026-09-30 ruling)
+  terms_status: LICENSED_FREE_KEY
+  config:
+    url: tushare:fut_wsr
+  note: Licensed-key route to the warehouse receipts fs_dce/czce_warehouse_receipts and fs_shfe_warehouse_stocks
+    scrape.
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - AUDUSD
+  - COTTON
+  - SUGAR
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: 'github.com/dkl0707/QuantDatabase (no licence file: endpoints only)'
+  dedupe: same data as fushare receipts rows
+- id: qdb_tushare_fut_daily
+  name: 'TuShare fut_daily: every CN futures contract month, daily'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: TuShare free registered key (licensed access per the 2026-09-30 ruling)
+  terms_status: LICENSED_FREE_KEY
+  config:
+    url: tushare:fut_daily
+  note: Licensed-key route to every contract month, the input to roll yield (fs_cn_roll_yield).
+  mt5_assets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XTIUSD
+  - AUDUSD
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: 'github.com/dkl0707/QuantDatabase (no licence file: endpoints only)'
+  dedupe: same data as fs_*_daily_bars
+- id: dsa_twse_t86
+  name: 'TWSE T86: daily 三大法人 (foreign, investment trust, dealer) net buy per listed stock'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: tw
+  language: zh
+  licence: public endpoint; terms confirmed by the owner thread before fetch (terms gate fails closed);
+    this container's network policy refuses the host, so the check runs on the box
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date=YYYYMMDD&selectType=ALLBUT0999
+  note: 'Fetch URL for the TW pack''s 三大法人 dataset (named, no URL). Summed across stocks it is the daily
+    foreign net equity flow: the TWD and Asian tech-risk read for USDJPY crosses, US tech CFDs and HK50.'
+  mt5_assets:
+  - HK50
+  - USDJPY
+  - US500
+  culture:
+    source_culture: tw
+    participant_structure: foreign_institutional_dominant
+  owner: breadth
+  origin: github.com/ZhuLinsen/daily_stock_analysis (MIT)
+  dedupe: TW pack institutional dataset (description only)
+- id: dsa_tpex_3insti
+  name: 'TPEx openapi tpex_3insti_daily_trading: OTC-market 三大法人 daily trading'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: tw
+  language: zh
+  licence: public endpoint; terms confirmed by the owner thread before fetch (terms gate fails closed);
+    this container's network policy refuses the host, so the check runs on the box
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://www.tpex.org.tw/openapi/v1/tpex_3insti_daily_trading
+  note: OTC leg of the same flow; an official open API.
+  mt5_assets:
+  - HK50
+  - USDJPY
+  culture:
+    source_culture: tw
+    participant_structure: foreign_institutional_dominant
+  owner: breadth
+  origin: github.com/ZhuLinsen/daily_stock_analysis (MIT)
+- id: dsa_tencent_kline
+  name: Tencent gtimg qfq K-lines and realtime quotes for A-shares, HK and US
+  priority: 1
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: public endpoint; terms confirmed by the owner thread before fetch (terms gate fails closed);
+    this container's network policy refuses the host, so the check runs on the box
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://web.ifzq.gtimg.cn/appstock/app/fqkline/get
+  note: A keyless fallback route for A/HK daily bars (CN pack and HK pack conditioners) when Eastmoney
+    is throttled.
+  mt5_assets:
+  - CHINAH
+  - HK50
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: github.com/ZhuLinsen/daily_stock_analysis (MIT)
+  dedupe: rm_em_push2his_kline and AkShare cover the same bars; this is redundancy, not new data

@@ -152,6 +152,13 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
     except (OSError, ValueError, TypeError):
         pass
+    # THE ANALYST PANEL'S PASSES (2026-10-01). Every idea a seat returned -- accepted, discarded
+    # or unexpressed -- and every forward look is a trial; a pass that donated charged them on its
+    # discovery file and writes tests_run 0 here, so each pass is counted exactly once.
+    t, side = _side_ledger(DESK / "data" / "analyst_panel_trials.jsonl")
+    total += t
+    for fam, k in side.items():
+        by_fam[fam] = by_fam.get(fam, 0) + k
     # THE LEARNED MINERS: ONE CHARGE PER DISTINCT TRIAL, EVER (audit 2026-10-13). The miner
     # writes one ledger row per (panel, symbol, config, threshold) it tried, donated or not, and
     # re-runs the same grid daily; a raw row count (or a sum of its daily files' tests_run)
@@ -206,6 +213,33 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             total += file_n
             for fam in file_fams or {"?"}:
                 by_fam[fam] = by_fam.get(fam, 0) + file_n // max(1, len(file_fams))
+    return total, by_fam
+
+
+def _side_ledger(path: Path) -> tuple[int, dict[str, int]]:
+    """(tests_run, per family) from a `{"tests_run", "by_family"}` JSONL side ledger. A row whose
+    split is absent is charged to "?"; dry runs are skipped; an unreadable line is skipped."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}
+    for ln in lines:
+        try:
+            row = json.loads(ln) if ln.strip() else None
+            if not isinstance(row, dict) or row.get("dry_run"):
+                continue
+            n = int(row.get("tests_run") or 0)
+            split = row.get("by_family")
+            per: dict[str, Any] = split if isinstance(split, dict) and split else {"?": n}
+            fams = {str(k): int(v or 0) for k, v in per.items()}
+        except (ValueError, TypeError):
+            continue
+        total += n
+        for fam, k in fams.items():
+            if k:
+                by_fam[fam] = by_fam.get(fam, 0) + k
     return total, by_fam
 
 
