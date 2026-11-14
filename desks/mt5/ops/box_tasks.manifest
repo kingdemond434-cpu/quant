@@ -333,6 +333,11 @@ TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/b
 # models through libs/ops/openrouter_free (already used by other organs). The box never contacts
 # YouTube: mine_channel_transcripts.py runs here only with --report-only, which does no network I/O.
 TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
+# The moat backup's two clocks (#479): the installer registers both; until these rows existed the
+# tasks could not be installed without tripping the scheduler-join fence, so the replica only ran
+# by hand. Times are the installer's (install_moat_backup_tasks.ps1), outside the money window.
+TASK name="MT5-MoatBackup"     trigger="daily 06:40"                 runs="scripts/run_moat_backup.py"  installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
+TASK name="MT5-RestoreDrill"   trigger="weekly Sunday 07:20"         runs="scripts/run_restore_drill.py" installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
 # THE SIDE-CHANNEL MINER SUITE (2026-11-05). run_all_miners ran only on the Linux VPS chain, whose
 # intel-ship stopped 2026-11-03; nineteen seats went DEAD together in PRODUCER_YIELD. Research only.
 # Clear-access channels only (QUANT_MINERS_ALLOW in the runner): official APIs, open data and

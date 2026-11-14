@@ -70,7 +70,9 @@ _STORES: dict[str, tuple[str, str]] = {
     # stays a NUMBER every run); _COVERED_MAX_BYTES below prevents the class from rotting
     # silently again for any store.
     "alpha_registry": ("data/alpha_registry.sqlite", "sqlite"),
-    "capital_events": ("data/capital_events.jsonl", "file"),
+    # "capital_events" LEFT THE GIT-CARRIED CLASS 2026-11-13 (#687 Auditor HOLD MF1): its rows
+    # carry deposit_usd, equity_before/after and start_equity, and backups/moat/ rides a PUBLIC
+    # repository. It is listed in _PRIVATE_NOT_CARRIED below, measured every run, never copied.
     # FORWARD EVIDENCE (added 2026-08-27): the 14-day clocks are time that cannot be re-earned.
     # The registry was re-based to day zero three times in 32 hours before atomic writes fixed
     # the writer -- and had these been in the backup, the evidence would have been recoverable
@@ -82,6 +84,71 @@ _STORES: dict[str, tuple[str, str]] = {
     "cost_model": ("data/cost_model.json", "file"),
     "graveyard": ("docs/graveyard.md", "file"),
 }
+
+#: Stores that hold account money or identity and therefore NEVER ride git (the replica repo is
+#: public). Measured every run so the gap is a number; their off-box copy is a non-public route
+#: (offsite backup), never backups/moat/. A git-carried store is also scanned file by file below.
+_PRIVATE_NOT_CARRIED: dict[str, str] = {
+    "capital_events": "data/capital_events.jsonl",
+}
+
+#: A key a git-carried replica may never hold: account money or account identity. Checked on
+#: every text file and every sqlite column before the copy; a hit withholds that file (recorded
+#: in `private_withheld`, and any earlier replica of it is deleted), so a store that starts
+#: carrying such a field can never publish it by accident. `_usd` is anchored, so `sizes_usdt`
+#: (an order-size grid) is not caught; `account_trade_allowed` (a permission flag) is not either.
+_PRIVATE_KEY = re.compile(
+    r"(?:_usd$|^usd$|equity|balance|deposit|withdraw|(?:^|_)login$|(?:^|_)server$|password)",
+    re.IGNORECASE)
+#: Keys the pattern catches that describe a STRATEGY, not an account. Each is named and
+#: argued here, never waved through by a looser pattern: `capacity_usd` is alpha_registry's
+#: estimated strategy capacity (a research figure, the same on every account).
+_NOT_ACCOUNT_KEYS = frozenset({"capacity_usd"})
+_JSON_KEY = re.compile(rb'"([A-Za-z0-9_]{1,80})"\s*:')
+_TEXT_SUFFIXES = (".json", ".jsonl", ".md", ".csv", ".txt", "")
+#: Markers _private_keys returns when it CANNOT read a file's fields. The check fails closed: a
+#: file whose fields were not read is withheld exactly like one that holds a private field
+#: (#687 re-audit MF1 -- an unsafe table name or an unlisted file type used to pass unchecked).
+UNSCANNABLE = "<unscannable>"
+UNSAFE_TABLE = "<unsafe-table-name>"
+
+
+def _private_keys(f: Path) -> list[str]:
+    """The private-looking keys a file holds: JSON-style keys (and a CSV header) in a text file,
+    column names in a sqlite file. FAILS CLOSED: a sqlite table that cannot be inspected, a file
+    type not listed in _TEXT_SUFFIXES, or a text file that is not UTF-8 returns a marker, and
+    the caller withholds the file. A file that cannot be opened at all reports nothing here --
+    the copy then lists it as unread, which is never published either."""
+    try:
+        head = f.read_bytes()
+    except OSError:
+        return []
+    if head.startswith(b"SQLite format 3"):
+        try:
+            con = sqlite3.connect(f"file:{f}?mode=ro", uri=True)
+            try:
+                cols: list[str] = []
+                for (t,) in con.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+                    if not _SAFE_IDENT.fullmatch(str(t)):
+                        return [UNSAFE_TABLE]
+                    cols += [str(r[1]) for r in con.execute(f'PRAGMA table_info("{t}")')]
+            finally:
+                con.close()
+        except sqlite3.Error:
+            return [UNSCANNABLE]
+        return sorted({c for c in cols if _PRIVATE_KEY.search(c) and c not in _NOT_ACCOUNT_KEYS})
+    if f.suffix.lower() not in _TEXT_SUFFIXES:
+        return [UNSCANNABLE]
+    try:
+        text = head.decode("utf-8")
+    except UnicodeDecodeError:
+        return [UNSCANNABLE]
+    keys = {m.decode("ascii") for m in _JSON_KEY.findall(head)}
+    if f.suffix.lower() == ".csv":
+        keys |= {c.strip().strip('"') for c in text.split("\n", 1)[0].split(",")}
+    return sorted(k for k in keys if _PRIVATE_KEY.search(k) and k not in _NOT_ACCOUNT_KEYS)
+
 
 #: Bulk stores git cannot carry -- measured every run so the uncovered gap stays a NUMBER.
 _NOT_COVERED = ("data/lake", "data/moat", "data/sor_research.sqlite")
@@ -199,7 +266,8 @@ def _copy_one(f: Path, out: Path) -> tuple[str, bool]:
 
 
 def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]],
-                 unread: list[dict[str, Any]] | None = None) -> dict[str, str]:
+                 unread: list[dict[str, Any]] | None = None,
+                 withheld: list[dict[str, Any]] | None = None) -> dict[str, str]:
     """Copy file or tree, skipping (and RECORDING) anything over the git-sane cap.
 
     THE DIGEST IS TAKEN FROM THE SOURCE, and that one word is the whole difference between a real
@@ -214,6 +282,7 @@ def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]],
     is now listed in `unread` (locked / vanished / moving, with errno) and the run goes on.
     """
     unread = unread if unread is not None else []
+    withheld = withheld if withheld is not None else []
     digests: dict[str, str] = {}
     files = [src] if src.is_file() else sorted(p for p in src.rglob("*") if p.is_file())
     for f in files:
@@ -224,6 +293,12 @@ def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]],
             if f.stat().st_size > _MAX_FILE_MB * 1e6:
                 skipped.append({"file": shown, "bytes": f.stat().st_size,
                                 "reason": f"over the {_MAX_FILE_MB}MB git-sane cap"})
+                continue
+            private = _private_keys(f)
+            if private:
+                # never published: the file is not copied and an earlier replica is removed
+                withheld.append({"file": shown, "keys": private})
+                out.unlink(missing_ok=True)
                 continue
             out.parent.mkdir(parents=True, exist_ok=True)
             digest, raced = _copy_one(f, out)
@@ -272,7 +347,11 @@ def build_backup(root: Path, dest: Path | None = None,
     dest.mkdir(parents=True, exist_ok=True)
     skipped: list[dict[str, Any]] = []
     unread: list[dict[str, Any]] = []
+    withheld: list[dict[str, Any]] = []
     stores: dict[str, Any] = {}
+    for name in _PRIVATE_NOT_CARRIED:
+        # a replica left by an earlier build is removed: this class is never published
+        (dest / name).unlink(missing_ok=True)
     for name, (rel, kind) in _STORES.items():
         src = root / rel
         if not src.exists():
@@ -293,13 +372,31 @@ def build_backup(root: Path, dest: Path | None = None,
         target = dest / name
         census: dict[str, int] | None = None
         if kind == "sqlite":
+            private = _private_keys(src)
+            if private:
+                withheld.append({"file": rel, "keys": private})
+                target.unlink(missing_ok=True)
+                stores[name] = {"status": "WITHHELD", "kind": kind, "path": rel,
+                                "bytes": _du(src), "sha256": {}, "private_keys": private,
+                                "note": "holds account money or identity columns; a public "
+                                        "replica is refused -- strip them or route it offsite"}
+                continue
             digest, census = _snapshot_sqlite(src, target)
             digests = {name: digest}
         else:
             if target.is_dir():
                 shutil.rmtree(target)
             first = len(unread)
-            digests = _copy_capped(src, target, skipped, unread)
+            held = len(withheld)
+            digests = _copy_capped(src, target, skipped, unread, withheld)
+            if not digests and len(withheld) > held:
+                stores[name] = {"status": "WITHHELD", "kind": kind, "path": rel,
+                                "bytes": _du(src), "sha256": {},
+                                "private_keys": sorted({k for w in withheld[held:]
+                                                        for k in w["keys"]}),
+                                "note": "every file holds account money or identity; a public "
+                                        "replica is refused -- strip them or route it offsite"}
+                continue
             # A FILE NOT READ IS A FILE NOT BACKED UP (#479 re-audit MF1). The drill checks only
             # recorded digests, so a store whose one file was locked passed vacuously and reported
             # OK beside a replica holding the previous run's bytes. "moving" is not counted: it
@@ -331,6 +428,12 @@ def build_backup(root: Path, dest: Path | None = None,
         "skipped_over_cap": skipped,
         # locked by a live writer, deleted mid-run, or never still across three copies (#479 MF1)
         "unread_files": unread,
+        # files a git-carried store held that carry account money or identity: never copied
+        "private_withheld": withheld,
+        "private_not_carried_bytes": {n: _du(root / p) for n, p in _PRIVATE_NOT_CARRIED.items()
+                                      if (root / p).exists()},
+        "private_note": "account money/identity never rides the public replica; its off-box "
+                        "copy is a non-public route -- measured here so the gap stays a number",
         "not_covered_bytes": {p: _du(root / p) for p in _NOT_COVERED if (root / p).exists()},
         "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- "
                             "measured here every run so the gap stays a number",
@@ -348,6 +451,8 @@ def build_backup(root: Path, dest: Path | None = None,
     absent = sorted(n for n, s in stores.items() if s["status"] == "ABSENT")
     oversized = sorted(n for n, s in stores.items() if s["status"] == "OVERSIZED")
     unread_stores = sorted(n for n, s in stores.items() if s["status"] in ("PARTIAL", "UNREAD"))
+    manifest["withheld_stores"] = sorted(
+        n for n, s in stores.items() if s["status"] == "WITHHELD")
     manifest["absent_stores"] = absent
     manifest["oversized_stores"] = oversized
     manifest["unread_stores"] = unread_stores
@@ -356,9 +461,9 @@ def build_backup(root: Path, dest: Path | None = None,
         status = "DISK-FUSE"
     elif not manifest["restore_drill_passed"]:
         status = "DRILL-FAILED"
-    elif all(s["status"] in ("ABSENT", "UNREAD") for s in stores.values()):
+    elif all(s["status"] in ("ABSENT", "UNREAD", "WITHHELD") for s in stores.values()):
         status = "NOTHING-REPLICATED"
-    elif absent or oversized or unread_stores:
+    elif absent or oversized or unread_stores or manifest["withheld_stores"]:
         status = "DEGRADED"
     manifest["status"] = status
     (dest / "manifest.json").write_text(json.dumps(manifest, indent=2), "utf-8")
