@@ -9,6 +9,15 @@ from enum import Enum
 
 import yaml
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE / "data" / "intelligence"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,7 +64,7 @@ def save_hypothesis(h: SideChannelHypothesis) -> Path:
     hyp_dir.mkdir(parents=True, exist_ok=True)
     path = hyp_dir / f"{h.id}.yaml"
     with open(path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(h.__dict__, f, sort_keys=False)
+        yaml.safe_dump(scrub(h.__dict__), f, sort_keys=False)
     return path
 
 

@@ -10,6 +10,15 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[0])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 # Add paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'desks', 'mt5'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'desks', 'mt5', 'side_channels'))
@@ -38,7 +47,7 @@ class HourlyControllerWithDiscovery(HourlyController):
             # Save discovery results
             discovery_file = self.data_dir / "intelligence" / "latest_discoveries.json"
             discovery_file.parent.mkdir(parents=True, exist_ok=True)
-            discovery_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+            discovery_file.write_text(json.dumps(scrub(results), indent=2), encoding="utf-8")
 
         except Exception as e:
             self.log(f"Discovery failed: {e}")

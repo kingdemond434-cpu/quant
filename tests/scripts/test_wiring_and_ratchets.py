@@ -86,7 +86,12 @@ def test_a_package_is_reachable_through_its_submodules() -> None:
 def test_the_modules_wired_this_session_are_no_longer_orphans() -> None:
     d = _defects(M.check_unwired_modules)
     names = d[0][1] if d else ""
-    for m in ("wallet_graph", "capacity_allocation", "book_walk", "alert_ledger"):
+    # wallet_graph LEFT THIS LIST: its only caller, the wallet-graph cadence leg, was deleted
+    # 2026-09-05 under the universe mandate (scripts/run_cadence.py "THE WALLET-GRAPH LEG IS
+    # GONE"), so it is genuinely unwired now and the check is right to name it. This assertion
+    # only ever passed because the defect text lists the first eight orphans and wallet_graph sat
+    # past them; once the desk tree's `_producer` legs counted as callers it moved into view.
+    for m in ("capacity_allocation", "book_walk", "alert_ledger"):
         assert m not in names, f"{m} is still unwired"
 
 

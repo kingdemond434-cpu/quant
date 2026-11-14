@@ -985,6 +985,99 @@ function Test-KeptByBox {
     return $boxTouched.ContainsKey($Rel)
 }
 
+# ---- 1b. NEVER ADOPT OVER CODE ONLY THIS BOX HOLDS --------------------------------------------
+# `Test-KeptByBox` protects STATE. Code the box committed since the merge base was protected by
+# nothing: a path the target lacks was unlinked below and a path the target differs on was
+# overwritten with origin's copy. That is how an adoption deleted 104 organs on the box they were
+# authored on (restored by hand in b2895adca). The rule: a CODE path this box changed since the
+# merge base, whose bytes the target does not carry, means the box is AHEAD on code -- the
+# adoption refuses and says which paths, so the box pushes first and the next adoption carries
+# them. Paths the target already contains (the box's commits reached origin) differ by nothing
+# and never trigger this. The one-shot recovery permit above still overrides, deliberately.
+# BYTES, NOT MODE: `--raw` gives each path's blob on both sides, and a path whose blob is the
+# same on both differs only by its mode bit. Origin's mode wins on adoption by design (the
+# exec-bit convergence, test_an_adoption_converges_a_tree_that_differs_only_by_the_exec_bit), so
+# a mode-only drift is no box-authored code and never refuses. `--no-renames` keeps one path per
+# line: a rename reads as the delete and the add it is.
+if ($mergeBase -and -not $permitAccepted) {
+    $aheadArgs = @("-c", "core.quotePath=false", "diff", "--raw", "--no-abbrev", "--no-renames",
+                   $target, "HEAD", "--") + $ReleaseCodePaths
+    $boxAheadCode = @(Invoke-Git $aheadArgs -AllowFail | ForEach-Object {
+                          $rawLine = "$_"
+                          if ($rawLine -match '^:\d+ \d+ ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*\t(.+)$' -and
+                              $Matches[1] -ne $Matches[2]) { $Matches[3].Trim() }
+                      } |
+                      Where-Object { $_ -match '\S' -and $boxTouched.ContainsKey($_) -and
+                                     -not (Test-StatePath $_) })
+    # QUARANTINED BOX COMMITS ARE NOT THE BOX'S CODE (Auditor HOLD on #246, 2026-11-14). On the
+    # live box the rule above refused every adoption: 13 of its ahead paths came only from eight
+    # Codex commits of 2026-11-12 that were quarantined (copies kept outside the tree) precisely
+    # so the next release would overwrite them. `ADOPT_QUARANTINED_COMMITS.json` (box-local,
+    # untracked: {"commits": ["<40-hex sha>", ...]}) names such commits. A path is let through,
+    # and overwritten by the target, ONLY when every box commit since the merge base that
+    # touched it is on that list; one commit outside it (any other box-authored code) and the
+    # path still refuses. Ordinary release deltas -- origin newer, the box untouched -- never
+    # reach this test: they are not in $boxTouched. An unreadable list quarantines nothing.
+    $quarantineFile = Join-Path $desk "data\ADOPT_QUARANTINED_COMMITS.json"
+    $quarantined = @{}
+    # A TRACKED LIST IS NO LIST (audit MF1 on f84c128f7): a copy that reached git could be edited
+    # on origin to name the box's own commits and turn this rule into the overwrite it refuses.
+    # The file is gitignored; if it is tracked anyway, it is ignored and the pass says so.
+    $quarantineTracked = $false
+    if (Test-Path -LiteralPath $quarantineFile) {
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & git -C $RepoRoot ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json" 2>$null | Out-Null
+        $lsRc = $LASTEXITCODE
+        $ErrorActionPreference = $prevEap
+        # FAIL CLOSED: only exit 1 ("not tracked") lets the list count; 0 (tracked) or any git
+        # failure (128) means the list is ignored.
+        $quarantineTracked = ($lsRc -ne 1)
+        if ($lsRc -eq 0) {
+            Write-Host "  ADOPT_QUARANTINED_COMMITS.json is TRACKED by git; the tracked list is ignored"
+        } elseif ($lsRc -ne 1) {
+            Write-Host ("  could not tell whether the quarantine list is tracked (git rc {0}); the list is ignored" -f $lsRc)
+        }
+    }
+    if ((Test-Path -LiteralPath $quarantineFile) -and -not $quarantineTracked) {
+        try {
+            $qdoc = Get-Content -LiteralPath $quarantineFile -Raw | ConvertFrom-Json
+            foreach ($c in @($qdoc.commits)) {
+                if ("$c" -match '^[0-9a-f]{40}$') { $quarantined["$c"] = $true }
+            }
+        } catch {
+            Write-Host "  quarantine list unreadable; no box commit is treated as quarantined"
+        }
+    }
+    if ($boxAheadCode.Count -gt 0 -and $quarantined.Count -gt 0) {
+        $stillAhead = New-Object System.Collections.Generic.List[string]
+        $overwritten = New-Object System.Collections.Generic.List[string]
+        foreach ($p in $boxAheadCode) {
+            $touching = @(Invoke-Git @("log", "--format=%H", "$mergeBase..HEAD", "--", $p) -AllowFail |
+                          ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^[0-9a-f]{40}$' })
+            $own = @($touching | Where-Object { -not $quarantined.ContainsKey($_) })
+            if ($touching.Count -gt 0 -and $own.Count -eq 0) { $overwritten.Add($p) }
+            else { $stillAhead.Add($p) }
+        }
+        if ($overwritten.Count -gt 0) {
+            Write-Host ("  {0} code path(s) changed only by quarantined box commits; the target overwrites them:" -f
+                        $overwritten.Count)
+            $overwritten | Select-Object -First 40 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        }
+        $boxAheadCode = @($stillAhead)
+    }
+    if ($boxAheadCode.Count -gt 0) {
+        $refuseMsg = "  REFUSING: {0} code path(s) this box committed are not in the target; " +
+                     "adopting would revert or delete them. Push the box's branch first."
+        Write-Host ($refuseMsg -f $boxAheadCode.Count)
+        $boxAheadCode | Select-Object -First 40 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        exit 1
+    }
+} elseif (-not $mergeBase) {
+    Write-Host ("  WARNING: no merge base with the target; box-authored code cannot be told " +
+                "apart from origin's, so none is protected on this adoption")
+}
+
 $written = 0; $added = 0; $removed = 0; $untracked = 0
 $shipped = Get-ShippedDiffCount -From "HEAD" -To $target
 $kept      = New-Object System.Collections.ArrayList

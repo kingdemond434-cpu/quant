@@ -42,6 +42,12 @@ INTEL_PATHS=(
 )
 if ! git diff --quiet -- "${INTEL_PATHS[@]}" 2>/dev/null \
         || [ -n "$(git ls-files --others --exclude-standard -- "${INTEL_PATHS[@]}" 2>/dev/null | head -1)" ]; then
+    # CREDENTIAL SCRUB BEFORE STAGING (2026-10-07, #246): scraped pages and LLM answers carry
+    # other people's keys, and one reached a public branch this way. Only the files this hour
+    # changed or added are read; the pre-commit hook scrubs the staged blobs again.
+    { git diff --name-only -z -- "${INTEL_PATHS[@]}"
+      git ls-files --others --exclude-standard -z -- "${INTEL_PATHS[@]}"; } 2>/dev/null \
+        | xargs -0 -r .venv/bin/python -m libs.ops.secret_scrub --tree
     git add -- "${INTEL_PATHS[@]}" 2>/dev/null
     git commit -q -m "intelligence hourly sync $(date -u +%Y-%m-%d_%H%M): miners/frontier/cohorts artifacts" \
         && echo "intel committed" || echo "nothing to commit"

@@ -48,6 +48,7 @@ try:
     from research import data_scout as DS
 except ImportError:                                                          # pragma: no cover
     import data_scout as DS  # type: ignore[no-redef]
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.data.pit import stamp as pit_stamp  # noqa: E402
 from libs.moat import registry as REG  # noqa: E402
 from libs.research import access_classifier as AC  # noqa: E402
@@ -118,7 +119,7 @@ def _read_json(path: Path, default: Any = None) -> Any:
 def _atomic(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
-    tmp.write_text(json.dumps(payload, indent=1, default=str), "utf-8")
+    tmp.write_text(json.dumps(scrub(payload), indent=1, default=str), "utf-8")
     os.replace(tmp, path)
 
 

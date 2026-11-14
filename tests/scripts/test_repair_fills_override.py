@@ -66,6 +66,13 @@ def _registry(tmp_path: Path, monkeypatch, rows: dict) -> None:
     monkeypatch.setattr(rus, "REGISTRY", reg)
 
 
+# THE PROBE IS PINNED TO `h1` BECAUSE THAT IS THE ONE THESE TESTS STUB. DEFAULT_SOURCE moved to
+# the broker's tape, so a bare `run()` called `load_tape()` and never reached the monkeypatched
+# `measured_spread` -- the fixtures below stopped feeding the rule they exist to test. The
+# override is source-agnostic (both probes return the same triple), so the stubbed probe is the
+# honest way to hand it a bar median.
+
+
 def _fills(pts: float) -> dict:
     return {"median_spread_pts": pts,
             "_provenance": {"median_spread_pts": {"source": "realized_fills"}}}

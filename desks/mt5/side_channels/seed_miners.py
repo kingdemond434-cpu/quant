@@ -20,6 +20,15 @@ from pathlib import Path
 
 import requests
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
@@ -690,7 +699,7 @@ def _write_state(st: dict) -> None:
     fd, tmp = tempfile.mkstemp(dir=STATE.parent, prefix=".seed_state.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump(st, fh, indent=0)
+            json.dump(scrub(st), fh, indent=0)  # credential scrub (PR #246)
         os.replace(tmp, STATE)
     finally:
         if os.path.exists(tmp):

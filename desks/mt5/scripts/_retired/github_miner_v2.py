@@ -15,6 +15,15 @@ from pathlib import Path
 
 import requests
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[4])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "github"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -122,7 +131,7 @@ def run() -> dict:
             })
 
     out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps({"discoveries": discoveries}, indent=2, default=str))
+    out_file.write_text(json.dumps(scrub({"discoveries": discoveries}), indent=2, default=str))
     return {"discoveries": discoveries}
 
 

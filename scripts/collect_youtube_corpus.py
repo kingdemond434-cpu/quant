@@ -34,6 +34,8 @@ from fetch_video_transcript import youtube as _yt_transcript
 _R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
 if str(_R) not in sys.path:
     sys.path.insert(0, str(_R))
+# The repo root also carries libs.ops.secret_scrub, which scrubs every row before it is written.
+from libs.ops.secret_scrub import scrub  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
@@ -255,8 +257,8 @@ def main() -> int:
     if rows:
         out = OUTDIR / f"videos_{now:%Y%m%d}.json"
         existing = read_json(out, [])
-        (out).write_text(json.dumps(existing + rows, indent=1), "utf-8")
-    REGISTRY.write_text(json.dumps(reg, indent=1), "utf-8")
+        (out).write_text(json.dumps(scrub(existing + rows), indent=1), "utf-8")
+    REGISTRY.write_text(json.dumps(scrub(reg), indent=1), "utf-8")
     cov = read_json(COVERAGE, {})
     cov.update({"last_sweep": now.isoformat(), **report})
     COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")

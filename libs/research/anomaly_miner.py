@@ -43,6 +43,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from libs.ops.secret_scrub import scrub
+
 _ROOT = Path(__file__).resolve().parents[2]
 _DESK = _ROOT / "desks" / "mt5"
 _BARS = _DESK / "data" / "universe"
@@ -462,7 +464,7 @@ def scan(symbols: list[str] | None = None, *, limit: int | None = None) -> dict[
     _OUT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M")
     (_OUT / f"anomalies_{stamp}.json").write_text(
-        json.dumps(report, indent=1, default=str), encoding="utf-8")
+        json.dumps(scrub(report), indent=1, default=str), encoding="utf-8")
     return report
 
 

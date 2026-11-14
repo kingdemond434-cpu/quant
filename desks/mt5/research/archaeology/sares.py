@@ -71,6 +71,7 @@ from archaeology import decompiler as dc  # noqa: E402
 from archaeology import phenotype as ph  # noqa: E402
 from archaeology import snapshots as snap  # noqa: E402
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import access_classifier as ac  # noqa: E402
 from libs.research import polyglot as pg  # noqa: E402
@@ -1573,7 +1574,7 @@ def donate(rows: Sequence[Mapping[str, Any]], *, at: str = "") -> Path | None:
     stamp = (at or _now()).replace(":", "").replace("-", "")[:15]
     path = DONATE_DIR / f"discoveries_{stamp}.json"
     mc._atomic_json(path, {"source": "sares", "generated_at": _now(), "rule": RULE,
-                           "discoveries": [dict(r) for r in rows]})
+                           "discoveries": scrub([dict(r) for r in rows])})
     return path
 
 

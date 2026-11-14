@@ -300,7 +300,12 @@ def publish_swap_panel(terms: dict, now: datetime | None = None) -> dict:
     if rows and (changed or panel_age is None or panel_age >= SWAP_HEARTBEAT_H):
         SWAP_PANEL.mkdir(parents=True, exist_ok=True)
         path = SWAP_PANEL / f"discoveries_{now.strftime('%Y%m%d_%H%M')}_terminal.json"
-        path.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+        try:   # the credential scrub every intelligence writer passes through (#246)
+            from libs.ops.secret_scrub import scrub
+            payload = scrub(rows)
+        except ImportError:                 # libs not importable here: the commit scrub stands
+            payload = rows
+        path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
         wrote, last_at = path.name, now.isoformat(timespec="seconds")
     if rows:
         SWAP_STATE.parent.mkdir(parents=True, exist_ok=True)

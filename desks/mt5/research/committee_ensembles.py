@@ -85,6 +85,7 @@ BANK = BASE / "data" / "hypotheses" / "external_survivors.json"
 NAMING_QUEUE = BASE / "data" / "hypotheses" / "mechanism_naming_queue.json"
 MQL5 = BASE / "data" / "intelligence" / "mql5_survivors"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+from libs.ops.secret_scrub import scrub
 LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 MARKOUT = BASE / "reports" / "markout.json"
 EXEC_QUALITY = BASE / "reports" / "execution_quality.json"
@@ -2062,10 +2063,10 @@ def _charge_trials(examined: Sequence[Mapping[str, Any]], write: bool) -> dict[s
         # own file, so the ledger's tests_run sum equals the union's growth (charge-once).
         stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
         _atomic(TRIAL_DONATIONS / f"discoveries_{stamp}_{os.getpid()}_{os.urandom(4).hex()}.json",
-                {"source": "committee_ensembles", "kind": "trial_charge",
+                scrub({"source": "committee_ensembles", "kind": "trial_charge",
                  "tests_run": len(new), "discoveries": [],
                  "why": "falsifier looks at return data by the Scientific committee, charged "
-                        "once over the lifetime union of (cell, seat)"})
+                        "once over the lifetime union of (cell, seat)"}))
     return out
 
 

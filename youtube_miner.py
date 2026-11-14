@@ -16,11 +16,37 @@ from pathlib import Path
 
 import requests
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[0])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "youtube"
 OUT.mkdir(parents=True, exist_ok=True)
 
-API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+
+def _load_api_key() -> str:
+    """The YouTube Data API key: env YOUTUBE_API_KEY, else data/secrets/youtube.json.
+
+    Never hard-code the key in source (it leaked that way once).
+    The secrets file is ``{"api_key": "..."}`` and lives only on the box that runs this.
+    """
+    env = os.environ.get("YOUTUBE_API_KEY", "").strip()
+    if env:
+        return env
+    secret = Path(__file__).resolve().parent / "data" / "secrets" / "youtube.json"
+    try:
+        return str(json.loads(secret.read_text(encoding="utf-8")).get("api_key", "")).strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+API_KEY = _load_api_key()
 SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # Trading-related search queries
@@ -175,7 +201,7 @@ def run_and_save() -> list[dict]:
         })
 
     out_file = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
-    out_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    out_file.write_text(json.dumps(scrub(results), indent=2), encoding="utf-8")
     print(f"youtube: {len(results)} discoveries saved to {out_file.name}")
     return results
 

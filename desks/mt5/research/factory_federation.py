@@ -23,6 +23,7 @@ for _path in (str(ROOT), str(DESK), str(DESK / "research")):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import factory_federation as F  # noqa: E402
 from libs.research.lead_schema import EVALUATION_LANES  # noqa: E402
 
@@ -320,7 +321,7 @@ def run(*, apply: bool = True, budget_s: float = 120.0,
         DONATIONS.mkdir(parents=True, exist_ok=True)
         for candidate in donations:
             donation_path = DONATIONS / f"discoveries_{candidate['input_version_id']}.json"
-            _atomic(donation_path, [candidate])
+            _atomic(donation_path, scrub([candidate]))
             record = versions[candidate["input_version_id"]]
             record["delivery"].update({"persisted": True, "submitted": True,
                                        "outbox_path": str(donation_path)})

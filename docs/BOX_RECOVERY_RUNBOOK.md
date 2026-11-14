@@ -91,6 +91,15 @@ curl -sI https://dash.quanttt.xyz/desk_state.json | grep -i last-modified
 
 `last-modified` must be within the last hour. Until it is, the desk is still down.
 
+The hourly cycle's `live_alive` leg runs the same check every pass and pages through
+`libs.ops.alert_channels` (gateway silent, equity drop, `GATEWAY_PAUSED`, release identity
+refusing new risk). To read its verdict by hand, or to run it once outside the cycle:
+
+```powershell
+python C:\opt\quant\scripts\check_live_desk_alive.py
+Get-Content C:\opt\quant\desks\mt5\reports\live_alive.json
+```
+
 ## 6 — Why the gold sleeves are armed but have never filled
 
 The four `XAUUSD.asia` sleeves have been `LIVE` in the registry since **2026-09-04 02:56** and

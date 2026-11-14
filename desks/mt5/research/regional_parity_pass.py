@@ -62,6 +62,7 @@ for _p in (str(REPO), str(BASE), str(BASE / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import equivalence_ontology as EQ  # noqa: E402
 from libs.research import forests as F  # noqa: E402
 from libs.research import regional_parity as RP  # noqa: E402
@@ -361,7 +362,7 @@ def build(*, dry_run: bool = False, now: datetime | None = None) -> dict[str, An
         _write_atomic(CANDIDATES, cand)
         _write_atomic(HUNT_TARGETS, targets)
         if disc:
-            _write_atomic(disc_path, disc)
+            _write_atomic(disc_path, scrub(disc))
         _write_atomic(DIGEST, digest(doc, discoveries_file=disc_path.name if disc else "",
                                      n_discoveries=len(disc)))
     return doc

@@ -31,6 +31,15 @@ from pathlib import Path
 
 import requests
 
+# Credential scrub before any intelligence write (libs/ops/secret_scrub.py).
+import sys as _scrub_sys  # noqa: E402
+from pathlib import Path as _ScrubPath  # noqa: E402
+
+_SCRUB_ROOT = str(_ScrubPath(__file__).resolve().parents[3])
+if _SCRUB_ROOT not in _scrub_sys.path:
+    _scrub_sys.path.append(_SCRUB_ROOT)  # appended: never shadows a desk-local module
+from libs.ops.secret_scrub import scrub, scrub_text  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
 COHORTS = INTEL / "cohorts"
@@ -156,7 +165,7 @@ def observe_due(reg: dict) -> int:
     if checked:
         OBS.parent.mkdir(parents=True, exist_ok=True)
         with OBS.open("a", encoding="utf-8") as fh:
-            fh.write(stage.read_text(encoding="utf-8"))
+            fh.write(scrub_text(stage.read_text(encoding="utf-8")))
         stage.unlink(missing_ok=True)
     return checked
 
@@ -223,7 +232,7 @@ def write_funnel(reg: dict) -> None:
         "forward_clone_match_rate": None,
         "fusion_forward_survivors": None,
     }
-    (INTEL / "survivor_funnel.json").write_text(json.dumps(funnel, indent=1), "utf-8")
+    (INTEL / "survivor_funnel.json").write_text(json.dumps(scrub(funnel), indent=1), "utf-8")
 
 
 def run_and_save() -> dict:
@@ -232,9 +241,9 @@ def run_and_save() -> dict:
     added = enroll_new(reg)
     checked = observe_due(reg)
     write_funnel(reg)
-    REGISTRY.write_text(json.dumps(reg, indent=0, default=str), "utf-8")
+    REGISTRY.write_text(json.dumps(scrub(reg), indent=0, default=str), "utf-8")
     graph = rebuild_identity_graph(reg)
-    GRAPH.write_text(json.dumps(graph, indent=1), "utf-8")
+    GRAPH.write_text(json.dumps(scrub(graph), indent=1), "utf-8")
     alive = sum(1 for m in reg.values() if m.get("status") == "ALIVE")
     dead = sum(1 for m in reg.values() if m.get("status") == "DEAD")
     print(f"cohorts: +{added} enrolled, {checked} observed | registry {len(reg)} "

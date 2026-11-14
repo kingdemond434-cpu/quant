@@ -67,6 +67,9 @@ def test_a_HEAVILY_IMPORTED_module_is_never_dormant(report: D.DormancyReport) ->
     # dormant now and reading it that way is the detector working. input_provenance is the
     # desk-wide core it stood in for (imported by ~50 organs).
     assert "libs/ops/input_provenance.py" not in paths
+    # And a libs module only the desk tree imports: the cost model is imported by the gateway
+    # and the engine on every pass, so it is live, not dormant.
+    assert "libs/portfolio/fusion_cost.py" not in paths
 
 
 def test_every_finding_carries_a_PROVING_COMMAND(report: D.DormancyReport) -> None:

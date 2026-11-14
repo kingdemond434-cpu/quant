@@ -80,6 +80,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402  (every intelligence write, #246)
+
 #: The source rows live beside the code, not under data/: data/ is the box's state (and money
 #: path to the release gates), and these rows are reviewed configuration, not state.
 REGISTRY = DESK / "research" / "futures_state_sources.json"
@@ -1325,8 +1327,8 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     }
     if not dry_run:
         _write(STATE, state)
-        _write(LAB_INPUTS, {"generated_utc": doc["generated_utc"],
-                            "rows": lab_inputs(built, frames)})
+        _write(LAB_INPUTS, scrub({"generated_utc": doc["generated_utc"],
+                                  "rows": lab_inputs(built, frames)}))
         _write(OUT, doc)
     return doc
 

@@ -11,6 +11,7 @@ import json
 import time
 import os
 import re
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -22,7 +23,31 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "youtube"
 OUT.mkdir(parents=True, exist_ok=True)
 
-API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+
+def _load_api_key() -> str:
+    """The YouTube Data API key: `read_key('YOUTUBE_API_KEY')`, else data/secrets/youtube.json.
+
+    Never hard-code the key in source (it leaked that way once). `read_key` reads the
+    machine/user registry and then the process env, so a `setx /M` key reaches a resident
+    started before it was set. The secrets file is ``{"api_key": "..."}`` and lives only on
+    the box that runs this.
+    """
+    root = BASE.parent.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from libs.ops.env_keys import read_key
+
+    key = read_key("YOUTUBE_API_KEY").strip()
+    if key:
+        return key
+    secret = root / "data" / "secrets" / "youtube.json"
+    try:
+        return str(json.loads(secret.read_text(encoding="utf-8")).get("api_key", "")).strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+API_KEY = _load_api_key()
 SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # Trading-related search queries
@@ -195,7 +220,10 @@ def run_and_save() -> list[dict]:
         from side_channels.discovery_io import write_discoveries
     except ModuleNotFoundError:
         from discovery_io import write_discoveries
-    results = write_discoveries(out_file, results)
+    # discovery_io put the repo root on sys.path. Scrub explicitly as well as inside the helper:
+    # this miner holds a key of its own, and a titles/URL row must never carry one.
+    from libs.ops.secret_scrub import scrub
+    results = write_discoveries(out_file, scrub(results))
     print(f"youtube: {len(results)} discoveries saved to {out_file.name}")
     return results
 

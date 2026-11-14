@@ -233,6 +233,38 @@ def test_an_adoption_converges_a_tree_that_differs_only_by_the_exec_bit(tmp_path
     assert "mode 100755 -> 100644" in r.stdout
 
 
+@needs_powershell
+def test_an_adoption_refuses_over_code_only_the_box_holds(tmp_path: Path) -> None:
+    """The guard that lets a mode-only drift converge (above) still refuses when the box's
+    commit changed a code path's BYTES and the target does not carry them: adopting would
+    overwrite box-authored code, which is how 104 organs were once deleted on the box."""
+    origin = _init(tmp_path / "origin")
+    _write(origin, "ops/gates.sh", "#!/bin/sh\necho gates\n")
+    _write(origin, "desks/mt5/research/engine.py", "v1\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "base")
+
+    box = tmp_path / "box"
+    subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True)
+    for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false"),
+                 ("core.fileMode", "false")):
+        _git(box, "config", k, v)
+    _write(box, "ops/gates.sh", "#!/bin/sh\necho gates written on the box\n")
+    _git(box, "add", "--", "ops/gates.sh")
+    _git(box, "commit", "-q", "-m", "box-authored code")
+
+    _write(origin, "desks/mt5/research/engine.py", "v2\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "ship")
+    _git(box, "fetch", "-q", str(origin), "main")
+
+    r = _run_adopt(box)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert "REFUSING: 1 code path(s) this box committed are not in the target" in r.stdout
+    assert "ops/gates.sh" in r.stdout
+    assert (box / "ops" / "gates.sh").read_text(encoding="utf-8").endswith("on the box\n")
+
+
 # ------------------------------------------------------------------------ 2. the index.lock
 def test_a_lost_lock_race_gets_a_repair_pass_before_the_adoption_refuses() -> None:
     """MEASURED 2026-09-23: thirteen paths failed to stage because a foreign writer held the
@@ -411,3 +443,83 @@ def test_neither_script_uses_the_operations_this_desk_has_banned() -> None:
         assert "git stash" not in code, path.name
         assert "commit -a" not in code, path.name
         assert "add -A" not in code and "add --all ." not in code, path.name
+
+
+# ------------------------------------------- 1b. quarantined box commits (audit HOLD on #246)
+def test_only_paths_changed_solely_by_quarantined_commits_are_let_through() -> None:
+    """The box-ahead refusal is narrowed by commit, never by path: a path passes only when every
+    box commit that touched it is on the box-local quarantine list, and an unreadable list
+    quarantines nothing."""
+    src = ADOPT.read_text(encoding="utf-8")
+    block = src[src.index("QUARANTINED BOX COMMITS ARE NOT THE BOX'S CODE"):
+                src.index('$refuseMsg = "  REFUSING: {0} code path(s) this box committed')]
+    assert 'data\\ADOPT_QUARANTINED_COMMITS.json' in block
+    assert '"log", "--format=%H", "$mergeBase..HEAD", "--", $p' in block
+    assert "$touching.Count -gt 0 -and $own.Count -eq 0" in block
+    assert "'^[0-9a-f]{40}$'" in block
+    assert "no box commit is treated as quarantined" in block
+
+
+def _box_with_codex_and_own_code(tmp_path: Path) -> tuple[Path, str]:
+    origin = _init(tmp_path / "origin")
+    _write(origin, "ops/gates.sh", "#!/bin/sh\necho gates\n")
+    _write(origin, "desks/mt5/research/engine.py", "v1\n")
+    _write(origin, "desks/mt5/research/tape.py", "t1\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "base")
+    box = tmp_path / "box"
+    subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True)
+    for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false"),
+                 ("core.fileMode", "false")):
+        _git(box, "config", k, v)
+    _write(box, "desks/mt5/research/tape.py", "t1 codex\n")
+    _git(box, "add", "--", "desks/mt5/research/tape.py")
+    _git(box, "commit", "-q", "-m", "codex sync")
+    codex = _git(box, "rev-parse", "HEAD").strip()
+    _write(origin, "desks/mt5/research/engine.py", "v2\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "ship")
+    _git(box, "fetch", "-q", str(origin), "main")
+    return box, codex
+
+
+@needs_powershell
+def test_a_path_only_a_quarantined_commit_changed_is_overwritten(tmp_path: Path) -> None:
+    box, codex = _box_with_codex_and_own_code(tmp_path)
+    _write(box, "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json",
+           '{"commits": ["%s"]}' % codex)
+    r = _run_adopt(box)
+    assert "REFUSING: " not in r.stdout, r.stdout + r.stderr
+    assert "changed only by quarantined box commits" in r.stdout
+    assert (box / "desks/mt5/research/tape.py").read_text(encoding="utf-8") == "t1\n"
+
+
+@needs_powershell
+def test_without_the_list_the_quarantined_path_still_refuses(tmp_path: Path) -> None:
+    box, _codex = _box_with_codex_and_own_code(tmp_path)
+    r = _run_adopt(box)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert "REFUSING: 1 code path(s) this box committed are not in the target" in r.stdout
+
+
+def test_the_quarantine_list_is_gitignored_and_ignored_when_tracked() -> None:
+    """Audit MF1 on #246: a tracked list could be edited on origin to overwrite box code."""
+    root = BASE.parent.parent
+    rel = "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json"
+    assert subprocess.run(["git", "-C", str(root), "check-ignore", "-q", "--", rel]).returncode == 0
+    src = ADOPT.read_text(encoding="utf-8")
+    assert 'ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json"' in src
+    assert "the tracked list is ignored" in src
+    assert "-and -not $quarantineTracked" in src
+    assert "$quarantineTracked = ($lsRc -ne 1)" in src      # fail closed on any git failure
+
+
+@needs_powershell
+def test_a_tracked_quarantine_list_quarantines_nothing(tmp_path: Path) -> None:
+    box, codex = _box_with_codex_and_own_code(tmp_path)
+    _write(box, "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json", '{"commits": ["%s"]}' % codex)
+    _git(box, "add", "-f", "--", "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json")
+    _git(box, "commit", "-q", "-m", "tracked list")
+    r = _run_adopt(box)
+    assert "the tracked list is ignored" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 1 and "REFUSING: " in r.stdout

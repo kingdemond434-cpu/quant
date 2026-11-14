@@ -1269,6 +1269,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
     # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
     "forest_attempts",
+    # THE LIVE-DESK LIVENESS PAGE (2026-09-25): reads a handful of artifacts and pages; every pass.
+    "live_alive",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -4216,6 +4218,12 @@ def main() -> None:
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
     tdoor = _costed("tier_s_door", tier_s_door)
+    # IS THE LIVE DESK ALIVE -- gateway state, equity, pause and release identity read from their
+    # own artifacts, paged through `libs.ops.alert_channels` when not; writes
+    # reports/live_alive.json. Light, every pass, right behind `health`, so a dead desk is known
+    # at the top of the hour.
+    lal = _costed("live_alive", lambda: _producer(
+        "live_alive", "scripts/check_live_desk_alive.py"))
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -6707,6 +6715,7 @@ def main() -> None:
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
                     "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
+                    "live_alive": lal,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

@@ -1,8 +1,8 @@
+# The VPS-side youtube_miner loads YOUTUBE_API_KEY (env or data/secrets/youtube.json).
 import subprocess, textwrap
 
 code = textwrap.dedent("""\
 import os
-os.environ.setdefault("YOUTUBE_API_KEY", "AIzaSyAIudkX3epD1dJZKNPMIr5x6J_9ayTGBoc")
 import sys
 sys.path.insert(0, "/home/quant/quant-platform/desks/mt5/side_channels")
 from youtube_miner import _search_youtube, QUERIES
