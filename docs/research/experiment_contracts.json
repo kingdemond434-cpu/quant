@@ -265,6 +265,51 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "event_window_policy": {
+   "hypothesis": "Standing a sleeve aside inside a -30/+60 min event window only where its paired-by-day E[log W] with the window is significantly worse than without (Holm across sleeves) keeps the edge that IS the event and drops only the windows that cost growth.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.DEFER",
+    "better": "down",
+    "organ": "report:EVENT_WINDOW_POLICY.json"
+   },
+   "falsifier": {
+    "metric": "counts.NO_EVIDENCE",
+    "op": ">=",
+    "threshold": 1,
+    "after": "30 days with event windows on the calendar and every sleeve still NO_EVIDENCE: the windows never hold enough trades to judge and the gate runs on its default"
+   }
+  },
+  "spread_state": {
+   "hypothesis": "Deferring an entry while the live spread exceeds k times the symbol's median at that server hour, with k chosen from the desk's own fill costs, lowers the entry cost in R that wide-spread fills pay without losing the trade.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_fills",
+    "better": "up",
+    "organ": "report:SPREAD_STATE.json"
+   },
+   "falsifier": {
+    "metric": "n_fills",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with filled intents on the journal and none joined to an hour median: the threshold is chosen from nothing"
+   }
+  },
+  "trade_journal": {
+   "hypothesis": "A journal row per closed trade with its thesis, regime, spread at entry, excursion, exit kind and event exposure lets loss_learner separate a bad idea from a bad fill from a bad day.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "coverage.mfe_r",
+    "better": "up",
+    "organ": "report:TRADE_JOURNAL_SUMMARY.json"
+   },
+   "falsifier": {
+    "metric": "n_rows",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with closed trades on the live ledger and no journal row: the journal records nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

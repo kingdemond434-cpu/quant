@@ -55,6 +55,9 @@ def _is_literal(node: ast.AST) -> bool:
     return True
 
 
+_RIDE_ALONG = ("note_close_result", "scalp_fill")
+
+
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
     """Exec the named gateway functions over a namespace seeded with the real decision core, so
     a bare name the adapter uses resolves to the same object the gateway imports.
@@ -84,6 +87,10 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
                  "os": os, "tempfile": tempfile,
                  "datetime": datetime, "UTC": UTC, "timedelta": timedelta, "Path": Path,
                  "pd": pd, "np": np})
+    # THE ENTRY DEFERRAL (trader-brain #2/#6) DEFAULTS TO "NOT DEFERRED": it reads the event
+    # calendar and the spread reference off disk, which these mechanics tests do not stage. The
+    # gate itself is pinned in test_entry_deferral.py; a test that wants it exec's it by name.
+    seed["entry_deferral"] = lambda *a, **k: False
     for node in _GW_TREE.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 \
                 and isinstance(node.targets[0], ast.Name) and _is_literal(node.value):
@@ -92,6 +99,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
                 and node.value is not None and _is_literal(node.value):
             seed.setdefault(node.target.id, ast.literal_eval(node.value))
     seed.update(ns)
+    # THE PURE RECOVERY HELPERS RIDE ALONG (recovery drills, 2026-11-13): every close path calls
+    # `note_close_result` and the scalp lane calls `scalp_fill`; left out, each is a NameError
+    # inside the slice that reads like the change under test failing. A test that fakes one
+    # through `ns` keeps its fake.
+    names = (*names, *(h for h in _RIDE_ALONG if h not in names and h not in ns))
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
     # These are unchanged production AST nodes, including their source line numbers.
@@ -1394,6 +1406,15 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),
+        # RECONCILE BEFORE EXPOSURE and the book-order check (recovery drills) are faked like the
+        # release gate here; the real gate and check are drilled against the gateway itself in
+        # libs/tiers/gateway_drill.py (terminal_disconnected, reconcile_unreadable,
+        # stale_positions) and pinned in test_new_risk_gate_wiring below.
+        "new_risk_gate": lambda ok, why, reconciled, terminal: (ok, why),
+        "book_consistency": lambda: {"verdict": "OK", "why": "test"},
+        # The per-symbol stale-quote gate reads the fake tick's clock; this harness's ticks are
+        # fresh by construction, so the age is faked fresh and the gate is drilled (stale_tick).
+        "quote_age_s": lambda tick: 0.0,
         # The armed-deadman gate (r6) is faked like the release gate; test_fusion_book_r6.py runs
         # `main` with the REAL reader and no stamp, and pins that nothing is sent.
         "fusion_deadman_armed": lambda: (True, "fusion deadman LIVE (test)"),
@@ -1457,17 +1478,21 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
         tmp_path, monkeypatch) -> None:
-    """The pause is consulted before the terminal is touched: no connect, no read, no order,
-    no state file, one log line saying why."""
+    """The pause is consulted before anything is placed: no order, no decision, no intent, one
+    log line saying why. Since #1071 a paused pass also refreshes the ruin rail's view of the
+    account through `paused_snapshot` (reads only; driven for real in
+    test_gateway_paused_snapshot.py), faked here so this test pins the pause alone."""
     rows = _gold_rows()
     mt5 = _Terminal(rows, *_quote(rows))
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=None)
+    ns["paused_snapshot"] = lambda: "rail view refreshed (test)"
     assert _cfg.gateway_paused() is True
     ns["main"]()
     assert mt5.sent == [] and ns["_calls"] == []
     assert not ns["_state_file"].exists()
     assert ns["_decisions"] == [] and ns["_intents"] == []
-    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
+    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass; "
+                           "rail view refreshed (test)"]
 
 
 def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_sends_nothing(

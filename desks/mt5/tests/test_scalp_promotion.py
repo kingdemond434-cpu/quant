@@ -353,7 +353,14 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # which the gateway imports as `_pm` at module scope (2026-09-29).
     seed["_pm"] = _pm
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
+    # The entry deferral (trader-brain #2/#6) is pinned in test_entry_deferral.py; here it is off.
+    seed["entry_deferral"] = lambda *a, **k: False
     seed.update(ns)
+    # The pure partial-fill helpers and their literal constants ride along (recovery drills):
+    # the executor and every close path call them, and a fake in `ns` still wins.
+    names = (*names, *(h for h in ("note_close_result", "scalp_fill", "FILLED_RETCODES",
+                                   "RETCODE_DONE_PARTIAL", "CLOSE_RESIDUAL_KEEP_H")
+                       if h not in names and h not in ns))
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)
             or (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names

@@ -29,6 +29,13 @@ WHAT IS CHECKED, per fault, on the gateway's real `connect`, `place_bracket` and
                     gateway's `new_risk_gate`; a gateway without one is the finding itself
                     (recovery drills, 2026-10-06: the pass opened new risk on top of an unread
                     book, and `connect()` only asks whether `terminal_info()` exists)
+  PARTIAL_IS_A_POSITION  a market order answered 10010 DONE_PARTIAL is recorded at the FILLED
+                    volume with its residual, never as a failure (the scalp lane used to skip
+                    the basket and leave the position unmanaged), and nothing is resent
+  CLOSE_RESIDUAL_KEPT  a close answered 10010 leaves its residual, re-read from the broker, in
+                    `st["close_residual"]` and is not resent in the same pass
+  BOOK_IN_ORDER     a positions list still showing a ticket whose closing deal has arrived (a
+                    lagging terminal) refuses new risk for the pass through `new_risk_gate`
 A breach is a FINDING about the gateway, reported with the fault that produced it; the drill
 never edits the gateway.
 """
@@ -47,9 +54,11 @@ DESK = ROOT / "desks" / "mt5"
 
 FAULTS: tuple[str, ...] = ("healthy", "send_none", "reject_10015", "requote_10004",
                            "send_raises", "tick_none", "terminal_down", "orders_get_raises",
-                           "terminal_disconnected", "reconcile_unreadable", "stale_tick")
+                           "terminal_disconnected", "reconcile_unreadable", "stale_tick",
+                           "partial_fill", "close_partial", "stale_positions")
 #: The faults after which the pass must refuse NEW exposure (RECONCILE_BEFORE_EXPOSURE).
-REFUSE_NEW_RISK: frozenset[str] = frozenset({"terminal_disconnected", "reconcile_unreadable"})
+REFUSE_NEW_RISK: frozenset[str] = frozenset({"terminal_disconnected", "reconcile_unreadable",
+                                             "stale_positions"})
 TIMEOUT_S = 90
 
 #: The child's program. It reads its fault from argv, builds the double, imports the gateway
@@ -61,6 +70,7 @@ from types import SimpleNamespace as NS
 fault = sys.argv[1]
 desk = sys.argv[2]
 calls = {"order_send": [], "initialize": 0}
+STATE = {"magic": 0}
 m = types.ModuleType("MetaTrader5")
 def _const(name):
     if name.isupper():
@@ -68,6 +78,7 @@ def _const(name):
             name, 1000 + (sum(map(ord, name)) % 5000))
     raise AttributeError(name)
 m.__getattr__ = _const
+m.DEAL_ENTRY_IN, m.DEAL_ENTRY_OUT, m.DEAL_ENTRY_OUT_BY = 0, 1, 3
 def terminal_info():
     return None if fault == "terminal_down" else NS(connected=fault != "terminal_disconnected")
 def initialize(**kw):
@@ -111,9 +122,23 @@ def orders_get(**kw):
 def positions_get(**kw):
     if fault == "reconcile_unreadable":
         raise RuntimeError("positions_get failed")
+    if fault == "close_partial" and kw.get("ticket") == 77:
+        return (NS(ticket=77, volume=0.01, magic=STATE["magic"], time_update_msc=1),)
+    if fault == "stale_positions" and not kw.get("ticket"):
+        # A lagging terminal: ticket 77 is still listed after its closing deal arrived.
+        return (NS(ticket=77, volume=0.02, magic=STATE["magic"], symbol="EURUSD", sl=99.0,
+                   type=0, time_update_msc=int(time.time() * 1000) - 60000),)
     return ()
+def history_deals_get(*a, **kw):
+    if fault != "stale_positions":
+        return ()
+    t = int(time.time() * 1000)
+    return (NS(ticket=1, position_id=77, entry=m.DEAL_ENTRY_IN, volume=0.02,
+               magic=STATE["magic"], time_msc=t - 120000),
+            NS(ticket=2, position_id=77, entry=m.DEAL_ENTRY_OUT, volume=0.02,
+               magic=STATE["magic"], time_msc=t - 30000))
 for f in (terminal_info, initialize, last_error, symbol_info_tick, symbol_info, account_info,
-          order_calc_margin, order_send, orders_get, positions_get):
+          order_calc_margin, order_send, orders_get, positions_get, history_deals_get):
     setattr(m, f.__name__, f)
 sys.modules["MetaTrader5"] = m
 sys.path.insert(0, desk)
@@ -122,6 +147,7 @@ out = {"fault": fault}
 try:
     from mt5desk import gateway
     out["root"] = str(gateway.BASE)
+    STATE["magic"] = int(gateway.MAGIC)
     try:
         out["connect"] = bool(gateway.connect())
     except Exception as exc:
@@ -149,12 +175,51 @@ try:
             rr = order_door.restart_reconcile(m, magic=1, armed=False)
         except Exception as exc:
             rr = {"verdict": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+        # As main() does: a book that disagrees with the deal history twice is not reconciled.
+        book = getattr(gateway, "book_consistency", None)
+        if book is None:
+            out["book"] = "NO_CHECK"
+        else:
+            try:
+                b = book()
+                if b.get("verdict") == "INCONSISTENT":
+                    b = book()
+                out["book"] = b.get("verdict")
+                if b.get("verdict") == "INCONSISTENT":
+                    rr = {"verdict": "UNMEASURED", "why": f"book_inconsistent: {b.get('why')}"}
+            except Exception as exc:
+                out["book_exc"] = f"{type(exc).__name__}: {exc}"
         try:
             ok, why = gate(True, "armed", rr, m.terminal_info())
             out["new_risk"] = bool(ok)
             out["new_risk_why"] = str(why)[:200]
         except Exception as exc:
             out["gate_exc"] = f"{type(exc).__name__}: {exc}"
+    # PARTIAL FILLS: the real helpers the scalp lane and every close path call.
+    if fault in ("partial_fill", "close_partial"):
+        # The venue's 10010 answer is built here, not sent: only the gateway's own sends count.
+        n0 = len(calls["order_send"])
+        res = NS(retcode=10010, order=6001, comment="sandbox", request_id=0, volume=0.01,
+                 price=100.0, deal=9001)
+        if fault == "partial_fill":
+            fill = getattr(gateway, "scalp_fill", None)
+            if fill is None or res.retcode not in getattr(gateway, "FILLED_RETCODES", ()):
+                out["partial"] = "NO_HANDLING"
+            else:
+                out["partial"] = list(fill(res, 0.02))
+        else:
+            note = getattr(gateway, "note_close_result", None)
+            if note is None:
+                out["close_residual"] = "NO_HANDLING"
+            else:
+                pst = {}
+                try:
+                    note(pst, NS(ticket=77, volume=0.02), res, "drill")
+                    out["close_residual"] = (pst.get("close_residual") or {}).get("77", {}).get(
+                        "residual")
+                except Exception as exc:
+                    out["close_exc"] = f"{type(exc).__name__}: {exc}"
+        out["resends"] = len(calls["order_send"]) - n0
 except Exception as exc:
     out["import_exc"] = f"{type(exc).__name__}: {exc}"
     out["trace"] = traceback.format_exc()[-800:]
@@ -213,7 +278,7 @@ def run_fault(fault: str, *, desk: Path = DESK) -> dict[str, Any]:
 def judge(fault: str, obs: dict[str, Any]) -> list[str]:
     """The invariants the module docstring names, checked on one observation."""
     out: list[str] = []
-    for k in ("connect_exc", "place_exc", "expire_exc", "gate_exc"):
+    for k in ("connect_exc", "place_exc", "expire_exc", "gate_exc", "book_exc", "close_exc"):
         if obs.get(k):
             out.append(f"NO_CRASH: {k.split('_')[0]} raised {obs[k]}")
     sends = int(obs.get("sends") or 0)
@@ -232,6 +297,24 @@ def judge(fault: str, obs: dict[str, Any]) -> list[str]:
     if fault == "terminal_down" and obs.get("connect") is not False:
         out.append(f"DOWN_IS_FALSE: connect() returned {obs.get('connect')} with the terminal "
                    "down")
+    if fault == "partial_fill" and "partial" in obs:
+        if obs["partial"] == "NO_HANDLING":
+            out.append("PARTIAL_IS_A_POSITION: a 10010 fill is not handled as a position")
+        elif obs["partial"] != [0.01, 0.01]:
+            out.append(f"PARTIAL_IS_A_POSITION: (filled, residual) = {obs['partial']}, "
+                       "expected the venue's 0.01 filled and 0.01 residual")
+    if fault == "close_partial" and "close_residual" in obs:
+        if obs["close_residual"] == "NO_HANDLING":
+            out.append("CLOSE_RESIDUAL_KEPT: a partial close's residual is not recorded")
+        elif obs["close_residual"] != 0.01:
+            out.append(f"CLOSE_RESIDUAL_KEPT: residual {obs['close_residual']}, expected the "
+                       "broker's 0.01")
+    if fault in ("partial_fill", "close_partial") and int(obs.get("resends") or 0) > 0:
+        out.append(f"PARTIAL_IS_A_POSITION: {obs['resends']} resend(s) of the residual in "
+                   "the same pass")
+    if fault == "stale_positions" and obs.get("book") == "NO_CHECK":
+        out.append("BOOK_IN_ORDER: the gateway does not compare its positions read with the "
+                   "deal history")
     if fault in REFUSE_NEW_RISK and "new_risk" in obs:
         if obs["new_risk"] == "NO_GATE":
             out.append("RECONCILE_BEFORE_EXPOSURE: the gateway has no new-risk gate; this pass "

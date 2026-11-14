@@ -717,8 +717,11 @@ def restart_reconcile(mt5: Any, *, magic: int, armed: bool,
         orders = [o for o in (mt5.orders_get() or ())
                   if int(getattr(o, "magic", 0) or 0) == int(magic)]
     except Exception as exc:
-        rep.update({"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-        _emit(log, f"RESTART RECONCILE: venue unreadable ({rep['why']}); UNMEASURED")
+        # The exception TYPE only in the report: it lands in the published gateway_state.json
+        # (Auditor rule, #639: no free exception text on the wire). The text stays in the log.
+        rep.update({"verdict": "UNMEASURED", "why": type(exc).__name__})
+        _emit(log, f"RESTART RECONCILE: venue unreadable ({type(exc).__name__}: "
+                   f"{str(exc)[:200]}); UNMEASURED")
         append_ledger(rep, log=log)
         return rep
     rep["positions"] = [{"ticket": getattr(p, "ticket", None), "symbol": getattr(p, "symbol", None),

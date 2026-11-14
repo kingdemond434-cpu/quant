@@ -126,6 +126,8 @@ def _gateway(faults: tuple[str, ...], now: datetime) -> dict[str, Any]:
         return _row(FAIL, ev, "; ".join(breaches)[:600], faults=list(faults),
                     fix=GATEWAY_SPEC if any("RECONCILE_BEFORE" in b for b in breaches)
                     else STALE_QUOTE_SPEC if any("NO_SEND_STALE" in b for b in breaches)
+                    else FILL_ORDER_SPEC if any(x in b for b in breaches for x in (
+                        "PARTIAL_IS_A_POSITION", "CLOSE_RESIDUAL_KEPT", "BOOK_IN_ORDER"))
                     else None)
     if len(seen) < len(faults):
         missing = [f for f in faults if f not in seen]
@@ -341,13 +343,9 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
      _ci("desks/mt5/tests/test_control_plane_chaos.py",
          "control-plane chaos (queue flood, frozen PID, killed worker) is tested in CI")),
     ("partial_fill", "partial fill",
-     _gap("the order door labels a partial fill but nothing acts on the unfilled remainder "
-          "(no resize of the stop leg, no record of the residual)",
-          FILL_ORDER_SPEC)),
+     lambda n: _gateway(("partial_fill", "close_partial"), n)),
     ("out_of_order", "out-of-order updates",
-     _gap("no sequencing of broker updates anywhere in mt5desk/: a stale positions read after "
-          "a newer deal is taken at face value",
-          FILL_ORDER_SPEC)),
+     lambda n: _gateway(("stale_positions",), n)),
     ("stale_data", "stale data / stale source", _stale),
     ("stale_quote", "one symbol's quote stale while the terminal is connected",
      lambda n: _gateway(("stale_tick",), n)),
