@@ -108,11 +108,16 @@ def test_main_writes_snapshot_and_keeps_disabled_registry_row(tmp_path, monkeypa
     reg = universe / "universe.json"
     reg.write_text(json.dumps({"UST10Y": {"symbol": "UST10Y", "trade_mode": 3},
                                "EURUSD": {"symbol": "EURUSD"}}))
-    fake = SimpleNamespace(initialize=lambda: True, shutdown=lambda: None,
+    fake = SimpleNamespace(initialize=lambda **kw: True, shutdown=lambda: None,
                            symbols_get=lambda: [sym("UST10Y", 0, "Bonds\\UST10Y")],
                            symbol_select=lambda *a: True, symbol_info=lambda *a: None,
                            TIMEFRAME_H1=1)
     monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    # LIVE's main pins the desk's terminal by path and refuses a non-Fusion account; the test
+    # stands in for both (the venue check has its own tests in test_mt5_session).
+    from research import mt5_session
+    monkeypatch.setattr(mt5_session, "attach_or_initialize", lambda mt5, path=None, **kw: True)
+    monkeypatch.setattr(mt5_session, "venue_refusal", lambda mt5, path=None: None)
     monkeypatch.setattr(E, "UNIVERSE", universe)
     monkeypatch.setattr(E, "REGISTRY", reg)
     monkeypatch.setattr(E, "REPORT", tmp_path / "report.json")
