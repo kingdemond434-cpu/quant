@@ -32,7 +32,10 @@ def fence(monkeypatch) -> ModuleType:
 
 def _healthy(at: Any) -> dict[str, Any]:
     doc: dict[str, Any] = {"families": {"overnight_drift": {"unjudged": 10, "queued": 3,
-                                                            "judged_window": 4}}}
+                                                            "judged_window": 4}},
+                           # what judge_coverage publishes: the live registry and its unmined list
+                           "totals": {"families_live": 1, "families_unmined": 0},
+                           "unmined_live_families": []}
     if at is not None:
         doc["at"] = at
     return doc
