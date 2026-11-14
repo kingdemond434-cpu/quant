@@ -31,7 +31,7 @@ import functools
 import json
 import operator
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -182,6 +182,48 @@ def recombinations(active: dict[str, dict[str, Any]], *,
     return out[:limit]
 
 
+#: The family kwargs that ARE the holding period, in the order a family is read for them.
+HOLDING_KNOBS: tuple[str, ...] = ("hold_bars", "ttl_bars")
+
+
+def _holding_knob(family: str) -> tuple[str, Any] | None:
+    """(kwarg, default) of the family's time exit, read from its signature, or None."""
+    try:
+        import inspect
+
+        from mt5desk.families import get_family_func
+        fn = get_family_func(family)
+        sig = inspect.signature(fn).parameters if fn is not None else {}
+    except Exception:
+        return None
+    for knob in HOLDING_KNOBS:
+        if knob in sig and sig[knob].default is not inspect.Parameter.empty:
+            return knob, sig[knob].default
+    return None
+
+
+def executable_cross(c: dict[str, Any]) -> tuple[dict[str, Any] | None, str]:
+    """(params the child family READS, "") for a cross the judge can run, else (None, why).
+
+    A mechanism-genome slot is an economic claim, not a parameter, and the child used to be
+    donated as `{mechanism_genome, crossed_slot}` -- params no family reads -- so every cross ran
+    as the parent's DEFAULT cell (2026-11-04: 96 such rows on the docket, none ever a new rule).
+    Only a slot that maps onto a kwarg of the parent family executes: `holding`, by taking the
+    donor family's time exit into the parent's own knob. Every other slot is reported
+    UNEXECUTABLE with its reason, never donated as a relabelled default cell.
+    """
+    slot = str(c.get("slot") or "")
+    if slot != "holding":
+        return None, f"slot {slot!r} has no family kwarg; the child would run as its parent"
+    mine = _holding_knob(str(c.get("from_family") or ""))
+    theirs = _holding_knob(str(c.get("to_family") or ""))
+    if mine is None or theirs is None:
+        return None, "a parent has no time-exit kwarg to carry the holding period"
+    if mine[1] == theirs[1]:
+        return None, f"both parents hold for {mine[1]} bars; the child is its parent"
+    return {mine[0]: theirs[1]}, ""
+
+
 def feature_genealogy(g: dict[str, dict]) -> dict[str, dict]:
     """Per feature id, the sleeves that descend from it -- the fake-breadth reading at the
     VARIABLE level. Family and cluster breadth both miss twelve sleeves that are all the same
@@ -285,18 +327,30 @@ def run() -> dict:
     # DONATED THROUGH THE ONE INTAKE, so a slot-level child is judged by the same ten gates as
     # every other candidate. A child carries its parents and the crossed slot in `evidence`, so
     # `mutation_yield` can join the verdict back to the slot that produced it.
+    runnable: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    unexecutable: Counter[str] = Counter()
+    for c in crosses:
+        params, why = executable_cross(c)
+        if params is None:
+            unexecutable[str(c.get("slot"))] += 1
+            c["unexecutable"] = why
+        else:
+            runnable.append((c, params))
+    mg_block["executable"] = len(runnable)
+    mg_block["unexecutable_by_slot"] = dict(unexecutable)
     try:
         from research import proposer_common as pc
         cands = [pc.candidate(
             "mechanism_genome", str(v.get("symbol") or ""), str(v.get("family") or ""),
-            {"mechanism_genome": c["genome"], "crossed_slot": c["slot"]},
+            dict(params),
             mechanism=(f"{c['from_family']} with {c['slot']}={c['took']} taken from "
                        f"{c['to_family']}"),
             title=f"{c['from_family']}+{c['to_family']} :: {c['slot']}",
             evidence={"crossed_slot": c["slot"], "took": c["took"], "replaced": c["replaced"],
                       "parents": [c["from_family"], c["to_family"]],
-                      "coherence": c["coherence"], "generator": "mechanism_genome"})
-            for c in crosses
+                      "coherence": c["coherence"], "generator": "mechanism_genome",
+                      "mechanism_genome": c["genome"]})
+            for c, params in runnable
             for v in [next((r for r in active.values()
                             if str(r.get("family")) == c["from_family"]), None)] if v]
         if cands:
