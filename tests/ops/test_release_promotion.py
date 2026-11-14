@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import subprocess
 from datetime import UTC, datetime
@@ -385,9 +386,12 @@ def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     assert "--force" not in promote and " -f " not in promote
     seal = _job(ci, "seal")
     assert "needs: [quality, mt5-money-path, coverage-floor]" in seal
-    # the seal step is reused, not duplicated, and it now says which commit it released
-    assert ci.count("release_manifest.py --seal") == 2           # first seal + retry re-seal
-    assert "release_commit=" in seal
+    # one seal, never re-sealed on a tip nobody tested; it says which commit it released and
+    # whether it is a real seal, and promote runs only on a real one
+    assert ci.count("release_manifest.py --seal") == 1
+    assert "release_commit=" in seal and "sealed=" in seal
+    assert "needs.seal.outputs.sealed == 'true'" in promote
+    assert 'release_commit=${GITHUB_SHA}' not in seal            # the 11-14 unsealed promote
     assert "release_manifest.py" not in promote
     for job in ("quality", "mt5-money-path"):
         body = _job(ci, job)
@@ -452,3 +456,89 @@ def test_windows_launcher_never_converts_gate_failure_to_tip_authority() -> None
     assert '"ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP"' in s
     r = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-Release.ps1").read_text(encoding="utf-8")
     assert "[string] $Target" in r
+
+
+# THE SEAL STEP, RUN. Until 11-14 a seal whose push lost the race to a newer LIVE commit exited 0
+# and handed promote the UNSEALED tested commit (run 43544362918): production moved while every
+# release still named the 11-10 seal. These run the step's own bash against a throwaway origin.
+def _seal_step() -> str:
+    import yaml
+
+    wf = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    return str(next(s for s in wf["jobs"]["seal"]["steps"] if s.get("id") == "push")["run"])
+
+
+def _sh(cwd: Path, *args: str) -> str:
+    return subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def _seal_race(tmp_path: Path, their_release: str | None) -> tuple[Path, str, dict[str, str]]:
+    origin, me, other = tmp_path / "origin.git", tmp_path / "me", tmp_path / "other"
+    _sh(tmp_path, "git", "init", "-q", "--bare", "-b", "live", str(origin))
+    _sh(tmp_path, "git", "clone", "-q", str(origin), str(me))
+    for d in (me,):
+        _sh(d, "git", "config", "user.name", "t")
+        _sh(d, "git", "config", "user.email", "t@t")
+    rel = me / "desks" / "mt5" / "data" / "RELEASE.json"
+    rel.parent.mkdir(parents=True)
+    rel.write_text('{"code_sha": "old"}\n')
+    (me / "code.py").write_text("a\n")
+    _sh(me, "git", "checkout", "-q", "-b", "live")
+    _sh(me, "git", "add", "-A")
+    _sh(me, "git", "commit", "-qm", "base")
+    _sh(me, "git", "push", "-q", "origin", "live")
+    (me / "code.py").write_text("b\n")
+    _sh(me, "git", "commit", "-qam", "tested")
+    tested = _sh(me, "git", "rev-parse", "HEAD")
+    _sh(me, "git", "push", "-q", "origin", "live")
+    # LIVE moves on while the gates run: an untested code merge and a box state commit
+    _sh(tmp_path, "git", "clone", "-q", "-b", "live", str(origin), str(other))
+    _sh(other, "git", "config", "user.name", "o")
+    _sh(other, "git", "config", "user.email", "o@o")
+    (other / "other.py").write_text("c\n")
+    _sh(other, "git", "add", "-A")
+    _sh(other, "git", "commit", "-qm", "untested code")
+    (other / "desks" / "mt5" / "data" / "state.json").write_text("{}\n")
+    _sh(other, "git", "add", "-A")
+    _sh(other, "git", "commit", "-qm", "box state")
+    if their_release is not None:
+        code = _sh(other, "git", "rev-parse", "HEAD~1") if their_release == "newer" else "older"
+        theirs = other / "desks" / "mt5" / "data" / "RELEASE.json"
+        theirs.write_text(f'{{"code_sha": "{code}"}}\n')
+        _sh(other, "git", "commit", "-qam", "another seal")
+    _sh(other, "git", "push", "-q", "origin", "live")
+    rel.write_text(f'{{"code_sha": "{tested}"}}\n')  # what release_manifest --seal wrote
+    out = tmp_path / "out"
+    env = {**os.environ, "GITHUB_OUTPUT": str(out), "BRANCH": "live", "RUN_ID": "1"}
+    subprocess.run(["bash", "-c", _seal_step()], cwd=me, check=True, env=env, capture_output=True)
+    outputs = dict(line.split("=", 1) for line in out.read_text().split())
+    _sh(me, "git", "fetch", "-q", "origin")
+    return me, tested, outputs
+
+
+def test_a_seal_that_loses_the_race_still_lands_and_promote_gets_the_pure_seal(
+    tmp_path: Path,
+) -> None:
+    for their in (None, "older"):
+        d = tmp_path / str(their)
+        d.mkdir()
+        me, tested, out = _seal_race(d, their)
+        assert out["sealed"] == "true", their
+        seal = out["release_commit"]
+        # the released commit is exactly the tested tree plus RELEASE.json, parent = tested
+        assert _sh(me, "git", "rev-parse", f"{seal}^") == tested
+        assert _sh(me, "git", "diff", "--name-only", tested, seal) == "desks/mt5/data/RELEASE.json"
+        assert tested in _sh(me, "git", "show", f"{seal}:desks/mt5/data/RELEASE.json")
+        # and it is on LIVE's history, through a history-only merge that changes RELEASE.json alone
+        tip = _sh(me, "git", "rev-parse", "origin/live")
+        on_live = subprocess.run(["git", "merge-base", "--is-ancestor", seal, tip], cwd=me)
+        assert on_live.returncode == 0
+        merged = _sh(me, "git", "diff", "--name-only", f"{tip}^1", tip)
+        assert merged == "desks/mt5/data/RELEASE.json"
+        assert _sh(me, "git", "show", f"{tip}:other.py") == "c"
+
+
+def test_a_newer_seal_on_live_stands_this_one_down_and_nothing_is_promoted(tmp_path: Path) -> None:
+    me, _tested, out = _seal_race(tmp_path, "newer")
+    assert out == {"sealed": "false"}
+    assert _sh(me, "git", "log", "-1", "--format=%s", "origin/live") == "another seal"

@@ -305,11 +305,12 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
-    # THE COMMIT `promote` RELEASES: the pure-seal commit this job pushed, or the tested commit
-    # itself when it was already sealed or when the branch moved on to code these gates did not
-    # run. Never a tip nobody tested.
+    # THE COMMIT `promote` RELEASES: the pure-seal side commit this job made (parent = the tested
+    # commit), or the tested commit itself when it was already sealed. Never a tip nobody tested
+    # and never an unsealed commit: `sealed` is false when a newer seal stood this one down.
     outputs:
       release_commit: ${{ steps.push.outputs.release_commit }}
+      sealed: ${{ steps.push.outputs.sealed }}
     # LEVEL 2 (ops/release/authority/LEVEL2.md). Once the LIVE ruleset is on, GITHUB_TOKEN can't
     # push LIVE: GitHub Actions is never a bypass actor, because a PR's own workflow holds one. The
     # seal pushes as the state App instead. Its key lives only in this environment, whose only
@@ -339,11 +340,16 @@ jobs:
       - name: Seal the tested release (no-op when HEAD is already the sealed code)
         run: python scripts/release_manifest.py --seal --tested --if-needed --by "ci:${{ github.run_id }}"
 
-      # Three tries. A rejected push means the branch moved under us -- normally by the box's
-      # own state-sync or an earlier seal. The tested SHA is re-read from the new tip ONLY when
-      # the tip carries no code the gates did not run (its diff against the sealed SHA is
-      # confined to desk state); a tip with untested code is left for its own CI run to seal,
-      # because `--tested` is an attestation and this job may not make one it did not earn.
+      # THE SEAL IS A SIDE COMMIT: parent = the tested commit, diff = RELEASE.json alone, so its
+      # tree is exactly what the gates ran plus the manifest. `promote` releases THAT commit. When
+      # the branch moved under us (merges land every few minutes; a run takes about an hour, so
+      # a fast-forward push nearly always loses), the seal reaches LIVE's history by a --no-ff
+      # merge into the new tip. The merge is history only: production never gets it, and the
+      # untested commits it brings in are left to their own CI runs. Until 11-14 a rejected push
+      # gave up, exited 0 and handed promote the UNSEALED tested commit, so production moved while
+      # every release since 11-10 still named bb527d650 (run 43544362918: no "seal release"
+      # commit ever reached LIVE). A tip whose RELEASE.json moved since the tested commit carries a
+      # newer seal; this one then stands down and promote is skipped -- never an unsealed target.
       - name: Commit RELEASE.json alone and push
         id: push
         env:
@@ -355,33 +361,49 @@ jobs:
           git config user.email "ci@users.noreply.github.com"
           if git diff --quiet -- desks/mt5/data/RELEASE.json; then
             echo "release_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "sealed=true" >> "$GITHUB_OUTPUT"
             echo "nothing to seal: HEAD is already the sealed code"; exit 0
           fi
           tested="$(git rev-parse HEAD)"
           git add desks/mt5/data/RELEASE.json
           git commit -q -m "seal release $(git rev-parse --short "$tested")"
-          for attempt in 1 2 3; do
-            if git push origin "HEAD:refs/heads/${BRANCH}"; then
-              echo "release_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"; exit 0
+          seal="$(git rev-parse HEAD)"
+          test "$(git rev-parse "${seal}^")" = "$tested"
+          test "$(git diff --name-only "$tested" "$seal")" = "desks/mt5/data/RELEASE.json"
+          for attempt in 1 2 3 4 5; do
+            git fetch -q origin "refs/heads/${BRANCH}"
+            tip="$(git rev-parse FETCH_HEAD)"
+            if git merge-base --is-ancestor "$seal" "$tip"; then
+              echo "the seal is already on ${BRANCH}"; break
             fi
-            echo "push rejected (attempt ${attempt}): the branch moved -- re-sealing on the new tip"
-            git reset -q --hard HEAD~1
-            git pull -q --ff-only origin "${BRANCH}"
-            if ! git diff --quiet "$tested" HEAD -- . ':(exclude)desks/mt5/data'; then
-              echo "::warning::the new tip carries code these gates did not run; leaving the seal to its own CI run"
-              echo "release_commit=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-              exit 0
+            theirs="$(git show "${tip}:desks/mt5/data/RELEASE.json" | python -c 'import json,sys; print(json.load(sys.stdin).get("code_sha") or "")')"
+            if [ -n "$theirs" ] && [ "$theirs" != "$tested" ] && git merge-base --is-ancestor "$tested" "$theirs" 2>/dev/null; then
+              echo "::warning::${BRANCH} already names a newer seal (${theirs:0:12}) than ${tested:0:12}; standing down, nothing promoted"
+              echo "sealed=false" >> "$GITHUB_OUTPUT"; exit 0
             fi
-            tested="$(git rev-parse HEAD)"
-            python scripts/release_manifest.py --seal --tested --if-needed --by "ci:${RUN_ID}"
-            if git diff --quiet -- desks/mt5/data/RELEASE.json; then
-              echo "release_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-              echo "the new tip is already the sealed code"; exit 0
+            if [ "$tip" = "$tested" ]; then
+              push="$seal"
+            else
+              git checkout -q --detach "$tip"
+              # an older seal merged since `tested` also moved RELEASE.json: this seal's copy wins
+              git merge -q --no-ff --no-commit "$seal" || true
+              git checkout "$seal" -- desks/mt5/data/RELEASE.json
+              git add desks/mt5/data/RELEASE.json
+              test -z "$(git diff --name-only --diff-filter=U)"
+              git commit -q --no-edit -m "Merge seal release ${tested:0:12} into ${BRANCH} (history only)"
+              test -z "$(git diff --name-only "$tip" HEAD -- . ':(exclude)desks/mt5/data/RELEASE.json')"
+              push="$(git rev-parse HEAD)"
             fi
-            git add desks/mt5/data/RELEASE.json
-            git commit -q -m "seal release $(git rev-parse --short "$tested")"
+            if git push origin "${push}:refs/heads/${BRANCH}"; then
+              echo "pushed ${push:0:12} (seal ${seal:0:12})"; break
+            fi
+            echo "push rejected (attempt ${attempt}): the branch moved -- merging the seal into the new tip"
+            if [ "$attempt" = 5 ]; then
+              echo "::error::could not land the seal after 5 attempts"; exit 1
+            fi
           done
-          echo "::error::could not push the seal after 3 attempts"; exit 1
+          echo "release_commit=${seal}" >> "$GITHUB_OUTPUT"
+          echo "sealed=true" >> "$GITHUB_OUTPUT"
 
   # DEVELOPMENT -> GREEN IMMUTABLE RELEASE -> PRODUCTION, AND A MASTER EQUAL TO WHAT IS DEPLOYED.
   # Runs only after both gates are green AND the seal job has committed RELEASE.json, on a push to
@@ -403,7 +425,8 @@ jobs:
   promote:
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3'
+      github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3' &&
+      needs.seal.outputs.sealed == 'true'
     needs: [quality, mt5-money-path, coverage-floor, seal]
     runs-on: ubuntu-latest
     timeout-minutes: 10
