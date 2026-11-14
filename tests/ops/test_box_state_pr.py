@@ -312,3 +312,24 @@ def test_the_route_waits_for_both_workflows_to_skip_box_state_heads(
     assert bsp.ci_skips_box_state(tmp_path) is False  # one of two is not enough
     _gate(tmp_path)
     assert bsp.ci_skips_box_state(tmp_path) is True
+
+
+def test_api_calls_go_through_the_keyed_redirect_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The token never follows a redirect off api.github.com (tests/data/test_keyed_fetch_fence)."""
+    import io
+
+    seen: dict[str, Any] = {}
+
+    def fake(req: Any, *, timeout: float, context: Any = None, secrets: Any = ()) -> Any:
+        seen.update(url=req.full_url, secrets=list(secrets), auth=req.get_header("Authorization"))
+        return io.BytesIO(b'{"sha": "x"}')
+
+    call = bsp.github_api("tok-123", ROOT)
+    ks = sys.modules["_box_keyed_sources"]
+    monkeypatch.setattr(ks, "keyed_urlopen", fake)
+    assert call("GET", "repos/o/r/git/ref/heads/x", None) == {"sha": "x"}
+    assert seen == {
+        "url": "https://api.github.com/repos/o/r/git/ref/heads/x",
+        "secrets": ["tok-123"],
+        "auth": "Bearer tok-123",
+    }

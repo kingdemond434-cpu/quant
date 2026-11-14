@@ -216,7 +216,24 @@ def mint_token(repo: Path, home: Path = MERGER_HOME) -> str | None:
     return tok
 
 
-def github_api(token: str) -> Api:
+def _keyed_sources(repo: Path) -> Any:
+    """libs/data/keyed_sources.py from the box's own checkout, loaded by path (stdlib only)."""
+    spec = importlib.util.spec_from_file_location(
+        "_box_keyed_sources", repo / "libs/data/keyed_sources.py"
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("libs/data/keyed_sources.py cannot be loaded")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def github_api(token: str, repo: Path) -> Api:
+    """API calls as the App. Every request goes through keyed_urlopen, so the token never follows
+    a redirect to another host (the desk's keyed-fetch fence)."""
+    ks = _keyed_sources(repo)
+
     def call(method: str, path: str, body: Mapping[str, Any] | None = None) -> Any:
         req = urllib.request.Request(
             f"https://api.github.com/{path}",
@@ -230,7 +247,7 @@ def github_api(token: str) -> Api:
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with ks.keyed_urlopen(req, timeout=60, secrets=[token]) as r:
                 raw = r.read()
         except urllib.error.HTTPError as exc:
             raise RuntimeError(f"{method} {path}: HTTP {exc.code}") from exc
@@ -369,7 +386,7 @@ def main(argv: list[str] | None = None) -> int:
         res = publish(
             a.repo,
             a.pending,
-            github_api(tok),
+            github_api(tok, a.repo),
             slug(a.repo),
             base=a.base,
             refused=refused,
