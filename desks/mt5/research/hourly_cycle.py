@@ -1191,6 +1191,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # Disk size history (2026-11-10): 370 GB of growth since 11-03 went unmeasured because the
+    # census ran on no clock. Core so rotation cannot starve it; it skips itself (one JSON read)
+    # unless its own last stamp is 6 h old, so the walk runs ~4 times a day.
+    "disk_census",
     # Whether each ruin rail can reach its input, and the halt's REAL age -- capital-path class, so
     # it runs every pass and never waits for a rotation (scripts/check_halt_rail_integrity.py).
     "halt_rail",
@@ -2965,6 +2969,15 @@ def session_chart_expansion() -> dict:
     returns 2.0.
     """
     return _producer("session_chart_expansion", "research/session_chart_equivalents.py", "--apply")
+
+
+def disk_census() -> dict:
+    """`disk_census`: where the disk went, with a size history and 24 h / 7 d top growers.
+
+    Measures only; deletes nothing (reclaiming is `reclaim_disk.py`'s job). Writes
+    reports/DISK_CENSUS.json and appends reports/DISK_CENSUS_HISTORY.jsonl.
+    """
+    return _producer("disk_census", "scripts/disk_census.py", "--min-age-h", "6")
 
 
 def stamp_freshness() -> dict:
@@ -5904,6 +5917,7 @@ def main() -> None:
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
+    dsk = _costed("disk_census", disk_census)
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
@@ -6615,6 +6629,7 @@ def main() -> None:
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
+                    "disk_census": dsk,
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,

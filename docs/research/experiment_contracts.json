@@ -310,6 +310,21 @@
     "threshold": 1,
     "after": "14 days of passes with no symbol at or above the 66-day bar: the terminal's store holds less than the bar and the forward clock is the only route"
    }
+  },
+  "disk_census": {
+   "hypothesis": "A census of the box's largest directories every 6 h, kept as a history, names the directory behind any disk growth within one day (the 370 GB rise of 11-03..11-10 went unexplained because the census ran on no clock and kept no history), so space is reclaimed from the real grower and never by shedding the bar lake or research.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "growth.24h.used_gb_delta",
+    "better": "down",
+    "organ": "report:DISK_CENSUS.json"
+   },
+   "falsifier": {
+    "metric": "accounted_gb",
+    "op": "==",
+    "threshold": 0,
+    "after": "7 days in which every census accounts for 0 GB: the walk reads nothing on the box and names no grower"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
