@@ -266,6 +266,36 @@
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
   },
+  "decay_verdicts": {
+   "hypothesis": "An order-sensitive decay verdict (Edgington mean-p, early blocks against late blocks under a split frozen in code) names sleeves whose realised edge is fading while the order-invariant statistics (n, exp_r, forward t, DSR) still read healthy, and the share of sleeves it can judge rises as forward clocks accrue past 20 trades.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:DECAY_VERDICTS.json"
+   },
+   "falsifier": {
+    "metric": "n_sleeves",
+    "op": "==",
+    "threshold": 0,
+    "after": "any pass: a decay report judging no sleeve has lost the roster and every lane state file"
+   }
+  },
+  "cluster_judge": {
+   "hypothesis": "Judging the forward clocks at the Tier S bar as ONE hypothesis, with their pairwise correlation and eigenvalue N_eff measured from each clock's own per-key ledger, shows how many independent bets they really are before any promotion reads them, and the share of cluster clocks it can measure rises as per-key ledgers accrue.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:CLUSTER_JUDGE.json"
+   },
+   "falsifier": {
+    "metric": "n_measured_series",
+    "op": "==",
+    "threshold": 0,
+    "after": "14 days after per-key forward ledgers (claude/forward-ledger-per-key) land on the box: every cluster clock still UNMEASURED means the clocks' own series never reached the judge"
+   }
+  },
   "limit_optimality": {
    "hypothesis": "Publishing, per prop account, the book's current total risk against the highest-objective point on the solver's own frontier whose breach probability stays inside the survival margin gives every autonomous limit change a measured delta: where the optimum sits above scale 1 the desk is leaving pass-speed x pass-probability (or funded E[log W]) on the table at no extra ruin.",
    "metric": {
