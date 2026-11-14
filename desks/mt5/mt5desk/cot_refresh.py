@@ -173,12 +173,22 @@ def frame(t: Target, rows: Iterable[dict[str, Any]]) -> pd.DataFrame:
     return df.sort_values("report_date").drop_duplicates("report_date", keep="last")
 
 
-#: When this desk FIRST saw each row (UTC), an upper bound on its public release time. CFTC
+#: When this desk FIRST saw each row (UTC): the row's knowledge_time, an upper bound on its public release time. CFTC
 #: releases slip (holiday Mondays push Friday to Monday; a shutdown backlogs weeks), so a reader
 #: that needs point-in-time truth bounds availability by this, never by report_date + 3 days.
 #: Rows held before the column existed carry NaT: their first sight was never recorded, and the
 #: refresher does not invent one (Auditor note, 2026-11-13).
 SEEN = "release_seen_utc"
+
+
+def _with_cols(df: pd.DataFrame, cols: list[str], other: pd.DataFrame) -> pd.DataFrame:
+    """``df`` holding exactly ``cols`` in that order; a column it lacks is added empty, typed
+    like the other frame's column so the concat keeps that dtype (a column union, not a join)."""
+    df = df.copy()
+    for c in cols:
+        if c not in df.columns:
+            df[c] = pd.Series(index=df.index, dtype=other[c].dtype)
+    return df[cols]
 
 
 def merge(old: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
@@ -190,7 +200,7 @@ def merge(old: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
     if SEEN not in old.columns:
         old[SEEN] = pd.Series(pd.NaT, index=old.index, dtype="datetime64[ns, UTC]")
     cols = list(old.columns) + [c for c in new.columns if c not in old.columns]
-    both = pd.concat([old.reindex(columns=cols), new.reindex(columns=cols)], ignore_index=True)
+    both = pd.concat([_with_cols(old, cols, new), _with_cols(new, cols, old)], ignore_index=True)
     out = (both.sort_values("report_date", kind="stable")
            .drop_duplicates("report_date", keep="last").reset_index(drop=True)[cols])
     if SEEN in old.columns:
