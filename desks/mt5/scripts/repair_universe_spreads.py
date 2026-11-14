@@ -165,13 +165,34 @@ def load_tape(write: bool = True) -> dict[str, Any]:
     """
     from research.fusion_spread_tape import measure
 
-    doc = measure(ROOT)
+    # The live-sample ledger is recorded exactly when this pass publishes (the hourly leg), so
+    # the zero's live confirmation accumulates on the leg's clock and a --no-write check never
+    # writes it.
+    doc = measure(ROOT, record_live=write)
     _TAPE.clear()
     _TAPE.update(doc.get("by_symbol") or {})
     if write and doc.get("status") != "UNMEASURED":
         TAPE_REPORT.parent.mkdir(parents=True, exist_ok=True)
         TAPE_REPORT.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
     return doc
+
+
+def _spread_provenance(row: dict[str, Any]) -> dict[str, Any] | None:
+    """The row's `_provenance.median_spread_pts` stamp when it is a map, else None.
+
+    A `_provenance` (or its entry) that is not a map is read as NO stamp, never indexed: a list
+    there raised AttributeError and took the whole pass down (audit should-fix, 2026-10-21)."""
+    prov = row.get("_provenance")
+    entry = prov.get("median_spread_pts") if isinstance(prov, dict) else None
+    return entry if isinstance(entry, dict) else None
+
+
+def is_observed_zero_stamp(row: dict[str, Any]) -> bool:
+    """True when the row's zero carries the tape's observed-zero stamp -- the only zero the
+    sealed swap_cost gate accepts (`external_gauntlet._zero_spread_stamp`)."""
+    stamp = _spread_provenance(row)
+    return bool(stamp and stamp.get("source") == "fusion_zero_m1_tape"
+                and stamp.get("zero_spread") is True)
 
 
 def tape_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
@@ -193,7 +214,9 @@ def tape_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
                               "disagreements": row.get("disagreements"),
                               "corroboration": row.get("corroboration"),
                               "corroborated_by": row.get("corroborated_by"),
-                              "hours_traded": row.get("hours_traded")}
+                              "hours_traded": row.get("hours_traded"),
+                              "zero_spread": row.get("zero_spread") is True,
+                              "zero_evidence": row.get("zero_evidence")}
     # `n_priced` is what the report and the console printer below already read.
     detail["n_priced"] = (row.get("window") or {}).get("n")
     return value, why, detail
@@ -222,7 +245,13 @@ def _verified(path: Path | None) -> set[str] | None:
 
 def run(apply: bool = False, write: bool = True,
         widening_only: bool = False, only_verified: Path | None = None,
-        source: str = DEFAULT_SOURCE) -> dict[str, Any]:
+        source: str = DEFAULT_SOURCE, stamp_zeros_only: bool = False) -> dict[str, Any]:
+    """`stamp_zeros_only` (v2.1): write NOTHING but the observed-zero stamp onto rows whose
+    registry value is already 0 and which the tape proves an observed zero. No value moves, no
+    widening is taken: `--apply-widening-only` and `--only-verified` never stamp a 0 -> 0, so
+    without this mode the zeros already in the registry could only be stamped by a full apply."""
+    if stamp_zeros_only:
+        apply, widening_only = True, False
     try:
         doc = json.loads(REGISTRY.read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -265,7 +294,7 @@ def run(apply: bool = False, write: bool = True,
         row = rows[sym]
         if not isinstance(row, dict):
             continue
-        src = ((row.get("_provenance") or {}).get("median_spread_pts") or {}).get("source")
+        src = (_spread_provenance(row) or {}).get("source")
         if src == "realized_fills":
             # THE DESK'S OWN EXECUTIONS BEAT AN ESTIMATE FROM BARS -- with ONE exception, added
             # 2026-09-10 because the unconditional version was protecting the two worst numbers
@@ -285,6 +314,8 @@ def run(apply: bool = False, write: bool = True,
             probe, _why, pdetail = probe_fn(sym)
             old_raw = row.get("median_spread_pts")
             old_val = float(old_raw) if isinstance(old_raw, (int, float)) else None
+            # A ZERO PROBE IS NEVER "far below the fills": `old > 0 * 3x` would overrule every
+            # execution with an observed zero, and the desk's own fills beat a bar reading.
             implausible = (probe is not None and old_val is not None and probe > 0
                            and old_val > probe * FILLS_IMPLAUSIBLE_ABOVE_BARS)
             if not implausible:
@@ -303,6 +334,16 @@ def run(apply: bool = False, write: bool = True,
         if got is None:
             unmeasured[sym] = why
             continue
+        if got == 0 and not (source == "tape" and detail.get("zero_spread") is True
+                             and isinstance(detail.get("zero_evidence"), dict)):
+            # ONLY THE TAPE'S OBSERVED ZERO IS EVER WRITTEN, and only with its evidence.
+            unmeasured[sym] = "a 0.0 without the tape's observed-zero evidence is never written"
+            continue
+        if row.get("_provenance") is not None and not isinstance(row.get("_provenance"), dict):
+            # Never overwritten: whatever is there is somebody's record, and it is not a map.
+            unmeasured[sym] = (f"_provenance is a {type(row.get('_provenance')).__name__}, "
+                               "not a map: not overwritten, so this row is not stamped")
+            continue
         old = row.get("median_spread_pts")
         old_f = float(old) if isinstance(old, (int, float)) else None
         entry = {"symbol": sym, "old": old_f, "new": got, **detail}
@@ -312,7 +353,8 @@ def run(apply: bool = False, write: bool = True,
             corrected.append(entry)
             if old_f is not None and old_f > 0 and got < old_f:
                 cheaper.append(entry)
-            if old_f is not None and old_f > 0 and max(got / old_f, old_f / got) > SUSPECT_RATIO:
+            if (old_f is not None and old_f > 0 and got > 0
+                    and max(got / old_f, old_f / got) > SUSPECT_RATIO):
                 suspect.append(entry)
         # THE TWO DIRECTIONS ARE NOT THE SAME DECISION, and `--apply` treated them as one.
         #
@@ -339,9 +381,16 @@ def run(apply: bool = False, write: bool = True,
             if old_f is None or abs(old_f - got) >= 1e-9:
                 skipped_unverified.append(sym)
             continue
-        if apply and (not widening_only or old_f is None or got > old_f):
+        if stamp_zeros_only:
+            take = (got == 0 and old_f == 0 and detail.get("zero_spread") is True
+                    and not is_observed_zero_stamp(row))
+        else:
+            take = apply and (not widening_only or old_f is None or got > old_f)
+        if take:
             row["median_spread_pts"] = got
-            prov = row.setdefault("_provenance", {})
+            prov = row.get("_provenance")
+            if not isinstance(prov, dict):             # absent or null: a fresh map
+                prov = row["_provenance"] = {}
             # THE DISPERSION RIDES WITH THE SCALAR. A reader of the registry alone cannot tell a
             # symbol that is 2 all day from one that is 2 for twenty-three hours and 158 at the
             # rollover, and the sleeves that fire at the rollover pay the second one. The scalar
@@ -350,13 +399,20 @@ def run(apply: bool = False, write: bool = True,
             # window it was taken over are stamped beside it, with the artifact that holds the
             # per-hour detail named so it can be found.
             prov["median_spread_pts"] = {"at": now, "source": stamp, "was": old_f,
-                                         "mode": "widening_only" if widening_only else "full"}
+                                         "mode": ("stamp_observed_zeros" if stamp_zeros_only
+                                                  else "widening_only" if widening_only
+                                                  else "full")}
             if source == "tape":
                 prov["median_spread_pts"].update({
                     "dispersion": detail.get("dispersion"),
                     "window": detail.get("window"),
                     "corroboration": detail.get("corroboration"),
                     "detail": "desks/mt5/reports/SPREAD_TAPE.json"})
+                if got == 0:
+                    # THE STAMP THE SEALED GATE READS: a zero the tape OBSERVED, with the day
+                    # vote that proved it, so it can never be confused with a no-tick stub.
+                    prov["median_spread_pts"].update({
+                        "zero_spread": True, "zero_evidence": detail.get("zero_evidence")})
             applied_syms.append(sym)
 
     if apply and write:
@@ -367,10 +423,12 @@ def run(apply: bool = False, write: bool = True,
         "source": source, "provenance_stamp": stamp,
         "tape_summary": {k: tape_doc.get(k) for k in (
             "at", "account", "terminal_status", "live_freshness", "n_measured", "n_unmeasured",
-            "n_dearer", "n_cheaper", "n_unchanged", "n_priced_from_zero",
+            "n_dearer", "n_cheaper", "n_unchanged", "n_priced_from_zero", "n_observed_zero",
+            "observed_zero",
             "n_cheaper_contradicted", "n_cheaper_tape_only", "cheaper_contradicted",
             "n_with_disagreement")} if tape_doc else None,
-        "apply_mode": ("widening_only" if (apply and widening_only) else
+        "apply_mode": ("stamp_observed_zeros" if stamp_zeros_only else
+                       "widening_only" if (apply and widening_only) else
                        "full" if apply else "report_only"),
         "n_applied": len(applied_syms),
         "verified_gate": None if verified is None else sorted(verified),
@@ -390,6 +448,16 @@ def run(apply: bool = False, write: bool = True,
         # fabricated positive spread there would be an invention; writing the measured zero is
         # refused because a zero lets a non-edge certify. Naming them is the third option, and
         # their tails are in SPREAD_TAPE.json.
+        # WHICH ZEROS THE GATE WILL ACCEPT. Only a tape-stamped observed zero is a cost basis;
+        # an unstamped one may be a `symbol_info` stub read before any tick arrived.
+        "observed_zero_stamped": sorted(
+            s for s, r in rows.items()
+            if isinstance(r, dict) and r.get("median_spread_pts") == 0
+            and is_observed_zero_stamp(r)),
+        "zero_unstamped": sorted(
+            s for s, r in rows.items()
+            if isinstance(r, dict) and r.get("median_spread_pts") == 0
+            and not is_observed_zero_stamp(r)),
         "n_still_priced_at_zero": sum(
             1 for s, r in rows.items()
             if isinstance(r, dict) and r.get("median_spread_pts") == 0),
@@ -430,7 +498,8 @@ def run(apply: bool = False, write: bool = True,
         "rule": (f"median_spread_pts is recomputed from source={source!r} and stamped "
                  f"{stamp!r}. The tape source is the symbol's own M1 spread column over TICKED "
                  "bars on full-session days, by cost_surface's exclusions, with zero-spread bars "
-                 "KEPT and a zero central value never written; the h1 source is the superseded "
+                 "KEPT and a zero central value written only as the tape's OBSERVED zero, stamped "
+                 "zero_spread=True with its evidence; the h1 source is the superseded "
                  "non-zero H1 median, which on this broker reads a pre-2021 fixed-spread era. "
                  "`realized_fills` rows are never overwritten -- an "
                  "execution beats an inference. Identity: this changes cost_hash, and "
@@ -452,7 +521,14 @@ def main(argv: list[str] | None = None) -> int:
                          "person to look at each row and is left alone.")
     ap.add_argument("--apply", action="store_true",
                     help="write the registry (default: report only)")
+    ap.add_argument("--stamp-observed-zeros", action="store_true",
+                    help="write ONLY the observed-zero stamp onto rows already at 0 that the "
+                         "tape proves (bars AND live ticks); no value moves. The two apply "
+                         "modes never stamp a 0 -> 0.")
     ap.add_argument("--no-write", action="store_true", help="do not write the report either")
+    ap.add_argument("--no-rejudge", action="store_true",
+                    help="skip the cost-basis re-judge queue (research/cost_basis_rejudge.py), "
+                         "which this hourly leg otherwise runs after the report")
     ap.add_argument("--only-verified", type=Path, default=None,
                     help="apply ONLY the symbols listed in this file's verified_symbols "
                          "(desks/mt5/data/spread_repair_verified.json, written by "
@@ -468,7 +544,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     r = run(apply=a.apply or a.apply_widening_only, write=not a.no_write,
             widening_only=a.apply_widening_only, only_verified=a.only_verified,
-            source=a.source)
+            source=a.source, stamp_zeros_only=a.stamp_observed_zeros)
     if r.get("status") != "MEASURED":
         print(f"REFUSED: {r.get('why')}")
         return 1
@@ -498,7 +574,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
     print(f"  STILL priced at ZERO after this pass: {r['n_still_priced_at_zero']} "
           f"{r['still_priced_at_zero']}")
-    if not (a.apply or a.apply_widening_only):
+    if not (a.apply or a.apply_widening_only or a.stamp_observed_zeros):
         print(f"  {r['n_zero_registry_spread']} symbol(s) carry a registry spread of ZERO and are "
               f"therefore priced at no cost at all.")
         print("  REPORT ONLY -- nothing written to the registry.")
@@ -506,6 +582,21 @@ def main(argv: list[str] | None = None) -> int:
         print("    --apply                 take both halves; the narrowing half needs review")
     else:
         print(f"  APPLIED {r['n_applied']} symbol(s) in mode {r['apply_mode']}")
+    print(f"  observed zeros stamped: {len(r.get('observed_zero_stamped') or [])}  "
+          f"zeros UNSTAMPED (the gate refuses them): {r.get('zero_unstamped')}")
+    if not a.no_rejudge:
+        # RE-JUDGE ON A COST-BASIS CHANGE, ON THIS LEG'S CLOCK: every registry writer's change is
+        # seen within the hour, and the cells it decided go to the front of the judge's queue
+        # once their cache can serve the new cost. A report-and-queue step: it writes no verdict.
+        try:
+            from research.cost_basis_rejudge import run as _rejudge
+            rr = _rejudge(write=not a.no_write)
+            print(f"  cost-basis re-judge: {rr.get('status')} changed="
+                  f"{len(rr.get('changed') or [])} queued={rr.get('n_queued')} released="
+                  f"{rr.get('n_released')} held={rr.get('n_held_for_the_cache')} "
+                  f"{rr.get('queue') or rr.get('why') or ''}")
+        except Exception as exc:        # its own artifact says why; never fails the leg
+            print(f"  cost-basis re-judge: UNMEASURED ({type(exc).__name__}: {exc})")
     return 0
 
 

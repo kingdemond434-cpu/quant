@@ -565,6 +565,12 @@ desks/mt5/data/hypotheses/build_input_parked_trials.json*
 desks/mt5/data/hypotheses/coverage_map.json
 desks/mt5/data/hypotheses/.coverage_map.json.*.tmp
 desks/mt5/data/hypotheses/steer_ledger.jsonl
+# THE ZERO'S LIVE CONFIRMATION LEDGER (fusion_spread_tape, zero_spread v2.1.1). Box state, read on
+# the box by the hourly spread_provenance leg only; its evidence is published through the
+# registry stamp's zero_evidence counts. Ignored so a hourly-churning file never dirties the tree
+# Adopt-And-Seal seals, and never reaches the public repository. It holds no login, path or host.
+desks/mt5/data/live_quote_samples.json
+desks/mt5/data/live_quote_samples.json.*
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
