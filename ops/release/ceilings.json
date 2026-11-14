@@ -65,6 +65,10 @@
     "desks/mt5/prop/prop_fleet.py": {
       "CHILD_TIMEOUT_S": 600,
       "PROCESS_ENV": "QUANT_PROP_ACCOUNT"
+    },
+    "desks/mt5/scripts/heal_identity_broken_clocks.py": {
+      "HOLD_EXPIRY_H": 72.0,
+      "SOURCE_LOOKBACK": 400
     }
   },
   "superset": {
@@ -231,6 +235,14 @@
       "main(argv=)": "None",
       "run_role(data=)": "None",
       "run_role(popen=)": "subprocess.Popen"
+    },
+    "desks/mt5/scripts/heal_identity_broken_clocks.py": {
+      "REPO": "DESK.parents[1]",
+      "REPORT": "DESK / 'reports' / 'IDENTITY_HEALER.json'",
+      "frozen_source_revision(lookback=)": "SOURCE_LOOKBACK",
+      "prior_hold_since(path=)": "None",
+      "write_report(held_since=)": "None",
+      "write_report(lost=)": "None"
     }
   }
 }
