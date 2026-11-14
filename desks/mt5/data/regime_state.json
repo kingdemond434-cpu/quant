@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-13T23:45:02.887315+00:00",
+  "swept_at": "2026-11-14T00:45:03.331588+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1406,7 +1406,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7925,
+      "shadow_exp_r": -0.7979,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -2352,7 +2352,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2965,
+      "shadow_exp_r": -0.2805,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -3210,7 +3210,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5827,
+      "shadow_exp_r": -0.5819,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -5597,7 +5597,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -1.6098,
+      "shadow_exp_r": -1.6053,
       "woke_on_shadow": false
     },
     "XZNUSD|correlation_regime_continuous": {
