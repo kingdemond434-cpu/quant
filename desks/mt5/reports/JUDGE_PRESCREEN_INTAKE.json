@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-13T02:38:38+00:00",
+ "generated_at": "2026-11-13T17:21:36+00:00",
  "mode": "SHADOW",
- "rows": 1605373,
- "rows_already_ruled_not_screened": 780750,
+ "rows": 1668858,
+ "rows_already_ruled_not_screened": 788903,
  "would_kill": {
   "needs_data": 1286,
   "chart_short": 0,
-  "sibling_dead": 253116
+  "sibling_dead": 266295
  },
- "would_kill_total": 254402,
- "would_kill_share": 0.158469,
+ "would_kill_total": 267581,
+ "would_kill_share": 0.160338,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,21 +21,16 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 253116,
-  "10": 202262,
-  "20": 123112,
-  "40": 55027,
-  "80": 24564
+  "5": 266295,
+  "10": 213462,
+  "20": 132045,
+  "40": 60013,
+  "80": 26989
  },
- "ms_per_row": 1.48473,
- "seconds": 2383.542,
+ "ms_per_row": 1.2882,
+ "seconds": 2149.818,
  "samples": {
   "needs_data": [
-   {
-    "cell": "USDMXN.cot_positioning.p=7f9697f1d97820ce",
-    "missing_input": "cot_series:USDMXN",
-    "why": "orthogonal_sweep._cot_frame('USDMXN') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
-   },
    {
     "cell": "USDZAR.cot_positioning.p=0d8318b9505543ec",
     "missing_input": "cot_series:USDZAR",
@@ -155,49 +150,26 @@
     "cell": "GER40.cot_positioning.p=0d8318b9505543ec",
     "missing_input": "cot_series:GER40",
     "why": "orthogonal_sweep._cot_frame('GER40') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "USDCNH.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:USDCNH",
+    "why": "orthogonal_sweep._cot_frame('USDCNH') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    }
   ],
   "chart_short": [],
   "sibling_dead": [
    {
-    "cell": "COFROB@M5.session_range_breakout.p=675f5d6db5e87993",
-    "bucket": "COFROB|M5|session_range_breakout",
-    "named_cells": 5,
+    "cell": "EURSEK@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
+    "bucket": "EURSEK|M5|session_range_breakout",
+    "named_cells": 42,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "E35@M15.session_range_breakout.p=5b26c8a9d4218407",
-    "bucket": "E35|M15|session_range_breakout",
-    "named_cells": 7,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "E35@M5.session_range_breakout.p=2c8b8fe9fc53b47b",
-    "bucket": "E35|M5|session_range_breakout",
-    "named_cells": 9,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USCOCOA@M5.session_range_breakout.p=c033cc62d72d6600",
-    "bucket": "USCOCOA|M5|session_range_breakout",
-    "named_cells": 6,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "SUGARRAW@M15.session_range_breakout.p=c1f9ebc98e280806",
-    "bucket": "SUGARRAW|M15|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFROB@M5.session_range_breakout.p=959c1d284573a5ba",
-    "bucket": "COFROB|M5|session_range_breakout",
-    "named_cells": 5,
+    "cell": "EURPLN@M5.session_range_breakout.p=73efa2b1e954e0cb",
+    "bucket": "EURPLN|M5|session_range_breakout",
+    "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
    },
@@ -209,13 +181,6 @@
     "k": 5
    },
    {
-    "cell": "E35@M30.session_range_breakout.p=ae087c2514833ec5",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
     "cell": "USDHUF@M5.session_range_breakout.p=cfc2cb86a87f6147",
     "bucket": "USDHUF|M5|session_range_breakout",
     "named_cells": 41,
@@ -223,16 +188,16 @@
     "k": 5
    },
    {
-    "cell": "E35@M30.session_range_breakout.p=3365e4579f5e486d",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
+    "cell": "AUDNZD@M5.session_range_breakout.p=27465e2f40c355ac",
+    "bucket": "AUDNZD|M5|session_range_breakout",
+    "named_cells": 40,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "E35@M5.session_range_breakout.p=574280c92d59f30d",
-    "bucket": "E35|M5|session_range_breakout",
-    "named_cells": 9,
+    "cell": "GBPSEK@M5.session_range_breakout.p=23a79b6eddaeceff",
+    "bucket": "GBPSEK|M5|session_range_breakout",
+    "named_cells": 43,
     "cleared_cells": 0,
     "k": 5
    },
@@ -254,6 +219,48 @@
     "cell": "USDHKD@M5.session_range_breakout.p=29a876e1392f92b1",
     "bucket": "USDHKD|M5|session_range_breakout",
     "named_cells": 43,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=ef63a35959cac5ea",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=1118b394c86bef29",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=e8341d583736f903",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=94443788479d204d",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=b2d67be296aeab98",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=9569f83d6d424793",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
     "cleared_cells": 0,
     "k": 5
    },
@@ -314,23 +321,16 @@
     "k": 5
    },
    {
-    "cell": "AUDCHF@M5.session_range_breakout.p=ada3951eb0b842f1",
+    "cell": "AUDCHF@M5.session_range_breakout.p=48bc2e1087e0d2ef",
     "bucket": "AUDCHF|M5|session_range_breakout",
     "named_cells": 33,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "AUDHUF@M5.session_range_breakout.p=dd31c3602be9edc2",
-    "bucket": "AUDHUF|M5|session_range_breakout",
-    "named_cells": 41,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDHUF@M5.session_range_breakout.p=a6b86b9a71e4b347",
-    "bucket": "AUDHUF|M5|session_range_breakout",
-    "named_cells": 41,
+    "cell": "AUDCHF@M5.session_range_breakout.p=89ac328d7c2defb5",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
     "cleared_cells": 0,
     "k": 5
    }
@@ -339,7 +339,7 @@
  "missed_growth": [
   {
    "day": "2026-11-13",
-   "at": "2026-11-13T02:38:38+00:00",
+   "at": "2026-11-13T17:21:36+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -354,13 +354,13 @@
    "would_act_sibling_dead": {
     "k": 5,
     "true_survivors_killed": 25,
-    "cleared_in_sample_killed": 2148,
+    "cleared_in_sample_killed": 2164,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
    "day": "2026-11-13",
-   "at": "2026-11-13T02:38:38+00:00",
+   "at": "2026-11-13T17:21:36+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.10894235133908307,
-   "would_free_seconds_if_all_rules_acted": 27715.2
+   "seconds_per_cell": 0.107504404694359,
+   "would_free_seconds_if_all_rules_acted": 28766.1
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
