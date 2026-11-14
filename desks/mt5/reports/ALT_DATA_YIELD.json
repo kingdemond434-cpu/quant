@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-14T13:45:47+00:00",
+ "generated_utc": "2026-11-14T13:59:39+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -79268,15 +79268,15 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 142,
+   "runs": 146,
    "fetches": 5386,
    "ok": 3293,
    "http_errors": 221,
    "transport_errors": 1872,
-   "seconds": 10802.9,
+   "seconds": 10852.6,
    "rows": 92,
-   "last_run": "2026-11-14T08:10:09+00:00",
-   "fetches_per_s": 0.4986,
+   "last_run": "2026-11-14T13:59:39+00:00",
+   "fetches_per_s": 0.4963,
    "success_rate": 0.6114,
    "wall_s_24h": 1077.2,
    "cpu_s_24h": 53.8
@@ -79446,8 +79446,8 @@
    "last_run": "2026-11-14T13:45:47+00:00",
    "fetches_per_s": 0.3994,
    "success_rate": 0.4656,
-   "wall_s_24h": 2172.5,
-   "cpu_s_24h": 232.5
+   "wall_s_24h": 2687.5,
+   "cpu_s_24h": 282.1
   },
   "forest_north_america": {
    "runs": 23,
