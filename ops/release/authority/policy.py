@@ -105,9 +105,25 @@ def envelope_check(base: Mapping | None, head: Mapping | None, env: Mapping) -> 
             if new == old:
                 continue
             if new < old:
-                # NEVER REDUCE AGGRESSIVENESS (principal 2026-09-08) and GROWTH GOVERNANCE Rule 1:
-                # a cap lowered by fiat is not delegated (#637 audit MF2); zuck's path decides
-                out.append(f"{path}:{knob} ceiling lowered {old} -> {new}: not delegated")
+                # RISK AUTONOMY (zuck 2026-11-14 03:30Z: "U can change live risk limits etc without
+                # me to wtv best"): a delegated knob moves both ways, one step per PR. Lowering a
+                # firm rule only tightens it. Anything else lowered stays the owner's path. A
+                # lowering still answers to GROWTH GOVERNANCE Rule 1 in review: evidence, not fiat.
+                low_spec = (raisable.get(path) or {}).get(knob)
+                if knob in (fixed.get(path) or ()):
+                    if new < 0:
+                        out.append(f"{path}:{knob} firm rule lowered below zero")
+                    continue
+                if not low_spec:
+                    out.append(f"{path}:{knob} ceiling lowered {old} -> {new}: not delegated")
+                    continue
+                if new <= 0:
+                    out.append(f"{path}:{knob} lowered to {new}: a delegated knob stays positive")
+                elif old > 0 and (old - new) / old > float(low_spec["max_step_frac"]) + 1e-12:
+                    out.append(
+                        f"{path}:{knob} lowered {old} -> {new}, more than one step "
+                        f"({low_spec['max_step_frac']:.0%}) in one PR"
+                    )
                 continue
             if knob in (fixed.get(path) or ()):
                 out.append(f"{path}:{knob} is a firm rule ({old} -> {new}): never raised")
