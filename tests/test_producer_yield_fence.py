@@ -178,3 +178,70 @@ def test_a_declaration_cannot_hide_convertible_rows_that_produced_no_cell(desk: 
     assert any("convertible source rows" in failure for failure in doc["failures"])
     row = next(r for r in doc["producers"] if r["producer"] == "barren")
     assert row["convertible_rows_owed"] == 7
+
+
+# ------------------------------------------------- the window is read by range, not by scan
+def _stamp(hours_ago: float, sep: str = "T") -> str:
+    from datetime import UTC, datetime, timedelta
+    return (datetime.now(UTC) - timedelta(hours=hours_ago)).strftime(f"%Y-%m-%d{sep}%H:%M:%S")
+
+
+def test_the_window_query_uses_the_created_at_index(desk: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """Measured 2026-11-10: 601 s at the law gate's 600 s cap, a full scan of a multi-GB table
+    because the predicate wrapped `created_at` in a function. Every statement the fence itself
+    sends must plan as a range SEARCH on the index, never a SCAN of the candidates."""
+    _registry(desk / "reg.sqlite", [{"created_at": _stamp(1), "generator": "g", "family": "f",
+                                     "symbol": "S", "horizon": "h1", "status": "judged"}])
+    con = sqlite3.connect(desk / "reg.sqlite")
+    con.execute("create index ix_candidates_created_at on research_candidates(created_at)")
+    con.commit()
+    con.close()
+    sent: list[str] = []
+    real = sqlite3.connect
+
+    def traced(*a: Any, **k: Any) -> sqlite3.Connection:
+        c = real(*a, **k)
+        c.set_trace_callback(sent.append)  # the expanded SQL, parameters bound
+        return c
+
+    monkeypatch.setattr(fence.sqlite3, "connect", traced)
+    assert fence._window_cells(24.0)["per"]["g"]["cells_emitted"] == 1
+    monkeypatch.undo()
+    selects = [q for q in sent if q.lstrip().lower().startswith("select")]
+    assert len(selects) == 2
+    con = sqlite3.connect(desk / "reg.sqlite")
+    try:
+        for q in selects:
+            plan = [str(r[-1]) for r in con.execute("explain query plan " + q)]
+            assert any("SEARCH c USING INDEX ix_candidates_created_at" in p for p in plan), plan
+            assert not any(p.startswith("SCAN c") for p in plan), plan
+    finally:
+        con.close()
+
+
+def test_both_separators_and_the_window_edge_count_exactly_as_before(desk: Path) -> None:
+    """The range bound is a superset in either spelling; the exact predicate still decides."""
+    rows = [
+        {"created_at": _stamp(1, "T"), "generator": "g", "content_hash": "a"},
+        {"created_at": _stamp(1, " "), "generator": "g", "content_hash": "b"},
+        {"created_at": _stamp(23.9, " "), "generator": "g", "content_hash": "c"},
+        {"created_at": _stamp(23.9, "T") + ".123456+00:00", "generator": "g",
+         "content_hash": "d"},
+        {"created_at": _stamp(24.1, " "), "generator": "g", "content_hash": "old1"},
+        {"created_at": _stamp(24.1, "T"), "generator": "g", "content_hash": "old2"},
+    ]
+    _registry(desk / "reg.sqlite", rows)
+    got = fence._window_cells(24.0)["per"]["g"]
+    assert got["cells_emitted"] == 4 and got["unique_cells"] == 4
+
+
+def test_lines_are_counted_on_bytes_as_text_mode_counted_them(tmp_path: Path) -> None:
+    cases = {"empty": b"", "one_no_nl": b"{}", "one_nl": b"{}\n", "crlf": b"a\r\nb\r\n",
+             "tail": b"a\nb\nc", "big": (b"x" * 700_000 + b"\n") * 3 + b"y"}
+    for name, raw in cases.items():
+        f = tmp_path / name
+        f.write_bytes(raw)
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            want = sum(1 for _ in fh)
+        assert fence._count_lines(str(f)) == want, name

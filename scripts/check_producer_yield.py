@@ -189,6 +189,20 @@ def _read(p: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+def _count_lines(path: str) -> int:
+    """Lines in a file, counted on raw bytes in 1 MiB blocks -- no decode, no per-line object.
+
+    The same number text-mode iteration gives for LF and CRLF files (a final line with no
+    newline still counts), at a fraction of the cost on a seat that donated gigabytes.
+    """
+    n, last = 0, b"\n"
+    with open(path, "rb") as fh:
+        while block := fh.read(1 << 20):
+            n += block.count(b"\n")
+            last = block[-1:]
+    return n + (last != b"\n")
+
+
 def _seat_output(window_days: float) -> dict[str, int]:
     """Rows each intelligence seat donated inside the window, from the files themselves.
 
@@ -205,8 +219,7 @@ def _seat_output(window_days: float) -> dict[str, int]:
                     if os.path.getmtime(f) < cutoff:
                         out.setdefault(seat, 0)
                         continue
-                    with open(f, encoding="utf-8", errors="replace") as fh:
-                        n = sum(1 for _ in fh)
+                    n = _count_lines(f)
                 except OSError:
                     continue
                 out[seat] += max(n, 1)
@@ -344,7 +357,16 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
     # silently excluded -- an undercount here would read as a barren producer, the exact false
     # positive this fence must never make.
     cutoff = (datetime.now(UTC) - timedelta(hours=window_hours)).strftime("%Y-%m-%dT%H:%M:%S")
-    when = "replace(substr(created_at,1,19),' ','T') >= ?"
+    # THE WINDOW IS REACHED THROUGH THE INDEX, THEN CUT EXACTLY (2026-11-10). The normalised
+    # predicate wraps `created_at` in a function, so SQLite could not use ix_candidates_created_at
+    # and both queries below scanned the whole multi-GB candidate table: 601 s at the law gate's
+    # 600 s cap on the box, PRODUCER_YIELD.json a day and a half stale. The bare `created_at >= ?`
+    # is given the cutoff in its SPACE-separated form, the lexically smallest spelling of that
+    # instant (' ' sorts before 'T'), so it admits every row the exact predicate admits whichever
+    # separator the row was stored with; the exact predicate still decides. Same rows, read by
+    # range instead of by scan.
+    floor = cutoff.replace("T", " ")
+    when = "created_at >= ? and replace(substr(created_at,1,19),' ','T') >= ?"
     judged = ("(donated_cell is not null or status in "
               "('donated','claimed','retired','judged'))")
     try:
@@ -375,13 +397,13 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
                 f"select {gen}, count(*), "  # noqa: S608 -- fragments are literals above
                 f"count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
                 f"sum(case when {judged} then 1 else 0 end) "
-                f"from {src} where {when} group by 1", (cutoff,)):
+                f"from {src} where {when} group by 1", (floor, cutoff)):
             per[str(key)] = {"cells_emitted": int(raw or 0), "unique_cells": int(uniq or 0),
                              "cells_to_judge": int(sent or 0)}
         cells: dict[str, list[str]] = {}
         for key, ident in cur.execute(
                 f"select distinct {gen}, {cell} from {src} "  # noqa: S608
-                f"where {when} and {judged}", (cutoff,)):
+                f"where {when} and {judged}", (floor, cutoff)):
             cells.setdefault(str(key), []).append(str(ident))
         # A window in which NOTHING was created is UNMEASURED, never a verdict on any one
         # producer: if the whole registry is silent the failure is the desk's, and convicting
@@ -679,8 +701,14 @@ def main(argv: list[str] | None = None) -> int:
                     help="judge only EVERY PRODUCER OWES CELLS (the law-gate half)")
     args = ap.parse_args(argv)
 
+    t0 = time.monotonic()
     doc = audit(window_days=args.window_days)
+    t1 = time.monotonic()
     doc["cells_owed"] = yld = yield_audit(window_hours=args.yield_window_hours)
+    # The fence names its own cost, so the next time it nears the gate's cap the phase is read
+    # from the report rather than inferred.
+    doc["elapsed_s"] = {"seat_half": round(t1 - t0, 2),
+                        "cells_half": round(time.monotonic() - t1, 2)}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
 
