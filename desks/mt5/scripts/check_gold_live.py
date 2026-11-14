@@ -209,9 +209,18 @@ def main(argv: list[str] | None = None) -> int:
     broker_hour = None
     try:
         import MetaTrader5 as mt5
-        if not mt5.initialize():
+        from mt5desk.config import terminal_path
+        from research.mt5_session import attach_or_initialize, venue_refusal
+        # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch; the box
+        # runs FTMO too, and a pathless attach reported whichever terminal the bridge saw first.
+        tpath = terminal_path()
+        if not attach_or_initialize(mt5, path=tpath, timeout=15000):
             say(BAD, f"MetaTrader5 will not initialize: {mt5.last_error()}")
             blocking.append("MT5 not connected")
+        elif (why := venue_refusal(mt5, tpath)) is not None:
+            say(BAD, f"THIS IS NOT THE DESK'S TERMINAL -- {why}. Steps 5 and 6 refused.")
+            blocking.append("wrong venue")
+            mt5.shutdown()
         else:
             t, a = mt5.terminal_info(), mt5.account_info()
             company = getattr(a, "company", None) or getattr(t, "company", "?")

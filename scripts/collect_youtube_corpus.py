@@ -27,12 +27,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-# The repo root too: libs.ops.secret_scrub scrubs every row before it is written.
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from fetch_video_transcript import TranscriptUnavailable as _TranscriptUnavailable
 from fetch_video_transcript import youtube as _yt_transcript
 
-from libs.ops.secret_scrub import scrub
+_R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
+# The repo root also carries libs.ops.secret_scrub, which scrubs every row before it is written.
+from libs.ops.secret_scrub import scrub  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
@@ -68,7 +71,8 @@ def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
     params["key"] = KEYFILE.read_text("utf-8").strip()
     url = f"{API}/{endpoint}?{urllib.parse.urlencode(params)}"
-    with urllib.request.urlopen(url, timeout=30) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(url, timeout=30, secrets=(params["key"],)) as r:
         spent[0] += cost
         return json.load(r)
 

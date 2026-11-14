@@ -81,8 +81,9 @@ def _ask(prompt: str) -> str:
     )
     from libs.ops import openrouter_guard
     openrouter_guard.check_request(request)
-    with urllib.request.urlopen(
-        request, timeout=240, context=ssl.create_default_context()
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(
+        request, timeout=240, context=ssl.create_default_context(), secrets=(key,)
     ) as response:
         payload = json.loads(response.read())
     message = payload["choices"][0]["message"]
