@@ -699,7 +699,24 @@ def _mt5_snapshot() -> dict[str, Any]:
     """
     try:
         import MetaTrader5 as mt5  # type: ignore[import-not-found, import-untyped]
-        if mt5.terminal_info() is None and not mt5.initialize():
+        # MT5-DeskState runs as SYSTEM: a bare initialize() there relaunches the Fusion terminal
+        # headless in Session 0 every pass (measured 2026-11-13 13:05Z). Attach through the guard,
+        # PINNED (2026-11-11) to the desk's terminal by path, and refuse an account that is not
+        # Fusion's -- the box runs FTMO too.
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from research.mt5_session import attach_or_initialize, venue_refusal
+
+        try:
+            path = (DESK / "data" / "terminal_path.txt").read_text(encoding="utf-8").strip()
+        except OSError:
+            path = ""
+        if not attach_or_initialize(mt5, path=path or None, timeout=15000):
+            return {}
+        why = venue_refusal(mt5, path or None)
+        if why is not None:
+            print(f"[zentech] live account read refused: {why}", file=sys.stderr)
+            mt5.shutdown()
             return {}
         info = mt5.account_info()
         if info is None:
