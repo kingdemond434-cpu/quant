@@ -30,6 +30,11 @@ def _files(*names: str) -> list[dict[str, Any]]:
     return [{"filename": n, "status": "modified"} for n in names]
 
 
+def _commit(login: str = "quant-merger[bot]", verified: bool = True) -> dict[str, Any]:
+    return {"sha": "c" * 40, "author": {"login": login},
+            "commit": {"verification": {"verified": verified}}}  # fmt: skip
+
+
 class FakeGH:
     def __init__(self, files: list[dict[str, Any]], author: str = "quant-merger[bot]",
                  ref: str = "box-state/2026-11-14_1400") -> None:  # fmt: skip
@@ -40,6 +45,7 @@ class FakeGH:
         }  # fmt: skip
         self.files = files
         self.comments: list[dict[str, Any]] = []
+        self.commits: list[dict[str, Any]] = [_commit()]
         self.writes: list[tuple[str, dict[str, Any]]] = []
 
     def __call__(self, *args: str, data: Any = None) -> Any:
@@ -49,6 +55,8 @@ class FakeGH:
             return None
         if "/files?" in path:
             return [self.files]
+        if "/commits?" in path:
+            return [self.commits]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
         return self.pr
@@ -133,4 +141,38 @@ def test_the_branch_and_the_author_are_pinned() -> None:
     assert ag.BOX_STATE_BRANCH == "box-state/"
     assert ag.BOX_STATE_AUTHORS == ("quant-merger[bot]",)
     assert {"docs/", "web/", "context/", ".github/"} <= set(ag.BOX_STATE_NEVER)
-    assert {".py", ".ps1", ".cmd", ".sh"} <= set(ag.BOX_STATE_CODE_EXTS)
+    assert set(ag.BOX_STATE_DATA_EXTS) <= {
+        ".json", ".jsonl", ".ndjson", ".csv", ".tsv", ".log", ".txt", ".gz", ".parquet"
+    }  # fmt: skip
+
+
+def test_only_data_extensions_and_never_a_switch() -> None:
+    """#1218 audit MF2: a code denylist missed MQL5 and more; data extensions are allowlisted."""
+    for name in ("desks/mt5/data/x.mq5", "desks/mt5/data/x.mqh", "desks/mt5/data/x.ex5",
+                 "desks/mt5/data/x.zip", "desks/mt5/data/x.pyd", "desks/mt5/data/x.xml",
+                 "desks/mt5/data/GATEWAY_PAUSED", "desks/mt5/data/PF_ALLOCATOR_ARMED"):  # fmt: skip
+        gh = FakeGH(_files(STATE, name))
+        assert _run(gh) == 1, name
+        assert not gh.merged(), name
+
+
+def test_state_that_grants_authority_keeps_its_own_route() -> None:
+    """#1218 audit MF1: a clearance row on LIVE is trusted by the adopt guard and the seal."""
+    for name in ("desks/mt5/data/ADOPT_CLEARS.jsonl", "desks/mt5/data/SEAL_CLEARS.jsonl",
+                 "desks/mt5/data/RELEASE.json", "desks/mt5/data/live_sleeve_policy.json",
+                 "desks/mt5/data/sleeve_registry.json", "desks/mt5/data/x_armed.json"):  # fmt: skip
+        gh = FakeGH(_files(STATE, name))
+        assert _run(gh) == 1, name
+        assert not gh.merged(), name
+
+
+def test_every_commit_must_be_the_app_s_and_signed_by_github() -> None:
+    """#1218 audit: the opener says nothing about who pushed to the branch since."""
+    for bad in (_commit(login="kingdemond434-cpu"), _commit(verified=False), _commit(login="")):
+        gh = FakeGH(_files(STATE))
+        gh.commits = [_commit(), bad]
+        assert _run(gh) == 1
+        assert not gh.merged()
+    gh = FakeGH(_files(STATE))
+    gh.commits = []
+    assert _run(gh) == 1 and not gh.merged()
