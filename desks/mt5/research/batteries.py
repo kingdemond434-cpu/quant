@@ -90,10 +90,28 @@ class Entry:
     path: str
     argv: tuple[str, ...]
     why: str
+    #: A FRESHNESS CONTRACT (2026-11-14, idea 743). A rotation slower than this would let the
+    #: organ's artifact go stale for a reader that needs it fresh: PRODUCER_YIELD.json sat 28h old
+    #: on origin while the box published every 15 minutes, because the fence roster rotates
+    #: through dozens of organs under one hourly budget. An entry past its age runs FIRST, ahead
+    #: of the rotation; None means rotation alone.
+    max_age_h: float | None = None
 
 
-def _e(path: str, why: str, *argv: str) -> Entry:
-    return Entry(path=path, argv=tuple(argv), why=why)
+def _e(path: str, why: str, *argv: str, max_age_h: float | None = None) -> Entry:
+    return Entry(path=path, argv=tuple(argv), why=why, max_age_h=max_age_h)
+
+
+def overdue(entries: tuple[Entry, ...], runs: dict[str, Any]) -> list[Entry]:
+    """Entries whose last run is older than their contract (or never ran), oldest first."""
+    late: list[tuple[float, Entry]] = []
+    for e in entries:
+        if e.max_age_h is None:
+            continue
+        age = _age_s((runs.get(e.path) or {}).get("at"))
+        if age is None or age > e.max_age_h * 3600.0:
+            late.append((float("inf") if age is None else age, e))
+    return [e for _, e in sorted(late, key=lambda t: -t[0])]
 
 
 #: THE FENCE ROSTER -- read-only verdicts, each measured runnable with no arguments 2026-09-22.
@@ -122,7 +140,10 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_oom_pressure.py", "organ deaths by OOM, the largest unmeasured loss"),
     _e("scripts/check_pegged_duplicates.py", "two tickers, one bet: the orthogonality hole"),
     _e("scripts/check_perishability.py", "does delay cost DELAY, or THE DATA"),
-    _e("scripts/check_producer_yield.py", "every producer produces, or it is replaced"),
+    # max_age_h=6: the producer-recovery check after adoption reads PRODUCER_YIELD.json, and a
+    # file a day old reads a recovered producer as dead (idea 743, 2026-11-14).
+    _e("scripts/check_producer_yield.py", "every producer produces, or it is replaced",
+       max_age_h=6.0),
     _e("scripts/check_reachability.py", "every capability reaches a decision, or is advisory"),
     _e("scripts/check_research_allocation.py", "what the search budget bought, per mechanism"),
     _e("scripts/check_research_health.py", "the WHOLE hourly loop, and the call for repair"),
@@ -398,11 +419,22 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
     # THE CURSOR IS READ ONCE. Advancing it inside the loop while also indexing from it skips
     # every second organ, which is how a rotation silently exercises half a roster forever.
     start = cursor
-    for i in range(len(entries)):
+    # OVERDUE FIRST, THEN THE ROTATION. An entry past its freshness contract is run before the
+    # cursor's next organ; the cursor still advances only through the rotation, so a contract
+    # never starves the rest of the roster -- it spends at most its own slice ahead of them.
+    late = overdue(entries, runs)
+    order = [(None, e) for e in late] + [
+        (i, entries[(start + i) % len(entries)]) for i in range(len(entries))]
+    done: set[str] = set()
+    for i, entry in order:
+        if entry.path in done:
+            # Already run ahead of the rotation this pass: it counts as the rotation's step too.
+            if i is not None:
+                cursor = (start + i + 1) % len(entries)
+            continue
         remaining = budget_s - (time.time() - t0)
         if remaining < MIN_SLICE_S:
             break
-        entry = entries[(start + i) % len(entries)]
         free_now, _ = free_memory()
         if floor_mb is not None and free_now is not None and free_now < floor_mb:
             skipped.append({"path": entry.path,
@@ -413,7 +445,9 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
         res = run_one(entry, min(per, remaining), base)
         runs[entry.path] = {**res, "at": _now()}
         ran.append(entry.path)
-        cursor = (start + i + 1) % len(entries)
+        done.add(entry.path)
+        if i is not None:
+            cursor = (start + i + 1) % len(entries)
 
     state[battery] = {"cursor": cursor, "runs": runs, "at": _now()}
     _atomic(sp, state)
@@ -424,7 +458,7 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
         rows.append({"path": e.path, "why": e.why, "argv": list(e.argv),
                      "verdict": last.get("verdict", "NEVER_RUN"), "rc": last.get("rc"),
                      "s": last.get("s"), "at": last.get("at"), "tail": last.get("tail"),
-                     "age_s": _age_s(last.get("at"))})
+                     "age_s": _age_s(last.get("at")), "max_age_h": e.max_age_h})
     never = [r["path"] for r in rows if r["verdict"] == "NEVER_RUN"]
     failing = [r["path"] for r in rows if r["verdict"] in ("FAILED", "TIMEOUT", "UNRUNNABLE",
                                                            "MISSING")]
@@ -434,6 +468,7 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
         "wall_s": round(time.time() - t0, 1),
         "rostered": len(entries), "ran": ran, "n_ran": len(ran), "skipped": skipped,
         "cursor": cursor, "slice_s": round(per, 1),
+        "ran_overdue": [e.path for e in late if e.path in done],
         "memory": {"free_mb": None if free_mb is None else round(free_mb),
                    "total_mb": None if total_mb is None else round(total_mb),
                    "floor_mb": None if floor_mb is None else round(floor_mb),

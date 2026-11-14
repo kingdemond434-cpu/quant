@@ -197,3 +197,28 @@ def test_the_ratchet_may_never_rise_and_no_rostered_or_retired_file_is_unclocked
     retired = {r["path"] for r in rows if r.get("path") and r.get("status") != "PROPOSED"}
     assert not (retired & unclocked), "a retired file is still being walked as an executable"
     assert not (retired & rostered), "a file cannot be both retired and rostered"
+
+
+def test_an_entry_past_its_freshness_contract_runs_before_the_rotation(desk: Path) -> None:
+    """Idea 743: a contracted organ never waits a full rotation to refresh its artifact."""
+    plain = _roster(desk, 5)
+    fresh = B._e(_organ(desk, "fresh.py", "print('ok')\n"), "contracted", max_age_h=6.0)
+    roster = (*plain, fresh)
+    state = desk / "state.json"
+    out = desk / "desks" / "mt5" / "reports" / "BATTERY_T.json"
+    old = "2020-01-01T00:00:00+00:00"
+    state.write_text(json.dumps({"t": {"cursor": 0, "runs": {fresh.path: {"at": old}}}}))
+    doc = B.run_battery("t", B.MIN_SLICE_S + 5.0, root=desk, state_path=state, roster=roster,
+                        out=out)
+    assert doc["ran"][0] == fresh.path and doc["ran_overdue"] == [fresh.path]
+    # Each organ runs at most once a pass: the contract run is not repeated by the rotation.
+    assert len(doc["ran"]) == len(set(doc["ran"]))
+    # Fresh now: the next pass rotates as usual and does not re-run it first.
+    doc2 = B.run_battery("t", B.MIN_SLICE_S + 5.0, root=desk, state_path=state, roster=roster,
+                         out=out)
+    assert doc2["ran_overdue"] == [] and doc2["ran"][0] != fresh.path
+
+
+def test_the_producer_yield_check_carries_a_six_hour_contract() -> None:
+    e = next(e for e in B.FENCES if e.path == "scripts/check_producer_yield.py")
+    assert e.max_age_h == 6.0
