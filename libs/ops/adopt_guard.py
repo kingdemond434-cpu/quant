@@ -493,25 +493,114 @@ def lifted_rollbacks(rows: Iterable[Clear]) -> set[str]:
     }
 
 
-def committed_clears(root: Path, target: str) -> list[Clear]:
+class _Versions:
+    """Every version of one file across the commits a walk names, in a constant number of git
+    calls, shared by every walk that is handed the same instance (2026-11-04). Measured on the
+    trading box: proving ADOPT_CLEARS append-only spawned one `rev-list` and one `show` per
+    commit and per parent, twice (target, then origin tip) -- 388 git calls, 1495 s, at ~3.5 s a
+    spawn under the box's memory load, and a `pre` that ran 58 min holding the git-writer mutex.
+    The same proof now costs one `rev-list --stdin`, one `cat-file --batch-check` and one
+    `cat-file --batch` per walk, with blobs and parents remembered across walks."""
+
+    def __init__(self, root: Path, rel: str) -> None:
+        self.root, self.rel = root, rel
+        self.parents: dict[str, list[str]] = {}
+        self.oid: dict[str, str | None] = {}
+        self.data: dict[str, bytes] = {}
+
+    def _batch(self, args: list[str], lines: list[str]) -> bytes:
+        p = subprocess.run(
+            ["git", "-C", str(self.root), *args],
+            input=("\n".join(lines) + "\n").encode("utf-8"),
+            capture_output=True,
+            check=False,
+            timeout=300,
+        )
+        if p.returncode != 0:
+            err = p.stderr.decode("utf-8", "replace").strip()[:300]
+            raise GuardError(f"git {' '.join(args[:2])} failed: {err}")
+        return p.stdout
+
+    def load_parents(self, shas: list[str]) -> None:
+        need = [s for s in dict.fromkeys(shas) if s not in self.parents]
+        if not need:
+            return
+        out = self._batch(["rev-list", "--no-walk=unsorted", "--parents", "--stdin"], need)
+        for line in out.decode("utf-8", "replace").splitlines():
+            parts = line.split()
+            if parts:
+                self.parents[parts[0]] = parts[1:]
+        missing = [s for s in need if s not in self.parents]
+        if missing:
+            raise GuardError(f"rev-list --parents returned nothing for {missing[0][:12]}")
+
+    def load(self, commits: list[str]) -> None:
+        need = [c for c in dict.fromkeys(commits) if c not in self.oid]
+        if need:
+            out = (
+                self._batch(
+                    ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+                    [f"{c}:{self.rel}" for c in need],
+                )
+                .decode("utf-8", "replace")
+                .splitlines()
+            )
+            if len(out) != len(need):
+                raise GuardError(f"cat-file --batch-check answered {len(out)} of {len(need)}")
+            for c, line in zip(need, out, strict=True):
+                parts = line.split()
+                if line.endswith(" missing"):
+                    self.oid[c] = None
+                elif len(parts) == 2 and HEX40.match(parts[0]) and parts[1] == "blob":
+                    self.oid[c] = parts[0]
+                else:  # anything but a plain blob or an absence: read it the old way
+                    ver = _show(self.root, c, self.rel)
+                    key = f"show:{c}"
+                    self.oid[c] = None if ver is None else key
+                    if ver is not None:
+                        self.data[key] = ver
+        want = [o for o in dict.fromkeys(self.oid[c] for c in commits) if o and o not in self.data]
+        if not want:
+            return
+        raw = self._batch(["cat-file", "--batch"], want)
+        at = 0
+        for o in want:
+            nl = raw.index(b"\n", at)
+            head = raw[at:nl].decode("utf-8", "replace").split()
+            if len(head) != 3 or head[0] != o:
+                raise GuardError(f"cat-file --batch: unexpected header for {o[:12]}")
+            size = int(head[2])
+            self.data[o] = raw[nl + 1 : nl + 1 + size]
+            at = nl + 1 + size + 1
+
+    def at(self, commit: str) -> bytes | None:
+        self.load([commit])
+        o = self.oid[commit]
+        return None if o is None else self.data[o]
+
+
+def committed_clears(root: Path, target: str, versions: _Versions | None = None) -> list[Clear]:
     """The rows as the TARGET commit carries them, after proving no version in its history was
     edited or truncated: every earlier version must be a byte prefix of the target's."""
     if _git(root, "rev-parse", "--is-shallow-repository").strip() == "true":
         raise GuardError(
             "shallow clone: the CLEAR record's history cannot be checked (git fetch --unshallow)"
         )
-    final = _show(root, target, CLEARS_REL)
+    v = versions if versions is not None else _Versions(root, CLEARS_REL)
+    final = v.at(target)
     if final is None:
         return []
     shas = _git(root, "log", "--full-history", "--format=%H", target, "--", CLEARS_REL).split()
-    for sha in shas:
-        for c in (sha, *_git(root, "rev-list", "--parents", "-n", "1", sha).split()[1:]):
-            ver = _show(root, c, CLEARS_REL)
-            if ver is not None and not final.startswith(ver):
-                raise GuardError(
-                    f"{CLEARS_REL} at {c[:12]} is not a prefix of the target's "
-                    "copy: a row was edited or dropped"
-                )
+    v.load_parents(shas)
+    every = [c for sha in shas for c in (sha, *v.parents[sha])]
+    v.load(every)
+    for c in every:
+        ver = v.at(c)
+        if ver is not None and not final.startswith(ver):
+            raise GuardError(
+                f"{CLEARS_REL} at {c[:12]} is not a prefix of the target's "
+                "copy: a row was edited or dropped"
+            )
     return parse_clears(final.decode("utf-8"))
 
 
@@ -589,12 +678,13 @@ def effective_clears(root: Path, target: str) -> list[Clear]:
     history, `by: audit-gate` CLEARs, which `authenticated` must then re-verify. A plain CLEAR that
     exists only on origin never counts: it has not ridden a tagged release and nothing can
     authenticate it."""
-    base = committed_clears(root, target)
+    versions = _Versions(root, CLEARS_REL)
+    base = committed_clears(root, target, versions)
     tip = _origin_tip(root)
     if tip is None or tip == target:
         return base
     have = {_key(r) for r in base}
-    extra = [r for r in committed_clears(root, tip) if _key(r) not in have]
+    extra = [r for r in committed_clears(root, tip, versions) if _key(r) not in have]
     ancestor = _run(root, "merge-base", "--is-ancestor", target, tip).returncode == 0
     return base + [
         r
