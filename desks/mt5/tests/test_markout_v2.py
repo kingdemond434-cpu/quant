@@ -231,3 +231,21 @@ def test_e8_csv_fill_joins_its_bracket_intent_on_the_stop_target_echo(tmp_path: 
     assert by_win["asia"]["slip_r"] == pytest.approx(0.13 / (4318.0 - 4257.49), abs=1e-6)
     assert by_win["asia"]["intent_order_id"] == 5
     assert by_win["london_am"]["reason"] == "no_intended_price"
+
+
+def test_the_published_report_carries_no_trade_level_record(tmp_path: Path) -> None:
+    out = tmp_path / "MARKOUT_V2.json"
+    assert m.main(["--as-of", AS_OF.isoformat(), "--out", str(out),
+                   "--e8-fills", str(tmp_path / "absent.jsonl")]) == 0
+    published = out.read_text("utf-8")
+    for key in ('"rows"', '"ticket"', '"deals"', '"deal"', '"intent_order_id"', '"order_id"',
+                '"filled_at"', '"latest_fill_at"', '"fill"', '"position"', '"entry_price"'):
+        assert key not in published, key
+    doc = {"accounts": {"fusion": {"n_rows": 3, "freshness": {"latest_fill_at": T,
+                                                               "age_days": 1.0}}},
+           "rows": {"fusion": [{"ticket": 1, "deals": [10], "fill": 2000.5}]}}
+    view = m.public_view(doc)
+    assert "rows" not in view and "latest_fill_at" not in json.dumps(view)
+    assert view["accounts"]["fusion"]["freshness"]["age_days"] == 1.0
+    assert (tmp_path / m.ROWS_OUT.name).exists()
+

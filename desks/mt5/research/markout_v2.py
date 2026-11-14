@@ -81,6 +81,21 @@ E8_INTENT_FILES = (DESK / "data" / "e8_intents.jsonl", DESK / "data" / "e8_gold_
 E8_FILLS = DESK / "data" / "e8_fills.jsonl"
 LEGACY = DESK / "reports" / "markout.json"
 OUT = DESK / "reports" / "MARKOUT_V2.json"
+#: The per-trade join (tickets, deal ids, fill prices and times). BOX ONLY: `**/reports/*` keeps
+#: it out of git and no sync path names it. The published report carries aggregates only.
+ROWS_OUT = DESK / "reports" / "MARKOUT_V2_ROWS.json"
+#: Keys that describe one trade. None of them may reach the published report (Auditor MF1,
+#: 2026-11-14): the repository is public, and a trade-level record is the account's own.
+TRADE_KEYS = frozenset({"rows", "latest_fill_at"})
+
+
+def public_view(doc: Any) -> Any:
+    """The report with every trade-level key removed, at any depth: aggregates only."""
+    if isinstance(doc, dict):
+        return {k: public_view(v) for k, v in doc.items() if k not in TRADE_KEYS}
+    if isinstance(doc, list):
+        return [public_view(v) for v in doc]
+    return doc
 BOOT_N = 2000
 BOOT_SEED = 20261020
 #: Fewer measured positions than this publish no CI and no directional sign.
@@ -554,7 +569,10 @@ def main(argv: list[str] | None = None) -> int:
                 max_age_days=a.max_age_days)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(public_view(doc), indent=1, sort_keys=True) + "\n",
+                   encoding="utf-8")
+    rows_out = out.with_name(ROWS_OUT.name)
+    rows_out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     f, e = doc["accounts"]["fusion"], doc["accounts"]["e8"]
     print(f"fusion {f['status']} median {f['median_slip_r']} sign {f['sign']} "
           f"n={f['n_measured']}/{f['n_rows']} positions, unjoined {f.get('n_unjoined_deals')}, "
