@@ -639,8 +639,6 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     assert str(st["Quantopian"].get("why", "")).startswith("FENCED")
     assert {ln["rail"] for ln in doc["missed_growth"]} == {"fenced:wayback",
                                                            "fenced:youtube_transcript"}
-    assert dfm.wayback_snapshot("https://x.test/") == ("", "FENCED: wayback")
-    assert dfm.youtube_transcript("abcdefghijk") == ("", "FENCED: youtube_transcript")
     assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
@@ -737,7 +735,8 @@ def test_refused_hosts_are_never_fetched_on_any_route(monkeypatch) -> None:
     monkeypatch.setattr(dfm, "_http", boom)
 
     class Stub:
-        status: list = []
+        def __init__(self) -> None:
+            self.status: list = []
 
         def _net_ok(self) -> bool:
             return True
@@ -746,3 +745,18 @@ def test_refused_hosts_are_never_fetched_on_any_route(monkeypatch) -> None:
     assert dfm._Run.page(stub, "https://fred.stlouisfed.org/series/X") == ""  # type: ignore[arg-type]
     assert stub.status and stub.status[-1]["refused"].startswith("REFUSED")
     assert dfm._Run.rendered(stub, "https://www.cmegroup.com/x") == ""  # type: ignore[arg-type]
+
+
+def test_the_fenced_fetchers_make_no_request(monkeypatch) -> None:
+    """Governance wayback ruling 2026-11-14: both fetchers return the fence before any request."""
+    import pytest
+
+    def boom(*_a, **_k):
+        pytest.fail("a fenced fetcher made a request")
+
+    monkeypatch.setattr(dfm, "_http", boom)
+    monkeypatch.setitem(sys.modules, "fetch_video_transcript", None)   # importing it would fail
+    assert dfm.wayback_snapshot("https://x.test/") == ("", "FENCED: wayback")
+    assert dfm.youtube_transcript("abcdefghijk") == ("", "FENCED: youtube_transcript")
+    assert {ln["rail"] for ln in dfm.fenced_missed_growth()} == {"fenced:wayback",
+                                                                 "fenced:youtube_transcript"}
