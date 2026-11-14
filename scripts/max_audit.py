@@ -8814,6 +8814,12 @@ def check_unwired_modules(defects) -> None:
     # batteries.py lists more. Its tests are not invokers.
     invoker_files += [p for p in (ROOT / "desks").rglob("*.py")
                       if "tests" not in p.parts and "__pycache__" not in p.parts]
+    # The box's scheduled-task manifest is the scheduler for Windows tasks: a script it names in
+    # `runs=` is invoked every trigger (MT5-ReapGitWriters runs scripts/reap_hung_git_writers.py,
+    # the sole importer of libs.ops.process_supervisor). Its installers are .ps1, not .py.
+    manifest = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+    if manifest.is_file():
+        invoker_files.append(manifest)
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
     # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise

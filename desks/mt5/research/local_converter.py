@@ -139,6 +139,38 @@ def _known_families() -> set[str]:
     return out
 
 
+def _required_evidence(fam: str) -> tuple[str, ...]:
+    """The REQUIRED keyword-only arguments of `fam`'s constructor, `symbol` aside.
+
+    THE CONVERTER CARRIES A FAMILY, A SYMBOL AND A SESSION -- nothing else (2026-11-14). A family
+    whose constructor REQUIRES evidence the row cannot name (`seasonal_window`'s window and side,
+    `calendar_month`'s month, the deep families' peer lists) can therefore never execute from a
+    converted row: measured on the box, 288 window-less `seasonal_window` rows from
+    `moat_factory` reached the docket and raised TypeError in every sweep's pre-warm. Such a row
+    is left for the model, the same as a row with no family, rather than padded with a guessed
+    window. `symbol` is supplied by the gauntlet's builder itself. An unresolvable constructor
+    reads as no requirement, so nothing that converted before is refused on a lookup failure.
+    """
+    try:
+        import inspect
+
+        fn = None
+        try:
+            from mt5desk import families as F
+            fn = getattr(F, f"family_{fam}", None)
+        except Exception:
+            fn = None
+        if fn is None:
+            from mt5desk import families_orthogonal as fo
+            fn = fo.ORTHOGONAL_FAMILIES.get(fam)
+        if fn is None:
+            return ()
+        return tuple(n for n, p in inspect.signature(fn).parameters.items()
+                     if p.kind is p.KEYWORD_ONLY and p.default is p.empty and n != "symbol")
+    except Exception:
+        return ()
+
+
 def _iter_rows(limit: int) -> Iterator[tuple[str, dict]]:
     """Yield (miner, row) for up to `limit` mined rows, one at a time.
 
@@ -210,6 +242,7 @@ def convert(limit: int) -> tuple[list[dict], Counter]:
     stats: Counter = Counter()
     seen: set[tuple[str, str, str]] = set()
     out: list[dict] = []
+    _needs_cache: dict[str, tuple[str, ...]] = {}
 
     for miner, row in _iter_rows(limit):
         stats["rows_read"] += 1
@@ -292,6 +325,12 @@ def convert(limit: int) -> tuple[list[dict], Counter]:
         found = list(dict.fromkeys(found))[:MAX_SYMBOLS_PER_ROW]
 
         if not fam or not found:
+            stats["left_for_the_model"] += 1
+            continue
+        if fam not in _needs_cache:
+            _needs_cache[fam] = _required_evidence(fam)
+        if _needs_cache[fam]:
+            stats["family_needs_evidence"] += 1
             stats["left_for_the_model"] += 1
             continue
 
