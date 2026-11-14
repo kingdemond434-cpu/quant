@@ -2743,6 +2743,30 @@ def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() 
     assert v == "PASS" and not any("never read apart" in x for x in log)
 
 
+def test_one_hunk_over_the_time_cap_is_read_alone_and_the_rest_stay_under_it() -> None:
+    """#659 (11-11): a new 420-line file is ONE hunk over PART_CHARS. That hunk used to send the
+    whole diff back through split_diff at the context limit: "1 parts", five 30-min timeouts,
+    UNAVAILABLE.
+    The big hunk is now a part of its own, read whole; every other part keeps to the cap."""
+    big = ("docs/big.py", ["+" + "b" * 40_000])
+    small = [(f"docs/s{i}.py", ["+" + "s" * 9_000]) for i in range(4)]
+    d = _diff(big, *small)
+    parts = ir.split_diff(d, ir.PART_CHARS, hard=200_000)
+    assert parts is not None and "".join(parts) == d          # every line, exactly once
+    whole = [u for u in parts if "b" * 40_000 in u]
+    assert len(whole) == 1 and "s" * 9_000 not in whole[0]     # read whole, and alone
+    assert all(len(u) <= ir.PART_CHARS for u in parts if u is not whole[0])
+    assert len(parts) >= 3
+    assert ir.split_diff(d, ir.PART_CHARS) is None  # without `hard`: a refusal, as before
+    assert ir.split_diff(d, ir.PART_CHARS, hard=30_000) is None  # over `hard`: still a refusal
+    asked: list[str] = []
+    v, log = _review(d, [("qwen", "q1", _counting(*[_PASS] * 12, asked=asked)),
+                        ("llama", "l1", _counting(*[_PASS] * 12))])
+    assert v == "PASS" and "1 parts" not in log[0]
+    assert all(len(u) <= ir.PART_CHARS or "b" * 40_000 in u
+               for u in asked if "This is part" in u)
+
+
 def test_money_files_are_read_together_in_one_part_or_the_review_fails() -> None:
     """#547 audit MF1 (a): max_lot raised in one money file, its min() dropped in another."""
     a = ("desks/mt5/prop/a.py", ["+MAX_LOT = 50" + " " * 30_000])
