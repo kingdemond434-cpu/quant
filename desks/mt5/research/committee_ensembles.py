@@ -144,6 +144,7 @@ def _runtime_doc(path: Path) -> Any:
                 "_runtime_attestation", Path(__file__).with_name("runtime_attestation.py"))
             assert spec is not None and spec.loader is not None
             mod = _ilu.module_from_spec(spec)
+            sys.modules[spec.name] = mod      # a dataclass resolves its module by this name
             spec.loader.exec_module(mod)
             _RA = mod
         doc = _RA.load_attestation_file(Path(path))
