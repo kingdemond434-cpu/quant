@@ -72,12 +72,23 @@ def main(argv: list[str] | None = None) -> int:
     doc = cl.build()
     rc, why = judge(doc, require_state=a.require_state, box=on_trading_box())
     doc["fence"] = {"rc": rc, "why": why, "enforced": a.require_state and on_trading_box()}
+    if not a.require_state:
+        # OWED (audit of d88b7598): the law gate registers this fence report-only on landing.
+        # The switch to --require-state is owed the first time the box reads zero violations;
+        # the report says so on every run, and says when it has become due.
+        clean = not doc.get("violations")
+        doc["fence"]["owed"] = {
+            "action": "register check_cert_lineage.py with --require-state in "
+                      "scripts/run_law_gate.py _STATE_FENCES",
+            "when": "the trading box's CERT_LINEAGE.json reads zero violations",
+            "due": bool(clean and on_trading_box()),
+        }
     dest = cl.out_path(a.out)  # the box's own report, or an explicit --out; else none
     try:
         if dest is not None:
             cl.write(doc, dest)
     except OSError as exc:
-        why += f" (artifact not written: {exc})"
+        why += f" (artifact not written: {type(exc).__name__})"
     print(json.dumps(doc["fence"]) if a.json else f"check_cert_lineage: {why}")
     return rc
 

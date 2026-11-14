@@ -284,8 +284,42 @@ def test_the_fence_fails_only_on_the_box_with_state() -> None:
 
 
 def test_the_fence_is_wired_into_the_box_gate() -> None:
+    """Report-only on landing (audit of d88b7598): the box read four open gold windows, so
+    enforcing would stall adoption. The switch to --require-state is OWED, and the report
+    carries that debt -- and whether it is due -- on every run."""
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
-    assert '("check_cert_lineage.py", ("--require-state",)),' in gate
+    assert '("check_cert_lineage.py", ()),' in gate
+
+
+def test_the_report_carries_the_owed_switch_and_says_when_it_is_due(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    wrote: list[dict] = []
+    monkeypatch.setattr(cl, "write", lambda doc, out: wrote.append(doc))
+    monkeypatch.setattr(FENCE, "on_trading_box", lambda: True)
+    monkeypatch.setattr(cl, "build", lambda: {"sleeves_readable": True, "canon_readable": True,
+                                              "n_violations": 1, "violations": [
+                                                  {"kind": "roster_window", "key": "gold_asia",
+                                                   "lineage": cl.NEAREST_CERT}]})
+    assert FENCE.main(["--out", str(tmp_path / "a.json")]) == 0
+    owed = wrote[-1]["fence"]["owed"]
+    assert "--require-state" in owed["action"] and owed["due"] is False
+    monkeypatch.setattr(cl, "build", lambda: {"sleeves_readable": True, "canon_readable": True,
+                                              "n_violations": 0, "violations": []})
+    assert FENCE.main(["--out", str(tmp_path / "b.json")]) == 0
+    assert wrote[-1]["fence"]["owed"]["due"] is True
+
+
+def test_an_unwritable_report_names_the_error_type_never_the_path(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        ) -> None:
+    def boom(doc: dict, out: Path) -> None:
+        raise PermissionError(13, "denied", "C:/secret/box/path/CERT_LINEAGE.json")
+    monkeypatch.setattr(cl, "write", boom)
+    monkeypatch.setattr(cl, "build", lambda: {"sleeves_readable": True, "canon_readable": True,
+                                              "n_violations": 0, "violations": []})
+    FENCE.main(["--out", str(tmp_path / "c.json")])
+    out = capsys.readouterr().out
+    assert "PermissionError" in out and "secret" not in out
 
 
 # -------------------------------------------------- one traded-params reader (2026-10-20)
