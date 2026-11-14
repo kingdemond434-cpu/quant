@@ -843,6 +843,9 @@ $reportPaths = @(
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
+    # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
+    # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read
+    "desks/mt5/reports/DECAY_VERDICTS.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
