@@ -52,7 +52,60 @@ _RUNTIME_BAR_CACHE: OrderedDict[tuple[str, str, str], Any] = OrderedDict()
 _RUNTIME_BAR_CACHE_ROWS = 900_000
 
 
+#: How far a peer/factor/driver series may END before the cell's own bars do and still be used.
+#: Seven days clears a weekend plus a holiday on any venue. A series that ends further back is
+#: DEAD AT THE VENUE, not slow: measured 2026-11-13, Fusion put UST10Y/UST05Y into close-only and
+#: their bars stop at 2025-12-31 09:14Z while the refresher kept rewriting the files. The families
+#: join `how="inner"`, so a dead factor did not raise -- it silently cut every bar after its end,
+#: and 25 cross_asset_residual clocks on ['USDX', 'UST10Y'] read ACTIVE with zero observations for
+#: 48 days. Refusing here turns that into BLOCKED_INPUTS_UNAVAILABLE with the reason named.
+STALE_INPUT_DAYS = 7.0
+#: symbol -> why its last load was refused as stale, so the caller's reason can name the cause.
+_STALE: dict[str, str] = {}
+
+
+def _last_stamp(frame: Any) -> Any:
+    try:
+        import pandas as pd
+        idx = frame.index
+        if len(idx) == 0:
+            return None
+        t = pd.Timestamp(idx.max())
+        return t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+    except Exception:
+        return None
+
+
+def stale_reason(symbol: str, frame: Any, primary: Any) -> str | None:
+    """Why `frame` (an input series) ends too long before `primary` to be joined, else None."""
+    mine, theirs = _last_stamp(frame), _last_stamp(primary)
+    if mine is None or theirs is None:
+        return None
+    lag_d = (theirs - mine).total_seconds() / 86400.0
+    if lag_d <= STALE_INPUT_DAYS:
+        return None
+    return (f"{symbol} bars end {mine.isoformat()}, {lag_d:.0f}d before the cell's own "
+            f"({theirs.isoformat()}): the input is dead at the venue, not slow")
+
+
 def _runtime_bars(inputs: Any, symbol: str, timeframe: str, primary: Any) -> Any:
+    frame = _runtime_bars_raw(inputs, symbol, timeframe, primary)
+    if frame is None:
+        return None
+    why = stale_reason(str(symbol), frame, primary)
+    if why:
+        _STALE[str(symbol)] = why
+        return None
+    _STALE.pop(str(symbol), None)
+    return frame
+
+
+def _stale_note(names: list[str]) -> str:
+    notes = [_STALE[n] for n in names if n in _STALE]
+    return ("; " + "; ".join(notes)) if notes else ""
+
+
+def _runtime_bars_raw(inputs: Any, symbol: str, timeframe: str, primary: Any) -> Any:
     local = inputs._bars(str(symbol), str(timeframe))
     if local is not None or os.name != "nt" or primary is None or not hasattr(primary, "index"):
         return local
@@ -191,7 +244,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                 return None, "no peer_symbol on the candidate"
             peer = _runtime_bars(inputs, str(peer_symbol), tf, h1)
             if peer is None:
-                return None, f"peer bars unavailable for {peer_symbol}"
+                return None, f"peer bars unavailable for {peer_symbol}{_stale_note([str(peer_symbol)])}"
             extra["peer"] = peer
             return extra, "ok"
 
@@ -234,7 +287,8 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                         drivers[t] = b
                         break
                 if t not in drivers:
-                    return None, f"no bars for driver role {t}"
+                    return None, (f"no bars for driver role {t}"
+                                  f"{_stale_note([str(c) for c in ROLES.get(t.upper(), ())])}")
             extra["drivers"] = drivers
             return extra, "ok"
 
@@ -244,7 +298,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
                 return None, "no driver_symbol on the candidate"
             b = _runtime_bars(inputs, str(drv), tf, h1)
             if b is None:
-                return None, f"driver bars unavailable for {drv}"
+                return None, f"driver bars unavailable for {drv}{_stale_note([str(drv)])}"
             extra["driver"] = b
             return extra, "ok"
 
@@ -281,7 +335,8 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             missing = [s for s, d in loaded if d is None]
             if missing:
                 return None, (f"factor bars unavailable for {missing}; all {len(names)} named "
-                              "factors are required to preserve the certified model")
+                              "factors are required to preserve the certified model"
+                              f"{_stale_note(missing)}")
             factors = [d for _s, d in loaded]
             extra["factors"] = factors
             return extra, "ok"
