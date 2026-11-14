@@ -588,6 +588,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
         "route": "via_provider", "sources": ("cot_fx",),
         "basis": "asks whether cot_positioning can fire by calling orthogonal_sweep._cot_frame, "
                  "which applies COT_RELEASE_LAG_DAYS; it joins nothing to a bar itself"},
+    "desks/mt5/research/discovery_backends.py": {
+        "route": "mention", "sources": ("gdelt",),
+        "basis": "queries the GDELT DOC API only to DISCOVER page URLs for the miners to read; "
+                 "it joins no value to a bar, and a GDELT seendate is carried as the row's "
+                 "own stamp, never as a feature"},
     "desks/mt5/research/asia_collector.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names the source id in its CLI usage; the collector writes, never joins"},
