@@ -620,6 +620,12 @@ def read_sge_premium(paths: Paths) -> list[Obs]:
 # whose wording does not match emits nothing, never a guess.
 
 GDELT_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.export.CSV.zip"
+#: GDELT Translingual: the same 15-minute event export, coded from the machine translation of
+#: 65 source languages' news (identical columns). The English stream above is what the world's
+#: English press says; this one is what the local press says in its own language.
+GDELT_TRANSLINGUAL_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.translation.export.CSV.zip"
+#: Every GDELT export source: they share the slot cursor, the parser and the day accumulator.
+GDELT_IDS: tuple[str, ...] = ("gdelt_events_country", "gdelt_translingual_country")
 #: FIPS 10-4 country code (GDELT's ActionGeo_CountryCode) -> ISO code used for series names.
 GDELT_COUNTRIES: dict[str, str] = {
     "CH": "CN", "HK": "HK", "JA": "JP", "KS": "KR", "TW": "TW", "IN": "IN", "US": "US",
@@ -2009,6 +2015,33 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "per slot and published only for days whose 96 slots were all read (<= 8 gaps). "
               "GKG themes are not read (files are 10x larger); CAMEO roots stand in for themes")),
     Source(
+        id="gdelt_translingual_country",
+        name="GDELT 2.0 Translingual Events: country x day x theme tone panel (65 languages)",
+        url=GDELT_TRANSLINGUAL_URL, region="GLOBAL", language="multi (machine-translated)",
+        cadence="daily", parse=parse_gdelt_events, rule=_lag_rule(1, 1), transform="level_dev",
+        instruments={"US500": 1}, series_instruments=_gdelt_series_map(),
+        signal_series=tuple(f"{iso}_{s}" for iso in sorted(set(GDELT_COUNTRIES.values()))
+                            for s in ("tone", "conflict_share")),
+        mechanism=("the same machine-coded event stream as gdelt_events_country, coded from the "
+                   "machine translation of the LOCAL-LANGUAGE press: what Chinese, Japanese, "
+                   "Russian, Arabic, Portuguese and Spanish outlets report about their own "
+                   "country, before or without English coverage"),
+        payer=("holders of EM and Asian FX/index risk who read English wires only and reprice "
+               "when the local story reaches them"),
+        constraint=("an English-only desk cannot read 65 languages; the translated stream's "
+                    "aggregate is not in the price by hand, and it is GDELT's own separate feed, "
+                    "not a re-count of the English one"),
+        licence="GDELT Project open data (unrestricted use with citation); no key",
+        source_culture="GLOBAL/multi-lingual",
+        participant_structure=("institutional", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when translation quality or GDELT's foreign source "
+                                 "list changes, and when English and local coverage are the "
+                                 "same syndicated wire, which makes the two panels collinear"),
+        crowding_prior="low", substitutes_for=_NEWS,
+        note=("read with the same fwd/back slot cursors and day accumulator as "
+              "gdelt_events_country; the news stream also reads its vaulted blobs as live "
+              "machine-coded story groups (news_event_stream.GDELT_VAULTS)")),
+    Source(
         id="wiki_asia_attention", name="Asian-language Wikipedia attention (ja/zh/ko pageviews)",
         url=WIKI_URL, region="ASIA",
         language="ja/zh/ko", cadence="daily", parse=parse_wikimedia,
@@ -2604,6 +2637,7 @@ TERMS: dict[str, tuple[str, str]] = {
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
+    "gdelt_translingual_country": ("confirmed", "GDELT: unrestricted use with citation"),
     "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
     "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
@@ -2936,7 +2970,18 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
                         "and unrestricted use for any academic, commercial, or governmental use "
                         "of any kind without fee."),
-        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "robots": ("data.gdeltproject.org/robots.txt is ASKED before every pass's first fetch "
+                   "(robots_check, RFC 9309); a Disallow stops the source for the pass"),
+        "credit": "The GDELT Project, https://www.gdeltproject.org/",
+        "checked_at": _CHK},
+    # the Translingual export is the same project, the same terms page and the same raw host
+    "gdelt_translingual_country": {
+        "terms_url": "https://gdeltproject.org/about.html",
+        "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
+                        "and unrestricted use for any academic, commercial, or governmental use "
+                        "of any kind without fee."),
+        "robots": ("data.gdeltproject.org/robots.txt is ASKED before every pass's first fetch "
+                   "(robots_check, RFC 9309); a Disallow stops the source for the pass"),
         "credit": "The GDELT Project, https://www.gdeltproject.org/",
         "checked_at": _CHK},
     "wiki_asia_attention": {
@@ -3018,6 +3063,13 @@ SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
+#: Other organs that READ a row's vaulted bytes (the mining registry credits their donations to
+#: the row only when it is named here). news_event_stream turns each GDELT export blob into
+#: story groups (2026-10-06).
+FETCHED_BY: dict[str, tuple[str, ...]] = {
+    "gdelt_events_country": ("news_event_stream",),
+    "gdelt_translingual_country": ("news_event_stream",),
+}
 #: CANDIDATE SUBSTITUTES FOR EACH TERMS-BLOCKED SOURCE (terms refused or to_confirm). A candidate
 #: is a lawful source of this organ that MAY stand in for the blocked one; it is NOT coverage by
 #: being listed. Under the paid-substitute law (#152, MIN_CORRELATION 0.50) a substitute counts
@@ -3250,6 +3302,107 @@ def http_get(url: str, secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
+# ============================================================================ robots.txt
+#: Sources whose raw-file host is asked its robots.txt (RFC 9309) before the first fetch of every
+#: pass. A Disallow for our product token (or for "*") stops the source for the pass, by name.
+ROBOTS_GATED: frozenset[str] = frozenset({"gdelt_events_country", "gdelt_translingual_country"})
+ROBOTS_TOKEN = UA.split("/", 1)[0].lower()          # "quant-desk-alt-proxies"
+ROBOTS_MAX_BYTES = 500 * 1024                       # RFC 9309 2.5: parse at least 500 KiB
+_ROBOTS_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def fetch_robots(robots_url: str) -> tuple[int, bytes]:
+    """(HTTP status, body) for a robots.txt; status 0 = the host could not be reached."""
+    req = urllib.request.Request(robots_url, headers={"User-Agent": UA, "Accept": "text/plain"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+            return int(r.status), r.read(ROBOTS_MAX_BYTES)
+    except urllib.error.HTTPError as exc:
+        exc.close()
+        return int(exc.code), b""
+    except (OSError, ValueError):
+        return 0, b""
+
+
+def _robots_groups(text: str) -> list[tuple[list[str], list[tuple[bool, str]]]]:
+    """RFC 9309 2.1-2.2: groups of (user-agent tokens, [(allow, path pattern)])."""
+    groups: list[tuple[list[str], list[tuple[bool, str]]]] = []
+    agents: list[str] = []
+    rules: list[tuple[bool, str]] = []
+    in_rules = False
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip().lower(), val.strip()
+        if key == "user-agent":
+            if in_rules:
+                groups.append((agents, rules))
+                agents, rules, in_rules = [], [], False
+            agents.append(val.lower())
+        elif key in ("allow", "disallow"):
+            if not agents:
+                continue                                 # a rule outside any group is ignored
+            in_rules = True
+            if val:                                      # an empty Disallow allows everything
+                rules.append((key == "allow", val))
+    if agents:
+        groups.append((agents, rules))
+    return groups
+
+
+def _robots_match(pattern: str, path: str) -> bool:
+    """RFC 9309 2.2.3: "*" matches any sequence, a trailing "$" anchors the end."""
+    anchored = pattern.endswith("$")
+    body = pattern[:-1] if anchored else pattern
+    rx = ".*".join(re.escape(urllib.parse.unquote(part)) for part in body.split("*"))
+    return re.match(rx + ("$" if anchored else ""), urllib.parse.unquote(path)) is not None
+
+
+def robots_verdict(text: str, path: str, token: str = ROBOTS_TOKEN) -> tuple[bool, str]:
+    """(allowed, the deciding rule) for `path` under RFC 9309: our product token's group(s) if
+    any name it, else the "*" group(s); the longest matching rule wins and Allow wins a tie."""
+    groups = _robots_groups(text)
+    mine = [r for a, r in groups if any(x != "*" and token.startswith(x) for x in a)]
+    rules = [x for r in (mine or [r for a, r in groups if "*" in a]) for x in r]
+    best: tuple[int, bool, str] | None = None
+    for allow, pat in rules:
+        if _robots_match(pat, path or "/"):
+            cand = (len(pat), allow, f"{'Allow' if allow else 'Disallow'}: {pat}")
+            if best is None or cand[:2] > best[:2]:
+                best = cand
+    return (True, "no matching rule") if best is None else (best[1], best[2])
+
+
+def robots_check(url: str, fetcher: Callable[[str], tuple[int, bytes]] | None = None,
+                 now: datetime | None = None) -> dict[str, Any]:
+    """Ask the host's robots.txt about `url` (cached per host for the pass). RFC 9309 2.3.1:
+    a 4xx robots.txt is "unavailable" (no restriction); a 5xx or an unreachable host is
+    "unreachable" and means COMPLETE DISALLOW -- never read as permission."""
+    parts = urllib.parse.urlsplit(url)
+    robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    path = parts.path + (f"?{parts.query}" if parts.query else "")
+    cached = _ROBOTS_CACHE.get(robots_url) if fetcher is None else None
+    if cached is None:
+        status, body = (fetcher or fetch_robots)(robots_url)
+        cached = {"robots_url": robots_url, "status": status,
+                  "text": body.decode("utf-8", "replace") if 200 <= status < 300 else "",
+                  "checked_at": (now or datetime.now(UTC)).isoformat()}
+        if fetcher is None:
+            _ROBOTS_CACHE[robots_url] = cached
+    status = int(cached["status"])
+    if 200 <= status < 300:
+        allowed, rule = robots_verdict(str(cached["text"]), path)
+    elif 400 <= status < 500:
+        allowed, rule = True, f"robots.txt {status}: unavailable, no restriction (RFC 9309 2.3.1.3)"
+    else:
+        allowed, rule = False, (f"robots.txt {'unreachable' if status == 0 else status}: "
+                                "complete disallow (RFC 9309 2.3.1.4)")
+    return {"robots_url": robots_url, "status": status, "path": path, "allowed": allowed,
+            "rule": rule, "token": ROBOTS_TOKEN, "checked_at": cached["checked_at"]}
+
+
 def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
           fetched_at: datetime) -> dict[str, Any]:
     """Raw bytes under their content hash, never overwritten; the URL is stored REDACTED."""
@@ -3312,7 +3465,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 **({"token": key} if key else {})})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_IDS:
         return _gdelt_requests(src, now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
@@ -4081,7 +4234,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     if getter is http_get and src.key_env:
         key = read_key(src.key_env)
         getter = functools.partial(http_get, secrets=(key,) if key else ())
-    if src.id == "gdelt_events_country":
+    if src.id in GDELT_IDS:
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
         _atomic(store_p, store)
@@ -4137,7 +4290,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
                   now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
-                  getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+                  getter: Callable[[str], tuple[bytes, str]] = http_get,
+                  robots: Callable[[str], dict[str, Any]] = robots_check) -> dict[str, Any]:
     """GDELT's own loop: read slots, fold them into their day, publish the days that closed.
 
     A 404 is a slot GDELT does not have (read, empty); any other error stops that direction for
@@ -4159,7 +4313,18 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     else:
         reqs = requests_for(src, now, sst)
     stopped: set[str] = set()
-    for req in reqs if fetch else []:
+    robots_rec: dict[str, Any] | None = None
+    if fetch and reqs and src.id in ROBOTS_GATED:
+        robots_rec = robots(reqs[0].url)
+        if not robots_rec["allowed"]:
+            errors.append(f"robots.txt refuses {robots_rec['path']} "
+                          f"({robots_rec['rule']}): nothing fetched this pass")
+            reqs_to_fetch: list[Request] = []
+        else:
+            reqs_to_fetch = reqs
+    else:
+        reqs_to_fetch = reqs
+    for req in reqs_to_fetch if fetch else []:
         direction, _, slot = req.ctx.part.partition(":")
         if direction in stopped:
             continue
@@ -4190,6 +4355,8 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     done, dropped = gdelt_complete_days(acc)
     m = merge_vintages(store, src, done, now)
     return {"requests": len(reqs), "fetched": fetched, "parsed": parsed, "merge": m,
+            "robots": robots_rec if robots_rec is not None else (
+                "NOT_ASKED: no fetch this pass" if src.id in ROBOTS_GATED else "NOT_GATED"),
             "days_published": sorted({o.period.isoformat() for o in done}),
             "days_dropped_for_gaps": dropped, "days_open": len(acc), "errors": errors[:6]}
 
@@ -4259,6 +4426,7 @@ def _by_regime(a: dict[Any, float], b: dict[Any, float], min_n: int) -> dict[str
 PAID_ORIGINAL_AGREEMENT: dict[str, dict[str, Any]] = {
     "news_analytics": {
         "paid_original": "RavenPack", "substitutes": ["gdelt_events_country",
+                                                      "gdelt_translingual_country",
                                                       "wiki_asia_attention"],
         "public_outputs": ("academic papers quote summary statistics of RavenPack sentiment "
                            "(ESS/relevance distributions, event counts), never a daily series"),
@@ -4508,7 +4676,7 @@ def _cursor(s: Source) -> str:
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
         return "resultOffset paging; 800-day window"
-    if s.id == "gdelt_events_country":
+    if s.id in GDELT_IDS:
         return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
                 f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
     if s.id in DATED_SOURCES:
@@ -4543,6 +4711,8 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
             rows[-1]["substitute_candidates"] = [
                 {k: c[k] for k in ("substitute", "verdict", "corr", "n")}
                 for c in (substitute_check(s.id, x) for x in SUBSTITUTED_BY[s.id])]
+        if s.id in FETCHED_BY:
+            rows[-1]["fetched_by"] = list(FETCHED_BY[s.id])
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})

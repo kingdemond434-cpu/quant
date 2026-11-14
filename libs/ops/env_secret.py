@@ -1,7 +1,9 @@
 """A key the principal set on the box, found wherever Windows actually put it.
 
-THE DEFECT (2026-10-06). The principal set FRED_API_KEY with `setx /M` "many times", and every
-ALFRED pass still read BLOCKED_AUTH. `setx /M` writes the MACHINE environment in the registry
+THE DEFECT (2026-10-06). The principal set a data key with `setx /M` "many times" (it was
+FRED_API_KEY, and FRED/ALFRED is now terms-refused for every automated desk use whatever the key:
+Governance ruling 2026-11-13), and every pass that read it still saw BLOCKED_AUTH. `setx /M`
+writes the MACHINE environment in the registry
 (HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment); it never reaches a
 process that is ALREADY running, nor the children that process starts. The desk's residents are
 long-lived scheduled tasks, so `os.environ` in them is the environment of the day they started,
@@ -18,7 +20,7 @@ So a key is looked up in this order, and the caller learns WHERE it came from (n
 Names are tried exactly as given, then case-insensitively in the registry (Windows environment
 names are case-insensitive). No value is ever printed, logged or returned by `presence`.
 
-    python -m libs.ops.env_secret FRED_API_KEY      # prints origin and length only
+    python -m libs.ops.env_secret EIA_API_KEY       # prints origin and length only
 """
 from __future__ import annotations
 
@@ -129,6 +131,34 @@ PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_
                           "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
 
 
+#: WITHHELD FROM CHILDREN UNLESS ASKED FOR (audit #204, 2026-11-11). A resident hands
+#: `fresh_secrets` to every child it starts, LLM seats included, so a credential no child of that
+#: resident reads must not ride along: the repository token (it can push) and every login-shaped
+#: name (an account login, not an API key). A caller that starts a leg which reads one names it
+#: in `allow`; `CHILD_READERS` is the inventory of which leg reads which, so a resident can
+#: derive its own allow-list from the legs it runs.
+CHILD_WITHHELD = frozenset({"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT"})
+LOGIN_SUFFIXES = ("_USER", "_USERNAME", "_PASS", "_PASSWORD", "_EMAIL", "_MAILADDRESS",
+                  "_LOGIN", "_SESSION", "_COOKIE")
+#: name -> the hourly legs that read it (libs/data/free_stack.py:1514 is read by
+#: free_stack_hunter; cell_emitter calls GitHub's code search with GITHUB_TOKEN).
+CHILD_READERS: dict[str, tuple[str, ...]] = {
+    "GITHUB_TOKEN": ("cell_emitter",),
+    "JQ_USER": ("free_stack_hunter",), "JQ_PASS": ("free_stack_hunter",),
+}
+
+
+def withheld_from_children(name: str) -> bool:
+    up = name.upper()
+    return up in CHILD_WITHHELD or up.endswith(LOGIN_SUFFIXES)
+
+
+def child_allow(legs: Iterable[str]) -> set[str]:
+    """The withheld names the given legs read (from `CHILD_READERS`), and no others."""
+    want = set(legs)
+    return {n for n, readers in CHILD_READERS.items() if want.intersection(readers)}
+
+
 def _hard_refused(up: str) -> bool:
     return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED
             or (bool(REFUSED_PREFIXES) and up.startswith(REFUSED_PREFIXES))
@@ -197,19 +227,24 @@ def _registry_all(hive: str) -> dict[str, str]:
     return out
 
 
-def fresh_secrets(existing: dict[str, str] | None = None) -> dict[str, str]:
+def fresh_secrets(existing: dict[str, str] | None = None, *,
+                  allow: Iterable[str] = ()) -> dict[str, str]:
     """Credential variables (`is_secret_name`: catalogued and not refused, or `*_KEY`/`*_TOKEN`/
     `*_SECRET` when there is no catalog) that the registry holds and the environment lacks:
     the keys a `setx /M` added after this process started. A resident merges them into each
     child's environment, so a key the principal sets reaches the next pass without a reboot.
-    Only fills ABSENT names; never overrides what the process already has."""
+    Only fills ABSENT names; never overrides what the process already has. A name
+    `withheld_from_children` (the repository token, any login) is carried only when `allow`
+    names it."""
     env = os.environ if existing is None else existing
+    allowed = {n.upper() for n in allow}
     have = {k.upper() for k, v in env.items() if str(v).strip()}
     out: dict[str, str] = {}
     cat = _catalog_names()
     for hive in ("machine", "user"):
         for name, value in _registry_all(hive).items():
             if (is_secret_name(name, cat) and value.strip()
+                    and (not withheld_from_children(name) or name.upper() in allowed)
                     and name.upper() not in have and name not in out):
                 out[name] = os.path.expandvars(value.strip())
     return out
@@ -223,7 +258,7 @@ def presence(names: Sequence[str], files: Iterable[Path] = ()) -> dict[str, obje
 
 
 def main(argv: list[str] | None = None) -> int:
-    names = (argv if argv is not None else sys.argv[1:]) or ["FRED_API_KEY"]
+    names = (argv if argv is not None else sys.argv[1:]) or ["EIA_API_KEY"]
     print(json.dumps(presence(names)))
     return 0
 

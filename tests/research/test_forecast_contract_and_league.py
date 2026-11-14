@@ -197,3 +197,31 @@ def test_an_empty_zoo_reports_a_gap_not_a_pass(zoo, capsys) -> None:
     if doc["entrants"] == 0:
         zoo.main([])
         assert "NO ENTRANTS" in capsys.readouterr().out
+
+
+def test_a_monotone_quantile_map_is_a_distribution(fc) -> None:
+    good = {"0.1": -12.0, 0.5: 0.0, "0.9": 15.0, 0.25: -12.0}       # ties are allowed
+    assert fc.defects(_ok(fc, kind="DISTRIBUTION", value=good)) == []
+
+
+@pytest.mark.parametrize(("value", "must_mention"), [
+    ({}, "non-empty"),
+    ([0.1, 0.5], "non-empty"),
+    ({"median": 1.0}, "not a number"),
+    ({0.0: -5.0, 0.5: 0.0}, "outside (0, 1)"),
+    ({1.0: 5.0, 0.5: 0.0}, "outside (0, 1)"),
+    ({1.5: 5.0}, "outside (0, 1)"),
+    ({"0.5": 1.0, 0.5: 2.0}, "twice"),
+    ({0.1: float("nan"), 0.9: 1.0}, "non-finite"),
+    ({0.1: 3.0, 0.5: 1.0, 0.9: 4.0}, "cross"),
+])
+def test_a_malformed_quantile_map_is_refused(fc, value, must_mention) -> None:
+    """Principal 2026-10-06: levels in (0, 1) and values non-decreasing, or it is not a belief."""
+    bad = fc.defects(_ok(fc, kind="DISTRIBUTION", value=value))
+    assert any(must_mention in d for d in bad), f"{value} -> {bad}"
+
+
+def test_the_audits_three_malformed_maps_are_refused(fc) -> None:
+    """The audit's finding 7 (2026-10-06), verbatim inputs."""
+    for value in ({1.5: 1.0, -0.2: 0.5}, {0.0: 1.0, 1.0: 2.0}, {0.1: 2.0, 0.9: -1.0}):
+        assert fc.defects(_ok(fc, kind="DISTRIBUTION", value=value)), value

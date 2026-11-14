@@ -101,6 +101,45 @@ def _finite(x: Any) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(float(x))
 
 
+def quantile_defects(value: Any) -> list[str]:
+    """Why a {quantile level: value} map is not a distribution (principal 2026-10-06 11:14).
+
+    Levels are probabilities STRICTLY inside (0, 1): the 0 and 1 quantiles of a real-valued
+    outcome are -inf/+inf or the support's edge, and a finite number there is a claim of bounded
+    support no forecaster here can make. Values must be finite and NON-DECREASING in the level:
+    a crossed quantile (q10 above q50) is not a distribution at all, and CRPS/pinball scores it
+    without complaint, which is how a broken model earns a plausible score.
+    """
+    if not isinstance(value, dict) or not value:
+        return ["a DISTRIBUTION belief must carry a non-empty {quantile level: value} map"]
+    out: list[str] = []
+    levels: list[tuple[float, float]] = []
+    seen: set[float] = set()
+    for k, v in value.items():
+        try:
+            q = float(k)
+        except (TypeError, ValueError):
+            out.append(f"quantile level {k!r} is not a number")
+            continue
+        if not math.isfinite(q) or not 0.0 < q < 1.0:
+            out.append(f"quantile level {k!r} is outside (0, 1)")
+            continue
+        if q in seen:
+            out.append(f"quantile level {k!r} appears twice")
+            continue
+        seen.add(q)
+        if not _finite(v):
+            out.append(f"quantile {k!r} carries a non-finite value {v!r}")
+            continue
+        levels.append((q, float(v)))
+    levels.sort()
+    for (q0, v0), (q1, v1) in zip(levels, levels[1:], strict=False):
+        if v1 < v0:
+            out.append(f"quantiles cross: q{q0:g}={v0:g} is above q{q1:g}={v1:g}; a "
+                       "distribution's quantiles are non-decreasing in the level")
+    return out
+
+
 def defects(b: Belief) -> list[str]:
     """Every reason this belief cannot be scored. Empty list means publishable.
 
@@ -129,10 +168,7 @@ def defects(b: Belief) -> list[str]:
         if not _finite(b.value):
             out.append("a MAGNITUDE belief must carry a finite real value")
     elif b.kind == "DISTRIBUTION":
-        ok = isinstance(b.value, dict) and b.value and all(
-            _finite(k if _finite(k) else float(k)) and _finite(v) for k, v in b.value.items())
-        if not ok:
-            out.append("a DISTRIBUTION belief must carry {quantile: value} with numeric keys")
+        out.extend(quantile_defects(b.value))
     if b.confidence is not None and (not _finite(b.confidence)
                                     or not 0.0 <= float(b.confidence) <= 1.0):
         out.append("confidence, when given, is a probability in [0, 1] and is scored too: a "
