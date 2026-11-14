@@ -85,9 +85,14 @@ def load_shadow() -> dict:
 
 
 def save_sleeves(sleeves: list[dict]) -> None:
-    SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SLEEVES_FILE.write_text(json.dumps({"sleeves": sleeves}, indent=2),
-                            encoding="utf-8")
+    """Through the promoter's own writer, never around it (audit of the replication door,
+    2026-10-14): `promoter.save_sleeves` applies the live policy and the replication LIVE door,
+    so this unscheduled side channel cannot write a LIVE row no door has asked about."""
+    research = str(BASE / "research")
+    if research not in sys.path:
+        sys.path.insert(0, research)
+    import promoter
+    promoter.save_sleeves(sleeves)
 
 
 def load_sleeves() -> list[dict]:

@@ -53,6 +53,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,21 @@ UNREACHED, STALE_SPEC = "UNREACHED", "STALE_SPEC"
 HELD_PLACEBO = "HELD_PLACEBO_ALARM"
 HELD_UNREPLICATED = "HELD_UNREPLICATED"
 HELD_MISMATCH = "HELD_REPLICATION_MISMATCH"
+
+#: THE CLOCK DOOR AND THE CAPITAL DOOR, SPLIT (coordinator ruling C, 2026-10-14). Measured that
+#: day: 127 certificates held clockless, 102 of them in families the replication lane has NO
+#: written rule for (clock_transition 76, cross_asset_residual 16, formula 10) -- UNMEASURED by
+#: construction, so held forever, so never gathering the forward evidence that could ever judge
+#: them. A forward clock deploys no capital, so a certificate whose family has no written rule
+#: now STARTS its clock, tagged `replication: UNMEASURED_NO_SPEC`; the requirement that matters
+#: for money moves to the promoter's LIVE door (`live_refusal`), where nothing unreplicated
+#: passes. MISMATCH and the placebo alarm still hold a clock, and a family WITH a written rule
+#: still waits for its REPLICATED verdict: a rule that can be checked is checked first.
+NO_SPEC = "UNMEASURED_NO_SPEC"
+#: The replication lane's own wording for "no written rule for this family"
+#: (replication_civilization.rule_for); read off a verdict when the lane did not publish its book.
+NO_SPEC_MARK = "no written specification in the spec book"
+REFUSED_UNREPLICATED = "REFUSED_UNREPLICATED"
 
 
 def _read(path: Path) -> Any:
@@ -144,6 +160,95 @@ def placebo_alarm(path: Path | None = None, now: datetime | None = None) -> dict
                     "not a reason to distrust an admission")}
 
 
+#: THE SCALP LANE'S OWN MARKERS (coordinator ruling, 2026-10-14). A `scalp_market` row names its
+#: lane, not a canon certificate: the literal "forward_clock", or `ten_gate:scalp.<its own name>`
+#: when scalp_gauntlet minted one. Matched on the row's exec AND the exact form, so no other lane's
+#: row can reach the exemption. The exemption itself holds only while live_policy bans the lane.
+SCALP_EXEC = "scalp_market"
+SCALP_CLOCK_MARKER = "forward_clock"
+SCALP_CERT_PREFIX = "ten_gate:scalp."
+
+
+def scalp_lane_marker(row: Mapping[str, Any]) -> bool:
+    if str(row.get("exec") or "") != SCALP_EXEC:
+        return False
+    cert = row.get("certificate")
+    if not isinstance(cert, str):
+        return False
+    name = str(row.get("name") or "")
+    return cert == SCALP_CLOCK_MARKER or (bool(name) and cert == f"{SCALP_CERT_PREFIX}{name}")
+
+
+def scalp_ban_stands(policy_file: Path | None = None) -> tuple[bool, str]:
+    """(True, why) while `live_policy`'s FILE bans `scalp_market` from live capital; (False, why)
+    when the ban is lifted or the policy file is absent or cannot be read -- then the replication
+    door applies to scalp rows, and with no SPEC_BOOK scalp rule they cannot replicate, so they
+    stay STANDBY (fail closed)."""
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from mt5desk.live_policy import POLICY_FILE, policy
+    except Exception as exc:
+        return False, f"live policy unreadable ({type(exc).__name__}: {exc})"
+    p = Path(policy_file or POLICY_FILE)
+    try:
+        pol = policy(p)
+    except Exception as exc:
+        return False, f"live policy unreadable ({type(exc).__name__}: {exc})"
+    if not p.exists():
+        # The gateway keeps its coded default ban; the DOOR reads an absent policy as unreadable
+        # (audit of door v4): no file, no written ban, so the exemption does not hold.
+        return False, f"{p.name} is absent"
+    if pol.source == "defaults":
+        return False, f"{p.name} is present but unreadable"
+    if SCALP_EXEC not in pol.banned_execs:
+        return False, f"live policy no longer bans {SCALP_EXEC}"
+    return True, f"{SCALP_EXEC} banned from live capital ({pol.source})"
+
+
+def scalp_refusal(policy_file: Path | None = None) -> str:
+    """"" while the scalp exemption holds; otherwise the refusal a scalp row gets at the door."""
+    ok, why = scalp_ban_stands(policy_file)
+    return "" if ok else (f"{REFUSED_UNREPLICATED}: scalp lane row -- {why}; no SPEC_BOOK scalp "
+                          f"replication rule exists, so the LIVE door applies and cannot pass it")
+
+
+def canon_certificate(row: Mapping[str, Any]) -> str:
+    """The canon certificate a sleeve row trades on, as the replication lane keys its verdicts, or
+    "" for a scalp lane marker / a row with none. Order: `principal_certificate`,
+    `canon_certificate` (the clock's enrolling certificate, written by the promoter), a
+    `{"cell": ...}` certificate, then the `certificate` string (the generic lane's key IS its
+    survivor key; a main-lane clock key is resolved by the caller)."""
+    if scalp_lane_marker(row):
+        return ""
+    cert = row.get("certificate")
+    cell = (str(cert.get("cell") or "") if isinstance(cert, Mapping)
+            else cert.strip() if isinstance(cert, str) else "")
+    return str(row.get("principal_certificate") or row.get("canon_certificate") or cell or "")
+
+
+#: MISMATCH reasons that disagree on DIRECTION, as replication_civilization writes them: the
+#: Sharpe or summed P&L of the other sign, or a rebuild with no fill at all.
+_SIGN_MARKS: tuple[str, ...] = ("SIGN", "NO fill")
+
+
+def _voids_waiver(reason: str) -> bool:
+    return any(m in reason for m in _SIGN_MARKS)
+
+
+@lru_cache(maxsize=1)
+def _current_metric_version() -> str:
+    """The replication lane's Sharpe metric version, read from the lane itself (never copied);
+    "" when the lane cannot be imported, and then every REPLICATED verdict is refused (fail
+    closed: a version that cannot be read cannot be shown current)."""
+    try:
+        from replication_civilization import SHARPE_METRIC_VERSION
+    except Exception:
+        return ""
+    return str(SHARPE_METRIC_VERSION)
+
+
 @dataclass
 class IntegrityGate:
     """Both facts, read once per pass, applied to every certificate that has no clock yet."""
@@ -151,6 +256,9 @@ class IntegrityGate:
     alarm: dict[str, Any] = field(default_factory=dict)
     verdicts: dict[str, dict[str, Any]] = field(default_factory=dict)
     replication_source: str = ""
+    #: The families the replication lane holds a written rule for, as it published them with its
+    #: verdict book; None when it published none (then only a recorded no-spec verdict counts).
+    spec_book: frozenset[str] | None = None
 
     @classmethod
     def load(cls, *, placebo: Path | None = None, verdicts: Path | None = None,
@@ -158,10 +266,72 @@ class IntegrityGate:
         vp = Path(verdicts or REPLICATION_VERDICTS)
         doc = _read(vp)
         rows = (doc.get("certificates") if isinstance(doc, dict) else None) or {}
+        book = doc.get("spec_book") if isinstance(doc, dict) else None
         return cls(alarm=placebo_alarm(placebo, now),
                    verdicts={str(k): v for k, v in rows.items() if isinstance(v, dict)},
                    replication_source=(vp.name if isinstance(doc, dict)
-                                       else f"{vp.name} absent"))
+                                       else f"{vp.name} absent"),
+                   spec_book=(frozenset(str(f) for f in book)
+                              if isinstance(book, list) and book else None))
+
+    def no_spec(self, certificate: str, family: Any) -> bool:
+        """True when the replication lane has NO written rule for this family: from its
+        published spec book, or from a recorded verdict that says so. Never from an absence."""
+        fam = str(family or "session_range_breakout")
+        if self.spec_book is not None:
+            return fam not in self.spec_book
+        row = self.verdicts.get(str(certificate)) or {}
+        return (str(row.get("verdict") or "") == UNMEASURED
+                and any(NO_SPEC_MARK in str(w) for w in (row.get("why") or [])))
+
+    def live_refusal(self, certificate: str, *, waived: bool = False,
+                     fingerprint: str | None = None) -> str | None:
+        """The capital door: None only when the certificate's latest verdict is REPLICATED for the
+        spec and metric in force, or the principal waived it by name and the lane has not since
+        found a SIGN disagreement.
+
+        FAILS CLOSED on everything else -- MISMATCH, UNMEASURED (no-spec families included),
+        never reached, an unreadable book, a REPLICATED verdict recorded under an older Sharpe
+        metric or (when the caller knows it) a different spec fingerprint -- because LIVE is where
+        money moves and an absent replication is not a clean one (L1.28a).
+
+        A waiver EXPIRES by itself: a REPLICATED verdict no longer needs it, and a MISMATCH whose
+        reasons say the rebuild disagrees in SIGN (or produced no fill, or gives no reason) voids
+        it. A size-only MISMATCH (Sharpe outside half-to-double, fills off by half) does not: the
+        principal waived the rebuild's precision, not the edge's direction (audit 2026-10-14)."""
+        row = self.verdicts.get(str(certificate))
+        if row is not None and str(row.get("verdict") or "") == MISMATCH:
+            reasons = [str(w) for w in (row.get("why") or [])]
+            why = "; ".join(reasons)[:200]
+            if not (waived and reasons and not any(_voids_waiver(w) for w in reasons)):
+                return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict MISMATCH"
+                        f"{f' ({why})' if why else ''}"
+                        f"{'; a SIGN mismatch voids the waiver' if waived else ''}")
+            return None
+        if waived:
+            return None
+        if row is None:
+            return (f"{REFUSED_UNREPLICATED}: {certificate} has no replication verdict "
+                    f"({self.replication_source or 'no verdict book'}); LIVE needs REPLICATED")
+        verdict = str(row.get("verdict") or UNMEASURED)
+        if verdict == REPLICATED:
+            metric = str(row.get("sharpe_metric_version") or "")
+            current = _current_metric_version()
+            if not current:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} REPLICATED, but the lane's "
+                        f"current Sharpe metric version is UNMEASURED (replication_civilization "
+                        f"not importable), so the verdict cannot be shown current")
+            if metric != current:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} was REPLICATED under Sharpe "
+                        f"metric {metric or 'unstamped'}, not {current}; the lane re-judges "
+                        f"stale-metric verdicts first")
+            if fingerprint is not None and str(row.get("fp") or "") != fingerprint:
+                return (f"{REFUSED_UNREPLICATED}: {certificate} was REPLICATED for a different "
+                        f"spec fingerprint ({STALE_SPEC}); LIVE needs a verdict on this spec")
+            return None
+        why = "; ".join(str(w) for w in (row.get("why") or []))[:200]
+        return (f"{REFUSED_UNREPLICATED}: {certificate} replication verdict {verdict}"
+                f"{f' ({why})' if why else ''}; LIVE needs REPLICATED")
 
     def replication(self, certificate: str, fingerprint: str) -> tuple[str, str]:
         row = self.verdicts.get(str(certificate))
@@ -186,6 +356,8 @@ class IntegrityGate:
         verdict, why = self.replication(certificate, fp)
         if verdict == REPLICATED:
             return None
+        if verdict != MISMATCH and self.no_spec(certificate, family):
+            return None             # paper clock starts; the LIVE door still refuses it
         if verdict == MISMATCH:
             return (f"{HELD_MISMATCH}: an independent rebuild from the written spec disagrees "
                     f"with the desk's implementation ({why})")
