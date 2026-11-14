@@ -107,8 +107,18 @@ def main() -> int:
     except ImportError:
         print("refresh_cost_fields: MetaTrader5 unavailable -- this organ runs on the desk box")
         return 2
-    if mt5.terminal_info() is None and not mt5.initialize():
+    from mt5desk.config import terminal_path
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch, and only on
+    # Fusion's account -- another broker's symbol_info is not this desk's cost.
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         print(f"refresh_cost_fields: terminal unavailable {mt5.last_error()}")
+        return 2
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        print(f"refresh_cost_fields: REFUSED, {why} -- writing nothing")
+        mt5.shutdown()
         return 2
     wanted = set(args.symbols) if args.symbols else None
     for attempt in range(3):

@@ -446,6 +446,9 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
+# the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
+desks/mt5/data/keyed_sources/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/
@@ -525,6 +528,7 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
+!desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
@@ -608,3 +612,7 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+
+# proposer_common.donate_per_family: the cells each converting producer has already charged
+# (one JSONL per source). Box state; losing it re-charges once, never under-counts.
+desks/mt5/data/donation_ledgers/
