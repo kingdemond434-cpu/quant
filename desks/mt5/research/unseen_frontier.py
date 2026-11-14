@@ -67,6 +67,10 @@ GRAPH = BASE / "data" / "hypothesis_graph.jsonl"
 AXIS_REPORT = BASE / "reports" / "AXIS_REGISTRY.json"
 OUT_REPORT = BASE / "reports" / "UNSEEN_FRONTIER.json"
 OUT_HISTORY = BASE / "data" / "unseen_frontier_history.jsonl"
+#: Words the intake uses and the desk's own tables cannot place, read by
+#: `vocabulary_proposer.py` (N9): ALIAS words map to a known mechanism, PROPOSED words stand as
+#: `proposed:<word>`. Read last, after the family table and the claim classes, never instead.
+ALIASES = BASE / "data" / "vocabulary_aliases.json"
 
 #: The box holding the live terminal has 8 GB and a dozen resident pythons. Every bound here says
 #: TOO_LARGE or TRUNCATED in the report rather than pretending the input was absent.
@@ -255,8 +259,47 @@ def species_key(mechanism: str, kinds: frozenset[str]) -> str:
     return hashlib.blake2b(payload.encode("utf-8"), digest_size=8).hexdigest()
 
 
+_LEARNT: dict[str, str] | None = None
+
+
+def learnt_words(path: Path | None = None) -> dict[str, str]:
+    """The proposer's words as one map, word -> mechanism (an alias's known mechanism, or
+    `proposed:<word>`). Absent or unreadable reads as no words, which changes nothing."""
+    try:
+        doc = json.loads((path or ALIASES).read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, str] = {}
+    for block in ("proposed", "aliases"):        # an alias wins over a proposal of the same word
+        b = doc.get(block) if isinstance(doc, dict) else None
+        if isinstance(b, dict):
+            out.update({str(k): str(v) for k, v in b.items() if k and v})
+    return out
+
+
+#: What `_LEARNT` was read from: (path, mtime_ns), or None when the file was absent. A long-lived
+#: caller re-reads the words when the proposer writes a new file, never more often.
+_LEARNT_KEY: tuple[str, int | None] | None = None
+
+
+def _aliases_key() -> tuple[str, int | None]:
+    try:
+        return str(ALIASES), ALIASES.stat().st_mtime_ns
+    except OSError:
+        return str(ALIASES), None
+
+
+def _learnt() -> dict[str, str]:
+    global _LEARNT, _LEARNT_KEY
+    key = _aliases_key()
+    if _LEARNT is None or key != _LEARNT_KEY:
+        _LEARNT, _LEARNT_KEY = learnt_words(), key
+    return _LEARNT
+
+
 def mechanism_of(family: Any = None, tags: Any = None, mech_class: Any = None) -> str:
-    """Family table first, then a tag that is itself a family, then the coarse claim class."""
+    """Family table first, then a tag that is itself a family, then the coarse claim class, and
+    only then a word the vocabulary proposer learnt from the intake (N9)."""
     if family:
         named = classify_family(family)
         if named != UNKNOWN:
@@ -268,7 +311,16 @@ def mechanism_of(family: Any = None, tags: Any = None, mech_class: Any = None) -
         mapped = CLASS_MECHANISM.get(_tok(tag))
         if mapped:
             return mapped
-    return CLASS_MECHANISM.get(_tok(mech_class), UNKNOWN)
+    named = CLASS_MECHANISM.get(_tok(mech_class), UNKNOWN)
+    if named != UNKNOWN:
+        return named
+    learnt = _learnt()
+    if learnt:
+        for label in (family, *(tags if isinstance(tags, list | tuple) else ()), mech_class):
+            hit = learnt.get(_tok(label)) if label else None
+            if hit:
+                return hit
+    return UNKNOWN
 
 
 def _stamp(row: dict[str, Any]) -> str:
@@ -576,9 +628,13 @@ def _headline(block: dict[str, Any]) -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     """Read every ground, estimate every ground and every cell, and say what went unmeasured."""
+    global _LEARNT, _LEARNT_KEY
     note: dict[str, str] = {}
     stats: Counter[str] = Counter()
     vocab = vocabulary(note)
+    # this pass reads the proposer's latest words
+    _LEARNT, _LEARNT_KEY = learnt_words(), _aliases_key()
+    note[ALIASES.name] = (f"READ({len(_LEARNT)})" if ALIASES.exists() else "ABSENT")
     sightings, named_grounds = collect(note, stats)
     history = read_history(note)
 
@@ -632,6 +688,9 @@ def build() -> dict[str, Any]:
             "grounds_never_sampled": len(named_grounds - sampled_sites),
             "grounds_unmeasured": sorted(g for g, b in grounds.items() if not b["n"]),
             "mechanism_vocabulary": len(vocab),
+            "learnt_words": len(_LEARNT or {}),
+            "sightings_on_proposed_mechanisms": sum(
+                1 for s in sightings if s.mechanism.startswith("proposed:")),
             "mechanisms_outside_the_vocabulary": sorted(
                 {s.mechanism for s in sightings} - vocab - {UNKNOWN}) if vocab else [],
             "discovery_files_seen": int(stats["discovery_files_seen"]),
