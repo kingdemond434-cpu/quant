@@ -46,7 +46,6 @@ SKIP_HTTP = frozenset({401, 403})
 DEAD_AFTER_PASSES = 3
 VARIANT_GAP_S = 1.0
 TIMEOUT_S = 15.0
-WAYBACK = "https://archive.org/wayback/available?url="
 USER_AGENT = "quant-desk-source-fixer/1.0 (+public data collection; repairs registered routes)"
 
 
@@ -127,15 +126,17 @@ def _acceptable(expect: str, ctype: str, head: bytes) -> tuple[bool, str]:
     return len(head) >= 64, "non-empty body"
 
 
+#: Governance wayback-youtube-ruling-2026-11-14: the Internet Archive is refused for automated
+#: desk use ("scholarship and research purposes only"), so the fixer never asks it for a capture.
+WAYBACK_TERMS = ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research "
+                 "purposes only; missed_growth: a dead route's archived copy is no longer "
+                 "located for backfill (a gap, not a zero)")
+
+
 def _wayback(url: str) -> str | None:
-    try:
-        with urllib.request.urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
-                                    timeout=TIMEOUT_S) as r:
-            doc = json.loads(r.read().decode("utf-8", errors="replace"))
-    except (OSError, ValueError, urllib.error.URLError):
-        return None
-    snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
-    return str(snap.get("url")) if snap.get("available") and snap.get("url") else None
+    """REFUSED ON TERMS: no Wayback request is made; the refusal rides each result row."""
+    del url
+    return None
 
 
 def _failed_sources(registry_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -214,7 +215,7 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
             entry["dead_since"] = datetime.now(UTC).isoformat(timespec="seconds")
         results.append({"id": sid, "outcome": "STILL_DEAD" if not entry.get("dead_since")
                         else "DEAD", "failed_passes": entry["failed_passes"],
-                        "wayback_url": wb, "tried": tried,
+                        "wayback_url": wb, "wayback": WAYBACK_TERMS, "tried": tried,
                         "why": ("no variant answered with the declared shape; the newest "
                                 "archived copy is recorded for backfill, live collection stays "
                                 "dead until the route is corrected in the registry")})

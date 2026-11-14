@@ -15,6 +15,7 @@ import json
 import re
 import sys
 import time
+import urllib.parse
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -30,7 +31,26 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
+#: Hosts whose owners' terms refuse automated desk use (Governance rulings; no probe ever asks
+#: them again: a terms refusal lifts only on the owner's own terms or written permission).
+TERMS_REFUSED_HOSTS: dict[str, str] = {
+    "archive.org": ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and "
+                    "research purposes only (wayback-youtube-ruling-2026-11-14)"),
+}
+
+
+def terms_refusal(url: str) -> str | None:
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    for h, why in TERMS_REFUSED_HOSTS.items():
+        if host == h or host.endswith("." + h):
+            return why
+    return None
+
+
 def fetch(url: str, as_json: bool = False, timeout: int = 20):
+    why = terms_refusal(url)
+    if why:
+        raise PermissionError(why)
     time.sleep(1.0)
     r = requests.get(url, headers=HEADERS, timeout=timeout)
     r.raise_for_status()
@@ -72,7 +92,19 @@ def _state() -> dict:
 #   ANTIBOT_CHALLENGE / HTTP_403 -- the server refused the request. Solving or evading a
 #                      challenge is circumventing an access control and is out of bounds, so
 #                      the only legitimate move is to ask again, rarely, in case it lifts.
+_WAYBACK_EVIDENCE = ("Governance wayback-youtube-ruling-2026-11-14: the Internet Archive's terms "
+                     "limit use to scholarship and research purposes only, so its CDX index is "
+                     "not mined for a trading desk. Held rows stay, labelled source=wayback. "
+                     "missed_growth: the dead-index enumeration this miner did is lost; a gap, "
+                     "not a zero.")
 SOURCE_WALLS: dict[str, dict] = {
+    # --- terms refusals: never re-probed (the probe is the owner's terms, not the network) ---
+    "darwinex": {"verdict": "TERMS_REFUSED", "host": "web.archive.org",
+                 "evidence": _WAYBACK_EVIDENCE, "probe": "terms",
+                 "url": "https://web.archive.org/cdx/search/cdx", "since": "2026-11-14"},
+    "forextsd_cdx": {"verdict": "TERMS_REFUSED", "host": "web.archive.org",
+                     "evidence": _WAYBACK_EVIDENCE, "probe": "terms",
+                     "url": "https://web.archive.org/cdx/search/cdx", "since": "2026-11-14"},
     # --- added 2026-09-01 after measuring each host directly -------------------------------
     # robots.txt was READ FIRST for all three (that is always permitted and is what it is for).
     # None names ClaudeBot/Anthropic and none carries a wildcard Disallow: /, so these are
@@ -186,6 +218,10 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
 
 def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
     """Ask once whether a wall has lifted. Returns (lifted, note)."""
+    if wall.get("probe") == "terms":
+        # A terms refusal is lifted by the owner's own terms or written permission, never by a
+        # request: no network call is made here.
+        return False, "refused on the owner's terms; no request sent"
     if wall.get("probe") == "robots":
         if _robots_still_disallows(wall["host"], wall.get("ua_token", "*")):
             return False, f"robots.txt still disallows {wall.get('ua_token')}"

@@ -86,6 +86,10 @@ TERMS_REFUSED_HOSTS: dict[str, str] = {
     "comtradeapi.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
     "stlouisfed.org": "FRED terms refuse automated use (Governance ruling 2026-11-13)",
     "finance.yahoo.com": "Yahoo terms s.2(d)(ix) forbid automated collection (ruling 2026-11-13)",
+    "archive.org": ("Internet Archive terms limit use to scholarship and research purposes only "
+                    "(wayback-youtube-ruling-2026-11-14)"),
+    "youtube.com": "the desk never contacts YouTube (no-YouTube rule; ruling 2026-11-14)",
+    "youtu.be": "the desk never contacts YouTube (no-YouTube rule; ruling 2026-11-14)",
 }
 
 
