@@ -33,7 +33,6 @@ on:
       - "!logs/**"
       - "!web/**"
       - "!docs/**"
-      - "!backups/**"
       - "!context/decision_journal.jsonl"
       - "!desks/mt5/docs/TRADE_PATH_REPORT.md"
       - "!desks/mt5/gateway_state.json"
