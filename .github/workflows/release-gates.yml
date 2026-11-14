@@ -97,6 +97,9 @@ jobs:
             /data/*.json
             # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
             /desks/mt5/research/admission_integrity.py
+            # the signal leg (replay_child --signals): the family code imports research/ (hunt16,
+            # the orthogonal inputs) exactly as on the box, where research/ is always present
+            /desks/mt5/research/*.py
             /pyproject.toml
           persist-credentials: false
 
@@ -116,6 +119,9 @@ jobs:
             /data/*.json
             # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
             /desks/mt5/research/admission_integrity.py
+            # the signal leg (replay_child --signals): the family code imports research/ (hunt16,
+            # the orthogonal inputs) exactly as on the box, where research/ is always present
+            /desks/mt5/research/*.py
           persist-credentials: false
 
       - uses: actions/setup-python@v5

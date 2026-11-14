@@ -29,7 +29,7 @@ import sys
 import traceback
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from unittest import mock
 
 #: Module attributes the book reads and writes its own files through.
@@ -524,7 +524,1034 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------------------------
+# THE SIGNAL LEG (2026-11-13). The scenario legs above stub the family code out (the FTMO leg's
+# `families.get_family_func` is a fixed stub), so a change to a family module was money path the
+# replay never ran: UNMEASURED, every time, whatever it did. This leg runs EVERY family the desk
+# can resolve, through the two resolvers the order path uses (`executables.resolve_family`, the
+# gateway's; `families.get_family_func`, the prop executors') and the call the forward clock and
+# the live executor share (`family_call.signals`, `family_call.hunt16_signals`), over a fixed grid
+# of synthetic H1 frames, both sides, with its default parameters and its grid's first point.
+# What each call decided (a digest of every signal's time, side, stop, target, ttl and the rest of
+# the record) is compared between the trees by replay_shadow.signal_problems.
+#
+# IT ALSO RECORDS WHICH LINES RAN. Importing a module proves nothing about the change inside it,
+# so the parent counts a changed family-path file as measured only when every changed statement
+# executed inside a call that returned on BOTH trees and was compared (replay_shadow.
+# signal_measured). The lines are traced only in the files the parent names (`trace`), so the
+# cost is one cheap global hook per Python call.
+
+#: The frames: symbol x price shape, each SIGNAL_BARS closed H1 bars ending on a fixed day.
+SIGNAL_SYMBOLS = {"XAUUSD": 4300.0, "EURUSD": 1.10}
+SIGNAL_SHAPES = ("range", "up_break", "down_break", "wide", "gap")
+SIGNAL_BARS = 1500
+SIGNAL_END = "2026-10-15 23:00"
+#: One call's budget. A call past it is recorded as a timeout and none of its lines count.
+SIGNAL_CALL_S = 60
+
+
+#: pandas frequencies of the charts a certificate can name (`timeframe`, absent means H1).
+TF_FREQ = {"M1": "min", "M5": "5min", "M15": "15min", "M30": "30min", "H1": "h", "H4": "4h",
+           "D1": "D"}  # fmt: skip
+
+
+def symbol_price(symbol: str) -> float:
+    """A plausible, deterministic price level for any symbol (the two grid symbols keep theirs)."""
+    import zlib
+
+    if symbol in SIGNAL_SYMBOLS:
+        return SIGNAL_SYMBOLS[symbol]
+    s = symbol.upper()
+    if s.endswith("JPY") or s.endswith("HUF"):
+        return 150.0
+    if len(s) == 6 and s.isalpha():
+        return 0.6 + (zlib.crc32(s.encode()) % 900) / 1000.0
+    return 50.0 + zlib.crc32(s.encode()) % 5000
+
+
+def signal_frame(
+    symbol: str, shape: str, *, end: Any = None, n: int = SIGNAL_BARS, tf: str = "H1"
+) -> Any:
+    """`n` bars of chart `tf` for `symbol` in `shape` ending at `end` (default SIGNAL_END),
+    deterministic in (symbol, shape) -- the grid's own frames are exactly what they were -- with
+    the columns a terminal's rates carry (tick_volume, spread, real_volume)."""
+    import pandas as pd
+
+    rng = random.Random(f"signal:{symbol}:{shape}")  # noqa: S311 -- a price path, not a secret
+    base = symbol_price(symbol)
+    unit = base / 1000.0
+    stop = pd.Timestamp(SIGNAL_END if end is None else end)
+    stop = stop.tz_localize("UTC") if stop.tzinfo is None else stop.tz_convert("UTC")
+    freq = TF_FREQ.get(str(tf).upper(), "h")
+    idx = pd.date_range(end=stop.floor(freq), periods=int(n), freq=freq)
+    px, rows = base, []
+    for i, t in enumerate(idx):
+        step = rng.gauss(0.0, (9.0 if shape == "wide" else 3.0) * unit)
+        if shape == "up_break" and i % 120 > 100:
+            step = abs(step) + 4.0 * unit
+        elif shape == "down_break" and i % 120 > 100:
+            step = -abs(step) - 4.0 * unit
+        elif shape == "gap" and t.hour == 0 and t.dayofweek == 0:
+            step += 40.0 * unit
+        elif shape == "range":
+            step *= 0.3
+        o = px
+        px = max(base / 10.0, px + step)
+        span = abs(rng.gauss(0.0, 1.5 * unit))
+        rows.append(
+            {
+                "open": round(o, 6),
+                "high": round(max(o, px) + span, 6),
+                "low": round(min(o, px) - span, 6),
+                "close": round(px, 6),
+                "tick_volume": rng.randint(100, 5000),
+                "spread": rng.randint(1, 30),
+                "real_volume": 0,
+            }
+        )
+    return pd.DataFrame(rows, index=idx)
+
+
+def signal_record(sig: Any) -> Any:
+    """One signal as plain data: every field it carries, floats to 8 places, times as text."""
+    import dataclasses
+
+    if dataclasses.is_dataclass(sig) and not isinstance(sig, type):
+        raw: Any = dataclasses.asdict(sig)
+    elif isinstance(sig, dict):
+        raw = dict(sig)
+    elif hasattr(sig, "__dict__"):
+        raw = dict(vars(sig))
+    else:
+        raw = sig
+
+    def plain(v: Any) -> Any:
+        if isinstance(v, dict):
+            return {str(k): plain(x) for k, x in sorted(v.items(), key=lambda kv: str(kv[0]))}
+        if isinstance(v, list | tuple):
+            return [plain(x) for x in v]
+        if isinstance(v, bool) or v is None or isinstance(v, str):
+            return v
+        if isinstance(v, int):
+            return int(v)
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return str(v)
+        return None if f != f else round(f, 8)
+
+    return plain(raw)
+
+
+# ---------------------------------------------------------------------------------------------
+# FIXTURE INPUTS (2026-11-13). An input-hungry family (carry, the macro and COT families, the
+# peer/factor/driver families, world_macro_state, ensemble, regime_split) returns [] without its
+# inputs, so on bare bars its changed lines never ran and the file stayed UNMEASURED. The loaders
+# those families and `family_inputs.resolve` read (the parquet store, FRED, COT, the tape, the swap
+# terms, the world series store) are not on the runner, so they are REPLACED, identically on both
+# trees, by deterministic series shaped like what each returns. Every series is a function of its
+# own name and the index it is asked for, never of the tree. The resolver itself and the families
+# run unpatched: only the bottom-most reads are fixtures. A loader the tree does not have is
+# skipped (its family then refuses, the same on both trees, and its lines stay UNMEASURED).
+
+
+def _det(name: str) -> random.Random:
+    return random.Random(f"fixture:{name}")  # noqa: S311 -- a fixture series, not a secret
+
+
+def fixture_daily(name: str, index: Any, lo: float = 0.0, hi: float = 1.0) -> Any:
+    """A daily-stepped series on `index`, deterministic in (name, day)."""
+    import zlib
+
+    import pandas as pd
+
+    days = pd.DatetimeIndex(index).floor("D")
+    vals = [
+        lo + (hi - lo) * ((zlib.crc32(f"{name}:{d.date()}".encode()) % 1000) / 999.0) for d in days
+    ]
+    return pd.Series(vals, index=index, dtype=float)
+
+
+def fixture_weekly_cot(symbol: str, end: Any) -> Any:
+    """Raw weekly COT rows (report_date, commercial and non-commercial longs and shorts) and the
+    normalised `net` column, from 2015 to `end`: the two shapes the COT readers return."""
+    import pandas as pd
+
+    rng = _det(f"cot:{symbol}")
+    dates = pd.date_range("2015-01-02", pd.Timestamp(end).tz_localize(None), freq="W-FRI")
+    rows, net = [], 0.0
+    for d in dates:
+        net = max(-1.0, min(1.0, net + rng.gauss(0.0, 0.08)))
+        cl, cs = 100_000 + rng.randint(0, 50_000), 100_000 + rng.randint(0, 50_000)
+        nl, ns = 80_000 + rng.randint(0, 60_000), 80_000 + rng.randint(0, 60_000)
+        rows.append({"report_date": d.tz_localize("UTC") + pd.Timedelta(days=-3),
+                     "comm_positions_long_all": cl, "comm_positions_short_all": cs,
+                     "noncomm_positions_long_all": nl, "noncomm_positions_short_all": ns,
+                     "net": net})  # fmt: skip
+    frame = pd.DataFrame(rows, index=pd.DatetimeIndex(dates, tz="UTC"))
+    return frame
+
+
+def fixture_world_series(key: str) -> Any:
+    """A monthly official statistic for `key`, 2010 onwards: a slow cycle plus noise, stamped on
+    the instant it became knowable (the store's own shape)."""
+    import math
+
+    import pandas as pd
+
+    rng = _det(f"world:{key}")
+    idx = pd.date_range("2010-01-15", "2026-10-15", freq="MS", tz="UTC") + pd.Timedelta(days=14)
+    vals = [math.sin(i / 7.0) * 2.0 + rng.gauss(0.0, 0.6) for i in range(len(idx))]
+    return pd.Series(vals, index=idx, dtype=float, name=key)
+
+
+def fixture_swap_terms(symbol: str) -> dict[str, Any] | None:
+    """Recorded contract terms in POINTS mode (the mode `swap_money_per_lot` resolves): a
+    positive long carry on every symbol whose name sorts its legs one way, short otherwise.
+    No symbol has no terms (the store has no row for it), as on the box."""
+    if not str(symbol or "").strip():
+        return None
+    up = sum(map(ord, symbol.upper())) % 2 == 0
+    price = symbol_price(symbol)
+    return {"symbol": symbol.upper(), "swap_mode": 1, "swap_long": 6.5 if up else -9.0,
+            "swap_short": -9.0 if up else 6.5, "point": 0.001 if price > 20 else 0.00001,
+            "contract_size": 100.0 if price > 500 else 100_000.0, "digits": 5}  # fmt: skip
+
+
+class Fixtures:
+    """The fixture loaders, around one chart end: every peer, factor and driver frame ends where
+    the primary frame does, on the chart it is asked for, so the families' inner joins keep it."""
+
+    def __init__(self, end: Any, n: int) -> None:
+        self.end, self.n = end, n
+        self.installed: list[str] = []
+
+    def bars(self, symbol: str, timeframe: str = "H1") -> Any:
+        return signal_frame(str(symbol), "peer", end=self.end, n=self.n, tf=str(timeframe))
+
+    def macro(self, index: Any, name: str | None = None) -> Any:
+        return fixture_daily(f"macro:{name}", index)
+
+    def tape(self, symbol: str, index: Any, timeframe: str = "H1") -> tuple[Any, Any]:
+        return (fixture_daily(f"spread:{symbol}", index, 0.5, 3.0),
+                fixture_daily(f"flow:{symbol}", index, -1.0, 1.0))  # fmt: skip
+
+    def cot(self, symbol: str | None = None) -> Any:
+        return fixture_weekly_cot(str(symbol), self.end)[["net"]]
+
+    def raw_cot(self, symbol: str) -> Any:
+        return fixture_weekly_cot(str(symbol), self.end).reset_index(drop=True)
+
+    def events(self) -> Any:
+        import pandas as pd
+
+        return pd.date_range("2024-01-05 13:30", pd.Timestamp(self.end).tz_localize(None),
+                             freq="W-FRI", tz="UTC")  # fmt: skip
+
+    def install(self) -> list[str]:
+        """Point every loader the tree has at its fixture. Returns what was installed."""
+        import importlib
+
+        plan = (
+            ("research.orthogonal_sweep", "_bars", self.bars),
+            ("research.orthogonal_sweep", "_macro_series", self.macro),
+            ("research.orthogonal_sweep", "_cot_frame", self.cot),
+            ("research.orthogonal_sweep", "_tape_series", self.tape),
+            ("research.orthogonal_sweep", "_event_index", self.events),
+            ("mt5desk.families_orthogonal", "_swap_terms", fixture_swap_terms),
+            ("mt5desk.data", "load_cot", self.raw_cot),
+            ("research.world_dataset_hunter", "raw_world_series", fixture_world_series),
+        )
+        for mod_name, attr, fn in plan:
+            try:
+                mod = importlib.import_module(mod_name)
+            except Exception:  # a tree without the loader: its families refuse alike
+                continue
+            if hasattr(mod, attr):
+                setattr(mod, attr, fn)
+                self.installed.append(f"{mod_name}.{attr}")
+        return self.installed
+
+
+#: The price shapes a certificate is run on (its own symbol, its own chart, both sides).
+CERT_SHAPES = ("up_break", "wide")
+#: A certificate's frame: long enough for the slowest warm-ups (an ensemble wants 120 days of
+#: bars, a regime label a trailing year of days); the fixture peers are longer still.
+CERT_BARS = 6000
+FIXTURE_BARS = 8000
+
+
+def fixture_runner(fixtures: Fixtures) -> Any:
+    """An ensemble's member runner when `family_inputs.resolve` cannot build the real one (it
+    reads data/universe/, which the runner does not check out): each member is run through the
+    desk's own resolver and call, on the member's fixture bars."""
+
+    def run(symbol: str, family: str, params: dict[str, Any], df: Any) -> list[Any]:
+        from mt5desk import executables, family_call, family_inputs
+
+        fn = executables.resolve_family(family)
+        if fn is None:
+            return []
+        call = family_inputs.runtime_call_params(family, params)
+        extra, _why = family_inputs.resolve(symbol, family, params, df)
+        if extra is None:
+            return []
+        call.update(extra)
+        return family_call.signals(fn, df, side=1, params=call)
+
+    return run
+
+
+def cert_call(
+    fixtures: Fixtures, family: str, symbol: str, params: dict[str, Any], df: Any, side: int
+) -> tuple[list[Any], dict[str, Any]]:
+    """One certified cell, called the way the gateway and the forward clock call it: params
+    stripped of identity keys, inputs rebuilt by `family_inputs.resolve` (whose loaders are the
+    fixtures), then `family_call.signals`. Returns (signals, how the inputs were built)."""
+    from mt5desk import executables, family_call, family_inputs
+
+    fn = executables.resolve_family(family)
+    if fn is None:
+        raise LookupError(f"no constructor for {family}")
+    call = family_inputs.runtime_call_params(family, params)
+    extra, why = family_inputs.resolve(symbol, family, params, df)
+    how = {"inputs": "resolve", "why": str(why)[:80]}
+    if extra is None and family == "ensemble":
+        extra, how = {"_runner": fixture_runner(fixtures)}, {"inputs": "fixture_runner"}
+    if extra is None:
+        return [], {"inputs": "refused", "why": str(why)[:80]}
+    call.update(extra)
+    return family_call.signals(fn, df, side=side, params=call), how
+
+
+class _CallTimeout(BaseException):
+    """Raised by the alarm inside a family call: a BaseException, so no family's own
+    `except Exception` can swallow it."""
+
+
+def signal_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
+    import hashlib
+    import os
+    import signal as _signal
+
+    stub = types.ModuleType("MetaTrader5")
+    stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
+    sys.modules["MetaTrader5"] = stub
+    sys.path[:0] = [str(tree), str(tree / "desks" / "mt5")]
+    os.environ.pop("QUANT_PROP_ACCOUNT", None)
+    root = str(tree) + os.sep
+    traced = {str((tree / p).resolve()): p for p in spec.get("trace") or []}
+    lines: dict[str, dict[str, set[int]]] = {}
+    bucket: dict[str, Any] = {"key": "<import>"}
+
+    def local(frame: Any, event: str, arg: Any) -> Any:
+        if event == "line":
+            rel = traced[frame.f_code.co_filename]
+            lines.setdefault(bucket["key"], {}).setdefault(rel, set()).add(frame.f_lineno)
+        return local
+
+    def hook(frame: Any, event: str, arg: Any) -> Any:
+        if frame.f_code.co_filename in traced:
+            return local(frame, event, arg)
+        return None
+
+    def on_alarm(signum: int, frame: Any) -> None:
+        raise _CallTimeout
+
+    _signal.signal(_signal.SIGALRM, on_alarm)
+    import pandas  # noqa: F401 -- imported outside the trace: not repository code
+
+    sys.settrace(hook)
+    try:
+        from mt5desk import executables, families, family_call
+
+        names = sorted(set(families.live_family_names()))
+        fixtures = Fixtures(SIGNAL_END, FIXTURE_BARS)
+        installed = fixtures.install()
+    finally:
+        sys.settrace(None)
+    frames = {f"{s}/{sh}": signal_frame(s, sh) for s in SIGNAL_SYMBOLS for sh in SIGNAL_SHAPES}
+    hunt16 = executables.hunt16_families()
+    calls: dict[str, Any] = {}
+
+    def run(key: str, fn: Any) -> None:
+        bucket["key"] = key
+        _signal.setitimer(_signal.ITIMER_REAL, SIGNAL_CALL_S)
+        sys.settrace(hook)
+        try:
+            got = fn()
+            sigs, how = got if isinstance(got, tuple) else (got, None)
+            rec = [signal_record(x) for x in sigs]
+            # how a certified cell's inputs were built is part of what it decided
+            blob = json.dumps([how, rec] if how is not None else rec, sort_keys=True, default=str)
+            calls[key] = {
+                "n": len(rec),
+                "digest": hashlib.sha256(blob.encode()).hexdigest(),
+                "first": rec[:2],
+            }
+            if how is not None:
+                calls[key]["how"] = how
+        except _CallTimeout:
+            calls[key] = {"timeout": True}
+            lines.pop(key, None)
+        except Exception as exc:  # the verdict IS the exception type: compared, lines dropped
+            calls[key] = {"error": type(exc).__name__, "detail": str(exc)[:160]}
+            lines.pop(key, None)
+        finally:
+            sys.settrace(None)
+            _signal.setitimer(_signal.ITIMER_REAL, 0)
+
+    for name in names:
+        resolvers: dict[str, Any] = {}
+        for tag, get in (
+            ("gateway", executables.resolve_family),
+            ("executor", families.get_family_func),
+        ):
+            try:
+                fn = get(name)
+            except Exception as exc:
+                calls[f"{name}|{tag}|resolve"] = {"error": type(exc).__name__}
+                continue
+            if fn is None:
+                calls[f"{name}|{tag}|resolve"] = {"error": "None"}
+                continue
+            if any(fn is f for f in resolvers.values()):
+                continue  # the same constructor: one set of calls
+            resolvers[tag] = fn
+        for tag, fn in resolvers.items():
+            is_h16 = hunt16.get(name) is fn
+            param_sets: list[dict[str, Any]] = [{}]
+            if not is_h16:
+                try:
+                    grid = families.get_param_grid(name) or {}
+                    first = {k: v[0] for k, v in grid.items() if isinstance(v, list) and v}
+                except Exception:
+                    first = {}
+                if first:
+                    param_sets.append(first)
+            for fk, df in frames.items():
+                for side in (1, -1):
+                    for params in param_sets:
+                        pkey = json.dumps(params, sort_keys=True, default=str)
+                        key = f"{name}|{tag}|{fk}|{side}|{pkey}"
+                        if is_h16:
+                            run(
+                                key,
+                                lambda f=fn, d=df, s=side: family_call.hunt16_signals(
+                                    f, d.copy(), s
+                                ),
+                            )
+                        else:
+                            run(
+                                key,
+                                lambda f=fn, d=df, s=side, p=params: family_call.signals(
+                                    f, d.copy(), side=s, params=dict(p)
+                                ),
+                            )
+
+    # THE CERTIFIED CELLS (2026-11-13): each family with the params its certificates carry
+    # (`certs`, read by the parent from the BASE's books, so both trees run the same cells), on
+    # its own symbol and chart, with its inputs rebuilt through `family_inputs.resolve` from the
+    # fixture loaders. The bare calls above hand an input-hungry family nothing, so it returned []
+    # and its changed lines never ran.
+    for i, cert in enumerate(spec.get("certs") or []):
+        family, sym = str(cert.get("family")), str(cert.get("symbol") or "EURUSD")
+        params = dict(cert.get("params") or {})
+        tf = str(params.get("timeframe") or "H1").upper()
+        try:
+            from mt5desk import executables as _ex
+            from mt5desk.family_call import accepts_side
+
+            fn0 = _ex.resolve_family(family)
+            # a family that takes no side is only ever traded LONG (the gateway refuses the
+            # SHORT row by name, `wrong_side`), so its SHORT call would only re-raise TypeError
+            sides = (1, -1) if fn0 is not None and accepts_side(fn0) else (1,)
+        except Exception:
+            sides = (1, -1)
+        for shape in CERT_SHAPES:
+            df = signal_frame(sym, shape, tf=tf, n=CERT_BARS)
+            for side in sides:
+                key = f"{family}|cert{i}|{sym}@{tf}/{shape}|{side}"
+                run(
+                    key,
+                    lambda f=family, sy=sym, p=params, d=df, s=side: cert_call(
+                        fixtures, f, sy, p, d.copy(), s
+                    ),
+                )
+
+    files = (getattr(m, "__file__", None) for m in list(sys.modules.values()))
+    imported = sorted(
+        {str(Path(f).resolve()) for f in files if f and str(Path(f).resolve()).startswith(root)}
+    )
+    out_path.write_text(
+        json.dumps(
+            {
+                "names": names,
+                "fixtures": installed,
+                "calls": calls,
+                "lines": {k: {f: sorted(v) for f, v in d.items()} for k, d in lines.items()},
+                "imported": imported,
+            },
+            default=str,
+        ),
+        "utf-8",
+    )
+    return 0
+
+
+# ---------------------------------------------------------------------------------------------
+# THE FUSION GATEWAY LEG (2026-11-13). The scenario legs replay the E8 book and the FTMO lane;
+# the Fusion gateway (`mt5desk/gateway.py`, and `fusion_rails`, `order_door`, `cross_account`,
+# `decision_core` as it calls them) turns sleeves into orders on the live account and was money
+# path the replay never ran. This leg runs the gateway's own family lane exactly as `main` drives
+# it -- `resolve_family_order` for every family sleeve (pricing it before the cap), the heat cap
+# (`cap_by_heat`), then `run_family_sleeves`, ARMED, against a FAKE terminal whose `order_send`
+# only records -- for a fixed set of sleeves (the certified cells the parent read from the base's
+# books, sized at a fixed fraction), over a fixed run of passes on a frozen clock, from two
+# account states (flat; holding a long and a short). What each pass intended (every resolved
+# plan, what the cap admitted, every request that reached `order_send`) is the pass's decision.
+#
+# NOTHING TOUCHES THE TREE: the leg runs on a COPY of the files the CI job checks out, in its
+# working directory, with MT5_DESK_ROOT pointed at the copy, so every state, journal and ledger
+# file the gateway writes lands in the copy. Lines are traced in the copy and reported under
+# their repository paths, with the same per-pass buckets the signal leg uses.
+
+#: What the CI job checks out (release-gates.yml): the copy holds exactly this, here and there.
+GATEWAY_COPY = (
+    "libs", "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research/*.py", "desks/mt5/*.py",
+    "desks/mt5/data/*.json", "desks/mt5/reports/*.json", "data/*.json", "pyproject.toml",
+)  # fmt: skip
+#: Passes per account state, an hour apart, ending at the parent's frozen anchor
+#: (replay_shadow.GATEWAY_ANCHOR, a fixed weekday at 14:10 UTC).
+GATEWAY_PASSES = 24
+#: The fixed account the fake terminal reports, and the fraction every fixture sleeve asks.
+GATEWAY_EQUITY = 100_000.0
+GATEWAY_RISK_FRAC = 0.005
+#: One pass's budget (every sleeve, the cap and the executor).
+GATEWAY_PASS_S = 240
+
+
+def copy_tree(tree: Path, dest: Path) -> Path:
+    """The CI job's file set of `tree`, copied to `dest` (no caches)."""
+    import glob
+    import shutil
+
+    for pat in GATEWAY_COPY:
+        for src in sorted(glob.glob(str(tree / pat))):
+            rel = Path(src).relative_to(tree)
+            to = dest / rel
+            if Path(src).is_dir():
+                shutil.copytree(src, to, dirs_exist_ok=True,
+                                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))  # fmt: skip
+            else:
+                to.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, to)
+    return dest
+
+
+class _Unknown:
+    """A terminal attribute the fake does not model: a stable constant that, called, answers
+    None (the terminal's own "unavailable"). Its text never carries an address, so it cannot
+    make two identical trees disagree."""
+
+    def __init__(self, name: str) -> None:
+        import zlib
+
+        self.name, self.value = name, 900_000 + zlib.crc32(name.encode()) % 100_000
+
+    def __call__(self, *a: Any, **k: Any) -> None:
+        return None
+
+    def __int__(self) -> int:
+        return self.value
+
+    def __index__(self) -> int:
+        return self.value
+
+    def __eq__(self, other: object) -> bool:
+        return other is self or other == self.value
+
+    def __hash__(self) -> int:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"<mt5.{self.name}>"
+
+
+class FusionTerminal:
+    """A fake Fusion terminal: one fixed account, fixed contract terms per symbol, the scenario's
+    positions, a tick and closed bars on the frozen clock. `order_send` records and answers DONE;
+    nothing leaves the process."""
+
+    TIMEFRAMES: ClassVar[dict[str, int]] = {
+        "M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 16385, "H4": 16388, "D1": 16408,
+    }  # fmt: skip
+    CONSTANTS: ClassVar[dict[str, int]] = {
+        "ORDER_TYPE_BUY": 0, "ORDER_TYPE_SELL": 1, "ORDER_TYPE_BUY_LIMIT": 2,
+        "ORDER_TYPE_SELL_LIMIT": 3, "ORDER_TYPE_BUY_STOP": 4, "ORDER_TYPE_SELL_STOP": 5,
+        "TRADE_ACTION_DEAL": 1, "TRADE_ACTION_PENDING": 5, "TRADE_ACTION_SLTP": 6,
+        "TRADE_ACTION_MODIFY": 7, "TRADE_ACTION_REMOVE": 8, "TRADE_ACTION_CLOSE_BY": 10,
+        "ORDER_TIME_GTC": 0, "ORDER_TIME_DAY": 1, "ORDER_TIME_SPECIFIED": 2,
+        "ORDER_FILLING_FOK": 0, "ORDER_FILLING_IOC": 1, "ORDER_FILLING_RETURN": 2,
+        "POSITION_TYPE_BUY": 0, "POSITION_TYPE_SELL": 1, "DEAL_ENTRY_IN": 0, "DEAL_ENTRY_OUT": 1,
+        "DEAL_TYPE_BUY": 0, "DEAL_TYPE_SELL": 1, "TRADE_RETCODE_DONE": 10009,
+        "TRADE_RETCODE_PLACED": 10008, "SYMBOL_TRADE_MODE_FULL": 4,
+        "ACCOUNT_TRADE_MODE_DEMO": 0, "ACCOUNT_TRADE_MODE_REAL": 2,
+        "SYMBOL_FILLING_FOK": 1, "SYMBOL_FILLING_IOC": 2,
+    }  # fmt: skip
+
+    def __init__(self, clock: dict[str, Any], positions: list[dict[str, Any]]) -> None:
+        self.clock, self.positions, self.sent = clock, positions, []
+        self.last_close: dict[tuple[int, str], float] = {}
+
+    def module(self) -> types.ModuleType:
+        mod = types.ModuleType("MetaTrader5")
+        for k, v in self.CONSTANTS.items():
+            setattr(mod, k, v)
+        for k, v in self.TIMEFRAMES.items():
+            setattr(mod, f"TIMEFRAME_{k}", v)
+        for k in dir(self):
+            if not k.startswith("_") and callable(getattr(self, k)) and k != "module":
+                setattr(mod, k, getattr(self, k))
+        mod.__getattr__ = _Unknown  # type: ignore[method-assign]
+        return mod
+
+    def _now(self) -> Any:
+        return self.clock["now"]
+
+    def initialize(self, *a: Any, **k: Any) -> bool:
+        return True
+
+    def shutdown(self) -> None:
+        return None
+
+    def last_error(self) -> tuple[int, str]:
+        return (1, "ok")
+
+    def terminal_info(self) -> Any:
+        return types.SimpleNamespace(connected=True, trade_allowed=True, name="Fusion Replay",
+                                     company="Fusion Markets Replay", path="replay")  # fmt: skip
+
+    def account_info(self) -> Any:
+        return types.SimpleNamespace(login=7700001, server="FusionMarkets-Replay", currency="USD",
+                                     equity=GATEWAY_EQUITY, balance=GATEWAY_EQUITY,
+                                     margin=0.0, margin_free=GATEWAY_EQUITY, margin_level=0.0,
+                                     leverage=500, trade_mode=2, trade_allowed=True,
+                                     name="replay", company="Fusion Markets Replay")  # fmt: skip
+
+    def symbol_info(self, symbol: str) -> Any:
+        px = symbol_price(symbol)
+        big = px > 20
+        point = 0.01 if big else 0.00001
+        return types.SimpleNamespace(
+            name=symbol, visible=True, select=True, digits=2 if big else 5, point=point,
+            trade_contract_size=100.0 if px > 500 else 100_000.0, volume_min=0.01,
+            volume_step=0.01, volume_max=50.0, trade_tick_size=point,
+            trade_tick_value=1.0, trade_tick_value_loss=1.0,
+            trade_tick_value_profit=1.0, currency_profit="USD", currency_base=symbol[:3],
+            currency_margin=symbol[:3], spread=12, trade_stops_level=0, trade_freeze_level=0,
+            filling_mode=3, trade_mode=4, swap_mode=1, swap_long=-3.0, swap_short=1.0,
+            bid=self._mid(symbol) - point * 6, ask=self._mid(symbol) + point * 6,
+            trade_calc_mode=0, margin_initial=0.0,
+        )  # fmt: skip
+
+    def symbols_get(self, *a: Any, **k: Any) -> list[Any]:
+        return [self.symbol_info(s) for s in ("EURUSD", "XAUUSD", "GBPUSD", "USDJPY", "AUDJPY")]
+
+    def symbol_select(self, symbol: str, on: bool = True) -> bool:
+        return True
+
+    def _frame(self, symbol: str, tf: str, n: int) -> Any:
+        shape = SIGNAL_SHAPES[self.clock["pass"] % len(SIGNAL_SHAPES)]
+        return signal_frame(symbol, shape, end=self._now(), n=n, tf=tf)
+
+    def _mid(self, symbol: str) -> float:
+        """The close of the last bar this pass served for `symbol` (any chart), so the tick
+        agrees with the frame the signal was computed on; H1 before any was served."""
+        got = self.last_close.get((self.clock["pass"], symbol))
+        return got if got is not None else float(self._frame(symbol, "H1", 50)["close"].iloc[-1])
+
+    def symbol_info_tick(self, symbol: str) -> Any:
+        info_point = 0.01 if symbol_price(symbol) > 20 else 0.00001
+        mid = self._mid(symbol)
+        t = int(self._now().timestamp())
+        return types.SimpleNamespace(time=t, time_msc=t * 1000, bid=round(mid - 6 * info_point, 6),
+                                     ask=round(mid + 6 * info_point, 6), last=mid,
+                                     volume=1)  # fmt: skip
+
+    def copy_rates_from_pos(self, symbol: str, timeframe: int, start: int, count: int) -> Any:
+        import numpy as np
+
+        tf = next((k for k, v in self.TIMEFRAMES.items() if v == timeframe), "H1")
+        df = self._frame(symbol, tf, int(count) + int(start))
+        if start:
+            df = df.iloc[: -int(start)]
+        if len(df):
+            self.last_close[(self.clock["pass"], symbol)] = float(df["close"].iloc[-1])
+        rec = np.zeros(len(df), dtype=[("time", "<i8"), ("open", "<f8"), ("high", "<f8"),
+                                       ("low", "<f8"), ("close", "<f8"), ("tick_volume", "<u8"),
+                                       ("spread", "<i4"), ("real_volume", "<u8")])  # fmt: skip
+        rec["time"] = (df.index.asi8 // 10**9).astype("int64")
+        for c in ("open", "high", "low", "close", "tick_volume", "spread", "real_volume"):
+            rec[c] = df[c].to_numpy()
+        return rec
+
+    def copy_rates_range(self, symbol: str, timeframe: int, a: Any, b: Any) -> Any:
+        return self.copy_rates_from_pos(symbol, timeframe, 0, 400)
+
+    def positions_get(
+        self, symbol: str | None = None, group: str | None = None, ticket: int | None = None
+    ) -> tuple[Any, ...]:
+        out = [types.SimpleNamespace(**p) for p in self.positions]
+        if symbol:
+            out = [p for p in out if p.symbol == symbol]
+        if ticket:
+            out = [p for p in out if p.ticket == ticket]
+        return tuple(out)
+
+    def positions_total(self) -> int:
+        return len(self.positions)
+
+    def orders_get(self, *a: Any, **k: Any) -> tuple[Any, ...]:
+        return ()
+
+    def orders_total(self) -> int:
+        return 0
+
+    def history_deals_get(self, *a: Any, **k: Any) -> tuple[Any, ...]:
+        return ()
+
+    def history_orders_get(self, *a: Any, **k: Any) -> tuple[Any, ...]:
+        return ()
+
+    def order_calc_margin(self, typ: int, symbol: str, lot: float, price: float) -> float:
+        return float(lot) * symbol_price(symbol) * 1000.0 / 500.0
+
+    def order_calc_profit(self, typ: int, symbol: str, lot: float, a: float, b: float) -> float:
+        size = 100.0 if symbol_price(symbol) > 500 else 100_000.0
+        return (b - a if typ == 0 else a - b) * size * float(lot)
+
+    def order_check(self, req: dict[str, Any]) -> Any:
+        return types.SimpleNamespace(retcode=0, comment="Done", margin_free=GATEWAY_EQUITY)
+
+    def order_send(self, req: dict[str, Any]) -> Any:
+        self.sent.append(dict(req))
+        n = 50_000 + len(self.sent)
+        return types.SimpleNamespace(retcode=10009, order=n, deal=n, price=req.get("price"),
+                                     volume=req.get("volume"), comment="replay",
+                                     request_id=n)  # fmt: skip
+
+
+def gateway_positions(state: str, anchor: Any) -> list[dict[str, Any]]:
+    """The account state's open positions (none, or a long EURUSD and a short XAUUSD that no
+    fixture sleeve owns), opened a day before the anchor."""
+    if state == "flat":
+        return []
+    t = int(anchor.timestamp()) - 86_400
+    return [
+        {"ticket": 7001, "identifier": 7001, "symbol": "EURUSD", "type": 0, "volume": 0.05,
+         "price_open": 1.1, "sl": 1.095, "tp": 1.11, "price_current": 1.1, "profit": 0.0,
+         "swap": 0.0, "magic": 341953, "comment": "replay_other", "time": t,
+         "time_msc": t * 1000},
+        {"ticket": 7002, "identifier": 7002, "symbol": "XAUUSD", "type": 1, "volume": 0.02,
+         "price_open": 4300.0, "sl": 4340.0, "tp": 4240.0, "price_current": 4300.0,
+         "profit": 0.0, "swap": 0.0, "magic": 341953, "comment": "replay_other", "time": t,
+         "time_msc": t * 1000},
+    ]  # fmt: skip
+
+
+def gateway_sleeves(certs: list[dict[str, Any]], takes_side: Any) -> list[dict[str, Any]]:
+    """One LONG family-market sleeve per certified cell, and a SHORT one where the family takes
+    a side (`takes_side(family)`), at a fixed fraction (never the allocator's book, which the
+    runner does not hold)."""
+    out = []
+    for i, c in enumerate(certs):
+        params = dict(c.get("params") or {})
+        for side in ("LONG", "SHORT") if takes_side(str(c["family"])) else ("LONG",):
+            out.append({
+                "name": f"replay_{c['family']}_{i}_{side[0]}",
+                "symbol": str(c.get("symbol") or "EURUSD"), "family": str(c["family"]),
+                "params": params, "exec": "family_market", "lot": "auto_ramp",
+                "risk_frac": GATEWAY_RISK_FRAC, "status": "LIVE", "side": side,
+                "selector": "all", "timeframe": str(params.get("timeframe") or "H1"),
+            })  # fmt: skip
+    return out
+
+
+def _takes_side(family: str) -> bool:
+    try:
+        from mt5desk import executables
+        from mt5desk.family_call import accepts_side
+
+        fn = executables.resolve_family(family)
+        return fn is not None and bool(accepts_side(fn))
+    except Exception:
+        return False
+
+
+class _FROZEN_BASE:
+    """Marks the frozen datetime class (installed once per process)."""
+
+
+def _freeze(root: str, clock: dict[str, Any]) -> None:
+    """Every repository module's `datetime` and `time` read the pass's frozen instant."""
+    import datetime as _dt
+    import time as _time
+
+    real = _dt.datetime.__mro__[1] if issubclass(_dt.datetime, _FROZEN_BASE) else _dt.datetime
+
+    class Frozen(real, _FROZEN_BASE):  # type: ignore[misc,valid-type]
+        @classmethod
+        def now(cls, tz: Any = None) -> Any:  # type: ignore[override]
+            t = clock["now"].to_pydatetime()
+            return t.astimezone(tz) if tz is not None else t.replace(tzinfo=None)
+
+        @classmethod
+        def utcnow(cls) -> Any:  # type: ignore[override]
+            return clock["now"].to_pydatetime().replace(tzinfo=None)
+
+        @classmethod
+        def today(cls) -> Any:  # type: ignore[override]
+            return cls.now()
+
+    # a module the pass imports lazily (cross_account, fusion_rails) binds the frozen class too
+    if not issubclass(_dt.datetime, _FROZEN_BASE):
+        _dt.datetime = Frozen  # type: ignore[misc]
+    shim = types.SimpleNamespace(
+        **{k: getattr(_time, k) for k in dir(_time) if not k.startswith("__")}
+    )
+    shim.time = lambda: float(clock["now"].timestamp())
+    for m in list(sys.modules.values()):
+        f = getattr(m, "__file__", None)
+        if not isinstance(f, str) or not f.startswith(root):
+            continue
+        if getattr(m, "datetime", None) in (real, _dt.datetime):
+            m.datetime = Frozen  # type: ignore[attr-defined]
+        if getattr(m, "time", None) is _time:
+            m.time = shim  # type: ignore[attr-defined]
+
+
+def plan_record(plan: dict[str, Any]) -> dict[str, Any]:
+    """A resolved plan as decisions: prose (why, note, basis) and the live objects (sym, tick)
+    out; the signal as its record."""
+    import datetime as _dt
+
+    drop = {"why", "note", "basis", "sym", "tick", "leg_why", "macro_why", "sep"}
+    out = {
+        k: str(v) if isinstance(v, _dt.datetime) else signal_record(v)
+        for k, v in sorted(plan.items())
+        if k not in drop
+    }
+    if "signal" in plan:
+        out["signal"] = signal_record(plan["signal"])
+    return out
+
+
+def _age_files(copy: Path, at: float) -> None:
+    """Every data file in the copy (not its code: a .py mtime keys the bytecode cache) stamped
+    at the frozen instant `at`, so a freshness check that ages a file by `time.time() - mtime`
+    reads it on the frozen clock, not on when the copy was made (#1097 audit SF2)."""
+    import os
+
+    for p in copy.rglob("*"):
+        if p.suffix != ".py" and p.is_file():
+            os.utime(p, (at, at))
+
+
+def gateway_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
+    import hashlib
+    import os
+    import signal as _signal
+    import time as _time
+    from collections import Counter
+
+    import pandas as pd
+
+    real_time = _time.time
+    work = Path.cwd()
+    copy = copy_tree(tree, work / "tree")
+    desk = copy / "desks" / "mt5"
+    (desk / "logs").mkdir(parents=True, exist_ok=True)
+    (desk / "data").mkdir(parents=True, exist_ok=True)
+    (desk / "data" / "GENERIC_EXEC_ENABLED").write_text("replay", "utf-8")
+    os.environ["MT5_DESK_ROOT"] = str(desk)
+    # a throwaway account key, so the gateway can stamp the Fusion book it publishes
+    key_file = work / "fusion_account_key.hmac"
+    key_file.write_text("replay-fusion-gateway-leg".ljust(48, "0"), "utf-8")
+    os.environ["QUANT_ACCOUNT_KEY_FILE"] = str(key_file)
+    os.environ.pop("QUANT_PROP_ACCOUNT", None)
+    anchor = pd.Timestamp(spec["anchor"]).tz_convert("UTC")
+    clock: dict[str, Any] = {"now": anchor, "pass": 0}
+    term = FusionTerminal(clock, [])
+    sys.modules["MetaTrader5"] = term.module()
+    sys.path[:0] = [str(copy), str(desk)]
+    root = str(copy) + os.sep
+    traced = {str((copy / p).resolve()): p for p in spec.get("trace") or []}
+    lines: dict[str, dict[str, set[int]]] = {}
+    bucket: dict[str, Any] = {"key": "<import>"}
+
+    def local(frame: Any, event: str, arg: Any) -> Any:
+        if event == "line":
+            rel = traced[frame.f_code.co_filename]
+            lines.setdefault(bucket["key"], {}).setdefault(rel, set()).add(frame.f_lineno)
+        return local
+
+    def hook(frame: Any, event: str, arg: Any) -> Any:
+        if frame.f_code.co_filename in traced:
+            return local(frame, event, arg)
+        return None
+
+    def on_alarm(signum: int, frame: Any) -> None:
+        raise _CallTimeout
+
+    _signal.signal(_signal.SIGALRM, on_alarm)
+    fixtures = Fixtures(anchor, FIXTURE_BARS)
+    calls: dict[str, Any] = {}
+    sys.settrace(hook)
+    try:
+        from mt5desk import gateway as g
+
+        installed = fixtures.install()
+    except Exception as exc:  # compared: a tree whose gateway cannot import says so
+        sys.settrace(None)
+        calls["gateway|import"] = {"error": type(exc).__name__, "detail": str(exc)[:160]}
+        out_path.write_text(json.dumps({"names": [], "calls": calls, "lines": {},
+                                        "imported": []}), "utf-8")  # fmt: skip
+        return 0
+    finally:
+        sys.settrace(None)
+    sleeves0 = gateway_sleeves(spec.get("certs") or [], _takes_side)
+    for state in ("flat", "held"):
+        term.positions = gateway_positions(state, anchor)
+        st: dict[str, Any] = {"armed": True, "generic": {}, "brackets": {}}
+        for k in range(GATEWAY_PASSES):
+            clock["now"] = anchor - pd.Timedelta(hours=GATEWAY_PASSES - 1 - k)
+            clock["pass"] = k
+            _freeze(root, clock)
+            # the other accounts' books, fresh at the pass: E8 holds a GBPUSD long when the
+            # account is `held` (so the opposite-side fence has something to refuse)
+            xacct = desk / "data" / "xacct"
+            xacct.mkdir(parents=True, exist_ok=True)
+            for acct, syms in (("e8", {"GBPUSD": {"long": True, "short": False}}
+                                if state == "held" else {}), ("ftmo", {})):  # fmt: skip
+                (xacct / f"{acct}_book.json").write_text(
+                    json.dumps(
+                        {
+                            "account": acct,
+                            "covers": "all",
+                            "at": clock["now"].isoformat(),
+                            "symbols": syms,
+                            "account_key": "sha256:0123456789abcdef",
+                        }
+                    ),
+                    "utf-8",
+                )
+            _age_files(copy, float(clock["now"].timestamp()))
+            key = f"gateway|{state}|pass{k}"
+            bucket["key"] = key
+            sent0 = len(term.sent)
+            _signal.setitimer(_signal.ITIMER_REAL, GATEWAY_PASS_S)
+            # a function-local `import time` (allocator_proof's certificate age) binds the real
+            # module, which `_freeze` cannot reach: the module's own clock is frozen for the pass
+            _time.time = lambda: float(clock["now"].timestamp())
+            sys.settrace(hook)
+            try:
+                g.NEW_RISK_OK = True
+                g._DESK_STALE = None
+                sleeves = [json.loads(json.dumps(s)) for s in sleeves0]
+                pending: dict[str, float] = {}
+                plans: dict[str, Any] = {}
+                for s in sleeves:
+                    try:
+                        plan = g.resolve_family_order(st, s, GATEWAY_EQUITY, pending=pending)
+                    except Exception as exc:
+                        plan = {"ok": False, "stage": "resolve_failed",
+                                "error": type(exc).__name__}  # fmt: skip
+                    if plan.get("ok"):
+                        pending[s["symbol"]] = pending.get(s["symbol"], 0.0) + float(
+                            plan["side"]
+                        ) * float(plan["lot"])
+                        s["q_charge"] = g.realised_q(GATEWAY_EQUITY, plan["dist"], s["symbol"],
+                                                     plan["sym"], lot=plan["lot"])  # fmt: skip
+                        s["dist"] = plan["dist"]
+                    else:
+                        s["q_charge"] = 0.0
+                    s["pending_order"] = plan
+                    plans[s["name"]] = plan_record(plan)
+                admitted, _note = g.cap_by_heat(sleeves, GATEWAY_EQUITY)
+                g.run_family_sleeves(st, admitted, GATEWAY_EQUITY)
+                sent = [signal_record(r) for r in term.sent[sent0:]]
+                ok = [n for n, p in plans.items() if p.get("ok")]
+                rec = {
+                    "plans": plans,
+                    "admitted": sorted(str(s.get("name")) for s in admitted),
+                    "sent": sent,
+                }
+                blob = json.dumps(rec, sort_keys=True, default=str)
+                calls[key] = {
+                    "n": len(sent) + len(ok),
+                    "digest": hashlib.sha256(blob.encode()).hexdigest(),
+                    "first": (sent or [plans[n] for n in ok])[:2],
+                    # what the pass's sleeves came to, by stage (for the report, not compared)
+                    "stages": dict(
+                        sorted(Counter(str(p.get("stage")) for p in plans.values()).items())
+                    ),
+                }
+            except _CallTimeout:
+                calls[key] = {"timeout": True}
+                lines.pop(key, None)
+            except Exception as exc:  # the pass's verdict IS the exception: compared
+                calls[key] = {"error": type(exc).__name__, "detail": str(exc)[:160]}
+                lines.pop(key, None)
+            finally:
+                sys.settrace(None)
+                _signal.setitimer(_signal.ITIMER_REAL, 0)
+                _time.time = real_time
+    files = (
+        f for m in list(sys.modules.values())
+        if isinstance(f := getattr(m, "__file__", None), str)
+    )  # fmt: skip
+    imported = sorted(
+        {
+            # reported under the TREE's path, so the parent reads it as the tree's file
+            str(tree / Path(f).resolve().relative_to(copy.resolve()))
+            for f in files
+            if f and str(Path(f).resolve()).startswith(str(copy.resolve()) + os.sep)
+        }
+    )
+    out_path.write_text(
+        json.dumps(
+            {
+                "names": [s["name"] for s in sleeves0],
+                "fixtures": installed,
+                "calls": calls,
+                "lines": {k: {f: sorted(v) for f, v in d.items()} for k, d in lines.items()},
+                "imported": imported,
+            },
+            default=str,
+        ),
+        "utf-8",
+    )
+    return 0
+
+
 if __name__ == "__main__":
+    if sys.argv[1] == "--gateway":
+        raise SystemExit(
+            gateway_main(
+                Path(sys.argv[2]).resolve(),
+                json.loads(Path(sys.argv[3]).read_text()),
+                Path(sys.argv[4]),
+            )
+        )
+    if sys.argv[1] == "--signals":
+        raise SystemExit(
+            signal_main(
+                Path(sys.argv[2]).resolve(),
+                json.loads(Path(sys.argv[3]).read_text()),
+                Path(sys.argv[4]),
+            )
+        )
     raise SystemExit(
         main(
             Path(sys.argv[1]).resolve(),
