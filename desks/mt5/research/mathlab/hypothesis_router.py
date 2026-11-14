@@ -139,7 +139,7 @@ EXOTIC_SHARE = 0.10
 MAX_HYPOTHESES = 400
 #: Routing-log rows kept in MATH_LAB.json (the full count is in the status).
 MAX_LOG = 200
-#: The LLM lab's newest donation files read per pass.
+#: How many of the LLM lab's newest donation files each run reads.
 NEWEST_DONATION_FILES = 6
 
 
