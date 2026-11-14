@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T06:18:00Z",
+ "updated_at": "2026-11-14T07:28:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -469,6 +469,51 @@
    ],
    "separating_test": "residual tick-mid move beyond the broker's published roll adjustment versus the spread at the roll, and its 1h reversion",
    "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-752",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "traditions": [
+    "causal",
+    "stochastic_processes"
+   ],
+   "mechanism": "On US cash-market holidays and half-days (Thanksgiving 2026-11-26, half-day 2026-11-27), NY-session EURUSD and GBPUSD tick volatility may fall and 15-minute range reversion may clear costs, against matched non-holiday sessions. Separating test: a holiday dummy controlling for the count of scheduled releases in the session, with P&L net of the measured spread. Holiday calendar is hand-entered (no fetch); own broker ticks only; forward test first due 2026-11-26",
+   "falsifier": "the holiday dummy carries no loading on NY-session tick volatility or on net 15-minute range-reversion P&L once release count is controlled for",
+   "competing_explanations": [
+    "holiday liquidity drought",
+    "fewer scheduled releases"
+   ],
+   "separating_test": "holiday dummy versus release-count control on NY-session tick vol and net 15-minute range-reversion P&L, matched sessions",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-753",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "USDJPY"
+   ],
+   "traditions": [
+    "causal",
+    "change_point"
+   ],
+   "mechanism": "Falsifier for the existing Gotobi rows: if the USDJPY pre-9:55 JST flow is real corporate settlement, it must shift to the prior business day when the 5th/10th-multiple date falls on a Japanese holiday or weekend; a data-mined artefact stays on the nominal date or vanishes. Japanese holiday calendar is hand-entered (no fetch); own broker bars only. One test that kills or sharpens the existing Gotobi rows",
+   "falsifier": "the pre-9:55 JST USDJPY move does not shift to the prior business day on holiday- or weekend-displaced Gotobi dates",
+   "competing_explanations": [
+    "real settlement flow that follows the business-day convention",
+    "data-mined calendar artefact"
+   ],
+   "separating_test": "pre-9:55 JST USDJPY return on displaced Gotobi dates: prior business day versus nominal date",
+   "data_gate": ""
   }
  ]
 }
