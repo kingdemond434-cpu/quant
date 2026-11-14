@@ -84,7 +84,7 @@ class FakeApi:
         if method == "POST" and path.endswith("/pulls"):
             return {"number": 77}
         if method == "GET" and "/pulls?" in path:
-            return [*self.open_prs, {"number": 77, "head": {"ref": "box-state/vmi-x"}}]
+            return [*self.open_prs, {"number": 77, "head": {"ref": "box-state/box"}}]
         return None
 
     def of(self, method: str, suffix: str) -> list[tuple[str, str, Any]]:
@@ -136,7 +136,6 @@ def test_state_goes_by_pr_and_authority_keeps_its_route(tmp_path: Path) -> None:
         pending,
         api,
         "o/r",
-        host="VMI-X",
         now=datetime(2026, 11, 14, 12, 0, tzinfo=UTC),
         release=REL,
     )
@@ -156,10 +155,10 @@ def test_state_goes_by_pr_and_authority_keeps_its_route(tmp_path: Path) -> None:
     # no custom author or committer: GitHub makes the App both, and signs it (#1218 audit)
     assert "author" not in commit and "committer" not in commit
     ref = api.of("POST", "/git/refs")[0][2]
-    assert ref == {"ref": "refs/heads/box-state/vmi-x-20261114T120000Z", "sha": "newcommit"}
+    assert ref == {"ref": "refs/heads/box-state/box-20261114T120000Z", "sha": "newcommit"}
     pr = api.of("POST", "/pulls")[0][2]
     assert pr["draft"] is False and pr["base"] == bsp.LIVE
-    assert pr["head"] == "box-state/vmi-x-20261114T120000Z"
+    assert pr["head"] == "box-state/box-20261114T120000Z"
 
     # the direct commit carries ONLY the withheld path, over the same parent
     dc = out["direct_commit"]
@@ -175,7 +174,7 @@ def test_a_withheld_deletion_is_deleted_in_the_direct_commit(tmp_path: Path) -> 
         {"desks/mt5/data/HOLD_x.json": "{}", "keep.txt": "k"},
         {"desks/mt5/data/HOLD_x.json": None},
     )
-    out = bsp.publish(repo, pending, FakeApi(), "o/r", host="h", release=REL)
+    out = bsp.publish(repo, pending, FakeApi(), "o/r", release=REL)
     assert out["mode"] == "nothing" and out["pr_paths"] == []
     dc = out["direct_commit"]
     assert _git(repo, "ls-tree", "-r", "--name-only", dc) == "keep.txt"
@@ -184,24 +183,24 @@ def test_a_withheld_deletion_is_deleted_in_the_direct_commit(tmp_path: Path) -> 
 def test_nothing_new_against_live_opens_no_pr(tmp_path: Path) -> None:
     repo, _, pending = _repo(tmp_path, {"data/a.json": "1"}, {"data/a.json": "2"})
     api = FakeApi(same_tree=True)
-    out = bsp.publish(repo, pending, api, "o/r", host="h", release=REL)
+    out = bsp.publish(repo, pending, api, "o/r", release=REL)
     assert out["mode"] == "nothing" and out["pr"] is None and out["direct_commit"] is None
     assert not api.of("POST", "/git/commits") and not api.of("POST", "/pulls")
 
 
-def test_older_snapshots_from_this_host_are_closed_and_others_left(tmp_path: Path) -> None:
+def test_older_snapshots_with_this_tag_are_closed_and_others_left(tmp_path: Path) -> None:
     repo, _, pending = _repo(tmp_path, {"data/a.json": "1"}, {"data/a.json": "2"})
     api = FakeApi(
         open_prs=[
-            {"number": 70, "head": {"ref": "box-state/vmi-x-20261114T110000Z"}},
+            {"number": 70, "head": {"ref": "box-state/box-20261114T110000Z"}},
             {"number": 71, "head": {"ref": "box-state/other-20261114T110000Z"}},
             {"number": 72, "head": {"ref": "claude/some-feature"}},
         ]
     )
-    bsp.publish(repo, pending, api, "o/r", host="vmi-x", release=REL)
+    bsp.publish(repo, pending, api, "o/r", release=REL)
     assert [c[1] for c in api.of("PATCH", "/pulls/")] == ["repos/o/r/pulls/70"]
     assert [c[1] for c in api.of("DELETE", "/git/refs/")] == [
-        "repos/o/r/git/refs/heads/box-state/vmi-x-20261114T110000Z"
+        "repos/o/r/git/refs/heads/box-state/box-20261114T110000Z"
     ]
 
 
@@ -215,7 +214,7 @@ def test_a_pending_commit_with_two_parents_is_refused(tmp_path: Path) -> None:
     _git(repo, "merge", "-q", "--no-edit", "side")
     merge = _git(repo, "rev-parse", "HEAD")
     with pytest.raises(RuntimeError, match="one parent"):
-        bsp.publish(repo, merge, FakeApi(), "o/r", host="h", release=REL)
+        bsp.publish(repo, merge, FakeApi(), "o/r", release=REL)
 
 
 GATE_SRC = """
@@ -227,10 +226,15 @@ def merge_box_state(repo, pr):
 """
 
 
-def _gate(root: Path, src: str = GATE_SRC) -> Path:
+def _gate(root: Path, src: str = GATE_SRC, ci_skip: bool = True) -> Path:
     p = root / bsp.GATE
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(src, encoding="utf-8")
+    for w in bsp.CI_WORKFLOWS:
+        q = root / w
+        q.parent.mkdir(parents=True, exist_ok=True)
+        skip = "    if: ${{ !startsWith(github.head_ref, 'box-state/') }}\n" if ci_skip else ""
+        q.write_text(f"jobs:\n  quality:\n{skip}", encoding="utf-8")
     return root
 
 
@@ -280,3 +284,31 @@ def test_slug_reads_the_github_origin(tmp_path: Path) -> None:
     repo, _, _ = _repo(tmp_path, {"a.txt": "1"}, {"a.txt": "2"})
     _git(repo, "remote", "add", "origin", "https://github.com/kingdemond434-cpu/quant.git")
     assert bsp.slug(repo) == "kingdemond434-cpu/quant"
+
+
+def test_the_machine_name_never_reaches_the_public_repo(tmp_path: Path) -> None:
+    """#1219 audit MF: the branch, commit message and PR title are public; the host name stays
+    on the box. The program does not even read it."""
+    src = (ROOT / "ops/box/box_state_pr.py").read_text(encoding="utf-8")
+    assert "gethostname" not in src and "import socket" not in src
+    assert "COMPUTERNAME" not in src and "platform.node" not in src
+    repo, _, pending = _repo(tmp_path, {"data/a.json": "1"}, {"data/a.json": "2"})
+    with pytest.raises(ValueError):
+        bsp.publish(repo, pending, FakeApi(), "o/r", tag="VMI3571445.local", release=REL)
+
+
+def test_the_route_waits_for_both_workflows_to_skip_box_state_heads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def never(repo: Path) -> str:
+        raise AssertionError("no token is minted before CI skips box-state PRs")
+
+    monkeypatch.setattr(bsp, "mint_token", never)
+    _gate(tmp_path, ci_skip=False)
+    assert bsp.ci_skips_box_state(tmp_path) is False
+    assert bsp.main(["--repo", str(tmp_path), "--pending", "x"]) == 0
+    assert json.loads(capsys.readouterr().out)["mode"] == "no-ci-skip"
+    (tmp_path / bsp.CI_WORKFLOWS[0]).write_text("if: box-state/", encoding="utf-8")
+    assert bsp.ci_skips_box_state(tmp_path) is False  # one of two is not enough
+    _gate(tmp_path)
+    assert bsp.ci_skips_box_state(tmp_path) is True

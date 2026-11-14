@@ -23,16 +23,19 @@ WHAT IT DOES.
   2. Mints the quant-merger App token (C:\\opt\\merger\\config.json, the same minting as
      ops/release/merger/merger_env.ps1) for this process only; it is never printed or written.
   3. Through the API, as the App: one blob per path, one tree over LIVE's tip tree, one commit
-     (author = the App, signed by GitHub), a `box-state/<host>-<UTC>` ref, a non-draft PR to LIVE.
-  4. Closes this host's older open box-state PRs and deletes their refs: each snapshot supersedes
-     the last, and two open snapshots of the same files would only conflict with each other.
+     (author = the App, signed by GitHub), a `box-state/box-<UTC>` ref, a non-draft PR to LIVE.
+  4. Closes the older open box-state PRs carrying the same tag and deletes their refs: each
+     snapshot supersedes the last, and two open snapshots of the same files would only conflict.
 
 Exit 0 with one JSON line on stdout: {"pr", "pr_paths", "direct", "direct_commit", "mode"}.
-`mode` is "pr", "nothing" (no change against LIVE), "no-gate" (the box's adopted gate has no
-box-state path yet, so a PR would never merge) or "no-app" (no merger config on this machine);
-on the last two nothing was done and the caller keeps its direct push. The PR route therefore
-switches itself on when #1218 is adopted, with no flag and no tap. Exit 1 on any failure -- the
-caller logs it and keeps its current route for that pass.
+`mode` is "pr", "nothing" (no change against LIVE), or one of three stand-asides, on which
+nothing is done and the caller keeps its direct push:
+  - "no-gate": the box's adopted gate has no box-state path yet (#1218), so a PR never merges;
+  - "no-ci-skip": the adopted ci.yml and release-gates.yml do not yet skip box-state/ heads, so
+    each snapshot would cost a full suite run (Governance, 2026-11-14);
+  - "no-app": no merger config on this machine.
+The PR route therefore switches itself on once both are adopted, with no flag and no tap. Exit 1
+on any failure -- the caller logs it and keeps its current route for that pass.
 """
 
 from __future__ import annotations
@@ -45,7 +48,6 @@ import importlib.util
 import json
 import os
 import re
-import socket
 import subprocess
 import sys
 import tempfile
@@ -58,6 +60,9 @@ from typing import Any
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 BRANCH_PREFIX = "box-state/"
+#: A FIXED tag, never the machine's name: the repository is public, and the branch name, the
+#: commit message and the PR title would publish the host name every 15 minutes (#1219 audit).
+BOX_TAG = "box"
 MERGER_HOME = Path(r"C:\opt\merger")
 
 #: The gate accepts these extensions only (#1218 after audit). Extensionless files never.
@@ -74,6 +79,18 @@ AUTHORITY_GLOBS = (
     "armed_*", "*armed_*", "release_identity*", "gateway_loaded*", "*adopt_*",
 )  # fmt: skip
 GATE = ".github/scripts/audit_gate.py"
+#: The workflows that must skip a box-state/ head before snapshots are opened (Governance,
+#: 2026-11-14): without the skip every 15-minute snapshot costs a full suite run.
+CI_WORKFLOWS = (".github/workflows/ci.yml", ".github/workflows/release-gates.yml")
+
+
+def ci_skips_box_state(repo: Path) -> bool:
+    """True when every workflow in CI_WORKFLOWS, as the box adopted it, names the box-state/
+    prefix (its skip condition). Unreadable is False: the route keeps standing aside."""
+    try:
+        return all(BRANCH_PREFIX in (repo / w).read_text(encoding="utf-8") for w in CI_WORKFLOWS)
+    except OSError:
+        return False
 
 
 def gate_refusals(repo: Path) -> tuple[str, ...] | None:
@@ -236,7 +253,7 @@ def publish(
     api: Api,
     gh_repo: str,
     *,
-    host: str,
+    tag: str = BOX_TAG,
     now: datetime | None = None,
     base: str = LIVE,
     release: Any = None,
@@ -277,7 +294,9 @@ def publish(
     if tree["sha"] == tip_tree:
         return out  # LIVE already carries it
     stamp = (now or datetime.now(tz=UTC)).strftime("%Y%m%dT%H%M%SZ")
-    host_tag = re.sub(r"[^A-Za-z0-9-]", "-", host).strip("-").lower() or "box"
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", tag):
+        raise ValueError("the box-state tag must be lower-case letters, digits and dashes")
+    host_tag = tag
     msg = f"mt5 box state {stamp} ({len(pr_paths)} path(s), {host_tag})"
     commit = api(
         "POST",
@@ -329,6 +348,9 @@ def main(argv: list[str] | None = None) -> int:
         if refused is None:  # this tree's gate cannot merge a box-state PR yet
             print(json.dumps(_stand_aside("no-gate")))
             return 0
+        if not ci_skips_box_state(a.repo):  # each snapshot would cost a full CI run
+            print(json.dumps(_stand_aside("no-ci-skip")))
+            return 0
         if a.dry_run:
             rel = _release(a.repo)
             _, rows = changed(a.repo, a.pending)
@@ -349,7 +371,6 @@ def main(argv: list[str] | None = None) -> int:
             a.pending,
             github_api(tok),
             slug(a.repo),
-            host=socket.gethostname(),
             base=a.base,
             refused=refused,
         )
