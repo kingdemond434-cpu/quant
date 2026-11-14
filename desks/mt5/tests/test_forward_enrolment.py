@@ -216,3 +216,39 @@ def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch)
     s = json.loads((tmp_path / "FORWARD_ENROLMENT_SUMMARY.json").read_text())
     assert s["over_budget"]["budget"] == 100 and s["over_budget"]["bytes"] > 100
     assert payload["summary_over_budget"] == s["over_budget"]
+
+
+# ------------------------------------------- a published report carries no box path or exc text
+
+BOX_PATH = "/opt/secret_box_root/data/secrets/never_publish.json"
+
+
+def test_an_absolute_path_in_an_error_reaches_neither_published_file(tmp_path, monkeypatch) -> None:
+    """Auditor MF1 (2026-11-13): free exception text and absolute box paths in the enrolment
+    report were synced to a public branch. Errors are published as their type name only."""
+    import types
+
+    def _boom(_base):
+        raise OSError(2, "No such file or directory", BOX_PATH)
+
+    fake = types.ModuleType("shadow_admission")
+    fake.DROPPED_CERTIFICATES = []  # type: ignore[attr-defined]
+    fake.authorized_runs = _boom  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "shadow_admission", fake)
+    monkeypatch.setattr(fe, "OUT", tmp_path / "FORWARD_ENROLMENT.json")
+    monkeypatch.setattr(fe, "clock_rows", lambda *a, **k: {})
+    monkeypatch.setattr(fe, "certification_stamps", dict)
+    payload = fe.run(write=True, now=NOW, budget_s=5.0)
+    assert "OSError" in json.dumps(payload, default=str)
+    for name in ("FORWARD_ENROLMENT.json", "FORWARD_ENROLMENT_SUMMARY.json"):
+        path = tmp_path / name
+        assert path.exists(), name
+        text = path.read_text(encoding="utf-8")
+        assert BOX_PATH not in text and "secret_box_root" not in text, name
+
+
+def test_a_missing_engine_is_named_without_its_absolute_path() -> None:
+    rep = fe.repair([{"key": "k"}], deadline=float("inf"),
+                    engine=Path(BOX_PATH).with_name("shadow_forward.py"))
+    assert rep["status"] == "UNMEASURED"
+    assert "secret_box_root" not in json.dumps(rep) and "shadow_forward.py" in rep["why"]

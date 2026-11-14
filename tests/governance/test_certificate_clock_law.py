@@ -449,3 +449,12 @@ def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch)
     law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
     s = json.loads((tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").read_text())
     assert s["over_budget"]["budget"] == 100 and doc["summary_over_budget"] == s["over_budget"]
+
+
+def test_a_published_note_names_no_absolute_path(tmp_path) -> None:
+    """Auditor MF1 (2026-11-13): the law's notes are synced to a public branch."""
+    certs, notes = law.certificates(tmp_path / "secret_box_root" / "UNIVERSAL_SURVIVORS.json")
+    assert certs == [] and notes
+    assert all("secret_box_root" not in n and str(tmp_path) not in n for n in notes)
+    rows, rnotes = law.clock_rows(tmp_path / "secret_box_root")
+    assert rows == {} and all("secret_box_root" not in n for n in rnotes)

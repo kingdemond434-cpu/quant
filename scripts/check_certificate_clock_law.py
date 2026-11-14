@@ -164,7 +164,7 @@ def host_runs_clocks(desk: Path | None = None) -> tuple[bool, str]:
         return False, ("no MetaTrader5 package here: no terminal, no bars, nothing scheduled to "
                        "advance a forward clock, so a frozen row count is not this host's defect")
     except Exception as exc:
-        return False, f"clock_liveness unavailable ({type(exc).__name__}: {exc}): host UNMEASURED"
+        return False, f"clock_liveness unavailable ({type(exc).__name__}): host UNMEASURED"
 
 
 def certificates(canon: Path | None = None) -> tuple[list[dict[str, Any]], list[str]]:
@@ -176,7 +176,7 @@ def certificates(canon: Path | None = None) -> tuple[list[dict[str, Any]], list[
     notes: list[str] = []
     doc = _read_json(canon or CANON)
     if not isinstance(doc, dict):
-        return [], [f"canon unreadable or absent at {canon or CANON}: certificates {UNMEASURED}"]
+        return [], [f"canon unreadable or absent ({(canon or CANON).name}): certificates {UNMEASURED}"]
     surv = doc.get("survivors")
     if not isinstance(surv, dict):
         return [], [f"canon carries no `survivors` mapping: certificates {UNMEASURED}"]
@@ -216,7 +216,7 @@ def clock_keys(certs: list[dict[str, Any]],
         sys.path.insert(0, str(base / "research"))
         import shadow_forward as sf  # type: ignore[import-not-found]
     except Exception as exc:
-        return {}, [f"shadow_forward unavailable ({type(exc).__name__}: {exc}): "
+        return {}, [f"shadow_forward unavailable ({type(exc).__name__}): "
                     f"clock keys {UNMEASURED}"]
     keys: dict[str, str] = {}
     notes: list[str] = []
@@ -235,7 +235,7 @@ def clock_keys(certs: list[dict[str, Any]],
             keys[c["name"]] = sf.sleeve_key(c["symbol"], c["selector"], dict(c["params"]),
                                             c["family"], c["side"])
         except Exception as exc:
-            notes.append(f"{c['name']}: sleeve_key refused ({type(exc).__name__}: {exc})")
+            notes.append(f"{c['name']}: sleeve_key refused ({type(exc).__name__})")
     return keys, notes
 
 
@@ -257,7 +257,7 @@ def clock_rows(desk: Path | None = None) -> tuple[dict[str, dict[str, Any]], lis
                 if isinstance(row, dict) and "n" in row:
                     rows.setdefault(str(key), {**row, "lane": lane})
     if not rows:
-        notes.append(f"no lane state file under {base} carries a clock row: clocks {UNMEASURED}")
+        notes.append(f"no lane state file under reports/shadow carries a clock row: clocks {UNMEASURED}")
     return rows, notes
 
 

@@ -220,13 +220,13 @@ def certificates() -> tuple[list[dict[str, Any]], list[dict[str, str]], str]:
                 authorized_runs,
             )
         except Exception as exc:
-            return [], [], f"shadow_admission unavailable: {type(exc).__name__}: {exc}"
+            return [], [], f"shadow_admission unavailable: {type(exc).__name__}"
     except Exception as exc:
-        return [], [], f"shadow_admission unavailable: {type(exc).__name__}: {exc}"
+        return [], [], f"shadow_admission unavailable: {type(exc).__name__}"
     try:
         runs = list(authorized_runs(BASE))
     except Exception as exc:
-        return [], [], f"authorized_runs FAILED: {type(exc).__name__}: {exc}"
+        return [], [], f"authorized_runs FAILED: {type(exc).__name__}"
     return runs, list(DROPPED_CERTIFICATES), ""
 
 
@@ -280,11 +280,11 @@ def integrity_gate() -> tuple[Any, str]:
                 IntegrityGate,
             )
         except Exception as exc:
-            return None, f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+            return None, f"admission_integrity unimportable: {type(exc).__name__}"
     try:
         return IntegrityGate.load(), ""
     except Exception as exc:
-        return None, f"integrity door unreadable: {type(exc).__name__}: {exc}"
+        return None, f"integrity door unreadable: {type(exc).__name__}"
 
 
 def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
@@ -445,7 +445,7 @@ def repair(missing: list[dict[str, Any]], deadline: float,
     script = Path(engine or ENGINE)
     if not script.exists():
         return {"status": "UNMEASURED", "n_missing": len(missing),
-                "why": f"enrolment engine not found at {script}"}
+                "why": f"enrolment engine not found: {script.name}"}
     try:
         proc = subprocess.run([sys.executable, str(script)], cwd=str(BASE), timeout=remaining,
                               capture_output=True, text=True, check=False)
@@ -454,7 +454,7 @@ def repair(missing: list[dict[str, Any]], deadline: float,
                 "why": f"enrolment sweep exceeded {remaining:.0f}s; the next pass resumes it"}
     except Exception as exc:
         return {"status": "FAILED", "n_missing": len(missing),
-                "why": f"{type(exc).__name__}: {exc}"}
+                "why": type(exc).__name__}
     tail = (proc.stdout or proc.stderr or "").strip().splitlines()[-3:]
     return {"status": "RAN" if proc.returncode == 0 else "RAN_NONZERO", "rc": proc.returncode,
             "n_missing": len(missing), "tail": tail}
@@ -518,7 +518,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
                        overdue=payload["n_overdue"], held=payload.get("n_held"),
                        accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
         except Exception as exc:
-            payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+            payload["events"] = f"UNMEASURED: {type(exc).__name__}"
     return payload
 
 
@@ -573,7 +573,7 @@ def _write_summary(payload: dict[str, Any]) -> None:
     except OSError as exc:
         # Windows refuses the replace while the sync holds the summary open; the full artifact
         # is already written and the next pass republishes the summary.
-        payload["summary"] = f"UNMEASURED this pass: {type(exc).__name__}: {exc}"
+        payload["summary"] = f"UNMEASURED this pass: {type(exc).__name__}"
 
 
 def render(payload: dict[str, Any]) -> str:
