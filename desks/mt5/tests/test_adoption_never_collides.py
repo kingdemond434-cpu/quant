@@ -500,3 +500,25 @@ def test_without_the_list_the_quarantined_path_still_refuses(tmp_path: Path) -> 
     r = _run_adopt(box)
     assert r.returncode == 1, r.stdout + r.stderr
     assert "REFUSING: 1 code path(s) this box committed are not in the target" in r.stdout
+
+
+def test_the_quarantine_list_is_gitignored_and_ignored_when_tracked() -> None:
+    """Audit MF1 on #246: a tracked list could be edited on origin to overwrite box code."""
+    root = BASE.parent.parent
+    rel = "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json"
+    assert subprocess.run(["git", "-C", str(root), "check-ignore", "-q", "--", rel]).returncode == 0
+    src = ADOPT.read_text(encoding="utf-8")
+    assert 'ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json"' in src
+    assert "the tracked list is ignored" in src
+    assert "-and -not $quarantineTracked" in src
+
+
+@needs_powershell
+def test_a_tracked_quarantine_list_quarantines_nothing(tmp_path: Path) -> None:
+    box, codex = _box_with_codex_and_own_code(tmp_path)
+    _write(box, "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json", '{"commits": ["%s"]}' % codex)
+    _git(box, "add", "-f", "--", "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json")
+    _git(box, "commit", "-q", "-m", "tracked list")
+    r = _run_adopt(box)
+    assert "the tracked list is ignored" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 1 and "REFUSING: " in r.stdout

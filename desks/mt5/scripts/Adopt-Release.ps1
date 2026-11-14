@@ -1020,7 +1020,21 @@ if ($mergeBase -and -not $permitAccepted) {
     # reach this test: they are not in $boxTouched. An unreadable list quarantines nothing.
     $quarantineFile = Join-Path $desk "data\ADOPT_QUARANTINED_COMMITS.json"
     $quarantined = @{}
+    # A TRACKED LIST IS NO LIST (audit MF1 on f84c128f7): a copy that reached git could be edited
+    # on origin to name the box's own commits and turn this rule into the overwrite it refuses.
+    # The file is gitignored; if it is tracked anyway, it is ignored and the pass says so.
+    $quarantineTracked = $false
     if (Test-Path -LiteralPath $quarantineFile) {
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & git -C $RepoRoot ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json" 2>$null | Out-Null
+        $quarantineTracked = ($LASTEXITCODE -eq 0)
+        $ErrorActionPreference = $prevEap
+        if ($quarantineTracked) {
+            Write-Host "  ADOPT_QUARANTINED_COMMITS.json is TRACKED by git; the tracked list is ignored"
+        }
+    }
+    if ((Test-Path -LiteralPath $quarantineFile) -and -not $quarantineTracked) {
         try {
             $qdoc = Get-Content -LiteralPath $quarantineFile -Raw | ConvertFrom-Json
             foreach ($c in @($qdoc.commits)) {
