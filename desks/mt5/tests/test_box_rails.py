@@ -155,6 +155,12 @@ def test_the_robots_gate_fails_closed(rails, url, allowed):
     "https://query1.finance.yahoo.com/v7/x", "https://www.cboe.com/x", "https://www.cmegroup.com/x",
     "https://www.nasdaq.com/x", "https://www.theocc.com/x", "https://www.baidu.com/s?wd=x",
     "https://mp.weixin.qq.com/s/x",
+    # seed_miners' own Wayback shapes (CDX query and capture), refused before the wire
+    "http://web.archive.org/cdx/search/cdx?url=forum.test/*&output=json&limit=300",
+    "https://web.archive.org/web/20200101000000/https://forum.test/post",
+    "https://archive.org/wayback/available?url=x", "https://comtradeplus.un.org/x",
+    "https://comtradeapi.un.org/x", "https://www.theice.com/x", "https://www.miaxglobal.com/x",
+    "https://www.m-x.ca/x", "https://www.asx.com.au/x", "https://www.eurex.com/x",
 ])
 def test_refused_hosts_are_never_contacted_not_even_robots(rails, url):
     """The box never contacts YouTube, the terms-refused sources or a crypto exchange."""
