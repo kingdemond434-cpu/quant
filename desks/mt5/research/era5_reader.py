@@ -71,7 +71,10 @@ import re
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
+import urllib.robotparser
 import zipfile
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -101,6 +104,14 @@ OK = "OK"
 BLOCKED_AUTH = "BLOCKED_AUTH"
 UNAVAILABLE = "UNAVAILABLE"
 BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
+#: The host's robots.txt disallows the path for our agent, or could not be read: nothing is
+#: fetched (unreadable robots are never read as permission).
+BLOCKED_ROBOTS = "BLOCKED_ROBOTS"
+#: The one agent every request of this module sends, and the one robots.txt is read for.
+UA = "quant-desk-era5-reader/1 (terms)"
+ROBOTS_MISSED_GROWTH = ("ERA5 weather conditioners (HDD/CDD, precipitation, frost) stay "
+                        "unmeasured while the CDS robots.txt bars or cannot be read: no "
+                        "exogenous_conditioner cell is minted from them")
 ERROR = "ERROR"
 PARTIAL = "PARTIAL"
 #: The aggregates a region publishes. Anything a region config names must be one of these.
@@ -417,8 +428,51 @@ def _licence_links(doc: Any) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+def _robots_fetch(url: str) -> tuple[int, bytes]:
+    """(HTTP status, body) of a robots.txt read under our own agent; an HTTP error is a status."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=15.0) as r:
+            return int(getattr(r, "status", 200) or 200), r.read(500_000)
+    except urllib.error.HTTPError as e:
+        code = int(getattr(e, "code", 0) or 0)
+        e.close()
+        return code, b""
+
+
+def robots_refusal(url: str, fetch: Callable[[str], tuple[int, bytes]] | None = None
+                   ) -> str | None:
+    """None when the host's robots.txt lets our agent fetch this exact path, else why not.
+
+    FAILS CLOSED: 404/410 means the host has no rules (allowed); 401/403 on robots.txt itself
+    disallows everything; any other status or a read that fails is a refusal, never an assumed
+    allow. The robots.txt request is the one request that cannot be gated by its own answer."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" or not parts.netloc:
+        return f"not an https URL: {parts.scheme or '?'}"
+    if parts.path == "/robots.txt":
+        return None
+    try:
+        status, body = (fetch or _robots_fetch)(f"https://{parts.netloc}/robots.txt")
+    except Exception as exc:
+        return f"robots.txt unreadable ({type(exc).__name__})"
+    rp = urllib.robotparser.RobotFileParser()
+    if status in (404, 410):
+        rp.parse([])
+    elif status in (401, 403):
+        rp.parse(["User-agent: *", "Disallow: /"])
+    elif 200 <= status < 300:
+        rp.parse(body.decode("utf-8", errors="replace").splitlines())
+    else:
+        return f"robots.txt unreadable (HTTP {status})"
+    return None if rp.can_fetch(UA, url) else "robots.txt disallows this path"
+
+
 def _http_get(url: str, timeout: float = 30.0) -> tuple[int, str, bytes]:
-    req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-era5-reader/1 (terms)"})
+    refused = robots_refusal(url)
+    if refused:
+        raise PermissionError(f"{BLOCKED_ROBOTS}: {refused}")
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return int(r.status), str(r.headers.get("Content-Type") or ""), r.read(8 * 1024 * 1024)
 
@@ -1174,7 +1228,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, now: datetime | None = None, budget_s: 
         client_factory: Callable[[], tuple[Any, str, str]] = make_client,
         key_reader: Callable[[str], str | None] | None = None,
         mint: Callable[[str], bool] = may_mint,
-        donor: Callable[..., dict[str, Any]] = donate) -> dict[str, Any]:
+        donor: Callable[..., dict[str, Any]] = donate,
+        robots: Callable[[str], str | None] | None = None) -> dict[str, Any]:
     now = now or _now()
     doc = load_regions(paths.regions)
     errs = region_config_errors(doc, _universe(paths))
@@ -1196,7 +1251,25 @@ def run(paths: Paths = DEFAULT_PATHS, *, now: datetime | None = None, budget_s: 
         _finish(paths, rep, dry_run)
         return rep
     fetch_res: dict[str, Any] = {"status": "SKIPPED (--no-fetch)"}
+    refused = None
     if fetch:
+        # The cdsapi retrieve goes to the CDS API; its robots.txt is read first, under our agent,
+        # and a refusal (or robots that cannot be read) fetches nothing this pass.
+        base = CDS_URL
+        with contextlib.suppress(Exception):
+            from libs.ops.env_keys import read_key
+            base = read_key(URL_NAME) or CDS_URL
+        name = str((doc.get("dataset") or {}).get("name") or "")
+        for u in (base.rstrip("/") + "/",
+                  f"{base.rstrip('/')}/retrieve/v1/processes/{name}/execution"):
+            refused = (robots or robots_refusal)(u)
+            if refused:
+                rep["status"] = BLOCKED_ROBOTS
+                rep["why"] = f"{u}: {refused}"
+                rep["missed_growth"] = ROBOTS_MISSED_GROWTH
+                fetch_res = {"status": BLOCKED_ROBOTS, "url": u, "why": refused}
+                break
+    if fetch and not refused:
         client, cstat, why = client_factory()
         rep["client"] = {"status": cstat, "why": why}
         if client is None:

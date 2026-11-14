@@ -51,6 +51,12 @@ CC_BY_TEXT = (
 
 
 # --------------------------------------------------------------------------- fixtures
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No network here either: robots.txt reads answer 'no rules' unless a test says otherwise."""
+    monkeypatch.setattr(e5, "_robots_fetch", lambda url: (404, b""))
+
+
 def _small_regions() -> dict[str, Any]:
     return {
         "dataset": {"name": "reanalysis-era5-single-levels-timeseries",
@@ -658,3 +664,45 @@ def test_a_failed_donation_records_its_charge_and_retries_without_a_second_one(
     assert rep["gains"]["charged"] == 0 and rep["gains"]["pending_donation_retried"] == 1
     assert json.loads(paths.charges.read_text("utf-8"))["pending_donation"] == []
 
+
+
+# --------------------------------------------------------------------------- robots
+@pytest.mark.parametrize(("status", "body", "allowed"), [
+    (404, b"", True), (410, b"", True),
+    (200, b"User-agent: *\nAllow: /\n", True),
+    (200, b"User-agent: *\nDisallow: /api/\n", False),
+    (403, b"", False), (401, b"", False), (500, b"", False), (503, b"", False)])
+def test_robots_fail_closed(status: int, body: bytes, allowed: bool) -> None:
+    got = e5.robots_refusal("https://cds.climate.copernicus.eu/api/retrieve/v1/processes/x",
+                            fetch=lambda u: (status, body))
+    assert (got is None) is allowed
+
+
+def test_an_unreadable_robots_is_a_refusal_and_plain_http_never_passes() -> None:
+    def boom(url: str) -> tuple[int, bytes]:
+        raise OSError("down")
+    assert e5.robots_refusal("https://cds.climate.copernicus.eu/api/", fetch=boom)
+    assert e5.robots_refusal("http://cds.climate.copernicus.eu/api/", fetch=lambda u: (404, b""))
+
+
+def test_the_terms_read_obeys_robots_before_any_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.request
+    monkeypatch.setattr(e5, "_robots_fetch", lambda u: (200, b"User-agent: *\nDisallow: /\n"))
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda *a, **k: pytest.fail("a robots-barred path was requested"))
+    with pytest.raises(PermissionError, match="BLOCKED_ROBOTS"):
+        e5._http_get("https://cds.climate.copernicus.eu/api/catalogue/v1/collections/x")
+
+
+def test_a_robots_refusal_fetches_nothing_and_names_its_missed_growth(tmp_path: Path) -> None:
+    paths = _desk(tmp_path)
+    _confirm(paths)
+    called: list[str] = []
+
+    def factory() -> tuple[Any, str, str]:
+        called.append("client")
+        return None, e5.UNAVAILABLE, "must not be built"
+    rep = e5.run(paths, now=NOW, client_factory=factory, key_reader=lambda n: FAKE_KEY,
+                 robots=lambda u: "robots.txt disallows this path")
+    assert rep["status"] == e5.BLOCKED_ROBOTS and not called
+    assert rep["fetch"]["status"] == e5.BLOCKED_ROBOTS and rep["missed_growth"]
