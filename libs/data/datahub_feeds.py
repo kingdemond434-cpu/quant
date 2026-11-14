@@ -9,8 +9,14 @@ here and none of its code is copied.
 WHICH OPENBB PROVIDERS. Only those whose upstream terms read `confirmed` on 2026-11-13. The
 report is /mnt/project-files/reports/terms_reads/free_terminal_terms_2026-11-13.md:
 
-    fred (St. Louis Fed's own series), sec, federal_reserve (Board), cftc (COT),
-    government_us (FiscalData, USDA), us_eia, oecd (terms confirmed; robots read on the box)
+    sec, federal_reserve (Board), cftc (COT), government_us (FiscalData, USDA), us_eia,
+    oecd (terms confirmed; robots read on the box)
+
+FRED IS REFUSED (governance/fred-terms-ruling-2026-11-13.md): St. Louis Fed's terms refuse
+every automated fetch, web or API, with or without a key. The `fred` provider is therefore
+never called; `macro.fred_series` answers only from the series the desk already holds in the
+ALFRED lake (held data stays, labelled), and is UNMEASURED otherwise. The public-domain series
+come from the Fed Board, Treasury, BLS, BEA and EIA directly.
 
 IMF, Cboe, FINRA, Nasdaq, TMX, yfinance, Tiingo, FMP, Intrinio and Polygon read `refused`.
 ECB, BLS, JODI, Fama-French and the regional Fed banks read `to_confirm`. None of them is
@@ -23,7 +29,7 @@ becomes zero.
 
     from libs.data.datahub_feeds import live_hub
     live_hub().get("tanker.port_calls")              -> daily frame, Kystverket NLOD
-    live_hub().get("macro.fred_series", series_id="DGS10")
+    live_hub().get("macro.fred_series", series_id="DGS10")   # held ALFRED lake only
 """
 from __future__ import annotations
 
@@ -40,7 +46,15 @@ ALFRED = DESK / "data" / "lake" / "alfred"
 
 #: OpenBB V5 provider names whose upstream terms read `confirmed` on 2026-11-13.
 OPENBB_CONFIRMED: frozenset[str] = frozenset({
-    "fred", "sec", "federal_reserve", "cftc", "government_us", "us_eia", "oecd"})
+    "sec", "federal_reserve", "cftc", "government_us", "us_eia", "oecd"})
+
+#: OpenBB providers refused on their upstream terms, each with why and what it costs.
+FRED_TERMS = ("terms-refused: St. Louis Fed terms refuse automated fetches of FRED, web and "
+              "API alike, key irrelevant (governance/fred-terms-ruling-2026-11-13.md)")
+FRED_MISSED_GROWTH = ("missed_growth: no fresh FRED series through OpenBB; macro.fred_series "
+                      "serves only the held ALFRED lake, and new public-domain series must come "
+                      "from the Fed Board, Treasury, BLS, BEA or EIA directly")
+OPENBB_REFUSED: dict[str, tuple[str, str]] = {"fred": (FRED_TERMS, FRED_MISSED_GROWTH)}
 
 
 # --------------------------------------------------------------------------- AIS (Kystverket)
@@ -85,7 +99,6 @@ def ais_positions(days: int = 1) -> list[dict[str, Any]] | None:
 #: The upstream path each OpenBB provider requests. robots.txt is read for it BEFORE OpenBB is
 #: called, because OpenBB itself never reads robots.
 OPENBB_UPSTREAM: dict[str, str] = {
-    "fred": "https://api.stlouisfed.org/fred/series/observations",
     "oecd": "https://sdmx.oecd.org/public/rest/data/",
     "cftc": "https://publicreporting.cftc.gov/resource/",
     "sec": "https://data.sec.gov/api/xbrl/",
@@ -133,6 +146,9 @@ def robots_refusal(url: str, agent: str = "") -> str | None:
 
 def openbb_call(provider: str, route: str, **kw: Any) -> Any:
     """Call one OpenBB route through a terms-confirmed provider; the result as a DataFrame."""
+    if provider in OPENBB_REFUSED:
+        terms, missed = OPENBB_REFUSED[provider]
+        raise PermissionError(f"openbb provider {provider!r}: {terms}; {missed}")
     if provider not in OPENBB_CONFIRMED:
         raise PermissionError(f"openbb provider {provider!r} is not terms-confirmed")
     refused = robots_refusal(OPENBB_UPSTREAM[provider])
@@ -151,10 +167,6 @@ def _fred_lake(series_id: str) -> Any:
         return None
     import pandas as pd
     return pd.read_parquet(p)
-
-
-def _fred_openbb(series_id: str) -> Any:
-    return openbb_call("fred", "economy.fred_series", symbol=series_id)
 
 
 def _cot_desk(code: str) -> Any:
@@ -199,10 +211,9 @@ def live_hub() -> DataHub:
                           description=f"tanker positions per sampling window ({nlod})",
                           providers=[Provider("ais_norway", ais_positions, "free")]))
     hub.register(Contract("macro.fred_series", "frame",
-                          description="FRED/ALFRED series (St. Louis Fed's own series)",
-                          providers=[Provider("alfred_lake", _fred_lake, "primary"),
-                                     Provider("openbb.fred", _fred_openbb, "backup",
-                                              version="openbb-v5")]))
+                          description="FRED/ALFRED series already held in the lake (no "
+                                      "fresh fetch: FRED is terms-refused)",
+                          providers=[Provider("alfred_lake", _fred_lake, "historical")]))
     hub.register(Contract("cot.net_spec", "frame",
                           description="CFTC COT net non-commercial share of open interest",
                           providers=[Provider("cftc_socrata", _cot_desk, "primary"),

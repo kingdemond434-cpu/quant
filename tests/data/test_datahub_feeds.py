@@ -21,6 +21,28 @@ def test_refused_or_unread_providers_never_reach_openbb() -> None:
     assert set(F.OPENBB_UPSTREAM) == set(F.OPENBB_CONFIRMED)
 
 
+def test_fred_is_terms_refused_and_never_reaches_the_wire(monkeypatch) -> None:
+    """The FRED ruling: no OpenBB call, no robots read, and the refusal names its cost."""
+    def boom(*_a, **_k):
+        raise AssertionError("a refused provider contacted the network")
+
+    monkeypatch.setattr(F, "robots_refusal", boom)
+    assert "fred" not in F.OPENBB_CONFIRMED
+    assert "fred" not in F.OPENBB_UPSTREAM
+    assert all("stlouisfed" not in u for u in F.OPENBB_UPSTREAM.values())
+    with pytest.raises(PermissionError, match="terms-refused") as exc:
+        F.openbb_call("fred", "economy.fred_series", symbol="DGS10")
+    assert "missed_growth" in str(exc.value)
+    providers = F.live_hub()._contracts["macro.fred_series"].providers
+    assert [p.name for p in providers] == ["alfred_lake"]
+
+
+def test_an_unheld_fred_series_is_unmeasured(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(F, "ALFRED", tmp_path)
+    with pytest.raises(LookupError):
+        F.live_hub().get("macro.fred_series", series_id="DGS10")
+
+
 def test_robots_refusal_blocks_openbb_before_import(monkeypatch) -> None:
     monkeypatch.setattr(F, "robots_refusal", lambda url: "robots.txt HTTP 503")
     with pytest.raises(PermissionError, match="503"):
