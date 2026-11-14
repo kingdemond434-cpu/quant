@@ -6286,8 +6286,7 @@ def main() -> None:
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)
                         for o in (res.get("orders") or [])):
                     _gold_placed_this_pass.append(s["name"])
-                # A STALE QUOTE DEFERS, IT DOES NOT SPEND THE DAY: nothing was sent, so the
-                # bracket is not recorded and the next pass places it on a fresh quote.
+                # stale quote: nothing sent, not recorded; the next pass retries it
                 if res.get("stage") == "stale_quote":
                     continue
                 try:
