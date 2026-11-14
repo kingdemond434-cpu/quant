@@ -773,8 +773,8 @@ class SensorLedger:
         try:
             with self._locked():
                 return self._append_locked(observations, now)
-        except LedgerLockTimeout as exc:
-            return {"status": "LOCK_TIMEOUT", "why": str(exc), "appended": 0,
+        except LedgerLockTimeout:
+            return {"status": "LOCK_TIMEOUT", "why": DIGEST_WHY["LOCK_TIMEOUT"], "appended": 0,
                     "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
                     "refusals": [], "shards": []}
 
@@ -783,8 +783,8 @@ class SensorLedger:
         when = now or datetime.now(UTC)
         try:
             index = self._load_index(fresh=True)    # another writer may have moved it
-        except LedgerIndexCorrupt as exc:
-            return {"status": "INDEX_CORRUPT", "why": str(exc), "appended": 0,
+        except LedgerIndexCorrupt:
+            return {"status": "INDEX_CORRUPT", "why": DIGEST_WHY["INDEX_CORRUPT"], "appended": 0,
                     "duplicates": 0, "revisions": 0, "conflicts": 0, "refused": 0,
                     "refusals": [], "shards": []}
         staged: dict[str, dict[str, Any]] = {}
@@ -1073,6 +1073,17 @@ def intake_metrics(rows: Sequence[Mapping[str, Any]],
 
 
 # ============================================================================== the digest
+#: What the published digest names as the ledger's home: a fixed repo-relative label, never the
+#: host's absolute path (the digest rides the public wire; Auditor HOLD on #204, 2026-11-14).
+PUBLIC_ROOT = "desks/mt5/data/sensors"
+#: Fixed sentences for the two failure codes. The exceptions' own text stays on the box.
+DIGEST_WHY = {
+    "INDEX_CORRUPT": "the revision index could not be parsed; the ledger appends nothing until "
+                     "it is repaired on the box",
+    "LOCK_TIMEOUT": "another writer held the ledger lock past the timeout; nothing was read or "
+                    "appended this pass",
+}
+
 def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
            days: int = 2) -> dict[str, Any]:
     """What the ledger holds, published where git can carry it. The shards themselves stay on
@@ -1085,10 +1096,12 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
     try:
         index = led.latest_index()
         index_status = "OK"
-    except LedgerIndexCorrupt as exc:
-        index, index_status = {}, f"INDEX_CORRUPT: {exc}"
-    except LedgerLockTimeout as exc:
-        index, index_status = {}, f"LOCK_TIMEOUT: {exc}"
+    # The digest is published on the public wire, so a failure is a fixed reason code and a
+    # fixed sentence: an exception's text carries the absolute lock path or raw ledger bytes.
+    except LedgerIndexCorrupt:
+        index, index_status = {}, "INDEX_CORRUPT"
+    except LedgerLockTimeout:
+        index, index_status = {}, "LOCK_TIMEOUT"
     per_day: dict[str, Any] = {}
     for back in range(max(1, days)):
         day = (when - timedelta(days=back)).date().isoformat()
@@ -1099,10 +1112,10 @@ def digest(ledger: SensorLedger | None = None, now: datetime | None = None,
     return {
         "schema": "sensor_ledger_digest/1",
         "at": when.isoformat(timespec="seconds"),
-        "root": str(led.root),
-        "status": (index_status.split(":", 1)[0] if index_status != "OK" else
+        "root": PUBLIC_ROOT,
+        "status": (index_status if index_status != "OK" else
                    "MEASURED" if shards else UNMEASURED),
-        "why": (index_status if index_status != "OK" else
+        "why": (DIGEST_WHY[index_status] if index_status != "OK" else
                 "" if shards else "the ledger has no observation shard on this host yet"),
         "shards": len(shards),
         "shard_bytes": sum(p.stat().st_size for p in shards),

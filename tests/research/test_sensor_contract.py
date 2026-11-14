@@ -463,6 +463,8 @@ def test_a_hung_lock_holder_times_out_and_appends_nothing(tmp_path, monkeypatch)
         assert out["status"] == "LOCK_TIMEOUT" and out["appended"] == 0
         assert not led.obs_dir.exists()
         assert sc.digest(sc.SensorLedger(tmp_path), now=T0)["status"] == "LOCK_TIMEOUT"
+        _assert_public(sc.digest(sc.SensorLedger(tmp_path), now=T0), tmp_path)
+        _assert_public(out, tmp_path)
     assert sc.SensorLedger(tmp_path).append(
         [_series("A", 1.0, T0 + timedelta(seconds=30))])["appended"] == 1
 
@@ -481,3 +483,30 @@ def test_a_permanent_lock_error_is_raised_not_retried_forever(tmp_path, monkeypa
     with pytest.raises(OSError):
         sc.SensorLedger(tmp_path).append([_series("A", 1.0, T0 + timedelta(seconds=30))])
     assert len(calls) == 1
+
+
+def _assert_public(doc: dict, root) -> None:
+    """The digest rides the public wire: no absolute path, no drive letter, no exception text."""
+    import json
+    import re
+    text = json.dumps(doc, default=str)
+    assert str(root) not in text and str(root).replace("\\", "\\\\") not in text
+    assert not re.search(r'"[A-Za-z]:[\\/]', text)              # a Windows drive path
+    assert not re.search(r'": ?"/', text)                        # a value that is a POSIX path
+    assert "{not json" not in text and "Expecting" not in text   # raw ledger bytes, json errors
+
+
+def test_the_published_digest_carries_no_host_path_or_exception_text(tmp_path) -> None:
+    led = sc.SensorLedger(tmp_path)
+    led.append([_payrolls(120.0, received=T0 + timedelta(seconds=30))])
+    ok = sc.digest(sc.SensorLedger(tmp_path), now=T0)
+    assert ok["root"] == sc.PUBLIC_ROOT and ok["status"] == "MEASURED"
+    _assert_public(ok, tmp_path)
+    led.index_path.write_text("{not json", encoding="utf-8")
+    bad = sc.digest(sc.SensorLedger(tmp_path), now=T0)
+    assert bad["status"] == bad["index_status"] == "INDEX_CORRUPT"
+    assert bad["why"] == sc.DIGEST_WHY["INDEX_CORRUPT"]
+    _assert_public(bad, tmp_path)
+    out = sc.SensorLedger(tmp_path).append([_payrolls(95.0, received=T0 + timedelta(days=1))])
+    assert out["status"] == "INDEX_CORRUPT" and out["why"] == sc.DIGEST_WHY["INDEX_CORRUPT"]
+    _assert_public(out, tmp_path)
