@@ -100,7 +100,18 @@ def test_a_variance_spike_moves_the_next_forecast_not_the_current_one():
     r = np.full(200, 0.001)
     r[150] = 0.30
     v = ewma_variance(r)
-    assert v[151] > v[150], "the shock must land on the FOLLOWING forecast"
+    assert v[151] > 100 * v[150], "the shock must land on the FOLLOWING forecast"
+    assert v[150] < 2e-6, "and not on its own bar"
+
+
+def test_the_forecast_uses_the_bar_just_closed():
+    """The forecast for bar i includes r[i-1]: it was one bar staler than that until 2026-11-10,
+    and the old assertion above (v[151] > v[150]) passed on a rounding-sized difference."""
+    r = np.full(50, 0.01)
+    r[30] = 0.0
+    v = ewma_variance(r, lam=0.5)
+    assert v[31] == 0.5 * v[30]
+    assert np.isnan(v[0]) and v[1] == r[0] ** 2      # causal seed: the first return seen
 
 
 def test_ewma_tracks_a_known_variance():
