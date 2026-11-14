@@ -52,6 +52,7 @@ moved, or any concern flagged as risk or control. Standard library only.
 from __future__ import annotations
 
 import argparse
+import contextvars
 import hashlib
 import importlib.util
 import json
@@ -110,6 +111,20 @@ CALL_TIMEOUT_S = 1800
 #: part, and one hunk too large for this cap is still read whole up to num_ctx: the cap only
 #: ever cuts where a cut was already allowed.
 PART_CHARS = 24_000
+#: A LOCAL call's own time limit grows with its prompt, from the same measurement (about 1.4k
+#: prompt characters a minute on the hosted runner's CPU, plus a few minutes to start): a part
+#: that may not be cut (the money files, read together) is ~70k on combiner #604/#618, and a flat
+#: CALL_TIMEOUT_S timed it out five times out of five, 2 h 42 min of runner each attempt, with
+#: no verdict. The scaled limit is 1.5x the measured need, never under CALL_TIMEOUT_S, and never
+#: past JOB_S from this process's start, so the job ends UNAVAILABLE rather than cancelled.
+LOCAL_CHARS_PER_MIN = 1_200
+LOCAL_START_S = 300
+#: The review step's whole allowance (release-gates.yml timeout-minutes 200, less setup).
+JOB_S = 190 * 60
+_STARTED = time.monotonic()
+_CALL_TIMEOUT: contextvars.ContextVar[float] = contextvars.ContextVar(
+    "call_timeout", default=float(CALL_TIMEOUT_S)
+)
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -131,6 +146,23 @@ class Unavailable(RuntimeError):
     """The model could not be asked right now (rate limit, outage, timeout): no vote."""
 
 
+class TimedOut(Unavailable):
+    """The call ran out of its time limit: no vote (a remote host is asked again later)."""
+
+
+class Exhausted(Unavailable):
+    """A LOCAL model ran out of a limit already scaled to the prompt: asking the same prompt
+    again inside this job cannot finish either, so that model is not asked again in this vote.
+    Still no vote, never a FAIL: the job ends UNAVAILABLE and the controller re-runs it."""
+
+
+def local_call_timeout(chars: int, now: float | None = None) -> float:
+    """Seconds one local call may take for a prompt of `chars` characters (see PART_CHARS)."""
+    need = LOCAL_START_S + 60.0 * chars / LOCAL_CHARS_PER_MIN
+    left = JOB_S - ((time.monotonic() if now is None else now) - _STARTED)
+    return max(60.0, min(left, max(float(CALL_TIMEOUT_S), 1.5 * need)))
+
+
 def _gh(*args: str) -> str:
     env = {k: v for k, v in os.environ.items() if k not in KEY_ENVS}
     p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env, check=False)
@@ -145,13 +177,19 @@ def _http(url: str, body: dict[str, Any] | None, headers: dict[str, str]) -> Any
         url, data=data, headers={"Content-Type": "application/json", **headers}
     )
     try:
-        with urllib.request.urlopen(req, timeout=CALL_TIMEOUT_S) as r:
+        with urllib.request.urlopen(req, timeout=_CALL_TIMEOUT.get()) as r:
             return json.loads(r.read().decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as exc:
         if exc.code in (408, 429) or exc.code >= 500:
             raise Unavailable(f"HTTP {exc.code}") from None
         raise RuntimeError(f"HTTP {exc.code}") from None
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+    except TimeoutError:
+        raise TimedOut("TimeoutError") from None
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, TimeoutError):
+            raise TimedOut("TimeoutError") from None
+        raise Unavailable(type(exc).__name__) from None
+    except OSError as exc:
         raise Unavailable(type(exc).__name__) from None
 
 
@@ -553,17 +591,28 @@ def ask_local(url: str, model: str, num_ctx: int, rubric: str, user: str) -> str
     prompt as filling the context or as implausibly short, either of which means it truncated."""
     if (len(rubric) + len(user)) // CHARS_PER_TOKEN + ANSWER_TOKENS > num_ctx:
         raise TooLarge(f"{model}: the prompt does not fit {num_ctx} tokens")
-    doc = _http(
-        f"{url}/api/chat",
-        {
-            "model": model,
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
-            "messages": [{"role": "system", "content": rubric}, {"role": "user", "content": user}],
-        },
-        {},
-    )
+    limit = local_call_timeout(len(rubric) + len(user))
+    token = _CALL_TIMEOUT.set(limit)
+    try:
+        doc = _http(
+            f"{url}/api/chat",
+            {
+                "model": model,
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
+                "messages": [
+                    {"role": "system", "content": rubric},
+                    {"role": "user", "content": user},
+                ],
+            },
+            {},
+        )
+    except TimedOut:
+        why = f"TimeoutError after {int(limit // 60)} min, scaled to the prompt"
+        raise Exhausted(why) from None
+    finally:
+        _CALL_TIMEOUT.reset(token)
     if doc.get("error"):
         raise Unavailable(str(doc["error"])[:200])
     seen = int(doc.get("prompt_eval_count") or 0)
@@ -681,6 +730,10 @@ def vote(
                     log.append("FAIL: too large for enough reviewer families to read whole")
                     return "FAIL", log
                 continue
+            except Exhausted as exc:  # the same prompt cannot finish in this job either
+                log.append(f"{mid}: unavailable ({exc}); not asked again in this vote")
+                dropped.add(mid)
+                continue
             except Unavailable as exc:
                 log.append(f"{mid}: unavailable ({exc})")
                 continue
@@ -709,6 +762,10 @@ def vote(
                     if len({f for f, m, _ in ladder if m not in dropped}) < VOTES:
                         log.append("FAIL: too large for enough reviewer families to read whole")
                         return "FAIL", log
+                    continue
+                except Exhausted as exc:
+                    log.append(f"{mid}: unavailable on the re-ask ({exc}); not asked again")
+                    dropped.add(mid)
                     continue
                 except Unavailable as exc:  # asked afresh on the next round
                     log.append(f"{mid}: unavailable on the re-ask ({exc})")
