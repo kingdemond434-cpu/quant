@@ -118,6 +118,9 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
                            "hourly venue-listed, positive-risk certified sleeve selection"),
+    "MT5-HourlyCore (pr blockers)": (
+        "desks/mt5/reports/PR_BLOCKERS.json", 180,
+        "one named blocker for every open PR into LIVE, so no PR waits unexplained"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
