@@ -403,8 +403,11 @@ def test_the_budget_stops_the_run_and_defers_rather_than_drops(desk, ctx, monkey
     monkeypatch.setattr(dc.time, "monotonic", lambda: next(clock, 1_000_000.0))
     report = dc.run(budget_s=240, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
                     out=desk["paths"]["OUT"], ctx=ctx)
-    assert report["budget_stopped"] is True
-    assert report["expanded"] == 0 and report["compiled"] == 0
+    # A spent budget still expands MIN_EXPAND (2026-11-14: a pass that converts nothing is the
+    # failure); everything past that is deferred, never dropped.
+    n = report["intake"]["n"]
+    assert n > dc.MIN_EXPAND, "the fixture must leave something to defer"
+    assert report["budget_stopped"] is True and report["expanded"] == dc.MIN_EXPAND
     assert any("budget ran out" in u["why"] and "never dropped" in u["why"]
                for u in report["unmeasured"])
     assert R.discoveries(state="UNPROCESSED", limit=500)
@@ -592,7 +595,9 @@ def test_intake_cannot_spend_the_expansion_budget(desk, ctx, monkeypatch):
     assert set(report["timings_s"]) >= {"context", "intake", "prepare", "expand"}
     assert report["expanded"] >= min(dc.MIN_EXPAND, report["intake"]["n"])
     # An already-expired budget still expands the minimum: a slow pass converts something.
-    monkeypatch.setattr(dc.time, "monotonic", lambda: t0 + 10_000)
+    import itertools
+    ticks = itertools.count(t0 + 10_000, 1_000)
+    monkeypatch.setattr(dc.time, "monotonic", lambda: next(ticks))
     _write(desk["paths"]["INTEL"] / "seaty" / "discoveries_1.json", _many_rows(12))
     monkeypatch.setattr(dc, "intake", lambda cursor, **kw: (
         [{"discovery_id": f"x{i}", "source_type": "intelligence", **r}
