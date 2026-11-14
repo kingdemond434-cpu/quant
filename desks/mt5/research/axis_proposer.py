@@ -842,6 +842,96 @@ def axis_tag(axis_id: str, symbol: str, days: Any = None) -> str:
     return "UNMEASURED" if labels is None or labels.empty else str(labels.mode().iloc[0])
 
 
+# ------------------------------------------------------------------------ axis -> cells
+#: AN AXIS IS ALSO A TRADEABLE CLAIM, AND THIS ORGAN'S OUTPUT REACHED NO DOOR (2026-11-11).
+#: `axis_proposals.jsonl` and `axis_registry_extensions.json` were read by nobody (the registry
+#: contract says it MAY read the extensions; it never did), so every candidate this organ measured
+#: -- "the instrument behaves differently when <state> is <bucket>" -- stopped at a verdict. The
+#: same definition is a hypothesis the gauntlet can judge whenever a REGISTERED family executes
+#: its state mechanically, and two do:
+#:
+#:   exogenous on a lake axis  -> `exogenous_conditioner` on `data/lake/series/axis_<axis>.csv`
+#:                                (written by `axis_ingest.publish_lake`), on the FIRST DIFFERENCE
+#:                                this organ buckets on (`delta_z`), both stances;
+#:   cot_percentile / exogenous COT -> `cot_positioning` at the extreme the cuts declare.
+#:
+#: Every measured candidate is converted, whatever its axis verdict: a FAIL here means the state
+#: did not explain the factor RESIDUAL, which is not the trading claim, and the gauntlet is the
+#: only arbiter of that. A definition no family executes (own-bar observables, diffusion speed,
+#: calendar proximity) is refused BY NAME in the report, never approximated. Cells go to
+#: data/intelligence/axis_proposer/ through `family_donation.donate_per_family`, one contract per
+#: trial family, each charged its post-expansion count; the ledger charges a cell once.
+SEAT = "axis_proposer"
+CELL_SIDES: tuple[int, ...] = (1, -1)
+NO_FAMILY = {
+    "own_observable": "no registered family takes a bar-derived daily state as its conditioner",
+    "diffusion_speed": "no registered family conditions on information-diffusion speed",
+    "calendar_proximity": ("turn_of_month / month_end_rebalance trade a calendar anchor with "
+                           "their own parameters; mapping this bucket onto them would be a guess"),
+}
+
+
+def _ensure_lake(axis: str) -> bool:
+    """The lake frame `exogenous_conditioner` reads, published from the axis file if absent."""
+    from research import axis_ingest as ai
+    if axis not in ai.LAKE_AXES:
+        return False
+    if (ai.LAKE_DIR / f"{ai.lake_source(axis)}.csv").exists():
+        return True
+    doc = _read_json(AXES_DIR / f"{axis}.json")
+    return bool(isinstance(doc, dict) and ai.publish_lake(axis, doc).get("written"))
+
+
+def cells_from_results(results: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                               dict[str, str]]:
+    """(cells, refusals) for every candidate that was measured on at least one instrument."""
+    from research import axis_ingest as ai
+    cells: list[dict[str, Any]] = []
+    refusals: dict[str, str] = {}
+    for res in results:
+        syms = [str(r.get("symbol")) for r in res.get("per_instrument") or [] if r.get("symbol")]
+        if not syms:
+            continue
+        defn, aid = res.get("definition") or {}, str(res.get("axis_id"))
+        kind = str(defn.get("kind"))
+        base = {"source": SEAT, "kind": "hypothesis", "url": "",
+                "title": f"axis {aid} ({res.get('verdict')})",
+                "falsifier": ("no net forward return on the days the state holds, after cost, "
+                              "out of sample"),
+                "lineage": {"axis_id": aid, "axis_verdict": res.get("verdict"),
+                            "axis_source": res.get("source")}}
+        series = str(defn.get("series") or "")
+        axis, _, col = series.partition(":")
+        if kind == "cot_percentile" or (kind == "exogenous" and axis == "cot"):
+            cuts = defn.get("cuts") or [0.1]
+            pct = round(max(0.5, min(0.99, 1.0 - float(cuts[0]))), 4)
+            cells.extend({**base, "symbol": s, "family": "cot_positioning",
+                          "params": {"input_source": "cot_point_in_time", "extreme_pct": pct},
+                          "mechanism": (f"{res.get('name')}: speculative positioning beyond its "
+                                        f"{pct:.0%} percentile is a forced future flow")}
+                         for s in syms)
+        elif kind == "exogenous" and axis in ai.REFUSED_LAKE_AXES:
+            refusals[aid] = ai.REFUSED_LAKE_AXES[axis]
+        elif kind == "exogenous" and axis in ai.LAKE_AXES and col:
+            if not _ensure_lake(axis):
+                refusals[aid] = f"the lake frame for axis {axis!r} could not be published"
+                continue
+            cells.extend({**base, "symbol": s, "family": "exogenous_conditioner",
+                          "params": {"source": ai.lake_source(axis), "signal": col,
+                                     "transform": "delta_z", "threshold": 1.0,
+                                     "side_when_high": side},
+                          "required_data": [f"data/lake/series/{ai.lake_source(axis)}.csv"],
+                          "mechanism": (f"{res.get('name')}: a 1-sigma change in {series} "
+                                        f"conditions {s}; stance "
+                                        f"{'with' if side > 0 else 'against'} the change")}
+                         for s in syms for side in CELL_SIDES)
+        else:
+            refusals[aid] = NO_FAMILY.get(
+                kind, f"definition kind {kind!r} on {series or 'no series'} has no executing "
+                      "family")
+    return cells, refusals
+
+
 # ------------------------------------------------------------------------------ build + write
 def build(n_symbols: int = DEFAULT_SYMBOLS,
           budget_s: float = DEFAULT_BUDGET_S) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -958,7 +1048,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print("  DRY RUN: nothing written, nothing registered")
         return 0
+    cells, refusals = cells_from_results(report.get("results") or [])
+    from research import family_donation as fdn
+    report["cells"] = {"offered": len(cells), "refused_no_family": refusals,
+                       "donation": fdn.donate_per_family(
+                           SEAT, cells, ledger=fdn.DONATION_LEDGERS / f"{SEAT}.jsonl")}
     write(report, extensions)
+    d = report["cells"]["donation"]
+    print(f"  cells: {len(cells)} offered, {d.get('donated_total', 0)} donated, "
+          f"{d.get('already_charged', 0)} already charged; {len(refusals)} refused by name")
     print(f"  -> {OUT_REPORT}  -> {PROPOSALS}  -> {EXTENSIONS}")
     return 0
 

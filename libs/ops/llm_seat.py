@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.ops import openrouter_guard
+from libs.ops.env_keys import read_key
 
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
@@ -222,7 +223,7 @@ def seats() -> list[Seat]:
     """
     out: list[Seat] = []
     for var, name, base in KEY_ENV_VARS:
-        key = os.environ.get(var, "").strip()
+        key = read_key(var)
         if key:
             out.append(Seat(name=name, base_url=os.environ.get(f"{name.upper()}_BASE_URL", base),
                             key=key, model=os.environ.get(f"{name.upper()}_MODEL", ""),
@@ -939,7 +940,8 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any], 
     """HTTP errors carry their BODY into the message. A bare '400 Bad Request' from a model API
     is unactionable; the body says which parameter the provider rejected."""
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_ctx()) as fh:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=timeout, context=_ctx()) as fh:
             parsed: dict[str, Any] = json.loads(fh.read().decode("utf8", errors="ignore"))
             return parsed, None
     except urllib.error.HTTPError as exc:
