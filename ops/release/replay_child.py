@@ -403,6 +403,12 @@ def ftmo_step(
     return out
 
 
+#: The live policy's keys the roster leg resolves and the harness probes (live_policy.policy).
+POLICY_MEASURED = (
+    "live_symbols", "banned_timeframes", "banned_families", "banned_execs", "live_sleeves",
+)  # fmt: skip
+
+
 def _inside(tree: Path, path: Any) -> bool:
     try:
         Path(path).resolve().relative_to(tree.resolve())
@@ -413,7 +419,7 @@ def _inside(tree: Path, path: Any) -> bool:
 
 def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[str, Any]:
     """Each row's fate under the tree's own roster doors. Pure outcomes, no prose: booleans and
-    numbers keyed by the row's name, so the harness can diff them without reading free text."""
+    numbers keyed by the row's `id`, so the harness can diff them without reading free text."""
     from mt5desk import decision_core, kelly_sizing, live_policy
     from prop import e8_book
 
@@ -430,11 +436,11 @@ def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[st
     sleeves = work / "roster_sleeves.json"
     sleeves.write_text(json.dumps({"sleeves": [{**r, "status": "LIVE"} for r in rows]}), "utf-8")
     kept, _notes = decision_core.load_sleeves_verbose(sleeves)
-    admitted = {str(r.get("name")) for r in kept}
+    admitted = {str(r.get("id")) for r in kept}
     out: dict[str, Any] = {
         "rows": {
-            str(r["name"]): {
-                "admitted": str(r["name"]) in admitted,
+            str(r["id"]): {
+                "admitted": str(r["id"]) in admitted,
                 "zero": {v: bool(decision_core.cert_zero_row(r, v)) for v in venues},
             }
             for r in rows
@@ -446,6 +452,9 @@ def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[st
         out["books"][v] = (
             None if book is None else {str(k): round(float(x), 9) for k, x in sorted(book.items())}
         )
+    # the policy as the tree RESOLVES it (code defaults included), for the harness's MF6 check
+    pol = live_policy.policy().as_dict()
+    out["policy"] = {k: pol.get(k) for k in POLICY_MEASURED}
     e8_rows = [r for r in rows if r.get("selector")]
     try:
         acc, blocked = e8_book.live_admissible(
@@ -600,8 +609,9 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
         try:
             result["fusion_roster"] = fusion_roster_leg(tree, scenario["fusion_roster"], work)
         except Exception as exc:
-            result["fusion_roster"] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
-            traceback.print_exc()
+            # type only: CI logs are public and the message may carry runner paths (audit SF)
+            result["fusion_roster"] = {"error": type(exc).__name__}
+            print(f"fusion roster leg raised {type(exc).__name__}", file=sys.stderr)
     out_path.write_text(json.dumps(result, default=str), "utf-8")
     return 0
 

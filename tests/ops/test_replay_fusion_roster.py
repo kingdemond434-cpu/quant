@@ -28,12 +28,23 @@ SHA = "a" * 40
 POLICY = rs.ROSTER_FILES[0]
 
 
-def _leg(admitted: dict[str, bool], books: dict[str, Any] | None = None) -> dict[str, Any]:
+def _leg(
+    admitted: dict[str, bool],
+    books: dict[str, Any] | None = None,
+    policy: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     return {
         "rows": {n: {"admitted": a, "zero": {"fusion": False}} for n, a in admitted.items()},
         "books": books if books is not None else {"fusion": {"gold_asia": 0.01}},
         "e8": {"accepted": [], "blocked": []},
+        "policy": dict(policy) if policy is not None else _POL,
     }
+
+
+_POL: dict[str, Any] = {
+    "live_symbols": ["XAUUSD"], "banned_timeframes": {"*": ["M15"]},
+    "banned_families": ["discovered"], "banned_execs": ["scalp_market"], "live_sleeves": {},
+}  # fmt: skip
 
 
 def _trees(tmp_path: Path, head_symbols: list[str] | None = None) -> tuple[Path, Path]:
@@ -247,7 +258,7 @@ def test_rows_come_from_both_trees_and_unprintable_names_are_dropped(tmp_path: P
         "utf-8",
     )
     grid = {"symbols": [], "families": ["carry"], "timeframes": [""], "venues": ["fusion"]}
-    rows = {r["name"]: r for r in rs.roster_rows((base, head), grid)}
+    rows = {r["id"]: r for r in rs.roster_rows((base, head), grid)}
     assert "eurusd_ok_asia" in rows and "probe.EURUSD.carry.any" in rows
     assert not any(" " in n or "/" in n for n in rows)
     srb = rows["EURUSD_session_range_breakout_asia"]
@@ -281,3 +292,114 @@ def test_the_real_leg_runs_on_this_tree_and_agrees_with_itself() -> None:
     rep = rs.compare(ROOT, ROOT, [POLICY], [{**rs.scenarios()[0], "hours": [7.03]}])
     assert rep["fusion_roster"]["measured"] is True, rep["problems"]
     assert rep["verdict"] == "PASS", rep["problems"]
+
+
+# ------------------------------------------------ MF6 / MF7 (#1156 audit HOLD at e53c11df)
+
+
+def _policy_trees(tmp_path: Path, base_doc: dict[str, Any], head_doc: dict[str, Any]) -> tuple:
+    base, head = tmp_path / "base", tmp_path / "head"
+    for t, doc in ((base, base_doc), (head, head_doc)):
+        (t / "desks/mt5/data").mkdir(parents=True)
+        (t / POLICY).write_text(json.dumps(doc), "utf-8")
+    return base, head
+
+
+def _gaps(
+    tmp_path: Path,
+    base_doc: dict[str, Any],
+    head_doc: dict[str, Any],
+    legs: dict[str, Any],
+    flips: list[tuple[str, str, str]],
+    code: str = "",
+) -> dict[str, list[str]]:
+    base, head = _policy_trees(tmp_path, base_doc, head_doc)
+    if code:
+        (base / "desks/mt5/reader.py").write_text(code, "utf-8")
+    grid = {"symbols": ["EURUSD"], "families": ["carry"], "timeframes": [""], "execs": [""]}
+    rows = rs.roster_rows((base, head), grid)
+    return rs.roster_unmeasured(base, head, legs, rows, flips, ["fusion"])
+
+
+def test_a_policy_key_some_code_reads_keeps_the_file_unmeasured(tmp_path: Path) -> None:
+    legs = {"base": _leg({}), "head": _leg({})}
+    gaps = _gaps(tmp_path, {"gate_x": 1}, {"gate_x": 2}, legs, [], code="v = d['gate_x']\n")
+    assert any("key gate_x is read by code" in g for g in gaps[POLICY])
+
+
+def test_a_prose_key_no_code_reads_counts_as_covered(tmp_path: Path) -> None:
+    legs = {"base": _leg({}), "head": _leg({})}
+    gaps = _gaps(tmp_path, {"why_zz_note": "a"}, {"why_zz_note": "b"}, legs, [])
+    assert gaps[POLICY] == []
+
+
+@pytest.mark.parametrize(
+    ("key", "value", "field"),
+    [("banned_families", "gnn_propagation", "family"), ("banned_execs", "scalp_market", "exec")],
+)
+def test_a_changed_ban_must_flip_a_probed_row(
+    tmp_path: Path, key: str, value: str, field: str
+) -> None:
+    """MF6: lifting a ban the probes never reach used to PASS; now it is UNMEASURED."""
+    head_pol = {**_POL, key: [x for x in _POL[key] if x != value]}
+    base_pol = {**_POL, key: sorted({*_POL[key], value})}
+    legs = {"base": _leg({}, policy=base_pol), "head": _leg({}, policy=head_pol)}
+    doc_b, doc_h = {key: base_pol[key]}, {key: head_pol[key]}
+    gaps = _gaps(tmp_path, doc_b, doc_h, legs, [])
+    assert any(f"{key} {value} flips no probed row" in g for g in gaps[POLICY])
+    rows = rs.roster_rows(
+        _policy_trees(tmp_path / "again", doc_b, doc_h),
+        {"symbols": ["EURUSD"], "families": [""], "timeframes": [""], "execs": [""]},
+    )
+    probe = next(r for r in rows if r.get(field) == value)  # the probe exists (from the ban)
+    flips = [("admit", "EURUSD", probe["id"])]
+    assert _gaps(tmp_path / "third", doc_b, doc_h, legs, flips)[POLICY] == []
+
+
+def test_named_sleeves_are_probed_under_every_ban_and_execs_are_probed(tmp_path: Path) -> None:
+    doc = {"live_symbols": ["EURUSD"], "live_sleeves": {"EURUSD": ["eur_one"]},
+           "banned_families": ["gnn_propagation"], "banned_execs": ["scalp_market"],
+           "banned_timeframes": {"EURUSD": ["M1"]}}  # fmt: skip
+    base, head = _policy_trees(tmp_path, doc, doc)
+    grid = {"symbols": [], "families": [], "timeframes": [""], "execs": [""]}
+    ids = {r["id"] for r in rs.roster_rows((base, head), grid)}
+    assert {"eur_one~fam.gnn_propagation", "eur_one~exec.scalp_market", "eur_one~tf.M1"} <= ids
+    assert {"probe.EURUSD.exec.scalp_market", "probe.EURUSD.gnn_propagation.M1"} <= ids
+
+
+def test_a_missing_resolved_policy_keeps_the_file_unmeasured(tmp_path: Path) -> None:
+    leg = _leg({})
+    del leg["policy"]
+    gaps = _gaps(tmp_path, {}, {}, {"base": leg, "head": leg}, [])
+    assert any("resolved policy" in g for g in gaps[POLICY])
+
+
+@pytest.mark.parametrize(("block", "covered"), [("fusion", True), ("excluded", False)])
+def test_only_venue_blocks_of_the_certified_book_are_covered(
+    tmp_path: Path, block: str, covered: bool
+) -> None:
+    """MF7: the gateway and the prop executors read other blocks directly."""
+    base, head = _policy_trees(tmp_path, {}, {})
+    (base / rs.ROSTER_FILES[1]).write_text(json.dumps({block: {"A": 1}}), "utf-8")
+    (head / rs.ROSTER_FILES[1]).write_text(json.dumps({block: {"A": 2}}), "utf-8")
+    legs = {"base": _leg({}), "head": _leg({})}
+    gaps = rs.roster_unmeasured(base, head, legs, [], [], ["fusion"])
+    assert (gaps[rs.ROSTER_FILES[1]] == []) is covered
+
+
+def test_an_unmeasured_roster_change_fails_through_compare(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    base_pol = {**_POL, "banned_families": ["discovered", "gnn_propagation"]}
+    rep = _run(
+        tmp_path, monkeypatch, _leg({}, policy=base_pol), _leg({}, policy=_POL),
+    )  # fmt: skip
+    assert rep["verdict"] == "FAIL"
+    assert POLICY not in rep["fusion_roster"]["covered"]
+    assert any("flips no probed row" in p for p in rep["problems"])
+
+
+def test_the_leg_reports_type_only_errors_in_ci_logs() -> None:
+    src = (ROOT / "ops/release/replay_child.py").read_text("utf-8")
+    leg_handler = src[src.index('if scenario.get("fusion_roster")') :]
+    assert "traceback.print_exc()" not in leg_handler.split("out_path.write_text")[0]

@@ -29,7 +29,9 @@ MERGES). It also FAILS when:
 THE FUSION ROSTER (2026-11-14, Auditor MF1-MF5 on the Governance design). The two roster data
 files (ROSTER_FILES) are covered only by the child's Fusion-roster leg: rows derived from BOTH
 trees' names and the frozen base grid (ops/release/fusion_roster_grid.json), the same rows on both
-trees, every door's outcome compared. A missing or failed leg on either tree is UNMEASURED; a PR
+trees, every door's outcome compared. A file is covered only where the leg reaches every change
+in it (roster_unmeasured: MF6 policy keys and resolved values, MF7 venue blocks only). A missing
+or failed leg on either tree is UNMEASURED; a PR
 that touches the grid or the leg (ROSTER_HARNESS) FAILS; diffs are printed as kind, symbol and a
 sanitised row name, never free text. When the ONLY problem is that rows flip between admitted and
 refused, and the flips equal exactly one declared row for this PR number and this full head sha in
@@ -786,85 +788,109 @@ def _symbol_of(name: str) -> str:
     return head if re.fullmatch(r"[A-Z]{6}", head) else ""
 
 
+def _policy_values(trees: tuple[Path, ...]) -> dict[str, set[str]]:
+    """Every banned family, timeframe and exec either tree's policy file names."""
+    fams: set[str] = set()
+    tfs: set[str] = set()
+    execs: set[str] = set()
+    for tree in trees:
+        pol = _load(tree / ROSTER_FILES[0])
+        pol = pol if isinstance(pol, dict) else {}
+        fams |= {str(f).lower() for f in _as_list(pol.get("banned_families"))}
+        execs |= {str(e).lower() for e in _as_list(pol.get("banned_execs"))}
+        bt = pol.get("banned_timeframes")
+        for vals in bt.values() if isinstance(bt, dict) else []:
+            tfs |= {str(v).upper() for v in _as_list(vals)}
+    return {"families": fams, "timeframes": tfs, "execs": execs}
+
+
+def _as_list(x: Any) -> list[Any]:
+    return x if isinstance(x, list) else []
+
+
 def roster_rows(trees: tuple[Path, ...], grid: dict[str, Any]) -> list[dict[str, Any]]:
-    """Rows for the roster leg: every name either tree's policy or certified book carries, plus the
-    frozen probes over every symbol either tree or the grid names. Unprintable names are dropped
-    (MF5), so a row can only carry what the harness may echo."""
+    """Rows for the roster leg, each with a unique printable `id`: every name either tree's policy
+    or certified book carries; the probes (symbol x family x timeframe, and symbol x exec) over
+    every symbol either tree or the grid names, with the grid's families, timeframes and execs
+    PLUS every banned_* value either tree names (MF6); and each named live sleeve again under every
+    probed family, timeframe and exec, so a ban still reaches a symbol whose live_sleeves list
+    refuses every anonymous probe. Unprintable names are dropped (MF5)."""
     venues = [str(v) for v in grid.get("venues") or []]
+    banned = _policy_values(trees)
+    fams = sorted({str(f).lower() for f in grid.get("families") or []} | banned["families"])
+    tfs = sorted({str(t).upper() for t in grid.get("timeframes") or []} | banned["timeframes"])
+    execs = sorted({str(e).lower() for e in grid.get("execs") or []} | banned["execs"])
     symbols = {str(x).upper() for x in grid.get("symbols") or []}
     rows: dict[str, dict[str, Any]] = {}
 
-    def put(row: dict[str, Any]) -> None:
-        if SAFE_NAME.match(str(row["name"])) and row.get("symbol"):
-            rows.setdefault(str(row["name"]), row)
+    def put(rid: str, row: dict[str, Any]) -> None:
+        printable = all(
+            SAFE_NAME.match(str(v)) for k, v in row.items() if k != "id" and v != ""
+        )  # fmt: skip
+        if SAFE_NAME.match(rid) and printable and row.get("symbol"):
+            rows.setdefault(rid, {"id": rid, "family": "", "timeframe": "", "exec": "", **row})
 
+    named: list[tuple[str, str]] = []
     for tree in trees:
-        pol = _load(tree / ROSTER_FILES[0]) or {}
-        book = _load(tree / ROSTER_FILES[1]) or {}
-        symbols |= {str(x).upper() for x in pol.get("live_symbols") or [] if str(x) != "*"}
-        for sym, names in sorted((pol.get("live_sleeves") or {}).items()):
+        pol = _load(tree / ROSTER_FILES[0])
+        pol = pol if isinstance(pol, dict) else {}
+        book = _load(tree / ROSTER_FILES[1])
+        book = book if isinstance(book, dict) else {}
+        symbols |= {str(x).upper() for x in _as_list(pol.get("live_symbols")) if str(x) != "*"}
+        bt = pol.get("banned_timeframes")
+        symbols |= {str(k).upper() for k in (bt if isinstance(bt, dict) else {}) if k != "*"}
+        ls = pol.get("live_sleeves")
+        for sym, names in sorted((ls if isinstance(ls, dict) else {}).items()):
             symbols.add(str(sym).upper())
-            for n in names or []:
-                put({"name": str(n), "symbol": str(sym).upper(), "family": "", "timeframe": ""})
-        keys = set()
+            named += [(str(n), str(sym).upper()) for n in _as_list(names)]
+        keys: set[str] = set()
         for block in (*venues, "e8_pending", "excluded"):
             if isinstance(book.get(block), dict):
                 keys |= {str(k) for k in book[block]}
         for k in sorted(keys):
             m = _BOOK_KEY.match(k)
             if m:
-                put(
-                    {
-                        "name": k,
-                        "book_key": k,
-                        "symbol": m.group(1),
-                        "family": m.group(2),
-                        "selector": m.group(3),
-                        "timeframe": "",
-                    }
-                )
+                put(k, {"name": k, "book_key": k, "symbol": m.group(1), "family": m.group(2),
+                        "selector": m.group(3)})  # fmt: skip
             else:
-                put(
-                    {
-                        "name": k,
-                        "book_key": k,
-                        "symbol": _symbol_of(k),
-                        "family": "",
-                        "timeframe": "",
-                    }
-                )
-    for sym in sorted(s for s in symbols if SAFE_NAME.match(s)):
-        for fam in grid.get("families") or []:
-            for tf in grid.get("timeframes") or []:
-                put(
-                    {
-                        "name": f"probe.{sym}.{fam}.{tf or 'any'}",
-                        "symbol": sym,
-                        "family": str(fam),
-                        "timeframe": str(tf),
-                    }
-                )
+                put(k, {"name": k, "book_key": k, "symbol": _symbol_of(k)})
+    for n, sym in sorted(set(named)):
+        put(n, {"name": n, "symbol": sym})
+        for fam in fams:
+            put(f"{n}~fam.{fam}", {"name": n, "symbol": sym, "family": fam})
+        for tf in tfs:
+            put(f"{n}~tf.{tf}", {"name": n, "symbol": sym, "timeframe": tf})
+        for ex in execs:
+            put(f"{n}~exec.{ex}", {"name": n, "symbol": sym, "exec": ex})
+    for sym in sorted(x for x in symbols if SAFE_NAME.match(x)):
+        for fam in fams:
+            for tf in tfs:
+                rid = f"probe.{sym}.{fam}.{tf or 'any'}"
+                put(rid, {"name": rid, "symbol": sym, "family": fam, "timeframe": tf})
+        for ex in execs:
+            rid = f"probe.{sym}.exec.{ex or 'none'}"
+            put(rid, {"name": rid, "symbol": sym, "exec": ex})
     return [rows[k] for k in sorted(rows)]
 
 
 def roster_diff(
     b: dict[str, Any], h: dict[str, Any], rows: list[dict[str, Any]]
 ) -> list[tuple[str, str, str]]:
-    """(kind, symbol, name) for every outcome the head decides differently. Kinds: `admit` and
+    """(kind, symbol, row id) for every outcome the head decides differently. Kinds: `admit` and
     `refuse` (the live policy door flipped), `zero:<venue>`, `book:<venue>`, `e8`."""
-    sym = {str(r["name"]): str(r["symbol"]) for r in rows}
+    sym = {str(r["id"]): str(r["symbol"]) for r in rows}
     out: list[tuple[str, str, str]] = []
     br, hr = b.get("rows") or {}, h.get("rows") or {}
-    for name in sorted(set(br) | set(hr)):
-        if name not in sym:
+    for rid in sorted(set(br) | set(hr)):
+        if rid not in sym:
             continue
-        x, y = br.get(name) or {}, hr.get(name) or {}
+        x, y = br.get(rid) or {}, hr.get(rid) or {}
         if bool(x.get("admitted")) != bool(y.get("admitted")):
-            out.append(("admit" if y.get("admitted") else "refuse", sym[name], name))
+            out.append(("admit" if y.get("admitted") else "refuse", sym[rid], rid))
         xz, yz = x.get("zero") or {}, y.get("zero") or {}
         for v in sorted(set(xz) | set(yz)):
             if xz.get(v) != yz.get(v):
-                out.append((f"zero:{v}", sym[name], name))
+                out.append((f"zero:{v}", sym[rid], rid))
     bb, hb = b.get("books") or {}, h.get("books") or {}
     for v in sorted(set(bb) | set(hb)):
         x, y = bb.get(v), hb.get(v)
@@ -873,15 +899,129 @@ def roster_diff(
             continue
         for k in sorted(set(x or {}) | set(y or {})):
             if (x or {}).get(k) != (y or {}).get(k):
-                out.append(
-                    (
-                        f"book:{v}",
-                        _symbol_of(k) or "*",
-                        k if SAFE_NAME.match(k) else "<unprintable>",
-                    )
-                )
+                out.append((f"book:{v}", _symbol_of(k) or "*",
+                            k if SAFE_NAME.match(k) else "<unprintable>"))  # fmt: skip
     if (b.get("e8") or {}) != (h.get("e8") or {}):
         out.append(("e8", "*", "live_admissible"))
+    return out
+
+
+#: The live policy keys the leg resolves (replay_child.POLICY_MEASURED) and probes.
+POLICY_MEASURED = (
+    "live_symbols", "banned_timeframes", "banned_families", "banned_execs", "live_sleeves",
+)  # fmt: skip
+
+
+def _is_test(f: str) -> bool:
+    return "tests/" in f or f.rsplit("/", 1)[-1].startswith("test_")
+
+
+def _read_by_code(trees: tuple[Path, ...], key: str) -> bool:
+    """True when any non-test Python file in either tree spells `key` as a string literal: a key
+    some code may read is never prose, whatever its name (MF6). Fails closed on a search error."""
+    lits = (f'"{key}"', f"'{key}'")
+    for tree in trees:
+        if _is_git(tree):
+            p = subprocess.run(
+                ["git", "-C", str(tree), "grep", "-l", "-F", "-e", lits[0], "-e", lits[1],
+                 "HEAD", "--", "*.py"],
+                capture_output=True, text=True, check=False,
+            )  # fmt: skip
+            if p.returncode not in (0, 1):
+                return True
+            hits = [ln.split(":", 1)[-1] for ln in p.stdout.splitlines()]
+        else:
+            hits = [
+                f for f in tree_files(tree)
+                if f.endswith(".py") and any(x in (read(tree, f) or x) for x in lits)
+            ]  # fmt: skip
+        if any(not _is_test(f) for f in hits):
+            return True
+    return False
+
+
+def _top_diff(a: Any, b: Any) -> list[str]:
+    a = a if isinstance(a, dict) else {}
+    b = b if isinstance(b, dict) else {}
+    return sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+
+
+def _printable(k: str) -> str:
+    return k if SAFE_NAME.match(k) else "<unprintable>"
+
+
+def roster_unmeasured(
+    base: Path,
+    head: Path,
+    legs: dict[str, Any],
+    rows: list[dict[str, Any]],
+    flips: list[tuple[str, str, str]],
+    venues: list[str],
+) -> dict[str, list[str]]:
+    """Why each roster file stays UNMEASURED although the leg ran (Auditor MF6, MF7).
+
+    live_sleeve_policy.json: every top-level key that differs must be one the leg resolves
+    (POLICY_MEASURED) or prose no code reads; and every value the two RESOLVED policies (code
+    defaults included) disagree on must flip at least one row that carries it -- a change the
+    probes cannot reach is a change nobody measured.
+    CERT_BOOK_LIVE.json: every top-level block that differs must be a venue block the leg reads
+    through load_cert_book; every other block has readers the leg never runs."""
+    out: dict[str, list[str]] = {f: [] for f in ROSTER_FILES}
+    pol_file, book_file = ROSTER_FILES
+    for k in _top_diff(_load(base / pol_file), _load(head / pol_file)):
+        if k not in POLICY_MEASURED and _read_by_code((base, head), k):
+            out[pol_file].append(f"key {_printable(k)} is read by code the leg does not run")
+    byid = {str(r["id"]): r for r in rows}
+    flipped = [byid[rid] for k, _s, rid in flips if k in ("admit", "refuse") and rid in byid]
+
+    def reached(field: str, value: str, symbol: str = "*") -> bool:
+        return any(
+            str(r.get(field) or "").upper() == value.upper()
+            and (symbol == "*" or str(r.get("symbol")) == symbol)
+            for r in flipped
+        )  # fmt: skip
+
+    bp = (legs.get("base") or {}).get("policy")
+    hp = (legs.get("head") or {}).get("policy")
+    if not (isinstance(bp, dict) and isinstance(hp, dict)):
+        out[pol_file].append("the leg did not report the resolved policy")
+    else:
+        for key, field in (("banned_families", "family"), ("banned_execs", "exec")):
+            for v in sorted(set(_as_list(bp.get(key))) ^ set(_as_list(hp.get(key)))):
+                if not reached(field, str(v)):
+                    out[pol_file].append(f"{key} {_printable(str(v))} flips no probed row")
+        for v in sorted(
+            set(_as_list(bp.get("live_symbols"))) ^ set(_as_list(hp.get("live_symbols")))
+        ):
+            if not reached("symbol", str(v)):
+                out[pol_file].append(f"live_symbols {_printable(str(v))} flips no probed row")
+        btf, htf = bp.get("banned_timeframes") or {}, hp.get("banned_timeframes") or {}
+        for sym in sorted(set(btf) | set(htf)):
+            for v in sorted(set(_as_list(btf.get(sym))) ^ set(_as_list(htf.get(sym)))):
+                if not reached("timeframe", str(v), str(sym)):
+                    out[pol_file].append(
+                        f"banned_timeframes {_printable(str(sym))} {_printable(str(v))} "
+                        "flips no probed row"
+                    )
+        bls, hls = bp.get("live_sleeves") or {}, hp.get("live_sleeves") or {}
+        for sym in sorted(set(bls) | set(hls)):
+            x, y = bls.get(sym), hls.get(sym)
+            if x == y:
+                continue
+            if x is None or y is None:  # the symbol's restriction appeared or went
+                if not reached("symbol", str(sym)):
+                    out[pol_file].append(f"live_sleeves {_printable(str(sym))} flips no row")
+                continue
+            for n in sorted(set(_as_list(x)) ^ set(_as_list(y))):
+                if not reached("name", str(n), str(sym)):
+                    out[pol_file].append(
+                        f"live_sleeves {_printable(str(sym))} {_printable(str(n))} flips no row"
+                    )
+    for k in _top_diff(_load(base / book_file), _load(head / book_file)):
+        if k not in venues:
+            out[book_file].append(
+                f"block {_printable(k)} has readers the leg does not run (not a venue block)"
+            )
     return out
 
 
@@ -1046,8 +1186,16 @@ def compare(
     ]
     closure = import_closure(base)
     covered = imported | new_and_bounded(base, head, head_imported)
-    if roster_ok:
-        covered |= set(ROSTER_FILES)
+    roster_gaps: dict[str, list[str]] = {}
+    if roster_ok and roster is not None:
+        roster_gaps = roster_unmeasured(
+            base, head, roster_legs, roster_rows_, roster_flips, list(roster["venues"])
+        )
+        for f in ROSTER_FILES:
+            if not roster_gaps[f]:
+                covered.add(f)
+            elif f in changed:
+                problems += [f"UNMEASURED fusion roster: {f} {why}" for why in roster_gaps[f]]
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
@@ -1080,6 +1228,7 @@ def compare(
         "verdict": verdict,
         "fusion_roster": {
             "measured": roster_ok,
+            "covered": sorted(f for f in ROSTER_FILES if roster_ok and not roster_gaps.get(f)),
             "rows": len(roster_rows_),
             "divergence": [list(x) for x in roster_flips],
             "declared": None if not flips else (declared_why or "matched"),
