@@ -256,38 +256,26 @@ FRED_SERIES = {
     "BAMLH0A0HYM2": "US high-yield OAS -- credit appetite",
     "VIXCLS": "VIX",
 }
-FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-
-#: FRED'S EDGE ALLOWLISTS THE CLIENT TOKEN, AND `UA` IS NOT ON IT -- which is why this axis read
-#: 0 series for its entire life while the other three worked on the same clock, the same box and
-#: the same IP.
-#:
-#: MEASURED ON THE TRADING BOX 2026-09-24, one series (DGS10), same URL, same process, back to
-#: back -- the only variable is this header:
-#:
-#:     "quant-desk-axis-ingest/1.0 (research)"      ConnectionResetError 10054 after 19.2 s
-#:     "curl/8.4.0"                                 HTTP 200, 268,823 B, 0.04 s
-#:     "curl/8.4.0 quant-desk-axis-ingest/1.0"      HTTP 200, 268,823 B, 0.04 s
-#:     "quant-desk-axis-ingest/1.0 curl/8.4.0"      TimeoutError after 30.0 s
-#:     "python-urllib/3.14"                         HTTP 200, 268,823 B, 0.11 s
-#:
-#: The FIRST token decides: an Akamai edge accepts the TLS handshake, then tarpits or resets the
-#: response body for a token it does not recognise. No HTTP status is ever returned, so the
-#: failure arrives as a timeout and reads exactly like a network fault -- which is how it survived
-#: as "FRED currently times out and resets from this box's IP (7/7)", a fact about the publisher.
-#: It was a fact about this string.
-#:
-#: AN HONEST TOKEN, NEVER ANOTHER CLIENT'S (audit of #138, MF2). The first token is the client
-#: this request actually comes from -- urllib's own `Python-urllib/<version>`, exactly what
-#: urllib sends with no header at all, and measured above at HTTP 200 -- and the desk's identity
-#: is the second token so the publisher can see who is asking. Claiming to be `curl` to clear an
-#: edge filter would be impersonating another client to pass that filter, which the desk's
-#: no-bypassing data rule forbids even where, as here, the data itself is keyless and public.
-#:
-#: SCOPED TO FRED ON PURPOSE. `UA` is shared with BIS, COT and ECB, which were ingesting 85.9 MB,
-#: 1.1 MB and 786 KB on this exact header; changing it globally would put three working axes at
-#: risk to repair a fourth.
-FRED_UA = f"Python-urllib/{urllib.request.__version__} quant-desk-axis-ingest/1.0"
+#: FRED IS TERMS-REFUSED FOR EVERY AUTOMATED FETCH (governance/fred-terms-ruling-2026-11-13.md;
+#: Audit thread, 2026-11-14). The key, the keyless fredgraph.csv and any client token are all
+#: irrelevant: the owner's terms refuse automated access. So this axis opens NO socket. The
+#: fetch and its edge-allowlisted client token are removed rather than left switched off, so no
+#: later session re-enables them by flipping a flag. Held `data/axes/fred.json` stays, labelled;
+#: `axis_ingest_all` never overwrites a populated axis with this empty document.
+#: Lawful routes, per the ruling: the public-domain series from their primary publishers (DGS10,
+#: DGS2, T10Y2Y from Treasury's daily par yield curve; DTWEXBGS from the Fed's H.10; T10YIE from
+#: Treasury nominal and real curves), and the third-party ones (VIXCLS is Cboe's, BAMLH0A0HYM2 is
+#: ICE BofA's) only from their owners under their owners' terms, or fenced as missed growth.
+FRED_TERMS = ("BLOCKED_ON_TERMS: FRED (stlouisfed.org) refuses automated fetches on every "
+              "route, keyed or keyless (governance FRED ruling 2026-11-13)")
+FRED_MISSED_GROWTH = {
+    "mechanism": "fred_terms_refusal",
+    "lost": "the macro_state axis refresh: rates, term spread, broad dollar, breakevens, "
+            "high-yield OAS and VIX for the nine shadow_institutional mechanisms that read it",
+    "stand_in": "held data/axes/fred.json (labelled, not refreshed); primary-publisher routes "
+                "for the public-domain series; VIX and OAS only from their owners or fenced",
+    "verdict": "a gap, not a zero",
+}
 
 ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
            "?lastNObservations={n}&format=csvdata")
@@ -369,35 +357,19 @@ def _csv_series(text, date_col, val_col):
 
 
 def ingest_fred():
-    """US rates, spreads, dollar, breakevens, credit and vol -- the macro STATE series.
+    """The FRED macro_state axis is REFUSED ON TERMS and opens no socket (see FRED_TERMS).
 
-    THE VINTAGE CAVEAT IS REAL AND RECORDED. fredgraph.csv serves the CURRENT vintage, so a
-    revised series silently back-dates knowledge. For DAILY MARKET series -- yields, the dollar
-    index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
-    negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
-    """
-    series, failed = {}, {}
-    for sid, what in FRED_SERIES.items():
-        try:
-            req = urllib.request.Request(FRED_URL.format(sid=sid),
-                                         headers={"User-Agent": FRED_UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-                text = r.read().decode("utf-8", "replace")
-            hdr = text.splitlines()[0].split(",")
-            pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
-            if pts:
-                series[sid] = {"what": what, "n": len(pts), "first": pts[0][0],
-                               "last": pts[-1][0],
-                               "points": [{"d": d, "v": v} for d, v in pts]}
-        except Exception as exc:
-            failed[sid] = f"{type(exc).__name__}: {str(exc)[:60]}"
+    Returns the axis's refusal record: zero series, every listed series named as refused, the
+    terms clause and the missed-growth line. `blocked_on_terms` tells `main` never to publish it,
+    and `axis_ingest_all` never overwrites a populated axis with an empty document, so the held
+    file stays as it is, labelled."""
     return {"axis": "macro_state", "id": "fred_series", "source": "fredgraph.csv",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "n_series": len(series), "n_failed": len(failed), "failed": failed,
-            "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
-                             "or national-accounts series is in this list on purpose."),
+            "n_series": 0, "n_failed": len(FRED_SERIES),
+            "failed": dict.fromkeys(FRED_SERIES, FRED_TERMS),
+            "blocked_on_terms": FRED_TERMS, "missed_growth": FRED_MISSED_GROWTH,
             "shape": "series[sid].points -- one dated state variable each",
-            "series": series}
+            "series": {}}
 
 
 def ingest_ecb():
@@ -669,6 +641,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"    {k:<14} FAILED {v[:58]}")
     if not a.apply:
         print("  --apply not given; nothing written")
+        return 0
+    if doc.get("blocked_on_terms"):
+        print(f"  {doc['blocked_on_terms']}; held axis left as it is, nothing written")
         return 0
     out = publish(a.axis, doc)
     print(f"-> {out}")
