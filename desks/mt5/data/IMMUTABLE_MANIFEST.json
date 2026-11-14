@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-10-13T16:50:25.269944+00:00",
- "signed_by": "principal",
+ "signed_utc": "2026-11-11T01:31:08.278230+00:00",
+ "signed_by": "principal (zuck 2026-11-11 01:30Z: re-seal state_admission for the venue clock fix)",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -19,7 +19,7 @@
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "a002827611ea8079",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
-  "libs/regime/state_admission.py": "1fc3e4878041db7a",
+  "libs/regime/state_admission.py": "7e6891e762a88c65",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
   "scripts/check_immutable_evaluator.py": "19c5c5d23cfec184",
@@ -2483,7 +2483,6 @@
   "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
   "libs/validation/redteam.py": "Codex, principal-authorized repair",
   "libs/validation/calibration.py": "Codex, principal-authorized repair",
-  "libs/regime/state_admission.py": "Codex, principal-authorized repair",
   "scripts/check_growth_governance.py": "Codex, principal-authorized repair",
   "scripts/check_heat_floor_wiring.py": "Codex, principal-authorized repair",
   "scripts/run_deadman_switch.py": "Codex, principal-authorized repair",
@@ -2493,6 +2492,7 @@
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
+  "libs/portfolio/allocator_proof.py": "principal"
  }
 }

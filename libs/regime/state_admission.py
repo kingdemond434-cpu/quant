@@ -87,6 +87,9 @@ class Trade:
     r: float
     #: dimension name -> bucket label for this trade.
     buckets: dict[str, str] = field(default_factory=dict)
+    #: What `when` is: "broker" (a broker STAMP -- every ledger the desk writes) or "utc" (a
+    #: true UTC instant). A stamp's hour is already its session-phase hour.
+    basis: str = "broker"
 
 
 @dataclass(frozen=True)
@@ -248,6 +251,7 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
             from research.session_phase import (  # type: ignore[import-not-found]
                 broker_utc_offset_h,
                 phase_at,
+                phase_for_hour,
             )
         except ImportError:
             return None
@@ -258,7 +262,14 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
         def _session(t: Trade) -> str:
             from datetime import datetime
             try:
-                return str(phase_at(datetime.fromisoformat(t.when), broker_utc_offset_h=off))
+                when = datetime.fromisoformat(t.when)
+                if t.basis != "utc":
+                    # A broker stamp is already on the phase clock: no offset, no shift.
+                    return str(phase_for_hour(when.hour))
+                # A true UTC instant takes the offset IN FORCE AT THE TRADE: the venue clock moves
+                # with US DST, so one constant mislabels everything across a clock change.
+                at_off = broker_utc_offset_h(at=when)[0]
+                return str(phase_at(when, broker_utc_offset_h=off if at_off is None else at_off))
             except (TypeError, ValueError):
                 return ""
         return _session

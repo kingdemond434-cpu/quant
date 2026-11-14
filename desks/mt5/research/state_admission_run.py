@@ -73,6 +73,16 @@ def _r(row: dict) -> float | None:
     return None
 
 
+def _basis(row: dict) -> str:
+    """The row's DECLARED timestamp basis ('utc' or 'broker'), read by the same rule the
+    allocator uses, so a stamp is never offset as if it were a UTC instant."""
+    try:
+        from session_phase import row_basis
+        return row_basis(row)
+    except ImportError:                                   # pragma: no cover - import context
+        return "broker"
+
+
 def load_trades(basis: str = "shadow") -> list[Trade]:
     """Realised trades with their entry time, one basis at a time.
 
@@ -87,7 +97,8 @@ def load_trades(basis: str = "shadow") -> list[Trade]:
                 row = json.loads(line)
                 when, r = _entry_time(row), _r(row)
                 if when and r is not None:
-                    out.append(Trade(sleeve=str(row.get("sleeve") or "?"), when=when, r=r))
+                    out.append(Trade(sleeve=str(row.get("sleeve") or "?"), when=when, r=r,
+                                     basis=_basis(row)))
         except (OSError, ValueError):
             return []
         return out
@@ -107,7 +118,7 @@ def load_trades(basis: str = "shadow") -> list[Trade]:
                     continue
                 when, r = _entry_time(row), _r(row)
                 if when and r is not None:
-                    out.append(Trade(sleeve=sleeve, when=when, r=r))
+                    out.append(Trade(sleeve=sleeve, when=when, r=r, basis=_basis(row)))
     return out
 
 
@@ -129,7 +140,7 @@ def label(trades: list[Trade], dimensions: tuple[str, ...]) -> tuple[list[Trade]
             b = fn(t)
             if b:
                 buckets[d] = b
-        out.append(Trade(sleeve=t.sleeve, when=t.when, r=t.r, buckets=buckets))
+        out.append(Trade(sleeve=t.sleeve, when=t.when, r=t.r, buckets=buckets, basis=t.basis))
     return out, gaps
 
 

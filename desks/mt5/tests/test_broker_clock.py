@@ -151,10 +151,10 @@ def test_the_resolver_prefers_a_terminal_over_an_inference() -> None:
     """A measurement from bars is what a host with NO terminal deserves; it is not what a host
     with one should use. The tier order is the whole safety property here."""
     src = (_DESK / "research" / "session_phase.py").read_text("utf-8")
-    i_live = src.index('"live_terminal"')
+    i_clock = src.index('"venue_clock_ny_plus_7"')
     i_rec = src.index('"recorded_broker_clock"')
     i_bars = src.index('"measured_from_bars"')
-    assert i_live < i_rec < i_bars, "the fallback order must be terminal, record, then inference"
+    assert i_clock < i_rec < i_bars, "the order must be venue clock, record, then inference"
 
 
 def test_the_inference_is_only_believed_when_it_says_MEASURED() -> None:
