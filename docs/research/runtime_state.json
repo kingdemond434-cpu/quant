@@ -724,7 +724,7 @@
     ]
    },
    {
-    "at": "2026-11-14T05:15:01+00:00",
+    "at": "2026-11-14T05:21:43+00:00",
     "host": "vm",
     "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
     "on_attesting_host": false,
@@ -27940,7 +27940,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T05:15:01+00:00"
+   "measured_at": "2026-11-14T05:21:43+00:00"
   },
   {
    "organ": "leg:redteam_counts",
@@ -27968,7 +27968,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T05:15:01+00:00"
+   "measured_at": "2026-11-14T05:21:43+00:00"
   }
  ],
  "ratchet": {

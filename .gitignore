@@ -629,3 +629,6 @@ desks/mt5/data/bar_clock_probes.summary.json.tmp
 # proposer_common.donate_per_family: the cells each converting producer has already charged
 # (one JSONL per source). Box state; losing it re-charges once, never under-counts.
 desks/mt5/data/donation_ledgers/
+# The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/LOSS_LEARNER.json
+!desks/mt5/reports/PLAUSIBILITY_AUDIT.json

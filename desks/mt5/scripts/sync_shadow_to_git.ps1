@@ -876,6 +876,22 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # THE LOSS BRAIN (2026-11-11, zuck: "did we finish the loss intelligence"). decay_monitor
+    # runs hourly and loss_learner hourly + daily on the box, but none of their outputs crossed
+    # the wire: origin's decay_live.json still read NO_ROSTER from 2026-09-04, and the loss
+    # learner's report, replacements and per-book rollout requests had never been committed --
+    # so the hourly pass scored all five loss-brain lines RED off the box whatever the box held.
+    # (decay_live.json follows in its own PR: its writer is a money-closure file whose status
+    # strings must first stop carrying exception text, and that change has its own veto clock.)
+    "desks/mt5/reports/LOSS_LEARNER.json",
+    "desks/mt5/data/loss_learning/replacements.jsonl",
+    "desks/mt5/data/loss_learning/BOOK_ROLLOUTS.json",
+    # the too-good-to-be-true forensics (libs/validation/plausibility): every flagged cell's
+    # evidence, and the fast-track list forward shadow reads first
+    "desks/mt5/data/plausibility/forensics.jsonl",
+    "desks/mt5/data/plausibility/FAST_TRACK.json",
+    "desks/mt5/data/plausibility/LEAK_PROVEN.json",
+    "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
     # THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13), cut to what the public
     # repository may carry (Auditor HOLD MF1/MF2 on #639): no absolute money, no account label,
     # no host, no filesystem path. TRIAL_ALLOCATION, admission_heavy_pass, RESEARCH_PNL,
@@ -890,10 +906,6 @@ $reportPaths = @(
     "desks/mt5/reports/admission_heavy_pass.json",
     "desks/mt5/reports/RESEARCH_PNL.json",
     "desks/mt5/reports/ACCOUNT_PARITY.json",
-    # the loss loop's reading (Loss loop thread, 2026-11-13): LOSS_LEARNER.json had never crossed.
-    # data/decay_live.json is NOT here yet: decay_monitor writes free exception text into it
-    # (Auditor, 2026-11-13); it joins this list with the writer that cuts that to a type name.
-    "desks/mt5/reports/LOSS_LEARNER.json",
     # THE RED TEAM, MEASURABLE FROM ORIGIN (hourly-pass sweep, 2026-11-13). The committees, the
     # ensembles, the falsifier battery and decay_live all carry free exception text and stay off
     # the wire; REDTEAM_COUNTS is their enum-only tally (research/redteam_counts.py). The regime
