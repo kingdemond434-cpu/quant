@@ -112,6 +112,19 @@ UNMEASURED_STR = "UNMEASURED"
 #: producer and excuse a broad one that collapsed.
 STARVED_FRACTION = 0.05
 
+#: Seat directories that were ONE-OFF donations, not producers, and so can never write again.
+#: Counting them DEAD every window asks for a replacement for something that was never meant to
+#: run; the honest verdict is RETIRED with the reason, and the ground's live owner named. A seat
+#: listed here that writes again is judged like any other producer: RETIRED applies only at zero.
+RETIRED_SEATS: dict[str, str] = {
+    "firm_mining": ("one-off hand donation of 2026-09-27 (docs/research/firm_mining/, five firm "
+                    "clusters); max_audit classes it a directory record, not inventory. The "
+                    "same ground is mined live by fund_playbook and institutional_cards"),
+    "statarb": ("box-only seat directory with no writer anywhere in the code (last file "
+                "2026-09-25); its stat-arb cluster was donated once through firm_mining "
+                "(statarb_multistrat) and is mined live by the pair families"),
+}
+
 #: producer -> the alternative that inherits its budget if it is ever declared DEAD. Declared in
 #: advance, by intent, so a dead producer has a decision attached to it rather than a question.
 REPLACEMENTS: dict[str, str] = {
@@ -229,7 +242,9 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     universe = list(seats.values())
     median = sorted(universe)[len(universe) // 2] if universe else 0
 
-    for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS)):
+    # A retired seat is still named in the census, so its RETIRED verdict is visible rather than
+    # the seat silently vanishing from the report.
+    for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS) | set(RETIRED_SEATS)):
         n = seats.get(name)
         rec: dict[str, Any] = {"producer": name, "rows_in_window": n,
                                "window_days": window_days}
@@ -238,6 +253,8 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
                         "why": ("no intelligence seat records this producer's output. It may "
                                 "write elsewhere, or it may write nowhere -- and those are not "
                                 "the same thing, so neither is assumed.")})
+        elif n == 0 and name in RETIRED_SEATS:
+            rec.update({"verdict": "RETIRED", "why": RETIRED_SEATS[name]})
         elif n == 0:
             rec.update({"verdict": "DEAD",
                         "why": f"zero rows in {window_days:g} day(s)",
@@ -260,7 +277,8 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output "
                 "is DEAD and carries a replacement; low output is STARVED and carries a budget "
-                "question; no artifact is UNMEASURED and carries neither."),
+                "question; no artifact is UNMEASURED and carries neither; a one-off donation "
+                "seat that cannot write again is RETIRED and carries its reason."),
         "window_days": window_days,
         "median_rows": median,
         "n_producers": len(rows),

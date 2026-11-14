@@ -17,7 +17,22 @@
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_frontier_audit_task.ps1
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_frontier_audit_task.ps1 -IfMissing
-param([switch]$IfMissing)
+#   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_frontier_audit_task.ps1 -EnsureSingleInstance
+#
+# ONE INSTANCE AT A TIME (2026-10-20). This installer has always registered IgnoreNew, but a task
+# that predates it (it was hand-registered before 2026-09-30, and -IfMissing never touches an
+# existing registration) can carry Parallel or Queue. -EnsureSingleInstance reads the LIVE task
+# and changes exactly one setting, MultipleInstances -> IgnoreNew, by mutating the live settings
+# object (the install_state_vector_task.ps1 pattern: rebuilding the set by hand is how a trigger
+# or a time limit gets lost). Trigger, action, principal, time limit and the organ list are left
+# exactly as they are, so every audit still runs, fully, on its daily schedule: a trigger that
+# fires while a pass is running is absorbed, and that pass is the day's audit.
+#
+# NOTE ON "~30 INSTANCES" (measured 2026-10-20 from reports/process_health.json): the thirty
+# `MT5-FrontierAudit (...)` rows there are ONE ROW PER ORGAN of this single sequential task
+# (`MT5-FrontierAudit (world model)`, `(quantbench)`, ...), not thirty running copies. The runner
+# calls each organ in turn with `call :run`; it never starts two.
+param([switch]$IfMissing, [switch]$EnsureSingleInstance)
 
 $ErrorActionPreference = 'Stop'
 
@@ -26,6 +41,22 @@ $DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
 $Runner   = Join-Path $RepoRoot 'ops\run_frontier_audit.cmd'
 if (-not (Test-Path $Runner)) { throw "run_frontier_audit.cmd missing at $Runner" }
+
+if ($EnsureSingleInstance) {
+    $live = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if (-not $live) { "{0}: not registered; run without switches to install it" -f $TaskName; exit 1 }
+    $before = [string]$live.Settings.MultipleInstances
+    if ($before -eq 'IgnoreNew') {
+        "{0}: MultipleInstances already IgnoreNew; nothing changed" -f $TaskName
+        exit 0
+    }
+    $live.Settings.MultipleInstances = 'IgnoreNew'
+    Set-ScheduledTask -InputObject $live | Out-Null
+    $after = [string](Get-ScheduledTask -TaskName $TaskName).Settings.MultipleInstances
+    "{0}: MultipleInstances {1} -> {2} (trigger, action, principal and limit unchanged)" -f $TaskName, $before, $after
+    if ($after -ne 'IgnoreNew') { exit 1 }
+    exit 0
+}
 
 if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
     "{0}: already registered; nothing to do" -f $TaskName

@@ -31,6 +31,7 @@ INPUTS: dict[str, tuple[Path, float]] = {
     "plumbing": (REPORTS / "PLUMBING_INVARIANTS.json", 2.5),
     "self_heal": (REPORTS / "DESK_SELF_HEAL.json", 2.5),
     "tier5": (REPORTS / "TIER5_ACCEPTANCE.json", 26.0),
+    "global_coverage": (REPORTS / "GLOBAL_COVERAGE_TENSOR.json", 2.5),
 }
 
 BRACKET22_DISPOSITION: tuple[dict[str, str], ...] = (
@@ -135,6 +136,14 @@ def build(*, now: datetime | None = None,
         "effective_breadth": _number(
             docs.get("breadth"), (("effective", "effective_breadth"),
                                   ("effective_breadth",), ("n_eff",))),
+        # THE GLOBAL COVERAGE TENSOR: the principal's three numbers and the proven-path share.
+        "coverage_distinct_cells": _number(docs.get("global_coverage"), (("distinct",),)),
+        "coverage_effective_independent": _number(
+            docs.get("global_coverage"), (("effective_independent",),)),
+        "coverage_proven_path_share": _number(
+            docs.get("global_coverage"), (("proven_path_covered_share",),)),
+        "coverage_missions_emitted": _number(
+            docs.get("global_coverage"), (("missions", "emitted"),)),
     }
     old = previous.get("counters", {}) if isinstance(previous, Mapping) else {}
     deltas: dict[str, int | float | None] = {}
@@ -154,6 +163,7 @@ def build(*, now: datetime | None = None,
                       if isinstance(row, dict))
 
     graph = docs.get("knowledge_graph") or {}
+    gcov = docs.get("global_coverage") or {}
     return {
         "at": now.isoformat(timespec="seconds"),
         "status": "CURRENT" if not issues else "ATTENTION",
@@ -172,6 +182,8 @@ def build(*, now: datetime | None = None,
             "mechanisms_with_leads_but_no_cells": graph.get(
                 "mechanisms_with_leads_but_no_cells", []),
             "unconverted_testable_leads": graph.get("unconverted_testable_leads"),
+            "global_coverage_top_missions": gcov.get("top_missions", []),
+            "global_coverage_proven_path_share": gcov.get("proven_path_covered_share"),
         },
         "source_health": health,
         "question_contract": ["what happened overnight", "what is blocked",
@@ -201,7 +213,7 @@ def answer(question: str, snapshot: Mapping[str, Any], *, term: str = "") -> dic
                 "source": "KNOWLEDGE_GRAPH.json::top_sources_by_yield"}
     if "under-research" in q or "coverage" in q or "missing" in q:
         return {"question": question, "answer": snapshot.get("under_researched"),
-                "source": "KNOWLEDGE_GRAPH.json"}
+                "source": "KNOWLEDGE_GRAPH.json + GLOBAL_COVERAGE_TENSOR.json"}
     if term:
         try:
             import knowledge_graph

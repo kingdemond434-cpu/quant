@@ -1,0 +1,602 @@
+"""process_health reads the scheduler with `schtasks /fo csv`, parsed by the csv module.
+
+MEASURED 2026-10-20 on the trading box: the PowerShell probe (Get-ScheduledTask, CIM underneath)
+timed out at 45 s under load and the verbose schtasks fallback at 20 s, so every one of the 73
+rows read SCHEDULER_UNMEASURED. `schtasks /query /fo csv` returns there in about 6 s. These pin
+the new probe: brief inventory first, verbose run history second, both on the 45 s bound, and an
+unread inventory still UNMEASURED -- never NOT_SCHEDULED, and an unread result never a clean 0.
+"""
+
+from __future__ import annotations
+
+import csv
+import importlib.util
+import io
+import subprocess
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[2]
+_spec = importlib.util.spec_from_file_location(
+    "process_health_under_test", ROOT / "ops" / "process_health.py"
+)
+assert _spec and _spec.loader
+ph = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ph)
+
+BRIEF = (
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\MT5-Gateway","20/10/2026 19:00:00","Running"\r\n'
+    '"\\MT5-Hourly","20/10/2026 19:05:00","Ready"\r\n'
+    '"\\MT5-Old","N/A","Disabled"\r\n'
+    '"\\Odd, ""quoted"" name","N/A","Ready"\r\n'
+    "\r\n"
+    "Folder: \\Microsoft\\Windows\r\n"
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
+)
+
+VERBOSE = (
+    '"HostName","TaskName","Next Run Time","Status","Logon Mode","Last Run Time","Last Result",'
+    '"Author","Task To Run","Scheduled Task State"\r\n'
+    '"BOX","\\MT5-Gateway","20/10/2026 19:00:00","Running","Interactive only",'
+    '"20/10/2026 18:00:00","267009","quant","cmd /c ""a, b""","Enabled"\r\n'
+    # a second trigger of the same task: schtasks /v prints the task again; first row wins
+    '"BOX","\\MT5-Gateway","20/10/2026 19:30:00","Running","Interactive only",'
+    '"20/10/2026 18:00:00","1","quant","cmd","Enabled"\r\n'
+    '"BOX","\\MT5-Hourly","20/10/2026 19:05:00","Ready","Interactive only",'
+    '"20/10/2026 18:05:00","-2147024894","quant","py","Enabled"\r\n'
+    '"HostName","TaskName","Next Run Time","Status","Logon Mode","Last Run Time","Last Result",'
+    '"Author","Task To Run","Scheduled Task State"\r\n'
+    '"BOX","\\MT5-Old","N/A","Disabled","Interactive only","N/A","0","quant","py","Disabled"\r\n'
+)
+
+
+def _fake(monkeypatch: pytest.MonkeyPatch, brief: Any, verbose: Any) -> list[list[str]]:
+    """Answer the two schtasks queries; an Exception instance is raised instead."""
+    calls: list[list[str]] = []
+
+    def run(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(list(cmd))
+        assert cmd[0] == "schtasks", f"the probe ran {cmd[0]!r}; it must be schtasks only"
+        assert kw.get("timeout") == (90 if "/v" in cmd else 45), kw
+        answer = verbose if "/v" in cmd else brief
+        if isinstance(answer, BaseException):
+            raise answer
+        return subprocess.CompletedProcess(cmd, 0, answer, "")
+
+    monkeypatch.setattr(ph.subprocess, "run", run)
+    return calls
+
+
+def test_the_timeout_is_kept_at_45_seconds() -> None:
+    assert ph.SCHTASKS_TIMEOUT_S == 45
+
+
+def test_the_verbose_query_has_its_own_90_second_bound() -> None:
+    # Measured 28.3 s for the verbose read on the trading box (2026-10-20); 45 s was under 1.6x.
+    assert ph.SCHTASKS_VERBOSE_TIMEOUT_S == 90
+
+
+def test_brief_csv_parses_folders_quotes_and_drops_microsoft() -> None:
+    rows = ph.parse_schtasks_csv(BRIEF)
+    names = [r["TaskName"] for r in rows]
+    assert names == ["\\MT5-Gateway", "\\MT5-Hourly", "\\MT5-Old", '\\Odd, "quoted" name']
+    assert rows[2]["Status"] == "Disabled"
+
+
+def test_verbose_csv_keeps_one_row_per_task_and_commas_in_commands() -> None:
+    rows = {r["TaskName"]: r for r in ph.parse_schtasks_csv(VERBOSE)}
+    assert set(rows) == {"\\MT5-Gateway", "\\MT5-Hourly", "\\MT5-Old"}
+    assert rows["\\MT5-Gateway"]["Last Result"] == "267009"
+    assert rows["\\MT5-Gateway"]["Task To Run"] == 'cmd /c "a, b"'
+
+
+def test_both_queries_answer_and_the_run_history_is_joined(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _fake(monkeypatch, BRIEF, VERBOSE)
+    rows, status = ph._tasks()
+    assert status == "OK schtasks"
+    assert ["schtasks", "/query", "/fo", "csv"] in calls
+    assert ["schtasks", "/query", "/fo", "csv", "/v"] in calls
+    by = {r["TaskName"]: r for r in rows}
+    assert by["\\MT5-Hourly"]["Last Result"] == "-2147024894"
+    assert "ResultUnmeasured" not in by["\\MT5-Hourly"]
+    # present in the inventory, absent from the verbose dump: its history is NOT read
+    assert by['\\Odd, "quoted" name']["ResultUnmeasured"]
+
+
+def _build(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, contracts: dict[str, tuple[str, int, str]]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    (tmp_path / "fresh.json").write_text("{}", "utf-8")
+    monkeypatch.setattr(ph, "ROOT", tmp_path)
+    monkeypatch.setattr(ph, "_contracts", lambda: dict(contracts))
+    doc = ph.build()
+    return doc, {r["name"]: r for r in doc["processes"]}
+
+
+CONTRACTS = {
+    "MT5-Hourly": ("fresh.json", 120, "hourly"),
+    "MT5-Gateway": ("fresh.json", 120, "gateway"),
+    "MT5-Vanished": ("fresh.json", 120, "deleted by hand"),
+}
+
+
+def test_full_read_judges_failures_and_absences(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, BRIEF, VERBOSE)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert by["MT5-Hourly"]["verdict"] == "FAILING"  # 0x80070002, printed signed
+    assert by["MT5-Gateway"]["verdict"] == "OK"  # 267009 = running
+    assert by["MT5-Old"]["verdict"] == "DISABLED"
+    assert by["MT5-Vanished"]["verdict"] == "NOT_SCHEDULED"
+    assert doc["counts"].get("SCHEDULER_UNMEASURED", 0) == 0
+
+
+def test_verbose_timeout_keeps_the_inventory_and_never_reads_a_clean_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, BRIEF, subprocess.TimeoutExpired(["schtasks", "/v"], 45))
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert "TimeoutExpired" in doc["scheduler_status"]
+    # the inventory still judges: absent organ, disabled task
+    assert by["MT5-Vanished"]["verdict"] == "NOT_SCHEDULED"
+    assert by["MT5-Old"]["verdict"] == "DISABLED"
+    # the result code was not read, and is not published as 0
+    for name in ("MT5-Hourly", "MT5-Gateway"):
+        assert by[name]["last_result_code"] is None
+        assert by[name]["last_result"].startswith("UNMEASURED")
+        assert by[name]["verdict"] == "OK" and "not read" in by[name]["why"]
+    assert doc["counts"].get("SCHEDULER_UNMEASURED", 0) == 0
+
+
+@pytest.mark.parametrize(
+    "failure", [subprocess.TimeoutExpired(["schtasks"], 45), FileNotFoundError("schtasks")]
+)
+def test_an_unread_inventory_stays_unmeasured(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, failure: BaseException
+) -> None:
+    calls = _fake(monkeypatch, failure, VERBOSE)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("UNMEASURED: ")
+    assert type(failure).__name__ in doc["scheduler_status"]
+    assert len(calls) == 1, "verbose must not be tried when the inventory itself failed"
+    assert {r["verdict"] for r in by.values()} == {"SCHEDULER_UNMEASURED"}
+    assert doc["status"] == "UNMEASURED"
+
+
+def test_a_nonzero_exit_is_unmeasured(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def run(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(cmd, 1, "", "ERROR: Access is denied.")
+
+    monkeypatch.setattr(ph.subprocess, "run", run)
+    rows, status = ph._tasks()
+    assert rows == [] and status.startswith("UNMEASURED: ") and "Access is denied" in status
+
+
+# AUDIT HOLD 2026-10-14 (PUBLISH_SYNC_SCHTASKS_55cd0c44a): output schtasks printed but this
+# parser could not read was returned as [], which `_tasks()` reported as "OK schtasks" and
+# `build()` then turned into NOT_SCHEDULED for every contracted organ. Each shape probed there
+# is pinned below as UNMEASURED.
+
+GERMAN_BRIEF = (
+    '"Aufgabenname","Nächste Laufzeit","Status"\r\n'
+    '"\\MT5-Gateway","20.10.2026 19:00:00","Wird ausgeführt"\r\n'
+)
+ACCESS_LEVEL_INFO = (
+    "INFO: There are no scheduled tasks presently available at your access level.\r\n"
+)
+MICROSOFT_ONLY = (
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
+)
+
+
+@pytest.mark.parametrize(
+    "brief, needle",
+    [
+        (GERMAN_BRIEF, "no TaskName header"),
+        (ACCESS_LEVEL_INFO, "no TaskName header"),
+        (MICROSOFT_ONLY, "no non-Microsoft task"),
+    ],
+    ids=["localised-header", "access-level-info-at-exit-0", "zero-non-microsoft-rows"],
+)
+def test_an_unparseable_or_empty_inventory_is_unmeasured_not_unscheduled(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, brief: str, needle: str
+) -> None:
+    calls = _fake(monkeypatch, brief, VERBOSE)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("UNMEASURED: ")
+    assert needle in doc["scheduler_status"]
+    assert len(calls) == 1, "verbose must not be tried when the inventory itself was unread"
+    assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
+    assert {r["verdict"] for r in by.values()} == {"SCHEDULER_UNMEASURED"}
+    assert doc["status"] == "UNMEASURED"
+
+
+def test_the_parser_refuses_text_with_no_header_and_accepts_empty_text() -> None:
+    with pytest.raises(ph.SchtasksUnreadable):
+        ph.parse_schtasks_csv(ACCESS_LEVEL_INFO)
+    assert ph.parse_schtasks_csv("") == []
+    assert ph.parse_schtasks_csv(MICROSOFT_ONLY) == []
+
+
+def test_a_verbose_dump_without_last_result_is_unmeasured_not_a_clean_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    buf = io.StringIO()
+    writer = csv.writer(buf, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    for rec in csv.reader(io.StringIO(VERBOSE)):
+        writer.writerow([c for i, c in enumerate(rec) if i != 6])  # drop "Last Result"
+    no_result = buf.getvalue()
+    assert "Last Result" not in no_result and "Last Run Time" in no_result
+    _fake(monkeypatch, BRIEF, no_result)
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert "lacks Last Result" in doc["scheduler_status"]
+    for name in ("MT5-Hourly", "MT5-Gateway"):
+        assert by[name]["last_result_code"] is None
+        assert by[name]["last_result"].startswith("UNMEASURED")
+
+
+@pytest.mark.parametrize("raw", [None, "", "  ", "n/a", "N/A", "Nicht zutreffend", "1.0"])
+def test_an_unreadable_result_code_is_none_never_zero(raw: Any) -> None:
+    assert ph._normalise_code(raw) is None
+
+
+@pytest.mark.parametrize(
+    "raw, code",
+    [
+        ("0x1", 1),
+        ("0x0", 0),
+        ("0x800710E0", 0x800710E0),
+        ("-2147020576", 0x800710E0),
+        ("267009", 267009),
+    ],
+)
+def test_hex_and_signed_codes_read_as_check_desk_health_reads_them(raw: str, code: int) -> None:
+    assert ph._normalise_code(raw) == code
+
+
+@pytest.mark.parametrize(
+    "last_result", [None, "", "N/A", "1.0"], ids=["no-column", "blank", "n/a", "float"]
+)
+def test_an_unreadable_code_on_a_fresh_artifact_is_unmeasured_not_ok(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, last_result: str | None
+) -> None:
+    row: dict[str, str] = {
+        "TaskName": "\\MT5-Hourly",
+        "Status": "Ready",
+        "Scheduled Task State": "Enabled",
+    }
+    if last_result is not None:
+        row["Last Result"] = last_result
+    monkeypatch.setattr(ph, "_tasks", lambda: ([row], "OK schtasks"))
+    doc, by = _build(monkeypatch, tmp_path, {"MT5-Hourly": ("fresh.json", 120, "hourly")})
+    assert by["MT5-Hourly"]["last_result_code"] is None
+    assert by["MT5-Hourly"]["last_result"].startswith("UNMEASURED")
+    assert by["MT5-Hourly"]["verdict"] == "SCHEDULER_UNMEASURED"
+    assert doc["status"] == "ATTENTION"
+
+
+def test_a_hex_failure_code_reads_failing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(
+        ph,
+        "_tasks",
+        lambda: (
+            [
+                {
+                    "TaskName": "\\MT5-Hourly",
+                    "Status": "Ready",
+                    "Scheduled Task State": "Enabled",
+                    "Last Result": "0x1",
+                },
+            ],
+            "OK schtasks",
+        ),
+    )
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Hourly": ("fresh.json", 120, "hourly")})
+    assert by["MT5-Hourly"]["verdict"] == "FAILING" and by["MT5-Hourly"]["last_result_code"] == 1
+
+
+@pytest.mark.parametrize(
+    "scheduler",
+    [
+        ([], "UNMEASURED: INFO: There are no scheduled tasks presently available"),
+        ([], "UNMEASURED: schtasks /fo csv OSError: boom"),
+    ],
+    ids=["info-at-rc0", "oserror"],
+)
+def test_no_contracts_and_an_unread_scheduler_is_an_unmeasured_headline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, scheduler: tuple[list[dict[str, str]], str]
+) -> None:
+    # `_contracts()` swallows a failed organ_contract import as {}, so this is one import
+    # failure away from a board of zero rows that used to read "status": "OK".
+    monkeypatch.setattr(ph, "_tasks", lambda: scheduler)
+    doc, _by = _build(monkeypatch, tmp_path, {})
+    assert doc["n_processes"] == 0
+    assert doc["status"] == "UNMEASURED"
+
+
+@pytest.mark.parametrize(
+    "state, status, verdict",
+    [
+        ("Deaktiviert", "Deaktiviert", "DISABLED"),
+        ("Désactivé", "", "DISABLED"),
+        ("", "Deshabilitado", "DISABLED"),
+        ("Aktiviert", "Bereit", "OK"),
+        ("Aktiviert", "Wird ausgeführt", "OK"),
+        ("Gesperrt", "Bereit", "SCHEDULER_UNMEASURED"),  # a state this file has never seen
+        ("", "Could not start", "SCHEDULER_UNMEASURED"),  # a failed start is not a live state
+        ("", "", "SCHEDULER_UNMEASURED"),  # no state read at all
+    ],
+)
+def test_the_task_state_is_read_in_any_locale_and_unknown_is_unmeasured(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, state: str, status: str, verdict: str
+) -> None:
+    monkeypatch.setattr(
+        ph,
+        "_tasks",
+        lambda: (
+            [
+                {
+                    "TaskName": "\\MT5-Hourly",
+                    "Status": status,
+                    "Scheduled Task State": state,
+                    "Last Result": "0",
+                },
+            ],
+            "OK schtasks",
+        ),
+    )
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Hourly": ("fresh.json", 120, "hourly")})
+    assert by["MT5-Hourly"]["verdict"] == verdict, by["MT5-Hourly"]["why"]
+    if verdict == "SCHEDULER_UNMEASURED":
+        assert "not recognised" in by["MT5-Hourly"]["why"]
+
+
+def test_a_localised_running_state_excuses_an_overlap_code(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        ph,
+        "_tasks",
+        lambda: (
+            [
+                {
+                    "TaskName": "\\MT5-Gateway",
+                    "Status": "Wird ausgeführt",
+                    "Scheduled Task State": "Aktiviert",
+                    "Last Result": "-2147020576",
+                },
+            ],
+            "OK schtasks",
+        ),
+    )
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
+    assert by["MT5-Gateway"]["verdict"] == "OK"
+
+
+# v5b (2026-10-21): a brief-only read lands the inventory but no run history, so the HEADLINE is
+# UNMEASURED -- an all-OK board there would be OK about results nobody read.
+@pytest.mark.parametrize(
+    "verbose",
+    [subprocess.TimeoutExpired(["schtasks", "/v"], 90), OSError("boom"), "",
+     '"HostName","TaskName"\r\n"BOX","\\MT5-Gateway"\r\n'],
+    ids=["timeout", "oserror", "empty", "no-result-columns"],
+)
+def test_a_brief_only_read_with_no_fault_is_an_unmeasured_headline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, verbose: Any
+) -> None:
+    healthy = "".join(ln + "\r\n" for ln in BRIEF.split("\r\n")
+                      if "MT5-Old" not in ln and "quoted" not in ln)
+    _fake(monkeypatch, healthy, verbose)
+    contracts = {"MT5-Hourly": CONTRACTS["MT5-Hourly"], "MT5-Gateway": CONTRACTS["MT5-Gateway"]}
+    doc, by = _build(monkeypatch, tmp_path, contracts)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert {r["verdict"] for r in by.values()} <= {"OK", "UNCONTRACTED"}  # no definite fault
+    assert doc["status"] == "UNMEASURED" and doc["run_history"] == "UNMEASURED"
+
+
+@pytest.mark.parametrize(
+    "contracts, fault",
+    [
+        (CONTRACTS, "NOT_SCHEDULED"),  # MT5-Vanished has a contract and no task
+        ({"MT5-Old": ("fresh.json", 120, "disabled")}, "DISABLED"),
+        ({"MT5-Hourly": ("stale.json", 1, "stale")}, "STALE"),
+        ({"MT5-Hourly": ("absent.json", 120, "absent")}, "NO_ARTIFACT"),
+    ],
+    ids=["not-scheduled", "disabled", "stale", "no-artifact"],
+)
+def test_a_brief_only_read_with_a_definite_fault_headlines_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, contracts: dict[str, Any], fault: str
+) -> None:
+    """Coordinator ruling 2026-10-21: the worst finding wins, so a fault the brief read can see
+    is ATTENTION, not UNMEASURED."""
+    import os
+    import time
+    stale = tmp_path / "stale.json"
+    stale.write_text("{}", "utf-8")
+    old = time.time() - 3600
+    os.utime(stale, (old, old))
+    _fake(monkeypatch, BRIEF, subprocess.TimeoutExpired(["schtasks", "/v"], 90))
+    doc, by = _build(monkeypatch, tmp_path, contracts)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert fault in {r["verdict"] for r in by.values()}
+    assert doc["status"] == "ATTENTION" and doc["run_history"] == "UNMEASURED"
+
+
+def test_both_reads_landing_is_a_measured_headline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, BRIEF, VERBOSE)
+    doc, _by = _build(monkeypatch, tmp_path, {"MT5-Gateway": CONTRACTS["MT5-Gateway"]})
+    assert doc["run_history"] == "MEASURED" and doc["status"] in ("OK", "ATTENTION")
+
+
+# v5b ruling 2 (2026-10-21): DISABLED raises the headline to ATTENTION on every read, except a
+# task in EXPECTED_DISABLED, whose row still reads DISABLED and says it is expected.
+BRIEF_ADOPT = (
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\MT5-Gateway","20/10/2026 19:00:00","Running"\r\n'
+    '"\\MT5-AdoptRelease","N/A","Disabled"\r\n'
+)
+VERBOSE_HEAD = (
+    '"HostName","TaskName","Next Run Time","Status","Logon Mode","Last Run Time","Last Result",'
+    '"Author","Task To Run","Scheduled Task State"\r\n'
+)
+VERBOSE_ADOPT = VERBOSE_HEAD + (
+    '"BOX","\\MT5-Gateway","20/10/2026 19:00:00","Running","Interactive only",'
+    '"20/10/2026 18:00:00","267009","quant","cmd","Enabled"\r\n'
+    '"BOX","\\MT5-AdoptRelease","N/A","Disabled","Interactive only","N/A","0","quant","ps",'
+    '"Disabled"\r\n'
+)
+_GW_ONLY = {"MT5-Gateway": ("fresh.json", 120, "gateway")}
+
+
+def _with_disabled(text: str, name: str) -> str:
+    return text.replace("MT5-AdoptRelease", name)
+
+
+def test_disabled_raises_attention_with_both_reads(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, _with_disabled(BRIEF_ADOPT, "MT5-Other"),
+          _with_disabled(VERBOSE_ADOPT, "MT5-Other"))
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    assert doc["run_history"] == "MEASURED"
+    assert by["MT5-Gateway"]["verdict"] == "OK"
+    assert by["MT5-Other"]["verdict"] == "DISABLED"
+    assert by["MT5-Other"]["expected_disabled"] is None
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+def test_disabled_raises_attention_in_a_brief_only_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, _with_disabled(BRIEF_ADOPT, "MT5-Other"),
+          subprocess.TimeoutExpired(["schtasks", "/v"], 90))
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    assert doc["run_history"] == "UNMEASURED"
+    assert by["MT5-Other"]["verdict"] == "DISABLED"
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+@pytest.mark.parametrize("brief_only", [False, True], ids=["both-reads", "brief-only"])
+def test_an_expected_disabled_adopt_release_does_not_raise_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, brief_only: bool
+) -> None:
+    verbose: Any = (subprocess.TimeoutExpired(["schtasks", "/v"], 90) if brief_only
+                    else VERBOSE_ADOPT)
+    _fake(monkeypatch, BRIEF_ADOPT, verbose)
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    row = by["MT5-AdoptRelease"]
+    assert row["verdict"] == "DISABLED", "the row still shows it is disabled"
+    assert row["expected_disabled"] == ph.EXPECTED_DISABLED["MT5-AdoptRelease"]
+    assert row["why"].startswith("EXPECTED")
+    assert doc["n_needing_attention"] == 0
+    assert doc["status"] == ("UNMEASURED" if brief_only else "OK")
+
+
+def test_every_expected_disabled_entry_names_a_reason_and_a_date() -> None:
+    from datetime import date
+    assert set(ph.EXPECTED_DISABLED) == {"MT5-AdoptRelease"}, (
+        "pinned (v5c): a new excuse is a reviewed change")
+    for name, entry in ph.EXPECTED_DISABLED.items():
+        assert str(entry.get("reason") or "").strip(), f"{name}: no reason"
+        assert len(entry["reason"].strip()) >= 20, f"{name}: a reason, not a word"
+        raw = str(entry.get("date") or "").strip()
+        assert raw, f"{name}: no date"
+        date.fromisoformat(raw)   # YYYY-MM-DD, or this raises
+
+
+# v5c (2026-10-21): a malformed EXPECTED_DISABLED entry is NOT an excuse and never raises.
+@pytest.mark.parametrize(
+    "table",
+    [
+        {"MT5-AdoptRelease": {"reason": "disabled on purpose for a reviewed reason"}},
+        {"MT5-AdoptRelease": {"date": "2026-10-21"}},
+        {"MT5-AdoptRelease": {"reason": "   ", "date": "2026-10-21"}},
+        {"MT5-AdoptRelease": {"reason": "disabled on purpose for a reason", "date": "21/10/2026"}},
+        {"MT5-AdoptRelease": {"reason": 5, "date": 20261021}},
+        {"MT5-AdoptRelease": "disabled on purpose"},
+        {"MT5-AdoptRelease": ["reason", "date"]},
+        ["MT5-AdoptRelease"],
+    ],
+    ids=["no-date", "no-reason", "blank-reason", "bad-date", "bad-types", "str-entry",
+         "list-entry", "table-not-a-dict"],
+)
+@pytest.mark.parametrize("brief_only", [False, True], ids=["both-reads", "brief-only"])
+def test_a_malformed_expected_disabled_entry_reads_attention_and_never_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, table: Any, brief_only: bool
+) -> None:
+    monkeypatch.setattr(ph, "EXPECTED_DISABLED", table)
+    verbose: Any = (subprocess.TimeoutExpired(["schtasks", "/v"], 90) if brief_only
+                    else VERBOSE_ADOPT)
+    _fake(monkeypatch, BRIEF_ADOPT, verbose)
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    row = by["MT5-AdoptRelease"]
+    assert row["verdict"] == "DISABLED" and row["expected_disabled"] is None
+    assert not row["why"].startswith("EXPECTED")
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+    entry, err = ph.expected_disabled("MT5-AdoptRelease")
+    assert entry is None and err
+
+
+# v5d (2026-10-21): process_health reads the account key file's STATE (never its contents), and a
+# short or unreadable key is ATTENTION -- fail-closed stamping is never silent.
+@pytest.mark.parametrize("body, state, headline",
+                         [(b"ab12", "short", "ATTENTION"), (b"k" * 64, "present", "OK"),
+                          (None, "absent", "OK")],
+                         ids=["short", "present", "absent"])
+def test_the_account_key_file_state_is_reported_and_a_short_key_is_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, body: bytes | None, state: str,
+    headline: str
+) -> None:
+    key = tmp_path / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    if body is not None:
+        key.write_bytes(body)
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
+    _fake(monkeypatch, BRIEF_ADOPT, VERBOSE_ADOPT)
+    doc, _by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    k = doc["account_key_file"]
+    assert k["state"] == state and doc["status"] == headline
+    assert k["size_bytes"] == (None if body is None else len(body))
+    if body is not None:
+        assert body.decode() not in repr(k), "the key's contents reached the report"
+    if state == "short":
+        assert "quant-keys" in k["restore"] and doc["n_needing_attention"] == 1
+
+
+# v5e (2026-10-21): the key's BACKUP is reported (present, size, matches -- never a hash) and a
+# missing or mismatched backup is ATTENTION.
+@pytest.mark.parametrize("backup, state, headline",
+                         [(b"k" * 64, "ok", "OK"), (b"x" * 64, "mismatch", "ATTENTION"),
+                          (None, "missing", "ATTENTION")],
+                         ids=["match", "mismatch", "missing"])
+def test_the_account_key_backup_is_reported_and_a_bad_one_is_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, backup: bytes | None, state: str,
+    headline: str
+) -> None:
+    import hashlib
+    key = tmp_path / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    key.write_bytes(b"k" * 64)
+    bpath = tmp_path / "quant-keys" / "account_key.hmac"
+    if backup is not None:
+        bpath.parent.mkdir(parents=True)
+        bpath.write_bytes(backup)
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_BACKUP", str(bpath))
+    _fake(monkeypatch, BRIEF_ADOPT, VERBOSE_ADOPT)
+    doc, _by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    b = doc["account_key_backup"]
+    assert b["state"] == state and doc["status"] == headline
+    assert b["size_bytes"] == (None if backup is None else 64)
+    assert hashlib.sha256(b"k" * 64).hexdigest() not in repr(doc)
+    assert doc["n_needing_attention"] == (0 if state == "ok" else 1)

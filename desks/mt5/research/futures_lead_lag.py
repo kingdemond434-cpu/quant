@@ -103,6 +103,7 @@ SEASONS: tuple[tuple[str, str, str], ...] = (
 
 CACHE = BASE / "data" / "reference" / "futures"
 OUT_REL = "desks/mt5/reports/FUTURES_LEAD_LAG.json"
+#: Consumed, not written: `research/bar_clock_probe.py` publishes it from this report's clock block.
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
 
 _CHART = "https://query2.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval={iv}"
@@ -516,12 +517,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     doc = census(fetch=not args.no_fetch)
-    for rel, payload in ((OUT_REL, doc), (CLOCK_REL, {"at": doc["at"], **doc["clock"]})):
-        out = ROOT / Path(*rel.split("/"))
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
+    # ONE WRITER PER FILE (2026-10-21). BAR_CLOCK.json is published by research/bar_clock_probe.py,
+    # which reads this report's `clock` block as its multi-year cross-venue opinion; writing it
+    # here too meant whichever leg ran last silently erased the other's evidence.
+    out = ROOT / Path(*OUT_REL.split("/"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(json.dumps(doc, indent=1, default=str) if args.json else render(doc))
-    print(f"written: {OUT_REL} and {CLOCK_REL}")
+    print(f"written: {OUT_REL} (its clock block feeds {CLOCK_REL} via bar_clock_probe)")
     return 0
 
 

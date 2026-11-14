@@ -30,7 +30,7 @@ SENT_MS = g._iso_ms(LEG["first_at"])
 def _order(oid: int, side: str, level: float, **kw: Any) -> dict:
     """A venue order row carrying every field the matcher requires, landed just after the send."""
     return {"id": oid, "side": side, "stopPrice": level, "tradableInstrumentId": IID,
-            "qty": 0.5, "createdDate": SENT_MS + 2_000, **kw}
+            "qty": 0.5, "createdDate": SENT_MS + 2_000, "type": "stop", "isOpen": True, **kw}
 
 
 MATCH = {"lot": 0.5, "instrument_id": IID, "since_ms": SENT_MS}
@@ -204,12 +204,22 @@ class _Venue:
         return 901
 
 
+def _flat_fusion_terminal() -> Any:
+    from types import SimpleNamespace
+    return SimpleNamespace(
+        account_info=lambda: SimpleNamespace(login=1, server="FusionMarkets-Live", trade_mode=2),
+        positions_get=lambda *a, **k: (), orders_get=lambda *a, **k: ())
+
+
 def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     from datetime import UTC, datetime
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
             "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
-            "hist_rows": [], "history_ok": True, "instrument_id": IID, **kw}
+            "hist_rows": [], "history_ok": True, "instrument_id": IID,
+            # A FLAT Fusion terminal: the retry is cross-account fenced (audit round 2) and
+            # fails closed without one; the fence itself is pinned in test_fusion_minlot_book.
+            "mt5": _flat_fusion_terminal(), **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
@@ -219,6 +229,11 @@ def _no_journal(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
     monkeypatch.setattr(g, "LOG", tmp_path / "log")
     (tmp_path / "intents.jsonl").write_text("", "utf-8")     # a readable, empty journal
+    # The late-gold-send rule (decision_core.GOLD_SEND_GRACE_MIN, r6) is lifted: these tests
+    # drive the retry mechanics at clocks past the 5-minute grace; test_fusion_book_r6.py pins the rule.
+    from mt5desk import decision_core as _dc_grace
+    monkeypatch.setattr(_dc_grace, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
+    monkeypatch.setattr(_dc_grace, "E8_GOLD_SEND_GRACE_MIN", 24 * 60.0)
 
 
 def test_the_pass_re_sends_the_leg_and_moves_it_into_the_bracket() -> None:
@@ -259,6 +274,68 @@ def test_an_abandoned_leg_leaves_the_retry_queue_with_its_reason() -> None:
     w = st["windows"]["asia"]
     assert v.sent == [] and "failed" not in w
     assert w["abandoned"]["buy_stop"]["why"] == "the window's session is over"
+
+
+def test_an_abandoned_leg_that_landed_is_owned_and_cancelled() -> None:
+    """A GTC stop that landed with no SENT row would otherwise rest unmanaged past its window."""
+    import json
+    cancelled: list[int] = []
+    v, st = _Venue(book=[_order(42, "buy", 4340.0)]), _state()
+    v.cancel = lambda oid: cancelled.append(oid) or True          # type: ignore[attr-defined]
+    doc = _retry(v, st, hour=13.5)
+    assert v.sent == [] and cancelled == [42]
+    rows = [json.loads(x) for x in g.INTENTS.read_text().splitlines() if x.strip()]
+    assert any(r.get("status") == "SENT" and r.get("order_id") == 42 and r.get("abandoned")
+               for r in rows)
+    assert 42 in g.own_entry_orders(rows, {})                      # the stale sweep sees it
+    assert any(a["act"] == "abandoned_landed_cancel" and a["ok"] for a in doc["actions"])
+
+
+@pytest.mark.parametrize("protective", [
+    {"positionId": 9},                       # the filled twin's stop-loss, attached to it
+    {"isOpen": False},
+    {"type": "limit"},
+    {"stop_loss_of_open_position": True}])   # named as the position's stopLossId
+def test_the_filled_twins_stop_loss_is_never_taken_for_the_abandoned_leg(protective) -> None:
+    """Audit of #423: with stops_level 0 the twin's SL rests at this leg's trigger, same lot."""
+    cancelled: list[int] = []
+    kw = {k: v for k, v in protective.items() if k != "stop_loss_of_open_position"}
+    v, st = _Venue(book=[_order(42, "buy", 4340.0, **kw)]), _state()
+    v.cancel = lambda oid: cancelled.append(oid) or True          # type: ignore[attr-defined]
+    pos = ([{"id": 9, "side": "sell", "stopLossId": 42, "openDate": SENT_MS - 60_000}]
+           if "stop_loss_of_open_position" in protective else [])
+    _retry(v, st, hour=13.5, xau_positions=pos)
+    assert cancelled == [] and v.sent == []
+    assert not st.get("landed_abandoned")
+    rows = [x for x in g.INTENTS.read_text().splitlines() if '"order_id": 42' in x]
+    assert rows == []
+
+
+def test_a_cancelled_landed_leg_leaves_the_book_and_state() -> None:
+    v, st = _Venue(book=[_order(42, "buy", 4340.0)]), _state()
+    v.cancel = lambda oid: True                                    # type: ignore[attr-defined]
+    _retry(v, st, hour=13.5)
+    assert not st.get("landed_abandoned")
+
+
+def test_a_landed_leg_whose_cancel_failed_stays_owned_in_state() -> None:
+    v, st = _Venue(book=[_order(42, "buy", 4340.0)]), _state()
+
+    def boom(oid):
+        raise RuntimeError("502")
+    v.cancel = boom                                                # type: ignore[attr-defined]
+    _retry(v, st, hour=13.5)
+    assert "42" in st["landed_abandoned"]
+    assert 42 in g.own_entry_orders([], st)                        # owned without the journal
+    assert "landed_abandoned" in g.rollover_state({**st, "date": "2000-01-01"}, "2000-01-02")
+
+
+def test_an_abandoned_leg_that_did_not_land_cancels_nothing() -> None:
+    cancelled: list[int] = []
+    v, st = _Venue(book=[_order(42, "buy", 4399.0)]), _state()     # another level: not ours
+    v.cancel = lambda oid: cancelled.append(oid) or True          # type: ignore[attr-defined]
+    _retry(v, st, hour=13.5)
+    assert cancelled == []
 
 
 def test_a_send_that_landed_and_filled_is_adopted_from_history_not_doubled() -> None:

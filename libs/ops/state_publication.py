@@ -45,6 +45,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops.box_git_env import git_env
+
 ROOT = Path(__file__).resolve().parents[2]
 SYNC_REL = "desks/mt5/scripts/sync_shadow_to_git.ps1"
 FLOW_REL = "desks/mt5/reports/BOX_STATE_FLOW.json"
@@ -66,8 +68,12 @@ STALL_H = 3.0
 def _git(root: Path, *args: str, timeout: float = 60.0) -> tuple[int, str]:
     """Run git; (rc, stdout). UTF-8 with replacement: cp1252 decoding killed three hooks (L0304)."""
     try:
+        # safe.directory for this repo (libs/ops/box_git_env.py): the box's tree is owned by a
+        # different account than its tasks, and without it this reader saw "dubious ownership"
+        # as UNMEASURED -- the meter blind to the very refusal it exists to name (2026-10-06).
         r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=timeout, check=False)
+                           encoding="utf-8", errors="replace", timeout=timeout, check=False,
+                           env=git_env(root))
     except (OSError, subprocess.SubprocessError) as exc:
         return 127, f"{type(exc).__name__}: {exc}"
     return r.returncode, r.stdout
@@ -214,13 +220,16 @@ Sender = Callable[[str, str], dict[str, Any]]
 
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
-        from libs.ops import alert_channels
+        from libs.ops import alert_digest
         # The sender reads its own config where it always has; anchored on the repo root so the
         # leg's working directory cannot make an armed box look unarmed. Nothing here reads or
         # records a channel's credentials.
-        return alert_channels.send_all(
+        return alert_digest.send(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl",
+            # Opt-in digest (2026-11-03): the publication meter's silent/flowing reminders.
+            digest_class=("state_meter"
+                          if ("METER SILENT" in title or "FLOWING again" in title) else None))
     return send
 
 

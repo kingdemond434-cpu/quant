@@ -4307,6 +4307,12 @@ _TERMINAL_ARTIFACTS = {
     "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
     "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
     "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
+    # Classified 2026-10-20 (base-red fix): landed in 1e8bca92b with no claim, which turned the
+    # artifact-ungoverned birth property red on every laws-only gate run.
+    "docs/policy/DEEPSEEK_THIRD_BRAIN_MAXIMUM_ROI_ADDENDUM.md":
+        "standing addendum to the DeepSeek second-flywheel mandate, subordinate to it by its own "
+        "header -- scopes the DeepSeek seat's residual work and creates no second authority, "
+        "amended by decision only, never a cadence or an inventory",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",

@@ -543,3 +543,68 @@ def test_an_id_born_before_the_horizon_is_not_reborn_by_a_recent_fate_row(organ)
     _plant(organ, [born_long_ago, *_baseline_born(), died_today], [])
     doc = gb.build(now=NOW)
     assert doc["windows"]["24h"]["intake"]["born_cells"] == 10
+
+
+# ----------------------------------------------- CRO 2026-09-30 gap 2: the leg's own clock
+def test_the_report_is_published_before_the_registry_write(organ, monkeypatch):
+    """The registry write can wait on a lock another organ holds; the measurement never waits."""
+    _plant(organ, _baseline_born(), [_verdict("EURUSD", "carry", n=i) for i in range(25)])
+    seen: list[str] = []
+
+    def priors(p: Any, at: str) -> dict[str, Any]:
+        seen.append(json.loads(organ["OUT"].read_text("utf-8"))["prior_write"]["status"])
+        return {"written": 0, "status": "STUB"}
+
+    monkeypatch.setattr(gb, "write_priors", priors)
+    assert gb.main([]) == 0
+    assert seen == ["PENDING"], "the report was on disk before write_priors ran"
+    assert json.loads(organ["OUT"].read_text("utf-8"))["prior_write"]["status"] == "STUB"
+
+
+def test_an_exhausted_budget_stops_reading_and_says_so(organ, monkeypatch):
+    """Past its deadline the reader stops, keeps what it decoded, and names the truncation --
+    the leg writes inside its budget instead of being killed at the cycle's timeout."""
+    monkeypatch.setattr(gb, "DEADLINE_EVERY", 1)
+    _plant(organ, _baseline_born(), _baseline_verdicts(4))
+    doc = gb.build(now=NOW, budget_s=0.0)
+    assert doc["budget_s"] == 0.0 and "elapsed_s" in doc
+    assert any(str(v).startswith("TRUNCATED_BUDGET") for v in doc["unmeasured"].values())
+
+
+# ------------------------------------------------------------------ audit of 53fade9ec (#165)
+def test_an_old_row_appended_after_its_recent_row_still_unbirths_it(organ):
+    """Read backwards, an old-dated row appended AFTER the in-horizon row is met first, before
+    its id is held: it must still mark the id as born before the horizon."""
+    died_today = {**_born("EURUSD", "carry", n=8, hours_ago=2.0), "fate": "BORN"}
+    late_old = _born("EURUSD", "carry", n=8, hours_ago=24 * 40)
+    _plant(organ, [*_baseline_born(), died_today, late_old], [])
+    doc = gb.build(now=NOW)
+    assert doc["windows"]["24h"]["intake"]["born_cells"] == 10
+
+
+def test_a_budget_cut_ledger_writes_no_priors(organ, monkeypatch):
+    _plant(organ, _baseline_born(), [_verdict("EURUSD", "carry", n=i) for i in range(25)])
+    calls: list[int] = []
+    monkeypatch.setattr(gb, "write_priors", lambda p, at: calls.append(1) or {"written": 9})
+    real = gb.build
+
+    def cut(**kw: Any) -> dict[str, Any]:
+        doc = real(**kw)
+        doc["unmeasured"][organ["GATE_LEDGER"].name] = "TRUNCATED_BUDGET(kept the newest 3)"
+        return doc
+
+    monkeypatch.setattr(gb, "build", cut)
+    assert gb.main([]) == 0
+    assert calls == [], "a partial ledger never upserts over the lifetime priors"
+    out = json.loads(organ["OUT"].read_text("utf-8"))
+    assert out["prior_write"]["status"] == "SKIPPED" and out["priors_written"] == 0
+
+
+def test_the_budget_clock_starts_at_the_callers_entry(organ, monkeypatch):
+    """Time spent before the build (the core republish) is charged to the leg's budget."""
+    import time as _t
+    monkeypatch.setattr(gb, "DEADLINE_EVERY", 1)
+    _plant(organ, _baseline_born(), _baseline_verdicts(4))
+    doc = gb.build(now=NOW, budget_s=50.0, started=_t.monotonic() - 100.0)
+    assert any(str(v).startswith("TRUNCATED_BUDGET") for v in doc["unmeasured"].values())
+    assert doc["elapsed_s"] >= 100.0
