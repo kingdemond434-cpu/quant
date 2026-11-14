@@ -1009,6 +1009,44 @@ if ($mergeBase -and -not $permitAccepted) {
                       } |
                       Where-Object { $_ -match '\S' -and $boxTouched.ContainsKey($_) -and
                                      -not (Test-StatePath $_) })
+    # QUARANTINED BOX COMMITS ARE NOT THE BOX'S CODE (Auditor HOLD on #246, 2026-11-14). On the
+    # live box the rule above refused every adoption: 13 of its ahead paths came only from eight
+    # Codex commits of 2026-11-12 that were quarantined (copies kept outside the tree) precisely
+    # so the next release would overwrite them. `ADOPT_QUARANTINED_COMMITS.json` (box-local,
+    # untracked: {"commits": ["<40-hex sha>", ...]}) names such commits. A path is let through,
+    # and overwritten by the target, ONLY when every box commit since the merge base that
+    # touched it is on that list; one commit outside it (any other box-authored code) and the
+    # path still refuses. Ordinary release deltas -- origin newer, the box untouched -- never
+    # reach this test: they are not in $boxTouched. An unreadable list quarantines nothing.
+    $quarantineFile = Join-Path $desk "data\ADOPT_QUARANTINED_COMMITS.json"
+    $quarantined = @{}
+    if (Test-Path -LiteralPath $quarantineFile) {
+        try {
+            $qdoc = Get-Content -LiteralPath $quarantineFile -Raw | ConvertFrom-Json
+            foreach ($c in @($qdoc.commits)) {
+                if ("$c" -match '^[0-9a-f]{40}$') { $quarantined["$c"] = $true }
+            }
+        } catch {
+            Write-Host "  quarantine list unreadable; no box commit is treated as quarantined"
+        }
+    }
+    if ($boxAheadCode.Count -gt 0 -and $quarantined.Count -gt 0) {
+        $stillAhead = New-Object System.Collections.Generic.List[string]
+        $overwritten = New-Object System.Collections.Generic.List[string]
+        foreach ($p in $boxAheadCode) {
+            $touching = @(Invoke-Git @("log", "--format=%H", "$mergeBase..HEAD", "--", $p) -AllowFail |
+                          ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^[0-9a-f]{40}$' })
+            $own = @($touching | Where-Object { -not $quarantined.ContainsKey($_) })
+            if ($touching.Count -gt 0 -and $own.Count -eq 0) { $overwritten.Add($p) }
+            else { $stillAhead.Add($p) }
+        }
+        if ($overwritten.Count -gt 0) {
+            Write-Host ("  {0} code path(s) changed only by quarantined box commits; the target overwrites them:" -f
+                        $overwritten.Count)
+            $overwritten | Select-Object -First 40 | ForEach-Object { Write-Host ("    {0}" -f $_) }
+        }
+        $boxAheadCode = @($stillAhead)
+    }
     if ($boxAheadCode.Count -gt 0) {
         $refuseMsg = "  REFUSING: {0} code path(s) this box committed are not in the target; " +
                      "adopting would revert or delete them. Push the box's branch first."
