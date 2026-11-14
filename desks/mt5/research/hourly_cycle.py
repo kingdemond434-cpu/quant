@@ -1197,6 +1197,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # Half-landed steps (a workflow or box task naming a file that is not in the tree) and the
+    # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
+    # network, two small reads; the cloud hourly pass runs the full GitHub half.
+    "arch_health",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -1339,7 +1343,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs",
+                     # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
+                     # and the ledger of which keys are set (#144, 2026-09-30)
+                     "keyed_sources", "credential_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
                      "market_intel", "mine",
@@ -2081,6 +2088,11 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
+    # cursor after every source; the cap sits above so the report and the donation are written.
+    "keyed_sources": 420,
+    # A registry read, a glob over clock files and the last 24h of donation files: seconds.
+    "credential_coverage": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4245,6 +4257,17 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # THE KEYED FREE SOURCES (#144): every free-key dataset no other lane builds (EIA weekly
+    # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
+    # direct exogenous_conditioner cells, indirect conditioned parents and
+    # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    kys = _costed("keyed_sources", lambda: _producer(
+        "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
+    # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
+    # consumer, whether it is on a clock, and cells minted from it in the last 24h, read from
+    # the consumers' own donation files. Writes reports/CREDENTIAL_COVERAGE.json.
+    crv = _costed("credential_coverage", lambda: _producer(
+        "credential_coverage", "research/credential_coverage.py", "--once"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -6372,6 +6395,10 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # ARCHITECTURE HEALTH, box half (zuck 2026-11-13, Phase 6). A monitor, never a gate.
+    ahl = _costed("arch_health", lambda: _producer(
+        "arch_health", "scripts/arch_health.py", "--static-only",
+        "--out", "desks/mt5/reports/ARCH_HEALTH.json"))
     # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
     # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
     # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
@@ -6623,6 +6650,7 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
@@ -6652,7 +6680,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
