@@ -142,8 +142,20 @@ ALL_MINERS = [
 ]
 
 
-#: Channels that need a configured credential or contact before they may fetch at all.
-REQUIRES_ENV = {"sec_edgar": "QUANT_EDGAR_UA"}
+#: Channels that need a configured credential or contact before they may fetch at all; any one of
+#: the names suffices (the EDGAR contact string has carried three, libs/data/credentials.py).
+REQUIRES_ENV = {"sec_edgar": ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")}
+
+
+def _configured(names: tuple[str, ...]) -> bool:
+    """Any of `names` set where read_key looks (registry included); os.environ when unreachable."""
+    try:
+        from sec_edgar_miner import edgar_ua
+        if set(names) <= {"QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA"}:
+            return bool(edgar_ua())
+    except Exception:
+        pass
+    return any(os.environ.get(n) for n in names)
 
 
 def allowed_channels() -> set[str] | None:
@@ -168,8 +180,8 @@ def run_all_miners() -> dict:
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         need = REQUIRES_ENV.get(name)
-        if need and not os.environ.get(need):
-            set_aside[name] = f"{need} is not configured"
+        if need and not _configured(need):
+            set_aside[name] = f"{need[0]} is not configured"
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         status, payload = _run_miner(name, fn)

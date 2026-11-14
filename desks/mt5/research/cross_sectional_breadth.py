@@ -160,9 +160,11 @@ def _due(prior: dict[str, Any], today: str, *, covered: bool = False) -> bool:
     A cell whose family raised is retried the next day, never again the same day (`error_day`).
     Once the grid has been covered once (`covered`), a cell under the seed floor is due daily:
     the 7-day window exists to get the first lap finished, not to hold back a near-miss."""
+    if str(prior.get("error_day") or "") == today:
+        return False
     day = str(prior.get("day") or "")
     if not day:
-        return str(prior.get("error_day") or "") != today
+        return True
     try:
         age = (datetime.fromisoformat(today).date() - datetime.fromisoformat(day).date()).days
     except ValueError:

@@ -151,6 +151,9 @@ LLM_BACKLOG = BASE / "logs" / "deepening_llm_backlog.jsonl"
 BATCH_SIZE = max(1, int(os.environ.get("DEEPEN_BATCH_SIZE", "15")))
 #: Wall seconds the replay of old BLOCKED rows may take per pass, inside RUN_BUDGET_SEC.
 REPLAY_BUDGET_SEC = float(os.environ.get("DEEPEN_REPLAY_BUDGET_SEC", "600"))
+#: Rows the replay scan reads every pass before its budget may stop it, so a setup that outruns
+#: the budget can never park the cursor where it started (see replay_blocked).
+REPLAY_MIN_ROWS = int(os.environ.get("DEEPEN_REPLAY_MIN_ROWS", "5000"))
 #: The desk's second seat roster (free models). Read for provider NAMES and routes only; the
 #: key is handed to the seat object and never printed, logged or written anywhere.
 FREE_ROSTER = ROOT / "data" / "secrets" / "llm_panel_free.json"
@@ -1057,7 +1060,7 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
         note["why"] = "nothing to replay" if not todo else "empty universe: nothing is priceable"
         return results, note
     started = time.monotonic()
-    # THE STORY TASKS FIRST: small, and the only place their text still lives.
+    # THE STORY TASKS FIRST: the only place their text still lives.
     for t in _story_tasks():
         tid = task_id(t)
         if tid in todo:
@@ -1065,7 +1068,17 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
             results.append((t, c, d, h))
             todo.discard(tid)
             tried.add(tid)
+    note["story_s"] = round(time.monotonic() - started, 1)
     files = paths if paths is not None else _replay_paths()
+    note["list_s"] = round(time.monotonic() - started - note["story_s"], 1)
+    note["files"] = len(files)
+    # PROGRESS EVERY PASS (2026-11-05). Measured on the box: wanted 7,200, matched 0,
+    # rows_scanned 0, elapsed 1,459 s, cursor parked at row 0 of the same file pass after pass.
+    # The story rebuild and the file listing spent the whole budget BEFORE the first row, so the
+    # first in-loop budget check stopped the scan at its own start and saved that start as the
+    # cursor: the replay was structurally unable to move. The setup is now timed separately and
+    # the scan always reads at least REPLAY_MIN_ROWS rows before the budget can stop it.
+    scan_started = time.monotonic()
     start_file = str(cur.get("file") or "")
     start_row = int(cur.get("row") or 0)
     names = [p.as_posix() for p in files]
@@ -1079,7 +1092,8 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
         for idx, row in enumerate(_iter_file_rows(path)):
             if idx < skip:
                 continue
-            if time.monotonic() - started > budget_s:
+            if (note["rows_scanned"] >= REPLAY_MIN_ROWS
+                    and time.monotonic() - started > budget_s):
                 stop_at = (path.as_posix(), idx)
                 break
             note["rows_scanned"] += 1
@@ -1111,6 +1125,7 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
     note["recovered"] = sum(1 for _t, c, _d, _h in results if c)
     note["still_open"] = len(todo)
     note["elapsed_s"] = round(time.monotonic() - started, 1)
+    note["scan_s"] = round(time.monotonic() - scan_started, 1)
     # A recovered row gets a TERMINAL ledger row; only misses need remembering here.
     recovered_ids = {task_id(t) for t, c, _d, _h in results if c}
     _save_rule_cursor({"file": stop_at[0], "row": stop_at[1],
@@ -1817,10 +1832,38 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
 LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
 
 
+def _holder_alive(pid: int, create_time: float | None = None) -> bool:
+    """Is the process that wrote the lock still running? A DEAD HOLDER FREES THE LOCK AT ONCE.
+
+    2026-11-05: the check read `age <= stale_after OR pid alive`, so a run killed by the task
+    limit left a lock that refused every caller for up to `stale_after` (80 min) although its
+    process was gone -- MT5-Deepening killed at 50 min blocked the next two triggers. A recorded
+    pid is now the whole answer: alive means held (however old the stamp, as before), gone
+    means free (however young). A lock that also records its holder's `create_time` is held
+    only by THAT process: Windows reuses pids, and an unrelated process on the same pid is not
+    the holder. A lock written without it (older code) keeps the pid-only answer."""
+    import psutil
+    try:
+        proc = psutil.Process(pid)
+        if create_time is not None and abs(proc.create_time() - float(create_time)) > 2.0:
+            return False
+        return bool(proc.is_running())
+    except psutil.NoSuchProcess:
+        return False
+    except (psutil.AccessDenied, OSError, ValueError, TypeError):
+        return True        # unmeasurable: never take a lock from a holder that may be alive
+
+
+def _own_create_time() -> float | None:
+    try:
+        import psutil
+        return float(psutil.Process().create_time())
+    except Exception:
+        return None
+
+
 def _single_flight():
     """Serialize stale-lock inspection and publication; never run duplicate writers."""
-    import psutil
-
     stale_after = RUN_BUDGET_SEC * 2.0
     guard = LOCK.with_name(LOCK.name + ".claim")
     handle = None
@@ -1849,16 +1892,18 @@ def _single_flight():
                 held = json.loads(LOCK.read_text("utf-8"))
                 age = time.time() - float(held.get("at") or 0.0)
                 pid = int(held.get("pid") or 0)
+                ctime = held.get("create_time")
             except (OSError, ValueError, TypeError, AttributeError):
-                age, pid = stale_after + 1.0, 0
-            if age <= stale_after or (pid > 0 and psutil.pid_exists(pid)):
+                age, pid, ctime = stale_after + 1.0, 0, None
+            if _holder_alive(pid, ctime) if pid > 0 else age <= stale_after:
                 dlog(f"another deepening run holds the lock (pid={pid}, {age:.0f}s old): "
                      "exiting rather than racing it")
                 return None
-            dlog(f"taking over a dead stale lock (pid={pid}, {age:.0f}s old)")
+            dlog(f"taking over a lock whose holder is gone (pid={pid}, {age:.0f}s old)")
         temporary = LOCK.with_name(LOCK.name + f".{os.getpid()}.tmp")
         try:
-            temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
+            temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time(),
+                                             "create_time": _own_create_time()}), "utf-8")
             os.replace(temporary, LOCK)
         finally:
             temporary.unlink(missing_ok=True)
@@ -1924,12 +1969,23 @@ def _work(argv: list[str] | None = None) -> int:
     # the pass had taken 274.3s -- a number that flatters whichever pass happened to find the
     # most rule-lane rows, which is not a throughput.
     pass_started = time.monotonic()
+    # THE SETUP, TIMED PER PHASE (2026-11-05). Measured on the box: 46 minutes from start to the
+    # queue line in the 04:05Z pass, inside a 50-minute task limit. The phases are named in the
+    # queue line so the next pass says which one it is rather than leaving it to a guess.
+    setup: dict[str, float] = {}
+    _mark = [time.monotonic()]
+
+    def phase(name: str) -> None:
+        now_ = time.monotonic()
+        setup[name] = round(now_ - _mark[0], 1)
+        _mark[0] = now_
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0
+    phase("queue_read")
 
     # COMPACT BEFORE READING, because the ledger is read twice and its size IS startup latency.
     if not args.dry_run:
@@ -1939,6 +1995,7 @@ def _work(argv: list[str] | None = None) -> int:
                  f"rows, {squeeze['bytes_before']} -> {squeeze['bytes_after']} bytes "
                  f"({squeeze['outage_rows_dropped']} repeated outage rows, "
                  f"{squeeze['outage_days_kept']} day(s) kept)")
+    phase("compact")
 
     # A MISSING SEAT IS AN OUTAGE, NOT A VERDICT (theirs, 2026-09-10). A row blocked on an
     # unconfigured external model was buried permanently; retried every hour it would spend the
@@ -1949,11 +2006,14 @@ def _work(argv: list[str] | None = None) -> int:
         retry_seat_blocks = bool(seat_chain())
     except Exception:
         retry_seat_blocks = False
+    phase("seat_chain")
     # ONE read, TWO questions: what is DECIDED (never re-worked) and what is merely BLOCKED
     # (re-worked when a seat exists, and OPEN in the census either way).
     terminal, outage = ledger_ids()
     done = terminal if retry_seat_blocks else (terminal | outage)
+    phase("ledger_ids")
     costs, cost_basis = task_costs()
+    phase("task_costs")
     variant = controller_variant()
     open_tasks = [t for t in tasks if task_id(t) not in done]
 
@@ -1969,6 +2029,7 @@ def _work(argv: list[str] | None = None) -> int:
     # no seat, so every non-terminal seat-lane row is offered to it on this pass.
     rule_first = [t for t in tasks if task_id(t) not in terminal and lane(t) == "seat"]
     seat_tasks = voi_order([t for t in open_tasks if lane(t) == "seat"], costs=costs)
+    phase("lanes_voi")
     mem_stop: dict = {}
 
     def over_memory() -> bool:
@@ -1991,7 +2052,7 @@ def _work(argv: list[str] | None = None) -> int:
     lane_census = {"rule": len(rule_tasks), "seat": len(seat_tasks)}
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
          f"lanes={lane_census} limit={args.limit} cost_basis={cost_basis} "
-         f"controller_variant={variant}")
+         f"controller_variant={variant} setup_s={setup}")
     if args.dry_run:
         for t in (pending if args.limit <= 0 else pending[:args.limit]):
             dlog(f"  would work {task_id(t)} [{lane(t)}] [{t.get('source')}] "
@@ -2004,7 +2065,13 @@ def _work(argv: list[str] | None = None) -> int:
     universe = known_symbols()
     recovered: list[dict] = []
     counts: dict[str, int] = {}
-    started = time.monotonic()
+    # THE BUDGET CLOCK STARTS WITH THE PASS, not after the setup (2026-11-05). Compaction, the
+    # 1.2M-row ledger read, the cost table and the VOI sort (245 s measured) ran BEFORE this
+    # clock started, so a "40-minute" pass ran 50+ and MT5-Deepening was killed at its task
+    # limit mid-pass: the tail that publishes the backlog, the throughput ratchet and the
+    # memory-guard report never ran, and the lock it held blocked the next triggers. Measured
+    # from the pass start, the budget is the wall time the task limit actually sees.
+    started = pass_started
     backlog_before = len(pending)
     write_lock = threading.Lock()
     decided_ids: set[str] = set()
@@ -2060,6 +2127,10 @@ def _work(argv: list[str] | None = None) -> int:
             record(entry)
 
     def out_of_time() -> bool:
+        # AT LEAST ONE ROW EVERY PASS, as the memory guard does: a setup that alone outran the
+        # budget must not turn into a pass that decides nothing, hour after hour.
+        if not counts:
+            return False
         return time.monotonic() - started > RUN_BUDGET_SEC
 
     # ---- THE RULE LANE, FIRST AND UNBOUNDED BY ANY QUOTA -----------------------------------
