@@ -1,67 +1,36 @@
 {
- "pid": 2956,
- "create_time": 1794564453.021808,
+ "pid": 11840,
+ "create_time": 1794609379.109933,
  "status": "RUNNING",
- "started_utc": "2026-11-13T10:07:33+00:00",
- "beat_utc": "2026-11-13T15:50:03+00:00",
- "beats": 305,
+ "started_utc": "2026-11-13T22:36:19+00:00",
+ "beat_utc": "2026-11-14T00:50:09+00:00",
+ "beats": 229,
  "beat_every_s": 30.0,
- "phase": "merge_and_publish",
- "phase_started_utc": "2026-11-13T15:22:48+00:00",
- "phase_elapsed_s": 1635.0,
+ "phase": "prewarm",
+ "phase_started_utc": "2026-11-13T22:48:37+00:00",
+ "phase_elapsed_s": 7291.3,
  "phases_done": {
-  "plan": 1177.3,
-  "prewarm": 15631.2,
-  "plan_handoff": 476.2,
-  "build_shards": 1472.4,
-  "collect_and_cut": 134.2,
-  "rule_shards": 19.4
+  "plan": 733.1
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
-  "run_s": 172800.0,
-  "run_deadline_utc": "2026-11-15T10:07:33+00:00",
-  "phase_s": 172800.0,
-  "phase_deadline_utc": "2026-11-15T15:22:48+00:00",
-  "no_progress_s": 3600.0,
-  "consecutive_stalls": 1
+  "run_s": 129422.8,
+  "run_deadline_utc": "2026-11-15T10:33:22+00:00",
+  "phase_s": 153594.0,
+  "phase_deadline_utc": "2026-11-15T17:28:31+00:00",
+  "no_progress_s": 1800.0,
+  "consecutive_stalls": 0
  },
- "run_deadline_utc": "2026-11-15T10:07:33+00:00",
+ "run_deadline_utc": "2026-11-15T10:33:22+00:00",
  "slow": [],
- "shards": {
-  "phase": "rule",
-  "total": 15,
-  "done": 15,
-  "failed": 0,
-  "running": 0,
-  "stalled": 0,
-  "slow": 0,
-  "retrying": 0,
-  "shard_slow_s": 3600.0,
-  "shard_idle_kill_s": 3600.0,
-  "wave_started_utc": "2026-11-13T15:22:28+00:00",
-  "admission": {
-   "floor": 11,
-   "widest": 12,
-   "last": {
-    "running": 11,
-    "available_mb": 66892.1,
-    "wave_rss_mb": 10951.0,
-    "estimate_mb": 2165.8,
-    "estimate_basis": "historic_peak",
-    "room_mb": 28029.6,
-    "reserve_mb": 25410.7,
-    "admitted": true
-   }
-  }
- },
+ "shards": {},
  "tree": {
-  "procs": 1,
-  "rss_mb": 4888.5,
-  "cpu_s": 3393.8
+  "procs": 19,
+  "rss_mb": 7755.5,
+  "cpu_s": 17911.8
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-13T15:50:03+00:00",
+ "last_progress_utc": "2026-11-14T00:50:09+00:00",
  "idle_s": 0.0,
- "progress_gaps": 5
+ "progress_gaps": 2
 }
