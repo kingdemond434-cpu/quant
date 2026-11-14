@@ -47,7 +47,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 import time
@@ -66,6 +65,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.env_keys import read_key  # noqa: E402
 from libs.research import analyst_views as av  # noqa: E402
 from libs.research import asia_alt_digest  # noqa: E402
 from libs.research.analyst_views import UNMEASURED, AnalystView  # noqa: E402
@@ -636,14 +636,17 @@ SEC_PHRASES: dict[int, tuple[str, ...]] = {
 #: EDGAR_UA; the desk's other EDGAR readers use QUANT_EDGAR_UA; libs.core.secrets uses the
 #: QP_SECRET_ prefix. Reading only the first of these left SEC UNCONFIGURED on every box pass
 #: (ANALYST_VIEWS 2026-11-13 14:50Z). The value is never logged or written to a report.
-EDGAR_UA_ENV = ("QUANT_EDGAR_UA", "EDGAR_UA", "QP_SECRET_EDGAR_UA")
+EDGAR_UA_ENV = ("QUANT_EDGAR_UA", "EDGAR_UA", "QP_SECRET_EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                "SEC_EDGAR_UA")
 #: NO COMMITTED FALLBACK, ON PURPOSE (2026-11-13). SEC fair access asks for a UA naming a
 #: contact (an organisation and a mailbox it reads). A UA with no contact is throttled or refused,
 #: and no project mailbox exists to put in one, so an unset UA is BLOCKED_ON_CONTACT -- named,
 #: with its missed growth -- never a silent failure and never anyone's personal address.
 def edgar_ua() -> str:
+    # read_key looks in the machine and user registry before the process environment, so a UA
+    # set with setx /M after a resident started is still seen (LIVE 1c7822fc74).
     for name in EDGAR_UA_ENV:
-        v = os.environ.get(name, "").strip()
+        v = read_key(name).strip()
         if v:
             return v
     return ""

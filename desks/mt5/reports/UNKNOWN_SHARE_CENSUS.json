@@ -5,13 +5,13 @@
   "docket_unique_cells": 1684948,
   "sample": 29761,
   "overlay": [],
-  "complete": false,
-  "stage": "building",
+  "complete": true,
+  "stage": "complete",
   "utc_day": "2026-11-13",
   "started_at": "2026-11-13T18:59:46+00:00",
-  "written_at": "2026-11-13T19:42:30+00:00",
+  "written_at": "2026-11-13T20:18:00+00:00",
   "cells_planned": 29762,
-  "cells_visited": 656,
+  "cells_visited": 29762,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 61123,
     "rss_cap_mb": 15281,
-    "peak_rss_mb": 1047
+    "peak_rss_mb": 726
   },
-  "lockbox_cut": "2024-03-29",
+  "lockbox_cut": "2024-03-22",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 43,
-  "elapsed_s": 2561.8,
+  "cells_carved_at_own_tail": 46,
+  "elapsed_s": 4692.0,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 40,
@@ -39,130 +39,148 @@
     }
   },
   "sampled_cells": {
-    "cells": 656,
+    "cells": 29761,
     "gate0_rejected": {
       "symbol_eligibility": 189
     },
-    "preflight_refused": 217,
+    "preflight_refused": 13722,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 250,
-    "unknown": 50,
+    "deferred": 15590,
+    "judged_built": 260,
+    "unknown": 52,
     "unknown_share_of_judged": 0.2,
     "wilson95": [
-      0.1551,
-      0.254
+      0.1559,
+      0.2528
     ],
     "unknown_by_reason": {
-      "no_signals": 36,
+      "no_signals": 38,
       "too_rare": 7,
       "short_history_after_cut": 4,
       "lockbox_consumed_history": 3
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 13,
+      "session_excludes_fire_hour": 11,
+      "input_absent:orderflow_imbalance": 10,
+      "short_history_after_cut": 4,
+      "input_absent:liquidity_regime": 4,
+      "session_thins_below_60": 4,
+      "lockbox_consumed_history": 3,
+      "too_rare": 3
+    },
     "unknown_by_family": {
-      "formula": 13,
+      "formula": 14,
       "orderflow_imbalance": 10,
       "liquidity_regime": 4,
       "joint_genome": 3,
       "session_range_breakout": 3,
       "htf_anchor_trend": 2,
       "comex_settlement": 2,
+      "regime_transition": 2,
       "overnight_drift": 2,
       "ict_fvg": 1,
       "regime_split": 1,
-      "regime_transition": 1,
       "entry_conditioned": 1,
       "alt_series_momentum": 1,
       "exogenous_conditioner": 1,
       "level_breakout": 1
     },
     "unknown_by_chart": {
-      "H1": 18,
+      "H1": 19,
       "M30": 13,
       "M5": 9,
       "M1": 3,
       "M15": 3,
       "D1": 3,
-      "H4": 1
+      "H4": 2
     },
     "judged_by_chart": {
-      "H1": 108,
-      "M30": 53,
-      "M5": 38,
+      "H1": 112,
+      "M30": 55,
+      "M5": 40,
       "M15": 37,
-      "M1": 6,
-      "H4": 5,
+      "M1": 7,
+      "H4": 6,
       "D1": 3
     }
   },
   "sampled_plus_siblings": {
-    "cells": 656,
+    "cells": 29762,
     "gate0_rejected": {
       "symbol_eligibility": 189
     },
-    "preflight_refused": 217,
+    "preflight_refused": 13722,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 250,
-    "unknown": 50,
+    "deferred": 15591,
+    "judged_built": 260,
+    "unknown": 52,
     "unknown_share_of_judged": 0.2,
     "wilson95": [
-      0.1551,
-      0.254
+      0.1559,
+      0.2528
     ],
     "unknown_by_reason": {
-      "no_signals": 36,
+      "no_signals": 38,
       "too_rare": 7,
       "short_history_after_cut": 4,
       "lockbox_consumed_history": 3
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 13,
+      "session_excludes_fire_hour": 11,
+      "input_absent:orderflow_imbalance": 10,
+      "short_history_after_cut": 4,
+      "input_absent:liquidity_regime": 4,
+      "session_thins_below_60": 4,
+      "lockbox_consumed_history": 3,
+      "too_rare": 3
+    },
     "unknown_by_family": {
-      "formula": 13,
+      "formula": 14,
       "orderflow_imbalance": 10,
       "liquidity_regime": 4,
       "joint_genome": 3,
       "session_range_breakout": 3,
       "htf_anchor_trend": 2,
       "comex_settlement": 2,
+      "regime_transition": 2,
       "overnight_drift": 2,
       "ict_fvg": 1,
       "regime_split": 1,
-      "regime_transition": 1,
       "entry_conditioned": 1,
       "alt_series_momentum": 1,
       "exogenous_conditioner": 1,
       "level_breakout": 1
     },
     "unknown_by_chart": {
-      "H1": 18,
+      "H1": 19,
       "M30": 13,
       "M5": 9,
       "M1": 3,
       "M15": 3,
       "D1": 3,
-      "H4": 1
+      "H4": 2
     },
     "judged_by_chart": {
-      "H1": 108,
-      "M30": 53,
-      "M5": 38,
+      "H1": 112,
+      "M30": 55,
+      "M5": 40,
       "M15": 37,
-      "M1": 6,
-      "H4": 5,
+      "M1": 7,
+      "H4": 6,
       "D1": 3
     }
   },
   "siblings_only": {
-    "cells": 0,
+    "cells": 1,
     "gate0_rejected": {},
     "preflight_refused": 0,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
+    "deferred": 1,
     "judged_built": 0,
     "unknown": 0,
     "unknown_share_of_judged": null,
