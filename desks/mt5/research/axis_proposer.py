@@ -910,6 +910,8 @@ def cells_from_results(results: list[dict[str, Any]]) -> tuple[list[dict[str, An
                           "mechanism": (f"{res.get('name')}: speculative positioning beyond its "
                                         f"{pct:.0%} percentile is a forced future flow")}
                          for s in syms)
+        elif kind == "exogenous" and axis in ai.REFUSED_LAKE_AXES:
+            refusals[aid] = ai.REFUSED_LAKE_AXES[axis]
         elif kind == "exogenous" and axis in ai.LAKE_AXES and col:
             if not _ensure_lake(axis):
                 refusals[aid] = f"the lake frame for axis {axis!r} could not be published"

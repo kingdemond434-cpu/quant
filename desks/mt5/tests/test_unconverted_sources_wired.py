@@ -216,6 +216,23 @@ def test_a_non_lake_axis_publishes_nothing(tmp_path):
     assert not list(tmp_path.glob("*.csv"))
 
 
+def test_the_fred_axis_is_refused_never_published_nor_minted(tmp_path, monkeypatch):
+    """The 2026-11-13 FRED terms ruling: no lake frame and no tradeable cell on the FRED axis."""
+    assert "fred" not in ai.LAKE_AXES and "fred" in ai.REFUSED_LAKE_AXES
+    fred = {"series": {"VIXCLS": {"points": [{"d": f"2024-01-{d:02d}", "v": 10 + d}
+                                             for d in range(1, 29)]}}}
+    assert not ai.publish_lake("fred", fred, tmp_path)["written"]
+    assert not list(tmp_path.glob("*.csv"))
+    assert ai.lake_cells("fred", ["VIXCLS"], UNIVERSE) == []
+    monkeypatch.setattr(ai, "LAKE_DIR", tmp_path)
+    cells, refusals = ap.cells_from_results([
+        {"axis_id": "q9::fred", "name": "v", "verdict": "PASS",
+         "definition": {"kind": "exogenous", "series": "fred:VIXCLS"},
+         "per_instrument": [{"symbol": "EURUSD"}, {"symbol": "USDJPY"}]}])
+    assert cells == []
+    assert refusals == {"q9::fred": ai.REFUSED_LAKE_AXES["fred"]}
+
+
 # ------------------------------------------------------------------- 4. axis_proposer
 def test_axis_proposer_results_become_cells_and_the_rest_are_refused_by_name(tmp_path,
                                                                              monkeypatch):

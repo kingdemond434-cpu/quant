@@ -462,7 +462,14 @@ LAKE_DIR = DESK / "data" / "lake" / "series"
 LAKE_AXES: dict[str, dict] = {
     "bis": {"fields": ("carry_differential",)},
     "ecb": {"currency": "EUR"},
-    "fred": {"currency": "USD"},
+}
+#: Axes NEVER published to the lake and never minted into cells, with the ruling that says why.
+#: FRED (2026-11-13 terms ruling): automated fetches are refused, and third-party series in it
+#: (VIXCLS from Cboe, the ICE BofA OAS) may come only from their owners under the owners' terms,
+#: so no tradeable cell is built on the FRED axis.
+REFUSED_LAKE_AXES: dict[str, str] = {
+    "fred": ("FRED axis refused (2026-11-13 terms ruling): no automated fetch, and its "
+             "third-party series only from their owners under the owners' terms"),
 }
 #: How each cell reads its column: level and change, each at a 1-sigma extreme of its own history,
 #: and BOTH signs of the stance -- the direction is the gauntlet's to find, never a preference.
@@ -586,6 +593,8 @@ def lake_targets(axis: str, signal: str, universe: set[str]) -> list[str]:
 def lake_cells(axis: str, signals: list[str], universe: set[str],
                transforms: tuple[str, ...] = LAKE_TRANSFORMS) -> list[dict]:
     """exogenous_conditioner cells for every (column, target, transform, side) of one axis."""
+    if axis in REFUSED_LAKE_AXES or axis not in LAKE_AXES:
+        return []
     src = lake_source(axis)
     out: list[dict] = []
     for sig in signals:
