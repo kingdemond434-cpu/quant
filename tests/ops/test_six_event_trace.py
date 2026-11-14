@@ -95,3 +95,23 @@ def test_fade_recovery_and_voided_retirement_do_not_prove_retirement(tmp_path: P
                                          encoding="utf-8")
     (data / "decay_actions.jsonl").write_text(json.dumps(voided) + "\n", encoding="utf-8")
     assert _run(tmp_path)["events"][5]["verdict"] == "MISSING"
+
+
+def test_the_trace_has_an_hourly_clock_off_the_daily_chain() -> None:
+    # Its only clock was a late step of the ~9 h daily chain, so the report stood at 2026-10-03
+    # while the CRO pass read it. The hourly leg runs that same step alone, on the meta plan.
+    import importlib.util
+
+    research = Path(six_event_trace.ROOT) / "desks" / "mt5" / "research"
+    spec = importlib.util.spec_from_file_location(
+        "hourly_cycle_for_six_event", research / "hourly_cycle.py")
+    assert spec and spec.loader
+    hc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hc)
+    assert "six_event_trace" not in hc.CORE_LEGS
+    assert hc.department_of("six_event_trace") == "meta"
+    assert hc.in_plan("six_event_trace", "dept:meta")
+    src = (research / "hourly_cycle.py").read_text("utf-8")
+    assert '"six_event_trace", "research/daily_cycle.py", "--step", "six_event_trace"' in src
+    daily = (research / "daily_cycle.py").read_text("utf-8")
+    assert '("six_event_trace", _six_event_trace)' in daily
