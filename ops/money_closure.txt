@@ -27,6 +27,7 @@ desks/mt5/mt5desk/family_alt_series.py
 desks/mt5/mt5desk/family_analyst_revision.py
 desks/mt5/mt5desk/family_call.py
 desks/mt5/mt5desk/family_clock_transition.py
+desks/mt5/mt5desk/family_china_contagion.py
 desks/mt5/mt5desk/family_cross_sectional.py
 desks/mt5/mt5desk/family_ensemble.py
 desks/mt5/mt5desk/family_event_reaction.py
@@ -248,6 +249,7 @@ libs/research/bar_clock_release.py
 libs/research/bar_span.py
 libs/research/breadth_credit.py
 libs/research/capacity_policy.py
+libs/research/china_graph.py
 libs/research/claim_selection.py
 libs/research/decision_ledger.py
 libs/research/experiment_ledger.py

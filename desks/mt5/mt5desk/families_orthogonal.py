@@ -2607,3 +2607,15 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+# CHINA STRESS CONTAGION (GAP_MAP 31, 2026-11-14): a Chinese stress shock, seen first in CNH,
+# H-shares, the Hang Seng and copper, traded the next day on an instrument the China knowledge
+# graph (libs/research/china_graph.py, trade-flow weights from UN Comtrade) says it reaches,
+# with the graph's exposure sign on the recipe. research/china_contagion.py is the only
+# proposer and charges its whole grid; the family reads the source bars itself.
+from mt5desk.family_china_contagion import family_china_stress_contagion  # noqa: E402
+
+ORTHOGONAL_FAMILIES["china_stress_contagion"] = family_china_stress_contagion
+FAMILY_INPUTS["china_stress_contagion"] = ("the China stress sources' bars (USDCNH, CHINAH, "
+                                           "HK50, XCUUSD), resolved by the family itself on "
+                                           "this cell's chart", "data/universe/*_H1.parquet")

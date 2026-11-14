@@ -217,7 +217,8 @@ def family_gnn_propagation(
     rr: float = 1.5,
 ) -> list[Signal]:
     """Cross-asset information diffusion: the graph says which markets move first for this one."""
-    if adjacency not in ("lead_lag", "corr") or int(layers) not in (1, 2):
+    if adjacency not in ("lead_lag", "corr", "knowledge", "knowledge_lead_lag") \
+            or int(layers) not in (1, 2):
         return []
     return _learned_signals(
         df, model="gnn", config={"adjacency": adjacency, "layers": int(layers)}, symbol=symbol,

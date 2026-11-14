@@ -520,6 +520,16 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
+    # CHINA CONTAGION (GAP_MAP 31, 2026-11-14): the China knowledge graph (STRUCTURAL priors; UN
+    # Comtrade is REFUSED_ON_TERMS, research/china_exposure_ingest.py records the fence)
+    # -> the price-side stress index's measured contagion -> china_stress_contagion cells.
+    Node("china_contagion", "desks/mt5/research/china_contagion.py",
+         reads=("desks/mt5/data/universe/",),
+         writes=("desks/mt5/reports/CHINA_CONTAGION.json", "desks/mt5/data/china_graph.json",
+                 "desks/mt5/data/intelligence/china_contagion/"),
+         # Its cells reach a decision only through the compiler that reads its intake glob, so
+         # it is priced there, as cell_emitter and alpha_registry are.
+         billed_as=("miner_candidate_compiler",)),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -1145,6 +1155,12 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/china_contagion/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/china_graph.json": ("the Hourly pass Tier-1 read of GAP_MAP 31 (nodes, "
+                                        "MEASURED/STRUCTURAL edges, exposures)"),
+    "desks/mt5/reports/CHINA_CONTAGION.json": ("the Hourly pass and the Tier-1 gap thread: "
+                                               "graph-vs-market score, per-instrument "
+                                               "contagion, proposals"),
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
