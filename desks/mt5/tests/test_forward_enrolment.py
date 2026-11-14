@@ -239,7 +239,7 @@ def test_an_absolute_path_in_an_error_reaches_neither_published_file(tmp_path, m
     monkeypatch.setattr(fe, "clock_rows", lambda *a, **k: {})
     monkeypatch.setattr(fe, "certification_stamps", dict)
     payload = fe.run(write=True, now=NOW, budget_s=5.0)
-    assert "OSError" in json.dumps(payload, default=str)
+    assert "FileNotFoundError" in json.dumps(payload, default=str)
     for name in ("FORWARD_ENROLMENT.json", "FORWARD_ENROLMENT_SUMMARY.json"):
         path = tmp_path / name
         assert path.exists(), name
