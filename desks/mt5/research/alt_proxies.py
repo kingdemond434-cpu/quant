@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import gzip
 import hashlib
 import html as _html
@@ -91,6 +92,8 @@ ROOT = DESK.parent.parent
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from libs.ops.env_keys import read_key  # noqa: E402
 
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
@@ -1829,7 +1832,8 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="us_census_marts_ex_autos", name="US Census advance retail sales, ex-autos cuts",
         url=("https://api.census.gov/data/timeseries/eits/marts?get=cell_value,data_type_code,"
-             "time_slot_id,category_code,seasonally_adj&time=from+2015"),
+             "time_slot_id,category_code,seasonally_adj&time=from+2015&key={key}"),
+        key_env="CENSUS_API_KEY",
         region="US", language="en", cadence="monthly", parse=parse_census_marts,
         rule=_lag_rule(17, 13, weekday=True), transform="mom_monthly",
         instruments={"US500": 1, "USDJPY": 1, "EURUSD": -1, "XAUUSD": -1},
@@ -3278,7 +3282,7 @@ def status_of(src: Source, environ: dict[str, str] | None = None,
         cands = SUBSTITUTED_BY.get(src.id)
         return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
                 else f"BLOCKED_ON_TERMS:{src.terms}")
-    if src.key_env and not env.get(src.key_env):
+    if src.key_env and not (read_key(src.key_env) if environ is None else env.get(src.key_env)):
         return f"BLOCKED_ON_KEY:{src.key_env}"
     missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
@@ -3300,13 +3304,20 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
-    return url.replace(key, f"<{src.key_env}>") if key else url
+    """The key out of `url` (or any text), raw AND url-encoded: a key holding `+`, `/` or `=`
+    travels encoded, and only the raw form used to be replaced (re-audit of #201)."""
+    from libs.data.keyed_sources import redact
+    key = read_key(src.key_env) if src.key_env else ""
+    return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
+def http_get(url: str, secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
+    from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # The key rides in this url's query or PATH (NASA FIRMS): the opener strips it from, or
+    # refuses, any redirect that would carry it to another host. A path key is only found when
+    # the opener is told the secret (re-audit of #252), so `collect` passes the source's key.
+    with keyed_opener(_tls(), secrets=secrets).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
@@ -3334,7 +3345,7 @@ class Request:
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    key = read_key(src.key_env) if src.key_env else ""
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
@@ -3366,7 +3377,10 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             q = urllib.parse.urlencode({
                 "where": f"portname IN ({quoted}) AND date >= timestamp '{since} 00:00:00'",
                 "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
-                "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
+                "resultOffset": offset, "resultRecordCount": 2000, "f": "json",
+                # the FeatureServer answers 499 "Token Required" since 2026-11 (box read
+                # 2026-11-11): an ArcGIS API key rides as `token`, redacted like any key
+                **({"token": key} if key else {})})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
     if src.id == "gdelt_events_country":
@@ -4135,6 +4149,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if getter is http_get and src.key_env:
+        key = read_key(src.key_env)
+        getter = functools.partial(http_get, secrets=(key,) if key else ())
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
@@ -4173,6 +4190,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         elif fetch:
             try:
                 body, ctype = getter(req.url)
+                if src.key_env:
+                    from libs.data.keyed_sources import scrub_body
+                    body = scrub_body(body, (read_key(src.key_env),))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
@@ -4550,7 +4570,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
-        "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
+        "keys": {s.key_env: bool(read_key(s.key_env)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
