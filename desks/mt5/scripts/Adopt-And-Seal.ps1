@@ -173,7 +173,62 @@ function Done([int] $code, [string] $stage) {
         ok          = ($code -eq 0)
         head_after  = $headAfter
     }
+    # Remember what a SETTLED run saw, so the next five-minute tick can skip while origin stands
+    # still (section -1). Only stages that mean "nothing left to do for these refs" count.
+    if ($code -eq 0 -and $script:RemoteKey -and ($script:SettledStages -contains $stage)) {
+        try {
+            (@{ key = $script:RemoteKey; stage = $stage
+                epoch = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+                at = (Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json -Compress) |
+                Set-Content -Path $script:SettledFile -Encoding utf8 -ErrorAction Stop
+        } catch { }
+    }
     exit $code
+}
+
+# ------------------------------------- -1. NOTHING NEW ON ORIGIN -> NOTHING TO DO (2026-11-14)
+# zuck 2026-11-14: "always immediate new code adoptions 24 7". The task used to fire hourly at
+# :12, so a sealed release waited up to an hour for the box. It now fires EVERY FIVE MINUTES, and
+# this check keeps that cheap: one read-only `git ls-remote` of the live branch and `production`
+# (no fetch, no lock, no index), compared with what the last SETTLED run saw. Unchanged, and that
+# run was under 55 minutes ago -> nothing can have changed for this box, so the tick is a success
+# and exits here. Anything else -- either ref moved, the remote cannot be read, an override is
+# set, the last run did not settle (a blackout, a lost lock, a guard error) -- runs the full path
+# below exactly as before. So the fast path can only SKIP a run that would have found nothing;
+# it never adopts anything, and at least one full run happens every hour.
+$script:SettledFile = Join-Path $PSScriptRoot "..\logs\adopt_settled.json"
+$script:SettledStages = @("held-awaiting-release", "held-awaiting-audit", "already-sealed",
+                          "accepts-nothing-to-seal", "sealed")
+$script:SettledMaxMin = 55
+$script:RemoteKey = $null
+$override = $AllowUnreleased -or ($env:QUANT_ADOPT_UNRELEASED -eq "1") -or
+            (Test-Path (Join-Path $desk "data\ADOPT_UNRELEASED"))
+if (-not $override) {
+    try {
+        $ls = @(git -C $RepoRoot -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 ls-remote origin `
+                "refs/heads/$Branch" "refs/heads/production" 2>$null | ForEach-Object { "$_".Trim() } |
+                Where-Object { $_ } | Sort-Object)
+        if ($LASTEXITCODE -eq 0 -and $ls.Count -eq 2) { $script:RemoteKey = $ls -join ";" }
+    } catch { $script:RemoteKey = $null }
+}
+if ($script:RemoteKey -and (Test-Path $script:SettledFile)) {
+    try {
+        $settled = Get-Content -Path $script:SettledFile -Raw -ErrorAction Stop | ConvertFrom-Json
+        # epoch seconds, not the ISO text: PowerShell 7's ConvertFrom-Json turns an ISO string into
+        # a local DateTime, and 5.1 does not; a number reads the same under both.
+        $ageMin = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [long]$settled.epoch) / 60.0
+        if ([string]$settled.key -eq $script:RemoteKey -and $ageMin -ge 0 -and $ageMin -lt $script:SettledMaxMin) {
+            $null = Log ("origin unchanged since the {0} run {1:N0} min ago; nothing to adopt" -f $settled.stage, $ageMin)
+            Write-Heartbeat @{
+                finished_at = (Get-Date).ToUniversalTime().ToString('o')
+                exit_code   = 0
+                stage       = "no-new-release"
+                ok          = $true
+                head_after  = $script:HeadBefore
+            }
+            exit 0
+        }
+    } catch { }
 }
 
 Write-Heartbeat @{ finished_at = $null; exit_code = $null; stage = "started"; ok = $false }
