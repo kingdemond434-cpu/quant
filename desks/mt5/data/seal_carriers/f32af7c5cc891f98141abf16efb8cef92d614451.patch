@@ -1,0 +1,116 @@
+From f32af7c5cc891f98141abf16efb8cef92d614451 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 14 Nov 2026 06:26:26 +0000
+Subject: [PATCH] Gauntlet: a cell without its required evidence is refused by
+ name in preflight; identity keys never reach the family
+
+Every sweep's pre-warm repeated two TypeErrors on 401 cells, each after loading bars and holding
+a worker: 398 seasonal_window cells without start_md/end_md/side_bias, and 3 execution_state
+cells handed the fill surface's vintage (surface_generated_at). The preflight now names missing
+required keyword-only evidence (the orthogonal_sweep._unsuppliable test) as a NOT_RUN
+disposition, and the build strips identity keys the way the forward clock does
+(runtime_call_params), keeping session for its filter.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01TM3tMw4CNWqYHM8JZbUkSh
+
+diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
+index d44204ad9de4f06a599395ed476a682507104d43..e23e3da23eb7521d70c0a9fbddf4827e7246a346 100644
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -729,6 +729,18 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
+     # "this family takes no side" and retry, and the second failure returns None: an entire
+     # chart's worth of cells would read as unbuildable.
+     call_params.pop("timeframe", None)
++    # EVERY OTHER IDENTITY KEY GOES THE SAME WAY (2026-11-14). The branches above pop the keys
++    # they consume; a key no branch consumes -- `surface_generated_at`, the fill surface's
++    # vintage that orthogonal_sweep stamps on every execution_state cell -- reached the family
++    # and raised TypeError on every sweep's pre-warm ("unexpected keyword argument
++    # 'surface_generated_at'"). The same strip the forward clock applies (`runtime_call_params`):
++    # the key stays in the cell's identity, only the call loses it. `session` is kept for the
++    # filter just below.
++    try:
++        from mt5desk.family_inputs import strip_identity_keys as _strip_ids
++        call_params = _strip_ids(family, call_params, preserve_session=True)
++    except ImportError:
++        pass
+     # THE SESSION IS AN IDENTITY KEY, NEVER A FAMILY ARGUMENT (2026-09-16): the same filter the
+     # forward clock and the live executor apply in `family_call.signals`, applied here to the
+     # replay, so a cell certified inside a session is judged inside it.
+@@ -875,6 +887,26 @@ def modifier_preflight(spec: dict) -> str | None:
+     refused = cell_modifiers.refusal(mods)
+     if refused:
+         return refused
++    # REQUIRED EVIDENCE THE CELL DOES NOT CARRY IS REFUSED BY NAME, before any bar is loaded
++    # (2026-11-14). `seasonal_window` takes its window and side (`start_md`, `end_md`,
++    # `side_bias`) as REQUIRED keyword-only arguments -- a specialist's stated prior, never a
++    # searched default -- so a cell without them can only raise TypeError. 398 such cells did,
++    # in every sweep's pre-warm, each after loading its bars and holding a worker. The same
++    # signature test `orthogonal_sweep._unsuppliable` applies, so any family with required
++    # evidence is classified the same way on day one. The cell is not tested as a different rule.
++    # `symbol` is supplied by the build itself for the families that take it, and the legacy
++    # input loaders merge arbitrary keys, so neither is judged here.
++    try:
++        from mt5desk.legacy_family_inputs import RAW_COT_FAMILIES as _raw_cot
++        _missing = [] if (family == "usd_session_shock" or family in _raw_cot) else [
++            name for name, p in inspect.signature(fn).parameters.items()
++            if p.kind is p.KEYWORD_ONLY and p.default is p.empty
++            and name not in kwargs and name != "symbol"]
++        if _missing:
++            return ("missing required family parameter(s): " + ", ".join(_missing)
++                    + "; the cell does not carry the evidence the family requires")
++    except (TypeError, ValueError, ImportError):
++        pass
+     # Plain unsupported kwargs are just as deterministic as unsupported modifiers.  Previously
+     # they loaded bars, occupied a pre-warm worker, and only then raised TypeError.  Conserving
+     # them here as an explicit NOT_RUN disposition frees the expensive workers for cells that can
+diff --git a/desks/mt5/tests/test_gauntlet_modifier_preflight.py b/desks/mt5/tests/test_gauntlet_modifier_preflight.py
+index b812dec94e49e240286078c0492aebc5e8496d4f..dc1f461433c8c6baafa91ab048aa5395d3485b8a 100644
+--- a/desks/mt5/tests/test_gauntlet_modifier_preflight.py
++++ b/desks/mt5/tests/test_gauntlet_modifier_preflight.py
+@@ -89,3 +89,45 @@ def test_warmer_keeps_builder_failure_reason(monkeypatch):
+     result = gauntlet._warm_one({"sym": "AUDCAD", "family": "relative_value", "params": {}}, {})
+     assert result["status"] == "NOT_RUN_BUILD_FAILED"
+     assert result["why"] == "BLOCKED_RULES: no peer_symbol on the candidate"
++
++
++# ---- 2026-11-14: the two TypeErrors every pre-warm repeated (402 cells a sweep) ----
++
++def test_preflight_refuses_a_seasonal_window_cell_without_its_window_by_name() -> None:
++    refused = gauntlet.modifier_preflight({"family": "seasonal_window",
++                                           "params": {"hold_d": 1, "timeframe": "H1"}})
++    assert refused is not None
++    for name in ("start_md", "end_md", "side_bias"):
++        assert name in refused
++
++
++def test_preflight_keeps_a_seasonal_window_cell_that_carries_its_window() -> None:
++    assert gauntlet.modifier_preflight({
++        "family": "seasonal_window",
++        "params": {"start_md": 601, "end_md": 731, "side_bias": 1, "hold_d": 3},
++    }) is None
++
++
++def test_build_never_hands_the_surface_vintage_to_execution_state(monkeypatch) -> None:
++    import numpy as np
++    from mt5desk import families_orthogonal as fo
++    from research import orthogonal_sweep as osw
++
++    seen: dict = {}
++
++    def spy(df, **kw):
++        seen.update(kw)
++        return []
++    monkeypatch.setitem(fo.ORTHOGONAL_FAMILIES, "execution_state", spy)
++    monkeypatch.setattr(osw, "_surface_for", lambda sym: {"cells": {}})
++    idx = pd.date_range("2024-01-01", periods=24 * 30, freq="h", tz="UTC")
++    close = 1.1 + np.cumsum(np.random.default_rng(3).normal(0, 0.001, len(idx)))
++    bars = pd.DataFrame({"open": close, "high": close + 0.001, "low": close - 0.001,
++                         "close": close, "tick_volume": 100}, index=idx)
++    gauntlet.build_cell("EURUSD", "execution_state",
++                        {"input_source": "microstructure_surfaces",
++                         "surface_generated_at": "2026-11-01T00:00:00+00:00",
++                         "mode": "cheap_deep"}, {}, h1_override=bars)
++    assert "surface" in seen, gauntlet.LAST_BUILD_FAILURE
++    assert "surface_generated_at" not in seen and "input_source" not in seen
++    assert seen.get("mode") == "cheap_deep"
