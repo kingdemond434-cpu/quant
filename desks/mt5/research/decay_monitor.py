@@ -502,14 +502,11 @@ def _row_r(row: dict) -> float | None:
 def _shadow_ledger_rows(name: str) -> list[dict]:
     """The sleeve's forward-clock ledger rows, from the first directory that holds the file.
     Ledgers are named by the clock key with dots as underscores (`ledger_CADJPY_asia.json`)."""
-    stem = str(name).replace(".", "_")
-    for d in SHADOW_LEDGER_DIRS:
-        f = d / f"ledger_{stem}.json"
-        if not f.exists():
-            continue
-        rows = _read_json(f, None)
-        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
-    return []
+    # The clock's OWN ledger (libs.research.forward_ledger). A legacy file several clock keys
+    # shared is no clock's series and reads as no rows -- never as this sleeve's history.
+    from libs.research import forward_ledger as fl
+    rows, _status, _why = fl.read_rows(str(name), SHADOW_LEDGER_DIRS)
+    return rows or []
 
 
 def sleeve_series(name: str, now: datetime | None = None

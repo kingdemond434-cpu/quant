@@ -648,7 +648,18 @@ def run_counterfactual_analysis(base_path: Path, symbol: str = "XAUUSD",
     
     # Load historical signals from shadow ledger
     shadow_dir = base_path / "desks" / "mt5" / "reports" / "shadow"
-    ledger_files = list(shadow_dir.glob(f"ledger_{symbol}_*.json"))
+    # A legacy file several clock keys shared is frozen (libs.research.forward_ledger); its
+    # trades already sit in each clock's own file, so reading it too would count them twice.
+    try:
+        from libs.research import forward_ledger as fl
+        _frozen = set(fl.load_shared(shadow_dir))
+    except ImportError:             # run outside the repo root: read the registry directly
+        try:
+            _frozen = set(json.loads((shadow_dir / "shared_ledgers.json").read_text("utf-8"))
+                          .get("files") or {})
+        except (OSError, ValueError, AttributeError):
+            _frozen = set()
+    ledger_files = [p for p in shadow_dir.glob(f"ledger_{symbol}_*.json") if p.name not in _frozen]
     
     all_signals = []
     for f in ledger_files:
