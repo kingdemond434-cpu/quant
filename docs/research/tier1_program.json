@@ -9203,6 +9203,31 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "CHC1",
+   "item": "Conversion-handoff converter: the judge's parked cells (data/hypotheses/conversion_handoff.json, 718,558 rows on the box 2026-11-11, none resolved) get a consumer -- build_failed aggregated into a family defect report, short_history_after_cut routed to a same-class cross_asset_transplant with one trial charged per new transplant, lockbox_consumed_history refused under the holdout rail, never_fires relaxed along the family grid (up to 2 charged children), too_rare moved to a coarser chart or pooled onto a same-class peer in a class book, and build_input_missing ranked in a data-gap report and minted once its input exists -- all under a trial budget derived from the judge's measured spare capacity (never fed past it; a shortfall against the 150k/day floor is published as judge_gap_per_day; UNMEASURED fallback), round-robin across trial_family, every row ending with an outcome",
+   "domain": "C",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/conversion_handoff_converter.py",
+    "desks/mt5/research/conversion_handoff_common.py",
+    "desks/mt5/research/conversion_handoff_io.py",
+    "desks/mt5/research/conversion_handoff_routes.py",
+    "desks/mt5/research/conversion_handoff_children.py",
+    "desks/mt5/tests/test_conversion_handoff_converter.py",
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "scheduled_by": "hourly_cycle:conversion_handoff_converter",
+   "artifact": "desks/mt5/reports/CONVERSION_HANDOFF.json",
+   "consumer": "Transplants enter the judge's intake through proposer_common.donate (data/intelligence/conversion_handoff_converter/discoveries_*_<family>.json + registry research_candidates), and libs/research/experiment_ledger.py _proposer_counts charges their tests_run to the family; family owners read desks/mt5/reports/FAMILY_BUILD_DEFECTS.json; research/issue_board.py watches CONVERSION_HANDOFF.json for staleness",
+   "gap": "PARTIAL 2026-11-11: built and wired as an hourly leg; never yet run against the box's 718k-row handoff. Every handoff reason now has a route (no reason is held; an unknown reason is counted UNHANDLED_REASON). The regime_child, event_study and proxy_series axes have no converter yet. Params of a parked cell are recovered from the registry (id / donated_cell) or the docket; a cell in neither is UNMEASURED and re-asked daily. The day's trial budget at the measured box capacity is ~262k children against a ~1.1M-child backlog (about 4 days); whether a 420 s pass can mint its per-pass share (~11k) is UNMEASURED until the first box pass, and the projection is in CONVERSION_HANDOFF.json.",
+   "next_step": "first box pass writes CONVERSION_HANDOFF.json (trial_budget MEASURED, projection), FAMILY_BUILD_DEFECTS.json and BUILD_INPUT_GAPS.json; family owners act on the ranked defects and the fetchers on the ranked input gaps",
+   "landed": [
+    "conversion handoff converter 2026-11-11"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

@@ -1385,6 +1385,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
                      "conversion_maximiser", "conversion_funnel", "trend_core",
+                     # the judge's parked cells, handed over in conversion_handoff.json
+                     "conversion_handoff_converter",
                      # the anchor/exit grid and the empty-cluster forcer: both mint cells
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
@@ -2364,6 +2366,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
     # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
     "conversion_funnel": 330,
+    # The handoff converter streams the judge's conversion_handoff.json and stops itself at 85%
+    # of --budget-s 420 (or of the cap it is told), writing its ledger, cursor and two reports;
+    # the cap sits above its own budget so a cut hour costs rows, never the artifact.
+    "conversion_handoff_converter": 540,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -4791,6 +4797,16 @@ def main() -> None:
     # this hour's conversions are in the registry stage. Measurement only; no gate moves.
     cfn = _costed("conversion_funnel", lambda: _producer(
         "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
+    # THE CONVERSION-HANDOFF CONVERTER (box read JG3, 2026-11-11): the 718,558 cells the judge
+    # parked "to the converter" had no converter. build_failed -> FAMILY_BUILD_DEFECTS.json (no
+    # trial); short_history_after_cut -> a same-class cross_asset_transplant; never_fires -> up to
+    # two grid-relaxed children; too_rare -> a coarser chart or a pooled class book;
+    # build_input_missing -> BUILD_INPUT_GAPS.json and a 24h retry; lockbox_consumed_history ->
+    # NOT_CONVERTIBLE (holdout rail). Every child is a charged trial, under a budget derived from
+    # the judge's measured spare capacity. Discovery department, prediction layer.
+    chc = _costed("conversion_handoff_converter", lambda: _producer(
+        "conversion_handoff_converter", "research/conversion_handoff_converter.py", "--once",
+        "--budget-s", "420"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -6514,6 +6530,7 @@ def main() -> None:
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
+                    "conversion_handoff_converter": chc,
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,

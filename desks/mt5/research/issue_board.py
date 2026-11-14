@@ -138,6 +138,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("alt_equity_handoff", "desks/mt5/reports/ALT_EQUITY_HANDOFF.json", 3600,
      "research/alt_equity_handoff.py"),
+    # The judge's parked cells' converter: a stale report means the handoff queue is a parking
+    # lot again (box read JG3, 2026-11-11).
+    ("conversion_handoff_converter", "desks/mt5/reports/CONVERSION_HANDOFF.json", 3600,
+     "research/conversion_handoff_converter.py"),
     # The silent-organ census reads two small JSON files; its own clock here means the fence
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
