@@ -1,21 +1,21 @@
 {
- "at": "2026-11-14T05:01:02+00:00",
+ "at": "2026-11-14T05:16:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.02,
-   "why": "no new verdict for 0.0h (last 2026-11-14T04:59:50+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.27,
+   "why": "no new verdict for 0.3h (last 2026-11-14T04:59:50+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": true,
    "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.56,
-   "busy_other_cores": 14.89,
-   "why": "judge tree at 0.56 cores (others 14.89) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 2.0h (limit 1h)",
+   "busy_judge_cores": 0.99,
+   "busy_other_cores": 15.47,
+   "why": "judge tree at 0.99 cores (others 15.47) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 2.2h (limit 1h)",
    "low_since": "2026-11-14T03:01:09+00:00",
-   "hours": 2.0
+   "hours": 2.25
   },
   "resident_dead": {
    "open": false,
@@ -25,25 +25,28 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 6.42,
+   "hours": 0.11,
    "limit_h": 25.59,
-   "why": "6.4h since the last sweep ended (2026-11-13T22:36:03+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.1h since the last sweep ended (2026-11-14T05:09:24+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "why": "last sweep rc 75: not a completed sweep"
+   "cells": 100045,
+   "basis": "n_judged",
+   "read": "first 1048576 and last 262144 bytes",
+   "why": "the sweep that ended 2026-11-14T05:09:24+00:00 judged 100045 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 11840,
-   "why": "sweep child pid 11840 alive"
+   "pid": 11640,
+   "why": "sweep child pid 11640 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.93,
+   "phase": "plan",
+   "hours": 0.11,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.9h since 2026-11-14T04:05:02+00:00 (limit 3h)"
+   "why": "sweep phase plan has run 0.1h since 2026-11-14T05:09:33+00:00 (limit 4.5h)"
   },
   "host_unreadable": {
    "open": false,
@@ -88,9 +91,9 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 1624,
-  "heartbeat_utc": "2026-11-14T05:00:36+00:00",
-  "last_sweep_ended_utc": "2026-11-13T22:36:03+00:00",
-  "last_rc": 75
+  "heartbeat_utc": "2026-11-14T05:15:38+00:00",
+  "last_sweep_ended_utc": "2026-11-14T05:09:24+00:00",
+  "last_rc": 0
  },
  "host": "trading box",
  "page": {
