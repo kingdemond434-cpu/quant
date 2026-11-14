@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 835,
+  "NEVER": 837,
   "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1060,
+  "attested": 1062,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -713,7 +713,18 @@
     ]
    },
    {
-    "at": "2026-11-14T03:41:13+00:00",
+    "at": "2026-11-14T02:41:03+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:cluster_judge",
+     "leg:decay_verdicts"
+    ]
+   },
+   {
+    "at": "2026-11-14T05:10:48+00:00",
     "host": "vm",
     "machine_id": "d165c2d88d894a4787be219662b439ad",
     "on_attesting_host": false,
@@ -27850,6 +27861,62 @@
    "measured_at": "2026-11-11T18:04:02+00:00"
   },
   {
+   "organ": "leg:cluster_judge",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/cluster_judge.py"
+   ],
+   "clock": "hourly_cycle:cluster_judge",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CLUSTER_JUDGE.json",
+   "artifact_declared": "desks/mt5/reports/CLUSTER_JUDGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "none yet by design: a person reads it; the allocator / E8 independence count may",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
+   "organ": "leg:decay_verdicts",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/decay_verdicts.py"
+   ],
+   "clock": "hourly_cycle:decay_verdicts",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DECAY_VERDICTS.json",
+   "artifact_declared": "desks/mt5/reports/DECAY_VERDICTS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/desk_dashboard_state.py (each LIVE sleeve's verdict on the pr",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
    "organ": "leg:event_calendar",
    "kind": "leg",
    "code": [
@@ -27867,7 +27934,7 @@
    "artifact_declared": "data/event_calendar.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 735467,
+   "artifact_age_s": 740842,
    "artifact_bytes": 5043,
    "artifact_sha256": "b20b74c1945b78c6dca6289d3ffadc39b72c6eb4d62a6b498ea7e9472caed5c2",
    "summary": {},
@@ -27875,7 +27942,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T03:41:13+00:00"
+   "measured_at": "2026-11-14T05:10:48+00:00"
   },
   {
    "organ": "leg:ais_norway",
@@ -27903,7 +27970,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T03:41:13+00:00"
+   "measured_at": "2026-11-14T05:10:48+00:00"
   },
   {
    "organ": "leg:crowding_conditioner",
@@ -27931,7 +27998,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T03:41:13+00:00"
+   "measured_at": "2026-11-14T05:10:48+00:00"
   },
   {
    "organ": "library:scripts/screen_cot_positioning.py",
@@ -27959,7 +28026,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T03:41:13+00:00"
+   "measured_at": "2026-11-14T05:10:48+00:00"
   }
  ],
  "ratchet": {
