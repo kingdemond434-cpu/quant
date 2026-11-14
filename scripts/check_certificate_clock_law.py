@@ -77,6 +77,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import statistics
 import sys
 from datetime import UTC, datetime
@@ -163,7 +164,7 @@ def host_runs_clocks(desk: Path | None = None) -> tuple[bool, str]:
         return False, ("no MetaTrader5 package here: no terminal, no bars, nothing scheduled to "
                        "advance a forward clock, so a frozen row count is not this host's defect")
     except Exception as exc:
-        return False, f"clock_liveness unavailable ({type(exc).__name__}: {exc}): host UNMEASURED"
+        return False, f"clock_liveness unavailable ({type(exc).__name__}): host UNMEASURED"
 
 
 def certificates(canon: Path | None = None) -> tuple[list[dict[str, Any]], list[str]]:
@@ -175,7 +176,7 @@ def certificates(canon: Path | None = None) -> tuple[list[dict[str, Any]], list[
     notes: list[str] = []
     doc = _read_json(canon or CANON)
     if not isinstance(doc, dict):
-        return [], [f"canon unreadable or absent at {canon or CANON}: certificates {UNMEASURED}"]
+        return [], [f"canon unreadable or absent ({(canon or CANON).name}): certificates {UNMEASURED}"]
     surv = doc.get("survivors")
     if not isinstance(surv, dict):
         return [], [f"canon carries no `survivors` mapping: certificates {UNMEASURED}"]
@@ -215,7 +216,7 @@ def clock_keys(certs: list[dict[str, Any]],
         sys.path.insert(0, str(base / "research"))
         import shadow_forward as sf  # type: ignore[import-not-found]
     except Exception as exc:
-        return {}, [f"shadow_forward unavailable ({type(exc).__name__}: {exc}): "
+        return {}, [f"shadow_forward unavailable ({type(exc).__name__}): "
                     f"clock keys {UNMEASURED}"]
     keys: dict[str, str] = {}
     notes: list[str] = []
@@ -234,7 +235,7 @@ def clock_keys(certs: list[dict[str, Any]],
             keys[c["name"]] = sf.sleeve_key(c["symbol"], c["selector"], dict(c["params"]),
                                             c["family"], c["side"])
         except Exception as exc:
-            notes.append(f"{c['name']}: sleeve_key refused ({type(exc).__name__}: {exc})")
+            notes.append(f"{c['name']}: sleeve_key refused ({type(exc).__name__})")
     return keys, notes
 
 
@@ -256,7 +257,7 @@ def clock_rows(desk: Path | None = None) -> tuple[dict[str, dict[str, Any]], lis
                 if isinstance(row, dict) and "n" in row:
                     rows.setdefault(str(key), {**row, "lane": lane})
     if not rows:
-        notes.append(f"no lane state file under {base} carries a clock row: clocks {UNMEASURED}")
+        notes.append(f"no lane state file under reports/shadow carries a clock row: clocks {UNMEASURED}")
     return rows, notes
 
 
@@ -425,7 +426,11 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
     # ---- 4. a clock the engine refuses to advance is a breach whatever its row count says
     if status not in WORKING_STATUSES:
         entry.update(verdict="BLOCKED", breach=True,
-                     blocker=str(row.get("last_error") or "")[:400] or status,
+                     # The engine's `last_error` is free exception text that can carry a box
+                     # path, and this report is synced to a public branch: publish the status
+                     # and whether an error was recorded, never its text (Auditor MF1).
+                     blocker=status + (" (engine recorded last_error)"
+                                       if row.get("last_error") else ""),
                      why=f"BREACH: the engine will not advance this clock (`{status}`), so the "
                          f"certificate can never mature. Fix the blocker, never the certificate")
         return _seal(entry)
@@ -641,10 +646,89 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
         return None
 
 
+#: The box sync carries a report only under its 4 MB wire cap (sync_shadow_to_git.ps1,
+#: $ReportCapBytes). The full artifact passed it when the canon held ~3,000 certificates and was
+#: 8.7 MB at 7,458 (box, 2026-11-10), so every reader off the box -- the hourly pass included --
+#: read the 11-07 copy as current for three days. The SUMMARY is what crosses the wire; the full
+#: artifact stays on the box for the organs that read per-certificate rows.
+SUMMARY_BUDGET_BYTES = 3_000_000
+#: Breach rows listed per verdict in the summary before the rest are counted only.
+SUMMARY_ROWS_PER_VERDICT = 400
+
+
+def summarise(doc: dict[str, Any], rows_per_verdict: int = SUMMARY_ROWS_PER_VERDICT
+              ) -> dict[str, Any]:
+    """Everything a reader off the box needs to act on, small enough to publish.
+
+    Every headline field is copied as-is. Breaching certificates are kept as compact rows,
+    grouped by verdict, with each group's TOTAL always stated, so a trimmed list can never read
+    as the whole: `listed` < `n` says rows were left on the box, and the full artifact names them.
+    """
+    keep = ("at", "law", "alert_id", "host_why", "ok", "verdict", "n_certificates",
+            "n_clock_keys", "n_clock_rows", "counts", "n_late", "n_late_history",
+            "n_promotion_refused", "latency_breach_h", "late_window_h", "family_gap_hours",
+            "notes", "rule")
+    out: dict[str, Any] = {k: doc[k] for k in keep if k in doc}
+    out["collisions"] = len(doc.get("collisions") or {})
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for e in doc.get("certificates") or []:
+        if not isinstance(e, dict) or not (e.get("breach") or e.get("promotion_block")):
+            continue
+        kind = ("LATE_CLOCK" if e.get("late") and e.get("verdict") not in
+                ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS") else str(e.get("verdict")))
+        if e.get("promotion_block") and not e.get("breach"):
+            kind = "PROMOTION_REFUSED"
+        groups.setdefault(kind, []).append(
+            {"certificate": e.get("certificate"), "family": e.get("family"),
+             "key": e.get("key"), "status": e.get("status"), "n": e.get("n"),
+             "latency_h": e.get("latency_h"), "blocker": e.get("blocker"),
+             "promotion_block": e.get("promotion_block")})
+    by_family: dict[str, dict[str, int]] = {}
+    for kind, rows in groups.items():
+        fam: dict[str, int] = {}
+        for r in rows:
+            fam[str(r["family"])] = fam.get(str(r["family"]), 0) + 1
+        by_family[kind] = dict(sorted(fam.items(), key=lambda kv: -kv[1]))
+    out["breaches"] = {kind: {"n": len(rows), "listed": min(len(rows), rows_per_verdict),
+                              "by_family": by_family[kind],
+                              "rows": [{k: v for k, v in r.items() if v is not None}
+                                       for r in rows[:rows_per_verdict]]}
+                       for kind, rows in sorted(groups.items())}
+    out["full_artifact"] = "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json (on the box)"
+    return out
+
+
 def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     path = Path(target or OUT)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=2, default=str) + "\n", encoding="utf-8")
+    rows = SUMMARY_ROWS_PER_VERDICT
+    text = json.dumps(summarise(doc, rows), indent=1, default=str)
+    while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
+        rows //= 2
+        text = json.dumps(summarise(doc, rows), indent=1, default=str)
+    if len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES:
+        # Still over at the floor: the sync will skip it again. The miss is stamped in the
+        # summary, on the in-memory result the leg returns, and on stderr, never left silent.
+        over = summarise(doc, rows)
+        over["over_budget"] = {"bytes": len(text.encode("utf-8")),
+                               "budget": SUMMARY_BUDGET_BYTES, "rows": rows}
+        text = json.dumps(over, indent=1, default=str)
+        doc["summary_over_budget"] = over["over_budget"]
+        print(f"summary over the {SUMMARY_BUDGET_BYTES}-byte budget: {over['over_budget']}",
+              file=sys.stderr)
+    # TEMP + REPLACE: the box sync can read this file mid-write, and a half-written summary
+    # published off the box is worse than the previous whole one.
+    summary = path.with_name(path.stem + "_SUMMARY.json")
+    tmp = summary.with_name(summary.name + ".tmp")
+    tmp.write_text(text + "\n", encoding="utf-8")
+    try:
+        os.replace(tmp, summary)
+    except OSError as exc:
+        # Windows refuses the replace while the sync holds the summary open. The full artifact
+        # is already written, so the leg keeps it and the next pass republishes the summary.
+        print(f"clock law: summary not replaced this pass ({type(exc).__name__}); full artifact kept at {path.name}",
+              file=sys.stderr)
     return path
 
 

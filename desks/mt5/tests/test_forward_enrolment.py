@@ -186,3 +186,69 @@ def test_the_repair_sweep_defers_rather_than_overrunning_the_leg_budget() -> Non
 def test_a_missing_engine_is_unmeasured_not_a_crash(tmp_path) -> None:
     out = fe.repair([{"key": "X"}], deadline=1e9, engine=tmp_path / "nope.py")
     assert out["status"] == UNMEASURED
+
+
+def test_the_summary_fits_the_sync_cap_and_keeps_every_key_and_count(tmp_path,
+                                                                     monkeypatch) -> None:
+    """The full artifact reached 14.37 MB on the box and the sync skips reports over 4 MB, so
+    origin kept an 11-06 copy. The summary beside it must fit and say what it cut."""
+    out = tmp_path / "FORWARD_ENROLMENT.json"
+    monkeypatch.setattr(fe, "OUT", out)
+    payload = {"n_certificates": 9000, "n_enrolled": 8000, "status": "MEASURED",
+               "certificates": [{"certificate": f"c{i}", "why": "x" * 2000} for i in range(9000)],
+               "blocked": {f"k{i}": i for i in range(1000)}, "notes": ["a", "b"]}
+    fe._write_summary(payload)
+    summary = tmp_path / "FORWARD_ENROLMENT_SUMMARY.json"
+    assert summary.exists() and summary.stat().st_size < fe.SUMMARY_BUDGET_BYTES
+    s = json.loads(summary.read_text())
+    assert set(payload) <= set(s)
+    assert s["n_certificates"] == 9000 and s["notes"] == ["a", "b"]
+    assert s["certificates"]["truncated"] is True and s["certificates"]["n"] == 9000
+    assert s["blocked"]["n"] == 1000 and len(s["blocked"]["head"]) <= fe.SUMMARY_ROWS
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(fe, "OUT", tmp_path / "FORWARD_ENROLMENT.json")
+    monkeypatch.setattr(fe, "SUMMARY_BUDGET_BYTES", 100)
+    payload = {"n_certificates": 3, "notes": ["x" * 500]}
+    fe._write_summary(payload)
+    s = json.loads((tmp_path / "FORWARD_ENROLMENT_SUMMARY.json").read_text())
+    assert s["over_budget"]["budget"] == 100 and s["over_budget"]["bytes"] > 100
+    assert payload["summary_over_budget"] == s["over_budget"]
+
+
+# ------------------------------------------- a published report carries no box path or exc text
+
+BOX_PATH = "/opt/secret_box_root/data/secrets/never_publish.json"
+
+
+def test_an_absolute_path_in_an_error_reaches_neither_published_file(tmp_path, monkeypatch) -> None:
+    """Auditor MF1 (2026-11-13): free exception text and absolute box paths in the enrolment
+    report were synced to a public branch. Errors are published as their type name only."""
+    import types
+
+    def _boom(_base):
+        raise OSError(2, "No such file or directory", BOX_PATH)
+
+    fake = types.ModuleType("shadow_admission")
+    fake.DROPPED_CERTIFICATES = []  # type: ignore[attr-defined]
+    fake.authorized_runs = _boom  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "shadow_admission", fake)
+    monkeypatch.setattr(fe, "OUT", tmp_path / "FORWARD_ENROLMENT.json")
+    monkeypatch.setattr(fe, "clock_rows", lambda *a, **k: {})
+    monkeypatch.setattr(fe, "certification_stamps", dict)
+    payload = fe.run(write=True, now=NOW, budget_s=5.0)
+    assert "FileNotFoundError" in json.dumps(payload, default=str)
+    for name in ("FORWARD_ENROLMENT.json", "FORWARD_ENROLMENT_SUMMARY.json"):
+        path = tmp_path / name
+        assert path.exists(), name
+        text = path.read_text(encoding="utf-8")
+        assert BOX_PATH not in text and "secret_box_root" not in text, name
+
+
+def test_a_missing_engine_is_named_without_its_absolute_path() -> None:
+    rep = fe.repair([{"key": "k"}], deadline=float("inf"),
+                    engine=Path(BOX_PATH).with_name("shadow_forward.py"))
+    assert rep["status"] == "UNMEASURED"
+    assert "secret_box_root" not in json.dumps(rep) and "shadow_forward.py" in rep["why"]

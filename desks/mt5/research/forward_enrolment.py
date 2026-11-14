@@ -220,13 +220,13 @@ def certificates() -> tuple[list[dict[str, Any]], list[dict[str, str]], str]:
                 authorized_runs,
             )
         except Exception as exc:
-            return [], [], f"shadow_admission unavailable: {type(exc).__name__}: {exc}"
+            return [], [], f"shadow_admission unavailable: {type(exc).__name__}"
     except Exception as exc:
-        return [], [], f"shadow_admission unavailable: {type(exc).__name__}: {exc}"
+        return [], [], f"shadow_admission unavailable: {type(exc).__name__}"
     try:
         runs = list(authorized_runs(BASE))
     except Exception as exc:
-        return [], [], f"authorized_runs FAILED: {type(exc).__name__}: {exc}"
+        return [], [], f"authorized_runs FAILED: {type(exc).__name__}"
     return runs, list(DROPPED_CERTIFICATES), ""
 
 
@@ -280,11 +280,11 @@ def integrity_gate() -> tuple[Any, str]:
                 IntegrityGate,
             )
         except Exception as exc:
-            return None, f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+            return None, f"admission_integrity unimportable: {type(exc).__name__}"
     try:
         return IntegrityGate.load(), ""
     except Exception as exc:
-        return None, f"integrity door unreadable: {type(exc).__name__}: {exc}"
+        return None, f"integrity door unreadable: {type(exc).__name__}"
 
 
 def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
@@ -445,7 +445,7 @@ def repair(missing: list[dict[str, Any]], deadline: float,
     script = Path(engine or ENGINE)
     if not script.exists():
         return {"status": "UNMEASURED", "n_missing": len(missing),
-                "why": f"enrolment engine not found at {script}"}
+                "why": f"enrolment engine not found: {script.name}"}
     try:
         proc = subprocess.run([sys.executable, str(script)], cwd=str(BASE), timeout=remaining,
                               capture_output=True, text=True, check=False)
@@ -454,7 +454,7 @@ def repair(missing: list[dict[str, Any]], deadline: float,
                 "why": f"enrolment sweep exceeded {remaining:.0f}s; the next pass resumes it"}
     except Exception as exc:
         return {"status": "FAILED", "n_missing": len(missing),
-                "why": f"{type(exc).__name__}: {exc}"}
+                "why": type(exc).__name__}
     tail = (proc.stdout or proc.stderr or "").strip().splitlines()[-3:]
     return {"status": "RAN" if proc.returncode == 0 else "RAN_NONZERO", "rc": proc.returncode,
             "n_missing": len(missing), "tail": tail}
@@ -510,6 +510,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         tmp = OUT.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, OUT)
+        _write_summary(payload)
         try:
             from libs.ops.events import leg_events
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
@@ -517,8 +518,62 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
                        overdue=payload["n_overdue"], held=payload.get("n_held"),
                        accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
         except Exception as exc:
-            payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+            payload["events"] = f"UNMEASURED: {type(exc).__name__}"
     return payload
+
+
+#: The box sync skips any report over 4 MB (`$ReportCapBytes`, sync_shadow_to_git.ps1), and this
+#: artifact reached 14.37 MB on 11-10: 101 "SKIP report" lines in a day, so origin kept a copy
+#: from 11-06 and every off-box reader judged a stale enrolment. The summary keeps every scalar
+#: and every count, and the first rows of each list, under a budget the sync publishes.
+SUMMARY_BUDGET_BYTES = 3_000_000
+SUMMARY_ROWS = 400
+
+
+def summarise(payload: dict[str, Any], rows: int = SUMMARY_ROWS) -> dict[str, Any]:
+    """Every key of the full artifact survives: scalars and small values as they are, a long list
+    as its length plus its first `rows` entries, a large dict as its size plus its first `rows`
+    items. Nothing is dropped silently -- a cut value says it was cut and how big it was."""
+    out: dict[str, Any] = {"summary_of": "desks/mt5/reports/FORWARD_ENROLMENT.json",
+                           "rows_per_list": rows}
+    for key, value in payload.items():
+        if isinstance(value, list) and len(value) > rows:
+            out[key] = {"truncated": True, "n": len(value), "head": value[:rows]}
+        elif isinstance(value, dict) and len(value) > rows:
+            out[key] = {"truncated": True, "n": len(value),
+                        "head": dict(list(value.items())[:rows])}
+        else:
+            out[key] = value
+    return out
+
+
+def _write_summary(payload: dict[str, Any]) -> None:
+    rows = SUMMARY_ROWS
+    text = json.dumps(summarise(payload, rows), indent=1, default=str)
+    while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
+        rows //= 2
+        text = json.dumps(summarise(payload, rows), indent=1, default=str)
+    if len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES:
+        # Still over at the floor: the sync will skip it again. The miss is stamped in the
+        # summary, on the in-memory result the leg returns, and on stderr, never left silent.
+        over = summarise(payload, rows)
+        over["over_budget"] = {"bytes": len(text.encode("utf-8")),
+                               "budget": SUMMARY_BUDGET_BYTES, "rows": rows}
+        text = json.dumps(over, indent=1, default=str)
+        payload["summary_over_budget"] = over["over_budget"]
+        print(f"summary over the {SUMMARY_BUDGET_BYTES}-byte budget: {over['over_budget']}",
+              file=sys.stderr)
+    # Beside OUT, read at call time, so a redirected OUT (tests, a farm pass) never writes a
+    # summary into the real reports directory.
+    summary = OUT.with_name(OUT.stem + "_SUMMARY.json")
+    tmp = summary.with_name(summary.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    try:
+        os.replace(tmp, summary)
+    except OSError as exc:
+        # Windows refuses the replace while the sync holds the summary open; the full artifact
+        # is already written and the next pass republishes the summary.
+        payload["summary"] = f"UNMEASURED this pass: {type(exc).__name__}"
 
 
 def render(payload: dict[str, Any]) -> str:
