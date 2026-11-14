@@ -412,6 +412,12 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
                     "T10Y2Y": {"points": [{"d": d, "v": float(i % 3)}
                                           for i, d in enumerate(_days(400))]}}}),
         encoding="utf-8")
+    # The desk's own USDJPY bars: a lawful second risk sensor (jpy_carry_proxy), since the
+    # planted VIX and OAS rows are refused on terms.
+    import pandas as pd
+    pd.DataFrame({"close": [100.0 + (i % 11) for i in range(400)]},
+                 index=pd.to_datetime(_days(400))).to_parquet(
+                     tree["universe"] / "USDJPY_D1.parquet")
     doc = si.run(no_fetch=True, dry_run=False, desk=tree["desk"], axes=tree["axes"],
                  universe=tree["universe"], fixtures=tree["fixtures"],
                  report_path=tree["report"])
@@ -420,8 +426,8 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
     risk = next(r for r in doc["ensembles"] if r["latent"] == "global_risk_appetite")
     assert risk["status"] == "MEASURED"
     # VIXCLS and BAMLH0A0HYM2 are planted but refused on terms (FRED + Cboe, FRED + ICE BofA,
-    # 2026-11-14): held, never used.
-    assert risk["n_sensors_used"] == 1
+    # 2026-11-14): held, never used. T10Y2Y and the desk's USDJPY tape carry the latent.
+    assert risk["n_sensors_used"] == 2
     assert (tree["axes"] / "shadow_global_risk_appetite.json").exists()
     # every other latent is UNMEASURED BY NAME on a tree with nothing planted for it
     china = next(r for r in doc["ensembles"] if r["latent"] == "china_activity")
