@@ -235,8 +235,17 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2"}),
     ),
     "global_risk_appetite": (
+        # Refused twice over: FRED is terms-refused for automated fetches (ruling 2026-11-13)
+        # and VIX is Cboe's (addendum 2026-11-14). Held rows stay labelled; no new fetch.
         ("vix_level", "CBOE VIX close, redistributed by FRED", "desk_axis", "FRED VIXCLS",
-         "daily", 1, -1, _RISK, {"axis_file": "fred", "axis_series": "VIXCLS"}),
+         "daily", 1, -1, _RISK, {"axis_file": "fred", "axis_series": "VIXCLS",
+                                 "machine_use_allowed": False,
+                                 "licence": "BLOCKED_ON_TERMS: FRED refuses automated fetches "
+                                            "and VIX is Cboe's, whose terms restrict automated "
+                                            "extraction (FRED ruling + addendum 2026-11-14)",
+                                 "terms_note": "missed_growth: global_risk_appetite loses its "
+                                               "implied-vol level; credit spread, crypto vol and "
+                                               "the desk's own realised vol stand in"}),
         ("credit_spread", "high-yield OAS as the credit read", "desk_axis",
          "FRED BAMLH0A0HYM2", "daily", 1, -1, _RISK,
          {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2"}),
@@ -348,19 +357,22 @@ _CRYPTO_ROWS: tuple[tuple[Any, ...], ...] = (
      f"{_DERIBIT}/get_book_summary_by_currency"),
 )
 
-#: THE OPTIONS SOURCE THAT USED TO BE THE ONE REFUSAL. It is no longer refused (LAWS 5e,
-#: 2026-09-23): Cboe's terms restrict REDISTRIBUTION of the delayed tables, which is a routing
-#: label, and the desk reads what Cboe publishes openly. Registered rather than omitted so the
-#: next session argues with the row. `fetch_class` is UNMEASURED because nobody has written the
-#: route yet -- a missing route, never a permission question.
+#: CBOE'S DELAYED OPTIONS TABLES ARE TERMS-REFUSED FOR AUTOMATED READS (governance, FRED ruling
+#: addendum 2026-11-14 01:10Z, standing the 11-13 options memo). Cboe's own terms restrict
+#: automated extraction; LAWS 5e labels HELD rows and never grants permission to fetch. The row
+#: stays registered so the gap is visible and costed, and reopens only on Cboe's own terms or a
+#: written Cboe permission. `fetch_class` stays UNMEASURED: no route is written, and none may be.
+_CBOE_REFUSAL = ("BLOCKED_ON_TERMS: Cboe's website terms restrict automated extraction of the "
+                 "delayed quote tables (options memo 2026-11-13; FRED ruling addendum 2026-11-14)")
+_CBOE_MISSED = ("missed_growth: the global_risk_appetite latent loses its only equity-options "
+                "surface sensor (US500, NAS100); Deribit's crypto surface and the desk's own "
+                "realised-vol term structure stand in. A gap, not a zero.")
 _CBOE = Sensor(
     sensor_id="cboe_delayed_surface", latent="global_risk_appetite",
     what="delayed equity option quotes as an options-surface sensor", fetch_class=UNMEASURED,
     source="Cboe delayed quote tables", cadence="delayed", pit_lag_days=0.0,
-    machine_use_allowed=True, sign=-1, consumers=("US500", "NAS100"),
-    licence="Cboe's website terms restrict automated extraction and redistribution of the delayed"
-            " tables; that bounds what the desk may republish, not what it may read",
-    terms_note=f"{_CATALOGUED}; what is missing here is a written route, not permission")
+    machine_use_allowed=False, sign=-1, consumers=("US500", "NAS100"),
+    licence=_CBOE_REFUSAL, terms_note=_CBOE_MISSED)
 
 
 def _sensor(latent: str, row: Sequence[Any]) -> Sensor:
@@ -1179,8 +1191,9 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
         pts: list[tuple[str, float]] = []
         why = ""
         if not s.machine_use_allowed:
-            # HARD BOUNDARY ONLY (LAWS 5e, 2026-09-23): no sensor in this table reaches here for
-            # terms any more, and a row that does must name the refused act in its licence line.
+            # HARD BOUNDARY ONLY (LAWS 5e): a row reaches here only when it names the refused act
+            # in its licence line -- since 2026-11-14 that includes the Cboe and FRED VIX rows,
+            # whose owners' terms refuse automated extraction (governance FRED ruling addendum).
             why = f"REFUSED on the hard boundary: {s.licence}"
             guard.refused.append({"sensor": s.sensor_id, "why": why})
         elif s.fetch_class == "desk_axis" and s.axis_file:
