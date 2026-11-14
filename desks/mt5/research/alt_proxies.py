@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import gzip
 import hashlib
 import html as _html
@@ -91,6 +92,8 @@ ROOT = DESK.parent.parent
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from libs.ops.env_keys import read_key  # noqa: E402
 
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
@@ -1884,7 +1887,8 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="us_census_marts_ex_autos", name="US Census advance retail sales, ex-autos cuts",
         url=("https://api.census.gov/data/timeseries/eits/marts?get=cell_value,data_type_code,"
-             "time_slot_id,category_code,seasonally_adj&time=from+2015"),
+             "time_slot_id,category_code,seasonally_adj&time=from+2015&key={key}"),
+        key_env="CENSUS_API_KEY",
         region="US", language="en", cadence="monthly", parse=parse_census_marts,
         rule=_lag_rule(17, 13, weekday=True), transform="mom_monthly",
         instruments={"US500": 1, "USDJPY": 1, "EURUSD": -1, "XAUUSD": -1},
@@ -3325,7 +3329,7 @@ SECRETS_DIR = DESK / "data" / "secrets"
 def key_value(src: Source, environ: Any = None) -> str:
     """The source's key, or ''. A `key_file` source reads its entry from that secrets
     file with the country lanes' loader (one credential, one place); every other keyed source
-    reads its environment variable. An explicit `environ` replaces both (the committed roster
+    reads its name through the shared key reader (`read_key`). An explicit `environ` replaces both (the committed roster
     passes {} to state each source's status as declared)."""
     if not src.key_env:
         return ""
@@ -3335,8 +3339,9 @@ def key_value(src: Source, environ: Any = None) -> str:
         except Exception:                                      # pragma: no cover - import guard
             return ""
         return load_secrets(SECRETS_DIR / src.key_file).get(src.key_env, "")
-    env: Any = os.environ if environ is None else environ
-    return str(env.get(src.key_env) or "")
+    if environ is None:
+        return read_key(src.key_env)
+    return str(environ.get(src.key_env) or "")
 
 
 def config_value(name: str, environ: Any = None) -> str:
@@ -3384,14 +3389,23 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
+    """The key out of `url` (or any text), raw AND url-encoded: a key holding `+`, `/` or `=`
+    travels encoded, and only the raw form used to be replaced (re-audit of #201)."""
+    from libs.data.keyed_sources import redact
     key = key_value(src)
-    return url.replace(key, f"<{src.key_env}>") if key else url
+    return redact(url, (key,)).replace("<redacted>", f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+def http_get(url: str, headers: dict[str, str] | None = None,
+             secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
+    from libs.data.keyed_sources import keyed_opener
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*",
                                                **(headers or {})})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    # The key rides in this url's query or PATH (NASA FIRMS), or in a header (Banxico's
+    # Bmx-Token): the opener strips it from, or refuses, any redirect that would carry it to
+    # another host. A path key is only found when the opener is told the secret (re-audit of
+    # #252), so `collect` passes the source's key.
+    with keyed_opener(_tls(), secrets=secrets).open(req, timeout=TIMEOUT) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
@@ -3453,7 +3467,10 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             q = urllib.parse.urlencode({
                 "where": f"portname IN ({quoted}) AND date >= timestamp '{since} 00:00:00'",
                 "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
-                "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
+                "resultOffset": offset, "resultRecordCount": 2000, "f": "json",
+                # the FeatureServer answers 499 "Token Required" since 2026-11 (box read
+                # 2026-11-11): an ArcGIS API key rides as `token`, redacted like any key
+                **({"token": key} if key else {})})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
     if src.id == "gdelt_events_country":
@@ -4259,6 +4276,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if getter is http_get and src.key_env:
+        key = key_value(src)
+        getter = functools.partial(http_get, secrets=(key,) if key else ())
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
@@ -4286,6 +4306,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             try:
                 body, ctype = (getter(req.url, req.headers)  # type: ignore[call-arg]
                                if req.headers else getter(req.url))
+                if src.key_env:
+                    from libs.data.keyed_sources import scrub_body
+                    body = scrub_body(body, (key_value(src),))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
