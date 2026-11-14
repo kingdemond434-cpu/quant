@@ -25,6 +25,20 @@ on:
     workflows: ["ci", "release-gates"]
     types: [completed]
 
+# ONE WAITING RUN PER PR (2026-11-13: 182 gate runs sat queued, re-fired by every comment, label,
+# push and completed check). Run level, so a superseded run never waits for a runner at all; NOT
+# cancel-in-progress, so a gate that is already merging is never cut off -- a newer event only
+# replaces the run still waiting behind it. Every run reads the PR's state when it starts, so the
+# newest waiting run sees everything the replaced one would have. A run for an unrelated label
+# waits in its own "noise" group, so it can never replace a waiting gate run (it skips its job
+# anyway). The job-level groups below are unchanged.
+concurrency:
+  group: >-
+    audit-gate-run-${{ github.event.pull_request.number || github.event.workflow_run.head_sha
+    }}-${{ (github.event.action == 'labeled' && github.event.label.name != 'audit-clear')
+    && 'noise' || 'gate' }}
+  cancel-in-progress: false
+
 permissions:
   contents: write        # the merge
   pull-requests: write   # mark a CLEARed draft ready
