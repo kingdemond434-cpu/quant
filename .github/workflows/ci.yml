@@ -376,7 +376,10 @@ jobs:
             if git merge-base --is-ancestor "$seal" "$tip"; then
               echo "the seal is already on ${BRANCH}"; break
             fi
-            theirs="$(git show "${tip}:desks/mt5/data/RELEASE.json" | python -c 'import json,sys; print(json.load(sys.stdin).get("code_sha") or "")')"
+            theirs=""
+            if git cat-file -e "${tip}:desks/mt5/data/RELEASE.json" 2>/dev/null; then
+              theirs="$(git show "${tip}:desks/mt5/data/RELEASE.json" | python -c 'import json,sys; print(json.load(sys.stdin).get("code_sha") or "")')"
+            fi
             if [ -n "$theirs" ] && [ "$theirs" != "$tested" ] && git merge-base --is-ancestor "$tested" "$theirs" 2>/dev/null; then
               echo "::warning::${BRANCH} already names a newer seal (${theirs:0:12}) than ${tested:0:12}; standing down, nothing promoted"
               echo "sealed=false" >> "$GITHUB_OUTPUT"; exit 0
@@ -425,8 +428,8 @@ jobs:
   promote:
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3' &&
-      needs.seal.outputs.sealed == 'true'
+      needs.seal.outputs.sealed == 'true' &&
+      github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3'
     needs: [quality, mt5-money-path, coverage-floor, seal]
     runs-on: ubuntu-latest
     timeout-minutes: 10
