@@ -337,8 +337,6 @@ $LeaseEpoch = 0
 if (-not $WhatIfOnly) {
     # Eleven hours: longer than the ten-hour time limit, so a live pass never loses its own lease,
     # and short enough that a killed pass frees the institution before the other lane's window.
-    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
-    Push-Location $RepoRoot
     # A RESUMED pass reclaims ITS OWN lease. The pass being resumed was cut off (time limit,
     # reboot) before its release ran, so its eleven-hour lease is still live and names this same
     # controller; without the takeover every hourly resume exited 5 until the lease aged out and
@@ -348,6 +346,8 @@ if (-not $WhatIfOnly) {
     if ($resuming -and $state.lease_epoch -and $state.controller -eq $Controller) {
         $takeover = @("--takeover-epoch", "$([int]$state.lease_epoch)")
     }
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
     $claimJson = (& $Python scripts\controller_checkpoint.py claim --controller $Controller --ttl-seconds 39600 @takeover 2>&1 | Out-String)
     Pop-Location
     $ErrorActionPreference = $prevEap
