@@ -1,0 +1,263 @@
+"""Every side-channel miner's traffic goes through one door: refused hosts are never contacted,
+robots are read fail closed under the agent sent, and no browser User-Agent is ever sent."""
+from __future__ import annotations
+
+import sys
+import urllib.error
+import urllib.request
+import urllib.robotparser
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK), str(_DESK / "side_channels"), str(_DESK.parent.parent)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import net_gate as G  # noqa: E402
+import run_all_miners as ram  # noqa: E402
+
+
+def _rules(lines):
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(lines)
+    return rp
+
+
+def test_refused_hosts_never_reach_robots(monkeypatch) -> None:
+    monkeypatch.setattr(G, "_robots", lambda *a: pytest.fail("robots read for a refused host"))
+    for url in ("https://www.youtube.com/x", "https://api.stlouisfed.org/fred/x",
+                "https://api.open-meteo.com/v1/forecast", "https://kr.investing.com/a"):
+        assert G.refusal(url).startswith("BLOCKED_TERMS")
+
+
+def test_robots_fail_closed_and_disallow_refuses(monkeypatch) -> None:
+    monkeypatch.setattr(G, "_ROBOTS", {
+        "https://a.example.org": _rules(["User-agent: *", "Disallow: /private"]),
+        "https://down.example.org": "robots.txt unreadable (HTTP 500)"})
+    assert G.refusal("https://a.example.org/private/x").startswith("ROBOTS_REFUSED")
+    assert G.refusal("https://down.example.org/x").startswith("ROBOTS_REFUSED")
+    assert G.refusal("https://a.example.org/open") is None
+
+
+def test_robots_status_codes(monkeypatch) -> None:
+    def fail(code):
+        def _open(req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, code, "x", {}, None)
+        return _open
+    for code, allowed in ((404, True), (403, False), (500, False)):
+        monkeypatch.setattr(G, "_ROBOTS", {})
+        monkeypatch.setattr(G, "_ORIGINAL_URLOPEN", fail(code))
+        assert (G.refusal("https://h.example.org/x") is None) is allowed
+
+
+def test_browser_agents_are_replaced_and_contacts_kept() -> None:
+    assert G.honest_agent("Mozilla/5.0 (Windows NT 10.0) Chrome/126") == G.AGENT
+    assert G.honest_agent("python-requests/2.32") == G.AGENT
+    contact = "desk research contact@example.org"
+    assert G.honest_agent(contact) == contact
+
+
+def test_installed_door_blocks_requests_and_urllib(monkeypatch) -> None:
+    import urllib.request
+
+    import requests
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(requests.Session, "request", requests.Session.request)
+    G.install()
+    with pytest.raises(requests.RequestException):
+        requests.get("https://www.reddit.com/r/forex.json", timeout=1)
+    with pytest.raises(G.Refused):
+        urllib.request.urlopen("https://www.tradingview.com/ideas/")
+
+
+def test_no_blocked_channel_is_loaded_and_each_is_reported(monkeypatch) -> None:
+    names = {n for n, _ in ram.ALL_MINERS}
+    assert not names & set(ram.BLOCKED_ON_TERMS)
+    assert len(names | set(ram.BLOCKED_ON_TERMS)) == 25
+    assert "youtube" not in names
+    monkeypatch.setattr(ram, "ALL_MINERS", [("cot", None)])
+    monkeypatch.setattr(ram, "_run_miner", lambda name, fn: ("ok", [{"n": name}]))
+    monkeypatch.delenv("QUANT_MINERS_ALLOW", raising=False)
+    r = ram.run_all_miners()
+    assert r["youtube"]["status"] == "BLOCKED_ON_TERMS"
+    assert r["summary"]["producing"] == ["cot"]
+
+
+def _write_bars(tmp_path, sym, rets):
+    idx = pd.date_range("2018-01-01", periods=len(rets), freq="1D", tz="UTC")
+    close = 100 * np.exp(np.cumsum(rets))
+    frame = pd.DataFrame({"close": close}, index=idx.rename("time"))
+    frame.to_parquet(tmp_path / f"{sym}_H1.parquet")
+
+
+def test_correlation_miner_reports_a_break_between_two_instruments(tmp_path, monkeypatch) -> None:
+    import _bars
+    import correlation_miner as C
+    rng = np.random.default_rng(3)
+    n = 900
+    common = rng.normal(0, 0.01, n)
+    a = common + rng.normal(0, 0.002, n)
+    b = common + rng.normal(0, 0.002, n)
+    b[-30:] = -common[-30:] + rng.normal(0, 0.002, 30)          # the relationship flips
+    _write_bars(tmp_path, "EURUSD", a)
+    _write_bars(tmp_path, "GBPUSD", b)
+    monkeypatch.setattr(_bars, "hypothesis_symbols", lambda u=None: ["EURUSD", "GBPUSD"])
+    rows = C.mine_correlations(tmp_path)
+    assert rows and rows[0]["symbols"] == ["EURUSD", "GBPUSD"] and rows[0]["z"] < -C.Z_MIN
+
+
+def test_seasonality_month_effect_is_a_t_statistic_across_years() -> None:
+    import seasonality_miner as S
+    idx = pd.date_range("2016-01-01", "2025-12-31", freq="1D", tz="UTC")
+    step = np.where(idx.month == 3, 0.002, 0.0)
+    close = pd.Series(100 * np.exp(np.cumsum(step + 1e-5 * np.sin(np.arange(len(idx))))), index=idx)
+    row = S.month_effect(close, 3)
+    assert row is not None and row["n"] >= 9 and row["t"] > S.T_MIN and row["hit"] == 1.0
+    assert S.month_effect(close.iloc[:100], 3) is None
+
+
+def test_cot_rows_come_from_the_open_data_route_with_z_scores() -> None:
+    import cot_miner as C
+    idx = pd.date_range("2023-01-03", periods=170, freq="7D", tz="UTC")
+    base = 0.1 + np.random.default_rng(1).normal(0, 0.02, 170)
+    base[-1] = 0.3
+
+    def fetch(code):
+        return pd.Series(base, index=idx)
+    rows = C.mine_cot(fetch)
+    kinds = {r["type"] for r in rows}
+    assert {"positioning", "extreme_positioning", "positioning_shift"} <= kinds
+    assert all(r["symbols"] for r in rows)
+    assert "Mozilla" not in Path(C.__file__).read_text("utf-8")
+
+
+def test_urllib_redirect_to_a_refused_host_is_not_followed(monkeypatch) -> None:
+    """Auditor MF1 (urllib): a 302 onto a refused host stops at the door; one request only."""
+    import http.client
+    import io
+    import urllib.request
+
+    sent: list[str] = []
+
+    class Handler(urllib.request.HTTPSHandler):
+        def https_open(self, req):  # type: ignore[no-untyped-def]
+            sent.append(req.full_url)
+            msg = http.client.HTTPMessage()
+            msg["Location"] = "https://www.youtube.com/watch?v=x"
+            resp = urllib.request.addinfourl(io.BytesIO(b""), msg, req.full_url, 302)
+            resp.msg = "Found"
+            return resp
+
+    monkeypatch.setattr(G, "_OPENER", urllib.request.build_opener(G._GatedRedirects(), Handler()))
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    with pytest.raises(G.Refused):
+        G._ORIGINAL_URLOPEN("https://ok.example.org/feed")
+    assert sent == ["https://ok.example.org/feed"]
+
+
+def test_requests_redirect_to_a_refused_host_is_not_followed(monkeypatch) -> None:
+    """Auditor MF1 (requests): redirects are taken by the door, never inside Session.send."""
+    import requests
+
+    sent: list[tuple[str, bool]] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append((url, k.get("allow_redirects")))
+        r = requests.Response()
+        r.status_code, r.url = 302, url
+        r.headers["location"] = "https://api.stlouisfed.org/fred/series"
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    G.install()
+    with pytest.raises(requests.RequestException):
+        requests.get("https://ok.example.org/feed", timeout=1)
+    assert sent == [("https://ok.example.org/feed", False)]
+
+
+def test_requests_same_host_redirect_is_followed_through_the_door(monkeypatch) -> None:
+    import requests
+
+    sent: list[str] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append(url)
+        r = requests.Response()
+        r.url = url
+        if url.endswith("/old"):
+            r.status_code = 301
+            r.headers["location"] = "/new"
+        else:
+            r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    G.install()
+    assert requests.get("https://ok.example.org/old", timeout=1).status_code == 200
+    assert sent == ["https://ok.example.org/old", "https://ok.example.org/new"]
+
+
+def test_credentials_are_not_carried_onto_another_host(monkeypatch) -> None:
+    """Auditor MF2: a cross-host hop drops Authorization, cookies and any key/token header."""
+    import requests
+
+    sent: list[tuple[str, dict]] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append((url, dict(k.get("headers") or {})))
+        r = requests.Response()
+        r.url = url
+        if "api.example.org" in url:
+            r.status_code = 302
+            r.headers["location"] = "https://cdn.example.net/file"
+        else:
+            r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://api.example.org": _rules([]),
+                                       "https://cdn.example.net": _rules([])})
+    G.install()
+    s = requests.Session()
+    s.headers["Authorization"] = "token SESSION"
+    s.get("https://api.example.org/x", timeout=1,
+          headers={"Authorization": "token abc", "X-Api-Key": "k", "Accept": "a/b"})
+    first, second = sent[0][1], sent[1][1]
+    assert first["Authorization"] == "token abc" and first["X-Api-Key"] == "k"
+    assert "X-Api-Key" not in second and second.get("Accept") == "a/b"
+    assert second.get("Authorization") is None          # None drops the session's header too
+    assert s.headers["Authorization"] == "token SESSION"  # the session itself is unchanged
+
+
+def test_a_verifying_caller_context_is_honoured_and_cert_none_is_dropped(monkeypatch) -> None:
+    import ssl
+
+    used: list[object] = []
+
+    class Op:
+        def open(self, url, *a, **k):  # type: ignore[no-untyped-def]
+            used.append("default")
+            return "ok"
+
+    monkeypatch.setattr(G, "_OPENER", Op())
+    off = ssl.create_default_context()
+    off.check_hostname = False
+    off.verify_mode = ssl.CERT_NONE
+    assert G._ORIGINAL_URLOPEN("https://x.example.org/", context=off) == "ok"
+    assert used == ["default"]
+    built: list[object] = []
+    real = urllib.request.build_opener
+    monkeypatch.setattr(urllib.request, "build_opener",
+                        lambda *h: built.append(h) or Op())
+    G._ORIGINAL_URLOPEN("https://x.example.org/", context=ssl.create_default_context())
+    assert built and isinstance(built[0][0], urllib.request.HTTPSHandler)
+    monkeypatch.setattr(urllib.request, "build_opener", real)
