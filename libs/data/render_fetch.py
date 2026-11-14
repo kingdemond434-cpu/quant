@@ -149,7 +149,7 @@ def looks_challenged(html: str) -> str:
 
 
 def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
-           wait_ms: int = 1200, lang: str = "") -> tuple[str, str]:
+           wait_ms: int = 1200, lang: str = "", user_agent: str = "") -> tuple[str, str]:
     """(html, error). Renders one public page with the bundled Chromium.
 
     `wait_selector` is the honest way to wait: a fixed sleep either wastes seconds on a fast page
@@ -160,6 +160,9 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
     `lang` sets Accept-Language. Several of these sources serve different markup per locale, and
     fetching a Korean forum with an English header is how a parser written against the real page
     stops matching.
+
+    `user_agent` replaces the browser string. A caller that read robots.txt under its own
+    agent name passes that name here, so the page is fetched as the agent robots admitted.
     """
     global _used
     ok, why = render_available()
@@ -178,6 +181,8 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
                        "Chrome/124.0.0.0 Safari/537.36"),
         "viewport": {"width": 1366, "height": 900},
     }
+    if user_agent:
+        ctx_kw["user_agent"] = user_agent
     if lang:
         ctx_kw["locale"] = lang
         ctx_kw["extra_http_headers"] = {"Accept-Language": f"{lang},en;q=0.7"}

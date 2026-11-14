@@ -55,6 +55,11 @@ class _Resp:
     def read(self, n: int = -1) -> bytes:
         return self._body
 
+    def geturl(self) -> str:
+        # the collector reads the final hop for the off-limits redirect check; a
+        # fake that followed no redirect has no other URL to report
+        return ""
+
     def __enter__(self) -> _Resp:
         return self
 
