@@ -155,14 +155,22 @@ def read_account() -> dict[str, Any]:
     if mt5 is not None:
         opened = False
         try:
-            if mt5.terminal_info() is None:
-                try:
-                    from mt5desk.config import terminal_path
-                    path = terminal_path()
-                except Exception:
-                    path = ""
-                opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
-            acc = mt5.account_info() if (opened or mt5.terminal_info() is not None) else None
+            # Pinned to the desk's terminal and proven Fusion's (2026-11-11): the box runs FTMO
+            # too. A refused venue falls through to the state files below, named as unmeasured.
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            from research.mt5_session import attach_or_initialize, venue_refusal
+            held = mt5.terminal_info() is not None
+            attached = attach_or_initialize(mt5, path=path or None, timeout=15000)
+            opened = attached and not held
+            why = venue_refusal(mt5, path or None) if attached else None
+            if why is not None:
+                opened = True                   # the wrong terminal is let go, whoever held it
+                out["unmeasured"].append(f"terminal: wrong venue, refused: {why}")
+            acc = mt5.account_info() if attached and why is None else None
             if acc is not None:
                 out.update({"currency": str(acc.currency or ACCOUNT_CCY_DEFAULT),
                             "balance": float(acc.balance), "equity": float(acc.equity),

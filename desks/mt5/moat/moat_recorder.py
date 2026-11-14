@@ -277,8 +277,19 @@ def main() -> int:
     if not single_instance():
         log("another recorder instance is alive -- exiting (single-instance lock)")
         return 0
-    if not mt5.initialize():
-        log(f"mt5.initialize FAILED: {mt5.last_error()}")
+    # NEVER A BARE initialize() FROM SESSION 0 (2026-11-13). This runs as SYSTEM every ten
+    # minutes; after the 2026-11-12 reboot, before anyone logged on, a bare initialize() from a
+    # SYSTEM task launched the Fusion terminal headless in Session 0 with no login. The
+    # interactive watchdog then refused to launch beside it, so Fusion sat dark and E8's
+    # cross-account fence failed closed on every gold window. Attach through the shared guard.
+    desk = str(Path(__file__).resolve().parents[1])
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research.mt5_session import attach_or_initialize
+
+    if not attach_or_initialize(mt5):
+        log(f"mt5 attach refused or failed (Session 0 never launches a terminal): "
+            f"{mt5.last_error()}")
         return 1
     rec = Recorder()
     rec.health_row(event="recorder_start", once=once, backfill_h=BACKFILL_H)
