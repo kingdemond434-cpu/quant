@@ -79,7 +79,9 @@ def test_github_auth_boundary_and_original_code_receipts(tmp_path, monkeypatch):
         p.github("MT5", kind="invalid")
     payload = {"items": [None, {}, {"full_name": "owned/mt5", "description": "permutation",
                   "html_url": "https://github.com/owned/mt5", "pushed_at": "2026-01-03"}]}
-    monkeypatch.setattr(p.urllib.request, "urlopen", lambda *_a, **_k:
+    # The authenticated search goes through the redirect guard, not raw urlopen.
+    from libs.data import keyed_sources
+    monkeypatch.setattr(keyed_sources, "keyed_urlopen", lambda *_a, **_k:
                         io.BytesIO(json.dumps(payload).encode()))
     rows, error = p.github("MT5")
     assert error is None and rows[0].ident == "owned/mt5"
