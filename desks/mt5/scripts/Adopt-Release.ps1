@@ -1028,10 +1028,15 @@ if ($mergeBase -and -not $permitAccepted) {
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
         & git -C $RepoRoot ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json" 2>$null | Out-Null
-        $quarantineTracked = ($LASTEXITCODE -eq 0)
+        $lsRc = $LASTEXITCODE
         $ErrorActionPreference = $prevEap
-        if ($quarantineTracked) {
+        # FAIL CLOSED: only exit 1 ("not tracked") lets the list count; 0 (tracked) or any git
+        # failure (128) means the list is ignored.
+        $quarantineTracked = ($lsRc -ne 1)
+        if ($lsRc -eq 0) {
             Write-Host "  ADOPT_QUARANTINED_COMMITS.json is TRACKED by git; the tracked list is ignored"
+        } elseif ($lsRc -ne 1) {
+            Write-Host ("  could not tell whether the quarantine list is tracked (git rc {0}); the list is ignored" -f $lsRc)
         }
     }
     if ((Test-Path -LiteralPath $quarantineFile) -and -not $quarantineTracked) {

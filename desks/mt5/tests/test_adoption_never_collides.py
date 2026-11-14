@@ -511,6 +511,7 @@ def test_the_quarantine_list_is_gitignored_and_ignored_when_tracked() -> None:
     assert 'ls-files --error-unmatch -- "desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json"' in src
     assert "the tracked list is ignored" in src
     assert "-and -not $quarantineTracked" in src
+    assert "$quarantineTracked = ($lsRc -ne 1)" in src      # fail closed on any git failure
 
 
 @needs_powershell
