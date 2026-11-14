@@ -154,8 +154,10 @@ libs/data/pit.py
 libs/data/pit_stamp.py
 libs/data/quality.py
 libs/data/schema.py
+libs/data/terms_refused.py
 libs/data/timeframe.py
 libs/data/units.py
+libs/data/us_primary_rates.py
 libs/discovery/__init__.py
 libs/discovery/capacity.py
 libs/discovery/errors.py
