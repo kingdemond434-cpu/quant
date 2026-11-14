@@ -842,6 +842,9 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the math lab's per-tradition yield per compute-hour and its hypothesis -> tradition
+    # routing log (2026-11-13): the evidence the lab's compute shares are earned on
+    "desks/mt5/reports/MATH_LAB.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
     # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read

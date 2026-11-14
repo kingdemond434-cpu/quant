@@ -1,0 +1,600 @@
+{
+ "source": "Quant Guild / Paolucci translator cards (project shared folder mining/quant_guild, mined 2026-10-06)",
+ "source_sha256": {
+  "cards_2025.json": "c3032a3ec9a5760af6badbf1357a7ad6d691b0d6826f8437dfbb9670237e2b61",
+  "cards_2026.json": "f47df5d15222294a102cd53e47355352a7d59506fa4a35123b07057d915b9aae",
+  "cards_repos.json": "43b26ce6ce149538e6dcc59e66828e363d90ebbb05cff362718e248540605e0d"
+ },
+ "rule": "ideas only (licence NONE on most source repos: no code copied); orig is true where the card's diff-first verdict says the mechanism is new to the desk (MISSING, EXISTS_UNWIRED, EXISTS_INCOMPLETE or a new family needed). method_only, NOT_WORTH_IT, EXTERNALLY_BLOCKED and cards with no registry symbol are left out and counted",
+ "left_out": {
+  "method_only": 47,
+  "EXTERNALLY_BLOCKED": 3,
+  "no_registry_symbol": 19,
+  "NOT_WORTH_IT": 1
+ },
+ "updated_at": "2026-11-13T22:10:00Z",
+ "ideas": [
+  {
+   "id": "QG25-01",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40",
+    "XAUUSD"
+   ],
+   "mechanism": "Long-only averaging-down ladder: from a reference price (the highest filled entry), rest N buy limit orders at fixed percentage steps below it (level i at ref*(1 - i*d)); a filled level is marked done and the ladder re-anchors on the max fill. The LLM component is only a chat box; it generates no signal. Claims that quality equities mean-revert after drawdowns, so buying successively lower lowers the average cost. Economically this is short a put strip: it harvests a liquidity/recovery premium in benign regimes and carries unbounded left-tail exposure. On US500/NAS100/GER40 H1, a 3-leg ladder at 2/4/6 ATR below the 480-bar high with per-leg 3-ATR stops and a basket exit at the prior high has net-of-cost expectancy > 0R per basket and higher forward E[log W] than the single-entry drawdown_conditional at equal basket risk.",
+   "falsifier": "Basket expectancy <= 0R net of swap over the walk-forward, or left-tail loss per basket > 3x the single-entry family's.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG25-03",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40",
+    "UK100",
+    "JPN225"
+   ],
+   "mechanism": "Buy the equity index when implied vol (VIX) crosses a high threshold (lump sum at VIX > 30) or scale in progressively as the index falls during a vol spike ('buy the way down'); hold for the vol to mean-revert. Investors systematically overestimate crash probability (donor cites Goetzmann-Kim-Shiller crash-belief surveys: 6-19x historical frequency), so fear is overpriced at extremes; vol mean-reverts and the equity risk premium is highest when realized fear is highest. US500/NAS100/US30 H1 longs opened while VIXCLS z(250 obs) >= 1.5, held 120 bars with a 2-ATR stop and 1.5R target, have positive net expectancy and raise forward E[log W] versus the same entries with VIX z drawn from a shuffled calendar.",
+   "falsifier": "Expectancy net of swap <= 0 over walk-forward, or no improvement over random long entries of equal duration.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG25-04",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40",
+    "UK100",
+    "JPN225"
+   ],
+   "mechanism": "Same fear-premium claim as QG25-03 expressed without VIX: take drawdown entries on the index only when the instrument's own realized-vol tercile (vs its trailing year) is 'high'. High realized vol on an index coincides with forced de-risking and overpriced crash insurance; drawdown entries in that regime capture the recovery premium the donor attributes to mispriced fear, while drawdowns in calm regimes are more often information. On US500/NAS100/GER40/JPN225 H1, drawdown_conditional(dd_pct=0.05) signals kept only on 'high' vol-tercile days have higher net expectancy and forward E[log W] than the unconditioned family and than the 'low'-regime subset.",
+   "falsifier": "High-vol subset expectancy not above the unconditioned family at p<0.05 after the trial charge.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG25-05",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "Rank today's implied vol against its trailing 252-day window (percentile bands 20/40/60/80 -> LOW..HIGH); regress forward 30-day mean IV on current IV and take the fixed point slope/intercept (IV* = b/(1-a)) as the mean-reversion level, with separate slopes above and below it; IV above ~80th percentile is read as 'expect reversion down', and IV persistently above realized vol as the variance risk premium. Implied vol embeds an insurance premium that is richest when fear is high, and vol is mean-reverting; the state therefore carries information about the forward path of realized vol and about drift (leverage effect) of the underlying. For XAUUSD and US500, existing price-only cells gated off when the paired implied-vol percentile > 0.8 (or gated on, for mean-reversion cells) show a forward E[log W] difference versus ungated cells larger than the same gate built on a date-shuffled IV seri",
+   "falsifier": "Gate effect indistinguishable from the shuffled-IV gate across the judged cells.",
+   "diff_first": "EXISTS_UNWIRED",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG25-07",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40",
+    "USDCNH",
+    "USDMXN"
+   ],
+   "mechanism": "A policy shock (tariffs) knocks equity prices down quickly; firms re-optimise around the constraint so fundamental value recovers or exceeds the old path, leaving a multi-week value gap after the overreaction. Markets price the immediate cash-flow hit and the uncertainty premium at once, then the uncertainty decays as adaptation becomes visible (DCF illustration in the notebook). After a tariff-class policy shock that moves US500 down by > 1.5 ATR within 1 bar, a fade long held 120 H1 bars has positive net expectancy and higher E[log W] than the same entry on random equal-size down bars.",
+   "falsifier": "Expectancy <= 0 or not above random down-bar fades after clustering by episode.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG25-08",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "mechanism": "Standardise returns of a basket, take PCA; PC1 is the market, PC2/PC3 sector/idiosyncratic; trade a portfolio weighted by PC3 loadings as an exposure uncorrelated with the market; rolling 60-day PCA shows loadings are non-stationary. Removing common factors leaves residual exposures that mean-revert or carry idiosyncratic premia. (already judged by the desk) residual-z fades have positive net expectancy.",
+   "falsifier": "desk family's own",
+   "diff_first": "ALREADY_COMPLETE_LIVE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG25-11",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "XAUUSD",
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "In a game whose win probability jumps at random times, estimate p from the last W outcomes and play only when the estimate implies positive EV against the quoted price; two players with W=5 and W=60 show the window trade-off. If edge is regime-dependent and persistent over a horizon longer than W, a trailing estimate of the rule's own hit rate is a cheap regime detector. For base families with known regime sensitivity (vol_transition, opening_range), gating on trailing-20 paper expectancy > 0 raises forward E[log W] versus the ungated family and versus a random gate with the same open fraction.",
+   "falsifier": "Gated E[log W] not above a random gate of equal open fraction.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG25-20",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "XAUUSD",
+    "US500",
+    "XTIUSD",
+    "USDJPY"
+   ],
+   "mechanism": "ARCH/GARCH conditional variance captures clustering and mean reversion; out-of-sample comparison with EWMA; GARCH-scaled VaR breaches closer to nominal than constant-vol VaR; daily squared returns have low R^2, intraday measures much higher. Volatility clusters and mean-reverts; a conditional forecast sizes risk better than a trailing window. On the desk's top-10 symbols, GARCH(1,1) one-day-ahead vol has lower QLIKE loss than EWMA(0.94) out of sample, and risk units scaled by it produce realised R-dispersion closer to 1 than ATR-scaled units.",
+   "falsifier": "QLIKE not better than EWMA out of sample.",
+   "diff_first": "EXISTS_UNWIRED",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG25-22",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "GER40"
+   ],
+   "mechanism": "Three volatility states with Gaussian emissions on bar range (high-low)/close; calibrate emission means/stds by tercile hard assignment of recent bars and the transition matrix by counted transitions with additive smoothing; each new bar runs one forward-filter step (prior = P' * belief, posterior proportional to prior x likelihood) and labels the bar LOW/MED/HIGH. Lecture 51 fits regime-conditional Gaussians and a 3-state HMM to NVDA; lecture 49 derives transition-matrix MLE. Return distributions are locally conditional on a persistent latent volatility state; filtering that state gives regime-conditional parameters. (desk-owned)",
+   "falsifier": "n/a",
+   "diff_first": "ALREADY_COMPLETE_LIVE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG25-25",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "NVIDIA"
+   ],
+   "mechanism": "Score social posts with a finance-specific lexicon (buy/sell carry meaning), handle negation with n-grams, map mentions to tickers with NER (ambiguity: 'APPLE was delicious'), aggregate per name per day and trade a market-neutral long/short on the cross-section of sentiment; lecture 53 slides (author's own talk) model stock returns with emoji usage in posts. Retail attention and sentiment move prices short term and are partially predictable cross-sectionally; emojis carry tone that dictionary methods miss. Top-minus-bottom quintile of daily social sentiment within the share-CFD equity class earns positive next-day return net of costs, beyond cross_sectional_class_reversal/momentum.",
+   "falsifier": "No net-of-cost spread or explained by reversal/momentum.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG25-26",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "UST10Y"
+   ],
+   "mechanism": "Implied probabilities (Polymarket, betting odds, rate-cut pricing) measure how priced-in an outcome is; the market reaction to the realised outcome should scale with 1 - implied probability, so a 90%-priced rate cut moves price little and a surprise moves it a lot. Prices move on the unexpected component of news. For FOMC/CPI-type events, the absolute 1-hour reaction of USDJPY/XAUUSD/US500 is increasing in |outcome - p_implied|, and following the reaction when |surprise_pm| > 0.5 has positive net expectancy.",
+   "falsifier": "No monotone relation between |surprise_pm| and reaction size.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG26-01-kalman-ou-fair-value-reversion",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURCHF",
+    "AUDNZD",
+    "EURGBP",
+    "NZDCAD",
+    "CADCHF",
+    "XAUEUR"
+   ],
+   "mechanism": "Calibrate an AR(1)/OU model on a trailing window (phi, long-run mean, residual sigma), run a one-dimensional Kalman filter whose transition is the OU step and whose observation is the price, and treat the filtered state as a time-varying fair value. Trade price deviations from the filtered level in units of the OU stationary deviation sigma/sqrt(1-phi^2); exit at the filtered level. The observation noise R is the single lever between 'follow price' and 'trust the model'. Where an instrument is held near a level by a slow-moving anchor (managed cross, two-economy basket, commodity-currency link), short-run flow pushes it off the anchor and liquidity providers pull it back. A filtered level adapts to slow anchor drift that a fixed sample mean cannot, which is the lecture's own demonstration: a 30-sample mean mis-anchors the bands and bleeds. On H1 EURCHF/AUDNZD/EURGBP/NZDCAD/CADCHF, enteri",
+   "falsifier": "Net Sharpe of the Kalman rule not above the Bollinger rule on the same symbols in purged walk-forward, or forward clock expectancy <= 0 after 60 trades.",
+   "diff_first": "MISSING",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG26-02-adaptive-kalman-innovation-break-gate",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURCHF",
+    "AUDNZD",
+    "EURGBP",
+    "XAUUSD",
+    "US500"
+   ],
+   "mechanism": "Inside a Kalman filter, compare each innovation (price minus model prediction) with its predicted variance P+R. When the squared innovation exceeds nine times that variance (a 3-sigma surprise) the filter declares a shock and inflates its state uncertainty so it re-anchors fast. As a trading organ, the shock flag is a regime-break detector: it says the model's parameters are stale and a mean-reversion rule calibrated before the break should stand down until re-fitted. Mean-reversion rules lose most of their money in the bars after a level shift, when they keep fading a move that is a new equilibrium (lecture 141's fixed MR rule failing under a trend). A statistical surprise test on the model's own prediction errors is a causal, parameter-light break signal. Suppressing mean_reversion_bollinger entries for 24 H1 bars after a 3-sigma Kalman innovation on 2 of 3 bars raises that family's ne",
+   "falsifier": "Blocked trades' realised expectancy not below the kept trades' in walk-forward, or gated E[log W] not above ungated.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG26-03-hawkes-jump-cluster-intensity",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "GER40",
+    "USDJPY",
+    "XTIUSD"
+   ],
+   "mechanism": "Model large-move arrivals as a self-exciting point process: intensity = baseline + sum over past jumps of alpha*exp(-beta*elapsed). Each jump raises the near-term probability of the next, so jumps cluster (volatility clustering, excess kurtosis). The live intensity lambda_t relative to its baseline is a state: high means a cascade is in progress, low means isolated shocks. Forced deleveraging, stop cascades and margin calls are triggered by price moves and create more price moves; information shocks arrive in bursts. A shock inside a cascade carries different follow-through from an isolated one, which a constant-rate jump model cannot represent. After a 2.5-sigma H1 jump on XAUUSD/US500/NAS100/USDJPY, the next-8-bar return has the jump's sign when hawkes_ratio >= 3 and the opposite sign when hawkes_ratio < 1.5, and a family that switches mode on that split beats family_jump's single-mode",
+   "falsifier": "Mode-switched rule not better than the better single mode in walk-forward, or hawkes_ratio buckets show no difference in post-jump return sign.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG26-05-vol-tercile-regime-filter-is-beta-check",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "XAUUSD",
+    "EURUSD"
+   ],
+   "mechanism": "Label each day low/medium/high volatility by ranking 20-day realised vol against its own trailing 252-day 33rd/67th percentiles, estimate the 3x3 regime transition matrix by counting, and trade a base rule (5/9 MA crossover with 4% TP / 2% SL in the donor) only in the low-vol regime. The donor's point is the CONTROL: the filtered rule's return is mostly market beta, so the regime filter must be judged against exposure, not against zero. Return distributions differ by vol regime (lecture 93 splits SPX returns by VIX terciles); a low-vol filter keeps a long-biased rule in the market during calm uptrends, which is beta harvesting rather than timing. trend_ma_cross traded only in the low realised-vol tercile on US500/NAS100/GER40 earns a positive TIMING component (cov(position, return) > 0) after costs, not only an exposure component.",
+   "falsifier": "partition_return timing share <= 0 or monkey beat-rate < 0.9 on the gated cell.",
+   "diff_first": "ALREADY_COMPLETE_LIVE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG26-07-live-iv-surface-skew-term-state",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "XTIUSD",
+    "US30"
+   ],
+   "mechanism": "Stream broker-computed implied vols for the next six expiries and strikes within +-2% of spot, pivot to an expiry x strike surface (linear fill), and read the front-month skew and the ATM term structure. Skew and term slope are the market's price of crash risk and of near-term versus later uncertainty. Hedgers pay for downside protection; when demand for near-dated puts spikes, front skew steepens and the term structure inverts, which precedes or coincides with realised stress in the underlying. US500 drawdown_conditional entries taken when VIX term structure is in contango (VIX3M > VIX) have higher net expectancy than those taken when it is inverted.",
+   "falsifier": "No expectancy difference between term-shape buckets in walk-forward on the archived vintages.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG26-09-vrp-iv-rv-spread-state",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "XAUUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "Implied vol exceeds subsequently realised vol on average (insurance premium); the donor regresses forward 30-day realised variance on today's implied variance and shows both 'selling insurance' and 'buying insurance' can be profitable depending on timing (crash states). The spread IV^2 - RV^2 and the regression residual are state variables: a wide premium is compensation available to a short-vol carrier; a collapsed or negative premium marks stress. Hedgers who cannot bear tails pay a premium to transfer them; the premium widens after shocks and compresses in complacent markets. On US500/NAS100 H1, vol_mean_reversion and overnight_gap_decay entries taken when vrp_rank_252 >= 0.7 have higher net expectancy than entries when vrp_rank_252 <= 0.3; and vrp < 0 days have more negative 5-day forward returns than vrp > 0 days.",
+   "falsifier": "Bucket expectancy difference not significant after the multiplicity charge on the archived vintage, or vanishes once realised-vol tercile is controlled.",
+   "diff_first": "EXISTS_UNWIRED",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG26-10-black-litterman-equilibrium-posterior",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "XAUUSD",
+    "EURUSD",
+    "US500",
+    "USDJPY",
+    "XTIUSD"
+   ],
+   "mechanism": "Replace noisy historical mean returns with equilibrium implied returns Pi = delta * Sigma * w_mkt (reverse optimisation from a benchmark book), then tilt toward views Q on portfolios P with confidence Omega (diag of P tau Sigma P'), via the BL posterior mean. With no views the optimiser holds the benchmark; weak views shrink back to it. Mean estimates are the dominant error source in MVO; anchoring to an equilibrium prior and admitting forecasts in proportion to their confidence stabilises weights. Allocator solved on BL posterior means (prior = previous book) has lower weight turnover and equal or higher forward E[log W] than the same solve on raw posterior means.",
+   "falsifier": "No turnover reduction or lower forward E[log W].",
+   "diff_first": "MISSING",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG26-16-drawdown-monetisation-rebuy",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "US30"
+   ],
+   "mechanism": "Hold a long core; every 63 trading days set a downside floor 10% below and an upside give-up 28% above the reset price (a zero-cost collar in the donor). When a reset period closes 5% or more down, the floor's payoff is redeployed into more of the core at the depressed price; rallies above the cap are funded by trimming. The 'good volatility drag' claim: buying the fire sale with hedge proceeds turns a drawdown into extra exposure at a low basis. Forced sellers in a crash sell below value; a holder with dry powder generated by the crash itself buys their inventory. On US500/NAS100/GER40, long entries after a 10% decline from the trailing 63-trading-day high, held up to 20 trading days with a 2.5 ATR stop, earn positive net expectancy with a positive TIMING share (partition_return) beyond static long exposure.",
+   "falsifier": "Timing share <= 0 or monkey beat-rate < 0.9.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG26-18-crash-first-pc-concentration-state",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "XAUUSD",
+    "AUDUSD",
+    "USDJPY"
+   ],
+   "mechanism": "The share of cross-asset return variance explained by the first principal component (an absorption ratio) rises in crises as correlations go to one; diversification fails along that direction. Its level and its short-vs-long change are a fragility state. Common deleveraging forces every risky position to move together; when PC1 absorbs most variance the book's effective breadth collapses. Days with pc1_share_z >= 1.5 are followed by lower 20-day US500 returns and higher realised cross-sleeve correlation than days with pc1_share_z <= 0.",
+   "falsifier": "No forward difference beyond what US500 realised vol already explains.",
+   "diff_first": "MISSING",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG26-19-pca-residual-after-market-and-sector",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "XAUUSD"
+   ],
+   "mechanism": "Spectral decomposition of a stock panel: the first components are market and sector; alpha and other priced risk live in what is left after removing them. Residual moves without a common factor behind them are dislocations. pca_residual on FX majors/metal with MP-bounded factors fades residual |z| >= 2 profitably net of cost.",
+   "falsifier": "Gauntlet rejection.",
+   "diff_first": "ALREADY_COMPLETE_LIVE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG26-20-core-plus-trend-overlay-then-lever",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XTIUSD",
+    "EURUSD",
+    "USDJPY",
+    "UST10Y"
+   ],
+   "mechanism": "Pair a main return engine (2x SPY) with a roughly uncorrelated managed-futures replicator (DBMF) 50/50; the hedge leg lowers max drawdown enough that leverage on the core becomes safe, raising CAGR. Trend-following earns in sustained equity drawdowns; a lower drawdown denominator permits more heat on the core. multi_speed_trend crisis_only on the candidate symbols earns positive net returns during the worst 10% of US500 days (drawdown_alpha's tail) and passes the gauntlet.",
+   "falsifier": "No tail-period return or gauntlet rejection.",
+   "diff_first": "ALREADY_COMPLETE_LIVE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG26-23-rough-vol-roughness-state",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "EURUSD",
+    "USDJPY",
+    "XTIUSD"
+   ],
+   "mechanism": "Log realised volatility behaves like fractional Brownian motion with Hurst H around 0.1 (Gatheral-Jaisson-Rosenbaum); the scaling of E|log RV(t+d) - log RV(t)|^q with lag d estimates H. Lower H means rougher, faster-decorrelating vol, which governs how quickly a vol shock mean-reverts and how steep short-dated skew is. The donor simulates rough Bergomi via an exact Cholesky of the Volterra/Brownian covariance and shows the short-maturity skew power law T^(H-1/2). Vol roughness reflects the order-flow microstructure (meta-order splitting); its level changes the half-life of vol shocks that vol-reversion families trade. vol_mean_reversion entries on the candidate symbols taken when H_rv is in its lowest tercile have higher net expectancy than those in the highest tercile.",
+   "falsifier": "No tercile difference, or difference explained by vov.",
+   "diff_first": "MISSING",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG26-27-llm-thesis-lifecycle-share-cfd",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "NVIDIA"
+   ],
+   "mechanism": "An LLM agent maintains per-name THESES (narrative, optimistic target strictly above last, cost basis, conviction) and on a schedule classifies each holding into risk-trim / target-hit exit / invalidation exit / hold-or-add / new idea, executing through tools; conviction scales size (0.4/0.7/1.0 of a max-single-name weight), with stop-distance risk budgeting. News and earnings reactions in single names are the event lane; an explicit thesis with a target and an invalidation condition is a falsifiable, timestamped view. LLM-seat views on the six share CFDs placed at first_seen_at earn positive 5-day net returns in the stated direction on the forward record (n >= 100 views), beating a random-direction control.",
+   "falsifier": "Forward hit-rate/expectancy not above the random-direction control after 100 views.",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG-AIST-001",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "IBM",
+    "NVIDIA"
+   ],
+   "mechanism": "Weekly close-to-close change of one stock mapped by a tiny tanh MLP to a buy/sell/hold label; the label set is reversal-consistent on 192 of 261 rows (labels -1/0/1), i.e. the net learns a noisy weekly short-term-reversal rule. Short-horizon overreaction / liquidity-provision reversal (Jegadeesh 1990 style): a large weekly move is partly temporary price pressure that liquidity providers are paid to absorb. Within the Fusion US share-CFD class, the bottom-quintile 5-day return names outperform the top quintile over the next 3 days, net of spread+swap, with t>2 after the desk's deflation.",
+   "falsifier": "no positive net expectancy across the existing grid {lookback_d 1,3,5} x {hold_d 1,3}",
+   "diff_first": "DUPLICATED",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG-AIST-006",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "NVIDIA"
+   ],
+   "mechanism": "'Aurelius-style' 24/7 Russell-3000 NLP semantic alpha: per-name text sentiment converted into signals through TIME-VARYING quantile thresholds (a name is long when its score is above the rolling q-th quantile of the cross-section/its own history, not above a fixed cut). Sentiment scores drift in level and scale with vocabulary, source mix and market regime; a rolling quantile keeps the signal's base rate constant, so the trade fires on RELATIVE news tone rather than on the scorer's drift. US share CFDs whose first-seen news tone is above the rolling 90th class percentile outperform those below the 10th over the next 1-3 sessions, net of costs.",
+   "falsifier": "tail spread <= 0 net of costs over >=200 events, or no lift over fixed-threshold tone",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG-QDEV-001",
+   "orig": false,
+   "breadth_gap": [],
+   "symbols": [
+    "NAS100",
+    "US500",
+    "US30",
+    "GER40"
+   ],
+   "mechanism": "Tick-to-tick last-price jump filter: if the newest LAST tick differs from the previous by more than 3 index points on NQ, place a bracket order. A discontinuous print is information arrival or a sweep; follow-through (or fade) in the next seconds depends on liquidity. On NAS100, single-tick mid jumps > 6 sigma are followed by same-sign drift over 30 s when spread is at its normal state, and reversal when spread is wide.",
+   "falsifier": "no net edge after spread at 30 s",
+   "diff_first": "DUPLICATED",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG-ADH-001",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US2000",
+    "XAUUSD"
+   ],
+   "mechanism": "Discrete delta hedging of a European call: Black-Scholes price and delta recomputed each step as the underlying moves and time decays; the hedge error (option P&L minus delta x underlying P&L) is the state a dealer manages. A short-gamma dealer must buy into rallies and sell into declines to stay delta-neutral; aggregated, that rebalancing amplifies moves (negative dealer gamma) or dampens them (positive dealer gamma) near large open-interest strikes and into the close. When estimated dealer gamma on SPY/QQQ is negative, US500/NAS100 rest-of-day displacement continues into the close more often than when it is positive.",
+   "falsifier": "no difference in continuation rate between GEX<0 and GEX>0 days (two-sided, n>=250 days)",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG-QFIN-001",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "XAUUSD",
+    "EURUSD",
+    "US500",
+    "NAS100",
+    "XTIUSD",
+    "USDJPY"
+   ],
+   "mechanism": "One abstract stochastic-model interface: params + vanilla_pricing(F0,X,T) + calibrate(ivol) + simulate(F0,n,dt,T); ABM implemented, GBM and Heston in the legacy simulations module. A shared generator interface lets every validation arm draw 'same-distribution random' paths from a model calibrated to the instrument, so a sleeve can be re-run in a world with the instrument's vol, vol-of-vol, leverage correlation and jumps but no edge. A sleeve certified on history retains < 20% of its expectancy in 1,000 seeded Heston+jump worlds calibrated to its own symbol (i.e. its edge is not a property of the marginal distribution).",
+   "falsifier": "sleeve earns as much in calibrated null worlds as on history (edge is distributional, not structural)",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG-QFIN-002",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "JPN225",
+    "XAUUSD",
+    "USDJPY"
+   ],
+   "mechanism": "Heston leverage correlation: price and variance shocks correlated at rho<0, so falls raise volatility. As a STATE: the rolling correlation between returns and changes in realised vol. Leverage/volatility-feedback: in equity indices declines raise risk premia and vol; when the empirical rho weakens or flips (e.g. gold, JPY, crisis squeezes) the market is in a different regime, which conditions trend vs reversion families. On index CFDs, multi_speed_trend expectancy is higher when rho_t is in its least-negative tercile than in its most-negative tercile (two-sided, per symbol, deflated).",
+   "falsifier": "no tercile difference in any index at p<0.05 after deflation",
+   "diff_first": "MISSING",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG-DISC-005",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "NZDUSD"
+   ],
+   "mechanism": "A 'confusion' score beside bullish/bearish/neutral: disagreement or ambiguity within the text. Translated to the desk's own corpus: DISPERSION of hawk/dove tone across central-bank speakers in a window. When a committee's speakers disagree, the policy path is uncertain; uncertainty about the path raises the currency's event vol and weakens carry. FX carry cells on a currency earn less (and event_reaction fades work better) when that central bank's speaker-tone dispersion is in its top tercile.",
+   "falsifier": "no tercile difference in carry expectancy across G10 at p<0.05",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG-OT-001",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "mechanism": "Whole-market sector heatmap and recap: per-sector average % change, leaders/laggards, over the top-1,500 US names. Translated: MARKET BREADTH and sector dispersion as a state for index CFDs, computed from the desk's own US share-CFD bars. An index rising on narrowing participation (few large caps) is more fragile than one rising on broad participation; breadth divergence precedes index mean reversion. When US500 is at a 20-day high while breadth is below 50%, US500 5-day forward return is lower than when breadth is above 70% (two-sided, deflated).",
+   "falsifier": "no difference in forward return between low- and high-breadth states over >= 5 years",
+   "diff_first": "MISSING",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG-OT-002",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "XAUUSD",
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "Backfill the released 'actual' of the highest-visibility releases (Fed funds target, ECB MRO and DFR, NFP change, unemployment, CPI and core CPI m/m and y/y) from FRED, accepting it only when FRED's own observation date matches the release's REFERENCE PERIOD (monthly) or the decision date (rates). Surprise = actual - consensus moves FX/indices/gold at release; the desk has consensus (Forex Factory) but documents that it lacks 'actual'. EURUSD H1 return in the release hour has the sign of -(US surprise_z) for NFP and CPI with hit rate > 55% over >= 100 releases, and the effect scales with |surprise_z|.",
+   "falsifier": "surprise-signed reaction no better than unsigned over >= 100 events",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG-OT-004",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "NVIDIA"
+   ],
+   "mechanism": "Earnings history: reported EPS vs consensus (surprise %) for recent quarters, joined to the next-day price move -- a post-earnings-announcement drift (PEAD) / earnings-reaction table. Investors under-react to earnings news; prices drift in the surprise direction for days after the report (Bernard-Thomas). US share CFDs with positive EPS surprise outperform negative-surprise names over sessions 1-5 after the first tradable bar, net of costs (event_reaction fade=False).",
+   "falsifier": "signed drift <= unsigned drift over >= 300 events",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "registered_family"
+  },
+  {
+   "id": "QG-OT-005",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US2000",
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "Free option chains (strike, bid/ask, volume, OI, IV) for US names and ETFs -> put/call OI and volume ratios, ATM IV, skew and dealer-gamma inputs for the ETF proxies of CFD underlyings (SPY, QQQ, IWM, GLD, SLV, USO, UNG, TLT, UUP, FXE, FXY). Options positioning and implied skew carry forward-looking information about tail demand and dealer hedging that bars do not. (forward-only) GLD front-month skew percentile predicts XAUUSD 5-day realised vol rank.",
+   "falsifier": "no incremental predictive power over VIX/GVZ/OVX levels after 250 forward observations",
+   "diff_first": "EXISTS_INCOMPLETE",
+   "route_kind": "organ_owned_elsewhere"
+  },
+  {
+   "id": "QG-OT-006",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "NVIDIA",
+    "AMD"
+   ],
+   "mechanism": "FINRA Reg SHO consolidated daily short-sale volume per US symbol (CNMSshvolYYYYMMDD.txt): short volume / total volume as a daily per-name series. Abnormal increases in short-sale volume relative to a name's own baseline have been associated with negative subsequent returns (informed shorting), but the level is dominated by market-maker hedging (~40-50% baseline). Top-decile short-volume-ratio-z US share CFDs underperform bottom-decile over the next 5 sessions, net of costs.",
+   "falsifier": "decile spread <= 0 net over >= 2 years",
+   "diff_first": "MISSING",
+   "route_kind": "new_family_needed"
+  },
+  {
+   "id": "QG-OT-014",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "BTCUSD",
+    "ETHUSD",
+    "SOLUSD",
+    "ADAUSD",
+    "DOTUSD",
+    "LTCUSD"
+   ],
+   "mechanism": "Crypto market structure: total crypto market cap and BTC/ETH dominance (CoinGecko /global) as a state for Fusion's crypto CFDs -- reference data used ONLY because it informs an MT5 instrument. Falling BTC dominance in a rising market marks risk-on rotation into alts (higher beta); rising dominance in a falling market marks flight to the majors. Alt crypto CFD 10-day momentum earns more when 20-day BTC dominance change is negative than when positive.",
+   "falsifier": "no difference by dominance sign over >= 3 years",
+   "diff_first": "MISSING",
+   "route_kind": "registered_family"
+  }
+ ]
+}
