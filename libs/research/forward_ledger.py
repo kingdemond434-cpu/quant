@@ -266,4 +266,5 @@ def public_doc(obj: Any) -> Any:
 __all__ = ["NAME_MAX", "NO_LEDGER", "OWN", "OWN_SUFFIX", "REGISTRY_NAME",
            "UNMEASURED_SHARED_LEDGER", "KeyParts", "collisions", "freeze_collisions",
            "legacy_name", "legacy_name_for", "load_shared", "own_name", "parse_key",
-           "per_key_name", "public_doc", "public_path", "public_text", "read_rows", "resolve", "writer_name", "writer_path"]
+           "per_key_name", "public_doc", "public_path", "public_text", "read_rows", "resolve",
+           "writer_name", "writer_path"]

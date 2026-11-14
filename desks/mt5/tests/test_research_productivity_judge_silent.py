@@ -54,7 +54,7 @@ def test_judge_silent_47h_tops_the_bottleneck(tmp_path: Path) -> None:
     # Even with a deepening backlog that would otherwise win, the silent judge outranks it.
     name, detail = rp.choose_bottleneck({**_STAGES, "deepening": {"backlog": 500}}, judge)
     assert name == rp.JUDGE_SILENT
-    assert detail["age_hours"] == 45.4 and detail["evidence"] == str(led)
+    assert detail["age_hours"] == 45.4 and detail["evidence"] == led.name
     assert "gate_verdict_ledger.jsonl" in detail["why"] and "45.4h" in detail["why"]
 
 
@@ -101,7 +101,7 @@ def test_a_fresh_sweep_with_no_changed_verdict_is_not_silent(tmp_path: Path) -> 
     sw = _sweep(tmp_path, NOW - timedelta(minutes=40))
     judge = rp.judge_silence(led, now=NOW, sweep=sw)
     assert judge["status"] == "MEASURED" and judge["silent"] is False
-    assert judge["evidence"] == str(sw) and judge["age_hours"] == 0.7
+    assert judge["evidence"] == sw.name and judge["age_hours"] == 0.7
     assert judge["newest_ledger_verdict_at"] == (NOW - timedelta(hours=47)).isoformat()
     # and both witnesses old is still silent
     old = _sweep(tmp_path, NOW - timedelta(hours=30))
