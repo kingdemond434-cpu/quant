@@ -350,7 +350,7 @@ def test_only_missing_writes_sidecars_and_leaves_the_monolith_byte_identical(
     fresh = [_row("old_a", "NEVER"), _row("old_b", "MISSING"), _row("new_c", "NEVER"),
              _row("new_d", "LIVE")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     p = ra.Paths.at(tmp_path)
     assert path.read_bytes() == raw_file             # the monolith is not edited at all
     assert not p.out_md.exists()                     # nor is the rendered view written
@@ -379,7 +379,7 @@ def test_two_prs_adding_different_organs_touch_disjoint_files(
         monkeypatch.setattr(ra, "organ_rows",
                             lambda paths, budget_s, o=organ: ([_row(o)], {}))
         before = set(p.sidecars.iterdir()) if p.sidecars.is_dir() else set()
-        assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+        assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
         written.append(set(p.sidecars.iterdir()) - before)
     assert all(len(w) == 1 for w in written) and not (written[0] & written[1])
 
@@ -423,16 +423,16 @@ def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
     raw = path.read_bytes()
     fresh = [_row("old_a"), _row("new_c")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     side = ra.Paths.at(tmp_path).sidecars
     once = {f.name: f.read_bytes() for f in side.iterdir()}
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     assert {f.name: f.read_bytes() for f in side.iterdir()} == once and len(once) == 1
     assert path.read_bytes() == raw
 
 
 def test_only_missing_refuses_without_a_committed_attestation(tmp_path: Path) -> None:
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 1
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 1
     assert not ra.Paths.at(tmp_path).out_json.exists()
     assert not ra.Paths.at(tmp_path).sidecars.exists()
 
@@ -446,7 +446,7 @@ def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
     fresh = [_row("new_live", "LIVE"), _row("new_stale", "STALE"),
              _row("new_missing", "MISSING"), _row("new_never", "NEVER")]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     after = _merged(tmp_path)
     new = {r["organ"]: r for r in after["organs"][2:]}
     assert {k: r["state"] for k, r in new.items()} == {
@@ -467,7 +467,7 @@ def test_only_missing_on_the_attesting_host_keeps_its_measured_state(
     _committed(tmp_path, machine_id="box-machine-id")
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     row = _merged(tmp_path)["organs"][-1]
     assert row["state"] == "LIVE" and row["measured_on"] == socket.gethostname()
 
@@ -484,7 +484,7 @@ def test_only_missing_never_trims_the_monolith(tmp_path: Path, monkeypatch) -> N
         r["summary"] = {"status": "x" * 40, "rows": 10 ** 9 + i, "verdict": "y" * 40}
         fresh.append(r)
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     assert path.read_bytes() == raw
     rows = [r for r in _merged(tmp_path)["organs"] if r["organ"].startswith("new_")]
     assert len(rows) == 6 and all(r["summary"]["status"] == "x" * 40 for r in rows)
@@ -500,7 +500,7 @@ def test_a_cloud_vm_is_off_host_even_when_name_and_machine_id_match(
     assert not ok and "not a declared desk host" in why
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     row = _merged(tmp_path)["organs"][-1]
     assert row["state"] == ra.UNMEASURED and row["measured_on"] == "vm"
 
@@ -523,7 +523,7 @@ def test_an_old_format_stamp_is_unverifiable_not_breakage(tmp_path: Path, monkey
     assert not ok and why.startswith("UNVERIFIABLE")
     monkeypatch.setattr(ra, "organ_rows",
                         lambda paths, budget_s: ([_row("new_never", "NEVER")], {}))
-    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert ra.main(["--root", str(tmp_path), "--only-missing", "--base", ""]) == 0
     after = _merged(tmp_path)
     assert after["organs"][:2] == before["organs"] and after["host"] == before["host"]
     assert after["organs"][-1]["state"] == "NEVER"
@@ -646,3 +646,60 @@ def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, mon
     _write(tmp_path, _stamped(True, hours=5))
     rep = gate.full_gate(tmp_path, laws_only=False)
     assert not rep["ok"] and len(rep["failures"]) == 2
+
+
+def test_only_missing_writes_rows_only_for_organs_this_tree_changed(
+        tmp_path: Path, monkeypatch) -> None:
+    """Auditor HOLDs 2026-11-14: every PR re-added task:MT5-FTMO-Allocator, an organ LIVE declares
+    but deliberately carries no row for. A PR writes rows only for organs whose code it changed."""
+    _committed(tmp_path)
+    mine = dict(_row("pr_organ"), code=["desks/mt5/research/pr_organ.py"])
+    theirs = dict(_row("task:MT5-FTMO-Allocator"),
+                  code=["desks/mt5/research/prop_challenge_allocator.py"])
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([dict(mine), dict(theirs)], {}))
+    seen: list[str] = []
+    monkeypatch.setattr(ra, "changed_paths",
+                        lambda root, base: seen.append(base) or {"desks/mt5/research/pr_organ.py"})
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert seen == [ra.LIVE_REF]
+    side = ra.Paths.at(tmp_path).sidecars
+    assert [f.name for f in side.iterdir()] == [ra.sidecar_name("pr_organ")]
+
+
+def test_only_missing_refuses_when_git_cannot_say_what_changed(
+        tmp_path: Path, monkeypatch) -> None:
+    _committed(tmp_path)
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([_row("x")], {}))
+    monkeypatch.setattr(ra, "changed_paths", lambda root, base: None)
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 1
+    assert not ra.Paths.at(tmp_path).sidecars.exists()
+
+
+def test_live_never_gains_the_ftmo_allocator_row_from_a_pr_that_did_not_touch_it(
+        monkeypatch) -> None:
+    """On the real tree: a run that changed nothing of the allocator writes no row for it."""
+    root = ra.ROOT
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(
+        _row("task:MT5-FTMO-Allocator"),
+        code=["desks/mt5/research/prop_challenge_allocator.py"])], {}))
+    res = ra.attest_only_missing(ra.Paths.at(root), changed={"docs/LAWS.md"})
+    assert res["added"] == [] and [r["organ"] for r in res["skipped"]] == [
+        "task:MT5-FTMO-Allocator"]
+
+
+def test_changed_paths_reads_committed_and_uncommitted_work(tmp_path: Path) -> None:
+    import subprocess
+
+    def git(*a: str) -> None:
+        subprocess.run(["git", "-C", str(tmp_path), *a], check=True, capture_output=True)
+
+    git("init", "-q", "-b", "live")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "b")
+    git("checkout", "-q", "-b", "pr")
+    (tmp_path / "a.py").write_text("x", encoding="utf-8")
+    git("add", "a.py")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "a")
+    (tmp_path / "b.py").write_text("y", encoding="utf-8")
+    assert ra.changed_paths(tmp_path, "live") == {"a.py", "b.py"}
+    assert ra.changed_paths(tmp_path, "no-such-ref") is None
