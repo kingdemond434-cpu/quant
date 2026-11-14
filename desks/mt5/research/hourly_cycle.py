@@ -1253,7 +1253,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
-    "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
+    "research_api_status", "artifact_chain", "residual_queue", "vocabulary_proposer",
+    "unseen_frontier", "contradiction_miner",
     "source_registry", "queue_census",
     # THE BOOK'S RESIDUAL AND THE GATES' COUNTERFACTUALS (2026-09-30): ledger reads plus a
     # bounded build of the few conditioned cells a BH-corrected finding names; before
@@ -4398,8 +4399,17 @@ def main() -> None:
                                                       "research/axis_registry.py"))
     # THE UNSEEN FRONTIER: Chao1 / Good-Turing over canonical mechanism hashes per ground, so
     # the allocator knows which grounds are saturating (reads the axis registry's vocabulary).
+    # THE VOCABULARY PROPOSER (N9, 2026-11-10): the words the intake uses and the desk cannot
+    # place, read as an alias of a known mechanism or proposed as a mechanism of their own.
+    # Before `unseen_frontier`, which reads its data/vocabulary_aliases.json last of all.
+    vcp = _costed("vocabulary_proposer", lambda: _producer("vocabulary_proposer",
+                                                            "research/vocabulary_proposer.py"))
     usf = _costed("unseen_frontier", lambda: _producer("unseen_frontier",
                                                         "research/unseen_frontier.py"))
+    # THE CONTRADICTION MINER (N9, 2026-11-10): two sources that disagree about one
+    # instrument's direction or regime donate the follow / fade pair that settles it.
+    ctm = _costed("contradiction_miner", lambda: _producer("contradiction_miner",
+                                                            "research/contradiction_miner.py"))
     bld = _costed("breadth_ladder", lambda: _producer("breadth_ladder",
                                                        "research/breadth_ladder.py"))
     ffc = _costed("forced_flow_calendar", lambda: _producer("forced_flow_calendar",
@@ -6515,7 +6525,8 @@ def main() -> None:
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_search": rsr, "residual_queue": rsq,
-                    "unseen_frontier": usf,
+                    "vocabulary_proposer": vcp, "unseen_frontier": usf,
+                    "contradiction_miner": ctm,
                     "attribution_reconcile": atr,
                     "macro_state_engine": mse,
                     "research_artifacts": rart,
