@@ -33,6 +33,21 @@ foreach ($f in $files) {
   }
 }
 python scripts\video_transcript_vault.py open --src $sealed --dst $open
+# YouTube Data API corpus (titles, descriptions, links) from the off-box youtube-corpus workflow,
+# read over the existing git remote into data/intelligence/youtube, which the compiler mines.
+# The box itself never contacts YouTube. Worktree-only restore: nothing is staged here.
+# PS 5.1 turns native stderr into a terminating error under "Stop"; a failed corpus pull
+# must not kill the hourly task before extract_video_cells runs.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    git fetch --quiet origin claude/youtube-corpus 2>$null
+    if ($LASTEXITCODE -eq 0) { git restore --source origin/claude/youtube-corpus --worktree -- data/intelligence/youtube 2>$null }
+} catch {
+    Write-Output "corpus pull failed: $_"
+} finally {
+    $ErrorActionPreference = $prevEap
+}
 python scripts\extract_video_cells.py --mined $open --max-videos $MaxVideos
 # box-side coverage proof: every enumerated video id and its status, from the PC's own ledger
 python scripts\mine_channel_transcripts.py --out $open --report-only --report desks\mt5\reports\VIDEO_MINING_COVERAGE.json
