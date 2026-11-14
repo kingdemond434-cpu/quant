@@ -56,6 +56,8 @@ import hashlib
 import json
 import math
 import os
+import re
+import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -215,71 +217,409 @@ def _census_ratio(report: Mapping[str, Any]) -> tuple[float, str]:
     return rho, method
 
 
+_TrialFields = tuple[str, str, str, float, int]
+
+
+def _trial_fields(v: Any) -> _TrialFields | None:
+    """(cell, family, sym, sharpe, days) of one judged verdict, or None when it was not judged."""
+    if not isinstance(v, Mapping) or v.get("unmeasured"):
+        return None
+    stage = (v.get("stages") or {}).get("in_sample_screen")
+    sr = _finite(stage.get("sharpe")) if isinstance(stage, Mapping) else None
+    days = v.get("days")
+    if sr is None or not isinstance(days, int) or days < MIN_DAYS:
+        return None
+    cell = str(v.get("cell") or "")
+    if not cell:
+        return None
+    return cell, str(v.get("family") or "?"), str(v.get("sym") or "?"), sr, days
+
+
+def _rows_from(fields: Iterable[_TrialFields], report: Mapping[str, Any], *, sweep_id: str,
+               judged_at: str) -> list[dict[str, Any]]:
+    rho, rho_method = _census_ratio(report)
+    campaign = str(report.get("hunt") or "?")
+    return [{"cell": cell, "family": fam, "sym": sym, "campaign": campaign,
+             "sharpe": sr, "days": days, "judged_at": judged_at,
+             "sweep_id": sweep_id, "rho": round(rho, 6), "rho_method": rho_method}
+            for cell, fam, sym, sr, days in fields]
+
+
 def trial_rows(report: Mapping[str, Any], *, sweep_id: str, judged_at: str
                ) -> list[dict[str, Any]]:
     """The judged trials of one sweep report, as ledger rows."""
-    rho, rho_method = _census_ratio(report)
-    campaign = str(report.get("hunt") or "?")
-    out: list[dict[str, Any]] = []
-    for v in report.get("verdicts") or []:
-        if not isinstance(v, Mapping) or v.get("unmeasured"):
-            continue
-        stage = (v.get("stages") or {}).get("in_sample_screen")
-        sr = _finite(stage.get("sharpe")) if isinstance(stage, Mapping) else None
-        days = v.get("days")
-        if sr is None or not isinstance(days, int) or days < MIN_DAYS:
-            continue
-        cell = str(v.get("cell") or "")
-        if not cell:
-            continue
-        out.append({"cell": cell, "family": str(v.get("family") or "?"),
-                    "sym": str(v.get("sym") or "?"), "campaign": campaign,
-                    "sharpe": sr, "days": days, "judged_at": judged_at,
-                    "sweep_id": sweep_id, "rho": round(rho, 6), "rho_method": rho_method})
-    return out
+    fields = [t for v in report.get("verdicts") or [] if (t := _trial_fields(v)) is not None]
+    return _rows_from(fields, report, sweep_id=sweep_id, judged_at=judged_at)
 
 
-def harvest(report_path: Path | None = None, ledger_path: Path | None = None) -> dict[str, Any]:
-    """Append the latest sweep's judged trials to the ledger. Idempotent per sweep and per
-    (cell, Sharpe): re-harvesting the same report writes nothing."""
+# ------------------------------------------------------------------------------ bounded harvest
+# WHY THE HARVEST IS BOUNDED (2026-10-21). The leg's cap is 300 s and this organ published nine
+# times in ten days (none after 10-17T01:02Z) against a 4 h staleness limit, so the judge read sr0
+# UNMEASURED most hours. The old pass hashed AND parsed the whole sweep report, then read the
+# whole ledger, and only then asked whether the sweep was already harvested; measure() and write()
+# ran last, so a kill at the cap left nothing. Now: an unchanged report costs a stat (the index
+# below), the document is published from the existing ledger BEFORE the harvest, the report is
+# read as a stream (one verdict in memory at a time) and every step checks a deadline, and a
+# harvest that runs out of time says DEFERRED with the step it stopped in instead of dying.
+
+#: Harvest outcomes beyond MEASURED / UNMEASURED. DEFERRED: the deadline arrived before the sweep
+#: was read; nothing was appended and the next pass resumes (a computed report hash is kept in the
+#: index, so it is paid once). PENDING: the interim document, published from the existing ledger
+#: before this pass's harvest ran; the pass's final document supersedes it.
+DEFERRED = "DEFERRED"
+PENDING = "PENDING"
+ALREADY_HARVESTED_WHY = "this sweep is already in the ledger"
+#: The default ledger's harvest index. Box-local and gitignored (`**/reports/*`): a cache of
+#: (report stat -> sha256) and of the sweeps already in the ledger. Losing it costs one re-hash and
+#: one ledger scan, never a row.
+INDEX = DESK / "reports" / "DSR_INPUTS.harvest_index.json"
+INDEX_SCHEMA = "dsr_inputs_harvest_index/v1"
+INDEX_MAX_SWEEPS = 512
+#: The pass's harvest deadline when the caller names none; the leg's cap is 300 s and the final
+#: measure and write need the rest.
+DEFAULT_HARVEST_BUDGET_S = 180
+_CHUNK = 1 << 20
+_CHECK_EVERY = 1024
+_WS = re.compile(r"[ \t\n\r]*")
+#: The only top-level keys of a sweep report the harvest reads besides `verdicts`.
+_REPORT_KEYS = ("hunt", "swept_at", "trial_census")
+
+
+class _DeadlineReached(Exception):
+    """The harvest's deadline arrived; the message names the step it arrived in."""
+
+
+class _NotAMapping(Exception):
+    """The sweep report parses, but not to a mapping."""
+
+
+def _check(deadline: float | None, step: str) -> None:
+    if deadline is not None and time.monotonic() > deadline:
+        raise _DeadlineReached(step)
+
+
+def _file_sha256_bounded(path: Path, deadline: float | None) -> str | None:
+    h = hashlib.sha256()
+    try:
+        with path.open("rb") as fh:
+            for i, chunk in enumerate(iter(lambda: fh.read(_CHUNK), b"")):
+                if i % 64 == 0:
+                    _check(deadline, f"hashing {_rel(path)}")
+                h.update(chunk)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _index_path(ledger_path: Path | None) -> Path:
+    if ledger_path is None or Path(ledger_path) == LEDGER:
+        return INDEX
+    lp = Path(ledger_path)
+    return lp.with_name(lp.stem + ".harvest_index.json")
+
+
+def _read_index(path: Path) -> dict[str, Any]:
+    try:
+        idx = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        idx = None
+    if not isinstance(idx, dict) or idx.get("schema") != INDEX_SCHEMA \
+            or not isinstance(idx.get("sweeps"), dict):
+        return {"schema": INDEX_SCHEMA, "report": None, "sweeps": {}}
+    return idx
+
+
+def _write_index(path: Path, idx: dict[str, Any]) -> None:
+    sweeps = idx.get("sweeps") or {}
+    if len(sweeps) > INDEX_MAX_SWEEPS:
+        idx["sweeps"] = dict(list(sweeps.items())[-INDEX_MAX_SWEEPS:])
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(idx, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        pass                                   # a cache: the next pass re-hashes, nothing is lost
+
+
+def _stat_key(path: Path) -> dict[str, Any] | None:
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    return {"path": str(path.resolve()), "size": int(st.st_size),
+            "mtime_ns": int(st.st_mtime_ns), "ino": int(st.st_ino)}
+
+
+def _same_report(rec: Any, key: Mapping[str, Any]) -> bool:
+    return (isinstance(rec, Mapping) and isinstance(rec.get("sha256"), str)
+            and all(rec.get(k) == key[k] for k in ("path", "size", "mtime_ns", "ino")))
+
+
+def _ledger_size(path: Path) -> int:
+    try:
+        return int(path.stat().st_size)
+    except OSError:
+        return 0
+
+
+def _already(sweep_id: str, sha: str) -> dict[str, Any]:
+    return {"status": MEASURED, "appended": 0, "sweep_id": sweep_id, "sha256": sha,
+            "why": ALREADY_HARVESTED_WHY}
+
+
+def _indexed_as_harvested(idx: Mapping[str, Any], sweep_id: str, lpath: Path) -> bool:
+    ent = (idx.get("sweeps") or {}).get(sweep_id)
+    size = ent.get("ledger_size") if isinstance(ent, Mapping) else None
+    return isinstance(size, int) and _ledger_size(lpath) >= size
+
+
+def _remember(ipath: Path, idx: dict[str, Any], sweep_id: str, lpath: Path) -> None:
+    sweeps = idx.setdefault("sweeps", {})
+    sweeps.pop(sweep_id, None)
+    sweeps[sweep_id] = {"ledger_size": _ledger_size(lpath), "at": _iso(_now())}
+    _write_index(ipath, idx)
+
+
+def harvest_fast(report_path: Path | None = None, ledger_path: Path | None = None, *,
+                 index_path: Path | None = None) -> dict[str, Any] | None:
+    """The already-harvested answer for an UNCHANGED report from a stat and the index alone, or
+    None when that cannot be said without reading. Never parses or hashes the report. "Unchanged"
+    is the same path, size, mtime_ns and inode as when the index hashed it."""
     rpath = report_path or GAUNTLET_REPORT
     lpath = ledger_path or LEDGER
-    sha = _file_sha256(rpath)
-    if sha is None:
-        return {"status": UNMEASURED, "why": f"{_rel(rpath)} is absent or unreadable",
-                "appended": 0}
+    key = _stat_key(rpath)
+    if key is None:
+        return None
+    idx = _read_index(index_path or _index_path(ledger_path))
+    rec = idx.get("report")
+    if not _same_report(rec, key):
+        return None
+    sha = str(rec["sha256"])                                     # type: ignore[index]
+    if not _indexed_as_harvested(idx, sha[:16], lpath):
+        return None
+    return _already(sha[:16], sha)
+
+
+class _Stream:
+    """A JSON text read in chunks: values are decoded by the stdlib decoder one at a time, so a
+    sweep report's `verdicts` array never has to be in memory whole."""
+
+    def __init__(self, fh: Any, deadline: float | None, step: str) -> None:
+        self.fh, self.deadline, self.step = fh, deadline, step
+        self.buf, self.pos, self.eof = "", 0, False
+        self.dec = json.JSONDecoder()
+
+    def more(self, want: int = 0) -> bool:
+        if self.eof:
+            return False
+        _check(self.deadline, self.step)
+        chunk = self.fh.read(max(want, _CHUNK))
+        if not chunk:
+            self.eof = True
+            return False
+        self.buf = self.buf[self.pos:] + chunk
+        self.pos = 0
+        return True
+
+    def peek(self) -> str:
+        while True:
+            m = _WS.match(self.buf, self.pos)
+            self.pos = m.end() if m else self.pos
+            if self.pos < len(self.buf):
+                return self.buf[self.pos]
+            if not self.more():
+                return ""
+
+    def expect(self, ch: str) -> None:
+        if self.peek() != ch:
+            raise json.JSONDecodeError(f"Expecting {ch!r}", self.buf, self.pos)
+        self.pos += 1
+
+    def value(self) -> Any:
+        self.peek()
+        while True:
+            try:
+                obj, end = self.dec.raw_decode(self.buf, self.pos)
+            except json.JSONDecodeError:
+                if self.more(len(self.buf) - self.pos):      # incomplete: read more, decode again
+                    continue
+                raise
+            if end >= len(self.buf) and self.more(len(self.buf) - self.pos):
+                continue                                      # a number may continue past here
+            self.pos = end
+            return obj
+
+
+def _stream_report(path: Path, deadline: float | None
+                   ) -> tuple[dict[str, Any], list[_TrialFields]]:
+    """(the report's `hunt`/`swept_at`/`trial_census`, the judged trials of its `verdicts`), read
+    as a stream. Same decoder, same values and the same verdict on a malformed file as
+    `json.loads(path.read_text("utf-8"))`: a duplicated key keeps its last value, trailing data
+    is an error, and a text that is not an object is parsed whole exactly as before."""
+    step = f"reading {_rel(path)}"
+    with path.open(encoding="utf-8") as fh:
+        s = _Stream(fh, deadline, step)
+        if s.peek() != "{":
+            whole = json.loads(path.read_text("utf-8"))
+            if not isinstance(whole, dict):
+                raise _NotAMapping
+            return ({k: whole[k] for k in _REPORT_KEYS if k in whole},
+                    [t for v in whole.get("verdicts") or []
+                     if (t := _trial_fields(v)) is not None])
+        s.expect("{")
+        meta: dict[str, Any] = {}
+        fields: list[_TrialFields] = []
+        n = 0
+        if s.peek() == "}":
+            s.pos += 1
+        else:
+            while True:
+                key = s.value()
+                if not isinstance(key, str):
+                    raise json.JSONDecodeError("Expecting property name enclosed in double "
+                                               "quotes", s.buf, s.pos)
+                s.expect(":")
+                if key == "verdicts":
+                    fields = []                                   # the last occurrence wins
+                    if s.peek() == "[":
+                        s.pos += 1
+                        if s.peek() == "]":
+                            s.pos += 1
+                        else:
+                            while True:
+                                t = _trial_fields(s.value())
+                                if t is not None:
+                                    fields.append(t)
+                                n += 1
+                                if n % _CHECK_EVERY == 0:
+                                    _check(deadline, step)
+                                c = s.peek()
+                                s.pos += 1
+                                if c == "]":
+                                    break
+                                if c != ",":
+                                    raise json.JSONDecodeError("Expecting ',' delimiter",
+                                                               s.buf, s.pos - 1)
+                    else:
+                        whole_v = s.value()
+                        fields = [t for v in whole_v or []
+                                  if (t := _trial_fields(v)) is not None]
+                elif key in _REPORT_KEYS:
+                    meta[key] = s.value()
+                else:
+                    s.value()                                     # decoded and dropped
+                c = s.peek()
+                if c == "}":
+                    s.pos += 1
+                    break
+                if c != ",":
+                    raise json.JSONDecodeError("Expecting ',' delimiter", s.buf, s.pos)
+                s.pos += 1
+        if s.peek() != "":
+            raise json.JSONDecodeError("Extra data", s.buf, s.pos)
+    return meta, fields
+
+
+def _scan_ledger(path: Path, deadline: float | None
+                 ) -> tuple[set[str], set[tuple[str, float | None]]]:
+    """(sweep ids in the ledger, (cell, Sharpe) pairs in it), by the rules of `read_ledger`."""
+    sweeps: set[str] = set()
+    seen: set[tuple[str, float | None]] = set()
+    step = f"reading {_rel(path)}"
     try:
-        report = json.loads(rpath.read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        return {"status": UNMEASURED, "why": f"{_rel(rpath)}: {type(exc).__name__}",
-                "appended": 0, "sha256": sha}
-    if not isinstance(report, dict):
-        return {"status": UNMEASURED, "why": f"{_rel(rpath)} is not a mapping", "appended": 0,
-                "sha256": sha}
-    sweep_id = sha[:16]
+        with path.open(encoding="utf-8") as fh:
+            for i, line in enumerate(fh):
+                if i % 8192 == 0:
+                    _check(deadline, step)
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                sid = row.get("sweep_id")
+                if isinstance(sid, str):
+                    sweeps.add(sid)
+                seen.add((str(row.get("cell")), _finite(row.get("sharpe"))))
+    except OSError:
+        return set(), set()
+    return sweeps, seen
+
+
+def harvest(report_path: Path | None = None, ledger_path: Path | None = None, *,
+            deadline: float | None = None, index_path: Path | None = None) -> dict[str, Any]:
+    """Append the latest sweep's judged trials to the ledger. Idempotent per sweep and per
+    (cell, Sharpe): re-harvesting the same report writes nothing.
+
+    `deadline` is a `time.monotonic()` instant; past it the harvest stops at its next check and
+    returns DEFERRED, having appended nothing (rows are appended in one write, only after the
+    whole report was read, so a stop never leaves half a sweep that later reads as done)."""
+    rpath = report_path or GAUNTLET_REPORT
+    lpath = ledger_path or LEDGER
+    ipath = index_path or _index_path(ledger_path)
+    absent = {"status": UNMEASURED, "why": f"{_rel(rpath)} is absent or unreadable",
+              "appended": 0}
+    key = _stat_key(rpath)
+    if key is None:
+        return absent
+    idx = _read_index(ipath)
+    sha: str | None = None
+    try:
+        rec = idx.get("report")
+        if _same_report(rec, key):
+            sha = str(rec["sha256"])                             # type: ignore[index]
+        else:
+            sha = _file_sha256_bounded(rpath, deadline)
+            if sha is None:
+                return absent
+            idx["report"] = {**key, "sha256": sha}
+            _write_index(ipath, idx)
+        sweep_id = sha[:16]
+        if _indexed_as_harvested(idx, sweep_id, lpath):
+            return _already(sweep_id, sha)
+        sweeps, seen = _scan_ledger(lpath, deadline)
+        if sweep_id in sweeps:
+            _remember(ipath, idx, sweep_id, lpath)
+            return _already(sweep_id, sha)
+        try:
+            report, fields = _stream_report(rpath, deadline)
+        except _NotAMapping:
+            return {"status": UNMEASURED, "why": f"{_rel(rpath)} is not a mapping",
+                    "appended": 0, "sha256": sha}
+        except (OSError, ValueError) as exc:
+            return {"status": UNMEASURED, "why": f"{_rel(rpath)}: {type(exc).__name__}",
+                    "appended": 0, "sha256": sha}
+    except _DeadlineReached as stop:
+        return {"status": DEFERRED,
+                "why": f"harvest deadline reached while {stop}; nothing appended, the next "
+                       f"pass resumes", "appended": 0,
+                **({"sweep_id": sha[:16], "sha256": sha} if sha else {})}
     at = _parse(report.get("swept_at"))
     if at is None:
         try:
             at = datetime.fromtimestamp(rpath.stat().st_mtime, tz=UTC)
         except OSError:
             at = _now()
-    existing = read_ledger(lpath)
-    if any(r.get("sweep_id") == sweep_id for r in existing):
-        return {"status": MEASURED, "appended": 0, "sweep_id": sweep_id, "sha256": sha,
-                "why": "this sweep is already in the ledger"}
-    seen = {(str(r.get("cell")), _finite(r.get("sharpe"))) for r in existing}
-    rows = [r for r in trial_rows(report, sweep_id=sweep_id, judged_at=_iso(at))
+    rows = [r for r in _rows_from(fields, report, sweep_id=sweep_id, judged_at=_iso(at))
             if (r["cell"], r["sharpe"]) not in seen]
     if rows:
         lpath.parent.mkdir(parents=True, exist_ok=True)
+        blob = "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
         with lpath.open("a", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps(r, sort_keys=True) + "\n")
+            fh.write(blob)
+    _remember(ipath, idx, sweep_id, lpath)
     return {"status": MEASURED, "appended": len(rows), "sweep_id": sweep_id, "sha256": sha,
             "swept_at": _iso(at), "campaign": str(report.get("hunt") or "?")}
 
 
 # ------------------------------------------------------------------------------ measurement
+_UNSET: Any = object()
+
+
 def _latest_per_cell(rows: Iterable[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for r in rows:
@@ -345,9 +685,12 @@ def effective_trials(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 
 def measure(*, ledger_path: Path | None = None, report_path: Path | None = None,
             now: datetime | None = None, window_days: int = WINDOW_DAYS,
-            harvest_result: Mapping[str, Any] | None = None) -> dict[str, Any]:
+            harvest_result: Mapping[str, Any] | None = None,
+            report_sha256: Any = _UNSET) -> dict[str, Any]:
     """The published document: variance per family (window), effective trials (lifetime),
-    provenance, and `content_sha256` over all of it."""
+    provenance, and `content_sha256` over all of it. `report_sha256`, when given, is the sweep
+    report's hash the harvest already knows (so a multi-GB report is not hashed twice a pass);
+    omitted, it is computed here as before."""
     now = now or _now()
     lpath = ledger_path or LEDGER
     rpath = report_path or GAUNTLET_REPORT
@@ -400,7 +743,8 @@ def measure(*, ledger_path: Path | None = None, report_path: Path | None = None,
                  "sha256": _file_sha256(lpath), "rows": len(rows),
                  "distinct_cells": len(latest)},
                 {"path": _rel(rpath), "role": "latest sweep report harvested into the ledger",
-                 "sha256": _file_sha256(rpath)},
+                 "sha256": (_file_sha256(rpath) if report_sha256 is _UNSET
+                            else report_sha256)},
             ],
             "harvest": dict(harvest_result or {}),
             "code": {"path": _rel(Path(__file__)), "sha256": _file_sha256(Path(__file__))},
@@ -493,12 +837,95 @@ def cell_inputs(doc: Mapping[str, Any], family: str) -> dict[str, Any] | None:
             "content_sha256": doc.get("content_sha256"), "measured_at": doc.get("measured_at")}
 
 
+def unmeasured_document(why: str, *, harvest_result: Mapping[str, Any] | None = None,
+                        now: datetime | None = None, window_days: int = WINDOW_DAYS
+                        ) -> dict[str, Any]:
+    """The explicit UNMEASURED verdict for a pass that could not measure at all: the reason, the
+    attempt's timestamp, and no number. `load_verified` refuses it (status, and no measured_at),
+    so it fails closed exactly as an absent file does -- but it says why, and when."""
+    now = now or _now()
+    doc: dict[str, Any] = {
+        "schema": SCHEMA,
+        "status": UNMEASURED,
+        "why": why,
+        "unmeasured_reason": UNMEASURED_REASON,
+        "measured_at": None,
+        "attempted_at": _iso(now),
+        "max_age_s": MAX_AGE_S,
+        "variance": {"window": {"days": window_days},
+                     "pooled": {"n": 0, "variance": None, "status": UNMEASURED},
+                     "by_family": {}, "by_campaign": {}},
+        "effective_trials": {"nominal": None, "effective": None, "by_family": {},
+                             "method": EFFECTIVE_METHOD},
+        "sr0_pooled_at_lifetime_effective": None,
+        "provenance": {"harvest": dict(harvest_result or {}),
+                       "code": {"path": _rel(Path(__file__)),
+                                "sha256": _file_sha256(Path(__file__))},
+                       "timestamp": _iso(now)},
+    }
+    doc["content_sha256"] = canonical_sha256(doc)
+    return doc
+
+
+def _measure_or_explain(*, harvest_result: Mapping[str, Any], now: datetime | None,
+                        **kw: Any) -> dict[str, Any]:
+    try:
+        return measure(now=now, harvest_result=harvest_result, **kw)
+    except Exception as exc:                  # never silently stale: say why, and when
+        return unmeasured_document(f"measure raised {type(exc).__name__}: {exc}",
+                                   harvest_result=harvest_result, now=now,
+                                   window_days=kw.get("window_days", WINDOW_DAYS))
+
+
+def _with_harvest(doc: Mapping[str, Any], h: Mapping[str, Any]) -> dict[str, Any]:
+    out = {**doc, "provenance": {**(doc.get("provenance") or {}), "harvest": dict(h)}}
+    out["content_sha256"] = canonical_sha256(out)
+    return out
+
+
 def run(*, report_path: Path | None = None, ledger_path: Path | None = None,
         out: Path | None = None, now: datetime | None = None,
-        window_days: int = WINDOW_DAYS) -> dict[str, Any]:
-    """One pass: harvest, measure, publish."""
-    h = harvest(report_path, ledger_path)
-    doc = measure(ledger_path=ledger_path, report_path=report_path, now=now,
-                  window_days=window_days, harvest_result=h)
+        window_days: int = WINDOW_DAYS, budget_s: float | None = None,
+        index_path: Path | None = None) -> dict[str, Any]:
+    """One pass, publishing FIRST.
+
+    * An unchanged, already-harvested report (index: same path, size, mtime_ns, inode) costs a
+      stat: one measure, one write, the report neither hashed nor parsed.
+    * Otherwise the document is measured from the EXISTING ledger and written (harvest PENDING)
+      before the harvest starts, so a pass killed at the leg's cap still leaves a fresh document.
+      The harvest then runs against a deadline of `budget_s` seconds from the start of the pass
+      (None: unbounded, as before). Completed, the document is measured again and rewritten --
+      byte-for-byte what the old harvest-then-measure pass wrote on the same inputs, bar the code
+      hash. DEFERRED, the interim document is re-stamped with that harvest verdict and its reason.
+    * A measure that raises writes `unmeasured_document`, never nothing.
+    """
+    deadline = None if budget_s is None else time.monotonic() + max(0.0, float(budget_s))
+    ipath = index_path or _index_path(ledger_path)
+    kw: dict[str, Any] = {"ledger_path": ledger_path, "report_path": report_path,
+                          "window_days": window_days}
+    try:
+        fast = harvest_fast(report_path, ledger_path, index_path=ipath)
+    except Exception:
+        fast = None
+    if fast is not None:
+        doc = _measure_or_explain(harvest_result=fast, now=now, report_sha256=fast["sha256"],
+                                  **kw)
+        write(doc, out)
+        return doc
+    pending = {"status": PENDING, "appended": 0,
+               "why": "published from the existing ledger before this pass's harvest; the "
+                      "pass's final document supersedes it"}
+    interim = _measure_or_explain(harvest_result=pending, now=now, report_sha256=None, **kw)
+    write(interim, out)
+    try:
+        h = harvest(report_path, ledger_path, deadline=deadline, index_path=ipath)
+    except Exception as exc:
+        h = {"status": UNMEASURED, "why": f"harvest raised {type(exc).__name__}: {exc}",
+             "appended": 0}
+    if h.get("status") == DEFERRED:
+        doc = _with_harvest(interim, h)
+    else:
+        doc = _measure_or_explain(harvest_result=h, now=now,
+                                  report_sha256=h.get("sha256"), **kw)
     write(doc, out)
     return doc
