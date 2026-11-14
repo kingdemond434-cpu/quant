@@ -160,6 +160,8 @@ NON_CODE: frozenset[str] = frozenset({
     # Whether the tick tape is still moving (2026-10-14): the hourly `tape_fresh` leg's verdict
     # on each tape's own newest-tick stamp, published on the same wire. An output, never an input.
     "desks/mt5/reports/TAPE_FRESHNESS.json",
+    # The certificate lineage of every live window (scripts/check_cert_lineage.py, 2026-10-20).
+    "desks/mt5/reports/CERT_LINEAGE.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",

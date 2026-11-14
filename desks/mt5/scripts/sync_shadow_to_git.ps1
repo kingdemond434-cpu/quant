@@ -785,7 +785,9 @@ $relPaths = @(
     # WHETHER THE TICK TAPE IS STILL MOVING (2026-10-14). MT5-TickRecorder sat dead for two days
     # and origin's tape_state.json (never on this list) read 2026-09-04 whatever the box held.
     # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
-    "desks/mt5/reports/TAPE_FRESHNESS.json"
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
+    # CERTIFICATE LINEAGE OF EVERY LIVE WINDOW (2026-10-20, scripts/check_cert_lineage.py).
+    "desks/mt5/reports/CERT_LINEAGE.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:

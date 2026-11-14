@@ -114,6 +114,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/REMINT_STATUS.json",
     # The tick tape's freshness verdict (hourly `tape_fresh` leg, 2026-10-14).
     "desks/mt5/reports/TAPE_FRESHNESS.json",
+    # The certificate lineage of every live window (scripts/check_cert_lineage.py, 2026-10-20).
+    "desks/mt5/reports/CERT_LINEAGE.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --

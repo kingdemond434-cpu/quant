@@ -1008,7 +1008,10 @@ def _strategy_state_identity(sleeve: object, symbol: object) -> str:
             dynamic = {"status", "risk_frac", "risk_frac_source", "admission",
                        "forward_verdict", "shadow_exp", "shadow_n", "shadow_days",
                        "admit_streak", "admit_scan", "restored_at", "restore_reason",
-                       "promoted_at", "principal_override", "artifact"}
+                       "promoted_at", "principal_override", "artifact",
+                       # certificate lineage (research/cert_lineage.py, 2026-10-20): a record
+                       # of which certificate a row stands on, never part of what it trades
+                       "cert_id", "cert_spec_hash", "cert_gated_at", "cert_lineage"}
             ids: dict[str, str] = {}
             for spec in rows if isinstance(rows, list) else []:
                 if not isinstance(spec, dict) or not spec.get("name"):

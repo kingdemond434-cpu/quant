@@ -497,6 +497,10 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion_debt.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
+    # CERTIFICATE LINEAGE OF EVERY LIVE WINDOW (2026-10-20): a LIVE sleeve row or a sized
+    # CERT_BOOK_LIVE window (the gateway sizes gold_asia by window NAME) must name exactly one
+    # canon survivor. FAILS only on the trading box; reports everywhere else.
+    ("check_cert_lineage.py", ("--require-state",)),
     # the live half of THE PRODUCTIVITY CENSUS: on a host with desk state, NO census is the leg
     # not running, and a census older than its window is the same fact arriving late. The
     # portable half above passes with UNMEASURED on a clean checkout, where there is nothing to
