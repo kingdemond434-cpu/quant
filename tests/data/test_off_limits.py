@@ -46,6 +46,8 @@ def test_lookalikes_and_other_hosts_are_not(url: str) -> None:
 
 @pytest.fixture
 def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    import libs.data.keyed_sources as keyed_sources
+
     calls: list[str] = []
 
     def boom(req: Any, *a: Any, **k: Any) -> Any:
@@ -53,7 +55,7 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         raise AssertionError("an off-limits ground reached the network")
 
     monkeypatch.setattr(urllib.request, "urlopen", boom)
-    import libs.data.keyed_sources as keyed_sources   # free_stack fetches through it since #1180
+    # free_stack fetches through keyed_urlopen since #1180, not bare urlopen
     monkeypatch.setattr(keyed_sources, "keyed_urlopen", boom)
     return calls
 
