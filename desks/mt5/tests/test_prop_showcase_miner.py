@@ -89,6 +89,33 @@ def _redirect(monkeypatch: pytest.MonkeyPatch, tmp: Path) -> None:
     monkeypatch.setattr(psm, "SCREENED", tmp / "intel" / "screened.json")
 
 
+_OK: dict = {
+    "terms": dict.fromkeys(("a", "b"), ("confirmed", "test fixture")),
+    "evidence": {k: {"url": f"https://{k}.example/terms", "quote": "automated reading permitted"}
+                 for k in ("a", "b")},
+}
+
+
+def test_terms_gate_fails_closed_and_no_host_is_contacted(tmp_path: Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    # the shipped table confirms nobody: every firm is listed and none may be fetched
+    assert set(psf.TERMS) == set(psf.FIRMS)
+    assert all(v[0] in psf.TERMS_VALUES for v in psf.TERMS.values())
+    assert not any(psf.terms_ok(k) for k in psf.FIRMS)
+    f = _FakeFetcher({})
+    rep = psm.harvest(f)
+    assert f.hits == [] and rep["new_claims"] == 0
+    assert rep["harvest_status"].startswith("BLOCKED_ON_TERMS")
+    assert set(rep["terms_blocked"]) == set(psf.FIRMS)
+    # a `confirmed` verdict with no recorded quote, a refusal and an unlisted firm all stay shut
+    firms = {k: {"home": f"https://{k}.example", "paths": ("/blog/",)} for k in ("a", "b", "c")}
+    rep = psm.harvest(f, firms, terms={"a": ("confirmed", ""), "b": ("refused", "s.4")},
+                      evidence={"a": {"url": "https://a.example/terms", "quote": ""}})
+    assert f.hits == [] and rep["terms_blocked"] == {"a": "to_confirm", "b": "refused",
+                                                     "c": "to_confirm"}
+
+
 def test_harvest_respects_robots_and_never_crosses_walls(tmp_path: Path,
                                                          monkeypatch: pytest.MonkeyPatch) -> None:
     _redirect(monkeypatch, tmp_path)
@@ -109,7 +136,7 @@ def test_harvest_respects_robots_and_never_crosses_walls(tmp_path: Path,
         "https://b.example/robots.txt": (403, b""),
     })
     rep = psm.harvest(f, {"a": {"home": "https://a.example", "paths": ("/blog/",)},
-                          "b": {"home": "https://b.example", "paths": ("/blog/",)}})
+                          "b": {"home": "https://b.example", "paths": ("/blog/",)}}, **_OK)
     assert banned not in f.hits
     assert not any(u.startswith("https://b.example/") and not u.endswith("robots.txt")
                    for u in f.hits)
@@ -122,7 +149,7 @@ def test_harvest_respects_robots_and_never_crosses_walls(tmp_path: Path,
     assert "risk-to-reward" not in (tmp_path / "claims.jsonl").read_text()
     # a second pass does not re-read seen stories
     f.hits.clear()
-    psm.harvest(f, {"a": {"home": "https://a.example", "paths": ("/blog/",)}})
+    psm.harvest(f, {"a": {"home": "https://a.example", "paths": ("/blog/",)}}, **_OK)
     assert story not in f.hits
 
 
@@ -223,11 +250,11 @@ def test_transient_failure_is_retried_next_pass(tmp_path: Path,
              story: (503, b"")}
     f = _FakeFetcher(pages)
     firms = {"a": {"home": "https://a.example", "paths": ("/blog/",)}}
-    rep = psm.harvest(f, firms)
+    rep = psm.harvest(f, firms, **_OK)
     assert rep["harvest_status"].startswith("UNMEASURED")
     pages[story] = (200, f"<html>{STORY}</html>".encode())
     f2 = _FakeFetcher(pages)
-    rep2 = psm.harvest(f2, firms)
+    rep2 = psm.harvest(f2, firms, **_OK)
     assert story in f2.hits and rep2["new_claims"] == 1 and rep2["harvest_status"] == "MEASURED"
 
 

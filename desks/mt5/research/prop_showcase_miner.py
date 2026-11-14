@@ -28,6 +28,9 @@ the cells go through the SAME door the genome uses: proposer_common.screen -> de
 with every look charged (alt_proxies._donate, null passes into null_pass_trials.jsonl).
 
 PIPELINE, each stage counted so conversion is visible (PROP_SHOWCASE.json `funnel`):
+  terms     FAIL CLOSED: a firm is contacted only with a `confirmed` verdict and a recorded
+            permitting quote in prop_showcase_fetch.TERMS / TERMS_EVIDENCE. None is confirmed
+            yet, so the harvest reports BLOCKED_ON_TERMS and fetches nothing.
   harvest   firm sitemaps (robots.txt Sitemap lines, else /sitemap.xml) -> story-slug URLs ->
             polite fetch (robots consulted, unreadable robots = NOT fetched, 3 s spacing, a cap
             per firm per pass, no login, no cookies, no paywall/CAPTCHA/rate-limit crossing) ->
@@ -76,6 +79,7 @@ import prop_showcase_fetch as _fetch  # noqa: E402
 from prop_showcase_fetch import (  # noqa: E402, F401
     FIRMS,
     SOURCE,
+    TERMS,
     _Fetcher,
     _story_urls,
     _write_atomic,
@@ -292,7 +296,10 @@ def run(budget_s: float = 1800.0, write: bool = True, fetch: bool = True) -> dic
                       "donated": (prop.get("charge") or {}).get("donated", 0)},
            "by_firm_claims": {f: sum(1 for c in mech if c["firm"] == f) for f in FIRMS},
            "proposer": prop, "yield": _own_yield(), "selection_prior": SELECTION_PRIORS,
-           "rules": {"fetch": "public pages only; robots consulted, unreadable = not fetched; "
+           "terms": {k: v[0] for k, v in TERMS.items()},
+           "rules": {"terms": "a firm is fetched only on a confirmed, quoted terms verdict "
+                              "(prop_showcase_fetch.TERMS / TERMS_EVIDENCE); unlisted = shut",
+                     "fetch": "public pages only; robots consulted, unreadable = not fetched; "
                               "walls (401/402/403/429) counted, never crossed; raw text stays "
                               "on the box",
                      "trials": "every screened cell is a look, deflated in-sweep and charged "

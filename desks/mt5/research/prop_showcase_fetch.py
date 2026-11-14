@@ -47,6 +47,25 @@ FIRMS: dict[str, dict[str, Any]] = {
     "apex": {"home": "https://apextraderfunding.com", "paths": ("/blog",)},
     "fintokei": {"home": "https://www.fintokei.com", "paths": ("/blog", "/jp/blog")},
 }
+#: THE TERMS GATE, FAIL CLOSED (same vocabulary as book_forensics.TERMS / alt_proxies.TERMS).
+#: A firm's site is fetched ONLY when its verdict is `confirmed` AND TERMS_EVIDENCE holds the
+#: terms URL and a verbatim permitting quote a human recorded. Robots.txt is a second gate, not
+#: a substitute. An unlisted firm is `to_confirm`. No verdict here is `confirmed` yet: nobody
+#: has read these terms, so nothing is fetched and the report says BLOCKED_ON_TERMS.
+_UNREAD = "site terms of use not read; no automated-access ruling recorded (2026-11-14)"
+TERMS: dict[str, tuple[str, str]] = dict.fromkeys(FIRMS, ("to_confirm", _UNREAD))
+TERMS_EVIDENCE: dict[str, dict[str, str]] = {}
+TERMS_VALUES = ("confirmed", "to_confirm", "refused")
+
+
+def terms_ok(firm: str, terms: dict[str, tuple[str, str]] | None = None,
+             evidence: dict[str, dict[str, str]] | None = None) -> bool:
+    """True only for a `confirmed` verdict backed by a recorded terms URL and quote."""
+    verdict = (TERMS if terms is None else terms).get(firm, ("to_confirm", ""))[0]
+    ev = (TERMS_EVIDENCE if evidence is None else evidence).get(firm, {})
+    return verdict == "confirmed" and bool(ev.get("url")) and bool(ev.get("quote"))
+
+
 STORY_SLUG = re.compile(
     r"(trader|scalp|secur|earn|reward|payout|interview|stor(y|ies)|spotlight|strateg|funded|"
     r"success|journey|profit|withdraw|how-[a-z]+-[a-z]+-)", re.I)
@@ -225,14 +244,22 @@ def _load_seen() -> dict[str, str]:
 
 
 def harvest(fetcher: _Fetcher | None = None, firms: dict[str, dict[str, Any]] | None = None,
-            budget_s: float = 1500.0) -> dict[str, Any]:
-    """New stories -> claim rows appended to CLAIMS. Raw text vaulted on the box only."""
+            budget_s: float = 1500.0, terms: dict[str, tuple[str, str]] | None = None,
+            evidence: dict[str, dict[str, str]] | None = None) -> dict[str, Any]:
+    """New stories -> claim rows appended to CLAIMS. Raw text vaulted on the box only.
+    A firm without a confirmed terms verdict is not contacted at all (not even robots.txt)."""
     f = fetcher or _Fetcher()
     started = time.monotonic()
     seen = _load_seen()
     rep: dict[str, Any] = {"by_firm": {}}
     new_claims: list[dict[str, Any]] = []
+    blocked: dict[str, str] = {}
     for firm, cfg in (firms or FIRMS).items():
+        if not terms_ok(firm, terms, evidence):
+            verdict, why = (TERMS if terms is None else terms).get(firm, ("to_confirm", _UNREAD))
+            blocked[firm] = verdict if verdict != "confirmed" else "to_confirm"
+            rep["by_firm"][firm] = {"skipped": "terms", "terms": blocked[firm], "why": why}
+            continue
         if time.monotonic() - started > budget_s:
             rep["by_firm"][firm] = {"skipped": "budget"}
             continue
@@ -276,6 +303,10 @@ def harvest(fetcher: _Fetcher | None = None, firms: dict[str, dict[str, Any]] | 
     rep["harvest_status"] = ("MEASURED" if read or (f.log.get("fetched") and not pending) else
                              "UNMEASURED: nothing was fetched this pass (walls, robots or "
                              "network); zero new stories is not a finding")
+    rep["terms_blocked"] = blocked
+    if blocked and len(blocked) == len(rep["by_firm"]):
+        rep["harvest_status"] = ("BLOCKED_ON_TERMS: no firm has a confirmed terms verdict in "
+                                 "prop_showcase_fetch.TERMS / TERMS_EVIDENCE; nothing fetched")
     rep["new_claims"] = len(new_claims)
     return rep
 
