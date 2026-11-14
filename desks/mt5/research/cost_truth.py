@@ -826,8 +826,20 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         import MetaTrader5 as mt5
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
+    # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch, and only on
+    # Fusion's account. The box runs FTMO too; its quotes are not this desk's venue number.
+    if str(DESK) not in sys.path:
+        sys.path.insert(0, str(DESK))
+    from mt5desk.config import terminal_path
+
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        mt5.shutdown()
+        return {"status": UNMEASURED, "why": f"wrong venue, refused: {why}"}
     started = time.monotonic()
     out: dict[str, Any] = {"status": MEASURED, "symbols": {}, "bars": {}, "deals": []}
     try:

@@ -294,6 +294,36 @@
     "op": "==",
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
+    }
+   },
+  "decay_verdicts": {
+   "hypothesis": "An order-sensitive decay verdict (Edgington mean-p, early blocks against late blocks under a split frozen in code) names sleeves whose realised edge is fading while the order-invariant statistics (n, exp_r, forward t, DSR) still read healthy, and the share of sleeves it can judge rises as forward clocks accrue past 20 trades.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:DECAY_VERDICTS.json"
+   },
+   "falsifier": {
+    "metric": "n_sleeves",
+    "op": "==",
+    "threshold": 0,
+    "after": "any pass: a decay report judging no sleeve has lost the roster and every lane state file"
+   }
+  },
+  "cluster_judge": {
+   "hypothesis": "Judging the forward clocks at the Tier S bar as ONE hypothesis, with their pairwise correlation and eigenvalue N_eff measured from each clock's own per-key ledger, shows how many independent bets they really are before any promotion reads them, and the share of cluster clocks it can measure rises as per-key ledgers accrue.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:CLUSTER_JUDGE.json"
+   },
+   "falsifier": {
+    "metric": "n_measured_series",
+    "op": "==",
+    "threshold": 0,
+    "after": "14 days after per-key forward ledgers (claude/forward-ledger-per-key) land on the box: every cluster clock still UNMEASURED means the clocks' own series never reached the judge"
    }
   }
  },

@@ -390,3 +390,98 @@ def test_the_session_model_reads_cached_masks_rather_than_decoding_every_day(
     assert reads == 0, f"{reads} full-day decodes on a warm cache -- the mask is not being reused"
     assert np.array_equal(first.per_weekday, second.per_weekday)
     assert np.array_equal(first.weekday_obs, second.weekday_obs)
+
+
+# ------------------------------------------- paging on NEW failures only (idea 615) --
+def test_a_known_failure_pages_once_and_a_new_one_pages_again(
+        store: ts.TapeStore, tmp_path: Path) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days[:-2])
+    _write_days(store, "EURUSD", [days[-2]], minutes=range(0, 200))
+    out = tmp_path / "TICK_INTEGRITY.json"
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2, "first sight pages"
+    first = json.loads(out.read_text("utf-8"))
+    assert first["paging"]["new_failures"] == [f"EURUSD/{days[-2]}"]
+
+    rc = ti.main(["--root", str(store.root), "--out", str(out)])
+    doc = json.loads(out.read_text("utf-8"))
+    assert rc == 0, "the same FAIL day must not page every hour"
+    assert doc["verdict"] == ti.FAIL, "a known failure is not forgiven, only not re-paged"
+    assert doc["paging"]["known_failure_count"] == 1 and not doc["paging"]["pages"]
+    assert ti.main(["--root", str(store.root), "--out", str(out), "--page-on-any"]) == 2
+
+    _write_days(store, "EURUSD", [days[-1]], minutes=range(0, 200))
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2, "a new day pages"
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["paging"]["new_failures"] == [f"EURUSD/{days[-1]}"]
+
+
+def test_lost_memory_makes_the_checker_louder_never_quieter(
+        store: ts.TapeStore, tmp_path: Path) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days[:-1])
+    _write_days(store, "EURUSD", [days[-1]], minutes=range(0, 200))
+    out = tmp_path / "TICK_INTEGRITY.json"
+    out.write_text("{torn", "utf-8")
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2
+    assert "unreadable" in json.loads(out.read_text("utf-8"))["paging"]["memory"]
+
+
+def test_a_day_that_cleared_and_failed_again_pages_again() -> None:
+    fail = {"days": [{"symbol": "X", "day": "d1", "verdict": ti.FAIL}]}
+    clear = {"days": [{"symbol": "X", "day": "d1", "verdict": ti.OK}]}
+    known = ti._fail_keys(fail)
+    assert not ti.split_new_failures(dict(fail), known, "m")["paging"]["pages"]
+    known = ti._fail_keys(clear)
+    assert ti.split_new_failures(dict(fail), known, "m")["paging"]["pages"]
+
+
+# ----------------------------------------------- the sealed-day verdict cache --
+def test_an_unchanged_sealed_day_reuses_its_verdict_and_a_changed_one_is_rejudged(
+        store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days[:-1])
+    _write_days(store, "EURUSD", [days[-1]], minutes=range(0, 200))
+    first = ti.run(store, ["EURUSD"], days_back=0)
+    assert first["verdict_cache"]["hits"] == 0 and first["verdict_cache"]["judged"] == len(days)
+    second = ti.run(store, ["EURUSD"], days_back=0)
+    assert second["verdict_cache"]["hits"] == len(days) and second["verdict_cache"]["judged"] == 0
+    assert second["days"] == first["days"], "a reused verdict must be the verdict, field for field"
+    assert second["verdict"] == ti.FAIL
+
+    # The failing day gets its missing hours: its files change, so it is judged again.
+    store.write_segment("EURUSD", days[-1], ti_synth(days[-1]), 0.00001, 5)
+    third = ti.run(store, ["EURUSD"], days_back=0)
+    assert third["verdict_cache"]["judged"] == 1
+    assert third["verdict"] != ti.FAIL, "the healed day is no longer a failure"
+    assert ti.run(store, ["EURUSD"], days_back=0, use_cache=False)["days"] == third["days"]
+
+
+def ti_synth(day: str) -> np.ndarray:
+    return _synth(day, range(0, 1440))
+
+
+def test_a_torn_cache_costs_time_never_a_verdict(store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days)
+    (store.state_dir).mkdir(parents=True, exist_ok=True)
+    (store.state_dir / ti.CACHE_FILE).write_text("{torn", "utf-8")
+    rep = ti.run(store, ["EURUSD"], days_back=0)
+    assert rep["verdict"] == ti.OK and rep["verdict_cache"]["judged"] == len(days)
+
+
+def test_every_cached_day_is_reverified_within_the_period_and_not_all_at_once() -> None:
+    now = 10_000_000.0
+    keys = [f"EURUSD/2026-04-{i:02d}" for i in range(1, 29)]
+    assert not any(ti._reverify_due(k, now - 3600, now) for k in keys)
+    assert all(ti._reverify_due(k, now - ti.CACHE_REVERIFY_S, now) for k in keys)
+    due = [ti._reverify_due(k, now - ti.CACHE_REVERIFY_S * 0.85, now) for k in keys]
+    assert any(due) and not all(due), "re-verification must be staggered across days"
+
+
+def test_a_narrow_pass_keeps_what_it_did_not_visit_and_old_rows_expire() -> None:
+    old = {"A/2026-11-01": {"fp": "a"}, "B/2026-11-01": {"fp": "b"}, "A/2026-06-01": {"fp": "c"}}
+    out = ti._merge_cache(old, {"A/2026-11-01": {"fp": "new"}}, "2026-11-11")
+    assert out["A/2026-11-01"]["fp"] == "new"
+    assert out["B/2026-11-01"]["fp"] == "b", "a --symbols A pass must not evict B"
+    assert "A/2026-06-01" not in out

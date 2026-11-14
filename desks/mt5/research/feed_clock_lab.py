@@ -378,6 +378,10 @@ def ledger_signal(base: Path, sleeve: Mapping[str, Any]
     else:
         name = f"ledger_{symbol}_{sleeve.get('family')}_{sleeve.get('selector') or 'all'}.json"
     path = base / "reports" / "shadow" / name
+    from libs.research import forward_ledger as fl
+    if name in fl.load_shared(path.parent):
+        return [], [], (f"{name} is a shared legacy ledger (UNMEASURED_SHARED_LEDGER): several "
+                        f"clock keys wrote it, so it is not this sleeve's series")
     try:
         records = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):

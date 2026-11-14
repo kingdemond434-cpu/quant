@@ -486,6 +486,10 @@ def test_a_family_that_raises_is_retried_the_next_day_not_the_same_day():
     errored = {"error_day": "2026-11-10", "error": "KeyError"}
     assert not csb._due(errored, "2026-11-10")
     assert csb._due(errored, "2026-11-11")
+    # a cell measured long ago that raised today is not retried today either
+    stale = {"day": "2026-10-01", "error_day": "2026-11-10", "error": "KeyError"}
+    assert not csb._due(stale, "2026-11-10")
+    assert csb._due(stale, "2026-11-11")
 
     def plan_of(sym):
         return [("fam", None, {"symbol": sym})]
