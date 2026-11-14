@@ -3068,3 +3068,101 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------------------------------------- trusted-eval: an earlier green while one waits
+def _te_run(i: int, status: str, conclusion: str | None, *, ran_on: str = "b0", pr: int = 7,
+            head: str = "h" * 40) -> dict[str, Any]:
+    return {"id": i, "display_title": f"trusted-eval {pr} {head}", "status": status,
+            "conclusion": conclusion, "created_at": f"2026-11-14T0{i}:00:00Z",
+            "path": ".github/workflows/trusted-eval.yml", "head_branch": "live",
+            "event": "pull_request_target", "head_sha": ran_on}
+
+
+def _te_gh(monkeypatch, runs: list[dict[str, Any]],
+           compare: dict[str, Any] | Exception | None = None) -> list[str]:
+    calls: list[str] = []
+
+    def fake(*args: str, **kw: Any) -> Any:
+        calls.append(args[0])
+        if "/compare/" in args[0]:
+            if isinstance(compare, Exception):
+                raise compare
+            return compare
+        return {"workflow_runs": runs}
+
+    monkeypatch.setattr(ag, "_gh", fake)
+    return calls
+
+
+def test_an_earlier_green_stands_while_a_rerun_waits_when_the_judge_is_unchanged(
+        monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    calls = _te_gh(monkeypatch, runs, {"status": "ahead", "files": [
+        {"filename": "desks/mt5/research/promoter.py"}, {"filename": "docs/LAWS.md"}]})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert ok and "run 1" in why and "a newer run is queued" in why
+    assert any("/compare/b0...live" in c for c in calls)
+
+
+@pytest.mark.parametrize("changed", [
+    "tests/ops/test_audit_gate.py", "desks/mt5/tests/test_x.py", "ops/release/risk_suites.txt",
+    ".github/workflows/trusted-eval.yml", "pyproject.toml", "desks/mt5/conftest.py",
+    "libs/test_helpers.py", "x/site.pth",
+])
+def test_an_earlier_green_does_not_stand_when_a_judge_input_changed(monkeypatch,
+                                                                     changed: str) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    _te_gh(monkeypatch, runs, {"status": "ahead", "files": [{"filename": changed}]})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert not ok and "still running" in why and changed in why
+
+
+@pytest.mark.parametrize("compare", [
+    RuntimeError("boom"), {"status": "diverged", "files": []}, {"status": "behind", "files": []},
+    {"status": "ahead", "files": [{"filename": f"a{i}.py"} for i in range(300)]}, None,
+])
+def test_an_unreadable_or_odd_base_comparison_is_a_no(monkeypatch, compare: Any) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    _te_gh(monkeypatch, runs, compare)
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is False
+
+
+def test_the_newest_completed_failure_wins_over_an_older_green(monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "completed", "failure"),
+            _te_run(3, "queued", None)]
+    calls = _te_gh(monkeypatch, runs, {"status": "identical", "files": []})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert not ok and why.endswith("failure") and not any("/compare/" in c for c in calls)
+
+
+def test_nothing_completed_is_still_running_and_a_newest_green_needs_no_comparison(
+        monkeypatch) -> None:
+    _te_gh(monkeypatch, [_te_run(1, "queued", None)])
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live") == (
+        False, "trusted-eval still running")
+    calls = _te_gh(monkeypatch, [_te_run(1, "completed", "success")])
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is True
+    assert not any("/compare/" in c for c in calls)
+
+
+def test_a_green_for_another_head_or_pr_never_counts(monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success", head="g" * 40),
+            _te_run(2, "completed", "success", pr=8), _te_run(3, "queued", None)]
+    _te_gh(monkeypatch, runs, {"status": "identical", "files": []})
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live") == (
+        False, "trusted-eval still running")
+
+
+def test_the_gate_reads_more_than_one_page_of_trusted_eval_runs(monkeypatch) -> None:
+    pages: list[str] = []
+    filler = [dict(_te_run(9, "completed", "success", pr=99)) for _ in range(100)]
+
+    def fake(*args: str, **kw: Any) -> Any:
+        pages.append(args[0])
+        return {"workflow_runs": filler if args[0].endswith("&page=1")
+                else [_te_run(1, "completed", "success")]}
+
+    monkeypatch.setattr(ag, "_gh", fake)
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is True
+    assert len(pages) == 2
