@@ -1,52 +1,56 @@
 {
- "at": "2026-11-14T10:41:37+00:00",
+ "at": "2026-11-14T16:40:02+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1657178,
+  "rows_total": 1669288,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-14T04:59:50+00:00",
+  "last_verdict_at": "2026-11-14T12:40:14+00:00",
   "counts": {
    "1h": 0,
-   "24h": 18798,
-   "7d": 170895
+   "24h": 30907,
+   "7d": 163888,
+   "build_step_lo": 12110,
+   "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 11156,
-   "7d": 84493
+   "24h": 17272,
+   "7d": 84867,
+   "build_step_lo": 6116,
+   "build_step_hi": 0
   },
-  "first_terminal_cells": 754391,
+  "first_terminal_cells": 760507,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 464.833,
-   "7d": 502.935
+   "24h": 719.667,
+   "7d": 505.161
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 783.25,
-   "7d": 1017.232
+   "24h": 1287.792,
+   "7d": 975.524
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 16021,
-   "7d": 262608
+   "24h": 18785,
+   "7d": 254619
   },
   "per_hour": {
-   "24h": 667.542,
-   "7d": 1563.143
+   "24h": 782.708,
+   "7d": 1515.589
   }
  },
- "verdicts_per_hour": 783.25,
- "verdicts_per_day": 18798.0,
+ "verdicts_per_hour": 1287.792,
+ "verdicts_per_day": 30907.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 11156.0,
+ "first_judged_per_day": 17272.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 16021.0,
+ "created_per_day": 18785.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-14T10:40:42+00:00",
-  "pid": 28408
+  "started_at": "2026-11-14T16:38:21+00:00",
+  "pid": 9280
  }
 }
