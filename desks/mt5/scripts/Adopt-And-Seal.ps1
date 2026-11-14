@@ -556,7 +556,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # -IfMissing, so a registered task is NEVER touched (re-registering live tasks has failed with
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
 # a failed registration is logged and never stops the seal.
+# FTMO trades every certified sleeve (principal 2026-11-03 / 11-05; Governance ruling 2026-11-05):
+# the book's solve on its own clock and the sleeve executor, which stays STANDBY until
+# data\FTMO_EXECUTOR_ARMED exists. Registering either arms nothing.
 foreach ($ensure in @(
+        @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
+        @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
@@ -593,6 +598,15 @@ function Ensure-Signed {
     } catch {
         Log ("ensure-signed: failed to run: {0}" -f $_.Exception.Message)
     }
+}
+
+# ------------------------------------------------ 1b. the box's stuck steps, healed as SYSTEM
+# The ROOT pin at the wrong path, a jammed gate clone and stale bin copies used to each wait for
+# a person in an elevated window. ops\box\box_selfheal.ps1 says what each step will and will not
+# do; every step acts only on its exact stuck shape and never stops the seal.
+$selfheal = Join-Path $RepoRoot "ops\box\box_selfheal.ps1"
+if (Test-Path $selfheal) {
+    try { . $selfheal; Invoke-BoxSelfHeal } catch { Log "selfheal: could not load: $($_.Exception.Message)" }
 }
 
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed

@@ -86,6 +86,11 @@ def seed_queries() -> list[str]:
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
 
 
+def configured_handles() -> list[str]:
+    """The config's handles without the `@` (kept for callers of the LIVE-side name)."""
+    return [q.lstrip("@") for q in seed_queries() if q.startswith("@")]
+
+
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
     if spent[0] + cost > UNIT_BUDGET:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
@@ -225,7 +230,7 @@ def main() -> int:
         # search only when the search quota works at all this run.
         search_dead = False
         unresolved = [q for q in seed_queries() if q not in reg["channels"]
-                      and q not in reg["discovered"]][:6]
+                      and q not in reg["discovered"]][:12]
         for q in unresolved:
             # An exact "@handle" seed is used as given; a name seed has its handle guessed.
             handle = q if q.startswith("@") else "@" + re.sub(r"[^A-Za-z0-9]", "", q)
@@ -393,12 +398,20 @@ def main() -> int:
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run. A miss is queued
     # and retried on later runs (the old collector tried each video once, only the run it was
     # new, and dropped it), so a route that comes back serves the whole backlog.
+    # The off-box Actions job sets YOUTUBE_CORPUS_NO_TRANSCRIPTS=1: the only caption route
+    # (fetch_video_transcript) reaches robots-Disallowed paths via third-party mirrors, which
+    # the rules ban, so that job keeps titles/descriptions/links from the official API only.
+    no_t = os.environ.get("YOUTUBE_CORPUS_NO_TRANSCRIPTS") == "1"
     got_t, attempted = 0, 0
     unresolved: dict[str, int] = {}
+    if no_t:
+        unresolved["ROBOTS_DISALLOWED_SKIPPED"] = len(rows)
     queue = reg.setdefault("transcript_queue", [])
     queued_rows = [{"video_id": v, "queued": True} for v in queue
                    if v not in {r.get("video_id") for r in rows}]
     for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True) + queued_rows:
+        if no_t:
+            break
         if got_t >= TRANSCRIPTS_PER_RUN:
             break
         vid = row.get("video_id")

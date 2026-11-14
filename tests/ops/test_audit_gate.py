@@ -582,6 +582,26 @@ def test_one_approval_covers_every_clear_given_before_it_and_the_newest_counts(h
     assert f"sha={A}" in merge
 
 
+@pytest.mark.parametrize("body", ["Approve merges", "approve merges", " APPROVE  MERGES\n"])
+def test_the_approval_line_is_read_in_any_case_and_spacing(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+
+
+@pytest.mark.parametrize("body", ["Approve merges please", "APPROVE", "approve-merges"])
+def test_anything_but_the_line_is_still_no_approval(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
 def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     h = hub(
         comments=[
@@ -2688,6 +2708,41 @@ def test_a_large_diff_passes_only_when_every_part_and_the_final_vote_pass() -> N
     assert not any("This is part" in u for u in asked)  # a larger rung reads it whole
 
 
+def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() -> None:
+    """2026-11-05: #659's 58k diff fit num_ctx whole and timed out on all five asks (2 h 42 min).
+    Parts are capped at PART_CHARS; a hunk over the cap is still read whole, as before."""
+    mid = _diff(*((f"docs/m{i}.py", ["+" + "m" * 14_000]) for i in range(4)))  # ~56k chars
+    assert len(mid) < 88_000  # fits 32k tokens whole: before the cap this was ONE call
+    asked: list[str] = []
+    v, log = _review(mid, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and "final vote" in log[0]
+    parts = [u for u in asked if "This is part" in u]
+    assert len(asked) >= 4  # parts and the final, from the first family
+    assert len(parts) >= 3 and all(len(u) <= ir.PART_CHARS for u in parts)
+    asked.clear()
+    v, _ = _review(mid, [("qwen", "q1", _counting(_PASS, asked=asked)),
+                        ("llama", "l1", _counting(_PASS))], part_chars=None)
+    assert v == "PASS" and len(asked) == 1  # uncapped: read whole, the old behaviour
+    one = _diff(("docs/big.py", ["+" + "b" * 40_000]), ("docs/s.py", ["+s"]))
+    asked.clear()
+    v, _ = _review(one, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and any("b" * 40_000 in u for u in asked)  # one big hunk: whole, not FAIL
+    # Auditor SF on #735: money files whose own part (manifest + frame) is just over num_ctx
+    # while the whole diff fits it are read whole, never a new FAIL
+    room = (32_768 - ir.ANSWER_TOKENS) * ir.CHARS_PER_TOKEN - len(ir.VAGUE_NOTE) - 2 - len(
+        (ir.HERE / "review_rubric.md").read_text(encoding="utf-8"))
+    base = _diff(("desks/mt5/prop/a.py", ["+RISK = 1"]), ("docs/s.py", ["+s"]))
+    pad = room - len(ir.prompt(base, ["f.py"], "0" * 16)) - 40
+    edge = _diff(("desks/mt5/prop/a.py", ["+RISK = 1" + " " * pad]), ("docs/s.py", ["+s"]))
+    assert len(ir.prompt(edge, ["f.py"], "0" * 16)) <= room
+    asked.clear()
+    v, log = _review(edge, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                            ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and not any("never read apart" in x for x in log)
+
+
 def test_money_files_are_read_together_in_one_part_or_the_review_fails() -> None:
     """#547 audit MF1 (a): max_lot raised in one money file, its min() dropped in another."""
     a = ("desks/mt5/prop/a.py", ["+MAX_LOT = 50" + " " * 30_000])
@@ -2900,7 +2955,10 @@ def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
     return lambda: (at, "" if at else "no notice yet")
 
 
-def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window() -> None:
+def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, whatever LIVE sets
     got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
     assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over
@@ -2915,7 +2973,10 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
-def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
+def test_a_backdated_row_never_starts_the_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)
     # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
     sent: list[str] = []
     seen = tmp_path / "r.jsonl.window.json"

@@ -1,29 +1,51 @@
 {
-  "updated_at": "2026-11-04T14:31:05+00:00",
-  "configured_sleeves": 700,
-  "represented_sleeves": 700,
-  "certified_sleeves_total": 1810,
-  "forward_clocks_total": 700,
+  "updated_at": "2026-11-13T23:36:08+00:00",
+  "configured_sleeves": 685,
+  "represented_sleeves": 685,
+  "certified_sleeves_total": 8600,
+  "forward_clocks_total": 685,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 207,
-  "n_mechanisms": 11,
-  "retired_shadow_sleeves": 289,
+  "n_distinct_param_hashes": 212,
+  "n_mechanisms": 12,
+  "retired_shadow_sleeves": 332,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 607,
+  "sleeves_with_forward_trades": 635,
   "zero_trade_clocks": {
-    "count": 93,
+    "count": 50,
     "by_status": {
-      "ACTIVE": 83,
-      "BLOCKED_NO_BARS": 1,
+      "ACTIVE": 41,
       "IDENTITY_BROKEN": 9
     },
-    "age_measured": 93,
-    "median_age_days": 6.384,
-    "mature_14d_without_trade": 37,
-    "fresh_attempts": 84,
-    "naturally_inactive": 83,
-    "suppressed_or_unproven": 10,
+    "age_measured": 50,
+    "median_age_days": 37.482,
+    "mature_14d_without_trade": 44,
+    "fresh_attempts": 41,
+    "naturally_inactive": 17,
+    "suppressed_or_unproven": 33,
     "suppressed_examples": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -37,12 +59,121 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 10,
+  "evidence_blocked_sleeves": 33,
   "missing_sleeves": [
-    "821 certified sleeve(s)"
+    "7583 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 9634.405,
+  "seconds": 2463.653,
+  "stage_seconds": {
+    "scalp_bar_refresh": 0.0,
+    "external_state_reconcile": 0.7,
+    "legacy_shadow": 2397.1,
+    "scalp_shadow": 8.1,
+    "qquant_shadow": 1.2,
+    "promoter": 53.6
+  },
+  "engine_profile": {
+    "seconds": 2395.2,
+    "rows_timed": 1016,
+    "phase_seconds": {
+      "backtest": 239.3,
+      "fetch": 150.4,
+      "resolve": 63.7,
+      "signals": 997.1
+    },
+    "phase_calls": {
+      "backtest": 944,
+      "fetch": 160,
+      "resolve": 1016,
+      "signals": 938
+    },
+    "reused": {
+      "backtest": 72,
+      "signals": 78
+    },
+    "family_seconds": {
+      "cross_asset_residual": 720.8,
+      "macro_conditional": 683.1,
+      "carry": 461.1,
+      "overnight_gap_decay": 192.8,
+      "formula": 125.8,
+      "pca_residual": 92.4,
+      "clock_transition": 53.3,
+      "spread_state": 29.7,
+      "session_range_breakout": 26.8,
+      "range_reversion": 3.4,
+      "overnight_drift": 0.6
+    },
+    "chart_seconds": {
+      "M5": 1195.5,
+      "M15": 536.8,
+      "H1": 432.4,
+      "M30": 225.0
+    },
+    "slowest_rows": [
+      {
+        "key": "AUDCHF.carry.asia@M15#input_symbol=AUDCHF_session=asia",
+        "seconds": 26.27
+      },
+      {
+        "key": "EURMXN.carry.asia@M5#input_symbol=EURMXN_require_quiet=False",
+        "seconds": 20.61
+      },
+      {
+        "key": "USDILS.macro_conditional.asia@M5",
+        "seconds": 18.28
+      },
+      {
+        "key": "USDTHB.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+        "seconds": 18.23
+      },
+      {
+        "key": "EURILS.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+        "seconds": 18.2
+      },
+      {
+        "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48",
+        "seconds": 17.69
+      },
+      {
+        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48",
+        "seconds": 17.18
+      },
+      {
+        "key": "EURILS.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192",
+        "seconds": 16.96
+      },
+      {
+        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
+        "seconds": 16.86
+      },
+      {
+        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
+        "seconds": 16.36
+      },
+      {
+        "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
+        "seconds": 15.32
+      },
+      {
+        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+        "seconds": 14.73
+      },
+      {
+        "key": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny",
+        "seconds": 14.18
+      },
+      {
+        "key": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False",
+        "seconds": 13.93
+      },
+      {
+        "key": "EURILS.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
+        "seconds": 13.81
+      }
+    ]
+  },
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],

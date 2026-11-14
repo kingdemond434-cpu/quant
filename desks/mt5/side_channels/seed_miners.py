@@ -277,7 +277,11 @@ def _cdx_page(st: dict, key: str, url_pattern: str) -> list:
     The offset used to only grow, so once the archive was walked every pass returned nothing and
     the seat went quiet for good. Now an empty page ends a LAP: the offset wraps to 0 and the next
     lap asks only for captures made since the previous lap began (`from=`), so the walk keeps
-    polling the archive for what is new instead of finishing.
+    polling the archive for what is new instead of finishing. One page per sweep, through the
+    same `fetch` (and so the same rate-limited, robots-gated path) as before.
+
+    Progress is written with `_merge_state` (only this walk's keys), so it cannot clobber the
+    other cursors in the shared state file.
     """
     offset = int(st.get(f"{key}_offset", 0))
     since = str(st.get(f"{key}_from") or "")
@@ -286,15 +290,19 @@ def _cdx_page(st: dict, key: str, url_pattern: str) -> list:
     txt = fetch(q, timeout=40)
     rows_ = json.loads(txt) if txt.strip() else []
     got = max(len(rows_) - 1, 0)
+    today = datetime.now(UTC).strftime("%Y%m%d")
+    upd: dict = {}
     if got:
-        st[f"{key}_offset"] = offset + got
-        st.setdefault(f"{key}_lap_started", datetime.now(UTC).strftime("%Y%m%d"))
+        upd[f"{key}_offset"] = offset + got
+        if not st.get(f"{key}_lap_started"):
+            upd[f"{key}_lap_started"] = today
     else:                                   # lap complete: poll for new captures from here on
-        st[f"{key}_offset"] = 0
-        st[f"{key}_from"] = str(st.pop(f"{key}_lap_started", "") or
-                                datetime.now(UTC).strftime("%Y%m%d"))
-        st[f"{key}_laps"] = int(st.get(f"{key}_laps", 0)) + 1
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+        upd[f"{key}_offset"] = 0
+        upd[f"{key}_from"] = str(st.get(f"{key}_lap_started") or today)
+        upd[f"{key}_lap_started"] = ""
+        upd[f"{key}_laps"] = int(st.get(f"{key}_laps", 0)) + 1
+    st.update(upd)
+    _merge_state(upd)
     return rows_
 
 
@@ -610,7 +618,7 @@ def mine_github_topics() -> list[dict]:
                            (it.get("description") or "")[:400], topic=topic,
                            stars=s, star_delta=delta, pushed=it.get("pushed_at")))
     st["gh_topic_cursor"] = (topic_cursor + len(selected)) % len(topics)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out
 
 
@@ -635,7 +643,7 @@ def mine_propfirm_boards() -> list[dict]:
     cur = int(st.get("propfirm_cursor", 0)) % len(locs)
     take = locs[cur:cur + 30]
     st["propfirm_cursor"] = (cur + 30) % len(locs)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return [row("propfirm_boards", "trading_update",
                 u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
@@ -658,6 +666,71 @@ def mine_global_frontier() -> list[dict]:
     return _frontier().get("discoveries", [])
 
 
+def _depth_module():
+    try:
+        from side_channels import research_depth_miners as rdm
+    except ModuleNotFoundError:
+        import research_depth_miners as rdm  # type: ignore[no-redef]
+    return rdm
+
+
+def mine_research_feeds() -> list[dict]:
+    """Working papers (NBER, Fed, BIS, ECB, CEPR), practitioner research and all nine arXiv
+    q-fin categories, head AND backfill. Feeds live in research_feeds.json, not here."""
+    rdm = _depth_module()
+    st = _state()
+    out = rdm.mine_research_feeds(st, rdm.feed_text, row)
+    _merge_state({k: st[k] for k in ("rf_seen", "rf_status", "rf_arxiv_back") if k in st})
+    return out
+
+
+def mine_github_depth() -> list[dict]:
+    """README, code changes, issues, starred forks and discussions of the trading repos
+    github_topics found, inside GitHub's published rate limit."""
+    rdm = _depth_module()
+    st = _state()
+    out = rdm.mine_github_depth(st, rdm.requests_get, row, rdm.topic_repos(INTEL),
+                                rdm.github_token())
+    _merge_state({k: st[k] for k in ("gd_repos", "gd_fork_pool", "gd_status") if k in st})
+    return out
+
+
+def _merge_state(updates: dict) -> None:
+    """Write `updates` onto the CURRENT state file, never onto a copy read earlier.
+
+    THE CLOBBER THIS REPLACES (found 2026-11-10). run_and_save read the state once before the
+    sweep and wrote that copy back after it. Every miner that keeps its own cursor in the same
+    file (github_topics' gh_topic_cursor/gh_topic_pages/gh_stars, propfirm_cursor,
+    forextsd_offset, darwinex_cdx_offset) wrote its progress mid-sweep, and the end-of-sweep
+    write put the pre-sweep copy back over it. A rotating cursor that is reset every pass is a
+    cursor that never rotates: the committed github_topics archives show the same three topics
+    (mql5, metatrader5, forex-trading) on every pass, and the shipped state file carries no
+    gh_topic_cursor at all.
+    """
+    cur = _state()
+    cur.update(updates)
+    _write_state(cur)
+
+
+def _write_state(st: dict) -> None:
+    """Atomic replace: a reader sees the old file or the new one, never a torn half.
+
+    A torn write used to read back as `{}` in `_state()`, and the next merge would then write
+    every cursor away. Same directory, so `os.replace` stays one rename on both boxes.
+    """
+    import os
+    import tempfile
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=STATE.parent, prefix=".seed_state.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(st, fh, indent=0)
+        os.replace(tmp, STATE)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
 MINERS = {
     "global_frontier": mine_global_frontier,
     "regional_survivors": mine_regional_survivors,
@@ -670,6 +743,7 @@ MINERS = {
     "quant_se": mine_quant_se, "arxiv_qfin": mine_arxiv_qfin,
     "bis_speeches": mine_bis_speeches, "broker_swaps": mine_broker_swaps,
     "github_topics": mine_github_topics, "propfirm_boards": mine_propfirm_boards,
+    "research_feeds": mine_research_feeds, "github_depth": mine_github_depth,
 }
 
 
@@ -695,92 +769,150 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
-def run_and_save() -> dict:
+#: Stop STARTING miners once this share of the slice is spent, so the pass can still write its
+#: state and merge its discoveries before the caller's hard timeout lands.
+LAUNCH_SHARE = 0.75
+
+
+def sweep_order(cursor: int) -> list[str]:
+    """Every miner exactly once, starting at the rotation cursor."""
+    names = list(MINERS)
+    k = cursor % len(names) if names else 0
+    return names[k:] + names[:k]
+
+
+def run_and_save(budget_s: float | None = None) -> dict:
+    """One sweep. With `budget_s`, a ROTATING sweep inside that wall budget.
+
+    WHY ROTATION (measured 2026-11-10). On the box this module is run by the hourly cycle's
+    scout_swarm as one beat among ~20 sharing a 600 s pass, under a hard subprocess timeout of
+    that beat's slice. The sweep always started at the first MINERS entry, and the first three
+    (global_frontier, regional_survivors, mql5_survivors) are its heaviest, so a slice that
+    timed out inside them starved every later miner -- including the newest, registered last.
+    Now the cursor is ADVANCED BEFORE each miner runs and persisted at once: a miner that is
+    slow or killed is passed over next time rather than blocking the rest forever, and every
+    miner is reached within a bounded number of passes. Per-miner wall seconds are recorded,
+    so which source eats the slice is a measurement, not a guess.
+    """
+    t0 = time.monotonic()
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
     st = _state()
     probes = st.setdefault("wall_probes", {})
-    for name, fn in MINERS.items():
-        wall = SOURCE_WALLS.get(name)
-        if wall:
-            # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
-            # `walled` row carrying its verdict and evidence -- so the corpus records WHY the
-            # channel is dark -- and it is fetched only when its rediscovery probe comes due.
-            if _wall_due(name, st):
-                # A PROBE THE BOX'S RAILS REFUSED NEVER HAPPENED (2026-11-03). The box never
-                # contacts a VPS-walled host, so its "probe" learned nothing: it is recorded as
-                # UNMEASURED and the probe clock is NOT advanced -- the wall's rediscovery stays
-                # owed to the clock that may ask, instead of reading as asked-and-still-walled.
-                try:
-                    lifted, note = _probe_wall(name, wall)
-                    measured = True
-                except Exception as exc:
-                    if not _rail_refused(exc):
-                        raise
-                    lifted, measured = False, False
-                    note = f"probe UNMEASURED, refused by the box rails: {str(exc)[:120]}"
-                if measured:
-                    probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
-                if lifted:
-                    try:
-                        rows_ = fn()
-                    except Exception as exc:
-                        rows_ = [row(name, "fetch_error", str(exc)[:200],
-                                     needs_selector_work=True)]
-                        summary["failed"] += 1
-                    else:
-                        summary["ok"] += 1
-                        _write_rows(name, rows_, ts, results, summary, counted=True)
-                        print(f"  {name}: WALL LIFTED ({note}) -- {len(rows_)} rows")
-                        continue
-                else:
-                    rows_ = [row(name, "walled", f"{wall['verdict']}: {note}",
-                                 wall.get("url", f"https://{wall['host']}/"),
-                                 wall["evidence"], verdict=wall["verdict"],
-                                 walled_since=wall["since"], needs_selector_work=False,
-                                 probe="MEASURED" if measured else "UNMEASURED")]
-            else:
-                rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
-                             wall.get("url", f"https://{wall['host']}/"), wall["evidence"],
-                             verdict=wall["verdict"], walled_since=wall["since"],
-                             needs_selector_work=False)]
-            summary["walled"] += 1
-            _write_rows(name, rows_, ts, results, summary, counted=True)
-            print(f"  {name}: WALLED ({wall['verdict']})")
-            continue
+    seconds: dict = dict(st.get("miner_seconds", {}))
+    cursor = int(st.get("sweep_cursor", 0))
+    order = sweep_order(cursor)
+    ran: list[str] = []
+    deferred: list[str] = []
+    for i, name in enumerate(order):
+        fn = MINERS[name]
+        if budget_s is not None and time.monotonic() - t0 > LAUNCH_SHARE * budget_s:
+            deferred = order[i:]
+            break
+        cursor = (list(MINERS).index(name) + 1) % len(MINERS)
+        _merge_state({"sweep_cursor": cursor})
+        ran.append(name)
+        t_m = time.monotonic()
         try:
-            rows_ = fn()
-        except Exception as exc:
-            rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
-            summary["failed"] += 1
+            _run_one(name, fn, ts, st, probes, results, summary)
+        finally:
+            seconds[name] = round(time.monotonic() - t_m, 1)
+            _merge_state({"miner_seconds": seconds, "wall_probes": probes})
+    _merge_state({"sweep_last": {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                 "budget_s": budget_s, "ran": ran, "deferred": deferred,
+                                 "seconds": round(time.monotonic() - t0, 1)}})
+    _finish(results, summary, probes, budget_s, t0)
+    return results
+
+
+def _run_one(name: str, fn, ts: str, st: dict, probes: dict, results: dict,
+             summary: dict) -> None:
+    """One miner, walled or not, exactly as the sweep always ran it."""
+    wall = SOURCE_WALLS.get(name)
+    if wall:
+        # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
+        # `walled` row carrying its verdict and evidence -- so the corpus records WHY the
+        # channel is dark -- and it is fetched only when its rediscovery probe comes due.
+        if _wall_due(name, st):
+            # A PROBE THE BOX'S RAILS REFUSED NEVER HAPPENED (2026-11-03). The box never
+            # contacts a VPS-walled host, so its "probe" learned nothing: it is recorded as
+            # UNMEASURED and the probe clock is NOT advanced -- the wall's rediscovery stays
+            # owed to the clock that may ask, instead of reading as asked-and-still-walled.
+            try:
+                lifted, note = _probe_wall(name, wall)
+                measured = True
+            except Exception as exc:
+                if not _rail_refused(exc):
+                    raise
+                lifted, measured = False, False
+                note = f"probe UNMEASURED, refused by the box rails: {type(exc).__name__}"
+            if measured:
+                probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+            if lifted:
+                try:
+                    rows_ = fn()
+                except Exception as exc:
+                    rows_ = [row(name, "fetch_error", str(exc)[:200],
+                                 needs_selector_work=True)]
+                    summary["failed"] += 1
+                else:
+                    summary["ok"] += 1
+                    _write_rows(name, rows_, ts, results, summary, counted=True)
+                    print(f"  {name}: WALL LIFTED ({note}) -- {len(rows_)} rows")
+                    return
+            else:
+                rows_ = [row(name, "walled", f"{wall['verdict']}: {note}",
+                             wall.get("url", f"https://{wall['host']}/"),
+                             wall["evidence"], verdict=wall["verdict"],
+                             walled_since=wall["since"], needs_selector_work=False,
+                             probe="MEASURED" if measured else "UNMEASURED")]
         else:
-            # A SUCCESSFUL FETCH THAT PARSED NOTHING IS NOT A QUIET SOURCE (2026-09-01).
-            # `fetch` raises on a bad status and the handler above turns that into a fetch_error
-            # row, so a FAILURE is already visible. What was invisible is the other half: the
-            # request succeeded, the page arrived, and the selector matched nothing -- the miner
-            # returns [] and _write_rows archives an empty sweep. check_miner_health could then
-            # only say "archived EMPTY 18x -- exception swallowed, no error row", which is not
-            # even the right diagnosis: nothing was swallowed, there was nothing to swallow.
-            #
-            # Measured against the live fleet that day: 26 sources DOWN, and the majority
-            # carried exactly that message while their hosts were answering normally. Their
-            # markup had moved and no organ could say so.
-            #
-            # One stub row here covers all 19 seed miners, because the distinction belongs to
-            # the runner rather than to each parser. classify_row counts `needs_selector_work`
-            # as a STUB: never real, never an error, never a healthy zero (L1.28a). So the fence
-            # can finally separate "nothing happened today" from "this parser is blind", which
-            # are different pieces of work and were the same silence.
-            if not rows_:
-                rows_ = [row(name, "stub",
-                             "fetched OK and matched no selector -- markup moved or the data "
-                             "is rendered client-side; needs a parser or an API, not a retry",
-                             needs_selector_work=True)]
-                summary["failed"] += 1
-        _write_rows(name, rows_, ts, results, summary)
-        real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
-        print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+            rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
+                         wall.get("url", f"https://{wall['host']}/"), wall["evidence"],
+                         verdict=wall["verdict"], walled_since=wall["since"],
+                         needs_selector_work=False)]
+        summary["walled"] += 1
+        _write_rows(name, rows_, ts, results, summary, counted=True)
+        print(f"  {name}: WALLED ({wall['verdict']})")
+        return
+    try:
+        rows_ = fn()
+    except Exception as exc:
+        rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
+        summary["failed"] += 1
+    else:
+        # A SUCCESSFUL FETCH THAT PARSED NOTHING IS NOT A QUIET SOURCE (2026-09-01).
+        # `fetch` raises on a bad status and the handler above turns that into a fetch_error
+        # row, so a FAILURE is already visible. What was invisible is the other half: the
+        # request succeeded, the page arrived, and the selector matched nothing -- the miner
+        # returns [] and _write_rows archives an empty sweep. check_miner_health could then
+        # only say "archived EMPTY 18x -- exception swallowed, no error row", which is not
+        # even the right diagnosis: nothing was swallowed, there was nothing to swallow.
+        #
+        # Measured against the live fleet that day: 26 sources DOWN, and the majority
+        # carried exactly that message while their hosts were answering normally. Their
+        # markup had moved and no organ could say so.
+        #
+        # One stub row here covers all 19 seed miners, because the distinction belongs to
+        # the runner rather than to each parser. classify_row counts `needs_selector_work`
+        # as a STUB: never real, never an error, never a healthy zero (L1.28a). So the fence
+        # can finally separate "nothing happened today" from "this parser is blind", which
+        # are different pieces of work and were the same silence.
+        if not rows_:
+            rows_ = [row(name, "stub",
+                         "fetched OK and matched no selector -- markup moved or the data "
+                         "is rendered client-side; needs a parser or an API, not a retry",
+                         needs_selector_work=True)]
+            summary["failed"] += 1
+    _write_rows(name, rows_, ts, results, summary)
+    real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
+    print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
+
+
+def _finish(results: dict, summary: dict, probes: dict, budget_s: float | None,
+            t0: float) -> None:
+    """Merge discoveries, ask the optional seat, run the join -- in that order of value."""
+    _merge_state({"wall_probes": probes})
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:
@@ -793,7 +925,10 @@ def run_and_save() -> dict:
     # source registry to vet -- nothing here fetches it, no MINERS entry is created, and the
     # seat's validator refuses anything shaped like an address, so a model cannot point this
     # fleet at a page by naming it. No panel, no call, and the fleet mines exactly as today.
+    late = budget_s is not None and time.monotonic() - t0 > LAUNCH_SHARE * budget_s
     try:
+        if late:
+            raise TimeoutError("slice spent; the optional seat waits for a roomier pass")
         from libs.research import proposer_seat as _ps
         _reply = _ps.ask(
             "seed_miners", "terms",
@@ -802,12 +937,12 @@ def run_and_save() -> dict:
                   "below. Names only, no addresses."),
             context=[f"already mined: {n}" for n in sorted(MINERS)],
             n=8)
-        st["proposer_seat"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                               "candidate_source_names": _reply.terms,
-                               "verdict": _reply.verdict,
-                               "discipline": ("candidate NAMES for the source registry to vet; "
-                                              "nothing here fetches them")}
-        STATE.write_text(json.dumps(st, indent=0), "utf-8")
+        _merge_state({"proposer_seat": {
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "candidate_source_names": _reply.terms,
+            "verdict": _reply.verdict,
+            "discipline": ("candidate NAMES for the source registry to vet; "
+                           "nothing here fetches them")}})
     except Exception as _exc:                             # pragma: no cover - optional seat
         print(f"  proposer_seat: UNMEASURED ({type(_exc).__name__}: {_exc})")
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
@@ -816,13 +951,20 @@ def run_and_save() -> dict:
           f"walled={summary['walled']} failed={summary['failed']})")
     # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
     # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
+    if late:
+        print("cohort/identity join deferred: slice spent (it reads every sweep's files, so "
+              "the next pass with room joins this one's too)")
+        return
     try:
         from cohort_and_identity import run_and_save as _cohorts
         _cohorts()
     except Exception as exc:
         print(f"cohort/identity join failed (non-fatal): {exc}")
-    return results
 
 
 if __name__ == "__main__":
-    run_and_save()
+    import argparse
+    _ap = argparse.ArgumentParser(description="seed miner sweep")
+    _ap.add_argument("--budget-s", type=float, default=None,
+                     help="wall budget for a rotating sweep (the caller's slice)")
+    run_and_save(_ap.parse_args().budget_s)

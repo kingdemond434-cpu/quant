@@ -1,19 +1,19 @@
 {
- "at": "2026-11-04T13:20:31+00:00",
+ "at": "2026-11-13T22:48:14+00:00",
  "screened": 1500,
- "set_aside": 16,
+ "set_aside": 7,
  "rows": [
-  {
-   "sym": "AUDCHF",
-   "family": "formula",
-   "twin": "external.AUDCHF@M5.formula.p=ba013eb7096b4f76",
-   "why": "every measurable dimension reads as a twin of external.AUDCHF@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
   {
    "sym": "AUDNZD",
    "family": "cross_asset_residual",
    "twin": "external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed",
    "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "GBPJPY",
@@ -22,82 +22,28 @@
    "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
   },
   {
-   "sym": "USCOCOA",
+   "sym": "AUDCHF",
+   "family": "clock_transition",
+   "twin": "external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.clock_transition.p=32a8066e48e6e38e (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "GBPCAD",
+   "family": "clock_transition",
+   "twin": "external.GBPCAD@M15.clock_transition.p=063f4540daa14dff",
+   "why": "every measurable dimension reads as a twin of external.GBPCAD@M15.clock_transition.p=063f4540daa14dff (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "NZDCHF",
+   "family": "clock_transition",
+   "twin": "external.NZDCHF@M15.clock_transition.p=c3f9722b441ed329",
+   "why": "every measurable dimension reads as a twin of external.NZDCHF@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "GBPDKK",
    "family": "cross_asset_residual",
-   "twin": "external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e",
-   "why": "every measurable dimension reads as a twin of external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e (feature 1.00, semantic 1.00); the twin is NAMED rathe"
-  },
-  {
-   "sym": "EURCAD",
-   "family": "cross_asset_residual",
-   "twin": "external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7",
-   "why": "every measurable dimension reads as a twin of external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7 (feature 0.92, semantic 0.94); the twin is NAMED rathe"
-  },
-  {
-   "sym": "EURCAD",
-   "family": "cross_asset_residual",
-   "twin": "external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7",
-   "why": "every measurable dimension reads as a twin of external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7 (feature 1.00, semantic 1.00); the twin is NAMED rathe"
-  },
-  {
-   "sym": "EURZAR",
-   "family": "carry",
-   "twin": "external.EURZAR@M15.carry.p=97601ec337d6da20",
-   "why": "every measurable dimension reads as a twin of external.EURZAR@M15.carry.p=97601ec337d6da20 (feature 1.00, semantic 1.00); the twin is NAMED rather than the cand"
-  },
-  {
-   "sym": "GBPJPY",
-   "family": "cross_asset_residual",
-   "twin": "external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86",
-   "why": "every measurable dimension reads as a twin of external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86 (feature 0.92, semantic 0.94); the twin is NAMED rathe"
-  },
-  {
-   "sym": "CHFNOK",
-   "family": "formula",
-   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CHFNOK",
-   "family": "formula",
-   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CHFNOK",
-   "family": "formula",
-   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "CHFNOK",
-   "family": "formula",
-   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "EURCHF",
-   "family": "formula",
-   "twin": "external.EURCHF@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.EURCHF@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "EURMXN",
-   "family": "formula",
-   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "EURMXN",
-   "family": "formula",
-   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "EURMXN",
-   "family": "formula",
-   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
-   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+   "twin": "external.GBPDKK@M30.cross_asset_residual.p=78c502501c08da60",
+   "why": "every measurable dimension reads as a twin of external.GBPDKK@M30.cross_asset_residual.p=78c502501c08da60 (feature 1.00, semantic 1.00); the twin is NAMED rathe"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
