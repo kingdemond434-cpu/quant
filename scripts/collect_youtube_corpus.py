@@ -60,6 +60,7 @@ def configured_handles() -> list[str]:
 
 
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
+    raise PermissionError(f"{YOUTUBE_API_TERMS}; {YOUTUBE_API_MISSED_GROWTH}")
     if spent[0] + cost > UNIT_BUDGET:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
     params["key"] = KEYFILE.read_text("utf-8").strip()
@@ -107,7 +108,37 @@ def fetch_transcript(video_id: str) -> tuple[str | None, str | None]:
     return (text[:20000], None) if text else (None, "TRANSCRIPT_UNAVAILABLE")
 
 
+#: The YouTube Data API is refused (wayback-youtube-ruling-2026-11-14 and zuck's standing rules:
+#: no YouTube API key, the box never contacts YouTube). The collector therefore records the
+#: refusal where the coverage ledger is read and sends no request, with or without a key.
+YOUTUBE_API_TERMS = ("terms-refused: the YouTube Data API and caption routes are refused; the "
+                     "box never contacts YouTube (wayback-youtube-ruling-2026-11-14)")
+YOUTUBE_API_MISSED_GROWTH = ("missed_growth: no YouTube channel, upload or description links "
+                             "reach the video hunter; its digs use text, code and Bilibili "
+                             "routes")
+
+
+def record_refusal(now: datetime) -> dict:
+    """Write the refusal into the coverage ledger (L1.28a: never a silent zero)."""
+    report = {"ts": now.isoformat(), "status": "BLOCKED_ON_TERMS", "videos": 0,
+              "requests_sent": 0, "terms": YOUTUBE_API_TERMS,
+              "missed_growth": YOUTUBE_API_MISSED_GROWTH}
+    cov = read_json(COVERAGE, {})
+    cov.update({"last_sweep": now.isoformat(), **report})
+    COVERAGE.parent.mkdir(parents=True, exist_ok=True)
+    COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
+    return report
+
+
 def main() -> int:
+    report = record_refusal(datetime.now(tz=UTC))
+    print(f"youtube corpus: {report['status']} -- {YOUTUBE_API_TERMS}; "
+          f"{YOUTUBE_API_MISSED_GROWTH}")
+    return 0
+
+
+def _refused_sweep() -> int:
+    """The refused Data API sweep, kept for the record; nothing calls it."""
     if not KEYFILE.exists():
         print("youtube key absent (data/secrets/youtube_api_key) -- nothing collected, "
               "exiting quietly; the dig falls back to text/code routes")

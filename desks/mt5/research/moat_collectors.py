@@ -65,6 +65,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
@@ -154,6 +155,14 @@ _SCRIPTS: tuple[tuple[str, str], ...] = (
     ("latin", "[A-Za-zÀ-ɏ]"),
 )
 _SCRIPT_RE = {name: re.compile(rx) for name, rx in _SCRIPTS}
+#: YouTube is refused on terms (governance/wayback-youtube-ruling-2026-11-14.md): the box never
+#: contacts YouTube, by its own routes or a keyless mirror, so a YouTube ground is a named gap.
+YOUTUBE_REFUSED_HOSTS: frozenset[str] = frozenset({"youtube.com", "youtu.be",
+                                                    "youtube-nocookie.com", "googlevideo.com"})
+YOUTUBE_TERMS = ("terms-refused: YouTube captions by any route, its own or a keyless mirror "
+                 "(wayback-youtube-ruling-2026-11-14)")
+YOUTUBE_MISSED_GROWTH = ("missed_growth: YouTube spoken-word grounds stay unread; podcasts "
+                         "and Bilibili still serve the transcript lane")
 _YT_ID = re.compile(r"(?:v=|youtu\.be/|/embed/|/shorts/)([A-Za-z0-9_-]{6,20})")
 _ENCLOSURE = re.compile(r'(?is)<enclosure\b[^>]*url=["\']([^"\']+)["\'][^>]*>')
 _PODCAST_TRANSCRIPT = re.compile(r'(?is)<podcast:transcript\b[^>]*url=["\']([^"\']+)["\']')
@@ -459,6 +468,11 @@ def collect_transcript(row: Mapping[str, Any], budget_s: float) -> list[Capture]
     url = str(row.get("url") or "")
     if budget_s <= 0 or not url:
         return []
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    if any(host == h or host.endswith("." + h) for h in YOUTUBE_REFUSED_HOSTS):
+        # Refused before robots is read: reading youtube.com/robots.txt is itself contact.
+        return [_capture(row, b"", "transcript", url=url, status=0, ext="txt",
+                         unmeasured=f"{YOUTUBE_TERMS}; {YOUTUBE_MISSED_GROWTH}")]
     barred = robots_barred(url)
     if barred:
         return [_capture(row, b"", "transcript", url=url, status=0, ext="txt", unmeasured=barred)]
