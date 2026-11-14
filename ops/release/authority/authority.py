@@ -204,6 +204,18 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
             for r in runs
             if str(r.get("name")) in need and genuine(r)
         }
+        if f["checks"][0] == "fail":
+            dec = declared_divergence(ag, repo, pr, head, base, runs, genuine)
+            if dec is not None:
+                rest = tuple(n for n in need if n != ag.REPLAY_JOB)
+                f["checks"] = ag.checks(runs, rest, genuine)
+                f["replay_declared"] = dec
+                f["evidence"]["replay_declared"] = dec
+                if cls != "CONTROLLER":
+                    cls = "CONTROLLER"
+                    f["cls"] = cls
+                    raised = "replay-shadow MATCHES_DECLARED: CONTROLLER (trusted-eval, veto)"
+                    f["cls_reasons"] = [*why, raised]
         if cls == "CONTROLLER" and f["checks"][0] == "pass":
             # a check-changing PR: its own pull_request runs are self-attested, so the BASE's
             # trusted-eval (pull_request_target) must also have passed on this exact head
@@ -215,6 +227,67 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                 f["evidence"]["trusted-eval"] = ewhy
         f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
     return f
+
+
+#: An artifact larger than this is not a replay report.
+REPORT_MAX_BYTES = 4_000_000
+
+
+def _artifact_zip(repo: str, artifact_id: int) -> bytes | None:
+    """The artifact's zip, or None on any error (it is read as nothing)."""
+    try:
+        p = subprocess.run(["gh", "api", f"repos/{repo}/actions/artifacts/{artifact_id}/zip"],
+                           capture_output=True, check=False, timeout=120)  # fmt: skip
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return p.stdout if p.returncode == 0 and len(p.stdout) <= REPORT_MAX_BYTES else None
+
+
+def declared_divergence(
+    ag: Any, repo: str, pr: int, head: str, base: str,
+    runs: list[dict[str, Any]], genuine: Callable[[dict[str, Any]], bool],
+) -> dict[str, Any] | None:  # fmt: skip
+    """The replay-shadow run judged MATCHES_DECLARED ({"run", "why"}), or None. Only when the
+    newest genuine replay-shadow run is the one red required job, its own report (the artifact
+    `replay-shadow-report-<attempt>` of that run, for this exact head) says MATCHES_DECLARED, and
+    the authority itself re-matches it against the BASE's DECLARED_REGISTRY. Any read error is
+    None, so the PR stays FAIL."""
+    import io
+    import zipfile
+
+    rid = ag.newest_run_id(runs, ag.REPLAY_JOB, genuine)
+    run = next((r for r in runs if r.get("id") == rid), None)
+    if run is None or run.get("status") != "completed" or run.get("conclusion") != "failure":
+        return None
+    try:
+        job = ag._gh(f"repos/{repo}/actions/jobs/{rid}")
+        wf_run = ag._gh(f"repos/{repo}/actions/runs/{job['run_id']}")
+        if str(wf_run.get("head_sha")) != head or not str(wf_run.get("path") or "").endswith(
+            ag.WORKFLOW_OF[ag.REPLAY_JOB]
+        ):
+            return None
+        name = f"replay-shadow-report-{int(job.get('run_attempt') or 1)}"
+        arts = ag._gh(f"repos/{repo}/actions/runs/{job['run_id']}/artifacts?per_page=100")
+        found = [a for a in (arts or {}).get("artifacts") or []
+                 if a.get("name") == name and not a.get("expired")]  # fmt: skip
+        if len(found) != 1:
+            return None
+        blob = _artifact_zip(repo, int(found[0]["id"]))
+        if blob is None:
+            return None
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            info = z.getinfo("replay_shadow.json")
+            if info.file_size > REPORT_MAX_BYTES:
+                return None
+            report = json.loads(z.read(info).decode("utf-8"))
+        raw = _git_bytes("show", f"origin/{base}:{pol.DECLARED_REGISTRY}")
+        registry = json.loads(raw.decode("utf-8")) if raw is not None else None
+    except (RuntimeError, KeyError, ValueError, TypeError, zipfile.BadZipFile):
+        return None
+    if pol.declared_replay(report, registry, pr, head) is not None:
+        return None
+    flips = (report.get("fusion_roster") or {}).get("divergence") or []
+    return {"run": rid, "why": f"MATCHES_DECLARED: {len(flips)} declared roster flip(s)"}
 
 
 def issue(

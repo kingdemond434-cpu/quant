@@ -515,6 +515,22 @@ def checks(
     return "pass", f"{len(newest)} check run(s) green, gating jobs succeeded"
 
 
+#: The AUTO job a signed MATCHES_DECLARED may stand in for (ops/release/replay_shadow.py: a Fusion
+#: roster divergence that equals the Auditor's declaration for this PR and exact head exits 1,
+#: never PASS). Only the release authority maps it, and only to CONTROLLER (policy.py).
+REPLAY_JOB = "replay-shadow"
+
+
+def newest_run_id(
+    runs: Iterable[Mapping[str, Any]], name: str, genuine: Callable[[Mapping[str, Any]], bool]
+) -> Any:
+    """The id of the newest genuine check run called `name`, or None."""
+    mine = [r for r in runs if str(r.get("name") or "") == name and genuine(r)]
+    if not mine:
+        return None
+    return max(mine, key=lambda r: str(r.get("started_at") or "")).get("id")
+
+
 # ------------------------------------------------------------------------ the GitHub side
 
 
@@ -866,6 +882,12 @@ def authority_clear(
     if not patch or st.get("patch_id") != patch:
         return None, "the authority CLEAR names another change (patch-id)"
     want = {"PROTECTED": ("CONTROLLER",), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
+    declared = (st.get("evidence") or {}).get("replay_declared") if isinstance(
+        st.get("evidence"), dict) else None  # fmt: skip
+    if st.get("tier") == "CONTROLLER" and gate_tier in ("AUTO", "LOW") and declared:
+        # the authority raised it to CONTROLLER for a MATCHES_DECLARED replay: stricter, so
+        # trusted-eval and the CONTROLLER window apply on top of every gating job
+        want = {**want, gate_tier: (*want[gate_tier], "CONTROLLER")}
     if st.get("tier") not in want.get(gate_tier, ()):
         return None, f"the authority judged class {st.get('tier')}, the gate reads {gate_tier}"
     return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
@@ -1167,6 +1189,8 @@ def run(
     one element, spent here (None: no limit, a single PR's run)."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
+    # the replay-shadow run a verified authority CLEAR judged MATCHES_DECLARED (authority_rows)
+    declared: dict[str, Any] = {"run": None}
     if p.get("state") != "open":
         _summary(f"#{pr} is {p.get('state')}: nothing to do")
         return 0
@@ -1331,6 +1355,7 @@ def run(
 
     def authority_rows() -> tuple[list[dict[str, Any]], str]:
         """The authority path's one CLEAR row for this head, or none; why (see AUTHORITY_*)."""
+        declared["run"] = None
         pub = os.environ.get(AUTHORITY_PUBKEY_ENV) or ""
         folder = os.environ.get(AUTHORITY_DIR_ENV) or ""
         pin_path = os.environ.get(AUTHORITY_PIN_ENV) or ""
@@ -1360,6 +1385,9 @@ def run(
             ok, ewhy = trusted_eval_passed(repo, pr, head, base)
             if not ok:
                 return [], f"authority: {why}, but {ewhy}"
+        ev: dict[str, Any] = st["evidence"] if isinstance(st.get("evidence"), dict) else {}
+        rd = ev.get("replay_declared") if st["tier"] == "CONTROLLER" else None
+        declared["run"] = rd.get("run") if isinstance(rd, dict) else None
         # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
 
@@ -1412,7 +1440,14 @@ def run(
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
-        need = required + (AUTO_JOBS if clear.get("by") == "registry" else ())
+        auto: tuple[str, ...] = AUTO_JOBS if clear.get("by") == "registry" else ()
+        if (
+            auto
+            and declared["run"] is not None
+            and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+        ):  # the very run the authority signed as MATCHES_DECLARED; a re-run is judged anew
+            auto = tuple(j for j in auto if j != REPLAY_JOB)
+        need = required + auto
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
