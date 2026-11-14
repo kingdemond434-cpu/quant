@@ -177,6 +177,22 @@ EXOTIC_BAR_FILE = BASE / "reports" / "EXOTIC_COST_BAR.json"
 EXOTIC_BAR_MAX_AGE_H = 3.0
 
 
+_MAJORS = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
+
+
+class _MaybeExotic(frozenset):  # type: ignore[type-arg]
+    """Membership = a six-letter FX pair with any leg outside the eight majors."""
+
+    def __contains__(self, sym: object) -> bool:
+        s = str(sym or "").upper()[:6]
+        return (len(s) == 6 and s.isalpha()
+                and not (s[:3] in _MAJORS and s[3:] in _MAJORS)
+                and not s.startswith(("XAU", "XAG", "XPT", "XPD")))
+
+
+_MAYBE_EXOTIC: frozenset[str] = _MaybeExotic()
+
+
 def _exotic_bar(cfg: Any) -> tuple[bool, frozenset[str], frozenset[str], str]:
     """(enabled, exotic symbols, PASS names, why-stale). Off unless the policy file declares it."""
     if not isinstance(cfg, dict) or cfg.get("enabled") is False:
@@ -184,10 +200,18 @@ def _exotic_bar(cfg: Any) -> tuple[bool, frozenset[str], frozenset[str], str]:
     try:
         uni = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
-        uni = {}
+        uni = None
     exo = frozenset(str(s).upper() for s, m in (uni.items() if isinstance(uni, dict) else [])
                     if isinstance(m, dict)
                     and "exotic" in str(m.get("asset_class") or "").lower())
+    if not exo:
+        # FAIL CLOSED (Auditor SF, 2026-11-14). An unreadable registry -- or one that names no
+        # exotic at all -- used to give an EMPTY exotic set, so every exotic walked past the bar.
+        # Unknown class is not "not exotic": every pair with a leg outside the eight majors is
+        # treated as exotic, and the bar is UNMEASURED, so each one is refused until the registry
+        # reads again. Over-inclusive on purpose; it touches no metal, index or major cross.
+        return (True, _MAYBE_EXOTIC, frozenset(),
+                f"{UNIVERSE_FILE.name} unreadable or names no exotic; asset class UNMEASURED")
     max_age = float(cfg.get("max_age_h") or EXOTIC_BAR_MAX_AGE_H)
     try:
         doc = json.loads(EXOTIC_BAR_FILE.read_text(encoding="utf-8-sig"))

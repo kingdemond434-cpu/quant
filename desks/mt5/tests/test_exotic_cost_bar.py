@@ -134,3 +134,22 @@ def test_a_clock_already_on_its_fill_hour_basis_is_not_double_charged() -> None:
     r = ecb.judge("GBPSEK.formula.asia", st, UNI, _surf(698.0), mult=1.0)
     assert r["net_r_at_1x"] == pytest.approx(0.3, abs=1e-3)
     assert r["spread_pts_charged_by_clock"] == 698.0
+
+
+def test_an_unreadable_universe_fails_closed(tmp_path: Path,
+                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor SF (2026-11-14): an unreadable registry used to give an EMPTY exotic set, so the
+    2x bar let every exotic through. Unknown class now reads UNMEASURED and refuses any pair
+    with a leg outside the eight majors, even one the stale artifact lists as a PASS."""
+    p = _policy(tmp_path, monkeypatch, {"enabled": True}, datetime.now(tz=UTC))
+    (tmp_path / "universe.json").write_text("{not json", "utf-8")
+    p = lp.policy(tmp_path / "policy.json")
+    for sym in ("GBPSEK", "USDMXN", "EURZAR.a"):
+        why = str(lp.refuse({"symbol": sym, "name": "GBPSEK.formula.asia"}, p))
+        assert "UNMEASURED" in why and "unreadable" in why
+    for sym in ("EURUSD", "GBPJPY", "XAUUSD", "US500", "XAGUSD"):
+        assert lp.refuse({"symbol": sym, "name": "x"}, p) is None
+    (tmp_path / "universe.json").write_text(json.dumps({"EURUSD": {"asset_class": "Forex"}}),
+                                            "utf-8")
+    p = lp.policy(tmp_path / "policy.json")
+    assert "UNMEASURED" in str(lp.refuse({"symbol": "GBPSEK", "name": "GBPSEK.formula.asia"}, p))
