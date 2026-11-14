@@ -255,7 +255,9 @@ NODES: tuple[Node, ...] = (
                 # `_capacity_ceiling` hands CAPACITY.json's ceiling to the solve as capacity_max
                 # when (and only when) it is MEASURED; `_capacity_growth` republishes the per-
                 # sleeve curve and sizes nothing. Declared, not changed.
-                "desks/mt5/reports/CAPACITY.json"),
+                "desks/mt5/reports/CAPACITY.json",
+                # the forward clocks' table (pf_allocator.CLOCK_LAW, read at :407)
+                "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json"),
          authority=("sizing",),
          freshness_s={"desks/mt5/data/state_vector.json": 2 * 3600,
                       "desks/mt5/reports/STATE_ADMISSION.json": 3 * 24 * 3600},
@@ -769,6 +771,13 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/DECAY_VERDICTS.json",),
          reads=("desks/mt5/reports/shadow/", "desks/mt5/data/sleeves.json",
                 "desks/mt5/data/live_ledger.jsonl")),
+    # The hourly leg `certificate_clock_law` (L1.102) runs this script; pf_allocator and
+    # cluster_judge read its per-certificate clock table.
+    Node("certificate_clock_law", "scripts/check_certificate_clock_law.py",
+         writes=("desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",),
+         # its only decision path is the allocator's clock table, so the allocator's rent line
+         # is the one that measures what it changes
+         billed_as=("pf_allocator",)),
     Node("cluster_judge", "desks/mt5/research/cluster_judge.py",
          writes=("desks/mt5/reports/CLUSTER_JUDGE.json",),
          reads=("desks/mt5/reports/shadow/", "desks/mt5/data/sleeves.json",
