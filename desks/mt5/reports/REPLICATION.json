@@ -1,5 +1,5 @@
 {
- "at": "2026-11-14T02:39:04+00:00",
+ "at": "2026-11-14T03:38:30+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -27,9 +27,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=f0cfadac2406f4dc",
-   "certificate": "external.USDSGD.formula.p=f0cfadac2406f4dc",
-   "fp": "95a7542f0351cc66",
+   "key": "USDSGD.formula.p=88b287c34da66ded",
+   "certificate": "external.USDSGD.formula.p=88b287c34da66ded",
+   "fp": "6cdaeaa20995f322",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,9 +41,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=2cbef93daa65e18a",
-   "certificate": "external.USDSGD.formula.p=2cbef93daa65e18a",
-   "fp": "7cb0b4d02bbb9172",
+   "key": "USDSGD.formula.p=304b1750d837d7f0",
+   "certificate": "external.USDSGD.formula.p=304b1750d837d7f0",
+   "fp": "b96eb4f9705d54ca",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -55,9 +55,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=6ef24112b74f5e9a",
-   "certificate": "external.USDSGD.formula.p=6ef24112b74f5e9a",
-   "fp": "43667a02be82e34a",
+   "key": "USDSGD.formula.p=ecd62bc613164dcd",
+   "certificate": "external.USDSGD.formula.p=ecd62bc613164dcd",
+   "fp": "eb288a1c531b0042",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -69,9 +69,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=d053e64ba22e22bf",
-   "certificate": "external.USDSGD.formula.p=d053e64ba22e22bf",
-   "fp": "2e8d1c46b4fde8f9",
+   "key": "USDSGD.formula.p=cfe4101eb4c827ea",
+   "certificate": "external.USDSGD.formula.p=cfe4101eb4c827ea",
+   "fp": "ed6e17f4d1cd8ea5",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -83,9 +83,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=dfa5faa50af24857",
-   "certificate": "external.USDSGD.formula.p=dfa5faa50af24857",
-   "fp": "19248f7630c87149",
+   "key": "USDSGD.formula.p=b8d3042bae5abefb",
+   "certificate": "external.USDSGD.formula.p=b8d3042bae5abefb",
+   "fp": "3a06c510fe625ac2",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -97,9 +97,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=27929169fe86ed4d",
-   "certificate": "external.USDSGD.formula.p=27929169fe86ed4d",
-   "fp": "e0bcd58ab56bb282",
+   "key": "USDSGD.formula.p=cf67a1951ce3e24f",
+   "certificate": "external.USDSGD.formula.p=cf67a1951ce3e24f",
+   "fp": "f32f86f267f21fc7",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -111,9 +111,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=a24138a81e49d93d",
-   "certificate": "external.USDSGD.formula.p=a24138a81e49d93d",
-   "fp": "66f918396241b9db",
+   "key": "USDSGD.formula.p=a6da6886f382d31f",
+   "certificate": "external.USDSGD.formula.p=a6da6886f382d31f",
+   "fp": "cd38aa333c1be3ad",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -125,9 +125,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=6e6d300c9ba3944f",
-   "certificate": "external.USDSGD.formula.p=6e6d300c9ba3944f",
-   "fp": "84a34e69141f1e26",
+   "key": "USDSGD.formula.p=09dc4bd54168f62a",
+   "certificate": "external.USDSGD.formula.p=09dc4bd54168f62a",
+   "fp": "ec3f0182aa3be724",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -139,8 +139,8 @@
   },
   {
    "lane": "forward",
-   "key": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
-   "symbol": "AUDNZD",
+   "key": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+   "symbol": "AUDUSD",
    "family": "discovered",
    "verdict": "UNMEASURED",
    "why": [
@@ -152,8 +152,8 @@
   },
   {
    "lane": "forward",
-   "key": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_residz_USDDKK_horizon=3_side=-1",
-   "symbol": "AUDNZD",
+   "key": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+   "symbol": "AUDUSD",
    "family": "discovered",
    "verdict": "UNMEASURED",
    "why": [
@@ -165,8 +165,8 @@
   },
   {
    "lane": "forward",
-   "key": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_residz_USDX_horizon=3_side=-1",
-   "symbol": "AUDNZD",
+   "key": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
+   "symbol": "AUDUSD",
    "family": "discovered",
    "verdict": "UNMEASURED",
    "why": [
@@ -178,8 +178,8 @@
   },
   {
    "lane": "forward",
-   "key": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_triangle_resid_HUF_horizon=1_side=-1",
-   "symbol": "AUDNZD",
+   "key": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=ext_resid_EURNZD_z_horizon=1_side=-1",
+   "symbol": "AUDUSD",
    "family": "discovered",
    "verdict": "UNMEASURED",
    "why": [
@@ -191,51 +191,51 @@
   },
   {
    "lane": "forward",
-   "key": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['BCHUSD']_ttl_bars=6",
-   "symbol": "AUDSGD",
+   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=dd_24_horizon=3_side=1",
+   "symbol": "BTCUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_Coca-Cola_z_horizon=12_side=1",
+   "symbol": "BTCUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_UnitedHealth_horizon=6_side=1",
+   "symbol": "BTCUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFDKK.cross_asset_residual.continuous#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "CHFDKK",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['CA60']_ttl_bars=6",
-   "symbol": "AUDSGD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['CADCHF']_ttl_bars=6",
-   "symbol": "AUDSGD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDSGD.overnight_gap_decay.continuous",
-   "symbol": "AUDSGD",
-   "family": "overnight_gap_decay",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -245,68 +245,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "USDSGD.formula.p=f0cfadac2406f4dc",
+   "what": "USDSGD.formula.p=88b287c34da66ded",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=2cbef93daa65e18a",
+   "what": "USDSGD.formula.p=304b1750d837d7f0",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=6ef24112b74f5e9a",
+   "what": "USDSGD.formula.p=ecd62bc613164dcd",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=d053e64ba22e22bf",
+   "what": "USDSGD.formula.p=cfe4101eb4c827ea",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=dfa5faa50af24857",
+   "what": "USDSGD.formula.p=b8d3042bae5abefb",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=27929169fe86ed4d",
+   "what": "USDSGD.formula.p=cf67a1951ce3e24f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=a24138a81e49d93d",
+   "what": "USDSGD.formula.p=a6da6886f382d31f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=6e6d300c9ba3944f",
+   "what": "USDSGD.formula.p=09dc4bd54168f62a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
+   "what": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_residz_USDDKK_horizon=3_side=-1",
+   "what": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_residz_USDX_horizon=3_side=-1",
+   "what": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "AUDNZD.discovered.continuous#band=[0.9, 1.0]_feature=ext_triangle_resid_HUF_horizon=1_side=-1",
+   "what": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=ext_resid_EURNZD_z_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['BCHUSD']_ttl_bars=6",
+   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=dd_24_horizon=3_side=1",
+   "why": "no written specification in the spec book for family 'discovered'"
+  },
+  {
+   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_Coca-Cola_z_horizon=12_side=1",
+   "why": "no written specification in the spec book for family 'discovered'"
+  },
+  {
+   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_UnitedHealth_horizon=6_side=1",
+   "why": "no written specification in the spec book for family 'discovered'"
+  },
+  {
+   "what": "CHFDKK.cross_asset_residual.continuous#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['CA60']_ttl_bars=6",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "AUDSGD.cross_asset_residual.continuous#factor_symbols=['CADCHF']_ttl_bars=6",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "AUDSGD.overnight_gap_decay.continuous",
-   "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 110,
-  "at": "2026-11-14T01:36:51+00:00",
+  "forward": 118,
+  "at": "2026-11-14T02:39:04+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -342,16 +342,16 @@
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 11.37
+ "seconds": 5.66
 }
