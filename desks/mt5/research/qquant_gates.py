@@ -184,6 +184,34 @@ def worker_cell(cell: dict) -> tuple:
         return (sym, fam, side, win, state, None, str(e))
 
 
+#: How an attestation declares the fixed per-cell bar: the prefix of its `trial_count_basis`.
+FIXED_BAR_BASIS_PREFIX = "fixed_per_cell_bar"
+LEGACY_DSR_BASIS = "campaign_trials_x_sweep_variance"
+
+
+def dsr_bar(n_obs: int, campaign_trials: int, sweep_variance: float) -> tuple[int, float, str]:
+    """(n_trials, variance_of_sharpes, basis) for the deflated-Sharpe gate: THE BASIS THE
+    ATTESTATION THIS FILE STAMPS DECLARES (audit 2026-10-13, T8 blocker b).
+
+    THE LEGACY BASIS UNLESS ATTESTED (audit of #351, SF-c). The fixed per-cell bar
+    (`gate_policy.dsr_hurdle_inputs`, the principal's Tier S ruling 2026-10-13: N=5, null variance
+    1/(T-1)) is applied only when BOTH hold: the policy exposes that function, AND the attestation
+    it stamps declares the bar (`ATTESTATION["trial_count_basis"]` opens with
+    `FIXED_BAR_BASIS_PREFIX`). The first version switched on the function's mere presence, so a
+    helper landing ahead of its attestation would have judged on a bar no certificate declared.
+    At this revision `gate_policy` has no such function and attests the campaign charge, so this
+    returns the legacy campaign charge and sweep variance -- pinned by
+    `test_qquant_dsr_basis_matches_stamp.py` against the real policy."""
+    import gate_policy as _gp
+    fixed = getattr(_gp, "dsr_hurdle_inputs", None)
+    att = getattr(_gp, "ATTESTATION", None)
+    declared = str(att.get("trial_count_basis") or "") if isinstance(att, dict) else ""
+    if callable(fixed) and declared.startswith(FIXED_BAR_BASIS_PREFIX):
+        n_t, var, basis = fixed(int(n_obs))
+        return int(n_t), float(var), str(basis)
+    return int(campaign_trials), float(sweep_variance), LEGACY_DSR_BASIS
+
+
 def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
                 sharpes: np.ndarray) -> dict:
     """The original gauntlet evaluation for ONE survivor (identical code path).
@@ -210,11 +238,12 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
     stages["economic_prior"] = {"passed": True,
                                 "message": "mechanism documented at hunt registration"}
     stages["in_sample_screen"] = {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)}
-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
-                                variance_of_sharpes=float(sharpes.var(ddof=1)),
+    dsr_trials, dsr_var, dsr_basis = dsr_bar(len(arr), n_trials, float(sharpes.var(ddof=1)))
+    dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, variance_of_sharpes=dsr_var,
                                 threshold=DSR_THRESHOLD)
     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+                                 "sr0": round(float(dsr.sr0_threshold), 4),
+                                 "n_trials": dsr_trials, "basis": dsr_basis}
     stages["pbo"] = {"passed": bool(pbo_val <= PBO_THRESHOLD), "pbo": round(float(pbo_val), 4)}
     stages["reality_check_spa"] = {"passed": bool(spa_p < SPA_ALPHA),
                                    "p_value": round(float(spa_p), 4)}
