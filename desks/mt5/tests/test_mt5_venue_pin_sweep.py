@@ -127,7 +127,7 @@ def test_account_margin_refuses_a_non_fusion_server(monkeypatch, desk_terminal):
     fake = _install(monkeypatch, FakeMT5(FTMO))
     margin, equity, why = pa.account_margin()
     assert (margin, equity) == (None, None)
-    assert "wrong venue" in why and FTMO in why
+    assert "wrong venue" in why and FTMO not in why   # published: no server label (MF1, #982)
     assert fake.calls == ["shutdown"]
 
 
@@ -253,3 +253,15 @@ def test_no_swept_site_attaches_without_the_pin(rel: str) -> None:
     src = (ROOT / rel).read_text(encoding="utf-8")
     assert not re.search(r"\bmt5\.initialize\(", src), f"{rel}: a bare mt5.initialize() is back"
     assert "attach_or_initialize(" in src and "venue_refusal(" in src
+
+
+@pytest.mark.parametrize("fake, path", [
+    (FakeMT5(FTMO), TERMINAL),
+    (FakeMT5(FUSION, tdir=r"C:\Users\someone\FTMO MetaTrader 5"), TERMINAL),
+])
+def test_refusal_reason_carries_no_server_name_or_path(fake, path) -> None:
+    """The reason is published in a public repository (Auditor MF1 on #982): fixed phrases only."""
+    why = mt5_session.venue_refusal(fake, path)
+    assert why
+    for leak in (FTMO, "Server3", "C:\\", "someone", "Fusion\\", "terminal64.exe"):
+        assert leak not in why, (leak, why)
