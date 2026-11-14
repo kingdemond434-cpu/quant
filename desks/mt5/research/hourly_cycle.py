@@ -4231,6 +4231,16 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    # THE FILL JOIN, HOURLY (2026-09-30), AT THE HEAD OF THE PASS (moved 2026-11-14).
+    # `reports/markout.json` -- intents joined to live deals, n_matched, slippage against the
+    # ENTRY -- and `reports/attribution_chain.json` had one writer, `daily_cycle._markout`, behind
+    # the 900 s-starved daily chain; `--step markout` runs that one step here, unchanged. It sat
+    # near the tail, unpinned, so when the always-run legs alone planned 3,419 s of the 2,640 s
+    # core budget it was never admitted: last run 11-09 (1-3 s each), markout.json frozen at
+    # 11-11 13:57Z, NEVER RUN in MT5-HourlyCore's plan (box read 2026-11-14). Pinned in
+    # ALWAYS_RUN and placed here, before the heavy legs, like the two fences above.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     # Replication is a required live-door input with a six-hour expiry. Keeping its
     # writer late in the validation department let E8's entry door go stale even
     # while core passes ran. Refresh it on the existing core clock, before the door
@@ -5964,12 +5974,6 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
-    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
-    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
-    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
-    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
-    fmk = _costed("fill_markout", lambda: _producer(
-        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the

@@ -165,7 +165,7 @@ def test_cheap_money_and_health_fences_are_pinned():
     """Cheap fences that gate money or health never wait behind the budget (overlay 27d)."""
     import libs.ops.leg_rotation as LR
     for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
-                "judge_alive"):
+                "judge_alive", "fill_markout"):
         assert leg in LR.ALWAYS_RUN, leg
 
 
@@ -177,7 +177,7 @@ def test_the_freshness_and_health_fences_run_before_the_heavy_legs() -> None:
     roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
     heavy = [roster.index(x) for x in ("replication_civilization", "tier_s", "daily")
              if x in roster]
-    for leg in ("bars_state", "box_state_freshness", "desk_health"):
+    for leg in ("bars_state", "box_state_freshness", "desk_health", "fill_markout"):
         assert roster.count(leg) == 1
         assert roster.index(leg) < min(heavy)
     assert roster.index("bars_state") < roster.index("desk_health")
