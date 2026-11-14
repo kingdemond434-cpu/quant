@@ -120,6 +120,25 @@ MAX_SILENCE_S = 2 * CADENCE_S
 GATEWAY_FRESH_S = 3 * 3600
 
 
+#: ONE FILE PER ORGAN A PR ADDS (2026-11-14). `--only-missing` used to append to the monolith,
+#: so every PR that added an organ edited the same census counters and the same log head, and
+#: the box's hourly full pass rewrote all of it: measured that day, 25 of 100 open PRs touched
+#: runtime_state.json and every merge re-conflicted the rest (each re-cut then needed a fresh
+#: AUDIT CLEAR). A PR now adds `runtime_state.d/<organ>.json` and never edits the monolith, so two
+#: PRs collide only if they add the SAME organ. `load_attestation` is the one merged view: the
+#: monolith's row for an organ always wins over a sidecar's, so once the attesting host's full
+#: pass covers an organ its sidecar is inert and nothing needs deleting.
+SIDECAR_DIR = "runtime_state.d"
+
+
+def sidecar_name(organ: str) -> str:
+    """A file name for `organ` that is legal on NTFS (the box) and unique by construction."""
+    import re as _re
+
+    slug = _re.sub(r"[^A-Za-z0-9._-]", "~", organ)[:80]
+    return f"{slug}-{hashlib.sha256(organ.encode('utf-8')).hexdigest()[:8]}.json"
+
+
 @dataclass(frozen=True)
 class Paths:
     root: Path
@@ -131,6 +150,7 @@ class Paths:
     out_json: Path
     out_md: Path
     ratchet: Path
+    sidecars: Path
 
     @classmethod
     def at(cls, root: Path | None = None) -> Paths:
@@ -146,6 +166,7 @@ class Paths:
             gateway=desk / "data" / "gateway_state.json",
             out_json=base / "docs" / "research" / "runtime_state.json",
             out_md=base / "docs" / "research" / "RUNTIME_STATE.md",
+            sidecars=base / "docs" / "research" / SIDECAR_DIR,
         )
 
 
@@ -211,6 +232,45 @@ DESK_HOSTS: tuple[str, ...] = ("vmi3571445",)
 #: How a stamp with no machine id reads: written before identities were recorded, so nothing can
 #: confirm or refute that this machine wrote it. Not a defect in the document -- just unverifiable.
 UNVERIFIABLE = "UNVERIFIABLE (old-format host stamp: no machine_id)"
+
+
+def read_sidecars(paths: Paths) -> list[dict[str, Any]]:
+    """Every well-formed sidecar row, in file-name order. A malformed file is skipped here and
+    named by `scripts/check_runtime_attestation.py`, which fails on it."""
+    rows: list[dict[str, Any]] = []
+    if not paths.sidecars.is_dir():
+        return rows
+    for f in sorted(paths.sidecars.glob("*.json")):
+        doc = _read_json(f)
+        if isinstance(doc, dict) and isinstance(doc.get("organ"), str) \
+                and doc.get("state") in STATES:
+            rows.append(doc)
+    return rows
+
+
+def load_attestation(paths: Paths) -> dict[str, Any] | None:
+    """The committed monolith with every sidecar row it does not already name appended, and
+    the census and `scope.attested` moved by those rows alone. None when there is no monolith."""
+    _doc = _read_json(paths.out_json, max_bytes=MAX_JSON_BYTES * 8)
+    if _doc is None or not isinstance(_doc.get("organs"), list):
+        return None
+    doc: dict[str, Any] = _doc
+    have = {str(r.get("organ")) for r in doc["organs"] if isinstance(r, dict)}
+    extra = [r for r in read_sidecars(paths) if r["organ"] not in have]
+    if not extra:
+        return doc
+    doc["organs"].extend(extra)
+    _c = doc.get("census")
+    census: dict[str, Any] = _c if isinstance(_c, dict) else {}
+    for r in extra:
+        census[r["state"]] = int(census.get(r["state"], 0)) + 1
+    doc["census"] = census
+    _s = doc.get("scope")
+    scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
+    scope["attested"] = int(scope.get("attested", 0)) + len(extra)
+    scope["sidecar_rows"] = len(extra)
+    doc["scope"] = scope
+    return doc
 
 
 def _machine_id() -> str:
@@ -708,7 +768,11 @@ def ratchet_update(paths: Paths, host: str, census: dict[str, int],
 
 
 def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]:
-    """APPEND rows for organs the committed attestation has no row for, and touch nothing else.
+    """New rows for organs the committed attestation (monolith + sidecars) has no row for.
+
+    SINCE 2026-11-14 `main` WRITES EACH ADDED ROW AS ITS OWN SIDECAR (`SIDECAR_DIR`) and leaves
+    the monolith and RUNTIME_STATE.md exactly as the attesting host wrote them; the returned
+    `doc` is the merged view (`load_attestation`) with the new rows in it.
 
     WHY THIS EXISTS (2026-09-30). A PR that adds organs must also add their attestation rows, or
     `scripts/check_birth_obligations.py` fails the merge. Resolving `runtime_state.json` by taking
@@ -726,8 +790,8 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     size trim runs over the appended rows only. Run it on a FULL tree -- on a sparse one the
     registry cannot see every organ's source, and absence there would be read as NEVER.
     """
-    _doc = _read_json(paths.out_json, max_bytes=MAX_JSON_BYTES * 8)
-    if _doc is None or not isinstance(_doc.get("organs"), list):
+    _doc = load_attestation(paths)
+    if _doc is None:
         raise FileNotFoundError(f"{paths.out_json}: no committed attestation to append to -- "
                                 f"run a full --once pass on the attesting host first")
     doc: dict[str, Any] = _doc
@@ -757,6 +821,10 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
                         if r["state"] == UNMEASURED else
                         f"appended by --only-missing on {here} ({ident_why}): no artifact and "
                         f"no run record here, and the attesting host has never attested it")
+    log = {"at": at, "host": here, "machine_id": _machine_id(),
+           "on_attesting_host": on_host, "identity": ident_why}
+    for r in added:
+        r["only_missing"] = dict(log)
     doc["organs"].extend(added)
     _c = doc.get("census")
     census: dict[str, Any] = _c if isinstance(_c, dict) else {}
@@ -766,14 +834,7 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     _s = doc.get("scope")
     scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
     scope["attested"] = int(scope.get("attested", 0)) + len(added)
-    log = scope.get("only_missing_appended")
-    log = list(log) if isinstance(log, list) else []
-    log.append({"at": at, "host": here, "machine_id": _machine_id(),
-                "on_attesting_host": on_host, "identity": ident_why,
-                "organs": [str(r["organ"]) for r in added]})
-    scope["only_missing_appended"] = log
     doc["scope"] = scope
-    _trim(doc, only=added)
     return {"doc": doc, "added": added}
 
 
@@ -859,9 +920,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", type=Path, default=ROOT, help="repo root (tests)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--only-missing", action="store_true",
-                    help="append rows ONLY for organs the committed attestation lacks; every "
-                         "existing row, the host stamp and the ratchet are left untouched "
-                         "(merge resolution -- run on a FULL tree)")
+                    help="write one sidecar row (docs/research/runtime_state.d/) for each organ "
+                         "the committed attestation lacks; the monolith, its host stamp and the "
+                         "ratchet are left untouched (run on a FULL tree)")
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.root))
     if a.only_missing:
@@ -872,15 +933,17 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if res["added"]:
             try:
-                _atomic(paths.out_json,
-                        json.dumps(res["doc"], indent=1, default=str, sort_keys=False))
-                _atomic(paths.out_md, render(res["doc"]))
+                paths.sidecars.mkdir(parents=True, exist_ok=True)
+                for r in res["added"]:
+                    _atomic(paths.sidecars / sidecar_name(str(r["organ"])),
+                            json.dumps(r, indent=1, default=str, sort_keys=False) + "\n")
             except OSError as exc:
                 print(f"runtime_attestation --only-missing: NOT written "
                       f"({type(exc).__name__}: {exc})")
                 return 1
         names = ", ".join(f"{r['organ']} ({r['state']})" for r in res["added"])
-        print(f"runtime_attestation --only-missing: appended {len(res['added'])} row(s)"
+        print(f"runtime_attestation --only-missing: wrote {len(res['added'])} sidecar row(s) "
+              f"under {paths.sidecars.relative_to(paths.root).as_posix()}/"
               + (f": {names}" if names else " -- every registry organ already has a row"))
         return 0
     doc = attest(paths, budget_s=float(a.budget_s))
