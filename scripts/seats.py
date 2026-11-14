@@ -29,8 +29,13 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
+
+_R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -162,7 +167,8 @@ def _free_tier_active() -> bool:
 
         req = urllib.request.Request("https://openrouter.ai/api/v1/credits",
                                      headers={"Authorization": f"Bearer {_load_key()}"})
-        with urllib.request.urlopen(req, timeout=20) as r:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=20) as r:
             data = json.loads(r.read()).get("data", {})
         total = float(data.get("total_credits") or 0)
         used = float(data.get("total_usage") or 0)

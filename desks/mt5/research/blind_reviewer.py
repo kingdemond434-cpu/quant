@@ -336,7 +336,8 @@ def _replay2_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
 
 def minimal_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
     """The contract hand-rolled, for a tree where neither engine imports: next-open entry,
-    intrabar stop and target with the STOP assumed first, TTL exit at the next open, one position
+    intrabar stop and target with the STOP assumed first, a bar opening through the stop exiting at
+    that open, TTL exit at the next open, one position
     at a time, R against the distance to the stop. Labelled `minimal_replay` wherever it is used,
     because it models no trigger, no banking and no trail -- a breakout cell replayed here is a
     different trade from the one the certificate was earned on."""
@@ -356,6 +357,9 @@ def minimal_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
             continue
         exit_i, exit_px = None, None
         for j in range(j0, min(j0 + max(1, int(s.ttl_bars)), len(o))):
+            if j > j0 and (o[j] - stop) * side <= 0:      # opened through the stop: the open
+                exit_i, exit_px = j, o[j]
+                break
             hit_stop = lo[j] <= stop if side > 0 else hi[j] >= stop
             hit_tgt = hi[j] >= target if side > 0 else lo[j] <= target
             if hit_stop or hit_tgt:
