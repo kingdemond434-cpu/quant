@@ -2374,6 +2374,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
     "transmission_engine": 1_000,
+    # candidate_crowding stops itself at --budget-s 420 (a docket read, the public-seat census
+    # and a cached, cursor-advanced decay/edge-trend study); the cap sits above so it writes.
+    "candidate_crowding": 540,
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
@@ -5159,6 +5162,14 @@ def main() -> None:
         "cross_asset_graph", "research/cross_asset_graph.py", "--budget-s", "900"))
     txg = _costed("transmission_engine", lambda: _producer(
         "transmission_engine", "research/transmission_engine.py", "--budget-s", "900"))
+    # CANDIDATE CROWDING (H6, GAP_MAP 132, the candidate half; #1137 is the allocator half).
+    # research/candidate_crowding.py puts a crowding score on EVERY docket row (public footprint,
+    # literature age, retail narrative velocity, CFTC concentration, originality credit) and the
+    # desk's OWN measured decay -- pre/post-publication split where the bars reach back, yearly
+    # edge trend for every runnable family -- as a two-sided, report-only expected-edge
+    # multiplier. Writes data/hypotheses/crowding_marks.json and reports/CANDIDATE_CROWDING.json.
+    ccr = _costed("candidate_crowding", lambda: _producer(
+        "candidate_crowding", "research/candidate_crowding.py", "--budget-s", "420"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -6574,6 +6585,7 @@ def main() -> None:
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
+                    "candidate_crowding": ccr,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
