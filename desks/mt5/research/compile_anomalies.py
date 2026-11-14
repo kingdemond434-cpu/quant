@@ -41,7 +41,9 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
-sys.path.insert(0, str(ROOT))
+for _p in (str(ROOT), str(DESK)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from libs.research.mechanism_adapters import explain  # noqa: E402
 
@@ -65,6 +67,20 @@ GLOBAL_CAP = 6000
 #: whose trial count is carried into deflation. The strongest member survives; the rest are
 #: counted and reported, never silently dropped.
 DEDUPE_KEY = ("symbol", "feature", "side")
+
+
+#: The only family this organ can express: `family_discovered(feature, band, horizon, side)`.
+FAMILY = "discovered"
+
+
+def _ban_reason(family: str) -> str:
+    """The principal's reason when `family` is banned, else "". `family_policy` is the one
+    reader every organ shares; it reads `discovered` as banned even with the data file gone."""
+    try:
+        from family_policy import ban_reason, family_banned
+    except ImportError:                                    # pragma: no cover - desk-root runs
+        from research.family_policy import ban_reason, family_banned
+    return str(ban_reason(family) or "banned") if family_banned(family) else ""
 
 
 def _side(mean_bp: float) -> int:
@@ -105,7 +121,7 @@ def compile_latest() -> dict[str, Any]:
         sym = str(a.get("symbol") or "")
         by_symbol.setdefault(sym, []).append({
             "symbol": sym,
-            "family": "discovered",
+            "family": FAMILY,
             "params": {"feature": feature, "band": band,
                        "horizon": int(a.get("horizon") or 1),
                        "side": _side(a.get("mean_bp") or 0.0)},
@@ -139,13 +155,28 @@ def compile_latest() -> dict[str, Any]:
 
     # 2. RANK GLOBALLY, then cap. Per-symbol capping let a thin symbol keep weak cells while a
     #    rich one lost strong ones; the gauntlet does not care which symbol a cell came from.
-    candidates = sorted(best.values(), key=lambda r: -abs(r["t_stat"]))[:GLOBAL_CAP]
+    ranked = sorted(best.values(), key=lambda r: -abs(r["t_stat"]))[:GLOBAL_CAP]
+
+    # 3. A BANNED FAMILY IS REFUSED HERE, AT THE WRITER, BY NAME (2026-11-11). Every row this
+    #    organ mints is `discovered`, which the principal banned PERMANENTLY (2026-09-16/22:
+    #    85 live closes, mean -0.24R, pooled t=-5.2). The compiler already refuses it, so the
+    #    docket file carried 404 rows that could only ever compile to BANNED_FAMILY -- a source
+    #    that looked like an unconverted backlog when it is a governance refusal. The refused
+    #    rows are kept under `refused_banned_family` with the ban's own reason, never forged
+    #    into another family, and `candidates` holds only what a door may still admit. Reading
+    #    the ban from `family_policy` (not a constant) means a lifted ban resumes this lane.
+    ban = _ban_reason(FAMILY)
+    candidates = [] if ban else ranked
+    refused = ranked if ban else []
 
     report = {
         "compiled_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "source_file": files[-1],
         "anomalies_in": len(rows),
         "candidates_out": len(candidates),
+        "family": FAMILY,
+        "refused_banned_family_n": len(refused),
+        "refused_banned_family_reason": ban or None,
         "symbols": len(by_symbol),
         "skipped_unexplained": skipped_unexplained,
         "skipped_no_single_feature_recipe": skipped_shape,
@@ -153,6 +184,7 @@ def compile_latest() -> dict[str, Any]:
         "collapsed_near_duplicates": collapsed,
         "distinct_after_dedupe": len(best),
         "candidates": candidates,
+        "refused_banned_family": refused,
         "rule": ("Nothing is invented. feature/band/horizon are copied from the measurement and "
                  "side is the SIGN of the measured effect; the mechanism comes from an adapter "
                  "that matched, with its falsifier attached. selection_trials is carried so "
