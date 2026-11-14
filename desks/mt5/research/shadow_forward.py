@@ -104,6 +104,37 @@ _TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARAN
                       "PROMOTION CANDIDATE", "IDENTITY_BROKEN")
 
 
+def reopen_door_error(key: str, st: dict) -> bool:
+    """Hand a row the Tier S door withheld on a DOOR_ERROR back to the promoter. True if reopened.
+
+    Only `DOOR_ERROR` holds are reopened: a verifier that did not run is not evidence against the
+    sleeve (`promotion_authority`: "withheld until it runs clean"). A hold on EVIDENCE about the
+    certificate (REPLICATION_MISMATCH, ONLINE_FDR_OVER_BUDGET, REVIEW_PANEL_FAILED, ...) is left
+    exactly as it is. The row returns to PROMOTION CANDIDATE only while its forward record still
+    meets this clock's own promotion clause, because the clock kept running while it was held.
+    The promoter then runs every door on it again; if the door still errors, it is held again.
+    """
+    if st.get("status") != "BLOCKED_TIER_S":
+        return False
+    why = str(st.get("gate_reason") or "")
+    if not why.startswith("DOOR_ERROR"):
+        return False
+    try:
+        exp_r, dd_r = float(st.get("exp_r")), float(st.get("max_dd_r"))
+    except (TypeError, ValueError):
+        return False
+    if not (exp_r > PROMOTE_MIN_EXP and dd_r > PROMOTE_MIN_DD):
+        return False
+    st.setdefault("tier_s_reopened", []).append(
+        {"at": datetime.now(UTC).isoformat(timespec="seconds"), "was": why[:300]})
+    del st["tier_s_reopened"][:-20]
+    st["status"] = "PROMOTION CANDIDATE"
+    st.pop("gate_reason", None)
+    slog(f"{key}: Tier S hold was a DOOR_ERROR, not evidence -- handed back to the promoter as "
+         f"PROMOTION CANDIDATE (exp {exp_r:+.3f}R, maxDD {dd_r:.1f}R)")
+    return True
+
+
 def _is_terminal(status: object) -> bool:
     text = str(status or "").upper()
     return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
@@ -1564,6 +1595,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
+            # A DOOR THAT DID NOT RUN IS NOT A VERDICT (2026-11-10, CLOCK_LAW). The promoter
+            # writes BLOCKED_TIER_S when the Tier S door withholds a new live row, but it only
+            # ever reads rows at PROMOTION CANDIDATE, so a row held once was never shown the
+            # door again. Measured on LIVE: all eight main-lane BLOCKED_TIER_S rows carried the
+            # same DOOR_ERROR (REPLICATION.json stale) and the door passes each of them now.
+            # `reopen_door_error` hands such a row back to the promoter, which runs EVERY door
+            # again on it -- Tier S included -- so nothing here decides a promotion.
+            reopen_door_error(key, st)
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
                 if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                     st["status"] = "PROMOTION CANDIDATE"
