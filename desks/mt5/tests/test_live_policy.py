@@ -87,6 +87,8 @@ def _restrict_fixture(monkeypatch, tmp_path) -> None:
 def test_the_gateway_door_drops_refused_rows_and_names_them(tmp_path, monkeypatch) -> None:
     _restrict_fixture(monkeypatch, tmp_path)
     f = tmp_path / "sleeves.json"
+    # The roster also reads its stops record beside it (principal_stops, 2026-10-14).
+    (tmp_path / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
     f.write_text(json.dumps({"sleeves": [FX, GOLD, GOLD_M15,
                                          {**GOLD, "name": "standby", "status": "STANDBY"}]}),
                  encoding="utf-8")
