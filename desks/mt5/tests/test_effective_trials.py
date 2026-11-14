@@ -165,9 +165,17 @@ def test_the_bar_never_moves_without_a_deliberate_act(tmp_path: Path) -> None:
 
 
 def test_the_scheduled_build_measures_but_never_writes_the_wall(tmp_path: Path) -> None:
+    # A census that MEASURES a lower charge, built here: read off the live docket, the test only
+    # held where that docket was fresh and fell to UNCHANGED (597 = the wall) everywhere else.
+    docket = tmp_path / "docket.json"
+    rows = [_row("carry", "AUDJPY", "H1", fast=19 + i) for i in range(24)]
+    rows += [_row("overnight_gap_decay", "EURUSD", "H4", z=1.0 + i / 10) for i in range(12)]
+    docket.write_text(json.dumps(rows), encoding="utf-8")
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
-    doc = et.build(spec=spec, apply=True, budget_s=5.0)
+    doc = et.build(docket=docket, spec=spec, apply=True, budget_s=30.0,
+                   dsr_inputs_path=_measured_dsr_inputs(tmp_path))
+    assert doc["verdict"] == "MEASURED" and doc["effective"] < 597
     assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"
     assert et.spec_fixed_trial_count(spec) == 597
 
