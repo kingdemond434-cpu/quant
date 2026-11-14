@@ -124,6 +124,16 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "detect missed hourly refreshes before its six-hour evidence expiry"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
+    # THE FTMO LANE (2026-11-13). Its three box tasks ran every pass and read UNCONTRACTED in
+    # process_health: the FTMO executor could stop placing and the account would keep reading
+    # "within its limits", the same silent failure the E8 note above describes. Each writes its
+    # report on every pass, sent or refused, so a stale report means the organ stopped.
+    "MT5-FTMO-Executor":  ("desks/mt5/reports/FTMO_EXEC.json", 15,
+                           "five-minute FTMO sleeve placement off the allocator book, or why not"),
+    "MT5-FTMO-Follower":  ("desks/mt5/reports/FTMO_FOLLOWER.json", 10,
+                           "the one-minute FTMO gold follower and mirror bracket, or why not"),
+    "MT5-FTMO-VenueReader": ("desks/mt5/reports/FTMO_ACCOUNT_STATE.json", 15,
+                             "the FTMO account's phase, equity room and days traded"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
     # `E8_GUARD.json`, and both halves were wrong: there is no `E8-Guard` task in the scheduler,
     # and that artifact has never existed. The guard is a PROPERTY of E8-Executor -- its verdict
