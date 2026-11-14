@@ -57,7 +57,7 @@ def test_a_favourable_fill_is_negative_slip():
 
 def test_slippage_is_reported_in_R_because_that_is_the_unit_of_every_gate():
     """0.5 quote on a 19.1 stop distance is 0.0262R -- against a +0.159R edge, 16% of it."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY, risk=19.1)])
+    m = compute([{**_intent(1, 2000.0), "sl": 2000.0 - 19.1}], [_deal(1, 2000.5, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.5 / 19.1, rel=1e-6)
     assert m.edge_share == pytest.approx((0.5 / 19.1) / 0.159, rel=1e-6)
 
@@ -91,7 +91,8 @@ def test_no_fills_yet_is_not_a_clean_bill_of_health():
 
 def test_the_report_escalates_when_slippage_eats_the_edge():
     """0.10R average against a 0.159R edge is 63% of everything the book earns."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
+    m = compute([{**_intent(1, 2000.0), "sl": 2000.0 - 19.1}],
+                [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.10, abs=0.001)
     out = render(m)
     assert "eating the edge" in out
@@ -183,3 +184,63 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
         "history_deals_get takes no magic keyword; a refused keyword lands in the except and "
         "the ledger is silently never written")
     assert 'getattr(d, "magic", 0)' in src
+
+
+def test_slip_in_R_is_over_the_intended_stop_distance_never_the_money_at_risk():
+    """THE 2026-11-11 RED THAT WAS A DENOMINATOR. `risk_quote` is account money for the
+    position's volume, measured from the fill: on a 0.01-lot FX cross it is ~1000x the price
+    distance, and a fill near its stop shrinks it toward zero. A slip in R is over the distance
+    the trade was sized on -- intended entry to the intent's stop."""
+    fx = {"ticket": 1, "intended": 0.93000, "side": "buy", "sl": 0.92600,
+          "sleeve": "eurchf_x", "symbol": "EURCHF"}
+    deal = {"order": 1, "fill_price": 0.93004, "side": SELL, "risk_quote": 4.06,
+            "sleeve": "eurchf_x", "symbol": "EURCHF", "deal": 10}
+    m = compute([fx], [deal])
+    assert m.rows[0]["risk_basis"] == "intent_sl"
+    assert m.mean_slip_r == pytest.approx(0.00004 / 0.004, rel=1e-6)
+
+    # A short filled $3.84 ABOVE its trigger and $0.10 under its stop: -0.97R, not -44R.
+    short = {"ticket": 2, "intended": 4338.91, "side": "sell", "sl": 4342.85,
+             "sleeve": "xau_m5", "symbol": "XAUUSD"}
+    near = {"order": 2, "fill_price": 4342.75, "side": BUY, "risk_quote": 0.086688,
+            "sleeve": "xau_m5", "symbol": "XAUUSD", "deal": 20}
+    m2 = compute([short], [near])
+    assert m2.mean_slip_r == pytest.approx(-3.84 / 3.94, rel=1e-3)
+
+
+def test_the_position_stop_stands_in_when_the_intent_carries_none():
+    m = compute([_intent(1, 2000.0)],
+                [{**_deal(1, 2000.5, BUY, risk=999.0), "sl": 1990.0}])
+    assert m.rows[0]["risk_basis"] == "position_sl"
+    assert m.mean_slip_r == pytest.approx(0.05)
+
+
+def test_slippage_splits_by_sleeve_and_symbol_beside_realised_R():
+    intents = [{**_intent(1, 2000.0), "sl": 1990.0},
+               {**_intent(2, 2000.0), "sl": 1990.0, "sleeve": "other", "symbol": "EURUSD"},
+               {**_intent(3, 2000.0), "sl": 1990.0}]
+    deals = [{**_deal(1, 2001.0, BUY), "r_multiple": 1.5},
+             {**_deal(2, 1999.0, BUY), "sleeve": "other", "symbol": "EURUSD",
+              "r_multiple": -1.0},
+             {**_deal(3, 2000.0, BUY), "r_multiple": 0.5}]
+    m = compute(intents, deals)
+    gold = m.by_sleeve["gold_asia"]
+    assert gold["n"] == 2 and gold["worse"] == 1 and gold["at_price"] == 1
+    assert gold["mean_slip_r"] == pytest.approx(0.05)
+    assert gold["mean_realized_r"] == pytest.approx(1.0)
+    assert m.by_symbol["EURUSD"]["better"] == 1
+    assert m.median_slip_r == pytest.approx(0.0)
+    assert "by sleeve" in render(m)
+
+
+def test_a_row_with_no_stop_gets_no_R_and_never_moves_the_R_mean():
+    """`risk_quote` is account money. A stopless row keeps its quote slip, is counted under
+    `risk_quote_only`, and stays out of the R mean, median and every breakdown."""
+    intents = [{**_intent(1, 2000.0), "sl": 1990.0}, _intent(2, 2000.0)]
+    deals = [_deal(1, 2000.5, BUY), _deal(2, 2003.0, BUY, risk=0.05)]
+    m = compute(intents, deals)
+    bases = {r["risk_basis"]: r["slip_r"] for r in m.rows}
+    assert bases == {"intent_sl": pytest.approx(0.05), "risk_quote_only": None}
+    assert m.mean_slip_r == pytest.approx(0.05)
+    assert m.by_sleeve["gold_asia"]["mean_slip_r"] == pytest.approx(0.05)
+    assert m.mean_slip_quote == pytest.approx(1.75)
