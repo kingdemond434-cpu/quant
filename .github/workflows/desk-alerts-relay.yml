@@ -1,0 +1,45 @@
+name: desk-alerts-relay
+
+# THE BOX'S ALERTS, SAID BY AN IDENTITY THAT NOTIFIES (2026-11-11, #1002 follow-up). The trading
+# box comments RED/recovery transitions on the "Desk alerts" issue as the repository owner, and
+# GitHub never notifies an account of its own comments. Once an hour this relays the transitions
+# the issue has not yet been told as github-actions[bot] (which notifies the owner), and says once
+# when the box heartbeat goes stale (a dead box) and once when it returns. Deduped by markers in
+# the issue; a quiet hour posts nothing. Reads two reports from LIVE; absent, it is a no-op.
+# No secrets: only this run's GITHUB_TOKEN, with issues: write.
+#
+# GitHub runs `schedule` from the DEFAULT branch's copy of this file (master, synced from LIVE by
+# ci.yml's promote job), so the hourly clock starts once a promote has carried it there.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: desk-alerts-relay
+  cancel-in-progress: true
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/desk_alerts_relay.py
+            desks/mt5/reports/DESK_ALERTS.json
+            desks/mt5/reports/BOX_HEARTBEAT.json
+          sparse-checkout-cone-mode: false
+      - name: relay transitions and the dead-man (no secrets)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -I .github/scripts/desk_alerts_relay.py --repo "${{ github.repository }}"
