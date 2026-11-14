@@ -167,10 +167,31 @@ def test_ci_passes_only_when_every_run_finished_and_the_gating_jobs_succeeded() 
 
 def test_a_skipped_gating_job_is_not_a_success() -> None:
     runs = [_r("quality", conclusion="skipped"), _r("mt5-money-path"), _r("coverage-floor")]
-    state, why = ag.checks(runs)
+    state, why = ag.checks(runs, draft=True)
     # never a pass; since 2026-11-14 a draft's skipped run WAITS (pending) for the run that marking
     # it ready starts, instead of failing -- a fail would quarantine every no-comment draft
     assert state == "pending" and "quality" in why and "draft" in why
+
+
+def test_a_skipped_gating_job_on_a_ready_pr_fails() -> None:
+    """#1222 audit: only a draft waits. A READY PR whose gating job skipped never ran its full CI,
+    and reading that as pending would hold the PR forever. Unknown draftness is the strict read."""
+    runs = [_r("quality", conclusion="skipped"), _r("mt5-money-path"), _r("coverage-floor")]
+    for state, why in (ag.checks(runs, draft=False), ag.checks(runs)):
+        assert state == "fail" and "quality" in why and "ready PR" in why
+
+
+def test_a_queued_full_run_supersedes_the_draft_s_skipped_run() -> None:
+    """Marking a draft ready starts the full run; until it carries a start stamp it must still
+    win over the skipped one, or the ready PR would read failed in that window."""
+    runs = [
+        _r("quality", conclusion="skipped"),
+        {**_r("quality", status="queued", conclusion=None), "started_at": None},
+        _r("mt5-money-path"),
+        _r("coverage-floor"),
+    ]
+    assert ag.checks(runs, draft=False)[0] == "pending"
+    assert ag.checks(list(reversed(runs)), draft=False)[0] == "pending"
 
 
 def test_a_skipped_gating_job_never_masks_a_real_failure() -> None:
