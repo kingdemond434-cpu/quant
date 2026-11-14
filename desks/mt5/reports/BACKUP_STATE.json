@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-11-13T12:15:21+00:00",
+ "at": "2026-11-14T02:30:20+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -14,8 +14,17 @@
  },
  "offsite": {
   "job": "MT5-OffsiteBackup",
-  "state": "UNMEASURED",
-  "why": "no OFFSITE_BACKUP.json on this host: the job has not run here"
+  "state": "NOT_ARMED",
+  "verdict": "NOT_ARMED",
+  "at": "2026-11-13T23:43:02+00:00",
+  "last_success_at": null,
+  "last_check_at": null,
+  "last_check_ok": null,
+  "last_prune_at": null,
+  "encrypted": true,
+  "key_escrowed_off_box": false,
+  "n_included": 7,
+  "n_missing": 1
  },
  "ops_redundancy": {
   "state": "FAIL",

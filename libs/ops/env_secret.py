@@ -1,7 +1,9 @@
 """A key the principal set on the box, found wherever Windows actually put it.
 
-THE DEFECT (2026-10-06). The principal set FRED_API_KEY with `setx /M` "many times", and every
-ALFRED pass still read BLOCKED_AUTH. `setx /M` writes the MACHINE environment in the registry
+THE DEFECT (2026-10-06). The principal set a data key with `setx /M` "many times" (it was
+FRED_API_KEY, and FRED/ALFRED is now terms-refused for every automated desk use whatever the key:
+Governance ruling 2026-11-13), and every pass that read it still saw BLOCKED_AUTH. `setx /M`
+writes the MACHINE environment in the registry
 (HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment); it never reaches a
 process that is ALREADY running, nor the children that process starts. The desk's residents are
 long-lived scheduled tasks, so `os.environ` in them is the environment of the day they started,
@@ -18,7 +20,7 @@ So a key is looked up in this order, and the caller learns WHERE it came from (n
 Names are tried exactly as given, then case-insensitively in the registry (Windows environment
 names are case-insensitive). No value is ever printed, logged or returned by `presence`.
 
-    python -m libs.ops.env_secret FRED_API_KEY      # prints origin and length only
+    python -m libs.ops.env_secret EIA_API_KEY       # prints origin and length only
 """
 from __future__ import annotations
 
@@ -115,7 +117,16 @@ BLOCKED_ON_TERMS = frozenset({"MYFXBOOK_EMAIL", "MYFXBOOK_PASSWORD", "MYFXBOOK_S
 #: HARD REFUSALS, with or without a catalog (audit #204, 2026-10-07): the fenced platforms
 #: (libs/data/terms_fence.py) by prefix, and the paid sources by name. A suffix-mode resident
 #: would otherwise hand X_BEARER_TOKEN or a paid vendor's token to every child it starts.
-REFUSED_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_", "DISCORD_")
+#: X and Reddit are NOT fenced (principal 2026-10-13: "not banned ... dont ban it"): their official
+#: API credentials (bearer token, client id/secret) are carried like any key. What stays refused
+#: on those platforms is login-bypass material -- a session cookie or account password -- because
+#: using it is the refused METHOD, not the source.
+#: The same holds for StockTwits and Discord: an API or bot token is official access; a user
+#: token, cookie or password is login material and stays refused.
+REFUSED_PREFIXES: tuple[str, ...] = ()
+OFFICIAL_API_PREFIXES: tuple[str, ...] = ("X_", "TWITTER_", "REDDIT_", "STOCKTWITS_",
+                                          "DISCORD_")
+LOGIN_MATERIAL = ("COOKIE", "PASSWORD", "SESSION", "USERNAME", "USER_TOKEN")
 PAID_BLOCKED = frozenset({"TIANYANCHA_TOKEN", "BAIDU_INDEX_COOKIE", "CLOUDFLARE_API_TOKEN",
                           "GFW_API_TOKEN", "XUEQIU_COOKIE", "WIND_KEY"})
 
@@ -149,7 +160,9 @@ def child_allow(legs: Iterable[str]) -> set[str]:
 
 
 def _hard_refused(up: str) -> bool:
-    return up in BLOCKED_ON_TERMS or up in PAID_BLOCKED or up.startswith(REFUSED_PREFIXES)
+    return (up in BLOCKED_ON_TERMS or up in PAID_BLOCKED
+            or (bool(REFUSED_PREFIXES) and up.startswith(REFUSED_PREFIXES))
+            or (up.startswith(OFFICIAL_API_PREFIXES) and any(m in up for m in LOGIN_MATERIAL)))
 
 
 def _catalog_names() -> tuple[set[str], set[str]] | None:
@@ -245,7 +258,7 @@ def presence(names: Sequence[str], files: Iterable[Path] = ()) -> dict[str, obje
 
 
 def main(argv: list[str] | None = None) -> int:
-    names = (argv if argv is not None else sys.argv[1:]) or ["FRED_API_KEY"]
+    names = (argv if argv is not None else sys.argv[1:]) or ["EIA_API_KEY"]
     print(json.dumps(presence(names)))
     return 0
 

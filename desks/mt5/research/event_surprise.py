@@ -1012,7 +1012,7 @@ def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
     except Exception as exc:                             # pragma: no cover - guarded organ
         return {"rows": [], "sensor_inputs": [],
                 "census": {"status": UNMEASURED,
-                           "why": f"release_vintages: {type(exc).__name__}: {str(exc)[:160]}"}}
+                           "why": f"release_vintages: {type(exc).__name__}"}}
     horizon = (now - timedelta(days=DAYS)).date()
     recent = [s for s in built["sensor_inputs"] if s["sched"].date() >= horizon]
     return {"rows": built["rows"], "sensor_inputs": recent, "census": built["census"]}
@@ -1025,7 +1025,7 @@ def record_sensors(sensor_inputs: list[dict[str, Any]], received_at: datetime) -
         from macro import release_vintages as rv
         return sc.SensorLedger().append(rv.sensor_observations(sensor_inputs, received_at))
     except Exception as exc:                             # pragma: no cover - guarded organ
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+        return {"status": UNMEASURED, "why": type(exc).__name__}
 
 
 # --------------------------------------------------------------------------------- the organ
