@@ -152,3 +152,28 @@ def test_the_alt_proxies_row_reads_the_series_and_is_terms_confirmed() -> None:
     assert src.terms == "confirmed" and src.parse is None and src.reader is P.read_ais_norway
     assert not src.substitutes_for
     assert "NLOD" in P.TERMS_EVIDENCE["no_ais_tankers"]["terms_quote"]
+
+
+def test_an_unreadable_series_is_never_overwritten_by_the_window(tmp_path: Path,
+                                                                 monkeypatch) -> None:
+    pytest.importorskip("pyarrow")
+    monkeypatch.setattr(A, "REPORT", tmp_path / "r.json")
+    lake, series = tmp_path / "lake", tmp_path / "series.parquet"
+    series.write_bytes(b"not a parquet file")
+    d0 = datetime(2026, 11, 12, tzinfo=UTC)
+    for h in range(A.MIN_WINDOWS):
+        A.run(0, lake=lake, series=series, lines=_window(), now=d0 + timedelta(hours=h))
+    rep = A.run(0, lake=lake, series=series, lines=[], now=d0 + timedelta(days=1, hours=1))
+    assert rep["series_rows"] == 0
+    assert series.read_bytes() == b"not a parquet file"
+
+
+def test_prune_keeps_undated_and_recent_files(tmp_path: Path) -> None:
+    today = datetime(2026, 11, 14, tzinfo=UTC).date()
+    old = tmp_path / "windows_2026-01-01.jsonl"
+    new = tmp_path / "windows_2026-11-13.jsonl"
+    odd = tmp_path / "windows_notadate-x.jsonl"
+    for p in (old, new, odd):
+        p.write_text("{}\n")
+    A._prune(tmp_path, today)
+    assert not old.exists() and new.exists() and odd.exists()

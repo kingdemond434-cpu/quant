@@ -288,9 +288,11 @@ def write_series(lake: Path, series: Path, today: date) -> int:
     df.index = pd.to_datetime(df.index)
     df.index.name = "date"
     if series.exists():
-        with contextlib.suppress(Exception):
+        try:
             old = pd.read_parquet(series)
-            df = pd.concat([old[~old.index.isin(df.index)], df]).sort_index()
+        except Exception:     # an unreadable series is never overwritten by a 120-day window
+            return 0
+        df = pd.concat([old[~old.index.isin(df.index)], df]).sort_index()
     series.parent.mkdir(parents=True, exist_ok=True)
     tmp = series.with_suffix(".tmp")
     df.to_parquet(tmp)
