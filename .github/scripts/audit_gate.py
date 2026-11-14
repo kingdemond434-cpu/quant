@@ -956,31 +956,85 @@ def authority_clear(
     return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
 
 
+#: Paths whose base copy the trusted-eval judge runs (trusted-eval.yml): every test-config file,
+#: the release harness and suite lists, the workflows, and every test file. A base change that
+#: touches none of them cannot change the judge's verdict on a given head.
+_JUDGE_INPUT = re.compile(
+    r"(^|/)(conftest\.py|pytest\.ini|tox\.ini|setup\.cfg|setup\.py|pyproject\.toml"
+    r"|sitecustomize\.py|usercustomize\.py)$|\.pth$|^ops/release/|^\.github/"
+    r"|(^|/)tests?/|(^|/)test_[^/]*\.py$"
+)
+
+#: How many pages (100 runs each) of trusted-eval runs the gate reads looking for this head.
+TRUSTED_EVAL_PAGES = 5
+
+
+def _judge_unchanged(repo: str, ran_on: str, base: str) -> tuple[bool, str]:
+    """True when no judge input differs between the base commit a run used and the base now.
+    Any read error, or a comparison GitHub truncates, is a no."""
+    if not ran_on:
+        return False, "the run names no base commit"
+    try:
+        cmp = _gh(f"repos/{repo}/compare/{ran_on}...{base}")
+    except RuntimeError as exc:
+        return False, f"base comparison unreadable ({str(exc)[:120]})"
+    files = (cmp or {}).get("files")
+    if not isinstance(files, list) or len(files) >= 300 \
+            or (cmp or {}).get("status") not in ("ahead", "identical"):
+        return False, f"base {ran_on[:9]} is not a readable ancestor of {base}"
+    names = {str(f.get(k) or "") for f in files for k in ("filename", "previous_filename")}
+    hit = sorted(n for n in names if n and _JUDGE_INPUT.search(n))
+    if hit:
+        return False, f"the judge changed since base {ran_on[:9]} ({', '.join(hit[:3])})"
+    return True, f"judge unchanged since base {ran_on[:9]}"
+
+
 def trusted_eval_passed(repo: str, pr: int, head: str, base: str) -> tuple[bool, str]:
     """Did the BASE's trusted-eval.yml (pull_request_target: the base's file, never the PR's)
     succeed for this PR at this exact head? Its run-name carries the PR and head it checked out,
-    from the base's own file; any read error is a no."""
+    from the base's own file; any read error is a no.
+
+    AN EARLIER GREEN STANDS WHILE A RE-RUN WAITS (2026-11-14). The newest run decided alone, so a
+    re-fired run sitting in the queue (171 deep, oldest 20 h that morning) hid a success for the
+    same head and an approved PR waited behind it for nothing. Now the newest COMPLETED run
+    decides: a failure there is a no whatever is queued after it, and a success counts while a
+    newer run is still queued only when no judge input (`_JUDGE_INPUT`) changed on the base
+    between the base commit that run used and the base now -- so it is the same judge's verdict
+    on the same head. With nothing completed, a queued run is still "still running"."""
     want = f"{TRUSTED_EVAL} {pr} {head}"
-    try:
-        got = _gh(f"repos/{repo}/actions/workflows/trusted-eval.yml/runs"
-                  f"?event=pull_request_target&per_page=100")  # fmt: skip
-    except RuntimeError as exc:
-        return False, f"trusted-eval runs unreadable ({str(exc)[:120]})"
-    runs = [
-        r for r in (got or {}).get("workflow_runs") or []
-        if str(r.get("display_title") or "") == want
-        and str(r.get("path") or "").endswith(WORKFLOW_OF[TRUSTED_EVAL])
-        and str(r.get("head_branch") or "") == base
-        and str(r.get("event") or "") == "pull_request_target"
-    ]  # fmt: skip
+    runs: list[Mapping[str, Any]] = []
+    for page in range(1, TRUSTED_EVAL_PAGES + 1):
+        try:
+            got = _gh(f"repos/{repo}/actions/workflows/trusted-eval.yml/runs"
+                      f"?event=pull_request_target&per_page=100&page={page}")  # fmt: skip
+        except RuntimeError as exc:
+            return False, f"trusted-eval runs unreadable ({str(exc)[:120]})"
+        batch = (got or {}).get("workflow_runs") or []
+        runs += [
+            r for r in batch
+            if str(r.get("display_title") or "") == want
+            and str(r.get("path") or "").endswith(WORKFLOW_OF[TRUSTED_EVAL])
+            and str(r.get("head_branch") or "") == base
+            and str(r.get("event") or "") == "pull_request_target"
+        ]  # fmt: skip
+        if len(batch) < 100:
+            break
     if not runs:
         return False, f"no base-run {TRUSTED_EVAL} for {head[:9]}"
     last = max(runs, key=lambda r: str(r.get("created_at") or ""))
-    if last.get("status") != "completed":
+    done = [r for r in runs if r.get("status") == "completed"]
+    if not done:
         return False, f"{TRUSTED_EVAL} still running"
-    if last.get("conclusion") != "success":
-        return False, f"{TRUSTED_EVAL} {last.get('conclusion')}"
-    return True, f"{TRUSTED_EVAL} passed (run {last.get('id')})"
+    fin = max(done, key=lambda r: str(r.get("created_at") or ""))
+    if fin.get("conclusion") != "success":
+        return False, f"{TRUSTED_EVAL} {fin.get('conclusion')}"
+    if fin is last:
+        return True, f"{TRUSTED_EVAL} passed (run {fin.get('id')})"
+    same, why = _judge_unchanged(repo, str(fin.get("head_sha") or ""), base)
+    if not same:
+        return False, f"{TRUSTED_EVAL} still running ({why})"
+    return True, (f"{TRUSTED_EVAL} passed (run {fin.get('id')}; a newer run is queued and "
+                  f"{why})")
 
 
 BEHIND = "it is behind"
