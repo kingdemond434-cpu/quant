@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import math
 import os
@@ -125,6 +126,19 @@ PROTECTED = (GATE_LEDGER, LIVE_LEDGER, ORDER_INTENTS, DECISIONS, FORECAST_LOG,
              DESK / "data" / "preregistrations.jsonl", DESK / "data" / "decision_dataset.jsonl")
 
 MAX_EMIT_PER_KIND = 150
+#: THE EMISSION ROTATION (2026-11-14). Every emitter builds its FULL candidate list; `_emit`
+#: ranks cells never donated before first and only then caps, so each hour's 150 are new cells.
+#: A cell donated within this many days is withheld (the compiler already holds it); after it, the
+#: cell may be re-sent, oldest donation first, only when the fresh cells do not fill the cap.
+REEMIT_AFTER_DAYS = 14
+#: Donation memory older than this is forgotten (a cell that old is fresh ground again).
+EMITTED_MEMORY_DAYS = 90
+EMITTED_CELLS = "emitted_cells"
+#: Rows an emitter may hand `_emit` in one pass; the full grid is far below it today.
+MAX_CANDIDATES_PER_KIND = 200_000
+#: Probes per empty QD niche handed to the rotation (families x symbols, in steering order);
+#: 400 niches x 300 is ~33 days of fresh 150-row hours before anything is re-sent.
+MAX_PROBES_PER_NICHE = 300
 NOW = datetime.now(UTC)
 
 
@@ -349,10 +363,14 @@ def _family_vocab() -> list[str]:
 
 
 _FAILMEM: dict[str, Any] | None = None
+_EXPLORED_MEMO: dict[tuple[str, str, str], int] = {}
 
 
 def _explored(row: Mapping[str, Any]) -> int:
-    """How many judged cells the failure memory already holds in this row's neighbourhood."""
+    """How many judged cells the failure memory already holds in this row's neighbourhood.
+
+    Memoised by its (mechanism, asset class, selector) descriptor: the full candidate grids the
+    rotation ranks are tens of thousands of rows over a few hundred descriptors."""
     global _FAILMEM
     if _FAILMEM is None:
         _FAILMEM = _read(STATE / "failure_memory.json") or {}
@@ -360,12 +378,82 @@ def _explored(row: Mapping[str, Any]) -> int:
         return 0
     sym = str(row["symbols"][0])
     params = row.get("params") or {}
-    desc = {"mechanism": _mechanism(str(row["family"])), "asset_class": _asset_class(sym),
-            "selector": str(params.get("session") or "?")}
+    sel = params.get("session") if isinstance(params, dict) else None
+    key = (_mechanism(str(row["family"])), _asset_class(sym), str(sel or "?"))
+    if key in _EXPLORED_MEMO:
+        return _EXPLORED_MEMO[key]
+    desc = {"mechanism": key[0], "asset_class": key[1], "selector": key[2]}
     try:
-        return int(failure_memory.neighbourhood(desc, _FAILMEM)["explored"])
+        v = int(failure_memory.neighbourhood(desc, _FAILMEM)["explored"])
     except Exception:
-        return 0
+        v = 0
+    _EXPLORED_MEMO[key] = v
+    return v
+
+
+#: Row fields that make two hypothesis rows the SAME cell for the compiler.
+_CELL_FIELDS = ("family", "symbols", "params", "niche", "theory", "composed", "session")
+
+
+def cell_key(row: Mapping[str, Any]) -> str:
+    """Stable identity of a donated cell: family, instruments, params and the organ's own
+    coordinates (niche / theory / composition). Steering weights and prose are not identity."""
+    blob = json.dumps({k: row.get(k) for k in _CELL_FIELDS if row.get(k) is not None},
+                      sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:20]
+
+
+def _interleave(groups: Iterable[list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """Round-robin across groups, so a cap taken from the front spans every group."""
+    out: list[dict[str, Any]] = []
+    gs = [list(g) for g in groups if g]
+    i = 0
+    while gs:
+        nxt = []
+        for g in gs:
+            if i < len(g):
+                out.append(g[i])
+                nxt.append(g)
+        gs = [g for g in nxt if i + 1 < len(g)]
+        i += 1
+    return out
+
+
+def rotate(kind: str, rows: list[dict[str, Any]], seen: Mapping[str, Any], *,
+           now: datetime, rank: Any = None, cap: int = MAX_EMIT_PER_KIND
+           ) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """The rotation: never-donated cells first (in `rank` order, stable on the emitter's own
+    steering order), then cells last donated more than REEMIT_AFTER_DAYS ago (oldest first), then
+    cap. A cell donated more recently is withheld -- the compiler already holds it, so sending it
+    again spends the cap on nothing. Returns (chosen rows, counts)."""
+    fresh: list[tuple[Any, int, dict[str, Any]]] = []
+    stale: list[tuple[str, int, dict[str, Any]]] = []
+    recent = 0
+    horizon = now - timedelta(days=REEMIT_AFTER_DAYS)
+    for i, r in enumerate(rows):
+        k = cell_key(r)
+        r["_cell"] = k
+        last = seen.get(k)
+        if last is None:
+            fresh.append((rank(r) if rank else 0, i, r))
+            continue
+        try:
+            t = datetime.fromisoformat(str(last))
+        except ValueError:
+            t = None
+        if t is not None and t > horizon:
+            recent += 1
+            continue
+        stale.append((str(last), i, r))
+    fresh.sort(key=lambda x: (x[0], x[1]))
+    stale.sort(key=lambda x: (x[0], x[1]))
+    chosen = [r for _, _, r in fresh][:cap]
+    n_fresh = len(chosen)
+    if len(chosen) < cap:
+        chosen += [r for _, _, r in stale][: cap - len(chosen)]
+    return chosen, {"candidates": len(rows), "fresh_available": len(fresh),
+                    "fresh_emitted": n_fresh, "reemitted": len(chosen) - n_fresh,
+                    "withheld_recent": recent, "stale_available": len(stale)}
 
 
 def _emit(kind: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -373,21 +461,33 @@ def _emit(kind: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     ORDER, NEVER A FILTER: rows in regions the failure memory has already mapped as dead go
     LAST, so the cap spends itself on unexplored ground first. Nothing is dropped for having a
-    failed neighbour -- a theorem about a region is a prior, not a verdict on a new cell."""
-    rows = [r for r in rows if r.get("symbols")]
-    if not authority.suspended("failure_memory"):
-        rows = sorted(rows, key=_explored)
-    rows = rows[:MAX_EMIT_PER_KIND]
+    failed neighbour -- a theorem about a region is a prior, not a verdict on a new cell.
+
+    ROTATION (2026-11-14): the cap used to fall on the same prefix of a deterministic list every
+    hour, so the hour's donation was last hour's again. `rotate` puts never-donated cells first
+    and withholds cells donated in the last REEMIT_AFTER_DAYS; the donation memory lives in
+    data/tier_s/emitted_cells.json. Withholding a duplicate is not a filter on ground: the cell
+    is already in the compiler's hands."""
+    rows = [r for r in rows if r.get("symbols")][:MAX_CANDIDATES_PER_KIND]
+    rank = None if authority.suspended("failure_memory") else _explored
+    mem = _state(EMITTED_CELLS)
+    seen: dict[str, str] = dict((mem.get(kind) or {}) if isinstance(mem.get(kind), dict) else {})
+    rows, counts = rotate(kind, rows, seen, now=NOW, rank=rank)
     if not rows:
-        return {"kind": kind, "emitted": 0}
+        return {"kind": kind, "emitted": 0, "rotation": counts}
     stamp = NOW.strftime("%Y%m%dT%H")
     for r in rows:
+        seen[str(r.pop("_cell"))] = NOW.isoformat()
         r.setdefault("found_at", NOW.isoformat())
         r.setdefault("source", f"tier_s:{kind}")
         r.setdefault("seat", "tier_s")
     _write(INTEL / f"{kind}_{stamp}.json", {"kind": kind, "generated_utc": NOW.isoformat(),
                                              "rows": rows})
-    return {"kind": kind, "emitted": len(rows)}
+    cutoff = (NOW - timedelta(days=EMITTED_MEMORY_DAYS)).isoformat()
+    mem[kind] = {k: v for k, v in seen.items() if str(v) >= cutoff}
+    mem["generated_utc"] = NOW.isoformat()
+    _save_state(EMITTED_CELLS, mem)
+    return {"kind": kind, "emitted": len(rows), "rotation": counts}
 
 
 def _returns_panel(max_symbols: int = 28, bars: int = 3000) -> tuple[dict[str, np.ndarray],
@@ -1534,8 +1634,13 @@ def _emit_orthogonal(steer: Mapping[str, Mapping[str, float]],
         UNIVERSE.exists() else []
     syms = [s for s in syms if _may_hypothesise(s)]
     cls_w = steer.get("asset_class") or {}
-    rows = []
+    # THE FULL GRID, never a prefix: the loop used to stop at MAX_EMIT_PER_KIND, so the steering's
+    # top family x top classes were re-sent every hour and nothing past them was ever reached.
+    # `_emit` rotates; the steering order survives as the tie-break among never-donated cells.
+    per_fam: list[list[dict[str, Any]]] = []
     for f in sorted(vocab, key=lambda x: -fam_w[x]):
+        rows: list[dict[str, Any]] = []
+        per_fam.append(rows)
         for s in sorted(syms, key=lambda x: -cls_w.get(_asset_class(x), 1.0)):
             if (f, s) in held:
                 continue
@@ -1545,11 +1650,9 @@ def _emit_orthogonal(steer: Mapping[str, Mapping[str, float]],
                                  f"{cls_w.get(_asset_class(s), 1.0):.3f} vs the effective basis",
                          "steering": {"mechanism": fam_w[f],
                                       "asset_class": cls_w.get(_asset_class(s), 1.0)}})
-            if len(rows) >= MAX_EMIT_PER_KIND:
-                break
-        if len(rows) >= MAX_EMIT_PER_KIND:
-            break
-    return _emit("orthogonal", rows)
+    # family-major order kept for the steering (heaviest mechanism first), but interleaved so one
+    # hour's cap spans many families rather than exhausting the first one's symbols
+    return _emit("orthogonal", _interleave(per_fam))
 
 
 def organ_qd() -> dict[str, Any]:
@@ -1625,7 +1728,10 @@ def organ_qd() -> dict[str, Any]:
     except Exception:
         cls3, actor = {}, {}
     all_syms = [s for v in by_cls.values() for s in v]
-    rows = []
+    # EVERY family and symbol that can occupy each niche, not the first two by three: the
+    # rotation in `_emit` reaches the rest over the following hours; niches are interleaved so
+    # each hour probes many of them.
+    per_niche: list[list[dict[str, Any]]] = []
     for e in empty:
         # families that can occupy the niche: by mechanism, information source or actor
         fams = [f for f in vocab
@@ -1642,15 +1748,21 @@ def organ_qd() -> dict[str, Any]:
         extra = {"session": e["session"]} if e.get("session") not in (None, "all", "?") \
             else {}
         label = ", ".join(f"{k}={v}" for k, v in e.items())
-        for f in fams[:2]:
-            for s in pool[:3]:
+        rows: list[dict[str, Any]] = []
+        per_niche.append(rows)
+        for f in fams:
+            for s in pool:
                 r: dict[str, Any] = {"kind": "hypothesis", "family": f, "symbols": [s],
                                      "text": f"tier_s MAP-Elites: niche ({label}) holds no "
                                              f"elite; {f} on {s} is the probe", "niche": e}
                 if extra:
                     r["params"] = extra
                 rows.append(r)
-    emitted = _emit("qd_niches", rows)
+                if len(rows) >= MAX_PROBES_PER_NICHE:
+                    break
+            if len(rows) >= MAX_PROBES_PER_NICHE:
+                break
+    emitted = _emit("qd_niches", _interleave(per_niche))
     filled_on = {a: sum(1 for c in arch.cells.values() if (c["desc"] or {}).get(a) != "?")
                  for a in ("capacity", "corr_cluster")}
     return {"coverage": cov, "empty_projections": empty[:40], "weak": arch.weak(10),
@@ -2210,7 +2322,8 @@ def organ_theory() -> dict[str, Any]:
         base = dict(spec.get("defaults") or {})
         if not spec:
             continue
-        syms = [s for s, _n in by_fam_sym[fam].most_common(4) if s and _may_hypothesise(s)]
+        # every symbol the family has evidence on (most first); the rotation reaches past four
+        syms = [s for s, _n in by_fam_sym[fam].most_common() if s and _may_hypothesise(s)]
         for label, extra in conditions:
             if any(k != "session" and k not in base for k in extra):
                 continue
