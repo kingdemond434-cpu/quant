@@ -596,6 +596,7 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    "exploration_share": "meta",
     # The organ census is meta by construction: it measures the desk's own organs against the
     # seven-link chain and orders research compute by survivor yield. It generates no hypothesis.
     "organ_census": "meta",
