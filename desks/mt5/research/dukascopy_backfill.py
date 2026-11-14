@@ -165,6 +165,15 @@ def main() -> int:
     parser.add_argument("--report", type=Path, default=REPORT)
     args = parser.parse_args()
     now = datetime.now(UTC)
+    # TERMS-REFUSED (2026-11-14): no pass downloads anything. The report says so by name, so a
+    # reader sees a refused source rather than a silent or failing one; the Fusion terminal's own
+    # history is deepened by `recorders/tape_deepen.py` instead.
+    _atomic_json(args.report, {"generated_at": now.isoformat(timespec="seconds"),
+                               "status": "TERMS_REFUSED", "symbol_days_completed": 0,
+                               "why": "Dukascopy's terms refuse automated download (#891)",
+                               "replacement": "desks/mt5/recorders/tape_deepen.py"})
+    print("Dukascopy backfill: TERMS_REFUSED; nothing fetched (see recorders/tape_deepen.py)")
+    return 0
     if not _claim(LOCK, now=now):
         print("Dukascopy backfill already running; this pass is a measured no-op")
         return 0

@@ -72,6 +72,36 @@ _DATE_COLS = ("date", "DATE", "Date", "time", "TIME", "Time", "timestamp", "TIME
               "datetime", "DATETIME", "period", "PERIOD", "obs_date", "ref_date", "week",
               "as_of", "asof", "report_date", "TIME_PERIOD")
 
+#: HOSTS WHOSE OWN TERMS REFUSE AUTOMATED DOWNLOAD, by suffix (the host and its subdomains).
+#: The value is the clause. A pack may still NAME these grounds -- they are the literature's
+#: mirror-trade vocabulary -- but this acquirer never contacts them, and the refusal is counted.
+#: UN Comtrade (Global data terms verdict 2026-11-14, from the licence agreement, section 5):
+#: "any copying, automated browsing or downloading, redistribution, publication, or commercial
+#: exploitation ... is strictly prohibited without the prior written permission of the United
+#: Nations", binding on users "without subscription" too, with no carve-out for the keyless API.
+#: FRED and Yahoo Finance: the Governance rulings of 2026-11-13.
+TERMS_REFUSED_HOSTS: dict[str, str] = {
+    "comtrade.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "comtradeplus.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "comtradeapi.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "stlouisfed.org": "FRED terms refuse automated use (Governance ruling 2026-11-13)",
+    "finance.yahoo.com": "Yahoo terms s.2(d)(ix) forbid automated collection (ruling 2026-11-13)",
+    "archive.org": ("Internet Archive terms limit use to scholarship and research purposes only "
+                    "(wayback-youtube-ruling-2026-11-14)"),
+    "youtube.com": "the desk never contacts YouTube (no-YouTube rule; ruling 2026-11-14)",
+    "youtu.be": "the desk never contacts YouTube (no-YouTube rule; ruling 2026-11-14)",
+}
+
+
+def terms_refusal(url: str) -> str | None:
+    """The clause that refuses `url`, or None. Matches the host and every subdomain."""
+    host = (urllib.parse.urlsplit(str(url)).hostname or "").lower()
+    for suffix, why in TERMS_REFUSED_HOSTS.items():
+        if host == suffix or host.endswith("." + suffix):
+            return why
+    return None
+
+
 #: Anything matching this needs a credential and is skipped rather than retried.
 _KEYED = re.compile(r"(api[_-]?key|apikey|token=|access_key|client_id|subscription)", re.I)
 
@@ -133,6 +163,8 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
+    if terms_refusal(url):
+        return None, "terms"
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
@@ -327,7 +359,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
     # whole budget on discovered pages that turn out to be markup.
     for u in _SEED_ENDPOINTS:
-        if u in fresh or u in seen:
+        if u in fresh or u in seen or terms_refusal(u):
             continue
         seen.add(u)
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
@@ -356,7 +388,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
                 urls.extend(str(value) for value in source.roots
                             if str(value).startswith(("http://", "https://")))
         for url in urls:
-            if url in seen or url in fresh or _KEYED.search(url):
+            if url in seen or url in fresh or _KEYED.search(url) or terms_refusal(url):
                 continue
             seen.add(url)
             buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
@@ -375,7 +407,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
             continue
         for r in rows:
             for u in (r.get("endpoints") or []):
-                if u in seen or u in fresh or _KEYED.search(u):
+                if u in seen or u in fresh or _KEYED.search(u) or terms_refusal(u):
                     continue
                 seen.add(u)
                 out.append((u, str(r.get("host") or "")))
@@ -413,7 +445,9 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
         raw, ctype = _fetch(url)
         if raw is None:
-            _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
+            _refuse_url("served HTML, not data" if ctype == "html"
+                        else f"BLOCKED_ON_TERMS: {terms_refusal(url)}" if ctype == "terms"
+                        else "unreachable")
             continue
         if len(raw) > MAX_BYTES:
             _refuse_url("larger than the per-file cap")

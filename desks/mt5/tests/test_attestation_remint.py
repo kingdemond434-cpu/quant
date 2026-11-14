@@ -57,7 +57,9 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                       ("JUDGING_RATE", "reports/JUDGING_RATE.json"),
                       ("GAUNTLET_ORDER", "reports/GAUNTLET_ORDER.json"),
                       ("GATES_OUTPUT", "reports/universal_gates_external.json"),
-                      ("GAUNTLET_SRC", "scripts/external_gauntlet.py")):
+                      ("GAUNTLET_SRC", "scripts/external_gauntlet.py"),
+                      ("LOCKBOX_RECERT", "reports/LOCKBOX_RECERT.json"),
+                      ("SHADOW_STATE", "reports/shadow/shadow_state.json")):
         monkeypatch.setattr(ar, name, tmp_path / rel)
     monkeypatch.setattr(ar, "_authorized_runs", lambda: {"status": "MEASURED", "n": 0})
     (tmp_path / "data" / "hypotheses" / "external_survivors.json").write_text(
@@ -354,3 +356,31 @@ def test_the_docket_append_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.undo()
     assert ar.append_to_docket(docket, [{"b": 2}])["appended"] == 1
     assert json.loads(docket.read_text("utf-8")) == [{"a": 1}, {"b": 2}]
+
+
+def test_lockbox_restamps_are_queued_even_when_in_force_since_is_unknown(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MEASURED 2026-11-13 on the box: REMINT_STATUS had in_force_since None, so `stale_keys`
+    found nothing, while the lockbox ledger ruled seven rows RESTAMPED. The ledger's ruling now
+    reaches the re-judge queue and the priority record on its own."""
+    rows = {"external.R": _row("USDJPY", "2026-08-26T01:44:33Z"),
+            "external.OK": _row("EURUSD", NEW)}
+    _stores(desk, ATTESTATION, rows)
+    monkeypatch.setattr(ar, "in_force_since", lambda *a, **k: (None, "UNMEASURED"))
+    _write(desk / "reports" / "LOCKBOX_RECERT.json", {"certificates": {
+        "external.R": {"after": {"state": "RESTAMPED", "store": "canon", "key": "external.R"}},
+        "external.OK": {"after": {"state": "REMINTED", "store": "canon", "key": "external.OK"}},
+        "external.GONE": {"after": {"state": "RESTAMPED", "store": "canon",
+                                    "key": "external.GONE"}}}})
+    doc = ar.build(T0 + timedelta(hours=1), previous={}, git_time=T0, patched=True)
+    assert doc["restamped_not_rejudged"] == ["external.R"]
+    assert doc["lockbox_restamped"] == ["external.GONE", "external.R"]
+    assert doc["breach"] is True
+    assert [x["key"] for x in doc["_targets"]] == ["external.R"]
+    ar.apply(doc, T0 + timedelta(hours=1))
+    prio = json.loads((desk / "data" / "hypotheses" / "priority_remint.json").read_text("utf-8"))
+    assert prio["stale_certificate_keys"] == ["external.R"]
+
+
+def test_an_absent_lockbox_ledger_adds_nothing(desk: Path) -> None:
+    assert ar.lockbox_restamped(desk / "reports" / "nope.json") == {}
