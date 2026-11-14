@@ -96,6 +96,11 @@ def venue_refusal(mt5: Any, path: str | None,
     first, so restart order decided which broker an organ read. Attaching by path is the pin;
     this is the proof: the attached account's server must be Fusion's and, when a path is
     configured, the attached terminal must be that one. An unreadable answer is a refusal.
+
+    THE REASON IS PUBLISHED (2026-11-14, Auditor MF1 on #982): it reaches report fields, the
+    spread tape's `why` and leg tails in a public repository, so it is a fixed phrase. It never
+    carries the attached server name or either terminal path -- only the expected prefix, which
+    is the desk's own constant.
     """
     try:
         info = mt5.account_info()
@@ -103,7 +108,8 @@ def venue_refusal(mt5: Any, path: str | None,
         return f"account_info() raised {type(exc).__name__}"
     server = str(getattr(info, "server", "") or "") if info is not None else ""
     if not server.startswith(expected_prefix):
-        return f"attached terminal is on server {server or '(none)'!r}, not {expected_prefix}*"
+        return (f"attached server is not {expected_prefix}*" if server
+                else "attached terminal reports no server")
     if path:
         try:
             tinfo = mt5.terminal_info()
@@ -111,5 +117,6 @@ def venue_refusal(mt5: Any, path: str | None,
             return f"terminal_info() raised {type(exc).__name__}"
         attached = str(getattr(tinfo, "path", "") or "") if tinfo is not None else ""
         if not same_terminal(path, attached):
-            return f"attached terminal {attached or '(unknown)'!r} is not the configured {path!r}"
+            return ("attached terminal is not the configured one" if attached
+                    else "attached terminal reports no path")
     return None

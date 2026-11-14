@@ -162,10 +162,25 @@ jobs:
           fi
           sort -u "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/previous.txt" > "$RUNNER_TEMP/changed.txt"
 
+      # The Auditor's declared Fusion-roster divergences, from the BASE (harness) only: a PR can
+      # never declare its own. A match is MATCHES_DECLARED, which still exits 1 here.
       - name: Replay the live E8 book, base against PR
+        env:
+          QUANT_EXPECTED_DIVERGENCE: harness/ops/release/expected_divergence.json
         run: >-
           python -I harness/ops/release/replay_shadow.py --base base --head head
           --changed "$RUNNER_TEMP/changed.txt" --report "$RUNNER_TEMP/replay_shadow.json"
+
+      # The report, for the release authority: it re-reads a MATCHES_DECLARED from here, re-matches
+      # it against the base's registry itself, and maps it to CONTROLLER (policy.declared_replay).
+      - name: Keep the replay report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-shadow-report-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/replay_shadow.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   independent-review:
     if: github.event.pull_request.head.repo.full_name == github.repository

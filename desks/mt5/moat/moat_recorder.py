@@ -314,7 +314,7 @@ def main() -> int:
     # restart order decided which broker the moat tape recorded. The path pins it.
     terminal = terminal_path()
     if not attach_or_initialize(mt5, path=terminal, timeout=15000):
-        log(f"mt5 attach refused or failed ({terminal or 'no terminal_path.txt'}; Session 0 "
+        log(f"mt5 attach refused or failed ({'pinned terminal' if terminal else 'no terminal_path.txt'}; Session 0 "
             f"never launches a terminal): {mt5.last_error()}")
         return 1
     why = venue_refusal(mt5, terminal)
