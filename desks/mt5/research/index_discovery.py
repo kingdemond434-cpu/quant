@@ -71,8 +71,8 @@ FOUND = BASE / "data" / "intelligence" / "index_discovery"
 #: Addresses taken per route per pass. Discovery is cheap but the frontier is not infinite, and a
 #: single Common Crawl query can return tens of thousands of URLs for one host.
 PER_ROUTE = 300
-#: The crawl this desk queries. Common Crawl publishes a new index every few weeks; an index id
-#: that has rotated returns 404, which is a NAMED failure here rather than an empty result.
+#: The FALLBACK crawl id. The live id is read from collinfo.json by
+#: `discovery_backends.LawfulDiscovery._cc_endpoint`, so a rotated crawl is not a 404.
 CC_INDEX = "CC-MAIN-2026-30"
 
 UA = "quant-desk-index/1.0 (research; public index queries only)"
@@ -152,6 +152,19 @@ def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes |
         return None, f"{type(e).__name__}: {str(e)[:70]}"
 
 
+_GUARD: Any = None
+
+
+def _guard() -> Any:
+    """The lawful guard, used here for the Common Crawl index id (collinfo.json) only: the
+    index requests themselves keep the robots.txt gate above (Governance ruling, PR #819)."""
+    global _GUARD
+    if _GUARD is None:
+        from research import discovery_backends as db
+        _GUARD = db.LawfulDiscovery()
+    return _GUARD
+
+
 _TLS = None
 
 
@@ -176,26 +189,23 @@ def commoncrawl_cdx(limit: int = PER_ROUTE) -> dict[str, Any]:
     found: list[str] = []
     per_host: dict[str, int] = {}
     errors: dict[str, str] = {}
+    from research import discovery_backends as db
+    api = _guard()._cc_endpoint(db.BackendRecord("commoncrawl_cdx", ""))
     for host in _hosts_from_registry():
         q = urllib.parse.quote(f"*.{host}/*", safe="")
-        url = (f"https://index.commoncrawl.org/{CC_INDEX}-index?url={q}"
-               f"&output=json&limit={max(20, limit // 6)}")
+        url = f"{api}?url={q}&output=json&limit={max(20, limit // 6)}"
         body, why = _get(url)
         if body is None:
             errors[host] = why
             continue
         n = 0
-        for ln in body.decode("utf-8", errors="replace").splitlines():
-            try:
-                row = json.loads(ln)
-            except ValueError:
-                continue
-            u = str(row.get("url") or "")
+        for row in db.parse_cdx_ndjson(body.decode("utf-8", errors="replace")):
+            u = row["url"]
             if u and u not in found:
                 found.append(u)
                 n += 1
         per_host[host] = n
-    return {"route": "commoncrawl_cdx", "index": CC_INDEX, "addresses": found,
+    return {"route": "commoncrawl_cdx", "index": api, "addresses": found,
             "per_host": per_host, "errors": errors,
             "note": "one request per host returns every URL the crawl holds for it; no page fetched"}
 

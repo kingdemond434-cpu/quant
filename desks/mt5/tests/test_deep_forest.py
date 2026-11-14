@@ -379,8 +379,22 @@ _DATA_PAGE = ("<html><title>Statistics</title><body><p>Monthly reserves and inte
               "<a href='/statistics/reserves.csv'>reserves csv</a><a href='/api/series?id=fx'>api</a></body></html>")
 
 
+#: THE LAWFUL DISCOVERY CHAIN (2026-11-03) reads a site's OWN feed before any index, and never a
+#: search engine while a lawful backend answers. These are the same stories the Bing fixtures
+#: above carry, published the way note.com and YouTube publish them: as feeds.
+_NOTE_FEED = """<rss><channel><item><title>ドル円 仲値 手法</title><link>https://note.com/x/n/1</link>
+<description>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</description></item></channel></rss>"""
+_YT_FEED = """<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>ドル円 仲値 トレード解説</title>
+<link href="https://www.youtube.com/watch?v=abcdefghijk"/>
+<summary>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</summary></entry></feed>"""
+
+
 def _dispatch(url: str, **kw) -> str:
     """One fake transport for every route: the URL says which fixture answers."""
+    if "note.com/feed" in url:
+        return _NOTE_FEED
+    if "youtube.com/feed" in url:
+        return _YT_FEED
     if "t.me/s/" in url:
         return _PAGE_TG
     if "bing.com" in url:
@@ -573,7 +587,13 @@ def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetc
     doc = _run_grounds(monkeypatch, tmp_path, [
         {"name": "note (JP)", "region": "jp", "language": "ja", "route": "search", "site": "note.com",
          "queries": ["ドル円 仲値 手法"], "kind": "blog", "snippets_only": True}])
-    assert any("setlang=ja" in u and "cc=JP" in u for u in urls)
+    # Discovered through the site's own feed, never a search engine (2026-11-03): the ground's
+    # locale now reaches the claims through the page, and Bing is only a last resort.
+    assert "https://note.com/feed" in urls
+    assert not any("bing.com" in u or "duckduckgo" in u for u in urls)
+    g = doc["grounds"][0]
+    assert g["discovery_status"] == "YIELDED" and g["discovery"]["site_feeds"]["status"] == \
+        "YIELDED"
     from urllib.parse import urlparse
     assert any(urlparse(u).netloc.endswith("note.com") for u in urls), \
         "a snippets_only label must not stop the site being fetched"

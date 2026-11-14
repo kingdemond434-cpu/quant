@@ -37,6 +37,13 @@ GRAPH = _DESK / "reports" / "CROSS_ASSET_GRAPH.json"
 REPORT = _DESK / "reports" / "cross_asset_graph.json"
 ENTRY_Z = (1.5, 2.0)
 HOLDS = (4, 8)
+#: Symbols one pass sweeps. Pairs grow as n*(n-1), so this stays a cap -- KEPT with its
+#: missed-growth line on the report. It was `book_symbols()[:12]`, the ALPHABETICAL prefix of the
+#: live book: the same twelve every pass, and no emerging currency unless the book already held
+#: it. Now the book goes first one region at a time, and the free slots go to hypothesis-lane
+#: instruments from regions the book does not reach (TRY, ZAR, PLN, MXN, CNH, INR ... whatever
+#: the registry lists), rotated by the hour so successive passes reach different countries.
+MAX_SYMBOLS = 16
 
 
 def _book_symbols() -> list[str]:
@@ -45,6 +52,48 @@ def _book_symbols() -> list[str]:
         return book_symbols()
     except Exception:
         return []
+
+
+def swept_symbols(symbols: list[str] | None, have: set[str], *, rotation: int = 0
+                  ) -> tuple[list[str], dict]:
+    """(symbols this pass sweeps, the cap's missed-growth line). Statistical lane only: a share
+    CFD is never a lead_lag cell (two-lane order), whatever book it sits in."""
+    from research import universe_policy as up
+    if symbols:
+        ordered = [s for s in dict.fromkeys(symbols) if s in have]
+        return ordered, {**up.cap_line(ordered, ordered, len(ordered)),
+                         **({} if ordered else _unmeasured("none of the requested symbols has "
+                                                           "H1 bars here"))}
+    if not up._registry():
+        # NO REGISTRY, NO LANE -- AND AN EMPTY SWEEP MUST NOT READ AS A CLEAN ONE. Every symbol is
+        # UNCLASSIFIED without universe.json, so the lane filter would sweep nothing and the
+        # report would say "0 swept, no missed growth" (NOT_BINDING). Keep sweeping the book the
+        # way the old code did (its alphabetical prefix), and say why on the line.
+        book = sorted(s for s in _book_symbols() if s in have)[:12]
+        return book, {**up.cap_line(book, book, 12),
+                      **_unmeasured("the universe registry is absent or unreadable here, so no "
+                                    "symbol can be routed by lane or region; swept the book's "
+                                    f"alphabetical prefix ({len(book)}) unrouted, as before "
+                                    "2026-11-03")}
+    lane = [s for s in sorted(have) if up.lane(s) == up.HYPOTHESIS]
+    book = [s for s in _book_symbols() if s in have and up.lane(s) == up.HYPOTHESIS]
+    book_regions = {up.region_of(s) for s in book}
+    rest = [s for s in lane if s not in set(book)]
+    dark = [s for s in rest if up.region_of(s) not in book_regions]
+    lit = [s for s in rest if up.region_of(s) in book_regions]
+    ordered = (up.region_interleave(book, rotation=rotation)
+               + up.region_interleave(dark, rotation=rotation)
+               + up.region_interleave(lit, rotation=rotation))
+    chosen = ordered[:MAX_SYMBOLS]
+    line = up.cap_line(ordered, chosen, MAX_SYMBOLS)
+    if not chosen:
+        line.update(_unmeasured(f"{len(have)} instrument(s) with H1 bars and none of them in the "
+                                "hypothesis lane: nothing swept, which is not a clean pass"))
+    return chosen, line
+
+
+def _unmeasured(why: str) -> dict:
+    return {"status": "UNMEASURED", "verdict": "UNMEASURED", "why": why}
 
 
 def _pairs(symbols: list[str], meta: dict, have: set[str]) -> list[tuple[str, str, str | None]]:
@@ -80,7 +129,7 @@ def _event_times() -> list[str]:
 def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
     meta = pc.universe_meta()
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
-    syms = [s for s in (symbols or _book_symbols()) if s in have][:12]
+    syms, cap = swept_symbols(symbols, have, rotation=int(time.time() // 3600))
     pairs = _pairs(syms, meta, have)
     bars: dict = {}
     for s in {x for p in pairs for x in p[:2]}:
@@ -140,7 +189,13 @@ def run(symbols: list[str] | None = None, budget_s: float = 900.0) -> dict:
     rep = {"generated_at": datetime.now(tz=UTC).isoformat(), "symbols_swept": len(syms),
            "pairs": g["n_pairs"], "edges": g["n_edges"], "event_chains": len(chains),
            "tests_run": len(rows), "cells_proposed": len(proposals), "skipped": skipped,
-           "proposals": proposals}
+           "proposals": proposals, "symbols": syms,
+           "status": cap.get("status", "MEASURED"), "why": cap.get("why", ""),
+           # A binding cap, or an UNMEASURED sweep, always publishes its line: an empty list
+           # here reads NOT_BINDING downstream, which an empty sweep must never claim.
+           "missed_growth": [{"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                              "rail": "cross_asset_graph_symbol_cap", **cap}]
+           if (cap.get("left_out") or cap.get("status") == "UNMEASURED") else []}
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
     if cands:
         rep["donated"] = str(pc.donate(SOURCE, cands, len(rows)))

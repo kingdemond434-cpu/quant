@@ -901,6 +901,10 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
+#: The two miners whose symbol walks were widened by region (2026-11-03). Each keeps a cap and
+#: publishes the line it owes on its own report.
+CROSS_ASSET_GRAPH = BASE / "reports" / "cross_asset_graph.json"
+TREND_CORE = BASE / "reports" / "TREND_CORE.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1201,7 +1205,11 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    # SYMBOL CAPS KEPT ON THE REGION-WIDENED MINERS (2026-11-03)
+                                    "cross_asset_graph_symbol_cap": organ_published_lines(
+                                        CROSS_ASSET_GRAPH),
+                                    "trend_core_walk": organ_published_lines(TREND_CORE)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
