@@ -61,6 +61,205 @@ def broker_stamp_to_utc(ts: datetime) -> datetime:
     return out
 
 
+#: THE BROKER-EPOCH CLASS (row 247/239, 2026-10-29). MetaTrader's `deal.time`, `deal.time_msc`
+#: and `tick.time` count the BROKER's wall clock, not UTC: deal 217155220 closed at 09:09:01 UTC
+#: and carries epoch 12:09:01 (Fusion, UTC+3 while New York is on daylight time). Every writer
+#: that did `datetime.fromtimestamp(deal.time, tz=UTC)` stamped broker time under a +00:00 label.
+#: A measured offset is accepted only when the tick is this fresh against the wall clock; a stale
+#: tick (market closed, weekend) carries no reading of the offset. DERIVATION: the venue offsets
+#: are whole hours, so a fresh tick sits within a few seconds of a whole hour; six minutes is one
+#: tenth of an hour, far inside the half-hour that would make the rounding ambiguous.
+OFFSET_FRESH_TOL_H = 0.1
+#: Basis labels written on ledger rows, so a reader knows which instant a stamp names.
+BASIS_MEASURED = "utc_from_broker_epoch:measured"
+BASIS_CALENDAR = "utc_from_broker_epoch:calendar_ny+7"
+BASIS_UNMEASURED = "broker_epoch_unconverted"
+
+
+def measured_offset_h(tick_epoch: Any, wall_epoch: float) -> int | None:
+    """The broker clock's offset from UTC in whole hours, read off one FRESH tick, or None.
+
+    `tick_epoch` is the venue's `tick.time` (broker wall seconds), `wall_epoch` this host's real
+    UTC `time.time()` at the same moment. None when the tick is absent, stale, or the offset is not
+    a plausible whole hour (|h| <= 14)."""
+    try:
+        diff_h = (float(tick_epoch) - float(wall_epoch)) / 3600.0
+    except (TypeError, ValueError):
+        return None
+    h = round(diff_h)
+    if abs(diff_h - h) > OFFSET_FRESH_TOL_H or abs(h) > 14:
+        return None
+    return int(h)
+
+
+def broker_epoch_to_utc(epoch: Any, offset_h: int | None = None, *,
+                        calendar: bool = True) -> tuple[str | None, str]:
+    """(ISO UTC instant, basis) for a MetaTrader broker-wall epoch in seconds.
+
+    `offset_h` is the offset measured in the writer's OWN session (`measured_offset_h`); it wins.
+    Without it, `calendar=True` falls back to the venue calendar rule (New York + 7 h, DST-aware:
+    `libs.regime.session_clock`), which is the Fusion server's clock and NOT a rule for any other
+    venue -- a writer for another venue passes `calendar=False`, and an unmeasured stamp is then
+    returned unconverted with BASIS_UNMEASURED rather than guessed."""
+    try:
+        e = float(epoch)
+    except (TypeError, ValueError):
+        return None, BASIS_UNMEASURED
+    if e <= 0:
+        return None, BASIS_UNMEASURED
+    wall = datetime.fromtimestamp(e, tz=UTC)
+    if offset_h is not None:
+        return (wall - timedelta(hours=offset_h)).isoformat(), BASIS_MEASURED
+    if calendar:
+        return broker_stamp_to_utc(wall).astimezone(UTC).isoformat(), BASIS_CALENDAR
+    return wall.isoformat(), BASIS_UNMEASURED
+
+
+#: THE OFFSET REGIME (audit of #518, 2026-11-13). An offset measured off a fresh tick is the
+#: venue's offset NOW; it names a past deal's offset only while no clock change lies between the
+#: deal and now. A Friday-open/Monday-close across a US or EU change, or a history backfill, would
+#: otherwise be stamped one hour wrong, and that hour flows into the R, hold-time and session
+#: attribution the allocator reads. DERIVATION of the 24 h bound: no zone changes its clock twice
+#: inside 24 h, so comparing the zone's UTC offset at the two ends of the span sees every
+#: transition inside it; past 24 h that endpoint comparison could miss a there-and-back pair.
+REGIME_MAX_AGE_S = 24 * 3600
+#: Fusion's server clock is New York + 7 h (`libs.regime.session_clock`), so New York's clock
+#: changes are the only ones that move it.
+FUSION_REGIME_ZONES: tuple[str, ...] = ("America/New_York",)
+#: FTMO's server clock is not the Fusion calendar and which DST rule it follows is not measured
+#: here (its servers are documented as GMT+2/+3, the European pattern; some MT5 venues follow the
+#: US dates instead). A clock change in EITHER zone therefore ends the regime: the stamp stays
+#: unconverted (UNMEASURED) rather than risk being an hour wrong.
+FTMO_REGIME_ZONES: tuple[str, ...] = ("Europe/Prague", "America/New_York")
+
+
+def _zone_offset(at: datetime, zone: str) -> timedelta | None:
+    import pandas as pd
+    out = pd.Timestamp(at).tz_convert(zone).utcoffset()
+    return None if out is None else timedelta(seconds=out.total_seconds())
+
+
+def same_offset_regime(deal_utc: datetime, now_utc: datetime,
+                       zones: tuple[str, ...]) -> bool:
+    """True when an offset measured at `now_utc` also held at `deal_utc`: the deal is no more than
+    REGIME_MAX_AGE_S old (and not more than LEDGER_CLOCK_TOL_S in the future), and no clock change
+    in any of `zones` lies between the two instants."""
+    if deal_utc.tzinfo is None:
+        deal_utc = deal_utc.replace(tzinfo=UTC)
+    if now_utc.tzinfo is None:
+        now_utc = now_utc.replace(tzinfo=UTC)
+    age = (now_utc - deal_utc).total_seconds()
+    if age > REGIME_MAX_AGE_S or age < -LEDGER_CLOCK_TOL_S:
+        return False
+    try:
+        return all(_zone_offset(deal_utc, z) == _zone_offset(now_utc, z) for z in zones)
+    except Exception:
+        return False
+
+
+def fusion_epoch_to_utc(epoch: Any, measured_h: int | None,
+                        now_epoch: float) -> dict[str, Any]:
+    """A Fusion broker-wall epoch as UTC, converted by the calendar rule AT THE DEAL'S OWN INSTANT
+    (New York + 7 h, DST-aware), with the offset measured now as a CROSS-CHECK only.
+
+    Returns `utc` (ISO or None), `basis`, `offset_h` (the calendar offset at the deal),
+    `measured_h` (the fresh-tick offset now, or None) and `mismatch`: True when the deal lies in
+    the measured offset's own regime (`same_offset_regime`) and the two offsets disagree, False
+    when they agree there, None when the cross-check could not be made (no fresh tick, or the deal
+    is outside the regime -- an older deal's offset is the calendar's alone)."""
+    out: dict[str, Any] = {"utc": None, "basis": BASIS_UNMEASURED, "offset_h": None,
+                           "measured_h": measured_h, "mismatch": None}
+    try:
+        e = float(epoch)
+    except (TypeError, ValueError):
+        return out
+    if e <= 0:
+        return out
+    wall = datetime.fromtimestamp(e, tz=UTC)
+    now = datetime.fromtimestamp(float(now_epoch), tz=UTC)
+    try:
+        utc = broker_stamp_to_utc(wall).astimezone(UTC)
+    except Exception:
+        utc = None
+    if utc is None:
+        # The calendar could not answer: the measured offset is used only inside its own regime.
+        if measured_h is not None:
+            guess = wall - timedelta(hours=measured_h)
+            if same_offset_regime(guess, now, FUSION_REGIME_ZONES):
+                out.update(utc=guess.isoformat(), basis=BASIS_MEASURED, offset_h=measured_h)
+        return out
+    cal_h = round((wall - utc).total_seconds() / 3600.0)
+    out.update(utc=utc.isoformat(), basis=BASIS_CALENDAR, offset_h=int(cal_h))
+    if measured_h is not None and same_offset_regime(utc, now, FUSION_REGIME_ZONES):
+        out["mismatch"] = int(cal_h) != int(measured_h)
+    return out
+
+
+def regime_epoch_to_utc(epoch: Any, measured_h: int | None, now_epoch: float,
+                        zones: tuple[str, ...] = FTMO_REGIME_ZONES) -> tuple[str | None, str]:
+    """(ISO, basis) for a broker-wall epoch on a venue WITHOUT a calendar rule (FTMO): the offset
+    measured now is applied only when the deal lies in the same offset regime
+    (`same_offset_regime`); otherwise the stamp is returned unconverted with BASIS_UNMEASURED."""
+    try:
+        e = float(epoch)
+    except (TypeError, ValueError):
+        return None, BASIS_UNMEASURED
+    if e <= 0:
+        return None, BASIS_UNMEASURED
+    wall = datetime.fromtimestamp(e, tz=UTC)
+    if measured_h is not None:
+        guess = wall - timedelta(hours=measured_h)
+        if same_offset_regime(guess, datetime.fromtimestamp(float(now_epoch), tz=UTC), zones):
+            return guess.isoformat(), BASIS_MEASURED
+    return wall.isoformat(), BASIS_UNMEASURED
+
+
+#: A ledger row's exit stamp may trail its real-UTC write time (a pass that ran late records the
+#: close late) but may never LEAD it: a stamp in the future of its own write is the broker clock
+#: under a UTC label. DERIVATION: five minutes covers the venue's own clock skew against this host
+#: (measured in seconds by e8_gold.venue_clock_skew_ms) with room to spare, and is a twelfth of
+#: the smallest offset error (one hour) it exists to catch.
+LEDGER_CLOCK_TOL_S = 5 * 60
+
+
+def ledger_clock_breaches(rows: list[dict[str, Any]]) -> list[str]:
+    """Why ledger rows written with a converted basis carry a broker stamp, by row: an exit (or
+    entry) stamp more than LEDGER_CLOCK_TOL_S after the row's own real-UTC `time`. Legacy rows
+    (basis "broker_deal_epoch") are read through `row_utc` and are not breaches."""
+    out: list[str] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        if not str(r.get("timestamp_basis") or "").startswith("utc_from_broker_epoch"):
+            continue
+        wrote = _parse(r.get("time"))
+        if wrote is None:
+            continue
+        for field in ("exit_time", "entry_time"):
+            ts = _parse(r.get(field))
+            if ts is not None and (ts - wrote).total_seconds() > LEDGER_CLOCK_TOL_S:
+                out.append(f"deal {r.get('deal')}: {field} {r.get(field)} is "
+                           f"{(ts - wrote).total_seconds() / 3600:.2f}h after its write "
+                           f"{r.get('time')} (a broker stamp under a UTC label)")
+    return out
+
+
+def row_utc(row: dict[str, Any], field: str) -> datetime | None:
+    """THE CORRECTED VIEW of a ledger stamp, without rewriting the ledger: the true UTC instant of
+    `row[field]`. A row written with a `utc_from_broker_epoch:*` basis is taken as written; a
+    legacy row (`timestamp_basis == "broker_deal_epoch"`, the pre-2026-10-29 Fusion writer) is
+    converted by the venue calendar rule. Anything else returns None -- not guessed."""
+    ts = _parse(row.get(field)) if isinstance(row, dict) else None
+    if ts is None:
+        return None
+    basis = str(row.get("timestamp_basis") or "")
+    if basis.startswith("utc_from_broker_epoch"):
+        return ts.astimezone(UTC)
+    if basis == "broker_deal_epoch":
+        return broker_stamp_to_utc(ts)
+    return None
+
+
 def clock_verdict(state: Any, now: datetime | None = None) -> dict[str, Any]:
     """Is `gateway_state.json`'s pass stamp on the right clock? OK, LEGACY, RED or UNMEASURED.
 

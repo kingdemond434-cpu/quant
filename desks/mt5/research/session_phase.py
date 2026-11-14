@@ -54,12 +54,24 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     majors' volume troughs place it at +2 against the winter rollover with the overlap peak at
     +3 -- the same clock, measured a second way, years later, from different data.
     """
+    # THE LIVE TIER MEASURES A FRESH TICK (row 247/239, 2026-10-29). It called
+    # `h1_source.broker_utc_offset_hours`, which is pinned to 0.0, and RECORDED that 0 as a live
+    # measurement -- so broker_clock.json read 0 "live_terminal" while deal 217155220 closed at
+    # 09:09:01 UTC under the epoch of 12:09:01. `gateway_clock.measured_offset_h` reads the
+    # offset off a tick only when the tick is fresh; a closed market measures nothing and the
+    # recorded tiers below answer.
     try:
+        import time as _time
+
         import MetaTrader5 as _mt5
-        from h1_source import broker_utc_offset_hours
-        off = round(float(broker_utc_offset_hours(_mt5)))
-        _record_broker_clock(off)
-        return off, "live_terminal"
+
+        from libs.ops.gateway_clock import measured_offset_h
+        for _sym in ("EURUSD", "XAUUSD", "GBPUSD", "USDJPY"):
+            _tick = _mt5.symbol_info_tick(_sym)
+            off_m = measured_offset_h(getattr(_tick, "time", None), _time.time())
+            if off_m is not None:
+                _record_broker_clock(off_m)
+                return off_m, "live_terminal"
     except Exception:
         pass
     try:
