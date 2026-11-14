@@ -1030,3 +1030,22 @@ def test_no_account_money_reaches_the_published_decision_ledger() -> None:
     row = json.loads(text.splitlines()[-1])
     assert row["lot"] == 0.39 and row["reason"] == "daily_floor"
     assert "x1.5" in row["why"]
+
+
+def test_a_row_kept_before_the_money_fix_publishes_no_account_money() -> None:
+    """Audit HOLD on #1096: a pending row an older build kept is re-published without money."""
+    st: dict[str, Any] = {"evidence_pending": [
+        {"decided_at": "2026-11-12T14:00:00+00:00", "lane": "e8_gold", "window": "afternoon",
+         "outcome": "DEFERRED", "reason": "budget", "lot": 0.39, "risk_usd": 850.0,
+         "stop_risk_usd": 120.5, "why": "against 850 to today's floor, down -620 today, "
+                                        "committed 1,349 USD, adopted order 42 at 07:00"}]}
+    written = ev.record_decisions([], st, now=datetime.now(UTC), server_date="2026-11-13",
+                                  account="tradelocker:7654321", armed=True, host={})
+    assert len(written) == 1
+    [row] = _rows()
+    assert not [k for k in row if k.endswith("_usd")]
+    assert row["lot"] == pytest.approx(0.39)
+    assert row["why"] == ("against <n> to today's floor, down <n> today, committed <amount>, "
+                          "adopted order 42 at 07:00")
+    text = ev.decisions_path().read_text("utf-8")
+    assert "850" not in text and "620" not in text and "1,349" not in text

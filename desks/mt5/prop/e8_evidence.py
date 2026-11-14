@@ -1243,7 +1243,14 @@ def _public_row(row: Any) -> Any:
             ref = machine_ref(mid)
             if ref:
                 out["machine_ref"] = ref
-        return public_fields(out)
+        # NO ACCOUNT MONEY (audit HOLD on #1096): a row kept before the money fix still carries
+        # risk_usd and a why-text with its figures; both are cut here as on a fresh row.
+        for k in [k for k in out if str(k).lower().endswith("_usd")]:
+            out.pop(k, None)
+        out = public_fields(out)
+        if isinstance(out, dict) and "why" in out:
+            out["why"] = _figures_withheld(str(out["why"] or ""))[:300]
+        return out
     except Exception:
         return {}
 
