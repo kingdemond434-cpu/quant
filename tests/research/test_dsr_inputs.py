@@ -397,7 +397,7 @@ def test_the_stream_reads_what_json_loads_reads(tmp_path: Path,
             want, sweep_id="x", judged_at="t")
 
 
-@pytest.mark.parametrize("text", ['{"verdicts": [', '﻿{"verdicts": []}', "[]", "",
+@pytest.mark.parametrize("text", ['{"verdicts": [', '\ufeff{"verdicts": []}', "[]", "",
                                   '{"verdicts": []} x', '{"verdicts": [1,]}', '{"a": 1,}',
                                   '{"verdicts": [], "verdicts": [1]}', "{}", "  {  }  "])
 def test_a_malformed_report_gets_the_old_verdict(tmp_path: Path, text: str) -> None:
