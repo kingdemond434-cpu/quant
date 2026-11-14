@@ -702,6 +702,10 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/ENTRY_TIMING.json",),
          reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
                 "desks/mt5/data/universe/universe.json")),
+    Node("execution_timing", "desks/mt5/research/execution_timing.py",
+         writes=("desks/mt5/reports/EXECUTION_TIMING.json",),
+         reads=("desks/mt5/data/sleeve_registry.json",
+                "desks/mt5/data/universe/universe.json")),
     # The hourly leg `spread_provenance` runs scripts/repair_universe_spreads.py (report-only);
     # there has never been a research/spread_provenance.py.
     Node("spread_provenance", "desks/mt5/scripts/repair_universe_spreads.py",
@@ -1030,6 +1034,9 @@ HUMAN_READ = frozenset({
     # NOT_BINDING -- the retire signal, stated rather than hidden. Listed here so the graph says
     # so; the day one of these gains a consumer, the consumer is declared and the row leaves.
     "desks/mt5/reports/MICROSTRUCTURE.json", "desks/mt5/reports/ENTRY_TIMING.json",
+    # EXECUTION_TIMING (2026-11-14): report-only by design (#1125); its decision reader is the
+    # entry-timing follow-up, and the day that lands this row leaves.
+    "desks/mt5/reports/EXECUTION_TIMING.json",
     "desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/TIME_JOINS.json",
     "desks/mt5/reports/COST_CONSTRUCTION.json", "desks/mt5/reports/edges_macro_fusion_sweep.json",
     "desks/mt5/reports/COMPLETION.json", "desks/mt5/reports/TAPE_ARCHIVE.json",
