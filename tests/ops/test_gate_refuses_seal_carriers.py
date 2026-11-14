@@ -35,6 +35,15 @@ def test_adding_or_changing_a_carrier_file_is_refused() -> None:
     assert level == "REFUSED"  # case-blind, as on the box's NTFS checkout
 
 
+def test_moving_a_carrier_out_of_its_folder_is_refused() -> None:
+    for status in ("renamed", "copied"):
+        level, why = _tier(
+            {"filename": "libs/x.bundle", "previous_filename": CARRIER, "status": status}
+        )
+        assert level == "REFUSED", status
+        assert "seal carrier" in why
+
+
 def test_removing_carrier_files_still_merges() -> None:
     level, _ = _tier({"filename": CARRIER, "status": "removed"})
     assert level != "REFUSED"

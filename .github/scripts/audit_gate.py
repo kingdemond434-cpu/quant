@@ -382,8 +382,7 @@ def tier(
     for name, _ in names:
         if any(fnmatch.fnmatchcase(name.lower(), p) for p in SECRETS):
             return "REFUSED", f"REFUSED: {name} is a secrets path; it never merges"
-    for f in files:
-        name = str(f.get("filename") or "")
+    for name, f in names:  # both sides of a rename/copy: moving a carrier out is refused too
         if str(f.get("status") or "") != "removed" and any(
             fnmatch.fnmatchcase(name.lower(), p) for p in SEAL_CARRIERS
         ):
