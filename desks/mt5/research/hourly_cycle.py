@@ -1197,6 +1197,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # Half-landed steps (a workflow or box task naming a file that is not in the tree) and the
+    # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
+    # network, two small reads; the cloud hourly pass runs the full GitHub half.
+    "arch_health",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -1231,6 +1235,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    # ORDER-SENSITIVE DECAY (R0312): a reader of the lane state files and the per-sleeve ledgers,
+    # seconds; it runs every hour beside the fused reliability column it complements.
+    "decay_verdicts",
+    # THE TIER-S CLUSTER JUDGED AS ONE HYPOTHESIS (P8-J1): reads the lane state files and each
+    # clock's own per-key ledger, seconds; a report, so it rides the core clock beside decay.
+    "cluster_judge",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
@@ -1339,7 +1349,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs",
+                     # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
+                     # and the ledger of which keys are set (#144, 2026-09-30)
+                     "keyed_sources", "credential_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
                      "market_intel", "mine",
@@ -1447,7 +1460,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration", "decay_verdicts", "cluster_judge"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -2112,6 +2125,11 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
+    # cursor after every source; the cap sits above so the report and the donation are written.
+    "keyed_sources": 420,
+    # A registry read, a glob over clock files and the last 24h of donation files: seconds.
+    "credential_coverage": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4267,6 +4285,17 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # THE KEYED FREE SOURCES (#144): every free-key dataset no other lane builds (EIA weekly
+    # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
+    # direct exogenous_conditioner cells, indirect conditioned parents and
+    # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    kys = _costed("keyed_sources", lambda: _producer(
+        "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
+    # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
+    # consumer, whether it is on a clock, and cells minted from it in the last 24h, read from
+    # the consumers' own donation files. Writes reports/CREDENTIAL_COVERAGE.json.
+    crv = _costed("credential_coverage", lambda: _producer(
+        "credential_coverage", "research/credential_coverage.py", "--once"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -6326,6 +6355,24 @@ def main() -> None:
         "opportunity_forecast", "research/opportunity_forecast.py"))
     erl = _costed("edge_reliability", lambda: _producer(
         "edge_reliability", "research/edge_reliability.py"))
+    # ORDER-SENSITIVE DECAY ON EVERY LIVE AND FORWARD-CLOCK SLEEVE (R0312, SARES archaeology).
+    # Every statistic above is invariant to the ORDER of a sleeve's trades; this one is not. The
+    # realised R series is cut into pre-registered equal-count blocks by trade index (frozen in
+    # code, identical for every sleeve), one-sided p per block, Edgington mean-p early vs late.
+    # Below 20 trades the row is UNMEASURED_TOO_FEW_TRADES by name. A demote/shrink INPUT only:
+    # it sizes nothing and gates nothing (reports/DECAY_VERDICTS.json; the sizing hook is the
+    # Max-growth thread's and is published as NOT_WIRED).
+    dcv = _costed("decay_verdicts", lambda: _producer(
+        "decay_verdicts", "research/decay_verdicts.py"))
+    # THE TIER-S CLUSTER, JUDGED AS ONE HYPOTHESIS (P8-J1, 2026-10-14). The forward clocks at
+    # n >= 5 and t >= the Tier S bar are one mechanism on correlated crosses; judged one by one
+    # they count one bet many times. This leg reads each clock's OWN ledger (a shared legacy
+    # file is UNMEASURED_SHARED_LEDGER by name), measures pairwise correlation with overlap
+    # counts, hierarchical clusters and eigenvalue N_eff, and the cluster's composite t against
+    # the SAME bar with one trial for the record. A report: no sizing, no gate, no trial write
+    # (reports/CLUSTER_JUDGE.json; promotion_input is NOT_WIRED, the Max-growth thread's).
+    clj = _costed("cluster_judge", lambda: _producer(
+        "cluster_judge", "research/cluster_judge.py"))
     # LIVE TRUTH, CLOSED INTO RESEARCH CREDIT AND KEPT AS A SERIES (Tier-1 audit, 2026-09-29):
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
@@ -6394,6 +6441,10 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # ARCHITECTURE HEALTH, box half (zuck 2026-11-13, Phase 6). A monitor, never a gate.
+    ahl = _costed("arch_health", lambda: _producer(
+        "arch_health", "scripts/arch_health.py", "--static-only",
+        "--out", "desks/mt5/reports/ARCH_HEALTH.json"))
     # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
     # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
     # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
@@ -6635,7 +6686,9 @@ def main() -> None:
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
-                    "edge_reliability": erl, "arena": ar, "session_capital": scap,
+                    "edge_reliability": erl, "decay_verdicts": dcv,
+                    "cluster_judge": clj, "arena": ar,
+                    "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
@@ -6645,6 +6698,7 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
@@ -6674,7 +6728,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
