@@ -201,4 +201,23 @@ def test_an_unwritable_checkpoint_never_costs_the_count(tmp_path, monkeypatch):
     ck = tmp_path / "no_such_dir" / "ck.json"
     got = jt._verdict_counts(NOW, led, extra_cuts=CUTS, checkpoint=ck)
     assert got["status"] == "MEASURED" and got["checkpoint"].startswith("not saved (")
+    # JUDGING_RATE.json is tracked: the error's type, never its text or path (audit MF1).
+    assert got["checkpoint"] == "not saved (FileNotFoundError)"
+    assert "no_such_dir" not in json.dumps(got)
     assert _strip(got) == _slow(monkeypatch, led)
+
+
+def test_a_row_with_anything_after_the_eight_keys_takes_the_parse(tmp_path, monkeypatch):
+    """Audit of 80c9e6e7 SF1: a valid prefix with a damaged tail (two writers interleaved) is
+    never read by the fast path; the parse refuses it exactly as before."""
+    good = json.dumps(_writer_row("2026-11-13T10:00:00+00:00", "c|1", "dsr"))
+    torn = good[:-1] + ', "x": 1' + "\n"                     # unclosed after the eight keys
+    glued = good + '{"at": "2026-11-13T10:00:01+00:00"'       # a second writer's head appended
+    for line in (torn, glued, good + " trailing"):
+        assert not jt._FAST_ROW.match(line)
+    led = tmp_path / "gate_verdict_ledger.jsonl"
+    led.write_text("\n".join((good, torn.rstrip(), glued, good.replace("c|1", "c|2"))) + "\n",
+                   "utf-8")
+    fast = jt._verdict_counts(NOW, led, extra_cuts=CUTS)
+    assert fast == _slow(monkeypatch, led)
+    assert fast["first_terminal_cells"] == 2                  # c|1 and c|2, never the torn rows

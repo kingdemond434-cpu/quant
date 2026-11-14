@@ -264,7 +264,7 @@ def test_a_failed_rate_write_costs_neither_the_env_nor_throughput(box: Path, mon
 
     def _fail_rate(path, doc):
         if path.name == "JUDGING_RATE.json":
-            raise PermissionError("WinError 5: held open by the sync")
+            raise PermissionError(r"WinError 5: C:\opt\quant\desks\mt5\reports\JUDGING_RATE.json")
         return real(path, doc)
 
     monkeypatch.setattr(jt, "_write_atomic", _fail_rate)
@@ -275,11 +275,13 @@ def test_a_failed_rate_write_costs_neither_the_env_nor_throughput(box: Path, mon
     assert payload["applied"]["cadence"]["status"] == "APPLIED"
     marker = json.loads((box / "JUDGING_RATE.attempt.json").read_text("utf-8"))
     assert marker["phase"] == "applied" and marker["done"] is True
-    assert "WinError 5" in marker["rate_write_error"]
+    # The marker is tracked state: the error's type, never its text (audit of 80c9e6e7 MF1).
+    assert marker["rate_write_error"] == "PermissionError"
+    assert "opt" not in json.dumps(marker) and "WinError" not in json.dumps(marker)
     assert "rate_write_failed" in [p["phase"] for p in marker["phases"]]
     got = _read(box, now=NOW + timedelta(seconds=30))   # even inside the grace window
     assert got["status"] == jra.STALE
-    assert "could not write JUDGING_RATE.json" in got["why"] and "WinError 5" in got["why"]
+    assert "could not write JUDGING_RATE.json" in got["why"] and "PermissionError" in got["why"]
 
 
 def test_a_pre_change_rate_with_unmeasured_verdicts_is_never_fresh(tmp_path: Path) -> None:
