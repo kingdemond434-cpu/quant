@@ -387,6 +387,7 @@ def test_a_shrunk_leg_is_budgeted_against_the_floor_at_its_shrunk_risk(
     _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
     _cert_book(tmp_path, 0.0095)
     venue = _Venue(equity=99_900.0)
+    g.GOLD_MAX_LOT_FILE.write_text('{"max_lot": 0.75}', encoding="utf-8")  # a box ceiling
     monkeypatch.setattr(
         venue, "details", lambda symbol: {"contractSize": 10.0, "currency": "USD", "lotStep": 0.01}
     )

@@ -359,6 +359,7 @@ def test_the_ceiling_fit_runs_before_any_risk_budget_deferral(
     and no exempt `risk_budget` deferral is ever written for it."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.03)
+    g.GOLD_MAX_LOT_FILE.write_text('{"max_lot": 0.75}', encoding="utf-8")  # a box ceiling
     venue = bg._Venue()
     monkeypatch.setattr(
         venue, "details", lambda symbol: {"contractSize": 10.0, "currency": "USD", "lotStep": 0.01}

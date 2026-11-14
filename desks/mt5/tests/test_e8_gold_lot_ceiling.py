@@ -113,7 +113,7 @@ def test_a_window_under_the_ceiling_is_sent_unchanged(
 def test_a_leg_over_the_ceiling_is_sent_at_the_ceiling_and_the_withheld_risk_billed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    _sandbox(monkeypatch, tmp_path)
+    _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.75})  # a box ceiling below the cap
     venue = _Venue(contract=10.0)  # 500 USD / (33.5 x 10) = 1.49 lots
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)]
@@ -148,7 +148,7 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     # buffer still stands in for it.
     assert g.ceiling_budget_lot(0.0, 2500.0, 33.5, 10.0, 400.0) == pytest.approx(2400 / 4335)
     assert g.ceiling_budget_lot(0.0, 2500.0, 33.5, 10.0, 0.0) == pytest.approx(1920 / 335)
-    _sandbox(monkeypatch, tmp_path)
+    _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.75})  # a box ceiling below the cap
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 400.0)
     venue = _Venue(contract=10.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
@@ -285,8 +285,9 @@ def test_an_invalid_override_falls_back_to_the_default(
     venue = _Venue(contract=10.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["lot_ceiling"]["max_lot"] == g.GOLD_MAX_LOT
-    assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)], (
-        "a bad override never switches the ceiling off, nor idles the lane"
+    assert doc["lot_ceiling"]["max_lot"] == g.GOLD_MAX_LOT_CAP
+    assert len(venue.sent) == 2 and all(lot > 0 for _s, lot, _p in venue.sent), (
+        "a bad override falls back to the venue cap, and never idles the lane"
     )
 
 
@@ -309,10 +310,26 @@ def test_missed_growth_publishes_the_ceiling_two_sided(
     assert mg.published_e8_gold_lines()["verdict"] == mg.UNMEASURED  # absent: never a zero
     journal.write_text(json.dumps({"status": "SENT", "order_id": 1}) + "\n", encoding="utf-8")
     assert mg.published_e8_gold_lines()["verdict"] == mg.NOT_BINDING
-    _sandbox(monkeypatch, tmp_path)
+    _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.75})  # a box ceiling below the cap
     g.run(_Venue(contract=10.0), _FlatMT5(), armed=True)
     out = mg.published_e8_gold_lines()
     (line,) = out["lines"]
     assert line["rail"] == g.LOT_CEILING_RAIL and line["n_shrunk"] == 1
     assert line["cost"]["risk_withheld_usd"] == pytest.approx(248.75)
     assert line["saving"]["verdict"] == mg.UNMEASURED and out["verdict"] == mg.UNMEASURED
+
+
+def test_the_default_ceiling_is_the_venue_cap_and_floor_fit_binds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Audit HOLD on #1096 (2026-11-14): no hand-picked shrink-cap. The default ceiling is E8's own
+    20-lot XAUUSD cap, so a leg the old 0.75 would have shrunk is sized by floor_fit's survival
+    budget instead, and no lot-ceiling shrink is journalled."""
+    assert g.GOLD_MAX_LOT == g.GOLD_MAX_LOT_CAP == 20.0
+    _sandbox(monkeypatch, tmp_path)
+    assert g.gold_max_lot() == (g.GOLD_MAX_LOT_CAP, "default GOLD_MAX_LOT")
+    venue = _Venue(contract=10.0)
+    doc = g.run(venue, _FlatMT5(), armed=True)
+    assert len(venue.sent) == 2 and all(lot > 0.75 for _s, lot, _p in venue.sent)
+    assert not [r for r in _journal(tmp_path) if r.get("rail") == g.LOT_CEILING_RAIL]
+    assert doc["lot_ceiling"]["max_lot"] == g.GOLD_MAX_LOT_CAP

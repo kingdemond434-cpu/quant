@@ -30,7 +30,8 @@ placements down on any verdict but OK; management of what is already open never 
 ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
 short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
 the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
-A leg that would need more than GOLD_MAX_LOT is sent at the ceiling, smaller, never skipped.
+A leg that would need more than GOLD_MAX_LOT (default: E8's own 20-lot cap) is sent at the
+ceiling, smaller, never skipped; the binding bound is floor_fit's survival budget.
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -173,9 +174,17 @@ MAX_STOP_REFUSALS = 3
 # deferring a window that can never pass it; and the risk withheld is journalled (status
 # RAIL_SHRUNK, rail LOT_CEILING_RAIL, reason LOT_CEILING_REASON) and published two-sided by
 # `research/missed_growth.published_e8_gold_lines` -- the risk withheld, the saving UNMEASURED.
-GOLD_MAX_LOT = 0.75
+#
+# v5 (audit HOLD on #1096 at 06ebe5f2, 2026-11-14): THE DEFAULT IS THE VENUE'S OWN CAP. A fixed
+# 0.75 was hand-picked, its benefit UNMEASURED (growth-governance Rule 1, NEVER REDUCE
+# AGGRESSIVENESS, ALLOCATOR SOVEREIGNTY), and redundant with the survival bound this lane already
+# derives: `floor_fit` prices both legs' risk plus slip_points x lots x contract against
+# min(room_to_daily_floor, room_to_static) - committed - margin, from the measured slip. So the
+# ceiling defaults to E8's 20-lot XAUUSD cap and floor_fit binds. A box override below the cap
+# (E8_GOLD_MAX_LOT.json) still shrinks, and still journals RAIL_SHRUNK with its missed-growth line.
 #: E8's own position cap on XAUUSD, in lots. A configured value larger than it is no ceiling at all.
 GOLD_MAX_LOT_CAP = 20.0
+GOLD_MAX_LOT = GOLD_MAX_LOT_CAP
 #: The box may move the ceiling without a code change: {"max_lot": <lots>}. Absent means
 #: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite, <= 0, above GOLD_MAX_LOT_CAP or below the
 #: venue's minimum lot (which would idle the lane) also means GOLD_MAX_LOT, said in the pass
