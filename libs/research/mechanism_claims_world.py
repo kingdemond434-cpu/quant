@@ -17,6 +17,9 @@ Persian's ک and ی are also typed by Arabic writers on Persian keyboards; such 
 """
 from __future__ import annotations
 
+from libs.research import mechanism_claims_world_b as _b
+from libs.research import mechanism_claims_world_c as _c
+
 #: lang -> (quantity, direction, horizon)
 WORLD_VOCAB: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "fa": (
@@ -184,9 +187,21 @@ WORLD_ALIASES: dict[str, tuple[str, ...]] = {
     "XTIUSD": ("نفت", "نفتی", "تیل", "তেলের", "অপরিশোধিত তেল", "கச்சா எண்ணெய்", "ముడి చమురు",
                "कच्चे तेल", "ક્રૂડ", "langis", "țiței", "olaj", "πετρέλαιο"),
 }
+# The eight one-script languages (mechanism_claims_world_b) and the last twelve
+# (mechanism_claims_world_c) join the same tables.
+for _more in (_b.ALIASES, _c.ALIASES):
+    for _sym, _terms in _more.items():
+        WORLD_ALIASES[_sym] = WORLD_ALIASES.get(_sym, ()) + _terms
+WORLD_VOCAB.update(_b.VOCAB)
+WORLD_VOCAB.update(_c.VOCAB)
+WORLD_STOPWORDS.update(_c.STOPWORDS)
+WORLD_LETTER_HINTS = WORLD_LETTER_HINTS + _c.LETTER_HINTS
+SCRIPT_LANGS = _b.SCRIPT_LANGS
+DENSE_LANGS = _b.DENSE_LANGS
+NEPALI_MARKERS = _b.NEPALI_MARKERS
 #: Arabic, Bengali, Tamil, Telugu, Gujarati and Devanagari, as regex character ranges.
 _SCRIPTS = ("\u0600-\u06ff", "\u0980-\u09ff", "\u0b80-\u0bff", "\u0c00-\u0c7f", "\u0a80-\u0aff",
-            "\u0900-\u097f")
+            "\u0900-\u097f", *_b.BOUNDED_SCRIPTS)
 #: alias -> its script block: no letter of that script may precede or follow it (so "طلاب",
 #: students, and "نفتح", we open, never read as gold and oil).
 SCRIPT_BOUNDED: dict[str, str] = {
@@ -202,3 +217,5 @@ WORLD_DIR_BUCKETS: dict[str, tuple[str, ...]] = {
               "తగ్గు", "विक्री", "घसरण", "વેચ", "ઘટ", "ibenta", "bumaba", "vânz", "scade",
               "prodej", "klesá", "eladás", "esik", "πώληση", "πτώση"),
 }
+for _key in WORLD_DIR_BUCKETS:
+    WORLD_DIR_BUCKETS[_key] = WORLD_DIR_BUCKETS[_key] + _b.DIR_BUCKETS[_key] + _c.DIR_BUCKETS[_key]

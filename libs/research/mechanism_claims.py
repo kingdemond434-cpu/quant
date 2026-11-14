@@ -49,6 +49,7 @@ import re
 from typing import Any
 
 from libs.research import mechanism_claims_world as _world
+from libs.research import mechanism_claims_world_c as _c
 from libs.research.claim_selection import selection_trials
 from libs.research.metric_fence import check_metrics as fence_metrics
 from libs.research.metric_fence import reason_class
@@ -680,7 +681,8 @@ LANGUAGES: tuple[str, ...] = tuple(_VOCAB)
 
 #: How a language's vocabulary is matched. "sub": plain substring (scripts without spaces);
 #: "stem": the word must START at a word boundary and may continue (inflecting languages).
-_SUBSTRING_LANGS: frozenset[str] = frozenset({"zh", "zh-Hant", "ja", "ko", "th"})
+_SUBSTRING_LANGS: frozenset[str] = frozenset({"zh", "zh-Hant", "ja", "ko", "th"}) | (
+    _world.DENSE_LANGS)
 
 # ============================================================================== detection
 _CJK = re.compile(r"[一-鿿]")
@@ -694,6 +696,9 @@ _BENGALI = re.compile(r"[ঀ-৿]")
 _GUJARATI = re.compile(r"[઀-૿]")
 _TAMIL = re.compile(r"[஀-௿]")
 _TELUGU = re.compile(r"[ఀ-౿]")
+#: Scripts one added language writes alone (Ethiopic, Armenian, Georgian, Sinhala, Khmer, Lao,
+#: Myanmar): `mechanism_claims_world_b.SCRIPT_LANGS`.
+_ONE_SCRIPT = tuple((re.compile(f"[{block}]"), code) for block, code in _world.SCRIPT_LANGS)
 _GREEK = re.compile(r"[Ͱ-Ͽἀ-῿]")
 _HEBREW = re.compile(r"[֐-׿]")
 _ARABIC = re.compile(r"[؀-ۿ]")
@@ -788,13 +793,19 @@ def language_of(text: str) -> str:
         return "zh-Hant" if trad > simp else "zh"
     if _THAI.search(t):
         return "th"
+    for rx, code in _ONE_SCRIPT:
+        if rx.search(t):
+            return code
     # Before Devanagari: Bengali and Gujarati text ends sentences with the Devanagari danda.
     for rx, code in ((_BENGALI, "bn"), (_GUJARATI, "gu"), (_TAMIL, "ta"), (_TELUGU, "te")):
         if rx.search(t):
             return code
     if _DEVANAGARI.search(t):
-        mr = sum(t.count(w) for w in _world.MARATHI_MARKERS)
-        return "mr" if mr > sum(t.count(w) for w in _world.HINDI_MARKERS) else "hi"
+        votes = {code: sum(t.count(w) for w in words) for code, words in (
+            ("hi", _world.HINDI_MARKERS), ("mr", _world.MARATHI_MARKERS),
+            ("ne", _world.NEPALI_MARKERS))}
+        best = max(votes, key=lambda k: votes[k])
+        return best if votes[best] > votes["hi"] else "hi"
     if _HEBREW.search(t):
         return "he"
     if _ARABIC.search(t):
@@ -807,12 +818,27 @@ def language_of(text: str) -> str:
     if greek >= 3 and greek >= 0.3 * sum(ch.isalpha() for ch in t):
         return "el"
     if _CYRILLIC.search(t):
-        return "uk" if _UKR_ONLY.search(t) else "ru"
+        # Kazakh before Ukrainian: both write the dotted i; only Kazakh writes its six own letters.
+        for letters, code in ((_c.KAZAKH_LETTERS, "kk"), (_c.MONGOLIAN_LETTERS, "mn")):
+            if any(ch in t for ch in letters):
+                return code
+        if _UKR_ONLY.search(t):
+            return "uk"
+        if any(ch in t for ch in _c.SERBIAN_LETTERS):
+            return "sr"
+        padded = f" {t.lower()} "
+        if (sum(padded.count(w) for w in _c.BULGARIAN_MARKERS) >= 2
+                and not any(ch in t for ch in _c.RUSSIAN_ONLY)):
+            return "bg"
+        return "ru"
     viet = _VIET.findall(t)
     if len(viet) >= 2 and not (any(ch in t for ch in _world.ROMANIAN_ONLY)
                                and len([c for c in viet if c not in "ăĂ"]) < 2):
         return "vi"
     low = t.lower()
+    for letters, code in _c.DECISIVE_LETTERS:
+        if any(ch in low for ch in letters):
+            return code
     score: dict[str, int] = {lang: len(rx.findall(low)) for lang, rx in _STOP_RE.items()}
     for ch, lang in _LETTER_HINTS:
         if ch in low:
@@ -1490,8 +1516,10 @@ def mechanism_key(inst: dict[str, Any], cls: str, direction: list[str], horizon:
 # ============================================================================== stated numbers
 # Sentence enders: ASCII plus the full-width ideographic stop, bang, question and semicolon
 # (U+3002, U+FF01, U+FF1F, U+FF1B), the Devanagari danda (U+0964) and the Arabic question mark
-# (U+061F), written as escapes so the linter does not read them as typos.
-_SPLIT = re.compile("(?<=[.!?\u3002\uff01\uff1f\uff1b;\u0964\u061f])\\s*|\\n+")
+# (U+061F), and the Ethiopic, Armenian, Myanmar and Khmer full stops (U+1362, U+0589, U+104B,
+# U+17D4), written as escapes so the linter does not read them as typos.
+_SPLIT = re.compile(
+    "(?<=[.!?\u3002\uff01\uff1f\uff1b;\u0964\u061f\u1362\u0589\u104b\u17d4])\\s*|\\n+")
 _PERF: tuple[tuple[str, str], ...] = (
     ("return_pct",
      r"(?:收益率?|報酬率?|年化(?:收益|報酬)?|盈利|利回り|リターン|수익률|доходност[ьи]?|"
