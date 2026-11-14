@@ -939,7 +939,8 @@ class Fill:
 def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[Fill]:
     """The written fill rule: entry at the open of the first bar STRICTLY after the signal bar
     (or at the resting trigger if it is touched within wait_bars bars from there); the stop is
-    checked before the target on every bar, both intrabar; a target is not taken on the fill bar
+    checked before the target on every bar, both intrabar, and a bar after the fill bar that
+    OPENS through the stop exits at that open; a target is not taken on the fill bar
     of a limit entry; time exit at the open of bar fill+ttl; one position at a time; R is the
     move over the initial stop distance less the round-trip cost over the same distance."""
     n = len(b)
@@ -982,7 +983,14 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
         for j in range(fill_bar, min(n, fill_bar + max(1, order.ttl_bars))):
             held = j - fill_bar + 1
             hi, lo = float(b.h[j]), float(b.low[j])
+            # A BAR THAT OPENS THROUGH THE STOP FILLS AT ITS OPEN (engine 28ae39d90, 2026-11-11):
+            # a touched stop is a market order and a gap's first tradeable price is the open.
+            # The fill bar is exempt -- its open is the entry, or the entry is a trigger inside it.
+            gap_open = float(b.o[j]) if j > fill_bar else None
             if side > 0:
+                if gap_open is not None and gap_open <= stop:
+                    exit_px, reason = gap_open, "stop"
+                    break
                 if lo <= stop:
                     exit_px, reason = stop, "stop"
                     break
@@ -990,6 +998,9 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
                     exit_px, reason = target, "target"
                     break
             else:
+                if gap_open is not None and gap_open >= stop:
+                    exit_px, reason = gap_open, "stop"
+                    break
                 if hi >= stop:
                     exit_px, reason = stop, "stop"
                     break
