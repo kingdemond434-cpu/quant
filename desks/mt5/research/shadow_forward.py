@@ -686,10 +686,30 @@ def per_symbol_costs(meta: dict, sym: str):
     `fusion_cost.COMMISSION_PER_LOT_PER_SIDE` is read rather than copied, so the desk has ONE
     commission number and a re-measurement reaches this call site without an edit.
     """
-    from mt5desk.engine import Costs
-
     from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
-    return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
+
+    # THE HOUR OF ENTRY AND THE HOUR OF EXIT (2026-10-13). The flat registry spread was charged
+    # at every fill, so a clock entering at the broker-00 rollover on an exotic paid the pooled
+    # median (USDZAR 329 pts against 3,534 at hour 00), and a clock on a symbol whose registry
+    # spread is ZERO (USDJPY and 13 others) paid the engine's 0.05 floor -- nothing. The cost
+    # model now carries the surface's per-(weekday, hour) table and the engine charges each
+    # long its entry slot and a short its exit slot (bid bars: the ask is crossed there).
+    # `meta[sym]` still raises KeyError for a
+    # symbol the catalogue lacks, which is what routes the caller to its frozen basis.
+    from mt5desk.engine import Costs
+    from research.entry_hour_cost import attach_table
+
+    row = meta[sym]
+    costs, basis = attach_table(sym, row, Costs.from_symbol(
+        row, commission_per_lot=COMMISSION_PER_LOT_PER_SIDE))
+    COST_BASIS[sym] = basis
+    return costs
+
+
+#: symbol -> the spread basis its clock was priced on this pass ("fill_hour_surface_table",
+#: "REGISTRY_FALLBACK:...", or "UNMEASURED..."). Published beside each clock so an UNMEASURED
+#: price is queued for repricing rather than read as a clean number.
+COST_BASIS: dict[str, str] = {}
 
 
 def frozen_costs(key: str):
@@ -1363,6 +1383,16 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            # THE TABLE IS KEYED ON THE BROKER CLOCK (Auditor, #389). MT5 and cached bars carry the
+            # broker's wall time, the clock cost_surface.json was built on; an HTTP route
+            # (yfinance) carries true UTC, where the same table would put the rollover charge two
+            # to three hours off. Such a clock is charged the flat spread, and says why.
+            _clock_basis: str | None = None
+            if getattr(costs, "spread_per_lot_by_hour", None) and \
+                    str(getattr(bars, "source", "")).startswith("HTTP:"):
+                import dataclasses as _dcs
+                costs = _dcs.replace(costs, spread_per_lot_by_hour=None)
+                _clock_basis = f"REGISTRY_FALLBACK:bars_not_on_broker_clock({bars.source})"
             ledger = _fl.writer_path(key, SHADOW_DIR, shared_ledgers)
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
@@ -1376,6 +1406,13 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 memo.put(_bt_key, res, h1, extra)
             else:
                 prof.hit("backtest")
+            # WHICH SPREAD THIS PASS CHARGED, on the clock's own state, so a clock priced on an
+            # UNMEASURED or registry-fallback spread is visible and queued, never read as clean.
+            st["spread_basis"] = _clock_basis or ((COST_BASIS.get(sym) or "frozen_basis") if
+                getattr(costs, "spread_per_lot_by_hour", None) or sym in COST_BASIS
+                else "frozen_basis")
+            st["spread_clock"] = ("UTC" if str(getattr(bars, "source", "")).startswith("HTTP:")
+                                  else "broker")
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,

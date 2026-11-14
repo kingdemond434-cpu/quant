@@ -1500,6 +1500,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # THE ENTRY-HOUR COST MODEL CHECKED AGAINST THE ACCOUNT'S OWN FILLS.
+                     "cost_surface_accuracy",
                      # CULTURE PROVENANCE PER CELL: source culture, participant structure,
                      # failure-mode hypothesis and crowding prior, backfilled bounded, and the
                      # culture gap list the producers read. The machine measuring whether its
@@ -2376,6 +2378,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
+    # Two JSONL reads and one M1 parquet per traded symbol (~15 on the box): seconds, capped low.
+    "cost_surface_accuracy": 240,
     "transmission_engine": 1_000,
     "forward_calibration": 180,
     "desk_self_heal": 240,
@@ -5232,6 +5236,11 @@ def main() -> None:
     # pass null clocks. It reports only and never tightens a gate or grants authority.
     fcal = _costed("forward_calibration", lambda: _producer(
         "forward_calibration", "research/forward_calibration.py", "--apply"))
+    # THE COST SURFACE AGAINST REAL FILLS (2026-10-13): every gate and forward clock now charges
+    # the spread of the slot a trade crosses the ask in (`research/entry_hour_cost.py`); this
+    # publishes the modelled charge beside the quote the account's fills actually met, per symbol.
+    csa = _costed("cost_surface_accuracy", lambda: _producer(
+        "cost_surface_accuracy", "research/cost_surface_accuracy.py"))
     # SAFE SELF-HEAL: re-run only the existing producer tasks named by the evidence audit.
     # Promotion, capital, gates, deadman state and orders are structurally outside its actuator.
     dsh = _costed("desk_self_heal", lambda: _producer(
@@ -6578,6 +6587,7 @@ def main() -> None:
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
+                    "cost_surface_accuracy": csa,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,

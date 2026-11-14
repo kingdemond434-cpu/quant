@@ -241,13 +241,7 @@
       "costs_for(charged_at_source=)": "REPLAY_CHARGES_ENTRY_HOUR"
     },
     "desks/mt5/mt5desk/universe_registry.py": {
-      "MEDIAN_SPREAD_PRODUCERS": {
-        "any_of": [
-          "('realized_fills', 'fusion_zero_m1_tape', 'h1_spread_median', 'download_all_symbols')",
-          "('realized_fills', 'fusion_zero_m1_tape', 'cost_surface_symbol_p50', 'h1_spread_median', 'download_all_symbols')"
-        ],
-        "until_pr": 389
-      }
+      "MEDIAN_SPREAD_PRODUCERS": "('realized_fills', 'fusion_zero_m1_tape', 'cost_surface_symbol_p50', 'h1_spread_median', 'download_all_symbols')"
     }
   }
 }
