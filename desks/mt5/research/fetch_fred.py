@@ -60,8 +60,23 @@ SERIES = {
 }
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def fetch(sid: str) -> pd.DataFrame:
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    why = _terms_refused(url)
+    if why:
+        raise RuntimeError(f"BLOCKED_TERMS: {why}")
     df = pd.read_csv(url, skiprows=1, index_col=0, parse_dates=True)
     df.index = pd.to_datetime(df.index, utc=True)
     df = df.rename(columns={df.columns[0]: sid})

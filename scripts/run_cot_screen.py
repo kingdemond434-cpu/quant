@@ -84,6 +84,18 @@ _ZWIN = 52          # weeks
 _BORROWED_HAIRCUT = 0.58
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def _fetch(url: str, dest: Path) -> bytes:
     """Cache-first fetch, with a curl fallback.
 
@@ -95,6 +107,9 @@ def _fetch(url: str, dest: Path) -> bytes:
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size > 0:
         return dest.read_bytes()
+    why = _terms_refused(url)
+    if why:                           # held cache only: a refused host is never fetched
+        raise RuntimeError(f"BLOCKED_TERMS: {why}")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "quant-research/1.0"})
         with urllib.request.urlopen(req, timeout=45) as r:

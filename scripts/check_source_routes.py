@@ -84,11 +84,27 @@ _ACCEPT = {
 MIN_BODY_BYTES = 64
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    why = _terms_refused(url)
+    if why:                           # a terms-refused host is never probed
+        out.update({"status": "BLOCKED_TERMS", "why": why})
+        return out
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

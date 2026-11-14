@@ -52,7 +52,7 @@
   {
    "id": "fred_rates",
    "adapter": "fred",
-   "terms": "OPEN",
+   "terms": "REFUSED", "terms_refused_why": "REFUSED 2026-11-13 (governance/fred-terms-ruling-2026-11-13.md): FRED's terms refuse automated and system-building use on every host, API key or not; held parquets are read, nothing is fetched. Primary-publisher replacement pending (Global data owns the migration)",
    "key_env": [
     "FRED_API_KEY",
     "FRED_KEY"
@@ -76,7 +76,7 @@
   {
    "id": "fred_vixcls",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
+   "terms": "REFUSED", "terms_refused_why": "REFUSED 2026-11-13 (governance/fred-terms-ruling-2026-11-13.md): FRED's terms refuse automated and system-building use on every host, API key or not; held parquets are read, nothing is fetched. Primary-publisher replacement pending (Global data owns the migration)",
    "url": "https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS",
    "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed"
   },
@@ -136,13 +136,13 @@
   {
    "id": "oecd_rates_on_fred",
    "adapter": "fred",
-   "terms": "OPEN",
+   "terms": "REFUSED", "terms_refused_why": "REFUSED 2026-11-13 (governance/fred-terms-ruling-2026-11-13.md): FRED's terms refuse automated and system-building use on every host, API key or not; held parquets are read, nothing is fetched. Primary-publisher replacement pending (Global data owns the migration)",
    "note": "OECD MEI 3M interbank rates via FRED (OECD data CC BY 4.0, attribute OECD)"
   },
   {
    "id": "imf_reserves_on_fred",
    "adapter": "fred",
-   "terms": "OPEN",
+   "terms": "REFUSED", "terms_refused_why": "REFUSED 2026-11-13 (governance/fred-terms-ruling-2026-11-13.md): FRED's terms refuse automated and system-building use on every host, API key or not; held parquets are read, nothing is fetched. Primary-publisher replacement pending (Global data owns the migration)",
    "note": "IMF IFS total reserves ex gold via FRED (IMF data free reuse with attribution)"
   },
   {

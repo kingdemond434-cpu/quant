@@ -90,7 +90,23 @@ SGE_CONTRACTS = {"au9999_cny_g": "Au99.99", "au_td_cny_g": "Au(T+D)"}
 _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
+    why = _terms_refused(url)
+    if why:
+        print(f"  {col}: BLOCKED_TERMS -- {why}", flush=True)
+        return None
     try:
         r = requests.get(url, timeout=timeout)
         r.raise_for_status()

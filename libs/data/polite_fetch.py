@@ -249,6 +249,11 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     host = urlparse(url).netloc.lower()
     open_ = opener or urllib.request.urlopen
     resp = Response(url=url)
+    from libs.data.terms_refused import refused
+    why_refused = refused(url)
+    if why_refused:                   # a terms-refused host (FRED): no request, ever
+        resp.error = why_refused
+        return resp
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:

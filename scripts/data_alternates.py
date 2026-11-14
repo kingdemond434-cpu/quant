@@ -57,8 +57,25 @@ DBNOMICS_MIRROR: dict[str, tuple[str, str, str]] = {
 }
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def fred_route(series_id: str) -> dict[str, float]:
-    """Primary: keyless fredgraph CSV."""
+    """Primary: keyless fredgraph CSV -- terms-refused since 2026-11-13, so this route always
+    raises and the walk goes on to the primary publishers' series (DBnomics BLS / Fed ids)."""
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+    why = _terms_refused(url)
+    if why:
+        raise RuntimeError(f"BLOCKED_TERMS: {why}")
     raw = _get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
     out: dict[str, float] = {}
     for row in csv.DictReader(io.StringIO(raw.decode("utf-8", "replace"))):
