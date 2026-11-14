@@ -156,3 +156,11 @@ def test_the_fred_token_is_scoped_and_honest() -> None:
         "ingest_fred must send the scoped token, not the shared one")
     assert 'headers={"User-Agent": UA}' in src.split("def ingest_fred", 1)[0], (
         "the other ingesters must still send the shared token")
+
+
+def test_the_manifest_matches_the_box_s_two_hour_ingest_clock() -> None:
+    """The box runs MT5-AxisIngest every two hours; the task table says so too."""
+    manifest = Path(__file__).resolve().parents[1] / "ops" / "box_tasks.manifest"
+    line = next(ln for ln in manifest.read_text(encoding="utf-8").splitlines()
+                if 'name="MT5-AxisIngest"' in ln)
+    assert 'trigger="every 2 hours at :40"' in line
