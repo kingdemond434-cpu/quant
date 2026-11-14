@@ -2225,7 +2225,11 @@ def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict
 #: switches the input off and a PROMOTE switches an opt-in input on, on the next pass. "shadow":
 #: the verdict is published with what it WOULD do and nothing moves, because the standing rule
 #: keeps GARCH/HMM sizing changes in shadow until zuck says otherwise.
-INPUT_POLICY: dict[str, str] = {"macro": "enforce", "vix": "enforce",
+#: VIX IS SHADOW TOO (#1023 audit HOLD, 2026-11-14): VIXCLS is Cboe's series, reached through
+#: FRED, and the 11-13 FRED terms ruling admits a third-party series only from its owner under
+#: the owner's terms -- so no new LIVE sizing consumer of it. The verdict is still published with
+#: what it would do; the arm returns to "enforce" once a terms-clean VIX source is wired.
+INPUT_POLICY: dict[str, str] = {"macro": "enforce", "vix": "shadow",
                                 "regime": "shadow", "garch": "shadow"}
 #: Days a VIX rank may lag today before the live vix arm reads it as UNMEASURED. DERIVATION:
 #: VIXCLS prints each US business day, and the longest normal gap is Friday to Tuesday after a

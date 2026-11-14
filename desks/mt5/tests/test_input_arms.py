@@ -135,7 +135,23 @@ def _daily(n: int = 400) -> pd.DataFrame:
     return pd.DataFrame({"x": book}, index=days)
 
 
-def test_live_verdicts_enforce_macro_and_vix_and_shadow_hmm_and_garch() -> None:
+def test_vix_stays_shadow_until_a_terms_clean_source_exists() -> None:
+    """#1023 audit HOLD: VIXCLS (Cboe via FRED) may not feed live sizing; a PROMOTE verdict is
+    published with what it would do and moves nothing."""
+    assert pa.INPUT_POLICY["vix"] == "shadow"
+    daily = _daily()
+    _, days, ranks = _vix_world(n=400)
+    hi = next(d for d in reversed(days) if ranks[d] >= 0.9)
+    out = pa.input_verdicts(daily, 0.06, verdict=lambda a: "PROMOTE" if a == "vix" else "X",
+                            ranks=ranks, today=hi)
+    assert out["inputs"]["vix"] == {"verdict": "PROMOTE", "policy": "shadow",
+                                    "action": "switch on", "enforced": False}
+    assert out["vix_share"] is None
+
+
+def test_live_verdicts_enforce_macro_and_vix_and_shadow_hmm_and_garch(monkeypatch) -> None:
+    # The enforce path itself, for when a terms-clean VIX source puts the arm back on.
+    monkeypatch.setitem(pa.INPUT_POLICY, "vix", "enforce")
     daily = _daily()
     _, days, ranks = _vix_world(n=400)
     hi = next(d for d in reversed(days) if ranks[d] >= 0.9)
@@ -148,7 +164,8 @@ def test_live_verdicts_enforce_macro_and_vix_and_shadow_hmm_and_garch() -> None:
     assert out["inputs"]["garch"]["enforced"] is False
 
 
-def test_live_verdicts_change_nothing_without_a_verdict_or_a_fresh_vix() -> None:
+def test_live_verdicts_change_nothing_without_a_verdict_or_a_fresh_vix(monkeypatch) -> None:
+    monkeypatch.setitem(pa.INPUT_POLICY, "vix", "enforce")
     daily = _daily()
     _, days, ranks = _vix_world(n=400)
     out = pa.input_verdicts(daily, 0.06, verdict=lambda _a: "UNPROVEN", ranks=ranks,
