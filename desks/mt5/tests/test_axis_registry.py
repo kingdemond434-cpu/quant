@@ -313,6 +313,11 @@ def test_proposals_stay_in_the_hypothesis_lane_and_name_a_runnable_session(desk)
                "information_source": "carry", "chart": "H1", "session": "overlap"}
     assert ar._proposal(overlap, "global_explore", "w", _FAMILIES, frozenset(),
                         {"forex": ["EURUSD"]}, 1.0) is None, "no window exists for overlap"
+    # the London/New York overlap has a window of its own, under a name nothing else uses
+    fine = {**overlap, "session": "ldn_ny_overlap"}
+    row = ar._proposal(fine, "global_explore", "w", _FAMILIES, frozenset(),
+                       {"forex": ["EURUSD"]}, 1.0)
+    assert row is not None and row["params"]["session"] == "ldn_ny_overlap"
 
 
 def test_the_three_selectors_share_one_budget_and_every_row_is_shaped_for_the_intake(desk):

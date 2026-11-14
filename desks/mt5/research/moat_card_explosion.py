@@ -265,10 +265,11 @@ def knobs(family: str) -> frozenset[str]:
 
 
 def sessions() -> tuple[str, ...]:
-    """The desk's own session table, never a copy of it."""
+    """The desk's own session table, never a copy of it, in its own order: the broad sessions
+    before the fine ones (2026-10-06), so `MAX_PER_AXIS` trims a fix window, never `ny`."""
     try:
-        from mt5desk.family_call import SESSIONS
-        return tuple(sorted(SESSIONS))
+        from mt5desk.family_call import WINDOWS
+        return tuple(WINDOWS)
     except Exception:
         return ("all", "asia", "london", "ny")
 

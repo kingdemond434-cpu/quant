@@ -50,6 +50,21 @@ for _p in (str(DESK), str(REPO)):
 
 UNIVERSE = DESK / "data" / "universe"
 REPORT = DESK / "reports" / "TIMEFRAME_COVERAGE.json"
+#: The bulk downloader's per-(symbol, chart) verdicts and the tick recorder's status, read so the
+#: one published report says what the box CAPTURES, not only which files exist (2026-10-06: the
+#: cloud could not see the box's bars, and an outside read was refused; the box now says it).
+VERDICTS = DESK / "data" / "bar_coverage_verdicts.json"
+TAPE_STATUS = DESK / "reports" / "TAPE_RECORDER.json"
+#: Bar length in seconds per chart, for freshness and gap arithmetic.
+TF_SECONDS = {"M1": 60, "M5": 300, "M15": 900, "M30": 1800, "H1": 3600, "H4": 14400,
+              "D1": 86400}
+#: A hole longer than this many bars, but shorter than a weekend, is an intraday GAP. Anything
+#: of 40 hours or more is a market closure (weekend, holiday) and is not counted, nor is a hole
+#: that RECURS at the same hour of the week in `RECUR_WEEKS` or more weeks: that is the
+#: instrument's own session break (a share CFD's overnight close, a daily rollover pause).
+GAP_BARS = 3
+CLOSURE_S = 40 * 3600
+RECUR_WEEKS = 3
 
 #: Charts the desk stores, in speed order. Kept in step with `download_all_symbols.TIMEFRAME_DEPTH`
 #: -- and the check below asserts they agree, because two lists that must match and are compared
@@ -126,6 +141,125 @@ def coverage() -> dict[str, Any]:
     }
 
 
+def _bar_times(path: Path) -> Any:
+    """The bar timestamps of one chart as int64 epoch seconds (sorted), or None if unreadable.
+    Reads the time column only, never the prices."""
+    try:
+        import numpy as np
+        import pyarrow.parquet as pq
+        pf = pq.ParquetFile(path)
+        names = pf.schema_arrow.names
+        col = next((c for c in ("time", "__index_level_0__", "datetime", "timestamp")
+                    if c in names), None)
+        if col is None:
+            return None
+        arr = pf.read(columns=[col]).column(col).to_numpy()
+        if arr.dtype.kind == "M":
+            arr = arr.astype("datetime64[s]").astype("int64")
+        arr = np.asarray(arr, dtype="int64")
+        if arr.size and arr.max() > 10**11:                     # milliseconds
+            arr = arr // 1000
+        arr.sort()
+        return arr
+    except Exception:                                                    # noqa: BLE001
+        return None
+
+
+def capture(now: datetime | None = None) -> dict[str, Any]:
+    """WHAT THE BOX HOLDS, PER CHART, AND HOW CURRENT IT IS.
+
+    Per chart: series held, symbols whose last bar is fresh (within a weekend of now), median
+    last-bar age, intraday gaps (holes over `GAP_BARS` bars and under a market closure) and the
+    worst holes by name. Hunted and event-lane symbols alike: the M1 lake feeds event-reaction
+    measurement too. An unreadable file is counted as unreadable, never as empty."""
+    import numpy as np
+    now_s = int((now or datetime.now(tz=UTC)).timestamp())
+    per_tf: dict[str, dict[str, Any]] = {}
+    worst: list[tuple[float, str]] = []
+    if not UNIVERSE.exists():
+        return {"status": "UNMEASURED", "why": f"{UNIVERSE} does not exist on this host"}
+    for path in sorted(UNIVERSE.glob("*.parquet")):
+        sym, _, tf = path.stem.rpartition("_")
+        tf = tf.upper()
+        if not sym or tf not in TF_SECONDS:
+            continue
+        row = per_tf.setdefault(tf, {"series": 0, "unreadable": 0, "fresh": 0, "ages_h": [],
+                                     "bars": 0, "gaps": 0, "gap_hours": 0.0, "symbols": []})
+        row["series"] += 1
+        t = _bar_times(path)
+        if t is None or not len(t):
+            row["unreadable"] += 1
+            continue
+        age = (now_s - int(t[-1])) / 3600.0
+        row["ages_h"].append(age)
+        row["bars"] += int(len(t))
+        if age * 3600 <= CLOSURE_S + 2 * TF_SECONDS[tf]:
+            row["fresh"] += 1
+            row["symbols"].append(sym)
+        d = np.diff(t)
+        cand = (d > GAP_BARS * TF_SECONDS[tf]) & (d < CLOSURE_S)
+        starts = t[:-1][cand]
+        slot = (starts % (7 * 86400)) // 3600                 # hour of the week it began
+        week = starts // (7 * 86400)
+        pairs = np.unique(np.stack([slot, week]), axis=1) if starts.size else np.empty((2, 0))
+        slots, weeks = np.unique(pairs[0], return_counts=True)
+        recurring = set(slots[weeks >= RECUR_WEEKS].tolist())
+        holes = d[cand][[int(x) not in recurring for x in slot]] if starts.size else d[:0]
+        row["gaps"] += int(holes.size)
+        row["gap_hours"] += float(holes.sum()) / 3600.0
+        if holes.size:
+            worst.append((float(holes.max()) / 3600.0, f"{sym}_{tf}"))
+    out: dict[str, Any] = {}
+    for tf in EXPECTED_TIMEFRAMES:
+        r = per_tf.get(tf)
+        if r is None:
+            out[tf] = {"series": 0}
+            continue
+        ages = r.pop("ages_h")
+        syms = r.pop("symbols")
+        out[tf] = {**r, "gap_hours": round(r["gap_hours"], 1),
+                   "median_last_bar_age_h": round(float(np.median(ages)), 2) if ages else None,
+                   "fresh_symbols": sorted(syms) if tf in ("M1", "M5") else len(syms)}
+    fine = {s for tf in ("M1",) for s in (out.get(tf, {}).get("fresh_symbols") or [])}
+    return {"status": "MEASURED", "by_timeframe": out,
+            "symbols_fresh_at_or_below_60s": len(fine),
+            "worst_gaps": [{"series": n, "hours": round(h, 1)}
+                           for h, n in sorted(worst, reverse=True)[:20]]}
+
+
+def fetch_verdicts() -> dict[str, Any]:
+    """The bulk downloader's last answer per (symbol, chart), tallied by chart and verdict."""
+    try:
+        doc = json.loads(VERDICTS.read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return {"status": "UNMEASURED", "why": f"{VERDICTS.name} absent or unreadable"}
+    cells = doc.get("cells") if isinstance(doc, dict) else None
+    if not isinstance(cells, dict):
+        return {"status": "UNMEASURED", "why": f"{VERDICTS.name} carries no cells"}
+    tally: dict[str, Counter[str]] = defaultdict(Counter)
+    newest = ""
+    for key, row in cells.items():
+        if not isinstance(row, dict):
+            continue
+        tf = str(key).rpartition("_")[2].upper()
+        tally[tf][str(row.get("verdict") or "UNKNOWN")] += 1
+        newest = max(newest, str(row.get("at") or ""))
+    return {"status": "MEASURED", "newest_at": newest or None,
+            "by_timeframe": {tf: dict(sorted(c.items())) for tf, c in sorted(tally.items())}}
+
+
+def tape() -> dict[str, Any]:
+    """The tick recorder's own status, carried whole except its per-cycle lists."""
+    try:
+        doc = json.loads(TAPE_STATUS.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"status": "UNMEASURED", "why": f"{TAPE_STATUS.name} absent or unreadable"}
+    if not isinstance(doc, dict):
+        return {"status": "UNMEASURED", "why": f"{TAPE_STATUS.name} is not an object"}
+    return {"status": "MEASURED",
+            **{k: v for k, v in doc.items() if k not in ("added", "removed")}}
+
+
 def _tier(path: Path) -> str:
     rel = path.as_posix()
     name = path.name
@@ -189,6 +323,9 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "coverage": cov,
+        "capture": capture(),
+        "fetch_verdicts": fetch_verdicts(),
+        "tape": tape(),
         "hardcoding": hard,
         "downloader_agrees": agree,
         "downloader_note": why,
@@ -208,6 +345,11 @@ def main(argv: list[str] | None = None) -> int:
               f"charts can be discovered at all")
     print(f"  {cov['h1_only_symbols']} hunted symbol(s) hold H1 and nothing else; "
           f"{cov['multi_timeframe_symbols']} hold more than one chart")
+    cap = payload["capture"]
+    if cap.get("status") == "MEASURED":
+        print("  fresh symbols by chart: " + ", ".join(
+            f"{tf}={(lambda v: len(v) if isinstance(v, list) else v)(cap['by_timeframe'][tf].get('fresh_symbols', 0))}"
+            for tf in EXPECTED_TIMEFRAMES) + f"; at or below 60s: {cap['symbols_fresh_at_or_below_60s']}")
     print(f"  downloader: {why}")
     print("  H1 literals by tier (tests excluded):")
     for tier in ("PIPELINE", "MINER_SOURCE", "OTHER", "THROWAWAY"):
