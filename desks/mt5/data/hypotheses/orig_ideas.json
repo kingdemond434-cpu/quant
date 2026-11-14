@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T01:45:00Z",
+ "updated_at": "2026-11-14T02:55:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -320,6 +320,53 @@
     "common news shock"
    ],
    "separating_test": "release against matched non-release minutes with the surprise sign partialled out",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial; the surprise sign needs a consensus series, UNMEASURED until one passes terms and robots (most consensus feeds are third-party), so the first test runs release against matched non-release minutes without it"
+  },
+  {
+   "id": "IQ-730",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "causal"
+   ],
+   "mechanism": "EURUSD tick imbalance in the 5 minutes before the London 4pm fix on month-end days against the month-to-date US500 minus GER40 return differential: equity-rebalancing pressure (the imbalance sign follows the differential on month-end days only) against generic end-of-day liquidity noise (the same pattern on non-month-end days). Separating test: the interaction of the differential with a month-end dummy on the pre-fix imbalance and on the 16:00-16:30 London move, net of costs. The month-end fix trade is crowded at bar level, so the tick-imbalance rule must beat the plain bar rule on the same days. Own tick tape only",
+   "falsifier": "the differential-by-month-end interaction is zero, or the tick rule does not beat the plain bar rule after costs",
+   "competing_explanations": [
+    "month-end equity-rebalancing pressure",
+    "generic end-of-day liquidity noise"
+   ],
+   "separating_test": "differential x month-end dummy on pre-fix imbalance and the 16:00-16:30 London move; must beat the plain bar rule",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-731",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "USDJPY",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "information_theory"
+   ],
+   "mechanism": "During the Tokyo cash lunch break (11:30-12:30 JST, 02:30-03:30 UTC) USDJPY tick imbalance leads US500 CFD moves at 1-10 minutes: Nikkei-futures hedging routed through JPY against a common risk-on factor (contemporaneous co-movement only, no lead). Separating test: the lead-lag beta in the lunch hour against matched non-lunch Asian hours, with contemporaneous co-movement partialled out. Own tick tape only",
+   "falsifier": "the lunch-hour lead-lag beta equals the matched non-lunch beta once contemporaneous co-movement is partialled out",
+   "competing_explanations": [
+    "Nikkei-futures hedging routed through JPY",
+    "common risk-on factor"
+   ],
+   "separating_test": "lunch against matched non-lunch Asian hours, contemporaneous co-movement partialled out",
    "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
