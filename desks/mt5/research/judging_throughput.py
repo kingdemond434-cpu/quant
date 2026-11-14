@@ -1779,9 +1779,10 @@ def _verdict_counts(now: datetime, path: Path | None = None,
             fh.seek(offset)
             n_line = 0
             for bline in fh:
-                # Never on the first line: a pass whose checkpoint load alone outlasts the
-                # deadline still advances at least _DEADLINE_EVERY rows, so it always converges.
-                if (stop_at is not None and n_line and n_line % _DEADLINE_EVERY == 0
+                # The original check, row 0 included: a deadline already spent (a checkpoint
+                # load that outlasted it, a budget <= 0) reads UNMEASURED and saves the
+                # checkpoint unchanged. Each pass with time left advances, so it converges.
+                if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
                         and _time.monotonic() > stop_at):
                     if ckpt is not None:
                         ckpt_note = _persist(ckpt, p, fh, frozen or _snap(), state, new_digests)

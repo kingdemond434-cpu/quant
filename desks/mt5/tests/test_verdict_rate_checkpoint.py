@@ -121,11 +121,11 @@ def test_an_overrun_keeps_its_progress_and_the_next_pass_resumes(tmp_path, monke
     monkeypatch.setattr(jt, "_DEADLINE_EVERY", 1000)
     clock = iter(range(10**6))
     monkeypatch.setattr("time.monotonic", lambda: float(next(clock)))
-    # Every deadline check reads a later tick than the last, so each pass stops at its first
-    # check after the first block of rows: the stream advances 1000 rows a pass.
+    # Each call reads one tick later: a pass starts at tick k, passes its row-0 check at k+1
+    # (inside k+1.5) and stops at its row-1000 check at k+2, so it advances 1000 rows a pass.
     passes, got = 0, {"status": jt.UNMEASURED}
     while got["status"] != "MEASURED":
-        got = jt._verdict_counts(NOW, led, extra_cuts=CUTS, checkpoint=ck, deadline_s=0.5)
+        got = jt._verdict_counts(NOW, led, extra_cuts=CUTS, checkpoint=ck, deadline_s=1.5)
         passes += 1
         if got["status"] != "MEASURED":
             assert "never a partial count" in got["why"]
@@ -134,6 +134,14 @@ def test_an_overrun_keeps_its_progress_and_the_next_pass_resumes(tmp_path, monke
     monkeypatch.undo()
     assert passes > 3
     assert _strip(got) == _slow(monkeypatch, led)
+    # Caught up, a spent deadline has nothing left to read; with new rows it is never partial.
+    spent = jt._verdict_counts(NOW, led, extra_cuts=CUTS, checkpoint=ck, deadline_s=-1.0)
+    assert spent["status"] == "MEASURED"
+    with led.open("ab") as fh:
+        fh.write(_ledger(n=50, seed=3))
+    spent = jt._verdict_counts(NOW, led, extra_cuts=CUTS, checkpoint=ck, deadline_s=-1.0)
+    assert spent["status"] == jt.UNMEASURED and "deadline" in spent["why"]
+    assert spent["resumed_from_row"] == got["rows_total"]
 
 
 def test_a_future_stamp_is_reread_once_its_time_has_come(tmp_path, monkeypatch):
