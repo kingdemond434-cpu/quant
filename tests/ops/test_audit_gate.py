@@ -3160,7 +3160,7 @@ def test_the_gate_reads_more_than_one_page_of_trusted_eval_runs(monkeypatch) -> 
 
     def fake(*args: str, **kw: Any) -> Any:
         pages.append(args[0])
-        return {"workflow_runs": filler if "page=1" in args[0]
+        return {"workflow_runs": filler if args[0].endswith("&page=1")
                 else [_te_run(1, "completed", "success")]}
 
     monkeypatch.setattr(ag, "_gh", fake)
