@@ -259,6 +259,11 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     if blank:
         return MISSING_PARAMS, (f"{family} is {information_class(family, p)}: the cell names an "
                                 f"empty series in {blank}, so the family would read nothing")
+    if family == "world_macro_state":
+        key = p.get("series_key")
+        if not isinstance(key, str) or not key.strip():
+            return MISSING_PARAMS, ("world_macro_state requires a named series_key: it has no "
+                                    "default statistic, so an unnamed cell would read nothing")
     if family == "clock_transition":
         from mt5desk.family_clock_transition import CATALOGUE, MODES
         label, hour = p.get("label"), p.get("stamp_hour")

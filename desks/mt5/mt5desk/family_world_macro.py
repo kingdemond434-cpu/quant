@@ -22,7 +22,18 @@ THE Z IS TAKEN ON THE SERIES' OWN OBSERVATIONS, NOT ON THE BAR CLOCK: a monthly 
 filled onto hourly bars is constant for ~500 bars, and a bar-clock z of a constant is undefined.
 The z is computed where the value changes, then carried causally onto the bars.
 
-REFUSES (returns []) without the series, with too little history, or with an unknown direction.
+REFUSES (returns []) with too little history, an unknown direction or no `series_key` (an
+incomplete recipe, which `gauntlet_buildability.cell_verdict` names MISSING_PARAMS first).
+
+AN ABSENT SERIES IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (2026-11-10). A `series_key`
+this host's store cannot resolve -- no `keys.json`, the key not in it, or its parquet gone --
+raises `WorldSeriesUnavailable`. Returning [] there made the judge file the cell as UNKNOWN /
+never_fires, a statement about the market, when the truth is a statement about the host: the
+input is not here. Measured on the box 2026-11-10: 1,074 world_macro_state cells mined, 0 judged,
+and all 84 null-lab draws built with zero trades. The sealed builder turns the raise into
+`_build_failed("world_macro_state raised WorldSeriesUnavailable: ...")`, and
+`research/build_input_probe` parks the cell by the missing input's name (`world_series:<key>`)
+and re-admits it the pass the series is present (L1.28a: UNMEASURED is a real answer).
 """
 from __future__ import annotations
 
@@ -31,6 +42,18 @@ import pandas as pd
 from mt5desk.families import Signal, _atr, _h1
 
 DIRECTIONS = {"long": 1, "short": -1}
+
+
+class WorldSeriesUnavailable(LookupError, TypeError):
+    """The recipe names a world series this host's store does not hold.
+
+    ALSO A TypeError, ON PURPOSE. The sealed builder (`external_gauntlet.build_cell`) calls a
+    family as `fn(h1, side=side, **params)` and catches ONLY TypeError there, retrying without
+    `side` under a catch-all that names the failure. Any other exception from the first call
+    escapes `build_cell` into the sweep. Being a TypeError routes this refusal through the
+    builder's own named door (`_build_failed("world_macro_state raised WorldSeriesUnavailable:
+    ...")`) without touching the immutable evaluator.
+    """
 
 
 def _series(series_key: str):
@@ -52,6 +75,14 @@ def family_world_macro_state(
     df: pd.DataFrame,
     *,
     side: int | None = None,
+    # DEFAULTS TO "" AND AN UNNAMED SERIES RETURNS [] (2026-11-13). The executor calls every
+    # family through `family_call.signals` with whatever params the cell carries, and the
+    # replay-shadow signal leg showed that requiring this key (or raising on "") turned base's
+    # "no signals" into an exception on that path: 20 divergences. The incomplete recipe is
+    # caught BEFORE any build instead: `gauntlet_buildability.cell_verdict` answers
+    # MISSING_PARAMS for a world_macro_state cell with no series_key (1,059 such rows, 0 judged,
+    # 168 parked never_fires, measured on the box 2026-11-10), and the input probe leaves an
+    # unnamed series UNMEASURED.
     series_key: str = "",
     z_obs: int = 24,
     z_lo: float = 1.0,
@@ -67,10 +98,16 @@ def family_world_macro_state(
     # so honouring it would make the two callers build different trades from one identity.
     del side
     flip = DIRECTIONS.get(str(direction))
-    if not series_key or flip is None or float(z_hi) <= float(z_lo):
+    if not series_key:
+        return []   # an incomplete recipe; cell_verdict names it MISSING_PARAMS before a build
+    if flip is None or float(z_hi) <= float(z_lo):
         return []
     raw, align = _series(str(series_key))
-    if raw is None or len(raw) < int(z_obs) + 2:
+    if raw is None:
+        raise WorldSeriesUnavailable(
+            f"world series {series_key} is absent from the world dataset store on this host "
+            "(keys.json, the key or its parquet); the input is missing, the cell is unjudged")
+    if len(raw) < int(z_obs) + 2:
         return []
     z = world_state_z(raw, int(z_obs))
     if z.empty:

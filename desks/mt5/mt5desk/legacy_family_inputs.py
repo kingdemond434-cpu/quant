@@ -47,6 +47,14 @@ def input_preflight(family, params):
     # the family, which answers it as it always has.
     if family == "lead_lag" and not params.get("driver_symbol"):
         return "BLOCKED_RULES: lead_lag: no driver_symbol on the cell"
+    # AN UNNAMED WORLD SERIES IS AN INCOMPLETE RECIPE (2026-11-13). `family_world_macro_state`
+    # returns [] for an empty `series_key` so the executor's own call keeps base's no-signals
+    # (the replay-shadow signal leg compares that path). Without this refusal the sealed builder
+    # built such a cell with zero trades and the judge filed it never_fires -- 1,059 rows minted
+    # from the family's defaults, 0 judged, 168 parked, measured on the box 2026-11-10. Named
+    # here, the builder refuses it by name before any bars load, as it does lead_lag above.
+    if family == "world_macro_state" and not str(params.get("series_key") or "").strip():
+        return "BLOCKED_RULES: world_macro_state: no series_key on the candidate"
     # A TRIANGLE NAMES BOTH LEGS OR IT IS NOT A TRIANGLE (2026-10-22). `build_cell` refuses
     # `if not leg_b_symbol` / `if not leg_c_symbol`, but only AFTER a pool worker has loaded the
     # cell's own bars, so the refusal held a worker and, as a pre-warm failure, came back
