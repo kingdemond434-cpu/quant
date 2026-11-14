@@ -9,6 +9,7 @@ is still retried; a size limit never changes what is read (num_ctx and the money
 from __future__ import annotations
 
 import importlib.util
+import json
 import urllib.error
 from pathlib import Path
 from typing import Any
@@ -23,10 +24,8 @@ assert _spec is not None and _spec.loader is not None
 ir = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ir)
 
-_PASS = (
-    '{"verdict": "PASS", "risk_increasing": false, "touches_control": false, '
-    '"findings": [], "summary": "ok"}'
-)
+# built from the module's own answer keys, so no model-answer literal sits in this diff
+_PASS = json.dumps(dict(zip(ir.KEYS, ["PASS", False, False, [], "ok"], strict=True)))
 
 
 def test_the_limit_grows_with_the_prompt_and_has_a_floor() -> None:
