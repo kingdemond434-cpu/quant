@@ -245,9 +245,9 @@ def _families(root: Path) -> tuple[set[str], set[str], str]:
 
 def _regions(root: Path) -> tuple[set[str], set[str], str]:
     """A region arrives at the CURRENT depth and breadth floors, never at zero."""
-    doc = _json(root / "desks" / "mt5" / "reports" / "regional_parity.json")
+    doc = _json(root / "desks" / "mt5" / "reports" / "REGIONAL_DEPTH.json")
     if not isinstance(doc, dict) or not isinstance(doc.get("regions"), dict):
-        return set(), set(), f"{UNMEASURED}: desks/mt5/reports/regional_parity.json is absent"
+        return set(), set(), f"{UNMEASURED}: desks/mt5/reports/REGIONAL_DEPTH.json is absent"
     objects = {str(k) for k in doc["regions"]}
     flagged = doc.get("flagged")
     if isinstance(flagged, dict):
@@ -457,7 +457,7 @@ AXES: tuple[Axis, ...] = (
                    "typed", _families, ("check_judge_coverage.py", ()),
          "desks/mt5/reports/JUDGE_COVERAGE.json"),
     Axis("region", "arrival at the CURRENT depth, breadth and ingestion floors, never at zero",
-         _regions, ("check_regional_parity.py", ()), "desks/mt5/reports/regional_parity.json"),
+         _regions, ("check_regional_parity.py", ()), "desks/mt5/reports/REGIONAL_DEPTH.json"),
     Axis("destructive", "a guard against acting on an absence", _destructive,
          ("check_no_retirement_on_absence.py", ())),
     # SIXTH AXIS (2026-09-23): attribution. Measured that day, 3,663 of 3,862 unique cells and 33

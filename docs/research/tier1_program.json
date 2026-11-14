@@ -7181,7 +7181,7 @@
     "desks/mt5/research/countries/pk/pack.py:413 - the sibling holiday schema DERIVED from market_holidays() on import, so pk and bd stop being the only two packs whose calendar research.countries.check_pack could not read"
    ],
    "scheduled_by": "run_law_gate:check_regional_parity (portable, every commit and push) and the hourly box gate with --strict; hourly_cycle:research_roi consumes the priority",
-   "artifact": "desks/mt5/reports/regional_parity.json; the parity block inside desks/mt5/data/forest_allocation.json",
+   "artifact": "desks/mt5/reports/REGIONAL_DEPTH.json; the parity block inside desks/mt5/data/forest_allocation.json",
    "consumer": "desks/mt5/research/research_roi.py parity_overlay() -> forest_allocation.json, read by libs/research/forests.allocation_for and desks/mt5/research/forest_runner.py",
    "landed": [
     "regional parity 2026-09-23"
@@ -8202,10 +8202,10 @@
     "desks/mt5/research/countries/caucasus_central_asia/pack.py:1 - am/uz/kg/tj/tm",
     "desks/mt5/research/countries/black_sea/pack.py:1 - ua/by",
     "desks/mt5/research/countries/east_africa/pack.py:1 - et/tz/ug",
-    "desks/mt5/reports/regional_parity.json:1 - countries 81/81 answered"
+    "desks/mt5/reports/REGIONAL_DEPTH.json:1 - countries 81/81 answered"
    ],
    "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly) verifies the packs' layers; scripts/check_regional_parity.py runs in scripts/run_law_gate.py",
-   "artifact": "desks/mt5/reports/regional_parity.json",
+   "artifact": "desks/mt5/reports/REGIONAL_DEPTH.json",
    "consumer": "scripts/check_regional_parity.py (the NO_PACK fence) and research_roi.forest_allocation, which folds the published priority in as a bonus",
    "landed": [
     "fourteen country departments and the ea JURISDICTIONS tuple, 2026-09-23"
