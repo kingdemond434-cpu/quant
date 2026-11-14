@@ -237,7 +237,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-14T07:05:16+00:00",
+ "heartbeat_utc": "2026-11-14T07:34:50+00:00",
  "sweep_phase": {
   "pid": 11640,
   "sweep_started_utc": "2026-11-14T05:09:33+00:00",
@@ -308,21 +308,21 @@
      }
     },
     "prewarm": {
-     "samples": 602,
+     "samples": 709,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 583,
-       "share": 0.968
+       "n": 687,
+       "share": 0.969
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 9,
-       "share": 0.015
+       "n": 10,
+       "share": 0.014
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 6,
+       "n": 7,
        "share": 0.01
       },
       {
@@ -333,17 +333,17 @@
       {
        "stack": "threading.py:__init__:290 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
        "n": 1,
-       "share": 0.002
+       "share": 0.001
       }
      ],
      "process": {
-      "cpu_s": 402.3,
-      "page_faults": 25513018.0,
-      "read_bytes": 11819381.0,
-      "write_bytes": 29202625461.0,
-      "sampled_s": 6010.0,
+      "cpu_s": 501.2,
+      "page_faults": 31815835.0,
+      "read_bytes": 14260759.0,
+      "write_bytes": 35359561042.0,
+      "sampled_s": 7080.0,
       "rss_mb_max": 3482.4,
-      "cpu_share_of_wall": 0.067
+      "cpu_share_of_wall": 0.071
      }
     }
    }
