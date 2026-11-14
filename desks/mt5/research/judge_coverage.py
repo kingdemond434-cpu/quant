@@ -4415,6 +4415,15 @@ MERGE_REPORT = HYP / "merge_report.json"
 REUSE_STALE_EXIT = 4
 #: How far ahead of this clock a report's stamp may sit before it is read as not a reading.
 REUSE_FUTURE_SKEW_S = 120.0
+#: THE FALLBACK TO COMPUTE (2026-11-14). `--compute-if-stale` turns a STALE reuse into the leg's
+#: own build + write once the published table is older than this, or unreadable, or undated.
+#: Measured on the box 2026-11-14 01:45Z: the merge had not published a table since 11-13
+#: 19:02Z, so every hourly leg exited 4 REUSE_STALE and JUDGE_COVERAGE.json froze -- and with it
+#: the judge's drain ETA (judging_throughput reads it under a 2 h lease) and the coverage fence.
+#: Ninety minutes keeps that lease fed while a table the merge published one cycle ago is still
+#: reused, so the duplicate computation the reuse removed comes back only when the merge has
+#: actually stopped publishing.
+COMPUTE_IF_STALE_AFTER_S = 5400.0
 
 
 def _cycle_started_at() -> datetime | None:
@@ -4535,6 +4544,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="compute nothing: verify that merge_hypotheses published this cycle's "
                          "coverage and exit 0, or exit 4 with JUDGE_COVERAGE_REUSE.json naming "
                          "why not. Never writes the report or the ratchet")
+    ap.add_argument("--compute-if-stale", action="store_true",
+                    help="with --reuse-fresh: when the reuse is STALE and the published table "
+                         f"is older than {COMPUTE_IF_STALE_AFTER_S:.0f} s (or unreadable or "
+                         "undated), run this leg's own build + write instead of exiting 4")
     args = ap.parse_args(argv)
     if args.reuse_fresh:
         fresh, verdict = reuse_fresh()
@@ -4542,7 +4555,18 @@ def main(argv: list[str] | None = None) -> int:
               f"judge coverage: {verdict['verdict']} report_at={verdict.get('report_at')} "
               f"cycle={verdict.get('cycle_started_at')}"
               + ("" if fresh else " -- " + "; ".join(verdict.get("why") or [])))
-        return 0 if fresh else REUSE_STALE_EXIT
+        if fresh:
+            return 0
+        age = verdict.get("report_age_s")
+        if not (args.compute_if_stale
+                and (not isinstance(age, (int, float)) or age > COMPUTE_IF_STALE_AFTER_S)):
+            return REUSE_STALE_EXIT
+        # A table this old means the merge has stopped publishing: compute it here, under this
+        # leg's own budget and transaction, exactly as the leg did before the reuse existed.
+        how = ("unreadable or undated" if not isinstance(age, (int, float))
+               else f"{age:.0f} s old")
+        print(f"judge coverage: COMPUTE -- the published table is {how}, past the "
+              f"{COMPUTE_IF_STALE_AFTER_S:.0f} s fallback; building it here", flush=True)
     t0 = time.time()
     stop_s, cap_s = stop_after_s(args.budget_s)
     m0 = time.monotonic()

@@ -4875,6 +4875,10 @@ def main() -> None:
     # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
     # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
     # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
+    # `--compute-if-stale` (2026-11-14): once the published table is past
+    # judge_coverage.COMPUTE_IF_STALE_AFTER_S (or unreadable), the leg builds and writes it
+    # itself under its own budget, so a merge that stopped publishing can no longer freeze the
+    # coverage, the drain ETA and the fence that reads them.
     # THE JUDGE'S PRE-BUILD SCREEN (principal 2026-10-28; research/judge_prescreen). Replays the
     # gate ledger in time order to measure, per K, what `sibling_dead` would have killed and how
     # many true survivors it would have taken (the canon gate is ZERO in both halves), refreshes
@@ -4890,6 +4894,7 @@ def main() -> None:
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--reuse-fresh",
+                                                      "--compute-if-stale",
                                                       "--budget-s", "120"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
