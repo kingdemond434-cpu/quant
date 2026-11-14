@@ -301,3 +301,24 @@ def _model_swap_ledger_in_tmp(tmp_path_factory: pytest.TempPathFactory,
     monkeypatch.setattr(llm_seat, "SWAP_LEDGER",
                         tmp_path_factory.mktemp("llm_swaps") / "llm_model_swaps.jsonl",
                         raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _control_plane_acks_and_lineage_in_tmp(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> Any:
+    """THE CONTROL PLANE'S ACK LOG AND LINEAGE DB NEVER LAND IN THE CHECKOUT FROM A TEST
+    (2026-11-14). `lease.ack_artifact` appends to desks/mt5/data/artifact_acks.jsonl and
+    `edges.connect` opens desks/mt5/data/lineage.sqlite; both read the module constant at call
+    time. Under `-n auto` one worker's write landed inside another's tree snapshot and failed
+    `test_hypothesis_families`' "wrote a desk file" check on unrelated PRs (#1168), the same race
+    as #721. A test's own redirect (or an explicit `path=`) is applied after this one and wins."""
+    try:
+        from libs.ops.control_plane import edges, lease
+    except Exception:
+        yield
+        return
+    root = tmp_path_factory.mktemp("control_plane")
+    monkeypatch.setattr(lease, "ACK_LOG", root / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", root / "lineage.sqlite")
+    yield
