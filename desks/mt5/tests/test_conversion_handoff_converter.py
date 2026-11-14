@@ -610,7 +610,7 @@ def test_an_empty_steer_keeps_the_old_order(world: dict[str, Any]) -> None:
 
 def test_a_deferred_steered_row_is_not_pinned_and_the_unsteered_floor_holds(
         world: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
-    """Auditor MF1 + MF2: two examined rows a pass, half kept for unsteered cells. The steered
+    """MF1 + MF2: two examined rows per pass, half kept for unsteered cells. The steered
     family is capped after its first conversion, so its later rows stay unresolved; the lane
     rotates past each one instead of re-examining it, and every unsteered row is reached."""
     monkeypatch.setattr(C, "MAX_EXAMINED_PER_PASS", 2)
