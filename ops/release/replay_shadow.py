@@ -26,6 +26,16 @@ MERGES). It also FAILS when:
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
 - the PR's tree raises where the base did not.
 
+THE FUSION ROSTER (2026-11-14, Auditor MF1-MF5 on the Governance design). The two roster data
+files (ROSTER_FILES) are covered only by the child's Fusion-roster leg: rows derived from BOTH
+trees' names and the frozen base grid (ops/release/fusion_roster_grid.json), the same rows on both
+trees, every door's outcome compared. A missing or failed leg on either tree is UNMEASURED; a PR
+that touches the grid or the leg (ROSTER_HARNESS) FAILS; diffs are printed as kind, symbol and a
+sanitised row name, never free text. When the ONLY problem is that rows flip between admitted and
+refused, and the flips equal exactly one declared row for this PR number and this full head sha in
+the registry at $QUANT_EXPECTED_DIVERGENCE (every refusal carrying its missed_growth line), the
+verdict is MATCHES_DECLARED: still a non-zero exit, never a PASS. Any other divergence FAILS.
+
 LIMIT: the PR's code runs in the child that writes its own result, so a PR written to fool this
 check can. That is the reviewer's job (independent-review); this check catches regressions.
 
@@ -128,6 +138,16 @@ HOURS = (0.5, 6.95, 7.03, 7.25, 8.0, 10.0, 13.03, 13.5, 15.0, 17.03, 17.5, 19.0,
 SHAPES = ("range", "up_break", "down_break", "wide", "gap")
 DAYS = ("2026-10-13", "2026-10-15")
 TIMEOUT_S = 300
+#: The Fusion roster's data, covered only by the child's roster leg (never by an import).
+ROSTER_FILES = ("desks/mt5/data/live_sleeve_policy.json", "desks/mt5/data/CERT_BOOK_LIVE.json")
+#: The leg and its frozen grid: a PR touching either can no longer be measured by them (MF2).
+ROSTER_HARNESS = ("ops/release/fusion_roster_grid.json", "ops/release/replay_child.py")
+ROSTER_GRID = HERE / "fusion_roster_grid.json"
+#: A row name that may be printed: no spaces, no paths, no prose (MF5).
+SAFE_NAME = re.compile(r"^[A-Za-z0-9_.#=-]{1,96}$")
+_BOOK_KEY = re.compile(r"^([A-Z]{6})_([a-z0-9_]+)_([a-z]+)$")
+DECLARED_ENV = "QUANT_EXPECTED_DIVERGENCE"
+MATCHES_DECLARED = "MATCHES_DECLARED"
 
 
 def _long(day: str, qty: float = 0.15) -> dict[str, Any]:
@@ -752,11 +772,180 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
         return json.loads(out.read_text("utf-8"))
 
 
+def _load(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _symbol_of(name: str) -> str:
+    head = name.split("_", 1)[0].split(".", 1)[0].upper()
+    if head in ("GOLD", "XAU"):
+        return "XAUUSD"
+    return head if re.fullmatch(r"[A-Z]{6}", head) else ""
+
+
+def roster_rows(trees: tuple[Path, ...], grid: dict[str, Any]) -> list[dict[str, Any]]:
+    """Rows for the roster leg: every name either tree's policy or certified book carries, plus the
+    frozen probes over every symbol either tree or the grid names. Unprintable names are dropped
+    (MF5), so a row can only carry what the harness may echo."""
+    venues = [str(v) for v in grid.get("venues") or []]
+    symbols = {str(x).upper() for x in grid.get("symbols") or []}
+    rows: dict[str, dict[str, Any]] = {}
+
+    def put(row: dict[str, Any]) -> None:
+        if SAFE_NAME.match(str(row["name"])) and row.get("symbol"):
+            rows.setdefault(str(row["name"]), row)
+
+    for tree in trees:
+        pol = _load(tree / ROSTER_FILES[0]) or {}
+        book = _load(tree / ROSTER_FILES[1]) or {}
+        symbols |= {str(x).upper() for x in pol.get("live_symbols") or [] if str(x) != "*"}
+        for sym, names in sorted((pol.get("live_sleeves") or {}).items()):
+            symbols.add(str(sym).upper())
+            for n in names or []:
+                put({"name": str(n), "symbol": str(sym).upper(), "family": "", "timeframe": ""})
+        keys = set()
+        for block in (*venues, "e8_pending", "excluded"):
+            if isinstance(book.get(block), dict):
+                keys |= {str(k) for k in book[block]}
+        for k in sorted(keys):
+            m = _BOOK_KEY.match(k)
+            if m:
+                put(
+                    {
+                        "name": k,
+                        "book_key": k,
+                        "symbol": m.group(1),
+                        "family": m.group(2),
+                        "selector": m.group(3),
+                        "timeframe": "",
+                    }
+                )
+            else:
+                put(
+                    {
+                        "name": k,
+                        "book_key": k,
+                        "symbol": _symbol_of(k),
+                        "family": "",
+                        "timeframe": "",
+                    }
+                )
+    for sym in sorted(s for s in symbols if SAFE_NAME.match(s)):
+        for fam in grid.get("families") or []:
+            for tf in grid.get("timeframes") or []:
+                put(
+                    {
+                        "name": f"probe.{sym}.{fam}.{tf or 'any'}",
+                        "symbol": sym,
+                        "family": str(fam),
+                        "timeframe": str(tf),
+                    }
+                )
+    return [rows[k] for k in sorted(rows)]
+
+
+def roster_diff(
+    b: dict[str, Any], h: dict[str, Any], rows: list[dict[str, Any]]
+) -> list[tuple[str, str, str]]:
+    """(kind, symbol, name) for every outcome the head decides differently. Kinds: `admit` and
+    `refuse` (the live policy door flipped), `zero:<venue>`, `book:<venue>`, `e8`."""
+    sym = {str(r["name"]): str(r["symbol"]) for r in rows}
+    out: list[tuple[str, str, str]] = []
+    br, hr = b.get("rows") or {}, h.get("rows") or {}
+    for name in sorted(set(br) | set(hr)):
+        if name not in sym:
+            continue
+        x, y = br.get(name) or {}, hr.get(name) or {}
+        if bool(x.get("admitted")) != bool(y.get("admitted")):
+            out.append(("admit" if y.get("admitted") else "refuse", sym[name], name))
+        xz, yz = x.get("zero") or {}, y.get("zero") or {}
+        for v in sorted(set(xz) | set(yz)):
+            if xz.get(v) != yz.get(v):
+                out.append((f"zero:{v}", sym[name], name))
+    bb, hb = b.get("books") or {}, h.get("books") or {}
+    for v in sorted(set(bb) | set(hb)):
+        x, y = bb.get(v), hb.get(v)
+        if (x is None) != (y is None):
+            out.append((f"book:{v}", "*", "void" if y is None else "restored"))
+            continue
+        for k in sorted(set(x or {}) | set(y or {})):
+            if (x or {}).get(k) != (y or {}).get(k):
+                out.append(
+                    (
+                        f"book:{v}",
+                        _symbol_of(k) or "*",
+                        k if SAFE_NAME.match(k) else "<unprintable>",
+                    )
+                )
+    if (b.get("e8") or {}) != (h.get("e8") or {}):
+        out.append(("e8", "*", "live_admissible"))
+    return out
+
+
+def _pr_and_head() -> tuple[int | None, str]:
+    pr, head = os.environ.get("PR") or "", os.environ.get("HEAD_SHA") or ""
+    if not (pr and head) and os.environ.get("GITHUB_EVENT_PATH"):
+        ev = (_load(Path(os.environ["GITHUB_EVENT_PATH"])) or {}).get("pull_request") or {}
+        pr = pr or str(ev.get("number") or "")
+        head = head or str((ev.get("head") or {}).get("sha") or "")
+    return (int(pr) if pr.isdigit() else None), head
+
+
+def declared_match(
+    diffs: list[tuple[str, str, str]], declared: Any, pr: int | None, head_sha: str
+) -> str | None:
+    """None when `diffs` equal exactly one declared row for this PR and this full head sha;
+    otherwise why not (MF3/MF4). Only admit/refuse flips are declarable."""
+    if not re.fullmatch(r"[0-9a-f]{40}", head_sha or "") or pr is None:
+        return "no PR number or no full 40-hex head sha to match a declaration against"
+    other = sorted({k for k, _s, _n in diffs if k not in ("admit", "refuse")})
+    if other:
+        return f"undeclarable divergence ({', '.join(other)})"
+    rows = declared.get("rows") if isinstance(declared, dict) else declared
+    mine = [
+        r for r in rows or []
+        if isinstance(r, dict) and r.get("pr") == pr and r.get("head_sha") == head_sha
+    ]  # fmt: skip
+    if len(mine) != 1:
+        return f"{len(mine)} declared rows for this PR at this head (exactly one is required)"
+    row = mine[0]
+    refuse = row.get("refuse") or []
+    if not all(
+        isinstance(r, dict) and isinstance(r.get("missed_growth"), str)
+        and r["missed_growth"].strip() for r in refuse
+    ):  # fmt: skip
+        return "a declared refusal carries no missed_growth line"
+    want_admit = {str(n) for n in row.get("admit") or []}
+    want_refuse = {str(r.get("name")) for r in refuse}
+    got_admit = {n for k, _s, n in diffs if k == "admit"}
+    got_refuse = {n for k, _s, n in diffs if k == "refuse"}
+    if (want_admit, want_refuse) != (got_admit, got_refuse):
+        return "the measured flips differ from the declared admit/refuse sets"
+    return None
+
+
+def roster_grid() -> dict[str, Any]:
+    grid = _load(ROSTER_GRID)
+    if not isinstance(grid, dict):
+        raise ValueError("ops/release/fusion_roster_grid.json is unreadable")
+    return grid
+
+
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
 
 
 def compare(
-    base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
+    base: Path,
+    head: Path,
+    changed: list[str],
+    grid: list[dict[str, Any]] | None = None,
+    *,
+    declared: Any = None,
+    pr: int | None = None,
+    head_sha: str | None = None,
 ) -> dict[str, Any]:
     grid = scenarios() if grid is None else grid
     # fresh fingerprints each run, the same for both trees: fooling the replay needs code that
@@ -764,6 +953,23 @@ def compare(
     who = {"account_id": 10_000 + secrets.randbelow(89_999_999), "server": secrets.token_hex(5)}
     grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
+    # The roster leg is owed where the base HAS the roster (as the FTMO leg below). Its rows ride
+    # on the first scenario only: one measurement, both trees, the same rows (MF1).
+    roster_owed = (base / ROSTER_FILES[0]).is_file()
+    roster: dict[str, Any] | None = None
+    roster_rows_: list[dict[str, Any]] = []
+    if roster_owed and grid:
+        rg = roster_grid()
+        roster_rows_ = roster_rows((base, head), rg)
+        if len(roster_rows_) > int(rg.get("max_rows") or 0):
+            problems.append(
+                f"UNMEASURED fusion roster: {len(roster_rows_)} rows exceed the grid's max_rows"
+            )
+            roster_rows_ = []
+        else:
+            roster = {"rows": roster_rows_, "venues": list(rg.get("venues") or [])}
+            grid[0] = {**grid[0], "fusion_roster": roster}
+    roster_legs: dict[str, Any] = {}
     imported: set[str] = set()
     head_imported: set[str] = set()
     placed = 0
@@ -779,6 +985,8 @@ def compare(
         if "crash" in h:
             problems.append(f"{sc['id']}: the PR's tree crashed ({h['crash']})")
             continue
+        if "fusion_roster" in sc:
+            roster_legs = {"base": b.get("fusion_roster"), "head": h.get("fusion_roster")}
         base_root, head_root = str(base.resolve()), str(head.resolve())
         imported.update(
             Path(f).relative_to(base_root).as_posix()
@@ -819,8 +1027,27 @@ def compare(
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     if ftmo_owed and not ftmo_rows:
         problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
+    roster_flips: list[tuple[str, str, str]] = []
+    roster_ok = False
+    if roster is not None:
+        for side in ("base", "head"):
+            leg = roster_legs.get(side)
+            if not isinstance(leg, dict) or "error" in leg:
+                kind = "missing" if not isinstance(leg, dict) else str(leg["error"]).split(":")[0]
+                kind = kind if SAFE_NAME.match(kind.replace(" ", "_")) else "error"
+                problems.append(f"UNMEASURED fusion roster: the {side} leg did not run ({kind})")
+        if not any(p.startswith("UNMEASURED fusion roster") for p in problems):
+            roster_ok = True
+            roster_flips = roster_diff(roster_legs["base"], roster_legs["head"], roster_rows_)
+    touched = sorted(f for f in changed if f in ROSTER_HARNESS)
+    problems += [
+        f"the PR changes the Fusion-roster replay harness (it cannot measure itself): {f}"
+        for f in touched
+    ]
     closure = import_closure(base)
     covered = imported | new_and_bounded(base, head, head_imported)
+    if roster_ok:
+        covered |= set(ROSTER_FILES)
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
@@ -834,12 +1061,33 @@ def compare(
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
     problems += knob_changes(base, head, changed, closure, exempt)
+    flips = [f"fusion roster {k} {sym} {name}" for k, sym, name in roster_flips]
+    verdict = "FAIL" if problems or flips else "PASS"
+    declared_why = "not considered: the PR has other problems" if problems else None
+    if flips and not problems:
+        if declared is None and os.environ.get(DECLARED_ENV):
+            declared = _load(Path(os.environ[DECLARED_ENV]))
+        if pr is None and head_sha is None:
+            pr, head_sha = _pr_and_head()
+        declared_why = (
+            "no declared-divergence registry"
+            if declared is None
+            else declared_match(roster_flips, declared, pr, head_sha or "")
+        )
+        if declared_why is None:
+            verdict = MATCHES_DECLARED
     return {
-        "verdict": "FAIL" if problems else "PASS",
+        "verdict": verdict,
+        "fusion_roster": {
+            "measured": roster_ok,
+            "rows": len(roster_rows_),
+            "divergence": [list(x) for x in roster_flips],
+            "declared": None if not flips else (declared_why or "matched"),
+        },
         "scenarios": len(grid),
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
-        "problems": problems,
+        "problems": problems + flips,
         # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
@@ -864,6 +1112,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     for p in rep["problems"][:200]:
         print(" -", p)
+    why = (rep.get("fusion_roster") or {}).get("declared")
+    if why:
+        print(f"FUSION-ROSTER declaration: {why}")
     return 0 if rep["verdict"] == "PASS" else 1
 
 
