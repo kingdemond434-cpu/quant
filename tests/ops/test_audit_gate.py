@@ -2387,6 +2387,47 @@ def test_the_box_task_table_is_money_unless_only_gate_rows_change(
     assert rs.manifest_is_money(b, h, set(), scripts, set()) is money
 
 
+_INSTALLER = "desks/mt5/scripts/install_x_task.ps1"
+_FREE_ROW = (f'TASK name="Quant-X" trigger="daily" runs="ops/x.py" installer="{_INSTALLER}" '
+             'lane="ops"\n')
+
+
+@pytest.mark.parametrize(
+    ("row", "exempt", "money", "closure", "is_money"),
+    [
+        # 1. an exempt installer in a free row is free
+        (_FREE_ROW, {_INSTALLER}, set(), set(), False),
+        # 2. a script the reviewed list does not exempt is money
+        (_FREE_ROW, set(), set(), set(), True),
+        # 3. an exempt script that is also in the money set, or in the closure, is money
+        (_FREE_ROW, {_INSTALLER}, {_INSTALLER}, set(), True),
+        (_FREE_ROW, {_INSTALLER}, set(), {_INSTALLER}, True),
+        # 4. a non-script under MONEY_PATH is money, exempt list or not
+        (_FREE_ROW.replace(_INSTALLER, "desks/mt5/data/x.json"), {"desks/mt5/data/x.json"},
+         set(), set(), True),
+        # 5. a held (control-plane) row or a prop row stays money even with an exempt installer
+        (_FREE_ROW.replace("Quant-X", "MT5-ClockFixer"), {_INSTALLER}, set(), set(), True),
+        (_FREE_ROW.replace('lane="ops"', 'lane="prop"'), {_INSTALLER}, set(), set(), True),
+    ],
+)  # fmt: skip
+def test_a_free_row_s_installer_is_judged_by_the_reviewed_exemption_alone(
+    tmp_path: Path, row: str, exempt: set[str], money: set[str], closure: set[str],
+    is_money: bool,
+) -> None:
+    """2026-11-14 (Auditor ruling): manifest_is_money decides a SCRIPT path the way is_money()
+    does -- by the reviewed exemption -- and keeps MONEY_PATH for every other path."""
+    b, h = tmp_path / "b", tmp_path / "h"
+    for t, text in ((b, _ROWS), (h, _ROWS + row)):
+        (t / "desks/mt5/ops").mkdir(parents=True)
+        (t / rs.COMPONENTS).write_text(
+            'REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer"})\n'
+            'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n',
+            "utf-8",
+        )
+        (t / rs.MANIFEST).write_text(text, "utf-8")
+    assert rs.manifest_is_money(b, h, closure, money, exempt) is is_money
+
+
 # ------------------------------------- a FAIL that names no defect is asked again (#525 rework)
 
 # Boilerplate that names nothing and flags nothing: no risk word, no mechanism, no place, and both

@@ -495,9 +495,16 @@ def manifest_is_money(
         for p in paths:
             if not _PLAIN_PATH.fullmatch(p) or any(seg in ("", ".", "..") for seg in p.split("/")):
                 return True  # only a plain repo path is compared as the file it names (v3 MF1)
-            if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
+            if p in closure or p in ENTRY_POINTS or p in money:
                 return True
-            if is_script(p) and p not in exempt:
+            # A SCRIPT is decided by the reviewed exemption alone, as is_money() decides it
+            # (2026-11-14, Auditor ruling): an installer under desks/mt5/scripts/ that
+            # not_money_scripts.txt lists and every text test clears is free here too. Any other
+            # path under MONEY_PATH is still money.
+            if is_script(p):
+                if p not in exempt:
+                    return True
+            elif p.startswith(MONEY_PATH):
                 return True
     return False
 
