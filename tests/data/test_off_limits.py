@@ -154,6 +154,13 @@ def test_a_redirect_into_an_off_limits_host_is_discarded_unread(
     monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: _Redirected())
     with pytest.raises(free_stack.FetchError, match="off_limits"):
         free_stack.http_fetch("https://ok.example/a")
+    import libs.data.keyed_sources as keyed_sources
+
+    class _Opener:   # alt_proxies fetches through keyed_opener since #1180, not bare urlopen
+        def open(self, *_a, **_k):
+            return _Redirected()
+
+    monkeypatch.setattr(keyed_sources, "keyed_opener", lambda *a, **k: _Opener())
     with pytest.raises(PermissionError):
         alt_proxies.http_get("https://ok.example/a")
     with pytest.raises(PermissionError):
