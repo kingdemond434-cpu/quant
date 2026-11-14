@@ -449,6 +449,9 @@ LEG_LAYER: dict[str, str] = {
     # THE LOSS LEARNER (2026-11-03) steps a live sleeve's target, stop or hold on the loss mode
     # its own trades show -- where and when a position ends -- which is the exit layer.
     "loss_learner": "exit",
+    # THE PLAUSIBILITY AUDIT (2026-11-11) asks whether a too-good certified edge was computed
+    # from data it could not have had -- a validity question about the evidence: meta.
+    "plausibility_audit": "meta",
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
     # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
     # measures whether the machine's evidence is still evidence after an unbounded stream of
