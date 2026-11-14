@@ -520,6 +520,16 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
+    # CANDIDATE CROWDING (H6 candidate half, 2026-11-13): the docket + the public seats' donations
+    # + the CFTC axis (data/axes/cot.json, a box-written axis file) + the desk's own bars -> a
+    # crowding mark and a measured decay per row.
+    Node("candidate_crowding", "desks/mt5/research/candidate_crowding.py",
+         reads=("desks/mt5/data/hypotheses/external_survivors.json",
+                "desks/mt5/data/intelligence/", "desks/mt5/data/axes/",
+                "desks/mt5/data/universe/"),
+         writes=("desks/mt5/data/hypotheses/crowding_marks.json",
+                 "desks/mt5/reports/CANDIDATE_CROWDING.json",
+                 "desks/mt5/data/crowding_decay_cache.json")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -1145,6 +1155,14 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/hypotheses/crowding_marks.json": ("candidate_crowding.read_mark -- the door "
+                                                      "the allocator's crowding conditioner "
+                                                      "(#1137) adopts under a Rule-1 proof"),
+    "desks/mt5/reports/CANDIDATE_CROWDING.json": ("the Hourly pass ALPHA RICHNESS read "
+                                                  "(crowding-adjusted survivor yield) and the "
+                                                  "research steering of crowded families"),
+    "desks/mt5/data/crowding_decay_cache.json": ("candidate_crowding (its own decay cache, "
+                                                 "keyed by family, params, symbols, year)"),
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",

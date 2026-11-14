@@ -618,3 +618,8 @@ desks/mt5/data/donation_ledgers/
 # The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
 !desks/mt5/reports/LOSS_LEARNER.json
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
+# H6 CANDIDATE CROWDING (2026-11-13): a mark for every docket row (~4.6 MB, rewritten hourly)
+# and its decay cache are box-local state read on the box; the summary is reports/
+# CANDIDATE_CROWDING.json.
+desks/mt5/data/hypotheses/crowding_marks.json
+desks/mt5/data/crowding_decay_cache.json
