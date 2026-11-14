@@ -699,11 +699,14 @@ def _mt5_snapshot() -> dict[str, Any]:
     """
     try:
         import MetaTrader5 as mt5  # type: ignore[import-not-found, import-untyped]
-        # PINNED (2026-11-11): attach to the desk's terminal by path, never launch one from
-        # Session 0, and refuse an account that is not Fusion's -- the box runs FTMO too.
-        if str(DESK / "research") not in sys.path:
-            sys.path.insert(0, str(DESK / "research"))
-        from mt5_session import attach_or_initialize, venue_refusal
+        # MT5-DeskState runs as SYSTEM: a bare initialize() there relaunches the Fusion terminal
+        # headless in Session 0 every pass (measured 2026-11-13 13:05Z). Attach through the guard,
+        # PINNED (2026-11-11) to the desk's terminal by path, and refuse an account that is not
+        # Fusion's -- the box runs FTMO too.
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from research.mt5_session import attach_or_initialize, venue_refusal
+
         try:
             path = (DESK / "data" / "terminal_path.txt").read_text(encoding="utf-8").strip()
         except OSError:
