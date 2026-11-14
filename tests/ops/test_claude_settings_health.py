@@ -30,7 +30,7 @@ GOOD = (
     [
         (GOOD[1:], "MISSING_LEADING_BRACE"),  # the 2026-11-13 box file
         (GOOD[:-1], "MISSING_TRAILING_BRACE"),
-        ("﻿" + GOOD, "UTF8_BOM"),
+        ("\ufeff" + GOOD, "UTF8_BOM"),
         ('{"a": 1, "b": [1, 2,]}', "TRAILING_COMMA"),
         ("not json at all", "UNKNOWN"),
     ],
