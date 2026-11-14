@@ -28,14 +28,17 @@ WHAT IT DOES.
      the last, and two open snapshots of the same files would only conflict with each other.
 
 Exit 0 with one JSON line on stdout: {"pr", "pr_paths", "direct", "direct_commit", "mode"}.
-`mode` is "pr", "nothing" (no change against LIVE), or "no-app" (no merger config on this
-machine: nothing was done and the caller keeps its direct push). Exit 1 on any failure -- the
+`mode` is "pr", "nothing" (no change against LIVE), "no-gate" (the box's adopted gate has no
+box-state path yet, so a PR would never merge) or "no-app" (no merger config on this machine);
+on the last two nothing was done and the caller keeps its direct push. The PR route therefore
+switches itself on when #1218 is adopted, with no flag and no tap. Exit 1 on any failure -- the
 caller logs it and keeps its current route for that pass.
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
 import base64
 import fnmatch
 import importlib.util
@@ -67,8 +70,36 @@ AUTHORITY_GLOBS = (
     "adopt_clears*", "seal_clears*", "release.json", "*_armed*", "hold_*",
     "*live_sleeve_policy*", "*sleeve_registry*", "*approv*", "*authority*",
     "*_enabled*", "*_disabled*", "*_enforce*", "*_off", "*_off.*", "deactivate*",
-    "principal_*", "*kill*", "*_halt*", "*_stop", "*_stop.*", "*override*",
+    "principal_*", "*kill*", "*_halt*", "*_stop", "*_stop.*", "*override*", "*clears.jsonl",
+    "armed_*", "*armed_*",
 )  # fmt: skip
+GATE = ".github/scripts/audit_gate.py"
+
+
+def gate_refusals(repo: Path) -> tuple[str, ...] | None:
+    """The gate's own BOX_STATE_REFUSED patterns (full lower-case paths), read from the box's
+    adopted tree; None while that tree's gate has no box-state path (#1218 not merged and
+    adopted), in which case nothing is done and the caller keeps its direct push. Read with ast,
+    never imported: the gate is not this program's to execute."""
+    try:
+        tree = ast.parse((repo / GATE).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    names = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
+    if "merge_box_state" not in names:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.Assign | ast.AnnAssign):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(isinstance(t, ast.Name) and t.id == "BOX_STATE_REFUSED" for t in targets):
+                try:
+                    val = ast.literal_eval(node.value) if node.value is not None else None
+                except ValueError:
+                    return None
+                if isinstance(val, tuple) and all(isinstance(v, str) for v in val):
+                    return tuple(v.lower() for v in val)
+    return None
+
 
 Api = Callable[[str, str, Mapping[str, Any] | None], Any]
 
@@ -84,9 +115,10 @@ def _release(repo: Path) -> Any:
     return mod
 
 
-def pr_ok(rel: str, release: Any) -> bool:
+def pr_ok(rel: str, release: Any, refused: tuple[str, ...] = ()) -> bool:
     """True when `rel` may travel on a box-state PR: ungoverned box state, data-shaped, granting
-    no authority. Anything unsure is False and keeps its current route."""
+    no authority, refused by none of the gate's own patterns (`refused`). Anything unsure is
+    False and keeps its current route."""
     p = str(rel).replace("\\", "/")
     low = p.lower()
     if not p or p.startswith(("/", "./")) or ".." in p.split("/") or "/secrets/" in f"/{low}":
@@ -95,6 +127,8 @@ def pr_ok(rel: str, release: Any) -> bool:
         return False
     name = low.rsplit("/", 1)[-1]
     if any(fnmatch.fnmatchcase(name, g) for g in AUTHORITY_GLOBS):
+        return False
+    if any(fnmatch.fnmatchcase(low, g) for g in refused):
         return False
     return bool(release.is_state_path(p)) and not bool(release.is_governed_state(p))
 
@@ -206,11 +240,12 @@ def publish(
     now: datetime | None = None,
     base: str = LIVE,
     release: Any = None,
+    refused: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Open the box-state PR for the pending commit's pr_ok paths (see the module docstring)."""
     release = release if release is not None else _release(repo)
     parent, rows = changed(repo, pending)
-    pr_paths = sorted(p for _, p in rows if pr_ok(p, release))
+    pr_paths = sorted(p for _, p in rows if pr_ok(p, release, refused))
     direct = sorted(p for _, p in rows if p not in pr_paths)
     out: dict[str, Any] = {
         "pr": None,
@@ -276,6 +311,10 @@ def publish(
     return out
 
 
+def _stand_aside(mode: str) -> dict[str, Any]:
+    return {"mode": mode, "pr": None, "pr_paths": [], "direct": [], "direct_commit": None}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", type=Path, required=True)
@@ -286,36 +325,33 @@ def main(argv: list[str] | None = None) -> int:
     )
     a = ap.parse_args(argv)
     try:
+        refused = gate_refusals(a.repo)
+        if refused is None:  # this tree's gate cannot merge a box-state PR yet
+            print(json.dumps(_stand_aside("no-gate")))
+            return 0
         if a.dry_run:
             rel = _release(a.repo)
             _, rows = changed(a.repo, a.pending)
-            ok = sorted(p for _, p in rows if pr_ok(p, rel))
-            print(
-                json.dumps(
-                    {
-                        "mode": "dry-run",
-                        "pr_paths": ok,
-                        "direct": sorted(p for _, p in rows if p not in ok),
-                    }
-                )
-            )
+            ok = sorted(p for _, p in rows if pr_ok(p, rel, refused))
+            plan = {
+                "mode": "dry-run",
+                "pr_paths": ok,
+                "direct": [p for _, p in rows if p not in ok],
+            }
+            print(json.dumps(plan))
             return 0
         tok = mint_token(a.repo)
         if tok is None:
-            print(
-                json.dumps(
-                    {
-                        "mode": "no-app",
-                        "pr": None,
-                        "pr_paths": [],
-                        "direct": [],
-                        "direct_commit": None,
-                    }
-                )
-            )
+            print(json.dumps(_stand_aside("no-app")))
             return 0
         res = publish(
-            a.repo, a.pending, github_api(tok), slug(a.repo), host=socket.gethostname(), base=a.base
+            a.repo,
+            a.pending,
+            github_api(tok),
+            slug(a.repo),
+            host=socket.gethostname(),
+            base=a.base,
+            refused=refused,
         )
     except Exception as exc:  # the caller keeps its current route for this pass
         print(json.dumps({"mode": "failed", "error": f"{type(exc).__name__}: {exc}"[:400]}))

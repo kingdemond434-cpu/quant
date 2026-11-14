@@ -109,6 +109,8 @@ class FakeApi:
     ("data/secrets/k.json", False),
     ("data/../ops/x.json", False),
     ("ops/notes.txt", False),                           # not state per release.py
+    ("desks/mt5/data/merge_clears.jsonl", False),       # the gate's *clears.jsonl
+    ("desks/mt5/data/armed_sleeves.json", False),       # the gate's *armed_*
 ])  # fmt: skip
 def test_pr_ok_lets_only_ungoverned_data_state_through(rel: str, ok: bool) -> None:
     assert bsp.pr_ok(rel, REL) is ok
@@ -211,13 +213,50 @@ def test_a_pending_commit_with_two_parents_is_refused(tmp_path: Path) -> None:
         bsp.publish(repo, merge, FakeApi(), "o/r", host="h", release=REL)
 
 
+GATE_SRC = """
+BOX_STATE_REFUSED = ("*seal_clears*", "*/hold_*", "data/odd_one.json")
+
+
+def merge_box_state(repo, pr):
+    return None
+"""
+
+
+def _gate(root: Path, src: str = GATE_SRC) -> Path:
+    p = root / bsp.GATE
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(src, encoding="utf-8")
+    return root
+
+
+def test_the_gate_s_own_refusals_are_read_and_applied(tmp_path: Path) -> None:
+    refused = bsp.gate_refusals(_gate(tmp_path))
+    assert refused == ("*seal_clears*", "*/hold_*", "data/odd_one.json")
+    assert bsp.pr_ok("data/odd_one.json", REL) is True
+    assert bsp.pr_ok("data/odd_one.json", REL, refused) is False
+
+
+def test_the_route_stands_aside_until_the_box_s_gate_can_merge_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert bsp.gate_refusals(tmp_path) is None  # no gate file at all
+    _gate(tmp_path, "BOX_STATE_REFUSED = ()\n")
+    assert bsp.gate_refusals(tmp_path) is None  # a gate with no box-state path (pre-#1218)
+
+    def never(repo: Path) -> str:
+        raise AssertionError("no token is minted while the gate cannot merge")
+
+    monkeypatch.setattr(bsp, "mint_token", never)
+    assert bsp.main(["--repo", str(tmp_path), "--pending", "x"]) == 0
+    assert json.loads(capsys.readouterr().out)["mode"] == "no-gate"
+
+
 def test_no_merger_config_means_no_app_and_the_caller_keeps_its_push(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert bsp.mint_token(tmp_path, home=tmp_path / "absent") is None
-    monkeypatch.setattr(bsp, "MERGER_HOME", tmp_path / "absent")
     monkeypatch.setattr(bsp, "mint_token", lambda repo: None)
-    assert bsp.main(["--repo", str(tmp_path), "--pending", "x"]) == 0
+    assert bsp.main(["--repo", str(_gate(tmp_path)), "--pending", "x"]) == 0
     assert json.loads(capsys.readouterr().out)["mode"] == "no-app"
 
 
@@ -228,7 +267,7 @@ def test_a_failure_exits_1_with_a_failed_line(
         raise RuntimeError("the quant-merger App token could not be minted")
 
     monkeypatch.setattr(bsp, "mint_token", boom)
-    assert bsp.main(["--repo", str(tmp_path), "--pending", "x"]) == 1
+    assert bsp.main(["--repo", str(_gate(tmp_path)), "--pending", "x"]) == 1
     assert json.loads(capsys.readouterr().out)["mode"] == "failed"
 
 

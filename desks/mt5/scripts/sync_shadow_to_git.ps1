@@ -461,6 +461,49 @@ function Resolve-FencePython {
     return @()
 }
 
+# THE BOX'S STATE, BY PULL REQUEST (Governance + Architecture, 2026-11-14). ops/box/box_state_pr.py
+# takes the fenced pending commit, sends its ungoverned data-shaped paths to LIVE as a box-state/
+# PR that the box's App authors through the API (the gate merges those at once, #1218), and hands
+# back a local commit of ONLY the governed/authority paths, which this pass pushes as before.
+# Returns that result, or $null when the route stands aside ("no-gate": the adopted gate cannot
+# merge a box-state PR yet; "no-app": no merger config here) or fails -- and then this pass pushes
+# the whole commit exactly as it always has, so the box's state never stalls on the new route.
+function Invoke-BoxStatePr {
+    param([string]$RepoRoot, [string]$Pending)
+    $script_ = Join-Path $RepoRoot "ops\box\box_state_pr.py"
+    if (-not (Test-Path -LiteralPath $script_)) { return $null }
+    $pyCmd = @(Resolve-FencePython -RepoRoot $RepoRoot)
+    if ($pyCmd.Count -eq 0) { return $null }
+    $pyArgs = @($pyCmd | Select-Object -Skip 1)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $lines = @(& $pyCmd[0] @pyArgs $script_ --repo $RepoRoot --pending $Pending 2>$null |
+                   Where-Object { $_ -match '\S' })
+        $rc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    $res = $null
+    if ($lines.Count -gt 0) {
+        try { $res = $lines[-1] | ConvertFrom-Json } catch { $res = $null }
+    }
+    if ($null -eq $res) {
+        Write-SyncLog "publish: box-state PR route gave no answer rc=$rc; pushing as before"
+        return $null
+    }
+    if ($rc -ne 0 -or $res.mode -notin @("pr", "nothing")) {
+        $why = if ($res.error) { " ($($res.error))" } else { "" }
+        Write-SyncLog "publish: box-state PR route $($res.mode)$why; pushing as before"
+        return $null
+    }
+    if ($res.mode -eq "pr") {
+        Write-SyncLog ("publish: box state sent as PR #{0} ({1} path(s)); {2} governed/authority path(s) keep the push" -f
+                       $res.pr, @($res.pr_paths).Count, @($res.direct).Count)
+    }
+    return $res
+}
+
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
@@ -642,6 +685,16 @@ function Publish-StateOnto {
         # (measured 2026-11-05). Until the ruleset is on, this pass also pushes it itself.
         $refRc = Git-In-Repo @("update-ref", "refs/publish/pending", $commit)
         if ($refRc -ne 0) { Write-SyncLog "publish: update-ref refs/publish/pending failed rc=$refRc (the state publisher keeps the previous one)" }
+        $viaPr = Invoke-BoxStatePr -RepoRoot $RepoRoot -Pending $commit
+        if ($null -ne $viaPr) {
+            if (-not $viaPr.direct_commit) {
+                Write-SyncLog ("publish: box state left by PR only ({0}); nothing pushed to {1}" -f $viaPr.mode, $Branch)
+                return $true
+            }
+            # Only the governed/authority paths remain: their own one-parent commit, same parent.
+            $commit = "$($viaPr.direct_commit)".Trim()
+            $n = @($viaPr.direct).Count
+        }
         $remote = "origin"
         $rc = Push-Logged @("push", "--no-verify", $remote,
                              ("{0}:refs/heads/{1}" -f $commit, $Branch))
