@@ -8,7 +8,9 @@ naive server time and converts to true UTC via :func:`normalize_timezone`, which
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import ClassVar, Protocol, runtime_checkable
 
 import pandas as pd
@@ -44,14 +46,35 @@ class MT5BarSource:  # pragma: no cover - requires a live Windows MT5 terminal
         Timeframe.D1: "TIMEFRAME_D1",
     }
 
-    def __init__(self) -> None:
+    def __init__(self, path: str | None = None, expected_prefix: str | None = None) -> None:
+        """Attach to ``path`` (default: the MT5 desk's ``data/terminal_path.txt``) and refuse an
+        account whose server does not start with ``expected_prefix`` (default: the desk's).
+
+        PINNED (2026-11-11): the box runs Fusion and FTMO side by side; a pathless
+        ``initialize()`` took whichever terminal the bridge saw first.
+        """
         try:
             import MetaTrader5 as mt5
         except ImportError as exc:
             raise MT5Error("the MetaTrader5 package is not installed") from exc
         self._mt5 = mt5
-        if not mt5.initialize():
+        desk = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+        if str(desk) not in sys.path:
+            sys.path.insert(0, str(desk))
+        from research.mt5_session import (  # type: ignore[import-not-found,unused-ignore]
+            attach_or_initialize,
+            venue_refusal,
+        )
+        if path is None:
+            from mt5desk.config import terminal_path
+            path = terminal_path()
+        if not attach_or_initialize(mt5, path=path, timeout=15000):
             raise MT5Error(f"MT5 initialize() failed: {mt5.last_error()}")
+        venue = {"expected_prefix": expected_prefix} if expected_prefix else {}
+        why = venue_refusal(mt5, path, **venue)
+        if why is not None:
+            mt5.shutdown()
+            raise MT5Error(f"MT5 wrong venue, refused: {why}")
 
     def fetch_bars(
         self, symbol: str, timeframe: Timeframe, start: datetime, end: datetime
