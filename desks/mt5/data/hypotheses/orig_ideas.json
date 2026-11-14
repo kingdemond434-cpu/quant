@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T07:28:00Z",
+ "updated_at": "2026-11-14T08:36:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -514,6 +514,55 @@
    ],
    "separating_test": "pre-9:55 JST USDJPY return on displaced Gotobi dates: prior business day versus nominal date",
    "data_gate": ""
+  },
+  {
+   "id": "IQ-758",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "gold_metals",
+    "indices"
+   ],
+   "symbols": [
+    "EURUSD",
+    "XAUUSD",
+    "US500"
+   ],
+   "traditions": [
+    "extreme_value",
+    "stochastic_processes"
+   ],
+   "mechanism": "Round price levels (EURUSD x.x000 and x.x500, XAUUSD 00 and 50, US500 00) may show excess first-touch bounces and excess post-break travel against matched non-round offsets fixed in advance: take-profit orders cluster at round numbers and stop orders just beyond them (Osler). Separating test: the clustering account needs BOTH excesses, net of spread, per asset class; a random walk shows neither. Own broker ticks only",
+   "falsifier": "no excess first-touch bounce or no excess post-break travel at round levels versus the pre-fixed non-round offsets, net of spread, in any asset class",
+   "competing_explanations": [
+    "take-profit and stop-order clustering at round numbers",
+    "random walk"
+   ],
+   "separating_test": "first-touch bounce rate and post-break travel at round levels versus matched non-round offsets fixed in advance, net of spread, per asset class",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-759",
+   "orig": true,
+   "breadth_gap": [
+    "indices"
+   ],
+   "symbols": [
+    "BTCUSD",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "information_theory"
+   ],
+   "mechanism": "Fusion BTCUSD CFD return and tick imbalance over 13:00-13:30 UTC as a predictor of US500's first 15 minutes after the cash open, controlling for US500's own pre-open move and its gap. BTCUSD is used only as an MT5 CFD informing an MT5 index, never as a hunted crypto universe. Own broker ticks only",
+   "falsifier": "the BTCUSD 13:00-13:30 UTC return and imbalance carry no out-of-sample loading on US500's first 15 minutes once US500's pre-open move and gap are controlled for, net of costs",
+   "competing_explanations": [
+    "BTC prices extra risk sentiment",
+    "a common futures driver already in US500's pre-open move"
+   ],
+   "separating_test": "out-of-sample regression of US500's first-15-minute return on the BTCUSD 13:00-13:30 UTC return and imbalance, with US500 pre-open move and gap as controls",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
 }
