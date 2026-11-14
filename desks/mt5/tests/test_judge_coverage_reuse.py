@@ -165,6 +165,70 @@ def test_the_leg_exits_four_on_stale_and_zero_on_fresh(desk: dict[str, Path],
     assert "REUSED" in capsys.readouterr().out
 
 
+def _fake_compute(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    calls: list[str] = []
+
+    def build(**_k: object) -> dict:
+        calls.append("build")
+        return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "families": {}}
+
+    def write(doc: dict, **_k: object) -> None:
+        calls.append("write")
+
+    monkeypatch.setattr(jc, "build", build)
+    monkeypatch.setattr(jc, "write", write)
+    monkeypatch.setattr(jc, "render", lambda doc: ["rendered"])
+    return calls
+
+
+def test_a_table_past_the_fallback_is_computed_by_the_leg(desk: dict[str, Path],
+                                                          monkeypatch: pytest.MonkeyPatch,
+                                                          capsys: pytest.CaptureFixture[str]
+                                                          ) -> None:
+    """Measured 2026-11-14: the merge stopped publishing, every leg exited 4, the table froze."""
+    calls = _fake_compute(monkeypatch)
+    old = datetime.now(tz=UTC) - timedelta(seconds=jc.COMPUTE_IF_STALE_AFTER_S + 600)
+    _merge_cycle(desk, at=old, cycle=START - timedelta(hours=1))
+    assert jc.main(["--once", "--reuse-fresh", "--compute-if-stale", "--budget-s", "120"]) == 0
+    assert calls == ["build", "write"]
+    assert "COMPUTE" in capsys.readouterr().out
+    assert json.loads(desk["reuse"].read_text("utf-8"))["verdict"] == "STALE"
+    # Without the flag the same table is still a named REUSE_STALE and nothing is computed.
+    calls.clear()
+    assert jc.main(["--once", "--reuse-fresh", "--budget-s", "120"]) == jc.REUSE_STALE_EXIT
+    assert calls == []
+
+
+def test_a_table_one_cycle_old_is_still_left_to_the_merge(desk: dict[str, Path],
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _fake_compute(monkeypatch)
+    _merge_cycle(desk, at=datetime.now(tz=UTC) - timedelta(minutes=50),
+                 cycle=START - timedelta(hours=1))
+    before = _bytes(desk)
+    assert jc.main(["--once", "--reuse-fresh", "--compute-if-stale"]) == jc.REUSE_STALE_EXIT
+    assert calls == [] and _bytes(desk) == before
+
+
+def test_an_unreadable_table_is_computed(desk: dict[str, Path],
+                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _fake_compute(monkeypatch)
+    desk["report"].write_text("{not json", "utf-8")
+    assert jc.main(["--once", "--reuse-fresh", "--compute-if-stale"]) == 0
+    assert calls == ["build", "write"]
+
+
+def test_a_table_stamped_in_the_future_is_computed_like_an_undated_one(
+        desk: dict[str, Path], monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """A stamp past the reuse skew has no age; left alone it would never reach the fallback."""
+    calls = _fake_compute(monkeypatch)
+    ahead = datetime.now(tz=UTC) + timedelta(seconds=jc.REUSE_FUTURE_SKEW_S + 3600)
+    _merge_cycle(desk, at=ahead, cycle=START - timedelta(hours=1))
+    assert jc.main(["--once", "--reuse-fresh", "--compute-if-stale", "--budget-s", "120"]) == 0
+    assert calls == ["build", "write"]
+    assert "stamped in the future" in capsys.readouterr().out
+
+
 def test_a_real_order_docket_write_is_what_reuse_accepts(desk: dict[str, Path],
                                                          monkeypatch: pytest.MonkeyPatch) -> None:
     """End to end on the real writer: what order_docket(publish=True) leaves, followed by the
@@ -192,6 +256,7 @@ def test_a_real_order_docket_write_is_what_reuse_accepts(desk: dict[str, Path],
 def test_the_hourly_leg_reuses_and_keeps_its_cap() -> None:
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"--once", "--reuse-fresh",' in src
+    assert '"--compute-if-stale",' in src, "the hourly leg falls back to compute"
     sys.path.insert(0, str(DESK / "research"))
     import hourly_cycle as hc
     assert hc.LEG_BUDGET_SEC["judge_coverage"] == 300, "the cap is not this change's to move"
