@@ -4,7 +4,8 @@ Deterministic replay on real live H1 bars from SHADOW_START forward. Same
 families/engine code as the backtest -> identical signals given identical bars.
 No capital: fills simulated at actual bar opens with the account cost model.
 
-Ledger: reports/shadow/ledger_<sym>_<window>.json (full trade list, idempotent).
+Ledger: reports/shadow/ledger_<clock key, dots as underscores>.json (full trade list,
+idempotent; one file per clock key -- libs.research.forward_ledger).
 State:  reports/shadow/shadow_state.json (per sleeve n / cumR / exp / maxDD /
 days / status; runs once per UTC day).
 
@@ -871,6 +872,23 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # Clock creation is cheap and grants no capital.  Persist the complete enrolment set before
     # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
     checkpoint_enrolments(enrolled, state, state_path)
+    # ONE LEDGER PER CLOCK KEY (libs.research.forward_ledger, P8-J1). The file name used to drop
+    # the parameter signature, chart and side, so every parameterisation of a cell wrote ONE file
+    # and readers got one clock's trades under another's name. Every legacy file more than one
+    # key maps to -- over this pass's keys AND every key the state has ever held -- is frozen
+    # (append-only registry, nothing deleted), and each clock writes its own file from here on.
+    # The replay runs from SHADOW_START every pass, so a clock's own file holds its whole record
+    # after the first pass.
+    from libs.research import forward_ledger as _fl
+    _all_keys = {sleeve_key(r[0], r[1], r[2], r[3] if len(r) > 3 else "session_range_breakout",
+                            r[4] if len(r) > 4 else "LONG") for r in enrolled}
+    _all_keys |= {str(k) for k, v in state.items() if isinstance(v, dict) and "n" in v}
+    try:
+        shared_ledgers = _fl.freeze_collisions(sorted(_all_keys), SHADOW_DIR)
+    except Exception as exc:     # the registry is bookkeeping; the pass still writes per key
+        slog(f"shared-ledger registry not written ({type(exc).__name__}: {exc}); "
+             f"collisions computed in memory")
+        shared_ledgers = {n: {"members": m} for n, m in _fl.collisions(_all_keys).items()}
     seen: set[str] = set()
     for i_row, row in enumerate(enrolled):
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
@@ -1232,8 +1250,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            ledger = _fl.writer_path(key, SHADOW_DIR, shared_ledgers)
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
                 slog(f"{key}: session filter corrected; prior state archived and a "
