@@ -456,6 +456,97 @@ def _set_aside_summary() -> dict[str, Any]:
                       for k, v in worst[:10]]}
 
 
+
+def _stem(key: str) -> str:
+    """The producer a census alias names. The census lists one producer under several keys:
+    `leg:<name>` (its hourly-cycle leg), `executable:<path>` (its script) and the bare `<name>`
+    the registry attributes cells to. Only the bare key carried compute hours and cells, so every
+    alias row read 0.0h and 0 cells for producers that plainly ran (P116: leg:mass_screen 0.0h
+    next to mass_screen 2.79h, 286 of 288 executable rows 0.0h). Map an alias to its bare name."""
+    k = str(key or "").strip().lower()
+    if k.startswith("leg:"):
+        return k[4:]
+    if k.startswith("seat:") and ":" not in k[5:]:
+        return k[5:]
+    if k.startswith("executable:"):
+        return Path(k.split(":", 1)[1]).stem
+    return k
+
+
+def _merge_aliases(rows: list[Any]) -> list[dict[str, Any]]:
+    """Collapse census rows that name the same producer into ONE row: the bare key's row when it
+    exists (its label and clock), with each compute field the max over the aliases, and the
+    aliases listed. A producer is then counted once, with the hours it really spent, so neither
+    the donating share nor the OWING list is diluted by alias rows that can never hold cells."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    order: list[str] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        key = str(r.get("key") or r.get("producer") or "").strip().lower()
+        if not key:
+            continue
+        st = _stem(key)
+        if st not in groups:
+            groups[st] = []
+            order.append(st)
+        groups[st].append(r)
+    out: list[dict[str, Any]] = []
+    for st in order:
+        g = groups[st]
+        base = next((r for r in g if str(r.get("key") or r.get("producer") or "").strip().lower()
+                     == st), g[0])
+        merged = dict(base)
+        merged["key"] = st if len(g) > 1 else (base.get("key") or base.get("producer"))
+        for f in ("compute_hours", "compute_hours_ledger", "compute_hours_registry"):
+            vals = [float(r[f]) for r in g if isinstance(r.get(f), (int, float))]
+            if vals:
+                merged[f] = max(vals)
+        if len(g) > 1:
+            merged["aliases"] = sorted(str(r.get("key") or r.get("producer")) for r in g
+                                       if r is not base)
+            if not merged.get("clock"):
+                merged["clock"] = next((r.get("clock") for r in g if r.get("clock")), None)
+        out.append(merged)
+    return out
+
+def _own_cells(per: dict[str, Any], key: str) -> dict[str, int]:
+    """A producer's own cells under every key the registry files them by. discovery_compiler
+    records a seat's donations with generator `seat:<dir>` (discovery_compiler.py:570) while the
+    census keys the producer bare, so paradigm_router (2.5 cells/h), standing_questions (1.92/h),
+    research_tree (1.58/h) and event_response_atlas sat on OWING while feeding the judge (Tier S,
+    P119). Sum the bare, alias-stem and `seat:` keys; a key is never counted twice."""
+    keys = {key, _stem(key)}
+    st = _stem(key)
+    if ":" not in st:
+        keys.add(f"seat:{st}")
+    out: dict[str, int] = {}
+    for k in keys:
+        v = per.get(k)
+        if isinstance(v, dict):
+            for f, n in v.items():
+                if isinstance(n, (int, float)):
+                    out[f] = out.get(f, 0) + int(n)
+    return out
+
+
+def _child_cells(per: dict[str, Any], key: str) -> dict[str, int]:
+    """Cells attributed to a parent's sub-generators. The census prices compute on the parent
+    (`graveyard_resurrection` 663 compute-h/7d, P119) while the registry attributes its cells to
+    `graveyard_resurrection:repair`, `lineage:untried_mutation` and so on, so the parent read as
+    a zero-cell organ burning compute. Sum the children so the parent is judged on what it made."""
+    out = {"n": 0, "cells_to_judge": 0, "unique_cells": 0, "cells_emitted": 0}
+    pre = f"{key}:"
+    if not key or ":" in key:
+        return out
+    for k, v in per.items():
+        if str(k).lower().startswith(pre) and isinstance(v, dict):
+            out["n"] += 1
+            for f in ("cells_to_judge", "unique_cells", "cells_emitted"):
+                out[f] += int(v.get(f, 0) or 0)
+    return out
+
+
 def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
     census = _read(CENSUS, default={})
@@ -475,16 +566,20 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     owing: list[dict[str, Any]] = []
     exempted: list[dict[str, Any]] = []
     unattributed: list[str] = []
-    census_rows = census.get("producers") if isinstance(census.get("producers"), list) else []
+    census_rows = _merge_aliases(census.get("producers")
+                                 if isinstance(census.get("producers"), list) else [])
     seen: set[str] = set()
     for src in list(census_rows) + [{"producer": k, "key": k} for k in per]:
         if not isinstance(src, dict):
             continue
         key = str(src.get("key") or src.get("producer") or "").strip().lower()
-        if not key or key in seen:
+        if key.startswith("seat:") and ":" not in key[5:]:
+            key = key[5:]  # canonical bare label, whatever order the rows arrive in
+        if not key or key in seen or _stem(key) in seen:
             continue
-        seen.add(key)
-        m = per.get(key) or {}
+        seen.update({key, _stem(key)})
+        m = _own_cells(per, key)
+        kids = _child_cells(per, key)
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None
         led = src.get("compute_hours_ledger")
@@ -498,7 +593,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         # rather than accused (L1.28a).
         spent = (led >= MIN_COMPUTE_HOURS) or (reg_h > 0.0)
         row = {
-            "producer": src.get("producer") or key,
+            "producer": key if str(src.get("producer") or "").lower().startswith("seat:")
+            else (src.get("producer") or key),
             "key": key,
             "clock": src.get("clock"),
             "compute_hours_window7d": hours if hours is not None else UNMEASURED_STR,
@@ -510,6 +606,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             "orthogonality_added": (round(float(marginal.get(key, 0.0)), 4)
                                     if br.get("available") else UNMEASURED_STR),
         }
+        if kids["n"]:
+            # The parent spends the compute; its sub-generators (`parent:child`) carry the cells.
+            row["child_producers"] = kids["n"]
+            row["family_cells_to_judge_per_hour"] = round(
+                (m.get("cells_to_judge", 0) + kids["cells_to_judge"]) / window_hours, 4)
+            row["family_unique_cells_per_hour"] = round(
+                (m.get("unique_cells", 0) + kids["unique_cells"]) / window_hours, 4)
         decl = declared.get(key)
         if decl:
             row["declared"] = decl
@@ -524,7 +627,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         # has not said why. Not "low" -- zero. Low is a budget question and is never a failure
         # here, because cutting the tail of the search distribution is the one reduction in
         # aggressiveness this desk refuses.
-        if spent and m.get("unique_cells", 0) == 0 and win.get("available"):
+        if (spent and m.get("unique_cells", 0) + kids["unique_cells"] == 0
+                and win.get("available")):
             if decl:
                 exempted.append(row)
             else:
