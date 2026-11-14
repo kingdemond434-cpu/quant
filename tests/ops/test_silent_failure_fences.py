@@ -182,7 +182,8 @@ def test_the_fence_never_touches_the_tree() -> None:
 
 def test_minutes_to_adoption_names_the_real_deadline() -> None:
     from datetime import UTC, datetime
-    assert br.ADOPT_MINUTE == 12
-    assert br._minutes_to_adoption(datetime(2026, 9, 23, 10, 5, tzinfo=UTC)) == 7
+    # every five minutes from :02 (2026-11-14; it was hourly at :12)
+    assert (br.ADOPT_MINUTE, br.ADOPT_EVERY_MIN) == (2, 5)
+    assert br._minutes_to_adoption(datetime(2026, 9, 23, 10, 5, tzinfo=UTC)) == 2
     assert br._minutes_to_adoption(datetime(2026, 9, 23, 10, 12, tzinfo=UTC)) == 0
-    assert br._minutes_to_adoption(datetime(2026, 9, 23, 10, 30, tzinfo=UTC)) == 42
+    assert br._minutes_to_adoption(datetime(2026, 9, 23, 10, 30, tzinfo=UTC)) == 2

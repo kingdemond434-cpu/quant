@@ -54,8 +54,10 @@ from libs.ops.fence_exit import FAIL, fence_exit  # noqa: E402
 from libs.ops.release import is_state_path  # noqa: E402
 
 _PASSING = frozenset({"CLEAN"})
-#: The minute past the hour at which `MT5-AdoptRelease` lands the branch's tree in place.
-ADOPT_MINUTE = 12
+#: `MT5-AdoptRelease` fires at :02 and every ADOPT_EVERY_MIN minutes after (2026-11-14; it was
+#: hourly at :12). A tick where origin has not moved exits in one `git ls-remote`.
+ADOPT_MINUTE = 2
+ADOPT_EVERY_MIN = 5
 OUT = _ROOT / "desks" / "mt5" / "reports" / "BOX_REVERSION.json"
 
 
@@ -70,7 +72,7 @@ def _git(*args: str, root: Path | None = None) -> tuple[int, str]:
 
 def _minutes_to_adoption(now: datetime | None = None) -> int:
     n = now or datetime.now(UTC)
-    return (ADOPT_MINUTE - n.minute) % 60
+    return (ADOPT_MINUTE - n.minute) % ADOPT_EVERY_MIN
 
 
 def build_report(*, root: Path | None = None) -> dict[str, Any]:
@@ -137,8 +139,8 @@ def build_report(*, root: Path | None = None) -> dict[str, Any]:
         rep["status"] = "AT_RISK"
         rep["detail"] = (
             f"{n_un} uncommitted and {n_up} unpushed CODE path(s) on branch "
-            f"{rep['branch'] or '?'} will be reverted by the hourly adoption, in "
-            f"{rep['minutes_to_adoption']} minute(s) at :{ADOPT_MINUTE:02d}. "
+            f"{rep['branch'] or '?'} will be reverted by the next adoption that lands code, "
+            f"which can be the tick in {rep['minutes_to_adoption']} minute(s). "
             f"{rep['state_paths_ignored']} state path(s) ignored: the adoption keeps those.")
     else:
         rep["status"] = "CLEAN"

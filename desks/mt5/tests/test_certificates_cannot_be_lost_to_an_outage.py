@@ -159,12 +159,13 @@ def test_adopt_and_seal_defaults_to_the_live_desk_branch() -> None:
     assert '[string] $Branch = "claude/llm-auto-upgrade-verify-gcjac3"' in ADOPT
 
 
-def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> None:
+def test_the_installer_registers_the_adoption_every_five_minutes_off_the_sync_slots() -> None:
     blk = _block(INSTALL, "$adoptSeal = Join-Path", "# MT5-ArtifactSync")
     assert 'Register-ScheduledTask -TaskName "MT5-AdoptRelease"' in blk
     assert 'scripts\\Adopt-And-Seal.ps1' in blk
-    assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in blk
-    assert "(Get-Date).Date.AddMinutes(12)" in blk          # between the :05 and :20 sync slots
+    # every five minutes from :02 (2026-11-14, zuck: "always immediate new code adoptions 24 7")
+    assert "-RepetitionInterval (New-TimeSpan -Minutes 5)" in blk
+    assert "(Get-Date).Date.AddMinutes(2)" in blk           # :02, :07 ... never a :05 sync slot
     assert "-ExecutionTimeLimit (New-TimeSpan -Hours 2)" in blk
     assert "-MultipleInstances IgnoreNew" in blk
     assert "[DRY ] MT5-AdoptRelease" in blk                  # honoured in -WhatIfOnly
@@ -172,7 +173,7 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
 
 def test_the_sync_slot_really_is_before_the_adoption_slot() -> None:
     assert "(Get-Date).Date.AddMinutes(5)" in INSTALL      # ShadowSync
-    assert INSTALL.index("AddMinutes(5)") < INSTALL.index("AddMinutes(12)")
+    assert INSTALL.index("AddMinutes(5)") < INSTALL.index("$adoptSeal = Join-Path")
 
 
 def _slot_minutes(src: str, task: str) -> tuple[int, int]:
@@ -195,11 +196,11 @@ def test_the_adoption_minute_is_never_a_sync_slot() -> None:
     assert (sync_start, sync_every) == (5, 15)
     for src in (INSTALL, STANDALONE):
         adopt_start, adopt_every = _slot_minutes(src, "MT5-AdoptRelease")
-        assert adopt_every == 60
-        assert (adopt_start - sync_start) % sync_every != 0, \
-            f"minute :{adopt_start:02d} is a ShadowSync slot"
-        # and it sits after the :05 slot's ten-minute limit has run out, before the :20 slot
-        assert sync_start < adopt_start < sync_start + sync_every
+        # every five minutes (2026-11-14): no tick of the hour may land on a sync slot
+        assert adopt_every == 5
+        syncs = set(range(sync_start, 60, sync_every))
+        ticks = set(range(adopt_start % adopt_every, 60, adopt_every))
+        assert not ticks & syncs, f"minute(s) {sorted(ticks & syncs)} are ShadowSync slots"
 
 
 SYNC = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
@@ -248,10 +249,10 @@ def test_the_standalone_installer_agrees_with_the_full_one() -> None:
     register the SAME task, or the two routes would fight over its settings every install."""
     blk = _block(INSTALL, "$adoptSeal = Join-Path", "# MT5-ArtifactSync")
     for s in ("MT5-AdoptRelease", "Adopt-And-Seal.ps1",
-              "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(12)",
+              "-RepetitionInterval (New-TimeSpan -Minutes 5)", "(Get-Date).Date.AddMinutes(2)",
               "-ExecutionTimeLimit (New-TimeSpan -Hours 2)", "-MultipleInstances IgnoreNew",
               "-LogonType ServiceAccount -RunLevel Highest", "-StartWhenAvailable",
-              # a DAILY trigger repeating hourly for ONE day: a -Once trigger with a long
+              # a DAILY trigger repeating every 5 minutes (2026-11-14) for ONE day: a -Once trigger with a long
               # duration was folded to P9DT2H40M by the scheduler and expired 2026-09-21
               "New-ScheduledTaskTrigger -Daily -At", "-RepetitionDuration (New-TimeSpan -Days 1)"):
         assert "-RepetitionDuration (New-TimeSpan -Days 3650)" not in blk

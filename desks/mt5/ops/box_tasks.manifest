@@ -206,7 +206,7 @@ TASK name="MT5-GateAttest" trigger="every 2 hours" runs="scripts/run_gate_attest
 TASK name="MT5-SshGuard" trigger="every 5 minutes" runs="desks/mt5/scripts/ssh_guard.ps1" installer="NONE" lane="ops"
 TASK name="E8-Gold" trigger="every 5 minutes" runs="desks/mt5/prop/e8_gold.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="MT5-GatewayResident" trigger="every 10 minutes" runs="desks/mt5/research/gateway_resident.py" installer="NONE" lane="ops"
-TASK name="MT5-AdoptRelease" trigger="every 1 hour, at :12" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
+TASK name="MT5-AdoptRelease" trigger="every 5 minutes, from :02" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
 TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/scripts/heal_identity_broken_clocks.py" installer="NONE" lane="research"
 # THE PLUMBING WATCHDOG (principal 2026-09-23, "the plumbing must never ever permanently stop
 # silently"). Every fifteen minutes it PROVES BY OBSERVATION that the adoption task exists, is
