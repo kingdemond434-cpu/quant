@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-14T13:00:02.728925+00:00",
+  "swept_at": "2026-11-14T13:15:02.618834+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2440,7 +2440,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 62,
-      "shadow_exp_r": 0.7759,
+      "shadow_exp_r": 0.7606,
       "woke_on_shadow": false
     },
     "GBPNZD|cross_asset_residual_continuous": {
