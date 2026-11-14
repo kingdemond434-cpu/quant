@@ -266,6 +266,51 @@
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
   },
+  "decay_verdicts": {
+   "hypothesis": "An order-sensitive decay verdict (Edgington mean-p, early blocks against late blocks under a split frozen in code) names sleeves whose realised edge is fading while the order-invariant statistics (n, exp_r, forward t, DSR) still read healthy, and the share of sleeves it can judge rises as forward clocks accrue past 20 trades.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:DECAY_VERDICTS.json"
+   },
+   "falsifier": {
+    "metric": "n_sleeves",
+    "op": "==",
+    "threshold": 0,
+    "after": "any pass: a decay report judging no sleeve has lost the roster and every lane state file"
+   }
+  },
+  "cluster_judge": {
+   "hypothesis": "Judging the forward clocks at the Tier S bar as ONE hypothesis, with their pairwise correlation and eigenvalue N_eff measured from each clock's own per-key ledger, shows how many independent bets they really are before any promotion reads them, and the share of cluster clocks it can measure rises as per-key ledgers accrue.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "measured_share",
+    "better": "up",
+    "organ": "report:CLUSTER_JUDGE.json"
+   },
+   "falsifier": {
+    "metric": "n_measured_series",
+    "op": "==",
+    "threshold": 0,
+    "after": "14 days after per-key forward ledgers (claude/forward-ledger-per-key) land on the box: every cluster clock still UNMEASURED means the clocks' own series never reached the judge"
+   }
+  },
+  "tape_deepen": {
+   "hypothesis": "Copying the Fusion terminal's own tick store backwards, a bounded slice every hour, adds broker-native symbol-days below the first day the forward writers recorded, so symbols reach the 66-day tape bar the order-flow families wait on sooner than the forward clock alone would take them there.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "days_added",
+    "better": "up",
+    "organ": "report:TAPE_DEEPEN.json"
+   },
+   "falsifier": {
+    "metric": "at_or_above_bar",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days of passes with no symbol at or above the 66-day bar: the terminal's store holds less than the bar and the forward clock is the only route"
+   }
+  },
   "principles": {
    "hypothesis": "Mapping each of the seven standing principles to the organs that enforce it, and measuring each from live artifacts every hour, turns a principle that silently stops holding (a sacred row, an unanswered structural-change trigger, a relaxed gate, a stalled judge, a closed registry) into a named VIOLATED finding the law gate refuses, instead of a gap a delivery audit finds weeks later.",
    "metric": {
@@ -368,7 +413,6 @@
   "discovery_compiler",
   "dislocation_lab",
   "drawdown_alpha_miner",
-  "dukascopy_backfill",
   "duty_cycle",
   "edge_confidence",
   "edge_reliability",

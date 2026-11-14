@@ -538,29 +538,26 @@ def forward_series(key: str, row: dict | None,
                    live: dict[str, list[float]] | None = None) -> tuple[list[float], str]:
     """(forward per-trade R, where it came from) for one enrolled clock.
 
-    The shadow ledger first (`ledger_<key with dots as underscores>.json`), then the same name
-    with the parameter signature stripped, then the live ledger for a clock promoted to a sleeve,
-    then the row's own moments -- which are NOT a series and are reported as such rather than
-    silently imputed.
-
-    THE STRIPPED NAME IS FLAGGED, NOT SILENTLY ACCEPTED. `shadow_forward` writes one ledger per
-    (symbol, family, window) and appends no parameter signature, so EVERY parameterisation of one
-    cell shares that file -- `XAUUSD.asia#rr=1.5` and `#rr=2.5` read the same trades. The row's own
-    `forward_t` is per-parameterisation and this series is not, so the basis says
-    `shadow_ledger_forward_shared` wherever that fallback fired and a reader can see which rows
-    hold a series that is not exclusively their clock's.
+    The clock's OWN shadow ledger first (`libs.research.forward_ledger.resolve`), then the live
+    ledger for a clock promoted to a sleeve, then the row's own moments -- which are NOT a series
+    and are reported as such rather than silently imputed. A clock whose only file is a legacy
+    ledger several keys shared reads `UNMEASURED_SHARED_LEDGER`: that file's rows carry no key,
+    so it was never this clock's series (it used to be read here as `shadow_ledger_forward_shared`).
     """
     base_key = key.split("#", 1)[0]
-    exact = key.replace(".", "_")
-    for stem in (exact, base_key.replace(".", "_")):
-        path = SHADOW / f"ledger_{stem}.json"
-        if not path.exists():
-            continue
+    # ONE LEDGER PER CLOCK KEY (2026-10-14). The stripped-name fallback that used to follow here
+    # read the cell's SHARED file as this clock's series and only flagged it; a shared file is
+    # no clock's series, so it is now a named gap and never a number (libs.research.
+    # forward_ledger: a variant reads its own file, a frozen legacy file reads as
+    # UNMEASURED_SHARED_LEDGER).
+    from libs.research import forward_ledger as fl
+    path, status, _why = fl.resolve(key, (SHADOW,))
+    shared_gap = status == fl.UNMEASURED_SHARED_LEDGER
+    if path is not None:
         r = [v for v in (_fnum(t.get("r_multiple")) for t in _rows_of(path)
                          if str(t.get("phase") or "") == "forward") if v is not None]
         if r:
-            return r, ("shadow_ledger_forward" if stem == exact
-                       else "shadow_ledger_forward_shared")
+            return r, "shadow_ledger_forward"
     names = live if live is not None else live_series()
     if names:
         stem = base_key.replace(".", "_")
@@ -569,6 +566,8 @@ def forward_series(key: str, row: dict | None,
         hits = [n for n in names if n.startswith(stem)]
         if len(hits) == 1:                             # an ambiguous prefix names nothing
             return list(names[hits[0]]), "live_ledger"
+    if shared_gap:
+        return [], fl.UNMEASURED_SHARED_LEDGER
     n = _fnum((row or {}).get("n"))
     if n and n > 0:
         return [], "row_moments"
@@ -678,10 +677,7 @@ def anytime_monitor(enrolled: set[str] | None, rows: dict[str, dict], fam: dict 
                 e = None
             else:
                 status = "MEASURED"
-                why = ("" if basis != "shadow_ledger_forward_shared" else
-                       "series read from the cell's shared ledger: shadow_forward writes one "
-                       "ledger per (symbol, family, window), so every parameterisation of this "
-                       "cell reads the same trades")
+                why = ""
                 log_e = round(math.log(e), 6)
                 e = round(e, 6)
                 n_measured += 1

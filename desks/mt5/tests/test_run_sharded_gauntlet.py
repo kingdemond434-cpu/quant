@@ -456,6 +456,62 @@ def test_the_tree_kill_does_not_wait_on_corpses(tmp_path) -> None:
             root.kill()
 
 
+def test_a_descendant_the_last_scan_lists_is_killed_and_settled_before_it_is_named(
+        monkeypatch) -> None:
+    """CI 2026-11-14 (orphans [5686], killed 4, wall_s 0.17): the final scan named a child
+    caught mid-exit with no kill and no settle. Now it is killed, settled, and named only if it
+    outlives the settle; a re-kill of an already-killed child is not counted twice."""
+    import types
+
+    class _P:
+        def __init__(self, pid, *, dies_on_kill=True, scans_live=0):
+            self.pid, self.alive, self.dies = pid, True, dies_on_kill
+            self.scans_live = scans_live          # how many scans still list it after its kill
+            self.kills = 0
+
+        def suspend(self):
+            pass
+
+        def kill(self):
+            self.kills += 1
+            if self.dies:
+                self.alive = False
+
+        def is_running(self):
+            return self.alive
+
+        def status(self):
+            return "running" if self.alive else "zombie"
+
+        def wait(self, timeout=None):
+            return 0
+
+    late = _P(11)                     # killed, yet listed by the very last scan (mid-exit)
+    stubborn = _P(12, dies_on_kill=False)
+    calls = {"n": 0}
+
+    class _Root(_P):
+        def children(self, recursive=False):
+            calls["n"] += 1
+            if not self.alive:        # after the root dies: the late child reappears once
+                out = [k for k in (late, stubborn) if k.scans_live > 0]
+                for k in out:
+                    k.scans_live -= 1
+                    k.alive = True
+                return out
+            return [k for k in (late, stubborn) if k.alive and k.kills == 0]
+
+    root = _Root(10)
+    fake = types.SimpleNamespace(Process=lambda pid: root, Error=Exception,
+                                 STATUS_ZOMBIE="zombie")
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    monkeypatch.setattr(runner, "KILL_RESETTLE_S", 0.2)
+    late.scans_live = 1
+    rep = runner._kill_sweep_tree(10, wall_s=0.5)
+    assert late.kills == 2 and rep["orphans"] == [12], rep      # only the real survivor
+    assert rep["killed"] == 3, rep          # late + stubborn + root; the re-kill is not counted
+
+
 def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
     """The 33h stall could not say which part of the sweep the core was in: each phase is now
     stamped, folded into the resident's heartbeat, and named on a hung kill."""
