@@ -236,3 +236,21 @@ def test_vix_positioning_is_refreshed_in_legacy_and_tff() -> None:
     got = {(t.family, t.slug): t.names for t in R.TARGETS if t.slug == "vix"}
     assert got == {("legacy", "vix"): ("VIX FUTURES",),
                    ("tff", "vix"): ("VIX FUTURES - CBOE FUTURES EXCHANGE",)}
+
+
+def test_the_report_names_no_box_path_and_no_exception_text(tmp_path, monkeypatch) -> None:
+    _only("gold", "legacy", monkeypatch)
+    secret = "https://internal.example/C:/opt/quant/secret-path"
+
+    def boom(url: str) -> bytes:
+        if url.endswith("/robots.txt"):
+            return ROBOTS
+        raise OSError(secret)
+    report = tmp_path / "out" / "COT_REFRESH.json"
+    R.refresh(client=S.Client(get=boom, sleep=lambda s: None),
+              now=datetime(2026, 11, 14, tzinfo=UTC), data=tmp_path / "data", report=report)
+    text = report.read_text("utf-8")
+    row = json.loads(text)["slugs"][0]
+    assert row["status"] == "FAILED" and row["why"] == "OSError"
+    assert row["file"] == "data/cot/gold.parquet"
+    assert str(tmp_path) not in text and secret not in text and "secret-path" not in text

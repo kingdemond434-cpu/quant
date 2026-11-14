@@ -230,7 +230,7 @@ def refresh_one(t: Target, client: S.Client, release: pd.Timestamp, *, force: bo
     old = held(t, data)
     newest = old["report_date"].max() if old is not None and len(old) else None
     dirty = contaminated(t, old)
-    row: dict[str, Any] = {"family": t.family, "slug": t.slug, "file": str(path_of(t, data))}
+    row: dict[str, Any] = {"family": t.family, "slug": t.slug, "file": f"data/{FOLDER[t.family]}/{t.slug}.parquet"}
     if t.delisted:
         row.update(status="DELISTED", newest=str(newest.date()) if newest is not None else None,
                    rows=0 if old is None else len(old))
@@ -248,7 +248,7 @@ def refresh_one(t: Target, client: S.Client, release: pd.Timestamp, *, force: bo
     try:
         fresh = frame(t, client.rows(DATASET[t.family], where=where, select=SELECT[t.family]))
     except Exception as e:
-        row.update(status="FAILED", why=f"{type(e).__name__}: {str(e)[:160]}",
+        row.update(status="FAILED", why=type(e).__name__,          # the type only: free text can carry a host or path
                    newest=str(newest.date()) if newest is not None else None,
                    rows=0 if old is None else len(old))
         return row
