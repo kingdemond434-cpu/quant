@@ -556,3 +556,57 @@ def test_owed_files_are_taken_before_newer_ones(desk, ctx):
     _write(desk["paths"]["INTEL"] / "seatx" / "b_new.json", _many_rows(8))
     got, _b, _u = dc.intake(cursor, limit=4)
     assert cursor["files"][str(old)].get("next_row") is None      # the owed file finished first
+
+
+def test_one_large_seat_cannot_starve_the_other_seats(desk, ctx):
+    """2026-11-14 (LLM lab): one seat's big file filled the whole seat share and four seats read
+    0 cells/h. Round one gives every seat with fresh rows an equal share."""
+    intel = desk["paths"]["INTEL"]
+    _write(intel / "big" / "discoveries_1.json", _many_rows(40))
+    for seat in ("standing_questions", "research_tree", "world"):
+        _write(intel / seat / "discoveries_1.json", _many_rows(3))
+    got, _b, _u = dc.intake(dc.load_cursor(), limit=12)
+    seats = [g.get("source_seat") for g in got if g.get("source_type") == "intelligence"]
+    for seat in ("standing_questions", "research_tree", "world"):
+        assert seat in seats, seat
+    assert len(got) == 12
+
+
+def test_intake_cannot_spend_the_expansion_budget(desk, ctx, monkeypatch):
+    """Box 2026-11-14: intake ran out the whole 180s budget and nothing was ever interpreted.
+    Intake is held to INTAKE_SHARE of the budget, and a pass always expands MIN_EXPAND."""
+    seen: dict[str, float] = {}
+    real = dc.intake
+
+    def slow_intake(cursor, *, deadline=None, **kw):
+        seen["deadline"] = deadline
+        return real(cursor, deadline=deadline, **kw)
+
+    monkeypatch.setattr(dc, "intake", slow_intake)
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(20))
+    import time as _t
+    t0 = _t.monotonic()
+    report = dc.run(budget_s=100, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert seen["deadline"] <= t0 + 100 * dc.INTAKE_SHARE + 5
+    assert set(report["timings_s"]) >= {"context", "intake", "prepare", "expand"}
+    assert report["expanded"] >= min(dc.MIN_EXPAND, report["intake"]["n"])
+    # An already-expired budget still expands the minimum: a slow pass converts something.
+    monkeypatch.setattr(dc.time, "monotonic", lambda: t0 + 10_000)
+    _write(desk["paths"]["INTEL"] / "seaty" / "discoveries_1.json", _many_rows(12))
+    monkeypatch.setattr(dc, "intake", lambda cursor, **kw: (
+        [{"discovery_id": f"x{i}", "source_type": "intelligence", **r}
+         for i, r in enumerate(_many_rows(12)["discoveries"])], {"intelligence": 12}, []))
+    report = dc.run(budget_s=1, max_discoveries=12, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert report["expanded"] == dc.MIN_EXPAND and report["budget_stopped"]
+
+
+def test_expansion_order_interleaves_every_source() -> None:
+    rows = ([{"discovery_id": f"r{i}", "source_type": "registry"} for i in range(4)]
+            + [{"discovery_id": f"a{i}", "source_type": "intelligence", "source_seat": "a"}
+               for i in range(2)]
+            + [{"discovery_id": "b0", "source_type": "intelligence", "source_seat": "b"}])
+    order = [d["discovery_id"] for d in dc.interleave_sources(rows)]
+    assert order[:3] == ["r0", "a0", "b0"] and sorted(order) == sorted(d["discovery_id"]
+                                                                       for d in rows)

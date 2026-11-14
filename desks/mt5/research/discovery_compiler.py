@@ -97,6 +97,12 @@ MAX_ROWS_PER_FILE = 400
 #: then `_mark`ed read with its rows refused, and 203,189 seat rows in three days were never
 #: revisited. Seats get this share first; unused seat room returns to the backlog.
 SEAT_SHARE = 0.5
+#: Share of the wall-clock budget intake may spend. Measured 2026-11-14 on the box: intake took the
+#: whole 180s budget (`budget_stopped` true, 200 registry rows in, `interpreted` 0), so every pass
+#: converted nothing. Intake now stops at this share and expansion always has the rest.
+INTAKE_SHARE = 0.4
+#: Discoveries every pass expands even past the deadline, so a slow pass still converts.
+MIN_EXPAND = 8
 
 RULE = ("no discovery exists without a disposition; maximum conversion is every economically "
         "defensible transformation, never the cartesian product")
@@ -542,6 +548,25 @@ def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
     return out
 
 
+def interleave_sources(discoveries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Round-robin the pass's discoveries across their sources (registry backlog, each seat), so
+    a budget cut part-way through expansion still converts some of every source instead of only
+    the first one intake happened to read."""
+    queues: dict[str, list[dict[str, Any]]] = {}
+    for d in discoveries:
+        key = str(d.get("source_type") or "")
+        if key == "intelligence":
+            key = f"intelligence:{d.get('source_seat') or d.get('origin') or ''}"
+        queues.setdefault(key, []).append(d)
+    out: list[dict[str, Any]] = []
+    lanes = list(queues.values())
+    while lanes:
+        for q in lanes:
+            out.append(q.pop(0))
+        lanes = [q for q in lanes if q]
+    return out
+
+
 def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVERIES,
            deadline: float | None = None, record: bool = True
            ) -> tuple[list[dict[str, Any]], dict[str, int], list[dict[str, str]]]:
@@ -585,14 +610,16 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             by_source[source_type] = by_source.get(source_type, 0) + 1
         return True
 
-    def take_file(path: Path, rows: list[Any], source_id: str, make: Any) -> None:
+    def take_file(path: Path, rows: list[Any], source_id: str, make: Any,
+                  max_new: int | None = None) -> None:
         """Take rows from the resume offset; `_mark` the file read only when every row was taken,
-        otherwise record where the next pass resumes. A refused or cut row is OWED, never lost."""
+        otherwise record where the next pass resumes. A refused or cut row is OWED, never lost.
+        `max_new` bounds the rows this call may ADD (a seat's fair share of the pass)."""
         start = _resume_row(cursor, path, rows)
         stop = min(len(rows), start + MAX_ROWS_PER_FILE)
-        i = start
+        i, base = start, len(got)
         while i < stop:
-            if out_of_time():
+            if out_of_time() or (max_new is not None and len(got) - base >= max_new):
                 break
             made = make(rows[i])
             if made is not None and not add(source_id, *made[0], **made[1]):
@@ -621,20 +648,44 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
         # OWED FILES FIRST (Auditor SF1): a partly-taken file must not wait behind every newer
         # one, or an hourly seat that always writes a newer file starves its own older rows.
         files = [p for p in files if _owed(cursor, p)] + [p for p in files if not _owed(cursor, p)]
+        # EVERY SEAT IS SERVED (2026-11-14, LLM lab lead): one seat writing a 24,000-row jsonl
+        # each hour filled the whole seat share, and standing_questions, research_tree,
+        # axis_registry and world read 0 cells/h while their rows kept arriving. Round one gives
+        # each seat with fresh rows an equal share of the room left; round two lets any seat use
+        # what the others did not.
+        by_seat: dict[str, list[Path]] = {}
         for path in files:
-            if len(got) >= limit or out_of_time():
-                break
-            if not _fresh(cursor, path):
-                continue
-            if path.suffix == ".jsonl":
-                doc = [json.loads(ln) for ln in _jsonl_lines(path)]
-            else:
-                doc = _read_json(path)
-            seat = path.parent.name
-            take_file(path, rows_of(doc), f"intel:{seat}:{path.name}",
-                      lambda row, _seat=seat, _path=path: (
-                          ("intelligence", _spec_from_row(row, seat=_seat, path=_path)),
-                          {"origin": R.origin_of(_seat), "generator": f"seat:{_seat}"}))
+            by_seat.setdefault(path.parent.name, []).append(path)
+        docs: dict[Path, list[Any]] = {}
+
+        def rows_for(path: Path) -> list[Any]:
+            if path not in docs:
+                if path.suffix == ".jsonl":
+                    docs[path] = rows_of([json.loads(ln) for ln in _jsonl_lines(path)])
+                else:
+                    docs[path] = rows_of(_read_json(path))
+            return docs[path]
+
+        def serve(seat: str, quota: int | None) -> None:
+            base = len(got)
+            for path in by_seat[seat]:
+                left = None if quota is None else quota - (len(got) - base)
+                if len(got) >= limit or out_of_time() or (left is not None and left <= 0):
+                    return
+                if not _fresh(cursor, path):
+                    continue
+                take_file(path, rows_for(path), f"intel:{seat}:{path.name}",
+                          lambda row, _seat=seat, _path=path: (
+                              ("intelligence", _spec_from_row(row, seat=_seat, path=_path)),
+                              {"origin": R.origin_of(_seat), "generator": f"seat:{_seat}"}),
+                          max_new=left)
+
+        if by_seat:
+            quota = max(1, (limit - len(got)) // len(by_seat))
+            for seat in by_seat:
+                serve(seat, quota)
+            for seat in by_seat:
+                serve(seat, None)
     else:
         unmeasured.append({"what": "data/intelligence", "why": "the seat donation tree is absent "
                                                                "on this host; seat conversion is "
@@ -1234,7 +1285,10 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
     deadline = started + max(1, int(budget_s))
     cpath = cursor_path or CURSOR
     cursor = load_cursor(cpath)
+    timings: dict[str, float] = {}
+    t = time.monotonic()
     ctx = ctx if ctx is not None else build_context()
+    timings["context"] = round(time.monotonic() - t, 3)
     conn = R.connect()
     report: dict[str, Any] = {
         "at": _now(), "dry_run": bool(dry_run), "budget_s": int(budget_s),
@@ -1243,10 +1297,16 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         "generated_cells": 0, "unexplained_missing_cells": None, "conversion_coverage": None,
         "by_miner": {}, "mechanisms": {}, "unmeasured": [], "budget_stopped": False,
         "donated": 0, "donation_path": None, "notes": [], "priors_lowered": [], "rule": RULE,
+        "timings_s": timings,
     }
     try:
+        t = time.monotonic()
+        intake_deadline = min(deadline, started + max(1.0, budget_s * INTAKE_SHARE))
         discoveries, by_source, unmeasured = intake(cursor, conn=conn, limit=max_discoveries,
-                                                    deadline=deadline, record=not dry_run)
+                                                    deadline=intake_deadline,
+                                                    record=not dry_run)
+        timings["intake"] = round(time.monotonic() - t, 3)
+        discoveries = interleave_sources(discoveries)
         report["intake"]["by_source"] = by_source
         report["intake"]["n"] = len(discoveries)
         report["unmeasured"].extend(unmeasured)
@@ -1259,9 +1319,11 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
         blocked: dict[str, int] = {}
         by_miner: dict[str, dict[str, int]] = {}
         meta = _universe_meta()        # read once per run for `complete_inputs`
+        timings["prepare"] = round(time.monotonic() - t - timings["intake"], 3)
+        t = time.monotonic()
 
         for disc in discoveries:
-            if time.monotonic() > deadline:
+            if time.monotonic() > deadline and report["expanded"] >= MIN_EXPAND:
                 report["budget_stopped"] = True
                 report["unmeasured"].append({
                     "what": f"{len(discoveries) - report['expanded']} discovery(ies) not expanded",
@@ -1282,6 +1344,7 @@ def run(*, dry_run: bool = False, budget_s: int = BUDGET_S,
             slot["discoveries"] += 1
             slot["compiled"] += got["compiled"]
 
+        timings["expand"] = round(time.monotonic() - t, 3)
         report["blocked"]["by_reason"] = dict(sorted(blocked.items()))
         report["blocked"]["n"] = sum(blocked.values())
         report["by_miner"] = {k: by_miner[k] for k in TM.MINERS if k in by_miner}
