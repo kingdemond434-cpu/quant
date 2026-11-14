@@ -493,6 +493,8 @@ MODULES: tuple[Module, ...] = (
            "desks/mt5/research/survivor_distiller.py"),
           ("tail_alpha_search", "tail_alpha", "desks/mt5/research/tail_alpha_search.py"),
           ("transition_alpha", "transition_alpha", "desks/mt5/research/transition_alpha.py"),
+          # the Tier-1 idea rows (2026-11-11): SOURCE = "tier1_ideas" stamps every donation
+          ("tier1_idea_proposer", "tier1_ideas", "desks/mt5/research/tier1_idea_proposer.py"),
           ("weak_signal_compiler", "weak_signal_ensemble",
            "desks/mt5/research/weak_signal_compiler.py"),
           ("world_causal_graph", "world_causal_graph",

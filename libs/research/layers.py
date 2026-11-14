@@ -672,6 +672,7 @@ LEG_LAYER: dict[str, str] = {
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
+    "tier1_idea_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",

@@ -518,6 +518,12 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
+    # THE TIER-1 IDEA ROWS (2026-11-11): U1-U6 and N1 as declared grids -> screened cells donated
+    # into the intake the compiler merges. Its report is the per-idea reach and park state.
+    Node("tier1_idea_proposer", "desks/mt5/research/tier1_idea_proposer.py",
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/calendars/"),
+         writes=("desks/mt5/reports/TIER1_IDEA_PROPOSER.json",
+                 "desks/mt5/data/intelligence/tier1_ideas/")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -935,6 +941,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
+    # The Tier-1 idea proposer's per-idea reach and park state; its decision output is the
+    # donation under data/intelligence/tier1_ideas/, declared below.
+    "desks/mt5/reports/TIER1_IDEA_PROPOSER.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
     # output is external_survivors.json, whose certificate consumer is declared above.
     "desks/mt5/data/hypotheses/merge_report.json",
@@ -1118,6 +1127,7 @@ EXTERNAL_READERS = {
     "desks/mt5/data/repo_cache/": "repo_miner (its own cache)",
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/tier1_ideas/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
