@@ -110,6 +110,9 @@ STEERING: dict[str, dict[str, str]] = {
                                                 "budget_s": "--budget-s"},
     "desks/mt5/research/asia_collector.py": {"budget_s": "--budget"},
     "desks/mt5/side_channels/world_crawler.py": {"budget_s": "--budget-s"},
+    # The seed sweep rotates inside the slice it is given (2026-11-10). Without the flag it ran
+    # from the first miner every pass and the hard timeout cut it inside the heaviest three.
+    "desks/mt5/side_channels/seed_miners.py": {"budget_s": "--budget-s"},
 }
 #: Crypto-exchange-native ground is never hunted again (MT5 universe mandate, 2026-08-18). An
 #: expansion edge pointing at one is REFUSED and counted, never registered as a candidate source.
