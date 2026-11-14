@@ -664,7 +664,37 @@ def build_report(rows: list[dict[str, Any]], complaints: list[str], cursor: dict
             "uses": r["uses"], "blocker_prior": r.get("blocker_prior", ""),
         }
     statuses = Counter(str(v["status"]) for v in per.values())
+    by_id = {str(r["id"]): r for r in rows}
+
+    def _withheld(status: str) -> list[dict[str, Any]]:
+        out = []
+        for sid, v in sorted(per.items()):
+            if v["status"] != status:
+                continue
+            r = by_id.get(sid) or {}
+            out.append({"id": sid, "terms": r.get("terms") or "",
+                        "substitute_status": r.get("substitute_status") or UNMEASURED,
+                        "substituted_by": r.get("substituted_by") or [],
+                        "substitute_candidates": [c.get("substitute") for c in
+                                                  r.get("substitute_candidates") or []
+                                                  if isinstance(c, dict)]})
+        return out
+
+    # WHAT THE PASS WITHHELD, BY NAME (2026-11-05). A source the pass never requested is a verdict
+    # with a cause, never silence: the silent-leg triage read these legs as "never produced"
+    # because a withheld source looked identical to a broken writer.
+    blocked_terms = _withheld("BLOCKED_ON_TERMS")
+    withheld = {
+        "blocked_on_terms": len(blocked_terms),
+        "refused_hard_boundary": statuses.get("REFUSED_HARD_BOUNDARY", 0),
+        "terms_to_confirm": sorted(b["id"] for b in blocked_terms if b["terms"] != "refused"),
+        "terms_refused": sorted(b["id"] for b in blocked_terms if b["terms"] == "refused"),
+        "sources": blocked_terms + _withheld("REFUSED_HARD_BOUNDARY"),
+        "missed_growth": ("each withheld source names its substitute; a to_confirm source is "
+                          "breadth not yet mined until its terms are read and recorded"),
+    }
     return {"generated_utc": _iso(now), "writer": "research/free_stack_hunter.py",
+            "withheld": withheld,
             "live": live, "seconds": round(seconds, 1), "sources": len(rows),
             "roster_complaints": complaints, "by_status": dict(statuses),
             "yielding": sorted(k for k, v in per.items() if v["status"] == "OK"),

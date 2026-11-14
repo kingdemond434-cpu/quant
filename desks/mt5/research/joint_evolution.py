@@ -109,18 +109,13 @@ SEED = 20260912
 
 
 def _live_symbols(limit: int = MAX_SYMBOLS) -> list[str]:
-    try:
-        doc = json.loads(SLEEVES.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    rows = doc if isinstance(doc, list) else (doc.get("sleeves") or [])
-    out: list[str] = []
-    for r in rows:
-        if isinstance(r, dict) and str(r.get("status", "")).upper() == "LIVE":
-            s = str(r.get("symbol") or "").strip()
-            if s and s not in out:
-                out.append(s)
-    return out[:limit]
+    """LIVE, then STANDBY sleeves, then the core panel: never empty while bars exist (2026-11-05).
+
+    It read LIVE rows only, and data/sleeves.json has held none since gold moved to gateway
+    windows, so this organ studied nothing. See research/research_panel.py.
+    """
+    from research.research_panel import panel_symbols
+    return panel_symbols(limit, sleeves=SLEEVES, universe=UNI)[0]
 
 
 # ------------------------------------------------------------------------------- the genome

@@ -470,6 +470,8 @@ def harvest(note: dict[str, str]) -> list[dict[str, Any]]:
         note["STANDING_QUESTIONS.json"] = "absent, or Q3 carries no significant residual correlate"
 
     rep = _read_json(REPRESENTATION) or {}
+    if rep.get("status") == "UNMEASURED" and isinstance(rep.get("last_ok"), dict):
+        rep = rep["last_ok"]          # an empty hour keeps the last OK pass's winners
     winners = (rep.get("directional") or []) + (rep.get("beat_own_null") or [])
     for row in winners:
         name = str((row or {}).get("name") or "")

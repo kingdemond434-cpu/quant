@@ -431,3 +431,13 @@ def test_every_declared_candidate_is_reachable_and_the_library_is_well_formed(de
     diffusion = _row(report, "information_diffusion_speed")
     assert diffusion["instruments_tested"] == len(TARGETS)
     assert diffusion["verdict"] == "FAIL"
+
+
+def test_an_unmeasured_representation_hour_keeps_the_last_ok_winners(desk):
+    """An empty REPRESENTATION_DISCOVERY pass carries its last OK report under last_ok, and the
+    harvest reads it, so the learned lane's winners never drop out for one empty hour."""
+    (desk / "REPRESENTATION_DISCOVERY.json").write_text(json.dumps(
+        {"status": "UNMEASURED", "why": "x", "last_ok": {
+            "status": "OK", "directional": [{"name": "range", "excess_nats": 0.01}]}}), "utf-8")
+    note: dict[str, str] = {}
+    assert any("range" in str(c) for c in ap.harvest(note))
