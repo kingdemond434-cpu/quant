@@ -97,7 +97,7 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
-    "silent_organs": "meta",
+    "silent_organs": "meta", "arch_health": "meta",
     # Whether each ruin rail can reach its input, and how old the trading halt really is: this
     # measures the ORDER path's own brakes, not the research machine, so it is execution rather
     # than meta -- the same side of the line as `markout` and `fill_attribution`.
@@ -257,6 +257,12 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # ORDER-SENSITIVE DECAY VERDICTS (R0312): the demote/shrink INPUT beside the decay monitor's
+    # own verdicts, read per sleeve by whatever sizes the book later -- portfolio, as its sibling.
+    "decay_verdicts": "portfolio",
+    # THE TIER-S CLUSTER JUDGE (P8-J1): dependence and concentration of the forward clocks at
+    # the bar, an input to whatever counts independent bets in the book -- portfolio.
+    "cluster_judge": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
@@ -666,6 +672,9 @@ LEG_LAYER: dict[str, str] = {
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
+    # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
+    # ledger of which keys are set measures the desk itself: meta
+    "keyed_sources": "information", "credential_coverage": "meta",
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",

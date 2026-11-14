@@ -839,7 +839,27 @@ def run_backtest(
             # mid-bar stop ratchet that would have turned a full loss into a
             # breakeven. It biases the measurement AGAINST pyramiding, which is
             # the direction a test of pyramiding has to be biased.
+            # A BAR THAT OPENS THROUGH THE STOP FILLS AT ITS OPEN, NOT AT THE STOP (2026-11-11).
+            # A stop is a market order once touched; when the bar gaps past it the first price
+            # available is the open, which is worse. Paying the stop level there credited every
+            # gap loss with the distance the market never traded -- the optimistic direction, and
+            # the one a random-entry positive control catches first (hourly pass 107, idea 654).
+            # The fill bar is exempt: its open IS the entry (or the entry is a trigger inside it).
+            gap_open = float(o[j]) if j > fill_bar else None
             if side > 0:
+                if gap_open is not None and gap_open <= stop:
+                    exit_price, reason = gap_open, "bank" if banked else "stop"
+                    break
+                # THE BANK CANNOT BE PAID ON A BAR THE STOP TOOK (2026-11-11). The partial used to
+                # be credited at the target, and the stop ratcheted to its protect level, BEFORE
+                # this bar's low was tested -- so a bar that touched both was paid the partial and
+                # then stopped at the ratcheted level: the engine choosing the intrabar order in
+                # the trade's favour twice, against the stop-first rule this loop states for the
+                # trail and the pyramid. The stop at its level in force at bar open is tested
+                # first; the bank, and its ratchet, can only happen on a bar the stop survived.
+                if lo <= stop:
+                    exit_price, reason = stop, "bank" if banked else "stop"
+                    break
                 if (not banked and bank_frac > 0 and hi >= target
                         and not (limit_entry and j == fill_bar)):
                     banked = True
@@ -897,12 +917,20 @@ def run_backtest(
                     exit_price, reason = target, "target"
                     break
             else:
+                if gap_open is not None and gap_open >= stop:     # gap through -- see long side
+                    exit_price, reason = gap_open, "bank" if banked else "stop"
+                    break
+                if hi >= stop:            # stop first, before any bank -- see the long side
+                    exit_price, reason = stop, "bank" if banked else "stop"
+                    break
                 if (not banked and bank_frac > 0 and lo <= target
                         and not (limit_entry and j == fill_bar)):
                     banked = True
                     banked_at = target
                     stop = min(stop, entry - sd0 * bank_protect_k)
-                if hi >= stop:            # stop first — see the long side
+                # The ratcheted stop is re-tested on the bar that banked, as on the long side:
+                # after the bank the intrabar path is unknown, so the runner is not let run.
+                if hi >= stop:
                     exit_price, reason = stop, "bank" if banked else "stop"
                     break
                 if banked or bank_frac <= 0:

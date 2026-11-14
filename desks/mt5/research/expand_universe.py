@@ -307,8 +307,19 @@ def main() -> int:
     from mt5desk.universe_registry import cost_fields_from_symbol_info
 
     now = datetime.now(tz=UTC)
-    if not mt5.initialize():
+    from mt5desk.config import terminal_path
+
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch, and only on
+    # Fusion's account -- the box runs FTMO too, and its symbols are not this desk's universe.
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         print(f"MT5 initialize failed: {_explain(mt5.last_error())}")
+        return 1
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        print(f"REFUSED: {why} -- collecting nothing")
+        mt5.shutdown()
         return 1
 
     symbols = mt5.symbols_get() or ()
