@@ -172,6 +172,20 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
     ]
 
 
+#: A Google API key's shape. Scraped pages quote other sites' embedded keys in their scripts and
+#: config blocks, and every corpus this hunter feeds is committed to a PUBLIC repository
+#: (2026-11-14: three data/intelligence files carried one). No mined row may carry a key, ours or
+#: anyone else's, so every string a discovered item holds is scrubbed before it is used or kept.
+_KEY_SHAPE = re.compile(r"AIza[0-9A-Za-z_\-]{35}")
+KEY_REDACTED = "[api key removed]"
+
+
+def scrub_keys(item: dict[str, Any]) -> dict[str, Any]:
+    """The item with every key-shaped substring in its string values replaced by KEY_REDACTED."""
+    return {k: _KEY_SHAPE.sub(KEY_REDACTED, v) if isinstance(v, str) else v
+            for k, v in item.items()}
+
+
 def _refused(exc: BaseException, what: str) -> dict[str, object]:
     """The transcript record for a fetch the network REFUSED, as distinct from one that was empty.
 
@@ -493,7 +507,7 @@ def run(
     processed, failures, discovered_sources = [], [], set(state.get("discovered_sources", []))
     for source in sources:
         try:
-            items = discover(source, getter)
+            items = [scrub_keys(i) for i in discover(source, getter)]
         except Exception as exc:  # each source is an independent acquisition path
             failures.append({"source": source.name, "stage": "DISCOVER", "error": str(exc)})
             continue

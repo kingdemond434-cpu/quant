@@ -3648,11 +3648,11 @@ def _publish_priority(key: str, value: Any) -> str:
     f54ac4dd007: two processes merging at once could each drop the other's block, and with it an
     `unspilled` line), and the temporary name is unique per writer. Returns WRITTEN or FAILED:
     ... and never raises; a FAILED publish is printed to stderr, never silent."""
-    from libs.research.artifact_chain import _locked
-    from scripts import judge_priority as jp
-
     status = "WRITTEN"
     try:
+        from libs.research.artifact_chain import _locked
+        from scripts import judge_priority as jp
+
         JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
         with _locked(JUDGE_PRIORITY_DECISION, PUBLISH_PRIORITY_LOCK_S) as held:
             if not held:
