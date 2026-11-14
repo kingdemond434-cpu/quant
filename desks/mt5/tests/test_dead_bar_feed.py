@@ -138,3 +138,23 @@ def test_a_dead_factor_blocks_the_cell_by_name(monkeypatch) -> None:
 def test_a_weekend_gap_is_not_stale() -> None:
     assert fi.stale_reason("EURUSD", _frame("2026-11-13 21:00"),
                            _frame("2026-11-16 09:00")) is None
+
+
+def test_a_dead_feed_is_refreshed_last_not_first(tmp_path: Path, monkeypatch) -> None:
+    """Its file is never rewritten, so by mtime it is the oldest forever (Auditor SF1)."""
+    import importlib
+    import os
+    import types
+    monkeypatch.setitem(sys.modules, "MetaTrader5", types.ModuleType("MetaTrader5"))
+    fu = importlib.import_module("research.fetch_universe")
+    lake = tmp_path / "data" / "universe"
+    lake.mkdir(parents=True)
+    for sym, mtime in (("UST10Y", 1), ("EURUSD", 2), ("GBPUSD", 3)):
+        (lake / f"{sym}_H1.parquet").write_bytes(b"x")
+        os.utime(lake / f"{sym}_H1.parquet", (mtime, mtime))
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "BAR_FEED_ALARMS.json").write_text(
+        json.dumps({"dead_feeds": [{"symbol": "UST10Y"}]}), encoding="utf-8")
+    monkeypatch.setattr(fu, "OUT", lake)
+    monkeypatch.setattr(fu, "_clocked_symbols", lambda: set())
+    assert fu._refresh_order(["UST10Y", "GBPUSD", "EURUSD"]) == ["EURUSD", "GBPUSD", "UST10Y"]

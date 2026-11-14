@@ -510,7 +510,7 @@ def main() -> int:
     try:
         write_alarms(server_name)
     except Exception as e:                    # the alarm must never cost the refresh itself
-        print(f"BAR_FEED_ALARMS not written: {type(e).__name__}: {e}")
+        print(f"BAR_FEED_ALARMS not written: {type(e).__name__}")
     holes = [r for r in results if "GAP" in r]
     print(f"\n{ok}/{len(results)} (symbol, timeframe) series refreshed "
           f"across {len(broker_info)} symbol(s)")
