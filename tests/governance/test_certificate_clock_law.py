@@ -75,7 +75,9 @@ def test_a_blocked_clock_is_a_breach_and_names_its_blocker() -> None:
                last_error="params changed after the clock froze")
     e = law.judge(_cert(), "K", row, [], 100.0, "why", NOW)
     assert e["breach"] is True and e["verdict"] == "BLOCKED"
-    assert "params changed" in e["blocker"]
+    # The status names the blocker; the engine's free text stays on the box (Auditor MF1).
+    assert "IDENTITY_BROKEN" in e["blocker"] and "last_error" in e["blocker"]
+    assert "params changed" not in e["blocker"]
 
 
 def test_a_late_clock_is_a_breach_because_immediate_is_the_word() -> None:
@@ -458,3 +460,10 @@ def test_a_published_note_names_no_absolute_path(tmp_path) -> None:
     assert all("secret_box_root" not in n and str(tmp_path) not in n for n in notes)
     rows, rnotes = law.clock_rows(tmp_path / "secret_box_root")
     assert rows == {} and all("secret_box_root" not in n for n in rnotes)
+
+
+def test_a_blocked_clock_publishes_its_status_never_the_engines_error_text() -> None:
+    row = _row(status="BLOCKED_X", last_error="FileNotFoundError: C:\\opt\\quant\\secret_box_root")
+    e = law.judge(_cert(), "K", row, [], 100.0, "why", NOW)
+    assert e["verdict"] == "BLOCKED"
+    assert "secret_box_root" not in json.dumps(e) and "BLOCKED_X" in e["blocker"]

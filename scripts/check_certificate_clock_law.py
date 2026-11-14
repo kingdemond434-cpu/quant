@@ -426,7 +426,11 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
     # ---- 4. a clock the engine refuses to advance is a breach whatever its row count says
     if status not in WORKING_STATUSES:
         entry.update(verdict="BLOCKED", breach=True,
-                     blocker=str(row.get("last_error") or "")[:400] or status,
+                     # The engine's `last_error` is free exception text that can carry a box
+                     # path, and this report is synced to a public branch: publish the status
+                     # and whether an error was recorded, never its text (Auditor MF1).
+                     blocker=status + (" (engine recorded last_error)"
+                                       if row.get("last_error") else ""),
                      why=f"BREACH: the engine will not advance this clock (`{status}`), so the "
                          f"certificate can never mature. Fix the blocker, never the certificate")
         return _seal(entry)
