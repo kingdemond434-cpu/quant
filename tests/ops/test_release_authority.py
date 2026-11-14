@@ -246,11 +246,19 @@ def test_a_firm_rule_is_never_raised(env: Any) -> None:
     assert any("firm rule" in b for b in bad)
 
 
-def test_a_lowered_ceiling_is_not_delegated_either(env: Any) -> None:
-    """#637 audit MF2: NEVER REDUCE AGGRESSIVENESS -- a cap lowered by fiat is zuck's call."""
-    bad = env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.06), env["env"])
-    assert any("lowered" in b for b in bad)
-    assert env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
+def test_a_delegated_knob_moves_both_ways_one_step_at_a_time(env: Any) -> None:
+    """zuck 2026-11-14 03:30Z (risk autonomy): a raisable knob may be lowered too, one step per PR,
+    never to zero; a firm rule may be tightened, never raised; any other lowering is still ROOT."""
+    check = env["pol"].envelope_check
+    assert check(_ceil(m=0.08), _ceil(m=0.06), env["env"]) == []
+    assert any("one step" in b for b in check(_ceil(m=0.08), _ceil(m=0.05), env["env"]))
+    assert any("positive" in b for b in check(_ceil(m=0.08), _ceil(m=0.0), env["env"]))
+    assert check(_ceil(d=0.05), _ceil(d=0.04), env["env"]) == []  # a firm rule tightened
+    base, head = _ceil(), _ceil()
+    base["max"]["x.py"] = {"K": 2.0}
+    head["max"]["x.py"] = {"K": 1.0}
+    assert any("not delegated" in b for b in check(base, head, env["env"]))
+    assert check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
 
 
 def test_pins_and_rail_lists_cannot_move_through_the_envelope(env: Any) -> None:

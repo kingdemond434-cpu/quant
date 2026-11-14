@@ -229,19 +229,23 @@ PROTECTED_FILE = Path(__file__).resolve().parents[2] / "ops" / "release" / "prot
 ROOT_POLICY_FILE = (
     Path(__file__).resolve().parents[2] / "ops" / "release" / "authority" / "ROOT_POLICY.json"
 )
-#: Never covered by zuck's standing approval, on top of the ROOT policy's own lists (2026-11-14):
-#: the workflows, the release harness and the approving machinery. A PR that touches one still
-#: needs his own APPROVE MERGES newer than its CLEAR. What stays PROTECTED and standing (test
-#: configuration, ops/gates.sh, the pre-commit guard) stands only with a base-run trusted-eval.
+#: Never covered by zuck's standing approval, on top of the ROOT policy's own lists (root,
+#: enforced root, grow-only). Since #1172 put the base-run trusted-eval over the gating workflows
+#: and the release machinery (tests/ops/test_gating_workflows_pinned.py and the release, seal,
+#: signing, promotion and adopt-guard pins in ops/release/trusted_eval_suites.txt), every other
+#: PROTECTED path stands on an Auditor CLEAR plus a green base-run trusted-eval of the exact head.
+#: What stays his: the runner of this gate (it holds the merge token), the release authority's own
+#: service and its signer list (the authority key). ops/release/ceilings.json stands only when the
+#: change is inside the ROOT policy's delegated envelope (zuck 2026-11-14 03:30Z, risk autonomy).
 NEVER_STANDING = (
-    # everything that defines or runs a check that judges the PR (#1162 audit HOLD 1, 3): the
-    # workflows (ci.yml defines the gating jobs, and a PR runs its own copy), the whole release
-    # harness (ceilings, replay-shadow and its exemption list, risk invariants, the review)
-    ".github/*", "ops/release/*",
-    # the approving machinery outside ops/release (#1162 audit HOLD 4)
+    ".github/workflows/audit-gate.yml",
     "ops/release_authority.py", "ops/run_release_authority.cmd", "ops/signing/*",
-    "libs/ops/release.py",
 )  # fmt: skip
+#: The risk ceilings: standing only inside the delegated envelope (see NEVER_STANDING).
+CEILINGS_FILE = "ops/release/ceilings.json"
+#: The job that holds a PR to the ceilings and the firm rules. Required on every merge that rests on
+#: the standing approval, so a prop firm's own limit binds on every autonomous path.
+RISK_JOB = "risk-invariants"
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
@@ -473,13 +477,15 @@ def standing(
     board: Iterable[Mapping[str, Any]],
     names: Iterable[str] = (),
     trusted: Callable[[], bool] | None = None,
+    ceilings_ok: Callable[[], bool] | None = None,
 ) -> bool:
     """May zuck's approval stand for CLEARs that come after it, on a PR of this tier and these
     files? LOW and AUTO, yes. PROTECTED, only when it names its files, none of them is
-    NEVER-STANDING (the workflows, the release harness, the approving machinery, root), the root
-    policy is readable, AND `trusted()` says the base-run trusted-eval passed on this exact head
-    (the base's test configuration and suites over the head: #1162 audit HOLD 2; no callable is
-    a no). Never for REFUSED or anything else, and never while the controller is switched off."""
+    NEVER-STANDING (this gate's runner, the authority service and signers, root), the root policy
+    is readable, `trusted()` says the base-run trusted-eval passed on this exact head (#1162 audit
+    HOLD 2), and, when it changes ops/release/ceilings.json, `ceilings_ok()` says the change is
+    inside the delegated envelope. No callable is a no. Never for REFUSED or anything else, and
+    never while the controller is switched off."""
     if not activated(board)[0]:
         return False
     if level in ("LOW", "AUTO"):
@@ -493,9 +499,32 @@ def standing(
     if any(fnmatch.fnmatchcase(n.lower(), p.lower()) for n in files for p in pats):
         return False
     try:
+        if any(n.lower() == CEILINGS_FILE for n in files) and (
+            ceilings_ok is None or ceilings_ok() is not True
+        ):
+            return False
         return trusted() is True
     except Exception:  # an unreadable trusted-eval is a no
         return False
+
+
+def ceilings_delegated(base_ref: str, head: str) -> bool:
+    """Is the head's ops/release/ceilings.json change inside the ROOT policy's delegated envelope
+    (ops/release/authority/policy.py envelope_check, the policy read from THIS checkout)? Any
+    read or parse error is a no."""
+    try:
+        pol = _authority_mod("policy")
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        sides = [
+            json.loads(_git("show", f"{rev}:{CEILINGS_FILE}"))
+            for rev in (f"origin/{base_ref}", head)
+        ]
+        return not pol.envelope_check(sides[0], sides[1], policy.get("envelope") or {})
+    except Exception:
+        return False
+
+
+STANDING_WHY = "covered by zuck's standing approval of"
 
 
 def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
@@ -504,7 +533,7 @@ def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> 
     if at is None:
         return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
     if clear["at"] >= at and stands and at >= STANDING_FROM:
-        return True, f"covered by zuck's standing approval of {at}"
+        return True, f"{STANDING_WHY} {at}"
     if clear["at"] >= at:
         return False, (
             f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
@@ -1284,6 +1313,10 @@ def run(
         """The base-run trusted-eval passed on this exact head (read only for a PROTECTED PR)."""
         return trusted_eval_passed(repo, pr, head, base)[0]
 
+    def ce() -> bool:
+        """The head's ceilings change is inside the delegated envelope (read only if it has one)."""
+        return ceilings_delegated(base, head)
+
     if level == "REFUSED":
         _summary(f"#{pr} @ {head[:9]}: {twhy}")
         if not box:
@@ -1331,7 +1364,9 @@ def run(
         if (
             ours
             and boards
-            and approved(last, approval_at(boards[-1]), standing(level, boards[-1], names, te))[0]
+            and approved(last, approval_at(boards[-1]), standing(level, boards[-1], names, te, ce))[
+                0
+            ]
         ):
             return "zuck approved its CLEAR of this head"
         return None
@@ -1421,7 +1456,11 @@ def run(
                 "--slurp",
             )
             board = _flat(ap)
-            ok, awhy = approved(clear, approval_at(board), standing(level, board, names, te))
+            ok, awhy = approved(clear, approval_at(board), standing(level, board, names, te, ce))
+            if ok and awhy.startswith(STANDING_WHY):
+                # it rests on the standing approval, not a comment newer than the CLEAR: the
+                # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
+                clear = {**clear, "standing": "yes"}
             if ok or not registry:
                 return (clear if ok else None), f"{why}; {awhy}"
             why = f"{why}; {awhy}"
@@ -1524,6 +1563,8 @@ def run(
         ):  # the very run the authority signed as MATCHES_DECLARED; a re-run is judged anew
             auto = tuple(j for j in auto if j != REPLAY_JOB)
         need = required + auto
+        if clear.get("standing") and RISK_JOB not in need:
+            need = (*need, RISK_JOB)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
