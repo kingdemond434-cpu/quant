@@ -390,10 +390,14 @@ def _zuck_typed(c: Mapping[str, Any]) -> bool:
 
 
 def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
-    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE."""
+    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE.
+    The line is read in any letter case and with any run of spaces between the words: a phone's
+    autocorrect posted "Approve merges" on 2026-11-13 and the gate silently ignored it. Every
+    other rule stands (zuck's own account, typed by him, unedited, nothing else in the body)."""
     best: str | None = None
     for c in comments:
-        if str(c.get("body") or "").strip() == APPROVE and _zuck_typed(c):
+        line = " ".join(str(c.get("body") or "").split()).upper()
+        if line == APPROVE and _zuck_typed(c):
             best = max(best or "", str(c["created_at"]))
     return best
 
