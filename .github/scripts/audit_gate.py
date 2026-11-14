@@ -194,6 +194,13 @@ PROTECTED = (
 )  # fmt: skip
 #: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
 SECRETS = ("data/secrets/*", "*/data/secrets/*")
+#: Seal carriers are never merged (Sign train, 2026-11-14: #1193 and #1081 reached LIVE on a CLEAR
+#: of the carrier head). A carrier exists only to be sealed; replay-shadow and independent-review
+#: are red on it by design and the manual path does not run them. A PR from a carrier branch, or
+#: one that adds or changes a file under the carrier folder, is REFUSED whatever its verdict.
+#: Removing carrier files (#941) still merges.
+SEAL_CARRIER_BRANCH = "claude/seal-carrier-"
+SEAL_CARRIERS = ("desks/mt5/data/seal_carriers/*",)
 #: The PROTECTED floor before 2026-10-29. These now merge with no comment, but always on the AUTO
 #: path (every AUTO job), never LOW (#532 audit MF1).
 FORMERLY_PROTECTED = (
@@ -391,6 +398,11 @@ def tier(
     for name, _ in names:
         if any(fnmatch.fnmatchcase(name.lower(), p) for p in SECRETS):
             return "REFUSED", f"REFUSED: {name} is a secrets path; it never merges"
+    for name, f in names:  # both sides of a rename/copy: moving a carrier out is refused too
+        if str(f.get("status") or "") != "removed" and any(
+            fnmatch.fnmatchcase(name.lower(), p) for p in SEAL_CARRIERS
+        ):
+            return "REFUSED", f"REFUSED: {name} is a seal carrier; carriers never merge"
     for name, _ in names:
         if is_protected(name):
             return "PROTECTED", f"PROTECTED: {name} (it changes a check that judges this PR)"
@@ -1303,6 +1315,9 @@ def run(
         return 0
     if (p["head"].get("repo") or {}).get("full_name") != repo:
         _summary(f"#{pr} comes from a fork: never merged by the gate")
+        return 0
+    if str(p["head"].get("ref") or "").lower().startswith(SEAL_CARRIER_BRANCH):
+        _summary(f"#{pr} is a seal carrier ({p['head'].get('ref')}): carriers never merge")
         return 0
     files = _flat(_gh(f"repos/{repo}/pulls/{pr}/files?per_page=100", "--paginate", "--slurp"))
     p2 = _gh(f"repos/{repo}/pulls/{pr}")
