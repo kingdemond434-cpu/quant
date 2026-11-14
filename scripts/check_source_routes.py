@@ -40,8 +40,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import urllib.error
-import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,30 +50,21 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
 
-#: Hosts whose own terms refuse automated contact. A route on one of these is never probed,
-#: whatever its row says: the check is by HOST inside `probe`, so a caller that brings its own
-#: route list (asia_plane) is fenced too. Unclear terms are not listed here; they are the
-#: caller's to fail closed on.
-REFUSED_HOSTS: dict[str, str] = {
-    "api.stlouisfed.org": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
-    "fred.stlouisfed.org": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
-    "datafeed.dukascopy.com": ("Dukascopy terms of use refuse bots and commercial use "
-                               "(data_universe_map.json dukascopy_bi5_datafeed_VERDICT)"),
-    "query1.finance.yahoo.com": ("Yahoo terms s2(d)(9) refuse automated collection without "
-                                 "express prior permission"),
-    "query2.finance.yahoo.com": ("Yahoo terms s2(d)(9) refuse automated collection without "
-                                 "express prior permission"),
-}
+#: Hosts whose own terms refuse automated contact live in ONE list, matched by domain suffix
+#: (alfred.stlouisfed.org is FRED too). The check is inside `probe`, so a caller that brings its
+#: own route list (asia_plane) is fenced as well.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.data.refused_hosts import REFUSED_HOSTS, refusal  # noqa: E402
+
+__all__ = ["REFUSED_HOSTS", "probe", "terms_refusal"]
 
 
 def terms_refusal(route: dict[str, Any]) -> str | None:
     """Why this route may not be contacted, or None. An unparseable URL is refused."""
-    try:
-        host = (urllib.parse.urlsplit(str(route.get("url") or "")).hostname or "").lower()
-    except ValueError:
-        return "the route URL does not parse, so its host's terms cannot be read"
-    if host in REFUSED_HOSTS:
-        return REFUSED_HOSTS[host]
+    why = refusal(str(route.get("url") or ""))
+    if why:
+        return why
     if str(route.get("terms") or "").upper() == "REFUSED":
         return str(route.get("terms_why") or "the route is marked terms REFUSED")
     return None

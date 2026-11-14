@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import urllib.parse
 import urllib.request
 
 import pytest
@@ -21,15 +20,11 @@ def opened(monkeypatch):
     return urls
 
 
-def _host(url: str) -> str:
-    return (urllib.parse.urlsplit(url).hostname or "").lower()
-
-
 def test_no_probed_url_is_on_a_refused_host(opened, tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(csr, "OUT", tmp_path / "SOURCE_ROUTES.json")
     assert csr.main([]) == 0
     assert opened, "the lawful routes are still probed"
-    assert not [u for u in opened if _host(u) in csr.REFUSED_HOSTS]
+    assert not [u for u in opened if csr.refusal(u)]
     doc = json.loads((tmp_path / "SOURCE_ROUTES.json").read_text(encoding="utf-8"))
     blocked = {r["name"]: r for r in doc["routes"] if r["status"] == "BLOCKED_ON_TERMS"}
     assert set(blocked) == {"fred_series", "fred_release_dates", "fred_graph_csv",
@@ -42,6 +37,9 @@ def test_no_probed_url_is_on_a_refused_host(opened, tmp_path, monkeypatch) -> No
     "https://FRED.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
     "https://datafeed.dukascopy.com:443/datafeed",
     "https://user@query2.finance.yahoo.com/v1/test/getcrumb",
+    "https://alfred.stlouisfed.org/series?seid=DGS10",
+    "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
+    "https://web.archive.org/web/2024/https://example.org/",
 ])
 def test_a_caller_route_on_a_refused_host_is_refused_by_host(url, opened) -> None:
     # asia_plane brings its own routes; the fence is by host, not by this file's ROUTES.
