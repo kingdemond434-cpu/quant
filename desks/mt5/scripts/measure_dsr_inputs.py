@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         doc = dsr_inputs.run(report_path=a.report, ledger_path=a.ledger, out=a.out,
                              window_days=a.window_days, budget_s=budget)
     except OSError as exc:
-        print(f"dsr_inputs: could not write: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"dsr_inputs: could not write: {type(exc).__name__}", file=sys.stderr)
         return 1
     pooled = (doc.get("variance") or {}).get("pooled") or {}
     eff = doc.get("effective_trials") or {}

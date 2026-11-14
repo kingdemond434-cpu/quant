@@ -470,3 +470,22 @@ def test_the_script_bounds_the_harvest_inside_the_leg(tmp_path: Path,
                      "--out", str(tmp_path / "o.json"), "--budget-s", "0"]) == 0
     line = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert line["harvest_status"] == di.DEFERRED and line["status"] == di.UNMEASURED
+
+
+@pytest.mark.parametrize("organ", ["harvest", "measure"])
+def test_an_exception_holding_a_path_or_host_never_reaches_the_document(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, organ: str) -> None:
+    """DSR_INPUTS.json is published box state and its `why` is echoed to the leg's stdout: a
+    raised exception is named by its type only, never by its text (audit of 7cd7a86e, MF1)."""
+    secret = r"C:\opt\quant\data\secrets\box-host-62.example\token"
+
+    def boom(*_a: Any, **_k: Any) -> Any:
+        raise OSError(secret)
+
+    rp = _write(tmp_path / "r.json", _report(_sweep(150)))
+    out = tmp_path / "o.json"
+    monkeypatch.setattr(di, organ, boom)
+    doc = di.run(report_path=rp, ledger_path=tmp_path / "l.jsonl", out=out)
+    blob = json.dumps(doc) + out.read_text("utf-8")
+    assert "box-host-62" not in blob and "secrets" not in blob
+    assert f"{organ} raised OSError" in blob

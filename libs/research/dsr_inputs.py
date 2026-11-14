@@ -778,7 +778,7 @@ def load_verified(path: Path | None = None, *, now: datetime | None = None,
     except OSError:
         return None, f"{UNMEASURED_REASON}: {_rel(p)} is absent"
     except ValueError as exc:
-        return None, f"{UNMEASURED_REASON}: {_rel(p)} does not parse ({exc})"
+        return None, f"{UNMEASURED_REASON}: {_rel(p)} does not parse ({type(exc).__name__})"
     if not isinstance(doc, dict):
         return None, f"{UNMEASURED_REASON}: {_rel(p)} is not a mapping"
     if doc.get("schema") != SCHEMA:
@@ -786,7 +786,7 @@ def load_verified(path: Path | None = None, *, now: datetime | None = None,
     try:
         recomputed = canonical_sha256(doc)
     except ValueError as exc:
-        return None, f"{UNMEASURED_REASON}: content does not hash ({exc})"
+        return None, f"{UNMEASURED_REASON}: content does not hash ({type(exc).__name__})"
     if doc.get("content_sha256") != recomputed:
         return None, (f"{UNMEASURED_REASON}: provenance hash does not verify "
                       f"(file {str(doc.get('content_sha256'))[:12]}, recomputed "
@@ -872,7 +872,7 @@ def _measure_or_explain(*, harvest_result: Mapping[str, Any], now: datetime | No
     try:
         return measure(now=now, harvest_result=harvest_result, **kw)
     except Exception as exc:                  # never silently stale: say why, and when
-        return unmeasured_document(f"measure raised {type(exc).__name__}: {exc}",
+        return unmeasured_document(f"measure raised {type(exc).__name__}",
                                    harvest_result=harvest_result, now=now,
                                    window_days=kw.get("window_days", WINDOW_DAYS))
 
@@ -920,7 +920,7 @@ def run(*, report_path: Path | None = None, ledger_path: Path | None = None,
     try:
         h = harvest(report_path, ledger_path, deadline=deadline, index_path=ipath)
     except Exception as exc:
-        h = {"status": UNMEASURED, "why": f"harvest raised {type(exc).__name__}: {exc}",
+        h = {"status": UNMEASURED, "why": f"harvest raised {type(exc).__name__}",
              "appended": 0}
     if h.get("status") == DEFERRED:
         doc = _with_harvest(interim, h)
