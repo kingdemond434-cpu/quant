@@ -97,6 +97,71 @@ def _git(root: Path, *args: str) -> tuple[int, str]:
     return r.returncode, r.stdout
 
 
+#: How far back one walk looks for each published path's newest writer. Box state commits every
+#: fifteen minutes, so every live path is touched well inside this; a path not seen in the walk
+#: falls back to its own `git log -1`, so the bound changes speed, never the answer.
+WALK_COMMITS = 2000
+
+
+def _last_writers(root: Path, use: str, rels: list[str]) -> dict[str, tuple[str, str]]:
+    """{rel: (author, subject)} of the newest commit touching each rel at `use`, in ONE walk.
+
+    WHY ONE WALK (2026-11-13). This leg measured a 485 s median on the box -- the third-largest
+    always-run cost in a core budget it helped overrun, starving 146 legs -- because it spawned
+    one `git log -1 -- <path>` and one `git show` per published path (~165 git processes, each
+    seconds on Windows). `-c` keeps a merge that resolved a path differently from every parent,
+    exactly the merges a per-path `git log -1` stops on, so the answer is the same commit.
+    """
+    want = set(rels)
+    found: dict[str, tuple[str, str]] = {}
+    rc, out = _git(root, "log", "-c", "--name-only", "--format=%x00%an%x09%s",
+                   "-n", str(WALK_COMMITS), use, "--", *rels)
+    if rc == 0:
+        head: tuple[str, str] | None = None
+        for line in out.splitlines():
+            if line.startswith("\x00"):
+                who, _, subject = line[1:].partition("\t")
+                head = (who, subject)
+                continue
+            rel = line.strip()
+            if head is not None and rel in want and rel not in found:
+                found[rel] = head
+    for rel in sorted(want - set(found)):
+        rc_a, line = _git(root, "log", "-1", "--format=%an%x09%s", use, "--", rel)
+        writer, _, subject = line.strip().partition("\t")
+        if rc_a == 0 and writer.strip():
+            found[rel] = (writer, subject)
+    return found
+
+
+def _show_many(root: Path, use: str, rels: list[str]) -> dict[str, str]:
+    """{rel: text} for each rel present at `use`, read by ONE `git cat-file --batch`."""
+    if not rels:
+        return {}
+    try:
+        r = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"],
+                           input="".join(f"{use}:{rel}\n" for rel in rels).encode("utf-8"),
+                           capture_output=True, timeout=120, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    out: dict[str, str] = {}
+    buf, pos = r.stdout, 0
+    for rel in rels:
+        nl = buf.find(b"\n", pos)
+        if nl < 0:
+            break
+        header = buf[pos:nl].split()
+        pos = nl + 1
+        if len(header) != 3 or header[1] != b"blob":
+            continue   # "<name> missing" (or not a blob): nothing to read, as `git show` failing
+        size = int(header[2])
+        out[rel] = buf[pos:pos + size].decode("utf-8", errors="replace")
+        pos += size + 1
+    return out
+
+
 def is_box_commit(author: str, subject: str, box_author: str = BOX_AUTHOR) -> bool:
     """A box write: the publisher's subject, or (older commits) the box's own author name."""
     if BOX_SUBJECT_RE.match(subject.strip()):
@@ -224,23 +289,24 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
     stamps: dict[str, str] = {}
     not_box_written: dict[str, str] = {}
     newest_stamp = None
-    for rel in paths:
-        if not rel.endswith(".json"):
-            continue
+    jsons = [rel for rel in paths if rel.endswith(".json")]
+    writers = _last_writers(root, use, jsons)
+    texts = _show_many(root, use, [rel for rel in jsons
+                                   if is_box_commit(*writers.get(rel, ("", "")), box_author)])
+    for rel in jsons:
         # ONLY THE BOX'S OWN WRITE COUNTS (2026-10-06). RELEASE.json is on the publisher's list,
         # but since release promotion (#90) CI's "seal release" commit rewrites it with a fresh
         # `generated_utc` every release -- measured on 2d61e69a1, that stamp (11:11Z) read the
         # fence FRESH at 4.3h while the newest box-authored commit on any published path was
         # bcbec41f0 of 2026-09-24. A stamp counts only when the newest commit touching its file
         # at the ref is a box identity's; anyone else's write is listed, never believed.
-        rc_a, line = _git(root, "log", "-1", "--format=%an%x09%s", use, "--", rel)
-        writer, _, subject = line.strip().partition("\t")
-        if rc_a != 0 or not is_box_commit(writer, subject, box_author):
+        writer, subject = writers.get(rel, ("", ""))
+        if not is_box_commit(writer, subject, box_author):
             if writer.strip():
                 not_box_written[rel] = writer.strip()
             continue
-        rc, text = _git(root, "show", f"{use}:{rel}")
-        if rc != 0:
+        text = texts.get(rel)
+        if text is None:
             continue
         try:
             data = json.loads(text)

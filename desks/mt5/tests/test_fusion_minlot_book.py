@@ -593,12 +593,15 @@ def test_no_organ_writes_the_switch() -> None:
                 continue
             if "MINLOT_OVERRIDE.json" in text or "MINLOT_OVERRIDE_FILE" in text:
                 hits.append(path.relative_to(_ROOT).as_posix())
-    # The core reads it; the gateway only names it in a log/basis line. Nothing else may.
+    # The core reads it; the gateway only names it in a log/basis line; the account-parity
+    # report names it as the sizing source it READS (2026-11-14, #639). Nothing else may.
     assert sorted(hits) == ["desks/mt5/mt5desk/decision_core.py",
-                            "desks/mt5/mt5desk/gateway.py"], hits
-    for line in (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8").splitlines():
-        if "MINLOT_OVERRIDE" in line:
-            assert not any(w in line for w in ("write_text", "json.dump", "os.replace"))
+                            "desks/mt5/mt5desk/gateway.py",
+                            "desks/mt5/research/account_parity.py"], hits
+    for rel in ("mt5desk/gateway.py", "research/account_parity.py"):
+        for line in (_DESK / rel).read_text(encoding="utf-8").splitlines():
+            if "MINLOT_OVERRIDE" in line:
+                assert not any(w in line for w in ("write_text", "json.dump", "os.replace")), line
     src = (_DESK / "mt5desk" / "decision_core.py").read_text(encoding="utf-8")
     block = src[src.index("MINLOT_OVERRIDE_FILE ="):src.index("def ramped_fraction")]
     for writer in ("write_text", "json.dump(", "os.replace", ".open("):

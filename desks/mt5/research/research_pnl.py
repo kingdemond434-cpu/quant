@@ -82,7 +82,7 @@ def _graph_rows() -> tuple[list[dict], str | None]:
         from libs.research.hypothesis_graph import Graph
         rows = Graph().rows()
     except Exception as exc:
-        return [], f"hypothesis graph unreadable: {type(exc).__name__}: {exc}"
+        return [], f"hypothesis graph unreadable: {type(exc).__name__}"
     return rows, (None if rows else "hypothesis graph absent or empty on this host")
 
 

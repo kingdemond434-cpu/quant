@@ -257,6 +257,8 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # The red team's verdict tallies measure the machine's own kill rate: meta.
+    "redteam_counts": "meta",
     # ORDER-SENSITIVE DECAY VERDICTS (R0312): the demote/shrink INPUT beside the decay monitor's
     # own verdicts, read per sleeve by whatever sizes the book later -- portfolio, as its sibling.
     "decay_verdicts": "portfolio",
@@ -628,6 +630,8 @@ LEG_LAYER: dict[str, str] = {
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
+    # Every live account against every mechanism: the machine measuring its own parity (2026-11-03).
+    "account_parity": "meta",
     # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.

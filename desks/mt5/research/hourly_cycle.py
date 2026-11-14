@@ -1225,6 +1225,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
     "fill_recorder", "cost_surfaces",
+    # Does every live account run the same mechanisms (e8, ftmo, fusion)? A read-only census of
+    # code text and log tails, bounded at 8 s and self-throttled to 15 min, so it rides the core
+    # clock.
+    "account_parity",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1289,6 +1293,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # THE RED TEAM'S KILL RATE, IN A FORM THAT MAY CROSS THE WIRE (2026-11-13): enum verdict
+    # tallies from the committees, ensembles, falsifier battery and decay walk, whose own reports
+    # carry free exception text and so are never published. Reads four files, well under a second.
+    "redteam_counts",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -2167,6 +2175,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
+    # alpha_breadth: 292 s measured on the box (11-07, the one run in seven days); the cap is
+    # about twice that, below the 720 s default it inherited, because it is now FORCED by age
+    # (libs/ops/leg_rotation.DUE_BY_AGE_H) and hard + one core period + cap must land inside 6 h.
+    "alpha_breadth": 600,
     "forward_enrolment": 400,
     # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
     # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
@@ -2438,7 +2450,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # raised for, and the one this organ exists to catch.
     "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
-    "expression_factory": 720,
+    # MEASURED 2026-11-13 20:51Z on the box: killed at 727 s, so its own stop overshoots by more
+    # than the old 120 s margin (setup -- census, harvest, world load -- is not budget-checked,
+    # and a cell in flight finishes) and the pass wrote nothing. It runs on the mathlab resident,
+    # which has no scheduler limit, so the margin costs nothing: 300 s, 2.5x the overshoot seen.
+    "expression_factory": 900,
     # THE FREE-STACK HUNTER stops itself at --budget-s 600 and persists its cursor after every
     # source, so a cut pass still advanced; the cap sits above so the yield artifact is written.
     "free_stack_hunt": 720,
@@ -5944,6 +5960,9 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # The red-team verdict tallies, after decay_monitor so the decay walk's newest reading counts.
+    rtc = _costed("redteam_counts", lambda: _producer(
+        "redteam_counts", "research/redteam_counts.py"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
@@ -6235,6 +6254,14 @@ def main() -> None:
     # corpus the execution twin and the shortfall model already read. Recording only.
     flr = _costed("fill_recorder", lambda: _producer(
         "fill_recorder", "research/fill_recorder.py", "--once", "--budget-s", "120"))
+    # EVERY LIVE ACCOUNT AGAINST EVERY MECHANISM (2026-11-03). A mechanism wired on one account
+    # and absent or silent on another showed up only when somebody read three logs side by side.
+    # This leg writes reports/ACCOUNT_PARITY.json: accounts x mechanisms, RED when absent or
+    # silent while it fired on a peer, UNMEASURED never GREEN, firm caps listed not judged.
+    # Report only: no lane imported, no venue, no write but its own report. Re-measures at most
+    # every 15 min, so an hourly call always measures.
+    apy = _costed("account_parity", lambda: _producer(
+        "account_parity", "research/account_parity.py"))
     # THE WHOLE ROUND TRIP, KEYED (2026-09-30). The cost model was spread x hour only; this joins
     # the corpus fill_recorder just wrote with the ledger's commission and swap into surfaces
     # keyed instrument x session x size x vol x direction x order type, UNMEASURED where no fill
@@ -6660,6 +6687,7 @@ def main() -> None:
                     "culture_gap_cells": cgc, "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "account_parity": apy,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
@@ -6671,6 +6699,7 @@ def main() -> None:
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "redteam_counts": rtc,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

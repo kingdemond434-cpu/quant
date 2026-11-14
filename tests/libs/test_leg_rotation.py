@@ -292,8 +292,14 @@ def test_artifact_age_reads_the_oldest_input_and_absent_is_infinite(tmp_path: Pa
 def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
     from libs.tiers import promotion_authority as PA
     door = {(PA.REPLICATION, "at"), (PA.FDR_ROWS, "generated_utc"), (PA.FREEZE, "at")}
-    ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
+    ours = {(LR.DESK / rel, key) for leg, arts in LR.DUE_ARTIFACTS.items()
+            if leg != "alpha_breadth" for rel, key in arts}
     assert ours == door
+    # the breadth leg's clock is the file the allocator's breadth credit reads, and its own stamp
+    from libs.research import breadth_credit as BC
+    breadth = (("reports/EFFECTIVE_BREADTH.json", "generated_utc"),)
+    assert LR.DUE_ARTIFACTS["alpha_breadth"] == breadth
+    assert LR.DESK / "reports/EFFECTIVE_BREADTH.json" == BC.BREADTH_REPORT
     assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)
 
 

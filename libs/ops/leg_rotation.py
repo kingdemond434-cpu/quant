@@ -163,6 +163,12 @@ ALWAYS_RUN: frozenset[str] = frozenset({
 DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
     "tier_s": (2.5, 4.0),
     "replication_civilization": (2.5, 4.0),
+    # THE BREADTH THE ALLOCATOR SIZES ON (2026-11-13). `alpha_breadth` writes EFFECTIVE_BREADTH
+    # (the linear n_eff `libs/research/breadth_credit.py` reads), costs ~292 s measured on the box,
+    # and ran ONCE in seven days (11-07 18:42Z): it ranked behind always-run legs in a budget
+    # with no room left, so k_eff and the prop-lane breadth read froze for six days. Fresh within
+    # the same 6 h bound as the door's inputs; the soft rule still forces one leg per pass.
+    "alpha_breadth": (3.0, 4.5),
 }
 
 #: THE CLOCK IS THE ARTIFACT, NOT THE RUN (Auditor MF1, 2026-11-05). Attendance stamps a leg when
@@ -176,6 +182,7 @@ DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
     "tier_s": (("reports/tier_s/ONLINE_FDR_ROWS.json", "generated_utc"),
                ("data/tier_s/PROMOTION_FREEZE.json", "at")),
     "replication_civilization": (("reports/REPLICATION.json", "at"),),
+    "alpha_breadth": (("reports/EFFECTIVE_BREADTH.json", "generated_utc"),),
 }
 
 #: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and

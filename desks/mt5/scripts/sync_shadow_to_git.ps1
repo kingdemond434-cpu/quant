@@ -801,6 +801,9 @@ $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
+    # WHICH LEGS THE CORE ROTATION ADMITTED, DEFERRED OR CAN NEVER FIT (2026-11-13): six
+    # clock and breadth legs went dark for days and nothing off the box could see why.
+    "desks/mt5/reports/LEG_ROTATION.json",
     "desks/mt5/data/research_budget.json",
     # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg
     # bars_state): last bar time, rows and mtime per file, newest tick per symbol. The parquets
@@ -889,6 +892,26 @@ $reportPaths = @(
     "desks/mt5/data/plausibility/FAST_TRACK.json",
     "desks/mt5/data/plausibility/LEAK_PROVEN.json",
     "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
+    # THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13), cut to what the public
+    # repository may carry (Auditor HOLD MF1/MF2 on #639): no absolute money, no account label,
+    # no host, no filesystem path. TRIAL_ALLOCATION, admission_heavy_pass, RESEARCH_PNL,
+    # ACCOUNT_PARITY (every account against every mechanism) and the daily chain as a REDACTED
+    # mirror of its per-box stamp (DAILY_CYCLE_STATE: step verdicts only, no error text).
+    # Deliberately NOT here: E8_GOLD, E8_EXEC, FTMO_ACCOUNT_STATE and pf_allocation (equity and
+    # balances; E8_GOLD also the account label #1096 keeps unpublished), DISK_CENSUS and
+    # MATH_LAB (filesystem paths), PRODUCTIVITY_CENSUS (host names), weak_signal_compiler (free
+    # exception text). They need a redacted twin before they may cross this wire.
+    "desks/mt5/reports/TRIAL_ALLOCATION.json",
+    "desks/mt5/reports/DAILY_CYCLE_STATE.json",
+    "desks/mt5/reports/admission_heavy_pass.json",
+    "desks/mt5/reports/RESEARCH_PNL.json",
+    "desks/mt5/reports/ACCOUNT_PARITY.json",
+    # THE RED TEAM, MEASURABLE FROM ORIGIN (hourly-pass sweep, 2026-11-13). The committees, the
+    # ensembles, the falsifier battery and decay_live all carry free exception text and stay off
+    # the wire; REDTEAM_COUNTS is their enum-only tally (research/redteam_counts.py). The regime
+    # hierarchy carries labels and probabilities only.
+    "desks/mt5/reports/REDTEAM_COUNTS.json",
+    "desks/mt5/reports/REGIME_HIERARCHY.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,

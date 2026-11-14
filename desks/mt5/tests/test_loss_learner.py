@@ -417,3 +417,22 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     rep = LL.run(dry_run=True)
     assert rep["books"]["e8"].startswith("UNMEASURED")
     assert list(tmp_path.iterdir()) == []
+
+
+def test_published_notes_carry_no_exception_text_or_box_path(monkeypatch, tmp_path) -> None:
+    """LOSS_LEARNER.json crosses the box wire (#639): no free exception text, no absolute path."""
+    fake = "C:\\opt\\secret\\hypothesis_graph.sqlite"
+    assert LL._public_note(f"unreadable: OSError: [Errno 2] {fake}") == "unreadable: OSError"
+    assert LL._public_note(f"no rows at {fake}") == "absent or empty"
+    import research.survivor_distiller as sd
+
+    def _boom(skipped):
+        raise OSError(f"cannot open {fake}")
+    monkeypatch.setattr(sd, "_graph_rows", _boom)
+    _ids, _grid, note = LL._graph_state()
+    assert fake not in note and "OSError" in note
+    absent = tmp_path / "nowhere"
+    _rows, books = LL.ledger_rows(datetime.now(UTC), fusion=absent / "live_ledger.jsonl",
+                                  prop=absent / "prop_ledger.jsonl")
+    assert all(str(absent) not in v for v in books.values()), books
+    assert "live_ledger.jsonl" in books["fusion"]
