@@ -20,6 +20,9 @@ still the SHAPE the caller expects:
     HTTP_ERROR   an honest non-200. Bad, but at least it is loud.
     UNREACHABLE  DNS, TLS or timeout. The network, not the route.
     UNMEASURED   no probe could be made at all -- reported, never scored as a pass.
+    BLOCKED_ON_TERMS  the host's terms refuse automated contact, so it is never probed, on any
+                 pass and for any caller (asia_plane reuses `probe`). A route probe is still an
+                 automated contact. Reported with its missed_growth line, never as a pass.
 
 NOTHING IS FETCHED FOR CONTENT. This reads the first few KB and looks at the shape. It is a route
 check, not an acquisition run, and it must stay cheap enough to run every hour beside everything
@@ -38,6 +41,7 @@ from __future__ import annotations
 import argparse
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,6 +50,35 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
 
+#: Hosts whose own terms refuse automated contact. A route on one of these is never probed,
+#: whatever its row says: the check is by HOST inside `probe`, so a caller that brings its own
+#: route list (asia_plane) is fenced too. Unclear terms are not listed here; they are the
+#: caller's to fail closed on.
+REFUSED_HOSTS: dict[str, str] = {
+    "api.stlouisfed.org": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+    "fred.stlouisfed.org": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+    "datafeed.dukascopy.com": ("Dukascopy terms of use refuse bots and commercial use "
+                               "(data_universe_map.json dukascopy_bi5_datafeed_VERDICT)"),
+    "query1.finance.yahoo.com": ("Yahoo terms s2(d)(9) refuse automated collection without "
+                                 "express prior permission"),
+    "query2.finance.yahoo.com": ("Yahoo terms s2(d)(9) refuse automated collection without "
+                                 "express prior permission"),
+}
+
+
+def terms_refusal(route: dict[str, Any]) -> str | None:
+    """Why this route may not be contacted, or None. An unparseable URL is refused."""
+    try:
+        host = (urllib.parse.urlsplit(str(route.get("url") or "")).hostname or "").lower()
+    except ValueError:
+        return "the route URL does not parse, so its host's terms cannot be read"
+    if host in REFUSED_HOSTS:
+        return REFUSED_HOSTS[host]
+    if str(route.get("terms") or "").upper() == "REFUSED":
+        return str(route.get("terms_why") or "the route is marked terms REFUSED")
+    return None
+
+
 #: (name, url, expected shape). The shape is what makes a MOVED verdict possible: without a
 #: declared expectation, an HTML error page and a real response are both just "bytes".
 #:
@@ -53,21 +86,23 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
 #: so an auth failure is never confused with a route change.
 ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "fred_series", "url": "https://api.stlouisfed.org/fred/series/observations",
-     "expect": "json", "needs_key": True},
+     "expect": "json", "needs_key": True, "terms": "REFUSED"},
     {"name": "fred_release_dates", "url": "https://api.stlouisfed.org/fred/release/dates",
-     "expect": "json", "needs_key": True},
+     "expect": "json", "needs_key": True, "terms": "REFUSED"},
     {"name": "fred_graph_csv",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10", "expect": "csv"},
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10", "expect": "csv",
+     "terms": "REFUSED"},
     {"name": "ecb_eurofxref_hist",
      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", "expect": "xml"},
     {"name": "dukascopy_datafeed", "url": "https://datafeed.dukascopy.com/datafeed",
-     "expect": "any"},
+     "expect": "any", "terms": "REFUSED"},
     {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any"},
     {"name": "gld_holdings",
      "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
      "expect": "binary"},
     {"name": "yahoo_chart",
-     "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json"},
+     "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json",
+     "terms": "REFUSED"},
 )
 
 #: Content types that satisfy each declared shape. Deliberately generous -- the check is for a
@@ -89,6 +124,13 @@ def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    refused = terms_refusal(route)
+    if refused:
+        out.update({"status": "BLOCKED_ON_TERMS", "why": f"BLOCKED_ON_TERMS: {refused}",
+                    "missed_growth": {"mechanism": f"{name}_terms_refusal",
+                                      "lost": "the hourly MOVED/OK shape check for this route",
+                                      "verdict": "a gap, not a zero"}})
+        return out
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -164,7 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"source routes: {len(results)} probed -> {census}")
     for r in results:
         mark = {"OK": "  ok    ", "MOVED": "  MOVED ", "HTTP_ERROR": "  http  ",
-                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr "}.get(str(r["status"]), "  ?    ")
+                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr ",
+                "BLOCKED_ON_TERMS": "  terms "}.get(str(r["status"]), "  ?    ")
         print(f"{mark}{r['name']!s:22} {str(r.get('why') or r.get('content_type') or '')[:70]}")
     print(f"  -> {OUT}")
     # MOVED is the only fatal verdict. An honest HTTP error or an unreachable host is loud and
