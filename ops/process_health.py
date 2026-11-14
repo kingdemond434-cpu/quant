@@ -648,7 +648,12 @@ def build() -> dict[str, Any]:
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    rows.append(_realised_risk_row())
+    # The realised-risk reading is a MEASUREMENT, not a process: it is published beside the board
+    # (`realised_risk`), never as one of its rows, so it cannot make an empty or unread board
+    # look read. A RISK_BREACH still headlines ATTENTION (`risk_fault` below).
+    task_rows = rows
+    risk_row = _realised_risk_row()
+    risk_fault = risk_row.get("verdict") == "RISK_BREACH"
 
     order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1, "RISK_BREACH": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
@@ -660,8 +665,7 @@ def build() -> dict[str, Any]:
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE",
-                                             "RISK_BREACH")
+                                             "FAILING", "NO_ARTIFACT", "STALE")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
@@ -670,17 +674,17 @@ def build() -> dict[str, Any]:
     backup = account_key_backup()
     key_fault = key.get("state") in KEY_FAULT_STATES
     backup_fault = backup.get("state") in BACKUP_FAULT_STATES
-    status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
+    status = ("UNMEASURED" if not task_rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    if key_fault or backup_fault or risk_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
         "scheduler_status": scheduler_status,
-        "n_processes": len(rows),
+        "n_processes": len(task_rows),
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
         # is how a dead gateway hides behind a green majority. An unread scheduler, or a board
@@ -695,7 +699,8 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(risk_fault),
+        "realised_risk": risk_row,
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
