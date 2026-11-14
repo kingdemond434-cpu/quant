@@ -4596,7 +4596,7 @@ def main() -> None:
     # anti-lookahead, with per-dataset contribution and the regime forecast. It ALLOCATES NO
     # CAPITAL -- it publishes epsilon so `residual_hunt` can hunt what it cannot explain.
     wmd = _costed("world_model", lambda: _producer("world_model", "research/world_model.py",
-                                                    "--once", "--budget-s", "900"))
+                                                    "--once", "--budget-s", "1200"))
     # THE CANONICAL RESEARCH REGISTRY (principal 2026-09-17: one registry, its research chain
     # populated by the organs that do the work): the bridge leg lands the desk's record --
     # candidates, trials, runs, cards+events, memories, workers -- and publishes the counts,
