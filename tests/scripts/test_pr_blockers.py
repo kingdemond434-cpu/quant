@@ -156,7 +156,9 @@ def test_it_is_an_hourly_core_leg_and_published() -> None:
     hc = (ROOT / "desks/mt5/research/hourly_cycle.py").read_text(encoding="utf-8")
     assert '"box_state_freshness", "desk_health", "pr_blockers",' in hc
     assert '_producer("pr_blockers", "scripts/pr_blockers.py")' in hc
-    assert '"pr_blockers": prb' in hc
+    assert '"pr_blockers": pbk' in hc
+    # its own name: `prb` is the probation leg's result, so reusing it reported the wrong leg
+    assert 'pbk = _costed("pr_blockers"' in hc and 'prb = _costed("pr_blockers"' not in hc
     for f in ("libs/ops/release.py", "desks/mt5/mt5desk/release_identity.py",
               "desks/mt5/scripts/sync_shadow_to_git.ps1"):  # fmt: skip
         assert "desks/mt5/reports/PR_BLOCKERS.json" in (ROOT / f).read_text(encoding="utf-8")
