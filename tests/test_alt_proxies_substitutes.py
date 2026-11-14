@@ -349,7 +349,7 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        assert ev["robots"] and ev["checked_at"] >= "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -568,14 +568,17 @@ NEW_SUBSTITUTES = ("jp_estat_immigration", "hk_immd_passenger", "br_bcb_payments
                    "in_dgi_iip_consumer", "za_statssa_retail")
 BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva", "mx_antad_sss",
            "cn_maoyan_box_office", "in_npci_upi", "cn_sge_premium", "cn_baidu_migration",
-           "za_beti", "kr_busan_port", "cn_mot_port_weekly")
+           "za_beti", "kr_busan_port", "cn_mot_port_weekly",
+           # IMF terms pages conflict (read 2026-11-13): fail closed until written permission
+           "imf_portwatch_ports", "imf_portwatch_chokepoints")
 
 
 def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
     assert blocked == {*BLOCKED, "za_statssa_retail"}       # a mirror-only candidate fails closed
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
-    assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
+    assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti", "cn_mot_port_weekly",
+                                    "imf_portwatch_ports", "imf_portwatch_chokepoints"}
     for sid, subs in A.SUBSTITUTED_BY.items():
         assert subs and len(subs) == len(set(subs)), sid
         for x in subs:
@@ -648,7 +651,7 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
     assert set(rep["blocked_unsubstituted"]) == set(BLOCKED)
     assert rep["sources"]["za_statssa_retail"]["series"] == {}
     cands = rep["substitute_candidates"]["kr_busan_port"]
-    assert [c["substitute"] for c in cands] == ["kr_mof_container_teu", "imf_portwatch_ports"]
+    assert [c["substitute"] for c in cands] == ["kr_mof_container_teu"]
     assert all(c["verdict"] == "UNVERIFIED" for c in cands)
     sa = rep["substitute_agreement"]["substitute_vs_original"]["in_npci_upi"]
     assert sa[0]["corr"] == "UNMEASURED" and sa[0]["min_corr"] == 0.5
@@ -825,8 +828,12 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
         assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
         assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
         assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
+        assert r["unsubstituted_because"], sid
+        if sid not in A.SUBSTITUTED_BY:                     # no candidate at all: terms block
+            assert r["status"] == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}", sid
+            continue
         assert r["status"].startswith("BLOCKED_NO_SUBSTITUTE:UNVERIFIED="), sid
-        assert "UNVERIFIED" in r["substitute_check"] and r["unsubstituted_because"], sid
+        assert "UNVERIFIED" in r["substitute_check"], sid
     assert "za_statssa_retail" not in rows["za_beti"]["evidence"]   # unconfirmed: no evidence
     lib = {r["id"] for r in doc["library_rows"]}
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v

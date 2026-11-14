@@ -2593,9 +2593,16 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
-    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
-    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
-                                  "ArcGIS API"),
+    # FAIL CLOSED 2026-11-13: two live IMF pages now disagree. external/terms.htm grants sale
+    # "including for commercial purposes"; en/About/copyright-and-terms says "For any potential
+    # commercial reuse of IMF Data, email copyright@imf.org to request permission" and prohibits
+    # "bulk download of information by automated technology without explicit permission".
+    # Neither says which controls and PortWatch carries no licence of its own.
+    "imf_portwatch_ports": ("to_confirm", "IMF terms pages conflict on commercial reuse and "
+                            "automated download (read 2026-11-13); written permission needed"),
+    "imf_portwatch_chokepoints": ("to_confirm", "IMF terms pages conflict on commercial reuse "
+                                  "and automated download (read 2026-11-13); written "
+                                  "permission needed"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
@@ -2671,19 +2678,29 @@ _ESTAT_API: dict[str, str] = {
                "functions from e-Stat, however its contents are not guaranteed by government."),
 }
 _IMF_EV: dict[str, str] = {
-    "terms_url": "https://www.imf.org/external/terms.htm",
-    "terms_quote": ("Users may download, extract, copy, create derivative works, publish, "
-                    "distribute, and sell Data obtained from IMF Sites, including for commercial "
-                    "purposes"),
+    "terms_url": "https://www.imf.org/en/About/copyright-and-terms",
+    "terms_quote": ("For any potential commercial reuse of IMF Data, email copyright@imf.org to "
+                    "request permission."),
+    "conflicting_terms_url": "https://www.imf.org/external/terms.htm",
+    "conflicting_terms_quote": ("Users may download, extract, copy, create derivative works, "
+                                "publish, distribute, and sell Data obtained from IMF Sites"),
+    "automated_quote": ("The IMF prohibits bulk download of information by automated "
+                        "technology without explicit permission"),
     "policy_url": "https://portwatch.imf.org/pages/data-and-methodology",
     "policy_quote": ("All data and content in the IMF PortWatch are provided by the IMF unless "
                      "mentioned otherwise."),
-    "judgement": ("PortWatch points to the IMF terms for copyright and usage; the live terms "
-                  "read 2026-09-30 grant commercial reuse (an older copy asked commercial users "
-                  "to email copyright@imf.org). Attribution required"),
+    "judgement": ("TO_CONFIRM. The 2026-09-30 read took external/terms.htm (sale allowed, "
+                  "commercial purposes included). The 2026-11-13 re-read found "
+                  "en/About/copyright-and-terms live as well, asking commercial users to email "
+                  "copyright@imf.org and prohibiting automated bulk download without "
+                  "permission. Neither page says which controls and PortWatch has no licence of "
+                  "its own, so the rows fail closed until the IMF answers in writing"),
     "robots": "services9.arcgis.com FeatureServer is PortWatch's documented ArcGIS API",
     "credit": "Source: International Monetary Fund (IMF PortWatch).",
-    "checked_at": _CHK,
+    "missed_growth": ("the daily Hormuz/Bab el-Mandeb tanker-transit and port-call series stop "
+                      "feeding cells until permission arrives; no_ais_tankers (NLOD) carries "
+                      "the northern tanker flows meanwhile"),
+    "checked_at": "2026-11-13",
 }
 _OI_EV: dict[str, str] = {
     "terms_url": "https://github.com/opportunityinsights/economictracker",
@@ -2885,8 +2902,15 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "judgement": ("Korea Customs Service's own licence on the national portal for its "
                       "10-day provisional trade statistics, the statistics its 1-10 / 1-20 day "
                       "press releases print; customs.go.kr's copyright page timed out"),
-        "robots": "customs.go.kr copyright page timed out 2026-09-30 (not read)",
-        "checked_at": _CHK},
+        "robots": ("customs.go.kr/robots.txt read on the box 2026-11-13: HTTP 200, groups for "
+                   "Googlebot, Yeti, Daum and Bingbot each with Disallow: /*/na/ntt/ (the press "
+                   "release path this source read), no `*` group -- respected as the site's "
+                   "intent, so the press route is refused"),
+        "missed_growth": ("Korea's 1-10 / 1-20 day exports and semis series stop refreshing, so "
+                          "their USDKRW / NAS100 / chip-share conditioned cells hold as "
+                          "SERIES_ABSENT until the data.go.kr OpenAPI (key) or tradedata.go.kr "
+                          "route is read and wired"),
+        "checked_at": "2026-11-13"},
     "us_tsa_throughput": {
         "terms_url": "https://catalog.data.gov/dataset/covid-19-passenger-throughput",
         "terms_quote": "License: https://www.usa.gov/government-works",
@@ -3033,8 +3057,7 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "cn_maoyan_box_office": ("hk_immd_passenger",),
     "cn_sge_premium": ("in_gold_imports",),
     "cn_baidu_migration": ("hk_immd_passenger",),
-    "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
-    "cn_mot_port_weekly": ("imf_portwatch_ports",),
+    "kr_busan_port": ("kr_mof_container_teu",),
 }
 #: The #152 engine's MIN_CORRELATION, applied here to every blocked -> substitute pair.
 SUBSTITUTE_MIN_CORR = 0.50
@@ -3055,6 +3078,19 @@ NO_SUBSTITUTE: dict[str, str] = {
                     "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
                     "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
                     "reported"),
+    "cn_mot_port_weekly": ("its only candidate, imf_portwatch_ports, went to_confirm on "
+                           "2026-11-13 (the IMF terms pages conflict), so no UNVERIFIED free "
+                           "stand-in remains; a candidate is COVERED only at corr >= 0.5 with n "
+                           "reported"),
+    "imf_portwatch_ports": ("no free port-call panel with confirmed terms covers Shanghai, "
+                            "Ningbo, Port Hedland and Singapore; kr_mof_container_teu covers "
+                            "Korea only and is not offered as UNVERIFIED stand-in for them; a "
+                            "candidate is COVERED only at corr >= 0.5 with n reported"),
+    "imf_portwatch_chokepoints": ("no free chokepoint-transit panel with confirmed terms covers "
+                                  "Hormuz or Bab el-Mandeb; Norway's open AIS (NLOD) sees only "
+                                  "the northern lanes and is not offered as an UNVERIFIED "
+                                  "stand-in; a candidate is COVERED only at corr >= 0.5 with n "
+                                  "reported"),
     "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "
                 "mirror of the Stats SA notice was read, statssa.gov.za is behind Incapsula) and "
                 "no correlation against BETI has been measured (PayInc terms unreadable; SARB "
@@ -4033,6 +4069,17 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
     return None
 
 
+#: Sources whose LICENCE is fine but whose fetch ROUTE the site has refused. Live fetches stop;
+#: recorded fixtures still parse, so the parser stays tested for when a lawful route is wired.
+ROUTE_REFUSED: dict[str, str] = {
+    "kr_exports_early": (
+        "customs.go.kr/robots.txt disallows the press path /*/na/ntt/ for every crawler it "
+        "names (Googlebot, Yeti, Daum, Bingbot) and has no '*' group -- respected as the site's "
+        "intent (read on the box 2026-11-13). Lawful routes still to read: the 10-day "
+        "statistics OpenAPI on data.go.kr (portal key) and tradedata.go.kr"),
+}
+
+
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
             getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
@@ -4064,6 +4111,13 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if src.id in ROUTE_REFUSED and fetch and fixtures is None:
+        rec.update({"status": "BLOCKED_ON_ROBOTS", "requests": 0,
+                    "why": ROUTE_REFUSED[src.id],
+                    "missed_growth": TERMS_EVIDENCE.get(src.id, {}).get("missed_growth")
+                    or f"{src.id} series are not refreshed while its route is refused",
+                    "store_rows": len(store)})
+        return rec
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
