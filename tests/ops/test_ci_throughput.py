@@ -106,6 +106,16 @@ def test_the_actions_gate_looks_once() -> None:
     assert int(re.search(r"timeout-minutes:\s*(\d+)", text).group(1)) <= 15  # type: ignore[union-attr]
 
 
+def test_the_gate_keeps_one_waiting_run_per_pr() -> None:
+    text = (WF / "audit-gate.yml").read_text(encoding="utf-8")
+    top = text.split("\njobs:", 1)[0]
+    assert "audit-gate-run-${{ github.event.pull_request.number" in top
+    assert "|| github.event.workflow_run.head_sha" in top
+    # an unrelated label waits in its own group, so it never replaces a waiting gate run
+    assert "github.event.label.name != 'audit-clear')" in top and "'noise' || 'gate'" in top
+    assert "cancel-in-progress: false" in top  # never cut off a gate that is merging
+
+
 def test_release_gates_supersede_an_old_head() -> None:
     text = (WF / "release-gates.yml").read_text(encoding="utf-8")
     top = text.split("\njobs:", 1)[0]
