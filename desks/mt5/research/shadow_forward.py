@@ -197,7 +197,8 @@ def restamp_hold(key: str, st: dict) -> bool:
     st["promotion_hold_certificate"] = cert
     if st.get("status") == "PROMOTION CANDIDATE":
         slog(f"{key}: ALREADY A PROMOTION CANDIDATE on certificate {cert}, which was re-stamped "
-             f"and never re-judged -- marked, not demoted (a live-book change is not a session's)")
+             f"and never re-judged -- marked; its status is left as it is (a live-book change "
+             f"is not a session's)")
     return True
 
 
