@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 834,
-  "UNMEASURED": 43
+  "NEVER": 837,
+  "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1058,
+  "attested": 1062,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -721,6 +721,19 @@
     "organs": [
      "leg:cluster_judge",
      "leg:decay_verdicts"
+    ]
+   },
+   {
+    "at": "2026-11-14T05:10:48+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:event_calendar",
+     "leg:ais_norway",
+     "leg:crowding_conditioner",
+     "library:scripts/screen_cot_positioning.py"
     ]
    }
   ]
@@ -4025,7 +4038,7 @@
     "_": "UNMEASURED (not a readable JSON object)"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner"
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py \u2192 desks/mt5/data/hypotheses/miner"
   },
   {
    "organ": "leg:state_admission",
@@ -4494,7 +4507,7 @@
     "outcome": "exit_code=1"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.co"
+   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning \u2192 StateVector.co"
   },
   {
    "organ": "leg:dead_architecture",
@@ -4654,7 +4667,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads e"
+   "consumer": "libs/research/bandit SOURCE_ARM \u2192 exit_improvement budget share; nothing reads e"
   },
   {
    "organ": "leg:experiment_cache",
@@ -4947,7 +4960,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the repres"
+   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) \u2014 the repres"
   },
   {
    "organ": "leg:model_league",
@@ -4972,7 +4985,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a"
+   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) \u2014 a"
   },
   {
    "organ": "leg:model_skill",
@@ -5105,7 +5118,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → "
+   "consumer": "promoter.allocation_view \u2192 admission_of \u2192 capital_verdict \u2192 reconcile_capital \u2192 "
   },
   {
    "organ": "leg:promoter",
@@ -27902,6 +27915,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
+   "organ": "leg:event_calendar",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/event_calendar_refresh.py"
+   ],
+   "clock": "hourly_cycle:event_calendar",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/event_calendar.json",
+   "artifact_declared": "data/event_calendar.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 740842,
+   "artifact_bytes": 5043,
+   "artifact_sha256": "b20b74c1945b78c6dca6289d3ffadc39b72c6eb4d62a6b498ea7e9472caed5c2",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T05:10:48+00:00"
+  },
+  {
+   "organ": "leg:ais_norway",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/ais_norway.py"
+   ],
+   "clock": "hourly_cycle:ais_norway",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/AIS_NORWAY.json",
+   "artifact_declared": "desks/mt5/reports/AIS_NORWAY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T05:10:48+00:00"
+  },
+  {
+   "organ": "leg:crowding_conditioner",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/crowding_conditioner.py"
+   ],
+   "clock": "hourly_cycle:crowding_conditioner",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CROWDING_CONDITIONER.json",
+   "artifact_declared": "desks/mt5/reports/CROWDING_CONDITIONER.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T05:10:48+00:00"
+  },
+  {
+   "organ": "library:scripts/screen_cot_positioning.py",
+   "kind": "library",
+   "code": [
+    "scripts/screen_cot_positioning.py"
+   ],
+   "clock": "import:desks/mt5/research/crowding_conditioner.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "reports/axis_screens/cot_positioning.json",
+   "artifact_declared": "reports/axis_screens/cot_positioning.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T05:10:48+00:00"
   }
  ],
  "ratchet": {

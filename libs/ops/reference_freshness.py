@@ -1205,6 +1205,20 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
              "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
     ),
+    DestructivePath(
+        path_id="ais_norway.prune",
+        module="desks/mt5/research/ais_norway.py",
+        function="_prune",
+        removes="raw dated AIS window files in data/lake/ais/norway older than KEEP_DAYS (120)",
+        reference="each file's OWN date stamp in its name, against today -- no external store",
+        status="positive",
+        note="Removes a raw window only on its own dated name being past the 120-day horizon; a "
+             "name that does not parse as a date is kept (ValueError suppressed), so an absence "
+             "or a malformed name removes nothing. The daily series it feeds is append-merged "
+             "(held days outside the window are kept) and is never overwritten when the held "
+             "parquet cannot be read, so pruning a raw file loses no series day. Declared "
+             "2026-11-14 (free terminal feeds, Global data).",
+    ),
 )
 
 

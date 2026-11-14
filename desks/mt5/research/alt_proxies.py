@@ -182,6 +182,10 @@ class Paths:
         return self.desk / "data" / "lake" / "sge_premium.parquet"
 
     @property
+    def ais_norway(self) -> Path:
+        return self.desk / "data" / "lake" / "series" / "ais_norway.parquet"
+
+    @property
     def nlp_series(self) -> Path:
         """`nlp_event_factors` writes its per-country tagger panel here (nlp_events_<CC>)."""
         return self.series
@@ -597,6 +601,27 @@ def read_sge_premium(paths: Paths) -> list[Obs]:
                 out.append(Obs("premium_pct", pd.Timestamp(str(idx)).date(), x))
     return out
 
+
+
+def read_ais_norway(paths: Paths) -> list[Obs]:
+    """The daily tanker series `ais_norway` builds from Kystverket's open stream -- READ only."""
+    p = paths.ais_norway
+    if not p.exists():
+        return []
+    try:
+        import pandas as pd
+        df = pd.read_parquet(p)
+    except Exception:
+        return []
+    out: list[Obs] = []
+    for col in df.columns:
+        if col == "windows":
+            continue
+        for idx, v in df[col].items():
+            with contextlib.suppress(Exception):
+                if v == v:                                       # NaN is no observation
+                    out.append(Obs(str(col), pd.Timestamp(str(idx)).date(), float(v)))
+    return out
 
 
 # ============================================================================ paid substitutes
@@ -1953,6 +1978,35 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="no_ais_tankers", name="Norway open AIS: tankers at Melkoya, Mongstad/Sture, Karsto, "
+                                  "North Cape",
+        url="file:data/lake/series/ais_norway.parquet", region="NO", language="en",
+        cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="anomaly_daily",
+        instruments={"XBRUSD": -1, "XTIUSD": -1},
+        series_instruments={
+            "hammerfest_lng": {"XNGUSD": -1},
+            "karsto": {"XNGUSD": -1},
+            "mongstad_sture": {"XBRUSD": -1, "USDNOK": -1, "EURNOK": -1},
+            "north_cape": {"XBRUSD": -1, "XTIUSD": -1},
+            "stationary_offport": {"XBRUSD": 1, "XTIUSD": 1}},
+        signal_series=("hammerfest_lng_tankers", "mongstad_sture_tankers", "karsto_tankers",
+                       "north_cape_tankers", "stationary_offport_tankers"),
+        mechanism=("tankers loading at Norway's export terminals and Russian Arctic cargoes "
+                   "rounding the North Cape are physical crude and LNG supply counted by ship, "
+                   "days before Norwegian export statistics, Russian loading programmes or "
+                   "European storage data; tankers idling off-port are barrels not yet sold"),
+        payer=("crude, gas and NOK holders who price supply from monthly NPD/SSB prints, "
+               "Russian export estimates and weekly storage, not from the ships"),
+        constraint=("paid tanker trackers cost terminal-level subscriptions most macro books "
+                    "do not hold; the open stream needs a decoder nobody ships with a terminal"),
+        licence="Kystverket open AIS, NLOD 2.0 (any purpose incl. commercial, attribution)",
+        source_culture="NO/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when terminal maintenance (Melkoya outages, Sture "
+                                 "turnarounds) moves counts that the market already priced off "
+                                 "operator notices, or when AIS coverage drops"),
+        crowding_prior="low", note="no fetch: ais_norway samples the stream and records it",
+        reader=read_ais_norway),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2601,6 +2655,7 @@ TERMS: dict[str, tuple[str, str]] = {
     "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
                                   "ArcGIS API"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
+    "no_ais_tankers": ("confirmed", "Kystverket open AIS, NLOD 2.0: any purpose, attribution"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
@@ -2922,6 +2977,22 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "imf_portwatch_ports": {**_IMF_EV},
     "imf_portwatch_chokepoints": {**_IMF_EV},
+    "no_ais_tankers": {
+        "terms_url": ("https://www.kystverket.no/en/sea-transport-and-ports/ais/"
+                      "access-to-ais-data/"),
+        "terms_quote": ("The data are free and universally accessible, and are regulated under "
+                        "the Norwegian Licence for Open Government Data (NLOD)."),
+        "licence_url": "https://data.norge.no/nlod/en/2.0/",
+        "licence_quote": ("The licensee, subject to the limitations that follow from this "
+                          "licence, may use the information for any purpose and in all "
+                          "contexts"),
+        "judgement": ("the open component needs no registration; the closed (registered, "
+                      "purpose-limited) component is not used. Read 2026-11-13"),
+        "robots": ("a raw TCP feed (153.44.253.27:5631), not HTTP; kystverket.no/robots.txt "
+                   "carries only a Sitemap line"),
+        "credit": ("Contains data under the Norwegian licence for Open Government data (NLOD) "
+                   "distributed by the Norwegian Coastal Administration."),
+        "checked_at": "2026-11-13"},
     "in_gold_imports": {
         "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
         "terms_quote": ("Material featured on this website may be reproduced free of charge and "
@@ -4087,9 +4158,26 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
+    # A HARD STOP HOLDS (fetch rules: 401/403/429/451 means stop). A host that refused us is
+    # not asked again every hour; it is retried once after HARD_STOP_RETRY_D days, and the
+    # report names the refusal with its missed growth instead of reading UNMEASURED.
+    hs = sst.get("hard_stop") if isinstance(sst.get("hard_stop"), dict) else None
+    if hs and fetch and fixtures is None:
+        try:
+            since = datetime.fromisoformat(str(hs.get("at")))
+        except ValueError:
+            since = now
+        if now - since < timedelta(days=HARD_STOP_RETRY_D):
+            rec.update({"status": f"BLOCKED_HTTP_{hs.get('code')}", "requests": 0,
+                        "why": (f"the host answered HTTP {hs.get('code')} on "
+                                f"{hs.get('at')}; a hard stop, retried once after "
+                                f"{HARD_STOP_RETRY_D} days, never routed around"),
+                        "missed_growth": _hard_stop_missed(src), "store_rows": len(store)})
+            return rec
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
+    stop_codes: list[int] = []
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4109,6 +4197,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                if isinstance(exc, urllib.error.HTTPError) and exc.code in HARD_STOP_CODES:
+                    stop_codes.append(int(exc.code))
+                    break                               # one refusal stops the whole source
                 continue
         if body is None:
             continue
@@ -4131,8 +4222,28 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 "errors": errors[:6], "store_rows": len(store)})
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
+    if stop_codes and not parsed:
+        sst["hard_stop"] = {"code": stop_codes[0], "at": now.isoformat(timespec="seconds")}
+        rec.update({"status": f"BLOCKED_HTTP_{stop_codes[0]}",
+                    "why": f"the host answered HTTP {stop_codes[0]}: a hard stop, not retried "
+                           f"for {HARD_STOP_RETRY_D} days and never routed around",
+                    "missed_growth": _hard_stop_missed(src)})
+    elif fetched:
+        sst.pop("hard_stop", None)
     _atomic(store_p, store)
     return rec
+
+
+#: HTTP answers that mean "stop" (fetch rules), and how long a stopped source waits to retry.
+HARD_STOP_CODES = frozenset({401, 403, 429, 451})
+HARD_STOP_RETRY_D = 7
+
+
+def _hard_stop_missed(src: Source) -> str:
+    return (f"{src.id} series ({', '.join(src.signal_series) or 'all'}) are not refreshed, so "
+            f"its conditioned cells on {', '.join(sorted(src.instruments)[:6])} hold as "
+            "SERIES_ABSENT until the host admits the desk or an official open-data route is "
+            "wired")
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],

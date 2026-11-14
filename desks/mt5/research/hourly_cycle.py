@@ -1344,7 +1344,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     "cost_construction", "swap_rejudge", "sge_premium", "ais_norway",
+                     "event_calendar", "crowding_conditioner",
+                     "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
@@ -2291,6 +2293,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # Reads Norway's open AIS socket for --window-s 180, then rebuilds the daily series.
+    "ais_norway": 260,
+    # Weekly in practice: one file read unless a refresh is due, then ten robots-gated pages.
+    "event_calendar": 240,
+    # Daily in practice (rebuilds when its artifact is 20h old): 17 CFTC reads plus the test.
+    "crowding_conditioner": 300,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -5913,6 +5921,19 @@ def main() -> None:
     # chokepoints, India gold imports and the recorded SGE premium, each as a PIT series
     # through the axis door, the lake (exogenous_conditioner / alt conditioners) and
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
+    # NORWAY'S OPEN AIS STREAM (2026-11-13, NLOD 2.0): a bounded window of Kystverket's socket,
+    # tankers at Melkoya / Mongstad-Sture / Karsto / North Cape, rebuilt into a daily series
+    # BEFORE alt_proxies so its `no_ais_tankers` reader sees the day the pass just closed.
+    ais = _costed("ais_norway", lambda: _producer(
+        "ais_norway", "research/ais_norway.py", "--window-s", "180"))
+    # The scheduled-event calendar event_guard blocks on, from the publishers' own pages; it
+    # fetches only when a weekly refresh is due and exits 2 (red) when the calendar is STALE.
+    evc = _costed("event_calendar", lambda: _producer(
+        "event_calendar", "research/event_calendar_refresh.py"))
+    # Who is already on the trade: CFTC positioning extremes as a two-sided cell modifier,
+    # proposed only as far as the lake's history evidences it (trader-brain gap #9).
+    crw = _costed("crowding_conditioner", lambda: _producer(
+        "crowding_conditioner", "research/crowding_conditioner.py"))
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
@@ -6617,7 +6638,8 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
-                    "alt_proxies": alp,
+                    "alt_proxies": alp, "ais_norway": ais,
+                    "event_calendar": evc, "crowding_conditioner": crw,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
