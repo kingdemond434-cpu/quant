@@ -519,10 +519,11 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
     # CANDIDATE CROWDING (H6 candidate half, 2026-11-13): the docket + the public seats' donations
-    # + the CFTC axis + the desk's own bars -> a crowding mark and a measured decay per row.
+    # + the CFTC axis (data/axes/cot.json, a box-written axis file) + the desk's own bars -> a
+    # crowding mark and a measured decay per row.
     Node("candidate_crowding", "desks/mt5/research/candidate_crowding.py",
          reads=("desks/mt5/data/hypotheses/external_survivors.json",
-                "desks/mt5/data/intelligence/", "desks/mt5/data/axes/cot.json",
+                "desks/mt5/data/intelligence/", "desks/mt5/data/axes/",
                 "desks/mt5/data/universe/"),
          writes=("desks/mt5/data/hypotheses/crowding_marks.json",
                  "desks/mt5/reports/CANDIDATE_CROWDING.json",
