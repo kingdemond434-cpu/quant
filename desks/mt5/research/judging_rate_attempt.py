@@ -36,7 +36,9 @@ from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 RATE_PATH = BASE / "reports" / "JUDGING_RATE.json"
-ATTEMPT_PATH = BASE / "reports" / "JUDGING_RATE.attempt.json"
+#: Derived, never spelled: the scheduled organ (judging_throughput.ATTEMPT_PUBLISHED) names the
+#: published file, so the census attributes it to that leg and this module is no organ of its own.
+ATTEMPT_PATH = RATE_PATH.with_name(RATE_PATH.stem + ".attempt" + RATE_PATH.suffix)
 ATTEMPT_REL = "desks/mt5/reports/JUDGING_RATE.attempt.json"
 
 UNMEASURED = "UNMEASURED"
@@ -47,6 +49,8 @@ STALE = "STALE"
 #: so a marker reading `rate` means the pass died while streaming the verdict ledger.
 PHASES = ("started", "measure_box", "queue", "plan", "rate", "rate_written", "task_limit",
           "written", "applied")
+#: `rate_write_failed` takes `rate_written`'s place when the rate write raised (v1.1); the pass
+#: goes on, and the marker carries `rate_write_error` on every later write.
 #: Phases after which JUDGING_RATE.json on disk is this pass's own.
 RATE_PUBLISHED_PHASES = frozenset({"rate_written", "task_limit", "written", "applied"})
 
@@ -101,7 +105,12 @@ class Attempt:
         self.pid = os.getpid()
         self._t0 = time.monotonic()
         self.phases: list[dict[str, Any]] = []
+        self.notes: dict[str, Any] = {}
         self.last_error: str | None = None
+
+    def note(self, **fields: Any) -> None:
+        """Fields every later marker write carries (a rate write error, say)."""
+        self.notes.update(fields)
 
     def pointer(self) -> dict[str, Any]:
         """The field the successful JUDGING_RATE.json write carries back to its marker."""
@@ -117,7 +126,8 @@ class Attempt:
                "phase_at": _iso(now), "done": bool(done), "phases": self.phases,
                "rule": ("the phase named here is the one this pass ENTERED last; a marker newer "
                         "than JUDGING_RATE.json's `at` past the leg budget is a pass that died "
-                        "there, and JUDGING_RATE.json reads STALE with that reason"), **extra}
+                        "there, and JUDGING_RATE.json reads STALE with that reason"),
+               **self.notes, **extra}
         try:
             write_atomic(self.path, doc)
         except Exception as exc:   # the marker is evidence, never a reason to fail the pass
@@ -173,6 +183,13 @@ def read_rate(now: datetime | None = None, *, rate_path: Path | None = None,
             out["why"] = (f"{ap.name} carries no timezone-aware `started_at`: which pass wrote "
                           f"{rp.name} cannot be told, so the judging rate is UNMEASURED")
             return out
+        if started > rate_at and att.get("rate_write_error"):
+            out["status"] = STALE
+            out["why"] = (f"attempt started {_iso(started)} could not write {rp.name} "
+                          f"({att.get('rate_write_error')}); it still holds the pass of "
+                          f"{_iso(rate_at)}")
+            out["died_in_phase"] = phase
+            return out
         if started > rate_at:
             running_s = (t - started).total_seconds()
             if running_s > grace_s:
@@ -196,6 +213,13 @@ def read_rate(now: datetime | None = None, *, rate_path: Path | None = None,
         return out
     if str(rate.get("status") or "") == UNMEASURED:
         out["why"] = f"the pass of {_iso(rate_at)} measured nothing: {rate.get('why') or '?'}"
+        return out
+    # A PRE-CHANGE FILE (v1.1) carries no top-level status; its own verdict count still says
+    # whether anything was measured, and an UNMEASURED count is never read as FRESH.
+    ver = rate.get("verdicts")
+    if isinstance(ver, dict) and str(ver.get("status") or "") != "MEASURED":
+        out["why"] = (f"the pass of {_iso(rate_at)} has verdicts.status "
+                      f"{ver.get('status') or 'absent'}: {ver.get('why') or '?'}")
         return out
     out["status"] = FRESH
     out["why"] = f"measured {_iso(rate_at)}"

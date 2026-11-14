@@ -554,6 +554,11 @@ judge_coverage_txn-*
 desks/mt5/reports/JUDGE_COVERAGE_TIMEOUT.json.tmp
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp-*
 desks/mt5/data/hypotheses/conversion_handoff.json.tmp-*
+# THE VERDICT-RATE CHECKPOINT (2026-11-14): research/judging_throughput.VERDICT_CKPT_NAME, the resume
+# point of the gate ledger stream. Machine state rewritten every hour; never published.
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.json
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.json.tmp
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.cells
 # per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
 desks/mt5/data/hypotheses/shard_verdicts/
 # The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
