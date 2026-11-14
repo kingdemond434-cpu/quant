@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-14T16:39:49+00:00",
+  "updated_at": "2026-11-14T17:39:40+00:00",
   "configured_sleeves": 685,
   "represented_sleeves": 685,
   "certified_sleeves_total": 8734,
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 50,
-    "median_age_days": 38.193,
+    "median_age_days": 38.234,
     "mature_14d_without_trade": 44,
     "fresh_attempts": 41,
     "naturally_inactive": 17,
@@ -64,23 +64,23 @@
     "7717 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2684.859,
+  "seconds": 2676.131,
   "stage_seconds": {
     "scalp_bar_refresh": 0.0,
-    "external_state_reconcile": 0.6,
-    "legacy_shadow": 2639.5,
-    "scalp_shadow": 10.5,
-    "qquant_shadow": 1.8,
-    "promoter": 29.5
+    "external_state_reconcile": 0.7,
+    "legacy_shadow": 2589.8,
+    "scalp_shadow": 18.0,
+    "qquant_shadow": 5.5,
+    "promoter": 57.3
   },
   "engine_profile": {
-    "seconds": 2638.7,
+    "seconds": 2589.5,
     "rows_timed": 1016,
     "phase_seconds": {
-      "backtest": 342.1,
-      "fetch": 46.5,
-      "resolve": 25.0,
-      "signals": 1181.9
+      "backtest": 305.9,
+      "fetch": 67.4,
+      "resolve": 33.6,
+      "signals": 1134.8
     },
     "phase_calls": {
       "backtest": 944,
@@ -93,84 +93,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "cross_asset_residual": 855.0,
-      "macro_conditional": 839.2,
-      "carry": 404.7,
-      "overnight_gap_decay": 180.2,
-      "pca_residual": 147.2,
-      "formula": 92.6,
-      "clock_transition": 57.1,
-      "session_range_breakout": 24.9,
-      "spread_state": 23.8,
-      "range_reversion": 6.8,
-      "overnight_drift": 1.9
+      "cross_asset_residual": 863.8,
+      "macro_conditional": 787.8,
+      "carry": 351.2,
+      "overnight_gap_decay": 207.9,
+      "formula": 132.3,
+      "pca_residual": 128.0,
+      "clock_transition": 52.7,
+      "session_range_breakout": 31.7,
+      "spread_state": 19.1,
+      "range_reversion": 6.0,
+      "overnight_drift": 1.2
     },
     "chart_seconds": {
-      "M5": 1519.1,
-      "M15": 489.9,
-      "H1": 357.3,
-      "M30": 267.0
+      "M5": 1372.8,
+      "M15": 487.0,
+      "H1": 448.1,
+      "M30": 273.7
     },
     "slowest_rows": [
       {
-        "key": "USDSGD.macro_conditional.asia@M5",
-        "seconds": 18.74
+        "key": "USDZAR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+        "seconds": 21.91
+      },
+      {
+        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
+        "seconds": 21.35
       },
       {
         "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
-        "seconds": 17.37
+        "seconds": 17.77
       },
       {
-        "key": "USDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
-        "seconds": 16.95
+        "key": "USDZAR.macro_conditional.asia@M5",
+        "seconds": 17.43
       },
       {
-        "key": "AUDSGD.carry.asia@M15#input_symbol=AUDSGD_session=asia",
-        "seconds": 16.62
+        "key": "USDZAR.macro_conditional.asia@M5#session=ny",
+        "seconds": 15.61
       },
       {
-        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
-        "seconds": 16.6
+        "key": "USDTHB.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+        "seconds": 14.69
       },
       {
-        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
-        "seconds": 16.41
+        "key": "AUDSGD.pca_residual.asia@M15#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+        "seconds": 14.65
       },
       {
-        "key": "USDPLN.macro_conditional.asia@M5",
-        "seconds": 15.52
+        "key": "CHFSGD.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=london",
+        "seconds": 13.94
       },
       {
-        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=ny",
-        "seconds": 15.34
+        "key": "NZDSGD.macro_conditional.asia@M5",
+        "seconds": 13.69
       },
       {
-        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=asia",
-        "seconds": 15.27
+        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=-1_ttl_bars=96",
+        "seconds": 13.64
       },
       {
-        "key": "CHFNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
-        "seconds": 15.19
+        "key": "GBPZAR.macro_conditional.asia@M5",
+        "seconds": 13.29
       },
       {
-        "key": "EURNOK.macro_conditional.asia@M5",
-        "seconds": 15.14
+        "key": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
+        "seconds": 12.87
       },
       {
-        "key": "GBPCAD.macro_conditional.asia@M5",
-        "seconds": 14.33
+        "key": "USDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+        "seconds": 12.79
       },
       {
-        "key": "CHFNOK.carry.asia@M5#require_quiet=False_symbol=CHFNOK",
-        "seconds": 13.66
+        "key": "USDILS.macro_conditional.asia@M5",
+        "seconds": 12.76
       },
       {
-        "key": "EURNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
-        "seconds": 13.37
-      },
-      {
-        "key": "GBPSGD.macro_conditional.asia@M5",
-        "seconds": 13.33
+        "key": "AUDSGD.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=asia",
+        "seconds": 12.68
       }
     ]
   },
