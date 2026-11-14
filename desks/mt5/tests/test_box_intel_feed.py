@@ -362,7 +362,8 @@ def test_a_rail_refused_wall_probe_is_unmeasured_and_does_not_advance_its_clock(
     import seed_miners as sm
     monkeypatch.setattr(sm, "INTEL", tmp_path)
     monkeypatch.setattr(sm, "STATE", tmp_path / "seed_miners_state.json")
-    name = next(iter(sm.SOURCE_WALLS))
+    # A wall the network decides; a TERMS_REFUSED wall (Wayback, ae1250f97b) is never probed.
+    name = next(k for k, w in sm.SOURCE_WALLS.items() if w.get("probe") != "terms")
     monkeypatch.setattr(sm, "MINERS", {name: lambda: pytest.fail("a walled miner ran")})
     monkeypatch.setitem(sys.modules, "cohort_and_identity",
                         type(sys)("cohort_and_identity"))
