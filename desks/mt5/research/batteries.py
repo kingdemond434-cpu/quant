@@ -109,6 +109,7 @@ FENCES: tuple[Entry, ...] = (
     # undeclared-work ratchet it owns was never read. Read-only without --accept.
     _e("scripts/check_completion.py", "a leg may not join the cycles without declaring output"),
     _e("scripts/check_credentials.py", "what needs a credential, and what breaks without it"),
+    _e("scripts/check_keys.py", "every API key: present or missing per scope, never a value"),
     _e("scripts/check_data_recoverability.py", "L1.65 -- lost span, and can it be bought back"),
     _e("scripts/check_desk_manifest.py", "the manifest describes the repo that exists"),
     _e("scripts/check_dig_roi.py", "a cycle is scored by candidates and certificates"),

@@ -18,6 +18,7 @@ it (a starved key tomorrow costs more than a thinner sweep today).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -47,6 +48,15 @@ SEED_QUERIES = [
     "Unbiased Trading", "AI Pathways trading", "IQ Capital trading",
 ]
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
+
+#: zuck's requested channels (QuantGuild, Algovibes, ...) live in the transcript miner's config;
+#: the corpus follows every one of them too, so a blocked caption route never blinds discovery.
+CHANNEL_CONFIG = ROOT / "config" / "video_mining_channels.json"
+
+
+def configured_handles() -> list[str]:
+    cfg = read_json(CHANNEL_CONFIG, {})
+    return [str(c.get("handle", "")).lstrip("@") for c in cfg.get("channels", []) if c.get("handle")]
 
 
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
@@ -115,8 +125,9 @@ def main() -> int:
         # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
         # search only when the search quota works at all this run.
         search_dead = False
-        unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
-                      and q not in reg["discovered"]][:6]
+        seeds = configured_handles() + [q for q in SEED_QUERIES if q not in configured_handles()]
+        unresolved = [q for q in seeds if q not in reg["channels"]
+                      and q not in reg["discovered"]][:12]
         for q in unresolved:
             handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
             try:
@@ -194,9 +205,17 @@ def main() -> int:
         report["errors"].append(str(exc))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
+    # The off-box Actions job sets YOUTUBE_CORPUS_NO_TRANSCRIPTS=1: the only caption route
+    # (fetch_video_transcript) reaches robots-Disallowed paths via third-party mirrors, which
+    # the rules ban, so that job keeps titles/descriptions/links from the official API only.
+    no_t = os.environ.get("YOUTUBE_CORPUS_NO_TRANSCRIPTS") == "1"
     got_t, attempted = 0, 0
     unresolved: dict[str, int] = {}
+    if no_t:
+        unresolved["ROBOTS_DISALLOWED_SKIPPED"] = len(rows)
     for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True):
+        if no_t:
+            break
         if got_t >= TRANSCRIPTS_PER_RUN:
             break
         vid = row.get("video_id")
