@@ -110,7 +110,8 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
             if redirected_off_limits(url, resp.geturl()):
                 raise FetchError("off_limits", f"redirect from {url}")
             raw: bytes = resp.read(MAX_BYTES + 1)

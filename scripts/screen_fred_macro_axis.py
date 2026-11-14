@@ -95,6 +95,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty  # noqa: E402
+from libs.data.keyed_sources import keyed_urlopen  # noqa: E402
 from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
 
@@ -263,7 +264,7 @@ def fred_deep(sid: str, key: str) -> pd.Series:
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
                                 "observation_start": "1900-01-01"})
     req = urllib.request.Request(f"{FRED}?{q}", headers={"User-Agent": "quant-fred-screen/1.0"})
-    with urllib.request.urlopen(req, timeout=45) as r:
+    with keyed_urlopen(req, timeout=45, secrets=(key,)) as r:
         obs = json.loads(r.read()).get("observations", [])
     d = {pd.Timestamp(o["date"], tz="UTC"): float(o["value"])
          for o in obs if o.get("value") not in (".", "", None)}

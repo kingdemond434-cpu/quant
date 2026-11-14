@@ -53,6 +53,8 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
         raise AssertionError("an off-limits ground reached the network")
 
     monkeypatch.setattr(urllib.request, "urlopen", boom)
+    import libs.data.keyed_sources as keyed_sources   # free_stack fetches through it since #1180
+    monkeypatch.setattr(keyed_sources, "keyed_urlopen", boom)
     return calls
 
 
@@ -151,10 +153,11 @@ def test_a_redirect_into_an_off_limits_host_is_discarded_unread(
     r = polite_fetch.get("https://ok.example/a", gate=None, retries=0,
                          opener=lambda *a, **k: _Redirected())
     assert "redirected into an off-limits host" in r.error and not r.text
+    import libs.data.keyed_sources as keyed_sources
     monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: _Redirected())
+    monkeypatch.setattr(keyed_sources, "keyed_urlopen", lambda *a, **k: _Redirected())
     with pytest.raises(free_stack.FetchError, match="off_limits"):
         free_stack.http_fetch("https://ok.example/a")
-    import libs.data.keyed_sources as keyed_sources
 
     class _Opener:   # alt_proxies fetches through keyed_opener since #1180, not bare urlopen
         def open(self, *_a, **_k):
