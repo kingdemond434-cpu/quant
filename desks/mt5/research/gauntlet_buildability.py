@@ -113,7 +113,29 @@ def _supplied_at(path: str, mtime_ns: int) -> frozenset[str]:
     names: set[str] = set(re.findall(r'family\s*==\s*"([A-Za-z0-9_]+)"', body))
     for group in re.findall(r"family\s+in\s*[{(\[]([^})\]]*)[})\]]", body):
         names |= set(re.findall(r'"([A-Za-z0-9_]+)"', group))
+    # A NAMED SET IS A BRANCH TOO (2026-11-13). `build_cell` loads raw COT for
+    # `family in RAW_COT_FAMILIES`, a constant it imports, and this scan read only literal sets --
+    # so the four raw `cot_*` families were reported INPUT_NOT_SUPPLIED and every producer that
+    # asks this module set them aside, while the gauntlet itself would have built them. The
+    # constant is resolved from the `from <module> import ...` line inside `build_cell`.
+    for const in set(re.findall(r"family\s+in\s+([A-Z][A-Z0-9_]+)\b", body)):
+        names |= _named_set(body, const)
     return frozenset(names)
+
+
+def _named_set(body: str, const: str) -> set[str]:
+    """The family names in constant `const`, imported by a `from X import ...` line in `body`."""
+    import importlib
+    for mod, imported in re.findall(r"from\s+([A-Za-z0-9_.]+)\s+import\s+([^\n]+)", body):
+        if const not in re.findall(r"[A-Za-z0-9_]+", imported):
+            continue
+        try:
+            value = getattr(importlib.import_module(mod), const)
+        except Exception:
+            return set()
+        if isinstance(value, (set, frozenset, tuple, list)):
+            return {str(v) for v in value if isinstance(v, str)}
+    return set()
 
 
 def supplied_families(path: Path | None = None) -> frozenset[str]:

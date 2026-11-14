@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 834,
+  "NEVER": 838,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1058,
+  "attested": 1062,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -721,6 +721,19 @@
     "organs": [
      "leg:cluster_judge",
      "leg:decay_verdicts"
+    ]
+   },
+   {
+    "at": "2026-11-14T04:37:22+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:conversion_debt",
+     "leg:flow_seeder",
+     "leg:hunt16_seeder",
+     "leg:learned_miners"
     ]
    }
   ]
@@ -27902,6 +27915,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-14T02:41:03+00:00"
+  },
+  {
+   "organ": "leg:conversion_debt",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/conversion_debt.py"
+   ],
+   "clock": "hourly_cycle:conversion_debt",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CONVERSION_DEBT.json",
+   "artifact_declared": "desks/mt5/reports/CONVERSION_DEBT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T04:37:22+00:00"
+  },
+  {
+   "organ": "leg:flow_seeder",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/flow_seeder.py"
+   ],
+   "clock": "hourly_cycle:flow_seeder",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FLOW_SEEDER.json",
+   "artifact_declared": "desks/mt5/reports/FLOW_SEEDER.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T04:37:22+00:00"
+  },
+  {
+   "organ": "leg:hunt16_seeder",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/hunt16_seeder.py"
+   ],
+   "clock": "hourly_cycle:hunt16_seeder",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/HUNT16_SEEDER.json",
+   "artifact_declared": "desks/mt5/reports/HUNT16_SEEDER.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T04:37:22+00:00"
+  },
+  {
+   "organ": "leg:learned_miners",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/learned_miners.py"
+   ],
+   "clock": "hourly_cycle:learned_miners",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/learned_miners.json",
+   "artifact_declared": "desks/mt5/reports/learned_miners.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T04:37:22+00:00"
   }
  ],
  "ratchet": {

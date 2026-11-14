@@ -298,6 +298,11 @@ LEG_LAYER: dict[str, str] = {
     # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
     "alt_equity_handoff": "prediction",
     "specialist_cell": "prediction",
+    # the hunt16 corpus minted over the book's gaps through the specialist path
+    "hunt16_seeder": "prediction",
+    # COT positioning, tape order flow and the opex calendar through the specialist path
+    "flow_seeder": "prediction",
+    "learned_miners": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
@@ -379,6 +384,9 @@ LEG_LAYER: dict[str, str] = {
     # in information. The ROI reallocator is the machine spending on itself: meta.
     "evidence_router": "information", "research_roi": "meta",
     "research_debt": "meta", "mining_objective": "meta", "research_gap_map": "meta",
+    # CONVERSION DEBT reads what the compiler and the deepening worker already decided and tells
+    # the crawler which addresses to fetch again: the machine steering its own intake.
+    "conversion_debt": "meta",
     # THE IMPLEMENTER. Meta, not governance: it spends the hour deciding what the desk's own
     # recommendations become, which is the machine acting on the machine. An hour here buys no
     # new hypothesis and is not meant to -- it buys the removal of open rows that name no owner.

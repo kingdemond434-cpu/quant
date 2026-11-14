@@ -360,8 +360,10 @@ def family_seasonal_window(
 #: `families_cross_sectional` and this module's own families load their inputs from what their
 #: params carry, so they wrap.
 def unwrappable() -> frozenset[str]:
+    from mt5desk.families_implied_vol import OPERATORS
     from mt5desk.family_exit_operated import _UNWRAPPABLE
-    return frozenset(_UNWRAPPABLE | {"entry_conditioned", "exit_operated"}) - {"carry"}
+    return (frozenset(_UNWRAPPABLE | {"entry_conditioned", "exit_operated"} | OPERATORS)
+            - {"carry"})
 
 
 def wrappable(name: str) -> bool:
@@ -380,6 +382,41 @@ def _ints(v: Any) -> list[int] | None:
         return sorted({int(x) for x in v})
     except (TypeError, ValueError):
         return None
+
+
+def base_signals(d: pd.DataFrame, base_family: str, base_params: dict[str, Any] | None,
+                 symbol: str = "") -> list[Signal]:
+    """`base_family`'s signals on the normalised bars `d`, called EXACTLY AS THE SEALED
+    `build_cell` CALLED IT WHEN IT WAS CERTIFIED: `side=1` (the gauntlet's convention), falling
+    back to no side for a family that takes none. A side the parent's own params declare wins --
+    a certified short parent stays short. Every operator over a base cell (`entry_conditioned`
+    here, the implied-vol conditioners in `families_implied_vol`) calls the base through this
+    one function, so an operator can only DROP signals, never re-derive them differently.
+    [] when the base is unresolvable or raises."""
+    from mt5desk.families import get_family_func
+    fn = get_family_func(base_family) if base_family else None
+    if fn is None or d is None or len(d) == 0:
+        return []
+    params = dict(base_params or {})
+    for k in ("timeframe", "session"):
+        params.pop(k, None)
+    try:
+        import inspect
+        takes_symbol = "symbol" in inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        takes_symbol = False
+    if takes_symbol and symbol and not params.get("symbol"):
+        params["symbol"] = symbol
+    try:
+        raw = fn(d, **params) if "side" in params else fn(d, side=1, **params)
+    except TypeError:
+        try:
+            raw = fn(d, **params)
+        except Exception:
+            return []
+    except Exception:
+        return []
+    return [s for s in (raw or []) if isinstance(s, Signal)]
 
 
 def family_entry_conditioned(
@@ -412,36 +449,10 @@ def family_entry_conditioned(
         return []
     if int(cond_lookback_d) < 1:
         return []
-    from mt5desk.families import get_family_func
-    fn = get_family_func(base_family)
-    if fn is None or df is None or len(df) == 0:
+    if df is None or len(df) == 0:
         return []
-    params = dict(base_params or {})
-    for k in ("timeframe", "session"):
-        params.pop(k, None)
-    try:
-        import inspect
-        takes_symbol = "symbol" in inspect.signature(fn).parameters
-    except (TypeError, ValueError):
-        takes_symbol = False
-    if takes_symbol and symbol and not params.get("symbol"):
-        params["symbol"] = symbol
     d = _h1(df)
-    # THE BASE IS CALLED EXACTLY AS THE SEALED `build_cell` CALLED IT WHEN IT WAS CERTIFIED:
-    # `side=1` (the gauntlet's convention), falling back to no side for a family that takes
-    # none. A side the parent's own params declare wins -- a certified short parent stays short.
-    # The filter only DROPS signals; each kept signal keeps the side the base gave it, so a base
-    # that emits both sides on its own stays two-sided.
-    try:
-        raw = fn(d, **params) if "side" in params else fn(d, side=1, **params)
-    except TypeError:
-        try:
-            raw = fn(d, **params)
-        except Exception:
-            return []
-    except Exception:
-        return []
-    sigs = [s for s in (raw or []) if isinstance(s, Signal)]
+    sigs = base_signals(d, base_family, base_params, symbol)
     if not sigs:
         return []
     keep = np.ones(len(sigs), dtype=bool)
@@ -541,3 +552,32 @@ TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
     "seasonal_window": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
                                  "daily chart the decision hour does not exist"),
 }
+
+
+# IMPLIED-VOL FAMILIES (2026-11-13, `mt5desk/families_implied_vol.py`): the variance-risk-premium
+# conditioner, the VIX term-structure regime gate and the IV-shock event family, reading the CBOE
+# reference history `recorders/vol_archive.py` persists, point-in-time with a D+1 00:00 UTC lag.
+# Registered into THESE tables so every reader of the specialist contract (buildability, the
+# orthogonal registry, the information class) sees them with no second lookup. Imported here, at
+# the bottom, because that module imports `base_signals` / `_daily_decisions` from this one
+# lazily and so must not be imported before this module's own tables exist.
+from mt5desk import families_implied_vol as _iv  # noqa: E402
+
+SPECIALIST_FAMILIES.update(_iv.IMPLIED_VOL_FAMILIES)
+INFORMATION_CLASS.update(_iv.INFORMATION_CLASS)
+FOREIGN_SERIES.update(_iv.FOREIGN_SERIES)
+INPUTS.update(_iv.INPUTS)
+TIMEFRAMES.update(_iv.TIMEFRAMES)
+
+# THE FLOW FAMILIES (2026-11-13, `mt5desk/families_flow.py`): `cot_report` (CFTC legacy, TFF and
+# disaggregated positioning) and `expiry_gamma` (the third-Friday option-expiry calendar) keep
+# this module's contract -- every foreign input loaded by the family from what the cell carries
+# -- so they are registered through these same tables and reach the gauntlet's lookups, the
+# buildability verdict and FAMILY_INPUTS without a second registration path.
+from mt5desk import families_flow as _flow  # noqa: E402
+
+SPECIALIST_FAMILIES.update(_flow.FLOW_FAMILIES)
+INFORMATION_CLASS.update(_flow.INFORMATION_CLASS)
+FOREIGN_SERIES.update(_flow.FOREIGN_SERIES)
+INPUTS.update(_flow.INPUTS)
+TIMEFRAMES.update(_flow.TIMEFRAMES)

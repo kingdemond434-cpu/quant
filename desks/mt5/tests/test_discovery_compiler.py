@@ -399,12 +399,16 @@ def test_a_second_run_changes_nothing(desk, ctx):
 
 def test_the_budget_stops_the_run_and_defers_rather_than_drops(desk, ctx, monkeypatch):
     _populate(desk)
+    monkeypatch.setattr(dc, "MIN_EXPAND", 2)
     clock = iter([0.0])
     monkeypatch.setattr(dc.time, "monotonic", lambda: next(clock, 1_000_000.0))
     report = dc.run(budget_s=240, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
                     out=desk["paths"]["OUT"], ctx=ctx)
-    assert report["budget_stopped"] is True
-    assert report["expanded"] == 0 and report["compiled"] == 0
+    # A spent budget still expands MIN_EXPAND (2026-11-14: a pass that converts nothing is the
+    # failure); everything past that is deferred, never dropped.
+    n = report["intake"]["n"]
+    assert n > dc.MIN_EXPAND, "the fixture must leave something to defer"
+    assert report["budget_stopped"] is True and report["expanded"] == dc.MIN_EXPAND
     assert any("budget ran out" in u["why"] and "never dropped" in u["why"]
                for u in report["unmeasured"])
     assert R.discoveries(state="UNPROCESSED", limit=500)
@@ -489,3 +493,126 @@ def test_a_row_with_no_evidence_carries_unmeasured_never_a_guess():
     assert prov["source_culture"] == "UNMEASURED"
     assert prov["culture_derivation"]["source_culture"] == "UNMEASURED"
     assert "source_url" not in prov and "source_seat" not in prov
+
+
+def _many_rows(n: int) -> dict[str, Any]:
+    return {"source": "seatx", "discoveries": [
+        {"kind": "anomaly", "symbol": "EURUSD", "family": "asia_momentum",
+         "params": {"timeframe": "H1", "rr": 1.0 + i / 100}, "mechanism": f"handover {i}"}
+        for i in range(n)]}
+
+
+def test_a_seat_file_refused_for_room_is_resumed_not_marked_read(desk, ctx):
+    """Tier S 2026-11-13: rows refused at the limit were marked read and never revisited."""
+    path = desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json"
+    _write(path, _many_rows(10))
+    cursor = dc.load_cursor()
+    taken: list[dict[str, Any]] = []
+    for _ in range(6):
+        got, _b, _u = dc.intake(cursor, limit=4)
+        taken += [g for g in got if g.get("source_type") == "intelligence"]
+        if cursor["files"].get(str(path), {}).get("next_row") is None and len(taken) >= 10:
+            break
+    assert len(taken) == 10
+    assert cursor["files"][str(path)].get("next_row") is None
+    got, _b, _u = dc.intake(cursor, limit=4)                 # fully read: nothing re-taken
+    assert not [g for g in got if g.get("source_type") == "intelligence"]
+
+
+def test_the_registry_backlog_cannot_starve_the_seats(desk, ctx, monkeypatch):
+    backlog = [{"discovery_id": f"b{i}", "source_type": "registry"} for i in range(50)]
+    monkeypatch.setattr(dc.R, "discoveries",
+                        lambda state=None, limit=0, conn=None: backlog[:limit])
+    monkeypatch.setattr(dc, "registry_parent", lambda row, *a: dict(row))
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(10))
+    got, by_source, _u = dc.intake(dc.load_cursor(), limit=10)
+    assert by_source.get("intelligence") == 5 and by_source.get("registry_unprocessed") == 5
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(2))
+    got, by_source, _u = dc.intake(dc.load_cursor(), limit=10)    # unused seat room returns
+    assert len(got) == 10 and by_source.get("registry_unprocessed", 0) >= 8
+
+
+def test_a_growing_seat_jsonl_resumes_at_its_new_rows(desk, ctx):
+    """Auditor MF2: keying the offset on size/mtime reset every appended .jsonl to row 0."""
+    path = desk["paths"]["INTEL"] / "seatx" / "hypotheses.jsonl"
+    rows = _many_rows(6)["discoveries"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows[:4]), "utf-8")
+    cursor = dc.load_cursor()
+    got, _b, _u = dc.intake(cursor, limit=100)
+    assert len([g for g in got if g.get("source_type") == "intelligence"]) == 4
+    with path.open("a", encoding="utf-8") as fh:                  # the seat appends next hour
+        fh.write("".join(json.dumps(r) + "\n" for r in rows[4:]))
+    got, _b, _u = dc.intake(cursor, limit=100)
+    new = [g for g in got if g.get("source_type") == "intelligence"]
+    assert [g.get("params", {}).get("rr") for g in new] == [1.04, 1.05]
+    assert cursor["files"][str(path)]["rows_taken"] == 6
+
+
+def test_owed_files_are_taken_before_newer_ones(desk, ctx):
+    import os
+    old = desk["paths"]["INTEL"] / "seatx" / "a_old.json"
+    _write(old, _many_rows(6))
+    os.utime(old, (1_000_000, 1_000_000))
+    cursor = dc.load_cursor()
+    dc.intake(cursor, limit=4)                                    # takes 4 of 6: owed 2
+    assert cursor["files"][str(old)].get("next_row") is not None
+    _write(desk["paths"]["INTEL"] / "seatx" / "b_new.json", _many_rows(8))
+    got, _b, _u = dc.intake(cursor, limit=4)
+    assert cursor["files"][str(old)].get("next_row") is None      # the owed file finished first
+
+
+def test_one_large_seat_cannot_starve_the_other_seats(desk, ctx):
+    """2026-11-14 (LLM lab): one seat's big file filled the whole seat share and four seats read
+    0 cells/h. Round one gives every seat with fresh rows an equal share."""
+    intel = desk["paths"]["INTEL"]
+    _write(intel / "big" / "discoveries_1.json", _many_rows(40))
+    for seat in ("standing_questions", "research_tree", "world"):
+        _write(intel / seat / "discoveries_1.json", _many_rows(3))
+    got, _b, _u = dc.intake(dc.load_cursor(), limit=12)
+    seats = [g.get("source_seat") for g in got if g.get("source_type") == "intelligence"]
+    for seat in ("standing_questions", "research_tree", "world"):
+        assert seat in seats, seat
+    assert len(got) == 12
+
+
+def test_intake_cannot_spend_the_expansion_budget(desk, ctx, monkeypatch):
+    """Box 2026-11-14: intake ran out the whole 180s budget and nothing was ever interpreted.
+    Intake is held to INTAKE_SHARE of the budget, and a pass always expands MIN_EXPAND."""
+    seen: dict[str, float] = {}
+    real = dc.intake
+
+    def slow_intake(cursor, *, deadline=None, **kw):
+        seen["deadline"] = deadline
+        return real(cursor, deadline=deadline, **kw)
+
+    monkeypatch.setattr(dc, "intake", slow_intake)
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(20))
+    import time as _t
+    t0 = _t.monotonic()
+    report = dc.run(budget_s=100, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert seen["deadline"] <= t0 + 100 * dc.INTAKE_SHARE + 5
+    assert set(report["timings_s"]) >= {"context", "intake", "prepare", "expand"}
+    assert report["expanded"] >= min(dc.MIN_EXPAND, report["intake"]["n"])
+    # An already-expired budget still expands the minimum: a slow pass converts something.
+    import itertools
+    ticks = itertools.count(t0 + 10_000, 1_000)
+    monkeypatch.setattr(dc.time, "monotonic", lambda: next(ticks))
+    _write(desk["paths"]["INTEL"] / "seaty" / "discoveries_1.json", _many_rows(12))
+    monkeypatch.setattr(dc, "intake", lambda cursor, **kw: (
+        [{"discovery_id": f"x{i}", "source_type": "intelligence", **r}
+         for i, r in enumerate(_many_rows(12)["discoveries"])], {"intelligence": 12}, []))
+    report = dc.run(budget_s=1, max_discoveries=12, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert report["expanded"] == dc.MIN_EXPAND and report["budget_stopped"]
+
+
+def test_expansion_order_interleaves_every_source() -> None:
+    rows = ([{"discovery_id": f"r{i}", "source_type": "registry"} for i in range(4)]
+            + [{"discovery_id": f"a{i}", "source_type": "intelligence", "source_seat": "a"}
+               for i in range(2)]
+            + [{"discovery_id": "b0", "source_type": "intelligence", "source_seat": "b"}])
+    order = [d["discovery_id"] for d in dc.interleave_sources(rows)]
+    assert order[:3] == ["r0", "a0", "b0"] and sorted(order) == sorted(d["discovery_id"]
+                                                                       for d in rows)

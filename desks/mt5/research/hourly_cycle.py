@@ -1263,6 +1263,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
     "research_debt",
+    # WHAT EVERY UNCONVERTED MINED ROW NEEDS (N3): a streamed ledger read and two small files.
+    "conversion_debt",
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
@@ -1401,7 +1403,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alt_equity_handoff",
                      # the asset-class specialists' named mechanisms, built by the sealed
                      # gauntlet's own build_cell before they are donated
-                     "specialist_cell"),
+                     "specialist_cell",
+                     # the hunt16 corpus over the book's gaps, specialist path
+                     "hunt16_seeder", "learned_miners",
+                     # COT, the tape's signed ticks and the opex calendar, specialist path
+                     "flow_seeder"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -1470,7 +1476,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
-                     "research_debt", "paradigm_router", "meta_controller", "research_bandit",
+                     "research_debt", "conversion_debt", "paradigm_router", "meta_controller",
+                     "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
                      "coverage_tensor", "regional_parity", "global_coverage_tensor",
                      "research_evolution",
@@ -2284,6 +2291,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "cross_sectional_breadth": 1_000,
     # stops itself at its own 900 s `--budget-s` and writes; resumes next pass from its state
     "specialist_cell": 1_000,
+    # The hunt16 seeder stops itself at --budget-s 600; the cap sits above its own budget.
+    "hunt16_seeder": 700,
+    # The flow seeder stops itself at --budget-s 600; the cap sits above its own budget.
+    "flow_seeder": 700,
+    "learned_miners": 1_000,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
     "event_surprise": 400,
@@ -2370,6 +2382,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
     # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
     "conversion_funnel": 330,
+    # Conversion debt stops itself at --budget-s 240 (a streamed read of the deepening worker's
+    # ledger, the queue and the crawler's frontier); the cap sits above its own budget.
+    "conversion_debt": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -4530,6 +4545,28 @@ def main() -> None:
     # charged to the trial census; writes reports/SPECIALIST_CELLS.json. Additive.
     spcl = _costed("specialist_cell", lambda: _producer(
         "specialist_cell", "research/specialist_cell.py", "--once", "--budget-s", "900"))
+    # THE HUNT16 CORPUS, AIMED AT THE BOOK'S GAPS (2026-11-13). hunt16_cell is judgeable only with
+    # its base family as a param, which no sweep supplied, so hunt16_cell and its seven dav_*
+    # mechanisms minted nothing for a week. The seeder enumerates them over gold, indices and
+    # USD/JPY/EUR non-exotic crosses through the specialist path; writes HUNT16_SEEDER.json.
+    h16s = _costed("hunt16_seeder", lambda: _producer(
+        "hunt16_seeder", "research/hunt16_seeder.py", "--once", "--budget-s", "600"))
+    # THE LEARNED MINERS GOT A CLOCK THAT FIRES (2026-11-13). They were a daily_cycle proposer,
+    # step nine of a chain the box diagnostic showed stalling after step one for hours at a
+    # time: learned_miners_contract.json was 897h old and no daily log line had ever named them,
+    # so gnn_propagation, attention_ts, rocket_ts, ae_latent and sig_path minted nothing for
+    # weeks. Here they still run ONCE A DAY (`--daily` exits at once when today's report already
+    # exists) on their own 900s budget, so no other hourly leg's share shrinks.
+    lrnm = _costed("learned_miners", lambda: _producer(
+        "learned_miners", "research/learned_miners.py", "--once", "--daily", "--budget-s", "900"))
+    # COT, TAPE ORDER FLOW AND THE OPEX CALENDAR GOT A CLOCK THAT FIRES (2026-11-13). The COT
+    # producers were VPS timers or unscheduled side channels whose zcache never reached this
+    # box, the raw cot_* families were mis-read as unbuildable, orderflow_imbalance had no
+    # producer naming a tape-backed cell and the US expiry-gamma miner was unwired: all minted 0
+    # cells in 24h. Hourly, each cell re-measured at most weekly through the specialist path, on
+    # gold, indices and FX majors (no exotics); writes reports/FLOW_SEEDER.json.
+    flws = _costed("flow_seeder", lambda: _producer(
+        "flow_seeder", "research/flow_seeder.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -4799,6 +4836,12 @@ def main() -> None:
         "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
+    # CONVERSION DEBT (ownership row N3, 2026-11-10). The compiler and the deepening worker name
+    # why each mined row did not convert; this types that as NEEDS_DATA / NEEDS_RULE / NEEDS_PIT
+    # per source and hands the fetchable part to the world crawler as recapture seeds (hosts its
+    # frontier already holds). The crawler leg runs later in this pass and reads the file.
+    cdb = _costed("conversion_debt", lambda: _producer(
+        "conversion_debt", "research/conversion_debt.py", "--budget-s", "240"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
     # seat row, claim, axis series, tape day, bar file, sleeve ledger, normalised document --
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
@@ -6520,6 +6563,8 @@ def main() -> None:
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
+                    "hunt16_seeder": h16s, "learned_miners": lrnm,
+                    "flow_seeder": flws,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
@@ -6538,7 +6583,7 @@ def main() -> None:
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
-                    "research_debt": rdb,
+                    "research_debt": rdb, "conversion_debt": cdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,
