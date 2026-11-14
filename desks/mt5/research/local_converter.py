@@ -398,6 +398,39 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     return 0, -1
 
 
+#: What the last `docket_rows()` call set aside as UNTESTABLE, by `family|verdict`, with the
+#: reason and a cell count. Published in OUT so a refusal is never known only to this file.
+LAST_SET_ASIDE: dict[str, dict[str, Any]] = {}
+
+
+def _testable(fam: str, params: dict[str, Any]) -> bool:
+    """ASK THE SEALED GAUNTLET BEFORE MINTING A ROW (2026-11-10).
+
+    This producer knows a family, a symbol and at most a session. A family whose function
+    REQUIRES more (a `series_key`, a peer, a catalogue label) was minted here with `params {}`
+    anyway: ~1,059 docket rows, 1,074 macro cells mined and 0 judged, each one a docket row and
+    a judge slot spent on a cell `build_cell` cannot construct. The recipe cannot be invented
+    from a forum post, so such a cell is SET ASIDE by name and counted, never queued. A
+    candidate that carries its own `params` rides them through and is judged on those.
+
+    An unimportable probe refuses NOTHING (L1.28a: a missing measurement is not a verdict).
+    """
+    try:
+        from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    except Exception:
+        return True
+    try:
+        verdict, why = cell_verdict(fam, params)
+    except Exception:
+        return True
+    if verdict == BUILDABLE:
+        return True
+    row = LAST_SET_ASIDE.setdefault(f"{fam}|{verdict}", {
+        "family": fam, "verdict": verdict, "why": why, "cells": 0})
+    row["cells"] += 1
+    return False
+
+
 def docket_rows(cands: list[dict]) -> list[dict]:
     """The candidates in the docket's own row shape, PIT-stamped, deduped on the executable spec.
 
@@ -414,6 +447,7 @@ def docket_rows(cands: list[dict]) -> list[dict]:
     now = datetime.now(UTC).isoformat(timespec="seconds")
     seen: set[str] = set()
     rows = []
+    LAST_SET_ASIDE.clear()
     for c in cands:
         sym = (c.get("symbols") or [None])[0]
         fam = c.get("family")
@@ -421,11 +455,16 @@ def docket_rows(cands: list[dict]) -> list[dict]:
             continue
         # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
         # cells rather than one cell with a label the builder cannot read.
-        params = {"selector": c["selector"]} if c.get("selector") else {}
+        carried = c.get("params")
+        params = dict(carried) if isinstance(carried, dict) else {}
+        if c.get("selector"):
+            params["selector"] = c["selector"]
         k = key(str(sym), str(fam), params)
         if k in seen:
             continue
         seen.add(k)
+        if not _testable(str(fam), params):
+            continue
         rows.append({
             "symbol": sym, "family": fam, "params": params,
             "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
@@ -502,13 +541,17 @@ def main(argv: list[str] | None = None) -> int:
     # ATOMIC: merge_hypotheses now reads OUT concurrently, and a torn file reads as ABSENT for a
     # whole MergeDocket run (~27h). Write beside it, then swap in one rename.
     tmp = OUT.with_name(OUT.name + ".tmp")
+    rows = docket_rows(cands)
+    set_aside = sorted(LAST_SET_ASIDE.values(), key=lambda r: -int(r["cells"]))
     tmp.write_text(json.dumps(
         {"built_at": datetime.now(UTC).isoformat(timespec="seconds"),
          "source": "desks/mt5/research/local_converter.py",
          "stats": dict(stats), "candidates": cands,
-         "docket_rows": docket_rows(cands)}, indent=1), encoding="utf-8")
+         "docket_rows": rows, "set_aside": set_aside}, indent=1), encoding="utf-8")
     os.replace(tmp, OUT)
     print(f"wrote {OUT}")
+    for r in set_aside[:8]:
+        print(f"  set aside {r['cells']:,} x {r['family']} ({r['verdict']}): {r['why'][:120]}")
     if not a.no_feed:
         added, total = feed_docket(cands)
         if total < 0:

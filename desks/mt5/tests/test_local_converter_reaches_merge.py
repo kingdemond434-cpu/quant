@@ -44,3 +44,26 @@ def test_docket_rows_are_docket_shaped_stamped_and_deduped() -> None:
     from libs.data.pit import is_stamped
     assert all(is_stamped(r) for r in rows)
     assert all(r["n"] == 0 and r["exp_r"] is None for r in rows), "no performance is claimed"
+
+
+def test_a_recipe_less_cell_is_set_aside_by_name_and_never_queued() -> None:
+    """Measured 2026-11-10: ~1,059 docket rows minted with params {} for families that REQUIRE
+    a recipe -- mined, queued and never judged. The sealed gauntlet's own verdict is asked
+    before a row is minted; a refusal is counted with its reason, never silent."""
+    base = {"kind": "hypothesis", "symbols": ["XAUUSD"], "source": "local_converter/guba"}
+    rows = local_converter.docket_rows([
+        {**base, "family": "clock_transition"},
+        {**base, "family": "clock_transition", "selector": "asia"},
+        {**base, "family": "session_range_breakout"},
+    ])
+    assert [r["family"] for r in rows] == ["session_range_breakout"]
+    aside = local_converter.LAST_SET_ASIDE["clock_transition|MISSING_PARAMS"]
+    assert aside["cells"] == 2 and aside["why"]
+
+
+def test_a_candidate_that_carries_its_recipe_rides_it_through() -> None:
+    cand = {"kind": "hypothesis", "family": "session_range_breakout", "symbols": ["XAUUSD"],
+            "selector": "asia", "params": {"lookback": 12}}
+    (row,) = local_converter.docket_rows([cand])
+    assert row["params"] == {"lookback": 12, "selector": "asia"}
+    assert not local_converter.LAST_SET_ASIDE
