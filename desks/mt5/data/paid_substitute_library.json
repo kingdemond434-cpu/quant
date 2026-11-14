@@ -5435,6 +5435,199 @@
    "instruments": null,
    "participant_structure": "policy_driven",
    "licence": "Brazilian open data"
+  },
+  {
+   "id": "era5_us_midwest_corn_soy",
+   "name": "Copernicus ERA5 reanalysis (CDS): US Corn Belt (Iowa, Illinois, Indiana, Nebraska, Minnesota)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "CORN",
+    "SOYBEAN"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_us_midwest_corn_soy"
+  },
+  {
+   "id": "era5_us_plains_wheat",
+   "name": "Copernicus ERA5 reanalysis (CDS): US Southern Plains hard red winter wheat (Kansas, Oklahoma)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "WHEAT"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_us_plains_wheat"
+  },
+  {
+   "id": "era5_brazil_coffee",
+   "name": "Copernicus ERA5 reanalysis (CDS): Brazil coffee belt (Sul de Minas, Cerrado Mineiro, Mogiana, Espirito Santo conilon)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "BR",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "COFARA",
+    "COFROB"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_brazil_coffee"
+  },
+  {
+   "id": "era5_brazil_sugar",
+   "name": "Copernicus ERA5 reanalysis (CDS): Brazil centre-south cane (Sao Paulo, Goias, Mato Grosso do Sul)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "BR",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "SUGAR",
+    "SUGARRAW"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_brazil_sugar"
+  },
+  {
+   "id": "era5_west_africa_cocoa",
+   "name": "Copernicus ERA5 reanalysis (CDS): West Africa cocoa belt (Cote d'Ivoire, Ghana)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "CI",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "UKCOCOA",
+    "USCOCOA"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_west_africa_cocoa"
+  },
+  {
+   "id": "era5_europe_gas_demand",
+   "name": "Copernicus ERA5 reanalysis (CDS): Europe gas-demand centres (Germany, France, Italy, Netherlands, UK)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "EU",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_europe_gas_demand"
+  },
+  {
+   "id": "era5_us_natgas_demand",
+   "name": "Copernicus ERA5 reanalysis (CDS): US gas- and power-demand centres (NY, Boston, Philadelphia, Chicago, Atlanta, Dallas)",
+   "publisher_type": "gov_open_data",
+   "url": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-timeseries",
+   "endpoint": "https://cds.climate.copernicus.eu/api",
+   "classes": [
+    "weather"
+   ],
+   "region": "US",
+   "frequency": "daily",
+   "history_start": 1991,
+   "latency_days": 5,
+   "auth": "free_key",
+   "auth_env": "CDSAPI_KEY",
+   "languages": [
+    "en"
+   ],
+   "instruments": [
+    "XNGUSD"
+   ],
+   "participant_structure": "physical_flow",
+   "licence": "ERA5 dataset licence on the CDS (expected CC BY 4.0: free, worldwide, commercial use, attribution); fenced by terms_evidence, fail closed until the box quotes it",
+   "terms_evidence": "data/era5/terms_evidence.json",
+   "producer": "desks/mt5/research/era5_reader.py",
+   "lake_series": "psub_era5_us_natgas_demand"
   }
  ]
 }
