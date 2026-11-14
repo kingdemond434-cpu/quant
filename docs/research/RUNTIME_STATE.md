@@ -1055,8 +1055,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `library:libs/ops/keys_needed.py` | `import:desks/mt5/research/credential_coverage.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/KEYS_NEEDED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cluster_judge` | `hourly_cycle:cluster_judge` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLUSTER_JUDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:decay_verdicts` | `hourly_cycle:decay_verdicts` | UNMEASURED UNMEASURED | `desks/mt5/reports/DECAY_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/china_exposure_ingest.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CHINA_CONTAGION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:china_contagion` | `hourly_cycle:china_contagion` | UNMEASURED UNMEASURED | `desks/mt5/reports/CHINA_CONTAGION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/dukascopy_backfill.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DUKASCOPY_BACKFILL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:tape_deepen` | `hourly_cycle:tape_deepen` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_DEEPEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
