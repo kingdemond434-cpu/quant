@@ -351,9 +351,10 @@ def test_the_reading_carries_its_age_by_the_worse_of_its_two_clocks(fd) -> None:
     """A reading is only as current as its staler clock, and no clock at all is UNMEASURED.
 
     THE EXACT BOX STATE OF 2026-11-14, which nothing measured for fourteen days:
-    `gateway_state.json` froze 2026-10-30 19:50:13Z at equity 266.01 with a flat book, and the
-    stamp published those figures with no age beside them, so every reader -- the log, the duty
-    checks, the CRO pass -- saw a live account at EUR 266.
+    `gateway_state.json` froze 2026-10-30 19:50:13Z with a flat book, and the stamp published
+    its figures with no age beside them, so every reader -- the log, the duty checks, the CRO
+    pass -- saw a live account. (The figures here are illustrative; no account figure is
+    written into this public repository.)
     """
     frozen = "2026-10-30T19:50:13+00:00"
     now = datetime(2026, 11, 14, 12, 40, 39, tzinfo=UTC)
@@ -383,25 +384,25 @@ def test_the_stamp_publishes_the_readings_age_and_changes_no_verdict(fd) -> None
     ARMED survival rail. This change only ends the blindness.
 
     AND THE READING IS WHY BOTH HALVES MATTER AT ONCE. On the code THIS branch carries -- the
-    principal's EUR 10 floor (zuck 2026-11-05) -- equity 266.01 raises NO breach, so the halt
+    principal's floor (zuck 2026-11-05) -- the frozen reading raises NO breach, so the halt
     the live box has held for 177 consecutive passes clears the moment this branch is adopted.
-    The live box is still running the EUR 300 floor it was sealed with on 2026-11-10, judging
+    The live box is still running the older floor it was sealed with on 2026-11-10, judging
     the SAME 352-hour-old number as a ruin. So this rail's verdict on this reading is a function
     of which release is adopted, and nothing published the reading's age to say so.
     """
-    _write_state(fd, equity=266.01, last="2026-10-30T19:50:13+00:00")
-    assert fd.main(dry_run=True) == 0, "the EUR 10 floor sees no breach in a 266.01 reading"
+    _write_state(fd, equity=250.0, last="2026-10-30T19:50:13+00:00")
+    assert fd.main(dry_run=True) == 0, "the floor sees no breach in this reading"
     s = _stamp(fd)
     r = s["readings"]
     assert r["measured"] is False
     assert r["age_min"] is not None and r["age_min"] > fd.STALE_HEARTBEAT_MIN
     assert "last_reconcile" in r["age_why"] and r["source"].endswith("gateway_state.json")
-    assert r["equity"] == 266.01            # the figures are published beside the age, not instead
+    assert r["equity"] == 250.0            # the figures are published beside the age, not instead
     # THE VERDICT IS THE RAILS', UNCHANGED: exactly what `evaluate` returns for this reading.
     assert s["breaches"] == [c for c, _ in fd.evaluate(
-        {"equity": 266.01, "margin_free": 15_000.0,
+        {"equity": 250.0, "margin_free": 15_000.0,
          "last_reconcile": "2026-10-30T19:50:13+00:00", "withdrawn_offset": 0.0},
-        [], [], max(266.01, 0.0))]
+        [], [], max(250.0, 0.0))]
     assert not fd.PAUSED.exists()           # a dry-run pass still writes no pause file
 
 

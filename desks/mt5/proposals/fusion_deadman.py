@@ -88,7 +88,7 @@ DAILY_LOSS_PCT = 0.10
 #: dictated risk. Every Fusion order is now judged on its own size: sovereignty sends nothing
 #: below the venue minimum, the gateway refuses any order risking more than
 #: FUSION_MAX_TRADE_RISK_FRAC (10%) and stops for the day at FUSION_DAILY_LOSS_FRAC, so the
-#: account-wide halt at 300 only stopped orders those rails allow (it halted Fusion at EUR 266).
+#: account-wide halt at 300 only stopped orders those rails allow (it halted Fusion).
 #: DERIVED as the ruin line: the equity below which not even the cheapest admitted order fits
 #: the 10% per-trade rail -- measured on the live ledger 2026-11-05, the cheapest admitted
 #: sleeve's 0.01-lot stop risk is EUR 0.58 (usdnok_carry, n=6); 0.58 / 0.10 = EUR 5.8, rounded
@@ -347,12 +347,12 @@ def reading_age_min(account: dict, published_age_min: float | None = None,
     NOTHING MEASURED THE AGE OF THE NUMBER THE RAILS ARE JUDGED ON, AND IT COST FOURTEEN DAYS.
     `main()` takes equity, free margin, the open book and the reconcile stamp from one file the
     gateway publishes, and judged them as a current account whatever their age. On 2026-10-30
-    20:50 `gateway_state.json` stopped being written with equity 266.01 and a flat book; the
-    EQUITY_FLOOR rail (then EUR 300) breached on that frozen number on every pass for 352 hours
+    20:50 `gateway_state.json` stopped being written with a flat book; the EQUITY_FLOOR rail
+    breached on that frozen number on every pass for 352 hours
     -- 177 consecutive by 2026-11-14 12:40Z -- and the halt stops the only organ that rewrites
     that file, so the breach could not be re-measured by anyone. Nothing in the stamp, the log or
     any duty check said the reading was two weeks old: `readings` published the figures and not
-    their age, so every reader saw a live account at EUR 266.
+    their age, so every reader saw it as a live account.
     THIS FUNCTION CHANGES NO VERDICT. It is the measurement that was missing, published on the
     stamp beside the numbers it dates (`readings.measured`, `age_min`, `age_why`, `source`), so a
     frozen file can never again read as a live account. Which breaches a stale reading should
@@ -747,7 +747,7 @@ def main(dry_run: bool = True) -> int:
                          # beside the figures, never instead of them, and no verdict depends on
                          # it: see `reading_age_min`.
                          "measured": measured, "age_min": age_min, "age_why": age_why,
-                         "source": str(STATE)}
+                         "source": STATE.name}
     stamp["rails"] = rails()
     stamp["breaches"] = codes
     stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,
