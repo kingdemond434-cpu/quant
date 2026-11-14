@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-14T03:15:03.043275+00:00",
+  "swept_at": "2026-11-14T17:30:02.834518+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4079,7 +4079,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3907,
+      "shadow_exp_r": -0.1833,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4354,7 +4354,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 1.2842,
+      "shadow_exp_r": -0.1039,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
@@ -5553,7 +5553,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4596,
+      "shadow_exp_r": -0.5739,
       "woke_on_shadow": false
     },
     "XTIUSD|cross_asset_residual_continuous": {

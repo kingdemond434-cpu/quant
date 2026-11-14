@@ -150,6 +150,30 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     # every MT5 task by design, so its census is not the trading box's and neither may judge the
     # other. A host with no floor yet is UNMEASURED and sets one on its next attestation pass,
     # which is a measurement, not a pass by default.
+    # SIDECARS (2026-11-14): rows a PR added with `--only-missing`, one file per organ. The
+    # census and ratchet stay the attesting host's own (the monolith); each sidecar must be a
+    # well-formed row stamped with where it was measured, and off the attesting host it may only
+    # read NEVER or UNMEASURED -- the same rule the monolith's appended rows always had.
+    out["sidecars"] = 0
+    if paths.sidecars.is_dir():
+        for f in sorted(paths.sidecars.iterdir()):
+            rel = f.relative_to(base).as_posix()
+            row = ra._read_json(f) if f.suffix == ".json" else None
+            if not isinstance(row, dict) or not isinstance(row.get("organ"), str):
+                out["failures"].append(f"{rel}: not a sidecar row (no organ)")
+                continue
+            out["sidecars"] += 1
+            if f.name != ra.sidecar_name(row["organ"]):
+                out["failures"].append(f"{rel}: named for another organ than {row['organ']!r}")
+            if row.get("state") not in ra.STATES:
+                out["failures"].append(f"{rel}: state {row.get('state')!r} is not a state")
+            stamp = row.get("only_missing")
+            if not row.get("measured_on") or not isinstance(stamp, dict):
+                out["failures"].append(f"{rel}: carries no measured_on / only_missing stamp")
+            elif stamp.get("on_attesting_host") is not True \
+                    and row.get("state") not in ("NEVER", ra.UNMEASURED):
+                out["failures"].append(f"{rel}: measured off the attesting host yet reads "
+                                       f"{row.get('state')}")
     rdoc = ra._read_json(paths.ratchet, max_bytes=ra.MAX_JSON_BYTES) or {}
     _hosts = rdoc.get("hosts")
     floors: dict[str, Any] = _hosts if isinstance(_hosts, dict) else {}
