@@ -745,3 +745,13 @@ def test_every_debt_component_names_the_organ_that_drains_it(desk) -> None:
     for name in ("silent_discoveries", "unreasoned_blocks"):
         assert "NOT this organ" in debt["component_owner"][name]
         assert "discovery_compiler" in debt["component_owner"][name]
+
+
+def test_the_convert_loop_always_leaves_a_tail_reserve() -> None:
+    """Silent-organ census: the loop ran to 5 s before its budget and the unbudgeted tail
+    (trial charge, after-measures, the artifact write) was killed by the cycle cap. LIVE's
+    fixed reserve (merged over this branch's prior-tail estimate) must keep that room."""
+    for seconds in (60.0, 240.0, 900.0, 3600.0):
+        r = cm.tail_reserve_s(cm.Budget(seconds))
+        assert 0 < r <= 0.5 * seconds
+        assert r >= min(cm.TAIL_RESERVE_MIN_S, 0.5 * seconds)

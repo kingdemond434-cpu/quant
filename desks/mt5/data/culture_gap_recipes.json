@@ -1,0 +1,2373 @@
+{
+ "note": "Culture-gap recipes (2026-09-30). Each row turns ONE gap of desks/mt5/reports/CELL_CULTURE.json (asset class x jurisdiction x participant structure) into cells of a REGISTERED family, with the participant structure's own clock: a fixing, a settlement or session window, a tax month, a local premium. `windows` are in the MARKET'S OWN local clock and are converted to broker stamp-hours by desks/mt5/research/culture_gap_cells.py through libs/regime/session_clock.py, one cell per distinct broker hour the year actually needs (DST seasons). `grid` is the family's own kwargs; every point is a trial charged at the registry door. `source_id` names the roster row (desks/mt5/data/source_rosters/culture_gap_sources.json), an asia_sources pack or a deep-forest ground whose publisher states the fact. MT5/Fusion instruments only; never the `discovered` family.",
+ "recipes": [
+  {
+   "id": "br_retail_b3_open",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "BR",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "BR/pt",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "USDBRL"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "America/Sao_Paulo",
+     "at": "09:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "b3_mini_dollar_wdo",
+   "mechanism": "Brazilian individual traders move BRL through B3's mini-dollar future, whose day opens 09:00 Sao Paulo; an extension into their first two hours is retail flow that fades or follows"
+  },
+  {
+   "id": "ru_retail_moex_open",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "RU",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "RU/ru",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "USDRUB",
+    "EURRUB"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "Europe/Moscow",
+     "at": "10:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "moex_open_positions",
+   "mechanism": "Russian individuals hold a published share of MOEX currency derivatives; an extension in the first two Moscow-session hours is local retail flow"
+  },
+  {
+   "id": "za_retail_jse_open",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "ZA",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "ZA/en",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "USDZAR",
+    "EURZAR",
+    "GBPZAR",
+    "ZARJPY"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "Africa/Johannesburg",
+     "at": "09:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "Sharenet / JSE boards",
+   "mechanism": "South African retail trades the rand in the Johannesburg morning; an extension in its first two hours is local retail flow"
+  },
+  {
+   "id": "mx_retail_bmv_open",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "MX",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "MX/es",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "USDMXN",
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "America/Mexico_City",
+     "at": "09:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "Rankia México",
+   "mechanism": "Mexican retail trades the peso once the Mexico City day opens (BMV 08:30); an extension in its first two full hours is local retail flow"
+  },
+  {
+   "id": "tr_retail_istanbul_open",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "TR",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "TR/tr",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "USDTRY",
+    "EURTRY",
+    "GBPTRY"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "Europe/Istanbul",
+     "at": "10:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tcmb_weekly_money_banking",
+   "mechanism": "Turkish households dollarise through bank FX deposits during the Istanbul business day; an extension in its first two hours is household flow"
+  },
+  {
+   "id": "jp_retail_yen_crosses_evening",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "JP",
+    "participant_structure": "retail_heavy"
+   },
+   "source_culture": "JP/ja",
+   "participant_structure": "retail_heavy",
+   "family": "retail_overlap_reversal",
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "CADJPY",
+    "GBPJPY",
+    "EURJPY",
+    "CHFJPY",
+    "MXNJPY",
+    "ZARJPY",
+    "SGDJPY"
+   ],
+   "windows": [
+    {
+     "param": "hours",
+     "tz": "Asia/Tokyo",
+     "at": "21:00",
+     "align": "start",
+     "span": 2
+    }
+   ],
+   "grid": {
+    "ext_atr": [
+     0.75,
+     1.0,
+     1.5
+    ],
+    "mode": [
+     "fade",
+     "follow"
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "ffaj_retail_fx_monthly",
+   "mechanism": "Japanese retail margin FX (the FFAJ's published book) trades the yen crosses after the Tokyo working day; an extension into the 21:00-23:00 JST hours is Mrs Watanabe flow"
+  },
+  {
+   "id": "cn_pboc_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CN",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "CN/zh",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDCNH"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Shanghai",
+     "at": "09:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "cfets_rmb_central_parity",
+   "mechanism": "the PBoC's 09:15 central parity is a policy signal the offshore rate must reprice to; the pre-fix positioning reverses once the fix is out"
+  },
+  {
+   "id": "cn_fix_to_london",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CN",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "CN/zh",
+   "participant_structure": "policy_driven",
+   "family": "session_handoff",
+   "symbols": [
+    "USDCNH"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Shanghai",
+     "at": "09:15",
+     "align": "contains"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "cfets_rmb_central_parity",
+   "mechanism": "the move made in the bar of the PBoC fixing carries into (or reverses at) the London open"
+  },
+  {
+   "id": "in_fbil_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "IN",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "IN/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDINR"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Kolkata",
+     "at": "12:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "fbil_usdinr_reference",
+   "mechanism": "the RBI leans on the rupee inside the 11:30-12:30 IST window the FBIL reference is polled in; displacement into that window reverses once it closes"
+  },
+  {
+   "id": "in_onshore_to_london",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "IN",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "IN/en",
+   "participant_structure": "policy_driven",
+   "family": "session_handoff",
+   "symbols": [
+    "USDINR"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Kolkata",
+     "at": "10:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "fbil_usdinr_reference",
+   "mechanism": "the managed onshore Mumbai morning sets a rupee move the London open prices or reverses"
+  },
+  {
+   "id": "jp_tokyo_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "JP",
+    "participant_structure": "settlement_constrained"
+   },
+   "source_culture": "JP/ja",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Tokyo",
+     "at": "09:55",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "mufg_ttm_tokyo_fix",
+   "mechanism": "Japanese importers must buy dollars at the 09:55 Tokyo fix to meet settlement (heaviest on gotobi days); the pre-fix dollar bid reverses once it is filled",
+   "note": "the family fires every business day; restricting to gotobi days needs a day-of-month parameter no registered family has, so the gotobi subset is UNMEASURED inside these cells"
+  },
+  {
+   "id": "jp_fix_to_london",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "JP",
+    "participant_structure": "settlement_constrained"
+   },
+   "source_culture": "JP/ja",
+   "participant_structure": "settlement_constrained",
+   "family": "session_handoff",
+   "symbols": [
+    "USDJPY"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Tokyo",
+     "at": "09:55",
+     "align": "contains"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "mufg_ttm_tokyo_fix",
+   "mechanism": "the Tokyo-fix hour's settlement-driven move carries into or reverses at the London open"
+  },
+  {
+   "id": "jp_tax_calendar_jpn225",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "JP",
+    "participant_structure": "tax_driven"
+   },
+   "source_culture": "JP/ja",
+   "participant_structure": "tax_driven",
+   "family": "calendar_month",
+   "symbols": [
+    "JPN225"
+   ],
+   "windows": [],
+   "grid": {
+    "active_month": [
+     1,
+     3,
+     9,
+     12
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nta_securities_tax_1463",
+   "mechanism": "Japanese individuals' calendar-year loss harvesting (December), the NISA allowance reset (January) and the March / September record dates move the Nikkei by the tax calendar"
+  },
+  {
+   "id": "cn_morning_to_hk_afternoon",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "CN",
+    "participant_structure": "settlement_constrained"
+   },
+   "source_culture": "CN/zh",
+   "participant_structure": "settlement_constrained",
+   "family": "session_handoff",
+   "symbols": [
+    "CHINAH",
+    "HK50"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Shanghai",
+     "at": "09:30",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "13:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "sse_trading_rules_limits",
+   "mechanism": "a mainland morning move that T+1 and price limits stop A-share holders from finishing is completed or reversed in Hong Kong's afternoon session"
+  },
+  {
+   "id": "hk_open_range_china",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "CN",
+    "participant_structure": "settlement_constrained"
+   },
+   "source_culture": "CN/zh",
+   "participant_structure": "settlement_constrained",
+   "family": "opening_range",
+   "symbols": [
+    "CHINAH",
+    "HK50"
+   ],
+   "windows": [
+    {
+     "param": "open_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "09:30",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "range_bars": [
+     1,
+     2
+    ],
+    "window_bars": [
+     6,
+     12
+    ],
+    "min_range_atr": [
+     0.25,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "hkex_trading_hours_rule501",
+   "mechanism": "the Hong Kong cash open absorbs the orders mainland holders could not work overnight under T+1; a break of that opening balance is the constraint releasing"
+  },
+  {
+   "id": "kr_open_to_hk_afternoon",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "KR",
+    "participant_structure": "any"
+   },
+   "source_culture": "KR/ko",
+   "participant_structure": "retail_heavy",
+   "family": "session_handoff",
+   "symbols": [
+    "HK50",
+    "CHINAH"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Seoul",
+     "at": "09:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "13:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "krx_investor_type_trading",
+   "mechanism": "Korean individuals dominate KRX turnover at the 09:00 Seoul open; the regional risk move they make there is priced or reversed in Hong Kong's afternoon (the Seoul open shares its clock with Tokyo's, and the cell cannot separate them)"
+  },
+  {
+   "id": "kr_open_to_tokyo_afternoon",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "KR",
+    "participant_structure": "any"
+   },
+   "source_culture": "KR/ko",
+   "participant_structure": "retail_heavy",
+   "family": "session_handoff",
+   "symbols": [
+    "JPN225"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Seoul",
+     "at": "09:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Asia/Tokyo",
+     "at": "13:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "krx_investor_type_trading",
+   "mechanism": "Korean individuals' 09:00 open move carries into the Tokyo afternoon session (shared clock with Tokyo's own open: not separable)"
+  },
+  {
+   "id": "in_gold_festival_months",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "IN",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "IN/en",
+   "participant_structure": "physical_flow",
+   "family": "calendar_month",
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAGUSD"
+   ],
+   "windows": [],
+   "grid": {
+    "active_month": [
+     4,
+     5,
+     10,
+     11
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "ibja_bullion_rates",
+   "mechanism": "Indian physical buying around Akshaya Tritiya (April-May) and Dhanteras-Diwali (October-November) is a seasonal bid on world gold"
+  },
+  {
+   "id": "in_gold_mumbai_to_london",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "IN",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "IN/en",
+   "participant_structure": "physical_flow",
+   "family": "session_handoff",
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Kolkata",
+     "at": "09:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "ibja_bullion_rates",
+   "mechanism": "the Mumbai bullion day (MCX opens 09:00 IST) prices Indian physical demand before London; London continues or fades it"
+  },
+  {
+   "id": "ae_gold_dubai_to_london",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "AE",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "AE/ar",
+   "participant_structure": "physical_flow",
+   "family": "session_handoff",
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Dubai",
+     "at": "09:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "dgcx_gold_market",
+   "mechanism": "Dubai's physical bullion trade clears in the Gulf morning; London continues or fades the move it made"
+  },
+  {
+   "id": "tr_gold_istanbul_to_london",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "TR",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "TR/tr",
+   "participant_structure": "physical_flow",
+   "family": "session_handoff",
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Europe/Istanbul",
+     "at": "10:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "10:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "borsa_istanbul_precious_metals",
+   "mechanism": "Turkish household gold buying clears in the Istanbul morning; London continues or fades it"
+  },
+  {
+   "id": "in_gold_premium_conditioner",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "IN",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "IN/en",
+   "participant_structure": "physical_flow",
+   "family": "exogenous_conditioner",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "pack": "india_ibja_rates",
+   "windows": [],
+   "grid": {
+    "transform": [
+     "level_z",
+     "delta_z"
+    ],
+    "threshold": [
+     1.0,
+     1.5
+    ],
+    "side_when_high": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1",
+    "H4",
+    "D1"
+   ],
+   "source_id": "india_ibja_rates",
+   "mechanism": "the Indian domestic bullion rate over world gold is the local premium; at an extreme it conditions world gold"
+  },
+  {
+   "id": "ae_gold_premium_conditioner",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "AE",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "AE/ar",
+   "participant_structure": "physical_flow",
+   "family": "exogenous_conditioner",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "pack": "dgcx_settlements",
+   "windows": [],
+   "grid": {
+    "transform": [
+     "level_z",
+     "delta_z"
+    ],
+    "threshold": [
+     1.0,
+     1.5
+    ],
+    "side_when_high": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1",
+    "H4",
+    "D1"
+   ],
+   "source_id": "dgcx_settlements",
+   "mechanism": "DGCX settlements carry the Dubai physical premium; at an extreme it conditions world gold"
+  },
+  {
+   "id": "tr_gold_premium_conditioner",
+   "gap": {
+    "asset_class": "metals",
+    "jurisdiction": "TR",
+    "participant_structure": "physical_flow"
+   },
+   "source_culture": "TR/tr",
+   "participant_structure": "physical_flow",
+   "family": "exogenous_conditioner",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "pack": "borsa_istanbul_gold",
+   "windows": [],
+   "grid": {
+    "transform": [
+     "level_z",
+     "delta_z"
+    ],
+    "threshold": [
+     1.0,
+     1.5
+    ],
+    "side_when_high": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1",
+    "H4",
+    "D1"
+   ],
+   "source_id": "borsa_istanbul_gold",
+   "mechanism": "Borsa Istanbul's gold price over world gold is the Turkish premium; at an extreme it conditions world gold"
+  },
+  {
+   "id": "ea_ecb_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "EA",
+    "participant_structure": "any"
+   },
+   "source_culture": "EA/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "EURUSD",
+    "EURCHF",
+    "EURGBP",
+    "EURAUD",
+    "EURCAD",
+    "EURNZD",
+    "EURNOK",
+    "EURSEK",
+    "EURDKK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Berlin",
+     "at": "14:10",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "ecb_euro_reference_rates",
+   "mechanism": "the ECB's 14:10 CET concertation is the euro's official reference; displacement into it reverses once it is struck"
+  },
+  {
+   "id": "ch_snb_assessment_months",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CH",
+    "participant_structure": "any"
+   },
+   "source_culture": "CH/en",
+   "participant_structure": "policy_driven",
+   "family": "calendar_month",
+   "symbols": [
+    "USDCHF",
+    "CHFJPY",
+    "CHFSEK",
+    "CHFNOK",
+    "CHFDKK"
+   ],
+   "windows": [],
+   "grid": {
+    "active_month": [
+     3,
+     6,
+     9,
+     12
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "snb_policy_decisions",
+   "mechanism": "the SNB reprices the franc at its quarterly assessments, so the assessment months carry the policy move"
+  },
+  {
+   "id": "cz_cnb_fixing",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CZ",
+    "participant_structure": "any"
+   },
+   "source_culture": "CZ/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "EURCZK",
+    "USDCZK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Prague",
+     "at": "14:30",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "cnb_fx_fixing",
+   "mechanism": "the CNB's 14:30 fixing is the koruna's official rate; displacement into it reverses once it is declared"
+  },
+  {
+   "id": "hu_mnb_fixing",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "HU",
+    "participant_structure": "any"
+   },
+   "source_culture": "HU/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "EURHUF",
+    "USDHUF",
+    "CHFHUF",
+    "GBPHUF",
+    "AUDHUF",
+    "NZDHUF"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Budapest",
+     "at": "11:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "mnb_official_rates_fixing",
+   "mechanism": "the MNB fixes the forint's official rates at 11:00; displacement into the fix reverses after it"
+  },
+  {
+   "id": "pl_nbp_fixing",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "PL",
+    "participant_structure": "any"
+   },
+   "source_culture": "PL/pl",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "EURPLN",
+    "USDPLN",
+    "CHFPLN",
+    "GBPPLN"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Warsaw",
+     "at": "11:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nbp_table_a",
+   "mechanism": "the NBP's table A rates are set around 11:00; displacement into that window reverses after it"
+  },
+  {
+   "id": "il_boi_representative",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "IL",
+    "participant_structure": "any"
+   },
+   "source_culture": "IL/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDILS",
+    "EURILS"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Jerusalem",
+     "at": "15:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "boi_representative_rate",
+   "mechanism": "the Bank of Israel's representative rate is struck around 15:15; displacement into it reverses after it",
+   "note": "Fridays and holiday eves fix at 12:15; the cell uses the 15:15 weekday time, so those days are UNMEASURED inside it"
+  },
+  {
+   "id": "sg_abs_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "SG",
+    "participant_structure": "any"
+   },
+   "source_culture": "SG/en",
+   "participant_structure": "institutional",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDSGD",
+    "EURSGD",
+    "GBPSGD",
+    "AUDSGD",
+    "NZDSGD",
+    "CHFSGD",
+    "SGDJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Singapore",
+     "at": "11:30",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "abs_sgd_thb_spot_benchmarks",
+   "mechanism": "Singapore's benchmark users transact at the 11:30 ABS spot fix; displacement into it reverses after it"
+  },
+  {
+   "id": "th_onshore_to_london",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "TH",
+    "participant_structure": "any"
+   },
+   "source_culture": "TH/th",
+   "participant_structure": "policy_driven",
+   "family": "session_handoff",
+   "symbols": [
+    "USDTHB"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "Asia/Bangkok",
+     "at": "10:00",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 1
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "bot_reference_rate",
+   "mechanism": "the Bank of Thailand manages baht volatility in the onshore Bangkok morning; London continues or reverses that managed move"
+  },
+  {
+   "id": "id_jisdor",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "ID",
+    "participant_structure": "any"
+   },
+   "source_culture": "ID/id",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDIDR"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Jakarta",
+     "at": "16:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "bi_jisdor",
+   "mechanism": "Bank Indonesia steers the rupiah over the 08:00-16:00 WIB JISDOR window and publishes at 16:15; displacement into it reverses after publication"
+  },
+  {
+   "id": "hk_tma_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "HK",
+    "participant_structure": "any"
+   },
+   "source_culture": "HK/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDHKD",
+    "EURHKD",
+    "HKDJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "11:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2,
+     3
+    ],
+    "min_displacement_atr": [
+     0.4,
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tma_usdhkd_spot_fix",
+   "mechanism": "the TMA's 11:00 USD/HKD fix is struck inside the HKMA's linked-rate band; displacement into it reverses after it"
+  },
+  {
+   "id": "de_xetra_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "DE",
+    "participant_structure": "any"
+   },
+   "source_culture": "DE/de",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "GER40"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/Berlin",
+     "at": "17:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/Berlin",
+     "at": "09:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "xetra_trading_hours",
+   "mechanism": "German funds and index trackers transact at the 17:30 Xetra closing auction; the day's displacement continues into it"
+  },
+  {
+   "id": "ea_eustx50_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "EA",
+    "participant_structure": "any"
+   },
+   "source_culture": "EA/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "EUSTX50"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/Berlin",
+     "at": "17:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/Berlin",
+     "at": "09:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "xetra_trading_hours",
+   "mechanism": "euro-area index trackers transact at the 17:30 CET cash closes; the day's displacement continues into them"
+  },
+  {
+   "id": "au_financial_year_end",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "AU",
+    "participant_structure": "any"
+   },
+   "source_culture": "AU/en",
+   "participant_structure": "tax_driven",
+   "family": "calendar_month",
+   "symbols": [
+    "AUS200"
+   ],
+   "windows": [],
+   "grid": {
+    "active_month": [
+     6,
+     7
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "asx_trading_hours",
+   "mechanism": "Australia's income year ends 30 June: June loss harvesting and the July reversal"
+  },
+  {
+   "id": "au_asx_open_range",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "AU",
+    "participant_structure": "any"
+   },
+   "source_culture": "AU/en",
+   "participant_structure": "institutional",
+   "family": "opening_range",
+   "symbols": [
+    "AUS200"
+   ],
+   "windows": [
+    {
+     "param": "open_hour",
+     "tz": "Australia/Sydney",
+     "at": "10:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "range_bars": [
+     1,
+     2
+    ],
+    "window_bars": [
+     6,
+     12
+    ],
+    "min_range_atr": [
+     0.25,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "asx_trading_hours",
+   "mechanism": "the ASX's single 10:00 opening auction sets an initial balance whose break is the Australian day's price discovery"
+  },
+  {
+   "id": "ca_tax_loss_months",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "tax_driven",
+   "family": "calendar_month",
+   "symbols": [
+    "CA60"
+   ],
+   "windows": [],
+   "grid": {
+    "active_month": [
+     12,
+     1
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tsx_trading_hours",
+   "mechanism": "Canadian individuals' calendar-year tax-loss selling in December and the January reversal"
+  },
+  {
+   "id": "ca_tsx_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "CA60"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "America/Toronto",
+     "at": "15:00",
+     "align": "start"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "America/Toronto",
+     "at": "10:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tsx_trading_hours",
+   "mechanism": "Canadian funds transact into the 16:00 TSX market-on-close; the day's displacement continues through the last hour"
+  },
+  {
+   "id": "gb_gilt_month_end",
+   "gap": {
+    "asset_class": "bonds",
+    "jurisdiction": "GB",
+    "participant_structure": "any"
+   },
+   "source_culture": "GB/en",
+   "participant_structure": "institutional",
+   "family": "turn_of_month",
+   "symbols": [
+    "UKGILT"
+   ],
+   "windows": [],
+   "grid": {
+    "days_before": [
+     1,
+     2,
+     3
+    ],
+    "days_after": [
+     0,
+     1,
+     2
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "uk_dmo_gilt_calendar",
+   "mechanism": "UK pension and LDI mandates extend gilt duration at the month-end index rebalance"
+  },
+  {
+   "id": "us_treasury_month_end",
+   "gap": {
+    "asset_class": "bonds",
+    "jurisdiction": "US",
+    "participant_structure": "any"
+   },
+   "source_culture": "US/en",
+   "participant_structure": "institutional",
+   "family": "turn_of_month",
+   "symbols": [
+    "UST05Y",
+    "UST10Y"
+   ],
+   "windows": [],
+   "grid": {
+    "days_before": [
+     1,
+     2,
+     3
+    ],
+    "days_after": [
+     0,
+     1,
+     2
+    ],
+    "side_bias": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "us_treasury_auctions",
+   "mechanism": "Treasury index trackers add duration at the month-end index extension"
+  },
+  {
+   "id": "fr_euronext_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "FR",
+    "participant_structure": "any"
+   },
+   "source_culture": "FR/fr",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "FRA40"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/Paris",
+     "at": "17:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/Paris",
+     "at": "09:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "euronext_trading_hours_paris",
+   "mechanism": "local funds and index trackers transact at the 17:30 closing auction of the home exchange; the day's displacement continues into it"
+  },
+  {
+   "id": "nl_euronext_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "NL",
+    "participant_structure": "any"
+   },
+   "source_culture": "NL/nl",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "NETH25"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/Amsterdam",
+     "at": "17:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/Amsterdam",
+     "at": "09:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "euronext_trading_hours_amsterdam",
+   "mechanism": "local funds and index trackers transact at the 17:30 closing auction of the home exchange; the day's displacement continues into it"
+  },
+  {
+   "id": "es_bme_close",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "ES",
+    "participant_structure": "any"
+   },
+   "source_culture": "ES/es",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "E35"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/Madrid",
+     "at": "17:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/Madrid",
+     "at": "09:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "bme_trading_hours",
+   "mechanism": "local funds and index trackers transact at the 17:30 closing auction of the home exchange; the day's displacement continues into it"
+  },
+  {
+   "id": "ca_boc_announcement_hour",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDCAD",
+    "CADJPY",
+    "CADCHF"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Toronto",
+     "at": "09:45",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "boc_policy_rate_schedule",
+   "mechanism": "every Bank of Canada policy-rate announcement lands at 09:45 ET; displacement built into that hour reverses once the release is priced",
+   "note": "fires ONLY on the Bank's fixed announcement dates (desks/mt5/data/calendars/boc_policy_rate.json), in the hour containing 09:45 Toronto time on each date",
+   "calendar": "boc_policy_rate"
+  },
+  {
+   "id": "ca_tsx_session_to_close",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "institutional",
+   "family": "session_handoff",
+   "symbols": [
+    "USDCAD",
+    "CADJPY",
+    "CADCHF"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "America/Toronto",
+     "at": "09:30",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "America/Toronto",
+     "at": "16:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 6
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tsx_trading_hours",
+   "mechanism": "the CAD move made during the Toronto cash session (10:00-16:00 ET) carries into, or reverses in, the hour after the 16:00 TSX close when Canadian equity desks hand off"
+  },
+  {
+   "id": "dk_nationalbank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "DK",
+    "participant_structure": "any"
+   },
+   "source_culture": "DK/da",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDDKK",
+    "GBPDKK",
+    "CHFDKK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Copenhagen",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nationalbanken_exchange_rates",
+   "mechanism": "Danmarks Nationalbank's daily reference rates are a 14:15 CET snapshot that Danish accounting and customs settle against; displacement into the snapshot reverses after it"
+  },
+  {
+   "id": "no_norges_bank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "NO",
+    "participant_structure": "any"
+   },
+   "source_culture": "NO/no",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDNOK",
+    "NOKSEK",
+    "NOKJPY",
+    "GBPNOK",
+    "CHFNOK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Oslo",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "norges_bank_exchange_rates",
+   "mechanism": "Norges Bank's daily exchange rates are observed around 14:15 CET and are the NOK reference Norwegian contracts use; displacement into the observation reverses after it"
+  },
+  {
+   "id": "se_riksbank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "SE",
+    "participant_structure": "any"
+   },
+   "source_culture": "SE/sv",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDSEK",
+    "SEKJPY",
+    "GBPSEK",
+    "CHFSEK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Stockholm",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "riksbank_exchange_rates",
+   "mechanism": "since 27 Nov 2023 the Riksbank's published SEK rates come from the ECB's 14:10-14:15 CET concertation (published ~16:15); Swedish reference flow is struck there and displacement into it reverses"
+  },
+  {
+   "id": "gb_wmr_london_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "GB",
+    "participant_structure": "any"
+   },
+   "source_culture": "GB/en",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "GBPUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPCHF",
+    "GBPNZD",
+    "GBPJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/London",
+     "at": "16:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "wmr_4pm_fix_fca",
+   "mechanism": "the WM/Reuters 4pm benchmark is calculated over 15:57:30-16:02:30 London; passive sterling flow must trade into it and the displacement reverses once it is struck"
+  },
+  {
+   "id": "gb_lse_closing_auction",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "GB",
+    "participant_structure": "any"
+   },
+   "source_culture": "GB/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "UK100"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/London",
+     "at": "16:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "lse_closing_auction",
+   "mechanism": "UK index funds and trackers transact in the 16:30-16:35 LSE closing auction; the day's displacement continues into it"
+  },
+  {
+   "id": "hk_hkex_closing_auction",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "HK",
+    "participant_structure": "any"
+   },
+   "source_culture": "HK/zh",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "HK50",
+    "CHINAH"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "16:00",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "09:30",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "hkex_trading_hours_page",
+   "mechanism": "Hong Kong index trackers transact in the Closing Auction Session (16:00 to a random close 16:08-16:10); the day's displacement continues into it"
+  },
+  {
+   "id": "us_nyse_closing_imbalance",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "US",
+    "participant_structure": "any"
+   },
+   "source_culture": "US/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "US2000"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "America/New_York",
+     "at": "15:50",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "America/New_York",
+     "at": "09:30",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nyse_auctions",
+   "mechanism": "NYSE closing-auction imbalances publish from 15:50 ET into the 16:00 close; index and ETF rebalancing flow continues the day's displacement into it"
+  },
+  {
+   "id": "kr_won_reference_rate",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "KR",
+    "participant_structure": "any"
+   },
+   "source_culture": "KR/ko",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDKRW"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Seoul",
+     "at": "15:30",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "kr_won_market_hours_2026",
+   "mechanism": "the 15:30 KST onshore reference rate and market average rate, on which USD/KRW NDFs settle, are struck at the old session close; displacement into it reverses after",
+   "note": "the onshore market trades near 24h since 7 Jul 2026; the 15:30 reference stays until the authorities move it"
+  },
+  {
+   "id": "br_ptax_fixing",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "BR",
+    "participant_structure": "any"
+   },
+   "source_culture": "BR/pt",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDBRL"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Sao_Paulo",
+     "at": "13:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "bcb_ptax_cme_ser",
+   "mechanism": "PTAX, the rate BRL NDFs and futures settle on, averages four BCB dealer consultations and closes with the 13:00-13:10 Brasilia window; displacement into it reverses after"
+  },
+  {
+   "id": "mx_banxico_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "MX",
+    "participant_structure": "any"
+   },
+   "source_culture": "MX/es",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDMXN",
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Mexico_City",
+     "at": "12:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "banxico_fix",
+   "mechanism": "Banco de Mexico informs the FIX, the peso's settlement reference for dollar obligations, from 12:00 Mexico City time; displacement into it reverses after"
+  }
+ ]
+}

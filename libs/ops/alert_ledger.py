@@ -31,16 +31,25 @@ Pure stdlib. JSON persistence, because a lifecycle that dies with the process is
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import sys
+import time
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import BinaryIO
 
 __all__ = [
     "OPEN_STATES",
     "STATES",
     "Alert",
     "AlertLedger",
+    "AlertLedgerBusy",
+    "AlertLedgerUnreadable",
+    "os_lock",
 ]
 
 STATES = ("OPEN", "ATTEMPTED", "FIXED", "FAILED", "NEEDS_HUMAN", "REGRESSED")
@@ -76,32 +85,208 @@ class Alert:
         return (ref - datetime.fromisoformat(self.first_seen)).total_seconds() / 3600.0
 
 
+#: os.replace retries on PermissionError (Windows: the target is open in another process).
+REPLACE_RETRIES = 20
+#: How long a writer waits for the lock before it gives up -- and RAISES (v5f): it never goes on
+#: unlocked, because a writer that proceeds unlocked is a second holder.
+LOCK_WAIT_S = 10.0
+
+
+class AlertLedgerBusy(TimeoutError):
+    """The ledger's lock was not obtained within the wait: nothing was written."""
+
+
+class AlertLedgerUnreadable(OSError):
+    """The ledger exists and could not be read: saving now would replace it with less."""
+
+
+def _acquire(fh: BinaryIO, timeout_s: float) -> bool:
+    """An OS lock on byte 0 of the sidecar, polled: msvcrt on Windows, flock elsewhere."""
+    deadline = time.monotonic() + timeout_s
+    while True:
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except (OSError, ImportError):
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.02)
+
+
+def _release(fh: BinaryIO) -> None:
+    with contextlib.suppress(OSError, ImportError):
+        if sys.platform == "win32":
+            import msvcrt
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+
+
+@contextlib.contextmanager
+def os_lock(lock: Path, timeout_s: float = LOCK_WAIT_S) -> Iterator[None]:
+    """An exclusive OS lock on a sidecar file that is never deleted (v5f).
+
+    THE OLD LOCK COULD BE HELD TWICE. It was an O_EXCL lock file that a waiter deleted once it
+    looked older than 60 s: two waiters could both judge it stale, the first could delete it and
+    take a fresh one, and the second then deleted THAT one and took another -- two holders. A
+    kernel lock has no stale state to judge: it is released when its holder's handle closes,
+    including when the holder dies, so there is nothing to break and no second holder. The
+    sidecar stays on disk because deleting it races every other opener on Windows. A wait that
+    expires raises AlertLedgerBusy; it never proceeds unlocked."""
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(lock, "a+b")   # noqa: SIM115 -- held for the whole body, closed below
+    try:
+        if fh.tell() == 0:
+            fh.write(b"\0")
+            fh.flush()
+        if not _acquire(fh, timeout_s):
+            raise AlertLedgerBusy(f"{lock.name} held by another writer for {timeout_s:g}s")
+        try:
+            yield
+        finally:
+            _release(fh)
+    finally:
+        fh.close()
+
+
+#: Kept for callers of the v5e name; it is the OS lock now.
+_locked = os_lock
+
+
+def _parse(text: str) -> dict[str, Alert]:
+    raw = json.loads(text)
+    if not isinstance(raw, dict):
+        raise ValueError("ledger is not an object")
+    alerts = raw.get("alerts") or {}
+    if not isinstance(alerts, dict):
+        raise ValueError("'alerts' is not an object")
+    out: dict[str, Alert] = {}
+    for aid, d in alerts.items():
+        known = {k: v for k, v in d.items() if k in Alert.__dataclass_fields__}
+        out[aid] = Alert(id=aid, **{k: v for k, v in known.items() if k != "id"})
+    return out
+
+
 class AlertLedger:
-    """Persistent alert lifecycle. Survives the process, which is the whole point."""
+    """Persistent alert lifecycle. Survives the process, which is the whole point.
+
+    LOAD, MODIFY AND SAVE UNDER ONE LOCK (v5f). `AlertLedger.transaction(path)` holds the OS lock
+    from the read to the write. A plain `save()` outside one re-reads the ledger UNDER the lock and
+    lays only this instance's changes (alerts added or changed since it loaded) over what is on
+    disk, so another process's alert written in between is kept, never overwritten by a stale
+    copy. A ledger that EXISTS and cannot be read is never saved over: a transient OSError would
+    otherwise empty it. One that reads but does not parse is moved aside (kept, never lost) and
+    the ledger starts again from it."""
 
     def __init__(self, path: Path) -> None:
         self.path = Path(path)
         self.alerts: dict[str, Alert] = {}
+        self.load_error: str | None = None
+        self._snapshot: dict[str, dict[str, object]] = {}
+        self._in_txn = False
         self._load()
 
-    def _load(self) -> None:
+    @classmethod
+    @contextlib.contextmanager
+    def transaction(cls, path: Path, timeout_s: float = LOCK_WAIT_S) -> Iterator[AlertLedger]:
+        """Lock, load, yield, save -- one critical section. Raises (and writes nothing) when the
+        ledger is unreadable or the body raises."""
+        led = cls.__new__(cls)
+        led.path = Path(path)
+        led.alerts, led.load_error, led._snapshot, led._in_txn = {}, None, {}, True
+        with os_lock(led._lock_path(), timeout_s):
+            led._load()
+            if led.load_error and not led.load_error.startswith("unparseable"):
+                raise AlertLedgerUnreadable(f"{led.path.name}: {led.load_error}")
+            yield led
+            led._write(led.alerts)
+        led._in_txn = False
+
+    def _lock_path(self) -> Path:
+        return self.path.with_name(self.path.name + ".flock")
+
+    def _read(self) -> tuple[dict[str, Alert] | None, str | None]:
+        """(alerts, None) on a read; ({}, None) when absent; (None, why) when it cannot be read;
+        ({}, "unparseable ...") when it reads but does not parse."""
         try:
-            raw = json.loads(self.path.read_text("utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return
-        for aid, d in (raw.get("alerts") or {}).items():
-            known = {k: v for k, v in d.items() if k in Alert.__dataclass_fields__}
-            self.alerts[aid] = Alert(id=aid, **{k: v for k, v in known.items() if k != "id"})
+            text = self.path.read_text("utf-8")
+        except FileNotFoundError:
+            return {}, None
+        except OSError as exc:
+            return None, f"unreadable ({type(exc).__name__})"
+        try:
+            return _parse(text), None
+        except (ValueError, TypeError, AttributeError) as exc:
+            return {}, f"unparseable ({type(exc).__name__})"
+
+    def _load(self) -> None:
+        got, why = self._read()
+        self.load_error = why
+        self.alerts = got if got is not None else {}
+        self._snapshot = {aid: asdict(a) for aid, a in self.alerts.items()}
+
+    def _set_aside_unparseable(self) -> None:
+        with contextlib.suppress(OSError):
+            os.replace(self.path, self.path.with_name(
+                f"{self.path.name}.unparseable-{time.time_ns()}"))
 
     def save(self) -> None:
+        """ATOMIC (v5e) and MERGED UNDER THE LOCK (v5f): see the class docstring."""
+        if self._in_txn:
+            return   # the transaction writes once, on its way out, under its own lock
+        with os_lock(self._lock_path()):
+            disk, why = self._read()
+            if disk is None:
+                raise AlertLedgerUnreadable(f"{self.path.name}: {why}; not saved over")
+            if why:
+                self._set_aside_unparseable()
+            for aid, a in self.alerts.items():
+                if asdict(a) != self._snapshot.get(aid):
+                    disk[aid] = a
+            for aid in set(self._snapshot) - set(self.alerts):
+                disk.pop(aid, None)
+            self._write(disk)
+            self.alerts = disk
+            self._snapshot = {aid: asdict(a) for aid, a in disk.items()}
+            self.load_error = None
+
+    def _write(self, alerts: dict[str, Alert]) -> None:
+        """Temp file, fsync, os.replace (retried on a Windows PermissionError). Lock held."""
+        if self.load_error and self.load_error.startswith("unparseable") and self.path.exists():
+            self._set_aside_unparseable()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps({
+        body = json.dumps({
             "updated": datetime.now(tz=UTC).isoformat(),
-            "alerts": {a.id: asdict(a) for a in self.alerts.values()},
+            "alerts": {a.id: asdict(a) for a in alerts.values()},
             "note": ("`last_seen` is dedup state and `state` is truth -- they are never the same "
                      "field. Suppressing a repeat makes the pager quieter and does nothing about "
                      "the condition."),
-        }, indent=1), "utf-8")
+        }, indent=1)
+        tmp = self.path.with_name(f".{self.path.name}.{os.getpid()}.{time.monotonic_ns()}.tmp")
+        try:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write(body)
+                fh.flush()
+                os.fsync(fh.fileno())
+            for attempt in range(REPLACE_RETRIES):
+                try:
+                    os.replace(tmp, self.path)
+                    break
+                except PermissionError:
+                    if attempt == REPLACE_RETRIES - 1:
+                        raise
+                    time.sleep(0.05 * (attempt + 1))
+        finally:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
 
     # ------------------------------------------------------------------ transitions
 

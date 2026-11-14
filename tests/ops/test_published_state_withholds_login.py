@@ -144,3 +144,25 @@ def test_spread_tape_snapshot_withholds_the_login(monkeypatch: pytest.MonkeyPatc
     snap = FST.live_snapshot([])
     assert str(FAKE_LOGIN) not in json.dumps(snap, default=str)
     assert snap["account"]["login_withheld"] is True
+
+
+def test_bars_state_report_withholds_the_login(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """BARS_STATE.json rides `$reportPaths`; even with a terminal loaded it carries no account."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    monkeypatch.setitem(sys.modules, "MetaTrader5", _fake_mt5())
+    mod = _load("bars_state_under_test", ROOT / "desks" / "mt5" / "research" / "bars_state.py")
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    pq.write_table(pa.table({"time": pa.array([1_790_000_000_000], pa.timestamp("ms", tz="UTC"))}),
+                   uni / "XAUUSD_M1.parquet")
+    out = tmp_path / "BARS_STATE.json"
+    assert mod.main(["--out", str(out), "--universe", str(uni), "--ticks", str(tmp_path / "t"),
+                     "--tape-state", str(tmp_path / "none.json")]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert str(FAKE_LOGIN) not in text and "FusionMarkets-Live" not in text
+    rec = json.loads(text)
+    assert "login" not in rec and "account" not in rec
+    assert rec["bars"][0]["status"] == "MEASURED"

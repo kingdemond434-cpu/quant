@@ -1,0 +1,69 @@
+name: paperclip-lab
+
+# THE PAPERCLIP RESEARCH COMPANY, ISOLATED (principal 2026-11-03: "do 2 and 1 now", 24/7).
+# A fresh GitHub-hosted VM every hour: no repository secrets, read-only contents, and the
+# workflow's own GITHUB_TOKEN with `models: read` for the free GitHub Models tier. It reads this
+# public tree, runs the company's roles (libs/research/paperclip_lab), and uploads ONE JSON
+# bundle. It cannot push, cannot reach the box, the broker, the allocator or the lockbox. The box
+# pulls the bundle and re-screens every row (desks/mt5/research/paperclip_intake.py).
+# A pass that reaches no model fails red; the box leg turns RED if no bundle lands for 3 hours.
+
+on:
+  schedule:
+    - cron: "41 * * * *"
+  workflow_dispatch:
+    inputs:
+      calls:
+        description: "model calls this pass"
+        default: "24"
+
+permissions:
+  contents: read
+  models: read
+
+concurrency:
+  group: paperclip-lab
+  cancel-in-progress: false
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            libs/__init__.py
+            libs/research/__init__.py
+            libs/research/paperclip_lab
+            scripts/paperclip_lab_run.py
+            desks/mt5/mt5desk/families.py
+            desks/mt5/mt5desk/families_orthogonal.py
+            desks/mt5/data/universe/universe.json
+            desks/mt5/data/data_registry.json
+            desks/mt5/data/deep_forest_datasets.jsonl
+            desks/mt5/data/paperclip
+            desks/mt5/reports/PRODUCER_YIELD.json
+            data/intelligence/practitioner_corpus.json
+            data/intelligence/quantocracy_blogosphere_index.json
+            data/intelligence/public_strategy_items.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+      - name: lab pass (free models, no secrets)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PAPERCLIP_CALLS: ${{ github.event.inputs.calls || '24' }}
+        run: python scripts/paperclip_lab_run.py --out out/paperclip_bundle.json
+      - name: upload bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: paperclip-bundle
+          path: out/paperclip_bundle.json
+          retention-days: 7
+          if-no-files-found: warn

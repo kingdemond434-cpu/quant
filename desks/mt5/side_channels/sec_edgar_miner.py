@@ -6,6 +6,7 @@ When they dump, it's a warning.
 """
 
 import json
+import os
 import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -16,7 +17,9 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "sec_edgar"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "QuantResearch quant@example.com"}
+# SEC fair-access policy: a declared User-Agent naming a real contact. The box sets
+# QUANT_EDGAR_UA; run_all_miners sets this channel aside when it is absent.
+HEADERS = {"User-Agent": os.environ.get("QUANT_EDGAR_UA") or "QuantResearch quant@example.com"}
 
 # Top hedge funds to track
 FUND_CIKS = {

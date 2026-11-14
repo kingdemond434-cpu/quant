@@ -136,11 +136,28 @@ def _candidate(row: dict, why: str) -> dict:
     }
 
 
+def _hygiene_first() -> dict:
+    """Run `certificate_hygiene --apply` BEFORE reading the canon, every hour.
+
+    Its own task is daily (MT5-FrontierAudit 05:10), which left a banned-family certificate
+    COUNTED for up to a day after a ban and an unrecorded-params certificate un-evicted for as
+    long. The hygiene pass is idempotent and only moves rows out, so running it on this hourly
+    leg makes both evictions land the hour they become true -- and this organ, and the re-judge
+    below, then read the registry it leaves behind. Never raises into the leg."""
+    try:
+        import certificate_hygiene
+        rc = certificate_hygiene.main(["--apply"])
+        return {"rc": rc, "report": str(certificate_hygiene.OUT)}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def main(argv: list[str] | None = None) -> int:
     apply = "--apply" in (argv if argv is not None else sys.argv[1:])
+    hygiene = _hygiene_first() if apply else {"status": "SKIPPED (dry run)"}
     try:
         rows, source = _canon_rows()
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"UNANSWERED: the certificate canon could not be read via shadow_admission "
               f"({type(exc).__name__}: {exc}). Nothing is requeued and nothing is claimed.",
               file=sys.stderr)
@@ -168,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         "reasons": sorted({why for _, why in stuck}),
         "cells": usable,
         "applied": apply,
+        "certificate_hygiene": hygiene,
     }
 
     if apply and usable:
@@ -188,6 +206,23 @@ def main(argv: list[str] | None = None) -> int:
             DOCKET.write_text(json.dumps(existing, indent=1), encoding="utf-8")
         report["requeued"] = len(fresh)
         report["already_on_docket"] = len(usable) - len(fresh)
+
+    # THE EVICTED ONES, WHICH THIS ORGAN CAN NO LONGER SEE. It reads the canon, and
+    # `certificate_hygiene` has already moved every unrunnable row OUT of the canon -- so after an
+    # eviction this organ reports nothing stuck while the certificate sits in the eviction file
+    # with no route back to a judge. `rejudge_evicted` reads that file and re-queues each one with
+    # a complete, provenanced parameterisation, stamped, at the docket's front. Run here so it has
+    # an hourly clock (this leg) as well as the eviction's own hook.
+    try:
+        import rejudge_evicted
+        rj = rejudge_evicted.run(apply_changes=apply)
+        report["rejudge_evicted"] = {"cells": len(rj.get("cells") or []),
+                                     "refused": len(rj.get("refused") or []),
+                                     "applied": rj.get("applied"),
+                                     "report": str(rejudge_evicted.OUT)}
+    except Exception as exc:
+        report["rejudge_evicted"] = {"status": "UNMEASURED",
+                                     "why": f"{type(exc).__name__}: {exc}"}
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2), encoding="utf-8")

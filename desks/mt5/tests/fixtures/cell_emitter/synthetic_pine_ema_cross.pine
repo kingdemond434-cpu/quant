@@ -1,0 +1,12 @@
+// SYNTHETIC FIXTURE -- written for desks/mt5/tests/test_cell_emitter.py, not recorded from any site.
+//@version=5
+strategy("Synthetic EMA cross", overlay=true)
+fastLen = input.int(21, "Fast")
+slowLen = input.int(55, "Slow")
+fast = ta.ema(close, fastLen)
+slow = ta.ema(close, slowLen)
+plot(fast, color=color.blue)
+if ta.crossover(fast, slow)
+    strategy.entry("L", strategy.long)
+if ta.crossunder(fast, slow)
+    strategy.entry("S", strategy.short)

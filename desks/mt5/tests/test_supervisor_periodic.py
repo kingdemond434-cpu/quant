@@ -30,7 +30,7 @@ def test_the_most_overdue_mode_wins_heaviest_first() -> None:
     them assert the old schedule rather than the ordering. Derived from the live cadence now:
     each probe sits just past the mode it should trigger and short of the next one up.
     """
-    assert rs._allocator_mode({}, 10_000.0, CAD) == "heavy"
+    assert rs._allocator_mode({}, CAD["heavy"] + 1.0, CAD) == "heavy"
     t0 = 9_000.0
     st = {f"pf_allocator_{m}": {"last_spawn": t0} for m in ("heavy", "normal", "fast")}
     assert rs._allocator_mode(st, t0 + CAD["fast"] - 1.0, CAD) is None

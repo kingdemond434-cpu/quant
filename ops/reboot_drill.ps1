@@ -19,7 +19,9 @@ $term = $terms | Sort-Object StartTime | Select-Object -First 1
 if ($term) { "TERMINAL: running (" + $terms.Count + " process(es); oldest pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
 else { $fail += "terminal64 NOT running"; "TERMINAL: NOT RUNNING" }
 
-$required = @('MT5-TerminalBoot','MT5-Gateway','MT5-Gauntlet','MT5-Shadow','MT5-Hourly',
+# MT5-GatewayResident is the gateway (box_tasks.manifest); MT5-Gateway is Disabled since
+# 2026-09-16, and requiring it here re-ENABLED the retired per-minute runner on every drill.
+$required = @('MT5-TerminalBoot','MT5-GatewayResident','MT5-Gauntlet','MT5-Shadow','MT5-Hourly',
               'MT5-DeskState','MT5-MoatRecorder','MT5-MoatSilver','MT5-StallWatch',
               'MT5-Universe','MT5-ShadowSync')
 $present = (schtasks /Query /FO CSV | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
@@ -27,7 +29,16 @@ foreach ($r in $required) {
   if ($present -notcontains $r) { $fail += "task MISSING: $r"; "TASK $r : MISSING" }
   else {
     $st = (schtasks /Query /TN $r /FO CSV | ConvertFrom-Csv).Status
-    if ($st -eq 'Disabled') { Enable-ScheduledTask -TaskName $r | Out-Null; "TASK $r : was Disabled -> re-enabled" }
+    # A DELIBERATE DISABLE IS NOT A REBOOT LOSS (2026-10-22). MT5-Gateway was disabled by hand
+    # while release_identity refused new risk, and this drill re-enabled it on a later pass. A
+    # task disabled on purpose carries a hold marker, desks\mt5\data\TASK_HOLD_<name> (first
+    # line: why); the drill leaves it Disabled and reports it HELD. Remove the marker to heal it.
+    $hold = Join-Path $root ("desks\mt5\data\TASK_HOLD_" + $r)
+    if ($st -eq 'Disabled' -and (Test-Path $hold)) {
+      $why = Get-Content $hold -TotalCount 1 -ErrorAction SilentlyContinue
+      "TASK $r : Disabled (HELD: $why) -> left as is"
+    }
+    elseif ($st -eq 'Disabled') { Enable-ScheduledTask -TaskName $r | Out-Null; "TASK $r : was Disabled -> re-enabled" }
     else { "TASK $r : $st" }
   }
 }

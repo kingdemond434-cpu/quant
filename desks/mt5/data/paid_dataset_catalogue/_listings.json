@@ -1,0 +1,95 @@
+{
+ "note": "Public catalogue listing pages the paid-substitute engine's crawler reads (robots.txt honoured, a bounded number of pages per pass, rotating). Only vendor/product names a page itself links are recorded; a class of UNSTATED means the page spans classes. Add a listing here, never in code.",
+ "listings": [
+  {
+   "url": "https://datarade.ai/data-categories",
+   "source": "datarade",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://datarade.ai/data-categories/estimates-data",
+   "source": "datarade",
+   "class": "consensus_estimates"
+  },
+  {
+   "url": "https://datarade.ai/data-categories/climate-data/providers",
+   "source": "datarade",
+   "class": "weather"
+  },
+  {
+   "url": "https://datarade.ai/data-categories/esg-data/providers",
+   "source": "datarade",
+   "class": "esg"
+  },
+  {
+   "url": "https://datarade.ai/data-categories/corporate-company-esg-data/providers",
+   "source": "datarade",
+   "class": "esg"
+  },
+  {
+   "url": "https://datarade.ai/data-categories/implied-volatility-data",
+   "source": "datarade",
+   "class": "options_vol"
+  },
+  {
+   "url": "https://datarade.ai/use-cases/esg-performance-analysis",
+   "source": "datarade",
+   "class": "esg"
+  },
+  {
+   "url": "https://datarade.ai/platforms/battlefin-ensemble",
+   "source": "battlefin",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://londonstrategicedge.com/directory/alternative-data/",
+   "source": "london_strategic_edge",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://paperswithbacktest.com/datasets/best-alternative-data",
+   "source": "paperswithbacktest",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://www.neudata.co/solutions/new-starter",
+   "source": "neudata",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://www.neudata.co/1/vendors/kodata",
+   "source": "neudata",
+   "class": "card_consumer"
+  },
+  {
+   "url": "https://dsg.eaglealpha.com/tags/",
+   "source": "eagle_alpha",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://dsg.eaglealpha.com/tag/esg/",
+   "source": "eagle_alpha",
+   "class": "esg"
+  },
+  {
+   "url": "https://dsg.eaglealpha.com/employment-alternative-data/",
+   "source": "eagle_alpha",
+   "class": "jobs"
+  },
+  {
+   "url": "https://dsg.eaglealpha.com/financial-alternative-data/",
+   "source": "eagle_alpha",
+   "class": "flows"
+  },
+  {
+   "url": "https://www.battlefin.com/",
+   "source": "battlefin",
+   "class": "UNSTATED"
+  },
+  {
+   "url": "https://www.battlefin.com/buyer/data-dashboards",
+   "source": "battlefin",
+   "class": "UNSTATED"
+  }
+ ]
+}

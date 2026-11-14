@@ -74,7 +74,7 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
 
     inst = INSTALLER.read_text("utf-8")
     assert "$TaskName = 'MT5-FrontierAudit'" in inst
-    assert "param([switch]$IfMissing)" in inst
+    assert "param([switch]$IfMissing, [switch]$EnsureSingleInstance)" in inst
     assert "run_frontier_audit.cmd" in inst
     assert "AddHours(5).AddMinutes(10)" in inst
     # -IfMissing returns before any Unregister, so a live task is never touched.
@@ -84,6 +84,22 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
     assert "install_frontier_audit_task.ps1" in adopt
     hook = adopt.index("install_frontier_audit_task.ps1")
     # After a SUCCESSFUL adoption (the partial branch exits first) and before the seal.
-    assert adopt.index('Done $adoptExit "adopt-release-partial"') < hook
+    assert adopt.index('$adoptExit "adopt-release-partial"') < hook
     assert hook < adopt.index("release.seal(by='Adopt-And-Seal')")
     assert "-IfMissing" in adopt[hook:hook + 800]
+
+
+def test_every_flag_the_runner_passes_is_one_the_organ_declares() -> None:
+    """world_model, meta_rnd and quantbench were called with --apply, which none of them
+    declares: each exited rc=2 ("unrecognized arguments") on every run (box log 2026-11-09/10)
+    and the lane never refreshed them. A flag the organ's own source never names is that bug."""
+    lines = _code_lines(RUNNER.read_text("utf-8"))
+    bad = []
+    for ln in _main_body(lines):
+        m = re.match(r'call :run "([^"]+)"(.*)', ln)
+        if not m:
+            continue
+        src = (ROOT / m.group(1).replace("\\", "/")).read_text("utf-8")
+        bad += [f"{m.group(1)} {flag}" for flag in re.findall(r"(--[a-z][a-z0-9-]*)", m.group(2))
+                if f'"{flag}"' not in src]
+    assert not bad, bad
