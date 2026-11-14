@@ -916,7 +916,8 @@ def test_a_file_key_gets_the_shared_redaction_scrub_and_redirect_guard(
     opened: list[tuple[tuple[str, ...], dict[str, str]]] = []
 
     class _Resp:
-        headers: dict[str, str] = {"Content-Type": "application/json"}
+        def __init__(self) -> None:
+            self.headers = {"Content-Type": "application/json"}
 
         def __enter__(self) -> _Resp:
             return self
