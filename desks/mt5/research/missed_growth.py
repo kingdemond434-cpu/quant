@@ -719,7 +719,12 @@ FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily
                      "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
                      "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
                      "cert_book_zero", "e8_account_undeclared",
-                     "gold_oco_direction_lock", "adopt_new_risk_hold", "cancel_requested")
+                     "gold_oco_direction_lock", "adopt_new_risk_hold", "cancel_requested",
+                     # THE ACCOUNT BREAKERS (mt5desk.account_breaker, 2026-11-11): survival
+                     # rails, not growth caps -- a prop account's breach is terminal, so a trip
+                     # inside the venue's line by the MEASURED one-interval loss raises forward
+                     # E[log W]; every trip and refusal is still billed here at its stop risk.
+                     "account_daily_breaker", "disconnect_breaker")
 
 #: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
 #: a SKIPPED row with reason late_send).

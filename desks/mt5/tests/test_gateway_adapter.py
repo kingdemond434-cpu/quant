@@ -1424,6 +1424,12 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "scalp_position_tags": lambda sleeves: frozenset(),
         "record_trades": lambda st, sleeves: None,
         "reconcile": lambda st: {**st, "position": [], "pending": []},
+        # The account breakers (mt5desk.account_breaker) are faked open here, like the release
+        # gate; test_account_breaker.py runs the real ones against a scripted terminal.
+        "account_breaker_pass": lambda st: None,
+        "account_breaker_reconciled": lambda verdict: None,
+        "account_breaker_new_risk": lambda: (True, ""),
+        "_BRK_BLOCK_WHY": "",
         "_logs": logs, "_decisions": decisions, "_intents": intents, "_calls": calls,
         "_state_file": state_file,
     }
