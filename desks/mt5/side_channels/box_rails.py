@@ -234,11 +234,13 @@ def check(url: str, exc_t: type[Exception] = RailRefusal) -> None:
     """Raise `exc_t` (a RailRefusal) unless the box may fetch `url`."""
     parts = urlsplit(url)
     host = parts.hostname or ""
-    if host_walled(host):
-        _refuse(url, f"host {host} is walled on the VPS (seed_miners.SOURCE_WALLS)", exc_t)
+    # A terms refusal is named first: it is permanent, where a VPS wall is an operational state
+    # that lifts. A host that is both (web.archive.org) is refused for its terms.
     terms = refused_host(host, parts.path)
     if terms:
         _refuse(url, f"host {host} is refused on the box ({terms})", exc_t)
+    if host_walled(host):
+        _refuse(url, f"host {host} is walled on the VPS (seed_miners.SOURCE_WALLS)", exc_t)
     if parts.path == "/robots.txt":
         return
     rp, why = _robots(parts.scheme or "https", parts.netloc)
