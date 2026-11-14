@@ -94,3 +94,50 @@ def test_emitters_hand_over_the_full_grid():
     assert "len(rows) >= MAX_EMIT_PER_KIND" not in body
     assert "fams[:2]" not in src and "pool[:3]" not in src
     assert ".most_common(4)" not in src.split("theory_compositions", 1)[0][-6000:]
+
+
+def test_orthogonal_grid_widens_past_family_x_symbol(tmp_path, monkeypatch):
+    """Base cells first, then session variants, then registered param_grid variants, then
+    session x param -- so a spent family x symbol base never leaves the emitter silent."""
+    monkeypatch.setattr(ts, "STATE", tmp_path / "state")
+    monkeypatch.setattr(ts, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(ts, "_explored", lambda r: 0)
+    monkeypatch.setattr(ts, "_family_vocab", lambda: ["fam_a", "fam_b"])
+    monkeypatch.setattr(ts, "_param_variants",
+                        lambda f: [{"k": 1}, {"k": 3}] if f == "fam_a" else [])
+    uni = tmp_path / "uni"
+    uni.mkdir()
+    for s in ("EURUSD", "GBPUSD"):
+        (uni / f"{s}_H1.parquet").write_text("x")
+    monkeypatch.setattr(ts, "UNIVERSE", uni)
+    monkeypatch.setattr(ts, "_may_hypothesise", lambda s: True)
+    monkeypatch.setattr(ts, "MAX_EMIT_PER_KIND", 4)
+    seen_params: list[list] = []
+    cells: list[str] = []
+    for h in range(12):
+        monkeypatch.setattr(ts, "NOW", NOW + timedelta(hours=h))
+        res = ts._emit_orthogonal({}, [])
+        stamp = (NOW + timedelta(hours=h)).strftime("%Y%m%dT%H")
+        f = tmp_path / "intel" / f"orthogonal_{stamp}.json"
+        rows = json.loads(f.read_text())["rows"] if f.exists() else []
+        seen_params.append([r.get("params") for r in rows])
+        cells.extend(ts.cell_key(r) for r in rows)
+        if h == 0:
+            # 4 base + 12 session + 4 param + 12 session x param
+            assert res["rotation"]["candidates"] == 32
+    assert all(p is None for p in seen_params[0])                    # base first
+    assert all(p and set(p) == {"session"} for p in seen_params[1])  # then sessions
+    flat = [p for hour in seen_params for p in hour]
+    # 3 sessions + 2 knob values + 6 session x knob = 11 distinct parameterisations, each on
+    # both symbols (28 widened cells) -- and no cell is donated twice
+    assert len(flat) == 32 and len({json.dumps(p, sort_keys=True) for p in flat if p}) == 11
+    assert len(cells) == len(set(cells)) == 32
+    assert seen_params[8] == []                                       # all 32 donated, 4/hour
+
+
+def test_param_variants_are_one_knob_off_the_defaults(monkeypatch):
+    from mt5desk import families
+    monkeypatch.setitem(families.FAMILY_REGISTRY, "toy_fam",
+                        {"defaults": {"a": 1, "b": 2}, "param_grid": {"a": [1, 5], "b": [2, 7]}})
+    assert ts._param_variants("toy_fam") == [{"a": 5, "b": 2}, {"a": 1, "b": 7}]
+    assert ts._param_variants("not_registered") == []

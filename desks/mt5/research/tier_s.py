@@ -420,12 +420,13 @@ def _interleave(groups: Iterable[list[dict[str, Any]]]) -> list[dict[str, Any]]:
 
 
 def rotate(kind: str, rows: list[dict[str, Any]], seen: Mapping[str, Any], *,
-           now: datetime, rank: Any = None, cap: int = MAX_EMIT_PER_KIND
+           now: datetime, rank: Any = None, cap: int | None = None
            ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     """The rotation: never-donated cells first (in `rank` order, stable on the emitter's own
     steering order), then cells last donated more than REEMIT_AFTER_DAYS ago (oldest first), then
     cap. A cell donated more recently is withheld -- the compiler already holds it, so sending it
     again spends the cap on nothing. Returns (chosen rows, counts)."""
+    cap = MAX_EMIT_PER_KIND if cap is None else int(cap)
     fresh: list[tuple[Any, int, dict[str, Any]]] = []
     stale: list[tuple[str, int, dict[str, Any]]] = []
     recent = 0
@@ -1637,22 +1638,76 @@ def _emit_orthogonal(steer: Mapping[str, Mapping[str, float]],
     # THE FULL GRID, never a prefix: the loop used to stop at MAX_EMIT_PER_KIND, so the steering's
     # top family x top classes were re-sent every hour and nothing past them was ever reached.
     # `_emit` rotates; the steering order survives as the tie-break among never-donated cells.
-    per_fam: list[list[dict[str, Any]]] = []
+    #
+    # AND THE GRID WIDENS WHEN ITS BASE IS SPENT (Tier S thread, 2026-11-14): family x symbol
+    # alone is ~900 cells on the box -- six fresh hours, then fourteen silent days and an OWING
+    # producer row. Each base cell is followed by its SESSION variants (asia / london / ny) and by
+    # one-knob variants over the family's registered `param_grid` (each listed value with every
+    # other knob at its default). Every variant is a distinct, judgeable cell with its own
+    # identity, withheld only if IT was donated within the window. Tiers are emitted in order
+    # (base, session, param, session x param), each interleaved across families, so the widening
+    # is spent only after the plainer ground. On the box (~200 eligible symbols) the four tiers
+    # hold more cells than 14 days x 24 hours x 150, so the emitter never goes silent inside the
+    # re-emit window; the rotation counts report `fresh_available` so exhaustion is visible.
+    tiers: list[list[list[dict[str, Any]]]] = [[], [], [], []]
     for f in sorted(vocab, key=lambda x: -fam_w[x]):
-        rows: list[dict[str, Any]] = []
-        per_fam.append(rows)
+        base: list[dict[str, Any]] = []
+        sess: list[dict[str, Any]] = []
+        knob: list[dict[str, Any]] = []
+        both: list[dict[str, Any]] = []
+        tiers[0].append(base)
+        tiers[1].append(sess)
+        tiers[2].append(knob)
+        tiers[3].append(both)
+        variants = _param_variants(f)
         for s in sorted(syms, key=lambda x: -cls_w.get(_asset_class(x), 1.0)):
-            if (f, s) in held:
+            steer_row = {"mechanism": fam_w[f], "asset_class": cls_w.get(_asset_class(s), 1.0)}
+            text = (f"tier_s orthogonal direction: {f} on {s} -- mechanism weight "
+                    f"{fam_w[f]:.3f}, asset-class weight "
+                    f"{cls_w.get(_asset_class(s), 1.0):.3f} vs the effective basis")
+            if (f, s) not in held:
+                base.append({"kind": "hypothesis", "family": f, "symbols": [s], "text": text,
+                             "steering": steer_row})
+            for sn in ORTHOGONAL_SESSIONS:
+                sess.append({"kind": "hypothesis", "family": f, "symbols": [s],
+                             "params": {"session": sn}, "text": f"{text}; session {sn}",
+                             "steering": steer_row})
+            for pv in variants:
+                knob.append({"kind": "hypothesis", "family": f, "symbols": [s],
+                             "params": dict(pv), "text": f"{text}; variant {pv}",
+                             "steering": steer_row})
+                for sn in ORTHOGONAL_SESSIONS:
+                    both.append({"kind": "hypothesis", "family": f, "symbols": [s],
+                                 "params": {**pv, "session": sn},
+                                 "text": f"{text}; variant {pv}; session {sn}",
+                                 "steering": steer_row})
+    rows = [r for t in tiers for r in _interleave(t)]
+    return _emit("orthogonal", rows)
+
+
+#: Session selectors the orthogonal grid widens over once its family x symbol base is spent.
+ORTHOGONAL_SESSIONS = ("asia", "london", "ny")
+
+
+def _param_variants(family: str) -> list[dict[str, Any]]:
+    """One-knob variants of a registered family: each `param_grid` value with every other knob
+    at its default, skipping the default itself (the base cell already is that)."""
+    try:
+        from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
+    except Exception:
+        return []
+    spec = FAMILY_REGISTRY.get(family) or {}
+    grid = spec.get("param_grid") if isinstance(spec, dict) else None
+    defaults = (spec.get("defaults") or {}) if isinstance(spec, dict) else {}
+    if not isinstance(grid, dict):
+        return []
+    out: list[dict[str, Any]] = []
+    for k, vals in sorted(grid.items()):
+        for v in vals if isinstance(vals, (list, tuple)) else []:
+            if defaults.get(k) == v:
                 continue
-            rows.append({"kind": "hypothesis", "family": f, "symbols": [s],
-                         "text": f"tier_s orthogonal direction: {f} on {s} -- mechanism weight "
-                                 f"{fam_w[f]:.3f}, asset-class weight "
-                                 f"{cls_w.get(_asset_class(s), 1.0):.3f} vs the effective basis",
-                         "steering": {"mechanism": fam_w[f],
-                                      "asset_class": cls_w.get(_asset_class(s), 1.0)}})
-    # family-major order kept for the steering (heaviest mechanism first), but interleaved so one
-    # hour's cap spans many families rather than exhausting the first one's symbols
-    return _emit("orthogonal", _interleave(per_fam))
+            out.append({**defaults, k: v})
+    return out
 
 
 def organ_qd() -> dict[str, Any]:
