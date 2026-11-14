@@ -192,7 +192,7 @@ try {
     foreach ($h in $heads) {
         $branch = "claude/sign-train-$($h.Substring(0, 12))"
         if ((GhCount @('pr', 'list', '-R', $Repo, '--head', $branch, '--state', 'closed', '--json', 'mergedAt', '--jq', '[.[] | select(.mergedAt == null)] | length')) -ne 0) {
-            Say "a sign PR for $($h.Substring(0, 9)) was closed unmerged; not signed again"; continue
+            Wait $branch "a sign PR for $($h.Substring(0, 9)) was closed unmerged; not signed again"; continue
         }
         foreach ($t in $tips) {
             if ("$t" -notmatch '^([0-9a-f]{40})\s+refs/heads/([A-Za-z0-9._/-]+)$') { continue }
