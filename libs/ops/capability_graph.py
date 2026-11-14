@@ -765,6 +765,15 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/EDGE_CONFIDENCE.json",)),
     Node("edge_reliability", "desks/mt5/research/edge_reliability.py",
          writes=("desks/mt5/reports/edge_reliability.json",)),
+    Node("decay_verdicts", "desks/mt5/research/decay_verdicts.py",
+         writes=("desks/mt5/reports/DECAY_VERDICTS.json",),
+         reads=("desks/mt5/reports/shadow/", "desks/mt5/data/sleeves.json",
+                "desks/mt5/data/live_ledger.jsonl")),
+    Node("cluster_judge", "desks/mt5/research/cluster_judge.py",
+         writes=("desks/mt5/reports/CLUSTER_JUDGE.json",),
+         reads=("desks/mt5/reports/shadow/", "desks/mt5/data/sleeves.json",
+                "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
+                "backups/moat/shadow_ledgers/")),
     Node("execution_resolver", "desks/mt5/research/execution_resolver.py",
          writes=("desks/mt5/reports/execution_resolver.json",)),
     Node("exit_study", "desks/mt5/research/exit_study.py",
@@ -953,6 +962,10 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/microstructure_miner.json", "desks/mt5/reports/MISSED_GROWTH.json",
     "desks/mt5/reports/CAPITAL_MODIFIERS.json", "desks/mt5/reports/FILL_SURFACE.json",
     "desks/mt5/reports/NETTING.json", "desks/mt5/reports/NETTING_BOOK.json",
+    # THE TIER-S CLUSTER JUDGE (P8-J1). `promotion_input` is for the allocator / E8 independence
+    # count, which do not read it yet (sizing is the Max-growth thread's; NOT_WIRED in the
+    # artifact). Until that reader lands a person reads it; when it does, move this line.
+    "desks/mt5/reports/CLUSTER_JUDGE.json",
     # The execution twin's report, private dataset and watermark: advisory until the cost
     # model reads the report (see the execution_twin node). The portfolio gap likewise until
     # the research bandit reads it.
@@ -1060,6 +1073,10 @@ EXTERNAL_READERS = {
     "desks/mt5/data/prospector_targets.json": "world_crawler (side_channels)",
     "desks/mt5/data/hypotheses/deepened_candidates.json": "external_gauntlet via compiler merge",
     "desks/mt5/data/state_fits.json": "state_vector_build (its own cache)",
+    # ORDER-SENSITIVE DECAY VERDICTS (R0312). The allocator's demote/shrink reader is owned by the
+    # Max-growth thread (the artifact says NOT_WIRED); until it lands, the phone page reads it.
+    "desks/mt5/reports/DECAY_VERDICTS.json": ("desk_dashboard_state._live: each LIVE sleeve's "
+                                              "decay verdict on the principal's page"),
     "desks/mt5/data/module_rent.jsonl": "module_rent (its own append-only window history)",
     "desks/mt5/data/vol_archive/observations.jsonl": ("vol_archive (its own append-only vintage "
                                                      "series; the archive IS the asset and is "

@@ -22,11 +22,14 @@ of 0.1%, and the stage where the other 999 stopped is the one to fix.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import glob
 import json
+import re
 import statistics
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -42,7 +45,7 @@ def _recent(paths: list[Path], days: int = 7) -> int:
     return sum(1 for p in paths if _mtime(p) >= cut)
 
 
-def _rows(path: Path) -> list:
+def _rows(path: Path) -> list[Any]:
     try:
         d = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
@@ -95,9 +98,9 @@ def _banned(family: object) -> bool:
         return False
 
 
-def forward_stage(canon_rows: list, moat_ledgers: list[Path] | None = None,
+def forward_stage(canon_rows: list[Any], moat_ledgers: list[Path] | None = None,
                   shadow_dir: Path | None = None, enrolment: Path | None = None,
-                  now: datetime | None = None) -> dict:
+                  now: datetime | None = None) -> dict[str, Any]:
     """Certificates against the forward clocks that are ACTUALLY TICKING.
 
     THE DEFECT THIS REPLACES (measured on the box 2026-09-30). This stage counted files in
@@ -121,7 +124,7 @@ def forward_stage(canon_rows: list, moat_ledgers: list[Path] | None = None,
     banned = sum(1 for f in fams if _banned(f))
     eligible = len(fams) - banned
     root = Path(shadow_dir or SHADOW_DIR)
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     lanes_read = 0
     for name in LANE_FILES:
         try:
@@ -132,7 +135,7 @@ def forward_stage(canon_rows: list, moat_ledgers: list[Path] | None = None,
             lanes_read += 1
             rows += [v for v in doc.values() if isinstance(v, dict)]
     ticks = [x for x in (_ts(r.get("last_attempt_at")) for r in rows) if x is not None]
-    out: dict = {
+    out: dict[str, Any] = {
         "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
         "certificates": len(fams), "banned_family_certificates": banned,
         "forward_eligible_certificates": eligible,
@@ -167,7 +170,7 @@ def forward_stage(canon_rows: list, moat_ledgers: list[Path] | None = None,
     return out
 
 
-def stages() -> dict:
+def stages() -> dict[str, Any]:
     intel = BASE / "data" / "intelligence"
     intake_files = [Path(p) for p in glob.glob(str(intel / "*" / "discoveries_*.json"))]
     intake_rows = sum(len(_rows(p)) for p in intake_files[-200:])
@@ -180,13 +183,11 @@ def stages() -> dict:
     cand = _rows(BASE / "data" / "hypotheses" / "miner_candidates.json")
     deep_q = _rows(BASE / "data" / "hypotheses" / "miner_deepening_queue.json")
     worked = 0
-    try:
+    with contextlib.suppress(OSError):
         worked = sum(1 for ln in (BASE / "data" / "hypotheses" / "deepening_worked.jsonl")
                      .read_text("utf-8").splitlines() if ln.strip())
-    except OSError:
-        pass
     judged = _rows(BASE / "reports" / "universal_gates_external.json")
-    canon: dict = {}
+    canon: dict[str, Any] = {}
     try:
         canon = json.loads((BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json").read_text("utf-8"))
         certified = len(canon.get("survivors") or {})
@@ -206,11 +207,9 @@ def stages() -> dict:
         rec_open = [r for r in rec_rows if isinstance(r, dict) and r.get("status") == "open"]
         ages = []
         for r in rec_open:
-            try:
+            with contextlib.suppress(KeyError, ValueError, TypeError):
                 ages.append((datetime.now(tz=UTC)
                              - datetime.fromisoformat(str(r["raised"]))).days)
-            except (KeyError, ValueError, TypeError):
-                pass
         rec_summary = {"total": len(rec_rows), "open": len(rec_open),
                        "open_median_age_days": (statistics.median(ages) if ages else None)}
     except (OSError, ValueError):
@@ -224,18 +223,218 @@ def stages() -> dict:
         "deepening": {"queued": len(deep_q), "decided_total": worked,
                       "backlog": max(0, len(deep_q) - worked)},
         "judged": {"cells": len(judged),
-                   "unmeasured": sum(1 for v in judged if isinstance(v, dict) and v.get("unmeasured"))},
+                   "unmeasured": sum(1 for v in judged
+                                     if isinstance(v, dict) and v.get("unmeasured"))},
         "certified": {"cells": certified,
                       "last_certified": (cert_dates[-1] if cert_dates else None),
                       "certified_last_30d": sum(
                           1 for d in cert_dates
-                          if d and d >= (datetime.now(tz=UTC) - timedelta(days=30)).strftime("%Y-%m-%d"))},
+                          if d and d >= (datetime.now(tz=UTC)
+                                         - timedelta(days=30)).strftime("%Y-%m-%d"))},
         "forward": forward_stage(canon_rows, moat_ledgers=ledgers),
         "recommendations": rec_summary,
     }
 
 
-def run() -> dict:
+GATE_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+JUDGE_FENCE = ROOT / "scripts" / "check_judge_coverage.py"
+#: Bytes read from the END of the gate ledger to find the newest verdict. The sealed judge appends
+#: one JSON row per verdict, so the newest stamp is in the tail; streaming a multi-GB ledger every
+#: hour is the cost `judge_coverage` already learned to avoid (2026-10-07).
+TAIL_BYTES = 1 << 20
+JUDGE_SILENT = "judge_silent"
+#: Rewritten by every external_gauntlet sweep that is not a one-cell reproduction.
+SWEEP_REPORT = BASE / "reports" / "universal_gates_external.json"
+
+
+def judge_stale_hours() -> float:
+    """The judge-coverage fence's own lease, `scripts/check_judge_coverage.STALE_H`, reused.
+
+    Loaded by path because `scripts/` is not a package; the fence imports stdlib only. If it
+    cannot be loaded the lease is not invented here: None, and the caller says UNMEASURED.
+    """
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location("_rp_check_judge_coverage", JUDGE_FENCE)
+        if spec is None or spec.loader is None:
+            raise ImportError(str(JUDGE_FENCE))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return float(mod.STALE_H)
+    except Exception as exc:  # a missing fence is UNMEASURED, never a guess
+        raise LookupError(f"judge-coverage lease unreadable from {JUDGE_FENCE}: {exc}") from exc
+
+
+def _ledger_newest(path: Path, now: datetime) -> tuple[datetime | None, int]:
+    """(newest `at` no later than `now` in the ledger's tail, rows stamped in the future).
+
+    A row stamped after `now` is not evidence the judge ran: a clock skew or a hand edit would
+    otherwise mask a silent judge for as long as the bad stamp stays in the tail (audit of
+    61b2e2408: a 47h-old ledger plus one row at +30d read `silent=False`). Such rows are counted
+    and reported, never taken as the newest verdict.
+    """
+    with path.open("rb") as fh:
+        fh.seek(0, 2)
+        size = fh.tell()
+        fh.seek(max(0, size - TAIL_BYTES))
+        tail = fh.read().decode("utf-8", errors="replace")
+    best: datetime | None = None
+    future = 0
+    for line in tail.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        at = _ts(row.get("at")) if isinstance(row, dict) else None
+        if at is None:
+            continue
+        if at > now:
+            future += 1
+            continue
+        if best is None or at > best:
+            best = at
+    return best, future
+
+
+def newest_verdict_at(ledger: Path | None = None, *, now: datetime | None = None
+                      ) -> datetime | None:
+    """The `at` of the newest verdict in the gate ledger's tail that is not in the future."""
+    return _ledger_newest(Path(ledger or GATE_LEDGER), now or datetime.now(tz=UTC))[0]
+
+
+_N_JUDGED = re.compile(rb'"n_judged"\s*:\s*(\d+)')
+
+
+def sweep_n_judged(path: Path) -> int | None:
+    """The sweep report's top-level `n_judged`, read without parsing the whole (large) document;
+    None when the report carries none (an empty discovery batch writes no such field)."""
+    with path.open("rb") as fh:
+        m = _N_JUDGED.search(fh.read())
+    return int(m.group(1)) if m else None
+
+
+def judge_silence(ledger: Path | None = None, *, now: datetime | None = None,
+                  stale_h: float | None = None, sweep: Path | None = None) -> dict[str, Any]:
+    """Is the sealed judge running? MEASURED with the age, or UNMEASURED with why.
+
+    THE DEFECT (measured 2026-10-14 04:24Z). RESEARCH_PRODUCTIVITY reported bottleneck
+    "none obvious" while the judge's newest verdict was 47 h old (2026-10-12 06:59Z). A funnel
+    whose judge has stopped has exactly one bottleneck, and it is that one. The lease is the
+    judge-coverage fence's `STALE_H`, so the two organs can never disagree on what "stale" means.
+    A missing or unreadable ledger is UNMEASURED (L1.28a): absence never reads as a quiet judge.
+
+    TWO WITNESSES, NOT ONE (audit of 61b2e2408). `external_gauntlet._append_gate_ledger` writes a
+    ledger row only when a cell's verdict CHANGES, so a judge that is sweeping and re-judging
+    unchanged cells leaves the ledger untouched. Every sweep that is not a one-cell reproduction
+    rewrites `reports/universal_gates_external.json`, so its mtime is the second witness. The
+    judge is silent only when the NEWER of the two is past the lease; either alone is enough to
+    measure it. Neither witness is believed when it is stamped in the future.
+    """
+    t = now or datetime.now(tz=UTC)
+    path = Path(ledger or GATE_LEDGER)
+    sweep_path = Path(sweep or SWEEP_REPORT)
+    out: dict[str, Any] = {"evidence": str(path), "sweep_report": str(sweep_path),
+                           "lease_source": "scripts/check_judge_coverage.STALE_H"}
+    try:
+        lease = float(stale_h) if stale_h is not None else judge_stale_hours()
+    except LookupError as exc:
+        out.update(status="UNMEASURED", silent=None, why=str(exc))
+        return out
+    out["stale_after_hours"] = lease
+    witnesses: list[tuple[datetime, str]] = []
+    gaps: list[str] = []
+    try:
+        at, future = _ledger_newest(path, t)
+    except OSError as exc:
+        at, future = None, 0
+        gaps.append(f"{path.name} absent or unreadable: {exc.__class__.__name__}")
+    else:
+        if future:
+            out["ledger_rows_stamped_in_future"] = future
+        if at is None:
+            gaps.append(f"{path.name} holds no verdict stamped at or before now in its last "
+                        f"{TAIL_BYTES} bytes" + (f" ({future} stamped in the future, ignored)"
+                                                 if future else ""))
+        else:
+            out["newest_ledger_verdict_at"] = at.isoformat()
+            witnesses.append((at, str(path)))
+    try:
+        swept = datetime.fromtimestamp(sweep_path.stat().st_mtime, tz=UTC)
+        n_judged = sweep_n_judged(sweep_path)
+    except OSError as exc:
+        gaps.append(f"{sweep_path.name} absent or unreadable: {exc.__class__.__name__}")
+    else:
+        out["sweep_n_judged"] = n_judged
+        if not n_judged:
+            # A sweep that judged nothing is not the judge working: an empty discovery batch
+            # rewrites this report too (re-audit of 9dd343f69: an n_judged=0 report from 1h ago
+            # masked a 47h-silent ledger).
+            gaps.append(f"{sweep_path.name} judged no cell (n_judged={n_judged}); not a witness")
+        elif swept > t:
+            out["sweep_report_mtime_in_future"] = swept.isoformat()
+            gaps.append(f"{sweep_path.name} mtime {swept.isoformat()} is in the future, ignored")
+        else:
+            out["sweep_report_mtime"] = swept.isoformat()
+            witnesses.append((swept, str(sweep_path)))
+    if gaps:
+        out["gaps"] = gaps
+    if not witnesses:
+        out.update(status="UNMEASURED", silent=None, why="; ".join(gaps))
+        return out
+    newest, source = max(witnesses)
+    age = max(0.0, (t - newest).total_seconds() / 3600.0)
+    out.update(status="MEASURED", newest_verdict_at=newest.isoformat(), evidence=source,
+               age_hours=round(age, 1), silent=age > lease)
+    return out
+
+
+def _stage_rule(s: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    """The funnel's own measured bottleneck, judge aside: a deepening backlog, then a judged
+    stage that is mostly UNMEASURED. None when neither binds."""
+    if s["deepening"]["backlog"] > 100:
+        return "deepening", {"stage": "deepening", "backlog": s["deepening"]["backlog"]}
+    if s["judged"]["cells"] and s["judged"]["unmeasured"] > 0.5 * s["judged"]["cells"]:
+        return "judged", {"stage": "judged", "unmeasured": s["judged"]["unmeasured"],
+                          "cells": s["judged"]["cells"]}
+    return None
+
+
+def choose_bottleneck(s: dict[str, Any], judge: dict[str, Any]
+                      ) -> tuple[str, dict[str, Any]]:
+    """(bottleneck name, detail). A silent or unmeasured judge outranks every other stage.
+
+    An UNMEASURED judge still carries the stage the funnel DID measure in its detail (audit of
+    61b2e2408: a 500-row deepening backlog vanished behind "UNMEASURED"), so the one unknown
+    never hides the one known.
+    """
+    rule = _stage_rule(s)
+    if judge.get("status") != "MEASURED":
+        detail: dict[str, Any] = {"stage": "judge", "why": judge.get("why"),
+                                  "evidence": judge.get("evidence")}
+        detail["measured_stage"] = (
+            {"bottleneck": rule[0], **rule[1]} if rule else
+            {"bottleneck": "none obvious",
+             "why": "no other stage binds on what the funnel measured"})
+        return "UNMEASURED", detail
+    if judge.get("silent"):
+        return JUDGE_SILENT, {
+            "stage": "judge", "evidence": judge.get("evidence"),
+            "age_hours": judge.get("age_hours"),
+            "newest_verdict_at": judge.get("newest_verdict_at"),
+            "why": (f"the judge's newest activity is {judge.get('age_hours')}h old "
+                    f"({judge.get('newest_verdict_at')}), past the "
+                    f"{judge.get('stale_after_hours'):.0f}h judge-coverage lease; "
+                    f"evidence {judge.get('evidence')}")}
+    if rule:
+        return rule
+    return "none obvious", {"judge_age_hours": judge.get("age_hours")}
+
+
+def run(*, ledger: Path | None = None, now: datetime | None = None,
+        sweep: Path | None = None) -> dict[str, Any]:
     s = stages()
     conv = {}
     if s["intake"]["rows_recent_files"]:
@@ -253,11 +452,11 @@ def run() -> dict:
                                            / fwd["forward_eligible_certificates"], 4)
     elif s["certified"]["cells"]:
         conv["certified_to_forward"] = "UNMEASURED"
-    bottleneck = "deepening" if s["deepening"]["backlog"] > 100 else (
-        "judged" if s["judged"]["cells"] and s["judged"]["unmeasured"] > 0.5 * s["judged"]["cells"]
-        else "none obvious")
-    doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "stages": s, "conversion": conv,
-           "bottleneck": bottleneck}
+    judge = judge_silence(ledger, now=now, sweep=sweep)
+    s["judge"] = judge
+    bottleneck, detail = choose_bottleneck(s, judge)
+    doc = {"generated_utc": (now or datetime.now(tz=UTC)).isoformat(), "stages": s,
+           "conversion": conv, "bottleneck": bottleneck, "bottleneck_detail": detail}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc
@@ -268,6 +467,8 @@ def main() -> int:
     d = run()
     s = d["stages"]
     print(f"RESEARCH PRODUCTIVITY  bottleneck={d['bottleneck']}")
+    if d.get("bottleneck_detail", {}).get("why"):
+        print(f"  why: {d['bottleneck_detail']['why']}")
     print(f"  intake files={s['intake']['files']} (7d {s['intake']['files_7d']})  "
           f"compiled={s['compiled']['candidates']}  deepening backlog={s['deepening']['backlog']}")
     print(f"  judged={s['judged']['cells']} (unmeasured {s['judged']['unmeasured']})  "

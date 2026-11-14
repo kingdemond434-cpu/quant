@@ -257,6 +257,12 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # ORDER-SENSITIVE DECAY VERDICTS (R0312): the demote/shrink INPUT beside the decay monitor's
+    # own verdicts, read per sleeve by whatever sizes the book later -- portfolio, as its sibling.
+    "decay_verdicts": "portfolio",
+    # THE TIER-S CLUSTER JUDGE (P8-J1): dependence and concentration of the forward clocks at
+    # the bar, an input to whatever counts independent bets in the book -- portfolio.
+    "cluster_judge": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
