@@ -4,9 +4,9 @@ release, with every revision appended and every surprise variant measured or nam
 THE GAP, MEASURED ON THIS TREE (2026-10-06). The desk has captured the free calendar's consensus
 since 2026-08-25 as point-in-time vintages (`data/intelligence/ff_calendar_vintage/`, hourly
 rollups: title, scheduled instant, forecast, previous, impact, capture stamp), and the agencies
-publish every first print on a schedule. Nothing joined them. `event_surprise` therefore found ZERO pairs with both an
-actual and a consensus and reported every scheduled surprise UNMEASURED, and the event atlas
-measured reactions to scheduled MOMENTS, never to NEWS. This module is the join.
+publish every first print on a schedule. Nothing joined them. `event_surprise` therefore found
+ZERO pairs with both an actual and a consensus and reported every scheduled surprise
+UNMEASURED, and the event atlas measured reactions to scheduled MOMENTS, never to NEWS. This module is the join.
 
 WHAT A ROW CARRIES (principal 2026-10-05, "ECONOMIC SURPRISE LAYER"): event, country, currency,
 reference period, scheduled instant, previous (as the calendar showed it), the prior period's

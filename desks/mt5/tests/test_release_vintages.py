@@ -163,7 +163,7 @@ def test_nothing_here_fetches_or_reads_fred() -> None:
                    '"lake" / "alfred"'):
         assert banned not in src, banned
     assert set(rv.PRIMARY) >= {r.series for r in rv.RELEASES}
-    assert rv.gauntlet_terms("prints:PAYEMS")[0] is False
+    assert rv.gauntlet_terms("alfred:PAYEMS")[0] is False
     assert rv.gauntlet_terms("fred:PAYEMS")[0] is False
 
 
