@@ -385,6 +385,12 @@ def _proposers() -> None:
     contract. None admits anything. Daily, because cadence is multiplicity. A failure in one
     must not cost the others their run, so each is fenced.
     """
+    # THE REACH EDGE THE REGISTRY CAN SEE (2026-11-03). The loop below imports by name
+    # (`__import__`), which no static walk follows, so the showcase producer is also imported
+    # here; the component registry then puts it on this step's clock (invoked:daily_cycle.py).
+    import contextlib
+    with contextlib.suppress(ImportError):
+        import prop_showcase_miner  # noqa: F401
     # THE BANDIT SETS THE BUDGETS. Each proposer belongs to a research direction; its time budget
     # is the base budget scaled by that direction's share (uniform = 1.0), clipped so no arm is
     # ever starved to zero -- the exploration floor is what keeps a cold arm alive.
@@ -421,7 +427,11 @@ def _proposers() -> None:
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
-                 "book_forensics"):
+                 "book_forensics",
+                 # PROP-FIRM PAYOUT SHOWCASES (2026-11-03, BACKLOG row 38): the firms' own
+                 # funded-trader stories -> instrument/session/style claims -> family cells,
+                 # screened and charged through the same donor door as the genome.
+                 "prop_showcase_miner"):
         try:
             mod = __import__(name)
             kwargs = {}
