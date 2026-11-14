@@ -638,6 +638,9 @@ LEG_LAYER: dict[str, str] = {
     # research-live identity join grades whether the live book trades what research certified:
     # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
     "null_lab": "meta", "research_live_identity": "meta",
+    # H6 candidate half: how crowded and how decayed each docket row's edge is -- a judgement
+    # about the research pipeline's own output, so it is meta like the null lab.
+    "candidate_crowding": "meta",
     "macro_conditioned_sweep": "prediction",
     # The UNKNOWN-share census grades the judge's own coverage: the machine measuring the machine.
     "unknown_census": "meta",

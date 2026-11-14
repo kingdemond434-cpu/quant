@@ -607,3 +607,8 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# H6 CANDIDATE CROWDING (2026-11-13): a mark for every docket row (~4.6 MB, rewritten hourly)
+# and its decay cache are box-local state read on the box; the summary is reports/
+# CANDIDATE_CROWDING.json.
+desks/mt5/data/hypotheses/crowding_marks.json
+desks/mt5/data/crowding_decay_cache.json
