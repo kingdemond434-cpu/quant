@@ -251,6 +251,14 @@ def _markout() -> None:
         "risk_basis": {b: sum(1 for r in m.rows if r.get("risk_basis") == b)
                        for b in sorted({str(r.get("risk_basis")) for r in m.rows})},
     }, indent=2), encoding="utf-8")
+    # PER ACCOUNT (idea pass p11, rebuilt 2026-11-14). markout.json is MIXED whenever the ledger
+    # holds more than one account; MARKOUT_V2.json measures each account on its own. Fail-soft:
+    # a broken v2 never costs the legacy report or the chain below.
+    try:
+        from research import markout_v2
+        markout_v2.main([])
+    except Exception as exc:  # noqa: BLE001 -- a report leg, never fatal
+        dlog(f"  markout_v2 skipped: {type(exc).__name__}")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
     # the share of all deals that have one. The programme's "no semantic breaks" property is
