@@ -176,6 +176,15 @@ _CATALOGUED = ("REGISTERED AND MINED; redistribution withheld by its terms (LAWS
 #: `desk_axis` rows are already on this box; `public_endpoint` rows go through `Guard`;
 #: `UNMEASURED` rows are NAMED GAPS with the missing fetcher said out loud (L1.28a), never
 #: omitted, because a gap nobody can name is a gap nobody closes.
+#: ICE BofA's US high-yield OAS reaches FRED as a third-party series: refused on terms twice over
+#: (FRED ruling 2026-11-13 item 3: third-party series only from their owner under the owner's
+#: terms; FRED itself refuses automated fetches). Held rows stay labelled; no new use.
+_ICE_REFUSAL = ("BLOCKED_ON_TERMS: ICE BofA owns the US high-yield OAS (BAMLH0A0HYM2) and FRED "
+                "refuses automated fetches (FRED ruling 2026-11-13 item 3)")
+_ICE_MISSED = ("missed_growth: the high-yield OAS credit read is lost to usd_liquidity and "
+               "global_risk_appetite until ICE's own terms allow it; the term spread, funding "
+               "spreads and the desk's own tape stand in. A gap, not a zero.")
+
 _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
     "china_activity": (
         ("cn_customs_exports", "China customs monthly exports, USD", "public_endpoint",
@@ -232,7 +241,9 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          {"terms_note": f"{_NOFETCHER}; issuer pages are public but are not an API"}),
         ("us_credit_oas", "high-yield OAS: the price of balance sheet", "desk_axis",
          "FRED BAMLH0A0HYM2", "daily", 1, -1, ("NAS100", "US500", "XAUUSD"),
-         {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2"}),
+         {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2",
+                                   "machine_use_allowed": False, "licence": _ICE_REFUSAL,
+                                   "terms_note": _ICE_MISSED}),
     ),
     "global_risk_appetite": (
         # Refused twice over: FRED is terms-refused for automated fetches (ruling 2026-11-13)
@@ -244,11 +255,13 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
                                             "and VIX is Cboe's, whose terms restrict automated "
                                             "extraction (FRED ruling + addendum 2026-11-14)",
                                  "terms_note": "missed_growth: global_risk_appetite loses its "
-                                               "implied-vol level; credit spread, crypto vol and "
-                                               "the desk's own realised vol stand in"}),
+                                               "implied-vol level; the term spread, crypto vol "
+                                               "and the desk's own realised vol stand in"}),
         ("credit_spread", "high-yield OAS as the credit read", "desk_axis",
          "FRED BAMLH0A0HYM2", "daily", 1, -1, _RISK,
-         {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2"}),
+         {"axis_file": "fred", "axis_series": "BAMLH0A0HYM2",
+                                   "machine_use_allowed": False, "licence": _ICE_REFUSAL,
+                                   "terms_note": _ICE_MISSED}),
         ("term_spread", "10y minus 2y as the cycle read", "desk_axis", "FRED T10Y2Y", "daily",
          1, +1, ("US500", "NAS100", "USDJPY"), {"axis_file": "fred", "axis_series": "T10Y2Y"}),
         ("cross_asset_breadth", "share of the desk's universe above its 20-day mean",

@@ -97,12 +97,15 @@ def test_cboe_and_vix_rows_are_refused_on_terms_and_keep_their_missed_growth() -
     and Cboe. Both rows stay registered, name the act, and carry a missed_growth line."""
     cboe = next(s for s in si.CRYPTO_SENSORS if s.sensor_id == "cboe_delayed_surface")
     vix = next(s for s in si.ENSEMBLES["global_risk_appetite"] if s.sensor_id == "vix_level")
-    for row in (cboe, vix):
+    oas = [s for rows in si.ENSEMBLES.values() for s in rows
+           if s.axis_series == "BAMLH0A0HYM2"]
+    assert len(oas) == 2
+    for row in (cboe, vix, *oas):
         assert row.machine_use_allowed is False
         assert row.licence.startswith("BLOCKED_ON_TERMS")
         assert "missed_growth" in row.terms_note
     assert cboe.fetch_class == si.UNMEASURED
-    assert not si.check_sensors([cboe, vix])
+    assert not si.check_sensors([cboe, vix, *oas])
     # A row that DOES claim a hard-boundary refusal must name the act in its licence line.
     bad = si.Sensor(sensor_id="bad", latent="global_risk_appetite", what="x",
                     fetch_class="public_endpoint", source="x", cadence="daily", pit_lag_days=0.0,
@@ -416,8 +419,9 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
     assert tree["report"].exists()
     risk = next(r for r in doc["ensembles"] if r["latent"] == "global_risk_appetite")
     assert risk["status"] == "MEASURED"
-    # VIXCLS is planted but refused on terms (FRED + Cboe, 2026-11-14): held, never used.
-    assert risk["n_sensors_used"] == 2
+    # VIXCLS and BAMLH0A0HYM2 are planted but refused on terms (FRED + Cboe, FRED + ICE BofA,
+    # 2026-11-14): held, never used.
+    assert risk["n_sensors_used"] == 1
     assert (tree["axes"] / "shadow_global_risk_appetite.json").exists()
     # every other latent is UNMEASURED BY NAME on a tree with nothing planted for it
     china = next(r for r in doc["ensembles"] if r["latent"] == "china_activity")
