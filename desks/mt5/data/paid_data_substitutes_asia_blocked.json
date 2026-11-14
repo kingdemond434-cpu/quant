@@ -279,8 +279,8 @@
    ],
    "region": "GLOBAL",
    "frequency": "daily",
-   "auth": "free_key",
-   "auth_env": "ARCGIS_API_KEY",
+   "auth": "none",
+   "auth_env": "",
    "languages": [
     "en"
    ],

@@ -1881,7 +1881,6 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="imf_portwatch_ports", name="IMF PortWatch daily port calls",
         url=PORTWATCH_BASE.format(svc="Daily_Ports_Data"),
-        key_env="ARCGIS_API_KEY",
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_ports,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
         instruments={"AUDUSD": 1},
@@ -1904,7 +1903,6 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="imf_portwatch_chokepoints", name="IMF PortWatch daily chokepoint transits",
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
-        key_env="ARCGIS_API_KEY",
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
         instruments={"XTIUSD": -1, "XBRUSD": -1},
