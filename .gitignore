@@ -526,6 +526,7 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/MATH_LAB.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
