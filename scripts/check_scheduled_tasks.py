@@ -121,6 +121,75 @@ def _ps(cmd: str) -> str:
         return ""
 
 
+#: THE SCHEDULER'S OWN WORD FOR "NEVER LAUNCHED": SCHED_S_TASK_HAS_NOT_RUN, 0x00041303.
+#: `LastRunTime` for such a task is the 1999-11-30 sentinel, not a date anyone chose.
+NEVER_RUN_RESULT = 267011
+NEVER_RUN_SENTINEL_YEAR = 1999
+
+
+def task_info() -> dict[str, dict[str, str]]:
+    """name -> {state, next_run, last_run, last_result}, from the scheduler itself.
+
+    A TASK CAN BE PRESENT, ENABLED, "READY" AND STILL NEVER TICK, AND THAT IS WHAT THIS ADDS
+    (measured 2026-11-14). `check` classified a task by presence and by the single word Windows
+    calls its State, so MT5-CycleMidnight -- one of the two lanes of this desk's own governing
+    cycle -- read PRESENT/Ready in a report whose headline was 26 of 26 present, 0 missing. The
+    scheduler's own record for it was:
+
+        LastRunTime  11/30/1999 00:00:00   (the sentinel: never)
+        LastTaskResult 267011              (SCHED_S_TASK_HAS_NOT_RUN)
+        NextRunTime  null                  (nothing will fire it)
+        NumberOfMissedRuns 0               (never even came due)
+
+    A registered clock with no next run time that has never run is not slow and not idle: it will
+    never tick, and every artifact-reading fence downstream is blind to it in exactly the way this
+    file's opening paragraph describes. The lane had produced no checkpoint and no ledger row in
+    its entire existence, and nothing in the repository could say why.
+
+    WHY THE RULE IS THREE CONDITIONS AND NOT ONE, measured on this box's 117 MT5/E8 tasks: seven
+    carry no NextRunTime and only ONE of them is a defect. Four are long-running residents
+    (E8-Spreads, MT5-DeskDashboard, MT5-DeskTunnel, MT5-NewsDesk) with State `Running` and
+    LastTaskResult 267009 (SCHED_S_TASK_RUNNING) -- no next run because they are running now.
+    Two have genuinely run and finished (MT5-FetchUniverse-Repair, result 0, 2026-09-21;
+    MT5-PushBacklog, result 1, 2026-09-25). So the rule excludes anything Running and anything
+    that has ever run, and on this box it fires on exactly one task. A guard whose first output
+    is a false positive is a guard the next person switches off -- this file learned that from its
+    own `stuck_writers`, and the same discipline applies here.
+    """
+    out = _ps("Get-ScheduledTask | Where-Object {$_.TaskName -like 'MT5*' -or "
+              "$_.TaskName -like 'E8-*'} | ForEach-Object { $i = $_ | Get-ScheduledTaskInfo; "
+              "$_.TaskName + '|' + $_.State + '|' + $i.NextRunTime + '|' + $i.LastRunTime + "
+              "'|' + $i.LastTaskResult }")
+    got: dict[str, dict[str, str]] = {}
+    for ln in out.splitlines():
+        parts = [p.strip() for p in ln.strip().split("|")]
+        if len(parts) < 5 or not parts[0]:
+            continue
+        got[parts[0]] = {"state": parts[1], "next_run": parts[2],
+                         "last_run": parts[3], "last_result": parts[4]}
+    return got
+
+
+def never_fires(info: dict[str, str]) -> bool:
+    """Is this a registered clock that will never tick? See `task_info` for why three conditions.
+
+    UNREADABLE FIELDS ARE NOT A DEFECT: a task whose info query returned nothing reads False
+    here, so a failed PowerShell read can never manufacture a red.
+    """
+    state = str(info.get("state") or "").lower()
+    if not state or state in ("running", "disabled"):
+        return False            # running: no next run BECAUSE it is running. disabled: its own row
+    if str(info.get("next_run") or "").strip():
+        return False            # it has a next tick
+    last_run, last_result = str(info.get("last_run") or ""), str(info.get("last_result") or "")
+    if not last_run and not last_result:
+        return False            # nothing measured about its history: not a defect, just unread
+    if last_result.strip() == str(NEVER_RUN_RESULT):
+        return True
+    return f"/{NEVER_RUN_SENTINEL_YEAR} " in f"{last_run} " or last_run.startswith(
+        str(NEVER_RUN_SENTINEL_YEAR))
+
+
 def present() -> dict[str, str]:
     """name -> state, from the scheduler itself. Empty means the query failed, not that none exist."""
     out = _ps("Get-ScheduledTask | Where-Object {$_.TaskName -like 'MT5*' -or "
@@ -162,7 +231,8 @@ def stuck_writers() -> list[dict[str, Any]]:
 
 def check() -> dict[str, Any]:
     want = declared()
-    have = present()
+    info = task_info()
+    have = {name: row["state"] for name, row in info.items()} or present()
     queried = bool(have)
     rows: list[dict[str, Any]] = []
     for name in want:
@@ -178,27 +248,48 @@ def check() -> dict[str, Any]:
         elif str(state).lower() == "disabled":
             rows.append({"task": name, "verdict": "DISABLED", "state": state,
                          "why": "registered and disabled: it will never fire"})
+        elif never_fires(info.get(name) or {}):
+            row = info.get(name) or {}
+            rows.append({"task": name, "verdict": "NEVER_FIRED", "state": state,
+                         "last_run": row.get("last_run"), "last_result": row.get("last_result"),
+                         "why": ("registered and enabled with NO next run time, and it has never "
+                                 "run: the scheduler has never launched it "
+                                 f"(LastTaskResult {row.get('last_result')}, LastRunTime "
+                                 f"{row.get('last_run')}). A clock that will never tick is not "
+                                 "slow and not idle, and every artifact-reading fence downstream "
+                                 "is blind to it.")})
         else:
             rows.append({"task": name, "verdict": "PRESENT", "state": state})
 
     missing = [r for r in rows if r["verdict"] == "MISSING"]
     disabled = [r for r in rows if r["verdict"] == "DISABLED"]
+    never_fired = [r for r in rows if r["verdict"] == "NEVER_FIRED"]
     writers = stuck_writers()
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("the declared task set IS the desk's clock. A clock that is absent is not slow, "
                 "it is gone -- and no artifact-reading fence can ever see it, because a task that "
-                "does not exist writes nothing to read."),
+                "does not exist writes nothing to read. NOR IS A CLOCK THAT WILL NEVER TICK: a "
+                "task present, enabled and 'Ready' with no next run time, which has never run, "
+                "is the same blindness wearing a healthy state (2026-11-14)."),
         "n_declared": len(want), "n_present": sum(1 for r in rows if r["verdict"] == "PRESENT"),
         "n_missing": len(missing), "n_disabled": len(disabled),
-        "missing": missing, "disabled": disabled,
+        "n_never_fired": len(never_fired),
+        "missing": missing, "disabled": disabled, "never_fired": never_fired,
         "stuck_git_writers": writers,
         "remedy": ("powershell -ExecutionPolicy Bypass -File "
                    "desks/mt5/scripts/Install-QuantWindows.ps1 restores the whole set; "
                    "install_adopt_release_task.ps1 restores the adopt task alone and runs one "
-                   "adoption immediately."),
+                   "adoption immediately; install_cro_cycle_tasks.ps1 re-registers the two CRO "
+                   "lanes, which is the remedy for a NEVER_FIRED lane -- re-registering rebuilds "
+                   "the trigger that a task with no next run time is missing."),
         "tasks": rows,
     }
+
+
+def _defects(doc: dict[str, Any]) -> bool:
+    """A clock that will never tick counts with the ones that are gone (2026-11-14)."""
+    return bool(doc["missing"] or doc["never_fired"] or doc["stuck_git_writers"])
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -210,20 +301,24 @@ def main(argv: list[str] | None = None) -> int:
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     if args.json:
         print(json.dumps(doc, indent=1))
-        return 1 if (doc["missing"] or doc["stuck_git_writers"]) else 0
+        return 1 if _defects(doc) else 0
 
     print(f"scheduled tasks: {doc['n_present']} present of {doc['n_declared']} declared, "
-          f"{doc['n_missing']} MISSING, {doc['n_disabled']} disabled")
+          f"{doc['n_missing']} MISSING, {doc['n_disabled']} disabled, "
+          f"{doc['n_never_fired']} NEVER FIRED")
     for r in doc["missing"]:
         print(f"  MISSING  {r['task']}")
     for r in doc["disabled"]:
         print(f"  disabled {r['task']}")
+    for r in doc["never_fired"]:
+        print(f"  NEVER FIRED {r['task']} -- no next run time, last result "
+              f"{r.get('last_result')}, last run {r.get('last_run')}")
     for w in doc["stuck_git_writers"]:
         print(f"  STUCK GIT WRITER pid {w['pid']} {w['name']} {w['age_minutes']}min")
-    if doc["missing"] or doc["stuck_git_writers"]:
+    if _defects(doc):
         print(f"  remedy: {doc['remedy']}")
     print(f"  -> {OUT}")
-    return 1 if (doc["missing"] or doc["stuck_git_writers"]) else 0
+    return 1 if _defects(doc) else 0
 
 
 if __name__ == "__main__":

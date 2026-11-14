@@ -70,3 +70,61 @@ def test_the_main_installer_still_hands_the_lanes_to_the_cro_installer() -> None
     assert "install_cro_cycle_tasks.ps1" in src
     for lane in LANES:
         assert not re.search(rf'Name\s*=\s*"{lane}"', src), f"{lane} is in the main table now"
+
+
+# ------------------------------------------------- a clock that will never tick
+
+def test_a_present_enabled_task_that_never_ran_and_has_no_next_run_is_a_defect() -> None:
+    """MT5-CycleMidnight's own scheduler record, 2026-11-14, read verbatim from the box.
+
+    It was PRESENT and "Ready" inside a report whose headline was 26 of 26 present and 0 missing
+    -- while the scheduler said LastRunTime 11/30/1999 (the never sentinel), LastTaskResult 267011
+    (SCHED_S_TASK_HAS_NOT_RUN), NextRunTime null and NumberOfMissedRuns 0. The lane had produced
+    no checkpoint and no ledger row in its entire existence, and nothing in the repository could
+    say why, because presence and the word "Ready" were all this fence ever looked at.
+    """
+    m = _check()
+    assert m.never_fires({"state": "Ready", "next_run": "", "last_run": "11/30/1999 00:00:00",
+                          "last_result": "267011"})
+
+
+def test_the_six_legitimate_no_next_run_tasks_on_this_box_are_not_flagged() -> None:
+    """Measured over 117 MT5/E8 tasks: seven carry no NextRunTime and only ONE is a defect.
+
+    A guard whose first output is a false positive is a guard the next person switches off --
+    this file's sibling `stuck_writers` learned that from `sshd.exe`, so the rule is sized to fire
+    once on this box rather than seven times.
+    """
+    m = _check()
+    # Four long-running residents: no next run BECAUSE they are running (SCHED_S_TASK_RUNNING).
+    for name, last in (("E8-Spreads", "11/14/2026 12:30:21"),
+                       ("MT5-DeskDashboard", "11/12/2026 12:24:28"),
+                       ("MT5-DeskTunnel", "11/12/2026 12:24:28"),
+                       ("MT5-NewsDesk", "11/12/2026 12:24:28")):
+        assert not m.never_fires({"state": "Running", "next_run": "", "last_run": last,
+                                  "last_result": "267009"}), name
+    # Two that have genuinely run and finished, one successfully and one not.
+    assert not m.never_fires({"state": "Ready", "next_run": "",
+                              "last_run": "09/21/2026 23:14:41", "last_result": "0"})
+    assert not m.never_fires({"state": "Ready", "next_run": "",
+                              "last_run": "09/25/2026 04:04:49", "last_result": "1"})
+
+
+def test_a_task_with_a_next_run_or_an_unreadable_record_is_never_flagged() -> None:
+    """A tick in the future is not a defect, and a failed read may not manufacture a red."""
+    m = _check()
+    assert not m.never_fires({"state": "Ready", "next_run": "11/14/2026 14:42:00",
+                              "last_run": "11/30/1999 00:00:00", "last_result": "267011"})
+    assert not m.never_fires({})                                   # nothing measured at all
+    assert not m.never_fires({"state": "Ready", "next_run": "", "last_run": "",
+                              "last_result": ""})                  # info query returned nothing
+    assert not m.never_fires({"state": "Disabled", "next_run": "", "last_run": "",
+                              "last_result": "267011"})            # DISABLED has its own verdict
+
+
+def test_a_never_fired_clock_exits_nonzero_like_an_absent_one() -> None:
+    m = _check()
+    base: dict[str, list] = {"missing": [], "never_fired": [], "stuck_git_writers": []}
+    assert not m._defects(base)
+    assert m._defects(dict(base, never_fired=[{"task": "MT5-CycleMidnight"}]))
+    assert m._defects(dict(base, missing=[{"task": "X"}]))
