@@ -106,21 +106,6 @@ try {
     if (-not $Python) { throw "no Python 3.14 found" }
 
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
-    # LEVEL 2 (ops/release/authority/LEVEL2.md step 3): the quant-merger App when it is installed
-    $asApp = $false
-    $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
-    if (Test-Path -LiteralPath $mergerEnv) {
-        . $mergerEnv
-        try { $asApp = Use-MergerIdentity $Clone } catch { Say "$($_.Exception.Message)"; Beat 3 "merger App token failed" $false; Watch; exit 3 }
-    }
-    $status = (& $Gh auth status -h github.com 2>&1 | Out-String)
-    $scopeLine = ($status -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; Watch; exit 3 }
-    $scope = $asApp -or ($scopeLine -match "'workflow'")  # an App's Workflows permission is not a scope
-    if (-not $scope) {
-        Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
-    }
-
     if (-not (Test-Path -LiteralPath (Join-Path $Clone ".git"))) {
         & git clone -q --filter=blob:none --no-checkout "https://github.com/$Repo.git" $Clone 2>&1 | ForEach-Object { Say "clone: $_" }
         if ($LASTEXITCODE -ne 0) { throw "git clone failed ($LASTEXITCODE)" }
@@ -135,6 +120,25 @@ try {
     & git -C $Clone checkout -q -f --detach "origin/$Live" 2>&1 | ForEach-Object { Say "checkout: $_" }
     if ($LASTEXITCODE -ne 0) { throw "git checkout failed ($LASTEXITCODE)" }
     $at = (& git -C $Clone rev-parse --short=9 HEAD)
+
+    # LEVEL 2 (ops/release/authority/LEVEL2.md step 3): the quant-merger App when it is installed.
+    # Loaded only AFTER the clone is on LIVE's tip (2026-11-13): it used to run first, from the
+    # clone's OLD copy, so a broken merger_env.ps1 failed every git call before the fetch that
+    # would have brought its fix -- a loop no merge could break. The repo is public, so the
+    # sparse-checkout, fetch and checkout above need no identity.
+    $asApp = $false
+    $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
+    if (Test-Path -LiteralPath $mergerEnv) {
+        . $mergerEnv
+        try { $asApp = Use-MergerIdentity $Clone } catch { Say "$($_.Exception.Message)"; Beat 3 "merger App token failed" $false; Watch; exit 3 }
+    }
+    $status = (& $Gh auth status -h github.com 2>&1 | Out-String)
+    $scopeLine = ($status -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1)
+    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; Watch; exit 3 }
+    $scope = $asApp -or ($scopeLine -match "'workflow'")  # an App's Workflows permission is not a scope
+    if (-not $scope) {
+        Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
+    }
 
     # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
     # are cancelled and re-run behind it, and runs on moved heads are cancelled. A failure here is
