@@ -459,12 +459,11 @@ def collect_slides(row: Mapping[str, Any], budget_s: float) -> list[Capture]:
 
 
 def collect_transcript(row: Mapping[str, Any], budget_s: float) -> list[Capture]:
-    """A spoken-word ground: YouTube captions where a route is allowed, podcasts through the
-    feed. YOUTUBE'S OWN CAPTION ENDPOINTS ARE NEVER TRIED -- `/api/` and `/youtubei/` are
-    Disallow under `User-agent: *` in youtube.com/robots.txt (measured 2026-08-27, SS13), so the
-    only route is the keyless mirror rotation `scripts/fetch_video_transcript.py` owns, reached
-    through `deep_forest_miner.youtube_transcript`. A podcast feed gives enclosure METADATA and
-    the transcript only when the feed itself carries one; audio is never transcribed here."""
+    """A spoken-word ground: podcasts through the feed. YOUTUBE IS REFUSED ON TERMS
+    (wayback-youtube-ruling-2026-11-14): a YouTube host is answered with a named gap and its
+    missed_growth line before robots.txt is read, and no route -- YouTube's own or a keyless
+    mirror -- is tried. A podcast feed gives enclosure METADATA and the transcript only when the
+    feed itself carries one; audio is never transcribed here."""
     url = str(row.get("url") or "")
     if budget_s <= 0 or not url:
         return []
