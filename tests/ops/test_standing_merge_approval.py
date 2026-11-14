@@ -89,6 +89,16 @@ def test_root_the_gate_runner_and_the_authority_are_never_standing() -> None:
         "ops/release_authority.py",
         "ops/run_release_authority.cmd",
         "ops/signing/allowed_signers",
+        # #1192 audit HOLD: unpinned by any base suite
+        ".github/workflows/ci.yml",
+        ".github/workflows/youtube-corpus.yml",
+        ".github/workflows/new-workflow.yml",
+        ".github/scripts/memecoin_gate.py",
+        "ops/release/expected_divergence.json",
+        "ops/release/not_money_scripts.txt",
+        "ops/release/local_models.json",
+        "ops/release/review_rubric.md",
+        "libs/ops/release.py",
         "OPS/RELEASE/AUTHORITY/ROOT_POLICY.JSON",  # case-blind, as on the box's NTFS checkout
     ):
         assert not ag.standing("PROTECTED", ON, [name], YES, YES), name
@@ -98,14 +108,11 @@ def test_root_the_gate_runner_and_the_authority_are_never_standing() -> None:
 def test_self_judging_paths_stand_on_a_base_run_trusted_eval_since_1172() -> None:
     """#1172 put the base-run trusted-eval over the gating workflows and the release machinery."""
     for name in (
-        ".github/workflows/ci.yml",
-        ".github/workflows/release-gates.yml",
         "ops/release/replay_shadow.py",
         "ops/release/risk_invariants.py",
         "ops/release/independent_review.py",
-        "ops/release/not_money_scripts.txt",
         "ops/release/ruleset-live.json",
-        "libs/ops/release.py",
+        "ops/release/adopt_rows.py",
     ):
         assert ag.standing("PROTECTED", ON, [name], YES), name
         assert not ag.standing("PROTECTED", ON, [name], NO), name

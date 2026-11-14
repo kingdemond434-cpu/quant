@@ -234,11 +234,23 @@ ROOT_POLICY_FILE = (
 #: and the release machinery (tests/ops/test_gating_workflows_pinned.py and the release, seal,
 #: signing, promotion and adopt-guard pins in ops/release/trusted_eval_suites.txt), every other
 #: PROTECTED path stands on an Auditor CLEAR plus a green base-run trusted-eval of the exact head.
-#: What stays his: the runner of this gate (it holds the merge token), the release authority's own
-#: service and its signer list (the authority key). ops/release/ceilings.json stands only when the
-#: change is inside the ROOT policy's delegated envelope (zuck 2026-11-14 03:30Z, risk autonomy).
+#: What stays his: every workflow, the memecoin fence, replay-shadow's and the review's exception
+#: and model lists, the seal's NON_CODE, the release authority's own service and its signer list
+#: (#1192 audit HOLD). Each can leave this list only with a base pin of its own.
+#: ops/release/ceilings.json stands only when the change is inside the ROOT policy's delegated
+#: envelope (zuck 2026-11-14 03:30Z, risk autonomy).
 NEVER_STANDING = (
-    ".github/workflows/audit-gate.yml",
+    # every workflow (#1192 audit HOLD 1): no base suite pins which steps receive the State App
+    # key (live-seal) or stops a new workflow file declaring it, so they stay his
+    ".github/workflows/*",
+    # the memecoin LIVE fence (#1192 audit HOLD 2)
+    ".github/scripts/memecoin_gate.py",
+    # replay-shadow's exceptions and the independent review's models and rubric: one row turns a
+    # replay FAIL into MATCHES_DECLARED or takes a script off the money path (#1192 HOLD 3)
+    "ops/release/expected_divergence.json", "ops/release/not_money_scripts.txt",
+    "ops/release/local_models.json", "ops/release/review_rubric.md",
+    # NON_CODE: the paths the seal skips (#1192 audit HOLD 4)
+    "libs/ops/release.py",
     "ops/release_authority.py", "ops/run_release_authority.cmd", "ops/signing/*",
 )  # fmt: skip
 #: The risk ceilings: standing only inside the delegated envelope (see NEVER_STANDING).
