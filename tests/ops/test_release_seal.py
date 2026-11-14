@@ -303,11 +303,25 @@ def test_commit_blob_reads_are_reused_across_release_hashes(tmp_path: Path, monk
         calls.append(args)
         return SimpleNamespace(returncode=0, stdout=b"same immutable blob")
 
-    release._read_commit.cache_clear()
+    release._read_commit_ok.cache_clear()
     monkeypatch.setattr(release.subprocess, "run", fake_run)
     assert release._read("a.py", tmp_path, "a" * 40) == b"same immutable blob"
     assert release._read("a.py", tmp_path, "a" * 40) == b"same immutable blob"
     assert len(calls) == 1
+
+
+def test_a_failed_blob_read_is_never_cached(tmp_path: Path, monkeypatch) -> None:
+    """Recovered box patch 39: `lru_cache` remembered a transient None as faithfully as bytes,
+    so one flapped `git show` became the process's permanent "absent" for that path."""
+    from types import SimpleNamespace
+
+    answers = [SimpleNamespace(returncode=128, stdout=b""),
+               SimpleNamespace(returncode=0, stdout=b"the blob")]
+    monkeypatch.setattr(release.subprocess, "run", lambda args, **_k: answers.pop(0))
+    release._read_commit_ok.cache_clear()
+    assert release._read("b.py", tmp_path, "b" * 40) is None
+    assert release._read("b.py", tmp_path, "b" * 40) == b"the blob"
+    release._read_commit_ok.cache_clear()
 
 
 # ---------------------------------------------------------------- the rollback target

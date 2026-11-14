@@ -950,3 +950,126 @@ def report(trades: Sequence[Trade], equity: float | None = None) -> str:
               "hypothesis and enters the registry as a run against a registered "
               "claim, like every other trial."]
     return "\n".join(lines)
+
+
+# ------------------------------------------- structure from PUBLISHED SUMMARIES
+#
+# THE GAP THIS CLOSES (Asia directive PART XIV / global PART XXIII, audit row 35). Everything
+# above reads FILLS, and the public trader corpora the desk holds are not fills: an FX Blue
+# statement publishes per-trade (duration, profit) points, an hour histogram, a symbol mix, a
+# balance-drawdown path and monthly lots; an MQL5 page publishes a weekly growth curve and a few
+# ratios. `summary_signature` reads the STRUCTURE those summaries can honestly support -- and
+# nothing they cannot. Every field it cannot derive is None, never a default, so a genome built
+# from it can tell "no martingale" from "not observable" (L1.28a).
+#
+# The tags are the same shapes the basket functions name (`skew_profile`'s many-small-wins /
+# rare-large-loss, `infer_structure`'s no-hard-stop recovery), read from the per-trade profit
+# distribution instead of from baskets. They are DESCRIPTIONS of a record, not verdicts about a
+# trader, and the genome uses them only as features whose survival rate it then measures over
+# the living AND the dead.
+
+#: A per-trade sample smaller than this supports no shape statement.
+SUMMARY_MIN_TRADES = 20
+#: The martingale / grid signature: a high win rate bought with a small payoff ratio and a
+#: negatively skewed per-trade distribution. Thresholds are stated, not tuned.
+MARTINGALE_WIN_RATE = 0.70
+MARTINGALE_PAYOFF = 0.50
+NEG_SKEW = -1.0
+#: Worst single loss at or beyond this many median wins reads as no hard stop.
+NO_STOP_MULTIPLE = 10.0
+#: Session blocks over the (broker-clock) hour histogram. The clock is the statement's own;
+#: it is recorded as such and never silently converted.
+SESSIONS: dict[str, range] = {"asia": range(0, 7), "london": range(7, 13),
+                              "newyork": range(13, 21), "late": range(21, 24)}
+
+
+def _skew(xs: Sequence[float]) -> float | None:
+    n = len(xs)
+    if n < 3:
+        return None
+    m = statistics.fmean(xs)
+    sd = statistics.pstdev(xs)
+    if not sd or not math.isfinite(sd):
+        return None
+    return sum(((x - m) / sd) ** 3 for x in xs) / n
+
+
+def summary_signature(*, trade_profits: Sequence[float] | None = None,
+                      trade_durations: Sequence[float] | None = None,
+                      hour_trades: dict[int, float] | None = None,
+                      symbol_trades: dict[str, float] | None = None,
+                      max_dd_pct: float | None = None,
+                      monthly_lots: Sequence[float] | None = None) -> dict:
+    """Structure features of a PUBLISHED record. Every unavailable field is None.
+
+    trade_profits    per-trade net profit points (any currency; only signs and ratios are used)
+    trade_durations  per-trade holding time in the PUBLISHER'S unit (recorded raw, never scaled)
+    hour_trades      trade count per hour of the publisher's clock
+    symbol_trades    trade count per symbol
+    max_dd_pct       the deepest published drawdown, as a negative percent
+    monthly_lots     lots traded per month, oldest first
+    """
+    out: dict = {"n_trades_sampled": 0, "win_rate": None, "payoff_ratio": None, "skew": None,
+                 "tail_ratio": None, "median_hold_raw": None, "max_dd_pct": None,
+                 "top_symbol_share": None, "session": None, "session_share": None,
+                 "lot_escalation": None, "tags": []}
+    tags: list[str] = []
+    pnl = [float(p) for p in (trade_profits or []) if p is not None
+           and math.isfinite(float(p)) and float(p) != 0.0]
+    out["n_trades_sampled"] = len(pnl)
+    if len(pnl) >= SUMMARY_MIN_TRADES:
+        wins = [p for p in pnl if p > 0]
+        losses = [p for p in pnl if p < 0]
+        wr = len(wins) / len(pnl)
+        out["win_rate"] = round(wr, 4)
+        sk = _skew(pnl)
+        out["skew"] = round(sk, 4) if sk is not None else None
+        if wins and losses:
+            payoff = statistics.fmean(wins) / abs(statistics.fmean(losses))
+            out["payoff_ratio"] = round(payoff, 4)
+            mw = statistics.median(wins)
+            tail = abs(min(losses)) / mw if mw > 0 else None
+            out["tail_ratio"] = round(tail, 3) if tail is not None else None
+            if wr >= MARTINGALE_WIN_RATE and payoff <= MARTINGALE_PAYOFF and (sk or 0) <= NEG_SKEW:
+                tags.append("martingale_signature")
+            if tail is not None and tail >= NO_STOP_MULTIPLE:
+                tags.append("no_hard_stop")
+        if sk is not None and sk <= NEG_SKEW:
+            tags.append("negative_skew")
+        elif sk is not None and sk >= -NEG_SKEW:
+            tags.append("positive_skew")
+        if wr >= MARTINGALE_WIN_RATE:
+            tags.append("high_win_rate")
+    durs = [float(d) for d in (trade_durations or []) if d is not None
+            and math.isfinite(float(d)) and float(d) >= 0]
+    if len(durs) >= SUMMARY_MIN_TRADES:
+        out["median_hold_raw"] = round(statistics.median(durs), 4)
+    if max_dd_pct is not None and math.isfinite(float(max_dd_pct)):
+        out["max_dd_pct"] = round(float(max_dd_pct), 3)
+        if float(max_dd_pct) <= -50.0:
+            tags.append("deep_drawdown")
+    sym = {str(k): float(v) for k, v in (symbol_trades or {}).items() if v and float(v) > 0}
+    tot = sum(sym.values())
+    if tot > 0:
+        top = max(sym.values()) / tot
+        out["top_symbol_share"] = round(top, 4)
+        tags.append("single_instrument" if top >= 0.8 else
+                    ("multi_instrument" if top < 0.4 else "concentrated"))
+    hrs = {int(h): float(v) for h, v in (hour_trades or {}).items() if v and float(v) > 0}
+    htot = sum(hrs.values())
+    if htot > 0:
+        shares = {s: sum(hrs.get(h, 0.0) for h in rng) / htot for s, rng in SESSIONS.items()}
+        best = max(shares, key=lambda s: shares[s])
+        out["session"], out["session_share"] = best, round(shares[best], 4)
+        if shares[best] >= 0.6:
+            tags.append(f"session_{best}")
+    lots = [float(x) for x in (monthly_lots or []) if x is not None and float(x) > 0]
+    if len(lots) >= 4:
+        half = len(lots) // 2
+        early, late = statistics.fmean(lots[:half]), statistics.fmean(lots[half:])
+        esc = late / early if early > 0 else None
+        out["lot_escalation"] = round(esc, 3) if esc is not None else None
+        if esc is not None and esc >= 2.0:
+            tags.append("pyramiding_size")
+    out["tags"] = sorted(set(tags))
+    return out

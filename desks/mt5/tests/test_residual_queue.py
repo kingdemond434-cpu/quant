@@ -133,6 +133,11 @@ def desk(tmp_path, monkeypatch):
         # `gold_asia` prefixes BOTH of these, so its shortfall is unattributable and is dropped.
         {"name": "gold_asia_v2", "symbol": "XAUUSD", "mu_mean": 0.4},
         {"name": "gold_asia_v3", "symbol": "XAUUSD", "mu_mean": 0.3}]})
+    _write(tmp_path / "RESIDUAL_SEARCH.json", {
+        "residual": {"findings": [{"axis": "hour", "bucket": 16, "n": 28,
+                                   "mean_residual_r": -0.62, "t": -5.3}]},
+        "counterfactual_policy": {"gates": {"gates": {"regime_veto": {"relaxed": {
+            "n": 25, "sum_r": 27.5, "verdict": "RELAXING_WOULD_HAVE_EARNED"}}}}}})
 
     for name, fname in (("STANDING", "STANDING_QUESTIONS.json"),
                         ("FACTOR", "factor_residual.json"),
@@ -142,6 +147,7 @@ def desk(tmp_path, monkeypatch):
                         ("FILLS", "FILL_ATTRIBUTION.json"),
                         ("EXECQ", "execution_quality.json"), ("LEDGER", "live_ledger.jsonl"),
                         ("POSTERIOR", "POSTERIOR_ALPHA.json"),
+                        ("RESIDUAL_SEARCH", "RESIDUAL_SEARCH.json"),
                         ("QUEUE", "residual_queue.jsonl"), ("REPORT", "RESIDUAL_QUEUE.json")):
         monkeypatch.setattr(rq, name, tmp_path / fname)
     # THE INTAKE IS NEVER REACHED FROM A TEST. The default seam returns None -- the same thing
@@ -164,7 +170,7 @@ def test_every_producer_is_joined_and_an_absent_one_is_a_verdict(desk):
     assert set(src) == {"standing_questions", "factor_residual", "unknown_unknowns",
                         "counterfactual_world", "opportunity_gap", "missed_growth",
                         "fill_attribution", "execution_quality", "live_ledger",
-                        "posterior_alpha"}
+                        "posterior_alpha", "residual_search"}
     for name, block in src.items():
         assert block["status"] == "present", name
         assert block["n"] > 0, name

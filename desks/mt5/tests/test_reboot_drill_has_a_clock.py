@@ -98,6 +98,17 @@ def test_weekend_market_closure_is_not_misreported_as_a_dead_account_feed() -> N
     assert "freshness fence paused" in src
 
 
+def test_a_held_task_stays_disabled() -> None:
+    """2026-10-22: the drill re-enabled MT5-Gateway after it was disabled on purpose. A task with
+    a TASK_HOLD_<name> marker is reported HELD and never re-enabled; the heal is the else-branch."""
+    src = DRILL.read_text("utf-8")
+    hold = src.index('"desks\\mt5\\data\\TASK_HOLD_" + $r')
+    held = src.index("(HELD: $why) -> left as is", hold)
+    heal = src.index("elseif ($st -eq 'Disabled') { Enable-ScheduledTask", held)
+    assert hold < held < heal
+    assert src.count("Enable-ScheduledTask") == 1
+
+
 def test_the_board_grades_a_missing_or_stale_drill_record_stalled(tmp_path: Path) -> None:
     keys = {i.key for i in issue_board.stale_producers(tmp_path)}
     assert "missing:reboot_drill" in keys

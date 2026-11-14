@@ -73,6 +73,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.research import event_ontology as onto  # noqa: E402
+from libs.research.source_provenance import source_url_of  # noqa: E402
 
 DATA = _DESK / "data"
 REPORTS = _DESK / "reports"
@@ -339,7 +340,7 @@ def _item(source_id: str, row: Mapping[str, Any], origin: str) -> Item | None:
                or row.get("body") or "").strip()[:MAX_TEXT]
     if not title and not text:
         return None
-    url = str(row.get("url") or row.get("link") or row.get("source_url") or "")
+    url = str(source_url_of(row) or "")
     prov = row.get("provenance")
     # THE RECEIPT STAMP AND THE KNOWABLE STAMP ARE DIFFERENT FACTS AND ARE READ SEPARATELY. The
     # first is when THIS desk saw it, the second is when the WORLD could -- and a joiner that

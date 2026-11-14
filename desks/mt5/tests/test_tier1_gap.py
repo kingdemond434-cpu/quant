@@ -43,7 +43,7 @@ def test_measures_are_read_and_ranked(monkeypatch, tmp_path: Path) -> None:
     (d / "hypotheses" / "gate_verdict_ledger.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     (tmp_path / "reports" / "JUDGING_RATE.json").write_text(json.dumps(
-        {"created_per_day": 8303.0, "verdicts_per_day": 5266.0}), "utf-8")
+        {"at": NOW.isoformat(), "created_per_day": 8303.0, "verdicts_per_day": 5266.0}), "utf-8")
     (d / "UNIVERSAL_SURVIVORS.canon.json").write_text(json.dumps({"survivors": {
         "external.EURCHF.carry.a": {"sym": "EURCHF"},
         "external.EURCHF.carry.b": {"sym": "EURCHF"},

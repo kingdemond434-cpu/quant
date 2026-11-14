@@ -105,6 +105,22 @@ TASK_DIAGNOSIS = {
         "subprocess timeout, not a crash: a report script outran BUDGET_S. Same shape as the "
         "daily cycle's 3h limit (raised to 10h 2026-09-13). Raise the budget for the specific "
         "script or split it; restarting reproduces the timeout."),
+    ("MT5-TickRecorder", 4): (
+        "the recorder started in Windows Session 0, where the MT5 bridge cannot reach the "
+        "logged-on terminal. Restarting reproduces it: re-register with LogonType Interactive "
+        "(desks/mt5/recorders/install_tape_tasks.ps1) and keep the trading user signed in."),
+    ("MT5-TickRecorder", 5): (
+        "the recorder HUNG (no cycle completed in 10 min, usually a terminal call that never "
+        "returned) and ended itself so its 10-minute trigger starts a fresh one. If it repeats, "
+        "the terminal link is the fault: read MT5-TerminalBoot and MT5-TickRecorder.log."),
+    ("MT5-TickRecorder", 6): (
+        "the recorder STALLED (connected, unpaused, no new tick for 2 h) and ended itself for a "
+        "fresh start. Repeating outside a weekend means the terminal serves no ticks: check the "
+        "terminal's connection, not the recorder."),
+    ("MT5-TickRecorder", 1): (
+        "a Python traceback or a kill (taskkill /F exits 1) -- since 2026-10-14 a terminal that "
+        "is down at start no longer exits. Read the tail of desks/mt5/logs/MT5-TickRecorder.log; "
+        "the contract on the tape's own newest tick restarts it while the tape is stale."),
 }
 
 
@@ -251,6 +267,12 @@ def run(apply: bool) -> dict:
         name = str(row.get("name") or "")
         if not name or verdict in ("OK", "RUNNING", "DISABLED"):
             continue
+        # UNMEASURED IS NOT A BREAKAGE TO ACT ON: the scheduler could not be read, so there is no
+        # fact here to restart against. The read failure itself is escalated ONCE below, rather
+        # than as one NEEDS_HUMAN row per contracted organ -- which is how a single slow
+        # `schtasks` became "71 NOT_SCHEDULED" on 2026-09-30.
+        if verdict in ("UNMEASURED", "SCHEDULER_UNMEASURED"):
+            continue
         # UNCONTRACTED IS A BOOKKEEPING GAP, NOT A BREAKAGE. The organ runs fine; nobody wrote it
         # an artifact contract, so nothing would notice if it stopped. That is worth fixing and
         # worth listing, but escalating it as NEEDS_HUMAN beside a dead gateway is precisely the
@@ -264,7 +286,9 @@ def run(apply: bool) -> dict:
                 acted.append({"task": name, "verdict": verdict, "action": "would start",
                               "why": row.get("why")})
                 continue
-            ok, msg = _start(name)
+            # A contract row may be an ASPECT of a task ("MT5-FrontierAudit (orthogonality)");
+            # the scheduler only knows the owning task, so that is what is started.
+            ok, msg = _start(str(row.get("task") or name.split(" (", 1)[0].strip() or name))
             acted.append({"task": name, "verdict": verdict,
                           "action": "started" if ok else "start FAILED",
                           "detail": msg, "why": row.get("why")})
@@ -284,6 +308,28 @@ def run(apply: bool) -> dict:
             "diagnosis": diag or ("no standing remedy for this shape -- inspect the task's own "
                                   "log. If a remedy is found, add it to DIAGNOSIS so the next "
                                   "occurrence arrives with its answer."),
+            "needs_human": True,
+        })
+
+    sched = doc.get("scheduler") if isinstance(doc.get("scheduler"), dict) else {}
+    # process_health on LIVE publishes the read as `scheduler_status` ("OK schtasks", "OK ..."
+    # for a brief-only inventory, anything else for no inventory) rather than a `scheduler`
+    # block; an inventory it could not read is the same unread scheduler.
+    status = doc.get("scheduler_status")
+    if not sched and isinstance(status, str) and not status.startswith("OK "):
+        sched = {"read": False, "why": status}
+    # EXISTENCE-ONLY IS NOT A READ (audit 2026-09-30). On a schtasks timeout process_health lists
+    # the task directory instead: that proves which tasks exist and nothing about how any of them
+    # ran, so every FAILING verdict is unmeasured and the scheduler still needs a human.
+    if sched and not sched.get("read"):
+        escalated.append({
+            "task": "(scheduler)", "verdict": "UNMEASURED", "code": None,
+            "why": (str(sched.get("why") or "the scheduler could not be read")
+                    + ("; existence-only fallback: task files listed, run results unread"
+                       if sched.get("existence_only") else "")),
+            "diagnosis": ("process_health could not enumerate scheduled tasks, so no organ has a "
+                          "scheduling verdict this pass. Check `schtasks /query` responds on the "
+                          "box; a hung Task Scheduler service is the usual cause."),
             "needs_human": True,
         })
 

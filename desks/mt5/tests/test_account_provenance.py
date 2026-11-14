@@ -27,7 +27,8 @@ for p in (str(_DESK), str(_DESK / "research")):
 
 from mt5desk.markout import compute  # noqa: E402
 from mt5desk.provenance import (  # noqa: E402
-    DEMO, LIVE, UNKNOWN, account_kind, current_account, same_account, split_by_account)
+    DEMO, LIVE, UNKNOWN, account_key, account_kind, current_account, same_account,
+    split_by_account)
 
 _GW = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
 
@@ -97,8 +98,9 @@ def test_split_by_account_separates_rather_than_discards():
     rows = [_row(login=1, kind=LIVE), _row(login=2, kind=DEMO), _row(login=2, kind=DEMO),
             {"sleeve": "x"}]
     got = split_by_account(rows)
-    assert len(got[(1, "S", LIVE)]) == 1
-    assert len(got[(2, "S", DEMO)]) == 2
+    # keyed by the hashed login@server since 2026-10-20 (a legacy row is hashed on read)
+    assert len(got[(account_key(1, "S"), "S", LIVE)]) == 1
+    assert len(got[(account_key(2, "S"), "S", DEMO)]) == 2
     assert len(got[(None, None, UNKNOWN)]) == 1
 
 

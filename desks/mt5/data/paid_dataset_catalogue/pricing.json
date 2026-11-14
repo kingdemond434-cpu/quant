@@ -1,0 +1,67 @@
+{
+ "class": "pricing",
+ "label": "Online prices, CPI nowcasts and e-commerce pricing",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:adobe:adobe_digital_price_index",
+   "vendor": "Adobe",
+   "dataset": "Adobe Digital Price Index",
+   "class": "pricing",
+   "region": "US",
+   "measures": "E-commerce price index",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://news.adobe.com/news/news-details/2023/media-alert-adobe-digital-price-index-online-prices-fall-1-7-in-march",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "headline in media alerts"
+   }
+  },
+  {
+   "id": "paid:pricestats_state_street:online_inflation_series",
+   "vendor": "PriceStats (State Street)",
+   "dataset": "Online inflation series",
+   "class": "pricing",
+   "region": "global",
+   "measures": "Daily online-price inflation",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:truflation:truflation_inflation_index",
+   "vendor": "Truflation",
+   "dataset": "Truflation inflation index",
+   "class": "pricing",
+   "region": "US",
+   "measures": "Daily alternative inflation index",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "FREE_TIER",
+    "kind": "documented_free_tier",
+    "url": "https://truflation.com/dashboard",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "public dashboard; API is paid"
+   }
+  }
+ ]
+}
