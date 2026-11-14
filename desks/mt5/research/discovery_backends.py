@@ -106,7 +106,8 @@ _OI = "terms-refused exchange options-OI host"
 _OFF_LIMITS = "off-limits ground (WeChat/Baidu)"
 NEVER_CONTACT: dict[str, str] = {
     "youtube.com": _NO_YOUTUBE, "youtu.be": _NO_YOUTUBE, "googlevideo.com": _NO_YOUTUBE,
-    "fred.stlouisfed.org": f"{_TERMS} (FRED)", "yahoo.com": f"{_TERMS} (Yahoo)",
+    "fred.stlouisfed.org": f"{_TERMS} (FRED)", "alfred.stlouisfed.org": f"{_TERMS} (ALFRED)",
+    "yahoo.com": f"{_TERMS} (Yahoo)",
     "cboe.com": f"{_OI} (Cboe)", "cmegroup.com": f"{_OI} (CME)",
     "nasdaq.com": f"{_OI} (Nasdaq)", "theocc.com": f"{_OI} (OCC)",
     "weixin.qq.com": _OFF_LIMITS, "wechat.com": _OFF_LIMITS, "baidu.com": _OFF_LIMITS,
