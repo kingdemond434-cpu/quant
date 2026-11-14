@@ -217,6 +217,18 @@ def test_an_unreadable_table_is_computed(desk: dict[str, Path],
     assert calls == ["build", "write"]
 
 
+def test_a_table_stamped_in_the_future_is_computed_like_an_undated_one(
+        desk: dict[str, Path], monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """A stamp past the reuse skew has no age; left alone it would never reach the fallback."""
+    calls = _fake_compute(monkeypatch)
+    ahead = datetime.now(tz=UTC) + timedelta(seconds=jc.REUSE_FUTURE_SKEW_S + 3600)
+    _merge_cycle(desk, at=ahead, cycle=START - timedelta(hours=1))
+    assert jc.main(["--once", "--reuse-fresh", "--compute-if-stale", "--budget-s", "120"]) == 0
+    assert calls == ["build", "write"]
+    assert "stamped in the future" in capsys.readouterr().out
+
+
 def test_a_real_order_docket_write_is_what_reuse_accepts(desk: dict[str, Path],
                                                          monkeypatch: pytest.MonkeyPatch) -> None:
     """End to end on the real writer: what order_docket(publish=True) leaves, followed by the

@@ -4558,12 +4558,15 @@ def main(argv: list[str] | None = None) -> int:
         if fresh:
             return 0
         age = verdict.get("report_age_s")
-        if not (args.compute_if_stale
-                and (not isinstance(age, (int, float)) or age > COMPUTE_IF_STALE_AFTER_S)):
+        # Undated, or stamped further ahead than the reuse skew allows, is no age at all: a
+        # future stamp would otherwise read as "fresh" forever and never earn the fallback.
+        undated = (not isinstance(age, (int, float))) or age < -REUSE_FUTURE_SKEW_S
+        if not (args.compute_if_stale and (undated or age > COMPUTE_IF_STALE_AFTER_S)):
             return REUSE_STALE_EXIT
         # A table this old means the merge has stopped publishing: compute it here, under this
         # leg's own budget and transaction, exactly as the leg did before the reuse existed.
         how = ("unreadable or undated" if not isinstance(age, (int, float))
+               else "stamped in the future" if age < -REUSE_FUTURE_SKEW_S
                else f"{age:.0f} s old")
         print(f"judge coverage: COMPUTE -- the published table is {how}, past the "
               f"{COMPUTE_IF_STALE_AFTER_S:.0f} s fallback; building it here", flush=True)
