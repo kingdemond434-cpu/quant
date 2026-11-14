@@ -2374,6 +2374,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
     "transmission_engine": 1_000,
+    # china_contagion stops itself at --budget-s 600 (a weekly Comtrade refresh through
+    # research/china_exposure_ingest.py, the graph, the contagion study and a 16-point grid per
+    # reached instrument); the cap sits above so the report is always written.
+    "china_contagion": 780,
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
@@ -5159,6 +5163,14 @@ def main() -> None:
         "cross_asset_graph", "research/cross_asset_graph.py", "--budget-s", "900"))
     txg = _costed("transmission_engine", lambda: _producer(
         "transmission_engine", "research/transmission_engine.py", "--budget-s", "900"))
+    # CHINA SUPPLY-CHAIN / CREDIT CONTAGION (GAP_MAP 31). research/china_contagion.py refreshes the
+    # knowledge graph's trade weights (research/china_exposure_ingest.py, UN Comtrade, weekly),
+    # builds the graph (libs/research/china_graph.py), measures the price-side China stress
+    # index's contagion into every reached instrument and scores the graph against it, and
+    # donates china_stress_contagion cells through the proposer door. The same graph is the
+    # learned GNN's `knowledge` adjacency.
+    chc = _costed("china_contagion", lambda: _producer(
+        "china_contagion", "research/china_contagion.py", "--budget-s", "600"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -6574,6 +6586,7 @@ def main() -> None:
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
+                    "china_contagion": chc,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,

@@ -682,6 +682,9 @@ LEG_LAYER: dict[str, str] = {
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
+    # GAP_MAP 31: the China knowledge graph and its contagion study -- information diffusion
+    # along trade and credit channels, like the cross-asset graph beside it.
+    "china_contagion": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",

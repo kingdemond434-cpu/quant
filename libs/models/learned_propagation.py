@@ -72,6 +72,13 @@ GNN_GRID: tuple[dict[str, Any], ...] = (
     {"adjacency": "lead_lag", "layers": 2},
     {"adjacency": "corr", "layers": 1},
     {"adjacency": "corr", "layers": 2},
+    # THE KNOWLEDGE GRAPH (GAP_MAP 31, 2026-11-14): the China supply-chain / trade-flow graph of
+    # libs/research/china_graph.py as the adjacency -- fixed from trade data, never from returns
+    # ("knowledge"), and the learned lead-lag weights restricted to the graph's edges
+    # ("knowledge_lead_lag": structure from fundamentals, strength from the training window).
+    # Declared 2026-11-14 before any result on them; each is a trial like the four above.
+    {"adjacency": "knowledge", "layers": 1},
+    {"adjacency": "knowledge_lead_lag", "layers": 1},
 )
 ATTENTION_GRID: tuple[dict[str, Any], ...] = (
     {"heads": 1, "lookback": 20},
@@ -79,7 +86,8 @@ ATTENTION_GRID: tuple[dict[str, Any], ...] = (
     {"heads": 1, "lookback": 10},
     {"heads": 2, "lookback": 10},
 )
-ADJACENCIES = ("lead_lag", "corr")
+ADJACENCIES = ("lead_lag", "corr", "knowledge", "knowledge_lead_lag")
+LEARNED_ADJACENCIES = ("lead_lag", "corr")
 #: Random dilated convolution features (ROCKET, Dempster et al. 2020) over each node's recent
 #: tokens: the kernels are drawn ONCE from a fixed seed and never fitted, so the features carry no
 #: information from any return; only the ridge readout is fitted, walk-forward.
@@ -228,6 +236,8 @@ class Design:
     y: np.ndarray
     x: np.ndarray
     sigma: np.ndarray
+    #: the panel's node names, in column order -- what a knowledge adjacency is keyed by
+    symbols: tuple[str, ...] = ()
 
 
 OWN_FEATURES = ("z_t", "z_t-1", "z_t-2", "mean5", "mean20")
@@ -259,7 +269,7 @@ def design(panel: Panel) -> Design:
         return cast(np.ndarray, o / float(w))
 
     x = np.stack([z0, lag(z0, 1), lag(z0, 2), trail_mean(5), trail_mean(20)], axis=-1)
-    return Design(z=z, y=y, x=x, sigma=sig)
+    return Design(z=z, y=y, x=x, sigma=sig, symbols=tuple(str(s) for s in panel.symbols))
 
 
 # ================================================================================ ridge
@@ -353,8 +363,8 @@ def adjacency(x0: np.ndarray, y: np.ndarray, kind: str, top_k: int = TOP_K) -> n
     kind="lead_lag": A[i, j] = corr(z_j,t , z_i,t+1) -- j's move today, i's move tomorrow.
     kind="corr":     A[i, j] = corr(z_j,t , z_i,t)   -- the contemporaneous co-movement graph.
     """
-    if kind not in ADJACENCIES:
-        raise ValueError(f"unknown adjacency {kind!r}; known: {ADJACENCIES}")
+    if kind not in LEARNED_ADJACENCIES:
+        raise ValueError(f"unknown learned adjacency {kind!r}; known: {LEARNED_ADJACENCIES}")
     tgt = y if kind == "lead_lag" else np.where(x0 != 0, x0, np.nan)
     n = x0.shape[1]
     a = np.zeros((n, n))
@@ -370,6 +380,40 @@ def adjacency(x0: np.ndarray, y: np.ndarray, kind: str, top_k: int = TOP_K) -> n
         a[i] = np.nan_to_num(c)
     np.fill_diagonal(a, 0.0)
     if top_k and top_k < n - 1:
+        keep = np.argsort(-np.abs(a), axis=1)[:, :top_k]
+        mask = np.zeros_like(a, dtype=bool)
+        np.put_along_axis(mask, keep, True, axis=1)
+        a = np.where(mask, a, 0.0)
+    s = np.abs(a).sum(axis=1, keepdims=True)
+    out: np.ndarray = np.divide(a, s, out=np.zeros_like(a), where=s > 0)
+    return out
+
+
+def knowledge_adjacency(symbols: tuple[str, ...], kind: str, x0: np.ndarray | None = None,
+                        y: np.ndarray | None = None, top_k: int = TOP_K) -> np.ndarray:
+    """The China knowledge graph as the GNN's adjacency over `symbols`.
+
+    "knowledge": fixed, from trade flows (`china_graph.knowledge_adjacency`); no return enters it.
+    "knowledge_lead_lag": the learned lead-lag weights on TRAINING rows, kept only where the
+    knowledge graph has an edge, then top-k and row-normalised -- the corporate-GNN recipe: the
+    economy names the edges, the window measures their strength. A node the graph does not reach
+    keeps a zero row (own features only), never a silently price-learned one."""
+    from libs.research import china_graph
+    prior = china_graph.knowledge_adjacency(list(symbols), top_k=0)
+    if kind == "knowledge":
+        if top_k and top_k < len(symbols) - 1:
+            keep = np.argsort(-np.abs(prior), axis=1)[:, :top_k]
+            mask = np.zeros_like(prior, dtype=bool)
+            np.put_along_axis(mask, keep, True, axis=1)
+            prior = np.where(mask, prior, 0.0)
+            s = np.abs(prior).sum(axis=1, keepdims=True)
+            prior = np.divide(prior, s, out=np.zeros_like(prior), where=s > 0)
+        return prior
+    if x0 is None or y is None:
+        raise ValueError("knowledge_lead_lag needs the training rows")
+    learned = adjacency(x0, y, "lead_lag", top_k=0)
+    a = np.where(prior != 0, learned, 0.0)
+    if top_k and top_k < len(symbols) - 1:
         keep = np.argsort(-np.abs(a), axis=1)[:, :top_k]
         mask = np.zeros_like(a, dtype=bool)
         np.put_along_axis(mask, keep, True, axis=1)
@@ -400,8 +444,15 @@ def gnn_predictions(d: Design, *, adjacency_kind: str = "lead_lag", layers: int 
                     alpha: float = RIDGE_ALPHA, top_k: int = TOP_K, **wf: int) -> np.ndarray:
     t_n, n = d.y.shape
 
+    if adjacency_kind not in ADJACENCIES:
+        raise ValueError(f"unknown adjacency {adjacency_kind!r}; known: {ADJACENCIES}")
+
     def fit(lo: int, k: int, _prev: Any) -> GraphModel | None:
-        a = adjacency(d.x[lo:k, :, 0], d.y[lo:k], adjacency_kind, top_k)
+        if adjacency_kind in LEARNED_ADJACENCIES:
+            a = adjacency(d.x[lo:k, :, 0], d.y[lo:k], adjacency_kind, top_k)
+        else:
+            a = knowledge_adjacency(d.symbols, adjacency_kind, d.x[lo:k, :, 0], d.y[lo:k],
+                                    top_k)
         h = propagate(d.x[lo:k], a, layers)
         xs, ys = _train_rows(h, d.y[lo:k], 0, k - lo)
         if ys.size < h.shape[-1] * 5:
