@@ -1,0 +1,196 @@
+{
+ "reason": "died_unrecorded",
+ "detail": "sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+ "stalled_utc": "2026-11-13T10:07:37+00:00",
+ "pid": 27040,
+ "phase": "collect_and_cut",
+ "shard": null,
+ "last_progress": {
+  "beat_utc": "2026-11-13T09:26:27+00:00",
+  "phase": "collect_and_cut",
+  "phase_elapsed_s": 21.3,
+  "shards": {
+   "phase": "build",
+   "total": 15,
+   "done": 15,
+   "failed": 0,
+   "running": 0,
+   "stalled": 0,
+   "slow": 0,
+   "retrying": 0,
+   "shard_slow_s": 42781.5,
+   "shard_idle_kill_s": 1800.0,
+   "wave_started_utc": "2026-11-13T08:52:44+00:00"
+  },
+  "tree": {
+   "procs": 1,
+   "rss_mb": 380.0,
+   "cpu_s": 3116.9
+  },
+  "last_progress_utc": "2026-11-13T09:26:27+00:00",
+  "idle_s": 0.0
+ },
+ "counts_toward_widening": false,
+ "lost_s": 15396.0,
+ "kill": null,
+ "restored_from_merge_snapshot": [],
+ "lock": "LOCKED",
+ "unlocked_writes": 0,
+ "consecutive": 0,
+ "history": [
+  {
+   "kind": "SLOW",
+   "reason": "phase_deadline:collect_and_cut",
+   "detail": "phase collect_and_cut ran 7382s, past its 5848s SLOW threshold (3x the longest measured wall); the tree is progressing (last 0s ago): left running",
+   "slow_utc": "2026-11-05T13:04:20+00:00",
+   "pid": 31752,
+   "phase": "collect_and_cut",
+   "shard": null,
+   "progress": {
+    "beat_utc": "2026-11-05T13:04:14+00:00",
+    "tree": {
+     "procs": 1,
+     "rss_mb": 2478.8,
+     "cpu_s": 2060.6
+    },
+    "last_progress_utc": "2026-11-05T13:04:14+00:00",
+    "idle_s": 0.0
+   }
+  },
+  {
+   "status": "STALLED",
+   "reason": "died_unrecorded",
+   "detail": "sweep pid 16160 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 58861s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+   "stalled_utc": "2026-11-12T11:26:07+00:00",
+   "pid": 16160,
+   "phase": "build_shards",
+   "shard": null,
+   "last_progress": {
+    "beat_utc": "2026-11-11T19:05:07+00:00",
+    "phase": "build_shards",
+    "phase_elapsed_s": 3252.4,
+    "shards": {
+     "phase": "build",
+     "total": 15,
+     "done": 9,
+     "failed": 15,
+     "running": 1,
+     "stalled": 0,
+     "slow": 0,
+     "retrying": 16,
+     "shard_slow_s": 42781.5,
+     "shard_idle_kill_s": 1800.0,
+     "wave_started_utc": "2026-11-11T18:10:55+00:00"
+    },
+    "tree": {
+     "procs": 3,
+     "rss_mb": 1252.0,
+     "cpu_s": 2236.0
+    },
+    "last_progress_utc": "2026-11-11T19:05:07+00:00",
+    "idle_s": 0.0
+   },
+   "counts_toward_widening": false,
+   "lost_s": 12683.0,
+   "kill": null,
+   "restored_from_merge_snapshot": []
+  },
+  {
+   "status": "STALLED",
+   "reason": "resident_kill",
+   "detail": "sweep pid 20396: its whole tree burned < 0.02 core for 2401s (> 2400s), measured by the resident",
+   "stalled_utc": "2026-11-13T10:07:15+00:00",
+   "pid": 20396,
+   "phase": null,
+   "shard": null,
+   "last_progress": {},
+   "counts_toward_widening": true,
+   "lost_s": 17841.6,
+   "kill": {
+    "killed": 2,
+    "orphans": [],
+    "wall_s": 1.28
+   },
+   "restored_from_merge_snapshot": []
+  },
+  {
+   "status": "STALLED",
+   "reason": "died_unrecorded",
+   "detail": "sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+   "stalled_utc": "2026-11-13T10:07:37+00:00",
+   "pid": 27040,
+   "phase": "collect_and_cut",
+   "shard": null,
+   "last_progress": {
+    "beat_utc": "2026-11-13T09:26:27+00:00",
+    "phase": "collect_and_cut",
+    "phase_elapsed_s": 21.3,
+    "shards": {
+     "phase": "build",
+     "total": 15,
+     "done": 15,
+     "failed": 0,
+     "running": 0,
+     "stalled": 0,
+     "slow": 0,
+     "retrying": 0,
+     "shard_slow_s": 42781.5,
+     "shard_idle_kill_s": 1800.0,
+     "wave_started_utc": "2026-11-13T08:52:44+00:00"
+    },
+    "tree": {
+     "procs": 1,
+     "rss_mb": 380.0,
+     "cpu_s": 3116.9
+    },
+    "last_progress_utc": "2026-11-13T09:26:27+00:00",
+    "idle_s": 0.0
+   },
+   "counts_toward_widening": false,
+   "lost_s": 15396.0,
+   "kill": null,
+   "restored_from_merge_snapshot": []
+  }
+ ],
+ "missed_growth": [
+  {
+   "day": "2026-11-12",
+   "at": "2026-11-12T11:26:07+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "died_unrecorded",
+   "lost_s": 12683.0,
+   "why": "sweep pid 16160 died_unrecorded: sweep pid 16160 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 58861s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) . Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  },
+  {
+   "day": "2026-11-13",
+   "at": "2026-11-13T10:07:15+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "resident_kill",
+   "lost_s": 17841.6,
+   "why": "sweep pid 20396 resident_kill: sweep pid 20396: its whole tree burned < 0.02 core for 2401s (> 2400s), measured by the resident. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  },
+  {
+   "day": "2026-11-13",
+   "at": "2026-11-13T10:07:37+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "died_unrecorded",
+   "lost_s": 15396.0,
+   "why": "sweep pid 27040 died_unrecorded: sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  }
+ ],
+ "last_clear_utc": "2026-11-13T22:26:26+00:00",
+ "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
+ "status": "CLEAR"
+}

@@ -560,3 +560,69 @@ def test_metatrader5_is_never_imported_at_module_scope_anywhere_in_the_package()
             elif isinstance(node, ast.ImportFrom):
                 names = {node.module or ""}
             assert "MetaTrader5" not in names, f"{path.name} imports MetaTrader5 at module scope"
+
+
+def test_a_behind_book_symbol_is_pulled_ahead_of_the_rotation_until_it_is_current(
+        tmp_path: Path) -> None:
+    """Measured 2026-10-28: after a six-day outage the rotation gave XAUUSD one six-hour window
+    per lap of 250 symbols, so the live gold book stayed days behind every exotic. A priority
+    symbol that is behind is pulled first, window after window, inside one cycle."""
+    _, rec, store = _rig(tmp_path, ["AAA", "BBB", "XAUUSD"])
+    rec.config.priority_symbols = ("XAUUSD",)
+    rec.run_once(now_ms=T0)
+    rec.config.cycle_budget_s = 1e6
+    rep = rec.run_once(now_ms=T0 + 30 * HOUR)
+    cursors = store.read_state("cursors")
+    end = T0 + 30 * HOUR - rec.config.settle_ms
+    assert end - cursors["XAUUSD"]["cursor_ms"] <= rec.config.priority_lag_ms, (
+        "a behind book symbol must be pulled until it is within the lag, not once per lap")
+    assert rep.priority_pulls >= 4
+    assert end - cursors["AAA"]["cursor_ms"] > rec.config.priority_lag_ms, (
+        "the rotation still pulls a non-book symbol one window per cycle")
+
+
+def test_the_book_cannot_spend_the_whole_cycle(tmp_path: Path, monkeypatch) -> None:
+    """The priority phase stops at its share of the budget, so the rotation still runs."""
+    from recorders import tick_recorder as recorder_module
+
+    _, rec, _ = _rig(tmp_path, ["AAA", "XAUUSD"])
+    rec.config.priority_symbols = ("XAUUSD",)
+    rec.run_once(now_ms=T0)
+    clock = [0.0]
+
+    def tick() -> float:
+        clock[0] += 1.0
+        return clock[0]
+
+    monkeypatch.setattr(recorder_module.time, "monotonic", tick)
+    rec.config.cycle_budget_s = 20.0
+    rec.config.priority_share = 0.25
+    rep = rec.run_once(now_ms=T0 + 200 * HOUR)
+    assert 0 < rep.priority_pulls <= 5
+    assert rep.symbols_pulled == 2, "the rotation must still reach the non-book symbol"
+
+
+def test_a_book_symbol_whose_pull_fails_is_dropped_for_the_cycle_not_spun_on(
+        tmp_path: Path) -> None:
+    src, rec, store = _rig(tmp_path, ["XAUUSD"])
+    rec.config.priority_symbols = ("XAUUSD",)
+    rec.run_once(now_ms=T0)
+    rec.config.cycle_budget_s = 1e6
+
+    def boom(*_a: object, **_k: object) -> None:
+        raise TickSourceError("terminal busy")
+
+    src.ticks = boom  # type: ignore[method-assign]
+    rep = rec.run_once(now_ms=T0 + 30 * HOUR)
+    assert rep.priority_pulls == 1
+    assert "XAUUSD" in rep.errors
+
+
+def test_book_symbols_lead_with_gold_and_survive_an_unreadable_registry(tmp_path: Path) -> None:
+    from recorders.tick_recorder import CORE_PRIORITY, book_symbols
+
+    reg = tmp_path / "sleeves.json"
+    reg.write_text('{"sleeves": [{"symbol": "USDJPY"}, {"symbol": "XAUUSD"}, {"name": "x"}]}')
+    got = book_symbols(reg)
+    assert got[:2] == CORE_PRIORITY and "USDJPY" in got and len(got) == len(set(got))
+    assert book_symbols(tmp_path / "absent.json") == CORE_PRIORITY

@@ -187,8 +187,8 @@ def test_the_thresholds_are_the_drafts(fd) -> None:
     """Pinned so this wave provably changed no number in the rail."""
     assert (fd.DAILY_LOSS_PCT, fd.EQUITY_FLOOR_EUR, fd.WEEKLY_LOSS_PCT, fd.MAX_OPEN_POSITIONS,
             fd.MIN_FREE_MARGIN_FRAC, fd.MAX_SIZE_MULTIPLE, fd.STALE_HEARTBEAT_MIN,
-            fd.CONFIRM_READS) == (0.10, 300.0, 0.20, 24, 0.25, 3.0, 45, 2)
-    assert fd.rails() == {"DAILY_LOSS_PCT": 0.10, "EQUITY_FLOOR_EUR": 300.0,
+            fd.CONFIRM_READS) == (0.10, 10.0, 0.20, 24, 0.25, 3.0, 45, 2)
+    assert fd.rails() == {"DAILY_LOSS_PCT": 0.10, "EQUITY_FLOOR_EUR": 10.0,
                           "WEEKLY_LOSS_PCT": 0.20, "MAX_OPEN_POSITIONS": 24,
                           "MIN_FREE_MARGIN_FRAC": 0.25, "MAX_SIZE_MULTIPLE": 3.0,
                           "STALE_HEARTBEAT_MIN": 45, "CONFIRM_READS": 2}

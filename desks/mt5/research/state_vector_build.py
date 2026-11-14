@@ -450,6 +450,21 @@ def _hint_weight(row: dict) -> float:
     return round(decay(reg.name, float(lag) * reg.cadence_s), 6)
 
 
+def _upstream_label(r: dict) -> str:
+    """One conditioning row for the summary print. Causal hints carry src/lag/clock; the actor
+    and latent rows appended beside them do not, and indexing them raised KeyError('src') after
+    state_vector.json was already written -- 736 times on the box since 2026-09-24, every one a
+    task rc 1 for a pass whose artifact was fine."""
+    src = r.get("src") or r.get("actor") or r.get("state") or r.get("name") or "?"
+    lag = r.get("lag")
+    where = f"@{lag}{r.get('clock') or ''}" if lag is not None else ""
+    try:
+        w = f"{float(r.get('weight')):.2f}"
+    except (TypeError, ValueError):
+        w = "?"
+    return f"{src}{where} w={w}"
+
+
 def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
     """Per book instrument, the ADMITTED upstream nodes `world_causal_graph` found, each with
     the lag it acts at, its information class and the weight that information still carries at
@@ -651,8 +666,7 @@ def main() -> int:
     print(f"  FRESH    {len(sv.freshness) - len(stale)}/{len(sv.freshness)} inputs still above "
           f"weight {STALE_WEIGHT}; stale: {', '.join(stale[:6]) or 'none'}")
     for sym, rows in sorted(sv.conditioning.items())[:6]:
-        print(f"  UPSTREAM {sym}: " + ", ".join(
-            f"{r['src']}@{r['lag']}{r['clock']} w={r['weight']:.2f}" for r in rows[:3]))
+        print(f"  UPSTREAM {sym}: " + ", ".join(_upstream_label(r) for r in rows[:3]))
     for k, v in sorted(sv.gaps.items()):
         print(f"  GAP      {k}: {v}")
     print(f"written: {OUT}")

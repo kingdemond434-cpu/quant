@@ -76,6 +76,11 @@ KINDS = (
     # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
     # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
     "STATE_FLOW_STALLED",
+    # THE JUDGE'S OPERATOR HOLD (2026-10-27): a RESIDENT_STOP first honoured by the resident, and
+    # an explicit `until=` timed stop that lapsed and was renamed aside. A forgotten empty stop
+    # held the judge for 108 h with no row anywhere; it now has a time on it here and a fence
+    # (check_judge_coverage `judge_stop`, WARN 12 h / FAIL 24 h).
+    "JUDGE_STOP_HONOURED", "JUDGE_STOP_LAPSED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

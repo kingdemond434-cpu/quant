@@ -1,0 +1,316 @@
+{
+ "provenance": {
+  "supplied_path": "/mnt/project-files/mining/tradingeconomics_free_substitutes.json",
+  "supplied_sha256": "c25d2ab17838f10663a391afb012fda92abaa8fa39bd46cc3cbb9fe66b22fdbc",
+  "supplied_bytes": 2979,
+  "copied_at": "2026-09-30",
+  "copied_by": "paid-substitute engine #152 (Breadth)",
+  "verbatim_keys": [
+   "paid_source",
+   "already_registered",
+   "verification",
+   "substitutes",
+   "coverage_claim",
+   "owner"
+  ],
+  "desk_keys": [
+   "provenance",
+   "desk_scoring"
+  ],
+  "note": "Every key in verbatim_keys is the supplied file unchanged. desk_scoring is desk-authored: the class/region of each TE field and the free sources each row NAMES, resolved to paid_substitute_library.json ids where the library carries them. Every terms verdict is to_confirm (the supplied file is UNVERIFIED and the terms gate fails closed); the owner flips one to confirmed or refused on the box, here, never in code."
+ },
+ "paid_source": "Trading Economics API (github.com/tradingeconomics/tradingeconomics is only the client; the data needs a paid key). No key is added.",
+ "already_registered": "desks/mt5/data/event_consensus_sources.json has tradingeconomics_calendar (open surface only, 401/403 recorded) and the Forex Factory weekly feeds (consensus + actual, public).",
+ "verification": "UNVERIFIED: this container's proxy refuses every probe (403 on CONNECT), so no endpoint or field map below was fetched. The owner confirms terms and field maps on the box before any row enters event_consensus_sources.json (the terms gate fails closed).",
+ "substitutes": [
+  {
+   "te_field": "calendar actual (US)",
+   "free_source": "FRED/ALFRED vintages (api.stlouisfed.org, free key the desk self-registers) and BLS/BEA release pages",
+   "why": "ALFRED gives the first-release value as known on the release date, i.e. point in time"
+  },
+  {
+   "te_field": "calendar actual (all countries)",
+   "free_source": "DBnomics (api.db.nomics.world, keyless) mirroring ~80 statistics offices and central banks: Eurostat, ONS, INSEE, Destatis, ISTAT, ABS, StatCan, Stats NZ, BoJ, SNB, Riksbank, Norges Bank, IBGE, INEGI, Banxico, TurkStat, SARB",
+   "why": "one API for most MT5 currencies' releases; revisions visible"
+  },
+  {
+   "te_field": "calendar actual (CN)",
+   "free_source": "NBS 国家统计局 data.stats.gov.cn and PBoC releases (via AkShare macro functions, already rostered)",
+   "why": "CNH and China50 release days"
+  },
+  {
+   "te_field": "consensus (US)",
+   "free_source": "Nasdaq economic calendar JSON (api.nasdaq.com/api/calendar/economicevents?date=YYYY-MM-DD: actual, consensus, previous) and MarketWatch economic calendar page",
+   "why": "US consensus beside the Forex Factory feed, as a second vote"
+  },
+  {
+   "te_field": "consensus (G10 and EM)",
+   "free_source": "Forex Factory feed (HAVE), Myfxbook economic calendar page, FXStreet calendar page, Investing.com calendar page (terms check first)",
+   "why": "cross-checking two consensus feeds exposes a stale or wrong forecast"
+  },
+  {
+   "te_field": "forecast (TE's own model forecasts)",
+   "free_source": "Philadelphia Fed Survey of Professional Forecasters (CSV, free), ECB SPF (free), Fed SEP dot plot, ECB, BoE and RBA staff projections, IMF WEO (DBnomics), OECD Economic Outlook (DBnomics)",
+   "why": "an expectations baseline for slow macro-surprise cells; TE's own forecasts are a model, not a consensus"
+  },
+  {
+   "te_field": "historical indicators and ratings",
+   "free_source": "World Bank WDI, IMF IFS and BIS (all on DBnomics), BIS REER and policy rates",
+   "why": "carry, REER value and terms-of-trade conditioners for the FX class books"
+  }
+ ],
+ "coverage_claim": "NONE yet: under the dataset rule a substitute counts only once the correlation between substitute and paid field is measured. That needs one TE export or the open-surface rows the event_surprise collector already records.",
+ "owner": "Breadth (paid-substitute engine #152); logged by the EliteQuant mining thread 2026-09-30",
+ "desk_scoring": {
+  "terms_vocabulary": [
+   "confirmed",
+   "refused",
+   "to_confirm"
+  ],
+  "fields": {
+   "calendar actual (US)": {
+    "class": "macro",
+    "region": "US",
+    "substitutes": [
+     {
+      "library_id": "alfred_vintages",
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_bls_bea_release_pages",
+      "name": "BLS/BEA release pages",
+      "classes": [
+       "macro"
+      ],
+      "region": "US",
+      "frequency": "monthly",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "calendar actual (all countries)": {
+    "class": "macro",
+    "region": "global",
+    "substitutes": [
+     {
+      "library_id": "dbnomics",
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "calendar actual (CN)": {
+    "class": "macro",
+    "region": "CN",
+    "substitutes": [
+     {
+      "library_id": "nbs_cn",
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_pboc_releases_akshare",
+      "name": "PBoC releases via AkShare macro functions",
+      "classes": [
+       "macro"
+      ],
+      "region": "CN",
+      "frequency": "monthly",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "consensus (US)": {
+    "class": "consensus_estimates",
+    "region": "US",
+    "substitutes": [
+     {
+      "id": "te_nasdaq_econ_calendar",
+      "name": "Nasdaq economic calendar JSON (actual, consensus, previous)",
+      "classes": [
+       "consensus_estimates",
+       "calendars"
+      ],
+      "region": "US",
+      "frequency": "daily",
+      "url": "https://api.nasdaq.com/api/calendar/economicevents",
+      "endpoint": "https://api.nasdaq.com/api/calendar/economicevents?date=YYYY-MM-DD",
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_marketwatch_econ_calendar",
+      "name": "MarketWatch economic calendar page",
+      "classes": [
+       "consensus_estimates",
+       "calendars"
+      ],
+      "region": "US",
+      "frequency": "weekly",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "consensus (G10 and EM)": {
+    "class": "consensus_estimates",
+    "region": "global",
+    "substitutes": [
+     {
+      "library_id": "ff_calendar",
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_myfxbook_calendar",
+      "name": "Myfxbook economic calendar page",
+      "classes": [
+       "consensus_estimates",
+       "calendars"
+      ],
+      "region": "global",
+      "frequency": "daily",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_fxstreet_calendar",
+      "name": "FXStreet calendar page",
+      "classes": [
+       "consensus_estimates",
+       "calendars"
+      ],
+      "region": "global",
+      "frequency": "daily",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_investing_calendar",
+      "name": "Investing.com calendar page (terms check first)",
+      "classes": [
+       "consensus_estimates",
+       "calendars"
+      ],
+      "region": "global",
+      "frequency": "daily",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "forecast (TE's own model forecasts)": {
+    "class": "consensus_estimates",
+    "region": "global",
+    "substitutes": [
+     {
+      "library_id": "philly_spf",
+      "terms": "to_confirm"
+     },
+     {
+      "library_id": "ecb_spf",
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_fed_sep",
+      "name": "Fed SEP dot plot",
+      "classes": [
+       "consensus_estimates"
+      ],
+      "region": "US",
+      "frequency": "quarterly",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_cb_staff_projections",
+      "name": "ECB, BoE and RBA staff projections",
+      "classes": [
+       "consensus_estimates"
+      ],
+      "region": "global",
+      "frequency": "quarterly",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     },
+     {
+      "id": "te_imf_weo_oecd_eo",
+      "name": "IMF WEO and OECD Economic Outlook (DBnomics)",
+      "classes": [
+       "consensus_estimates"
+      ],
+      "region": "global",
+      "frequency": "semiannual",
+      "url": null,
+      "endpoint": null,
+      "auth": "none",
+      "auth_env": "",
+      "history_start": null,
+      "latency_days": null,
+      "terms": "to_confirm"
+     }
+    ]
+   },
+   "historical indicators and ratings": {
+    "class": "macro",
+    "region": "global",
+    "substitutes": [
+     {
+      "library_id": "worldbank_wdi",
+      "terms": "to_confirm"
+     },
+     {
+      "library_id": "bis_stats",
+      "terms": "to_confirm"
+     },
+     {
+      "library_id": "dbnomics",
+      "terms": "to_confirm"
+     }
+    ]
+   }
+  }
+ }
+}

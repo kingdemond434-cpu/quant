@@ -174,6 +174,21 @@ def prefix_match(label: str, names: list[str]) -> tuple[str | None, list[str]]:
     return (hits[0] if len(hits) == 1 else None), hits
 
 
+def _account_of(d: dict[str, Any]) -> str | None:
+    """The deal's account as its hashed key (`mt5desk.provenance.row_key`): the new rows'
+    `account_key`, or a legacy row's raw `account`+`server` hashed on read, so a ledger holding
+    both shapes joins as ONE account. The raw login is never copied into this report."""
+    try:
+        import sys
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from mt5desk.provenance import row_key
+        return row_key(d)
+    except Exception:                                    # report-only: a miss costs a join
+        key = d.get("account_key")
+        return key if isinstance(key, str) else None
+
+
 def attribute(deals: list[dict[str, Any]], names: list[str]) -> list[dict[str, Any]]:
     """One verdict per deal, in the three passes, each unambiguous or it does not fire."""
     known = set(names)
@@ -183,7 +198,7 @@ def attribute(deals: list[dict[str, Any]], names: list[str]) -> list[dict[str, A
         row: dict[str, Any] = {
             "deal": d.get("deal"), "time": str(d.get("time") or ""),
             "symbol": str(d.get("symbol") or ""), "label": label,
-            "account": d.get("account"),
+            "account_key": _account_of(d),
             "tp": _num(d.get("tp")), "sl": _num(d.get("sl")),
             "sleeve": None, "route": UNATTRIBUTED, "candidates": [],
         }
@@ -197,24 +212,24 @@ def attribute(deals: list[dict[str, Any]], names: list[str]) -> list[dict[str, A
                 row["route"], row["candidates"] = AMBIGUOUS, cands[:8]
         out.append(row)
     # PASS 3, after the first two, because it joins ONTO what they attributed.
-    by_price: dict[tuple[str, int, float], str] = {}
-    for row, d in zip(out, deals, strict=True):
+    by_price: dict[tuple[str, str | None, float], str] = {}
+    for row in out:  # the account rides on the row now
         if row["sleeve"] is None:
             continue
-        acct = int(_num(d.get("account")) or 0)
+        acct = row["account_key"]
         for key in ("tp", "sl"):
             price = row[key]
             if price is not None and price > 0:
                 by_price.setdefault((row["symbol"], acct, round(float(price), 5)),
                                     str(row["sleeve"]))
-    for row, d in zip(out, deals, strict=True):
+    for row in out:
         if row["sleeve"] is not None:
             continue
         got = bracket_price(str(row["label"]))
         if got is None:
             continue
         _kind, price = got
-        acct = int(_num(d.get("account")) or 0)
+        acct = row["account_key"]
         hit = by_price.get((row["symbol"], acct, round(price, 5)))
         if hit is None:
             for (sym, a, p), name in by_price.items():

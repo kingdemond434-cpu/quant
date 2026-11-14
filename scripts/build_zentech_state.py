@@ -699,7 +699,13 @@ def _mt5_snapshot() -> dict[str, Any]:
     """
     try:
         import MetaTrader5 as mt5  # type: ignore[import-not-found, import-untyped]
-        if mt5.terminal_info() is None and not mt5.initialize():
+        # MT5-DeskState runs as SYSTEM: a bare initialize() there relaunches the Fusion terminal
+        # headless in Session 0 every pass (measured 2026-11-13 13:05Z). Attach through the guard.
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from research.mt5_session import attach_or_initialize
+
+        if not attach_or_initialize(mt5):
             return {}
         info = mt5.account_info()
         if info is None:

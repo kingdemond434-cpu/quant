@@ -164,6 +164,10 @@ def run(fetch: bool = True, write: bool = True) -> dict[str, Any]:
                           "symbols": list((c.get("instruments") or {}).get("analogues") or []),
                           "lang": c.get("lang"), "claim_hash": c["claim_hash"], "status": None,
                           "consumer": "deepening_worker (repo_mechanism)",
+                          # SOURCE PROVENANCE (libs.research.source_provenance).
+                          "source_url": str(doc.get("url") or ""),
+                          "retrieved_at": doc.get("fetched_utc") or doc.get("pushed_at"),
+                          "content_hash": c["claim_hash"], "ground": full,
                           "quantities": c["quantities"], "horizon": c["horizon"]})
         mined.append({"repo": full, "license": doc.get("license"), "stars": doc.get("stars"),
                       "claims": len(claims), "cached": "fetched_utc" in doc,

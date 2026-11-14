@@ -1,0 +1,75 @@
+{
+ "at": "2026-11-09T17:57:04+00:00",
+ "attestation_in_force": {
+  "version": "mt5-original-universal-10-v3-reserved-lockbox",
+  "fingerprint": "7bec8da705e664a8",
+  "lockbox_basis": "reserved_final_calendar_fraction_carved_before_program_matrix; held, recent-tail and half-split reads all clear the cell's deflated hurdle sr0 (v4)",
+  "trial_count_basis": "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.0002): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
+ },
+ "attestation_fingerprint": "7bec8da705e664a8",
+ "in_force_since": null,
+ "in_force_basis": "UNMEASURED: no carried status and git gave no date for research/gate_policy.py, so no row is dated stale against it",
+ "report": {
+  "status": "READ",
+  "exact": true,
+  "version": "mt5-original-universal-10-v3-reserved-lockbox",
+  "fingerprint": "7bec8da705e664a8",
+  "differs_in": [],
+  "swept_at": "2026-11-09T13:55:58.746405+00:00",
+  "n": 6183,
+  "restamped_not_rejudged": [],
+  "undated_unmeasured": [],
+  "pending_rejudge": 0,
+  "n_stale": 0
+ },
+ "canon": {
+  "status": "READ",
+  "exact": true,
+  "version": "mt5-original-universal-10-v3-reserved-lockbox",
+  "fingerprint": "7bec8da705e664a8",
+  "differs_in": [],
+  "swept_at": "2026-11-08T11:55:06.558570+00:00",
+  "n": 6183,
+  "restamped_not_rejudged": [],
+  "undated_unmeasured": [],
+  "pending_rejudge": 0,
+  "n_stale": 0
+ },
+ "match": {
+  "report": true,
+  "canon": true,
+  "any": true
+ },
+ "enrolment_frozen": false,
+ "authorized_runs": {
+  "status": "MEASURED",
+  "n": 6183
+ },
+ "certificates_pending_rejudge": 0,
+ "queueable_cells": 0,
+ "not_queueable": [],
+ "restamped_not_rejudged": [],
+ "oldest_pending_since": null,
+ "oldest_pending_age_hours": 0.0,
+ "oldest_pending_evidence_at": null,
+ "sealed_patch_applied": true,
+ "eta": {
+  "status": "NONE_PENDING",
+  "hours": 0.0
+ },
+ "frozen_at": null,
+ "first_sweep_started_after_freeze": null,
+ "last_sweep_started_at": "2026-11-09T12:47:23+00:00",
+ "last_sweep_completed_at": "2026-11-09T12:30:25+00:00",
+ "reminted_at": null,
+ "frozen_hours": 0.0,
+ "breach": false,
+ "breach_why": [],
+ "rule": "a certificate whose gates predate the attestation in force is re-JUDGED under it, at the front of the next sweep, never re-stamped; enrolment may stay frozen for at most one sweep",
+ "applied": {
+  "queued": 0,
+  "already_on_docket": 0,
+  "priority": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\priority_remint.json"
+ },
+ "queued_cells": []
+}

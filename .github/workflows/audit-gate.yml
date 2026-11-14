@@ -1,0 +1,105 @@
+name: audit-gate
+
+# A PR into LIVE merges by itself once the auditor CLEARs its head and CI is green
+# (.github/scripts/audit_gate.py says exactly when). `pull_request_target` runs THIS file and the gate
+# script from the BASE branch, never from the PR, so a PR cannot rewrite its own gate. The PR's
+# commits are fetched only to compare their diff (git patch-id); no PR code is ever run.
+#
+# The CLEAR: the auditor (or Desk health for it) posts a PR comment with the line
+#     AUDIT CLEAR <40-hex head sha> [merge|squash]
+# and adds the label `audit-clear`, which starts this run. Later pushes start it too: a clean
+# merge-in of LIVE keeps the CLEAR (same patch-id); anything else needs a new CLEAR.
+# `AUDIT HOLD <sha>` posted after a CLEAR blocks the merge.
+
+on:
+  pull_request_target:
+    types: [opened, labeled, synchronize, reopened, ready_for_review]
+    branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
+  # THE SECOND MERGER (#521, 2026-10-29). The run above looks once, when the PR moves; a PR whose
+  # checks finish later was merged only by the box sweep, and the box sweep was dead from 13:14Z
+  # (a cp1252 crash, then a hung gh holding its mutex) with nothing saying so. When a ci or
+  # release-gates run on a PR completes, the gate looks at that PR again. GitHub runs a
+  # workflow_run trigger from the DEFAULT branch's copy of this file (master, synced from LIVE by
+  # ci.yml's promote job), so this starts once a promote has carried it there.
+  workflow_run:
+    workflows: ["ci", "release-gates"]
+    types: [completed]
+
+permissions:
+  contents: write        # the merge
+  pull-requests: write   # mark a CLEARed draft ready
+  statuses: write        # the audit/clear commit status
+  actions: write         # dispatch ci.yml on LIVE after the merge
+  checks: read
+  issues: write          # the quarantine label on a failing no-comment PR
+
+jobs:
+  gate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && (
+        github.event.action != 'labeled' || github.event.label.name == 'audit-clear')
+    # Job-level, so a run for an unrelated label (skipped by `if`) never cancels a waiting gate;
+    # a new push does, and its own run decides.
+    concurrency:
+      group: audit-gate-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    # One look, never a wait (2026-10-29: gates polling up to 300 min held the runners their own
+    # checks were queued for). The box sweep, every 10 min, merges once the checks are green.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+          # the repo is public: fetching the PR's commits needs no token, and gh reads GH_TOKEN
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Merge once audit-CLEAR and green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python .github/scripts/audit_gate.py
+          --repo "${{ github.repository }}"
+          --pr "${{ github.event.pull_request.number }}"
+          --base "${{ github.event.pull_request.base.ref }}"
+          --wait-min 0
+
+  after-checks:
+    # A completed check run on a PR: the same gate, same rule, one look per PR the run names.
+    # The gate's code and the base come from LIVE, never from the PR; the PR numbers are the
+    # event's own integers.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: audit-gate-after-${{ github.event.workflow_run.head_sha }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Look again at each PR this run completed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRS: ${{ toJSON(github.event.workflow_run.pull_requests) }}
+        run: |
+          # a quarantine or a pending PR is the gate's verdict, not this job failing: it reports
+          for n in $(jq -r '.[] | select(.base.ref == "claude/llm-auto-upgrade-verify-gcjac3") | .number' <<<"$PRS"); do
+            python .github/scripts/audit_gate.py --repo "${{ github.repository }}" --pr "$n" \
+              --base claude/llm-auto-upgrade-verify-gcjac3 --wait-min 0 || echo "::warning::#$n: gate rc $?"
+          done
