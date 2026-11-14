@@ -89,8 +89,8 @@ BOOK_CONSUMERS = {
 }
 BOOK_RAILS = {
     "fusion": "max E[log W] within survival; heat floor 20%",
-    "e8": ("E8 Pro: 2.5% daily loss incl. floating, 2%/day profit cap, floor $90k, no "
-           "cross-account opposite trades, no Scandi pairs"),
+    "e8": ("E8 Pro: 2.5% daily loss incl. floating, 2%/day profit cap, floor 90% of the starting "
+           "balance (10% max loss), no cross-account opposite trades, no Scandi pairs"),
     "ftmo": "FTMO 2-Step: 5% daily loss, 10% max loss; never on a symbol E8 trades",
 }
 REPORT = _DESK / "reports" / "LOSS_LEARNER.json"
