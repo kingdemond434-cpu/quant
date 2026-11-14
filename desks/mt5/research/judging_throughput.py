@@ -185,7 +185,7 @@ def measure_memory() -> dict[str, Any]:
                            commit_limit_mb=int(st.ullTotalPageFile // mb),
                            commit_free_mb=int(st.ullAvailPageFile // mb))
         except Exception as exc:
-            out["why"] = f"{type(exc).__name__}"
+            out["why"] = _why(exc)
         return out
     try:
         fields: dict[str, int] = {}
@@ -204,7 +204,7 @@ def measure_memory() -> dict[str, Any]:
                        commit_free_mb=(max(0, limit - used)
                                        if limit is not None and used is not None else UNMEASURED))
     except Exception as exc:
-        out["why"] = f"{type(exc).__name__}"
+        out["why"] = _why(exc)
     return out
 
 
@@ -237,7 +237,7 @@ def measure_terminal() -> dict[str, Any]:
         out.update(terminal_running=term > 0, gateway_running=gate > 0, n_python=pyn,
                    terminal_source="psutil")
     except Exception as exc:
-        out["terminal_why"] = f"{type(exc).__name__}"
+        out["terminal_why"] = _why(exc)
     return out
 
 
@@ -327,7 +327,7 @@ def measure_cpu(sample_s: float = CPU_SAMPLE_S) -> dict[str, Any]:
         out.update(cpu_source="psutil", busy_other_cores=round(other, 2),
                    busy_judge_cores=round(judge, 2), cpu_sample_s=float(sample_s))
     except Exception as exc:
-        out["cpu_why"] = f"{type(exc).__name__}"
+        out["cpu_why"] = _why(exc)
     return out
 
 
@@ -791,6 +791,19 @@ _APPLY_DEADLINE: list[float] = []
 _MACHINE_ENV_KEY = r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
 
 
+class ApplyBudgetSpent(TimeoutError):
+    """The apply deadline was spent, so the call was skipped. Raised by this module only."""
+
+
+def _why(exc: BaseException) -> str:
+    """What a published document says about an exception: its type, never its text (a path or a
+    host can ride in the text). The one exception is this module's own budget sentinel, whose
+    meaning is fixed here and carries nothing from outside."""
+    if isinstance(exc, ApplyBudgetSpent):
+        return f"{type(exc).__name__}: apply budget spent, call skipped"
+    return type(exc).__name__
+
+
 def _sub_timeout(cap: float | None = None) -> float:
     """Seconds the next subprocess may take: its own cap, never past the apply deadline."""
     import time as _time
@@ -799,7 +812,7 @@ def _sub_timeout(cap: float | None = None) -> float:
         return cap
     left = _APPLY_DEADLINE[0] - _time.monotonic()
     if left <= 1.0:
-        raise TimeoutError("apply budget spent; the call was skipped and is recorded as such")
+        raise ApplyBudgetSpent("apply budget spent; the call was skipped and is recorded as such")
     return min(cap, left)
 
 
@@ -1166,7 +1179,7 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
                            timeout=_sub_timeout())
             done[k] = v
         except Exception as exc:
-            failed[k] = f"{type(exc).__name__}"
+            failed[k] = _why(exc)
     retired: dict[str, str] = {}
     for k in RETIRED_MACHINE_KEYS:
         try:
@@ -1175,7 +1188,7 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
                                check=False)
             retired[k] = "DELETED" if r.returncode == 0 else "ABSENT"
         except Exception as exc:
-            retired[k] = f"FAILED: {type(exc).__name__}"
+            retired[k] = f"FAILED: {_why(exc)}"
     status = ("FAILED" if failed and not done and not unchanged
               else "PARTIAL" if failed else "APPLIED")
     return {"status": status, "set": done, "unchanged": unchanged, "failed": failed,
@@ -1263,10 +1276,10 @@ def _change_with_retry(minutes: int) -> tuple[bool, list[str]]:
                            check=True, capture_output=True, timeout=_sub_timeout(cap))
             return True, errors
         except TimeoutError as exc:      # the apply budget is spent: stop, never hang
-            errors.append(f"attempt {i + 1}: {type(exc).__name__}")
+            errors.append(f"attempt {i + 1}: {_why(exc)}")
             break
         except Exception as exc:
-            errors.append(f"attempt {i + 1}: {type(exc).__name__}")
+            errors.append(f"attempt {i + 1}: {_why(exc)}")
             if i + 1 < len(CADENCE_ATTEMPT_TIMEOUTS_S):
                 _time.sleep(1.0)
     return False, errors
@@ -1432,7 +1445,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                             previous=_read_json(RATE_OUT, {}) or {})
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
-                "why": f"{type(exc).__name__}"}
+                "why": _why(exc)}
     if write:
         rate["attempt"] = attempt.pointer()
         # GUARDED (v1.1): a failed rate write must not cost the env file and JUDGING_THROUGHPUT,
@@ -1441,7 +1454,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         try:
             _write_atomic(RATE_OUT, rate)
         except Exception as exc:
-            rate_write_error = f"{type(exc).__name__}"
+            rate_write_error = _why(exc)
             attempt.note(rate_write_error=rate_write_error)
             attempt.phase("rate_write_failed")
         else:
@@ -1494,7 +1507,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             except OSError as exc:
                 # LOUD, NOT SUPPRESSED (audit S3): an unwritten state re-bootstraps every pass
                 # and the controller never steps.
-                decision["build_step"]["state_written"] = f"FAILED: {type(exc).__name__}"
+                decision["build_step"]["state_written"] = f"FAILED: {_why(exc)}"
     _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, _step)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
@@ -1527,7 +1540,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         payload["blas_single_thread"] = blas_threads.status()
     except Exception as exc:
         payload["blas_single_thread"] = {"active": False, "why": (
-            f"{UNMEASURED}: switch unreadable ({type(exc).__name__})"[:300])}
+            f"{UNMEASURED}: switch unreadable ({_why(exc)})"[:300])}
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
@@ -1574,7 +1587,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                 try:
                     applied[name] = fn()
                 except Exception as exc:   # best effort: the measurement is already published
-                    applied[name] = {"status": "FAILED", "why": f"{type(exc).__name__}"}
+                    applied[name] = {"status": "FAILED", "why": _why(exc)}
         finally:
             _APPLY_DEADLINE[:] = []
     else:
@@ -1590,7 +1603,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                      code=a.get("code"), owner=a.get("owner"),
                      file_age_s=a.get("file_age_seconds"), sweep_age_s=a.get("sweep_age_seconds"))
             except Exception as exc:
-                payload["events"] = f"UNMEASURED: {type(exc).__name__}"
+                payload["events"] = f"UNMEASURED: {_why(exc)}"
         attempt.phase("applied" if apply else "written", done=True,
                       seconds=payload["seconds"])
         try:
@@ -1598,7 +1611,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),
                        limiting=decision["limiting_resource"], queue_depth=queue.get("depth"))
         except Exception as exc:
-            payload["events"] = f"UNMEASURED: {type(exc).__name__}"
+            payload["events"] = f"UNMEASURED: {_why(exc)}"
     return payload
 
 
@@ -1708,7 +1721,7 @@ def _save_ckpt(ckpt: Path, doc: dict[str, Any], new_digests: list[bytes], keep: 
         tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
         os.replace(tmp, ckpt)
     except OSError as exc:
-        return f"{type(exc).__name__}"
+        return _why(exc)
     return None
 
 
@@ -1865,13 +1878,13 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 new_digests.append(d)
                 first[at] = first.get(at, 0) + 1
     except OSError as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+        return {"status": UNMEASURED, "why": _why(exc)}
     if ckpt is not None:
         try:
             with p.open("rb") as fh2:
                 ckpt_note = _persist(ckpt, p, fh2, frozen or _snap(), state, new_digests)
         except OSError as exc:
-            ckpt_note = f"{type(exc).__name__}"
+            ckpt_note = _why(exc)
     counts = {w: sum(n for at, n in raw.items() if at >= cut) for w, cut in cuts.items()}
     first_counts = {w: sum(n for at, n in first.items() if at >= cut) for w, cut in cuts.items()}
     out: dict[str, Any] = {
@@ -1939,7 +1952,7 @@ def _creation_counts(now: datetime, path: Path | None = None,
     try:
         c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=busy_s)
     except sqlite3.Error as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+        return {"status": UNMEASURED, "why": _why(exc)}
     if stop_at is not None:
         _stop = stop_at
         c.set_progress_handler(lambda: int(_time.monotonic() > _stop), _SQLITE_PROGRESS_EVERY)
@@ -1957,7 +1970,7 @@ def _creation_counts(now: datetime, path: Path | None = None,
     except sqlite3.Error as exc:
         if stop_at is not None and _time.monotonic() > stop_at:
             return _overran()
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+        return {"status": UNMEASURED, "why": _why(exc)}
     finally:
         c.close()
     return {"status": "MEASURED", "counts": out,
