@@ -1839,7 +1839,8 @@ def _costed(name: str, fn):
     _rot = _rotation()
     if _rot is not None:
         _elapsed = (datetime.now(UTC) - _ROTATION["started"]).total_seconds()
-        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed)
+        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed,
+                                    _ROTATION.get("ran") or ())
         if not _ok:
             return {"status": "ROTATED_OUT", "plan": HOURLY_PLAN, "why": _why,
                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
