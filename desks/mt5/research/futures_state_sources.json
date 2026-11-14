@@ -122,9 +122,14 @@
   {
    "id": "yahoo_futures",
    "adapter": "none",
-   "terms": "IDEAS_ONLY",
+   "terms": "REFUSED",
+   "terms_evidence": {
+    "ruled_at": "2026-11-14",
+    "recorded_in": "Audit HOLD on PR #898 (2026-11-14T03:39:48Z); same standard as the FRED ruling applied in #1177",
+    "reading": "Yahoo's terms refuse automated fetches on every route, so ideas-only use does not make the fetch lawful: the collector opens no socket."
+   },
    "url": "https://query1.finance.yahoo.com/",
-   "note": "fetch_futures_curves.py source; IDEAS_ONLY, not a live input"
+   "note": "former fetch_futures_curves.py source; REFUSED on terms, nothing is fetched. Held data/futures_curves panels stay, labelled"
   },
   {
    "id": "cn_exchanges",

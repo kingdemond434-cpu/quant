@@ -1,13 +1,15 @@
-"""Governance 2026-11-11 00:41Z: the Yahoo GC/CL curves propose ideas only, never trading cells.
+"""The GC/CL curve fence. Governance 2026-11-11 00:41Z: the curves never mint trading cells. Audit
+HOLD on #898, 2026-11-14: Yahoo is REFUSED on terms, so the collector opens no socket at all.
 
-The fence reads futures_state_sources.json and fails closed when a class is missing or the file is
-unreadable; the collector's UA is an honest tool name and a refusal stops the whole pass."""
+The mint fence reads futures_state_sources.json and fails closed when a class is missing or the
+file is unreadable; the collector writes a BLOCKED_ON_TERMS record and leaves held panels alone."""
 from __future__ import annotations
 
 # ruff: noqa: E402 -- tests add the desk roots before importing standalone research modules.
 import json
 import sys
-import urllib.error
+import socket
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -28,10 +30,10 @@ def _registry(tmp_path: Path, **terms: str) -> Path:
     return path
 
 
-def test_the_live_registry_keeps_the_curves_ideas_only() -> None:
+def test_the_live_registry_refuses_yahoo_and_mints_nothing() -> None:
     permit = screen.mint_permission()
     assert permit["mint"] is False
-    assert permit["classes"] == {"yahoo_futures": "IDEAS_ONLY", "cme_settlements": "HELD"}
+    assert permit["classes"] == {"yahoo_futures": "REFUSED", "cme_settlements": "HELD"}
 
 
 @pytest.mark.parametrize("terms", [
@@ -57,17 +59,44 @@ def test_only_every_source_open_mints(tmp_path: Path) -> None:
     assert screen.mint_permission(reg)["mint"] is True
 
 
-def test_the_collector_names_itself_honestly_and_carries_its_class() -> None:
-    assert "Mozilla" not in fetcher.UA and fetcher.UA.startswith("quant-desk-")
-    assert fetcher.source_class() == "IDEAS_ONLY"
+def test_the_collector_carries_the_refused_class() -> None:
+    assert fetcher.source_class() == "REFUSED"
+    doc = json.loads(fetcher.REGISTRY.read_text(encoding="utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == "yahoo_futures")
+    assert row["terms_evidence"]["recorded_in"].startswith("Audit HOLD on PR #898")
 
 
-def test_a_refusal_stops_the_pass(monkeypatch: pytest.MonkeyPatch) -> None:
-    def refuse(*_a, **_k):
-        raise urllib.error.HTTPError("u", 403, "Forbidden", None, None)  # type: ignore[arg-type]
-    monkeypatch.setattr(fetcher.urllib.request, "urlopen", refuse)
-    with pytest.raises(fetcher.HardStop):
-        fetcher.fetch_contract("GCZ26.CMX")
+def test_the_fetch_is_removed_not_switched_off() -> None:
+    src = Path(fetcher.__file__).read_text(encoding="utf-8")
+    assert not hasattr(fetcher, "fetch_contract")
+    assert "urllib" not in src and "query1.finance.yahoo.com/v8" not in src
+
+
+def test_main_opens_no_socket_and_keeps_held_panels(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_network(*_a, **_k):
+        raise AssertionError("a socket was opened")
+    monkeypatch.setattr(socket, "socket", no_network)
+    monkeypatch.setattr(socket, "create_connection", no_network)
+    monkeypatch.setattr(urllib.request, "urlopen", no_network)
+    out = tmp_path / "futures_curves"
+    out.mkdir()
+    held = out / "GC_curve.parquet"
+    import pandas as pd
+    pd.DataFrame({"date": pd.to_datetime(["2026-11-01"], utc=True), "close": [1.0],
+                  "source_class": ["IDEAS_ONLY"]}).to_parquet(held, index=False)
+    before = held.read_bytes()
+    report = tmp_path / "futures_curve_coverage.json"
+    monkeypatch.setattr(fetcher, "OUT", out)
+    monkeypatch.setattr(fetcher, "REPORT", report)
+    assert fetcher.main([]) == 0
+    doc = json.loads(report.read_text(encoding="utf-8"))
+    assert doc["status"] == "BLOCKED_ON_TERMS" and doc["requests_made"] == 0
+    assert doc["missed_growth"]["verdict"] == "a gap, not a zero"
+    assert doc["held_panels"] == [{"file": "GC_curve.parquet", "rows": 1,
+                                   "last_date": "2026-11-01 00:00:00+00:00",
+                                   "source_class": "IDEAS_ONLY"}]
+    assert held.read_bytes() == before
 
 
 def test_the_shanghai_exchanges_are_recorded_refused() -> None:

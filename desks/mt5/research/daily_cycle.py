@@ -562,7 +562,7 @@ def _research_memory() -> None:
 
 
 def _futures_curves() -> None:
-    """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
+    """Write the curve collector's record. Yahoo is REFUSED on terms, so it opens no socket."""
     import fetch_futures_curves
 
     rc = fetch_futures_curves.main([])
