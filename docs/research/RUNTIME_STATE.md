@@ -1057,8 +1057,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:decay_verdicts` | `hourly_cycle:decay_verdicts` | UNMEASURED UNMEASURED | `desks/mt5/reports/DECAY_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/dukascopy_backfill.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DUKASCOPY_BACKFILL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:tape_deepen` | `hourly_cycle:tape_deepen` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_DEEPEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:intel_feed` | `hourly_cycle:intel_feed` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOX_INTEL_FEED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:run_all_feed` | `hourly_cycle:run_all_feed` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOX_RUN_ALL_FEED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:contradiction_miner` | `hourly_cycle:contradiction_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTRADICTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:vocabulary_proposer` | `hourly_cycle:vocabulary_proposer` | UNMEASURED UNMEASURED | `desks/mt5/reports/VOCABULARY_PROPOSALS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 

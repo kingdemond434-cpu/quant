@@ -735,14 +735,14 @@
     ]
    },
    {
-    "at": "2026-11-14T11:23:29+00:00",
+    "at": "2026-11-14T10:29:27+00:00",
     "host": "vm",
-    "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:intel_feed",
-     "leg:run_all_feed"
+     "leg:contradiction_miner",
+     "leg:vocabulary_proposer"
     ]
    }
   ]
@@ -27982,12 +27982,12 @@
    "measured_at": "2026-11-14T06:43:43+00:00"
   },
   {
-   "organ": "leg:intel_feed",
+   "organ": "leg:contradiction_miner",
    "kind": "leg",
    "code": [
-    "desks/mt5/side_channels/box_intel_feed.py"
+    "desks/mt5/research/contradiction_miner.py"
    ],
-   "clock": "hourly_cycle:intel_feed",
+   "clock": "hourly_cycle:contradiction_miner",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -27995,8 +27995,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/BOX_INTEL_FEED.json",
-   "artifact_declared": "desks/mt5/reports/BOX_INTEL_FEED.json",
+   "artifact": "desks/mt5/reports/CONTRADICTIONS.json",
+   "artifact_declared": "desks/mt5/reports/CONTRADICTIONS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -28006,16 +28006,16 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T11:23:29+00:00"
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-14T10:29:27+00:00"
   },
   {
-   "organ": "leg:run_all_feed",
+   "organ": "leg:vocabulary_proposer",
    "kind": "leg",
    "code": [
-    "desks/mt5/side_channels/box_run_all_feed.py"
+    "desks/mt5/research/vocabulary_proposer.py"
    ],
-   "clock": "hourly_cycle:run_all_feed",
+   "clock": "hourly_cycle:vocabulary_proposer",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -28023,8 +28023,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/BOX_RUN_ALL_FEED.json",
-   "artifact_declared": "desks/mt5/reports/BOX_RUN_ALL_FEED.json",
+   "artifact": "desks/mt5/reports/VOCABULARY_PROPOSALS.json",
+   "artifact_declared": "desks/mt5/reports/VOCABULARY_PROPOSALS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -28034,8 +28034,8 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-14T11:23:29+00:00"
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-14T10:29:27+00:00"
   }
  ],
  "ratchet": {
