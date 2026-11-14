@@ -428,11 +428,28 @@ def _licence_links(doc: Any) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+class CrossHostRedirect(urllib.error.URLError):
+    """A robots.txt read was redirected off its own scheme and host: read as unreadable."""
+
+
+class _SameHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Follows a robots.txt redirect only on the same scheme and host. Another host's permissive
+    robots.txt must never answer for this one, so a cross-host hop raises (= unreadable)."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        old, new = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
+        if (new.scheme, new.hostname, new.port) != (old.scheme, old.hostname, old.port):
+            raise CrossHostRedirect("robots.txt redirected to another host")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _robots_fetch(url: str) -> tuple[int, bytes]:
     """(HTTP status, body) of a robots.txt read under our own agent; an HTTP error is a status."""
     req = urllib.request.Request(url, headers={"User-Agent": UA})
+    opener = urllib.request.build_opener(_SameHostRedirect())
     try:
-        with urllib.request.urlopen(req, timeout=15.0) as r:
+        with opener.open(req, timeout=15.0) as r:
             return int(getattr(r, "status", 200) or 200), r.read(500_000)
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
@@ -448,12 +465,18 @@ def robots_refusal(url: str, fetch: Callable[[str], tuple[int, bytes]] | None = 
     disallows everything; any other status or a read that fails is a refusal, never an assumed
     allow. The robots.txt request is the one request that cannot be gated by its own answer."""
     parts = urllib.parse.urlsplit(url)
-    if parts.scheme != "https" or not parts.netloc:
+    if parts.scheme != "https" or not parts.hostname:
         return f"not an https URL: {parts.scheme or '?'}"
     if parts.path == "/robots.txt":
         return None
     try:
-        status, body = (fetch or _robots_fetch)(f"https://{parts.netloc}/robots.txt")
+        port = parts.port
+    except ValueError:
+        return "invalid port"
+    # host and port only: userinfo in a configured URL never reaches a request line
+    host = parts.hostname + (f":{port}" if port else "")
+    try:
+        status, body = (fetch or _robots_fetch)(f"https://{host}/robots.txt")
     except Exception as exc:
         return f"robots.txt unreadable ({type(exc).__name__})"
     rp = urllib.robotparser.RobotFileParser()
@@ -1260,14 +1283,16 @@ def run(paths: Paths = DEFAULT_PATHS, *, now: datetime | None = None, budget_s: 
             from libs.ops.env_keys import read_key
             base = read_key(URL_NAME) or CDS_URL
         name = str((doc.get("dataset") or {}).get("name") or "")
-        for u in (base.rstrip("/") + "/",
-                  f"{base.rstrip('/')}/retrieve/v1/processes/{name}/execution"):
-            refused = (robots or robots_refusal)(u)
+        # A base read from the key store is never published: the report names it <CDSAPI_URL>.
+        shown = CDS_URL if base == CDS_URL else f"<{URL_NAME}>"
+        for suffix in ("/", f"/retrieve/v1/processes/{name}/execution"):
+            refused = (robots or robots_refusal)(base.rstrip("/") + suffix)
             if refused:
+                label = shown.rstrip("/") + suffix
                 rep["status"] = BLOCKED_ROBOTS
-                rep["why"] = f"{u}: {refused}"
+                rep["why"] = f"{label}: {refused}"
                 rep["missed_growth"] = ROBOTS_MISSED_GROWTH
-                fetch_res = {"status": BLOCKED_ROBOTS, "url": u, "why": refused}
+                fetch_res = {"status": BLOCKED_ROBOTS, "url": label, "why": refused}
                 break
     if fetch and not refused:
         client, cstat, why = client_factory()

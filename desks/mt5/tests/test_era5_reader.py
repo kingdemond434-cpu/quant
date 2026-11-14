@@ -706,3 +706,39 @@ def test_a_robots_refusal_fetches_nothing_and_names_its_missed_growth(tmp_path: 
                  robots=lambda u: "robots.txt disallows this path")
     assert rep["status"] == e5.BLOCKED_ROBOTS and not called
     assert rep["fetch"]["status"] == e5.BLOCKED_ROBOTS and rep["missed_growth"]
+
+
+def test_userinfo_never_reaches_the_robots_request_line() -> None:
+    seen: list[str] = []
+    e5.robots_refusal("https://user:pw@cds.example.int:8443/api/x",
+                      fetch=lambda url: (seen.append(url), (404, b""))[1])
+    assert seen == ["https://cds.example.int:8443/robots.txt"]
+
+
+def test_a_cross_host_robots_redirect_is_unreadable_never_an_allow() -> None:
+    import urllib.request
+    h = e5._SameHostRedirect()
+    req = urllib.request.Request("https://cds.climate.copernicus.eu/robots.txt")
+    with pytest.raises(e5.CrossHostRedirect):
+        h.redirect_request(req, None, 302, "Found", {}, "https://elsewhere.example/robots.txt")
+    assert h.redirect_request(req, None, 301, "Moved", {},
+                              "https://cds.climate.copernicus.eu/robots.txt?x=1") is not None
+
+    def redirected(url: str) -> tuple[int, bytes]:
+        raise e5.CrossHostRedirect("robots.txt redirected to another host")
+    assert e5.robots_refusal("https://cds.climate.copernicus.eu/api/", fetch=redirected)
+
+
+def test_a_configured_base_is_never_published(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                              capsys: pytest.CaptureFixture[str]) -> None:
+    from libs.ops import env_keys
+    private = "https://user:pw@private.example.int/api"
+    monkeypatch.setattr(env_keys, "read_key",
+                        lambda n: private if n == e5.URL_NAME else FAKE_KEY)
+    paths = _desk(tmp_path)
+    _confirm(paths)
+    rep = e5.run(paths, now=NOW, client_factory=_never, key_reader=lambda n: FAKE_KEY,
+                 robots=lambda u: "robots.txt disallows this path")
+    text = json.dumps(rep) + capsys.readouterr().out
+    assert rep["status"] == e5.BLOCKED_ROBOTS and rep["why"].startswith("<CDSAPI_URL>/")
+    assert "private.example" not in text and "user:pw" not in text
