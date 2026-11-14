@@ -3,9 +3,8 @@ release, with every revision appended and every surprise variant measured or nam
 
 THE GAP, MEASURED ON THIS TREE (2026-10-06). The desk has captured the free calendar's consensus
 since 2026-08-25 as point-in-time vintages (`data/intelligence/ff_calendar_vintage/`, hourly
-rollups: title, scheduled instant, forecast, previous, impact, capture stamp) and has had a
-point-in-time FIRST-PRINT lake builder for months (`research/fetch_alfred.py`, every vintage
-ALFRED holds). Nothing joined them. `event_surprise` therefore found ZERO pairs with both an
+rollups: title, scheduled instant, forecast, previous, impact, capture stamp), and the agencies
+publish every first print on a schedule. Nothing joined them. `event_surprise` therefore found ZERO pairs with both an
 actual and a consensus and reported every scheduled surprise UNMEASURED, and the event atlas
 measured reactions to scheduled MOMENTS, never to NEWS. This module is the join.
 
@@ -33,9 +32,18 @@ TWO KINDS OF EXPECTATION, NEVER MIXED.
 NOTHING HERE HAS A DIRECTION. Every number is a magnitude handed to `event_surprise`, whose
 reaction measurement is the only place a sign is read, and to the sensor ledger.
 
-FAILS CLOSED. Without ALFRED files (FRED_API_KEY unset on this host) no actual is written, the
-consensus halves wait in the store for their partner, and the status says BLOCKED_AUTH. A revised
-series is never substituted for a first print.
+FIRST PRINTS COME FROM THE PUBLISHER, NEVER FROM FRED/ALFRED (Governance, FRED terms ruling
+2026-11-13: FRED's terms forbid every automated desk fetch and any use in building a system, and
+a key changes nothing). The actual side reads ONE store, `data/lake/first_prints/<series>`, which
+holds (observation_date, realtime_date, value) rows captured from the agency that publishes the
+number -- BLS, BEA, Census, the Labor Department, the Fed -- each through robots_gate and its own
+terms (`PRIMARY` names the publisher and its own series id per release). This module fetches
+nothing. ALFRED files already on the box are never read here.
+
+FAILS CLOSED. A release with no primary first-print vintages is UNMEASURED_NO_PRIMARY_VINTAGE:
+no actual is written, the consensus halves wait for their partner, and the census carries a
+missed_growth line naming the publisher, so the gap is priced, never hidden (Growth Governance
+Rule 1). A revised series is never substituted for a first print.
 """
 from __future__ import annotations
 
@@ -43,9 +51,6 @@ import gzip
 import json
 import math
 import re
-import subprocess
-import sys
-import time
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -56,27 +61,30 @@ from zoneinfo import ZoneInfo
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 VINTAGES = DESK / "data" / "intelligence" / "ff_calendar_vintage"
-ALFRED = DESK / "data" / "lake" / "alfred"
-FETCH_ALFRED = DESK / "research" / "fetch_alfred.py"
+#: The primary publishers' first-print vintages, one file per desk series (parquet or csv):
+#: observation_date, realtime_date (the date the publisher released that value), value.
+FIRST_PRINTS = DESK / "data" / "lake" / "first_prints"
+NO_PRIMARY = "UNMEASURED_NO_PRIMARY_VINTAGE"
 UNMEASURED = "UNMEASURED"
 SOURCE = "release_vintages"
 #: Sources whose numbers are measured and kept but may NOT reach the gauntlet until the terms
 #: gate clears them (audit #204 item 4). Forex Factory's survey median is a third party's
 #: compilation whose machine-use terms are UNMEASURED; Trading Economics' are commercial. A
-#: pair built on one is HELD_TERMS: stored, counted, never donated. The ALFRED first print against
+#: pair built on one is HELD_TERMS: stored, counted, never donated. The primary first print against
 #: the desk's own nowcast_ewm12 expectation ships alone until then.
 TERMS_HELD: dict[str, str] = {
     "ff_calendar": "Forex Factory survey median: machine-use terms UNMEASURED",
     "forexfactory": "Forex Factory survey median: machine-use terms UNMEASURED",
     "faireconomy": "Forex Factory survey median (faireconomy mirror): terms UNMEASURED",
     "tradingeconomics": "Trading Economics calendar: commercial terms, machine use not cleared",
+    # Governance FRED terms ruling 2026-11-13: no automated FRED/ALFRED use, key irrelevant.
+    "alfred": "FRED/ALFRED: terms refuse automated use and model building (ruling 2026-11-13)",
+    "fred": "FRED/ALFRED: terms refuse automated use and model building (ruling 2026-11-13)",
 }
 #: Where a cleared source is recorded: {"<held key>": {"status": "CLEARED", "by": ..., "why": ...}}
 #: written by whoever clears the terms (the global data thread's terms work, #162).
 CLEARANCES = DESK / "data" / "terms_clearances.json"
 ET = ZoneInfo("America/New_York")
-#: ALFRED files older than this are re-fetched (a release lands at most daily per series).
-ALFRED_MAX_AGE_H = 20.0
 NOWCAST_N = 12
 NOWCAST_HALF_LIFE = 3.0
 #: Declared transmission targets for a USD release: where to LOOK, never which way.
@@ -89,7 +97,7 @@ class ReleaseSpec:
     """One calendar headline and the first-print series whose transform IS that headline."""
 
     title: str               # the calendar title, currency prefix included
-    series: str              # the ALFRED series id
+    series: str              # the desk's key for the series (names its first_prints file)
     transform: str           # level | diff | pct_mom | pct_yoy | pct_qoq_saar
     kind: str                # the event ontology's kind
     hour: int                # scheduled hour, US/Eastern
@@ -132,6 +140,26 @@ RELEASES: tuple[ReleaseSpec, ...] = (
     ReleaseSpec("USD New Home Sales", "HSN1F", "level", "other", 10, 0),
 )
 BY_TITLE = {r.title: r for r in RELEASES}
+
+#: WHO PUBLISHES EACH FIRST PRINT: desk series -> (publisher, the publisher's own series id). A
+#: None id is a release whose primary vintage route is not mapped yet; it stays
+#: UNMEASURED_NO_PRIMARY_VINTAGE with its missed_growth line until a capture fills the store.
+PRIMARY: dict[str, tuple[str, str | None]] = {
+    "PAYEMS": ("bls", "CES0000000001"), "UNRATE": ("bls", "LNS14000000"),
+    "CES0500000003": ("bls", "CES0500000003"), "CPIAUCSL": ("bls", "CUSR0000SA0"),
+    "CPIAUCNS": ("bls", "CUUR0000SA0"), "CPILFESL": ("bls", "CUSR0000SA0L1E"),
+    "CPILFENS": ("bls", "CUUR0000SA0L1E"), "PPIFIS": ("bls", "WPSFD4"),
+    "PPIFES": ("bls", "WPSFD49104"), "JTSJOL": ("bls", "JTS000000000000000JOL"),
+    "ICSA": ("dol", None), "PCEPILFE": ("bea", None), "PI": ("bea", None),
+    "PCE": ("bea", None), "GDPC1": ("bea", None), "RSAFS": ("census", None),
+    "RSFSXMV": ("census", None), "DGORDER": ("census", None), "ADXTNO": ("census", None),
+    "PERMIT": ("census", None), "HOUST": ("census", None), "BOPGSTB": ("census", None),
+    "HSN1F": ("census", None), "INDPRO": ("fed", None),
+}
+
+
+def publisher(series: str) -> str:
+    return PRIMARY.get(series, (UNMEASURED, None))[0]
 
 
 # ============================================================================== small helpers
@@ -237,8 +265,8 @@ def consensus_vintages(folder: Path = VINTAGES) -> dict[tuple[str, str], dict[st
 
 
 # ============================================================================== actual side
-def load_alfred(series: str, folder: Path = ALFRED) -> Any:
-    """(observation_date, realtime_date, value), or None. Never the revised fredgraph file."""
+def load_first_prints(series: str, folder: Path = FIRST_PRINTS) -> Any:
+    """(observation_date, realtime_date, value) from the primary publisher's store, or None."""
     import pandas as pd
     for ext in (".parquet", ".csv"):
         p = folder / f"{series}{ext}"
@@ -306,8 +334,8 @@ def release_vintage(df: Any, spec: ReleaseSpec) -> list[dict[str, Any]]:
         if len(vints) < spec.vintage_rank:
             continue
         v = vints[spec.vintage_rank - 1]
-        # A first print dated at the START of ALFRED's record is the record's start, not the
-        # period's publication (fetch_alfred.release_lag says the same): not a release.
+        # A first print dated at the START of the store's record is the record's start, not the
+        # period's publication: not a release.
         if spec.vintage_rank == 1 and v <= record_start + pd.Timedelta(days=7):
             continue
         actual = transformed(df, obs, v, spec)
@@ -348,7 +376,7 @@ def _round(x: float | None, decimals: int) -> float | None:
     return None if x is None else round(float(x), max(0, int(decimals)))
 
 
-# ============================================================================== ALFRED refresh
+# ============================================================================== terms
 def gauntlet_terms(source_id: str, clearances: Path | None = None) -> tuple[bool, str]:
     """(may this source's pairs reach the gauntlet?, why). The terms fence (libs.data.terms_fence,
     #162) blocks first when it is present; a TERMS_HELD source passes only on a recorded
@@ -374,56 +402,9 @@ def gauntlet_terms(source_id: str, clearances: Path | None = None) -> tuple[bool
     return True, ""
 
 
-def alfred_key_present() -> bool:
-    try:
-        sys.path.insert(0, str(DESK / "research"))
-        import fetch_alfred  # type: ignore[import-not-found]
-        return bool(fetch_alfred.api_key())
-    except Exception:
-        return False
-
-
-def key_presence() -> dict[str, Any]:
-    """Where the FRED key was found (process | machine | user | file | absent) and its length."""
-    try:
-        sys.path.insert(0, str(DESK / "research"))
-        import fetch_alfred  # type: ignore[import-not-found]
-        return dict(fetch_alfred.key_presence())
-    except Exception as exc:
-        return {"present": False, "origin": UNMEASURED, "why": type(exc).__name__}
-
-
-def refresh_alfred(budget_s: float, series: Sequence[str] | None = None,
-                   folder: Path = ALFRED) -> dict[str, Any]:
-    """Re-fetch the stale first-print files through the desk's own fetcher, inside a budget.
-    No key: BLOCKED_AUTH, nothing fetched, nothing substituted."""
-    wanted = sorted(set(series or (r.series for r in RELEASES)))
-    if not alfred_key_present():
-        return {"status": "BLOCKED_AUTH", "key": key_presence(),
-                "why": ("no FRED key in the process environment, the machine or user registry "
-                        "environment, or a secrets file on this host; first prints come only "
-                        "from ALFRED vintages and none is substituted"),
-                "series": wanted}
-    now = time.time()
-    stale = [s for s in wanted
-             if not (folder / f"{s}.parquet").exists()
-             or (now - (folder / f"{s}.parquet").stat().st_mtime) / 3600.0 > ALFRED_MAX_AGE_H]
-    if not stale:
-        return {"status": "FRESH", "series": wanted}
-    try:
-        r = subprocess.run([sys.executable, str(FETCH_ALFRED), *stale,
-                            f"--max-age-h={ALFRED_MAX_AGE_H}"], cwd=str(DESK),
-                           capture_output=True, text=True, timeout=max(30.0, budget_s),
-                           check=False)
-        return {"status": "REFRESHED" if r.returncode == 0 else f"RC_{r.returncode}",
-                "stale": stale, "tail": (r.stdout + r.stderr)[-400:]}
-    except subprocess.TimeoutExpired:
-        return {"status": "BUDGET", "stale": stale,
-                "why": "fetch budget reached; the remaining series are owed to the next pass"}
-
-
 # ============================================================================== the build
-def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Path = ALFRED,
+def build(*, now: datetime | None = None, vintages: Path = VINTAGES,
+          first_prints: Path = FIRST_PRINTS,
           refresh_budget_s: float = 0.0, conditioning: Mapping[str, Any] | None = None
           ) -> dict[str, Any]:
     """Store rows for `event_surprise`, sensor observations, and the census.
@@ -433,31 +414,40 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
     """
     from macro.surprise import composite_z, surprise_family
     when = now or datetime.now(UTC)
-    refreshed = (refresh_alfred(refresh_budget_s, folder=alfred) if refresh_budget_s > 0
-                 else {"status": "skipped"})
+    # `refresh_budget_s` is kept for the caller's signature: nothing is fetched here any more.
+    refreshed = {"status": "NO_FETCH",
+                 "why": "first prints are captured from their publishers; FRED/ALFRED is "
+                        "terms-refused (ruling 2026-11-13)"}
     cons = consensus_vintages(vintages)
     ff_ok, ff_why = gauntlet_terms("ff_calendar_vintage")
     rows: list[dict[str, Any]] = []
     sensors: list[dict[str, Any]] = []
     census: dict[str, Any] = {"releases": {}, "consensus_vintages": len(cons),
-                              "alfred_refresh": refreshed, "fred_key": key_presence()}
+                              "actual_refresh": refreshed, "missed_growth": []}
     z_at_instant: dict[str, dict[str, float | None]] = {}
     frames: dict[str, Any] = {}
     for spec in RELEASES:
-        stat: dict[str, Any] = {"series": spec.series, "consensus_rows": 0, "pairs": 0,
+        stat: dict[str, Any] = {"series": spec.series, "publisher": publisher(spec.series),
+                                "publisher_series": PRIMARY.get(spec.series, ("", None))[1],
+                                "consensus_rows": 0, "pairs": 0,
                                 "nowcast_pairs": 0, "first_prints": 0, "revisions": 0}
         census["releases"][spec.title] = stat
         mine = {d: c for (t, d), c in cons.items() if t == spec.title}
         stat["consensus_rows"] = sum(1 for c in mine.values() if c.get("consensus") is not None)
         df = frames.get(spec.series)
         if df is None and spec.series not in frames:
-            df = load_alfred(spec.series, alfred)
+            df = load_first_prints(spec.series, first_prints)
             frames[spec.series] = df
         prints = release_vintage(df, spec) if df is not None else []
         stat["first_prints"] = len(prints)
-        stat["actual_status"] = ("ALFRED" if df is not None else
-                                 ("BLOCKED_AUTH" if not alfred_key_present() else
-                                  "NOT_FETCHED"))
+        stat["actual_status"] = "PRIMARY" if df is not None else NO_PRIMARY
+        if df is None:
+            census["missed_growth"].append({
+                "release": spec.title, "series": spec.series,
+                "publisher": publisher(spec.series), "verdict": UNMEASURED,
+                "why": (f"no {publisher(spec.series)} first-print vintages in "
+                        f"{first_prints.name}/ for {spec.series}: the release's surprise is not "
+                        "measured, so whatever it would add to forward E[log W] is unpriced")})
         by_day = {p["vintage"]: p for p in prints}
         firsts: list[float] = []
         cons_hist: list[float] = []
@@ -497,7 +487,7 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
                 rows.append({**base, "release": f"{spec.title}|nowcast_ewm12", "actual": actual,
                              "consensus": _round(exp, decimals + 2), "provides": "both",
                              "expectation_kind": "nowcast_ewm12",
-                             "source_id": f"alfred:{spec.series}"})
+                             "source_id": f"{publisher(spec.series)}:{spec.series}"})
                 stat["nowcast_pairs"] += 1
             if consensus is not None:
                 # stored and counted whatever the terms say; event_surprise.terms_filter is the
@@ -509,7 +499,8 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
                              "expectation_kind": "consensus_median",
                              "consensus_captured_at": c.get("captured_at"),
                              "previous_ff": c.get("previous_ff"),
-                             "source_id": f"ff_calendar_vintage+alfred:{spec.series}"})
+                             "source_id": f"ff_calendar_vintage+{publisher(spec.series)}:"
+                                          f"{spec.series}"})
                 stat["pairs"] += 1
                 cons_hist.append(float(actual) - float(consensus))  # type: ignore[arg-type]
                 z_at_instant.setdefault(_iso(sched), {})[spec.title] = (
@@ -534,7 +525,8 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
                          "previous_ff": c.get("previous_ff"),
                          "expectation_kind": "consensus_median",
                          "source_id": "ff_calendar_vintage",
-                         "waiting_for": ("the first print (ALFRED)" if df is not None else
+                         "waiting_for": ("the first print (primary publisher)" if df is not None
+                                         else
                                          f"the first print: actual side {stat['actual_status']}")})
     composites = {at: composite_z(zs) for at, zs in z_at_instant.items() if len(zs) >= 2}
     census["composites"] = len([c for c in composites.values()
@@ -542,9 +534,9 @@ def build(*, now: datetime | None = None, vintages: Path = VINTAGES, alfred: Pat
     census["rows"] = len(rows)
     census["terms"] = {"ff_calendar_vintage": ff_why or "admitted",
                        "gauntlet": "HELD" if not ff_ok else "admitted",
-                       "nowcast_ewm12": "admitted (ALFRED + the desk's own model)"}
+                       "nowcast_ewm12": "admitted (primary first print + the desk's own model)"}
     census["status"] = ("present" if any(r.get("actual") is not None for r in rows) else
-                        ("BLOCKED_AUTH" if not alfred_key_present() else UNMEASURED))
+                        NO_PRIMARY)
     return {"rows": rows, "sensor_inputs": sensors, "composites": composites,
             "census": census}
 
@@ -561,13 +553,14 @@ def sensor_observations(sensor_inputs: Sequence[Mapping[str, Any]], received_at:
         fam = s["family"]
         z = fam.get("z_release")
         pct = fam.get("percentile")
-        common = {"sensor_id": "macro:release", "source_id": f"alfred:{spec.series}",
-                  "dataset_id": "alfred_first_print", "entity": spec.country,
+        pub = publisher(spec.series)
+        common = {"sensor_id": "macro:release", "source_id": f"{pub}:{spec.series}",
+                  "dataset_id": f"{pub}_first_print", "entity": spec.country,
                   "geography": spec.country, "asset_domain": "macro", "metric": spec.title,
                   "unit": "%" if "pct" in spec.transform else "display", "kind": "state",
                   "sensor_class": "macro_release", "event_time": p["reference_period"],
                   "scheduled_time": s["sched"], "publication_time": s["sched"],
-                  "licence": "FRED/ALFRED terms: public data, attribution",
+                  "licence": f"{pub}: US federal statistics, public domain, attribution",
                   "commercial_rights": "public statistics (US federal), attribution"}
         first = sc.make(**common, value=s["actual"], consensus=s["consensus"],
                         expected_value=s["expected"], knowable_at=s["sched"],

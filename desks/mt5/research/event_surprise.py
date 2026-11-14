@@ -116,7 +116,7 @@ DAYS = 1200
 #: makes the desk wait for evidence it can already reach is a brake, not a guard.
 MAX_SOURCES_PER_PASS = 16
 COLLECT_BUDGET_SHARE = 0.4
-#: Share the ALFRED first-print refresh may spend (only when collecting).
+#: Share the first-print join may spend (only when collecting); it fetches nothing itself.
 VINTAGE_BUDGET_SHARE = 0.2
 #: A source is re-fetched no more often than this. These are monthly and quarterly publications;
 #: hammering them hourly is three wasted requests and one rate-limit away from a ban.
@@ -997,7 +997,8 @@ def terms_filter(pairs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dic
 
 def release_vintage_rows(*, now: datetime, refresh: bool, budget_s: float,
                          enabled: bool = True) -> dict[str, Any]:
-    """The calendar's PIT consensus joined to ALFRED's first prints (`macro.release_vintages`).
+    """The calendar's PIT consensus joined to the publishers' first prints
+    (`macro.release_vintages`; FRED/ALFRED is terms-refused, ruling 2026-11-13).
 
     Until 2026-10-06 nothing joined the two and every scheduled surprise here was UNMEASURED.
     The rows land in the same store as the collector's, keyed the same way, so a consensus half
@@ -1031,8 +1032,8 @@ def record_sensors(sensor_inputs: list[dict[str, Any]], received_at: datetime) -
 def build(*, days: int = DAYS, budget_s: float = 300.0, max_donations: int = MAX_DONATIONS,
           collect_enabled: bool = True, apply: bool = True, now: datetime | None = None,
           fetch: Any = None, vintages_enabled: bool | None = None) -> dict[str, Any]:
-    """Measure, and return the payload. Touches disk only through `main` (and, when collecting,
-    the ALFRED first-print lake through the desk's own fetcher)."""
+    """Measure, and return the payload. Touches disk only through `main`; the first-print join
+    reads the primary publishers' store and fetches nothing."""
     started = time.monotonic()
     now = now or _now()
     collected = (collect(budget_s=budget_s * COLLECT_BUDGET_SHARE, now=now, fetch=fetch)

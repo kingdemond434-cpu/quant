@@ -1,8 +1,9 @@
-"""The calendar's PIT consensus joined to ALFRED's FIRST print, revisions appended, and the whole
-surprise family measured or named UNMEASURED.
+"""The calendar's PIT consensus joined to the PUBLISHER's FIRST print, revisions appended, and the
+whole surprise family measured or named UNMEASURED.
 
-EVERYTHING IS SYNTHETIC: a hand-built ALFRED vintage file for payrolls in which every release
-revises the previous month by +10k, and a hand-built calendar rollup. No network, no key.
+EVERYTHING IS SYNTHETIC: a hand-built primary first-print vintage file for payrolls (BLS) in which
+every release revises the previous month by +10k, and a hand-built calendar rollup. No network,
+no key. FRED/ALFRED is never read (Governance FRED terms ruling 2026-11-13).
 """
 from __future__ import annotations
 
@@ -44,7 +45,7 @@ def _vintage(i: int) -> pd.Timestamp:
 N = 80          # 2020-01 .. 2026-08: the last first print is 2026-09-07
 
 
-def _alfred(folder: Path) -> None:
+def _first_prints(folder: Path) -> None:
     rows = []
     for i in range(N):
         base = 1000.0 + 150.0 * i
@@ -65,9 +66,8 @@ def _rollup(folder: Path, rows: list[dict[str, Any]]) -> None:
 
 @pytest.fixture
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
-    monkeypatch.setattr(rv, "alfred_key_present", lambda: False)
-    alfred, vint = tmp_path / "alfred", tmp_path / "ff"
-    _alfred(alfred)
+    prints, vint = tmp_path / "first_prints", tmp_path / "ff"
+    _first_prints(prints)
     _rollup(vint, [
         {"title": TITLE, "event_date": "2026-09-07T08:30:00-04:00", "forecast": "125K",
          "previous": "140K", "impact": "High", "captured_at": "2026-09-05T10:00:00+00:00"},
@@ -80,7 +80,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
         {"title": TITLE, "event_date": "2026-10-07T08:30:00-04:00", "forecast": "120K",
          "previous": "140K", "impact": "High", "captured_at": "2026-09-09T12:00:00+00:00"},
     ])
-    return alfred, vint
+    return prints, vint
 
 
 def test_consensus_is_the_last_capture_before_the_instant(world: tuple[Path, Path]) -> None:
@@ -93,8 +93,8 @@ def test_consensus_is_the_last_capture_before_the_instant(world: tuple[Path, Pat
 
 
 def test_first_print_and_revisions_are_vintage_true(world: tuple[Path, Path]) -> None:
-    alfred, _ = world
-    prints = rv.release_vintage(rv.load_alfred("PAYEMS", alfred), rv.BY_TITLE[TITLE])
+    store, _ = world
+    prints = rv.release_vintage(rv.load_first_prints("PAYEMS", store), rv.BY_TITLE[TITLE])
     by_day = {p["vintage"]: p for p in prints}
     last = by_day["2026-09-07"]
     # the first print as published: this month at base, last month already revised up 10
@@ -104,13 +104,13 @@ def test_first_print_and_revisions_are_vintage_true(world: tuple[Path, Path]) ->
     assert last["revisions"] == []                     # not revised yet
     earlier = by_day["2026-08-07"]
     assert earlier["revisions"] == [{"vintage": "2026-09-07", "value": pytest.approx(150.0)}]
-    # the start of ALFRED's record is not a release
+    # the start of the store's record is not a release
     assert _vintage(0).date().isoformat() not in by_day
 
 
 def test_build_pairs_waits_and_never_completes(world: tuple[Path, Path]) -> None:
-    alfred, vint = world
-    out = rv.build(now=NOW, vintages=vint, alfred=alfred)
+    prints, vint = world
+    out = rv.build(now=NOW, vintages=vint, first_prints=prints)
     rows = out["rows"]
     pair = [r for r in rows if r["release"] == TITLE and r["provides"] == "both"]
     assert len(pair) == 1
@@ -135,21 +135,42 @@ def test_build_pairs_waits_and_never_completes(world: tuple[Path, Path]) -> None
     assert out["census"]["releases"][TITLE]["pairs"] == 1
 
 
-def test_no_alfred_means_blocked_auth_and_the_consensus_waits(
+def test_no_primary_vintage_is_unmeasured_with_a_missed_growth_line_and_the_consensus_waits(
         world: tuple[Path, Path], tmp_path: Path) -> None:
-    _, vint = world
-    out = rv.build(now=NOW, vintages=vint, alfred=tmp_path / "empty")
-    assert out["census"]["status"] == "BLOCKED_AUTH"
+    prints, vint = world
+    # An ALFRED lake on the box is NEVER read (FRED terms ruling 2026-11-13): the same vintage
+    # file sitting in an prints folder, next to an empty primary store, changes nothing.
+    held = tmp_path / "alfred"
+    held.mkdir()
+    (held / "PAYEMS.csv").write_bytes((prints / "PAYEMS.csv").read_bytes())
+    out = rv.build(now=NOW, vintages=vint, first_prints=tmp_path / "empty",
+                   refresh_budget_s=30.0)
+    assert out["census"]["status"] == rv.NO_PRIMARY
+    assert out["census"]["actual_refresh"]["status"] == "NO_FETCH"
     assert all(r["actual"] is None for r in out["rows"])
     assert {r["period"] for r in out["rows"]} == {"2026-09-07", "2026-10-07"}
-    assert all("BLOCKED_AUTH" in r["waiting_for"] for r in out["rows"])
-    assert rv.refresh_alfred(10.0, folder=tmp_path)["status"] == "BLOCKED_AUTH"
+    assert all(rv.NO_PRIMARY in r["waiting_for"] for r in out["rows"])
+    stat = out["census"]["releases"][TITLE]
+    assert (stat["publisher"], stat["publisher_series"]) == ("bls", "CES0000000001")
+    lines = {m["release"]: m for m in out["census"]["missed_growth"]}
+    assert set(lines) == {r.title for r in rv.RELEASES}
+    assert lines[TITLE]["verdict"] == rv.UNMEASURED and "bls" in lines[TITLE]["why"]
+
+
+def test_nothing_here_fetches_or_reads_fred() -> None:
+    src = Path(rv.__file__).read_text("utf-8")
+    for banned in ("fetch_alfred", "subprocess", "api.stlouisfed", "fredgraph",
+                   '"lake" / "alfred"'):
+        assert banned not in src, banned
+    assert set(rv.PRIMARY) >= {r.series for r in rv.RELEASES}
+    assert rv.gauntlet_terms("prints:PAYEMS")[0] is False
+    assert rv.gauntlet_terms("fred:PAYEMS")[0] is False
 
 
 def test_releases_reach_the_sensor_ledger_with_revisions_appended(
         world: tuple[Path, Path], tmp_path: Path) -> None:
-    alfred, vint = world
-    out = rv.build(now=NOW, vintages=vint, alfred=alfred)
+    prints, vint = world
+    out = rv.build(now=NOW, vintages=vint, first_prints=prints)
     recent = [s for s in out["sensor_inputs"] if s["sched"].date() >= date(2026, 7, 1)]
     obs = rv.sensor_observations(recent, NOW)
     assert all(sc.defects(o) == [] for o in obs)
@@ -185,10 +206,10 @@ def test_surprise_family_measures_or_names_every_variant() -> None:
 
 def test_event_surprise_takes_the_rows_without_touching_disk(
         world: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    alfred, vint = world
+    prints, vint = world
     real = rv.build
     monkeypatch.setattr(rv, "build", lambda **kw: real(**{**kw, "vintages": vint,
-                                                          "alfred": alfred}))
+                                                          "first_prints": prints}))
     monkeypatch.setattr(es, "STORE", tmp_path / "store.jsonl")
     got = es.release_vintage_rows(now=NOW, refresh=False, budget_s=0.0)
     assert any(r["provides"] == "both" for r in got["rows"])
@@ -203,9 +224,9 @@ def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
         world: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Audit #204 item 4: the Forex Factory survey median is stored and counted, but no pair built
     on it reaches the gauntlet until its terms are cleared; nowcast_ewm12 ships alone."""
-    alfred, vint = world
+    prints, vint = world
     monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "terms_clearances.json")
-    out = rv.build(now=NOW, vintages=vint, alfred=alfred)
+    out = rv.build(now=NOW, vintages=vint, first_prints=prints)
     rows = out["rows"]
     assert any(r["provides"] == "both" and r["expectation_kind"] == "consensus_median"
                for r in rows)                              # stored
@@ -218,10 +239,10 @@ def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
     # a recorded clearance admits them; a non-CLEARED record does not
     (tmp_path / "terms_clearances.json").write_text(
         json.dumps({"ff_calendar": {"status": "PENDING"}}), "utf-8")
-    assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
+    assert rv.gauntlet_terms("ff_calendar_vintage+bls:PAYEMS")[0] is False
     (tmp_path / "terms_clearances.json").write_text(
         json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
     kept, held = es.terms_filter(rows)
     assert len(kept) == len(rows) and held["n"] == 0
-    # the nowcast source was never held, and an unknown source is not whitelisted away
-    assert rv.gauntlet_terms("alfred:PAYEMS") == (True, "")
+    # the publisher's nowcast source was never held, and an unknown source is not whitelisted away
+    assert rv.gauntlet_terms("bls:PAYEMS") == (True, "")
