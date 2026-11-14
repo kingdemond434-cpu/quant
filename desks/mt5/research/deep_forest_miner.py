@@ -865,6 +865,14 @@ def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
     return str(getattr(v, "last_attempt", "") or "") if v is not None else ""
 
 
+def _refused_search_site(g: dict[str, Any]) -> str:
+    """Why the lawful chain will not discover this ground's site at all, or ""."""
+    from research import discovery_backends as db
+    host = db._site_host(str(g.get("site") or ""))
+    dom = db._match(host, db.NEVER_DISCOVER) if host else ""
+    return f"REFUSED: {db.NEVER_CONTACT[dom]} ({dom})" if dom else ""
+
+
 def _vector_discovery_status(statuses: list[str]) -> str:
     """One ground's discovery verdict over its queries: YIELDED beats EMPTY beats BLOCKED;
     a ground no backend ran for is SKIPPED (not an attempt, never a zero)."""
@@ -1558,6 +1566,12 @@ class _Run:
             return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
+            return
+        refused = _refused_search_site(g) if route == "search" else ""
+        if refused:
+            # A TERMS-REFUSED OR OFF-LIMITS SITE (2026-11-14) is not discovered on any backend:
+            # a recorded gap with its reason, never a BLOCKED route and never a silent drop.
+            self.status.append({**row, "status": "UNREACHABLE", "why": refused})
             return
         if not self._net_ok():
             self.status.append({**row, "status": "NO_NETWORK",
