@@ -80,6 +80,17 @@ from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
+#: The per-sleeve per-trade R export (Max-growth ask 2026-11-10, BACKLOG "sleeve_trades"): every
+#: measured closed trade of the trailing EXPORT_DAYS, grouped by the ledger's sleeve name, so the
+#: off-box threads can study each sleeve's R series without the box. Public-safe by construction:
+#: the ledger row carries the keyed `account_key`, never a login, and only the columns below leave.
+SLEEVE_TRADES_OUT = BASE / "reports" / "SLEEVE_TRADES.json"
+EXPORT_DAYS = 90
+#: The state wire skips a report over 4 MB (sync_shadow_to_git.ps1 $ReportCapBytes); the newest
+#: rows are kept and the cut is declared, never silent.
+EXPORT_MAX_ROWS = 20000
+EXPORT_COLUMNS = ("time", "entry_time", "exit_time", "symbol", "entry_side", "r_multiple",
+                  "pl_quote", "net_cost_status", "server", "account_kind", "account_key")
 #: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the
 #: book (gateway.close_retired_positions reads and drains this).
 CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
@@ -899,6 +910,13 @@ def main(write_queue: bool = True) -> int:
         "note": ("a count is published only when the roster was READ or is provably absent; an "
                  "unreadable roster publishes null, because 0 and unknown are different answers "
                  "and only one of them is safe to act on (L1.28a)")}, indent=2), "utf-8")
+    # THE EXPORT NEVER CHANGES THIS ORGAN'S VERDICT OR EXIT: a failed write is printed and the
+    # pass carries on, because decay_live.json above is what the desk acts on.
+    try:
+        _x = export_sleeve_trades()
+        print(f"sleeve_trades export: {_x['rows']} row(s), {len(_x['sleeves'])} sleeve(s)")
+    except OSError as e:
+        print(f"sleeve_trades export: FAILED ({e})")
     if source == "UNMEASURED":
         print(f"decay monitor: UNMEASURED -- {source_why}")
         return 1
@@ -908,6 +926,78 @@ def main(write_queue: bool = True) -> int:
           f"{sum(1 for m in models.values() if m['status'] == 'MEASURED')} half-life(s) "
           f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}")
     return 0
+
+
+def export_sleeve_trades(out: Path | None = None) -> dict:
+    """Write the per-sleeve per-trade R export and return it.
+
+    Uses the same admission as `sleeve_trades`: a row needs a numeric `r_multiple`; a row flagged
+    `r_unreconstructible`, or with `risk_quote <= 0` (the pre-2026-09-16 unmeasured signature),
+    is COUNTED as excluded, never exported as a zero. Reads only; moves no verdict or size.
+    """
+    out = out or SLEEVE_TRADES_OUT
+    now = datetime.now(tz=UTC)
+    cutoff = now - timedelta(days=EXPORT_DAYS)
+    rows: list[dict] = []
+    excluded = {"unreconstructible": 0, "risk_quote_le_0": 0, "no_numeric_r": 0,
+                "bad_json": 0, "older_than_window": 0, "no_time": 0}
+    state = "NO_LEDGER"
+    if LEDGER.exists():
+        state = "READ"
+        for line in LEDGER.read_text("utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                excluded["bad_json"] += 1
+                continue
+            if not isinstance(r, dict) or not r.get("sleeve"):
+                continue
+            if not isinstance(r.get("r_multiple"), (int, float)) or isinstance(
+                    r.get("r_multiple"), bool):
+                excluded["no_numeric_r"] += 1
+                continue
+            if r.get("r_unreconstructible") is True:
+                excluded["unreconstructible"] += 1
+                continue
+            _rq = r.get("risk_quote")
+            if isinstance(_rq, (int, float)) and _rq <= 0:
+                excluded["risk_quote_le_0"] += 1
+                continue
+            try:
+                ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
+            except ValueError:
+                ts = None
+            if ts is None:
+                excluded["no_time"] += 1                   # no window can admit an undated row
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=UTC)
+            if ts < cutoff:
+                excluded["older_than_window"] += 1
+                continue
+            rows.append(r)
+    cut = max(0, len(rows) - EXPORT_MAX_ROWS)
+    rows = rows[cut:]
+    sleeves: dict[str, list[list]] = {}
+    for r in rows:
+        sleeves.setdefault(str(r["sleeve"]), []).append([r.get(c) for c in EXPORT_COLUMNS])
+    summary = {name: stats([float(t[EXPORT_COLUMNS.index("r_multiple")]) for t in ts])
+               for name, ts in sleeves.items()}
+    doc = {"generated_utc": now.isoformat(timespec="seconds"),
+           "ledger_state": state, "window_days": EXPORT_DAYS,
+           "rows": len(rows), "rows_cut_oldest": cut, "excluded": excluded,
+           "columns": list(EXPORT_COLUMNS), "summary": summary, "sleeves": sleeves,
+           "note": ("per-sleeve per-trade R, oldest first, ledger sleeve names (venue comment, "
+                    "<= 27 chars). Unmeasured R is excluded and counted, never a zero. Reads "
+                    "only: no verdict, size or slot depends on this file.")}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
+    tmp.replace(out)
+    return doc
 
 
 if __name__ == "__main__":
