@@ -3,7 +3,7 @@
 WHY (hourly pass, 2026-11-13 19:21Z). The 170 promoted sleeves were about eight independent bets,
 every one FX (NOK 67, CHF 55) plus two BTC: no gold, no index, and nothing entering 02:00-09:00,
 12:00-13:00 or 21:00-23:00 UTC. The converter served its backlog round-robin by trial family, so
-the classes the book lacks waited behind the class it already holds. `desks/mt5/data/
+the classes the book lacks waited behind the class it already holds. `desks/mt5/research/
 breadth_steer.json` names the groups to serve first; this module says which group a handoff row
 belongs to. A steer REORDERS the work list and never drops a row: an unsteered row keeps its
 place behind the steered ones, and an unreadable or absent steer file changes nothing.
@@ -20,7 +20,7 @@ from typing import Any
 
 from research.conversion_handoff_common import DESK
 
-STEER = DESK / "data" / "breadth_steer.json"
+STEER = DESK / "research" / "breadth_steer.json"
 UNSTEERED = ""
 #: The share of every pass's examined rows kept for unsteered cells (Auditor MF2), unless the
 #: steer file names its own `unsteered_share`.

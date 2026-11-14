@@ -492,7 +492,7 @@ def _exotic_split(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[str,
             "child_cells": split(conv),
             "rule": ("zuck 2026-11-13 19:46Z: at most 10% of mining and conversion compute on "
                      "exotic-currency markets; a hard quota on each pass's examined rows "
-                     "(desks/mt5/data/breadth_steer.json exotic_share_max)")}
+                     "(desks/mt5/research/breadth_steer.json exotic_share_max)")}
 
 
 def _interleave(first: list[dict[str, Any]], second: list[dict[str, Any]],
@@ -537,7 +537,7 @@ def _breadth_counts(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[st
             "converted_by_asset_class": {k: dict(v) for k, v in sorted(by_class.items())},
             "converted_by_steer_group": {k: dict(v) for k, v in sorted(by_group.items())},
             "rule": ("steered groups are examined first in the steer's order; a steer reorders "
-                     "the work list and never removes a row (desks/mt5/data/breadth_steer.json)")}
+                     "the work list and never removes a row (desks/mt5/research/breadth_steer.json)")}
 
 
 def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
