@@ -169,6 +169,9 @@ MODULES = [
     "desks/mt5/research/research_gap_map.py",
     "desks/mt5/research/simplifier.py",
     "desks/mt5/research/wiring_ceo.py",
+    # daily_cycle:contract_spec_diff (2026-11-13, #1060): the broker contract-spec diff the
+    # daily chain runs; a stale copy would diff against the wrong spec fields unseen.
+    "desks/mt5/research/contract_spec_diff.py",
     # daily_cycle:vector_families_check (2026-10-28): the box identity check for the fast family
     # paths (run as a child), and the two modules it exercises beyond families/families_vector --
     # its forced_flow engagement probe imports family_forced_flow, whose rules path is
