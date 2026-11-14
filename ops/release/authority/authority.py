@@ -210,7 +210,6 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                 rest = tuple(n for n in need if n != ag.REPLAY_JOB)
                 f["checks"] = ag.checks(runs, rest, genuine)
                 f["replay_declared"] = dec
-                f["evidence"]["replay_declared"] = dec
                 if cls != "CONTROLLER":
                     cls = "CONTROLLER"
                     f["cls"] = cls
@@ -307,7 +306,9 @@ def issue(
         patch_id=f.get("patch_id"), tier=str(f.get("cls")), verdict=verdict,
         policy_digest=digest,
         evidence={"checks": f.get("evidence") or {}, "files": f.get("files") or [],
-                  "gate_tier": f.get("tier"), "checks_why": (f.get("checks") or ("", ""))[1]},
+                  "gate_tier": f.get("tier"), "checks_why": (f.get("checks") or ("", ""))[1],
+                  **({"replay_declared": f["replay_declared"]} if f.get("replay_declared")
+                     else {})},
         reasons=reasons, kid=kid, now=now, ttl=timedelta(hours=ttl_h),
         authority_version=VERSION,
     )  # fmt: skip

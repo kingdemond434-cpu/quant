@@ -75,6 +75,7 @@ def test_the_base_run_trusted_eval_is_still_required(sb: Any) -> None:
 
 
 def test_the_gate_merges_it_only_after_the_controller_window(sb: Any) -> None:
+    sb.gh.board.append({**sb.gh.board[0], "body": sb.ag.ACTIVATE_AUTO})
     assert sb.authority()[0] == "CLEAR"
     sb.gate()
     assert sb.gh.merges() == []
@@ -164,3 +165,30 @@ def test_newest_run_id_reads_only_genuine_runs() -> None:
     ]
     assert ag.newest_run_id(runs, "replay-shadow", lambda r: bool(r["ok"])) == 2
     assert ag.newest_run_id(runs, "quality", lambda r: True) is None
+
+
+def test_a_newer_replay_run_than_the_one_signed_is_judged_anew(sb: Any) -> None:
+    sb.gh.board.append({**sb.gh.board[0], "body": sb.ag.ACTIVATE_AUTO})
+    assert sb.authority()[0] == "CLEAR"
+    sb.gate()
+    sb.clock.advance(hours=24, minutes=2)
+    base_runs = sb.gh.runs
+
+    def rerun() -> list[dict[str, Any]]:
+        extra = {"id": 999, "name": "replay-shadow", "status": "completed",
+                 "conclusion": "failure", "app": {"slug": "github-actions"},
+                 "check_suite": {"id": 2}, "started_at": "2026-11-05T00:00:00Z"}  # fmt: skip
+        return [*base_runs(), extra]
+
+    sb.gh.runs = rerun
+    sb.gate()
+    assert sb.gh.merges() == []
+
+
+def test_without_a_declaration_the_auto_path_still_quarantines(sb: Any) -> None:
+    sb.gh.board.append({**sb.gh.board[0], "body": sb.ag.ACTIVATE_AUTO})
+    sb.gh.replay_report = None
+    assert sb.authority()[0] == "FAIL"
+    sb.gate()
+    assert sb.gh.merges() == []
+    assert any(p.endswith("/labels") for (_m, p, _d) in sb.gh.writes)

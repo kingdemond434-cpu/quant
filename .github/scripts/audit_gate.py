@@ -1460,6 +1460,29 @@ def run(
                 _status(repo, head, "pending", qwhy)
                 _summary(f"#{pr} @ {head[:9]}: not merged -- {qwhy}")
                 return 0
+        if (
+            state == "fail"
+            and low
+            and box
+            and os.environ.get(REGISTRY_ENV)
+            and os.environ.get(AUTHORITY_PUBKEY_ENV)
+            and checks(runs, tuple(j for j in need if j != REPLAY_JOB), genuine)[0] != "fail"
+        ):
+            # replay-shadow is the one red job: a MATCHES_DECLARED the authority signed for this
+            # exact run is never an AUTO merge, so the PR leaves the no-comment path for the
+            # authority's CONTROLLER path (trusted-eval, the veto window) instead of quarantine
+            rclear, rwhy = registry_now(pr_verdicts(), "replay-shadow red on the AUTO path")
+            if (
+                declared["run"] is not None
+                and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+            ):
+                if rclear is None:  # signed, but its window is still running: no quarantine
+                    _summary(f"#{pr} @ {head[:9]}: not merged -- {rwhy}")
+                    return 0
+                mode, low, registry, required = "manual", False, True, GATING_JOBS
+                _summary(f"#{pr} @ {head[:9]}: replay-shadow MATCHES_DECLARED, signed by the "
+                         "authority as CONTROLLER: the authority path decides")  # fmt: skip
+                continue
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             if low:  # the no-comment paths quarantine a failure; the manual path reports it
