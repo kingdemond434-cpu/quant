@@ -73,12 +73,14 @@ def test_only_the_fusion_account_on_the_configured_terminal_is_accepted() -> Non
     b.attached = True
     assert venue_refusal(b, FUSION_EXE) is None
     b.server = "FTMO-Server3"
-    assert "FTMO-Server3" in str(venue_refusal(b, FUSION_EXE))
+    why = str(venue_refusal(b, FUSION_EXE))
+    assert "is not FusionMarkets-*" in why and "FTMO-Server3" not in why   # fixed phrase (MF1)
     b.server, b.path = "FusionMarkets-Live", FTMO_DIR
-    assert "is not the configured" in str(venue_refusal(b, FUSION_EXE))
+    why = str(venue_refusal(b, FUSION_EXE))
+    assert "is not the configured" in why and FTMO_DIR not in why
     assert venue_refusal(b, None) is None            # no path configured: the server still binds
     b.attached = False
-    assert "(none)" in str(venue_refusal(b, FUSION_EXE))
+    assert "reports no server" in str(venue_refusal(b, FUSION_EXE))
 
 
 def test_a_bridge_that_raises_is_a_refusal_not_an_acceptance() -> None:
@@ -103,7 +105,8 @@ def test_the_tick_source_attaches_by_path_and_refuses_ftmo(bridge: _Bridge) -> N
 
     bridge.server = "FTMO-Server3"                   # the terminal is logged into FTMO mid-run
     assert src.alive() is False                      # the cycle files SOURCE_UNAVAILABLE
-    assert "FTMO-Server3" in str(src.refusal) and bridge.shutdowns == 1
+    assert "is not FusionMarkets-*" in str(src.refusal) and bridge.shutdowns == 1
+    assert "FTMO-Server3" not in str(src.refusal)
 
     bridge.server = "FusionMarkets-Live"             # back on Fusion: the next cycle recovers
     assert src.alive() is True and src.refusal is None
