@@ -225,6 +225,8 @@ libs/portfolio/rails.py
 libs/portfolio/rebalance.py
 libs/portfolio/risk_parity.py
 libs/portfolio/robust_elog.py
+libs/mining/release_clock.py
+libs/mining/source_horizon.py
 libs/regime/__init__.py
 libs/regime/bayesian.py
 libs/regime/control_room.py
