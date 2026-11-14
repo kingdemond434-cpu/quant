@@ -73,9 +73,16 @@ def reference(row: dict, reviews: dict[str, dict]) -> dict:
         return {"status": "UNMEASURED", "why": "the roster row names no certificate"}
     rev = reviews.get(cell)
     if rev is None:
-        # the ledger keys `<hunt>.<cell>`; a roster row may carry the bare cell
-        rev = next((r for k, r in reviews.items() if k.endswith("." + cell) or
-                    cell.endswith("." + k)), None)
+        # The ledger keys `<hunt>.<cell>`; a roster row may carry the bare cell, or the hunt-
+        # qualified one against a bare ledger key. EXACT on the cell part only: a suffix match
+        # could pin another hunt's VETO on the wrong cell (#1005 audit should-fix).
+        hits = sorted(k for k in reviews
+                      if k.split(".", 1)[1:] == [cell] or cell.split(".", 1)[1:] == [k])
+        if len(hits) > 1:
+            return {"status": "UNMEASURED", "cell": cell,
+                    "why": (f"{len(hits)} hunts reviewed a cell named {cell} "
+                            f"({', '.join(hits[:4])}); the roster row does not say which")}
+        rev = reviews[hits[0]] if hits else None
     if rev is None:
         return {"status": "UNMEASURED", "cell": cell,
                 "why": "the blind reviewer has never reproduced this certificate"}

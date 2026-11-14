@@ -47,6 +47,18 @@ def test_reference_reads_the_certificate_and_its_latest_review() -> None:
     assert bare["status"] == "MEASURED"
 
 
+def test_reference_never_pins_another_cells_review_by_suffix() -> None:
+    """#1005 audit should-fix: a suffix match could hand one cell another hunt's VETO."""
+    reviews = B.latest_reviews([_rev("VETO")])        # external.USDNOK@M5.carry.p=...
+    # `carry.p=...` is a suffix of that key but not its cell: the old lookup VETOED it
+    assert B.reference(_row("carry.p=ff35bb7c8427d66f"), reviews)["status"] == "UNMEASURED"
+    # the bare cell reviewed by two hunts is ambiguous: named, never guessed
+    deep = {**_rev("VETO"), "cell": "deep." + CELL.split(".", 1)[1]}
+    two = B.latest_reviews([_rev("PASS"), deep])
+    amb = B.reference(_row(CELL.split(".", 1)[1]), two)
+    assert amb["status"] == "UNMEASURED" and "2 hunts" in amb["why"]
+
+
 @pytest.mark.parametrize("s,rev,want", [
     ({"n": 30, "t": 1.5, "exp_r": 0.2}, _rev("VETO"), "VETO"),
     ({"n": 30, "t": -2.5, "exp_r": -0.3}, _rev("PASS", 4.0), "CONTRADICTS"),
