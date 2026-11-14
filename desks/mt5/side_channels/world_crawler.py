@@ -442,7 +442,7 @@ _API_RE = re.compile(
 
 
 _DATA_HOSTS = (
-    "stlouisfed.org", "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
+    "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
     "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
     # zh
@@ -690,7 +690,6 @@ SEEDS = (
     #
     # en / official
     "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
-    "https://fred.stlouisfed.org/categories",
     "https://www.newyorkfed.org/markets/data-hub",
     "https://www.bis.org/statistics/index.htm",
     "https://www.ecb.europa.eu/stats/html/index.en.html",
@@ -845,7 +844,6 @@ SEEDS = (
     "https://alphaarchitect.com/blog/",
     "https://macrosynergy.com/research/",
     "https://www.cmegroup.com/insights/economic-research.html",
-    "https://www.cboe.com/insights/",
     "https://www.trade2win.com/",
     "https://www.bankofengland.co.uk/working-paper/working-papers",
     "https://www.bankofcanada.ca/research/staff-working-papers/",
@@ -862,7 +860,6 @@ SEEDS = (
     "https://www.gold.org/goldhub/data",
     "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
     "https://www.treasurydirect.gov/auctions/announcements-data-results/",
-    "https://alfred.stlouisfed.org/",
     # eu (de / fr / it / es / nl)
     "https://www.wallstreet-online.de/diskussion/",
     "https://stock3.com/",
