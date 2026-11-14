@@ -181,7 +181,7 @@ def test_a_skipped_gating_job_never_masks_a_real_failure() -> None:
 
 def test_the_box_marks_a_cleared_draft_ready_before_waiting_for_green() -> None:
     src = Path(ag.__file__).read_text("utf-8")
-    ready = src.index('if p.get("draft") and box:')
+    ready = src.index('if p.get("draft") and box and not low:')
     assert ready > src.index('_status(repo, head, "success", why)')  # only once CLEAR covers head
     assert ready > src.index('if state == "pass":\n            break')  # green drafts merge now
     assert ready < src.index('if state == "fail" and REVIEWER in need:')
@@ -544,6 +544,19 @@ def test_the_box_marks_a_cleared_draft_with_skipped_checks_ready_and_merges_noth
     assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
     assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
     assert not _merges(h)
+
+
+def test_the_box_never_marks_an_unaudited_low_tier_draft_ready(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Autonomy review of #1173: the LOW/AUTO paths carry no CLEAR, so a draft there stays a
+    draft (a session may still be pushing to it) and its skipped checks start nothing."""
+    skipped = [_r(n, conclusion="skipped") for n in ("quality", "mt5-money-path", "coverage-floor")]
+    h = low_hub(comments=[], draft=True, runs=skipped)
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    assert ran == [] and not _merges(h)
 
 
 def test_sweep_needs_box() -> None:

@@ -1428,7 +1428,12 @@ def run(
         # green first would hold it forever. Only the box does this: its `gh` is zuck's login, so
         # the ready_for_review event starts the full CI (the workflow token's would start
         # nothing). The next sweep, or the after-checks look when that CI ends, merges it.
-        if p.get("draft") and box:
+        # ONLY A REAL CLEAR (Autonomy review of #1173): the LOW and AUTO paths reach here with no
+        # CLEAR at all, so marking those drafts ready would start full CI on every unaudited
+        # draft a session is still pushing to (#552 SF5) and undo the load cut. And a CLEARed
+        # draft whose old full run FAILED is marked ready too: that starts one fresh run on the
+        # same head, once, after which it is a ready PR and the fail branch below judges it.
+        if p.get("draft") and box and not low:
             subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True,
                            timeout=GH_TIMEOUT_S)  # fmt: skip
             _summary(f"#{pr} @ {head[:9]}: CLEARed draft marked ready ({cwhy}); full CI starts")
