@@ -19,8 +19,8 @@ THE BACKENDS, every one free, keyless and BUILT for machine use:
     commoncrawl_cdx  the Common Crawl URL index (index.commoncrawl.org): every URL the latest
                      crawl holds for a host, in one request. The current index id is read from
                      collinfo.json, never hard-coded, so a rotated crawl is not a 404.
-    wayback_cdx      the Internet Archive's CDX server: every archived URL for a host, which also
-                     reaches grounds that have since gone dark.
+    (no wayback_cdx) the Internet Archive is terms-refused for automated desk use (Governance
+                     wayback ruling 2026-11-14); archive.org is in NEVER_CONTACT.
     (last resort)    bing / duckduckgo, ONLY when every lawful backend came back without rows,
                      ONLY through the same robots check (both engines Disallow their result paths
                      to `*`, so on the real box this is a recorded robots refusal, never a fetch),
@@ -88,22 +88,12 @@ YIELDED, EMPTY, BLOCKED, SKIPPED = "YIELDED", "EMPTY", "BLOCKED", "SKIPPED"
 UNMEASURED = "UNMEASURED"
 #: The lawful chain, in the order it is tried. Rows stop accumulating at ENOUGH_ROWS.
 LAWFUL_BACKENDS: tuple[str, ...] = ("site_feeds", "gdelt_doc", "commoncrawl_cdx")
-#: Backends built but NOT run until their terms are ruled (Auditor HOLD on #1168, 2026-11-14).
-#: The Internet Archive's terms read "scholarship and research purposes only", which is unclear
-#: for a trading desk, and an unclear term is a refusal. Named here so the chain records the gap
-#: with its reason, even when a caller asks for the backend by name; added back to
-#: LAWFUL_BACKENDS only on a Governance ruling.
-PENDING_TERMS: dict[str, str] = {
-    "wayback_cdx": ("Internet Archive terms ('scholarship and research purposes only') unruled "
-                    "for trading use; fails closed until Governance rules"),
-}
 LAST_RESORT: tuple[str, ...] = ("bing", "duckduckgo")
 ENOUGH_ROWS = 40
 ROWS_PER_BACKEND = 200
 #: Common Crawl's index list; the newest id is first. The constant is only the fallback.
 CC_COLLINFO = "https://index.commoncrawl.org/collinfo.json"
 CC_INDEX_FALLBACK = "CC-MAIN-2026-30"
-WAYBACK_CDX = "https://web.archive.org/cdx/search/cdx"
 GDELT_DOC = "https://api.gdeltproject.org/api/v2/doc/doc"
 #: HOSTS THIS MODULE NEVER CONTACTS, whatever a ground or a redirect names (desk mandate,
 #: 2026-11-14). Matched on the host and every parent domain. A request to one is refused before
@@ -125,6 +115,8 @@ NEVER_CONTACT: dict[str, str] = {
     "comtrade.un.org": f"{_TERMS} (UN Comtrade: licence s.5 refuses automated use, 2026-11-14)",
     "comtradeplus.un.org": f"{_TERMS} (UN Comtrade)",
     "comtradeapi.un.org": f"{_TERMS} (UN Comtrade)",
+    "archive.org": ("terms-refused for automated desk use: 'scholarship and research purposes "
+                    "only' (Governance wayback ruling 2026-11-14)"),
     "weixin.qq.com": _OFF_LIMITS, "wechat.com": _OFF_LIMITS, "baidu.com": _OFF_LIMITS,
 }
 #: Of those, the hosts whose URLs are not even TAKEN from an index: a discovered row is followed
@@ -538,30 +530,6 @@ def parse_cdx_ndjson(text: str) -> list[dict[str, str]]:
     return out
 
 
-def parse_wayback_cdx(text: str) -> list[dict[str, str]]:
-    """The Wayback CDX server's `output=json`: a header row, then one list per capture."""
-    try:
-        doc = json.loads(text or "")
-    except ValueError:
-        return []
-    if not isinstance(doc, list) or not doc or not isinstance(doc[0], list):
-        return []
-    head = [str(h) for h in doc[0]]
-    out: list[dict[str, str]] = []
-    for row in doc[1:]:
-        if not isinstance(row, list):
-            continue
-        rec = dict(zip(head, (str(x) for x in row), strict=False))
-        u = rec.get("original") or ""
-        if not u:
-            continue
-        if rec.get("statuscode") not in (None, "", "200", "-"):
-            continue
-        out.append({"url": u, "timestamp": rec.get("timestamp", ""),
-                    "mime": rec.get("mimetype", "")})
-    return out
-
-
 def parse_gdelt_doc(text: str) -> tuple[list[dict[str, str]], str]:
     """GDELT DOC 2.0 ArtList JSON -> rows, plus GDELT's own message when it refused the query
     (it answers 200 with a plain-text explanation, which is an answer, not a block)."""
@@ -938,24 +906,6 @@ class LawfulDiscovery:
         return [{"url": x["url"], "title": "", "captured": x["timestamp"]}
                 for x in parse_cdx_ndjson(r.text) if _page_like(x["url"])]
 
-    def _wayback(self, q: _Query, rec: BackendRecord) -> list[dict[str, str]] | None:
-        if not q.host:
-            rec.status, rec.why = SKIPPED, "the archive index answers per host; no site given"
-            return None
-        url = (f"{WAYBACK_CDX}?url={quote(f'{q.host}/*', safe='')}&output=json"
-               f"&limit={ROWS_PER_BACKEND}&filter=statuscode:200&collapse=urlkey"
-               "&fl=original,timestamp,mimetype,statuscode")
-        r = self.get(url, rec)
-        if r is None:
-            return None
-        if not r.ok:
-            rec.why = f"HTTP {r.status}" if r.status else r.error
-            return None
-        # A capture time is NOT a publication time: it is carried as `captured`, never as
-        # `published`, so no claim inherits a PIT stamp it does not have.
-        return [{"url": x["url"], "title": "", "captured": x["timestamp"]}
-                for x in parse_wayback_cdx(r.text) if _page_like(x["url"])]
-
     def _engine(self, name: str, build: Callable[..., str],
                 parse: Callable[[str], list[dict[str, str]]], q: _Query,
                 rec: BackendRecord) -> list[dict[str, str]] | None:
@@ -984,17 +934,13 @@ class LawfulDiscovery:
             return Discovery(rows=[], records=[BackendRecord(n, SKIPPED, why=why)
                                                for n in self.backends])
         fns = {"site_feeds": self._site_feeds, "gdelt_doc": self._gdelt,
-               "commoncrawl_cdx": self._commoncrawl, "wayback_cdx": self._wayback}
+               "commoncrawl_cdx": self._commoncrawl}
         rows: list[dict[str, str]] = []
         records: list[BackendRecord] = []
         seen: set[str] = set()
         for name in self.backends:
             if len(rows) >= ENOUGH_ROWS:
                 break
-            if name in PENDING_TERMS:
-                records.append(BackendRecord(name, SKIPPED, why=f"PENDING TERMS: "
-                                                                 f"{PENDING_TERMS[name]}"))
-                continue
             per_host = name != "gdelt_doc" or bool(q.host)
             key = (name, q.host) if per_host and q.host else (name, q.query, q.region, q.lang)
             with self._lock:

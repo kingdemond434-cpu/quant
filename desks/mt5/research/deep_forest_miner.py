@@ -541,11 +541,33 @@ def bilibili_transcript(bvid: str) -> tuple[str, str | None]:
         return "", type(exc).__name__
 
 
+#: FETCHERS FENCED BY GOVERNANCE (governance/wayback-youtube-ruling-2026-11-14.md). Each stays
+#: registered, makes NO fetch, and publishes a missed_growth line on this miner's report; held rows
+#: keep their labels (LAWS 5e). The Auditor holds any change that re-enables one.
+FENCED_FETCHERS: dict[str, str] = {
+    "wayback": ("Internet Archive terms-refused for automated desk use ('scholarship and "
+                "research purposes only'); a snapshot is also a mirror route around a host's "
+                "own refusal"),
+    "youtube_transcript": ("keyless YouTube transcript mirrors are YouTube content reached "
+                           "around YouTube's terms; the box never contacts YouTube"),
+}
+
+
+def fenced_missed_growth() -> list[dict[str, Any]]:
+    """One missed_growth line per fenced fetcher: what the desk gives up, said, never silent."""
+    return [{"at": datetime.now(UTC).isoformat(timespec="seconds"), "rail": f"fenced:{name}",
+             "kind": "terms_refusal", "why": why, "cost": "UNMEASURED", "gain": "UNMEASURED",
+             "reopens_on": "the owner's own terms, read in full, or written permission"}
+            for name, why in FENCED_FETCHERS.items()]
+
+
 def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
     """A YouTube transcript through the desk's keyless mirror rotation (Piped, Invidious),
     which `scripts/fetch_video_transcript.py` owns. MEASURED DEAD on every route 2026-08-27;
     youtube.com's own caption endpoints are barred by its robots.txt and are never tried. The
     reason is recorded per video, never an empty transcript."""
+    if "youtube_transcript" in FENCED_FETCHERS:
+        return "", "FENCED: youtube_transcript"
     try:
         sp = str(_ROOT / "scripts")
         if sp not in sys.path:
@@ -595,6 +617,8 @@ def parse_feed(xml: str) -> list[dict[str, str]]:
 
 def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
     """Nearest Wayback Machine capture of `url`, via the public availability API."""
+    if "wayback" in FENCED_FETCHERS:
+        return "", "FENCED: wayback"
     api = f"https://archive.org/wayback/available?url={quote(url, safe='')}"
     if timestamp:
         api += f"&timestamp={timestamp}"
@@ -1591,7 +1615,8 @@ class _Run:
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
-        refused = _refused_ground(g, route)
+        refused = (f"FENCED: {FENCED_FETCHERS['wayback']}" if route == "wayback"
+                   and "wayback" in FENCED_FETCHERS else _refused_ground(g, route))
         if refused:
             # A TERMS-REFUSED OR OFF-LIMITS SITE (2026-11-14) is not discovered on any backend:
             # a recorded gap with its reason, never a BLOCKED route and never a silent drop.
@@ -2261,6 +2286,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                                                  "claimed_performance", "score", "url")}
                           for t in tasks[:12]],
            "ledger_schema": LEDGER_SCHEMA,
+           "missed_growth": fenced_missed_growth(),
            "loop": ("Discover (search/platform/feed/archive routes, every region, rotated by "
                     "cursor) -> Extract (claims in 26 languages, direct/indirect channel, "
                     "mechanism class) -> dedupe on mechanism key -> queue story_mechanism per "

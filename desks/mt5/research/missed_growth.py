@@ -905,6 +905,8 @@ GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
 #: publishes the line it owes on its own report.
 CROSS_ASSET_GRAPH = BASE / "reports" / "cross_asset_graph.json"
 TREND_CORE = BASE / "reports" / "TREND_CORE.json"
+#: The deep-forest fetchers Governance fenced (wayback, youtube_transcript), 2026-11-14.
+DEEP_FOREST = BASE / "reports" / "DEEP_FOREST.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1209,7 +1211,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     # SYMBOL CAPS KEPT ON THE REGION-WIDENED MINERS (2026-11-03)
                                     "cross_asset_graph_symbol_cap": organ_published_lines(
                                         CROSS_ASSET_GRAPH),
-                                    "trend_core_walk": organ_published_lines(TREND_CORE)},
+                                    "trend_core_walk": organ_published_lines(TREND_CORE),
+                                    "deep_forest_fenced_fetchers": organ_published_lines(
+                                        DEEP_FOREST)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

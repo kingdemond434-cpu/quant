@@ -634,7 +634,13 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
-    assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
+    # Governance wayback ruling 2026-11-14: the route is fenced, a recorded gap, never a fetch.
+    assert st["Quantopian"]["status"] in ("UNREACHABLE", "BLOCKED")
+    assert str(st["Quantopian"].get("why", "")).startswith("FENCED")
+    assert {ln["rail"] for ln in doc["missed_growth"]} == {"fenced:wayback",
+                                                           "fenced:youtube_transcript"}
+    assert dfm.wayback_snapshot("https://x.test/") == ("", "FENCED: wayback")
+    assert dfm.youtube_transcript("abcdefghijk") == ("", "FENCED: youtube_transcript")
     assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0

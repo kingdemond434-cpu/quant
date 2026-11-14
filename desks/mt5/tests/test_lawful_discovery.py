@@ -32,9 +32,6 @@ _CC_NDJSON = "\n".join([
     json.dumps({"url": "https://forum.test/static/app.js", "status": "200"}),
     "not json",
 ])
-_WB_JSON = json.dumps([["original", "timestamp", "mimetype", "statuscode"],
-                       ["https://forum.test/old/rand-fix", "20190101000000", "text/html", "200"],
-                       ["https://forum.test/old/redirect", "20190101000000", "text/html", "301"]])
 _GDELT = json.dumps({"articles": [
     {"url": "https://news.test/lira", "title": "Lira weakens after CBRT cut", "seendate":
      "20261101T120000Z", "language": "Turkish", "sourcecountry": "Turkey", "domain": "news.test"}]})
@@ -88,12 +85,6 @@ def test_common_crawl_cdx_ndjson_keeps_200_page_rows_only() -> None:
     assert rows[0]["timestamp"] == "20261001" and rows[0]["mime"] == "text/html"
 
 
-def test_wayback_cdx_json_reads_the_header_row_and_skips_redirects() -> None:
-    rows = db.parse_wayback_cdx(_WB_JSON)
-    assert rows == [{"url": "https://forum.test/old/rand-fix", "timestamp": "20190101000000",
-                     "mime": "text/html"}]
-    assert db.parse_wayback_cdx("[]") == [] and db.parse_wayback_cdx("<html>") == []
-
 
 def test_gdelt_doc_rows_and_a_refused_query_is_an_answer_not_a_block() -> None:
     rows, msg = db.parse_gdelt_doc(_GDELT)
@@ -120,8 +111,7 @@ def test_the_lawful_chain_yields_from_every_backend_with_a_record_each(tmp_path)
                ("forum.test/feed", 200, _RSS),
                ("api.gdeltproject.org", 200, _GDELT),
                ("collinfo.json", 200, _CC_COLLINFO),
-               ("CC-MAIN-2026-44-index", 200, _CC_NDJSON),
-               ("web.archive.org/cdx", 200, _WB_JSON)])
+               ("CC-MAIN-2026-44-index", 200, _CC_NDJSON)])
     ld = _ld(tmp_path, net)
     db.ENOUGH_ROWS, saved = 10_000, db.ENOUGH_ROWS                    # run the whole chain
     try:
@@ -508,12 +498,13 @@ def test_a_transport_message_never_reaches_a_record_or_errors(tmp_path: Path) ->
     assert db.Fetched(url="u", status=None, error=f"OSError: {leak}").error == "OSError"
 
 
-def test_wayback_cdx_fails_closed_until_its_terms_are_ruled(tmp_path: Path) -> None:
-    """Auditor HOLD on #1168: the Internet Archive's terms are unruled for trading use, so the
-    backend is never run -- not by default and not when named -- and the gap is recorded."""
-    assert "wayback_cdx" not in db.LAWFUL_BACKENDS and "wayback_cdx" in db.PENDING_TERMS
-    net = Net([("web.archive.org/cdx", 200, _WB_JSON)], default=(404, ""))
-    d = _ld(tmp_path, net, backends=("wayback_cdx",)).discover("usdtry", site="forum.test")
-    assert not any("archive.org" in h for h in net.hosts())
-    rec = next(r for r in d.records if r.backend == "wayback_cdx")
-    assert rec.status == db.SKIPPED and rec.why.startswith("PENDING TERMS")
+def test_the_internet_archive_is_never_contacted(tmp_path: Path) -> None:
+    """Governance wayback ruling 2026-11-14: no wayback_cdx backend, and archive.org is refused
+    outright -- a ground on it, a redirect to it and an index row naming it alike."""
+    assert "wayback_cdx" not in db.LAWFUL_BACKENDS
+    assert not hasattr(db, "parse_wayback_cdx")
+    for u in ("https://web.archive.org/cdx/search/cdx", "https://archive.org/wayback/available"):
+        assert db.never_contact(u).startswith("REFUSED")
+    net = Net(default=(200, ""))
+    d = _ld(tmp_path, net).discover("x", site="web.archive.org")
+    assert net.calls == [] and all(r.status == db.SKIPPED for r in d.records)
