@@ -243,6 +243,9 @@ BOX_STATE_REFUSED = (
     "*sleeve_registry*",
     "*approv*",
     "*authority*",
+    "*adopt_*",
+    "*release_identity*",
+    "*gateway_loaded*",
 )
 #: The PROTECTED floor before 2026-10-29. These now merge with no comment, but always on the AUTO
 #: path (every AUTO job), never LOW (#532 audit MF1).
@@ -1209,11 +1212,16 @@ def box_state_commits(repo: str, pr: int) -> tuple[bool, str]:
         return False, f"{len(commits)} commits listed"
     for c in commits:
         sha = str(c.get("sha") or "")[:9]
+        # GitHub's signature vouches for the COMMITTER; the author is only a declared email
+        # (#1218 audit MF3). Both must be the app, and the signature must be GitHub's valid one.
         login = str((c.get("author") or {}).get("login") or "")
-        verified = ((c.get("commit") or {}).get("verification") or {}).get("verified") is True
-        if login not in BOX_STATE_AUTHORS or not verified:
-            return False, f"commit {sha} is by {login or 'an unknown author'}" + (
-                "" if verified else ", unsigned by GitHub"
+        committer = str((c.get("committer") or {}).get("login") or "")
+        ver = (c.get("commit") or {}).get("verification") or {}
+        signed = ver.get("verified") is True and ver.get("reason") == "valid"
+        if login not in BOX_STATE_AUTHORS or committer not in BOX_STATE_AUTHORS or not signed:
+            return False, (
+                f"commit {sha} is by {login or 'an unknown author'}, committed by "
+                f"{committer or 'an unknown committer'}" + ("" if signed else ", not GitHub-signed")
             )
     return True, f"{len(commits)} commit(s) by the box's app"
 

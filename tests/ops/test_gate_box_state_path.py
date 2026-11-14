@@ -30,9 +30,18 @@ def _files(*names: str) -> list[dict[str, Any]]:
     return [{"filename": n, "status": "modified"} for n in names]
 
 
-def _commit(login: str = "quant-merger[bot]", verified: bool = True) -> dict[str, Any]:
-    return {"sha": "c" * 40, "author": {"login": login},
-            "commit": {"verification": {"verified": verified}}}  # fmt: skip
+def _commit(
+    login: str = "quant-merger[bot]",
+    verified: bool = True,
+    committer: str = "quant-merger[bot]",
+    reason: str = "valid",
+) -> dict[str, Any]:
+    return {
+        "sha": "c" * 40,
+        "author": {"login": login},
+        "committer": {"login": committer},
+        "commit": {"verification": {"verified": verified, "reason": reason}},
+    }
 
 
 class FakeGH:
@@ -160,7 +169,10 @@ def test_state_that_grants_authority_keeps_its_own_route() -> None:
     """#1218 audit MF1: a clearance row on LIVE is trusted by the adopt guard and the seal."""
     for name in ("desks/mt5/data/ADOPT_CLEARS.jsonl", "desks/mt5/data/SEAL_CLEARS.jsonl",
                  "desks/mt5/data/RELEASE.json", "desks/mt5/data/live_sleeve_policy.json",
-                 "desks/mt5/data/sleeve_registry.json", "desks/mt5/data/x_armed.json"):  # fmt: skip
+                 "desks/mt5/data/sleeve_registry.json", "desks/mt5/data/x_armed.json",
+                 "desks/mt5/data/ADOPT_POLICY.json", "desks/mt5/reports/ADOPT_ROLLBACKS.jsonl",
+                 "desks/mt5/data/release_identity.json",
+                 "desks/mt5/data/GATEWAY_LOADED.json"):  # fmt: skip
         gh = FakeGH(_files(STATE, name))
         assert _run(gh) == 1, name
         assert not gh.merged(), name
@@ -168,7 +180,14 @@ def test_state_that_grants_authority_keeps_its_own_route() -> None:
 
 def test_every_commit_must_be_the_app_s_and_signed_by_github() -> None:
     """#1218 audit: the opener says nothing about who pushed to the branch since."""
-    for bad in (_commit(login="kingdemond434-cpu"), _commit(verified=False), _commit(login="")):
+    for bad in (
+        _commit(login="kingdemond434-cpu"),
+        _commit(verified=False),
+        _commit(login=""),
+        # #1218 audit MF3: the app's address declared as author, signed as the session's commit
+        _commit(committer="kingdemond434-cpu"),
+        _commit(reason="unknown_key"),
+    ):
         gh = FakeGH(_files(STATE))
         gh.commits = [_commit(), bad]
         assert _run(gh) == 1
