@@ -100,7 +100,9 @@ def robots_refusal(url: str, agent: str = UA, get: Getter | None = None) -> str 
     try:
         body = (get or _http)(req).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
-        return None if e.code in (404, 410) else f"robots.txt HTTP {e.code}"
+        code = int(e.code)
+        e.close()
+        return None if code in (404, 410) else f"robots.txt HTTP {code}"
     except Exception as e:
         return f"robots.txt unreadable ({type(e).__name__})"
     if body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
@@ -270,7 +272,9 @@ def capture_bls(*, now: datetime, folder: Path, state: dict[str, Any], key: str,
     try:
         body = get(bls_request(list(BLS.values()), key, now.year))
     except urllib.error.HTTPError as e:
-        why = f"BLS HTTP {e.code}" + (" (hard stop)" if e.code in (401, 403, 429, 451) else "")
+        code = int(e.code)
+        e.close()
+        why = f"BLS HTTP {code}" + (" (hard stop)" if code in (401, 403, 429, 451) else "")
         return {s: {"status": "UNMEASURED", "why": why} for s in BLS}
     except Exception as e:
         return {s: {"status": "UNMEASURED", "why": f"BLS unreachable ({type(e).__name__})"}

@@ -190,6 +190,7 @@ def test_a_cross_host_redirect_is_never_followed(monkeypatch, method_body) -> No
         with pytest.raises(urllib.error.HTTPError) as exc:
             fpc._http(req)
         assert exc.value.code == 302
+        exc.value.close()
         assert len(hits) == 1 and sent == [], "the redirect target was contacted"
     finally:
         srv.shutdown()
