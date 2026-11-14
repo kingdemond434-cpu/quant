@@ -78,11 +78,12 @@ _NOT_A_DECLARATION = ("data/", "reports/", "desks/mt5/data/", "desks/mt5/reports
                       "backups/", "web/", "tests/", "scratch/")
 
 #: Manifested tasks whose trigger this repo does not know. RATCHET: it may fall, never rise.
-#: Fourteen today -- the five `stall_watch` heals with no installer, plus the deadman, the vol
-#: archive, the moat trio and several data and ops tasks. Each one is a five-minute job on the box (`Get-ScheduledTask
+#: Four on 2026-11-11 (fourteen at birth). The vol archive's trigger and installer were always in
+#: `recorders/install_tape_tasks.ps1` and the moat recorder's and silver's in
+#: `Install-QuantWindows.ps1`; the manifest had simply not linked them. Each remaining one is a five-minute job on the box (`Get-ScheduledTask
 #: -TaskName <name> | Select -Expand Triggers`) that turns a guess into a fact, and until then this
 #: number is the honest measure of how much of the box cannot be rebuilt from here.
-MAX_UNDECLARED = 14
+MAX_UNDECLARED = 4
 
 
 def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
