@@ -1334,7 +1334,7 @@ DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery"
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
-                     "dukascopy_backfill", "synthetic_usdx",
+                     "tape_deepen", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
@@ -2094,6 +2094,9 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
+    # margin, when priced lower) and saves its state after every symbol turn.
+    "tape_deepen": 420,
     # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
     # cursor after every source; the cap sits above so the report and the donation are written.
     "keyed_sources": 420,
@@ -5927,12 +5930,13 @@ def main() -> None:
     # hour from the six ICE legs so it never lags them; a factor only, never a tradeable symbol.
     usx = _costed("synthetic_usdx",
                   lambda: _producer("synthetic_usdx", "research/synthetic_usdx.py"))
-    # LONG-HISTORY DEPTH, BOUNDED AND RESUMABLE. Eight complete symbol-days per data-department
-    # pass compounds the public bid/ask archive without turning the hourly cycle into a multi-hour
-    # download. This source may inform structure and spread regimes; Fusion-native evidence remains
-    # the only venue-cost authority (enforced again in the producer's report).
-    _costed("dukascopy_backfill", lambda: _producer(
-        "dukascopy_backfill", "research/dukascopy_backfill.py", "--symbol-days", "8"))
+    # LONG-HISTORY DEPTH, FROM THE VENUE ITSELF (2026-11-14). The Dukascopy download that stood
+    # here is terms-refused (#891); the Fusion terminal already holds weeks of its own broker's
+    # ticks behind the first day this desk recorded, and `tape_deepen` copies them backwards into
+    # the same day files the forward writer keeps, bounded per pass and resumable. Every day it
+    # lands counts toward the 66-day tape bar the order-flow families wait on.
+    _costed("tape_deepen", lambda: _producer(
+        "tape_deepen", "recorders/tape_deepen.py", "--budget-s", "300"))
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
