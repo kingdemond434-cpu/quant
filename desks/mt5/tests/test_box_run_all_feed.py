@@ -41,16 +41,16 @@ class _Runner:
 
 def test_every_miner_but_youtube_runs_in_its_own_rails_child(iso) -> None:
     names = raf.roster()
-    assert len(names) == 21 and "youtube" not in names and {"reddit", "github"} <= set(names)
+    assert len(names) == 19 and "youtube" not in names and {"reddit", "github"} <= set(names)
     assert not set(names) & set(raf.SOURCE_BLOCKED)
     r = _Runner()
     rep = raf.run_pass(10_000, runner=r)
-    assert rep["status"] == "OK" and rep["ran"] == 21 and rep["rows"] == 42
+    assert rep["status"] == "OK" and rep["ran"] == 19 and rep["rows"] == 38
     assert [c[0][-1] for c in r.calls] == names
     assert all(c[0][-2] == "--child" and c[2]["QUANT_BOX_RAILS"] == "1"
                and c[2]["QUANT_PROPOSER_SEAT"] == "0" and c[1] <= raf.MINER_TIMEOUT_S
                for c in r.calls)
-    assert json.loads((iso / "report.json").read_text("utf-8"))["ran"] == 21
+    assert json.loads((iso / "report.json").read_text("utf-8"))["ran"] == 19
 
 
 def test_a_budget_cut_resumes_where_it_stopped(iso) -> None:
@@ -63,8 +63,8 @@ def test_a_budget_cut_resumes_where_it_stopped(iso) -> None:
         t[0] += 1
         return r(cmd, timeout_s, env)
     rep = raf.run_pass(budget, runner=fake_runner)
-    assert rep["ran"] >= 1 and rep["not_reached_this_pass"] == 21 - rep["ran"]
-    assert json.loads((iso / "state.json").read_text("utf-8"))["cursor"] == rep["ran"] % 21
+    assert rep["ran"] >= 1 and rep["not_reached_this_pass"] == 19 - rep["ran"]
+    assert json.loads((iso / "state.json").read_text("utf-8"))["cursor"] == rep["ran"] % 19
     del time
 
 
