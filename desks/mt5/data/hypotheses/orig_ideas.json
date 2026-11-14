@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-13T23:40:00Z",
+ "updated_at": "2026-11-14T00:45:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -228,6 +228,53 @@
     "generic carry drift"
    ],
    "separating_test": "Gotobi versus non-Gotobi days at the same FFAJ extreme"
+  },
+  {
+   "id": "IQ-715",
+   "orig": true,
+   "breadth_gap": [
+    "02_09_utc"
+   ],
+   "symbols": [
+    "NZDUSD",
+    "AUDUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "linear_response"
+   ],
+   "mechanism": "Global Dairy Trade price-index surprise at the Tuesday auction close: dairy is about a quarter of NZ goods exports, so a GDT shock reprices NZ terms of trade and the NZDUSD-minus-AUDUSD relative leg (AUD has no dairy exposure) drifts in the shock's direction into the Asia session. Competing: terms-of-trade repricing against a common USD move against the RBNZ-expectation channel. Separating test: the relative leg cancels the common USD move; the RBNZ channel predicts the effect only in Monetary Policy Statement weeks, terms of trade predicts it in every week. Point-in-time on the auction-result timestamp",
+   "falsifier": "the relative-leg drift after the auction is the same for large and small GDT surprises, in RBNZ and non-RBNZ weeks",
+   "competing_explanations": [
+    "terms-of-trade repricing",
+    "common USD move",
+    "RBNZ-expectation channel"
+   ],
+   "separating_test": "NZDUSD-minus-AUDUSD relative leg; RBNZ MPS weeks against non-MPS weeks",
+   "data_gate": "GDT site terms unread; the event series is not fetched until Global data reads them through robots_gate (fails closed)"
+  },
+  {
+   "id": "IQ-716",
+   "orig": true,
+   "breadth_gap": [
+    "energy"
+   ],
+   "symbols": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "EIA Weekly Petroleum Status Report (Wednesday 10:30 ET): Cushing is the WTI delivery point, so a Cushing stock build beyond what the total US crude change explains widens Brent over WTI. Competing: Cushing storage arbitrage against a headline inventory surprise against refinery-run noise. Separating test: regress the XBR-XTI spread move on the Cushing change orthogonalised to total crude and on total crude; the storage mechanism predicts a residual loading with total crude insignificant. Point-in-time on the release timestamp, net of 2x spread cost",
+   "falsifier": "the spread loads on total crude and not on the Cushing residual, or neither loading survives 2x spread cost",
+   "competing_explanations": [
+    "Cushing storage arbitrage",
+    "headline inventory surprise",
+    "refinery-run noise"
+   ],
+   "separating_test": "Cushing residual loading against total-crude loading"
   }
  ]
 }

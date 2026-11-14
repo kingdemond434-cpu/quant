@@ -221,6 +221,21 @@ def test_the_orig_ideas_mirror_names_only_registry_symbols_and_routes_every_idea
         assert tools and tools[0]["class"] != "unclassified", idea["id"]
 
 
+def test_every_pinned_tradition_exists_and_a_data_gate_is_carried_and_counted(tmp_path):
+    doc = json.loads(ML.ORIG_IDEAS.read_text("utf-8"))
+    for idea in doc["ideas"]:
+        assert all(t in S.REGISTRY for t in idea.get("traditions") or []), idea["id"]
+    ideas = tmp_path / "orig_ideas.json"
+    ideas.write_text(json.dumps({"ideas": [
+        {"id": "IQ-G", "symbols": ["NZDUSD"], "mechanism": "auction surprise",
+         "data_gate": "event terms unread"},
+        {"id": "IQ-F", "symbols": ["EURUSD"], "mechanism": "fix flow"}]}), "utf-8")
+    out, status = HR.load_file_ideas(["NZDUSD", "EURUSD"], idea_files=[ideas], donation_dirs=[])
+    gate = {h["hypothesis_id"]: h["data_gate"] for h in out}
+    assert gate == {"IQ-G": "event terms unread", "IQ-F": ""}
+    assert status["data_gated"] == ["IQ-G"]
+
+
 def test_option_pricing_ideas_keep_stochastic_calculus_even_when_it_has_earned_nothing_yet():
     doc = json.loads(ML.ORIG_IDEAS.read_text("utf-8"))
     options = [i for i in doc["ideas"] if i["id"].startswith("IQ-OPT-")]

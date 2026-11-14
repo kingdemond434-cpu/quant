@@ -348,13 +348,17 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path | tuple[str, Pa
                             "first_test": str(row.get("separating_test")
                                               or row.get("falsifier") or "")[:400],
                             "refereed_revision": revision,
+                            # An event series still behind a terms check: the idea is routed
+                            # on bars alone and its event test waits, said out loud.
+                            "data_gate": str(row.get("data_gate") or "")[:200],
                             "gap_weight": gap_weight(target) + (1 if tags else 0),
                             "exotic": is_exotic(target)})
     # Original ideas and referee-hardened revisions first, then breadth gaps; nothing is
     # dropped, so the breadth of what the labs propose is kept and only the order changes.
     out.sort(key=lambda h: (not (h["original"] or h["refereed_revision"]), -h["gap_weight"]))
     status.update(status="MEASURED", kept=len(out),
-                  original=sum(1 for h in out if h["original"]))
+                  original=sum(1 for h in out if h["original"]),
+                  data_gated=sorted({h["hypothesis_id"] for h in out if h["data_gate"]}))
     return out, status
 
 
