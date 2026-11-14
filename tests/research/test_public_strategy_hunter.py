@@ -297,3 +297,12 @@ class TestR0466RefusalIsNotAbsence:
         walled = youtube_transcript(self.CAPTIONED, self._refuse(403))
         prompt = extraction_prompt({"url": "u", "title": "t", **walled}, "", ["PUBLIC_STRATEGY"])
         assert f"TRANSCRIPT_STATE: {TRANSCRIPT_BLOCKED}" in prompt
+
+
+def test_no_mined_row_keeps_a_key_shaped_string() -> None:
+    """Corpora are committed to a public repo: a page quoting an embedded key must not carry it."""
+    from libs.research.public_strategy_hunter import KEY_REDACTED, scrub_keys
+    fake = "AIza" + "x" * 35                     # shape only, built so no key sits in this file
+    row = scrub_keys({"description": f"cfg = {{ key: '{fake}' }} prose", "n": 3})
+    assert fake not in row["description"] and KEY_REDACTED in row["description"]
+    assert row["n"] == 3 and row["description"].endswith("prose")
