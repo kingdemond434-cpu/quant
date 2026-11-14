@@ -404,3 +404,43 @@ def test_fill_orthogonality_reads_one_for_a_single_producer_however_many_cells()
     spread = ii.fill_orthogonality([(f"p{i}", f"f{i}", f"s{i}", "h") for i in range(40)])
     assert spread["producer_effective_rank"] > one["producer_effective_rank"]
     assert ii.fill_orthogonality([])["available"] is False
+
+
+def _registry(tmp_path: Path, rows: list[tuple[int, str, str, dict[str, Any]]]) -> Path:
+    import sqlite3
+    db = tmp_path / "reg.sqlite"
+    con = sqlite3.connect(db)
+    con.execute("create table research_candidates (seq integer, family text, symbol text, "
+                "horizon text, params_json text, mechanism text, generator text, producer text, "
+                "discovery_id text, region text, origin text)")
+    for seq, fam, sym, params in rows:
+        con.execute("insert into research_candidates values (?,?,?,?,?,?,?,?,?,?,?)",
+                    (seq, fam, sym, "multi_day", json.dumps(params), fam, "miner", None, None,
+                     None, "local_converter"))
+    con.commit()
+    con.close()
+    return db
+
+
+def test_seasonal_window_requires_its_window() -> None:
+    assert ii.required_params("seasonal_window") == {"start_md", "end_md", "side_bias"}
+    assert ii.required_params("no_such_family_anywhere") == frozenset()
+
+
+def test_a_donor_missing_its_required_args_is_never_transplanted(tmp_path: Path) -> None:
+    whole = {"start_md": 601, "end_md": 731, "side_bias": 1, "hold_d": 3}
+    db = _registry(tmp_path, [
+        (1, "seasonal_window", "XCOUSD", whole),
+        (2, "seasonal_window", "XCOUSD", {"selector": "london"}),     # newest, but not whole
+        (3, "seasonal_window_orphan", "XAUUSD", {"selector": "asia"}),
+        (4, "carry", "EURUSD", {"band": 0.2}),
+    ])
+    donors = ii._donors(db)
+    assert donors["seasonal_window"]["params"] == whole           # the older WHOLE row
+    assert donors["carry"]["params"] == {"band": 0.2}             # no required args: unchanged
+
+
+def test_a_family_with_no_whole_row_has_no_donor(tmp_path: Path) -> None:
+    db = _registry(tmp_path, [(1, "seasonal_window", "XCOUSD", {"selector": "london"}),
+                              (2, "seasonal_window", "XKCUSD", {"hold_d": 3})])
+    assert "seasonal_window" not in ii._donors(db)
