@@ -173,9 +173,10 @@ def frame(t: Target, rows: Iterable[dict[str, Any]]) -> pd.DataFrame:
     return df.sort_values("report_date").drop_duplicates("report_date", keep="last")
 
 
-#: When this desk FIRST saw each row (UTC): the row's knowledge_time, an upper bound on its public release time. CFTC
-#: releases slip (holiday Mondays push Friday to Monday; a shutdown backlogs weeks), so a reader
-#: that needs point-in-time truth bounds availability by this, never by report_date + 3 days.
+#: When this desk FIRST saw each row (UTC): the row's knowledge_time, an upper bound on its
+#: public release time. CFTC releases slip (holiday Mondays push Friday to Monday; a shutdown
+#: backlogs weeks), so a reader that needs point-in-time truth bounds availability by this,
+#: never by report_date + 3 days.
 #: Rows held before the column existed carry NaT: their first sight was never recorded, and the
 #: refresher does not invent one (Auditor note, 2026-11-13).
 SEEN = "release_seen_utc"
