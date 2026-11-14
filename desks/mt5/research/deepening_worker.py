@@ -107,6 +107,7 @@ from miner_candidate_compiler import (  # noqa: E402
     _registered_cached,
     compile_row,
     known_symbols,
+    live_known_symbols,
 )
 
 from libs.research import rule_deepening as rd  # noqa: E402
@@ -2061,7 +2062,8 @@ def _work(argv: list[str] | None = None) -> int:
         dlog("every queued task already has a decision -- no spend this run")
         return 0
 
-    universe = known_symbols()
+    # Frozen series are withheld here exactly as the compiler withholds them.
+    universe, _ = live_known_symbols()
     recovered: list[dict] = []
     counts: dict[str, int] = {}
     # THE BUDGET CLOCK STARTS WITH THE PASS, not after the setup (2026-11-05). Compaction, the
