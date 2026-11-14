@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T00:45:00Z",
+ "updated_at": "2026-11-14T01:45:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -275,6 +275,52 @@
     "refinery-run noise"
    ],
    "separating_test": "Cushing residual loading against total-crude loading"
+  },
+  {
+   "id": "IQ-725",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals"
+   ],
+   "symbols": [
+    "XAUUSD"
+   ],
+   "traditions": [
+    "information_theory",
+    "survival_hazard"
+   ],
+   "mechanism": "XAUUSD tick imbalance in the last 30 minutes before the Friday close against the sign of the Sunday-open gap: informed weekend positioning (the imbalance sign predicts the gap sign) against liquidity withdrawal (spread widening, not imbalance, predicts only the gap size). Separating test: regress the gap sign on the imbalance with spread widening as a control and |gap| on spread widening; positioning predicts a significant imbalance coefficient after the control, withdrawal predicts zero. Own tick tape only",
+   "falsifier": "the imbalance coefficient on the gap sign is zero once spread widening is controlled",
+   "competing_explanations": [
+    "informed weekend positioning",
+    "liquidity withdrawal into the close"
+   ],
+   "separating_test": "gap sign on tick imbalance controlling for spread widening; |gap| on spread widening",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-726",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "EURUSD"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "US500 CFD tick imbalance in the first 5 seconds after 08:30 ET US releases (13:30 UTC in winter) leads the EURUSD 5-60 second move: flow transmission (the lead also appears on non-release minutes) against common news (the lead appears only at release minutes and vanishes once the surprise sign is removed). Separating test: lead-lag beta on release minutes against matched non-release minutes with the surprise sign partialled out, charged real latency and spread costs. Own tick tape only",
+   "falsifier": "the lead-lag beta is the same at release and matched non-release minutes, or vanishes once the surprise sign is partialled out, after latency and spread costs",
+   "competing_explanations": [
+    "cross-asset flow transmission",
+    "common news shock"
+   ],
+   "separating_test": "release against matched non-release minutes with the surprise sign partialled out",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
 }
