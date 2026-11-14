@@ -727,7 +727,7 @@ def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     except OSError as exc:
         # Windows refuses the replace while the sync holds the summary open. The full artifact
         # is already written, so the leg keeps it and the next pass republishes the summary.
-        print(f"clock law: summary not replaced this pass ({exc}); full artifact kept at {path}",
+        print(f"clock law: summary not replaced this pass ({type(exc).__name__}); full artifact kept at {path.name}",
               file=sys.stderr)
     return path
 
