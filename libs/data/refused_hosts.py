@@ -11,6 +11,9 @@ whose terms are merely unread is not here; each collector fails closed on those 
 """
 from __future__ import annotations
 
+import urllib.error
+import urllib.request
+from typing import IO, Any
 from urllib.parse import urlsplit
 
 #: domain -> why. Every entry is a settled terms refusal, not a guess.
@@ -27,6 +30,10 @@ REFUSED_HOSTS: dict[str, str] = {
     "youtube-nocookie.com": "YouTube: terms refuse automated access",
     "ytimg.com": "YouTube: terms refuse automated access",
     "cboe.com": "Cboe: terms refuse automated collection of its data",
+    "comtrade.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+    "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+    "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+    "theice.com": "ICE: terms refuse automated collection of its data",
 }
 
 
@@ -48,3 +55,24 @@ def refusal(url: str) -> str | None:
         if host == domain or host.endswith("." + domain):
             return why
     return None
+
+
+class RefusedRedirect(urllib.error.URLError):
+    """A redirect whose target host is refused on terms. Raised before the hop is requested."""
+
+
+class RefusingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Checks every redirect hop against the list: a lawful host that redirects to a refused
+    one never causes the refused host to be contacted."""
+
+    def redirect_request(self, req: urllib.request.Request, fp: IO[bytes], code: int,
+                         msg: str, headers: Any, newurl: str) -> urllib.request.Request | None:
+        why = refusal(newurl)
+        if why:
+            raise RefusedRedirect(f"BLOCKED_ON_TERMS: redirect target refused ({why})")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def opener(*handlers: urllib.request.BaseHandler) -> urllib.request.OpenerDirector:
+    """An opener whose redirects are checked hop by hop against the refused list."""
+    return urllib.request.build_opener(RefusingRedirectHandler(), *handlers)

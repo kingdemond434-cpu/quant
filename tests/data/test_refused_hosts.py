@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import io
 import socket
 import sys
 import urllib.request
@@ -79,3 +80,35 @@ def test_the_crawler_never_fetches_or_seeds_a_refused_host(no_network, monkeypat
     monkeypatch.setattr(wc.wf, "add", lambda sources, url, via="": added.append(url) or True)
     wc.seed({})
     assert added and not [u for u in added if rh.refusal(u)]
+
+
+@pytest.mark.parametrize("url", [
+    "https://comtradeapi.un.org/data/v1/get/C/A/HS",
+    "https://comtradeplus.un.org/",
+    "https://www.theice.com/marketdata/reports",
+])
+def test_the_other_ruled_hosts_are_refused(url: str) -> None:
+    assert rh.refusal(url)
+
+
+def test_a_redirect_to_a_refused_host_is_never_followed() -> None:
+    handler = rh.RefusingRedirectHandler()
+    req = urllib.request.Request("https://lawful.example.org/a")
+    with pytest.raises(rh.RefusedRedirect) as exc:
+        handler.redirect_request(req, io.BytesIO(), 302, "Found", {},
+                                 "https://datafeed.dukascopy.com/datafeed")
+    assert "BLOCKED_ON_TERMS" in str(exc.value.reason)
+    nxt = handler.redirect_request(req, io.BytesIO(), 302, "Found", {}, "https://lawful.example.org/b")
+    assert nxt is not None and nxt.full_url == "https://lawful.example.org/b"
+
+
+def test_the_crawler_reports_a_refused_redirect_as_blocked(monkeypatch) -> None:
+    wc = _crawler()
+
+    class _Opener:
+        def open(self, req, timeout=None):
+            raise rh.RefusedRedirect("BLOCKED_ON_TERMS: redirect target refused (test)")
+
+    monkeypatch.setattr(wc, "_refusing_opener", lambda: _Opener())
+    raw, why = wc.fetch("https://lawful.example.org/a")
+    assert raw is None and why.startswith("BLOCKED_ON_TERMS")

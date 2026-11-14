@@ -54,6 +54,8 @@ sys.path.insert(0, str(BASE))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
+from libs.data.refused_hosts import RefusedRedirect  # noqa: E402
+from libs.data.refused_hosts import opener as _refusing_opener  # noqa: E402
 from libs.data.refused_hosts import refusal as terms_refusal  # noqa: E402
 
 WORLD = BASE / "data" / "intelligence" / "world"
@@ -212,11 +214,15 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # Redirects are checked hop by hop: a lawful page that redirects to a refused host
+        # stops before the refused host is contacted (RefusedRedirect is a URLError).
+        with _refusing_opener().open(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
+    except RefusedRedirect as exc:
+        return None, str(exc.reason)
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -486,7 +492,7 @@ _DATA_HOSTS = (
     "bundesbank.de", "banque-france.fr", "snb.ch", "rba.gov.au", "bankofcanada.ca",
     "bankofengland.co.uk", "rbnz.govt.nz", "norges-bank.no", "riksbank.se", "cbr.ru",
     # (d) EXCHANGES for the metals, energy and index underlyings the desk trades as CFDs.
-    "lme.com", "theice.com", "eurex.com", "nasdaq.com", "euronext.com", "tocom.or.jp",
+    "lme.com", "eurex.com", "nasdaq.com", "euronext.com", "tocom.or.jp",
 )
 
 
