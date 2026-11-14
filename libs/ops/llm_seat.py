@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.ops import openrouter_guard
+from libs.ops.env_keys import read_key
 
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
@@ -222,7 +223,7 @@ def seats() -> list[Seat]:
     """
     out: list[Seat] = []
     for var, name, base in KEY_ENV_VARS:
-        key = os.environ.get(var, "").strip()
+        key = read_key(var)
         if key:
             out.append(Seat(name=name, base_url=os.environ.get(f"{name.upper()}_BASE_URL", base),
                             key=key, model=os.environ.get(f"{name.upper()}_MODEL", ""),
