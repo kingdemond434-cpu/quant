@@ -767,7 +767,32 @@ def ratchet_update(paths: Paths, host: str, census: dict[str, int],
     return {"floor": floor, "lowered": lowered}
 
 
-def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]:
+#: The branch a PR's tree is cut from: `--only-missing` writes rows only for organs whose code
+#: this tree changed relative to it.
+LIVE_REF = "origin/claude/llm-auto-upgrade-verify-gcjac3"
+
+
+def changed_paths(root: Path, base: str) -> set[str] | None:
+    """Every path this tree changed relative to `base`: committed (`base...HEAD`), staged,
+    unstaged and untracked. None when git cannot say, which `main` treats as refusal."""
+    import subprocess
+
+    out: set[str] = set()
+    for cmd in (["diff", "--name-only", f"{base}...HEAD"], ["diff", "--name-only", "HEAD"],
+                ["ls-files", "--others", "--exclude-standard"]):
+        try:
+            p = subprocess.run(["git", "-C", str(root), *cmd], capture_output=True, text=True,
+                               timeout=60, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if p.returncode != 0:
+            return None
+        out |= {x.strip() for x in p.stdout.splitlines() if x.strip()}
+    return out
+
+
+def attest_only_missing(paths: Paths, budget_s: float = 180.0,
+                        changed: set[str] | None = None) -> dict[str, Any]:
     """New rows for organs the committed attestation (monolith + sidecars) has no row for.
 
     SINCE 2026-11-14 `main` WRITES EACH ADDED ROW AS ITS OWN SIDECAR (`SIDECAR_DIR`) and leaves
@@ -797,9 +822,20 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     doc: dict[str, Any] = _doc
     have = {str(r.get("organ")) for r in doc["organs"] if isinstance(r, dict)}
     rows, _scope = organ_rows(paths, budget_s)
-    added = [r for r in rows if str(r["organ"]) not in have]
+    missing = [r for r in rows if str(r["organ"]) not in have]
+    # ONLY THIS TREE'S OWN ORGANS (Auditor HOLDs 2026-11-14: #838 #846 #285 #992 #1197 #1202
+    # #1204). An organ LIVE's registry declares but no attestation names -- task:MT5-FTMO-Allocator,
+    # whose row LIVE removed on purpose in 3d2ffd653 -- was re-added by every PR that ran this,
+    # each time a row about code the PR never touched. With `changed` (main passes the paths this
+    # tree changed against LIVE) a missing organ is written only when one of its code files is
+    # among them; the rest are reported in `skipped`, never written.
+    if changed is None:
+        added, skipped = missing, []
+    else:
+        added = [r for r in missing if set(r.get("code") or ()) & changed]
+        skipped = [r for r in missing if r not in added]
     if not added:
-        return {"doc": doc, "added": []}
+        return {"doc": doc, "added": [], "skipped": skipped}
     # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off
     # file mtimes and run records on whatever machine runs this pass, so the same organ could
     # read LIVE here and STALE on the box. Every appended row is stamped with where and when it
@@ -835,7 +871,7 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
     scope["attested"] = int(scope.get("attested", 0)) + len(added)
     doc["scope"] = scope
-    return {"doc": doc, "added": added}
+    return {"doc": doc, "added": added, "skipped": skipped}
 
 
 def _age(seconds: Any) -> str:
@@ -919,6 +955,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=180.0)
     ap.add_argument("--root", type=Path, default=ROOT, help="repo root (tests)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--base", default=LIVE_REF,
+                    help="--only-missing writes rows only for organs whose code this tree "
+                         "changed against BASE (default: LIVE); '' writes every missing organ "
+                         "(the attesting host only)")
     ap.add_argument("--only-missing", action="store_true",
                     help="write one sidecar row (docs/research/runtime_state.d/) for each organ "
                          "the committed attestation lacks; the monolith, its host stamp and the "
@@ -926,8 +966,13 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.root))
     if a.only_missing:
+        changed = changed_paths(paths.root, a.base) if a.base else None
+        if a.base and changed is None:
+            print(f"runtime_attestation --only-missing: NOT written (git cannot say what this "
+                  f"tree changed against {a.base}, so it cannot tell which organs are its own)")
+            return 1
         try:
-            res = attest_only_missing(paths, budget_s=float(a.budget_s))
+            res = attest_only_missing(paths, budget_s=float(a.budget_s), changed=changed)
         except FileNotFoundError as exc:
             print(f"runtime_attestation --only-missing: NOT written ({exc})")
             return 1
@@ -941,6 +986,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"runtime_attestation --only-missing: NOT written "
                       f"({type(exc).__name__}: {exc})")
                 return 1
+        if res.get("skipped"):
+            print(f"runtime_attestation --only-missing: skipped {len(res['skipped'])} missing "
+                  f"organ(s) whose code this tree did not change: "
+                  + ", ".join(str(r["organ"]) for r in res["skipped"][:10]))
         names = ", ".join(f"{r['organ']} ({r['state']})" for r in res["added"])
         print(f"runtime_attestation --only-missing: wrote {len(res['added'])} sidecar row(s) "
               f"under {paths.sidecars.relative_to(paths.root).as_posix()}/"
