@@ -399,6 +399,7 @@ def test_a_second_run_changes_nothing(desk, ctx):
 
 def test_the_budget_stops_the_run_and_defers_rather_than_drops(desk, ctx, monkeypatch):
     _populate(desk)
+    monkeypatch.setattr(dc, "MIN_EXPAND", 2)
     clock = iter([0.0])
     monkeypatch.setattr(dc.time, "monotonic", lambda: next(clock, 1_000_000.0))
     report = dc.run(budget_s=240, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
