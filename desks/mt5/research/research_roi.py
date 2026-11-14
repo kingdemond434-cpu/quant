@@ -67,6 +67,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.ops.ledger_rotation import rotate_if_over  # noqa: E402
 
 DATA, REPORTS = DESK / "data", DESK / "reports"
 FORWARD_DATA = DATA / "forward_reconcile.json"
@@ -84,6 +85,13 @@ GATE_LEDGER = DATA / "hypotheses" / "gate_verdict_ledger.jsonl"
 ALLOC_OUT = DATA / "research_allocation.json"
 FOREST_OUT = DATA / "forest_allocation.json"
 CAPITAL_OUT = DATA / "roi_capital_evidence.json"
+#: THE BUDGET DECISION LEDGER (Asia directive XLIV: "prove source ROI affects research budget after
+#: adequate sample size"). Each pass appends, per forest, the allocation it replaced (before), the
+#: one it wrote (after, what `libs/research/forests.py` reads), the ROI-only allocation and the
+#: FLAT-ROI counterfactual; `scripts/check_asia_directive.py` joins it with data/forest_runs.jsonl.
+BUDGET_DECISIONS = DATA / "roi_budget_decisions.jsonl"
+#: Past this size the ledger is ROTATED whole to a dated archive (never truncated).
+BUDGET_DECISIONS_ROTATE_BYTES = 2 * 1024 * 1024
 REPORT = REPORTS / "RESEARCH_ROI.json"
 #: The meta-evolution layer's population: each research-machinery variant names the host
 #: generator it configured and when it was activated; its fitness is that host's delayed
@@ -1003,6 +1011,59 @@ def forest_allocation(regions: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def budget_decision(regions: dict[str, Any], roi_only: dict[str, Any],
+                    final: dict[str, Any], previous: Any) -> dict[str, Any]:
+    """BEFORE / AFTER / COUNTERFACTUAL for every forest, so ROI's own effect on budget is a number.
+
+    `flat` is `forest_allocation` with every region's ROI unmeasured -- what the federation would
+    get if ROI moved nothing. `roi_only` minus `flat` is the budget ROI moved; `after` adds the
+    parity bonus and is what the consumer reads; `before` is the file this pass replaced. `trials`
+    is the region's routed trial count, the sample the XLIV "adequate sample" clause is judged on.
+    Pure: no I/O."""
+    per = regions.get("by_region") or {}
+    flat = forest_allocation({"by_region": {r: {**(per.get(r) or {}), "roi": None,
+                                                "roi_status": "FLAT_COUNTERFACTUAL"}
+                                            for r in REGIONS}})
+    prev = (previous.get("forests") if isinstance(previous, dict) else None) or {}
+
+    def wb(row: Any) -> dict[str, Any] | None:
+        if not isinstance(row, dict):
+            return None
+        return {"workers": row.get("workers"), "budget_s": row.get("budget_s")}
+
+    forests: dict[str, Any] = {}
+    for r in REGIONS:
+        roi_row = (roi_only.get("forests") or {}).get(r)
+        forests[r] = {"roi": (per.get(r) or {}).get("roi"),
+                      "trials": (per.get(r) or {}).get("trials"),
+                      "before": wb(prev.get(r)), "flat": wb((flat.get("forests") or {}).get(r)),
+                      "roi_only": wb(roi_row), "after": wb((final.get("forests") or {}).get(r))}
+    moved = sorted(f for f, v in forests.items() if v["roi_only"] != v["flat"])
+    return {"at": _now(), "forests": forests, "moved_by_roi": moved,
+            "changed_since_before": sorted(
+                f for f, v in forests.items()
+                if v["before"] is not None and v["before"] != v["after"]),
+            "rule": ("roi_only vs flat is the budget ROI moved; after is what forests.py reads; "
+                     "trials is the adequate-sample basis")}
+
+
+def budget_decisions_path() -> Path:
+    """Beside FOREST_OUT, so whatever redirects the allocation (a test's tmp dir) redirects its
+    decision ledger with it."""
+    return FOREST_OUT.with_name(BUDGET_DECISIONS.name)
+
+
+def _append_budget_decision(rec: dict[str, Any]) -> None:
+    path = budget_decisions_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, default=str) + "\n")
+        rotate_if_over(path, BUDGET_DECISIONS_ROTATE_BYTES)      # archive whole, drop nothing
+    except OSError as exc:
+        print(f"research roi: budget decision not recorded ({type(exc).__name__}: {exc})")
+
+
 def parity_overlay(forest: dict[str, Any], *, conn: sqlite3.Connection | None = None,
                    reports_dir: Path | None = None) -> dict[str, Any]:
     """Fold REGIONAL PARITY's coverage debt into the forest allocation, as a BONUS only.
@@ -1190,7 +1251,13 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
             c.close()
 
     depts = department_shares(scientists, hours, unmeasured)
-    forest = parity_overlay(forest_allocation(regions), conn=conn)
+    roi_only = forest_allocation(regions)
+    forest = parity_overlay(json.loads(json.dumps(roi_only, default=str)), conn=conn)
+    try:
+        previous = json.loads(FOREST_OUT.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = None
+    decision = budget_decision(regions, roi_only, forest, previous)
     trials = trial_budget(mechanisms)
     slots = forward_slot_weights(mechanisms, src)
     capital = capital_evidence(mechanisms, scientists, credit)
@@ -1222,6 +1289,9 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "mechanism_roi": mechanisms, "scientist_roi": scientists, "region_roi": regions,
         "negative_knowledge": negative,
         "n_negative_families": len(negative),
+        "budget_decision": {"moved_by_roi": decision["moved_by_roi"],
+                            "changed_since_before": decision["changed_since_before"],
+                            "ledger": str(budget_decisions_path())},
         "reallocation": {"departments": depts, "forest": forest,
                          "trial_budget_by_family": trials, "forward_slot_weights": slots,
                          "capital": {"file": str(CAPITAL_OUT),
@@ -1249,6 +1319,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
     if not dry_run:
         _atomic_write(ALLOC_OUT, alloc_doc)
         _atomic_write(FOREST_OUT, forest)
+        _append_budget_decision(decision)
         _atomic_write(CAPITAL_OUT, capital)
         _atomic_write(REPORT, report)
     return report

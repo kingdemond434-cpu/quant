@@ -869,6 +869,99 @@ function render(){
       + (news.rows||[]).length + " captured",
     firstSrc(mac));
 
+  /* ---- ASIA INTELLIGENCE (Asia directive PART XXXIX) ----
+     Read from sections.asia_intelligence, which joins the completion audit
+     (ASIA_COMPLETION_AUDIT.json), SOURCE_EVIG, RESEARCH_ROI, DISLOCATION_LAB and the latent-state
+     files. A cell the artifacts do not attribute prints UNMEASURED, never a zero. */
+  var asia = s.asia_intelligence || {};
+  function ucell(v){ return (v === "UNMEASURED" || v === null || v === undefined)
+    ? '<td class="n unm">UNMEASURED</td>' : '<td class="n">'+esc(typeof v === "object" ? JSON.stringify(v) : num(v))+"</td>"; }
+  out += panelOpen("ASIA INTELLIGENCE",
+    "they know which Asian ground is real, and which is only registered.",
+    "Every requirement of the China-first directive on its own ladder (ABSENT .. PROVEN, BLOCKED, "
+    + "UNMEASURED), the Asian sources by region and category, the China latent states, and the "
+    + "research economics: EVIG beside realised ROI. A state is read from what the organs wrote, "
+    + "never from code existing; an absent artifact is UNMEASURED.",
+    asia, "asia intelligence — " + firstSrc(asia));
+  var cen = (asia.census && asia.census.value) || null;
+  if(cen){
+    out += subhead("Completion ladder", fieldText(asia.n_requirements).txt + " requirements");
+    out += bars(["ABSENT","CODED","WIRED","SCHEDULED","RUNNING","PRODUCING_DATA","PRODUCING_CELLS",
+                 "JUDGED","FORWARD","LIVE","PROVEN","BLOCKED","UNMEASURED"].map(function(k){
+      return {label:k, value:(typeof cen[k] === "number" ? cen[k] : null)};
+    }));
+  } else {
+    out += '<div class="why unm">'+esc(fieldText(asia.census).why || "UNMEASURED: no completion audit on this host")+'</div>';
+  }
+  out += '<div class="grid">'
+    + bigCell("Registered Asian sources", asia.registered_sources, {})
+    + bigCell("Requirements audited", asia.n_requirements, {})
+    + bigCell("EVIG rows joined to ROI", asia.economics_join, {})
+    + '</div>';
+  var tot = (asia.totals && asia.totals.value) || {};
+  out += '<div class="grid tight">'
+    + bigCell("Active", {value: tot.active, status: (typeof tot.active === "number" ? "MEASURED" : "UNMEASURED"), why: "the collector has not reported on this host"}, {})
+    + bigCell("Blocked", {value: tot.blocked, status: (typeof tot.blocked === "number" ? "MEASURED" : "UNMEASURED"), why: "the collector has not reported on this host"}, {})
+    + bigCell("Fresh series", {value: tot.fresh_series, status: (typeof tot.fresh_series === "number" ? "MEASURED" : "UNMEASURED"), why: "the collector state is absent on this host"}, {})
+    + bigCell("Stale series", {value: tot.stale_series, status: (typeof tot.stale_series === "number" ? "MEASURED" : "UNMEASURED"), why: "the collector state is absent on this host"}, {})
+    + '</div>';
+  out += subhead("By region", "sources, observations, cells, judged, survivors, compute and ROI per region");
+  out += tbl(["region","sources","active","blocked","observations","cells","judged","survivors","certificates","forward","live","breadth","compute h","ROI"],
+    asia.regions || [], function(r){
+      return "<tr><td>"+esc(r.region)+"</td>" + ucell(r.sources) + ucell(r.active) + ucell(r.blocked)
+        + ucell(r.observations) + ucell(r.cells) + ucell(r.judged) + ucell(r.survivors)
+        + ucell(r.certificates) + ucell(r.forward) + ucell(r.live) + ucell(r.breadth_added)
+        + ucell(r.compute_h) + ucell(r.roi) + "</tr>";
+    });
+  var cats = (asia.categories && asia.categories.value) || {};
+  out += subhead("By category", "physical economy, participant data, supply chain, logistics, geospatial, search attention, practitioner forest");
+  out += tbl(["category","registered","active","blocked","fresh","stale"],
+    Object.keys(cats).map(function(k){ return [k, cats[k] || {}]; }), function(r){
+      var c = r[1];
+      return "<tr><td>"+esc(r[0])+"</td>" + ucell(c.registered) + ucell(c.active) + ucell(c.blocked)
+        + ucell(c.fresh_series) + ucell(c.stale_series) + "</tr>";
+    });
+  out += subhead("XLIV verification items", "the directive's easy-to-fake list, each on the ladder");
+  out += tbl(["id","item","state","blocker","next repair"], asia.xliv || [], function(r){
+      var st = String(r.state||"");
+      var c = st === "PROVEN" || st === "LIVE" || st === "JUDGED" ? "ok"
+            : (st === "ABSENT" || st === "BLOCKED" ? "bad" : (st === "UNMEASURED" ? "unm" : ""));
+      return "<tr><td>"+esc(r.id)+"</td><td>"+esc(r.title)+'</td><td class="'+c+'">'+esc(st)+"</td>"
+        + '<td class="w">'+esc(r.blocker)+'</td><td class="w">'+esc(r.next_repair)+"</td></tr>";
+    });
+  var pr = asia.proofs || {};
+  out += subhead("Feedback-loop proofs", "EVIG changes collection order · ROI changes budget · the forest rotates natively");
+  out += tbl(["proof","verdict","why"], Object.keys(pr).map(function(k){ return [k, pr[k]]; }), function(r){
+      var v = String((r[1]||{}).verdict||"UNMEASURED");
+      return "<tr><td>"+esc(r[0])+'</td><td class="'+(v==="PROVEN"?"ok":(v==="UNMEASURED"?"unm":"stale"))+'">'+esc(v)
+        + '</td><td class="w">'+esc((r[1]||{}).why)+"</td></tr>";
+    });
+  out += subhead("China latent states", "level, surprise, acceleration, uncertainty and component contributions");
+  out += tbl(["state","as of","level","surprise","acceleration","uncertainty","contributions","source"],
+    asia.latent_states || [], function(r){
+      function f(x){ var t = fieldText(x); return t.st === "MEASURED"
+        ? '<td class="n">'+esc(t.txt)+"</td>" : '<td class="n unm" title="'+esc(t.why)+'">'+esc(t.st)+"</td>"; }
+      var src = r.source || {};
+      return "<tr><td>"+esc(r.state)+"</td>" + f(r.as_of) + f(r.level) + f(r.surprise)
+        + f(r.acceleration) + f(r.uncertainty) + f(r.contributions)
+        + '<td class="w '+cls(src.status)+'">'+esc(String(src.source||"").split("/").pop()+" "+(src.status||""))+"</td></tr>";
+    });
+  out += subhead("Research economics", "source EVIG beside realised ROI, survivors per compute hour and credited dE[log W]");
+  out += tbl(["source","EVIG","rank","realised ROI","survivors / compute h","dE[log W]","certificates","breadth"],
+    asia.economics || [], function(r){
+      return "<tr><td>"+esc(r.source)+"</td>" + ucell(r.evig) + ucell(r.rank) + ucell(r.realized_roi)
+        + ucell(r.survivors_per_compute_h) + ucell(r.delta_elogw) + ucell(r.certificates)
+        + ucell(r.breadth_added) + "</tr>";
+    });
+  var dsl = asia.dislocation || {};
+  out += '<div class="grid tight">'
+    + bigCell("Dislocation lab", dsl.status, {})
+    + bigCell("Asia hard series in the lab", dsl.asia_hard_series, {})
+    + '</div>';
+  out += panelClose((cen ? (cen.PROVEN||0) + " proven · " + (cen.UNMEASURED||0) + " unmeasured · "
+      + (cen.ABSENT||0) + " absent" : "no audit on this host"),
+    firstSrc(asia));
+
   /* ---- UNMEASURED & STALE LEDGER ---- */
   out += '<section class="panel"><div class="chrome"><span class="dots"><i></i><i></i><i></i></span>'
     + '<span class="ctitle">unmeasured — what the desk does not hold, and why</span>'
