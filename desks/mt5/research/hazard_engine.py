@@ -252,8 +252,13 @@ class Pool:
 def _ledger_index(directory: Path | None = None) -> dict[str, Path]:
     """Lowercased basename -> path for every shadow ledger. Case matters in the ledger names
     (`ledger_EURGBP_discovered_asia.json`) and not in the roster's sleeve names."""
+    d = directory or SHADOW_DIR
+    # A legacy file several clock keys wrote is frozen (libs.research.forward_ledger): its rows
+    # carry no key, so it is no clock's series and never a training series either.
+    from libs.research import forward_ledger as fl
+    frozen = {n.lower() for n in fl.load_shared(d)}
     try:
-        return {p.name.lower(): p for p in (directory or SHADOW_DIR).glob("ledger_*.json")}
+        return {p.name.lower(): p for p in d.glob("ledger_*.json") if p.name.lower() not in frozen}
     except OSError:
         return {}
 
@@ -313,6 +318,9 @@ def collect_series() -> dict[str, dict]:
         if isinstance(row, dict):
             sym, fam, win = clock_ident(key)
             by_file.setdefault(ledger_basename(sym, fam, win).lower(), (sym, fam, win))
+            from libs.research import forward_ledger as fl
+            by_file.setdefault(fl.per_key_name(str(key)).lower(), (sym, fam, win))
+            by_file.setdefault(fl.own_name(str(key)).lower(), (sym, fam, win))
     for lname, path in sorted(_ledger_index().items()):
         sym, fam, win = by_file.get(lname, ("", "?", ""))
         if not sym:  # a ledger with no clock of its own: read its identity off the filename
