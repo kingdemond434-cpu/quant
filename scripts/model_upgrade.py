@@ -53,6 +53,7 @@ import certifi
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from libs.data.keyed_sources import keyed_urlopen  # noqa: E402
 from libs.llm.effort import reasoning_payload  # noqa: E402
 
 KEYS = ROOT / "data/secrets/llm_panel.json"
@@ -190,7 +191,7 @@ def _ask(base_url: str, key: str, model: str, system: str, user: str,
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
     from libs.ops import openrouter_guard
     openrouter_guard.check_request(req)
-    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+    with keyed_urlopen(req, timeout=timeout, context=CTX, secrets=(key,)) as r:
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]
     return str(msg.get("content") or msg.get("reasoning") or "")
@@ -348,7 +349,7 @@ def _balance_ok(key: str, need: float) -> tuple[bool, str]:
     try:
         req = urllib.request.Request("https://openrouter.ai/api/v1/credits",
                                      headers={"Authorization": f"Bearer {key}"})
-        with urllib.request.urlopen(req, timeout=20, context=CTX) as r:
+        with keyed_urlopen(req, timeout=20, context=CTX, secrets=(key,)) as r:
             d = json.loads(r.read())["data"]
         left = float(d.get("total_credits", 0)) - float(d.get("total_usage", 0))
     except Exception as e:                     # never block an upgrade on telemetry
