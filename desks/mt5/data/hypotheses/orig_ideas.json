@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T04:00:00Z",
+ "updated_at": "2026-11-14T06:18:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -414,6 +414,60 @@
     "Friday flow continuation"
    ],
    "separating_test": "joint regression of the reopen gap on the Friday last-hour imbalance and the Sunday first-hour USDJPY move",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-747",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "indices"
+   ],
+   "symbols": [
+    "BTCUSD",
+    "USDJPY",
+    "AUDJPY",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "Fusion BTCUSD CFD return over the weekend, while FX is shut, as a predictor of the sign and size of the Sunday-open USDJPY and AUDJPY gap: BTC trades through the weekend and may price weekend risk that FX can only reprice at the reopen. Separating test: regress the Sunday-open gap on the BTC weekend return, controlling for Friday's US500 return and the Friday last-hour tick imbalance, out of sample over 2 years, net of the Sunday-open spread. Own broker bars and tick tape only; BTCUSD is used as an MT5 CFD informing MT5 FX, never as a hunted crypto universe",
+   "falsifier": "the BTC weekend return carries no out-of-sample loading on the Sunday-open gap once Friday's US500 return and last-hour imbalance are controlled for, or the loading does not clear the Sunday-open spread",
+   "competing_explanations": [
+    "BTC prices weekend risk",
+    "spurious, via Friday's US500 move"
+   ],
+   "separating_test": "out-of-sample regression of the Sunday-open USDJPY/AUDJPY gap on the BTC weekend return with Friday US500 return and Friday last-hour tick imbalance as controls, net of the Sunday-open spread",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-748",
+   "orig": true,
+   "breadth_gap": [
+    "energy",
+    "indices"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "US500",
+    "NAS100",
+    "US30"
+   ],
+   "traditions": [
+    "change_point",
+    "extreme_value"
+   ],
+   "mechanism": "At the broker's energy and index CFD contract-roll timestamps, the tick mid may overshoot the broker's published roll adjustment and revert within 1h: a liquidity hole as the underlying contract switches. Separating test: the residual move beyond the published adjustment, measured against the spread at the roll; a pure bar artefact leaves a residual of zero. Own broker ticks and published roll adjustments only",
+   "falsifier": "the residual beyond the published roll adjustment is within the spread at the roll, or does not revert within 1h net of costs",
+   "competing_explanations": [
+    "liquidity-hole overshoot at the roll",
+    "bar artefact equal to the adjustment"
+   ],
+   "separating_test": "residual tick-mid move beyond the broker's published roll adjustment versus the spread at the roll, and its 1h reversion",
    "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
