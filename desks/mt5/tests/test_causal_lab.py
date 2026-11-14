@@ -243,6 +243,54 @@ def test_every_edge_carries_its_regime_table(classed):
         assert isinstance(reg["sign_stable"], bool)
 
 
+def test_every_edge_carries_its_time_stamp(classed):
+    for e in classed["edges"]:
+        bt = e["by_time"]
+        assert bt["status"] == "OK"
+        assert isinstance(bt["drifting"], bool) and isinstance(bt["fading"], bool)
+
+
+def _time_panel(coef: np.ndarray, seed: int = 5):
+    rng = np.random.default_rng(seed)
+    n = len(coef)
+    x = np.zeros((n, 2))
+    x[:, 0] = rng.normal(0, 1, n)
+    x[1:, 1] = coef[1:] * x[:-1, 0] + 0.5 * rng.normal(0, 1, n - 1)
+    return _panel(["XAUUSD", "XAGUSD"], x)
+
+
+def test_a_stationary_edge_is_not_called_drifting():
+    bt = cl.time_dependence(_time_panel(np.full(600, 0.7)), 0, 1, 1)
+    assert bt["status"] == "OK" and not bt["drifting"] and not bt["fading"]
+    assert not bt["sign_flipped"]
+
+
+def test_an_edge_that_dies_across_the_window_is_drifting_and_fading():
+    bt = cl.time_dependence(_time_panel(np.linspace(0.9, 0.0, 600)), 0, 1, 1)
+    assert bt["drifting"] and bt["fading"] and bt["t"] < 0
+    assert abs(bt["r_second_half"]) < abs(bt["r_first_half"])
+
+
+def test_an_edge_that_strengthens_is_drifting_but_not_fading():
+    bt = cl.time_dependence(_time_panel(np.linspace(0.0, 0.9, 600)), 0, 1, 1)
+    assert bt["drifting"] and not bt["fading"] and bt["t"] > 0
+
+
+def test_a_volatility_trend_alone_is_not_an_edge_drift():
+    """The mechanism is constant; only the noise grows. HC0 is what keeps this from firing."""
+    rng = np.random.default_rng(9)
+    n = 600
+    x = np.zeros((n, 2))
+    x[:, 0] = rng.normal(0, 1, n)
+    x[1:, 1] = 0.7 * x[:-1, 0] + np.linspace(0.2, 2.0, n - 1) * rng.normal(0, 1, n - 1)
+    assert not cl.time_dependence(_panel(["XAUUSD", "XAGUSD"], x), 0, 1, 1)["drifting"]
+
+
+def test_a_short_window_is_unmeasured_for_time():
+    bt = cl.time_dependence(_time_panel(np.full(3 * cl.MIN_REGIME_N - 5, 0.7)), 0, 1, 1)
+    assert bt["status"] == "UNMEASURED"
+
+
 def test_an_intervention_needs_a_release_and_a_price():
     """No release calendar, no top class -- and one calendar moving another is not a price."""
     rng = np.random.default_rng(9)
@@ -332,7 +380,8 @@ def test_artifact_carries_every_field_the_order_named(classed):
     assert classed["fdr_q"] == 0.05 and classed["n_nodes"] == 6
     assert classed["rule"].startswith("an LLM never invents an edge")
     for e in classed["edges"]:
-        assert {"from", "to", "lag", "coef", "p", "q", "klass", "mechanism", "by_regime"} <= set(e)
+        assert {"from", "to", "lag", "coef", "p", "q", "klass", "mechanism", "by_regime",
+                "by_time"} <= set(e)
         assert e["klass"] in cl.CLASS_RANK and 1 <= e["lag"] <= cl.MAX_LAG
         assert "i" not in e and "j" not in e, "internal column indices leaked into the artifact"
     assert json.loads(json.dumps(classed, default=str))["n_tests"] == classed["n_tests"]
