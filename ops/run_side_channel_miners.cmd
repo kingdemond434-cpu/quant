@@ -27,6 +27,12 @@ set "LOG=C:\opt\quant\desks\mt5\logs\Quant-SideChannelMiners.log"
 set "PY=C:\Program Files\Python314\python.exe"
 cd /d C:\opt\quant
 >>"%LOG%" echo === Quant-SideChannelMiners start %DATE% %TIME%
+rem COT positioning first (2026-11-13): research.cot_refresh fetches only when the CFTC has
+rem released a Tuesday the held parquets lack, so on most passes it sends no request at all.
+rem It runs from desks\mt5 so `research` imports; its report is desks\mt5\reports\COT_REFRESH.json.
+pushd desks\mt5
+"%PY%" -u -m research.cot_refresh >>"%LOG%" 2>&1
+popd
 "%PY%" -u desks\mt5\side_channels\run_all_miners.py >>"%LOG%" 2>&1
 set "RC=%ERRORLEVEL%"
 >>"%LOG%" echo === Quant-SideChannelMiners end rc=%RC% %DATE% %TIME%
