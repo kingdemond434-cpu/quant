@@ -905,6 +905,48 @@ def test_banxico_is_blocked_on_its_key_by_name(
     assert all(A._SIE_ID.match(i) for i in A.BANXICO_SERIES)
 
 
+def test_a_file_key_gets_the_shared_redaction_scrub_and_redirect_guard(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """LIVE's guards for env keys (redact, body scrub, same-host redirects) apply to a key read
+    from the secrets file too: all of them go through `key_value`."""
+    token = "tok" + "9" * 61
+    _banxico_secret(tmp_path, monkeypatch, token)
+    src = A.BY_ID["mx_banxico_sie"]
+    assert token not in A._redact(f"https://x.test/?t={token}", src)
+    opened: list[tuple[tuple[str, ...], dict[str, str]]] = []
+
+    class _Resp:
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+
+        def __enter__(self) -> _Resp:
+            return self
+
+        def __exit__(self, *a: object) -> None:
+            return None
+
+        def read(self, n: int = -1) -> bytes:
+            return b'{"echo": "' + token.encode() + b'"}'
+
+    class _Opener:
+        def __init__(self, secrets: tuple[str, ...]) -> None:
+            self.secrets = secrets
+
+        def open(self, req: Any, timeout: float = 0) -> _Resp:
+            opened.append((self.secrets, dict(req.header_items())))
+            return _Resp()
+
+    import libs.data.keyed_sources as K
+    monkeypatch.setattr(K, "keyed_opener", lambda tls=None, drop=(), secrets=(): _Opener(
+        tuple(secrets)))
+    out = tmp_path / "desk"
+    A.collect(A.Paths(out), src, {}, NOW, fetch=True, fixtures=None, deadline=1e18)
+    (secrets, headers), = opened
+    assert secrets == (token,)                              # the opener is told the secret
+    assert headers.get("Bmx-token") == token                # and it rides only in the header
+    stored = b"".join(f.read_bytes() for f in out.rglob("*") if f.is_file())
+    assert stored and token.encode() not in stored          # an echoed key never reaches disk
+
+
 def test_an_exhausted_banxico_quota_is_a_stop_until_its_reset(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _banxico_secret(tmp_path, monkeypatch, "tok" + "7" * 61)
