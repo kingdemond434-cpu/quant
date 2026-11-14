@@ -65,11 +65,13 @@ have to wait for the measurement, and naming them is what tells the desk where t
 THE TWO CONVENTIONS THAT ARE BROKER FACTS, NOT CHOICES
 ================================================================================================
 
-**THE STAMP.** Swap is charged at the broker's server rollover, conventionally 17:00 New York.
-`ROLLOVER_HOUR_UTC` is 22, which is correct while New York is on daylight time and one hour early
-while it is not. Fusion's server clock is the authority and this default is an assumption, flagged
-as one by `stamp_provenance`. The count is a floor either way: a trade spanning the true stamp
-also spans a stamp one hour from it in all but the narrowest cases.
+**THE STAMP.** Swap is charged at the broker's server rollover, 17:00 New York, which is 00:00 on
+the server's own clock (New York + 7h) every day of the year. The trade times this module counts
+are the engine's, which are SERVER stamps, so the stamp is `ROLLOVER_HOUR_SERVER` = 24: the end of
+server day d. It was `ROLLOVER_HOUR_UTC = 22`, a UTC hour applied to server stamps -- two hours
+early in the bars' own clock (2026-10-13, with the engine's same fix in #371). Only Monday to
+Friday server days end in a stamp: the venue is shut at the weekend, which is paid inside the
+triple.
 
 **WEDNESDAY IS TRIPLE.** Spot FX and metals settle T+2, so Wednesday's rollover carries the
 weekend and brokers charge three nights on it. Counting Wednesday once understates the annual
@@ -84,9 +86,9 @@ from typing import Iterable, Sequence
 
 FINANCING_VERSION = "financing-2026-08-19-a"
 
-#: Broker server rollover, 17:00 New York expressed in UTC during US daylight time. An ASSUMPTION
-#: until the server clock is read -- see `stamp_provenance`.
-ROLLOVER_HOUR_UTC = 22
+#: Broker server rollover: 17:00 New York is 00:00 on the server clock the trade times are stamped
+#: in, all year -- the end of server day d. See `stamp_provenance`.
+ROLLOVER_HOUR_SERVER = 24
 
 #: Monday=0, so 2 is Wednesday: the T+2 stamp that carries the weekend on spot FX and metals.
 #:
@@ -150,18 +152,19 @@ class SwapVerdict:
 
 
 def stamp_provenance() -> str:
-    """Why ROLLOVER_HOUR_UTC is an assumption. Published so a reader cannot mistake it for read.
+    """Where the rollover stamp comes from. Published so a reader cannot mistake it for read.
 
     Named rather than silent because the desk's rule is that an assumed input must be visible at
     the point the number is used, not in a docstring nobody opens.
     """
-    return (f"rollover assumed at {ROLLOVER_HOUR_UTC:02d}:00 UTC (17:00 New York on US daylight "
-            "time); one hour early on standard time. NOT read from the broker server clock -- "
-            "gateway.py can supply it and does not yet")
+    return (f"rollover at server hour {ROLLOVER_HOUR_SERVER} (server midnight = 17:00 New York, "
+            "all year) on server-stamped trade times, Monday-Friday server days only. The "
+            "venue's New York + 7h clock is libs/regime/session_clock's; the stamp itself is "
+            "not read from the broker")
 
 
 def rollover_nights(entry: datetime, exit_at: datetime, *,
-                    hour: int = ROLLOVER_HOUR_UTC,
+                    hour: int = ROLLOVER_HOUR_SERVER,
                     triple_weekday: int | None = TRIPLE_SWAP_WEEKDAY) -> int:
     """Nights CHARGED between entry and exit, Wednesday counted as three.
 
@@ -184,9 +187,10 @@ def rollover_nights(entry: datetime, exit_at: datetime, *,
     end = exit_at.replace(hour=0, minute=0, second=0, microsecond=0)
     while day <= end:
         stamp = day + timedelta(hours=hour)
-        if entry < stamp <= exit_at:
+        # The stamp ends server day `day`; the weekend's days end in none.
+        if entry < stamp <= exit_at and day.weekday() < 5:
             total += (TRIPLE_SWAP_NIGHTS
-                      if triple_weekday is not None and stamp.weekday() == triple_weekday
+                      if triple_weekday is not None and day.weekday() == triple_weekday
                       else 1)
         day += timedelta(days=1)
     return total

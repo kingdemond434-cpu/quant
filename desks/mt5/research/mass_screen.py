@@ -177,15 +177,20 @@ def cost_model(meta: dict[str, Any]) -> dict[str, Any]:
 def nights_between(a_ns: np.ndarray, b_ns: np.ndarray) -> np.ndarray:
     """`engine.rollovers_between`, vectorised: rollover instants strictly after a and at or
     before b, the triple-swap weekday counting three."""
-    from mt5desk.engine import ROLLOVER_HOUR_UTC, TRIPLE_SWAP_WEEKDAY
-    off = ROLLOVER_HOUR_UTC * 3600 * 10**9
+    from mt5desk.engine import ROLLOVER_HOUR_SERVER, night_weight
+    off = ROLLOVER_HOUR_SERVER * 3600 * 10**9
     da = np.floor_divide(a_ns - off, NS_DAY)
     db = np.floor_divide(b_ns - off, NS_DAY)
-    k = np.maximum(db - da, 0)
-    # day d (days since 1970-01-01, a Thursday) has weekday (d + 3) % 7.
-    r = (TRIPLE_SWAP_WEEKDAY - 3) % 7
-    trip = np.floor_divide(db - r, 7) - np.floor_divide(da - r, 7)
-    return (k + 2 * np.where(k > 0, trip, 0)).astype("float64")
+    # Server days d in (da, db] each end in a rollover worth night_weight(weekday). Day d (days
+    # since 1970-01-01, a Thursday) has weekday (d + 3) % 7; the count of days of weekday w in
+    # (da, db] is floor((db - r)/7) - floor((da - r)/7) with r = (w - 3) % 7.
+    out = np.zeros(np.broadcast(da, db).shape, dtype="float64")
+    for w in range(7):
+        weight = night_weight(w)
+        if weight:
+            r = (w - 3) % 7
+            out += weight * (np.floor_divide(db - r, 7) - np.floor_divide(da - r, 7))
+    return np.where(db > da, out, 0.0)
 
 
 # --------------------------------------------------------------------------------------------
