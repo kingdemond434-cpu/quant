@@ -135,7 +135,6 @@ def test_the_lawful_chain_yields_from_every_backend_with_a_record_each(tmp_path)
     assert d.status == db.YIELDED and set(d.yielded_via) == set(db.LAWFUL_BACKENDS)
     urls = [r["url"] for r in d.rows]
     assert "https://forum.test/post/9" in urls and "https://news.test/lira" in urls
-    assert "https://forum.test/old/rand-fix" in urls
     assert not any(u.endswith((".png", ".js")) for u in urls), "assets are not pages"
     # The live crawl id was READ, not assumed; GDELT got the site as a domain query.
     assert any("CC-MAIN-2026-44-index" in u for u in net.calls)
@@ -452,9 +451,10 @@ def test_the_miner_transport_reports_the_answering_url(monkeypatch) -> None:
 def test_youtube_is_discovered_through_the_indexes_never_contacted(tmp_path: Path) -> None:
     """No YouTube contact from the trading box: site_feeds is SKIPPED with the reason, nothing is
     asked of youtube.com (not even robots.txt), and the index backends still find video ids."""
-    wb = json.dumps([["original", "timestamp", "mimetype", "statuscode"],
-                     ["https://www.youtube.com/watch?v=abcdefghijk", "2026", "text/html", "200"]])
-    net = Net([("web.archive.org/cdx", 200, wb), ("/robots.txt", 404, "")])
+    cc = json.dumps({"url": "https://www.youtube.com/watch?v=abcdefghijk", "timestamp": "2026",
+                     "mime": "text/html", "status": "200"})
+    net = Net([("collinfo.json", 200, _CC_COLLINFO), ("CC-MAIN-2026-44-index", 200, cc),
+               ("/robots.txt", 404, "")])
     d = _ld(tmp_path, net).discover("usdtry carry", site="youtube.com")
     assert not any("youtube.com" in h or "youtu.be" in h for h in net.hosts())
     feeds = next(r for r in d.records if r.backend == "site_feeds")
@@ -506,3 +506,14 @@ def test_a_transport_message_never_reaches_a_record_or_errors(tmp_path: Path) ->
     assert db.safe_error("TimeoutError: timed out after 25s at x.test") == "TimeoutError"
     assert db.safe_error("<urlopen error x.test>") == "transport_error"
     assert db.Fetched(url="u", status=None, error=f"OSError: {leak}").error == "OSError"
+
+
+def test_wayback_cdx_fails_closed_until_its_terms_are_ruled(tmp_path: Path) -> None:
+    """Auditor HOLD on #1168: the Internet Archive's terms are unruled for trading use, so the
+    backend is never run -- not by default and not when named -- and the gap is recorded."""
+    assert "wayback_cdx" not in db.LAWFUL_BACKENDS and "wayback_cdx" in db.PENDING_TERMS
+    net = Net([("web.archive.org/cdx", 200, _WB_JSON)], default=(404, ""))
+    d = _ld(tmp_path, net, backends=("wayback_cdx",)).discover("usdtry", site="forum.test")
+    assert not any("archive.org" in h for h in net.hosts())
+    rec = next(r for r in d.records if r.backend == "wayback_cdx")
+    assert rec.status == db.SKIPPED and rec.why.startswith("PENDING TERMS")

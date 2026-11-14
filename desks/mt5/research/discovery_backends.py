@@ -87,7 +87,16 @@ HARD_STOP_STATUS: frozenset[int] = frozenset({401, 403, 429})
 YIELDED, EMPTY, BLOCKED, SKIPPED = "YIELDED", "EMPTY", "BLOCKED", "SKIPPED"
 UNMEASURED = "UNMEASURED"
 #: The lawful chain, in the order it is tried. Rows stop accumulating at ENOUGH_ROWS.
-LAWFUL_BACKENDS: tuple[str, ...] = ("site_feeds", "gdelt_doc", "commoncrawl_cdx", "wayback_cdx")
+LAWFUL_BACKENDS: tuple[str, ...] = ("site_feeds", "gdelt_doc", "commoncrawl_cdx")
+#: Backends built but NOT run until their terms are ruled (Auditor HOLD on #1168, 2026-11-14).
+#: The Internet Archive's terms read "scholarship and research purposes only", which is unclear
+#: for a trading desk, and an unclear term is a refusal. Named here so the chain records the gap
+#: with its reason, even when a caller asks for the backend by name; added back to
+#: LAWFUL_BACKENDS only on a Governance ruling.
+PENDING_TERMS: dict[str, str] = {
+    "wayback_cdx": ("Internet Archive terms ('scholarship and research purposes only') unruled "
+                    "for trading use; fails closed until Governance rules"),
+}
 LAST_RESORT: tuple[str, ...] = ("bing", "duckduckgo")
 ENOUGH_ROWS = 40
 ROWS_PER_BACKEND = 200
@@ -982,6 +991,10 @@ class LawfulDiscovery:
         for name in self.backends:
             if len(rows) >= ENOUGH_ROWS:
                 break
+            if name in PENDING_TERMS:
+                records.append(BackendRecord(name, SKIPPED, why=f"PENDING TERMS: "
+                                                                 f"{PENDING_TERMS[name]}"))
+                continue
             per_host = name != "gdelt_doc" or bool(q.host)
             key = (name, q.host) if per_host and q.host else (name, q.query, q.region, q.lang)
             with self._lock:
