@@ -67,6 +67,30 @@ RETIRED_CREDENTIALS = {
 STALL_MAX_AGE_H = 6.0
 
 
+_RA: Any = None
+
+
+def _runtime_doc(path: Path) -> Any:
+    """The runtime attestation at `path` merged with the PR sidecars beside it
+    (`runtime_attestation.load_attestation_file`); the bare file when that cannot be loaded."""
+    global _RA
+    try:
+        if _RA is None:
+            import importlib.util as _ilu
+
+            spec = _ilu.spec_from_file_location(
+                "_runtime_attestation", Path(__file__).with_name("runtime_attestation.py"))
+            assert spec is not None and spec.loader is not None
+            mod = _ilu.module_from_spec(spec)
+            sys.modules[spec.name] = mod      # a dataclass resolves its module by this name
+            spec.loader.exec_module(mod)
+            _RA = mod
+        doc = _RA.load_attestation_file(Path(path))
+    except Exception:  # the reader falls back to what it always read
+        doc = None
+    return doc
+
+
 def _json(p: Path) -> Any:
     try:
         return json.loads(p.read_text("utf-8-sig"))
@@ -225,7 +249,7 @@ def capital_rows() -> list[dict[str, Any]]:
 
 
 def implementation_rows() -> list[dict[str, Any]]:
-    doc = _json(RUNTIME)
+    doc = _runtime_doc(RUNTIME) or _json(RUNTIME)
     organs = (doc or {}).get("organs") if isinstance(doc, dict) else None
     if not isinstance(organs, list):
         return [_row("organ_budgets", "IMPLEMENTATION", "docs/research/runtime_state.json",

@@ -76,3 +76,24 @@ def test_absent_sources_are_unmeasured(tmp_path: Path) -> None:
                    stall=tmp_path / "d", readers={"x": tmp_path / "X.json"})
     assert doc["desk_verdict"] == hb.UNMEASURED
     assert "Desk verdict: UNMEASURED" in hb.render_md(doc)
+
+
+def test_an_organ_a_pr_added_as_a_sidecar_shows_on_the_board(tmp_path: Path) -> None:
+    """Auditor SF1 on #1207: the board read the monolith only, so a PR-added organ (a sidecar
+    under runtime_state.d/) was invisible until the attesting host's next full pass."""
+    side = tmp_path / "runtime_state.d"
+    side.mkdir()
+    (side / "leg~b-00000000.json").write_text(json.dumps(
+        {"organ": "leg:b", "kind": "leg", "state": "NEVER", "measured_on": "vm",
+         "only_missing": {"on_attesting_host": False}}), "utf-8")
+    doc = _fixture(tmp_path, [{"organ": "leg:a", "kind": "leg", "state": "LIVE"},
+                              {"organ": "leg:b", "kind": "leg", "state": "LIVE"}],
+                   [{"at": _now(), "kind": "LEG_DONE", "leg": "a"},
+                    {"at": _now(), "kind": "LEG_DONE", "leg": "b"}])
+    assert doc["desk_verdict"] == hb.GREEN          # the monolith's leg:b row wins
+    (side / "leg~c-00000000.json").write_text(json.dumps(
+        {"organ": "leg:c", "kind": "leg", "state": "NEVER", "measured_on": "vm",
+         "only_missing": {"on_attesting_host": False}}), "utf-8")
+    doc = _fixture(tmp_path, [{"organ": "leg:a", "kind": "leg", "state": "LIVE"}],
+                   [{"at": _now(), "kind": "LEG_DONE", "leg": "a"}])
+    assert doc["counts"][hb.UNMEASURED] == 2 and doc["desk_verdict"] == hb.AMBER
