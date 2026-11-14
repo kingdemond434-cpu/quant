@@ -3622,12 +3622,22 @@ def write_lake_series(paths: Paths, src: Source, points: dict[str, list[dict[str
                             "vintage_id": p["vintage_id"], "value": p["value"], "pace": p["pace"],
                             "surprise_z": p["surprise_z"], "pit_quality": p["pit_quality"]}
                            for p in pts])
-        target = paths.series / f"{lake_file(src, name)}.csv"
-        tmp = target.with_suffix(f".tmp{os.getpid()}")
-        df.to_csv(tmp, index=False)
-        os.replace(tmp, target)
-        written.append(target.name)
+        written.append(write_series_csv(paths.series, lake_file(src, name), df))
     return written
+
+
+def write_series_csv(series_dir: Path, stem: str, frame: Any) -> str:
+    """THE lake-series write: one `<stem>.csv` under data/lake/series, replaced atomically. The
+    frame must carry `available_time` -- `exogenous_conditioner` refuses a frame without one, so
+    writing it would land a series nothing can join. Shared with `causal_lab`'s stream landings."""
+    if "available_time" not in getattr(frame, "columns", ()):
+        raise ValueError(f"{stem}: a lake series needs an available_time column")
+    series_dir.mkdir(parents=True, exist_ok=True)
+    target = series_dir / f"{stem}.csv"
+    tmp = target.with_suffix(f".tmp{os.getpid()}")
+    frame.to_csv(tmp, index=False)
+    os.replace(tmp, target)
+    return target.name
 
 
 def allocation_intel(points_by_source: dict[str, dict[str, list[dict[str, Any]]]],

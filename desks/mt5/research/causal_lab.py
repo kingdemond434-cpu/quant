@@ -31,7 +31,19 @@ are reported AT THEIR WEAKEST LINK -- macro -> rates -> USD -> gold is one claim
 as the flimsiest arrow in it. And the rule: an LLM never invents an edge. Every row in the artifact
 is a test on PIT data with its class attached, or it is not here.
 
+THE GLOBAL STREAMS (section 4, 2026-10-13). The same oracle, run over the non-Western and "ugly"
+public streams the desk already lands -- every data/lake/series frame (alt_proxies incl. GDELT,
+free stack, country packs, blog_social, nlp_events), raw landings, COT positioning, the forum text
+store and the world dataset hunter -- each read at its OWN known-by stamp (anything unstamped is
+excluded and counted). Surviving links become STATE-CONDITIONED cells ("when S is in regime R,
+I does X") under `exogenous_conditioner` / `world_macro_state`, are refused when #377's style
+classifier names a style the book already holds, are donated once through
+`proposer_common.donate`, and every forum / local-language / axis stream is
+LANDED as a lake series (`data/lake/series/cg_*.csv`, PIT envelope) for the collector and pack
+cells; links and novelty verdicts stay in `reports/causal_global_links.json`.
+
     python desks/mt5/research/causal_lab.py [--dry-run] [--symbols EURUSD XAUUSD ...] [--days 500]
+                                            [--no-global] [--no-donate]
 """
 from __future__ import annotations
 
@@ -39,6 +51,7 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -748,6 +761,972 @@ def build(*, symbols: list[str] | None = None, days: int = DAYS, panel: Panel | 
     }
 
 
+# ================================================================== (4) THE GLOBAL STREAMS
+#
+# THE PRINCIPAL, 2026-10-13: hunt UNKNOWN styles. Tier-1 #377 measured the 43 certificates and found
+# none novel -- every one a passive session window, a range breakout or a drift. Those styles are
+# what a desk finds when the only inputs are its own bars and the four Western axis files above.
+# The desk already LANDS far stranger inputs -- the alt_proxies panels (GDELT among them), the
+# free stack, the country packs' canonical frames, the retail-forum text store, COT positioning,
+# the world dataset hunter's official statistics -- and none of them reached this lab. This
+# section reads each of them POINT IN TIME, tests its lead over MT5 instrument returns with the
+# same partial-correlation oracle and ONE Benjamini-Hochberg charge, and turns each surviving link
+# into a STATE-CONDITIONED cell ("when stream S is in regime R, instrument I does X") under a
+# family the gauntlet can already rebuild: `exogenous_conditioner` for a lake frame,
+# `world_macro_state` for a world series. A forum, local-language or axis stream with no lake
+# frame is LANDED as one (`land_streams`), which is what makes it executable; COT stays
+# measured-only because the cot_* families already trade it.
+#
+# POINT IN TIME. A value is placed at its own known-by stamp (`available_time` on a lake or raw
+# frame, `knowable_at` + 1 day on COT, `first_seen_at` + 1 day on a forum count, the hunter's own
+# `pit_series` clock on a world series). The stream's z is taken on its OWN observations, then read
+# as of 00:00 UTC of each trading day and used only at lag >= 1, so the value a day-t return is
+# tested against was knowable before day t-1's broker close (21:00-22:00 UTC) at the latest. A
+# stream with no stamp is EXCLUDED AND COUNTED, never assumed.
+#
+# TRIALS. Every test run is in the one BH denominator below. A donated cell is charged by the
+# gauntlet exactly once, through the existing trial ledger: this section writes no trial row, and
+# a cell already in this seat's donation contract is never donated again.
+
+LAKE_SERIES = DESK / "data" / "lake" / "series"
+LAKE_VAULT = DESK / "data" / "lake" / "vault"
+RAW_LANDINGS = DESK / "data" / "dfraw"
+TEXT_STORE = DESK / "data" / "text_store"
+WORLD_STORE = DESK / "data" / "world_datasets"
+STYLE_NOVELTY = DESK / "reports" / "STYLE_NOVELTY.json"
+INTEL = DESK / "data" / "intelligence"
+GLOBAL_OUT = DESK / "reports" / "causal_global_links.json"
+GLOBAL_SOURCE = "causal_global"
+
+GLOBAL_DAYS, GLOBAL_LAGS = 750, (1, 2, 3)
+OWN_LAGS = 3
+MAX_STREAMS, MAX_TARGETS, MAX_COLS_PER_FILE, MAX_LINKS = 400, 48, 2, 200
+#: `family_exogenous_conditioner.MIN_OBSERVATIONS`: below it the family emits nothing, so a link
+#: on a shorter stream could never execute and is not worth a slot in the BH denominator.
+MIN_STREAM_OBS = 30
+#: The two families' own z windows, so the regime the lab measures IS the regime the cell trades.
+LAKE_Z_WINDOW, WORLD_Z_OBS, Z_MIN_PERIODS = 250, 24, 20
+#: Days an as-of value may be carried before it is stale: a stream that stopped publishing is not
+#: a state that persists forever.
+MAX_STALE_DAYS = 120
+REGIME_Z, MIN_REGIME_DAYS = 1.0, 20
+MAX_DONATIONS = 20
+GLOBAL_BUDGET_S = 300.0
+MAX_TEXT_LINES = 200_000
+
+#: The asset classes this lane tests, read from the broker's own registry (never a symbol list).
+#: Single-name equities are absent by the two-lane mandate; crypto CFDs and bonds are not targets
+#: of this pass.
+TARGET_CLASSES = frozenset({"forex", "forex majors", "forex crosses", "forex exotics", "fx",
+                            "indices", "index", "commodities", "commodity", "soft commodity",
+                            "soft commodities", "energy", "metal", "metals"})
+
+#: Styles #377 found the whole book already IS: passive window (carry, session/calendar drift),
+#: range breakout and the 20-day breakout. The artifact's `dominant_style_counts` is added on top.
+REPEAT_STYLES_BASE = ("passive_window", "range_breakout_12bar", "breakout_20d")
+NOVEL_T_FALLBACK = 0.5
+
+#: The PIT envelope columns of a lake frame -- the stamp, never a signal (the same set
+#: `family_exogenous_conditioner.STAMP_COLUMNS` strips; read from there when importable).
+_STAMP_FALLBACK = frozenset({"event_time", "published_time", "available_time", "revision_time",
+                             "retrieval_time", "ingested_time", "source_id", "vintage_id",
+                             "first_seen_at", "period", "lag_days"})
+#: Named stream families the order asked for, and how this pass recognises each by name.
+NAMED_FAMILIES: dict[str, tuple[str, ...]] = {
+    "gdelt": ("gdelt",),
+    "cn_retail_posts / guba / paxnet": ("cn_retail", "guba", "taoguba", "paxnet"),
+    "alt_proxies": ("alt_",),
+    "free_stack": ("fs_",),
+    "blog_social": ("blog_social",),
+    "nlp_events": ("nlp_events",),
+    "cot": ("cot:",),
+    "world_dataset_hunt": ("world:",),
+    "dfraw": ("raw:",),
+}
+GLOBAL_RULE = ("a stream enters only at its own known-by stamp and only at lag >= 1; every test is "
+               "in one BH charge; a link is a cell only under a family the gauntlet already "
+               "rebuilds, and never in a style the book already holds")
+
+
+@dataclass
+class Stream:
+    """One global stream: values on their own known-by clock (UTC), and how a cell trades it."""
+
+    name: str
+    store: str
+    series: Any                      # pd.Series, index = known-by instant (UTC), float values
+    z_window: int
+    cell: dict[str, Any] | None = None
+    why_not_executable: str = ""
+    targets: tuple[str, ...] | None = None
+
+
+def _stamp_columns() -> frozenset[str]:
+    try:
+        from mt5desk.family_exogenous_conditioner import STAMP_COLUMNS
+        return frozenset(STAMP_COLUMNS) | _STAMP_FALLBACK
+    except Exception:
+        return _STAMP_FALLBACK
+
+
+def _rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _excl(rows: list[dict[str, Any]], stream: str, store: str, why: str, **extra: Any) -> None:
+    rows.append({"stream": stream, "store": store, "why": why, **extra})
+
+
+def read_tabular(path: Path, store: str, excluded: list[dict[str, Any]]) -> list[Stream]:
+    """A lake or raw frame. `available_time` is required; a row without a parseable one is dropped
+    and COUNTED, and a file without the column is excluded whole."""
+    import pandas as pd
+    stem = path.stem
+    try:
+        df = pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
+    except Exception as exc:
+        _excl(excluded, stem, store, f"unreadable ({type(exc).__name__})")
+        return []
+    if "available_time" not in df.columns:
+        _excl(excluded, stem, store, (
+            "no available_time column: a row with no known-by stamp cannot be placed in time, so "
+            "the file is excluded and counted, never assumed"), n_rows=len(df))
+        return []
+    stamps = pd.to_datetime(df["available_time"], errors="coerce", utc=True)
+    n_unstamped = int(stamps.isna().sum())
+    skip = _stamp_columns()
+    cols = [c for c in df.columns if str(c) not in skip and pd.api.types.is_numeric_dtype(df[c])
+            and not pd.api.types.is_bool_dtype(df[c])]
+    cols.sort(key=lambda c: (-int(df[c].notna().sum()), str(c)))
+    out: list[Stream] = []
+    for col in cols[:MAX_COLS_PER_FILE]:
+        s = pd.Series(pd.to_numeric(df[col], errors="coerce").to_numpy(dtype="float64"),
+                      index=stamps)
+        s = s[s.index.notna()].dropna().sort_index()
+        s = s[~s.index.duplicated(keep="last")]
+        name = f"{store}:{stem}.{col}"
+        if len(s) < MIN_STREAM_OBS:
+            _excl(excluded, name, store, f"{len(s)} stamped observation(s) < {MIN_STREAM_OBS}")
+            continue
+        executable = store == "lake"
+        out.append(Stream(
+            name=name, store=store, series=s, z_window=LAKE_Z_WINDOW,
+            cell=({"family": "exogenous_conditioner",
+                   "params": {"source": stem, "signal": str(col), "transform": "level_z"}}
+                  if executable else None),
+            why_not_executable=("" if executable else
+                                "a raw landing, not a canonical data/lake/series frame: "
+                                "exogenous_conditioner cannot read it")))
+    if len(cols) > MAX_COLS_PER_FILE:
+        _excl(excluded, f"{store}:{stem}", store,
+              f"{len(cols) - MAX_COLS_PER_FILE} further numeric column(s) beyond "
+              f"MAX_COLS_PER_FILE={MAX_COLS_PER_FILE} (densest kept)", kind="set_aside")
+    if n_unstamped:
+        _excl(excluded, f"{store}:{stem}", store,
+              f"{n_unstamped} row(s) with no parseable available_time dropped", kind="rows")
+    return out
+
+
+def read_cot(axes_dir: Path, excluded: list[dict[str, Any]]) -> list[Stream]:
+    """COT net positioning per instrument, at knowable_at + 1 day (the stamp is a date)."""
+    import pandas as pd
+    try:
+        doc = json.loads((axes_dir / "cot.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        _excl(excluded, "cot", "cot", f"axes/cot.json unreadable ({type(exc).__name__})")
+        return []
+    by: dict[str, list[tuple[Any, float]]] = {}
+    unstamped = 0
+    for row in doc.get("rows") or []:
+        if not isinstance(row, dict):
+            continue
+        t = pd.to_datetime(str(row.get("knowable_at") or ""), errors="coerce", utc=True)
+        try:
+            v = float(row["net_pct_oi"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if pd.isna(t) or len(str(row.get("knowable_at") or "")) < 10:
+            unstamped += 1
+            continue
+        by.setdefault(str(row.get("symbol") or ""), []).append((t + pd.Timedelta(days=1), v))
+    if unstamped:
+        _excl(excluded, "cot", "cot", f"{unstamped} COT row(s) without a day-precise knowable_at "
+                                       "dropped", kind="rows")
+    out: list[Stream] = []
+    for sym, pts in sorted(by.items()):
+        if not sym:
+            continue
+        s = pd.Series([v for _, v in pts], index=pd.DatetimeIndex([t for t, _ in pts])).sort_index()
+        s = s[~s.index.duplicated(keep="last")]
+        if len(s) < MIN_STREAM_OBS:
+            _excl(excluded, f"cot:{sym}", "cot", f"{len(s)} observation(s) < {MIN_STREAM_OBS}")
+            continue
+        out.append(Stream(
+            name=f"cot:{sym}.net_pct_oi", store="cot", series=s, z_window=LAKE_Z_WINDOW,
+            targets=(sym,), why_not_executable=(
+                "COT positioning is already expressed by the cot_* families on the docket; the "
+                "link is kept in the artifact rather than re-minted as a new cell")))
+    return out
+
+
+def read_axis_series(axes_dir: Path, lake_stems: set[str],
+                     excluded: list[dict[str, Any]]) -> list[Stream]:
+    """Every OTHER axis file in the `series[...].points` shape, point by point on `available_time`.
+    bis/ecb/fred/cot feed the core panel above; a file already landed as a lake frame is read
+    there instead, so one stream is never tested twice."""
+    import pandas as pd
+    out: list[Stream] = []
+    for path in sorted(axes_dir.glob("*.json")) if axes_dir.is_dir() else []:
+        stem = path.stem
+        if stem in ("bis", "cot", "ecb", "fred"):
+            continue
+        if any(s.startswith(stem) for s in lake_stems):
+            _excl(excluded, f"axis:{stem}", "axes", "read through its data/lake/series frame",
+                  kind="duplicate")
+            continue
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            _excl(excluded, f"axis:{stem}", "axes", f"unreadable ({type(exc).__name__})")
+            continue
+        for sid, blob in sorted((doc.get("series") or {}).items()):
+            pts = (blob or {}).get("points") or [] if isinstance(blob, dict) else []
+            stamped = [(p.get("available_time"), p.get("v")) for p in pts
+                       if isinstance(p, dict) and p.get("available_time")
+                       and p.get("v") is not None]
+            name = f"axis:{stem}.{sid}"
+            if len(stamped) < len(pts):
+                _excl(excluded, name, "axes", f"{len(pts) - len(stamped)} point(s) without "
+                                              "available_time dropped", kind="rows")
+            if len(stamped) < MIN_STREAM_OBS:
+                _excl(excluded, name, "axes", f"{len(stamped)} stamped point(s) < {MIN_STREAM_OBS}")
+                continue
+            s = pd.Series(pd.to_numeric([v for _, v in stamped], errors="coerce"),
+                          index=pd.to_datetime([t for t, _ in stamped], errors="coerce", utc=True))
+            s = s[s.index.notna()].dropna().sort_index()
+            s = s[~s.index.duplicated(keep="last")]
+            out.append(Stream(name=name, store="axes", series=s, z_window=LAKE_Z_WINDOW,
+                              why_not_executable="an axis file with no lake frame; no family "
+                                                 "reads it by name"))
+    return out
+
+
+def read_text_store(root: Path, excluded: list[dict[str, Any]]) -> list[Stream]:
+    """Daily post counts per forum (and per source within it), each day knowable at the next
+    00:00 UTC after the posts were FIRST SEEN. A day counts as zero only when the store's own
+    observed_days.json says the crawler was there; otherwise the day is simply absent."""
+    import pandas as pd
+    out: list[Stream] = []
+    for posts in sorted(root.glob("*/posts.jsonl")) if root.is_dir() else []:
+        forum = posts.parent.name
+        try:
+            every = posts.read_text("utf-8", errors="replace").splitlines()
+            truncated = len(every) > MAX_TEXT_LINES
+            lines = every[-MAX_TEXT_LINES:]
+        except OSError as exc:
+            _excl(excluded, f"text:{forum}", "text_store", f"unreadable ({type(exc).__name__})")
+            continue
+        counts: dict[str, dict[str, int]] = {}
+        unstamped = 0
+        for ln in lines:
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                unstamped += 1
+                continue
+            t = pd.to_datetime(str((r or {}).get("first_seen_at") or ""), errors="coerce", utc=True)
+            if pd.isna(t):
+                unstamped += 1
+                continue
+            day = str(t.date())
+            for key in ("*", str(r.get("source") or "")):
+                if key:
+                    counts.setdefault(key, {})[day] = counts.setdefault(key, {}).get(day, 0) + 1
+        if unstamped:
+            _excl(excluded, f"text:{forum}", "text_store",
+                  f"{unstamped} post(s) without a parseable first_seen_at dropped", kind="rows")
+        try:
+            observed = set(json.loads((posts.parent / "observed_days.json").read_text("utf-8")))
+        except (OSError, ValueError, TypeError):
+            observed = set()
+        # THE TAIL CUT IS NOT A QUIET DAY. Reading only the last MAX_TEXT_LINES posts drops the
+        # early days' posts; zero-filling those days from observed_days would write a false zero
+        # where the truth is "not read". When the file was cut, every day before the first kept
+        # day -- and that first day itself, which the cut may have split -- is MISSING, never 0.
+        if truncated and counts.get("*"):
+            first_kept = min(counts["*"])
+            for per_key in counts.values():
+                per_key.pop(first_kept, None)
+            observed = {str(d) for d in observed if str(d) > first_kept}
+            _excl(excluded, f"text:{forum}", "text_store",
+                  f"{len(every) - MAX_TEXT_LINES} early post(s) beyond MAX_TEXT_LINES not read: "
+                  f"days up to {first_kept} are MISSING, not zero", kind="rows")
+        keys = ["*", *sorted(k for k in counts if k != "*")] if len(counts) > 2 else ["*"]
+        for key in keys:
+            per = dict(counts.get(key) or {})
+            for d in observed:
+                per.setdefault(str(d), 0)
+            name = f"text:{forum}.posts" if key == "*" else f"text:{forum}.{key}.posts"
+            if len(per) < MIN_STREAM_OBS:
+                _excl(excluded, name, "text_store", f"{len(per)} day(s) < {MIN_STREAM_OBS}")
+                continue
+            idx = pd.to_datetime(sorted(per), utc=True) + pd.Timedelta(days=1)
+            s = pd.Series([float(per[d]) for d in sorted(per)], index=idx)
+            out.append(Stream(name=name, store="text_store", series=s, z_window=LAKE_Z_WINDOW,
+                              why_not_executable=("a raw forum count has no executable family; "
+                                                  "its canonical lake frame (blog_social_<SYM>) "
+                                                  "is the executable sibling")))
+    return out
+
+
+def read_world(store: Path, targets: list[str], excluded: list[dict[str, Any]]) -> list[Stream]:
+    """The world dataset hunter's core exposure per target, on the hunter's own PIT clock."""
+    import pandas as pd
+    if not (store / "keys.json").exists():
+        _excl(excluded, "world_dataset_hunt", "world_datasets",
+              "no data/world_datasets/keys.json on this host")
+        return []
+    try:
+        from research import world_dataset_hunter as W
+    except Exception as exc:
+        _excl(excluded, "world_dataset_hunt", "world_datasets",
+              f"world_dataset_hunter unimportable ({type(exc).__name__})")
+        return []
+    try:
+        doc = json.loads((store / "exposure.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    core = int(doc.get("core", 8) or 8)
+    wanted: dict[str, list[str]] = {}
+    for sym in targets:
+        for key in list((doc.get("symbols") or {}).get(sym) or [])[:core]:
+            wanted.setdefault(str(key), []).append(sym)
+    out: list[Stream] = []
+    for key, syms in sorted(wanted.items()):
+        try:
+            s = W.raw_world_series(key)
+        except Exception:
+            s = None
+        name = f"world:{key}"
+        if s is None or len(s) < WORLD_Z_OBS + 2:
+            _excl(excluded, name, "world_datasets", "no PIT series behind the key on this host")
+            continue
+        idx = pd.DatetimeIndex(s.index)
+        idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+        s = pd.Series(s.to_numpy(dtype="float64"), index=idx).dropna().sort_index()
+        out.append(Stream(name=name, store="world_datasets", series=s, z_window=WORLD_Z_OBS,
+                          cell={"family": "world_macro_state",
+                                "params": {"series_key": key, "z_obs": WORLD_Z_OBS}},
+                          targets=tuple(syms)))
+    return out
+
+
+def load_streams(*, lake: Path = LAKE_SERIES, raw: Path = RAW_LANDINGS, vault: Path = LAKE_VAULT,
+                 axes_dir: Path = AXES, text: Path = TEXT_STORE, world: Path = WORLD_STORE,
+                 targets: list[str] | None = None,
+                 ) -> tuple[list[Stream], list[dict[str, Any]], dict[str, Any]]:
+    """(streams, excluded, census). Every store is visited; an absent one is a census row."""
+    excluded: list[dict[str, Any]] = []
+    census: dict[str, Any] = {}
+    streams: list[Stream] = []
+
+    def _files(d: Path) -> list[Path]:
+        return sorted(p for p in d.rglob("*") if p.suffix in (".parquet", ".csv")) \
+            if d.is_dir() else []
+
+    lake_files = []
+    for p in _files(lake):
+        if p.stem.startswith(LANDING_PREFIX):
+            _excl(excluded, f"lake:{p.stem}", "lake", "this organ's own landing; read through its "
+                                                      "origin store", kind="own_landing")
+        else:
+            lake_files.append(p)
+    for store, files in (("lake", lake_files), ("raw", _files(raw))):
+        got: list[Stream] = []
+        for p in files:
+            got.extend(read_tabular(p, store, excluded))
+        where = lake if store == "lake" else raw
+        census[store] = {"present": where.is_dir(), "files": len(files), "streams": len(got)}
+        streams.extend(got)
+    n_vault = sum(1 for p in vault.rglob("*") if p.is_file()) if vault.is_dir() else 0
+    census["vault"] = {"present": vault.is_dir(), "files": n_vault, "streams": 0}
+    if n_vault:
+        _excl(excluded, "lake:vault", "vault", (
+            f"{n_vault} raw vault file(s): bytes as fetched, no available_time column; each "
+            "country pack's canonical frame is read from data/lake/series instead"),
+            kind="raw_bytes")
+    readers: tuple[tuple[str, Callable[[], list[Stream]]], ...] = (
+        ("cot", lambda: read_cot(axes_dir, excluded)),
+        ("axes", lambda: read_axis_series(axes_dir, {p.stem for p in lake_files}, excluded)),
+        ("text_store", lambda: read_text_store(text, excluded)),
+        ("world_datasets", lambda: read_world(world, list(targets or []), excluded)))
+    for store, fn in readers:
+        got = fn()
+        census[store] = {"streams": len(got)}
+        streams.extend(got)
+    census["text_store"]["present"] = text.is_dir()
+    census["world_datasets"]["present"] = (world / "keys.json").exists()
+    names = [s.name for s in streams]
+    census["named_families"] = {
+        fam: {"streams": sum(1 for n in names if any(tok in n.lower() for tok in toks)),
+              "status": ("READ" if any(any(tok in n.lower() for tok in toks) for n in names)
+                         else "ABSENT_ON_HOST")}
+        for fam, toks in NAMED_FAMILIES.items()}
+    return streams, excluded, census
+
+
+#: Prefix of the lake series this organ lands. The lake reader skips them (each is read through
+#: its origin store), so one stream is never tested twice.
+LANDING_PREFIX = "cg_"
+#: Stores whose streams have no lake frame of their own and are landed as one (COT is not: the
+#: cot_* families already trade it; world series are not: world_macro_state reads them by key).
+LANDED_STORES = ("text_store", "axes", "raw")
+
+
+def landing_id(name: str) -> str:
+    """`text:cn_retail_posts.guba.posts` -> `cg_text__cn_retail_posts_guba_posts`."""
+    store, _, rest = name.partition(":")
+    slug = "".join(ch if ch.isalnum() else "_" for ch in rest.lower()).strip("_")
+    return f"{LANDING_PREFIX}{store}__{slug}"[:120]
+
+
+def land_streams(streams: list[Stream], series_dir: Path = LAKE_SERIES) -> dict[str, Any]:
+    """THE HAND-OFF (coordinator, 2026-10-13). Every forum, local-language and axis stream with no
+    lake frame is LANDED as `data/lake/series/<id>.csv` in the lake's PIT envelope, through the
+    repo's one lake-series writer (`alt_proxies.write_series_csv`). From then on it is an ordinary
+    lake series: `exogenous_conditioner` reads it by id, the collector and pack cells see it, and
+    #385's novelty screen applies downstream. The stream becomes executable THIS pass."""
+    import pandas as pd
+    try:
+        from research.alt_proxies import write_series_csv
+    except Exception as exc:
+        return {"status": "UNMEASURED", "landed": [], "why": (
+            f"alt_proxies.write_series_csv unimportable ({type(exc).__name__}); nothing landed "
+            "and no stream was made executable")}
+    landed: list[str] = []
+    failed: list[dict[str, str]] = []
+    for st in streams:
+        if st.store not in LANDED_STORES or st.cell is not None:
+            continue
+        sid = landing_id(st.name)
+        stamps = [t.isoformat() for t in pd.DatetimeIndex(st.series.index)]
+        frame = pd.DataFrame({"event_time": stamps, "available_time": stamps,
+                              "source_id": st.name, "value": st.series.to_numpy(dtype="float64"),
+                              "pit_quality": "known_by_stamp_of_origin_store"})
+        try:
+            write_series_csv(series_dir, sid, frame)
+        except (OSError, ValueError) as exc:
+            failed.append({"stream": st.name, "why": f"{type(exc).__name__}: {exc}"[:200]})
+            continue
+        st.cell = {"family": "exogenous_conditioner",
+                   "params": {"source": sid, "signal": "value", "transform": "level_z"}}
+        st.why_not_executable = ""
+        landed.append(f"{sid}.csv")
+    return {"status": "OK", "dir": _rel(series_dir), "landed": landed, "n_landed": len(landed),
+            "failed": failed}
+
+
+# ------------------------------------------------------------------ targets and PIT alignment
+
+def global_targets(uni: Path = UNI) -> tuple[list[str], list[dict[str, str]]]:
+    """FX, metals, indices, energy and softs from the broker's registry that have bars here and
+    that the two-lane mandate lets this lane hypothesise on."""
+    refused: list[dict[str, str]] = []
+    try:
+        reg = json.loads((uni / "universe.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        reg = {}
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception as exc:
+        # FAIL CLOSED: without the lane policy no symbol's lane is known, so none is admitted.
+        why = (f"research.universe_policy unimportable ({type(exc).__name__}): the lane is "
+               "unknown, so nothing is admitted")
+        return [], [{"symbol": "*", "why": why}]
+    rank = {s: k for k, s in enumerate(DEFAULT_SYMBOLS)}
+    picked: list[tuple[int, str, str]] = []
+    rows = reg.items() if isinstance(reg, dict) and reg else \
+        ((s, {"asset_class": "fx"}) for s in DEFAULT_SYMBOLS)
+    for sym, meta in rows:
+        cls = str((meta or {}).get("asset_class") or "").strip().lower()
+        if cls not in TARGET_CLASSES and sym not in rank:
+            continue
+        if not (uni / f"{sym}_H1.parquet").exists():
+            continue
+        if not may_hypothesise(sym):
+            refused.append({"symbol": sym, "why": "the two-lane mandate: event lane only"})
+            continue
+        picked.append((rank.get(sym, len(rank)), cls, str(sym)))
+    picked.sort()
+    syms = [s for _, _, s in picked]
+    return sa.take(syms, MAX_TARGETS, organ="causal_lab", stage="global_targets",
+                   ordering="book symbols first, then registry class, then symbol"), refused
+
+
+def stream_z(stream: Stream) -> Any:
+    """The stream's trailing z on its OWN observations (each point against its own past only)."""
+    s = stream.series.astype(float)
+    r = s.rolling(int(stream.z_window), min_periods=min(Z_MIN_PERIODS, int(stream.z_window)))
+    z = (s - r.mean()) / r.std(ddof=1)
+    return z.replace([np.inf, -np.inf], np.nan).dropna()
+
+
+def asof_days(z: Any, days: list[str]) -> np.ndarray:
+    """z as of 00:00 UTC of each day: the last value whose known-by instant is at or before it,
+    carried at most MAX_STALE_DAYS. NaN where nothing was knowable yet."""
+    out = np.full(len(days), np.nan)
+    if z is None or len(z) == 0 or not days:
+        return out
+    import pandas as pd
+    # ONE UNIT ON BOTH SIDES. `asi8` is in the index's OWN unit (s, ms, us or ns -- pandas 2
+    # keeps the unit a frame was built with, and pandas 3 infers it per input), so comparing raw
+    # integers mixed units: an s/ms stream read a June value on a January day (look-ahead), an
+    # ns stream read all-NaN against a coarser day index, and the ns staleness limit below was
+    # 1000x off. Both sides are converted to ns before a single integer is compared.
+    t = np.asarray(pd.to_datetime(z.index, utc=True).as_unit("ns").asi8, dtype="int64")
+    v = z.to_numpy(dtype="float64")
+    d = np.asarray(pd.to_datetime(days, utc=True).as_unit("ns").asi8, dtype="int64")
+    k = np.searchsorted(t, d, side="right") - 1
+    ok = k >= 0
+    stale = np.zeros(len(d), dtype=bool)
+    stale[ok] = (d[ok] - t[k[ok]]) > MAX_STALE_DAYS * 86_400 * 10**9
+    use = ok & ~stale
+    out[use] = v[k[use]]
+    return out
+
+
+def _lagged_test(r: np.ndarray, x: np.ndarray, lag: int) -> dict[str, Any] | None:
+    """Partial correlation of r_t on x_{t-lag} given r's own OWN_LAGS lags."""
+    n = len(r)
+    start = max(OWN_LAGS, lag)
+    if n - start < MIN_DAYS:
+        return None
+    y = r[start:]
+    xs = x[start - lag: n - lag]
+    own = np.column_stack([r[start - k: n - k] for k in range(1, OWN_LAGS + 1)])
+    ok = np.isfinite(y) & np.isfinite(xs) & np.isfinite(own).all(axis=1)
+    m = int(ok.sum())
+    if m < MIN_DAYS or float(np.std(xs[ok])) <= 1e-12:
+        return None
+    ry, rx = _resid(y[ok], own[ok]), _resid(xs[ok], own[ok])
+    rr, denom = _corr(rx, ry), float(rx @ rx)
+    return {"r": rr, "coef": float(rx @ ry) / denom if denom > 1e-12 else 0.0,
+            "p": fisher_p(rr, m, OWN_LAGS), "n": m}
+
+
+def regime_reading(r: np.ndarray, x: np.ndarray, lag: int) -> dict[str, Any]:
+    """The instrument's next-day return inside each band of the stream's lagged z."""
+    y, xs = r[lag:], x[:len(x) - lag]
+    ok = np.isfinite(y) & np.isfinite(xs)
+    out: dict[str, Any] = {"z": REGIME_Z}
+    for label, sel in (("high", ok & (xs >= REGIME_Z)), ("mid", ok & (np.abs(xs) < REGIME_Z)),
+                       ("low", ok & (xs <= -REGIME_Z))):
+        k = int(sel.sum())
+        out[label] = {"n": k, "mean": round(float(y[sel].mean()), 7) if k else None,
+                      "status": "OK" if k >= MIN_REGIME_DAYS else "UNMEASURED"}
+    return out
+
+
+# ------------------------------------------------------------------ novelty
+
+def _style_classifier() -> Any:
+    """#377's own classifier (`style_novelty.style_matrix` + `project`) through a GUARDED import.
+    It lives on branch claude/style-novelty-lane; until that merges this returns None and the
+    verdict falls back to the published artifact, then to UNMEASURED."""
+    try:
+        from research import style_novelty as sn  # type: ignore[attr-defined]
+    except Exception:
+        return None
+    return sn if all(hasattr(sn, a) for a in ("style_matrix", "project")) else None
+
+
+def novelty_context(path: Path = STYLE_NOVELTY) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    sn = _style_classifier()
+    dom = dict((doc or {}).get("dominant_style_counts") or {}) if isinstance(doc, dict) else {}
+    repeat = sorted(set(REPEAT_STYLES_BASE) | {str(k) for k, v in dom.items() if v})
+    return {"artifact": str(path.name), "artifact_present": isinstance(doc, dict),
+            "classifier": "style_novelty.style_matrix+project" if sn else "UNAVAILABLE",
+            "classifier_note": ("" if sn else
+                                "desks/mt5/research/style_novelty.py is not on this branch "
+                                "(PR #377, claude/style-novelty-lane); guarded import, no copy"),
+            "dominant_style_counts": dom, "repeat_styles": repeat,
+            "per_family": dict((doc or {}).get("per_family") or {}) if isinstance(doc, dict)
+            else {},
+            "novel_t": float(getattr(sn, "NOVEL_T", NOVEL_T_FALLBACK)) if sn else
+            NOVEL_T_FALLBACK, "_sn": sn}
+
+
+def classify_novelty(ctx: dict[str, Any], family: str, days: list[str], r: np.ndarray,
+                     x: np.ndarray, lag: int, band: str, side: int) -> dict[str, Any]:
+    """REPEAT_STYLE (never donated), NOVEL, KNOWN_STYLE, or UNMEASURED (donated, nothing claimed).
+
+    With the classifier: the cell's own daily signals -- every day the lagged stream z sits in the
+    traded band -- projected onto #377's ten known styles on the same bars. Without it: the
+    artifact's per-family saturation, else UNMEASURED."""
+    sn = ctx.get("_sn")
+    if sn is not None:
+        from types import SimpleNamespace
+
+        import pandas as pd
+        close = np.exp(np.cumsum(np.nan_to_num(r)))
+        idx = pd.DatetimeIndex(pd.to_datetime(days, utc=True))
+        sigs = []
+        for t in range(lag, len(days)):
+            v = x[t - lag]
+            if not np.isfinite(v):
+                continue
+            if (band == "high" and v >= REGIME_Z) or (band == "low" and v <= -REGIME_Z):
+                sd = side
+            elif band == "both" and abs(v) >= REGIME_Z:
+                sd = side * int(np.sign(v))
+            else:
+                continue
+            sigs.append(SimpleNamespace(time=idx[t - 1], side=sd, ttl_bars=1, trigger=None,
+                                        wait_bars=1))
+        try:
+            y, X = sn.style_matrix(close, idx, sigs)
+            proj = sn.project(y, X)
+        except Exception as exc:
+            return {"verdict": "UNMEASURED", "why": f"classifier raised {type(exc).__name__}",
+                    "by": "classifier"}
+        if proj.get("status") != "MEASURED":
+            return {"verdict": "UNMEASURED", "why": str(proj.get("why") or "not measured"),
+                    "by": "classifier", "n": proj.get("n")}
+        dom = proj.get("dominant_style")
+        nr = float(proj.get("novelty_return") or 0.0)
+        verdict = ("REPEAT_STYLE" if dom in ctx["repeat_styles"] else
+                   "NOVEL" if nr >= float(ctx["novel_t"]) else "KNOWN_STYLE")
+        return {"verdict": verdict, "by": "classifier", "dominant_style": dom,
+                "novelty_return": round(nr, 4), "n": proj.get("n"),
+                "basis": "daily bars of the instrument, the cell's own band days"}
+    fam = (ctx.get("per_family") or {}).get(family)
+    if isinstance(fam, dict) and fam.get("saturation") == "SATURATED":
+        return {"verdict": "REPEAT_STYLE", "by": "artifact", "why": (
+            f"STYLE_NOVELTY.json marks family {family} SATURATED: it holds certificates and none "
+            "is novel")}
+    return {"verdict": "UNMEASURED", "by": "artifact" if ctx.get("artifact_present") else "none",
+            "why": ("classifier not importable on this branch; the artifact does not mark the "
+                    "family saturated" if ctx.get("artifact_present") else
+                    "STYLE_NOVELTY.json absent and the classifier not importable: novelty is "
+                    "UNMEASURED, neither blocked nor assumed novel")}
+
+
+# ------------------------------------------------------------------ the pass
+
+def _prior_identities(seat: Path) -> set[str]:
+    """Cells this seat already donated: the donation contract IS the record, so a cell is charged
+    once and never re-donated hourly."""
+    import gzip
+
+    from research.proposer_common import identity
+    seen: set[str] = set()
+
+    def _take(doc: Any) -> None:
+        rows = (doc.get("discoveries") if isinstance(doc, dict) and "discoveries" in doc
+                else doc if isinstance(doc, list) else [doc])
+        for c in rows or []:
+            if isinstance(c, dict) and c.get("family"):
+                seen.add(identity(str(c.get("symbol")), str(c.get("family")),
+                                  dict(c.get("params") or {})))
+
+    for f in sorted(seat.glob("discoveries_*.json")) if seat.is_dir() else []:
+        try:
+            _take(json.loads(f.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    # scripts/disk_guard.py `rollup` compacts aged discovery files into rollup_<day>.jsonl.gz,
+    # one JSON document per line; a cell rolled up there was still donated.
+    for f in sorted(seat.glob("rollup_*.jsonl.gz")) if seat.is_dir() else []:
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        _take(json.loads(line))
+                    except ValueError:
+                        continue
+        except (OSError, EOFError):
+            continue
+    return seen
+
+
+def _cell_for(stream: Stream, target: str, lag: int, coef: float,
+              regimes: dict[str, Any]) -> tuple[dict[str, Any] | None, str, int, str]:
+    """(family+params, band, side, why-none). The band is where the measured effect is strongest
+    among bands with enough days; its sign must agree with the linear link's."""
+    sgn = int(np.sign(coef)) or 1
+    bands = [(b, regimes[b]) for b in ("high", "low") if regimes[b]["status"] == "OK"]
+    if not bands:
+        return None, "", 0, f"no band holds {MIN_REGIME_DAYS} days: the regime is UNMEASURED"
+    band, info = max(bands, key=lambda kv: abs(float(kv[1]["mean"] or 0.0)))
+    side = int(np.sign(float(info["mean"] or 0.0)))
+    if side == 0 or side != (sgn if band == "high" else -sgn):
+        return None, band, side, ("the strongest band's mean return disagrees in sign with the "
+                                  "linear link: the regime and the line tell different stories")
+    if stream.cell is None:
+        return None, band, side, stream.why_not_executable or "no executable family"
+    fam = str(stream.cell["family"])
+    params = dict(stream.cell["params"])
+    if fam == "exogenous_conditioner":
+        params.update({"threshold": REGIME_Z, "side_when_high": sgn, "lag_hours": 24 * lag,
+                       "ttl_bars": 24})
+    elif fam == "world_macro_state":
+        params.update({"z_lo": REGIME_Z, "z_hi": 99.0} if band == "high" else
+                      {"z_lo": -99.0, "z_hi": -REGIME_Z})
+        params.update({"direction": "long" if side > 0 else "short", "hold_bars": 24})
+    return {"family": fam, "params": params}, band, side, ""
+
+
+def build_global(*, streams: list[Stream] | None = None, excluded: list[dict[str, Any]] | None
+                 = None, census: dict[str, Any] | None = None,
+                 returns: dict[str, tuple[list[str], np.ndarray]] | None = None,
+                 targets: list[str] | None = None, novelty: dict[str, Any] | None = None,
+                 prior: set[str] | None = None, budget_s: float = GLOBAL_BUDGET_S,
+                 now: str | None = None, land: bool = False,
+                 series_dir: Path = LAKE_SERIES) -> dict[str, Any]:
+    """Read the global streams, test them against MT5 returns, emit conditioned cells."""
+    import time as _time
+    t0 = _time.monotonic()
+    at = now or datetime.now(tz=UTC).isoformat(timespec="seconds")
+    refused_targets: list[dict[str, str]] = []
+    if targets is None:
+        targets, refused_targets = global_targets()
+    if returns is None:
+        returns = {}
+        for sym in targets:
+            bars = _daily_returns(UNI / f"{sym}_H1.parquet")
+            if bars is not None:
+                returns[sym] = bars
+    if streams is None:
+        streams, excluded, census = load_streams(targets=list(returns))
+    excluded = list(excluded or [])
+    census = dict(census or {})
+    ctx = novelty if novelty is not None else novelty_context()
+    landing = (land_streams(streams, series_dir) if land else
+               {"status": "SKIPPED", "why": "dry run: nothing landed", "landed": []})
+    usable = list(streams)
+    usable.sort(key=lambda s: (-len(s.series), s.name))
+    kept = sa.take(usable, MAX_STREAMS, organ="causal_lab", stage="global_streams",
+                   ordering="-n_observations, name")
+    for s in usable[MAX_STREAMS:]:
+        _excl(excluded, s.name, s.store, f"MAX_STREAMS={MAX_STREAMS} reached (densest kept)",
+              kind="set_aside")
+    tests: list[dict[str, Any]] = []
+    aligned: dict[tuple[str, str], np.ndarray] = {}
+    short_overlap = 0
+    reached: list[str] = []
+    errored: list[str] = []
+    for s in kept:
+        if _time.monotonic() - t0 > budget_s:
+            _excl(excluded, s.name, s.store, f"NOT_REACHED: the {budget_s:.0f}s budget was spent "
+                                             "first", kind="not_reached")
+            continue
+        reached.append(s.name)
+        # ONE STREAM THAT RAISES IS ONE STREAM EXCLUDED: its partial tests are discarded whole
+        # (never half-charged to BH) and the pass goes on to the next stream.
+        s_tests: list[dict[str, Any]] = []
+        s_aligned: dict[tuple[str, str], np.ndarray] = {}
+        s_short = 0
+        try:
+            z = stream_z(s)
+            for sym in (s.targets or tuple(returns)):
+                if sym not in returns:
+                    continue
+                days, r = returns[sym]
+                days, r = days[-GLOBAL_DAYS:], r[-GLOBAL_DAYS:]
+                x = asof_days(z, days)
+                s_aligned[(s.name, sym)] = x
+                for lag in GLOBAL_LAGS:
+                    got = _lagged_test(r, x, lag)
+                    if got is None:
+                        s_short += 1
+                        continue
+                    s_tests.append({"stream": s.name, "store": s.store, "instrument": sym,
+                                    "lag": lag, **got})
+        except Exception as exc:
+            errored.append(s.name)
+            _excl(excluded, s.name, s.store, f"ERROR: the stream raised {type(exc).__name__}: "
+                                             f"{str(exc)[:160]}", kind="error")
+            continue
+        tests.extend(s_tests)
+        aligned.update(s_aligned)
+        short_overlap += s_short
+    links: list[dict[str, Any]] = []
+    if tests:
+        rej, qv = bh_fdr(np.array([t["p"] for t in tests], dtype="float64"), FDR_Q)
+        for t, rj, qq in zip(tests, rej, qv, strict=True):
+            if rj:
+                links.append({**t, "q": float(qq)})
+    links.sort(key=lambda t: (t["q"], -abs(float(t["r"]))))
+    links = sa.take(links, MAX_LINKS, organ="causal_lab", stage="global_links",
+                    ordering="q, -abs(r)")
+    by_name = {s.name: s for s in kept}
+    try:
+        seen = prior if prior is not None else _prior_identities(INTEL / GLOBAL_SOURCE)
+    except Exception:
+        seen = set()
+    from research.proposer_common import identity
+    candidates: list[dict[str, Any]] = []
+    verdicts: dict[str, int] = {}
+    cell_status: dict[str, int] = {}
+    for ln in links:
+        s = by_name[ln["stream"]]
+        days, r = returns[ln["instrument"]]
+        days, r = days[-GLOBAL_DAYS:], r[-GLOBAL_DAYS:]
+        x = aligned[(s.name, ln["instrument"])]
+        lag = int(ln["lag"])
+        regimes = regime_reading(r, x, lag)
+        cell, band, side, why = _cell_for(s, ln["instrument"], lag, float(ln["coef"]), regimes)
+        ln.update({"r": round(float(ln["r"]), 5), "coef": round(float(ln["coef"]), 6),
+                   "p": round(float(ln["p"]), 8), "q": round(float(ln["q"]), 6),
+                   "regimes": regimes, "band": band, "side": side,
+                   "statement": (f"when {s.name} is {band or '?'} (z "
+                                 f"{'>=' if band == 'high' else '<='} "
+                                 f"{REGIME_Z if band == 'high' else -REGIME_Z:+.1f}), "
+                                 f"{ln['instrument']} {'rises' if side > 0 else 'falls'} over "
+                                 f"the day {lag} day(s) later") if band and side else ""})
+        if cell is None:
+            ln["cell_status"] = "NOT_EMITTED"
+            ln["why"] = why
+            cell_status["NOT_EMITTED"] = cell_status.get("NOT_EMITTED", 0) + 1
+            ln["novelty"] = {"verdict": "NOT_CLASSIFIED", "why": "no cell to classify"}
+            continue
+        band_for_signals = "both" if cell["family"] == "exogenous_conditioner" else band
+        sig_side = (int(np.sign(float(ln["coef"]))) or 1) if band_for_signals == "both" else side
+        nov = classify_novelty(ctx, cell["family"], days, r, x, lag, band_for_signals, sig_side)
+        ln["novelty"] = nov
+        ln["cell"] = cell
+        verdicts[nov["verdict"]] = verdicts.get(nov["verdict"], 0) + 1
+        ident = identity(ln["instrument"], cell["family"], cell["params"])
+        ln["identity"] = ident
+        if nov["verdict"] == "REPEAT_STYLE":
+            ln["cell_status"] = "REFUSED_REPEAT_STYLE"
+        elif ident in seen:
+            ln["cell_status"] = "ALREADY_DONATED"
+        elif len(candidates) >= MAX_DONATIONS:
+            ln["cell_status"] = "SET_ASIDE_MAX_DONATIONS"
+        else:
+            ln["cell_status"] = "EMITTED"
+            candidates.append({
+                "source": GLOBAL_SOURCE, "kind": "hypothesis", "symbol": ln["instrument"],
+                "symbols": [ln["instrument"]], "family": cell["family"],
+                "params": cell["params"], "url": "",
+                "title": f"causal global: {s.name} -> {ln['instrument']} lag {lag} ({band})"[:120],
+                "mechanism": (f"{ln['statement']}. Partial r={ln['r']:+.3f} given the "
+                              f"instrument's own {OWN_LAGS} lags, BH q={ln['q']:.4f} over "
+                              f"{len(tests)} tests; the stream is read at its own known-by "
+                              "stamp, so the claim is about information the desk held "
+                              "before the move.")[:400],
+                "falsifier": (f"the {band} band of {s.name} carries no forward return on "
+                              f"{ln['instrument']} net of cost out of sample"),
+                "evidence": {"stream": s.name, "store": s.store, "lag_days": lag,
+                             "r": ln["r"], "coef": ln["coef"], "p": ln["p"], "q": ln["q"],
+                             "n": ln["n"], "regimes": regimes, "band": band,
+                             "novelty": nov, "tests_in_bh": len(tests),
+                             "screen": GLOBAL_RULE}})
+        cell_status[ln["cell_status"]] = cell_status.get(ln["cell_status"], 0) + 1
+    per_store: dict[str, dict[str, int]] = {}
+    for s in kept:
+        per_store.setdefault(s.store, {"streams": 0, "links": 0})["streams"] += 1
+    for ln in links:
+        per_store.setdefault(str(ln["store"]), {"streams": 0, "links": 0})["links"] += 1
+    excl_kinds: dict[str, int] = {}
+    for e in excluded:
+        excl_kinds[str(e.get("kind") or "excluded")] = excl_kinds.get(
+            str(e.get("kind") or "excluded"), 0) + 1
+    n_not_reached = len(kept) - len(reached)
+    n_tested = len(reached) - len(errored)
+    # OK ONLY WHEN THE PASS DID ITS WORK. No test run is UNMEASURED (a budget spent before the
+    # first test, or every pair too short, is not a clean "no links"); a pass that tested some
+    # streams but not all is PARTIAL with its counts, never OK.
+    if not returns or not kept:
+        status = "UNMEASURED"
+        why = ("no target returns on this host" if not returns else
+               "no stamped global stream on this host: every store is absent or excluded -- "
+               "UNMEASURED, not zero")
+    elif not tests:
+        status = "UNMEASURED"
+        why = (f"0 tests ran: {len(reached)} of {len(kept)} stream(s) reached, "
+               f"{n_not_reached} not reached inside the budget, {len(errored)} raised, "
+               f"{short_overlap} pair(s) too short -- UNMEASURED, not zero")
+    elif n_not_reached or errored:
+        status = "PARTIAL"
+        why = (f"{n_tested} of {len(kept)} stream(s) tested ({len(tests)} test(s)); "
+               f"{n_not_reached} not reached inside the {budget_s:.0f}s budget, "
+               f"{len(errored)} raised and excluded")
+    else:
+        status, why = "OK", ""
+    return {
+        "at": at, "status": status,
+        "why": why, "n_streams_not_reached": n_not_reached, "n_streams_errored": len(errored),
+        "targets": list(returns), "n_targets": len(returns), "targets_refused": refused_targets,
+        "census": census, "per_store": per_store,
+        "streams_read": [s.name for s in kept], "n_streams_read": len(kept),
+        "n_streams_reached": len(reached),
+        "streams_excluded": excluded[:400], "n_streams_excluded": len(excluded),
+        "excluded_by_kind": excl_kinds,
+        "n_tests": len(tests), "n_pairs_short_overlap": short_overlap, "fdr_q": FDR_Q,
+        "lags_days": list(GLOBAL_LAGS), "n_links": len(links), "links": links,
+        "cell_status": cell_status, "n_cells_emitted": len(candidates),
+        "novelty": {k: v for k, v in ctx.items() if not k.startswith("_")},
+        "novelty_verdicts": verdicts,
+        "candidates": candidates,
+        "landing": landing,
+        "handoff": ("forum, local-language and axis streams are LANDED as data/lake/series/"
+                    f"{LANDING_PREFIX}*.csv with available_time; the collector / pack cells turn "
+                    "them into exogenous_conditioner cells and #385's novelty screen applies "
+                    "there. This artifact keeps the causal links and novelty verdicts; it is "
+                    "not a second LLM-lab input"),
+        "pit": ("each stream at its own known-by stamp; z on its own observations; read as of "
+                "00:00 UTC of a trading day and used only at lag >= 1"),
+        "trials": ("one BH charge across every test above; a donated cell is charged once by the "
+                   "gauntlet through the existing trial ledger, and a cell already donated by "
+                   "this seat is never donated again"),
+        "seconds": round(_time.monotonic() - t0, 2),
+        "rule": GLOBAL_RULE,
+    }
+
+
+def donate_global(doc: dict[str, Any]) -> dict[str, Any]:
+    """The seam: one call through the shared door, which stamps, lane-filters and pre-registers."""
+    cands = list(doc.get("candidates") or [])
+    if not cands:
+        return {"donated": 0, "why": "no cell emitted this pass"}
+    from research import proposer_common as pc
+    path = pc.donate(GLOBAL_SOURCE, cands, int(doc.get("n_tests") or 0))
+    out = pc.donation_counts()
+    out["path"] = str(path) if path else None
+    return {k: v for k, v in out.items() if k in ("donated", "refused_unstamped",
+                                                   "refused_wrong_lane", "path", "source")}
+
+
+def global_summary(doc: dict[str, Any]) -> dict[str, Any]:
+    return {k: doc.get(k) for k in ("status", "why", "n_targets", "n_streams_read",
+                                    "n_streams_excluded", "n_tests", "n_links",
+                                    "n_cells_emitted", "cell_status", "novelty_verdicts",
+                                    "donation")} | {
+        "n_landed": (doc.get("landing") or {}).get("n_landed", 0)} | {"artifact": _rel(GLOBAL_OUT)}
+
+
+def global_lines(doc: dict[str, Any]) -> list[str]:
+    head = (f"global streams: {doc['status']}   {doc.get('n_streams_read', 0)} stream(s) read, "
+            f"{doc.get('n_streams_excluded', 0)} excluded row(s), {doc.get('n_targets', 0)} "
+            "target(s)")
+    if doc["status"] not in ("OK", "PARTIAL"):
+        return [head, f"  {doc.get('why')}"]
+    return [head, *([f"  PARTIAL: {doc.get('why')}"] if doc["status"] == "PARTIAL" else []),
+            f"  {doc['n_tests']} test(s) l={','.join(map(str, GLOBAL_LAGS))}, BH q={FDR_Q} -> "
+            f"{doc['n_links']} link(s); cells: {doc['cell_status']}",
+            f"  novelty: {doc['novelty_verdicts'] or 'none classified'} "
+            f"(classifier {doc['novelty']['classifier']})"]
+
+
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
     """Atomic where the filesystem allows it. `os.replace` onto a read-only destination is legal on
     POSIX and raises WinError 5 here -- the way a VPS-tested fix once broke the box that trades."""
@@ -805,15 +1784,38 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")
     ap.add_argument("--symbols", nargs="+", default=None, help="panel symbols (default: the book)")
     ap.add_argument("--days", type=int, default=DAYS)
+    ap.add_argument("--no-global", action="store_true", help="skip the global-streams pass")
+    ap.add_argument("--no-donate", action="store_true",
+                    help="write both artifacts but donate no cell (a dry run that leaves files)")
     a = ap.parse_args(argv)
     doc = build(symbols=a.symbols, days=max(1, int(a.days)))
     for line in summary_lines(doc):
         print(line)
+    if not a.dry_run:
+        # THE CORE ARTIFACT LANDS FIRST: the global pass can run for its whole budget or be
+        # killed by the cycle cap, and the core lab's hour must not be lost with it.
+        _write_atomic(OUT, doc)
+        print(f"-> {OUT} (core)")
+    gdoc: dict[str, Any] | None = None
+    if not a.no_global:
+        try:
+            gdoc = build_global(land=not a.dry_run)
+        except Exception as exc:  # the core lab's artifact must not die with the global pass
+            gdoc = {"status": "UNMEASURED", "why": f"global pass raised {type(exc).__name__}: "
+                                                   f"{exc}", "candidates": []}
+        gdoc["donation"] = ({"donated": 0, "why": "--dry-run / --no-donate"}
+                            if a.dry_run or a.no_donate else donate_global(gdoc))
+        for line in global_lines(gdoc):
+            print(line)
+        doc["global_streams"] = global_summary(gdoc)
     if a.dry_run:
         print("  --dry-run: nothing written")
         return 0
     _write_atomic(OUT, doc)
     print(f"-> {OUT}")
+    if gdoc is not None:
+        _write_atomic(GLOBAL_OUT, gdoc)
+        print(f"-> {GLOBAL_OUT}")
     return 0
 
 
