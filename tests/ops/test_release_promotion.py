@@ -386,7 +386,9 @@ def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     seal = _job(ci, "seal")
     assert "needs: [quality, mt5-money-path, coverage-floor]" in seal
     # the seal step is reused, not duplicated, and it now says which commit it released
-    assert ci.count("release_manifest.py --seal") == 2           # first seal + retry re-seal
+    # TRANSITIONAL for #1196 (seal lands via a history-only merge; one seal call, no re-seal),
+    # which pins this back to exactly 1. Today's ci.yml has 2 (first seal + retry re-seal).
+    assert ci.count("release_manifest.py --seal") in (1, 2)
     assert "release_commit=" in seal
     assert "release_manifest.py" not in promote
     for job in ("quality", "mt5-money-path"):
