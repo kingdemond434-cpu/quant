@@ -425,7 +425,7 @@ def bing_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     try:
         page = _http(url, referer="https://www.bing.com/", lang=lang)
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     rows = parse_bing(page)
     if not rows:
         return [], (f"bing returned no parseable results ({len(page)} bytes -- an anti-bot "
@@ -441,7 +441,7 @@ def ddg_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     try:
         page = _http(url, referer="https://duckduckgo.com/", lang=lang)
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     rows = parse_ddg(page)
     if not rows:
         return [], f"duckduckgo returned no parseable results ({len(page)} bytes)"
@@ -505,7 +505,7 @@ def gitee_search(query: str) -> tuple[list[dict[str, Any]], str | None]:
     try:
         rows = json.loads(_http(url))
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     if not isinstance(rows, list):
         return [], "gitee search did not return a list"
     return [{"full": r.get("full_name") or r.get("path_with_namespace") or "",
@@ -538,7 +538,7 @@ def bilibili_transcript(bvid: str) -> tuple[str, str | None]:
         body = json.loads(_http(url))
         return " ".join(str(x.get("content", "")) for x in body.get("body", [])), None
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
 
 
 def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
@@ -554,7 +554,7 @@ def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None
         text, route = fvt.youtube(video_id, lang=lang.split("-")[0])
         return str(text), None if text else f"{route}: empty transcript"
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
 
 
 _FEED_ITEM = re.compile(r"(?is)<(item|entry)\b[^>]*>(.*?)</\1>")
@@ -601,7 +601,7 @@ def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
     try:
         doc = json.loads(_http(api))
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
     snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
     if not snap.get("url"):
         return "", "no capture in the Wayback Machine"
@@ -865,6 +865,23 @@ def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
     return str(getattr(v, "last_attempt", "") or "") if v is not None else ""
 
 
+def _refused_url(url: str) -> str:
+    """Why this URL's host is never contacted (terms-refused or off-limits), or ""."""
+    from research import discovery_backends as db
+    return db.never_contact(str(url or "")) if url else ""
+
+
+def _refused_ground(g: dict[str, Any], route: str) -> str:
+    """A search ground is judged by its site; every other route by the urls it would fetch."""
+    if route == "search":
+        return _refused_search_site(g)
+    for u in [g.get("url"), *list(g.get("alt") or [])]:
+        why = _refused_url(str(u)) if u else ""
+        if why:
+            return why
+    return ""
+
+
 def _refused_search_site(g: dict[str, Any]) -> str:
     """Why the lawful chain will not discover this ground's site at all, or ""."""
     from research import discovery_backends as db
@@ -969,6 +986,11 @@ class _Run:
         return str(self.ground.get("language") or "en")
 
     def page(self, url: str, referer: str = "") -> str:
+        refused = _refused_url(url)
+        if refused:
+            # Terms-refused or off-limits host (2026-11-14): never fetched on any route.
+            self.status.append({"url": url, "refused": refused})
+            return ""
         if not self._net_ok():
             return ""
         try:
@@ -982,15 +1004,17 @@ class _Run:
             return ""
         except Exception as exc:
             self._note_net(False)
-            self.status.append({"url": url, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
+            self.status.append({"url": url, "error": type(exc).__name__})
             return ""
 
     def rendered(self, url: str) -> str:
+        if _refused_url(url):
+            return ""
         try:
             from libs.data.render_fetch import render
             page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
         except Exception as exc:
-            page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
+            page, err = "", type(exc).__name__
         if err:
             self.status.append({"url": url, "render": err[:120]})
             return ""
@@ -1567,7 +1591,7 @@ class _Run:
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
-        refused = _refused_search_site(g) if route == "search" else ""
+        refused = _refused_ground(g, route)
         if refused:
             # A TERMS-REFUSED OR OFF-LIMITS SITE (2026-11-14) is not discovered on any backend:
             # a recorded gap with its reason, never a BLOCKED route and never a silent drop.
@@ -1614,7 +1638,7 @@ class _Run:
             else:
                 out = {"error": f"unknown route {route}"}
         except Exception as exc:
-            out = {"error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+            out = {"error": type(exc).__name__}
         n_claims = int(out.get("claims") or 0)
         # REACHED means the route answered: pages, results, articles, papers, feeds -- or claims
         # this run had already banked from another ground (a repeat is a measurement, not a
@@ -2411,7 +2435,7 @@ def _checkpoint(r: _Run, f: _Run, ckpt: dict[str, Any]) -> None:
             _save_seen(snap)
     except Exception as exc:
         with r._lock:
-            ckpt.setdefault("errors", []).append(f"{type(exc).__name__}: {str(exc)[:160]}")
+            ckpt.setdefault("errors", []).append(type(exc).__name__)
 
 
 def main() -> int:

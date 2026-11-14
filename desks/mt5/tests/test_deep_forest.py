@@ -709,3 +709,32 @@ def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> No
          "url": "https://m.test/"}])
     assert doc["momentum_only_grounds"] == ["Momentum only"]
     assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}
+
+
+def test_refused_hosts_are_never_fetched_on_any_route(monkeypatch) -> None:
+    """2026-11-14: the http grounds aimed at FRED, CME and Cboe (and their alt urls) record a
+    refused gap, and `page()` refuses such a host before any request, whatever route asked."""
+    import pytest
+    for url in ("https://fred.stlouisfed.org/categories", "https://alfred.stlouisfed.org/",
+                "https://www.cmegroup.com/market-data/volume-open-interest.html",
+                "https://www.cboe.com/insights/"):
+        assert dfm._refused_ground({"url": url}, "http").startswith("REFUSED")
+    assert dfm._refused_ground({"url": "https://x.test/", "alt": ["https://www.cboe.com/a"]},
+                               "render").startswith("REFUSED")
+    assert dfm._refused_ground({"url": "https://www.bis.org/"}, "http") == ""
+
+    def boom(*_a, **_k):
+        pytest.fail("a refused host was fetched")
+
+    monkeypatch.setattr(dfm, "_http", boom)
+
+    class Stub:
+        status: list = []
+
+        def _net_ok(self) -> bool:
+            return True
+
+    stub = Stub()
+    assert dfm._Run.page(stub, "https://fred.stlouisfed.org/series/X") == ""  # type: ignore[arg-type]
+    assert stub.status and stub.status[-1]["refused"].startswith("REFUSED")
+    assert dfm._Run.rendered(stub, "https://www.cmegroup.com/x") == ""  # type: ignore[arg-type]
