@@ -342,7 +342,9 @@ def test_gap_map_has_a_measured_status_on_every_row(tmp_path: Path) -> None:
     options = by["options surface (vendor)"]
     assert options["detail"]["deribit_sensors_declared"] >= 5
     # LAWS 5e (2026-09-23): Cboe is no longer refused for terms -- it is LABELLED and mined.
-    assert options["detail"]["refused_for_terms"] == []
+    # The only rows refused at the door are UN Comtrade's, whose licence (s.5) forbids automated
+    # downloading outright (BLOCKED_ON_TERMS, 2026-11-14).
+    assert options["detail"]["refused_for_terms"] == ["cn_customs_exports", "cn_iron_ore_imports"]
     assert "cboe_delayed_surface" in options["detail"]["terms_labelled"]
     # every row that is not fully shadowed NAMES what is missing
     for r in rows:

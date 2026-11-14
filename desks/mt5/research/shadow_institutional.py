@@ -158,6 +158,15 @@ _RISK = ("NAS100", "US500", "XAUUSD")
 
 #: Endpoints named once so a row is one line of intent rather than one line of URL.
 _COMTRADE = "https://comtradeapi.un.org/public/v1/preview/C/M/HS"
+#: BLOCKED_ON_TERMS (Global data terms verdict 2026-11-14). The UN Comtrade licence agreement,
+#: section 5, prohibits "automated browsing or downloading" without the UN's prior written
+#: permission, binding on users "without subscription", with no carve-out for the preview API.
+#: Permission is the UNSD Director's to give and the principal's to ask for; until then the row
+#: stays declared, refused at the door, and priced as a gap.
+_COMTRADE_TERMS = {"url": _COMTRADE, "machine_use_allowed": False,
+                   "licence": ("BLOCKED_ON_TERMS: UN Comtrade licence s.5 forbids automated "
+                               "browsing or downloading without prior written UN permission "
+                               "(comtradeplus.un.org/en/license-agreement)")}
 _FISCAL = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od"
            "/auctions_query")
 _BINANCE = "https://api.binance.com/api/v3"
@@ -179,8 +188,8 @@ _CATALOGUED = ("REGISTERED AND MINED; redistribution withheld by its terms (LAWS
 _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
     "china_activity": (
         ("cn_customs_exports", "China customs monthly exports, USD", "public_endpoint",
-         "GACC via the UN Comtrade preview API (public, attribution required)", "monthly", 20,
-         +1, ("USDCNH", "AUDUSD", "XCUUSD", "NAS100"), {"url": _COMTRADE}),
+         "GACC via the UN Comtrade preview API (BLOCKED_ON_TERMS)", "monthly", 20,
+         +1, ("USDCNH", "AUDUSD", "XCUUSD", "NAS100"), _COMTRADE_TERMS),
         ("cn_power_generation", "China electricity output, TWh", UNMEASURED,
          "National Bureau of Statistics monthly release (data.stats.gov.cn)", "monthly", 18,
          +1, ("XCUUSD", "USDCNH", "XTIUSD"),
@@ -193,8 +202,8 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          ("USDCNH", "AUDUSD", "XCUUSD", "US500"),
          {"terms_note": f"{_NOFETCHER}; the forced-flow calendar carries the DATE only"}),
         ("cn_iron_ore_imports", "iron ore and copper import volumes", "public_endpoint",
-         "UN Comtrade preview API", "monthly", 45, +1, ("AUDUSD", "XCUUSD"),
-         {"url": _COMTRADE}),
+         "UN Comtrade preview API (BLOCKED_ON_TERMS)", "monthly", 45, +1, ("AUDUSD", "XCUUSD"),
+         _COMTRADE_TERMS),
         ("cn_freight_bdi", "dry bulk freight rates as a shipping proxy", UNMEASURED,
          "Baltic Exchange headline index", "daily", 1, +1, ("AUDUSD", "XCUUSD"),
          {"machine_use_allowed": True, "terms_note": _CATALOGUED,
