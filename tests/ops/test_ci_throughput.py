@@ -728,7 +728,8 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert "--body-file $bodyFile" in ps and "--body $" not in ps  # v2 MF2: nothing to argv
     assert "'--state', 'closed'" in ps  # a closed sign PR is not reopened for the same head
     # v3 MF1: a closed wait is timed like an open one; gh counts are stdout-only numbers
-    assert 'Wait $branch "a sign PR' in ps and ps.count("GhCount @('pr', 'list'") == 2
+    assert "was closed unmerged; not signed again" in ps
+    assert ps.count("GhCount @('pr', 'list'") == 2
     assert "-notmatch '^\\d+$'" in ps
     # v3 SF: leased push, one single-parent commit touching exactly the two sealed-state files
     assert "--force-with-lease=$lease" in ps and "push -q --force origin" not in ps
@@ -743,6 +744,27 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert 'TASK name="Quant-SignTrain"' in rows
     inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
     assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst
+    # 2026-11-11 (G1-G10): the installed copy is the stub, which runs LIVE's own leg
+    assert "'sign_train_stub.ps1' = 'sign_train_leg.ps1'" in inst
+    stub = (ROOT / "ops/box/sign_train_stub.ps1").read_text(encoding="utf-8")
+    assert 'checkout -q -f --detach "origin/$Live"' in stub
+    assert "ops\\box\\sign_train_leg.ps1" in stub
+    # a PR head is signed by LIVE's train with --root on a data worktree; no PR code, no pytest
+    assert "--root $PrDir --target $head" in ps and "worktree add -q -f --detach $PrDir $head" in ps
+    assert "--list-heads" in ps and "pytest" not in ps
+    assert "$env:GIT_CONFIG_COUNT = $ownConfig" in ps  # G2: no App header in the train's child
+    # G1 (Auditor): every git call in the leg reads an empty hooks folder, never the PR tree's
+    assert "$env:GIT_CONFIG_KEY_3 = 'core.hooksPath'" in ps and "$ownConfig = '4'" in ps
+    # ...and the count covers it from the first git call (an entry past the count is ignored)
+    count = ps.index("$env:GIT_CONFIG_COUNT = '4'")
+    assert count < ps.index("& git ") and "$env:GIT_CONFIG_COUNT = '3'" not in ps
+    assert "is not empty; no git call runs" in ps
+    assert 'Wait $branch "the PR branch moved off $short before the push' in ps  # G5
+    assert "Python314" in ps and ".venv" not in ps  # BH2
+    # SEAL CARRIER (Auditor 13:12Z): re-judged by LIVE's train before G1-G10, then closed + ledgered
+    assert '"claude/seal-carrier-$($h.Substring(0, 12))"' in ps
+    assert ps.index("--carrier $carrierTip") < ps.index("--root $PrDir --target $head")
+    assert "$gh pr close $n" in ps.replace("& $Gh", "$gh") and "seal_carriers.jsonl" in ps
 
 
 def test_live_first_stops_at_its_budget_and_loses_nothing(
