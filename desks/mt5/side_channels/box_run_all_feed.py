@@ -5,15 +5,16 @@ never finishes, never rests -- "same w all miners". `run_all_miners.ALL_MINERS` 
 exactly one family of clocks, all on the Hetzner VPS (`hourly-controller.timer`,
 `full-pipeline.timer`, the brain chain), and the VPS went silent at 02:50Z. `box_intel_feed`
 (the `intel_feed` leg) carried seed_miners and hourly_discovery onto the box and deliberately
-never calls run_all_miners; the `youtube_miner` and `youtube_corpus` legs carry YouTube. This
-leg carries the other 24.
+never calls run_all_miners. This leg carries the rest, minus the seats in OWN_LEG (YouTube,
+which never runs on the box at all) and SOURCE_BLOCKED.
 
 WHAT ONE PASS DOES. Under the intel department's resident (MT5-Dept-Intel: 24/7, SYSTEM,
 BELOW_NORMAL), whose own loop is what makes it never stop:
   1. gates itself to MIN_INTERVAL_S since its last start, and takes a lease so two passes never
      run at once (the lease and cadence code is box_intel_feed's, reused, not copied);
   2. runs each miner as its own child process -- `--child <name>` -- which installs the box
-     rails (honest UA, robots.txt on every host, no VPS-walled host) BEFORE any miner module is
+     rails (honest UA, a fail-closed robots gate, no VPS-walled or terms-refused host) BEFORE any
+     miner module is
      imported, then calls that miner's own `run_and_save`, which writes its seat under
      data/intelligence/ where local_converter reads it;
   3. kills a child at MINER_TIMEOUT_S (run_all_miners' own 180 s) or at what is left of the
@@ -55,20 +56,26 @@ MINER_TIMEOUT_S = 180.0
 MIN_CHILD_S = 20.0
 WRITE_MARGIN_S = 60.0
 RESULT_PREFIX = feed.RESULT_PREFIX     # one result-line format for every rails child
-#: Carried by their own legs (`youtube_miner`, `youtube_corpus`): run here too and the quota is
-#: spent twice.
+#: NEVER ON THE BOX (owner's standing order, 2026-11-14): the trading box never contacts YouTube
+#: and holds no YouTube API key. The corpus is collected off the box by
+#: .github/workflows/youtube-corpus.yml; box_rails refuses every YouTube host besides.
 OWN_LEG: frozenset[str] = frozenset({"youtube"})
 
 #: SEATS WHOSE SOURCE REFUSES THE BOX, measured by one GET each from Contabo at 2026-11-04 ~03:45Z
 #: (/mnt/project-files/desk_health/PRODUCER_YIELD_DIAG_2026-11-04.md section 4). A 401/403/418/
 #: 429/451 or a WAF is a hard stop under the rails: these seats are NOT run, with no retry, no
 #: alternate host and no header games, and each is reported with its evidence every pass so the
-#: replacement (named here) stays visible as missed growth rather than silently absent. A robots
-#: Disallow is NOT a block (LAWS 5e): such a seat runs under the PUBLIC_WITH_TERMS label.
+#: replacement stays visible as missed growth rather than silently absent. Since 2026-11-14 the
+#: rails' robots gate fails closed, and seats whose only source refuses automated use in its
+#: terms (Yahoo) or is walled and robots-disallowed are listed here too rather than run to be
+#: refused. FRED is terms-refused, so it is never named as a replacement.
 SOURCE_BLOCKED: dict[str, str] = {
-    "aaii": "aaii.com: robots 403 behind an Incapsula WAF; replace with FRED UMCSENT",
-    "fear_greed": "CNN dataviz: HTTP 418 bot block; rebuild from FRED VIXCLS plus breadth",
+    "aaii": "aaii.com: robots 403 behind an Incapsula WAF; no permitted replacement yet",
+    "fear_greed": "CNN dataviz: HTTP 418 bot block; rebuild from breadth on the desk's own bars",
     "investing": "investing.com sentiment: 403; no free replacement for retail positioning yet",
+    "earnings": "finance.yahoo.com: Yahoo's terms refuse automated use; never run",
+    "google_trends": "trends.google.com: walled on the VPS and robots-disallowed; the "
+                     "fail-closed gate refuses every fetch",
 }
 
 Runner = Callable[[list[str], float, dict[str, str]], tuple[int | None, str]]

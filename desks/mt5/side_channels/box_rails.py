@@ -17,15 +17,19 @@ cover `requests` and `urllib.request`; no file the feed runs imports another HTT
 
 1. AN HONEST USER-AGENT. Every request is re-stamped `USER_AGENT`: the project's research
    crawler, with the public repository as its contact. No email, no browser string.
-2. ROBOTS.TXT IS A LABEL, NEVER A REFUSAL (LAWS §5e, 2026-09-23; audit SF on #601, 2026-11-03).
-   robots.txt is still read with the honest UA, once per host, for every token in
-   `ROBOTS_TOKENS` -- the `*` group, this crawler's own token, and ClaudeBot -- and a Disallow,
-   or a 401/403 on robots.txt is RECORDED as a PUBLIC_WITH_TERMS label, and an unreadable
-   robots.txt (5xx, timeout, redirect loop) as ACCESS_UNCLEAR (`labelled()`, and the LOG_ENV file with `"label"`), and the URL is fetched. "robots.txt
-   Disallow read as a refusal" is one of the brakes §5e deleted by name. What still stops a
-   fetch is an act, not a policy file: the server's own 401/403/429 or WAF answer, which each
-   miner books as a fetch_error, and the VPS walls below.
-3. NO HOST WALLED ON THE VPS. A host named in `seed_miners.SOURCE_WALLS` is never contacted from
+2. THE ROBOTS GATE FAILS CLOSED (Governance ruling 2026-11-10, PR #819; owner 2026-11-14 --
+   this REPLACES the 2026-11-03 "robots is a label" reading, which this module carried until
+   then). robots.txt is read with the honest UA, once per host, for every token in
+   `ROBOTS_TOKENS` -- the `*` group, this crawler's own token, and ClaudeBot. A Disallow on the
+   exact path for ANY of them, a 401/403 on robots.txt, or a robots.txt that cannot be read
+   (5xx, timeout, redirect loop, a redirect onto a walled host) REFUSES the fetch: an unreadable
+   policy is not consent. A 404 robots.txt is "no policy" and the fetch proceeds.
+3. NO TERMS-REFUSED HOST, AND NEVER YOUTUBE (`REFUSED_HOSTS`). FRED, Yahoo, the exchange
+   options-OI venues (Cboe, CME, Nasdaq, OCC), Baidu and WeChat refuse automated use in their
+   terms; the crypto exchanges are outside the MT5 mandate; and the trading box never contacts
+   YouTube (the corpus is collected off the box by .github/workflows/youtube-corpus.yml). Each
+   is refused before anything, its robots.txt included, goes on the wire.
+4. NO HOST WALLED ON THE VPS. A host named in `seed_miners.SOURCE_WALLS` is never contacted from
    the box at all -- not its content and not its robots.txt. Its rediscovery probe stays on the
    VPS clock that owns the wall.
 
@@ -47,7 +51,7 @@ import threading
 import urllib.error
 import urllib.request
 import urllib.robotparser
-from typing import Any
+from typing import Any, NoReturn
 from urllib.parse import urlsplit
 
 ENV = "QUANT_BOX_RAILS"
@@ -70,7 +74,50 @@ _STATE: dict[str, Any] = {"installed": False, "walled": frozenset(), "orig": {},
 
 
 class RailRefusal(OSError):
-    """The rails refused a URL: only a host walled on the VPS (robots signals are labels)."""
+    """The rails refused a URL: a VPS-walled or terms-refused host, or a robots.txt that
+    disallows the path or cannot be read (the gate fails closed)."""
+
+
+#: HOSTS THE BOX NEVER CONTACTS, whatever their robots.txt says (owner's standing orders,
+#: 2026-11-14). A host matches itself and every subdomain. Reasons are carried on the refusal.
+REFUSED_HOSTS: dict[str, str] = {
+    "youtube.com": "YouTube: the trading box never contacts YouTube",
+    "youtu.be": "YouTube: the trading box never contacts YouTube",
+    "youtube-nocookie.com": "YouTube: the trading box never contacts YouTube",
+    "youtube.googleapis.com": "YouTube: the trading box never contacts YouTube",
+    "ytimg.com": "YouTube: the trading box never contacts YouTube",
+    "stlouisfed.org": "FRED: terms refuse automated use",
+    "yahoo.com": "Yahoo: terms refuse automated use",
+    "yahooapis.com": "Yahoo: terms refuse automated use",
+    "cboe.com": "Cboe: exchange options OI, terms-refused",
+    "cmegroup.com": "CME: exchange options OI, terms-refused",
+    "nasdaq.com": "Nasdaq: exchange options OI, terms-refused",
+    "theocc.com": "OCC: exchange options OI, terms-refused",
+    "baidu.com": "Baidu: not a permitted source",
+    "weixin.qq.com": "WeChat: not a permitted source",
+    "wechat.com": "WeChat: not a permitted source",
+    "weixin.sogou.com": "WeChat (via Sogou): not a permitted source",
+    "binance.com": "crypto exchange: outside the MT5 mandate",
+    "bybit.com": "crypto exchange: outside the MT5 mandate",
+    "okx.com": "crypto exchange: outside the MT5 mandate",
+    "hyperliquid.xyz": "crypto exchange: outside the MT5 mandate",
+}
+#: googleapis.com serves many APIs; only its YouTube paths are refused.
+REFUSED_PATH_PREFIXES: dict[str, tuple[str, str]] = {
+    "googleapis.com": ("/youtube", "YouTube: the trading box never contacts YouTube"),
+}
+
+
+def refused_host(host: str, path: str = "") -> str | None:
+    """Why the box never contacts `host` (and `path`), or None."""
+    h = _norm(host)
+    for dom, why in REFUSED_HOSTS.items():
+        if h == dom or h.endswith("." + dom):
+            return why
+    for dom, (prefix, why) in REFUSED_PATH_PREFIXES.items():
+        if (h == dom or h.endswith("." + dom)) and (path or "").startswith(prefix):
+            return why
+    return None
 
 
 def _norm(host: str) -> str:
@@ -126,8 +173,8 @@ def _fetch_robots(scheme: str, netloc: str) -> tuple[int | None, str]:
     try:
         for _hop in range(ROBOTS_MAX_HOPS + 1):
             host = urlsplit(url).hostname or ""
-            if host_walled(host):
-                return None, f"robots.txt redirects to walled host {host}"[:200]
+            if host_walled(host) or refused_host(host):
+                return None, f"robots.txt redirects to refused host {host}"[:200]
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
             try:
                 with open_(opener, req, timeout=ROBOTS_TIMEOUT_S) as r:
@@ -178,47 +225,27 @@ def check(url: str, exc_t: type[Exception] = RailRefusal) -> None:
     host = parts.hostname or ""
     if host_walled(host):
         _refuse(url, f"host {host} is walled on the VPS (seed_miners.SOURCE_WALLS)", exc_t)
+    terms = refused_host(host, parts.path)
+    if terms:
+        _refuse(url, f"host {host} is refused on the box ({terms})", exc_t)
     if parts.path == "/robots.txt":
         return
     rp, why = _robots(parts.scheme or "https", parts.netloc)
     if rp is None:
-        _label(url, why, UNREADABLE_LABEL)
-        return
+        _refuse(url, f"{why} (the robots gate fails closed)", exc_t)
     for tok in ROBOTS_TOKENS:
         if not rp.can_fetch(tok, url):
-            _label(url, f"robots.txt disallows user-agent {tok!r} ({why})")
-            return
-
-
-#: The access label a robots signal earns (LAWS §5e): mined and tested in full, never
-#: redistributed, the fact carried on the row as `terms_note`.
-ROBOTS_LABEL = "PUBLIC_WITH_TERMS"
-#: A robots.txt that could not be read (5xx, timeout, redirect loop, onto a walled host) says
-#: nothing either way: mined with the ACCESS_UNCLEAR label attached, no quarantine (LAWS §5e).
-UNREADABLE_LABEL = "ACCESS_UNCLEAR"
-
-
-def _label(url: str, why: str, label: str = ROBOTS_LABEL) -> None:
-    """Record a robots signal as a label and let the fetch proceed. The server's own answer on
-    the content fetch (401/403/429, a WAF page) is untouched here and still fails the fetch."""
-    row = {"url": url[:300], "why": why, "label": label, "pid": os.getpid()}
-    with _LOCK:
-        _STATE["labelled"].append(row)
-        log = os.environ.get(LOG_ENV)
-        if log:
-            try:
-                with open(log, "a", encoding="utf-8") as fh:
-                    fh.write(json.dumps(row) + "\n")
-            except OSError:
-                pass
+            _refuse(url, f"robots.txt disallows user-agent {tok!r} ({why})", exc_t)
 
 
 def labelled() -> list[dict[str, Any]]:
+    """Robots signals let through with a label. Always empty since the gate fails closed
+    (2026-11-14): a robots signal is a refusal now, in `refused()`. Kept for the report shape."""
     with _LOCK:
         return list(_STATE["labelled"])
 
 
-def _refuse(url: str, why: str, exc_t: type[Exception] = RailRefusal) -> None:
+def _refuse(url: str, why: str, exc_t: type[Exception] = RailRefusal) -> NoReturn:
     row = {"url": url[:300], "why": why, "pid": os.getpid()}
     with _LOCK:
         _STATE["refused"].append(row)

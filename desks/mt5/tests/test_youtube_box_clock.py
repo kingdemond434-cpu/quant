@@ -1,7 +1,10 @@
-"""YouTube's two producers get a box clock and a quota-safe cadence (2026-11-03).
+"""YouTube's two producers: a quota-safe cadence, and NO clock on the trading box.
 
-Both had only VPS clocks (`ops/quant-youtube-corpus.timer`, `run_all_miners`), so the box's
-judge saw no YouTube row for a week after the VPS went quiet.
+2026-11-03 gave them box legs in hourly_cycle. Owner's standing order 2026-11-14: the trading box
+never contacts YouTube and holds no YouTube API key, so those legs are gone. The corpus is
+collected off the box by .github/workflows/youtube-corpus.yml, and the box reads its data branch.
+The scripts' own gates (interval, NO_KEY blocker, key redaction) are still pinned below because
+the off-box job runs the same collector.
 """
 from __future__ import annotations
 
@@ -28,22 +31,19 @@ def _load(name: str, path: Path):
     return mod
 
 
-def test_both_legs_run_in_the_cycle_and_the_intel_department() -> None:
+def test_no_youtube_leg_runs_on_the_box() -> None:
     src = HOURLY.read_text("utf-8")
-    assert '_producer(\n        "youtube_corpus", "scripts/collect_youtube_corpus.py")' in src
-    assert '_producer(\n        "youtube_miner", "side_channels/youtube_miner.py")' in src
-    assert '"youtube_corpus": ytc, "youtube_miner": ytm' in src
+    assert "collect_youtube_corpus.py" not in src
+    assert "side_channels/youtube_miner.py" not in src
     table = src[src.index("LEG_DEPARTMENT: dict[str, str] = {"):]
     intel = re.search(r"dict\.fromkeys\(\((.*?)\),\s*\n?\s*\"intel\"\)", table, re.S)
     assert intel is not None
-    assert {"youtube_corpus", "youtube_miner"} <= set(re.findall(r'"([^"]+)"', intel.group(1)))
-
-
-def test_both_legs_declare_a_layer() -> None:
+    assert not {"youtube_corpus", "youtube_miner"} & set(re.findall(r'"([^"]+)"', intel.group(1)))
     sys.path.insert(0, str(ROOT))
     from libs.research import layers
-    assert layers.LEG_LAYER["youtube_corpus"] == "information"
-    assert layers.LEG_LAYER["youtube_miner"] == "information"
+    assert "youtube_corpus" not in layers.LEG_LAYER and "youtube_miner" not in layers.LEG_LAYER
+    # the off-box host that owns the corpus is the one that already existed
+    assert (ROOT / ".github" / "workflows" / "youtube-corpus.yml").exists()
 
 
 @pytest.fixture()

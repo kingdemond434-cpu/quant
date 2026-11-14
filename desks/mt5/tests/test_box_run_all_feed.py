@@ -132,7 +132,9 @@ def test_no_file_the_children_run_imports_an_http_client_the_rails_do_not_patch(
 
 
 def test_source_blocked_seats_are_never_run_and_are_reported(iso) -> None:
-    assert set(raf.SOURCE_BLOCKED) == {"aaii", "fear_greed", "investing"}
-    assert "google_trends" in raf.roster()   # robots Disallow is PUBLIC_WITH_TERMS, not a block
+    assert set(raf.SOURCE_BLOCKED) == {"aaii", "fear_greed", "investing", "earnings",
+                                       "google_trends"}
+    assert "youtube" not in raf.roster()      # the box never contacts YouTube
+    assert not any("FRED" in why for why in raf.SOURCE_BLOCKED.values())
     rep = raf.run_pass(10_000, runner=_Runner())
     assert rep["source_blocked"] == raf.SOURCE_BLOCKED
