@@ -50,9 +50,17 @@ def _report(at: datetime, *, red: bool = False, judged: int = 5) -> dict[str, An
     return {"at": at.isoformat(), "families": {"overnight_drift": fam}}
 
 
+def _healthy_rate(path: Path, now: datetime) -> Path:
+    """A fresh measured JUDGING_RATE: the ETA fence (check 8) is not what these tests page on."""
+    path.write_text(json.dumps({"at": now.isoformat(),
+                                "eta_to_drain": {"status": "DRAINING", "hours": 10.0}}), "utf-8")
+    return path
+
+
 def _pass(fence, tmp_path: Path, rep: dict[str, Any], now: datetime, ch: Channel) -> dict:
     path = tmp_path / "JUDGE_COVERAGE.json"
     path.write_text(json.dumps(rep), "utf-8")
+    _healthy_rate(tmp_path / "JUDGING_RATE.json", now)
     doc = fence.judge(path, require_state=True, now=now)
     return fence.page_coverage(doc, rep, root=tmp_path, now=now, sender=ch)
 
@@ -144,6 +152,8 @@ def _run_main(fence, tmp_path, monkeypatch, capsys, argv: list[str], rep: dict) 
     report = tmp_path / "JUDGE_COVERAGE.json"
     report.write_text(json.dumps(rep), "utf-8")
     monkeypatch.setattr(fence, "REPORT", report)
+    monkeypatch.setattr(fence, "RATE", _healthy_rate(tmp_path / "JUDGING_RATE.json",
+                                                     datetime.now(tz=UTC)))
     monkeypatch.setattr(fence, "ROOT", tmp_path)
     ch = Channel()
     monkeypatch.setattr(fence, "_default_page_sender", lambda root: ch)
