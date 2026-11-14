@@ -70,8 +70,10 @@ from libs.ops.git_writer_lock import (  # noqa: E402
     HUNG_SAMPLE_S,
     reap_hung_writers,
 )
+from libs.ops.process_supervisor import drill, supervise  # noqa: E402
 
 OUT = _ROOT / "desks" / "mt5" / "reports" / "GIT_WRITER_REAP.json"
+SUP_OUT = _ROOT / "desks" / "mt5" / "reports" / "PROCESS_SUPERVISOR.json"
 
 
 def build_report(*, apply: bool, min_age_s: float, sample_s: float,
@@ -108,7 +110,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sample-s", type=float, default=HUNG_SAMPLE_S)
     ap.add_argument("--repo", type=Path, default=None)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--drill", action="store_true",
+                    help="run the process supervisor's simulated reporter hang and exit")
     a = ap.parse_args(argv)
+    if a.drill:
+        res = drill()
+        print(json.dumps({k: v for k, v in res.items() if k != "pass"}, default=str))
+        return 0 if res.get("drill") == "PASS" else 2
 
     rep = build_report(apply=a.apply, min_age_s=a.min_age_s, sample_s=a.sample_s, repo=a.repo)
     try:
@@ -132,6 +140,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  index.lock: present={lock['present']} removed={lock['removed']} "
               f"-- {lock['why']}")
         print(f"  -> {OUT}")
+
+    # THE PROCESS SUPERVISOR (2026-11-13) rides this same pass: no new task, no new scheduler.
+    # It stops only allowlisted non-trading members past their bound (libs/ops/process_supervisor).
+    # Its result never changes this reaper's exit code; it has its own report.
+    try:
+        sup = supervise(apply=a.apply)
+        SUP_OUT.write_text(json.dumps(sup, indent=1, default=str), encoding="utf-8")
+        print(f"process supervisor: {sup.get('verdict', sup['status'])} "
+              f"({len(sup['stopped'])} stopped, {len(sup['failed'])} failed) -> {SUP_OUT}")
+    except Exception as exc:  # the reaper's own job must never be lost to the supervisor
+        print(f"process supervisor failed: {type(exc).__name__}: {exc}", file=sys.stderr)
 
     if rep["verdict"] in ("CLEAR", "REAPED"):
         return 0

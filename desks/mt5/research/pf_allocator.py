@@ -1537,8 +1537,9 @@ def margin_use_from(margin: float, equity: float, deployed_heat: float,
 def account_margin() -> tuple[float | None, float | None, str]:
     """(margin, equity) from the live terminal, or (None, None) with the reason. Never raises.
 
-    Measured the way `promoter.account_in_hand` measures the account: an existing connection is
-    used and left alone, otherwise one is opened from `data/terminal_path.txt` and closed again.
+    An existing connection is used and left alone; none is ever opened here (a Session-0 caller
+    must not launch a terminal), and the attached account must be on Fusion's server and, when
+    `data/terminal_path.txt` names one, be that terminal -- otherwise it is shut and refused.
     A host without MetaTrader5, without a terminal, or without an account is UNMEASURED -- which
     is the honest answer and the one that leaves the survival envelope exactly as it is.
     """
@@ -1546,17 +1547,25 @@ def account_margin() -> tuple[float | None, float | None, str]:
         import MetaTrader5 as mt5
     except ImportError:
         return None, None, "MetaTrader5 is not importable on this host"
-    opened = False
+    # PINNED TO THE DESK'S TERMINAL (2026-11-11). The box runs Fusion and FTMO logged in side by
+    # side; a pathless `initialize()` landed on FTMO ~2/3 of runs, and from Session 0 it could
+    # spawn an unauthenticated terminal. This organ never launches one (`allow_autostart=False`):
+    # it reads a terminal this process already holds, proves it is Fusion's, or is UNMEASURED.
+    refused = False
     try:
-        if mt5.terminal_info() is None:
-            try:
-                from mt5desk.config import terminal_path
-                path = terminal_path()
-            except Exception:
-                path = ""
-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
-            if not opened:
-                return None, None, f"terminal unreachable ({mt5.last_error()})"
+        try:
+            from mt5desk.config import terminal_path
+            path = terminal_path()
+        except Exception:
+            path = ""
+        from research.mt5_session import attach_or_initialize, venue_refusal
+        if not attach_or_initialize(mt5, path=path or None, timeout=15000,
+                                    allow_autostart=False):
+            return None, None, f"terminal unreachable ({mt5.last_error()})"
+        why = venue_refusal(mt5, path or None)
+        if why is not None:
+            refused = True
+            return None, None, f"wrong venue, refused: {why}"
         acc = mt5.account_info()
         if acc is None:
             return None, None, "the terminal reports no account"
@@ -1564,7 +1573,7 @@ def account_margin() -> tuple[float | None, float | None, str]:
     except Exception as exc:
         return None, None, f"{type(exc).__name__}: {exc}"
     finally:
-        if opened:
+        if refused:
             with suppress(Exception):
                 mt5.shutdown()
 
