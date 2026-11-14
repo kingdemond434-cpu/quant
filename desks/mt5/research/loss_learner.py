@@ -225,7 +225,7 @@ def ledger_rows(now: datetime, fusion: Path | None = None, prop: Path | None = N
         for r in rows:
             out.append({**r, "_book": "fusion"})
     else:
-        state["fusion"] = f"UNMEASURED: no ledger at {fpath}"
+        state["fusion"] = f"UNMEASURED: no ledger at {Path(fpath).name}"
     ppath = prop or PROP_LEDGER
     if ppath.exists():
         rows = _jsonl(ppath)
@@ -236,7 +236,7 @@ def ledger_rows(now: datetime, fusion: Path | None = None, prop: Path | None = N
         for r in rows:
             out.append({**r, "_book": str(r.get("book") or "prop")})
     else:
-        state["e8"] = state["ftmo"] = f"UNMEASURED: no prop ledger at {ppath}"
+        state["e8"] = state["ftmo"] = f"UNMEASURED: no prop ledger at {ppath.name}"
     kept = []
     for r in out:
         t = _ts(r.get("exit_time")) or _ts(r.get("time"))
@@ -651,7 +651,7 @@ def variant_clock_keys(ids: set[str]) -> tuple[dict[str, str], str]:
                 out[nid] = sf.sleeve_key(sym, win, params, fam, side)
         return out, "MEASURED"
     except Exception as exc:
-        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__}: {exc})"
+        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__})"
 
 
 def replacement_verdict(parent_rows: list[tuple[datetime, float]],
@@ -720,15 +720,26 @@ def _hold_of(params: dict[str, Any]) -> int:
     return DEFAULT_HOLD_BARS
 
 
+def _public_note(note: object) -> str:
+    """A skip note cut to what the public wire may carry: 'unreadable: <Type>' or 'absent'."""
+    text = str(note)
+    if text.startswith("unreadable: "):
+        return "unreadable: " + text[len("unreadable: "):].split(":", 1)[0].strip()
+    return "absent or empty"
+
+
 def _graph_state() -> tuple[set[str], dict[str, dict[str, list[float]]], str]:
     try:
         from research import survivor_distiller as sd
         skipped: dict[str, str] = {}
         rows = sd._graph_rows(skipped)
+        # PUBLISHED as LOSS_LEARNER.json["graph"]: the distiller's skip notes carry exception
+        # text and the graph's absolute path, so only the source and its type name cross.
         return set(sd._current(rows)), sd.grid_values(rows), (
-            "; ".join(f"{k}: {v}" for k, v in skipped.items()) or f"{len(rows)} graph rows")
+            "; ".join(f"{k}: {_public_note(v)}" for k, v in skipped.items())
+            or f"{len(rows)} graph rows")
     except Exception as exc:
-        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__}: {exc})"
+        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__})"
 
 
 def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
@@ -817,8 +828,12 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
     report = {"generated_at": now.isoformat(timespec="seconds"), "source": SOURCE,
               "trail_days": TRAIL_DAYS, "books": book_state, "graph": graph_note,
               "sleeves": per, "minted": len(new_lineage),
-              "donation": {k: donated.get(k) for k in ("donated", "refused_unstamped",
-                                                       "refused_wrong_lane", "path")},
+              # PUBLISHED (LOSS_LEARNER.json crosses the box wire): the donation file is named by
+              # its basename, never the box's absolute path; exception text is a type name only.
+              "donation": {k: (Path(str(donated[k])).name if k == "path" and donated.get(k)
+                               else donated.get(k))
+                           for k in ("donated", "refused_unstamped", "refused_wrong_lane",
+                                     "path")},
               "lineage_total": len(lineage), "replacements": replacements,
               "dry_run": dry_run,
               "rule": ("variants are hypotheses: the gauntlet judges each at the charged trial "

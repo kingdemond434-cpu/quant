@@ -630,7 +630,7 @@ def refresh(now: float | None = None, *, out: Path = OUT, root: Path = ROOT,
         doc = measure(t, root=root, prev=prev)
     except Exception as exc:
         doc = {"measured_at": _iso(datetime.fromtimestamp(t, tz=UTC)), "verdict": "UNMEASURED",
-               "problems": [f"measurement crashed: {type(exc).__name__}: {str(exc)[:200]}"],
+               "problems": [f"measurement crashed: {type(exc).__name__}"],
                "grid": prev.get("grid") or {}}
     with contextlib.suppress(OSError):
         write(doc, out)
