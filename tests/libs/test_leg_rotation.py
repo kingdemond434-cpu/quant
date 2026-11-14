@@ -180,6 +180,24 @@ def test_record_publishes_never_run_by_name(tmp_path: Path) -> None:
     assert LR.load_record(out)["never_run"] == ["dark"]
 
 
+def test_department_plan_never_overwrites_the_hourly_record(tmp_path: Path, monkeypatch) -> None:
+    """HP3 2026-11-11: a one-leg dept:asean pass replaced the 162-leg hourly plan in RECORD."""
+    rec = tmp_path / "LEG_ROTATION.json"
+    monkeypatch.setattr(LR, "RECORD", rec)
+    att = _att({"a": 1, "b": 1}, costs={"a": 1.0, "b": 1.0})
+    hourly = LR.plan_pass(["a", "b"], att, plan="core", budget_s=100.0)
+    LR.record(hourly, att, ["a", "b"])
+    dept = LR.plan_pass(["a"], att, plan="dept:asean", budget_s=100.0)
+    LR.record(dept, att, ["a"])
+    assert json.loads(rec.read_text(encoding="utf-8"))["plan"] == "core"
+    assert json.loads((tmp_path / "LEG_ROTATION.core.json").read_text(encoding="utf-8"))[
+        "plan"] == "core"
+    assert json.loads((tmp_path / "LEG_ROTATION.dept_asean.json").read_text(encoding="utf-8"))[
+        "plan"] == "dept:asean"
+    assert LR.plan_record("dept:a/b c") == tmp_path / "LEG_ROTATION.dept_a_b_c.json"
+    assert LR.is_department_plan("dept:x") and not LR.is_department_plan("heavy")
+
+
 def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) -> None:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
