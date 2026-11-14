@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -122,8 +123,10 @@ def test_a_failed_read_is_unmeasured_and_never_loses_the_table() -> None:
 
     rows = pb.collect("o/r", NOW, fetch, registry=lambda repo: [])
     assert len(rows) == 9 and {r["blocker"] for r in rows} == {"UNMEASURED"}
-    assert "HTTP 503" in rows[0]["gate_says"]
-    assert "reads in a row failed" in rows[-1]["gate_says"]  # stops calling after MAX_MISSES
+    assert rows[0]["gate"] == pb.WHY_READ
+    assert rows[-1]["gate"] == pb.WHY_MISSES  # stops calling after MAX_MISSES
+    # no exception text reaches the published rows (Auditor HOLD on #992)
+    assert "503" not in json.dumps(rows) and "gh:" not in json.dumps(rows)
 
 
 def test_the_leg_budget_marks_the_rest_unmeasured() -> None:
@@ -137,7 +140,7 @@ def test_the_leg_budget_marks_the_rest_unmeasured() -> None:
     rows = pb.collect("o/r", NOW, fetch, registry=lambda repo: [],
                       clock=lambda: float(next(t)), budget_s=25)  # fmt: skip
     assert [r["blocker"] for r in rows][:2] == ["AUDIT_MISSING", "AUDIT_MISSING"]
-    assert rows[-1]["blocker"] == "UNMEASURED" and "budget" in rows[-1]["gate_says"]
+    assert rows[-1]["blocker"] == "UNMEASURED" and rows[-1]["gate"] == pb.WHY_BUDGET
 
 
 def test_budget_reads_the_cycle_cap(monkeypatch: Any) -> None:
@@ -160,3 +163,15 @@ def test_it_is_an_hourly_core_leg_and_published() -> None:
     assert "!desks/mt5/reports/PR_BLOCKERS.json" in (ROOT / ".gitignore").read_text()
     oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
     assert '"MT5-HourlyCore (pr blockers)"' in oc
+
+
+def test_the_gate_status_is_a_fixed_code_never_its_free_text() -> None:
+    free = {"state": "failure", "description": "anything at all: <script> https://x 12345"}
+    assert pb.gate_code(free) == "GATE_FAILURE"
+    assert pb.gate_code(None) == "GATE_NONE"
+    assert pb.gate_code({"state": "weird"}) == "GATE_NONE"
+    assert pb.gate_code({"state": "success", "description": "LIVE's root digest is off"}) == (
+        "GATE_PATH_OFF")
+    row = pb.classify(NOW, _pr(number=7), None, ("green", []), free)
+    assert row["gate"] == "GATE_FAILURE" and "script" not in json.dumps(row)
+    assert "gate_says" not in row

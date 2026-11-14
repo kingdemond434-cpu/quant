@@ -6,8 +6,9 @@ Backlog row 2026-11-03 (Autonomy): "for every PR say exactly which blocker holds
 queued/failed, missing audit, draft, protected policy, deploy failure); stop asking taps."
 
 Each PR gets one `blocker` (the first that applies, in the order the merge path meets them) and
-the facts behind it. The gate's own `audit/clear` status description is quoted as `gate_says`,
-because that is what the box sweep itself decided on that head:
+the facts behind it. The gate's own `audit/clear` status is reduced to a fixed code, `gate`
+(GATE_NONE / GATE_PENDING / GATE_SUCCESS / GATE_FAILURE / GATE_ERROR / GATE_PATH_OFF), because
+the published file carries no free text from GitHub or from an exception -- only codes:
 
     CONFLICT        GitHub reports the PR cannot merge into LIVE (rebase or merge LIVE in)
     AUDIT_MISSING   no Auditor registry row for the PR at all
@@ -46,6 +47,20 @@ LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 REGISTRY_REF = "audit-registry"
 REGISTRY_FILE = "REGISTRY_ROWS.jsonl"
 GATE_STATUS = "audit/clear"
+# what an unread PR's row says instead of any exception text (Auditor HOLD on #992, 11-14)
+WHY_BUDGET, WHY_MISSES, WHY_READ = "BUDGET_SPENT", "READS_FAILING", "READ_FAILED"
+
+
+def gate_code(gate: Mapping[str, Any] | None) -> str:
+    """The gate's audit/clear status as a fixed code; its description is read, never copied."""
+    if not gate:
+        return "GATE_NONE"
+    desc = str(gate.get("description") or "")
+    if "path is off" in desc or "root digest" in desc:
+        return "GATE_PATH_OFF"
+    state = str(gate.get("state") or "")
+    return {"pending": "GATE_PENDING", "success": "GATE_SUCCESS", "failure": "GATE_FAILURE",
+            "error": "GATE_ERROR"}.get(state, "GATE_NONE")  # fmt: skip
 #: .github/scripts/audit_gate.py GATING_JOBS and REGISTRY_HOLD_H (pinned by the tests).
 GATING_JOBS = ("quality", "mt5-money-path", "coverage-floor")
 VETO_H = 24.0
@@ -122,7 +137,7 @@ def classify(
 ) -> dict[str, Any]:
     """One PR's blocker, from facts only (pure: the tests drive it)."""
     head = str((pr.get("head") or {}).get("sha") or "")
-    gate_says = str((gate or {}).get("description") or "")
+    gate_at = gate_code(gate)
     found: list[str] = []
     if pr.get("mergeable") is False or pr.get("mergeable_state") == "dirty":
         found.append("CONFLICT")
@@ -140,7 +155,7 @@ def classify(
         at = _ts(row.get("at"))
         if at is not None and (now - at).total_seconds() / 3600.0 < VETO_H:
             found.append("VETO_WINDOW")
-    if "path is off" in gate_says or "root digest" in gate_says:
+    if gate_at == "GATE_PATH_OFF":
         found.append("GATE_PATH_OFF")
     found.sort(key=ORDER.index)
     blocker = found[0] if found else "READY"
@@ -149,7 +164,7 @@ def classify(
         "draft": bool(pr.get("draft")), "blocker": blocker, "words": WORDS[blocker],
         "also": found[1:], "audit": None if row is None else {
             "verdict": row.get("verdict"), "sha": str(row.get("sha") or "")[:9], "at": row.get("at")},
-        "ci": {"state": ci[0], "jobs": ci[1]}, "gate_says": gate_says[:160],
+        "ci": {"state": ci[0], "jobs": ci[1]}, "gate": gate_at,
     }  # fmt: skip
 
 
@@ -158,13 +173,13 @@ def table(rows: list[dict[str, Any]], at: str) -> str:
     out = [f"# What holds each open PR ({at})", "",
            f"{len(rows)} open PRs into LIVE. " + ", ".join(
                f"{k} {tally[k]}" for k in ORDER if tally.get(k)) + ".", "",
-           "| PR | blocker | in words | also | CI | audit | gate says |",
+           "| PR | blocker | in words | also | CI | audit | gate |",
            "|---|---|---|---|---|---|---|"]  # fmt: skip
     for r in sorted(rows, key=lambda r: (ORDER.index(r["blocker"]), r["pr"])):
         a = r["audit"]
         audit = "none" if a is None else f"{a['verdict']} {a['sha']}"
         ci = r["ci"]["state"] + (f" ({', '.join(r['ci']['jobs'])})" if r["ci"]["jobs"] else "")
-        says = r["gate_says"].replace("|", "/")[:80]
+        says = r["gate"]
         out.append(f"| #{r['pr']}{' (draft)' if r['draft'] else ''} | {r['blocker']} | "
                    f"{r['words']} | {', '.join(r['also'])} | {ci} | {audit} | {says} |")  # fmt: skip
     return "\n".join(out) + "\n"
@@ -238,10 +253,10 @@ def collect(repo: str, now: datetime, fetch: Fetch,
     for p in prs:
         n, head = int(p["number"]), str(p["head"]["sha"])
         if clock() >= stop:  # the leg's budget: the rest is named, never guessed
-            out.append(unmeasured(p, "not read: the leg's time budget ran out"))
+            out.append(unmeasured(p, WHY_BUDGET))
             continue
         if misses >= MAX_MISSES:  # rate-limited or GitHub down: the rest is named, never guessed
-            out.append(unmeasured(p, f"not read: {MAX_MISSES} reads in a row failed"))
+            out.append(unmeasured(p, WHY_MISSES))
             continue
         try:
             detail = fetch(f"repos/{repo}/pulls/{n}") or {}
@@ -250,7 +265,8 @@ def collect(repo: str, now: datetime, fetch: Fetch,
             st = fetch(f"repos/{repo}/commits/{head}/status") or {}
         except (RuntimeError, OSError, ValueError) as exc:  # one 503 never loses the table
             misses += 1
-            out.append(unmeasured(p, f"{type(exc).__name__}: {str(exc)[:80]}"))
+            del exc  # its text never reaches the published file
+            out.append(unmeasured(p, WHY_READ))
             continue
         misses = 0
         gate = next((s for s in st.get("statuses") or [] if s.get("context") == GATE_STATUS), None)
@@ -266,7 +282,7 @@ def unmeasured(pr: Mapping[str, Any], why: str) -> dict[str, Any]:
         "pr": int(pr["number"]), "title": str(pr.get("title") or "")[:90],
         "head": str((pr.get("head") or {}).get("sha") or "")[:9], "draft": bool(pr.get("draft")),
         "blocker": "UNMEASURED", "words": WORDS["UNMEASURED"], "also": [], "audit": None,
-        "ci": {"state": "unmeasured", "jobs": []}, "gate_says": why[:160],
+        "ci": {"state": "unmeasured", "jobs": []}, "gate": why if why in (WHY_BUDGET, WHY_MISSES, WHY_READ) else WHY_READ,
     }  # fmt: skip
 
 
