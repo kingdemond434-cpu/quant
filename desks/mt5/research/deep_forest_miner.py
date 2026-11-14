@@ -159,6 +159,21 @@ _UA = {"User-Agent": f"{ROBOTS_AGENT}/1.0 (deep_forest_miner; research; honours 
        "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
                   "*/*;q=0.8")}
 
+#: Governance, governance/wayback-youtube-ruling-2026-11-14.md. Both fetchers stay registered,
+#: make no request, and carry their missed-growth line. Held rows stay, labelled; a PR that
+#: re-enables either is held by the Auditor.
+WAYBACK_TERMS = ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research "
+                 "purposes only (source=wayback, terms=scholarship_research_only)")
+WAYBACK_MISSED_GROWTH = ("missed_growth: dead grounds (the Quantopian forum and other retired "
+                         "boards) are no longer read through captures; their held claims stay, "
+                         "labelled source=wayback. A gap, not a zero.")
+YOUTUBE_TERMS = ("BLOCKED_ON_TERMS: YouTube transcripts through keyless mirrors are YouTube "
+                 "content "
+                 "reached around YouTube's terms and the no-YouTube rule")
+YOUTUBE_MISSED_GROWTH = ("missed_growth: video transcripts are not read; video METADATA from the "
+                         "search index still is, and video ideas come only from sources whose own "
+                         "terms allow automated use. A gap, not a zero.")
+
 #: HOSTS WHOSE OWN TERMS FORBID AUTOMATED READING, read 2026-11-13 (report:
 #: /mnt/project-files/reports/terms_reads/). Never fetched, on any route, until the site grants
 #: written consent. A host here is a refusal, not a label.
@@ -167,6 +182,12 @@ TERMS_REFUSED: dict[str, str] = {
                      "自动数据收集或提取工具' without BigQuant's prior written consent"),
     "genport.newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
     "newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+    # Governance, wayback-youtube-ruling-2026-11-14 item 1: the Archive's terms limit use to
+    # "scholarship and research purposes only"; a snapshot is also a mirror of someone else's page.
+    "archive.org": WAYBACK_TERMS,
+    # Item 2 and zuck's standing rule: the box never contacts YouTube, on any route.
+    "youtube.com": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+    "youtu.be": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
 }
 #: A page that is a region wall, not content: the site serves it to every address outside
 #: mainland China. It is recorded as REGION_BLOCKED and never parsed (no proxy, no VPN: that
@@ -594,19 +615,11 @@ def bilibili_transcript(bvid: str) -> tuple[str, str | None]:
 
 
 def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
-    """A YouTube transcript through the desk's keyless mirror rotation (Piped, Invidious),
-    which `scripts/fetch_video_transcript.py` owns. MEASURED DEAD on every route 2026-08-27;
-    youtube.com's own caption endpoints are barred by its robots.txt and are never tried. The
-    reason is recorded per video, never an empty transcript."""
-    try:
-        sp = str(_ROOT / "scripts")
-        if sp not in sys.path:
-            sys.path.insert(0, sp)
-        import fetch_video_transcript as fvt  # type: ignore[import-not-found]
-        text, route = fvt.youtube(video_id, lang=lang.split("-")[0])
-        return str(text), None if text else f"{route}: empty transcript"
-    except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+    """REFUSED ON TERMS (Governance 2026-11-14 item 2): no transcript is fetched on any route.
+    The keyless-mirror rotation is removed from the fetch path; the name stays so the refusal is
+    recorded per video rather than silently skipped."""
+    del video_id, lang
+    return "", YOUTUBE_TERMS
 
 
 _FEED_ITEM = re.compile(r"(?is)<(item|entry)\b[^>]*>(.*?)</\1>")
@@ -646,18 +659,10 @@ def parse_feed(xml: str) -> list[dict[str, str]]:
 
 
 def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
-    """Nearest Wayback Machine capture of `url`, via the public availability API."""
-    api = f"https://archive.org/wayback/available?url={quote(url, safe='')}"
-    if timestamp:
-        api += f"&timestamp={timestamp}"
-    try:
-        doc = json.loads(_http(api))
-    except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
-    snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
-    if not snap.get("url"):
-        return "", "no capture in the Wayback Machine"
-    return str(snap["url"]), None
+    """REFUSED ON TERMS (Governance 2026-11-14 item 1): the Wayback Machine is never asked for a
+    capture. Registered so the route's refusal is named, never a silent skip."""
+    del url, timestamp
+    return "", WAYBACK_TERMS
 
 
 def parse_nitter(page: str) -> list[dict[str, str]]:
@@ -1468,9 +1473,9 @@ class _Run:
         nearest capture of the seed, then the capture's own links on the same original host."""
         original = str(g.get("url") or "")
         snap, err = wayback_snapshot(original, str(g.get("timestamp") or ""))
-        self._note_net(err is None or "HTTP" in str(err))
         if err:
-            return {"fetched": 0, "claims": 0, "errors": [err]}
+            return {"fetched": 0, "claims": 0, "errors": [err], "status": "BLOCKED_ON_TERMS",
+                    "missed_growth": WAYBACK_MISSED_GROWTH}
         page = self.page(snap)
         if not html_text(page):
             return {"fetched": 0, "claims": 0, "errors": [f"empty capture {snap}"]}
@@ -1522,8 +1527,9 @@ class _Run:
 
     def ground_youtube(self, g: dict[str, Any]) -> dict[str, Any]:
         """The Bilibili route generalised: video METADATA through the search index (titles and
-        descriptions state mechanisms too), then transcripts for the best few through the
-        keyless mirror rotation -- currently dead from this box, and said so per video."""
+        descriptions state mechanisms too). Transcripts are refused on terms (Governance
+        2026-11-14) and YouTube itself is a terms-refused host, so a result link is never
+        followed onto it."""
         claims = 0
         videos: list[tuple[str, str, str]] = []
         errors: list[str] = []
@@ -1547,24 +1553,15 @@ class _Run:
                 claims += self.take(f"{r.get('title', '')}. {r.get('snippet', '')}", ground=g,
                                     url=url, title=r.get("title", ""), route="youtube:metadata",
                                     grade="VIDEO_METADATA")
-                self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
+                # never queued for a crawler: YouTube is a terms-refused host
             time.sleep(1.5)
-        n_tr = 0
-        seen_ids: set[str] = set()
-        for vid, url, title in videos:
-            if vid in seen_ids or n_tr >= int(g.get("transcripts") or 0) or self.over():
-                continue
-            seen_ids.add(vid)
-            text, err = youtube_transcript(vid, self.lang)
-            if err:
-                errors.append(f"{vid}: {err}"[:100])
-                continue
-            n_tr += 1
-            self.counts["transcripts"] += 1
-            claims += self.take(text, ground=g, url=url, title=title, route="youtube:transcript",
-                                grade="VIDEO_TRANSCRIPT")
+        # Transcripts are REFUSED ON TERMS (Governance 2026-11-14): none is requested, on any
+        # route. The refusal is recorded once per pass with its missed-growth line.
+        if videos and int(g.get("transcripts") or 0):
+            errors.append(YOUTUBE_TERMS[:100])
         return {"queries": len(g.get("queries") or []), "engines": engines, "videos": len(videos),
-                "transcripts": n_tr, "claims": claims, "errors": errors[:4]}
+                "transcripts": 0, "transcripts_status": "BLOCKED_ON_TERMS",
+                "missed_growth": YOUTUBE_MISSED_GROWTH, "claims": claims, "errors": errors[:4]}
 
     def ground_telegram(self, g: dict[str, Any]) -> dict[str, Any]:
         """Public channel previews at t.me/s/<channel>: server-rendered, no account, the last
