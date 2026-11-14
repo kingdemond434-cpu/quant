@@ -269,7 +269,7 @@ def test_rows_come_from_both_trees_and_unprintable_names_are_dropped(tmp_path: P
 
 
 def test_diff_lines_carry_kind_symbol_and_name_only() -> None:
-    rows = [{"name": _probe(), "symbol": "EURUSD"}]
+    rows = [{"id": _probe(), "name": _probe(), "symbol": "EURUSD"}]
     b = _leg({_probe(): True}, books={"fusion": {"bad key with prose": 0.1}})
     h = _leg({_probe(): False}, books={"fusion": {"bad key with prose": 0.2}})
     h["rows"][_probe()]["zero"] = {"fusion": True}
@@ -363,7 +363,7 @@ def test_named_sleeves_are_probed_under_every_ban_and_execs_are_probed(tmp_path:
     base, head = _policy_trees(tmp_path, doc, doc)
     grid = {"symbols": [], "families": [], "timeframes": [""], "execs": [""]}
     ids = {r["id"] for r in rs.roster_rows((base, head), grid)}
-    assert {"eur_one~fam.gnn_propagation", "eur_one~exec.scalp_market", "eur_one~tf.M1"} <= ids
+    assert {"eur_one=fam.gnn_propagation", "eur_one=exec.scalp_market", "eur_one=tf.M1"} <= ids
     assert {"probe.EURUSD.exec.scalp_market", "probe.EURUSD.gnn_propagation.M1"} <= ids
 
 

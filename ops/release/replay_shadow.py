@@ -857,11 +857,11 @@ def roster_rows(trees: tuple[Path, ...], grid: dict[str, Any]) -> list[dict[str,
     for n, sym in sorted(set(named)):
         put(n, {"name": n, "symbol": sym})
         for fam in fams:
-            put(f"{n}~fam.{fam}", {"name": n, "symbol": sym, "family": fam})
+            put(f"{n}=fam.{fam}", {"name": n, "symbol": sym, "family": fam})
         for tf in tfs:
-            put(f"{n}~tf.{tf}", {"name": n, "symbol": sym, "timeframe": tf})
+            put(f"{n}=tf.{tf}", {"name": n, "symbol": sym, "timeframe": tf})
         for ex in execs:
-            put(f"{n}~exec.{ex}", {"name": n, "symbol": sym, "exec": ex})
+            put(f"{n}=exec.{ex}", {"name": n, "symbol": sym, "exec": ex})
     for sym in sorted(x for x in symbols if SAFE_NAME.match(x)):
         for fam in fams:
             for tf in tfs:
