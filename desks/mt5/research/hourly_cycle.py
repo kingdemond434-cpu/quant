@@ -2374,8 +2374,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
     "transmission_engine": 1_000,
-    # china_contagion stops itself at --budget-s 600 (a weekly Comtrade refresh through
-    # research/china_exposure_ingest.py, the graph, the contagion study and a 16-point grid per
+    # china_contagion stops itself at --budget-s 600 (the graph on its STRUCTURAL priors -- UN
+    # Comtrade is fenced REFUSED_ON_TERMS -- the contagion study and a 16-point grid per
     # reached instrument); the cap sits above so the report is always written.
     "china_contagion": 780,
     "forward_calibration": 180,
@@ -5163,8 +5163,8 @@ def main() -> None:
         "cross_asset_graph", "research/cross_asset_graph.py", "--budget-s", "900"))
     txg = _costed("transmission_engine", lambda: _producer(
         "transmission_engine", "research/transmission_engine.py", "--budget-s", "900"))
-    # CHINA SUPPLY-CHAIN / CREDIT CONTAGION (GAP_MAP 31). research/china_contagion.py refreshes the
-    # knowledge graph's trade weights (research/china_exposure_ingest.py, UN Comtrade, weekly),
+    # CHINA SUPPLY-CHAIN / CREDIT CONTAGION (GAP_MAP 31). research/china_contagion.py reads the
+    # weights fence (research/china_exposure_ingest.py: UN Comtrade REFUSED_ON_TERMS, no fetch),
     # builds the graph (libs/research/china_graph.py), measures the price-side China stress
     # index's contagion into every reached instrument and scores the graph against it, and
     # donates china_stress_contagion cells through the proposer door. The same graph is the
