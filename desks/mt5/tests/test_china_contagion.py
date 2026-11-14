@@ -1,12 +1,12 @@
 """China supply-chain / credit knowledge graph and contagion (GAP_MAP 31).
 
-  0. the graph labels every edge MEASURED (Comtrade) or STRUCTURAL (named prior), signs follow
-     the quote convention, havens stay unsigned, and the commodity channel adds through measured
+  0. the graph labels every edge MEASURED (a lawful source; none today) or STRUCTURAL (named
+     prior), signs follow the quote convention, havens stay unsigned, and the commodity channel adds through measured
      export shares;
   1. the knowledge adjacency is fixed, signed, zero-diagonal, row-normalised, zero for a symbol
      the graph does not reach, and the learned GNN takes it (both knowledge kinds);
-  2. the Comtrade ingest stores ratios only, refuses on unread robots and cross-host redirects,
-     keeps the previous vintage on failure and retries an empty vintage daily;
+  2. UN Comtrade is fenced REFUSED_ON_TERMS: the ingest sends nothing, writes nothing, carries
+     no fetch code, and the leg publishes the measured-weights gap as a missed-growth line;
   3. the stress index is causal and signed, leaves the target out, and the family trades the
      NEXT day in the graph's direction;
   4. the contagion study measures betas, agrees with a planted channel, scores the graph against
@@ -16,10 +16,8 @@ All inputs are synthetic.
 """
 from __future__ import annotations
 
-import json
 import sys
-import urllib.error
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -101,62 +99,24 @@ def test_gnn_runs_on_the_knowledge_graph_walk_forward():
         assert p.shape == (t_n, n) and np.isfinite(p[-50:]).any()
 
 
-# ------------------------------------------------------------------------------------ ingest
-def _comtrade(world: float, china: float, chapters: dict[str, float]) -> str:
-    rows = [{"partnerCode": 0, "cmdCode": "TOTAL", "flowCode": "X", "primaryValue": world},
-            {"partnerCode": 156, "cmdCode": "TOTAL", "flowCode": "X", "primaryValue": china}]
-    rows += [{"partnerCode": 0, "cmdCode": hs, "flowCode": "X", "primaryValue": v}
-             for hs, v in chapters.items()]
-    return json.dumps({"data": rows})
+# ------------------------------------------------------------------------------------- fence
+def test_comtrade_is_fenced_refused_on_terms_and_fetches_nothing(tmp_path, monkeypatch):
+    """Auditor ruling on #1155: UN Comtrade licence s.5 refuses automated retrieval. The module
+    sends nothing, writes nothing and carries no fetch code; the leg reports the fence."""
+    import urllib.request
 
-
-def test_ingest_stores_ratios_only_and_obeys_the_fetch_discipline(tmp_path):
-    calls: list[str] = []
-
-    def get(url: str) -> str:
-        calls.append(url)
-        if url.endswith("/robots.txt"):
-            return "User-agent: *\nAllow: /\n"
-        if "reporterCode=36" in url:
-            return _comtrade(1000.0, 300.0, {"26": 250.0, "74": 10.0})
-        raise urllib.error.URLError("unreachable")
-
-    out = tmp_path / "china_exposure.json"
-    d = ING.refresh(force=True, now=NOW, path=out, get=get)
-    aus = d["countries"]["AUS"]
-    assert aus["china_share"] == pytest.approx(0.3) and aus["chapter_share"]["26"] == 0.25
-    raw = out.read_text()
-    assert "primaryValue" not in raw and "1000" not in raw
-    assert d["attempts"]["AUS"] == "MEASURED" and d["attempts"]["NZL"] == "UNMEASURED"
-    assert all("comtradeapi.un.org" in c for c in calls)
-
-    # a later failure keeps the previous vintage, labelled so
-    def down(url: str) -> str:
-        raise urllib.error.URLError("down")
-    d2 = ING.refresh(force=True, now=NOW + timedelta(days=8), path=out, get=down)
-    assert d2["countries"]["AUS"]["kept_from_previous_vintage"] is True
-    # an empty vintage is retried the next day, a measured one waits a week
-    empty = tmp_path / "e.json"
-    ING.refresh(force=True, now=NOW, path=empty, get=down)
-    assert ING.refresh(now=NOW + timedelta(hours=25), path=empty, get=down)["refreshed"]
-    assert not ING.refresh(now=NOW + timedelta(days=2), path=out, get=get)["refreshed"]
-
-
-def test_unread_robots_and_cross_host_redirect_are_refusals():
-    def boom(url: str) -> str:
-        raise urllib.error.URLError("no robots")
-    assert ING.robots_allow("https://comtradeapi.un.org/x", boom) is False
-    assert ING.fetch_country("AUS", 36, NOW, boom)["status"] == "REFUSED_ROBOTS"
-
-    def nf(url: str) -> str:
-        raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
-    assert ING.robots_allow("https://comtradeapi.un.org/x", nf) is True
-
-    class Req:
-        full_url = "https://comtradeapi.un.org/public/v1/preview"
-    with pytest.raises(ING.Refused):
-        ING._SameHostOnly().redirect_request(Req(), None, 302, "Found", {},
-                                             "https://elsewhere.example.org/")
+    def no_net(*a, **k):  # pragma: no cover - reaching here is the failure
+        raise AssertionError("the fence sent a request")
+    monkeypatch.setattr(urllib.request, "urlopen", no_net)
+    monkeypatch.chdir(tmp_path)
+    d = ING.refresh(force=True, now=NOW)
+    assert d["status"] == "REFUSED_ON_TERMS" and d["refreshed"] is False
+    assert d["n_measured"] == 0 and "license-agreement" in d["terms"]
+    assert list(tmp_path.iterdir()) == []
+    src = (DESK / "research" / "china_exposure_ingest.py").read_text("utf-8")
+    for token in ("urlopen", "urllib", "requests", "comtradeapi", "write_text", "open("):
+        assert token not in src, token
+    assert not hasattr(G, "load_measured") and not hasattr(G, "EXPOSURE_FILE")
 
 
 # ------------------------------------------------------------------------- stress + family
@@ -246,12 +206,19 @@ def test_contagion_study_finds_a_planted_channel_and_scores_the_graph():
     assert m["graph_vs_market"]["status"] == "MEASURED"
     assert m["graph_vs_market"]["sign_agreement"] >= 0.8
 
-    rep = CC.run(bars=bars, donate=False, write=False, refresh_weights=False, budget_s=120,
+    rep = CC.run(bars=bars, donate=False, write=False, refresh_weights=True, budget_s=120,
                  now=NOW)
     assert rep["status"] == "OK"
     p = rep["proposer"]
-    reached_with_bars = sum(1 for s in {**G.reached(), "XAUUSD": 1} if s in bars)
+    # every unsigned instrument the market measured is admitted with its sign (no |t| screen),
+    # so every grid point it ran is charged
+    admitted = {s for s, r in m["instruments"].items() if r.get("measured_sign")}
+    reached_with_bars = len({s for s in G.reached() if s in bars} | admitted)
     assert p["tests_attempted"] == len(CC.GRID) * reached_with_bars
+    assert rep["weights"]["status"] == "REFUSED_ON_TERMS"
+    mg = rep["missed_growth"]
+    assert mg["measured_mass_share"] == 0.0 and mg["cost_elog"] == "UNMEASURED"
+    assert mg["n_measured_edges"] == 0 and "missed_growth.jsonl" in mg["where"]
     assert rep["official_notice_sources"]["CSRC"].startswith("REFUSED")
     assert rep["credit_proxy"].startswith("PRICE_SIDE")
 

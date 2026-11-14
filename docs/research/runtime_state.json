@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 831,
+  "NEVER": 832,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1055,
+  "attested": 1056,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -707,8 +707,17 @@
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "executable:desks/mt5/research/china_exposure_ingest.py",
      "leg:china_contagion"
+    ]
+   },
+   {
+    "at": "2026-11-14T00:42:26+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/china_exposure_ingest.py"
     ]
    }
   ]
@@ -27752,34 +27761,6 @@
    "measured_at": "2026-11-11T14:50:08+00:00"
   },
   {
-   "organ": "executable:desks/mt5/research/china_exposure_ingest.py",
-   "kind": "executable",
-   "code": [
-    "desks/mt5/research/china_exposure_ingest.py"
-   ],
-   "clock": "invoked:libs/research/china_graph.py",
-   "cadence_s": null,
-   "max_silence_s": null,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/data/axes/china_exposure.json",
-   "artifact_declared": "desks/mt5/data/axes/china_exposure.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "UNMEASURED",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T00:28:14+00:00"
-  },
-  {
    "organ": "leg:china_contagion",
    "kind": "leg",
    "code": [
@@ -27806,6 +27787,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-14T00:28:14+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/china_exposure_ingest.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/china_exposure_ingest.py"
+   ],
+   "clock": "invoked:libs/ops/capability_graph.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CHINA_CONTAGION.json",
+   "artifact_declared": "desks/mt5/reports/CHINA_CONTAGION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-14T00:42:26+00:00"
   }
  ],
  "ratchet": {

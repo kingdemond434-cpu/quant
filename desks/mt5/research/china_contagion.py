@@ -3,13 +3,14 @@
 THE GAP (wired ledger 2026-11-13): "China supply-chain/credit knowledge graph and contagion (CN AI
 shops' corporate GNNs)" -- evidence "none; learned gnn_propagation runs on a price-only lead-lag
 graph". This leg is the measurement and the proposer; `libs/research/china_graph.py` is the
-graph; `research/china_exposure_ingest.py` measures its weights; `libs/models/
+graph; `research/china_exposure_ingest.py` records why its weights are NOT measured; `libs/models/
 learned_propagation` takes the graph as the GNN's `knowledge` adjacency.
 
 EACH PASS:
 
-  1. WEIGHTS. `china_exposure_ingest.refresh()` (weekly; daily while nothing has measured): UN
-     Comtrade China export shares and HS-chapter shares for every country node.
+  1. WEIGHTS. UN Comtrade is REFUSED_ON_TERMS (licence s.5, Auditor ruling on #1155), so
+     `china_exposure_ingest.refresh()` is a fence that fetches nothing; every export edge runs on
+     its labelled STRUCTURAL prior and the report publishes the missed-growth line for that gap.
   2. GRAPH. Build it, compute each instrument's signed exposure and its channels, write
      data/china_graph.json (nodes, edges with MEASURED/STRUCTURAL status, exposures).
   3. STRESS. The daily China stress index from the markets that price a Chinese shock first
@@ -149,8 +150,9 @@ def measure(bars: Mapping[str, pd.DataFrame], ex: Mapping[str, Mapping[str, Any]
                "graph_sign": e.get("sign"), "same_day": same_day, "next_day": next_day,
                "stress_day_next": cond, "walk_forward": _oos_ic(s, nxt)}
         if not e.get("sign") and same_day.get("status") == "MEASURED":
-            rec["measured_sign"] = int(np.sign(same_day["beta"])) if abs(same_day["t"]) >= 2 \
-                else 0
+            # every measured unsigned instrument is admitted with the market's sign (no |t| screen:
+            # a screen here would be an uncharged trial; the 16 grid points are charged in propose)
+            rec["measured_sign"] = int(np.sign(same_day["beta"]))
         if e.get("sign") and same_day.get("status") == "MEASURED":
             rec["sign_agrees"] = bool(np.sign(same_day["beta"]) == np.sign(e["sign"]))
         out[inst] = rec
@@ -252,8 +254,10 @@ def run(*, budget_s: float = 600.0, donate: bool = True, write: bool = True,
         try:
             from research import china_exposure_ingest as ing
             w = ing.refresh(now=now)
-            weights = {"refreshed": w.get("refreshed"), "year": w.get("year"),
-                       "n_measured": w.get("n_measured"), "attempts": w.get("attempts")}
+            weights = {"status": w.get("status"), "refreshed": w.get("refreshed"),
+                       "year": w.get("year"), "n_measured": w.get("n_measured"),
+                       "terms": w.get("terms"), "why": w.get("why"),
+                       "lifted_by": w.get("lifted_by")}
         except Exception as exc:  # noqa: BLE001 -- the graph falls back to labelled priors
             weights = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
     g = china_graph.build()
@@ -291,6 +295,17 @@ def run(*, budget_s: float = 600.0, donate: bool = True, write: bool = True,
                            "stress": round(float(latest["stress"].iloc[-1]), 3),
                            "n_sources": int(latest["n_sources"].iloc[-1])}
                           if len(latest) else "UNMEASURED"),
+        "missed_growth": {
+            "gap": "measured China export weights (china->country, commodity->country)",
+            "cause": "UN Comtrade REFUSED_ON_TERMS (licence s.5); no lawful substitute read yet",
+            "n_structural_edges": doc_graph.get("n_structural_edges"),
+            "n_measured_edges": doc_graph.get("n_measured_edges"),
+            "measured_mass_share": 0.0 if not doc_graph.get("n_measured_edges") else None,
+            "cost_elog": "UNMEASURED",
+            "lifted_by": weights.get("lifted_by") or "written UN permission, or a lawful "
+                         "substitute source whose terms are read and allow this use",
+            "where": "published in this report; not appended to data/missed_growth.jsonl "
+                     "(that ledger is keyed by sealed rails)"},
         "credit_proxy": "PRICE_SIDE (CNH, H-shares, Hang Seng, copper on the desk's own bars)",
         "official_notice_sources": OFFICIAL_NOTICE_SOURCES,
         "contagion": meas, "proposer": prop,
@@ -319,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"china_contagion: status={r['status']} reached={r['instruments_reached']} "
           f"bars={len(r['bars_available'])} graph_vs_market={gv.get('spearman', gv['status'])} "
           f"tests={p.get('tests_attempted')} proposed={p.get('cells_proposed')} "
-          f"weights_measured={r['weights'].get('n_measured')} elapsed={r['elapsed_s']}s")
+          f"weights={r['weights'].get('status')} elapsed={r['elapsed_s']}s")
     return 0
 
 

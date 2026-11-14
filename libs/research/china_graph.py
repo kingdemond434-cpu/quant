@@ -22,13 +22,15 @@ THE GRAPH (typed nodes, signed weighted edges, every edge carrying its basis):
   Sign convention: the response of the instrument's QUOTED PRICE to a China STRESS shock (stress
   up = Chinese demand/credit worse). AUDUSD -1 (AUD weakens), USDKRW +1 (KRW weakens).
 
-WEIGHTS ARE MEASURED WHERE THE WORLD PUBLISHES THEM. `china -> country` and `commodity ->
-country` come from UN Comtrade annual exports (data/axes/china_exposure.json, written by
-`research/china_exposure_ingest.py`) and are labelled MEASURED with their year. Where that file
-has no row the edge falls back to a STRUCTURAL prior (an ordinal weight with its published
-basis named) and is labelled so: a prior is never reported as a measurement. `china ->
-commodity` weights are STRUCTURAL by construction (China's share of world demand is a published
-industry fact, not a series the desk ingests) and say so.
+WEIGHTS: STRUCTURAL PRIORS TODAY, MEASURED ONLY FROM A LAWFUL SOURCE. Every edge carries a
+STRUCTURAL ordinal weight with its published basis named, and is labelled so: a prior is never
+reported as a measurement. The graph was built to take `china -> country` and `commodity ->
+country` from bilateral export tables, but UN Comtrade is REFUSED_ON_TERMS for this desk
+(Auditor, #1155: licence section 5 forbids automated retrieval without written UN permission;
+the fence and what would lift it live in `research/china_exposure_ingest.py`). `build(measured=)`
+still accepts measured shares from a caller holding a source whose terms allow it, and labels
+those edges MEASURED with the source named; nothing in the repository supplies one today, and
+`research/china_contagion.py` publishes the missed-growth line for that gap.
 
 Safe-haven currencies (JPY, CHF) and gold are deliberately NOT given a sign: a China shock both
 cuts their exports and bids them as havens, and the net is an empirical question the contagion
@@ -43,23 +45,18 @@ It is FIXED (no return enters it), so it carries no look-ahead into any walk-for
 """
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-ROOT = Path(__file__).resolve().parents[2]
-EXPOSURE_FILE = ROOT / "desks" / "mt5" / "data" / "axes" / "china_exposure.json"
 
 MEASURED = "MEASURED"
 STRUCTURAL = "STRUCTURAL"
 #: Ordinal prior weights, used only where no measurement exists.
 PRIOR = {"direct": 1.0, "strong": 0.35, "medium": 0.2, "weak": 0.1}
 
-#: country -> (ISO3, UN Comtrade reporter code, its instruments with listing signs, the prior
+#: country -> (ISO3, UN M49 country code, its instruments with listing signs, the prior
 #: strength of its China link and that prior's published basis).
 COUNTRIES: dict[str, dict[str, Any]] = {
     "AUS": {"m49": 36, "instruments": {"AUDUSD": -1, "AUS200": -1}, "prior": "strong",
@@ -157,19 +154,13 @@ class Graph:
                 "n_structural_edges": sum(1 for e in self.edges if e.status == STRUCTURAL)}
 
 
-def load_measured(path: Path = EXPOSURE_FILE) -> dict[str, Any]:
-    try:
-        d = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return d if isinstance(d, dict) else {}
-
-
 def build(measured: Mapping[str, Any] | None = None) -> Graph:
-    """The graph, measured edges where the ingest has them, structural priors elsewhere."""
-    m = measured if measured is not None else load_measured()
-    rows = (m.get("countries") or {}) if isinstance(m, dict) else {}
-    g = Graph(measured_year=m.get("year") if isinstance(m, dict) else None)
+    """The graph on its STRUCTURAL priors; measured edges only where a caller supplies shares
+    from a source whose terms allow it (`{"source": ..., "year": ..., "countries": {...}}`)."""
+    m: Mapping[str, Any] = measured or {}
+    rows = (m.get("countries") or {}) if isinstance(m, Mapping) else {}
+    src = str(m.get("source") or "measured source")
+    g = Graph(measured_year=m.get("year"))
     g.nodes["china"] = "economy"
     for inst, sgn in DIRECT.items():
         g.nodes[inst] = "instrument"
@@ -190,7 +181,7 @@ def build(measured: Mapping[str, Any] | None = None) -> Graph:
         share = r.get("china_share")
         if isinstance(share, (int, float)) and 0.0 <= float(share) <= 1.0:
             g.add(Edge("china", iso, float(share), 1, "export_share", MEASURED,
-                       "UN Comtrade: exports to China / exports to world",
+                       f"{src}: exports to China / exports to world",
                        r.get("year")))
         else:
             g.add(Edge("china", iso, PRIOR[c["prior"]], 1, "export_share", STRUCTURAL,
@@ -201,7 +192,7 @@ def build(measured: Mapping[str, Any] | None = None) -> Graph:
             v = chapters.get(cm["hs"])
             if isinstance(v, (int, float)) and float(v) > 0:
                 g.add(Edge(cname, iso, float(v), 1, "commodity_export_share", MEASURED,
-                           f"UN Comtrade: HS {cm['hs']} exports / total exports",
+                           f"{src}: HS {cm['hs']} exports / total exports",
                            r.get("year")))
         for inst, sgn in c["instruments"].items():
             g.nodes[inst] = "instrument"
