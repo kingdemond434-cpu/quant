@@ -17,7 +17,7 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 from libs.data import cftc_socrata as S  # noqa: E402
-from mt5desk import cot_refresh as R  # noqa: E402
+from research import cot_refresh as R  # noqa: E402
 
 ROBOTS = b"User-agent: *\nCrawl-delay: 1\nDisallow: /OData.svc/\nDisallow: /api/odata/\n"
 
@@ -175,7 +175,7 @@ def test_a_contaminated_tff_file_is_rebuilt_from_exact_markets(tmp_path, monkeyp
 
 def test_the_box_task_runs_the_refresher() -> None:
     cmd = (_DESK.parent.parent / "ops" / "run_side_channel_miners.cmd").read_text("utf-8")
-    assert "-m mt5desk.cot_refresh" in cmd
+    assert "-m research.cot_refresh" in cmd
 
 
 def test_first_seen_time_is_recorded_and_never_moved_by_a_restatement(tmp_path,

@@ -26,8 +26,11 @@ files with the SAME columns the readers already open (`data/cot/<slug>.parquet` 
     FRESH, REFRESHED, REBUILT, STALE, FAILED (with why), or DELISTED (a contract the CFTC
     stopped reporting).
 
-    python -m mt5desk.cot_refresh            # from desks/mt5
-    python -m mt5desk.cot_refresh --force    # ignore the weekly throttle
+  * RESEARCH, NOT MONEY PATH. It lives under research/ because it sizes and places nothing;
+    under mt5desk/ every constant read as a money-path knob and sent the PR to the manual path.
+
+    python -m research.cot_refresh            # from desks/mt5
+    python -m research.cot_refresh --force    # ignore the weekly throttle
 """
 from __future__ import annotations
 
