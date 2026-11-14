@@ -652,6 +652,34 @@ def connect() -> sqlite3.Connection:
     return conn
 
 
+def connect_readonly() -> sqlite3.Connection:
+    """A READ-ONLY door for fences and reports that only count rows.
+
+    `connect()` opens read-write, sets WAL, runs `_evolve` (CREATE ... IF NOT EXISTS, ALTER
+    TABLE, `_lift_checks`) and commits on EVERY call, and each of those wants the write lock with
+    a 30 s busy timeout against a registry the miners write continuously. Measured on the trading
+    box 2026-11-11 (LG2): the counting work of check_family_evaluability is 7.1 s and of
+    check_regional_parity 17.5 s on a read-only connection, yet both had hit the law gate's 600 s
+    fence timeout through `connect()`. A reader needs none of the write path: this opens
+    `mode=ro`, applies the same cache/mmap tuning, never evolves and never restores. It returns a
+    real `sqlite3.Connection`, so callers that take a fast path on that type keep it. A missing
+    file raises (sqlite3.OperationalError) and the caller reports UNMEASURED, as it does for any
+    unopenable registry."""
+    if not _PATH.exists():
+        raise sqlite3.OperationalError(f"no registry at {_PATH}")
+    conn = sqlite3.connect(f"file:{_PATH.as_posix()}?mode=ro", uri=True, timeout=30)
+    try:
+        conn.row_factory = sqlite3.Row
+        cache_kib, mmap_bytes = _tuning()
+        conn.execute(f"PRAGMA cache_size=-{cache_kib}")
+        conn.execute(f"PRAGMA mmap_size={mmap_bytes}")
+        conn.execute("PRAGMA query_only=ON")
+    except BaseException:
+        conn.close()
+        raise
+    return conn
+
+
 def _retire_crypto_cards(conn: sqlite3.Connection) -> int:
     n = 0
     for row in conn.execute("SELECT id, name, market, status FROM alpha_cards").fetchall():

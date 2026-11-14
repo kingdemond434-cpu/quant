@@ -149,8 +149,10 @@ def _connect() -> sqlite3.Connection | None:
         from libs.moat import registry as R
     except Exception:
         return None
+    # READ-ONLY (LG2, 2026-11-11): the census is 15 s on a read-only connection; `connect()`'s
+    # evolve-and-commit on every open is the write path that hit the law gate's 600 s timeout.
     try:
-        return R.connect()
+        return R.connect_readonly()
     except Exception:
         return None
 

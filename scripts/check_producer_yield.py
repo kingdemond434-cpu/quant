@@ -344,7 +344,13 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
     # silently excluded -- an undercount here would read as a barren producer, the exact false
     # positive this fence must never make.
     cutoff = (datetime.now(UTC) - timedelta(hours=window_hours)).strftime("%Y-%m-%dT%H:%M:%S")
-    when = "replace(substr(created_at,1,19),' ','T') >= ?"
+    # SARGABLE FIRST (LG2, 2026-11-11): the normalised predicate alone wraps the column in a
+    # function, so SQLite full-scanned an 8.4 GB research_candidates twice (305 s of a 453 s
+    # fence on the trading box) beside an unused `ix_candidates_created_at`. A bare
+    # `created_at >= <cutoff date>` lets the index cut the rows first; both separator forms of
+    # that date and every later day sort at or above it, so the normalised test still decides.
+    day = cutoff[:10]
+    when = "created_at >= ? and replace(substr(created_at,1,19),' ','T') >= ?"
     judged = ("(donated_cell is not null or status in "
               "('donated','claimed','retired','judged'))")
     try:
@@ -375,13 +381,13 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
                 f"select {gen}, count(*), "  # noqa: S608 -- fragments are literals above
                 f"count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
                 f"sum(case when {judged} then 1 else 0 end) "
-                f"from {src} where {when} group by 1", (cutoff,)):
+                f"from {src} where {when} group by 1", (day, cutoff)):
             per[str(key)] = {"cells_emitted": int(raw or 0), "unique_cells": int(uniq or 0),
                              "cells_to_judge": int(sent or 0)}
         cells: dict[str, list[str]] = {}
         for key, ident in cur.execute(
                 f"select distinct {gen}, {cell} from {src} "  # noqa: S608
-                f"where {when} and {judged}", (cutoff,)):
+                f"where {when} and {judged}", (day, cutoff)):
             cells.setdefault(str(key), []).append(str(ident))
         # A window in which NOTHING was created is UNMEASURED, never a verdict on any one
         # producer: if the whole registry is silent the failure is the desk's, and convicting
