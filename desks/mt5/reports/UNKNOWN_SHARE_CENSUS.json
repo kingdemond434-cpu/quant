@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-11-14",
   "started_at": "2026-11-14T11:45:52+00:00",
-  "written_at": "2026-11-14T11:48:13+00:00",
+  "written_at": "2026-11-14T12:19:13+00:00",
   "cells_planned": 6113,
-  "cells_visited": 0,
+  "cells_visited": 3028,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 66617,
     "rss_cap_mb": 16654,
-    "peak_rss_mb": 526
+    "peak_rss_mb": 963
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 130.1,
+  "lockbox_cut": "2022-06-30",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 486,
+  "elapsed_s": 1989.9,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 189,
@@ -42,38 +42,122 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
+    "cells": 3028,
     "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 1526,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1500,
+    "unknown": 214,
+    "unknown_share_of_judged": 0.1427,
+    "wilson95": [
+      0.1259,
+      0.1613
+    ],
+    "unknown_by_reason": {
+      "no_signals": 149,
+      "too_rare": 30,
+      "lockbox_consumed_history": 23,
+      "short_history_after_cut": 12
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 62,
+      "session_range_breakout": 35,
+      "orderflow_imbalance": 29,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 12,
+      "exogenous_conditioner": 10,
+      "regime_transition": 8,
+      "multi_speed_trend": 7,
+      "entry_conditioned": 5,
+      "jump": 5,
+      "vol_transition": 3,
+      "exit_operated": 3,
+      "ict_fvg": 2,
+      "alt_series_momentum": 2,
+      "pca_residual": 2
+    },
+    "unknown_by_chart": {
+      "H1": 128,
+      "M30": 23,
+      "H4": 22,
+      "D1": 15,
+      "M15": 14,
+      "M5": 11,
+      "M1": 1
+    },
+    "judged_by_chart": {
+      "H1": 694,
+      "M30": 285,
+      "M15": 247,
+      "M5": 184,
+      "H4": 57,
+      "D1": 23,
+      "M1": 10
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
+    "cells": 3028,
     "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 1526,
+    "build_failed": 2,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 2
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1500,
+    "unknown": 214,
+    "unknown_share_of_judged": 0.1427,
+    "wilson95": [
+      0.1259,
+      0.1613
+    ],
+    "unknown_by_reason": {
+      "no_signals": 149,
+      "too_rare": 30,
+      "lockbox_consumed_history": 23,
+      "short_history_after_cut": 12
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 62,
+      "session_range_breakout": 35,
+      "orderflow_imbalance": 29,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 12,
+      "exogenous_conditioner": 10,
+      "regime_transition": 8,
+      "multi_speed_trend": 7,
+      "entry_conditioned": 5,
+      "jump": 5,
+      "vol_transition": 3,
+      "exit_operated": 3,
+      "ict_fvg": 2,
+      "alt_series_momentum": 2,
+      "pca_residual": 2
+    },
+    "unknown_by_chart": {
+      "H1": 128,
+      "M30": 23,
+      "H4": 22,
+      "D1": 15,
+      "M15": 14,
+      "M5": 11,
+      "M1": 1
+    },
+    "judged_by_chart": {
+      "H1": 694,
+      "M30": 285,
+      "M15": 247,
+      "M5": 184,
+      "H4": 57,
+      "D1": 23,
+      "M1": 10
+    }
   },
   "siblings_only": {
     "cells": 0,
