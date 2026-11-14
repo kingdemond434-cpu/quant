@@ -1478,7 +1478,8 @@ class _Run:
                 claims += self.take(f"{r.get('title', '')}. {r.get('snippet', '')}", ground=g,
                                     url=url, title=r.get("title", ""), route="youtube:metadata",
                                     grade="VIDEO_METADATA")
-                self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
+                # A YouTube result URL is NEVER queued into the crawler frontier: the box never
+                # contacts YouTube (Governance ruling 2026-11-14; same fix as #1091).
             time.sleep(1.5)
         n_tr = 0
         seen_ids: set[str] = set()

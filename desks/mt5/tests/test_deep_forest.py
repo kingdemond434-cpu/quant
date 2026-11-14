@@ -628,8 +628,18 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
         {"name": "coinpan never", "region": "kr", "language": "ko", "route": "foreign", "fn": "coinpan",
          "queries": ["x"], "kind": "forum"},
     ]
+    followed: list[str] = []
+    real_follow = dfm._Run.follow
+
+    def spy(self, url, *a, **k):
+        followed.append(str(url))
+        return real_follow(self, url, *a, **k)
+
+    monkeypatch.setattr(dfm._Run, "follow", spy)
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
+    assert not [u for u in followed if "youtube.com" in u or "youtu.be" in u], \
+        "a YouTube URL reached the crawler frontier"
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert st["Qiita"]["status"] == "PRODUCTIVE"
