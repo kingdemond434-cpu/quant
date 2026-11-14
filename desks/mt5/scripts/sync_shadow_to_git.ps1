@@ -733,6 +733,9 @@ $relPaths = @(
     # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
     # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
     "desks/mt5/reports/markout.json",
+    # PER-ACCOUNT MARKOUT (2026-11-14): markout.json is MIXED on a multi-account ledger; the
+    # daily markout leg writes MARKOUT_V2.json beside it with one figure per account.
+    "desks/mt5/reports/MARKOUT_V2.json",
     # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
     # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
     # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
