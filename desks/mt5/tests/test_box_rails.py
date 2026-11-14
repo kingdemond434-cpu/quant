@@ -32,6 +32,8 @@ PINNED_WALLS: dict[str, str] = {
     "china": "zhihu.com", "investing": "investing.com", "google_trends": "trends.google.com",
     "forexpeacearmy": "forexpeacearmy.com", "myfxbook_outlook": "myfxbook.com",
     "collective2": "collective2.com",
+    # Wayback, terms-refused and walled on the VPS (Governance ruling 2026-11-14, ae1250f97b).
+    "darwinex": "web.archive.org", "forextsd_cdx": "web.archive.org",
 }
 
 ROBOTS = {
@@ -168,7 +170,9 @@ def test_refused_hosts_are_never_contacted_not_even_robots(rails, url):
     with pytest.raises(requests.exceptions.ConnectionError):
         requests.get(url, timeout=5)
     assert wire == [] and robots_reads == []
-    assert "refused on the box" in box_rails.refused()[0]["why"]
+    why = box_rails.refused()[0]["why"]
+    # web.archive.org is also walled on the VPS since ae1250f97b; the wall is named first.
+    assert "refused on the box" in why or "walled on the VPS" in why
 
 
 def test_other_googleapis_paths_are_not_refused_as_youtube():
