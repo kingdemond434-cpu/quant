@@ -5944,6 +5944,12 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # DAILY P&L EXPLAIN PER ACCOUNT (finding K4, 2026-11-13): every account's realised P&L split
+    # into signal, entry slippage, commission, swap, fees and FX conversion, with the residual
+    # shown and the trades that do not reconcile listed. Ledgers + intents only, seconds; writes
+    # reports/PNL_EXPLAIN.json and appends each CLOSED day to data/pnl_explain_daily.jsonl.
+    pnx = _costed("pnl_explain", lambda: _producer(
+        "pnl_explain", "research/pnl_explain.py", "--days", "90"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
@@ -6671,6 +6677,7 @@ def main() -> None:
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "pnl_explain": pnx,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
