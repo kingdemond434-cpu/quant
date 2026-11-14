@@ -514,6 +514,11 @@ NOT_SOURCED_HERE = {
                          "reads the world dataset hunter's per-symbol exposure and charges its own "
                          "band x direction x hold grid; a sweep that paired every symbol with "
                          "every ingested series would be an uncharged search over thousands",
+    "china_stress_contagion": "the target and its exposure sign are named by the China "
+                              "knowledge graph and swept by research/china_contagion, which "
+                              "charges its whole direction x window x z x hold grid; a sweep "
+                              "here over every symbol would test instruments the graph does "
+                              "not reach and charge the same search twice",
     "gnn_propagation": "the peer panel and the model configuration are named by "
                        "research/learned_miners, which walk-forwards every configuration once "
                        "per panel and charges configurations x symbols x thresholds as trials; "
