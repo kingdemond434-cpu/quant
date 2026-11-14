@@ -146,7 +146,17 @@ def test_a_dead_feed_is_refreshed_last_not_first(tmp_path: Path, monkeypatch) ->
     import os
     import types
     monkeypatch.setitem(sys.modules, "MetaTrader5", types.ModuleType("MetaTrader5"))
+    had = "research.fetch_universe" in sys.modules
     fu = importlib.import_module("research.fetch_universe")
+    try:
+        _check_order(fu, tmp_path, monkeypatch)
+    finally:
+        if not had:     # never leave a module bound to the stub terminal for later tests
+            sys.modules.pop("research.fetch_universe", None)
+
+
+def _check_order(fu, tmp_path: Path, monkeypatch) -> None:
+    import os
     lake = tmp_path / "data" / "universe"
     lake.mkdir(parents=True)
     for sym, mtime in (("UST10Y", 1), ("EURUSD", 2), ("GBPUSD", 3)):
