@@ -1416,7 +1416,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "srb_uncorrelated_sweep"),
                     "validate"),
     # macro: the cross-asset / macro brain
-    **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
+    **dict.fromkeys(("weak_signal_book",
+                     "fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
                      "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
@@ -2236,6 +2237,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
     # failure `enrol_clocks` was raised for. The other three get room to reach their data.
     "weak_signals": 2_700,
+    # THE WEAK-SIGNAL BOOK pools every judged cell into one book; its own --budget-s is 900 for
+    # series refresh, and the read of the docket plus the walk-forward sit above that.
+    "weak_signal_book": 1_500,
     "residual_factors": 1_800,
     "exogenous_search": 1_200,
     # THE THREE 2026-09-17 ORGANS. Each subprocess timeout sits ABOVE the organ's own internal
@@ -3159,6 +3163,18 @@ def weak_signal_ensembles() -> dict:
     how a capability stays invisible: the artifact said there was nothing to do.
     """
     return _producer("weak_signals", "research/weak_signal_compiler.py")
+
+
+def weak_signal_book() -> dict:
+    """`weak_signal_book`: EVERY judged cell and live sleeve pooled into one book, judged OOS.
+
+    `weak_signals` votes power-deficient cells on one symbol. This pools the whole judged
+    universe across symbols, whatever each cell's verdict, and lets the training block alone set
+    each weight: purged walk-forward, DSR on the lifetime trial union, 3x-cost gate, must beat its
+    best single member, E[log W] sizing inside half the firm rails. Proposes only. Publishes
+    eligible-versus-ingested coverage and turns RED on any gap.
+    """
+    return _producer("weak_signal_book", "research/weak_signal_book.py", "--budget-s", "900")
 
 
 def residual_factors() -> dict:
@@ -5907,6 +5923,7 @@ def main() -> None:
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
+    wsbk = _costed("weak_signal_book", weak_signal_book)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
     # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
@@ -6574,6 +6591,7 @@ def main() -> None:
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,
+                    "weak_signal_book": wsbk,
                     "residual_factors": rfx,
                     "markout": mko,
                     "exogenous_search": exo,
