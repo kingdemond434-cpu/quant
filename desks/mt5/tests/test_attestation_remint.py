@@ -58,7 +58,8 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                       ("GAUNTLET_ORDER", "reports/GAUNTLET_ORDER.json"),
                       ("GATES_OUTPUT", "reports/universal_gates_external.json"),
                       ("GAUNTLET_SRC", "scripts/external_gauntlet.py"),
-                      ("LOCKBOX_RECERT", "reports/LOCKBOX_RECERT.json")):
+                      ("LOCKBOX_RECERT", "reports/LOCKBOX_RECERT.json"),
+                      ("SHADOW_STATE", "reports/shadow/shadow_state.json")):
         monkeypatch.setattr(ar, name, tmp_path / rel)
     monkeypatch.setattr(ar, "_authorized_runs", lambda: {"status": "MEASURED", "n": 0})
     (tmp_path / "data" / "hypotheses" / "external_survivors.json").write_text(

@@ -84,6 +84,9 @@ OUT = DESK / "reports" / "REMINT_STATUS.json"
 # The lockbox ledger names re-stamped certificates by their recorded baseline gated_at, so it
 # sees them even when `in_force_since` is unknown and `stale_keys` therefore finds nothing.
 LOCKBOX_RECERT = DESK / "reports" / "LOCKBOX_RECERT.json"
+#: The forward clocks, read for the clocks whose PROMOTE verdict waits on a re-judge here.
+SHADOW_STATE = DESK / "reports" / "shadow" / "shadow_state.json"
+RESTAMP_HOLD = "HELD_RESTAMPED_NOT_REJUDGED"
 STATUS = OUT
 JUDGING_RATE = DESK / "reports" / "JUDGING_RATE.json"
 GAUNTLET_ORDER = DESK / "reports" / "GAUNTLET_ORDER.json"
@@ -433,6 +436,24 @@ def lockbox_restamped(path: Path | None = None) -> dict[str, str]:
     return out
 
 
+def restamp_holds(path: Path | None = None) -> dict[str, Any]:
+    """Clocks held off PROMOTE on a re-stamped certificate, and how long the oldest has waited.
+
+    A re-judge queue that never drains shows up here as a count that does not fall and an
+    `oldest_held_since` that does not move."""
+    doc = _read(path or SHADOW_STATE)
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED, "n": None, "oldest_held_since": None, "clocks": []}
+    held = {str(k): v for k, v in doc.items()
+            if isinstance(v, dict) and v.get("promotion_hold") == RESTAMP_HOLD}
+    since = [t for t in (_ts(v.get("promotion_hold_since")) for v in held.values()) if t]
+    return {"status": "MEASURED", "n": len(held), "oldest_held_since": _iso(min(since, default=None)),
+            "clocks": [{"key": k, "certificate": v.get("promotion_hold_certificate"),
+                        "status": v.get("status"), "n": v.get("n"), "exp_r": v.get("exp_r"),
+                        "held_since": v.get("promotion_hold_since")}
+                       for k, v in sorted(held.items())]}
+
+
 def _public(store: dict[str, Any]) -> dict[str, Any]:
     out = {k: v for k, v in store.items() if k != "stale"}
     out["n_stale"] = len(store["stale"])
@@ -537,6 +558,7 @@ def build(now: datetime | None = None, *, previous: dict[str, Any] | None = None
         "not_queueable": [x for x in targets if not x.get("queue")],
         "restamped_not_rejudged": restamped,
         "lockbox_restamped": sorted(lockbox),
+        "restamp_holds": restamp_holds(),
         "oldest_pending_since": _iso(since) if pending else None,
         "oldest_pending_age_hours": ((round((t - since).total_seconds() / 3600.0, 2)
                                       if since is not None else None) if pending else 0.0),
