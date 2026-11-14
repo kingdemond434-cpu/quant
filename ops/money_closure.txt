@@ -71,8 +71,10 @@ desks/mt5/mt5desk/universe.py
 desks/mt5/mt5desk/universe_registry.py
 desks/mt5/prop/__init__.py
 desks/mt5/prop/e8_book.py
+desks/mt5/prop/e8_evidence.py
 desks/mt5/prop/e8_executor.py
 desks/mt5/prop/e8_gold.py
+desks/mt5/prop/e8_gold_slip.py
 desks/mt5/prop/e8_guard.py
 desks/mt5/prop/ftmo_follower.py
 desks/mt5/prop/tradelocker_venue.py
@@ -181,6 +183,7 @@ libs/ops/control_plane/specs.py
 libs/ops/control_plane/watermarks.py
 libs/ops/errors.py
 libs/ops/events.py
+libs/ops/host_identity.py
 libs/ops/live_ledger_view.py
 libs/ops/new_risk_hold.py
 libs/ops/proctree.py
