@@ -30,6 +30,13 @@ sample. The bar is a constant here and never moves to let an input pass. The rep
 authority of its own: the allocator reads it only through `verdict_for` once that wiring is
 audited.
 
+TWO MORE ARMS (2026-11-11, BACKLOG "every input re-tested" + "VIXCLS -> own_risk"). `vix`
+raises the crisis-world share from the VIX tercile's own measured crisis rate in the book's
+history (`input_arms.vix_crisis_share`; raise only). `garch` rescales each sleeve's deviations by
+its GARCH(1,1) forecast-to-sample volatility ratio (`input_arms.garch_vol_ratio`). Both read only
+rows up to the as-of day. The Bonferroni bar now counts four inputs, so every arm, the old two
+included, clears a higher bar than before. `pf_allocator.input_verdicts` reads these verdicts.
+
 LIMITS, SAID ONCE. A macro series with no ALFRED vintage is the current vintage, so its later
 revisions leak into the replay: the macro arm may then never read PROMOTE (`PIT_REQUIRED`), only
 UNPROVEN or DEMOTE. Each sleeve's trial count (deflation) is today's, the same on every arm, and
@@ -62,6 +69,7 @@ for _p in (str(BASE), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.portfolio import input_arms  # noqa: E402
 from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, optimise  # noqa: E402
 
 OUT = BASE / "reports" / "INPUT_ABLATION.json"
@@ -99,7 +107,7 @@ N_WORLDS = 128
 N_ROWS = 256
 #: The plain solve and one arm per input under test; every arm solves under the same
 #: `heat_policy.HEAT_TARGET` cap and per-sleeve bounds, so only the input differs.
-ARMS = ("plain", "regime", "macro")
+ARMS = ("plain", "regime", "macro", "vix", "garch")
 #: Windows the run keeps: the newest 52, a year of weekly windows, twice `MIN_PERIODS` so a
 #: verdict can stand on one half and be re-checked on the other.
 MAX_WINDOWS = 52
@@ -110,7 +118,7 @@ MAX_WINDOWS = 52
 BUDGET_S = 600.0
 #: Bump when the arm definitions or the score change; cached windows from another version are
 #: re-solved, never reused.
-VERSION = 2
+VERSION = 3
 
 
 @dataclasses.dataclass(frozen=True)
@@ -120,6 +128,8 @@ class ArmInputs:
     regime_labels: tuple[str, ...] = ()
     regime_probs: tuple[tuple[str, float], ...] = ()
     macro_w: Mapping[str, np.ndarray] | None = None       # sleeve name -> weights over its rows
+    crisis_prob: float | None = None                      # crisis-world share (vix arm)
+    vol_ratio: Mapping[str, float] | None = None          # sleeve -> GARCH vol ratio (garch arm)
     measured: bool = True
     point_in_time: bool = True
     why: str = ""
@@ -258,13 +268,18 @@ def ablate(daily: pd.DataFrame,
                     continue
                 ev_t = [dataclasses.replace(
                     ev[n],
+                    daily_r=(input_arms.rescale(ev[n].daily_r, float(add.vol_ratio[n]))
+                             if add.vol_ratio is not None and n in add.vol_ratio
+                             else ev[n].daily_r),
                     macro_w=(np.asarray(add.macro_w[n], dtype=float)
                              if add.macro_w is not None and n in add.macro_w
                              else np.array([], dtype=float)))
                     for n in names]
+                extra = ({"crisis_prob": float(add.crisis_prob)}
+                         if add.crisis_prob is not None else {})
                 cfg = WorldConfig(seed=seed, n_worlds=N_WORLDS, n_rows=N_ROWS,
                                   regime_labels=add.regime_labels,
-                                  regime_probs=add.regime_probs)
+                                  regime_probs=add.regime_probs, **extra)
                 books[arm] = {"heat": {str(n): float(v) for n, v in solve(ev_t, cfg).items()},
                               "point_in_time": bool(add.point_in_time)}
             cache[key] = books
@@ -362,7 +377,36 @@ def _desk_arm_inputs(arm: str, asof: str, hist: pd.DataFrame) -> ArmInputs:
             by_series.get(macro_state.SERIES.get(d, "")) == macro_state.VINTAGE_ALFRED
             for d in meta["dims"])
         return ArmInputs(macro_w={str(c): w for c in hist.columns}, point_in_time=pit)
+    if arm == "vix":
+        return _vix_inputs(asof, hist)
+    if arm == "garch":
+        ratios: dict[str, float] = {}
+        for c in hist.columns:
+            ratio, _ = input_arms.garch_vol_ratio(hist[c].to_numpy(dtype=float), HORIZON)
+            if ratio is not None:
+                ratios[str(c)] = ratio
+        if not ratios:
+            return ArmInputs(measured=False, why="no sleeve had a stationary GARCH(1,1) fit")
+        return ArmInputs(vol_ratio=ratios)
     raise ValueError(f"unknown arm {arm!r}")
+
+
+def _vix_inputs(asof: str, hist: pd.DataFrame) -> ArmInputs:
+    """The VIX own-risk crisis share as of `asof`, from the book's own history up to it. VIXCLS
+    is a daily market close that FRED does not revise (`fetch_alfred`), so the current vintage
+    is the point-in-time one; the rank is lagged a day inside `vix_crisis_share`."""
+    from libs.portfolio import macro_state
+    cut = str(asof)[:10]
+    ranks = {d: v for d, v in ((macro_state.daily_states().get("states") or {})
+                               .get("risk") or {}).items() if d <= cut}
+    if not ranks:
+        return ArmInputs(measured=False, why="no VIXCLS rank on or before this day")
+    book = hist.mean(axis=1, skipna=True).to_numpy(dtype=float)
+    share, diag = input_arms.vix_crisis_share(book, [str(d)[:10] for d in hist.index], ranks,
+                                              cut, WorldConfig().crisis_prob)
+    if diag.get("status") != "MEASURED":
+        return ArmInputs(measured=False, why=f"vix own-risk: {diag.get('why')}")
+    return ArmInputs(crisis_prob=share)
 
 
 def _desk_solver() -> Callable[[list[SleeveEvidence], WorldConfig], Mapping[str, float]]:

@@ -2230,6 +2230,100 @@ def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict
             "rule": "posterior mean x (1 - hazard); dispersion unchanged; retirement unaffected"}
 
 
+#: What each re-tested input's verdict may do on the live book (2026-11-11). "enforce": a DEMOTE
+#: switches the input off and a PROMOTE switches an opt-in input on, on the next pass. "shadow":
+#: the verdict is published with what it WOULD do and nothing moves, because the standing rule
+#: keeps GARCH/HMM sizing changes in shadow until zuck says otherwise.
+#: VIX IS SHADOW TOO (#1023 audit HOLD, 2026-11-14): VIXCLS is Cboe's series, reached through
+#: FRED, and the 11-13 FRED terms ruling admits a third-party series only from its owner under
+#: the owner's terms -- so no new LIVE sizing consumer of it. The verdict is still published with
+#: what it would do; the arm returns to "enforce" once a terms-clean VIX source is wired.
+INPUT_POLICY: dict[str, str] = {"macro": "enforce", "vix": "shadow",
+                                "regime": "shadow", "garch": "shadow"}
+#: Days a VIX rank may lag today before the live vix arm reads it as UNMEASURED. DERIVATION:
+#: VIXCLS prints each US business day, and the longest normal gap is Friday to Tuesday after a
+#: Monday holiday = 4 calendar days; 4 is therefore the newest print that could exist.
+VIX_MAX_LAG_DAYS = 4
+
+
+def input_verdicts(daily: pd.DataFrame, base_share: float,
+                   verdict: Callable[[str], str] | None = None,
+                   ranks: Mapping[str, float] | None = None,
+                   today: str | None = None) -> dict[str, Any]:
+    """Read `input_ablation`'s out-of-sample verdict for every input and decide what it does.
+
+    Returns `{"inputs": {arm: {verdict, policy, action, enforced}}, "macro_off": bool,
+    "vix_share": float | None, "vix": diag}`. A missing or partial ablation report reads UNPROVEN
+    for every arm (`verdict_for` fails closed), so absence changes nothing. The vix share is
+    computed only when the vix arm is PROMOTED, from the book's own history and today's VIX rank,
+    with the same function the walk-forward measured.
+    """
+    if verdict is None:
+        try:
+            from research.input_ablation import verdict_for as verdict
+        except Exception:
+            def verdict(_arm: str) -> str:
+                return "UNPROVEN"
+    out: dict[str, Any] = {"inputs": {}, "macro_off": False, "vix_share": None, "vix": {}}
+    for arm, pol in INPUT_POLICY.items():
+        v = verdict(arm)
+        action = "none"
+        if arm in ("macro", "regime") and v == "DEMOTE":
+            action = "switch off"
+        elif arm in ("vix", "garch") and v == "PROMOTE":
+            action = "switch on"
+        enforced = pol == "enforce" and action != "none"
+        out["inputs"][arm] = {"verdict": v, "policy": pol, "action": action,
+                              "enforced": enforced}
+    out["macro_off"] = bool(out["inputs"]["macro"]["enforced"])
+    if out["inputs"]["vix"]["enforced"]:
+        from libs.portfolio import input_arms
+        if ranks is None:
+            try:
+                from libs.portfolio import macro_state
+                ranks = (macro_state.daily_states().get("states") or {}).get("risk") or {}
+            except Exception:
+                ranks = {}
+        day = today or datetime.now(tz=UTC).date().isoformat()
+        known = sorted(d for d in ranks if d <= day)
+        lag = ((datetime.fromisoformat(day) - datetime.fromisoformat(known[-1])).days
+               if known else None)
+        if lag is None or lag > VIX_MAX_LAG_DAYS:
+            out["vix"] = {"status": "UNMEASURED",
+                          "why": f"newest VIX rank is {known[-1] if known else 'absent'}"}
+        else:
+            book = daily.mean(axis=1, skipna=True).to_numpy(dtype=float)
+            share, diag = input_arms.vix_crisis_share(
+                book, [str(d)[:10] for d in daily.index], ranks, known[-1], base_share)
+            out["vix"] = diag
+            if diag.get("status") == "MEASURED":
+                out["vix_share"] = float(share)
+    return out
+
+
+def _input_rail(rail: str, iv: Mapping[str, Any], *, before: float | None,
+                after: float | None) -> None:
+    """Bill an enforced input move on the rails ledger once per day (missed-growth line).
+
+    A raised crisis share or a switched-off input changes the population the book is solved
+    over; GROWTH_GOVERNANCE requires every such move to carry its ledger line with the evidence
+    that licensed it, in either direction. Never raises.
+    """
+    try:
+        from mt5desk import fusion_rails
+        day = datetime.now(tz=UTC).date().isoformat()
+        arm = "vix" if "vix" in rail else "macro"
+        fusion_rails.line_once(
+            rail, f"{rail}/{day}", before=before, after=after,
+            direction=(None if before is None or after is None
+                       else "shrink" if after > before else "boost"),
+            verdict=((iv.get("inputs") or {}).get(arm) or {}).get("verdict"),
+            evidence=(iv.get("vix") if arm == "vix" else "input_ablation DEMOTE"),
+            licence="input_ablation out-of-sample verdict (INPUT_POLICY enforce)")
+    except Exception:
+        pass
+
+
 def read_drift() -> tuple[dict[str, Any] | None, str]:
     """`reports/DRIFT.json` if it can be read, else None with the reason. Never raises.
 
@@ -3807,6 +3901,36 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     drift_doc, drift_why = read_drift()
     crisis_share, crisis_why = crisis_share_from_drift(drift_doc, WorldConfig().crisis_prob)
     _log(f"drift: {drift_why}")
+    # EVERY INPUT RE-TESTED, WINNERS ON, LOSERS OFF (2026-11-11). `input_ablation` measures each
+    # input against the plain solve out of sample; its verdict now reaches the book here, under
+    # `INPUT_POLICY`. A macro DEMOTE clears every sleeve's kernel weights; a vix PROMOTE raises
+    # the crisis share to the VIX own-risk belief (raise only, beside the drift overlay). The
+    # regime and garch verdicts are published, never enforced.
+    try:
+        iv = input_verdicts(daily, WorldConfig().crisis_prob)
+    except Exception as exc:
+        iv = {"inputs": {}, "macro_off": False, "vix_share": None,
+              "error": f"{type(exc).__name__}: {exc}"}
+    if iv.get("macro_off"):
+        from dataclasses import replace as _replace_iv
+        ev = [_replace_iv(e, macro_w=np.array([], dtype=float)) for e in ev]
+        _log("input verdict: macro DEMOTED out of sample -> kernel weights off")
+        _input_rail("input_macro_off", iv, before=None, after=None)
+    if iv.get("vix_share") is not None:
+        # TWO-SIDED: the VIX lift (share / base) multiplies the drift-adjusted share, so a calm
+        # tercile lowers it as readily as a stressed one raises it, inside the same clip.
+        from libs.portfolio.input_arms import crisis_share_min
+        from libs.portfolio.latent_factors import CRISIS_SHARE_MAX as _CSMAX
+        _base = WorldConfig().crisis_prob
+        _lift = float(iv["vix_share"]) / _base if _base > 0 else 1.0
+        _before = crisis_share
+        crisis_share = min(max(crisis_share_min(_base), crisis_share * _lift), _CSMAX)
+        if abs(crisis_share - _before) > 1e-12:
+            _dir = "raised" if crisis_share > _before else "lowered"
+            crisis_why = f"{crisis_why}; vix own-risk {_dir} it to {crisis_share:.1%}"
+            _log(f"input verdict: vix PROMOTED -> crisis share {_before:.1%} -> "
+                 f"{crisis_share:.1%}")
+            _input_rail("input_vix_crisis_share", iv, before=_before, after=crisis_share)
     _log(f"crisis worlds: {crisis_why}")
     # THE HAZARD, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. Under `HAZARD_MODE =
     # "decay_posterior"` each sleeve with a measured hazard carries it as its OWN decay
@@ -4988,6 +5112,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "drift_overlay": {"crisis_prob": round(crisis_share, 6),
                           "standing": WorldConfig().crisis_prob,
                           "why": crisis_why, "source": drift_why},
+        # WHAT THE OUT-OF-SAMPLE INPUT RE-TEST SAID AND DID (`input_ablation`, `INPUT_POLICY`).
+        "input_verdicts": iv,
         # THE MACRO REGIME THIS BOOK WAS SOLVED IN, AND WHAT IT MOVED (2026-09-16): the state
         # (dollar / risk / rates / curve / liquidity ranks and buckets), the kernel that weighted
         # every sleeve's history by its resemblance to today, the per-sleeve tilts the posterior
