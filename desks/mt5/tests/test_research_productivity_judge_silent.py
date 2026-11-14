@@ -152,3 +152,23 @@ def test_a_sweep_that_judged_nothing_is_no_witness(tmp_path: Path) -> None:
     empty.write_text('{"n_judged": 12, "verdicts": []}', "utf-8")
     os.utime(empty, (stamp, stamp))
     assert rp.judge_silence(led, now=NOW, sweep=empty)["silent"] is False
+
+
+_ABS_PATH = __import__("re").compile(r"(?<![\w.:/\\])(?:[A-Za-z]:[\\/]|/)[^\s'\",;)\]}]+")
+
+
+def test_published_report_holds_no_box_path_and_no_exception_text(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """RESEARCH_PRODUCTIVITY.json is published from a public repo (audit HOLD on #1161)."""
+    led = _ledger(tmp_path, NOW - timedelta(hours=1))
+    monkeypatch.setattr(rp, "JUDGE_FENCE", tmp_path / "nope.py")
+    monkeypatch.setattr(rp, "OUT", tmp_path / "RESEARCH_PRODUCTIVITY.json")
+    monkeypatch.setattr(rp, "stages", lambda: {
+        **_STAGES, "intake": {"rows_recent_files": 0}, "compiled": {"candidates": 0},
+        "certified": {"cells": 0}, "forward": {}})
+    rp.run(ledger=led, now=NOW)
+    text = (tmp_path / "RESEARCH_PRODUCTIVITY.json").read_text("utf-8")
+    assert not _ABS_PATH.findall(text), _ABS_PATH.findall(text)
+    assert str(tmp_path) not in text and "No such file" not in text and "Errno" not in text
+    judge = rp.judge_silence(led, now=NOW)
+    assert judge["evidence"] == led.name and str(tmp_path) not in json.dumps(judge)

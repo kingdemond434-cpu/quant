@@ -476,7 +476,10 @@ def write(doc: dict[str, Any], path: Path | None = None) -> Path:
     p = Path(path or OUT)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    # PUBLISHED (sync_shadow_to_git): no absolute box path leaves the box (audit HOLD on #1161).
+    from libs.research.forward_ledger import public_doc
+    tmp.write_text(json.dumps(public_doc(json.loads(json.dumps(doc, default=str))), indent=1),
+                   "utf-8")
     tmp.replace(p)
     return p
 

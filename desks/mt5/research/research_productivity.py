@@ -262,7 +262,8 @@ def judge_stale_hours() -> float:
         spec.loader.exec_module(mod)
         return float(mod.STALE_H)
     except Exception as exc:  # a missing fence is UNMEASURED, never a guess
-        raise LookupError(f"judge-coverage lease unreadable from {JUDGE_FENCE}: {exc}") from exc
+        raise LookupError(f"judge-coverage lease unreadable from scripts/{JUDGE_FENCE.name}: "
+                          f"{type(exc).__name__}") from exc
 
 
 def _ledger_newest(path: Path, now: datetime) -> tuple[datetime | None, int]:
@@ -336,7 +337,7 @@ def judge_silence(ledger: Path | None = None, *, now: datetime | None = None,
     t = now or datetime.now(tz=UTC)
     path = Path(ledger or GATE_LEDGER)
     sweep_path = Path(sweep or SWEEP_REPORT)
-    out: dict[str, Any] = {"evidence": str(path), "sweep_report": str(sweep_path),
+    out: dict[str, Any] = {"evidence": path.name, "sweep_report": sweep_path.name,
                            "lease_source": "scripts/check_judge_coverage.STALE_H"}
     try:
         lease = float(stale_h) if stale_h is not None else judge_stale_hours()
@@ -360,7 +361,7 @@ def judge_silence(ledger: Path | None = None, *, now: datetime | None = None,
                                                  if future else ""))
         else:
             out["newest_ledger_verdict_at"] = at.isoformat()
-            witnesses.append((at, str(path)))
+            witnesses.append((at, path.name))
     try:
         swept = datetime.fromtimestamp(sweep_path.stat().st_mtime, tz=UTC)
         n_judged = sweep_n_judged(sweep_path)
@@ -378,7 +379,7 @@ def judge_silence(ledger: Path | None = None, *, now: datetime | None = None,
             gaps.append(f"{sweep_path.name} mtime {swept.isoformat()} is in the future, ignored")
         else:
             out["sweep_report_mtime"] = swept.isoformat()
-            witnesses.append((swept, str(sweep_path)))
+            witnesses.append((swept, sweep_path.name))
     if gaps:
         out["gaps"] = gaps
     if not witnesses:
@@ -458,7 +459,10 @@ def run(*, ledger: Path | None = None, now: datetime | None = None,
     doc = {"generated_utc": (now or datetime.now(tz=UTC)).isoformat(), "stages": s,
            "conversion": conv, "bottleneck": bottleneck, "bottleneck_detail": detail}
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    # PUBLISHED: no absolute box path leaves the box (audit HOLD on #1161).
+    from libs.research.forward_ledger import public_doc
+    doc = public_doc(json.loads(json.dumps(doc, default=str)))
+    OUT.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
 
 

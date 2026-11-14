@@ -122,6 +122,13 @@ def test_build_judges_live_and_forward_clocks_and_names_every_gap(tmp_path: Path
     assert doc["sizing_hook"]["owner"] == "Max-growth thread"
     assert set(doc["companions"]) == {"decline_detector", "capacity_frontier"}
     dv.write(doc, out)
+    # PUBLISHED from a public repo (audit HOLD on #1161): no drive- or root-anchored path, no
+    # exception message, in any field.
+    import re
+    text = out.read_text("utf-8")
+    abs_path = re.compile(r"(?<![\w.:/\\])(?:[A-Za-z]:[\\/]|/)[^\s'\",;)\]}]+")
+    assert not abs_path.findall(text), abs_path.findall(text)
+    assert str(tmp_path) not in text and "Errno" not in text and "No such file" not in text
     got = dv.decay_input("EURUSD.asia", out)
     assert got["demote_input"] is True and got["strengthen_input"] is False
     assert dv.decay_input("eurusd_live_sleeve", out)["basis"] == "live_ledger"

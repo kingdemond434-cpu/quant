@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -228,7 +229,41 @@ def read_rows(key: str, dirs: Iterable[Path], shared: Mapping[str, Any] | None =
     return [r for r in doc if isinstance(r, dict)], OWN, str(path)
 
 
+_REPO = Path(__file__).resolve().parents[2]
+# A drive-anchored (`C:\\...`, `C:/...`) or root-anchored (`/home/...`) path token. The lookbehind
+# keeps prose like `symbol/family/window` and relative paths like `reports/x.json` untouched.
+_ABS = re.compile(r"(?<![\w.:/\\])(?:[A-Za-z]:[\\/]|/)[^\s'\",;)\]}]+")
+
+
+def public_path(p: str | Path) -> str:
+    """A path fit for a PUBLISHED artifact: repo-relative when it sits in the repository, else its
+    basename. The repo is public, so a box's absolute layout never leaves the box."""
+    raw = str(p)
+    try:
+        if not Path(raw).is_absolute():
+            raise ValueError(raw)          # a Windows path read on POSIX, or a relative one
+        return Path(raw).relative_to(_REPO).as_posix()
+    except ValueError:
+        return re.split(r"[\\/]", raw.rstrip("\\/"))[-1] or raw
+
+
+def public_text(text: str) -> str:
+    """`text` with every absolute path token replaced by `public_path` of it."""
+    return _ABS.sub(lambda m: public_path(m.group(0)), text)
+
+
+def public_doc(obj: Any) -> Any:
+    """`obj` (a JSON-shaped document) with `public_text` applied to every string, keys included."""
+    if isinstance(obj, str):
+        return public_text(obj)
+    if isinstance(obj, Mapping):
+        return {public_text(str(k)): public_doc(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [public_doc(v) for v in obj]
+    return obj
+
+
 __all__ = ["NAME_MAX", "NO_LEDGER", "OWN", "OWN_SUFFIX", "REGISTRY_NAME",
            "UNMEASURED_SHARED_LEDGER", "KeyParts", "collisions", "freeze_collisions",
            "legacy_name", "legacy_name_for", "load_shared", "own_name", "parse_key",
-           "per_key_name", "read_rows", "resolve", "writer_name", "writer_path"]
+           "per_key_name", "public_doc", "public_path", "public_text", "read_rows", "resolve", "writer_name", "writer_path"]
