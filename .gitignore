@@ -613,3 +613,7 @@ desks/mt5/data/bar_clock_probes.summary.json.tmp
 
 # Box-local adoption quarantine list (Adopt-Release step 1b); never tracked, never published.
 desks/mt5/data/ADOPT_QUARANTINED_COMMITS.json
+
+# proposer_common.donate_per_family: the cells each converting producer has already charged
+# (one JSONL per source). Box state; losing it re-charges once, never under-counts.
+desks/mt5/data/donation_ledgers/
