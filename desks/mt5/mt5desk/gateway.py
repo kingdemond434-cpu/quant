@@ -2981,8 +2981,9 @@ def _fill_surface():
     if _SURFACE is None:
         try:
             from mt5desk import fill_surface
-            rows = [json.loads(ln) for ln in INTENTS.read_text("utf-8").splitlines()
-                    if ln.strip()] if INTENTS.exists() else []
+            # WITH THEIR FILLS (2026-11-11): bare intents carry no `fill`, so the surface fitted
+            # here never learned a slip and priced every execution choice on a ~zero prior.
+            rows = fill_surface.load_joined(INTENTS, BASE / "data" / "live_ledger.jsonl")
             fs = fill_surface.FillSurface().fit(rows) if rows else None
             _SURFACE = fs if fs is not None else False
         except Exception as exc:

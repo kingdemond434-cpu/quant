@@ -27,7 +27,6 @@ import numpy as np
 
 BASE = Path(__file__).resolve().parent.parent
 INTENTS = BASE / "data" / "order_intents.jsonl"
-MARKOUT = BASE / "reports" / "markout.json"
 OUT = BASE / "reports" / "FILL_SURFACE.json"
 MIN_FILLS = 30
 FEATURES = ("spread_frac", "vol", "hour_sin", "hour_cos", "size", "is_buy", "distance")
@@ -156,6 +155,65 @@ class FillSurface:
                 "fill_w": (self.fill_w.tolist() if self.fill_w is not None else None)}
 
 
+LEDGER = BASE / "data" / "live_ledger.jsonl"
+
+
+def join_fills(intents: list[dict[str, Any]], deals: list[dict[str, Any]]) -> int:
+    """Write each intent's ENTRY fill onto it (`fill`), from the live ledger, through the
+    markout's own join. Returns how many intents got one.
+
+    THE SURFACE THAT NEVER SAW A FILL (measured 2026-11-11). `fit` learns slippage only from
+    rows carrying both `intended` and `fill`, and no intent ever carries `fill`: the gateway
+    fitted on bare intents, and `run` joined on `markout.json["rows"]`, a key the daily cycle has
+    never written. So the surface stayed on its half-spread prior for its whole life -- and with
+    no spread recorded on most intents that prior priced execution at ~0.03bps on XAUUSD while
+    the 122 measured gold fills cost 1.24bps (0.61bps across 223 fills). Every execution-policy
+    choice (market / limit / stop / split) was made against a cost of nearly zero.
+
+    The join is `markout.compute`'s (entry order / position id, then the stop/target echo), run
+    ONE ACCOUNT'S DEALS AT A TIME and keyed by (account, ticket). Ticket numbers are per broker:
+    an FTMO ticket can equal a Fusion one, and a join on the bare number would hand one
+    account's fill to another's intent and fabricate a slip of whatever the two prices differ by.
+    An intent that names its account takes a fill from that account only. An intent written
+    before provenance stamping (no account fields at all -- 222 of the 294 ticketed intents
+    measured 2026-11-11) takes a fill only when exactly one account holds that ticket; a ticket
+    two accounts share stays unfilled, never guessed.
+    """
+    from mt5desk.markout import compute
+    from mt5desk.provenance import row_account, split_by_account
+
+    fills: dict[tuple[Any, str], float] = {}
+    for acct, group in (split_by_account(deals).items() if deals else ()):
+        for r in compute(intents, list(group)).rows:
+            if r.get("order") is not None and r.get("fill") is not None:
+                fills[(acct, str(r["order"]))] = float(r["fill"])
+    by_ticket: dict[str, list[float]] = {}
+    for (_acct, ticket), fill in fills.items():
+        by_ticket.setdefault(ticket, []).append(fill)
+    n = 0
+    for it in intents:
+        ticket = str(it.get("ticket"))
+        if any(it.get(k) is not None for k in ("account_key", "server", "account_kind")):
+            f = fills.get((row_account(it), ticket))
+        else:
+            only = by_ticket.get(ticket) or []
+            f = only[0] if len(only) == 1 else None
+        if f is not None and it.get("fill") is None:
+            it["fill"] = f
+            n += 1
+    return n
+
+
+def load_joined(intents_path: Path = INTENTS, ledger: Path = LEDGER) -> list[dict[str, Any]]:
+    """The box's intents with their entry fills joined from the (audited) live ledger."""
+    from libs.ops.live_ledger_view import ledger_path
+
+    rows = _rows(intents_path)
+    if rows:
+        join_fills(rows, _rows(ledger_path(ledger)))
+    return rows
+
+
 def _rows(path: Path) -> list[dict[str, Any]]:
     try:
         return [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
@@ -165,16 +223,7 @@ def _rows(path: Path) -> list[dict[str, Any]]:
 
 def run(write: bool = True) -> dict[str, Any]:
     """Fit the surface on the box's own markout-joined intents; report the posterior."""
-    rows = _rows(INTENTS)
-    try:
-        mk = json.loads(MARKOUT.read_text("utf-8"))
-        joined = {str(m.get("ticket")): m for m in (mk.get("rows") or []) if isinstance(m, dict)}
-    except (OSError, ValueError):
-        joined = {}
-    for r in rows:
-        j = joined.get(str(r.get("ticket")))
-        if j:
-            r.setdefault("fill", j.get("fill"))
+    rows = load_joined()
     fs = FillSurface().fit(rows)
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "intents": len(rows),
            **fs.to_dict(),

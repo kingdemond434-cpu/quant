@@ -298,7 +298,7 @@ NODES: tuple[Node, ...] = (
     # EXECUTION INTELLIGENCE AND THE RELEASE: the learned fill/slip surface every cost consumer
     # shares, the netting measurement, and the one live SHA every decision is stamped with.
     Node("fill_surface", "desks/mt5/mt5desk/fill_surface.py",
-         reads=("desks/mt5/data/order_intents.jsonl", "desks/mt5/reports/markout.json"),
+         reads=("desks/mt5/data/order_intents.jsonl", "desks/mt5/data/live_ledger.jsonl"),
          writes=("desks/mt5/reports/FILL_SURFACE.json",)),
     # THE THEORETICAL-POSITION LEDGER (2026-09-05): the gateway asserts every sleeve's desired
     # signed position and records every fill into `netting.TheoreticalBook`; `netting.route`
