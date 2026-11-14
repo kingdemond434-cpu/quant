@@ -509,6 +509,13 @@ def checks(
         return "pending", "waiting on: " + ", ".join(
             running + [f"{g} (not started)" for g in missing]
         )
+    # A gating job SKIPPED is a draft's run (2026-11-14): never a pass, never a failure. It waits
+    # for the run that marking the PR ready starts.
+    skipped = [g for g in gating if newest[g].get("conclusion") == "skipped"]
+    if skipped:
+        return "pending", "waiting on: " + ", ".join(
+            f"{g} (skipped on a draft; it runs once the PR is ready)" for g in skipped
+        )
     not_ok = [g for g in gating if newest[g].get("conclusion") != "success"]
     if not_ok:
         return "fail", "gating jobs did not succeed: " + ", ".join(not_ok)
@@ -1416,6 +1423,16 @@ def run(
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
+        # A CLEARED DRAFT IS MARKED READY NOW, NOT AFTER ITS CHECKS (2026-11-14). Drafts run no
+        # gating job (ci.yml quality says why), so a draft could never show green and waiting for
+        # green first would hold it forever. Only the box does this: its `gh` is zuck's login, so
+        # the ready_for_review event starts the full CI (the workflow token's would start
+        # nothing). The next sweep, or the after-checks look when that CI ends, merges it.
+        if p.get("draft") and box:
+            subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True,
+                           timeout=GH_TIMEOUT_S)  # fmt: skip
+            _summary(f"#{pr} @ {head[:9]}: CLEARed draft marked ready ({cwhy}); full CI starts")
+            return 0
         if state == "fail" and REVIEWER in need:
             review = queued_review(repo, runs, genuine)
             rest = [r for r in runs if r is not review]
