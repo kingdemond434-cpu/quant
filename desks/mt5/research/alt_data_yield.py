@@ -13,7 +13,10 @@ seed-miner clock). This file only COMPOSES what those organs already record:
   rows, datasets, last error, counted per checkpoint since the counter landed);
 * per LEG fetch rate: `data/alt_fetch_runs.jsonl` (one line per miner pass: fetches, ok,
   seconds) and, for the `forest_*` legs, the wall/CPU seconds `compute_ledger.jsonl` holds;
-* the week: vectors attempted in the last seven days against vectors named.
+* the week: vectors attempted in the last seven days against vectors named;
+* per REGION (2026-11-03): named / attempted / YIELDED / EMPTY / BLOCKED, the discovery backend
+  that yielded (`research/discovery_backends.py`), the MT5 hypothesis-lane symbols the registry
+  lists there, and rule 23's RED flag for a region at 0 YIELDED for seven days on its clock.
 
 UNMEASURED IS NEVER ZERO (L1.28a). A counter that did not exist when a platform was last worked
 reads "UNMEASURED" with the reason, never 0; a leg with no fetch-rate line reads UNMEASURED. A
@@ -44,6 +47,10 @@ FRONTIER = DESK / "data" / "deep_forest_frontier.json"
 VECTOR_STATS = DESK / "data" / "deep_forest_vector_stats.json"
 RUNS = DESK / "data" / "alt_fetch_runs.jsonl"
 COMPUTE_LEDGER = DESK / "data" / "compute_ledger.jsonl"
+#: Per region: since when it has yielded nothing, and when it last yielded. Box-local state.
+REGION_CLOCK = DESK / "data" / "region_yield_clock.json"
+#: Rule 23 (REGION_GAP_RANK_2026-11-03): a region at 0 YIELDED for this long turns RED.
+RED_AFTER = timedelta(days=7)
 UNMEASURED = "UNMEASURED"
 WEEK = timedelta(days=7)
 DAY = timedelta(days=1)
@@ -172,6 +179,143 @@ def vectors(frontier: Any, stats: Any, now: datetime) -> dict[str, Any]:
             "rows_by_vector": rows}
 
 
+# --------------------------------------------------------------------------- regions
+def _clock(p: Path) -> Any:
+    """The region clock: its JSON, None when the file does not exist, or a str saying why a file
+    that exists could not be used. Absent and corrupt are different answers."""
+    try:
+        text = p.read_text("utf-8-sig")
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        return f"{p.name} exists but cannot be read ({type(exc).__name__})"
+    try:
+        doc = json.loads(text)
+    except ValueError as exc:
+        return f"{p.name} does not parse ({type(exc).__name__})"
+    return doc if isinstance(doc, dict) else f"{p.name} is not a JSON object"
+
+
+def _registry_regions() -> dict[str, int] | str:
+    """{region: hypothesis-lane MT5 symbols}, from the broker registry; a string when the
+    registry cannot be read (UNMEASURED, never zero)."""
+    try:
+        from research import universe_policy as up
+        got = up.hypothesis_regions()
+    except Exception as exc:
+        return f"{UNMEASURED}: {type(exc).__name__}"
+    if not got:
+        return f"{UNMEASURED}: the universe registry is absent or empty here"
+    return {r: len(v) for r, v in got.items()}
+
+
+def regions(frontier: Any, stats: Any, clock: Any, now: datetime,
+            symbols_by_region: dict[str, int] | str | None = None) -> dict[str, Any]:
+    """PER REGION, every pass: named / attempted (this week) / YIELDED / EMPTY / BLOCKED, the
+    discovery backends that yielded, the MT5 symbols the registry lists there, and the rule-23
+    flag: RED when a region has been at 0 YIELDED for seven days on its clock.
+
+    The clock (`REGION_CLOCK`) starts a zero streak at the earliest `counted_since` of the
+    region's vectors when the counters say it never yielded -- evidence, not the day this code
+    landed -- and otherwise at the first pass that saw it at zero. An unreadable frontier is
+    UNMEASURED for every region, never zero."""
+    vec = frontier.get("vectors") if isinstance(frontier, dict) else None
+    if not isinstance(vec, dict):
+        return {"status": UNMEASURED, "why": f"{FRONTIER.name} absent or unreadable here"}
+    st = (stats or {}).get("vectors") if isinstance(stats, dict) else None
+    st = st if isinstance(st, dict) else {}
+    # THE CLOCK IS GUARDED LIKE THE FRONTIER. `clock` is the parsed file, None when the file is
+    # absent (a first pass: every streak starts on evidence), or a str naming why a file that
+    # EXISTS could not be read -- then no streak is restarted, every zero-yield region reads
+    # UNMEASURED, and `region_clock_doc` refuses to write over the file.
+    clock_bad = clock if isinstance(clock, str) else ""
+    clk = clock.get("regions") if isinstance(clock, dict) else None
+    if isinstance(clock, dict) and not isinstance(clk, dict):
+        clock_bad = "the region clock has no `regions` table"
+    clk = clk if isinstance(clk, dict) else {}
+    rows: dict[str, dict[str, Any]] = {}
+    first_counted: dict[str, datetime] = {}
+    last_success: dict[str, datetime] = {}
+    for name, v in vec.items():
+        v = v if isinstance(v, dict) else {}
+        s = st.get(name) if isinstance(st.get(name), dict) else {}
+        region = str(v.get("region") or s.get("region") or "unknown") or "unknown"
+        r = rows.setdefault(region, {"named": 0, "attempted_this_week": 0, "YIELDED": 0,
+                                     "EMPTY": 0, "BLOCKED": 0, "NAMED_ONLY": 0,
+                                     "discovery": {}, "yielded_via": {}})
+        r["named"] += 1
+        outcome = str(v.get("outcome") or "NAMED_ONLY")
+        key = outcome if outcome in ("YIELDED", "EMPTY", "BLOCKED") else "NAMED_ONLY"
+        r[key] += 1
+        la = _ts(v.get("last_attempt"))
+        if la is not None and now - la <= WEEK:
+            r["attempted_this_week"] += 1
+        ds = s.get("discovery_status")
+        if ds:
+            r["discovery"][str(ds)] = r["discovery"].get(str(ds), 0) + 1
+        for b in s.get("yielded_via") or []:
+            r["yielded_via"][str(b)] = r["yielded_via"].get(str(b), 0) + 1
+        cs = _ts(s.get("counted_since"))
+        if cs is not None and (region not in first_counted or cs < first_counted[region]):
+            first_counted[region] = cs
+        ls = _ts(s.get("last_success"))
+        if ls is not None and (region not in last_success or ls > last_success[region]):
+            last_success[region] = ls
+    out: dict[str, Any] = {}
+    red: list[str] = []
+    for region, r in sorted(rows.items()):
+        prev = clk.get(region) if isinstance(clk.get(region), dict) else {}
+        last_y = last_success.get(region) or _ts(prev.get("last_yielded"))
+        if r["YIELDED"] > 0:
+            zero_since = None
+            last_y = last_y or now
+        else:
+            # A streak starts where it already started, else at the LAST YIELD (a region GREEN
+            # yesterday is one day at zero, not "since its counters began"), and only for a
+            # region that never yielded at the earliest counter -- evidence, not code age.
+            zero_since = (_ts(prev.get("zero_since")) or last_y
+                          or first_counted.get(region) or now)
+        days = round((now - zero_since).total_seconds() / 86400, 2) if zero_since else 0.0
+        if r["YIELDED"] > 0:
+            flag = "GREEN"
+        elif clock_bad:
+            flag, zero_since, days = UNMEASURED, None, UNMEASURED
+        elif zero_since is not None and now - zero_since >= RED_AFTER:
+            flag = "RED"
+            red.append(region)
+        else:
+            flag = "WATCH"
+        syms: Any = (symbols_by_region.get(region, 0) if isinstance(symbols_by_region, dict)
+                     else (symbols_by_region or UNMEASURED))
+        out[region] = {**r, "attempted": r["attempted_this_week"],
+                       "yield_share": round(r["YIELDED"] / r["named"], 4) if r["named"] else 0.0,
+                       "backend_that_yielded": (max(r["yielded_via"], key=r["yielded_via"].get)
+                                                if r["yielded_via"] else None),
+                       "mt5_hypothesis_symbols": syms,
+                       "zero_since": zero_since.isoformat(timespec="seconds") if zero_since
+                       else None,
+                       "last_yielded": last_y.isoformat(timespec="seconds") if last_y else None,
+                       "days_at_zero": days, "flag": flag}
+    return {"n": len(out), "red": red if not clock_bad else UNMEASURED,
+            "clock": f"{UNMEASURED}: {clock_bad}" if clock_bad else "OK",
+            "green": [k for k, v in out.items() if v["flag"] == "GREEN"],
+            "rule": ("rule 23: RED when a region's vectors stay at 0 YIELDED for 7 days on the "
+                     "region clock; WATCH while the streak is younger; UNMEASURED when the "
+                     "frontier cannot be read"),
+            "by_region": out}
+
+
+def region_clock_doc(section: dict[str, Any], now: datetime) -> dict[str, Any] | None:
+    """What the clock file holds after this pass, or None when the section is UNMEASURED (an
+    unreadable frontier must never restart or erase a streak)."""
+    rows = section.get("by_region") if isinstance(section, dict) else None
+    if not isinstance(rows, dict) or str(section.get("clock", "OK")) != "OK":
+        return None
+    return {"updated": now.isoformat(timespec="seconds"),
+            "regions": {k: {"zero_since": v.get("zero_since"),
+                            "last_yielded": v.get("last_yielded")} for k, v in rows.items()}}
+
+
 # --------------------------------------------------------------------------- legs
 def legs(runs: Iterable[dict[str, Any]], ledger: Iterable[dict[str, Any]],
          now: datetime) -> dict[str, Any]:
@@ -234,15 +378,21 @@ def legs(runs: Iterable[dict[str, Any]], ledger: Iterable[dict[str, Any]],
 # --------------------------------------------------------------------------- the artifact
 def build(*, coverage: Path | None = None, frontier: Path | None = None,
           vector_stats: Path | None = None, runs: Path | None = None,
-          compute_ledger: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
+          compute_ledger: Path | None = None, region_clock: Path | None = None,
+          now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     coverage = coverage or COVERAGE
     frontier = frontier or FRONTIER
     vector_stats = vector_stats or VECTOR_STATS
     runs = runs or RUNS
     compute_ledger = compute_ledger or COMPUTE_LEDGER
+    # The clock lives beside the run ledger (both in data/ on the box), so a caller -- or a test
+    # -- that points its ledgers elsewhere never writes the desk's own clock.
+    region_clock = region_clock or runs.with_name(REGION_CLOCK.name)
     plat = platforms(_json(coverage))
-    vec = vectors(_json(frontier), _json(vector_stats), now)
+    front, vstats = _json(frontier), _json(vector_stats)
+    vec = vectors(front, vstats, now)
+    reg = regions(front, vstats, _clock(region_clock), now, _registry_regions())
     leg = legs(_jsonl(runs), _jsonl(compute_ledger, max_bytes=8 * 1024 * 1024), now)
     return {
         "generated_utc": now.isoformat(timespec="seconds"),
@@ -253,9 +403,12 @@ def build(*, coverage: Path | None = None, frontier: Path | None = None,
             "vectors_attempted_this_week": vec.get("attempted_this_week", UNMEASURED),
             "vectors_never_attempted": vec.get("never_attempted", UNMEASURED),
             "vectors_by_outcome": vec.get("by_outcome", UNMEASURED),
+            "regions": reg.get("n", UNMEASURED),
+            "regions_red": reg.get("red", UNMEASURED),
         },
-        "platforms": plat, "vectors": vec, "legs": leg,
+        "platforms": plat, "vectors": vec, "regions": reg, "legs": leg,
         "sources": {"platforms": str(coverage), "vectors": [str(frontier), str(vector_stats)],
+                    "regions": [str(frontier), str(vector_stats), str(region_clock)],
                     "legs": [str(runs), str(compute_ledger)]},
         "rule": ("UNMEASURED is never written as 0; a vector never attempted has attempts 0, "
                  "which the frontier measures. Rewritten by every pass of deep_forest_miner "
@@ -284,6 +437,12 @@ def _atomic(path: Path, text: str) -> None:
 
 def write(out: Path | None = None, **paths: Any) -> dict[str, Any]:
     """Build and write the artifact. `paths` overrides any input (tests point them at tmp)."""
-    doc = build(**{k: Path(v) for k, v in paths.items() if v is not None})
+    p = {k: Path(v) for k, v in paths.items() if v is not None}
+    doc = build(**p)
     _atomic(out or OUT, json.dumps(doc, indent=1, ensure_ascii=False, default=str))
+    clock = region_clock_doc(doc.get("regions") or {}, _ts(doc["generated_utc"]) or
+                             datetime.now(tz=UTC))
+    if clock is not None:
+        with contextlib.suppress(OSError):
+            _atomic(Path(doc["sources"]["regions"][2]), json.dumps(clock, indent=1))
     return doc

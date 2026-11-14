@@ -324,7 +324,23 @@ def _softs() -> tuple[str, ...]:
 
 @_per_call
 def _fx_all() -> tuple[str, ...]:
-    return _by_class("Forex")
+    """EVERY FX pair the registry lists: majors, crosses AND exotics.
+
+    This was `_by_class("Forex")`, which is the registry's majors-and-crosses class only (29
+    pairs): the 57 `Forex Exotics` -- USDTRY, USDZAR, USDMXN, EURPLN, USDHUF, USDCNH, USDINR ...
+    -- were never instruments of the WMR fix or the month-end rebalance, though the WMR fix
+    benchmarks them exactly as it does EURUSD and the forced hedgers trade them in the same
+    minutes. The class vocabulary is `universe_policy`'s, so a registry that spells the FX classes
+    differently is still read whole (2026-11-03)."""
+    return _keep(sorted(k for k, v in _registry().items()
+                        if " ".join(str(v.get("asset_class") or "").lower().replace("_", " ")
+                                    .split()) in _FX_CLASS_NAMES))
+
+
+#: The FX class vocabulary, spelled as `universe_policy._FX_CLASSES` normalises it (a test pins
+#: the two together). Class names, never symbols.
+_FX_CLASS_NAMES = frozenset({"forex", "forex majors", "forex crosses", "forex exotics", "fx",
+                             "fx major", "fx cross", "fx exotic"})
 
 
 @_per_call

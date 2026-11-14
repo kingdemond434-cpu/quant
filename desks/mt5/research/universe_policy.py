@@ -353,3 +353,147 @@ def peer_classes() -> dict[str, list[str]]:
 def class_members(klass: str) -> list[str]:
     """Every registry symbol whose peer class is `klass`, sorted."""
     return list(peer_classes().get(str(klass), []))
+
+
+# =============================================================================================
+# REGIONS (2026-11-03): BREADTH BY COUNTRY, READ FROM THE REGISTRY, NEVER A SYMBOL LIST.
+#
+# THE NARROWING THIS ANSWERS. Several miners took the first N symbols of an ALPHABETICAL or
+# FILE-SIZE order (`sorted(...)[:12]`, a budget that stops a sorted walk, the largest parquet
+# files first). Every one of those orders puts the long-history majors first and the emerging
+# currencies last -- USDTRY, USDZAR, ZARJPY and USDIDR sort to the tail of the alphabet, and their
+# files are the youngest -- so the dark regions of REGION_GAP_RANK_2026-11-03 were dark on the
+# symbol side too. `region_interleave` takes ONE symbol from each region in turn, so any cap of N
+# spans N regions before it repeats one; nothing is removed from the walk, only reordered.
+#
+# A region is a COUNTRY CODE (ISO 3166 alpha-2, the same vocabulary the deep-forest grounds use),
+# derived per symbol from MetaTrader's own registry: an FX pair's non-major leg (its profit
+# currency when both legs are G10), an index's profit currency, `global` for a dollar-priced
+# commodity, a crypto CFD or the dollar basket. The currency -> country table below is ISO 4217
+# vocabulary: it names currencies, never instruments, so a pair listed tomorrow is placed the
+# day it appears.
+# =============================================================================================
+
+#: G10 currencies. A pair with a non-G10 leg is placed in that leg's country.
+G10_CURRENCIES: frozenset[str] = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "CAD", "AUD",
+                                            "NZD", "SEK", "NOK"})
+#: ISO 4217 -> ISO 3166 alpha-2 (EUR -> the euro area, `eu`).
+CURRENCY_REGION: dict[str, str] = {
+    "USD": "us", "EUR": "eu", "JPY": "jp", "GBP": "gb", "CHF": "ch", "CAD": "ca", "AUD": "au",
+    "NZD": "nz", "SEK": "se", "NOK": "no", "DKK": "dk", "PLN": "pl", "HUF": "hu", "CZK": "cz",
+    "RON": "ro", "BGN": "bg", "ISK": "is", "TRY": "tr", "ZAR": "za", "ILS": "il", "RUB": "ru",
+    "UAH": "ua", "KZT": "kz", "MXN": "mx", "BRL": "br", "CLP": "cl", "COP": "co", "PEN": "pe",
+    "ARS": "ar", "CNH": "cn", "CNY": "cn", "HKD": "hk", "SGD": "sg", "KRW": "kr", "TWD": "tw",
+    "INR": "in", "IDR": "id", "THB": "th", "MYR": "my", "PHP": "ph", "VND": "vn", "PKR": "pk",
+    "SAR": "sa", "AED": "ae", "QAR": "qa", "KWD": "kw", "EGP": "eg", "NGN": "ng", "KES": "ke",
+    "MAD": "ma",
+}
+GLOBAL = "global"
+
+
+def region_of(symbol: str) -> str:
+    """The country a hypothesis-lane symbol's edge is local to, or `global`. Never raises.
+
+    FX: the non-G10 leg if there is one (USDTRY -> tr, EURPLN -> pl, ZARJPY -> za); otherwise the
+    profit currency of a G10 cross (EURGBP -> gb), and the non-USD leg of a G10 dollar pair
+    (USDJPY -> jp). Indices: the profit currency (JPN225 -> jp, CHINAH -> hk). A metal quoted in
+    another currency (XAUAUD) takes that currency's country. Everything else -> `global`.
+    """
+    try:
+        sym = str(symbol).strip().upper()
+        row = _registry().get(sym) or {}
+        klass = asset_class_of(sym)
+        legs = _pair_legs(sym)
+        profit = str(row.get("currency_profit") or "").upper()
+        if klass in _FX_CLASSES and legs is not None:
+            em = [c for c in legs if c not in G10_CURRENCIES]
+            if em:
+                return CURRENCY_REGION.get(em[0], GLOBAL)
+            non_usd = [c for c in legs if c != "USD"]
+            pick = profit if profit in legs and profit != "USD" else (non_usd[0] if non_usd
+                                                                      else "")
+            return CURRENCY_REGION.get(pick, GLOBAL)
+        if klass in _INDEX_CLASSES:
+            if sym.startswith("USD"):
+                return GLOBAL                                 # the dollar basket is FX
+            return CURRENCY_REGION.get(profit, GLOBAL)
+        if klass in _COMMODITY_CLASSES and legs is not None and legs[1] != "USD":
+            return CURRENCY_REGION.get(legs[1], GLOBAL)
+        if klass in _BOND_CLASSES:
+            return CURRENCY_REGION.get(profit, GLOBAL)
+    except Exception:
+        return GLOBAL
+    return GLOBAL
+
+
+def hypothesis_regions() -> dict[str, list[str]]:
+    """{region: hypothesis-lane symbols} over the whole registry. Share CFDs are NOT here: they
+    are event-lane (and cross-sectional-class-book) instruments, never statistical ones."""
+    out: dict[str, list[str]] = {}
+    for k, v in _registry().items():
+        if lane(k) != HYPOTHESIS:
+            continue
+        out.setdefault(region_of(k), []).append(str(v.get("symbol") or k))
+    return {r: sorted(set(s)) for r, s in sorted(out.items())}
+
+
+def region_interleave(symbols: Iterable[str], *, rotation: int = 0) -> list[str]:
+    """`symbols` reordered one-per-region round robin, every symbol kept exactly once.
+
+    Inside a region the input order is the starting order (so a caller's own priority -- file
+    size, judged count -- decides which member opens at rotation 0). Regions are visited
+    smallest-first, so a two-member region (TRY, ZAR) is reached on the first lap rather than
+    after the eight-member euro area.
+
+    ROTATION MOVES BOTH ORDERS, so a cap cannot starve anyone. Pass `r` opens on region
+    `r % R` (R regions) and opens each region on its member `(r // R) % len(region)`. Over R
+    consecutive passes every region is FIRST once; over R * (largest region) passes every member
+    of every region has been first in its region at least once -- so any cap >= 1 reaches every
+    symbol inside that many passes. Callers pass hours since the epoch.
+    """
+    buckets: dict[str, list[str]] = {}
+    for s in dict.fromkeys(str(x) for x in symbols):
+        buckets.setdefault(region_of(s), []).append(s)
+    order = sorted(buckets, key=lambda r: (len(buckets[r]), r))
+    if order and rotation:
+        k = rotation % len(order)
+        order = order[k:] + order[:k]
+        lap = rotation // len(order)
+        for r in order:
+            b = buckets[r]
+            j = lap % len(b)
+            buckets[r] = b[j:] + b[:j]
+    out: list[str] = []
+    i = 0
+    while len(out) < sum(len(v) for v in buckets.values()):
+        for r in order:
+            if i < len(buckets[r]):
+                out.append(buckets[r][i])
+        i += 1
+    return out
+
+
+def cap_line(ordered: list[str], chosen: list[str], cap: int) -> dict[str, Any]:
+    """The missed-growth line a KEPT symbol cap owes (GROWTH GOVERNANCE: no cap without its
+    line): how many eligible symbols the cap left out and which regions it never reached. The
+    E[log W] price of the cap is UNMEASURED, and said so."""
+    pick = set(chosen)
+    left = [s for s in ordered if s not in pick]
+    reached = {region_of(s) for s in chosen}
+    unreached = sorted({region_of(s) for s in left} - reached)
+    return {"cap": int(cap), "eligible": len(ordered), "chosen": len(chosen),
+            "left_out": len(left), "regions_reached": sorted(reached),
+            "regions_left_dark": unreached,
+            "verdict": "NOT_BINDING" if not left else "UNMEASURED",
+            "why": ("cap did not bind" if not left else
+                    f"{len(left)} hypothesis-lane symbol(s) beyond the cap this pass; the hourly "
+                    "rotation (over regions AND within each region) reaches every one within "
+                    "regions x largest-region passes; the E[log W] cost is UNMEASURED")}
+
+
+def breadth_window(candidates: Iterable[str], cap: int, *, rotation: int = 0
+                   ) -> tuple[list[str], dict[str, Any]]:
+    """The first `cap` of `region_interleave(candidates)`, and its `cap_line`."""
+    ordered = region_interleave(candidates, rotation=rotation)
+    chosen = ordered[:max(0, int(cap))]
+    return chosen, cap_line(ordered, chosen, cap)

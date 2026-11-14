@@ -281,18 +281,35 @@ def accept_language(lang: str) -> str:
 
 
 # ------------------------------------------------------------------------------- fetching
-def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
+def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "",
+          honest: bool = False, meta: dict[str, str] | None = None) -> str:
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
-    on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
-    hdr = {**_UA, "Accept-Language": accept_language(lang)}
+    on a transport one, exactly the two shapes `_Run.page` and the route helpers expect.
+
+    `honest=True` is the DISCOVERY transport (`research.discovery_backends`): the desk's own
+    User-Agent instead of a browser's, and NO retry, because a 429 there is a hard stop. `meta`
+    receives `final_url`, the URL that actually answered after redirects, so a hold lands on the
+    host that refused."""
+    meta = meta if meta is not None else {}
+    opener = None
+    if honest:
+        from research import discovery_backends as db
+        hdr = {**db.DESK_HEADERS, "Accept-Language": accept_language(lang)}
+        opener = db.recording_opener(meta)
+    else:
+        hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
-    r = pf.get(url, headers=hdr, timeout=timeout, retries=1, leg=LEG, max_bytes=2_000_000)
+    r = pf.get(url, headers=hdr, timeout=timeout, retries=0 if honest else 1, leg=LEG,
+               max_bytes=4_000_000 if honest else 2_000_000, opener=opener)
+    if r.final_url and r.final_url != url:
+        meta.setdefault("final_url", r.final_url)
     if r.ok:
         return r.text
     if r.status is not None and r.status >= 400:
-        raise urllib.error.HTTPError(url, r.status, r.error or f"HTTP {r.status}",
+        raise urllib.error.HTTPError(meta.get("final_url") or url, r.status,
+                                     r.error or f"HTTP {r.status}",
                                      None, None)  # type: ignore[arg-type]
     raise OSError(r.error or "fetch failed")
 
@@ -412,7 +429,7 @@ def bing_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     try:
         page = _http(url, referer="https://www.bing.com/", lang=lang)
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     rows = parse_bing(page)
     if not rows:
         return [], (f"bing returned no parseable results ({len(page)} bytes -- an anti-bot "
@@ -428,7 +445,7 @@ def ddg_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     try:
         page = _http(url, referer="https://duckduckgo.com/", lang=lang)
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     rows = parse_ddg(page)
     if not rows:
         return [], f"duckduckgo returned no parseable results ({len(page)} bytes)"
@@ -448,6 +465,43 @@ def engine_search(query: str, site: str = "", lang: str = "zh", market: str = ""
     return [], "", errs
 
 
+def _bing_url(query: str, site: str = "", lang: str = "zh", market: str = "") -> str:
+    q = f"site:{site} {query}" if site else query
+    setlang, cc, _kl = locale_of(lang, market)
+    return f"https://www.bing.com/search?q={quote(q)}&setlang={setlang}&cc={cc}&count=20"
+
+
+def _ddg_url(query: str, site: str = "", lang: str = "zh", market: str = "") -> str:
+    q = f"site:{site} {query}" if site else query
+    return f"https://html.duckduckgo.com/html/?q={quote(q)}&kl={locale_of(lang, market)[2]}"
+
+
+def _discovery_transport(url: str) -> Any:
+    """The lawful chain's transport: `_http(honest=True)`, failures returned, never raised."""
+    from research import discovery_backends as db
+    meta: dict[str, str] = {}
+    try:
+        text = _http(url, honest=True, timeout=25.0, meta=meta)
+        final = meta.get("final_url", "")
+        return db.Fetched(url=url, status=200, text=text,
+                          final_url="" if final == url else final)
+    except Exception as exc:
+        return db.http_error_to_fetched(url, exc)
+
+
+def lawful_discovery() -> Any:
+    """One `LawfulDiscovery` for a run: robots, hard-stop holds and per-site caches shared by
+    every worker. Holds live beside the cursor file so a test that redirects SEEN redirects
+    them too. Bing and DuckDuckGo are the LAST RESORT only, behind the same robots check."""
+    from research import discovery_backends as db
+    return db.LawfulDiscovery(_discovery_transport,
+                              holds=SEEN.with_name(db.HOLDS.name),
+                              lock_dir=SEEN.with_name(LOCKS.name),
+                              last_resort=(("bing", _bing_url, parse_bing),
+                                           ("duckduckgo", _ddg_url, parse_ddg)),
+                              sleep=lambda s: time.sleep(s))
+
+
 # --------------------------------------------------------------------------- platform routes
 def gitee_search(query: str) -> tuple[list[dict[str, Any]], str | None]:
     url = (f"https://gitee.com/api/v5/search/repositories?q={quote(query)}"
@@ -455,7 +509,7 @@ def gitee_search(query: str) -> tuple[list[dict[str, Any]], str | None]:
     try:
         rows = json.loads(_http(url))
     except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:120]}"
+        return [], type(exc).__name__
     if not isinstance(rows, list):
         return [], "gitee search did not return a list"
     return [{"full": r.get("full_name") or r.get("path_with_namespace") or "",
@@ -488,7 +542,27 @@ def bilibili_transcript(bvid: str) -> tuple[str, str | None]:
         body = json.loads(_http(url))
         return " ".join(str(x.get("content", "")) for x in body.get("body", [])), None
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
+
+
+#: FETCHERS FENCED BY GOVERNANCE (governance/wayback-youtube-ruling-2026-11-14.md). Each stays
+#: registered, makes NO fetch, and publishes a missed_growth line on this miner's report; held rows
+#: keep their labels (LAWS 5e). The Auditor holds any change that re-enables one.
+FENCED_FETCHERS: dict[str, str] = {
+    "wayback": ("Internet Archive terms-refused for automated desk use ('scholarship and "
+                "research purposes only'); a snapshot is also a mirror route around a host's "
+                "own refusal"),
+    "youtube_transcript": ("keyless YouTube transcript mirrors are YouTube content reached "
+                           "around YouTube's terms; the box never contacts YouTube"),
+}
+
+
+def fenced_missed_growth() -> list[dict[str, Any]]:
+    """One missed_growth line per fenced fetcher: what the desk gives up, said, never silent."""
+    return [{"at": datetime.now(UTC).isoformat(timespec="seconds"), "rail": f"fenced:{name}",
+             "kind": "terms_refusal", "why": why, "cost": "UNMEASURED", "gain": "UNMEASURED",
+             "reopens_on": "the owner's own terms, read in full, or written permission"}
+            for name, why in FENCED_FETCHERS.items()]
 
 
 def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
@@ -496,6 +570,8 @@ def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None
     which `scripts/fetch_video_transcript.py` owns. MEASURED DEAD on every route 2026-08-27;
     youtube.com's own caption endpoints are barred by its robots.txt and are never tried. The
     reason is recorded per video, never an empty transcript."""
+    if "youtube_transcript" in FENCED_FETCHERS:
+        return "", "FENCED: youtube_transcript"
     try:
         sp = str(_ROOT / "scripts")
         if sp not in sys.path:
@@ -504,7 +580,7 @@ def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None
         text, route = fvt.youtube(video_id, lang=lang.split("-")[0])
         return str(text), None if text else f"{route}: empty transcript"
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
 
 
 _FEED_ITEM = re.compile(r"(?is)<(item|entry)\b[^>]*>(.*?)</\1>")
@@ -545,13 +621,15 @@ def parse_feed(xml: str) -> list[dict[str, str]]:
 
 def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
     """Nearest Wayback Machine capture of `url`, via the public availability API."""
+    if "wayback" in FENCED_FETCHERS:
+        return "", "FENCED: wayback"
     api = f"https://archive.org/wayback/available?url={quote(url, safe='')}"
     if timestamp:
         api += f"&timestamp={timestamp}"
     try:
         doc = json.loads(_http(api))
     except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+        return "", type(exc).__name__
     snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
     if not snap.get("url"):
         return "", "no capture in the Wayback Machine"
@@ -815,6 +893,40 @@ def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
     return str(getattr(v, "last_attempt", "") or "") if v is not None else ""
 
 
+def _refused_url(url: str) -> str:
+    """Why this URL's host is never contacted (terms-refused or off-limits), or ""."""
+    from research import discovery_backends as db
+    return db.never_contact(str(url or "")) if url else ""
+
+
+def _refused_ground(g: dict[str, Any], route: str) -> str:
+    """A search ground is judged by its site; every other route by the urls it would fetch."""
+    if route == "search":
+        return _refused_search_site(g)
+    for u in [g.get("url"), *list(g.get("alt") or [])]:
+        why = _refused_url(str(u)) if u else ""
+        if why:
+            return why
+    return ""
+
+
+def _refused_search_site(g: dict[str, Any]) -> str:
+    """Why the lawful chain will not discover this ground's site at all, or ""."""
+    from research import discovery_backends as db
+    host = db._site_host(str(g.get("site") or ""))
+    dom = db._match(host, db.NEVER_DISCOVER) if host else ""
+    return f"REFUSED: {db.NEVER_CONTACT[dom]} ({dom})" if dom else ""
+
+
+def _vector_discovery_status(statuses: list[str]) -> str:
+    """One ground's discovery verdict over its queries: YIELDED beats EMPTY beats BLOCKED;
+    a ground no backend ran for is SKIPPED (not an attempt, never a zero)."""
+    for s in ("YIELDED", "EMPTY", "BLOCKED"):
+        if s in statuses:
+            return s
+    return "SKIPPED"
+
+
 # ------------------------------------------------------------------------------- the run
 class _Run:
     def __init__(self, budget_s: float, fetch: bool, only: set[str] | None,
@@ -841,6 +953,9 @@ class _Run:
         self.ground: dict[str, Any] = {}
         self.ground_claims: list[dict[str, Any]] = []
         self.mech_keys: set[str] = set()
+        #: THE LAWFUL DISCOVERY CHAIN (2026-11-03), shared by every fork: robots verdicts,
+        #: person-released hard stops and per-site index answers are per run, not per thread.
+        self.discovery = lawful_discovery()
 
     @property
     def network(self) -> bool | None:
@@ -899,6 +1014,11 @@ class _Run:
         return str(self.ground.get("language") or "en")
 
     def page(self, url: str, referer: str = "") -> str:
+        refused = _refused_url(url)
+        if refused:
+            # Terms-refused or off-limits host (2026-11-14): never fetched on any route.
+            self.status.append({"url": url, "refused": refused})
+            return ""
         if not self._net_ok():
             return ""
         try:
@@ -912,15 +1032,17 @@ class _Run:
             return ""
         except Exception as exc:
             self._note_net(False)
-            self.status.append({"url": url, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
+            self.status.append({"url": url, "error": type(exc).__name__})
             return ""
 
     def rendered(self, url: str) -> str:
+        if _refused_url(url):
+            return ""
         try:
             from libs.data.render_fetch import render
             page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
         except Exception as exc:
-            page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
+            page, err = "", type(exc).__name__
         if err:
             self.status.append({"url": url, "render": err[:120]})
             return ""
@@ -1090,27 +1212,60 @@ class _Run:
                         time.sleep(1.0)
         return {"fetched": got, "deep_pages": pages, "claims": claims}
 
+    def _discover(self, g: dict[str, Any], query: str, site: str) -> Any:
+        """One query through the lawful chain (`research.discovery_backends`): the site's own
+        sitemap and feeds, GDELT, the Common Crawl and Wayback URL indexes -- and the search
+        engines only as a robots-checked last resort whose refusal is never counted against
+        the ground once a lawful backend has run."""
+        d = self.discovery.discover(query, site=site, lang=self.lang,
+                                    market=str(g.get("market") or ""),
+                                    region=str(g.get("region") or ""), deadline=self.g_end)
+        self._note_net(d.transport_ok or bool(d.rows))
+        return d
+
+    @staticmethod
+    def _fold(d: Any, backends: dict[str, int], records: dict[str, dict[str, Any]]) -> None:
+        for r in d.records:
+            a = records.setdefault(r.backend, {"status": r.status, "rows": 0, "requests": 0,
+                                               "lawful": r.lawful, "why": ""})
+            order = {"YIELDED": 3, "EMPTY": 2, "BLOCKED": 1, "SKIPPED": 0}
+            if order.get(r.status, 0) > order.get(a["status"], 0):
+                a["status"] = r.status
+            a["rows"] += r.rows
+            a["requests"] += r.requests
+            if r.why and not a["why"]:
+                a["why"] = r.why[:160]
+        for b in d.yielded_via:
+            backends[b] = backends.get(b, 0) + 1
+
     def ground_search(self, g: dict[str, Any]) -> dict[str, Any]:
         site = str(g.get("site") or "")
-        claims = pages = 0
+        claims = pages = answered = 0
         engines: dict[str, int] = {}
+        records: dict[str, dict[str, Any]] = {}
         errors: list[str] = []
+        statuses: list[str] = []
         for q in g.get("queries") or []:
             if self.over() or not self._net_ok():
                 break
             self.counts["queries"] += 1
-            rows, engine, errs = engine_search(str(q), site, self.lang, str(g.get("market") or ""))
-            self._note_net(bool(rows) or any("HTTPError" in e for e in errs))
-            errors.extend(errs[:2])
+            d = self._discover(g, str(q), site)
+            self._fold(d, engines, records)
+            statuses.append(d.status)
+            answered += d.answered
+            errors.extend(d.errors()[:2])
+            rows = d.rows
             if not rows:
                 continue
-            engines[engine] = engines.get(engine, 0) + 1
             fetched = 0
             for r in rows:
                 url = r.get("url") or ""
+                engine = r.get("backend") or "index"
                 text = f"{r.get('title', '')}. {r.get('snippet', '')}"
                 claims += self.take(text, ground=g, url=url, title=r.get("title", ""),
-                                    route=f"search:{engine}")
+                                    route=f"search:{engine}",
+                                    extra={"published_time": r.get("published") or None}
+                                    if r.get("published") else None)
                 self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
                 # THE SITE ITSELF IS ALSO READ (LAWS 5e, 2026-09-23). The old `snippets_only`
                 # flag stopped here whenever a ground's robots.txt named this agent family or a
@@ -1124,9 +1279,9 @@ class _Run:
                         claims += self._read_page(g, body, url, r.get("title", ""),
                                                   f"search:{engine}:page")
                     time.sleep(1.0)
-            time.sleep(1.5)
         return {"queries": len(g.get("queries") or []), "engines": engines, "pages": pages,
-                "claims": claims, "errors": errors[:4]}
+                "claims": claims, "errors": errors[:4], "answered": answered,
+                "discovery": records, "discovery_status": _vector_discovery_status(statuses)}
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import cn_sources
@@ -1306,17 +1461,19 @@ class _Run:
         videos: list[tuple[str, str, str]] = []
         errors: list[str] = []
         engines: dict[str, int] = {}
+        records: dict[str, dict[str, Any]] = {}
+        statuses: list[str] = []
+        answered = 0
         for q in g.get("queries") or []:
             if self.over() or not self._net_ok():
                 break
             self.counts["queries"] += 1
-            rows, engine, errs = engine_search(str(q), "youtube.com", self.lang,
-                                               str(g.get("market") or ""))
-            self._note_net(bool(rows) or any("HTTPError" in e for e in errs))
-            errors.extend(errs[:2])
-            if rows:
-                engines[engine] = engines.get(engine, 0) + 1
-            for r in rows:
+            d = self._discover(g, str(q), "youtube.com")
+            self._fold(d, engines, records)
+            statuses.append(d.status)
+            answered += d.answered
+            errors.extend(d.errors()[:2])
+            for r in d.rows:
                 url = r.get("url") or ""
                 m = re.search(r"(?:v=|youtu\.be/|shorts/)([A-Za-z0-9_-]{11})", url)
                 if not m:
@@ -1325,7 +1482,8 @@ class _Run:
                 claims += self.take(f"{r.get('title', '')}. {r.get('snippet', '')}", ground=g,
                                     url=url, title=r.get("title", ""), route="youtube:metadata",
                                     grade="VIDEO_METADATA")
-                self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
+                # A YouTube result URL is NEVER queued into the crawler frontier: the box never
+                # contacts YouTube (Governance ruling 2026-11-14; same fix as #1091).
             time.sleep(1.5)
         n_tr = 0
         seen_ids: set[str] = set()
@@ -1342,7 +1500,9 @@ class _Run:
             claims += self.take(text, ground=g, url=url, title=title, route="youtube:transcript",
                                 grade="VIDEO_TRANSCRIPT")
         return {"queries": len(g.get("queries") or []), "engines": engines, "videos": len(videos),
-                "transcripts": n_tr, "claims": claims, "errors": errors[:4]}
+                "transcripts": n_tr, "claims": claims, "errors": errors[:4],
+                "answered": answered, "discovery": records,
+                "discovery_status": _vector_discovery_status(statuses)}
 
     def ground_telegram(self, g: dict[str, Any]) -> dict[str, Any]:
         """Public channel previews at t.me/s/<channel>: server-rendered, no account, the last
@@ -1460,6 +1620,13 @@ class _Run:
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
+        refused = (f"FENCED: {FENCED_FETCHERS['wayback']}" if route == "wayback"
+                   and "wayback" in FENCED_FETCHERS else _refused_ground(g, route))
+        if refused:
+            # A TERMS-REFUSED OR OFF-LIMITS SITE (2026-11-14) is not discovered on any backend:
+            # a recorded gap with its reason, never a BLOCKED route and never a silent drop.
+            self.status.append({**row, "status": "UNREACHABLE", "why": refused})
+            return
         if not self._net_ok():
             self.status.append({**row, "status": "NO_NETWORK",
                                 "why": "three straight transport failures on this box"})
@@ -1501,13 +1668,14 @@ class _Run:
             else:
                 out = {"error": f"unknown route {route}"}
         except Exception as exc:
-            out = {"error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+            out = {"error": type(exc).__name__}
         n_claims = int(out.get("claims") or 0)
         # REACHED means the route answered: pages, results, articles, papers, feeds -- or claims
         # this run had already banked from another ground (a repeat is a measurement, not a
         # blocked route).
         reached = any(out.get(k) for k in ("fetched", "engines", "videos", "repos", "papers",
-                                            "items", "tweets", "channels", "feeds", "articles")
+                                            "items", "tweets", "channels", "feeds", "articles",
+                                            "answered")
                       ) or self.counts["claims_seen_before"] > seen_before
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
         classes: dict[str, int] = {}
@@ -2099,6 +2267,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "fetch_stats": {**pf.stats(LEG), "leg": leg,
                      "fetches_per_s": _rate(pf.stats(LEG)["fetches"],
                                             time.monotonic() - r.started)},
+           "discovery_backends": _discovery_stats(),
+           "discovery_holds": _discovery_holds(r),
            "counts": r.counts, "claims_new": len(r.new), "claims_total": len(all_rows),
            "claims_by_channel": {ch: sum(1 for c in r.new if c.get("channel") == ch)
                                  for ch in ("direct", "indirect")},
@@ -2121,6 +2291,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                                                  "claimed_performance", "score", "url")}
                           for t in tasks[:12]],
            "ledger_schema": LEDGER_SCHEMA,
+           "missed_growth": fenced_missed_growth(),
            "loop": ("Discover (search/platform/feed/archive routes, every region, rotated by "
                     "cursor) -> Extract (claims in 26 languages, direct/indirect channel, "
                     "mechanism class) -> dedupe on mechanism key -> queue story_mechanism per "
@@ -2135,15 +2306,37 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                          "only": len(only or []), "seconds": doc["elapsed_s"],
                          "workers": n_workers, "grounds_worked": worked,
                          "grounds_scheduled": len(order), "claims_new": len(r.new),
-                         "datasets_new": len(r.datasets), **doc["fetch_stats"]})
+                         "datasets_new": len(r.datasets),
+                         "discovery_backends": doc["discovery_backends"],
+                         **doc["fetch_stats"]})
         # THE YIELD ARTIFACT IS WRITTEN BY THE LEG THAT MOVES IT: every scheduled pass of this
         # miner (the deep_forest leg and every forest_* leg's practitioner role) republishes it.
         with contextlib.suppress(Exception):
             from research import alt_data_yield
             alt_data_yield.write(out=REPORT.with_name(alt_data_yield.ARTIFACT_NAME),
                                  frontier=_frontier_path(), vector_stats=_vector_stats_path(),
-                                 runs=_runs_path())
+                                 runs=_runs_path(),
+                                 region_clock=SEEN.with_name(alt_data_yield.REGION_CLOCK.name))
     return doc
+
+
+def _discovery_stats() -> dict[str, Any]:
+    try:
+        from research import discovery_backends as db
+        return db.stats()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+
+
+def _discovery_holds(r: _Run) -> dict[str, Any]:
+    """The hard-stop file's state and every hold this process could not persist -- said, never
+    swallowed. UNMEASURED_HOLDS means the file exists but is unusable: every host is held."""
+    try:
+        from research import discovery_backends as db
+        return {"status": r.discovery.holds.status() or "OK",
+                "path": str(r.discovery.holds.path), "write_errors": db.hold_errors()}
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _rate(n: float, seconds: float) -> float | None:
@@ -2198,6 +2391,14 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             e["region"] = s.get("region")
             e["language"] = s.get("language")
             e["route"] = s.get("route")
+            # THE LAWFUL DISCOVERY VERDICT (2026-11-03): per vector, which backend answered.
+            if s.get("discovery_status"):
+                e["discovery_status"] = s.get("discovery_status")
+                yv = sorted(b for b, r in (s.get("discovery") or {}).items()
+                            if isinstance(r, dict) and r.get("status") == "YIELDED")
+                if yv:
+                    e["yielded_via"] = yv
+                    e["last_discovery_yield"] = now
             err = s.get("error") or "; ".join(str(x) for x in (s.get("errors") or [])[:2]) \
                 or (s.get("why") if s.get("status") not in ("PRODUCTIVE",
                                                             "REACHED_NO_CLAIMS") else "")
@@ -2265,7 +2466,7 @@ def _checkpoint(r: _Run, f: _Run, ckpt: dict[str, Any]) -> None:
             _save_seen(snap)
     except Exception as exc:
         with r._lock:
-            ckpt.setdefault("errors", []).append(f"{type(exc).__name__}: {str(exc)[:160]}")
+            ckpt.setdefault("errors", []).append(type(exc).__name__)
 
 
 def main() -> int:

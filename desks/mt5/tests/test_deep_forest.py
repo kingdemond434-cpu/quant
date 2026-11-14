@@ -379,8 +379,22 @@ _DATA_PAGE = ("<html><title>Statistics</title><body><p>Monthly reserves and inte
               "<a href='/statistics/reserves.csv'>reserves csv</a><a href='/api/series?id=fx'>api</a></body></html>")
 
 
+#: THE LAWFUL DISCOVERY CHAIN (2026-11-03) reads a site's OWN feed before any index, and never a
+#: search engine while a lawful backend answers. These are the same stories the Bing fixtures
+#: above carry, published the way note.com and YouTube publish them: as feeds.
+_NOTE_FEED = """<rss><channel><item><title>ドル円 仲値 手法</title><link>https://note.com/x/n/1</link>
+<description>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</description></item></channel></rss>"""
+_YT_FEED = """<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>ドル円 仲値 トレード解説</title>
+<link href="https://www.youtube.com/watch?v=abcdefghijk"/>
+<summary>ドル円は五十日の仲値にかけて日中ドル高になりやすく、仲値後に反落する。</summary></entry></feed>"""
+
+
 def _dispatch(url: str, **kw) -> str:
     """One fake transport for every route: the URL says which fixture answers."""
+    if "note.com/feed" in url:
+        return _NOTE_FEED
+    if "youtube.com/feed" in url:
+        return _YT_FEED
     if "t.me/s/" in url:
         return _PAGE_TG
     if "bing.com" in url:
@@ -573,7 +587,13 @@ def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetc
     doc = _run_grounds(monkeypatch, tmp_path, [
         {"name": "note (JP)", "region": "jp", "language": "ja", "route": "search", "site": "note.com",
          "queries": ["ドル円 仲値 手法"], "kind": "blog", "snippets_only": True}])
-    assert any("setlang=ja" in u and "cc=JP" in u for u in urls)
+    # Discovered through the site's own feed, never a search engine (2026-11-03): the ground's
+    # locale now reaches the claims through the page, and Bing is only a last resort.
+    assert "https://note.com/feed" in urls
+    assert not any("bing.com" in u or "duckduckgo" in u for u in urls)
+    g = doc["grounds"][0]
+    assert g["discovery_status"] == "YIELDED" and g["discovery"]["site_feeds"]["status"] == \
+        "YIELDED"
     from urllib.parse import urlparse
     assert any(urlparse(u).netloc.endswith("note.com") for u in urls), \
         "a snippets_only label must not stop the site being fetched"
@@ -608,13 +628,27 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
         {"name": "coinpan never", "region": "kr", "language": "ko", "route": "foreign", "fn": "coinpan",
          "queries": ["x"], "kind": "forum"},
     ]
+    followed: list[str] = []
+    real_follow = dfm._Run.follow
+
+    def spy(self, url, *a, **k):
+        followed.append(str(url))
+        return real_follow(self, url, *a, **k)
+
+    monkeypatch.setattr(dfm._Run, "follow", spy)
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
+    assert not [u for u in followed if "youtube.com" in u or "youtu.be" in u], \
+        "a YouTube URL reached the crawler frontier"
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
-    assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
+    # Governance wayback ruling 2026-11-14: the route is fenced, a recorded gap, never a fetch.
+    assert st["Quantopian"]["status"] in ("UNREACHABLE", "BLOCKED")
+    assert str(st["Quantopian"].get("why", "")).startswith("FENCED")
+    assert {ln["rail"] for ln in doc["missed_growth"]} == {"fenced:wayback",
+                                                           "fenced:youtube_transcript"}
     assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
@@ -689,3 +723,50 @@ def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> No
          "url": "https://m.test/"}])
     assert doc["momentum_only_grounds"] == ["Momentum only"]
     assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}
+
+
+def test_refused_hosts_are_never_fetched_on_any_route(monkeypatch) -> None:
+    """2026-11-14: the http grounds aimed at FRED, CME and Cboe (and their alt urls) record a
+    refused gap, and `page()` refuses such a host before any request, whatever route asked."""
+    import pytest
+    for url in ("https://fred.stlouisfed.org/categories", "https://alfred.stlouisfed.org/",
+                "https://www.cmegroup.com/market-data/volume-open-interest.html",
+                "https://www.cboe.com/insights/", "https://comtradeplus.un.org/",
+                "https://www.miaxglobal.com/", "https://www.m-x.ca/en", "https://www.asx.com.au/",
+                "https://www.eurex.com/ex-en/data/statistics"):
+        assert dfm._refused_ground({"url": url}, "http").startswith("REFUSED")
+    assert dfm._refused_ground({"url": "https://x.test/", "alt": ["https://www.cboe.com/a"]},
+                               "render").startswith("REFUSED")
+    assert dfm._refused_ground({"url": "https://www.bis.org/"}, "http") == ""
+
+    def boom(*_a, **_k):
+        pytest.fail("a refused host was fetched")
+
+    monkeypatch.setattr(dfm, "_http", boom)
+
+    class Stub:
+        def __init__(self) -> None:
+            self.status: list = []
+
+        def _net_ok(self) -> bool:
+            return True
+
+    stub = Stub()
+    assert dfm._Run.page(stub, "https://fred.stlouisfed.org/series/X") == ""  # type: ignore[arg-type]
+    assert stub.status and stub.status[-1]["refused"].startswith("REFUSED")
+    assert dfm._Run.rendered(stub, "https://www.cmegroup.com/x") == ""  # type: ignore[arg-type]
+
+
+def test_the_fenced_fetchers_make_no_request(monkeypatch) -> None:
+    """Governance wayback ruling 2026-11-14: both fetchers return the fence before any request."""
+    import pytest
+
+    def boom(*_a, **_k):
+        pytest.fail("a fenced fetcher made a request")
+
+    monkeypatch.setattr(dfm, "_http", boom)
+    monkeypatch.setitem(sys.modules, "fetch_video_transcript", None)   # importing it would fail
+    assert dfm.wayback_snapshot("https://x.test/") == ("", "FENCED: wayback")
+    assert dfm.youtube_transcript("abcdefghijk") == ("", "FENCED: youtube_transcript")
+    assert {ln["rail"] for ln in dfm.fenced_missed_growth()} == {"fenced:wayback",
+                                                                 "fenced:youtube_transcript"}

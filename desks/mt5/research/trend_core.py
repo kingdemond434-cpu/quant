@@ -182,6 +182,24 @@ def max_symbols(default: int = 60) -> int:
 
 
 # --------------------------------------------------------------------------------- the inputs
+def breadth_order(names: list[str], *, rotation: int = 0) -> list[str]:
+    """The walk order: hypothesis-lane instruments ONE PER REGION in turn
+    (`universe_policy.region_interleave`), then the measured-only rest.
+
+    THE WALK WAS ALPHABETICAL and it stops on a budget or a memory-derived cap, so whatever
+    sorts last was what a short pass never reached -- USDTRY, USDZAR, ZARJPY, USDTHB, the emerging
+    tail of REGION_GAP_RANK_2026-11-03. Interleaving keeps every instrument in the walk and puts
+    each country inside the first lap. Nothing is dropped; an unreadable policy keeps the old
+    order rather than guessing."""
+    try:
+        from research.universe_policy import region_interleave
+    except Exception:                                    # pragma: no cover - import-context only
+        return list(names)
+    hyp = [n for n in names if _lane(n)]
+    keep = set(hyp)
+    return region_interleave(hyp, rotation=rotation) + [n for n in names if n not in keep]
+
+
 def universe_rows() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """The MT5 registry, and the accounting of it. An absent registry measures nothing."""
     doc = _read_json(UNIVERSE)
@@ -591,7 +609,8 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS,
     started = time.monotonic()
     now = now or _now()
     rows, universe_status = universe_rows()
-    names = sorted(symbols if symbols is not None else rows)
+    names = breadth_order(sorted(symbols if symbols is not None else rows),
+                          rotation=int(now.timestamp() // 3600))
     cap = max_symbols()
     legs: list[dict[str, Any]] = []
     skipped: dict[str, int] = defaultdict(int)
@@ -660,6 +679,7 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS,
         "elapsed_s": round(time.monotonic() - started, 2), "budget_s": budget_s,
         "universe": universe_status,
         "scan": {"named": len(names), "reached": reached, "cap": cap,
+                 "order": "region_interleaved (hypothesis lane first), was alphabetical",
                  "stopped_on_budget_or_cap": stopped, "skipped": dict(skipped),
                  "measured_not_hypothesised": len(measured_only),
                  "why_measured_only": ("single-name equities and unclassified instruments are "
@@ -672,6 +692,14 @@ def build(*, budget_s: float = 600.0, max_donations: int = MAX_DONATIONS,
                            "symbol, family, side, selector, condition, is_universe, hunt, plus "
                            "the certified params")},
         "cross_sectional": cs,
+        # THE CAP IS KEPT, SO IT OWES ITS LINE (GROWTH GOVERNANCE). Read by missed_growth.
+        "missed_growth": ([{"at": now.isoformat(timespec="seconds"), "rail": "trend_core_walk",
+                            "cap": cap, "named": len(names), "reached": reached,
+                            "left_out": max(0, len(names) - reached),
+                            "verdict": UNMEASURED,
+                            "why": ("the walk stopped on its budget or its memory-derived cap; "
+                                    "the instruments past it were not measured this pass and "
+                                    "the E[log W] cost is UNMEASURED")}] if stopped else []),
         "structure": structure,
         "core_growth": growth,
         "n_legs_measured": len(legs), "n_legs_admitted": len(admitted),

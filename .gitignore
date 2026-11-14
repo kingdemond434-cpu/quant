@@ -610,6 +610,13 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# Lawful discovery (2026-11-03): box-local hard stops and the region yield clock, and the
+# per-process temp files their atomic writes leave if a write is interrupted. Slot and lock
+# files live under desks/mt5/data/.job_locks/ (already ignored above).
+desks/mt5/data/discovery_host_holds.json
+desks/mt5/data/discovery_host_holds.json.*.tmp
+desks/mt5/data/region_yield_clock.json
+desks/mt5/data/region_yield_clock.json.*.tmp
 
 # proposer_common.donate_per_family: the cells each converting producer has already charged
 # (one JSONL per source). Box state; losing it re-charges once, never under-counts.
