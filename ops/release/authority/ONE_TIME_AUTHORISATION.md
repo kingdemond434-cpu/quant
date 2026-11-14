@@ -109,6 +109,17 @@ and the ruleset. I'll build it on your word.
   - The trigger is a reviewer finding that a base-versus-head deterministic test refutes.
   - A second independent model family must agree it's false.
   - Only then does the finding clear, and only under a ROOT_POLICY rule.
+  - **AMENDED 2026-11-10 (takes effect only when zuck merges this change on his own typed
+    path).** The line above said a reviewer FAIL is never converted into a CLEAR. zuck's
+    16:05Z answer ("Yes, Auditor sign-off is enough") and 16:07Z order ("change the design n
+    do them for me") change that in one bounded way: on the registry / authority path, a
+    failed or unavailable `independent-review` no longer blocks a head when the Auditor
+    posted `AUDIT CLEAR` for that exact head after the review finished, the box's copy of
+    the Auditor's registry agrees, and no changed path is protected. The 24 h veto window,
+    every other job, HOLD and DEACTIVATE are unchanged. Replay-shadow is still never
+    adjudicated. Limit, stated plainly: all Claude sessions post through one GitHub
+    identity, so this rests on two records agreeing, not on a key no agent holds. An
+    authenticated Auditor channel is the follow-up (`audit_gate.py`, ADJUDICABLE).
 - **A conftest change a PR genuinely needs.** trusted-eval uses the base's conftest. A PR whose
   tests only pass with its own conftest fails trusted-eval and stays blocked. Split the conftest
   change into its own PR, which trusted-eval can then judge.
