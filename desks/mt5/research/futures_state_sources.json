@@ -1116,11 +1116,14 @@
    "mode": "pairs",
    "avail_lag_days": 76,
    "window": 60,
-   "note": "monthly 3M interbank differential (OECD MEI); available 76 days after the month's first day",
+   "note": "monthly 3M interbank differential (OECD MEI); available 76 days after the month's first day; a list base/quote is a leg with fallbacks that only extend it past its last observation (euro area and UK OECD rows stop at 2026-01; ESTR and SONIA monthly means carry them on)",
    "pairs": [
     {
      "id": "EURUSD",
-     "base": "IR3TIB01EZM156N",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
      "quote": "IR3TIB01USM156N",
      "targets": [
       "EURUSD"
@@ -1128,7 +1131,10 @@
     },
     {
      "id": "GBPUSD",
-     "base": "IR3TIB01GBM156N",
+     "base": [
+      "IR3TIB01GBM156N",
+      "IUDSOIA"
+     ],
      "quote": "IR3TIB01USM156N",
      "targets": [
       "GBPUSD"
@@ -1192,7 +1198,10 @@
     },
     {
      "id": "EURJPY",
-     "base": "IR3TIB01EZM156N",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
      "quote": "IR3TIB01JPM156N",
      "targets": [
       "EURJPY"
@@ -1208,7 +1217,10 @@
     },
     {
      "id": "GBPJPY",
-     "base": "IR3TIB01GBM156N",
+     "base": [
+      "IR3TIB01GBM156N",
+      "IUDSOIA"
+     ],
      "quote": "IR3TIB01JPM156N",
      "targets": [
       "GBPJPY"
@@ -1216,15 +1228,24 @@
     },
     {
      "id": "EURGBP",
-     "base": "IR3TIB01EZM156N",
-     "quote": "IR3TIB01GBM156N",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
+     "quote": [
+      "IR3TIB01GBM156N",
+      "IUDSOIA"
+     ],
      "targets": [
       "EURGBP"
      ]
     },
     {
      "id": "EURCHF",
-     "base": "IR3TIB01EZM156N",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
      "quote": "IR3TIB01CHM156N",
      "targets": [
       "EURCHF"
@@ -1272,10 +1293,51 @@
     },
     {
      "id": "EURAUD",
-     "base": "IR3TIB01EZM156N",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
      "quote": "IR3TIB01AUM156N",
      "targets": [
       "EURAUD"
+     ]
+    },
+    {
+     "id": "USDNOK",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01NOM156N",
+     "targets": [
+      "USDNOK"
+     ]
+    },
+    {
+     "id": "USDSEK",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01SEM156N",
+     "targets": [
+      "USDSEK"
+     ]
+    },
+    {
+     "id": "EURNOK",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
+     "quote": "IR3TIB01NOM156N",
+     "targets": [
+      "EURNOK"
+     ]
+    },
+    {
+     "id": "EURSEK",
+     "base": [
+      "IR3TIB01EZM156N",
+      "ECBESTRVOLWGTTRMDMNRT"
+     ],
+     "quote": "IR3TIB01SEM156N",
+     "targets": [
+      "EURSEK"
      ]
     }
    ]

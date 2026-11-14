@@ -501,6 +501,42 @@ def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
     assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)
 
 
+def test_rate_leg_fallback_only_extends_past_the_primary():
+    """The euro-area OECD row stops; ESTR carries the leg on as month-start means, and never
+    overwrites a month the primary published."""
+    m = pd.date_range("2025-07-01", periods=7, freq="MS", tz="UTC")
+    d = pd.date_range("2025-07-01", "2026-03-31", freq="D", tz="UTC")
+    yc = pd.concat({"OECD": pd.Series(2.0, index=m), "ON": pd.Series(1.0, index=d)},
+                   axis=1).sort_index()
+    leg = fs.rate_leg(yc, ["OECD", "ON"])
+    assert leg is not None
+    assert (leg[leg.index <= m[-1]] == 2.0).all()
+    tail = leg[leg.index > m[-1]]
+    assert list(tail.index) == list(pd.date_range("2026-02-01", periods=2, freq="MS", tz="UTC"))
+    # a month in progress is never stored: the overnight leg ends mid-April, so April is out
+    part = pd.concat({"OECD": yc["OECD"], "ON": pd.Series(1.0, index=pd.date_range(
+        "2025-07-01", "2026-04-15", freq="D", tz="UTC"))}, axis=1).sort_index()
+    assert fs.rate_leg(part, ["OECD", "ON"]).index.max() == pd.Timestamp("2026-03-01", tz="UTC")
+    assert (tail == 1.0).all()
+    assert fs.rate_leg(yc, "OECD").equals(yc["OECD"].dropna())
+    assert fs.rate_leg(yc, ["MISSING"]) is None
+
+
+def test_a_pair_ends_where_its_stalest_leg_ends():
+    """EURNOK: the euro leg runs on (ESTR) while NOK's OECD row stops; the differential must not
+    serve the forward-filled NOK value as a fresh print."""
+    m_long = pd.date_range("2020-01-01", periods=60, freq="MS", tz="UTC")
+    m_short = m_long[:57]
+    yc = pd.concat({"EZ": pd.Series(np.linspace(1, 2, 60), index=m_long),
+                    "NO": pd.Series(3.0, index=m_short)}, axis=1)
+    cv = {"id": "rdiff3m", "mode": "pairs", "window": 12,
+          "pairs": [{"id": "EURNOK", "base": "EZ", "quote": "NO", "targets": ["EURNOK"]}]}
+    out = fs.fred_outputs(cv, yc)
+    assert len(out) == 1
+    _oid, _feat, idx, _targets, _kind = out[0]
+    assert idx.max() == m_short[-1]
+
+
 # ------------------------------------------------------------- scheduled-release first prints
 
 def _alfred_rows(n: int) -> list[dict[str, str]]:
