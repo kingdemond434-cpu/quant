@@ -63,7 +63,8 @@ def test_a_verified_real_edge_is_authorized_and_an_unverified_one_refused(
     config.write_text(json.dumps({"enabled": True, "e8": {
         "EURCHF_formula_asia": 0.01}, "excluded": {}}), encoding="utf-8")
     verdict = tmp_path / "REOPEN_VERIFICATION.json"
-    verdict.write_text(json.dumps({"rows": {
+    from datetime import UTC, datetime
+    verdict.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(), "rows": {
         "c1": {"certificate": "real", "verified": True, "why_not": []},
         "c2": {"certificate": "named_but_fake", "verified": False,
                "why_not": ["forward t 0.8 < 2"]}}}), encoding="utf-8")

@@ -16,20 +16,39 @@ WHAT IT DOES TO EACH BOOK:
     the terms fence, the placebo alarm, replication, and the E8 guard's loss limits;
   * a certificate the judge does not list is unaffected (the judge covers the reopened set).
 
-ABSENT OR UNREADABLE: UNMEASURED. Nothing new is admitted to E8 on a verdict that cannot be
+ABSENT, UNREADABLE OR STALE: UNMEASURED. Nothing new is admitted to E8 on a verdict that cannot be
 read, and the report says so; FTMO keeps its standing universe. Billed as rail `real_edge`.
+STALE (Auditor HOLD on #1211): the judge stamps `at` every hourly pass; a verdict whose stamp is
+missing, unparseable, in the future or older than MAX_AGE_S (three judge cadences) admits
+NOTHING -- its verified rows are dropped, so a stopped judge can never keep a certificate on E8
+by its last good reading. Its refusals still stand: an edge the judge last refused stays refused
+(fails closed on both sides).
 """
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
 VERDICT = BASE / "reports" / "REOPEN_VERIFICATION.json"
+#: The judge (`policy_lift_reopen`) runs hourly; three missed passes and its verdict admits nothing.
+MAX_AGE_S = 3 * 3600
 
 
-def load(path: Path | None = None) -> tuple[dict[str, dict[str, Any]], str]:
+def _age_s(doc: dict[str, Any], now: datetime) -> float | None:
+    try:
+        at = datetime.fromisoformat(str(doc["at"]))
+    except (KeyError, TypeError, ValueError):
+        return None
+    if at.tzinfo is None:
+        return None
+    return (now - at).total_seconds()
+
+
+def load(path: Path | None = None, *,
+         now: datetime | None = None) -> tuple[dict[str, dict[str, Any]], str]:
     """{certificate: {"verified": bool, "why_not": [...]}} and a status line.
 
     A certificate several clock rows share is verified only if every listed row verifies it
@@ -55,6 +74,12 @@ def load(path: Path | None = None) -> tuple[dict[str, dict[str, Any]], str]:
         else:
             prev["verified"] = prev["verified"] and ok
             prev["why_not"] = sorted(set(prev["why_not"]) | set(why))
+    age = _age_s(doc, now or datetime.now(tz=UTC))
+    if age is None or age < -300 or age > MAX_AGE_S:
+        refused = {k: v for k, v in out.items() if not v["verified"]}
+        when = "no usable `at` stamp" if age is None else f"{age / 3600:.1f}h old"
+        return refused, (f"UNMEASURED: {path.name} stale ({when}); nothing admitted, "
+                         f"{len(refused)} refusal(s) kept")
     n_ok = sum(1 for v in out.values() if v["verified"])
     return out, f"OK: {n_ok} of {len(out)} listed certificates verified"
 
