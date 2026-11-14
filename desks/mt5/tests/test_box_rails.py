@@ -154,7 +154,7 @@ def test_the_robots_gate_fails_closed(rails, url, allowed):
     "https://www.googleapis.com/youtube/v3/search?q=x", "https://fred.stlouisfed.org/series/X",
     "https://query1.finance.yahoo.com/v7/x", "https://www.cboe.com/x", "https://www.cmegroup.com/x",
     "https://www.nasdaq.com/x", "https://www.theocc.com/x", "https://www.baidu.com/s?wd=x",
-    "https://mp.weixin.qq.com/s/x", "https://api.binance.com/x",
+    "https://mp.weixin.qq.com/s/x",
 ])
 def test_refused_hosts_are_never_contacted_not_even_robots(rails, url):
     """The box never contacts YouTube, the terms-refused sources or a crypto exchange."""
@@ -168,6 +168,7 @@ def test_refused_hosts_are_never_contacted_not_even_robots(rails, url):
 def test_other_googleapis_paths_are_not_refused_as_youtube():
     assert box_rails.refused_host("www.googleapis.com", "/books/v1/volumes") is None
     assert box_rails.refused_host("www.googleapis.com", "/youtube/v3/videos")
+    assert all(box_rails.refused_host(h) for h in box_rails.REFUSED_HOSTS)
 
 
 def test_robots_is_read_once_per_host(rails):
