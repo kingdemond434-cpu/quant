@@ -1034,6 +1034,9 @@ HUMAN_READ = frozenset({
     # NOT_BINDING -- the retire signal, stated rather than hidden. Listed here so the graph says
     # so; the day one of these gains a consumer, the consumer is declared and the row leaves.
     "desks/mt5/reports/MICROSTRUCTURE.json", "desks/mt5/reports/ENTRY_TIMING.json",
+    # EXECUTION_TIMING (2026-11-14): report-only by design (#1125); its decision reader is the
+    # entry-timing follow-up, and the day that lands this row leaves.
+    "desks/mt5/reports/EXECUTION_TIMING.json",
     "desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/TIME_JOINS.json",
     "desks/mt5/reports/COST_CONSTRUCTION.json", "desks/mt5/reports/edges_macro_fusion_sweep.json",
     "desks/mt5/reports/COMPLETION.json", "desks/mt5/reports/TAPE_ARCHIVE.json",
