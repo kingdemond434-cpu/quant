@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-11-11T00:30:32+00:00",
+ "at": "2026-11-14T09:45:19+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -14,8 +14,17 @@
  },
  "offsite": {
   "job": "MT5-OffsiteBackup",
-  "state": "UNMEASURED",
-  "why": "no OFFSITE_BACKUP.json on this host: the job has not run here"
+  "state": "NOT_ARMED",
+  "verdict": "NOT_ARMED",
+  "at": "2026-11-14T05:43:03+00:00",
+  "last_success_at": null,
+  "last_check_at": null,
+  "last_check_ok": null,
+  "last_prune_at": null,
+  "encrypted": true,
+  "key_escrowed_off_box": false,
+  "n_included": 7,
+  "n_missing": 1
  },
  "ops_redundancy": {
   "state": "FAIL",
@@ -24,7 +33,7 @@
  },
  "reboot_drill": {
   "state": "PASS",
-  "at": "2026-11-10T04:30:12+00:00",
+  "at": "2026-11-14T04:30:09+00:00",
   "n_failures": 0
  },
  "moat": {
@@ -37,7 +46,7 @@
   },
   "restore_drill": {
    "state": "FAIL",
-   "at": "2026-11-07T02:52:22+00:00"
+   "at": "2026-11-11T09:05:08+00:00"
   }
  },
  "key_backup": {
