@@ -78,7 +78,7 @@ def _month(word: str) -> int | None:
 def lines(page: str) -> list[str]:
     s = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", page)
     s = re.sub(r"<[^>]+>", "\n", s)
-    s = _html.unescape(s).replace("\xa0", " ").replace("﻿", "")
+    s = _html.unescape(s).replace("\xa0", " ").replace("\ufeff", "")
     return [ln.strip() for ln in s.splitlines() if ln.strip()]
 
 
