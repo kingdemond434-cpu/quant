@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-15T11:15:02.344471+00:00",
+  "swept_at": "2026-11-15T11:30:02.647216+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1626,7 +1626,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3003,
+      "shadow_exp_r": -0.2846,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
