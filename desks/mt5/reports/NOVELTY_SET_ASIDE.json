@@ -1,7 +1,7 @@
 {
- "at": "2026-11-14T20:47:13+00:00",
+ "at": "2026-11-15T04:24:58+00:00",
  "screened": 1500,
- "set_aside": 44,
+ "set_aside": 45,
  "rows": [
   {
    "sym": "AUDCHF",
@@ -266,6 +266,12 @@
    "family": "formula",
    "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
    "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "EURAUD",
+   "family": "formula",
+   "twin": "external.EURAUD@M15.formula.p=ff291703a608b242",
+   "why": "every measurable dimension reads as a twin of external.EURAUD@M15.formula.p=ff291703a608b242 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
