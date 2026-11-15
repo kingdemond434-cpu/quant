@@ -156,8 +156,12 @@ def vectors(frontier: Any, stats: Any, now: datetime) -> dict[str, Any]:
             successes, rows_n = 0, 0                 # never attempted: a MEASURED zero
         else:
             successes, rows_n = UNMEASURED, UNMEASURED
+        w7 = _window7(s, attempts, now)
         rows[name] = {
             "outcome": outcome, "attempts": attempts, "successes": successes,
+            "last_output_at": (s or {}).get("last_success") or "",
+            "extract_funnel": (s or {}).get("last_extract_funnel") or UNMEASURED,
+            **w7,
             "rows": rows_n, "findings_total": int(v.get("findings") or 0),
             "datasets": int(s.get("datasets") or 0) if s is not None else (
                 0 if attempts == 0 else UNMEASURED),
@@ -166,10 +170,38 @@ def vectors(frontier: Any, stats: Any, now: datetime) -> dict[str, Any]:
             "language": v.get("language") or "", "region": v.get("region") or "",
         }
     named = len(rows)
+    # Where the text of the reached-but-silent vectors was lost, summed (stage -> sentences).
+    empty_funnel: dict[str, int] = {}
+    for r in rows.values():
+        f = r.get("extract_funnel")
+        if r.get("outcome") == "EMPTY" and isinstance(f, dict):
+            for k, v in f.items():
+                if isinstance(v, int):
+                    empty_funnel[k] = empty_funnel.get(k, 0) + v
     return {"named": named, "by_outcome": outcomes, "never_attempted": never,
+            "empty_vectors_extract_funnel": empty_funnel or UNMEASURED,
             "attempted_this_week": week,
             "attempted_this_week_share": round(week / named, 4) if named else UNMEASURED,
             "rows_by_vector": rows}
+
+
+def _window7(s: dict[str, Any] | None, attempts: int, now: datetime) -> dict[str, Any]:
+    """attempts_7d / successes_7d / rows_7d from the stats row's per-day counts. A vector never
+    attempted is a measured 0; one attempted before per-day counts existed is UNMEASURED until
+    its next attempt writes a day -- never a 0 (L1.28a)."""
+    daily = (s or {}).get("daily")
+    if not isinstance(daily, dict):
+        if attempts == 0 and not (s or {}).get("attempts"):
+            return {"attempts_7d": 0, "successes_7d": 0, "rows_7d": 0}
+        return {"attempts_7d": UNMEASURED, "successes_7d": UNMEASURED, "rows_7d": UNMEASURED}
+    cut = (now - WEEK).date().isoformat()
+    tot = [0, 0, 0]
+    for day, v in daily.items():
+        if str(day) > cut and isinstance(v, list):
+            for i in range(3):
+                with contextlib.suppress(TypeError, ValueError, IndexError):
+                    tot[i] += int(v[i])
+    return {"attempts_7d": tot[0], "successes_7d": tot[1], "rows_7d": tot[2]}
 
 
 # --------------------------------------------------------------------------- legs
@@ -246,6 +278,7 @@ def build(*, coverage: Path | None = None, frontier: Path | None = None,
     leg = legs(_jsonl(runs), _jsonl(compute_ledger, max_bytes=8 * 1024 * 1024), now)
     return {
         "generated_utc": now.isoformat(timespec="seconds"),
+        "generated_at": now.isoformat(timespec="seconds"),
         "summary": {
             "platforms": plat.get("n", UNMEASURED),
             "platforms_yielding": plat.get("yielding", UNMEASURED),
