@@ -1,14 +1,14 @@
 {
  "schema": "gate_verdict_digest/1",
- "generated_at": "2026-11-14T20:02:54+00:00",
+ "generated_at": "2026-11-15T04:00:27+00:00",
  "status": "MEASURED",
  "producer": "desks/mt5/research/gate_verdict_digest.py (hourly, publish_state leg)",
  "ledger": {
   "source": {
    "path": "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl",
    "status": "READ",
-   "bytes": 512218683,
-   "modified_at": "2026-11-14T12:40:20+00:00"
+   "bytes": 515073047,
+   "modified_at": "2026-11-14T19:58:18+00:00"
   },
   "rows": 1677787,
   "malformed_rows": 0,

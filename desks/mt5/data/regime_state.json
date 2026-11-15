@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-15T03:45:01.957707+00:00",
+  "swept_at": "2026-11-15T04:00:02.487201+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2736,8 +2736,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 52,
-      "shadow_exp_r": 0.7267,
+      "shadow_n": 51,
+      "shadow_exp_r": 0.6932,
       "woke_on_shadow": false
     },
     "GBPZAR|macro_conditional_asia": {
