@@ -1,5 +1,5 @@
 {
- "at": "2026-11-15T12:43:55+00:00",
+ "at": "2026-11-15T13:42:29+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -9,17 +9,13 @@
   "counts": {
    "1h": 0,
    "24h": 27026,
-   "7d": 162921,
-   "build_step_lo": 39136,
-   "build_step_hi": 0
+   "7d": 162921
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
    "24h": 12121,
-   "7d": 86524,
-   "build_step_lo": 18237,
-   "build_step_hi": 0
+   "7d": 86524
   },
   "first_terminal_cells": 772628,
   "first_terminal_per_hour": {
@@ -36,12 +32,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 42031,
-   "7d": 217501
+   "24h": 41858,
+   "7d": 217232
   },
   "per_hour": {
-   "24h": 1751.292,
-   "7d": 1294.649
+   "24h": 1744.083,
+   "7d": 1293.048
   }
  },
  "verdicts_per_hour": 1126.083,
@@ -49,20 +45,22 @@
  "verdict_rate_basis": "changed verdict events, not total completed tests",
  "first_judged_per_day": 12121.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
- "coverage_backlog_fresh": false,
- "created_per_day": 42031.0,
- "backlog": "UNMEASURED",
- "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+ "coverage_backlog_fresh": true,
+ "created_per_day": 41858.0,
+ "backlog": 977805,
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
-  "status": "UNMEASURED",
-  "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+  "status": "GROWING",
+  "hours": null,
+  "net_per_day": -29737.0,
+  "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
  "workers_planned": 18,
  "workers_last_sweep": 18,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-15T12:41:52+00:00",
-  "pid": 30596
+  "started_at": "2026-11-15T13:39:24+00:00",
+  "pid": 17984
  }
 }

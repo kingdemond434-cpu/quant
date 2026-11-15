@@ -237,7 +237,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-15T13:35:08+00:00",
+ "heartbeat_utc": "2026-11-15T13:50:09+00:00",
  "sweep_phase": {
   "pid": 9136,
   "sweep_started_utc": "2026-11-15T11:47:39+00:00",
@@ -308,22 +308,22 @@
      }
     },
     "prewarm": {
-     "samples": 533,
+     "samples": 617,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 509,
-       "share": 0.955
+       "n": 593,
+       "share": 0.961
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 13,
-       "share": 0.024
+       "share": 0.021
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 8,
-       "share": 0.015
+       "share": 0.013
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
@@ -337,13 +337,13 @@
       }
      ],
      "process": {
-      "cpu_s": 1645.3,
-      "page_faults": 115803318.0,
-      "read_bytes": 48761439.0,
-      "write_bytes": 124441620980.0,
-      "sampled_s": 5320.0,
+      "cpu_s": 1684.8,
+      "page_faults": 118429497.0,
+      "read_bytes": 49969651.0,
+      "write_bytes": 127529210348.0,
+      "sampled_s": 6160.0,
       "rss_mb_max": 3395.5,
-      "cpu_share_of_wall": 0.309
+      "cpu_share_of_wall": 0.273
      }
     }
    }
