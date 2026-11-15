@@ -1,6 +1,6 @@
 {
  "atr_n": 20,
- "built_at": "2026-11-14T02:25:31+00:00",
+ "built_at": "2026-11-15T02:30:10+00:00",
  "min_obs": 200,
  "n_skipped": 5,
  "n_symbols": 241,
@@ -170,23 +170,23 @@
   },
   "ADAUSD": {
    "administered": true,
-   "atr20_h1": 0.002035,
-   "atr20_h1_pts": 20.35,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 49665,
-   "bars_used": 48672,
+   "atr20_h1": 0.00277,
+   "atr20_h1_pts": 27.7,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 49689,
+   "bars_used": 48696,
    "cheapest_hour": 0,
    "contract_size": 100.0,
-   "days_full": 2032,
-   "days_total": 2983,
+   "days_full": 2033,
+   "days_total": 2984,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 951,
    "first": "2018-09-01 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2012,
-     "n_nonzero": 1843,
+     "n_bars": 2013,
+     "n_nonzero": 1844,
      "p50": 33.0,
      "p75": 36.0,
      "p90": 41.0,
@@ -194,8 +194,8 @@
      "zero_frac": 0.084
     },
     "1": {
-     "n_bars": 2028,
-     "n_nonzero": 1859,
+     "n_bars": 2029,
+     "n_nonzero": 1860,
      "p50": 33.0,
      "p75": 36.0,
      "p90": 41.0,
@@ -203,51 +203,6 @@
      "zero_frac": 0.0833
     },
     "10": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "11": {
-     "n_bars": 2027,
-     "n_nonzero": 1860,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0824
-    },
-    "12": {
-     "n_bars": 2020,
-     "n_nonzero": 1853,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0827
-    },
-    "13": {
-     "n_bars": 2029,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0823
-    },
-    "14": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "15": {
      "n_bars": 2029,
      "n_nonzero": 1861,
      "p50": 33.0,
@@ -256,7 +211,34 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "16": {
+    "11": {
+     "n_bars": 2028,
+     "n_nonzero": 1861,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0823
+    },
+    "12": {
+     "n_bars": 2021,
+     "n_nonzero": 1854,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0826
+    },
+    "13": {
+     "n_bars": 2030,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0823
+    },
+    "14": {
      "n_bars": 2031,
      "n_nonzero": 1863,
      "p50": 33.0,
@@ -265,7 +247,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0827
     },
-    "17": {
+    "15": {
      "n_bars": 2030,
      "n_nonzero": 1862,
      "p50": 33.0,
@@ -274,43 +256,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "18": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "19": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "2": {
-     "n_bars": 2029,
-     "n_nonzero": 1860,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0833
-    },
-    "20": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "21": {
+    "16": {
      "n_bars": 2032,
      "n_nonzero": 1864,
      "p50": 33.0,
@@ -319,16 +265,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0827
     },
-    "22": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "23": {
+    "17": {
      "n_bars": 2031,
      "n_nonzero": 1863,
      "p50": 33.0,
@@ -337,52 +274,34 @@
      "status": "MEASURED",
      "zero_frac": 0.0827
     },
-    "3": {
-     "n_bars": 2029,
-     "n_nonzero": 1860,
+    "18": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "19": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "2": {
+     "n_bars": 2030,
+     "n_nonzero": 1861,
      "p50": 33.0,
      "p75": 36.0,
      "p90": 41.0,
      "status": "MEASURED",
      "zero_frac": 0.0833
     },
-    "4": {
-     "n_bars": 2026,
-     "n_nonzero": 1858,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0829
-    },
-    "5": {
-     "n_bars": 2026,
-     "n_nonzero": 1860,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0819
-    },
-    "6": {
-     "n_bars": 2028,
-     "n_nonzero": 1862,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0819
-    },
-    "7": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 33.0,
-     "p75": 36.0,
-     "p90": 41.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "8": {
+    "20": {
      "n_bars": 2030,
      "n_nonzero": 1862,
      "p50": 33.0,
@@ -391,9 +310,90 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "9": {
-     "n_bars": 2029,
+    "21": {
+     "n_bars": 2033,
+     "n_nonzero": 1865,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0826
+    },
+    "22": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "23": {
+     "n_bars": 2032,
+     "n_nonzero": 1864,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "3": {
+     "n_bars": 2030,
      "n_nonzero": 1861,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0833
+    },
+    "4": {
+     "n_bars": 2027,
+     "n_nonzero": 1859,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0829
+    },
+    "5": {
+     "n_bars": 2027,
+     "n_nonzero": 1861,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0819
+    },
+    "6": {
+     "n_bars": 2029,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0818
+    },
+    "7": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "8": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 33.0,
+     "p75": 36.0,
+     "p90": 41.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "9": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
      "p50": 33.0,
      "p75": 36.0,
      "p90": 41.0,
@@ -401,7 +401,7 @@
      "zero_frac": 0.0828
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 31.0,
    "session_bars": 24,
@@ -2853,23 +2853,23 @@
   },
   "AVAXUSD": {
    "administered": true,
-   "atr20_h1": 0.11375,
-   "atr20_h1_pts": 113.75,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 41024,
-   "bars_used": 41010,
+   "atr20_h1": 0.13745,
+   "atr20_h1_pts": 137.45,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 41048,
+   "bars_used": 41034,
    "cheapest_hour": 0,
    "contract_size": 1000.0,
-   "days_full": 1712,
-   "days_total": 1716,
+   "days_full": 1713,
+   "days_total": 1717,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 4,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 1692,
-     "n_nonzero": 1692,
+     "n_bars": 1693,
+     "n_nonzero": 1693,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 97.0,
@@ -2877,17 +2877,17 @@
      "zero_frac": 0.0
     },
     "1": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
      "p50": 50.0,
      "p75": 60.0,
-     "p90": 96.3,
+     "p90": 96.2,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "10": {
-     "n_bars": 1711,
-     "n_nonzero": 1711,
+     "n_bars": 1712,
+     "n_nonzero": 1712,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 96.0,
@@ -2895,8 +2895,8 @@
      "zero_frac": 0.0
     },
     "11": {
-     "n_bars": 1711,
-     "n_nonzero": 1711,
+     "n_bars": 1712,
+     "n_nonzero": 1712,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 95.0,
@@ -2904,8 +2904,8 @@
      "zero_frac": 0.0
     },
     "12": {
-     "n_bars": 1703,
-     "n_nonzero": 1703,
+     "n_bars": 1704,
+     "n_nonzero": 1704,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 96.0,
@@ -2913,8 +2913,8 @@
      "zero_frac": 0.0
     },
     "13": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
+     "n_bars": 1711,
+     "n_nonzero": 1711,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 96.0,
@@ -2922,8 +2922,8 @@
      "zero_frac": 0.0
     },
     "14": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
+     "n_bars": 1711,
+     "n_nonzero": 1711,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 97.0,
@@ -2931,8 +2931,8 @@
      "zero_frac": 0.0
     },
     "15": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
+     "n_bars": 1711,
+     "n_nonzero": 1711,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 96.0,
@@ -2940,8 +2940,8 @@
      "zero_frac": 0.0
     },
     "16": {
-     "n_bars": 1711,
-     "n_nonzero": 1711,
+     "n_bars": 1712,
+     "n_nonzero": 1712,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 96.0,
@@ -2949,123 +2949,6 @@
      "zero_frac": 0.0
     },
     "17": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "18": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "19": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "2": {
-     "n_bars": 1709,
-     "n_nonzero": 1709,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "20": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.3,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "21": {
-     "n_bars": 1712,
-     "n_nonzero": 1712,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "22": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "23": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "3": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "4": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 97.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "5": {
-     "n_bars": 1709,
-     "n_nonzero": 1709,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "6": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "7": {
-     "n_bars": 1710,
-     "n_nonzero": 1710,
-     "p50": 50.0,
-     "p75": 60.0,
-     "p90": 96.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "8": {
      "n_bars": 1711,
      "n_nonzero": 1711,
      "p50": 50.0,
@@ -3074,17 +2957,134 @@
      "status": "MEASURED",
      "zero_frac": 0.0
     },
-    "9": {
+    "18": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "19": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "2": {
      "n_bars": 1710,
      "n_nonzero": 1710,
      "p50": 50.0,
      "p75": 60.0,
-     "p90": 96.1,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "20": {
+     "n_bars": 1709,
+     "n_nonzero": 1709,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.2,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "21": {
+     "n_bars": 1713,
+     "n_nonzero": 1713,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "22": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "23": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "3": {
+     "n_bars": 1709,
+     "n_nonzero": 1709,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "4": {
+     "n_bars": 1708,
+     "n_nonzero": 1708,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 97.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "5": {
+     "n_bars": 1710,
+     "n_nonzero": 1710,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "6": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "7": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "8": {
+     "n_bars": 1712,
+     "n_nonzero": 1712,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
+    "9": {
+     "n_bars": 1711,
+     "n_nonzero": 1711,
+     "p50": 50.0,
+     "p75": 60.0,
+     "p90": 96.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 36.0,
    "session_bars": 24,
@@ -4623,32 +4623,32 @@
   },
   "BCHUSD": {
    "administered": false,
-   "atr20_h1": 2.994,
-   "atr20_h1_pts": 299.4,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 57311,
-   "bars_used": 56762,
+   "atr20_h1": 3.596,
+   "atr20_h1_pts": 359.6,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 57335,
+   "bars_used": 56786,
    "cheapest_hour": 10,
    "contract_size": 1.0,
-   "days_full": 2368,
-   "days_total": 2880,
+   "days_full": 2369,
+   "days_total": 2881,
    "dear_over_cheap": 1.02,
    "dearest_hour": 2,
    "excluded_days": 512,
    "first": "2017-12-11 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2358,
-     "n_nonzero": 2060,
+     "n_bars": 2359,
+     "n_nonzero": 2061,
      "p50": 131.0,
      "p75": 165.0,
      "p90": 260.0,
      "status": "MEASURED",
-     "zero_frac": 0.1264
+     "zero_frac": 0.1263
     },
     "1": {
-     "n_bars": 2365,
-     "n_nonzero": 2067,
+     "n_bars": 2366,
+     "n_nonzero": 2068,
      "p50": 131.0,
      "p75": 165.0,
      "p90": 261.0,
@@ -4656,26 +4656,26 @@
      "zero_frac": 0.126
     },
     "10": {
-     "n_bars": 2366,
-     "n_nonzero": 2068,
+     "n_bars": 2367,
+     "n_nonzero": 2069,
      "p50": 130.0,
      "p75": 165.0,
      "p90": 261.0,
      "status": "MEASURED",
-     "zero_frac": 0.126
+     "zero_frac": 0.1259
     },
     "11": {
-     "n_bars": 2364,
-     "n_nonzero": 2066,
+     "n_bars": 2365,
+     "n_nonzero": 2067,
      "p50": 130.0,
      "p75": 165.0,
-     "p90": 260.5,
+     "p90": 260.4,
      "status": "MEASURED",
-     "zero_frac": 0.1261
+     "zero_frac": 0.126
     },
     "12": {
-     "n_bars": 2359,
-     "n_nonzero": 2061,
+     "n_bars": 2360,
+     "n_nonzero": 2062,
      "p50": 130.0,
      "p75": 165.0,
      "p90": 261.0,
@@ -4683,6 +4683,24 @@
      "zero_frac": 0.1263
     },
     "13": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 130.0,
+     "p75": 165.0,
+     "p90": 261.1,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "14": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 130.0,
+     "p75": 165.0,
+     "p90": 262.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "15": {
      "n_bars": 2367,
      "n_nonzero": 2069,
      "p50": 130.0,
@@ -4691,43 +4709,16 @@
      "status": "MEASURED",
      "zero_frac": 0.1259
     },
-    "14": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
-     "p50": 130.0,
-     "p75": 165.0,
-     "p90": 262.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1259
-    },
-    "15": {
-     "n_bars": 2366,
-     "n_nonzero": 2068,
-     "p50": 130.0,
-     "p75": 165.0,
-     "p90": 261.3,
-     "status": "MEASURED",
-     "zero_frac": 0.126
-    },
     "16": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
+     "n_bars": 2368,
+     "n_nonzero": 2070,
      "p50": 130.0,
      "p75": 165.0,
      "p90": 261.0,
      "status": "MEASURED",
-     "zero_frac": 0.1259
+     "zero_frac": 0.1258
     },
     "17": {
-     "n_bars": 2364,
-     "n_nonzero": 2067,
-     "p50": 130.0,
-     "p75": 165.0,
-     "p90": 262.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1256
-    },
-    "18": {
      "n_bars": 2365,
      "n_nonzero": 2068,
      "p50": 130.0,
@@ -4736,34 +4727,97 @@
      "status": "MEASURED",
      "zero_frac": 0.1256
     },
-    "19": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
-     "p50": 130.0,
-     "p75": 165.0,
-     "p90": 261.2,
-     "status": "MEASURED",
-     "zero_frac": 0.1259
-    },
-    "2": {
-     "n_bars": 2364,
-     "n_nonzero": 2066,
-     "p50": 132.0,
-     "p75": 165.0,
-     "p90": 262.5,
-     "status": "MEASURED",
-     "zero_frac": 0.1261
-    },
-    "20": {
-     "n_bars": 2367,
+    "18": {
+     "n_bars": 2366,
      "n_nonzero": 2069,
      "p50": 130.0,
      "p75": 165.0,
      "p90": 262.0,
      "status": "MEASURED",
-     "zero_frac": 0.1259
+     "zero_frac": 0.1255
+    },
+    "19": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 130.0,
+     "p75": 165.0,
+     "p90": 261.1,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "2": {
+     "n_bars": 2365,
+     "n_nonzero": 2067,
+     "p50": 132.0,
+     "p75": 165.0,
+     "p90": 262.4,
+     "status": "MEASURED",
+     "zero_frac": 0.126
+    },
+    "20": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 130.0,
+     "p75": 165.0,
+     "p90": 262.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
     },
     "21": {
+     "n_bars": 2369,
+     "n_nonzero": 2071,
+     "p50": 131.0,
+     "p75": 165.0,
+     "p90": 262.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "22": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 131.5,
+     "p75": 165.75,
+     "p90": 261.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "23": {
+     "n_bars": 2368,
+     "n_nonzero": 2070,
+     "p50": 131.0,
+     "p75": 165.0,
+     "p90": 260.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1258
+    },
+    "3": {
+     "n_bars": 2366,
+     "n_nonzero": 2068,
+     "p50": 132.0,
+     "p75": 165.0,
+     "p90": 262.0,
+     "status": "MEASURED",
+     "zero_frac": 0.126
+    },
+    "4": {
+     "n_bars": 2363,
+     "n_nonzero": 2065,
+     "p50": 132.0,
+     "p75": 166.0,
+     "p90": 261.6,
+     "status": "MEASURED",
+     "zero_frac": 0.1261
+    },
+    "5": {
+     "n_bars": 2365,
+     "n_nonzero": 2067,
+     "p50": 132.0,
+     "p75": 165.0,
+     "p90": 262.0,
+     "status": "MEASURED",
+     "zero_frac": 0.126
+    },
+    "6": {
      "n_bars": 2368,
      "n_nonzero": 2070,
      "p50": 131.0,
@@ -4772,81 +4826,27 @@
      "status": "MEASURED",
      "zero_frac": 0.1258
     },
-    "22": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
-     "p50": 132.0,
-     "p75": 166.0,
-     "p90": 261.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1259
-    },
-    "23": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
-     "p50": 131.0,
-     "p75": 165.0,
-     "p90": 260.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1259
-    },
-    "3": {
-     "n_bars": 2365,
-     "n_nonzero": 2067,
-     "p50": 132.0,
-     "p75": 165.0,
-     "p90": 262.0,
-     "status": "MEASURED",
-     "zero_frac": 0.126
-    },
-    "4": {
-     "n_bars": 2362,
-     "n_nonzero": 2064,
-     "p50": 132.0,
-     "p75": 166.0,
-     "p90": 261.7,
-     "status": "MEASURED",
-     "zero_frac": 0.1262
-    },
-    "5": {
-     "n_bars": 2364,
-     "n_nonzero": 2066,
-     "p50": 132.0,
-     "p75": 165.0,
-     "p90": 262.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1261
-    },
-    "6": {
-     "n_bars": 2367,
-     "n_nonzero": 2069,
-     "p50": 131.0,
-     "p75": 165.0,
-     "p90": 262.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1259
-    },
     "7": {
-     "n_bars": 2365,
-     "n_nonzero": 2067,
-     "p50": 131.0,
+     "n_bars": 2366,
+     "n_nonzero": 2068,
+     "p50": 131.5,
      "p75": 165.0,
-     "p90": 261.4,
+     "p90": 261.3,
      "status": "MEASURED",
      "zero_frac": 0.126
     },
     "8": {
-     "n_bars": 2366,
-     "n_nonzero": 2068,
+     "n_bars": 2367,
+     "n_nonzero": 2069,
      "p50": 131.0,
      "p75": 165.0,
      "p90": 262.0,
      "status": "MEASURED",
-     "zero_frac": 0.126
+     "zero_frac": 0.1259
     },
     "9": {
-     "n_bars": 2365,
-     "n_nonzero": 2067,
+     "n_bars": 2366,
+     "n_nonzero": 2068,
      "p50": 131.0,
      "p75": 165.0,
      "p90": 261.0,
@@ -4854,7 +4854,7 @@
      "zero_frac": 0.126
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 156.0,
    "session_bars": 24,
@@ -4869,41 +4869,41 @@
   },
   "BNBUSD": {
    "administered": true,
-   "atr20_h1": 6.0,
-   "atr20_h1_pts": 600.0,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 49782,
-   "bars_used": 48706,
+   "atr20_h1": 7.7,
+   "atr20_h1_pts": 770.0,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 49806,
+   "bars_used": 48730,
    "cheapest_hour": 0,
    "contract_size": 1.0,
-   "days_full": 2034,
-   "days_total": 3086,
+   "days_full": 2035,
+   "days_total": 3087,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 1052,
    "first": "2018-05-22 02:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2013,
-     "n_nonzero": 1843,
+     "n_bars": 2014,
+     "n_nonzero": 1844,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 141.8,
+     "p90": 142.0,
      "status": "MEASURED",
-     "zero_frac": 0.0845
+     "zero_frac": 0.0844
     },
     "1": {
-     "n_bars": 2028,
-     "n_nonzero": 1859,
+     "n_bars": 2029,
+     "n_nonzero": 1860,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 140.2,
+     "p90": 141.0,
      "status": "MEASURED",
      "zero_frac": 0.0833
     },
     "10": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
+     "n_bars": 2030,
+     "n_nonzero": 1862,
      "p50": 84.0,
      "p75": 104.0,
      "p90": 140.0,
@@ -4911,8 +4911,8 @@
      "zero_frac": 0.0828
     },
     "11": {
-     "n_bars": 2029,
-     "n_nonzero": 1862,
+     "n_bars": 2030,
+     "n_nonzero": 1863,
      "p50": 84.0,
      "p75": 103.0,
      "p90": 140.0,
@@ -4920,80 +4920,80 @@
      "zero_frac": 0.0823
     },
     "12": {
-     "n_bars": 2021,
-     "n_nonzero": 1854,
+     "n_bars": 2022,
+     "n_nonzero": 1855,
      "p50": 84.0,
      "p75": 103.0,
-     "p90": 140.0,
+     "p90": 140.6,
      "status": "MEASURED",
      "zero_frac": 0.0826
     },
     "13": {
-     "n_bars": 2031,
-     "n_nonzero": 1863,
+     "n_bars": 2032,
+     "n_nonzero": 1864,
      "p50": 84.0,
      "p75": 103.0,
-     "p90": 141.8,
+     "p90": 142.0,
      "status": "MEASURED",
      "zero_frac": 0.0827
     },
     "14": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
-     "p50": 84.0,
-     "p75": 103.5,
-     "p90": 144.6,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
-    "15": {
-     "n_bars": 2031,
-     "n_nonzero": 1862,
-     "p50": 84.0,
-     "p75": 104.0,
-     "p90": 141.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
-    "16": {
      "n_bars": 2033,
      "n_nonzero": 1864,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 140.7,
+     "p90": 145.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0831
+    },
+    "15": {
+     "n_bars": 2032,
+     "n_nonzero": 1863,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 141.8,
+     "status": "MEASURED",
+     "zero_frac": 0.0832
+    },
+    "16": {
+     "n_bars": 2034,
+     "n_nonzero": 1865,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 141.0,
      "status": "MEASURED",
      "zero_frac": 0.0831
     },
     "17": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
+     "n_bars": 2033,
+     "n_nonzero": 1864,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 138.0,
+     "p90": 138.7,
      "status": "MEASURED",
-     "zero_frac": 0.0832
+     "zero_frac": 0.0831
     },
     "18": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
+     "n_bars": 2033,
+     "n_nonzero": 1864,
      "p50": 84.0,
      "p75": 103.0,
-     "p90": 138.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
-    "19": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
-     "p50": 84.0,
-     "p75": 104.0,
      "p90": 139.0,
      "status": "MEASURED",
-     "zero_frac": 0.0832
+     "zero_frac": 0.0831
+    },
+    "19": {
+     "n_bars": 2033,
+     "n_nonzero": 1864,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 139.7,
+     "status": "MEASURED",
+     "zero_frac": 0.0831
     },
     "2": {
-     "n_bars": 2031,
-     "n_nonzero": 1861,
+     "n_bars": 2032,
+     "n_nonzero": 1862,
      "p50": 84.0,
      "p75": 104.0,
      "p90": 141.0,
@@ -5001,69 +5001,96 @@
      "zero_frac": 0.0837
     },
     "20": {
-     "n_bars": 2031,
-     "n_nonzero": 1862,
+     "n_bars": 2032,
+     "n_nonzero": 1863,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 139.9,
+     "p90": 140.0,
      "status": "MEASURED",
      "zero_frac": 0.0832
     },
     "21": {
-     "n_bars": 2034,
-     "n_nonzero": 1865,
+     "n_bars": 2035,
+     "n_nonzero": 1866,
      "p50": 84.0,
      "p75": 104.0,
+     "p90": 142.5,
+     "status": "MEASURED",
+     "zero_frac": 0.083
+    },
+    "22": {
+     "n_bars": 2033,
+     "n_nonzero": 1864,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 143.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0831
+    },
+    "23": {
+     "n_bars": 2033,
+     "n_nonzero": 1864,
+     "p50": 84.0,
+     "p75": 105.0,
      "p90": 142.0,
      "status": "MEASURED",
      "zero_frac": 0.0831
     },
-    "22": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
-     "p50": 84.0,
-     "p75": 104.0,
-     "p90": 142.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
-    "23": {
-     "n_bars": 2032,
-     "n_nonzero": 1863,
-     "p50": 84.0,
-     "p75": 105.0,
-     "p90": 141.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
     "3": {
-     "n_bars": 2031,
-     "n_nonzero": 1861,
+     "n_bars": 2032,
+     "n_nonzero": 1862,
      "p50": 84.0,
-     "p75": 103.0,
+     "p75": 103.75,
      "p90": 141.0,
      "status": "MEASURED",
      "zero_frac": 0.0837
     },
     "4": {
-     "n_bars": 2027,
-     "n_nonzero": 1858,
+     "n_bars": 2028,
+     "n_nonzero": 1859,
      "p50": 84.0,
      "p75": 104.0,
      "p90": 141.0,
      "status": "MEASURED",
-     "zero_frac": 0.0834
+     "zero_frac": 0.0833
     },
     "5": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
+     "n_bars": 2030,
+     "n_nonzero": 1862,
      "p50": 84.0,
      "p75": 104.0,
-     "p90": 141.0,
+     "p90": 141.9,
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
     "6": {
+     "n_bars": 2031,
+     "n_nonzero": 1864,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 142.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0822
+    },
+    "7": {
+     "n_bars": 2029,
+     "n_nonzero": 1863,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 143.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0818
+    },
+    "8": {
+     "n_bars": 2030,
+     "n_nonzero": 1864,
+     "p50": 84.0,
+     "p75": 104.0,
+     "p90": 142.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0818
+    },
+    "9": {
      "n_bars": 2030,
      "n_nonzero": 1863,
      "p50": 84.0,
@@ -5071,36 +5098,9 @@
      "p90": 142.0,
      "status": "MEASURED",
      "zero_frac": 0.0823
-    },
-    "7": {
-     "n_bars": 2028,
-     "n_nonzero": 1862,
-     "p50": 84.0,
-     "p75": 104.0,
-     "p90": 143.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0819
-    },
-    "8": {
-     "n_bars": 2029,
-     "n_nonzero": 1863,
-     "p50": 84.0,
-     "p75": 104.0,
-     "p90": 141.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0818
-    },
-    "9": {
-     "n_bars": 2029,
-     "n_nonzero": 1862,
-     "p50": 84.0,
-     "p75": 104.0,
-     "p90": 142.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0823
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 94.0,
    "session_bars": 24,
@@ -5115,129 +5115,30 @@
   },
   "BTCUSD": {
    "administered": false,
-   "atr20_h1": 638.9,
-   "atr20_h1_pts": 63890.0,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 56511,
-   "bars_used": 56488,
+   "atr20_h1": 739.83,
+   "atr20_h1_pts": 73983.0,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 56535,
+   "bars_used": 56512,
    "cheapest_hour": 1,
    "contract_size": 1.0,
-   "days_full": 2357,
-   "days_total": 2361,
+   "days_full": 2358,
+   "days_total": 2362,
    "dear_over_cheap": 1.02,
    "dearest_hour": 0,
    "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2336,
-     "n_nonzero": 2048,
+     "n_bars": 2337,
+     "n_nonzero": 2049,
      "p50": 1940.0,
      "p75": 2600.0,
      "p90": 3000.0,
      "status": "MEASURED",
-     "zero_frac": 0.1233
+     "zero_frac": 0.1232
     },
     "1": {
-     "n_bars": 2352,
-     "n_nonzero": 2063,
-     "p50": 1900.0,
-     "p75": 2600.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1229
-    },
-    "10": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
-     "p50": 1900.0,
-     "p75": 2555.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1223
-    },
-    "11": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1900.0,
-     "p75": 2507.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
-    "12": {
-     "n_bars": 2348,
-     "n_nonzero": 2058,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1235
-    },
-    "13": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1900.0,
-     "p75": 2550.25,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
-    "14": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
-    "15": {
-     "n_bars": 2355,
-     "n_nonzero": 2066,
-     "p50": 1900.0,
-     "p75": 2520.5,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1227
-    },
-    "16": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
-    "17": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1224
-    },
-    "18": {
-     "n_bars": 2354,
-     "n_nonzero": 2067,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1219
-    },
-    "19": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1900.0,
-     "p75": 2500.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
-    "2": {
      "n_bars": 2353,
      "n_nonzero": 2064,
      "p50": 1900.0,
@@ -5246,79 +5147,97 @@
      "status": "MEASURED",
      "zero_frac": 0.1228
     },
-    "20": {
+    "10": {
      "n_bars": 2356,
      "n_nonzero": 2068,
      "p50": 1900.0,
-     "p75": 2600.0,
+     "p75": 2552.5,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
-    "21": {
+    "11": {
      "n_bars": 2357,
-     "n_nonzero": 2068,
-     "p50": 1901.0,
-     "p75": 2600.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1226
-    },
-    "22": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 1902.0,
-     "p75": 2559.75,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2501.0,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
-    "23": {
+    "12": {
+     "n_bars": 2349,
+     "n_nonzero": 2059,
+     "p50": 1900.0,
+     "p75": 2500.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1235
+    },
+    "13": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2550.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "14": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2500.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "15": {
      "n_bars": 2356,
      "n_nonzero": 2067,
      "p50": 1900.0,
-     "p75": 2512.0,
+     "p75": 2519.0,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1227
     },
-    "3": {
+    "16": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2500.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "17": {
      "n_bars": 2354,
      "n_nonzero": 2066,
      "p50": 1900.0,
-     "p75": 2600.0,
+     "p75": 2500.0,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1223
     },
-    "4": {
-     "n_bars": 2351,
-     "n_nonzero": 2062,
+    "18": {
+     "n_bars": 2355,
+     "n_nonzero": 2068,
      "p50": 1900.0,
-     "p75": 2600.0,
+     "p75": 2500.0,
      "p90": 3000.0,
      "status": "MEASURED",
-     "zero_frac": 0.1229
+     "zero_frac": 0.1219
     },
-    "5": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
+    "19": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 1900.0,
-     "p75": 2600.0,
+     "p75": 2500.0,
      "p90": 3000.0,
      "status": "MEASURED",
-     "zero_frac": 0.1224
+     "zero_frac": 0.1222
     },
-    "6": {
-     "n_bars": 2356,
-     "n_nonzero": 2067,
-     "p50": 1900.0,
-     "p75": 2600.0,
-     "p90": 3000.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1227
-    },
-    "7": {
+    "2": {
      "n_bars": 2354,
      "n_nonzero": 2065,
      "p50": 1900.0,
@@ -5327,16 +5246,61 @@
      "status": "MEASURED",
      "zero_frac": 0.1228
     },
-    "8": {
+    "20": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "21": {
+     "n_bars": 2358,
+     "n_nonzero": 2069,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1226
+    },
+    "22": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
+     "p50": 1902.0,
+     "p75": 2550.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "23": {
+     "n_bars": 2357,
+     "n_nonzero": 2068,
+     "p50": 1900.0,
+     "p75": 2506.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1226
+    },
+    "3": {
      "n_bars": 2355,
      "n_nonzero": 2067,
-     "p50": 1901.0,
+     "p50": 1900.0,
      "p75": 2600.0,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1223
     },
-    "9": {
+    "4": {
+     "n_bars": 2352,
+     "n_nonzero": 2063,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1229
+    },
+    "5": {
      "n_bars": 2354,
      "n_nonzero": 2066,
      "p50": 1900.0,
@@ -5344,9 +5308,45 @@
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1223
+    },
+    "6": {
+     "n_bars": 2357,
+     "n_nonzero": 2068,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1226
+    },
+    "7": {
+     "n_bars": 2355,
+     "n_nonzero": 2066,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1227
+    },
+    "8": {
+     "n_bars": 2356,
+     "n_nonzero": 2068,
+     "p50": 1900.5,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "9": {
+     "n_bars": 2355,
+     "n_nonzero": 2067,
+     "p50": 1900.0,
+     "p75": 2600.0,
+     "p90": 3000.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1223
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2032.0,
    "session_bars": 24,
@@ -10800,23 +10800,23 @@
   },
   "DOGEUSD": {
    "administered": true,
-   "atr20_h1": 0.0007185,
-   "atr20_h1_pts": 71.85,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 48958,
-   "bars_used": 48658,
+   "atr20_h1": 0.001051,
+   "atr20_h1_pts": 105.1,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 48982,
+   "bars_used": 48682,
    "cheapest_hour": 0,
    "contract_size": 1000.0,
-   "days_full": 2031,
-   "days_total": 2292,
+   "days_full": 2032,
+   "days_total": 2293,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 261,
    "first": "2020-07-10 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2011,
-     "n_nonzero": 1842,
+     "n_bars": 2012,
+     "n_nonzero": 1843,
      "p50": 39.0,
      "p75": 42.0,
      "p90": 46.0,
@@ -10824,105 +10824,6 @@
      "zero_frac": 0.084
     },
     "1": {
-     "n_bars": 2026,
-     "n_nonzero": 1857,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0834
-    },
-    "10": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "11": {
-     "n_bars": 2028,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0823
-    },
-    "12": {
-     "n_bars": 2021,
-     "n_nonzero": 1854,
-     "p50": 39.0,
-     "p75": 41.75,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0826
-    },
-    "13": {
-     "n_bars": 2029,
-     "n_nonzero": 1862,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0823
-    },
-    "14": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "15": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "16": {
-     "n_bars": 2030,
-     "n_nonzero": 1862,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "17": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "18": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "19": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "2": {
      "n_bars": 2027,
      "n_nonzero": 1858,
      "p50": 39.0,
@@ -10931,34 +10832,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0834
     },
-    "20": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "21": {
-     "n_bars": 2031,
-     "n_nonzero": 1863,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0827
-    },
-    "22": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 39.0,
-     "p75": 41.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "23": {
+    "10": {
      "n_bars": 2030,
      "n_nonzero": 1862,
      "p50": 39.0,
@@ -10967,7 +10841,88 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "3": {
+    "11": {
+     "n_bars": 2029,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0823
+    },
+    "12": {
+     "n_bars": 2022,
+     "n_nonzero": 1855,
+     "p50": 39.0,
+     "p75": 41.5,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0826
+    },
+    "13": {
+     "n_bars": 2030,
+     "n_nonzero": 1863,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0823
+    },
+    "14": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "15": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "16": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "17": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "18": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "19": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "2": {
      "n_bars": 2028,
      "n_nonzero": 1859,
      "p50": 39.0,
@@ -10976,43 +10931,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0833
     },
-    "4": {
-     "n_bars": 2025,
-     "n_nonzero": 1857,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.083
-    },
-    "5": {
-     "n_bars": 2027,
-     "n_nonzero": 1859,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0829
-    },
-    "6": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "7": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 39.0,
-     "p75": 42.0,
-     "p90": 46.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "8": {
+    "20": {
      "n_bars": 2029,
      "n_nonzero": 1861,
      "p50": 39.0,
@@ -11021,7 +10940,52 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "9": {
+    "21": {
+     "n_bars": 2032,
+     "n_nonzero": 1864,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "22": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 41.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "23": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "3": {
+     "n_bars": 2029,
+     "n_nonzero": 1860,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0833
+    },
+    "4": {
+     "n_bars": 2026,
+     "n_nonzero": 1858,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0829
+    },
+    "5": {
      "n_bars": 2028,
      "n_nonzero": 1860,
      "p50": 39.0,
@@ -11029,9 +10993,45 @@
      "p90": 46.0,
      "status": "MEASURED",
      "zero_frac": 0.0828
+    },
+    "6": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "7": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "8": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "9": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
+     "p50": 39.0,
+     "p75": 42.0,
+     "p90": 46.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 44.0,
    "session_bars": 24,
@@ -11046,68 +11046,68 @@
   },
   "DOTUSD": {
    "administered": true,
-   "atr20_h1": 0.0102,
-   "atr20_h1_pts": 10.2,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 48906,
-   "bars_used": 48636,
+   "atr20_h1": 0.0145,
+   "atr20_h1_pts": 14.5,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 48930,
+   "bars_used": 48660,
    "cheapest_hour": 0,
    "contract_size": 50.0,
-   "days_full": 2030,
-   "days_total": 2262,
+   "days_full": 2031,
+   "days_total": 2263,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 232,
    "first": "2020-08-21 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2010,
-     "n_nonzero": 1841,
+     "n_bars": 2011,
+     "n_nonzero": 1842,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
      "status": "MEASURED",
-     "zero_frac": 0.0841
+     "zero_frac": 0.084
     },
     "1": {
-     "n_bars": 2027,
-     "n_nonzero": 1858,
+     "n_bars": 2028,
+     "n_nonzero": 1859,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
      "status": "MEASURED",
-     "zero_frac": 0.0834
+     "zero_frac": 0.0833
     },
     "10": {
-     "n_bars": 2027,
-     "n_nonzero": 1859,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0829
-    },
-    "11": {
-     "n_bars": 2027,
-     "n_nonzero": 1859,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 48.2,
-     "status": "MEASURED",
-     "zero_frac": 0.0829
-    },
-    "12": {
-     "n_bars": 2020,
-     "n_nonzero": 1852,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0832
-    },
-    "13": {
      "n_bars": 2028,
      "n_nonzero": 1860,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "11": {
+     "n_bars": 2028,
+     "n_nonzero": 1860,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 48.1,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "12": {
+     "n_bars": 2021,
+     "n_nonzero": 1853,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0831
+    },
+    "13": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11115,8 +11115,8 @@
      "zero_frac": 0.0828
     },
     "14": {
-     "n_bars": 2028,
-     "n_nonzero": 1859,
+     "n_bars": 2029,
+     "n_nonzero": 1860,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11124,8 +11124,8 @@
      "zero_frac": 0.0833
     },
     "15": {
-     "n_bars": 2026,
-     "n_nonzero": 1858,
+     "n_bars": 2027,
+     "n_nonzero": 1859,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11133,60 +11133,6 @@
      "zero_frac": 0.0829
     },
     "16": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "17": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "18": {
-     "n_bars": 2028,
-     "n_nonzero": 1859,
-     "p50": 34.0,
-     "p75": 37.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0833
-    },
-    "19": {
-     "n_bars": 2029,
-     "n_nonzero": 1861,
-     "p50": 34.0,
-     "p75": 37.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "2": {
-     "n_bars": 2027,
-     "n_nonzero": 1857,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0839
-    },
-    "20": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "21": {
      "n_bars": 2030,
      "n_nonzero": 1862,
      "p50": 34.0,
@@ -11195,16 +11141,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "22": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0828
-    },
-    "23": {
+    "17": {
      "n_bars": 2029,
      "n_nonzero": 1861,
      "p50": 34.0,
@@ -11213,18 +11150,81 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "3": {
-     "n_bars": 2027,
+    "18": {
+     "n_bars": 2029,
+     "n_nonzero": 1860,
+     "p50": 34.0,
+     "p75": 37.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0833
+    },
+    "19": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 34.0,
+     "p75": 37.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "2": {
+     "n_bars": 2028,
      "n_nonzero": 1858,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
      "status": "MEASURED",
-     "zero_frac": 0.0834
+     "zero_frac": 0.0838
+    },
+    "20": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "21": {
+     "n_bars": 2031,
+     "n_nonzero": 1863,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0827
+    },
+    "22": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "23": {
+     "n_bars": 2030,
+     "n_nonzero": 1862,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
+    },
+    "3": {
+     "n_bars": 2028,
+     "n_nonzero": 1859,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0833
     },
     "4": {
-     "n_bars": 2024,
-     "n_nonzero": 1856,
+     "n_bars": 2025,
+     "n_nonzero": 1857,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11232,8 +11232,8 @@
      "zero_frac": 0.083
     },
     "5": {
-     "n_bars": 2026,
-     "n_nonzero": 1858,
+     "n_bars": 2027,
+     "n_nonzero": 1859,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11241,8 +11241,8 @@
      "zero_frac": 0.0829
     },
     "6": {
-     "n_bars": 2028,
-     "n_nonzero": 1860,
+     "n_bars": 2029,
+     "n_nonzero": 1861,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -11250,15 +11250,6 @@
      "zero_frac": 0.0828
     },
     "7": {
-     "n_bars": 2027,
-     "n_nonzero": 1859,
-     "p50": 34.0,
-     "p75": 38.0,
-     "p90": 49.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0829
-    },
-    "8": {
      "n_bars": 2028,
      "n_nonzero": 1860,
      "p50": 34.0,
@@ -11267,17 +11258,26 @@
      "status": "MEASURED",
      "zero_frac": 0.0828
     },
-    "9": {
-     "n_bars": 2027,
-     "n_nonzero": 1859,
+    "8": {
+     "n_bars": 2029,
+     "n_nonzero": 1861,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
      "status": "MEASURED",
-     "zero_frac": 0.0829
+     "zero_frac": 0.0828
+    },
+    "9": {
+     "n_bars": 2028,
+     "n_nonzero": 1860,
+     "p50": 34.0,
+     "p75": 38.0,
+     "p90": 49.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0828
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 24,
@@ -12026,59 +12026,59 @@
   },
   "ETHUSD": {
    "administered": true,
-   "atr20_h1": 21.34,
-   "atr20_h1_pts": 2134.0,
-   "atr20_h1_through": "2026-11-14T02:00:00+00:00",
-   "bars_total": 56513,
-   "bars_used": 56490,
+   "atr20_h1": 28.72,
+   "atr20_h1_pts": 2872.0,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 56537,
+   "bars_used": 56514,
    "cheapest_hour": 0,
    "contract_size": 1.0,
-   "days_full": 2357,
-   "days_total": 2361,
+   "days_full": 2358,
+   "days_total": 2362,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2337,
-     "n_nonzero": 2048,
+     "n_bars": 2338,
+     "n_nonzero": 2049,
      "p50": 251.0,
      "p75": 300.0,
-     "p90": 340.6,
+     "p90": 340.4,
      "status": "MEASURED",
-     "zero_frac": 0.1237
+     "zero_frac": 0.1236
     },
     "1": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
+     "n_bars": 2354,
+     "n_nonzero": 2066,
      "p50": 251.0,
      "p75": 298.0,
-     "p90": 335.2,
+     "p90": 335.0,
      "status": "MEASURED",
-     "zero_frac": 0.1224
+     "zero_frac": 0.1223
     },
     "10": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
+     "n_bars": 2356,
+     "n_nonzero": 2068,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
      "status": "MEASURED",
-     "zero_frac": 0.1223
+     "zero_frac": 0.1222
     },
     "11": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 298.0,
-     "p90": 340.3,
+     "p90": 340.2,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
     "12": {
-     "n_bars": 2348,
-     "n_nonzero": 2058,
+     "n_bars": 2349,
+     "n_nonzero": 2059,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12086,8 +12086,8 @@
      "zero_frac": 0.1235
     },
     "13": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12095,8 +12095,8 @@
      "zero_frac": 0.1222
     },
     "14": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12104,17 +12104,17 @@
      "zero_frac": 0.1222
     },
     "15": {
-     "n_bars": 2355,
-     "n_nonzero": 2066,
+     "n_bars": 2356,
+     "n_nonzero": 2067,
      "p50": 251.0,
      "p75": 300.0,
-     "p90": 340.5,
+     "p90": 340.4,
      "status": "MEASURED",
      "zero_frac": 0.1227
     },
     "16": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12122,17 +12122,17 @@
      "zero_frac": 0.1222
     },
     "17": {
-     "n_bars": 2353,
-     "n_nonzero": 2066,
+     "n_bars": 2354,
+     "n_nonzero": 2067,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
      "status": "MEASURED",
-     "zero_frac": 0.122
+     "zero_frac": 0.1219
     },
     "18": {
-     "n_bars": 2354,
-     "n_nonzero": 2067,
+     "n_bars": 2355,
+     "n_nonzero": 2068,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
@@ -12140,8 +12140,8 @@
      "zero_frac": 0.1219
     },
     "19": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
@@ -12149,17 +12149,17 @@
      "zero_frac": 0.1222
     },
     "2": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
+     "n_bars": 2354,
+     "n_nonzero": 2066,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 336.0,
      "status": "MEASURED",
-     "zero_frac": 0.1224
+     "zero_frac": 0.1223
     },
     "20": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
@@ -12167,8 +12167,8 @@
      "zero_frac": 0.1222
     },
     "21": {
-     "n_bars": 2357,
-     "n_nonzero": 2068,
+     "n_bars": 2358,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12176,53 +12176,53 @@
      "zero_frac": 0.1226
     },
     "22": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
-     "p90": 336.3,
+     "p90": 336.2,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
     "23": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
-     "p75": 294.25,
+     "p75": 294.0,
      "p90": 334.0,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
     "3": {
-     "n_bars": 2354,
-     "n_nonzero": 2065,
+     "n_bars": 2355,
+     "n_nonzero": 2066,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
      "status": "MEASURED",
-     "zero_frac": 0.1228
+     "zero_frac": 0.1227
     },
     "4": {
-     "n_bars": 2351,
-     "n_nonzero": 2063,
+     "n_bars": 2352,
+     "n_nonzero": 2064,
      "p50": 251.0,
      "p75": 300.0,
-     "p90": 344.4,
-     "status": "MEASURED",
-     "zero_frac": 0.1225
-    },
-    "5": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
-     "p50": 251.0,
-     "p75": 300.0,
-     "p90": 342.0,
+     "p90": 344.1,
      "status": "MEASURED",
      "zero_frac": 0.1224
     },
+    "5": {
+     "n_bars": 2354,
+     "n_nonzero": 2066,
+     "p50": 251.0,
+     "p75": 300.0,
+     "p90": 342.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1223
+    },
     "6": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
@@ -12230,8 +12230,8 @@
      "zero_frac": 0.1222
     },
     "7": {
-     "n_bars": 2354,
-     "n_nonzero": 2066,
+     "n_bars": 2355,
+     "n_nonzero": 2067,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 342.0,
@@ -12239,17 +12239,17 @@
      "zero_frac": 0.1223
     },
     "8": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
+     "n_bars": 2356,
+     "n_nonzero": 2068,
      "p50": 251.0,
      "p75": 300.0,
-     "p90": 340.8,
+     "p90": 340.6,
      "status": "MEASURED",
-     "zero_frac": 0.1223
+     "zero_frac": 0.1222
     },
     "9": {
-     "n_bars": 2354,
-     "n_nonzero": 2066,
+     "n_bars": 2355,
+     "n_nonzero": 2067,
      "p50": 251.0,
      "p75": 300.0,
      "p90": 340.0,
@@ -12257,7 +12257,7 @@
      "zero_frac": 0.1223
     }
    },
-   "last": "2026-11-14 02:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 304.0,
    "session_bars": 24,
@@ -24160,129 +24160,30 @@
   },
   "LNKUSD": {
    "administered": true,
-   "atr20_h1": 0.119,
-   "atr20_h1_pts": 119.0,
-   "atr20_h1_through": "2026-11-14T03:00:00+00:00",
-   "bars_total": 46338,
-   "bars_used": 45880,
+   "atr20_h1": 0.15965,
+   "atr20_h1_pts": 159.65,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 46361,
+   "bars_used": 45904,
    "cheapest_hour": 0,
    "contract_size": 10.0,
-   "days_full": 1915,
-   "days_total": 2324,
+   "days_full": 1916,
+   "days_total": 2325,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 409,
    "first": "2020-05-19 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 1895,
-     "n_nonzero": 1835,
+     "n_bars": 1896,
+     "n_nonzero": 1836,
      "p50": 35.0,
      "p75": 44.0,
      "p90": 55.0,
      "status": "MEASURED",
-     "zero_frac": 0.0317
+     "zero_frac": 0.0316
     },
     "1": {
-     "n_bars": 1911,
-     "n_nonzero": 1851,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0314
-    },
-    "10": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "11": {
-     "n_bars": 1913,
-     "n_nonzero": 1855,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0303
-    },
-    "12": {
-     "n_bars": 1905,
-     "n_nonzero": 1847,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0304
-    },
-    "13": {
-     "n_bars": 1913,
-     "n_nonzero": 1855,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0303
-    },
-    "14": {
-     "n_bars": 1914,
-     "n_nonzero": 1855,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "15": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "16": {
-     "n_bars": 1914,
-     "n_nonzero": 1855,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "17": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "18": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "19": {
-     "n_bars": 1914,
-     "n_nonzero": 1855,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "2": {
      "n_bars": 1912,
      "n_nonzero": 1852,
      "p50": 35.0,
@@ -24291,16 +24192,43 @@
      "status": "MEASURED",
      "zero_frac": 0.0314
     },
-    "20": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
+    "10": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
      "p50": 35.0,
      "p75": 44.0,
      "p90": 55.0,
      "status": "MEASURED",
      "zero_frac": 0.0308
     },
-    "21": {
+    "11": {
+     "n_bars": 1914,
+     "n_nonzero": 1856,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0303
+    },
+    "12": {
+     "n_bars": 1906,
+     "n_nonzero": 1848,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0304
+    },
+    "13": {
+     "n_bars": 1914,
+     "n_nonzero": 1856,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0303
+    },
+    "14": {
      "n_bars": 1915,
      "n_nonzero": 1856,
      "p50": 35.0,
@@ -24309,16 +24237,7 @@
      "status": "MEASURED",
      "zero_frac": 0.0308
     },
-    "22": {
-     "n_bars": 1913,
-     "n_nonzero": 1854,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0308
-    },
-    "23": {
+    "15": {
      "n_bars": 1914,
      "n_nonzero": 1855,
      "p50": 35.0,
@@ -24327,7 +24246,106 @@
      "status": "MEASURED",
      "zero_frac": 0.0308
     },
+    "16": {
+     "n_bars": 1915,
+     "n_nonzero": 1856,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "17": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "18": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "19": {
+     "n_bars": 1915,
+     "n_nonzero": 1856,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "2": {
+     "n_bars": 1913,
+     "n_nonzero": 1853,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0314
+    },
+    "20": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "21": {
+     "n_bars": 1916,
+     "n_nonzero": 1857,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "22": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
+    "23": {
+     "n_bars": 1915,
+     "n_nonzero": 1856,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
+    },
     "3": {
+     "n_bars": 1913,
+     "n_nonzero": 1853,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0314
+    },
+    "4": {
+     "n_bars": 1910,
+     "n_nonzero": 1850,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0314
+    },
+    "5": {
      "n_bars": 1912,
      "n_nonzero": 1852,
      "p50": 35.0,
@@ -24336,43 +24354,16 @@
      "status": "MEASURED",
      "zero_frac": 0.0314
     },
-    "4": {
-     "n_bars": 1909,
-     "n_nonzero": 1849,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0314
-    },
-    "5": {
-     "n_bars": 1911,
-     "n_nonzero": 1851,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0314
-    },
     "6": {
-     "n_bars": 1913,
-     "n_nonzero": 1853,
+     "n_bars": 1914,
+     "n_nonzero": 1854,
      "p50": 35.0,
      "p75": 44.0,
      "p90": 55.0,
      "status": "MEASURED",
-     "zero_frac": 0.0314
+     "zero_frac": 0.0313
     },
     "7": {
-     "n_bars": 1912,
-     "n_nonzero": 1853,
-     "p50": 35.0,
-     "p75": 44.0,
-     "p90": 55.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0309
-    },
-    "8": {
      "n_bars": 1913,
      "n_nonzero": 1854,
      "p50": 35.0,
@@ -24381,17 +24372,26 @@
      "status": "MEASURED",
      "zero_frac": 0.0308
     },
-    "9": {
-     "n_bars": 1912,
-     "n_nonzero": 1853,
+    "8": {
+     "n_bars": 1914,
+     "n_nonzero": 1855,
      "p50": 35.0,
      "p75": 44.0,
      "p90": 55.0,
      "status": "MEASURED",
-     "zero_frac": 0.0309
+     "zero_frac": 0.0308
+    },
+    "9": {
+     "n_bars": 1913,
+     "n_nonzero": 1854,
+     "p50": 35.0,
+     "p75": 44.0,
+     "p90": 55.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0308
     }
    },
-   "last": "2026-11-14 03:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 37.0,
    "session_bars": 24,
@@ -24406,23 +24406,23 @@
   },
   "LTCUSD": {
    "administered": true,
-   "atr20_h1": 0.508,
-   "atr20_h1_pts": 50.8,
-   "atr20_h1_through": "2026-11-14T03:00:00+00:00",
-   "bars_total": 56513,
-   "bars_used": 56489,
+   "atr20_h1": 0.762,
+   "atr20_h1_pts": 76.2,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 56536,
+   "bars_used": 56513,
    "cheapest_hour": 0,
    "contract_size": 1.0,
-   "days_full": 2357,
-   "days_total": 2361,
+   "days_full": 2358,
+   "days_total": 2362,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 2337,
-     "n_nonzero": 2049,
+     "n_bars": 2338,
+     "n_nonzero": 2050,
      "p50": 36.0,
      "p75": 43.0,
      "p90": 47.0,
@@ -24430,8 +24430,8 @@
      "zero_frac": 0.1232
     },
     "1": {
-     "n_bars": 2353,
-     "n_nonzero": 2064,
+     "n_bars": 2354,
+     "n_nonzero": 2065,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24439,17 +24439,17 @@
      "zero_frac": 0.1228
     },
     "10": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
+     "n_bars": 2356,
+     "n_nonzero": 2068,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
      "status": "MEASURED",
-     "zero_frac": 0.1223
+     "zero_frac": 0.1222
     },
     "11": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24457,17 +24457,17 @@
      "zero_frac": 0.1222
     },
     "12": {
-     "n_bars": 2348,
-     "n_nonzero": 2060,
+     "n_bars": 2349,
+     "n_nonzero": 2061,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
      "status": "MEASURED",
-     "zero_frac": 0.1227
+     "zero_frac": 0.1226
     },
     "13": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24475,8 +24475,8 @@
      "zero_frac": 0.1222
     },
     "14": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24484,15 +24484,6 @@
      "zero_frac": 0.1222
     },
     "15": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
-     "p50": 36.0,
-     "p75": 42.0,
-     "p90": 47.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1223
-    },
-    "16": {
      "n_bars": 2356,
      "n_nonzero": 2068,
      "p50": 36.0,
@@ -24501,16 +24492,16 @@
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
-    "17": {
-     "n_bars": 2353,
-     "n_nonzero": 2066,
+    "16": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
      "status": "MEASURED",
-     "zero_frac": 0.122
+     "zero_frac": 0.1222
     },
-    "18": {
+    "17": {
      "n_bars": 2354,
      "n_nonzero": 2067,
      "p50": 36.0,
@@ -24519,9 +24510,18 @@
      "status": "MEASURED",
      "zero_frac": 0.1219
     },
-    "19": {
-     "n_bars": 2356,
+    "18": {
+     "n_bars": 2355,
      "n_nonzero": 2068,
+     "p50": 36.0,
+     "p75": 42.0,
+     "p90": 47.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1219
+    },
+    "19": {
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24529,24 +24529,33 @@
      "zero_frac": 0.1222
     },
     "2": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
+     "n_bars": 2354,
+     "n_nonzero": 2066,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
      "status": "MEASURED",
-     "zero_frac": 0.1224
+     "zero_frac": 0.1223
     },
     "20": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
-     "p75": 42.25,
+     "p75": 42.0,
      "p90": 47.0,
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
     "21": {
+     "n_bars": 2358,
+     "n_nonzero": 2070,
+     "p50": 36.0,
+     "p75": 42.75,
+     "p90": 47.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1221
+    },
+    "22": {
      "n_bars": 2357,
      "n_nonzero": 2069,
      "p50": 36.0,
@@ -24555,18 +24564,9 @@
      "status": "MEASURED",
      "zero_frac": 0.1222
     },
-    "22": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
-     "p50": 36.0,
-     "p75": 43.0,
-     "p90": 47.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1222
-    },
     "23": {
-     "n_bars": 2356,
-     "n_nonzero": 2068,
+     "n_bars": 2357,
+     "n_nonzero": 2069,
      "p50": 36.0,
      "p75": 42.0,
      "p90": 47.0,
@@ -24574,8 +24574,8 @@
      "zero_frac": 0.1222
     },
     "3": {
-     "n_bars": 2354,
-     "n_nonzero": 2066,
+     "n_bars": 2355,
+     "n_nonzero": 2067,
      "p50": 36.0,
      "p75": 43.0,
      "p90": 47.0,
@@ -24583,35 +24583,35 @@
      "zero_frac": 0.1223
     },
     "4": {
-     "n_bars": 2351,
-     "n_nonzero": 2063,
-     "p50": 36.0,
-     "p75": 43.0,
-     "p90": 47.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1225
-    },
-    "5": {
-     "n_bars": 2353,
-     "n_nonzero": 2065,
+     "n_bars": 2352,
+     "n_nonzero": 2064,
      "p50": 36.0,
      "p75": 43.0,
      "p90": 47.0,
      "status": "MEASURED",
      "zero_frac": 0.1224
     },
-    "6": {
-     "n_bars": 2355,
-     "n_nonzero": 2067,
+    "5": {
+     "n_bars": 2354,
+     "n_nonzero": 2066,
      "p50": 36.0,
-     "p75": 42.0,
+     "p75": 43.0,
      "p90": 47.0,
      "status": "MEASURED",
      "zero_frac": 0.1223
     },
+    "6": {
+     "n_bars": 2356,
+     "n_nonzero": 2068,
+     "p50": 36.0,
+     "p75": 42.0,
+     "p90": 47.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
     "7": {
-     "n_bars": 2354,
-     "n_nonzero": 2066,
+     "n_bars": 2355,
+     "n_nonzero": 2067,
      "p50": 36.0,
      "p75": 43.0,
      "p90": 47.0,
@@ -24619,6 +24619,15 @@
      "zero_frac": 0.1223
     },
     "8": {
+     "n_bars": 2356,
+     "n_nonzero": 2068,
+     "p50": 36.0,
+     "p75": 43.0,
+     "p90": 47.0,
+     "status": "MEASURED",
+     "zero_frac": 0.1222
+    },
+    "9": {
      "n_bars": 2355,
      "n_nonzero": 2067,
      "p50": 36.0,
@@ -24626,23 +24635,14 @@
      "p90": 47.0,
      "status": "MEASURED",
      "zero_frac": 0.1223
-    },
-    "9": {
-     "n_bars": 2354,
-     "n_nonzero": 2066,
-     "p50": 36.0,
-     "p75": 43.0,
-     "p90": 47.0,
-     "status": "MEASURED",
-     "zero_frac": 0.1223
     }
    },
-   "last": "2026-11-14 03:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 36.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 0.9,
+   "splice_tickvol_ratio": 1.0,
    "stress_p90_over_p50": 1.31,
    "tick_hours": {
     "status": "UNREADABLE",
@@ -24838,23 +24838,23 @@
   },
   "MATICUSD": {
    "administered": false,
-   "atr20_h1": 0.00095,
-   "atr20_h1_pts": 9.5,
-   "atr20_h1_through": "2026-11-14T03:00:00+00:00",
-   "bars_total": 40958,
-   "bars_used": 40931,
+   "atr20_h1": 0.001175,
+   "atr20_h1_pts": 11.75,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 40981,
+   "bars_used": 40955,
    "cheapest_hour": 1,
    "contract_size": 10000.0,
-   "days_full": 1709,
-   "days_total": 1714,
+   "days_full": 1710,
+   "days_total": 1715,
    "dear_over_cheap": 1.03,
    "dearest_hour": 0,
    "excluded_days": 5,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 1690,
-     "n_nonzero": 1690,
+     "n_bars": 1691,
+     "n_nonzero": 1691,
      "p50": 39.0,
      "p75": 47.0,
      "p90": 66.0,
@@ -24862,8 +24862,8 @@
      "zero_frac": 0.0
     },
     "1": {
-     "n_bars": 1703,
-     "n_nonzero": 1703,
+     "n_bars": 1704,
+     "n_nonzero": 1704,
      "p50": 38.0,
      "p75": 47.0,
      "p90": 66.0,
@@ -24871,8 +24871,8 @@
      "zero_frac": 0.0
     },
     "10": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 67.0,
@@ -24880,35 +24880,35 @@
      "zero_frac": 0.0
     },
     "11": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
-     "p50": 38.5,
-     "p75": 47.25,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
+     "p50": 38.0,
+     "p75": 47.0,
      "p90": 66.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "12": {
-     "n_bars": 1700,
-     "n_nonzero": 1700,
+     "n_bars": 1701,
+     "n_nonzero": 1701,
      "p50": 38.0,
-     "p75": 47.25,
+     "p75": 47.0,
      "p90": 66.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "13": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
-     "p50": 39.0,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
+     "p50": 38.5,
      "p75": 48.0,
      "p90": 66.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "14": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 38.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24916,17 +24916,17 @@
      "zero_frac": 0.0
     },
     "15": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 38.0,
-     "p75": 47.5,
+     "p75": 47.25,
      "p90": 66.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "16": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24934,8 +24934,8 @@
      "zero_frac": 0.0
     },
     "17": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24943,8 +24943,8 @@
      "zero_frac": 0.0
     },
     "18": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24952,17 +24952,17 @@
      "zero_frac": 0.0
     },
     "19": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 38.0,
      "p75": 48.0,
-     "p90": 66.4,
+     "p90": 66.3,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "2": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 38.0,
      "p75": 47.0,
      "p90": 66.0,
@@ -24970,8 +24970,8 @@
      "zero_frac": 0.0
     },
     "20": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 38.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24979,8 +24979,8 @@
      "zero_frac": 0.0
     },
     "21": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -24988,8 +24988,8 @@
      "zero_frac": 0.0
     },
     "22": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 67.0,
@@ -24997,17 +24997,17 @@
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 39.0,
      "p75": 47.0,
-     "p90": 66.4,
+     "p90": 66.3,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "3": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 38.0,
      "p75": 47.0,
      "p90": 66.0,
@@ -25015,8 +25015,8 @@
      "zero_frac": 0.0
     },
     "4": {
-     "n_bars": 1701,
-     "n_nonzero": 1701,
+     "n_bars": 1702,
+     "n_nonzero": 1702,
      "p50": 39.0,
      "p75": 47.0,
      "p90": 66.0,
@@ -25024,8 +25024,8 @@
      "zero_frac": 0.0
     },
     "5": {
-     "n_bars": 1706,
-     "n_nonzero": 1706,
+     "n_bars": 1707,
+     "n_nonzero": 1707,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -25033,8 +25033,8 @@
      "zero_frac": 0.0
     },
     "6": {
-     "n_bars": 1708,
-     "n_nonzero": 1708,
+     "n_bars": 1709,
+     "n_nonzero": 1709,
      "p50": 39.0,
      "p75": 48.0,
      "p90": 66.0,
@@ -25042,15 +25042,6 @@
      "zero_frac": 0.0
     },
     "7": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
-     "p50": 39.0,
-     "p75": 48.0,
-     "p90": 66.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "8": {
      "n_bars": 1708,
      "n_nonzero": 1708,
      "p50": 39.0,
@@ -25059,23 +25050,32 @@
      "status": "MEASURED",
      "zero_frac": 0.0
     },
+    "8": {
+     "n_bars": 1709,
+     "n_nonzero": 1709,
+     "p50": 39.0,
+     "p75": 48.0,
+     "p90": 66.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
     "9": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 39.0,
      "p75": 47.0,
-     "p90": 66.4,
+     "p90": 66.3,
      "status": "MEASURED",
      "zero_frac": 0.0
     }
    },
-   "last": "2026-11-14 03:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 24,
    "session_threshold": 18,
    "splice_tickvol_ratio": 0.2,
-   "stress_p90_over_p50": 1.7,
+   "stress_p90_over_p50": 1.71,
    "tick_hours": {
     "status": "UNREADABLE",
     "why": "IntCastingNaNError: Cannot convert non-finite values (NA or inf) to integer"
@@ -30752,32 +30752,32 @@
   },
   "SOLUSD": {
    "administered": true,
-   "atr20_h1": 1.0115,
-   "atr20_h1_pts": 1011.5,
-   "atr20_h1_through": "2026-11-14T03:00:00+00:00",
-   "bars_total": 40912,
-   "bars_used": 40891,
+   "atr20_h1": 1.211,
+   "atr20_h1_pts": 1211.0,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 40935,
+   "bars_used": 40915,
    "cheapest_hour": 0,
    "contract_size": 1000.0,
-   "days_full": 1707,
-   "days_total": 1712,
+   "days_full": 1708,
+   "days_total": 1713,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 5,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 1687,
-     "n_nonzero": 1687,
+     "n_bars": 1688,
+     "n_nonzero": 1688,
      "p50": 150.0,
      "p75": 176.0,
-     "p90": 200.4,
+     "p90": 200.3,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "1": {
-     "n_bars": 1703,
-     "n_nonzero": 1703,
+     "n_bars": 1704,
+     "n_nonzero": 1704,
      "p50": 150.0,
      "p75": 175.0,
      "p90": 200.0,
@@ -30785,8 +30785,8 @@
      "zero_frac": 0.0
     },
     "10": {
-     "n_bars": 1706,
-     "n_nonzero": 1706,
+     "n_bars": 1707,
+     "n_nonzero": 1707,
      "p50": 150.0,
      "p75": 176.0,
      "p90": 200.0,
@@ -30794,17 +30794,17 @@
      "zero_frac": 0.0
     },
     "11": {
-     "n_bars": 1706,
-     "n_nonzero": 1706,
+     "n_bars": 1707,
+     "n_nonzero": 1707,
      "p50": 150.0,
-     "p75": 177.75,
+     "p75": 177.5,
      "p90": 200.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "12": {
-     "n_bars": 1698,
-     "n_nonzero": 1698,
+     "n_bars": 1699,
+     "n_nonzero": 1699,
      "p50": 150.0,
      "p75": 176.0,
      "p90": 200.0,
@@ -30812,8 +30812,8 @@
      "zero_frac": 0.0
     },
     "13": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 178.0,
      "p90": 200.0,
@@ -30821,8 +30821,8 @@
      "zero_frac": 0.0
     },
     "14": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 176.0,
      "p90": 200.0,
@@ -30830,35 +30830,35 @@
      "zero_frac": 0.0
     },
     "15": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 175.0,
-     "p90": 199.6,
+     "p90": 199.5,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "16": {
-     "n_bars": 1706,
-     "n_nonzero": 1706,
+     "n_bars": 1707,
+     "n_nonzero": 1707,
      "p50": 150.0,
-     "p75": 174.75,
-     "p90": 198.5,
+     "p75": 175.0,
+     "p90": 198.4,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "17": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 171.0,
-     "p90": 199.6,
+     "p90": 199.5,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "18": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 150.0,
      "p75": 173.0,
      "p90": 198.0,
@@ -30866,8 +30866,8 @@
      "zero_frac": 0.0
     },
     "19": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 150.0,
      "p75": 172.0,
      "p90": 200.0,
@@ -30875,17 +30875,17 @@
      "zero_frac": 0.0
     },
     "2": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 150.0,
      "p75": 176.0,
-     "p90": 201.7,
+     "p90": 201.6,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "20": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 173.0,
      "p90": 198.0,
@@ -30893,8 +30893,8 @@
      "zero_frac": 0.0
     },
     "21": {
-     "n_bars": 1707,
-     "n_nonzero": 1707,
+     "n_bars": 1708,
+     "n_nonzero": 1708,
      "p50": 150.0,
      "p75": 175.0,
      "p90": 198.0,
@@ -30902,17 +30902,17 @@
      "zero_frac": 0.0
     },
     "22": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
-     "p75": 173.0,
+     "p75": 173.75,
      "p90": 200.0,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 175.0,
      "p90": 200.0,
@@ -30920,17 +30920,17 @@
      "zero_frac": 0.0
     },
     "3": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 150.0,
      "p75": 176.0,
-     "p90": 199.7,
+     "p90": 199.6,
      "status": "MEASURED",
      "zero_frac": 0.0
     },
     "4": {
-     "n_bars": 1702,
-     "n_nonzero": 1702,
+     "n_bars": 1703,
+     "n_nonzero": 1703,
      "p50": 150.0,
      "p75": 173.0,
      "p90": 198.0,
@@ -30938,8 +30938,8 @@
      "zero_frac": 0.0
     },
     "5": {
-     "n_bars": 1704,
-     "n_nonzero": 1704,
+     "n_bars": 1705,
+     "n_nonzero": 1705,
      "p50": 150.0,
      "p75": 176.0,
      "p90": 198.0,
@@ -30947,8 +30947,8 @@
      "zero_frac": 0.0
     },
     "6": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 175.0,
      "p90": 200.0,
@@ -30956,15 +30956,6 @@
      "zero_frac": 0.0
     },
     "7": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
-     "p50": 150.0,
-     "p75": 176.0,
-     "p90": 200.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0
-    },
-    "8": {
      "n_bars": 1706,
      "n_nonzero": 1706,
      "p50": 150.0,
@@ -30973,9 +30964,18 @@
      "status": "MEASURED",
      "zero_frac": 0.0
     },
+    "8": {
+     "n_bars": 1707,
+     "n_nonzero": 1707,
+     "p50": 150.0,
+     "p75": 176.0,
+     "p90": 200.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0
+    },
     "9": {
-     "n_bars": 1705,
-     "n_nonzero": 1705,
+     "n_bars": 1706,
+     "n_nonzero": 1706,
      "p50": 150.0,
      "p75": 175.0,
      "p90": 200.0,
@@ -30983,7 +30983,7 @@
      "zero_frac": 0.0
     }
    },
-   "last": "2026-11-14 03:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 180.0,
    "session_bars": 24,
@@ -43222,129 +43222,30 @@
   },
   "XLMUSD": {
    "administered": true,
-   "atr20_h1": 0.00181,
-   "atr20_h1_pts": 181.0,
-   "atr20_h1_through": "2026-11-14T03:00:00+00:00",
-   "bars_total": 46290,
-   "bars_used": 45807,
+   "atr20_h1": 0.002432,
+   "atr20_h1_pts": 243.2,
+   "atr20_h1_through": "2026-11-15T02:00:00+00:00",
+   "bars_total": 46313,
+   "bars_used": 45831,
    "cheapest_hour": 0,
    "contract_size": 10000.0,
-   "days_full": 1912,
-   "days_total": 2358,
+   "days_full": 1913,
+   "days_total": 2359,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
    "excluded_days": 446,
    "first": "2020-04-16 00:00:00+00:00",
    "hours": {
     "0": {
-     "n_bars": 1891,
-     "n_nonzero": 1834,
+     "n_bars": 1892,
+     "n_nonzero": 1835,
      "p50": 43.0,
      "p75": 54.0,
-     "p90": 72.7,
+     "p90": 72.6,
      "status": "MEASURED",
      "zero_frac": 0.0301
     },
     "1": {
-     "n_bars": 1907,
-     "n_nonzero": 1850,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 72.2,
-     "status": "MEASURED",
-     "zero_frac": 0.0299
-    },
-    "10": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 73.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "11": {
-     "n_bars": 1911,
-     "n_nonzero": 1855,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 74.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "12": {
-     "n_bars": 1903,
-     "n_nonzero": 1847,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 73.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0294
-    },
-    "13": {
-     "n_bars": 1911,
-     "n_nonzero": 1855,
-     "p50": 43.0,
-     "p75": 55.0,
-     "p90": 81.2,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "14": {
-     "n_bars": 1911,
-     "n_nonzero": 1855,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 82.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "15": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 73.7,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "16": {
-     "n_bars": 1911,
-     "n_nonzero": 1855,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 74.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "17": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 72.7,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "18": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 72.7,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "19": {
-     "n_bars": 1911,
-     "n_nonzero": 1855,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 75.2,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "2": {
      "n_bars": 1908,
      "n_nonzero": 1851,
      "p50": 43.0,
@@ -43353,16 +43254,16 @@
      "status": "MEASURED",
      "zero_frac": 0.0299
     },
-    "20": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
+    "10": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
      "p50": 43.0,
      "p75": 54.0,
-     "p90": 76.1,
+     "p90": 73.0,
      "status": "MEASURED",
      "zero_frac": 0.0293
     },
-    "21": {
+    "11": {
      "n_bars": 1912,
      "n_nonzero": 1856,
      "p50": 43.0,
@@ -43371,16 +43272,106 @@
      "status": "MEASURED",
      "zero_frac": 0.0293
     },
-    "22": {
-     "n_bars": 1910,
-     "n_nonzero": 1854,
+    "12": {
+     "n_bars": 1904,
+     "n_nonzero": 1848,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 73.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0294
+    },
+    "13": {
+     "n_bars": 1912,
+     "n_nonzero": 1856,
+     "p50": 43.0,
+     "p75": 55.0,
+     "p90": 81.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "14": {
+     "n_bars": 1912,
+     "n_nonzero": 1856,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 82.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "15": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 73.6,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "16": {
+     "n_bars": 1912,
+     "n_nonzero": 1856,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 74.5,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "17": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 72.6,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "18": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 72.6,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "19": {
+     "n_bars": 1912,
+     "n_nonzero": 1856,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 75.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "2": {
+     "n_bars": 1909,
+     "n_nonzero": 1852,
      "p50": 43.0,
      "p75": 54.0,
      "p90": 72.0,
      "status": "MEASURED",
+     "zero_frac": 0.0299
+    },
+    "20": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 75.8,
+     "status": "MEASURED",
      "zero_frac": 0.0293
     },
-    "23": {
+    "21": {
+     "n_bars": 1913,
+     "n_nonzero": 1857,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 74.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "22": {
      "n_bars": 1911,
      "n_nonzero": 1855,
      "p50": 43.0,
@@ -43389,7 +43380,34 @@
      "status": "MEASURED",
      "zero_frac": 0.0293
     },
+    "23": {
+     "n_bars": 1912,
+     "n_nonzero": 1856,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 72.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
     "3": {
+     "n_bars": 1910,
+     "n_nonzero": 1853,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 72.8,
+     "status": "MEASURED",
+     "zero_frac": 0.0298
+    },
+    "4": {
+     "n_bars": 1907,
+     "n_nonzero": 1850,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 72.0,
+     "status": "MEASURED",
+     "zero_frac": 0.0299
+    },
+    "5": {
      "n_bars": 1909,
      "n_nonzero": 1852,
      "p50": 43.0,
@@ -43398,27 +43416,9 @@
      "status": "MEASURED",
      "zero_frac": 0.0299
     },
-    "4": {
-     "n_bars": 1906,
-     "n_nonzero": 1849,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 72.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0299
-    },
-    "5": {
-     "n_bars": 1908,
-     "n_nonzero": 1851,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 73.0,
-     "status": "MEASURED",
-     "zero_frac": 0.0299
-    },
     "6": {
-     "n_bars": 1909,
-     "n_nonzero": 1851,
+     "n_bars": 1910,
+     "n_nonzero": 1852,
      "p50": 43.0,
      "p75": 54.0,
      "p90": 72.0,
@@ -43426,39 +43426,39 @@
      "zero_frac": 0.0304
     },
     "7": {
-     "n_bars": 1909,
-     "n_nonzero": 1853,
-     "p50": 43.0,
-     "p75": 54.0,
-     "p90": 72.8,
-     "status": "MEASURED",
-     "zero_frac": 0.0293
-    },
-    "8": {
      "n_bars": 1910,
      "n_nonzero": 1854,
      "p50": 43.0,
      "p75": 54.0,
-     "p90": 73.7,
+     "p90": 72.7,
+     "status": "MEASURED",
+     "zero_frac": 0.0293
+    },
+    "8": {
+     "n_bars": 1911,
+     "n_nonzero": 1855,
+     "p50": 43.0,
+     "p75": 54.0,
+     "p90": 73.6,
      "status": "MEASURED",
      "zero_frac": 0.0293
     },
     "9": {
-     "n_bars": 1909,
-     "n_nonzero": 1853,
+     "n_bars": 1910,
+     "n_nonzero": 1854,
      "p50": 43.0,
      "p75": 54.0,
-     "p90": 74.6,
+     "p90": 74.4,
      "status": "MEASURED",
      "zero_frac": 0.0293
     }
    },
-   "last": "2026-11-14 03:00:00+00:00",
+   "last": "2026-11-15 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 50.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 91.0,
+   "splice_tickvol_ratio": 91.1,
    "stress_p90_over_p50": 1.7,
    "tick_hours": {
     "status": "UNREADABLE",
