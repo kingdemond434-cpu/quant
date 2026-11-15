@@ -237,7 +237,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-15T16:50:03+00:00",
+ "heartbeat_utc": "2026-11-15T17:05:08+00:00",
  "sweep_phase": {
   "pid": 9136,
   "sweep_started_utc": "2026-11-15T11:47:39+00:00",
@@ -448,42 +448,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 155,
+     "samples": 234,
      "top": [
       {
        "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
        "n": 30,
-       "share": 0.194
+       "share": 0.128
       },
       {
        "stack": "datetimelike.py:asi8:332 < datetimes.py:__iter__:660 < gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844",
        "n": 17,
-       "share": 0.11
+       "share": 0.073
       },
       {
        "stack": "gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 15,
-       "share": 0.097
+       "share": 0.064
       },
       {
        "stack": "datetimes.py:__iter__:668 < gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 14,
-       "share": 0.09
+       "share": 0.06
       },
       {
-       "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 10,
-       "share": 0.065
+       "stack": "managers.py:get_rows_with_mask:1978 < series.py:_get_rows_with_mask:1229 < series.py:__getitem__:1163 < gate_policy.py:carve_lockbox:181 < external_gauntlet.py:run_gauntlet:3018 < external_gauntlet.py:main:3883",
+       "n": 11,
+       "share": 0.047
       }
      ],
      "process": {
-      "cpu_s": 1434.0,
-      "page_faults": 7378001.0,
+      "cpu_s": 2055.5,
+      "page_faults": 10989613.0,
       "read_bytes": 5567069756.0,
-      "write_bytes": 1129592529.0,
-      "sampled_s": 1540.0,
-      "rss_mb_max": 10073.5,
-      "cpu_share_of_wall": 0.931
+      "write_bytes": 1129753291.0,
+      "sampled_s": 2330.0,
+      "rss_mb_max": 12043.0,
+      "cpu_share_of_wall": 0.882
      }
     }
    }
