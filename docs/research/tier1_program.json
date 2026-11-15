@@ -9203,6 +9203,56 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "DECAY1",
+   "item": "ORDER-SENSITIVE DECAY ON EVERY LIVE AND FORWARD-CLOCK SLEEVE (R0312, SARES archaeology): libs/research/order_sensitive_decay.py was implemented and tested with no caller. Its Edgington mean-p decay verdict now runs hourly on each LIVE roster row's live deals and each forward clock's forward-phase ledger rows, under a split rule frozen in code (4 equal-count blocks by trade index, one-sided t per block, early half vs late half); below 20 trades the row is UNMEASURED_TOO_FEW_TRADES by name. A demote/shrink INPUT only: nothing sizes, gates or edits a roster from it, and the artifact publishes the sizing hook as NOT_WIRED (owner: the Max-growth thread).",
+   "domain": "R",
+   "phase": 5,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/decay_verdicts.py:91 - SUB_PERIODS / MIN_TRADES_PER_PERIOD: the pre-registered split, identical for every sleeve",
+    "desks/mt5/research/decay_verdicts.py:161 - verdict_for(): one-sided t per block into order_sensitive_decay.decay_verdict; UNMEASURED_TOO_FEW_TRADES below 20",
+    "desks/mt5/research/decay_verdicts.py:351 - clock_series(): rows at or after the clock's OWN forward_start + broker offset only; a ledger several clock keys map to is UNMEASURED_SHARED_LEDGER, never a sibling's trades",
+    "desks/mt5/research/decay_verdicts.py:484 - decay_input(): the reader an allocator may call later",
+    "desks/mt5/research/hourly_cycle.py:5652 - the decay_verdicts leg (core plan, department forward)",
+    "desks/mt5/tests/test_decay_verdicts.py:1 - splits frozen by n, UNMEASURED by name, reversed record flips the verdict, every source gap named"
+   ],
+   "scheduled_by": "hourly_cycle:decay_verdicts",
+   "artifact": "desks/mt5/reports/DECAY_VERDICTS.json",
+   "consumer": "desks/mt5/research/desk_dashboard_state.py (each LIVE sleeve's verdict on the principal's page); the allocator's sizing hook is owned by the Max-growth thread and the artifact says NOT_WIRED",
+   "gap": "the sizing hook (decay_input -> pf_allocator) is not wired; whoever wires it owes the Rule-1 proof and the two-sided (STRENGTHENING) half",
+   "next_step": "Max-growth thread: read decay_verdicts.decay_input per sleeve in the allocator as a two-sided modifier with its missed-growth ledger line.",
+   "landed": [
+    "decay verdict wired 2026-10-14"
+   ]
+  },
+  {
+   "id": "P8J1",
+   "item": "THE TIER-S CLUSTER JUDGED AS ONE HYPOTHESIS (P8-J1): every live forward clock at n >= 5 is judged by the CANONICAL bar -- libs.validation.dsr.deflated_sharpe_ratio at n_trials=bar_n() (5), variance 1/(T-1), pass at DSR >= 0.95 -- on its own forward returns, or at normal moments from its state row where those are absent (labelled), never a t constant; the coordinator's t >= 2.84 list (cut derived from the bar's large-T limit) is published beside it. The canonical-pass clocks are judged as ONE cluster: each clock's OWN per-key ledger cut at its own forward boundary (a shared legacy file is UNMEASURED_SHARED_LEDGER, no forward_start is UNMEASURED_NO_FORWARD_START), daily R, pairwise rho with overlap counts (< 10 shared days UNMEASURED), significance |rho| > z/sqrt(n) with z Bonferroni over each clock's k-1 pairs, independent_bets = noise-corrected eigenvalue N_eff (UNMEASURED if any member or pair is unmeasured or min eigenvalue < -0.1, never on a subset), clusters as components of significant pairs, an IN-SAMPLE composite DSR (never a clearance; out-of-sample needs days after selection_at), one trial on record and none written, per-currency and per-family concentration, a state-row duplicate-stream first cut (rows missing summary fields UNMEASURED), summary plus top-50 pairs. A report: no sizing, gate, promoter or trial-ledger change.",
+   "domain": "R",
+   "phase": 5,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/cluster_judge.py:152 - canonical_dsr(): deflated_sharpe_ratio(r, n_trials=bar_n(), variance_of_sharpes=1/(T-1)) at 0.95",
+    "desks/mt5/research/cluster_judge.py:214 - judge_clock(): own returns, else state row at normal moments (labelled), else UNMEASURED; no t constant",
+    "desks/mt5/research/cluster_judge.py:327 - own_forward_record(): the clock's OWN ledger via forward_ledger.read_rows, cut at decay_verdicts.forward_boundary",
+    "desks/mt5/research/cluster_judge.py:430 - pair_corr(): overlap-counted rho with the significance-aware threshold z/sqrt(n)",
+    "desks/mt5/research/cluster_judge.py:455 - n_eff(): eigenvalue N_eff with rho^2 de-biased by 1/(n-1), eigen guard at -0.1",
+    "desks/mt5/research/cluster_judge.py:858 - promotion_input(): the per-clock reader (independent_bets, max_pair_corr, cluster_id, concentration_flag), two-sided",
+    "desks/mt5/research/hourly_cycle.py:5661 - the cluster_judge leg (core plan, department forward)",
+    "desks/mt5/tests/test_cluster_judge.py:1 - canonical bar, shared ledger / no forward_start UNMEASURED, correlated -> N_eff ~ 1, the auditor's independence probe -> INDEPENDENT with N_eff ~ k, no trial-ledger write"
+   ],
+   "scheduled_by": "hourly_cycle:cluster_judge",
+   "artifact": "desks/mt5/reports/CLUSTER_JUDGE.json",
+   "consumer": "none yet by design: a person reads it; the allocator / E8 independence count may read promotion_input later (sizing is the Max-growth thread's; NOT_WIRED in the artifact)",
+   "gap": "on the tracked tree the clusters' own per-key ledgers do not exist yet (reports/shadow ledgers are gitignored; the tracked backup predates the per-key fix), so membership is judged at normal moments from state rows and correlation / N_eff are UNMEASURED until the box writes per-key ledgers; bar_n is loaded from libs/research/trial_count_guard.py when present (claude/trial-count-guard, not yet on this base) and the moment form swaps to dsr.psr_from_moments when that lands",
+   "next_step": "Box: adopt claude/forward-ledger-per-key so shadow_forward writes per-key ledgers, then read CLUSTER_JUDGE.json measured.n_eff; Max-growth thread: read promotion_input as a two-sided independence input with its missed-growth ledger line.",
+   "landed": [
+    "cluster judge wired 2026-10-14"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
