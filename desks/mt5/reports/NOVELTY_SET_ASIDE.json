@@ -1,7 +1,7 @@
 {
- "at": "2026-11-15T22:33:55+00:00",
+ "at": "2026-11-16T09:31:20+00:00",
  "screened": 1500,
- "set_aside": 246,
+ "set_aside": 1306,
  "rows": [
   {
    "sym": "AUDCAD",
@@ -1478,6 +1478,330 @@
    "family": "formula",
    "twin": "external.GBPSGD@M15.formula.p=2721326a66fe8882",
    "why": "every measurable dimension reads as a twin of external.GBPSGD@M15.formula.p=2721326a66fe8882 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "ADAUSD",
+   "family": "vol_transition",
+   "twin": "ADAUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ADAUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "vol_transition",
+   "twin": "AUDCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "vol_transition",
+   "twin": "AUDCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDHUF",
+   "family": "vol_transition",
+   "twin": "AUDHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDJPY",
+   "family": "vol_transition",
+   "twin": "AUDJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "vol_transition",
+   "twin": "AUDNZD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDNZD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "vol_transition",
+   "twin": "AUDSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDUSD",
+   "family": "cot_positioning",
+   "twin": "AUDUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUDUSD",
+   "family": "vol_transition",
+   "twin": "AUDUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUDUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AUS200",
+   "family": "vol_transition",
+   "twin": "AUS200.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AUS200.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "AVAXUSD",
+   "family": "vol_transition",
+   "twin": "AVAXUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS AVAXUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BCHUSD",
+   "family": "vol_transition",
+   "twin": "BCHUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BCHUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BNBUSD",
+   "family": "vol_transition",
+   "twin": "BNBUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BNBUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "BTCUSD",
+   "family": "vol_transition",
+   "twin": "BTCUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS BTCUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CA60",
+   "family": "vol_transition",
+   "twin": "CA60.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CA60.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CADCHF",
+   "family": "vol_transition",
+   "twin": "CADCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CADCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CADJPY",
+   "family": "vol_transition",
+   "twin": "CADJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CADJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFDKK",
+   "family": "vol_transition",
+   "twin": "CHFDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFHUF",
+   "family": "vol_transition",
+   "twin": "CHFHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFJPY",
+   "family": "vol_transition",
+   "twin": "CHFJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "vol_transition",
+   "twin": "CHFNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFPLN",
+   "family": "vol_transition",
+   "twin": "CHFPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFSEK",
+   "family": "vol_transition",
+   "twin": "CHFSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHFSGD",
+   "family": "vol_transition",
+   "twin": "CHFSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHFSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CHINAH",
+   "family": "vol_transition",
+   "twin": "CHINAH.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CHINAH.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "CORN",
+   "family": "vol_transition",
+   "twin": "CORN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS CORN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "COTTON",
+   "family": "vol_transition",
+   "twin": "COTTON.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS COTTON.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "DOGEUSD",
+   "family": "vol_transition",
+   "twin": "DOGEUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS DOGEUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "DOTUSD",
+   "family": "vol_transition",
+   "twin": "DOTUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS DOTUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "E35",
+   "family": "vol_transition",
+   "twin": "E35.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS E35.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "ETHUSD",
+   "family": "vol_transition",
+   "twin": "ETHUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS ETHUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURAUD",
+   "family": "vol_transition",
+   "twin": "EURAUD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURAUD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCAD",
+   "family": "vol_transition",
+   "twin": "EURCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCHF",
+   "family": "vol_transition",
+   "twin": "EURCHF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCHF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURCZK",
+   "family": "vol_transition",
+   "twin": "EURCZK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURCZK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURDKK",
+   "family": "vol_transition",
+   "twin": "EURDKK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURDKK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURGBP",
+   "family": "vol_transition",
+   "twin": "EURGBP.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURGBP.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURHKD",
+   "family": "vol_transition",
+   "twin": "EURHKD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURHKD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURHUF",
+   "family": "vol_transition",
+   "twin": "EURHUF.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURHUF.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURILS",
+   "family": "vol_transition",
+   "twin": "EURILS.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURILS.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURJPY",
+   "family": "vol_transition",
+   "twin": "EURJPY.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURJPY.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURMXN",
+   "family": "vol_transition",
+   "twin": "EURMXN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURMXN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURNOK",
+   "family": "vol_transition",
+   "twin": "EURNOK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURNOK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURNZD",
+   "family": "vol_transition",
+   "twin": "EURNZD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURNZD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURPLN",
+   "family": "vol_transition",
+   "twin": "EURPLN.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURPLN.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURSEK",
+   "family": "vol_transition",
+   "twin": "EURSEK.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURSEK.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURSGD",
+   "family": "vol_transition",
+   "twin": "EURSGD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURSGD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURUSD",
+   "family": "cot_positioning",
+   "twin": "EURUSD.cot_positioning.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURUSD.cot_positioning.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURUSD",
+   "family": "vol_transition",
+   "twin": "EURUSD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURUSD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EURZAR",
+   "family": "vol_transition",
+   "twin": "EURZAR.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EURZAR.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "EUSTX50",
+   "family": "vol_transition",
+   "twin": "EUSTX50.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS EUSTX50.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "FRA40",
+   "family": "vol_transition",
+   "twin": "FRA40.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS FRA40.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "GBPAUD",
+   "family": "vol_transition",
+   "twin": "GBPAUD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPAUD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
+  },
+  {
+   "sym": "GBPCAD",
+   "family": "vol_transition",
+   "twin": "GBPCAD.vol_transition.p=44136fa355b3678a",
+   "why": "exact cell identity: this IS GBPCAD.vol_transition.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
