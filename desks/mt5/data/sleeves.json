@@ -2168,13 +2168,13 @@
       "admission": {
         "status": "UNMEASURED",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
         "heat_earned": null,
         "joined": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
         "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-16T02:05:25.525582+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
