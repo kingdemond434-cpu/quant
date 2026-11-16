@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T02:42:37+00:00",
+ "at": "2026-11-16T03:44:29+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -36,12 +36,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 37570,
-   "7d": 203160
+   "24h": 38765,
+   "7d": 205698
   },
   "per_hour": {
-   "24h": 1565.417,
-   "7d": 1209.286
+   "24h": 1615.208,
+   "7d": 1224.393
   }
  },
  "verdicts_per_hour": 1717.958,
@@ -50,7 +50,7 @@
  "first_judged_per_day": 18378.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 37570.0,
+ "created_per_day": 38765.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-16T02:39:20+00:00",
-  "pid": 25860
+  "started_at": "2026-11-16T03:41:31+00:00",
+  "pid": 22408
  }
 }
