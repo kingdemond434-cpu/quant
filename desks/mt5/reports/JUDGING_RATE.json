@@ -1,42 +1,68 @@
 {
- "at": "2026-11-15T23:57:10+00:00",
- "status": "UNMEASURED",
- "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,462,272 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+ "at": "2026-11-16T00:45:29+00:00",
+ "status": "MEASURED",
  "verdicts": {
-  "status": "UNMEASURED",
-  "rows_read": 1462272,
-  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,462,272 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+  "status": "MEASURED",
+  "rows_total": 1719018,
+  "rows_unstamped": 0,
+  "last_verdict_at": "2026-11-15T22:11:43+00:00",
+  "counts": {
+   "1h": 0,
+   "24h": 41231,
+   "7d": 180019,
+   "build_step_lo": 10282,
+   "build_step_hi": 0
+  },
+  "count_basis": "changed verdict events; unchanged retests do not append",
+  "first_terminal_counts": {
+   "1h": 0,
+   "24h": 18378,
+   "7d": 94958,
+   "build_step_lo": 4899,
+   "build_step_hi": 0
+  },
+  "first_terminal_cells": 783520,
+  "first_terminal_per_hour": {
+   "1h": 0.0,
+   "24h": 765.75,
+   "7d": 565.226
+  },
+  "per_hour": {
+   "1h": 0.0,
+   "24h": 1717.958,
+   "7d": 1071.542
+  }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 36410,
-   "7d": 219312
+   "24h": 36428,
+   "7d": 219295
   },
   "per_hour": {
-   "24h": 1517.083,
-   "7d": 1305.429
+   "24h": 1517.833,
+   "7d": 1305.327
   }
  },
- "verdicts_per_hour": "UNMEASURED",
- "verdicts_per_day": "UNMEASURED",
+ "verdicts_per_hour": 1717.958,
+ "verdicts_per_day": 41231.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": "UNMEASURED",
+ "first_judged_per_day": 18378.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 36410.0,
+ "created_per_day": 36428.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
   "status": "UNMEASURED",
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
- "workers_planned": 13,
+ "workers_planned": 15,
  "workers_last_sweep": 18,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-15T23:56:20+00:00",
-  "pid": 12660
+  "started_at": "2026-11-16T00:43:53+00:00",
+  "pid": 7200
  }
 }

@@ -237,7 +237,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-16T00:35:01+00:00",
+ "heartbeat_utc": "2026-11-16T01:49:44+00:00",
  "sweep_phase": {
   "pid": 27084,
   "sweep_started_utc": "2026-11-15T22:24:13+00:00",
@@ -308,42 +308,42 @@
      }
     },
     "prewarm": {
-     "samples": 500,
+     "samples": 848,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 485,
-       "share": 0.97
+       "n": 828,
+       "share": 0.976
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 5,
-       "share": 0.01
+       "share": 0.006
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 3,
-       "share": 0.006
-      },
-      {
-       "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 2,
        "share": 0.004
       },
       {
        "stack": "threading.py:__init__:301 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
-       "n": 2,
+       "n": 3,
        "share": 0.004
+      },
+      {
+       "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 2,
+       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 704.0,
-      "page_faults": 42665139.0,
-      "read_bytes": 18396013.0,
-      "write_bytes": 47421455053.0,
-      "sampled_s": 4990.0,
+      "cpu_s": 1163.6,
+      "page_faults": 69515317.0,
+      "read_bytes": 29972739.0,
+      "write_bytes": 77153186997.0,
+      "sampled_s": 8470.0,
       "rss_mb_max": 3456.0,
-      "cpu_share_of_wall": 0.141
+      "cpu_share_of_wall": 0.137
      }
     }
    }
