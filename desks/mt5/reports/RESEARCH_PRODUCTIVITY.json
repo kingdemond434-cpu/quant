@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-16T13:17:28.511653+00:00",
+ "generated_utc": "2026-11-16T19:38:09.172842+00:00",
  "stages": {
   "intake": {
-   "files": 59822,
-   "files_7d": 2417,
+   "files": 59890,
+   "files_7d": 2388,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -23,17 +23,17 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 194,
-    "rows_latest": 7,
-    "last": "2026-11-16T07:03:26.099952+00:00"
+    "files": 195,
+    "rows_latest": 4,
+    "last": "2026-11-16T15:32:43.872930+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 740,
-   "decided_total": 67538,
+   "queued": 820,
+   "decided_total": 67593,
    "backlog": 0
   },
   "judged": {
@@ -41,46 +41,45 @@
    "unmeasured": 14112
   },
   "certified": {
-   "cells": 10384,
-   "last_certified": "2026-11-15",
-   "certified_last_30d": 9541
+   "cells": 10491,
+   "last_certified": "2026-11-16",
+   "certified_last_30d": 9648
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 10384,
+   "certificates": 10491,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 10384,
+   "forward_eligible_certificates": 10491,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 1022,
    "clocks_ticked_24h": 1003,
    "clocks_ticked_7d": 1016,
-   "last_tick": "2026-11-16T13:16:25+00:00",
+   "last_tick": "2026-11-16T19:36:43+00:00",
    "engine_silent_hours": 0.0,
-   "n_certificates": 10384,
+   "n_certificates": 10491,
    "n_enrolled": 1018,
-   "n_accruing": 493,
-   "n_blocked": 19,
+   "n_accruing": 495,
+   "n_blocked": 13,
    "n_missing": 0,
    "n_overdue": 0,
    "n_dropped_at_admission": 0,
    "blocked_by_status": {
-    "BLOCKED_NO_BARS": 6,
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-11-16T07:35:15+00:00"
+   "census_at": "2026-11-16T16:18:51+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 81.0
+   "open_median_age_days": 82.0
   }
  },
  "conversion": {
   "intake_to_compiled": 10.1326,
-  "judged_to_certified": 0.0093,
-  "certified_to_forward": 0.0475,
-  "certified_to_clock": 0.098
+  "judged_to_certified": 0.0094,
+  "certified_to_forward": 0.0472,
+  "certified_to_clock": 0.097
  },
  "bottleneck": "none obvious"
 }
