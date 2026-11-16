@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T09:10:44+00:00",
+ "at": "2026-11-16T16:57:33+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -10833,7 +10833,7 @@
   },
   "measured": {
    "swept_at": "2026-11-16T08:38:35.294441+00:00",
-   "age_h": 0.54,
+   "age_h": 8.32,
    "n_cells": 192947,
    "n_judged": 178835,
    "n_unmeasured": 14112,
@@ -10952,23 +10952,23 @@
   "gate_verdict_ledger.jsonl": "TRUNCATED_KEPT_NEWEST(500000 of more; read backwards and stopped at the cap after 500002 lines)"
  },
  "rule": "the gauntlet talks back: the miners change what they generate, and every failure class moves a prior, while cold exploration keeps its floor",
- "mode": "full",
+ "mode": "core",
  "full_at": "2026-11-16T09:10:44+00:00",
  "prior_write": {
   "status": "PENDING",
   "why": "report published before the registry write"
  },
  "core": {
-  "at": "2026-11-16T09:11:04+00:00",
+  "at": "2026-11-16T16:57:33+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
-   "verdicts": 34432,
-   "cells_judged": 33880,
-   "per_hour": 1411.667,
-   "passed": 880,
+   "verdicts": 28497,
+   "cells_judged": 28290,
+   "per_hour": 1178.75,
+   "passed": 755,
    "ledger": "READ",
-   "measured_at": "2026-11-16T09:11:04+00:00",
+   "measured_at": "2026-11-16T16:57:33+00:00",
    "source": "build_core"
   },
   "re_measured": [
@@ -10976,7 +10976,6 @@
    "core.testing_24h"
   ],
   "carried_from_full_at": "2026-11-16T09:10:44+00:00",
-  "why": "every block other than `capacity` and `core.testing_24h` is the last FULL build's, stamped `full_at`, and unchanged; a reader that needs a fresh window must check `full_at`, never `at`",
-  "kept_over_full_build_at": "2026-11-16T09:10:44+00:00"
+  "why": "every block other than `capacity` and `core.testing_24h` is the last FULL build's, stamped `full_at`, and unchanged; a reader that needs a fresh window must check `full_at`, never `at`"
  }
 }
