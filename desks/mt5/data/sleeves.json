@@ -427,7 +427,7 @@
         "delta_elogw_per_day": 4.8456e-06,
         "heat_earned": 0.012154,
         "joined": "joined on 'xauusd|afternoon'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
@@ -462,7 +462,7 @@
         "delta_elogw_per_day": 4.8456e-06,
         "heat_earned": 0.012154,
         "joined": "joined on 'xauusd|afternoon'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
@@ -497,7 +497,7 @@
         "delta_elogw_per_day": 4.8456e-06,
         "heat_earned": 0.012154,
         "joined": "joined on 'xauusd|afternoon'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000005/day (+0.12%/yr) and it earns 1.22% heat -- standalone Sharpe 0.70, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
@@ -2172,7 +2172,7 @@
         "delta_elogw_per_day": 0.0005269662,
         "heat_earned": 0.00625,
         "joined": "joined on 'xauusd|session_range_breakout|asia'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000527/day (+13.28%/yr) and it earns 0.62% heat -- standalone Sharpe 2.04, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000527/day (+13.28%/yr) and it earns 0.62% heat -- standalone Sharpe 2.04, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
@@ -2235,7 +2235,7 @@
         "delta_elogw_per_day": 0.0004728509,
         "heat_earned": 0.00625,
         "joined": "joined on 'xauusd_session_range_breakout_asia_5_wb_8'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000473/day (+11.92%/yr) and it earns 0.62% heat -- standalone Sharpe 1.58, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000473/day (+11.92%/yr) and it earns 0.62% heat -- standalone Sharpe 1.58, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
@@ -2298,7 +2298,7 @@
         "delta_elogw_per_day": 0.0005544102,
         "heat_earned": 0.00625,
         "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12'",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000554/day (+13.97%/yr) and it earns 0.62% heat -- standalone Sharpe 1.95, correlation to the book unmeasured"
+        "why": "same admission scan (2026-11-15T21:22:51.699353+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. admitted: re-solving at 0.00% total heat with it raises robust growth +0.000554/day (+13.97%/yr) and it earns 0.62% heat -- standalone Sharpe 1.95, correlation to the book unmeasured"
       },
       "admit_streak": 1,
       "admit_scan": "2026-11-15T21:22:51.699353+00:00",
