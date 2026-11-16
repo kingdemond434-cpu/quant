@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T14:37:55+00:00",
+ "at": "2026-11-16T20:42:43+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -21,16 +21,16 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 1,
-  "UNMEASURED": 15
+  "MISMATCH": 2,
+  "UNMEASURED": 14
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=f92527cd3c6ccbba",
-   "certificate": "external.EURCHF.formula.p=f92527cd3c6ccbba",
-   "fp": "88d051232ab6b20b",
-   "symbol": "EURCHF",
+   "key": "GBPAUD.formula.p=42ddd41f78638042",
+   "certificate": "external.GBPAUD.formula.p=42ddd41f78638042",
+   "fp": "c89a84fa56381c4f",
+   "symbol": "GBPAUD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -41,10 +41,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURNOK.formula.p=79f50576d6ed1e88",
-   "certificate": "external.EURNOK.formula.p=79f50576d6ed1e88",
-   "fp": "1a7178b1a7fbd2ed",
-   "symbol": "EURNOK",
+   "key": "GBPCAD.formula.p=0ff78ed4867fd89f",
+   "certificate": "external.GBPCAD.formula.p=0ff78ed4867fd89f",
+   "fp": "cd2abf71fa2a75e0",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -55,10 +55,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSEK.formula.p=0972c3633ccd668f",
-   "certificate": "external.EURSEK.formula.p=0972c3633ccd668f",
-   "fp": "4e3ca4234d28de6f",
-   "symbol": "EURSEK",
+   "key": "GBPCAD.formula.p=5e87b57e82560603",
+   "certificate": "external.GBPCAD.formula.p=5e87b57e82560603",
+   "fp": "e338317b2dfee954",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -69,10 +69,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSEK.formula.p=6afaba78c622d202",
-   "certificate": "external.EURSEK.formula.p=6afaba78c622d202",
-   "fp": "8b17cd4887cee772",
-   "symbol": "EURSEK",
+   "key": "GBPCAD.formula.p=caf1c46ee4575ad1",
+   "certificate": "external.GBPCAD.formula.p=caf1c46ee4575ad1",
+   "fp": "987af7d2a4c200e6",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -83,10 +83,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSEK.formula.p=59dde273c5bcafec",
-   "certificate": "external.EURSEK.formula.p=59dde273c5bcafec",
-   "fp": "108990111be15cad",
-   "symbol": "EURSEK",
+   "key": "GBPCAD.formula.p=ef0c19f03d397adf",
+   "certificate": "external.GBPCAD.formula.p=ef0c19f03d397adf",
+   "fp": "e58becdb71944310",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -97,10 +97,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSEK.formula.p=bf699f9651e5e5e8",
-   "certificate": "external.EURSEK.formula.p=bf699f9651e5e5e8",
-   "fp": "18ade03628652fcf",
-   "symbol": "EURSEK",
+   "key": "GBPCAD.formula.p=40c63e454b4f178e",
+   "certificate": "external.GBPCAD.formula.p=40c63e454b4f178e",
+   "fp": "e6ec1f58bc1ffc64",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -111,10 +111,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSGD.formula.p=97438ac51e8bcb0d",
-   "certificate": "external.EURSGD.formula.p=97438ac51e8bcb0d",
-   "fp": "ebecf569121f2404",
-   "symbol": "EURSGD",
+   "key": "GBPCAD.formula.p=19473f19bb8bac5f",
+   "certificate": "external.GBPCAD.formula.p=19473f19bb8bac5f",
+   "fp": "48f451b78144271b",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -125,10 +125,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURSGD.formula.p=4f71bb19e40359ff",
-   "certificate": "external.EURSGD.formula.p=4f71bb19e40359ff",
-   "fp": "3d07e6651b0982cc",
-   "symbol": "EURSGD",
+   "key": "GBPCAD.formula.p=0b8f577d699b7852",
+   "certificate": "external.GBPCAD.formula.p=0b8f577d699b7852",
+   "fp": "9331730e66411cee",
+   "symbol": "GBPCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -139,8 +139,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPAUD.session_range_breakout",
-   "symbol": "GBPAUD",
+   "key": "NZDJPY.session_range_breakout",
+   "symbol": "NZDJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -152,19 +152,18 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.asia",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.asia.FAILED_BREAK",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
    "verdict": "MISMATCH",
    "why": [
-    "FILLS disagree: 57 rebuilt vs 27 in the ledger",
     "POSITION STATE disagrees: ledger open=False, rebuilt open=True"
    ],
    "ours": {
-    "n_fills": 57,
-    "pnl_R": 3.982,
+    "n_fills": 56,
+    "pnl_R": 13.991,
     "cost": {
-     "spread_per_lot": 300.0,
+     "spread_per_lot": 200.0,
      "commission_per_lot": 2.0,
      "quote_per_account": 184.573,
      "basis": "universe_registry"
@@ -172,27 +171,65 @@
     "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
-    "n_trades": 27,
+    "n_trades": 63,
     "cost_fields": null,
-    "forward_start": "2026-08-25T23:25:02.264930+00:00"
+    "forward_start": "2026-08-25T23:26:08.836901+00:00"
    },
    "divergence": {
-    "n_ledger": 27,
-    "n_rebuilt": 57,
-    "matched": 20,
-    "match_share": 0.741,
-    "fill_ratio": 2.111,
-    "median_abs_dR": 0.0281,
-    "pnl_ledger_R": 5.105,
-    "pnl_rebuilt_R": 3.982,
+    "n_ledger": 63,
+    "n_rebuilt": 56,
+    "matched": 56,
+    "match_share": 0.889,
+    "fill_ratio": 0.889,
+    "median_abs_dR": 0.0325,
+    "pnl_ledger_R": 15.686,
+    "pnl_rebuilt_R": 13.991,
     "open_ledger": false,
     "open_rebuilt": true
    }
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.fair_value_gap",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.asia.MACRO_FAV",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "POSITION STATE disagrees: ledger open=False, rebuilt open=True"
+   ],
+   "ours": {
+    "n_fills": 56,
+    "pnl_R": 13.991,
+    "cost": {
+     "spread_per_lot": 200.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 184.573,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 63,
+    "cost_fields": null,
+    "forward_start": "2026-08-25T23:26:08.836943+00:00"
+   },
+   "divergence": {
+    "n_ledger": 63,
+    "n_rebuilt": 56,
+    "matched": 56,
+    "match_share": 0.889,
+    "fill_ratio": 0.889,
+    "median_abs_dR": 0.0325,
+    "pnl_ledger_R": 15.686,
+    "pnl_rebuilt_R": 13.991,
+    "open_ledger": false,
+    "open_rebuilt": true
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "USDJPY.london_am",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -204,8 +241,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.level_breakout",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.london_am.FAILED_BREAK",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -217,8 +254,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.london_am",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.london_am.MACRO_FAV",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -230,8 +267,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPUSD.session_range_breakout",
-   "symbol": "GBPUSD",
+   "key": "XAUUSD.afternoon",
+   "symbol": "XAUUSD",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -243,21 +280,8 @@
   },
   {
    "lane": "forward",
-   "key": "NZDJPY.dow_effect",
-   "symbol": "NZDJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "NZDJPY.fair_value_gap",
-   "symbol": "NZDJPY",
+   "key": "XAUUSD.afternoon.MACRO_FAV",
+   "symbol": "XAUUSD",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -269,78 +293,75 @@
   }
  ],
  "quarantined": [
-  "GBPJPY.asia"
+  "USDJPY.asia.FAILED_BREAK",
+  "USDJPY.asia.MACRO_FAV"
  ],
  "unmeasured": [
   {
-   "what": "EURCHF.formula.p=f92527cd3c6ccbba",
+   "what": "GBPAUD.formula.p=42ddd41f78638042",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURNOK.formula.p=79f50576d6ed1e88",
+   "what": "GBPCAD.formula.p=0ff78ed4867fd89f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSEK.formula.p=0972c3633ccd668f",
+   "what": "GBPCAD.formula.p=5e87b57e82560603",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSEK.formula.p=6afaba78c622d202",
+   "what": "GBPCAD.formula.p=caf1c46ee4575ad1",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSEK.formula.p=59dde273c5bcafec",
+   "what": "GBPCAD.formula.p=ef0c19f03d397adf",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSEK.formula.p=bf699f9651e5e5e8",
+   "what": "GBPCAD.formula.p=40c63e454b4f178e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSGD.formula.p=97438ac51e8bcb0d",
+   "what": "GBPCAD.formula.p=19473f19bb8bac5f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSGD.formula.p=4f71bb19e40359ff",
+   "what": "GBPCAD.formula.p=0b8f577d699b7852",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPAUD.session_range_breakout",
+   "what": "NZDJPY.session_range_breakout",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.fair_value_gap",
+   "what": "USDJPY.london_am",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.level_breakout",
+   "what": "USDJPY.london_am.FAILED_BREAK",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.london_am",
+   "what": "USDJPY.london_am.MACRO_FAV",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPUSD.session_range_breakout",
+   "what": "XAUUSD.afternoon",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "NZDJPY.dow_effect",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "NZDJPY.fair_value_gap",
+   "what": "XAUUSD.afternoon.MACRO_FAV",
    "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
-  "quarantined": 1,
-  "memory": 1,
-  "candidates": 890
+  "quarantined": 2,
+  "memory": 2,
+  "candidates": 1612
  },
  "cursor": {
-  "forward": 590,
-  "at": "2026-11-16T13:37:54+00:00",
+  "forward": 598,
+  "at": "2026-11-16T14:37:55+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -358,24 +379,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 52.78
+ "seconds": 697.79
 }

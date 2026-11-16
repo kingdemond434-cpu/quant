@@ -3,7 +3,7 @@
  "running_sha": "b78e2ec03fda364ebac15b6c61bf5d273806ada8",
  "release_sha": "bb527d650cfa11b0f152f7915951d8d6c188b12e",
  "reason": "running b78e2ec03fda carries 20 path(s) the sealed release bb527d650cfa never named: ['desks/mt5/mt5desk/tape.py', 'desks/mt5/recorders/tick_source.py', 'desks/mt5/research/bar_clock_probe.py', 'desks/mt5/research/fetch_gold_scalp.py', 'desks/mt5/research/h1_source.py', 'desks/mt5/research/hourly_cycle.py']",
- "age_h": 147.103,
+ "age_h": 148.1,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -35,10 +35,10 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-11-16T19:30:36+00:00",
+ "at": "2026-11-16T20:30:24+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
- "allocator_certificate": "566fb4eff6f8f3df@2026-11-16T19:17:52.690700+00:00 proof=FAILED book=posterior",
+ "allocator_certificate": "95ede6ebc5b7c3d3@2026-11-16T19:59:37.853321+00:00 proof=FAILED book=posterior",
  "ci_run_id": "UNMEASURED",
  "allows_new_risk": false,
  "verdict": "REFUSED"

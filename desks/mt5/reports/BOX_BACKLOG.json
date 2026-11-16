@@ -209,7 +209,7 @@
   ],
   "code_paths_touched": 2549,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-15T19:23:06+00:00",
+  "measured_at": "2026-11-16T20:08:00+00:00",
   "code_paths_differing": 8,
   "code_paths": [
     "desks/mt5/mt5desk/tape.py",
