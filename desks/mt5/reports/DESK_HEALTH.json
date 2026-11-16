@@ -1,12 +1,12 @@
 {
   "schema": "desk_health/1",
-  "checked_at": "2026-11-16T03:29:33+00:00",
+  "checked_at": "2026-11-16T05:28:21+00:00",
   "desk_root": "desks/mt5",
   "verdict": "PROBLEM",
   "counts": {
     "OK": 12,
-    "PROBLEM": 6,
-    "UNKNOWN": 2
+    "PROBLEM": 8,
+    "UNKNOWN": 0
   },
   "findings": [
     {
@@ -17,22 +17,22 @@
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "OK",
-      "message": "MT5-GatewayResident: Ready, last run 11/16/2026 4:22:01 AM, result 0 -- places and manages orders -- the money path"
+      "message": "MT5-GatewayResident: Ready, last run 11/16/2026 6:22:01 AM, result 0 -- places and manages orders -- the money path"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "OK",
-      "message": "MT5-Hourly: Running, last run 11/16/2026 4:24:34 AM, result -2147020576 -- the hourly chain: health, mining, sync"
+      "message": "MT5-Hourly: Running, last run 11/16/2026 6:00:01 AM, result -2147020576 -- the hourly chain: health, mining, sync"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "PROBLEM",
-      "message": "MT5-Shadow last run 11/16/2026 3:55:01 AM and returned 3 (non-zero = it failed) -- forward evidence for candidate sleeves"
+      "message": "MT5-Shadow last run 11/16/2026 5:55:02 AM and returned 3 (non-zero = it failed) -- forward evidence for candidate sleeves"
     },
     {
       "section": "SCHEDULED TASKS  (what drives the desk)",
       "level": "OK",
-      "message": "MT5-Gauntlet: Running, last run 11/16/2026 4:26:01 AM, result -2147020576 -- judges the docket and mints certificates"
+      "message": "MT5-Gauntlet: Running, last run 11/16/2026 6:26:01 AM, result -2147020576 -- judges the docket and mints certificates"
     },
     {
       "section": "RUNNING NOW",
@@ -52,47 +52,47 @@
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/gateway_state.json is 391.7h old (expected under 1h) -- the gateway, every pass has stopped producing"
+      "message": "data/gateway_state.json is 393.6h old (expected under 1h) -- the gateway, every pass has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/edge_search_results.json is 55.5h old (expected under 3h) -- the SEARCH leg has stopped producing"
+      "message": "data/hypotheses/edge_search_results.json is 57.4h old (expected under 3h) -- the SEARCH leg has stopped producing"
+    },
+    {
+      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
+      "level": "OK",
+      "message": "data/hypotheses/orthogonal_candidates.json is 1.1h old -- the SWEEP leg"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "data/hypotheses/orthogonal_candidates.json is 9.8h old (expected under 3h) -- the SWEEP leg has stopped producing"
+      "message": "reports/UNIVERSAL_SURVIVORS.json is 6.8h old (expected under 6h) -- the gauntlet's canon has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "OK",
-      "message": "reports/UNIVERSAL_SURVIVORS.json is 4.8h old -- the gauntlet's canon"
+      "message": "reports/pf_allocation.json is 0.5h old -- the allocator"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
       "level": "PROBLEM",
-      "message": "reports/pf_allocation.json is 2.5h old (expected under 0h) -- the allocator has stopped producing"
+      "message": "reports/BOX_STATE_FLOW.json is 3.4h old (expected under 2h) -- publish_state's delivery meter has stopped producing"
     },
     {
       "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "OK",
-      "message": "reports/BOX_STATE_FLOW.json is 1.4h old -- publish_state's delivery meter"
-    },
-    {
-      "section": "WHAT THE DESK HAS ACTUALLY PRODUCED",
-      "level": "OK",
-      "message": "reports/GATE_VERDICT_DIGEST.json is 1.4h old -- publish_state's gate verdict digest"
+      "level": "PROBLEM",
+      "message": "reports/GATE_VERDICT_DIGEST.json is 3.4h old (expected under 2h) -- publish_state's gate verdict digest has stopped producing"
     },
     {
       "section": "ARE THE BOX'S BARS AND TICKS FRESH  (data/BARS_STATE.json)",
-      "level": "UNKNOWN",
-      "message": "newest bar 0.3h old (UTC 2026-11-16T02:58:00+00:00; bars_verdict PARTIAL; limit 2h), but only part of the bar store measured"
+      "level": "OK",
+      "message": "newest bar 0.3h old (UTC 2026-11-16T05:00:00+00:00; bars_verdict MEASURED; limit 2h)"
     },
     {
       "section": "ARE THE BOX'S BARS AND TICKS FRESH  (data/BARS_STATE.json)",
-      "level": "UNKNOWN",
-      "message": "newest tick age is UNMEASURED (tape_verdict UNMEASURED)"
+      "level": "PROBLEM",
+      "message": "newest tick 2.9h old (UTC 2026-11-16T02:23:01+00:00; tape_verdict PARTIAL; limit 2h) -- the box's tick feed is STALE"
     },
     {
       "section": "IS THE BOX'S STATE REACHING ORIGIN",
@@ -107,7 +107,7 @@
     {
       "section": "DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)",
       "level": "OK",
-      "message": "alerts armed: 1 channel(s) (stall_watch 2026-11-16T03:20:26.6977400Z)"
+      "message": "alerts armed: 1 channel(s) (stall_watch 2026-11-16T05:20:31.2195572Z)"
     }
   ]
 }
