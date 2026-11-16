@@ -377,7 +377,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-17T23:00:14.719225+00:00",
     "sleeve_id": "fa21221872ebd8cdbb6e",
-    "last_attempt_at": "2026-11-16T02:58:24+00:00",
+    "last_attempt_at": "2026-11-16T04:48:43+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -402,7 +402,7 @@
     "promotion_authority": true,
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:24+00:00"
+      "at": "2026-11-16T04:48:43+00:00"
     },
     "last_error": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -605,7 +605,7 @@
     "bar_file_present": true
   },
   "last_run": "2026-11-16",
-  "updated_at": "2026-11-16T04:34:27+00:00",
+  "updated_at": "2026-11-16T04:49:45+00:00",
   "configured_sleeves": 1016,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -7608,7 +7608,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:18:32+00:00",
     "sleeve_id": "6c1a120699c1d18cdf33",
-    "last_attempt_at": "2026-11-16T02:53:28+00:00",
+    "last_attempt_at": "2026-11-16T04:34:56+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -7670,7 +7670,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:28+00:00"
+      "at": "2026-11-16T04:34:56+00:00"
     },
     "last_error": "no M15 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -7692,7 +7692,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-25T00:16:20.139962+00:00",
     "sleeve_id": "695ced1e5c6233f7ee99",
-    "last_attempt_at": "2026-11-16T02:53:35+00:00",
+    "last_attempt_at": "2026-11-16T04:34:58+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -7715,7 +7715,7 @@
     "last_error_cleared": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:35+00:00"
+      "at": "2026-11-16T04:34:58+00:00"
     },
     "last_error": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -7737,7 +7737,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:18:36+00:00",
     "sleeve_id": "f1ca1736c293c752ae2b",
-    "last_attempt_at": "2026-11-16T02:53:41+00:00",
+    "last_attempt_at": "2026-11-16T04:35:03+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -7799,7 +7799,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:41+00:00"
+      "at": "2026-11-16T04:35:03+00:00"
     },
     "last_error": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -11048,31 +11048,31 @@
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->5.0 spread per lot; round-trip charge 3.4165->6.2137 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost."
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8": {
-    "n": 36,
-    "cum_r": -13.035546421859138,
+    "n": 37,
+    "cum_r": -11.57859364073294,
     "max_dd_r": -12.914214014630577,
     "first_entry": "2026-10-12 00:30:00+00:00",
-    "last_entry": "2026-11-16 00:30:00+00:00",
+    "last_entry": "2026-11-16 02:45:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-26T22:26:12+00:00",
     "n_historical": 35,
-    "evidence_note": "36 forward observation(s) since the clock froze; 35 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "37 forward observation(s) since the clock froze; 35 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:15+00:00",
     "sleeve_id": "870db1a2773415a826bc",
-    "last_attempt_at": "2026-11-16T02:54:21+00:00",
+    "last_attempt_at": "2026-11-16T04:35:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.36209851171830937,
+    "exp_r": -0.3129349632630524,
     "days_active": 39,
-    "forward_t": -2.548,
-    "e_value": 7.5927,
+    "forward_t": -2.133,
+    "e_value": 4.4279,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 36,
+    "e_n": 37,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -11122,7 +11122,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:21+00:00"
+      "at": "2026-11-16T04:35:24+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11145,7 +11145,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:18+00:00",
     "sleeve_id": "147bd71f23f06a07ec46",
-    "last_attempt_at": "2026-11-16T02:54:24+00:00",
+    "last_attempt_at": "2026-11-16T04:35:28+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11207,7 +11207,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:24+00:00"
+      "at": "2026-11-16T04:35:28+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11218,31 +11218,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8": {
-    "n": 107,
-    "cum_r": -2.314003687181785,
+    "n": 108,
+    "cum_r": -0.8570509060555872,
     "max_dd_r": -15.720807973318188,
     "first_entry": "2026-09-28 03:30:00+00:00",
-    "last_entry": "2026-11-16 00:30:00+00:00",
+    "last_entry": "2026-11-16 02:45:00+00:00",
     "status": "PROMOTION CANDIDATE",
     "enrolled_at": "2026-09-26T22:26:23+00:00",
     "n_historical": 90,
-    "evidence_note": "107 forward observation(s) since the clock froze; 90 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "108 forward observation(s) since the clock froze; 90 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:55.178322+00:00",
     "sleeve_id": "a7dd47bb5a649211ff18",
-    "last_attempt_at": "2026-11-16T02:54:34+00:00",
+    "last_attempt_at": "2026-11-16T04:35:36+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.021626202683941914,
+    "exp_r": -0.007935656537551733,
     "days_active": 50,
-    "forward_t": -0.138,
-    "e_value": 0.558,
+    "forward_t": -0.051,
+    "e_value": 0.5255,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 107,
+    "e_n": 108,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -11253,7 +11253,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:34+00:00"
+      "at": "2026-11-16T04:35:37+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "certificate_drift": true,
@@ -11277,7 +11277,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:58.086968+00:00",
     "sleeve_id": "837bd8f440607ca6f0d1",
-    "last_attempt_at": "2026-11-16T02:54:43+00:00",
+    "last_attempt_at": "2026-11-16T04:35:48+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11300,7 +11300,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:43+00:00"
+      "at": "2026-11-16T04:35:48+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11323,7 +11323,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:29+00:00",
     "sleeve_id": "b0ce15aa6aecb9b876d5",
-    "last_attempt_at": "2026-11-16T02:54:45+00:00",
+    "last_attempt_at": "2026-11-16T04:35:51+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11385,7 +11385,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:46+00:00"
+      "at": "2026-11-16T04:35:51+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11396,31 +11396,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8": {
-    "n": 40,
-    "cum_r": -4.517415761894256,
+    "n": 41,
+    "cum_r": -3.060462980768058,
     "max_dd_r": -9.600949428951656,
     "first_entry": "2026-09-29 11:15:00+00:00",
-    "last_entry": "2026-11-16 00:30:00+00:00",
+    "last_entry": "2026-11-16 02:45:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-26T22:26:34+00:00",
     "n_historical": 42,
-    "evidence_note": "40 forward observation(s) since the clock froze; 42 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "41 forward observation(s) since the clock froze; 42 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:08.284273+00:00",
     "sleeve_id": "184a7e2b979352fcf256",
-    "last_attempt_at": "2026-11-16T02:54:58+00:00",
+    "last_attempt_at": "2026-11-16T04:35:58+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.11293539404735639,
+    "exp_r": -0.0746454385553185,
     "days_active": 50,
-    "forward_t": -0.694,
-    "e_value": 0.7393,
+    "forward_t": -0.457,
+    "e_value": 0.5818,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 40,
+    "e_n": 41,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -11431,7 +11431,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:58+00:00"
+      "at": "2026-11-16T04:35:58+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11454,7 +11454,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:13.187446+00:00",
     "sleeve_id": "a2fedc0000824f37ffcc",
-    "last_attempt_at": "2026-11-16T02:55:02+00:00",
+    "last_attempt_at": "2026-11-16T04:36:02+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11477,7 +11477,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:02+00:00"
+      "at": "2026-11-16T04:36:02+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11500,7 +11500,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:17.078858+00:00",
     "sleeve_id": "9212f050ac9ea748bcfe",
-    "last_attempt_at": "2026-11-16T02:55:13+00:00",
+    "last_attempt_at": "2026-11-16T04:36:16+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11523,7 +11523,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:13+00:00"
+      "at": "2026-11-16T04:36:16+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11535,8 +11535,8 @@
   },
   "BTCUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72": {
     "n": 42,
-    "cum_r": -16.970494574227523,
-    "max_dd_r": -19.170247194199817,
+    "cum_r": -16.72441578351456,
+    "max_dd_r": -18.924168403486853,
     "first_entry": "2026-10-01 20:30:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
     "status": "ACTIVE",
@@ -11546,16 +11546,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:22.185497+00:00",
     "sleeve_id": "9be2331fb9ebdeff1ad7",
-    "last_attempt_at": "2026-11-16T02:55:20+00:00",
+    "last_attempt_at": "2026-11-16T04:40:09+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.40405939462446483,
+    "exp_r": -0.3982003757979657,
     "days_active": 50,
-    "forward_t": -1.775,
-    "e_value": 2.1684,
+    "forward_t": -1.749,
+    "e_value": 2.1119,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 42,
@@ -11569,7 +11569,7 @@
     "last_error_cleared": "no M30 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:20+00:00"
+      "at": "2026-11-16T04:40:09+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M30 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11592,7 +11592,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:48+00:00",
     "sleeve_id": "5fb16ffa95c48971058c",
-    "last_attempt_at": "2026-11-16T02:55:28+00:00",
+    "last_attempt_at": "2026-11-16T04:40:12+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11654,7 +11654,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:28+00:00"
+      "at": "2026-11-16T04:40:12+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost."
   },
@@ -11671,7 +11671,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:33:01+00:00",
     "sleeve_id": "23d280e14707d943f8d7",
-    "last_attempt_at": "2026-11-16T02:55:40+00:00",
+    "last_attempt_at": "2026-11-16T04:40:32+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11733,7 +11733,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:40+00:00"
+      "at": "2026-11-16T04:40:32+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -11756,7 +11756,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:36.403534+00:00",
     "sleeve_id": "f37acb86c2d3fe75bd9c",
-    "last_attempt_at": "2026-11-16T02:55:45+00:00",
+    "last_attempt_at": "2026-11-16T04:40:51+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -11779,7 +11779,7 @@
     "last_error_cleared": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:45+00:00"
+      "at": "2026-11-16T04:40:52+00:00"
     },
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
@@ -13637,7 +13637,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:38.583586+00:00",
     "sleeve_id": "5bd3f353ad96e9da4a2c",
-    "last_attempt_at": "2026-11-16T02:57:06+00:00",
+    "last_attempt_at": "2026-11-16T04:46:31+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -13660,7 +13660,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:06+00:00"
+      "at": "2026-11-16T04:46:31+00:00"
     },
     "last_error": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -13682,7 +13682,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:24:39.194816+00:00",
     "sleeve_id": "07a50f1d884a71cd2522",
-    "last_attempt_at": "2026-11-16T02:57:09+00:00",
+    "last_attempt_at": "2026-11-16T04:46:34+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -13705,7 +13705,7 @@
     "last_error_cleared": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:09+00:00"
+      "at": "2026-11-16T04:46:34+00:00"
     },
     "last_error": "no M30 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17522,7 +17522,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['abs', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 3.5013442401856154,
+    "cum_r": 3.289704028545461,
     "max_dd_r": -2.1318131913994556,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17533,16 +17533,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:44+00:00",
     "sleeve_id": "0b5ec89235b73d3a4f12",
-    "last_attempt_at": "2026-11-16T02:56:30+00:00",
+    "last_attempt_at": "2026-11-16T04:41:48+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.1250480085780577,
+    "exp_r": 0.11748942959090933,
     "days_active": 39,
-    "forward_t": 1.027,
-    "e_value": 0.2402,
+    "forward_t": 0.978,
+    "e_value": 0.2477,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -17595,7 +17595,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:30+00:00"
+      "at": "2026-11-16T04:41:48+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17606,7 +17606,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', 'spread']_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 3.5013442401856154,
+    "cum_r": 3.289704028545461,
     "max_dd_r": -2.1318131913994556,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17617,16 +17617,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:47+00:00",
     "sleeve_id": "ad095ca80940c8d5473c",
-    "last_attempt_at": "2026-11-16T02:56:31+00:00",
+    "last_attempt_at": "2026-11-16T04:41:53+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.1250480085780577,
+    "exp_r": 0.11748942959090933,
     "days_active": 39,
-    "forward_t": 1.027,
-    "e_value": 0.2402,
+    "forward_t": 0.978,
+    "e_value": 0.2477,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -17679,7 +17679,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:31+00:00"
+      "at": "2026-11-16T04:41:54+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17690,7 +17690,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 3.5013442401856154,
+    "cum_r": 3.289704028545461,
     "max_dd_r": -2.1318131913994556,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17701,16 +17701,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:49+00:00",
     "sleeve_id": "db967472c13d744ea0cc",
-    "last_attempt_at": "2026-11-16T02:56:33+00:00",
+    "last_attempt_at": "2026-11-16T04:41:59+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.1250480085780577,
+    "exp_r": 0.11748942959090933,
     "days_active": 39,
-    "forward_t": 1.027,
-    "e_value": 0.2402,
+    "forward_t": 0.978,
+    "e_value": 0.2477,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -17763,7 +17763,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:34+00:00"
+      "at": "2026-11-16T04:41:59+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17774,7 +17774,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 3.5013442401856154,
+    "cum_r": 3.289704028545461,
     "max_dd_r": -2.1318131913994556,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17785,16 +17785,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:51+00:00",
     "sleeve_id": "327b2102f603fca2ba68",
-    "last_attempt_at": "2026-11-16T02:56:35+00:00",
+    "last_attempt_at": "2026-11-16T04:42:02+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.1250480085780577,
+    "exp_r": 0.11748942959090933,
     "days_active": 39,
-    "forward_t": 1.027,
-    "e_value": 0.2402,
+    "forward_t": 0.978,
+    "e_value": 0.2477,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -17847,7 +17847,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:35+00:00"
+      "at": "2026-11-16T04:42:02+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17858,7 +17858,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 5.777250786558247,
+    "cum_r": 5.565610574918093,
     "max_dd_r": -1.3970463305740803,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17869,16 +17869,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:53+00:00",
     "sleeve_id": "262fdf9414ded15e55ea",
-    "last_attempt_at": "2026-11-16T02:56:35+00:00",
+    "last_attempt_at": "2026-11-16T04:42:06+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.20633038523422312,
+    "exp_r": 0.19877180624707474,
     "days_active": 39,
-    "forward_t": 1.855,
-    "e_value": 0.1553,
+    "forward_t": 1.813,
+    "e_value": 0.1585,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -17931,7 +17931,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:35+00:00"
+      "at": "2026-11-16T04:42:06+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17942,7 +17942,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0": {
     "n": 36,
-    "cum_r": 5.754431005685588,
+    "cum_r": 5.542790794045434,
     "max_dd_r": -2.131813191399455,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17953,16 +17953,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:39:37.397404+00:00",
     "sleeve_id": "b6676a54d19a98915074",
-    "last_attempt_at": "2026-11-16T02:56:40+00:00",
+    "last_attempt_at": "2026-11-16T04:42:12+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.15984530571348857,
+    "exp_r": 0.1539664109457065,
     "days_active": 50,
-    "forward_t": 1.431,
-    "e_value": 0.1836,
+    "forward_t": 1.391,
+    "e_value": 0.1875,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 36,
@@ -17976,7 +17976,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:40+00:00"
+      "at": "2026-11-16T04:42:12+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -17987,7 +17987,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 48]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 3.5013442401856154,
+    "cum_r": 3.289704028545461,
     "max_dd_r": -2.1318131913994556,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -17998,16 +17998,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:57+00:00",
     "sleeve_id": "c9d752fc7fe102331826",
-    "last_attempt_at": "2026-11-16T02:56:42+00:00",
+    "last_attempt_at": "2026-11-16T04:42:14+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.1250480085780577,
+    "exp_r": 0.11748942959090933,
     "days_active": 39,
-    "forward_t": 1.027,
-    "e_value": 0.2402,
+    "forward_t": 0.978,
+    "e_value": 0.2477,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -18060,7 +18060,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:42+00:00"
+      "at": "2026-11-16T04:42:15+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -18071,7 +18071,7 @@
   },
   "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_session=asia_spike_pct=0.98": {
     "n": 13,
-    "cum_r": 5.074658285940071,
+    "cum_r": 4.863018074299917,
     "max_dd_r": -1.0467831121833555,
     "first_entry": "2026-10-12 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -18082,15 +18082,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:25:59+00:00",
     "sleeve_id": "f2d52b282603bef4131b",
-    "last_attempt_at": "2026-11-16T02:56:45+00:00",
+    "last_attempt_at": "2026-11-16T04:42:17+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.3903583296876978,
+    "exp_r": 0.3740783134076859,
     "days_active": 39,
-    "forward_t": 2.314,
+    "forward_t": 2.265,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -18144,7 +18144,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:45+00:00"
+      "at": "2026-11-16T04:42:17+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -18155,7 +18155,7 @@
   },
   "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95": {
     "n": 22,
-    "cum_r": 7.670531323181462,
+    "cum_r": 7.458891111541307,
     "max_dd_r": -1.0517454302868567,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -18166,16 +18166,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:39:42.578018+00:00",
     "sleeve_id": "7d5ea7f86311194a3051",
-    "last_attempt_at": "2026-11-16T02:56:47+00:00",
+    "last_attempt_at": "2026-11-16T04:42:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.3486605146900664,
+    "exp_r": 0.3390405050700594,
     "days_active": 50,
-    "forward_t": 2.61,
-    "e_value": 0.1291,
+    "forward_t": 2.569,
+    "e_value": 0.1311,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 22,
@@ -18189,7 +18189,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:47+00:00"
+      "at": "2026-11-16T04:42:19+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -18201,7 +18201,7 @@
   },
   "EURCHF.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.98": {
     "n": 16,
-    "cum_r": 7.393253904244651,
+    "cum_r": 7.181613692604497,
     "max_dd_r": -1.0399524728588672,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -18213,15 +18213,15 @@
     "forward_start": "2026-09-26T22:39:44.978455+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (3.5->3.5 commission, 0.05->0.05 spread per lot; round-trip charge 7.5067->7.5067 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "f6bda0222dd90cb0345b",
-    "last_attempt_at": "2026-11-16T02:56:49+00:00",
+    "last_attempt_at": "2026-11-16T04:42:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.4620783690152907,
+    "exp_r": 0.44885085578778106,
     "days_active": 50,
-    "forward_t": 3.068,
+    "forward_t": 3.024,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -18236,7 +18236,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:49+00:00"
+      "at": "2026-11-16T04:42:22+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -18247,7 +18247,7 @@
   },
   "EURCHF.spread_state.asia#session=asia": {
     "n": 18,
-    "cum_r": 3.654271943169711,
+    "cum_r": 3.4426317315295565,
     "max_dd_r": -1.0517454302868567,
     "first_entry": "2026-10-12 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -18258,15 +18258,15 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:26:03+00:00",
     "sleeve_id": "40cf407ee35198362780",
-    "last_attempt_at": "2026-11-16T02:56:52+00:00",
+    "last_attempt_at": "2026-11-16T04:42:23+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.20301510795387281,
+    "exp_r": 0.1912573184183087,
     "days_active": 39,
-    "forward_t": 1.365,
+    "forward_t": 1.312,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -18320,7 +18320,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:52+00:00"
+      "at": "2026-11-16T04:42:23+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -20859,7 +20859,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:42:45+00:00",
     "sleeve_id": "8db01cbd75507a5c3e19",
-    "last_attempt_at": "2026-11-16T02:57:30+00:00",
+    "last_attempt_at": "2026-11-16T04:46:56+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -20921,7 +20921,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:30+00:00"
+      "at": "2026-11-16T04:46:56+00:00"
     },
     "last_error": "no M15 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -20932,7 +20932,7 @@
   },
   "GBPAUD.macro_conditional.asia@M5": {
     "n": 485,
-    "cum_r": -62.685696964595145,
+    "cum_r": -62.15671553521987,
     "max_dd_r": -79.667056389292,
     "first_entry": "2026-09-28 00:05:00+00:00",
     "last_entry": "2026-11-16 04:05:00+00:00",
@@ -20943,16 +20943,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:47:54.097929+00:00",
     "sleeve_id": "4ae22b3750ac4a2c9132",
-    "last_attempt_at": "2026-11-16T02:57:36+00:00",
+    "last_attempt_at": "2026-11-16T04:47:10+00:00",
     "bar_source": "CACHE:GBPAUD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.12924885972081473,
+    "exp_r": -0.12815817636127808,
     "days_active": 50,
-    "forward_t": -2.051,
-    "e_value": 1.7373,
+    "forward_t": -2.034,
+    "e_value": 1.6799,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 485,
@@ -20966,7 +20966,7 @@
     "last_error_cleared": "no M5 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:38+00:00"
+      "at": "2026-11-16T04:47:10+00:00"
     },
     "last_error": "no M5 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -23535,7 +23535,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:26+00:00",
     "sleeve_id": "2a4546e21dd7a6275717",
-    "last_attempt_at": "2026-11-16T02:52:12+00:00",
+    "last_attempt_at": "2026-11-16T04:34:37+00:00",
     "bar_source": "CACHE:GBPJPY_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -23597,7 +23597,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:12+00:00"
+      "at": "2026-11-16T04:34:37+00:00"
     },
     "last_error": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -23608,8 +23608,8 @@
   },
   "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72": {
     "n": 207,
-    "cum_r": -63.43694038652347,
-    "max_dd_r": -70.43015098915386,
+    "cum_r": -66.36001730960048,
+    "max_dd_r": -71.53698699972489,
     "first_entry": "2026-09-28 03:25:00+00:00",
     "last_entry": "2026-11-16 00:00:00+00:00",
     "status": "KILL",
@@ -23619,16 +23619,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.709973+00:00",
     "sleeve_id": "6ba08ff0c289af159c99",
-    "last_attempt_at": "2026-11-16T02:52:20+00:00",
+    "last_attempt_at": "2026-11-16T04:34:39+00:00",
     "bar_source": "CACHE:GBPJPY_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.3064586492102583,
+    "exp_r": -0.3205797937661859,
     "days_active": 49,
-    "forward_t": -2.719,
-    "e_value": 11.0635,
+    "forward_t": -2.854,
+    "e_value": 14.1948,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 207,
@@ -23642,7 +23642,7 @@
     "last_error_cleared": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:20+00:00"
+      "at": "2026-11-16T04:34:39+00:00"
     },
     "last_error": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -23652,31 +23652,31 @@
     "bar_file_present": true
   },
   "GBPJPY.macro_conditional.asia@M5": {
-    "n": 485,
-    "cum_r": -19.401792404589607,
-    "max_dd_r": -31.712553562975103,
+    "n": 486,
+    "cum_r": -21.565233215999427,
+    "max_dd_r": -32.96565262909704,
     "first_entry": "2026-09-28 01:30:00+00:00",
-    "last_entry": "2026-11-16 04:30:00+00:00",
+    "last_entry": "2026-11-16 05:10:00+00:00",
     "status": "KILL",
     "enrolled_at": "2026-09-26T22:53:26+00:00",
     "n_historical": 426,
-    "evidence_note": "485 forward observation(s) since the clock froze; 426 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "486 forward observation(s) since the clock froze; 426 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:53:39.377667+00:00",
     "sleeve_id": "fe576e35f46c317b27f2",
-    "last_attempt_at": "2026-11-16T02:52:28+00:00",
+    "last_attempt_at": "2026-11-16T04:34:42+00:00",
     "bar_source": "CACHE:GBPJPY_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.0400036956795662,
+    "exp_r": -0.044372907851850676,
     "days_active": 50,
-    "forward_t": -0.621,
-    "e_value": 0.3234,
+    "forward_t": -0.689,
+    "e_value": 0.351,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 485,
+    "e_n": 486,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -23687,7 +23687,7 @@
     "last_error_cleared": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:29+00:00"
+      "at": "2026-11-16T04:34:43+00:00"
     },
     "last_error": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27788,7 +27788,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.711220+00:00",
     "sleeve_id": "110975bfa7521b8c790a",
-    "last_attempt_at": "2026-11-16T02:56:11+00:00",
+    "last_attempt_at": "2026-11-16T04:41:26+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27811,7 +27811,7 @@
     "last_error_cleared": "no M15 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:11+00:00"
+      "at": "2026-11-16T04:41:27+00:00"
     },
     "last_error": "no M15 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27833,7 +27833,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:06:08+00:00",
     "sleeve_id": "ded405b68cd82adf7ca1",
-    "last_attempt_at": "2026-11-16T02:56:15+00:00",
+    "last_attempt_at": "2026-11-16T04:41:35+00:00",
     "bar_source": "CACHE:NZDCAD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27895,7 +27895,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:15+00:00"
+      "at": "2026-11-16T04:41:35+00:00"
     },
     "last_error": "no M5 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27917,7 +27917,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:06:11+00:00",
     "sleeve_id": "cdb73027d8d0cf6d0576",
-    "last_attempt_at": "2026-11-16T02:56:17+00:00",
+    "last_attempt_at": "2026-11-16T04:41:40+00:00",
     "bar_source": "CACHE:NZDCAD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27979,7 +27979,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:17+00:00"
+      "at": "2026-11-16T04:41:40+00:00"
     },
     "last_error": "no M5 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27990,8 +27990,8 @@
   },
   "NZDCAD.macro_conditional.asia@M5": {
     "n": 501,
-    "cum_r": -102.66616262178086,
-    "max_dd_r": -101.48929958238124,
+    "cum_r": -102.01575611771592,
+    "max_dd_r": -101.2292824338389,
     "first_entry": "2026-09-28 00:10:00+00:00",
     "last_entry": "2026-11-16 00:30:00+00:00",
     "status": "KILL",
@@ -28001,16 +28001,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:01:02.202600+00:00",
     "sleeve_id": "72c2f5a61bfaf8a4346d",
-    "last_attempt_at": "2026-11-16T02:56:26+00:00",
+    "last_attempt_at": "2026-11-16T04:41:44+00:00",
     "bar_source": "CACHE:NZDCAD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.20492248028299573,
+    "exp_r": -0.2036242637080158,
     "days_active": 50,
-    "forward_t": -3.293,
-    "e_value": 38.1834,
+    "forward_t": -3.271,
+    "e_value": 35.868,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 501,
@@ -28024,7 +28024,7 @@
     "last_error_cleared": "no M5 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:27+00:00"
+      "at": "2026-11-16T04:41:45+00:00"
     },
     "last_error": "no M5 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -31493,7 +31493,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:16+00:00",
     "sleeve_id": "7d69c901628168c41539",
-    "last_attempt_at": "2026-11-16T02:58:10+00:00",
+    "last_attempt_at": "2026-11-16T04:48:02+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -31555,7 +31555,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:11+00:00"
+      "at": "2026-11-16T04:48:03+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -31566,7 +31566,7 @@
   },
   "USDPLN.macro_conditional.asia@M5": {
     "n": 548,
-    "cum_r": -163.21052653532166,
+    "cum_r": -163.04380074603472,
     "max_dd_r": -180.55606505728497,
     "first_entry": "2026-09-28 02:40:00+00:00",
     "last_entry": "2026-11-16 02:35:00+00:00",
@@ -31577,16 +31577,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:14:42.493589+00:00",
     "sleeve_id": "398e4e2db8b0b29cafbe",
-    "last_attempt_at": "2026-11-16T02:58:15+00:00",
+    "last_attempt_at": "2026-11-16T04:48:25+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.2978294279841636,
+    "exp_r": -0.29752518384312904,
     "days_active": 50,
-    "forward_t": -4.718,
-    "e_value": 2992.3259,
+    "forward_t": -4.713,
+    "e_value": 2949.9425,
     "e_crossed_at": 72,
     "e_crossed_stamp": "2026-10-01 10:25:00+00:00",
     "e_n": 548,
@@ -31600,7 +31600,7 @@
     "last_error_cleared": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:15+00:00"
+      "at": "2026-11-16T04:48:26+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -32939,7 +32939,7 @@
   },
   "USDZAR.cross_asset_residual.asia#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8": {
     "n": 20,
-    "cum_r": 22.272876058200854,
+    "cum_r": 21.99677506612696,
     "max_dd_r": -2.2523157894665005,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -32950,16 +32950,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:20:38.779909+00:00",
     "sleeve_id": "a2ed1b32ecddd82da7ce",
-    "last_attempt_at": "2026-11-16T02:58:17+00:00",
+    "last_attempt_at": "2026-11-16T04:48:30+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 1.1136438029100426,
+    "exp_r": 1.099838753306348,
     "days_active": 50,
-    "forward_t": 1.584,
-    "e_value": 0.3427,
+    "forward_t": 1.561,
+    "e_value": 0.3462,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 20,
@@ -32973,7 +32973,7 @@
     "last_error_cleared": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:17+00:00"
+      "at": "2026-11-16T04:48:30+00:00"
     },
     "last_error": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -32983,42 +32983,42 @@
     "bar_file_present": true
   },
   "USDZAR.cross_asset_residual.asia#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8": {
-    "n": 17,
-    "cum_r": 4.034151642428256,
+    "n": 18,
+    "cum_r": 3.427856825771481,
     "max_dd_r": -2.786131474833865,
     "first_entry": "2026-10-01 19:00:00+00:00",
-    "last_entry": "2026-11-13 16:00:00+00:00",
+    "last_entry": "2026-11-16 02:00:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-26T23:20:39+00:00",
     "n_historical": 12,
-    "evidence_note": "17 forward observation(s) since the clock froze; 12 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "18 forward observation(s) since the clock froze; 12 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:20:42.981862+00:00",
     "sleeve_id": "0bf0cba5385a6f08722c",
-    "last_attempt_at": "2026-11-16T02:58:18+00:00",
+    "last_attempt_at": "2026-11-16T04:48:33+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.23730303778989742,
+    "exp_r": 0.19043649032063784,
     "days_active": 50,
-    "forward_t": 0.567,
+    "forward_t": 0.479,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 17,
+    "e_n": 18,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
     "e_kill_supported": false,
-    "e_status": "UNMEASURED: 17/20 trades",
+    "e_status": "UNMEASURED: 18/20 trades",
     "promotion_authority": true,
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:18+00:00"
+      "at": "2026-11-16T04:48:33+00:00"
     },
     "last_error": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33040,7 +33040,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:20:46.697555+00:00",
     "sleeve_id": "8f739847212e038b66bf",
-    "last_attempt_at": "2026-11-16T02:58:21+00:00",
+    "last_attempt_at": "2026-11-16T04:48:36+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33063,7 +33063,7 @@
     "last_error_cleared": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:21+00:00"
+      "at": "2026-11-16T04:48:36+00:00"
     },
     "last_error": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33085,7 +33085,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:35+00:00",
     "sleeve_id": "1d0b9287c98a8051d04e",
-    "last_attempt_at": "2026-11-16T02:58:27+00:00",
+    "last_attempt_at": "2026-11-16T04:48:46+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33147,7 +33147,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:27+00:00"
+      "at": "2026-11-16T04:48:46+00:00"
     },
     "last_error": "no M15 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33169,7 +33169,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:21:05.881986+00:00",
     "sleeve_id": "c1fb4db38e68e87ee425",
-    "last_attempt_at": "2026-11-16T02:58:28+00:00",
+    "last_attempt_at": "2026-11-16T04:48:47+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33192,7 +33192,7 @@
     "last_error_cleared": "no M15 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:28+00:00"
+      "at": "2026-11-16T04:48:47+00:00"
     },
     "last_error": "no M15 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33214,7 +33214,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:21:16.892791+00:00",
     "sleeve_id": "388a6c7ce928b51228ad",
-    "last_attempt_at": "2026-11-16T02:58:35+00:00",
+    "last_attempt_at": "2026-11-16T04:49:03+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33237,7 +33237,7 @@
     "last_error_cleared": "no M15 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:35+00:00"
+      "at": "2026-11-16T04:49:03+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 270.0->282.0 spread per lot; round-trip charge 14.7029->15.4072 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
@@ -33260,7 +33260,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:42+00:00",
     "sleeve_id": "c730ba13fa7a9ac8ea91",
-    "last_attempt_at": "2026-11-16T02:58:38+00:00",
+    "last_attempt_at": "2026-11-16T04:49:06+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33322,7 +33322,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:38+00:00"
+      "at": "2026-11-16T04:49:07+00:00"
     },
     "last_error": "no M30 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33344,7 +33344,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:21:28.884053+00:00",
     "sleeve_id": "ed6005a0367b7a88e636",
-    "last_attempt_at": "2026-11-16T02:58:39+00:00",
+    "last_attempt_at": "2026-11-16T04:49:10+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33367,7 +33367,7 @@
     "last_error_cleared": "no M30 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:39+00:00"
+      "at": "2026-11-16T04:49:10+00:00"
     },
     "last_error": "no M30 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33389,7 +33389,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:21:34.891626+00:00",
     "sleeve_id": "abd9dc4e99f0cd6189f8",
-    "last_attempt_at": "2026-11-16T02:58:41+00:00",
+    "last_attempt_at": "2026-11-16T04:49:12+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33412,7 +33412,7 @@
     "last_error_cleared": "no M30 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:41+00:00"
+      "at": "2026-11-16T04:49:12+00:00"
     },
     "last_error": "no M30 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33434,7 +33434,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:47+00:00",
     "sleeve_id": "71b05b594a435a15233a",
-    "last_attempt_at": "2026-11-16T02:58:43+00:00",
+    "last_attempt_at": "2026-11-16T04:49:21+00:00",
     "bar_source": "CACHE:USDZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33496,7 +33496,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:43+00:00"
+      "at": "2026-11-16T04:49:21+00:00"
     },
     "last_error": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33506,31 +33506,31 @@
     "bar_file_present": true
   },
   "USDZAR.carry.asia@M5#input_symbol=USDZAR": {
-    "n": 364,
-    "cum_r": -89.22321310476971,
+    "n": 365,
+    "cum_r": -89.50746088677224,
     "max_dd_r": -90.57125150931029,
     "first_entry": "2026-09-28 00:05:00+00:00",
-    "last_entry": "2026-11-16 00:50:00+00:00",
+    "last_entry": "2026-11-16 04:45:00+00:00",
     "status": "KILL",
     "enrolled_at": "2026-09-26T23:21:49+00:00",
     "n_historical": 322,
-    "evidence_note": "364 forward observation(s) since the clock froze; 322 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "365 forward observation(s) since the clock froze; 322 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:22:03.587881+00:00",
     "sleeve_id": "1e677fcad0150be47588",
-    "last_attempt_at": "2026-11-16T02:58:44+00:00",
+    "last_attempt_at": "2026-11-16T04:49:32+00:00",
     "bar_source": "CACHE:USDZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.2451187173207959,
+    "exp_r": -0.24522592023773215,
     "days_active": 50,
-    "forward_t": -3.787,
-    "e_value": 297.0526,
+    "forward_t": -3.799,
+    "e_value": 309.6065,
     "e_crossed_at": 230,
     "e_crossed_stamp": "2026-10-27 09:20:00+00:00",
-    "e_n": 364,
+    "e_n": 365,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -33541,7 +33541,7 @@
     "last_error_cleared": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:44+00:00"
+      "at": "2026-11-16T04:49:33+00:00"
     },
     "last_error": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33551,31 +33551,31 @@
     "bar_file_present": true
   },
   "USDZAR.carry.asia@M5": {
-    "n": 364,
-    "cum_r": -89.22321310476971,
+    "n": 365,
+    "cum_r": -89.50746088677224,
     "max_dd_r": -90.57125150931029,
     "first_entry": "2026-09-28 00:05:00+00:00",
-    "last_entry": "2026-11-16 00:50:00+00:00",
+    "last_entry": "2026-11-16 04:45:00+00:00",
     "status": "KILL",
     "enrolled_at": "2026-09-26T23:22:05+00:00",
     "n_historical": 322,
-    "evidence_note": "364 forward observation(s) since the clock froze; 322 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "365 forward observation(s) since the clock froze; 322 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:22:20.300235+00:00",
     "sleeve_id": "efb61ee0b3f2bf4f1655",
-    "last_attempt_at": "2026-11-16T02:58:44+00:00",
+    "last_attempt_at": "2026-11-16T04:49:35+00:00",
     "bar_source": "CACHE:USDZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.2451187173207959,
+    "exp_r": -0.24522592023773215,
     "days_active": 50,
-    "forward_t": -3.787,
-    "e_value": 297.0526,
+    "forward_t": -3.799,
+    "e_value": 309.6065,
     "e_crossed_at": 230,
     "e_crossed_stamp": "2026-10-27 09:20:00+00:00",
-    "e_n": 364,
+    "e_n": 365,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -33586,7 +33586,7 @@
     "last_error_cleared": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:45+00:00"
+      "at": "2026-11-16T04:49:36+00:00"
     },
     "last_error": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -33608,7 +33608,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:53+00:00",
     "sleeve_id": "65a7c45860915fcf6e83",
-    "last_attempt_at": "2026-11-16T02:58:49+00:00",
+    "last_attempt_at": "2026-11-16T04:49:44+00:00",
     "bar_source": "CACHE:USDZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -33670,7 +33670,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:49+00:00"
+      "at": "2026-11-16T04:49:45+00:00"
     },
     "last_error": "no M5 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -42709,7 +42709,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['abs', 'spread']_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0": {
     "n": 36,
-    "cum_r": 5.754431005685588,
+    "cum_r": 5.542790794045434,
     "max_dd_r": -2.131813191399455,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -42720,16 +42720,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T03:27:23.582620+00:00",
     "sleeve_id": "ed4e0f459fb55e59de1d",
-    "last_attempt_at": "2026-11-16T02:56:31+00:00",
+    "last_attempt_at": "2026-11-16T04:41:51+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.15984530571348857,
-    "days_active": 49,
-    "forward_t": 1.431,
-    "e_value": 0.1836,
+    "exp_r": 0.1539664109457065,
+    "days_active": 50,
+    "forward_t": 1.391,
+    "e_value": 0.1875,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 36,
@@ -42743,7 +42743,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:31+00:00"
+      "at": "2026-11-16T04:41:51+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -42754,7 +42754,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', 'spread']_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0": {
     "n": 36,
-    "cum_r": 5.754431005685588,
+    "cum_r": 5.542790794045434,
     "max_dd_r": -2.131813191399455,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -42765,16 +42765,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T03:27:28.688654+00:00",
     "sleeve_id": "b2f127288a3f1380611c",
-    "last_attempt_at": "2026-11-16T02:56:32+00:00",
+    "last_attempt_at": "2026-11-16T04:41:56+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.15984530571348857,
-    "days_active": 49,
-    "forward_t": 1.431,
-    "e_value": 0.1836,
+    "exp_r": 0.1539664109457065,
+    "days_active": 50,
+    "forward_t": 1.391,
+    "e_value": 0.1875,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 36,
@@ -42788,7 +42788,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:32+00:00"
+      "at": "2026-11-16T04:41:56+00:00"
     },
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -42810,7 +42810,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:18:29+00:00",
     "sleeve_id": "3ce39eab55d6c5e56cfc",
-    "last_attempt_at": "2026-11-16T02:53:25+00:00",
+    "last_attempt_at": "2026-11-16T04:34:55+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -42872,7 +42872,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:25+00:00"
+      "at": "2026-11-16T04:34:55+00:00"
     },
     "last_error": "no M15 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -42894,7 +42894,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:18:35+00:00",
     "sleeve_id": "df5265d0390e25da1f18",
-    "last_attempt_at": "2026-11-16T02:53:38+00:00",
+    "last_attempt_at": "2026-11-16T04:35:00+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -42956,7 +42956,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:38+00:00"
+      "at": "2026-11-16T04:35:00+00:00"
     },
     "last_error": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -45722,31 +45722,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16": {
-    "n": 30,
-    "cum_r": -10.653131072885897,
+    "n": 31,
+    "cum_r": -9.196178291759699,
     "max_dd_r": -11.143649464284398,
     "first_entry": "2026-10-12 00:30:00+00:00",
-    "last_entry": "2026-11-16 00:30:00+00:00",
+    "last_entry": "2026-11-16 02:45:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-27T11:14:07+00:00",
     "n_historical": 30,
-    "evidence_note": "30 forward observation(s) since the clock froze; 30 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "31 forward observation(s) since the clock froze; 30 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:07+00:00",
     "sleeve_id": "6239b7867e8cb83c6fd7",
-    "last_attempt_at": "2026-11-16T02:54:14+00:00",
+    "last_attempt_at": "2026-11-16T04:35:18+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.3551043690961965,
+    "exp_r": -0.2966509126374096,
     "days_active": 39,
-    "forward_t": -1.878,
-    "e_value": 3.0753,
+    "forward_t": -1.545,
+    "e_value": 2.0658,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 30,
+    "e_n": 31,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -45796,7 +45796,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:14+00:00"
+      "at": "2026-11-16T04:35:18+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -45807,31 +45807,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=4": {
-    "n": 47,
-    "cum_r": -10.863070489612614,
+    "n": 49,
+    "cum_r": -9.155393722935353,
     "max_dd_r": -11.501722891323263,
     "first_entry": "2026-10-12 00:30:00+00:00",
-    "last_entry": "2026-11-16 01:45:00+00:00",
+    "last_entry": "2026-11-16 04:00:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-27T11:14:15+00:00",
     "n_historical": 41,
-    "evidence_note": "47 forward observation(s) since the clock froze; 41 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "49 forward observation(s) since the clock froze; 41 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:10+00:00",
     "sleeve_id": "af10d7700406b6f93c70",
-    "last_attempt_at": "2026-11-16T02:54:19+00:00",
+    "last_attempt_at": "2026-11-16T04:35:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.23112915935345987,
+    "exp_r": -0.18684476985582352,
     "days_active": 39,
-    "forward_t": -1.92,
-    "e_value": 3.2547,
+    "forward_t": -1.531,
+    "e_value": 1.8163,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 47,
+    "e_n": 49,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -45881,7 +45881,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:19+00:00"
+      "at": "2026-11-16T04:35:23+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -45892,31 +45892,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=4": {
-    "n": 147,
-    "cum_r": 1.8146364506377692,
+    "n": 149,
+    "cum_r": 3.52231321731503,
     "max_dd_r": -12.626732944607717,
     "first_entry": "2026-09-28 03:30:00+00:00",
-    "last_entry": "2026-11-16 01:45:00+00:00",
+    "last_entry": "2026-11-16 04:00:00+00:00",
     "status": "PROMOTION CANDIDATE",
     "enrolled_at": "2026-09-27T11:14:31+00:00",
     "n_historical": 111,
-    "evidence_note": "147 forward observation(s) since the clock froze; 111 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "149 forward observation(s) since the clock froze; 111 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:14:34.997289+00:00",
     "sleeve_id": "6715695780eb8b881ce1",
-    "last_attempt_at": "2026-11-16T02:54:29+00:00",
+    "last_attempt_at": "2026-11-16T04:35:31+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.01234446565059707,
+    "exp_r": 0.023639686022248523,
     "days_active": 49,
-    "forward_t": 0.117,
-    "e_value": 0.5465,
+    "forward_t": 0.225,
+    "e_value": 0.5073,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 147,
+    "e_n": 149,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -45927,7 +45927,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:29+00:00"
+      "at": "2026-11-16T04:35:32+00:00"
     },
     "certificate_drift": true,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
@@ -45951,7 +45951,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:14:42.594225+00:00",
     "sleeve_id": "631308b5da61922bf5fc",
-    "last_attempt_at": "2026-11-16T02:54:37+00:00",
+    "last_attempt_at": "2026-11-16T04:35:40+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -45974,7 +45974,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:37+00:00"
+      "at": "2026-11-16T04:35:41+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -45997,7 +45997,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:14:45.604656+00:00",
     "sleeve_id": "d6f7da001b3b01087195",
-    "last_attempt_at": "2026-11-16T02:54:40+00:00",
+    "last_attempt_at": "2026-11-16T04:35:45+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46020,7 +46020,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:40+00:00"
+      "at": "2026-11-16T04:35:45+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46031,31 +46031,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=16": {
-    "n": 35,
-    "cum_r": -10.0303156075689,
+    "n": 36,
+    "cum_r": -8.573362826442702,
     "max_dd_r": -15.104333077595596,
     "first_entry": "2026-09-29 11:15:00+00:00",
-    "last_entry": "2026-11-16 00:30:00+00:00",
+    "last_entry": "2026-11-16 02:45:00+00:00",
     "status": "ACTIVE",
     "enrolled_at": "2026-09-27T11:14:54+00:00",
     "n_historical": 35,
-    "evidence_note": "35 forward observation(s) since the clock froze; 35 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "36 forward observation(s) since the clock froze; 35 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:14:58.692831+00:00",
     "sleeve_id": "320bfc2d9cba53967d3e",
-    "last_attempt_at": "2026-11-16T02:54:49+00:00",
+    "last_attempt_at": "2026-11-16T04:35:52+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.28658044593054,
+    "exp_r": -0.23814896740118618,
     "days_active": 49,
-    "forward_t": -1.455,
-    "e_value": 1.7439,
+    "forward_t": -1.206,
+    "e_value": 1.2958,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 35,
+    "e_n": 36,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -46066,7 +46066,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:49+00:00"
+      "at": "2026-11-16T04:35:52+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46077,31 +46077,31 @@
     "bar_file_present": true
   },
   "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=4": {
-    "n": 49,
-    "cum_r": -7.701370280248898,
+    "n": 51,
+    "cum_r": -5.993693513571637,
     "max_dd_r": -12.355752143212907,
     "first_entry": "2026-09-29 11:15:00+00:00",
-    "last_entry": "2026-11-16 01:45:00+00:00",
-    "status": "ACTIVE",
+    "last_entry": "2026-11-16 04:00:00+00:00",
+    "status": "KILL",
     "enrolled_at": "2026-09-27T11:15:00+00:00",
     "n_historical": 51,
-    "evidence_note": "49 forward observation(s) since the clock froze; 51 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "51 forward observation(s) since the clock froze; 51 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:15:04.194069+00:00",
     "sleeve_id": "3b32e2c7afe21c7182ca",
-    "last_attempt_at": "2026-11-16T02:54:53+00:00",
+    "last_attempt_at": "2026-11-16T04:35:54+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.15717082204589586,
+    "exp_r": -0.11752340222689485,
     "days_active": 49,
-    "forward_t": -1.3,
-    "e_value": 1.5022,
+    "forward_t": -0.966,
+    "e_value": 0.9591,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
-    "e_n": 49,
+    "e_n": 51,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
@@ -46112,7 +46112,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:53+00:00"
+      "at": "2026-11-16T04:35:54+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46135,7 +46135,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:15:18.484876+00:00",
     "sleeve_id": "60ddb8fa4e6c5c917be6",
-    "last_attempt_at": "2026-11-16T02:55:06+00:00",
+    "last_attempt_at": "2026-11-16T04:36:06+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46158,7 +46158,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:06+00:00"
+      "at": "2026-11-16T04:36:06+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46181,7 +46181,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:15:22.400944+00:00",
     "sleeve_id": "e3f52a8c39349bb99f2d",
-    "last_attempt_at": "2026-11-16T02:55:10+00:00",
+    "last_attempt_at": "2026-11-16T04:36:11+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46204,7 +46204,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:10+00:00"
+      "at": "2026-11-16T04:36:11+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46216,8 +46216,8 @@
   },
   "BTCUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=36": {
     "n": 42,
-    "cum_r": -18.127927842797686,
-    "max_dd_r": -20.32768046276998,
+    "cum_r": -17.88184905208472,
+    "max_dd_r": -20.081601672057015,
     "first_entry": "2026-10-01 20:30:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
     "status": "ACTIVE",
@@ -46227,16 +46227,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:15:30.695347+00:00",
     "sleeve_id": "4050f4429517184c1bb8",
-    "last_attempt_at": "2026-11-16T02:55:16+00:00",
+    "last_attempt_at": "2026-11-16T04:40:07+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.4316173295904211,
+    "exp_r": -0.42575831076392195,
     "days_active": 49,
-    "forward_t": -1.911,
-    "e_value": 2.4644,
+    "forward_t": -1.884,
+    "e_value": 2.3986,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 42,
@@ -46250,7 +46250,7 @@
     "last_error_cleared": "no M30 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:16+00:00"
+      "at": "2026-11-16T04:40:07+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M30 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46273,7 +46273,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:52+00:00",
     "sleeve_id": "9cef449a373a717cd409",
-    "last_attempt_at": "2026-11-16T02:55:35+00:00",
+    "last_attempt_at": "2026-11-16T04:40:20+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46336,7 +46336,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:35+00:00"
+      "at": "2026-11-16T04:40:21+00:00"
     },
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -46358,7 +46358,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:32:56+00:00",
     "sleeve_id": "c31d5e54518f72cc96dc",
-    "last_attempt_at": "2026-11-16T02:55:39+00:00",
+    "last_attempt_at": "2026-11-16T04:40:30+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46420,7 +46420,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:40+00:00"
+      "at": "2026-11-16T04:40:30+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -46443,7 +46443,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:16:05.107601+00:00",
     "sleeve_id": "0df49915294d24d6a704",
-    "last_attempt_at": "2026-11-16T02:55:41+00:00",
+    "last_attempt_at": "2026-11-16T04:40:34+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46466,7 +46466,7 @@
     "last_error_cleared": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:41+00:00"
+      "at": "2026-11-16T04:40:34+00:00"
     },
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
@@ -46489,7 +46489,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:16:09.980041+00:00",
     "sleeve_id": "efd00a43cf6ccc2b2fca",
-    "last_attempt_at": "2026-11-16T02:55:43+00:00",
+    "last_attempt_at": "2026-11-16T04:40:45+00:00",
     "bar_source": "CACHE:BTCUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -46512,7 +46512,7 @@
     "last_error_cleared": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:43+00:00"
+      "at": "2026-11-16T04:40:46+00:00"
     },
     "last_error": "no M5 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 17.84->17.84 spread per lot; round-trip charge 18.8529->18.8529 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
@@ -50946,7 +50946,7 @@
   },
   "EURCHF.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0": {
     "n": 36,
-    "cum_r": 8.981276861804869,
+    "cum_r": 8.769636650164713,
     "max_dd_r": -1.3970463305740806,
     "first_entry": "2026-09-28 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -50957,16 +50957,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:41:11.777093+00:00",
     "sleeve_id": "0705287bb44b87ec0927",
-    "last_attempt_at": "2026-11-16T02:56:37+00:00",
+    "last_attempt_at": "2026-11-16T04:42:09+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.24947991282791301,
+    "exp_r": 0.24360101806013093,
     "days_active": 49,
-    "forward_t": 2.589,
-    "e_value": 0.0975,
+    "forward_t": 2.554,
+    "e_value": 0.1015,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 36,
@@ -50980,7 +50980,7 @@
     "last_error_cleared": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:37+00:00"
+      "at": "2026-11-16T04:42:09+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
@@ -54457,7 +54457,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:42:36+00:00",
     "sleeve_id": "aeb0e7dc85289ce5487d",
-    "last_attempt_at": "2026-11-16T02:57:22+00:00",
+    "last_attempt_at": "2026-11-16T04:46:48+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -54519,7 +54519,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:22+00:00"
+      "at": "2026-11-16T04:46:48+00:00"
     },
     "last_error": "no M15 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -54541,7 +54541,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:42:41+00:00",
     "sleeve_id": "a42fda3de0bc70fbec9b",
-    "last_attempt_at": "2026-11-16T02:57:26+00:00",
+    "last_attempt_at": "2026-11-16T04:46:52+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -54603,7 +54603,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:27+00:00"
+      "at": "2026-11-16T04:46:52+00:00"
     },
     "last_error": "no M15 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56166,7 +56166,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:24+00:00",
     "sleeve_id": "0356bdd980778bd5474f",
-    "last_attempt_at": "2026-11-16T02:52:02+00:00",
+    "last_attempt_at": "2026-11-16T04:34:35+00:00",
     "bar_source": "CACHE:GBPJPY_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56228,7 +56228,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:02+00:00"
+      "at": "2026-11-16T04:34:35+00:00"
     },
     "last_error": "no M5 bars from any source for GBPJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56295,7 +56295,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:57:53+00:00",
     "sleeve_id": "0ee7590f045408016af2",
-    "last_attempt_at": "2026-11-16T02:57:46+00:00",
+    "last_attempt_at": "2026-11-16T04:47:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56357,7 +56357,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:46+00:00"
+      "at": "2026-11-16T04:47:19+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56379,7 +56379,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T12:25:49.386749+00:00",
     "sleeve_id": "35c1bddcc13b65447ed9",
-    "last_attempt_at": "2026-11-16T02:57:46+00:00",
+    "last_attempt_at": "2026-11-16T04:47:21+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56402,7 +56402,7 @@
     "last_error_cleared": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:46+00:00"
+      "at": "2026-11-16T04:47:21+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56424,7 +56424,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T12:25:55.283894+00:00",
     "sleeve_id": "34f5e49441ea1ba26116",
-    "last_attempt_at": "2026-11-16T02:57:50+00:00",
+    "last_attempt_at": "2026-11-16T04:47:21+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56447,7 +56447,7 @@
     "last_error_cleared": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:50+00:00"
+      "at": "2026-11-16T04:47:21+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56469,7 +56469,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:57:57+00:00",
     "sleeve_id": "53635375231096727df0",
-    "last_attempt_at": "2026-11-16T02:57:51+00:00",
+    "last_attempt_at": "2026-11-16T04:47:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56532,7 +56532,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:51+00:00"
+      "at": "2026-11-16T04:47:24+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56554,7 +56554,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T12:26:06.285826+00:00",
     "sleeve_id": "02cecb8ec501bc5f77b2",
-    "last_attempt_at": "2026-11-16T02:57:51+00:00",
+    "last_attempt_at": "2026-11-16T04:47:25+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56577,7 +56577,7 @@
     "last_error_cleared": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:51+00:00"
+      "at": "2026-11-16T04:47:25+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56599,7 +56599,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T12:26:12.683760+00:00",
     "sleeve_id": "ae12980461a4b80f456d",
-    "last_attempt_at": "2026-11-16T02:57:53+00:00",
+    "last_attempt_at": "2026-11-16T04:47:27+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56622,7 +56622,7 @@
     "last_error_cleared": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:53+00:00"
+      "at": "2026-11-16T04:47:27+00:00"
     },
     "last_error": "no M30 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56644,7 +56644,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:01+00:00",
     "sleeve_id": "3cca4995fb6e7e0a6dfc",
-    "last_attempt_at": "2026-11-16T02:57:56+00:00",
+    "last_attempt_at": "2026-11-16T04:47:34+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56706,7 +56706,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:56+00:00"
+      "at": "2026-11-16T04:47:34+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56728,7 +56728,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:05+00:00",
     "sleeve_id": "267d22afaccaa4b25b9f",
-    "last_attempt_at": "2026-11-16T02:57:58+00:00",
+    "last_attempt_at": "2026-11-16T04:47:46+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56790,7 +56790,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:58+00:00"
+      "at": "2026-11-16T04:47:46+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -56812,7 +56812,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:58:10+00:00",
     "sleeve_id": "e64bfebe4e56fc4472f4",
-    "last_attempt_at": "2026-11-16T02:58:04+00:00",
+    "last_attempt_at": "2026-11-16T04:47:55+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -56874,7 +56874,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:04+00:00"
+      "at": "2026-11-16T04:47:55+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -57748,7 +57748,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:09:47+00:00",
     "sleeve_id": "b317a09b0e927fc7a331",
-    "last_attempt_at": "2026-11-16T02:57:42+00:00",
+    "last_attempt_at": "2026-11-16T04:47:14+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -57810,7 +57810,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:42+00:00"
+      "at": "2026-11-16T04:47:14+00:00"
     },
     "last_error": "no M30 bars from any source for USDCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -58186,7 +58186,7 @@
   },
   "USDPLN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0": {
     "n": 27,
-    "cum_r": 3.5248254539262374,
+    "cum_r": 3.596878979402321,
     "max_dd_r": -1.994193289025377,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -58197,17 +58197,17 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T14:46:22+00:00",
     "sleeve_id": "47064800772a728316e9",
-    "last_attempt_at": "2026-11-16T02:57:45+00:00",
+    "last_attempt_at": "2026-11-16T04:47:16+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "promotion_authority": true,
-    "exp_r": 0.13054909088615693,
+    "exp_r": 0.13321773997786374,
     "days_active": 39,
-    "forward_t": 1.061,
-    "e_value": 0.2411,
+    "forward_t": 1.081,
+    "e_value": 0.2385,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 27,
@@ -58225,7 +58225,7 @@
     },
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:45+00:00"
+      "at": "2026-11-16T04:47:16+00:00"
     },
     "runtime_windows_before": [
       {
@@ -58258,7 +58258,7 @@
   },
   "USDPLN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96": {
     "n": 505,
-    "cum_r": -141.30466544404518,
+    "cum_r": -141.13793965475824,
     "max_dd_r": -156.01615392983544,
     "first_entry": "2026-09-30 00:05:00+00:00",
     "last_entry": "2026-11-16 02:35:00+00:00",
@@ -58269,17 +58269,17 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-29T21:15:49.197690+00:00",
     "sleeve_id": "13f2a1de323e4b163600",
-    "last_attempt_at": "2026-11-16T02:58:02+00:00",
+    "last_attempt_at": "2026-11-16T04:47:51+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "promotion_authority": true,
-    "exp_r": -0.27981121870107956,
+    "exp_r": -0.27948106862328365,
     "days_active": 47,
-    "forward_t": -4.249,
-    "e_value": 684.0587,
+    "forward_t": -4.243,
+    "e_value": 674.759,
     "e_crossed_at": 93,
     "e_crossed_stamp": "2026-10-07 02:45:00+00:00",
     "e_n": 505,
@@ -58292,7 +58292,7 @@
     "last_error_cleared": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:02+00:00"
+      "at": "2026-11-16T04:47:51+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -58303,7 +58303,7 @@
   },
   "USDPLN.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96": {
     "n": 517,
-    "cum_r": -218.663558399995,
+    "cum_r": -218.8442581308677,
     "max_dd_r": -218.2171635646935,
     "first_entry": "2026-09-30 00:05:00+00:00",
     "last_entry": "2026-11-16 03:25:00+00:00",
@@ -58314,17 +58314,17 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-29T21:15:54.378805+00:00",
     "sleeve_id": "ae9fdc7960d634b5ce3f",
-    "last_attempt_at": "2026-11-16T02:58:07+00:00",
+    "last_attempt_at": "2026-11-16T04:47:58+00:00",
     "bar_source": "CACHE:USDPLN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "promotion_authority": true,
-    "exp_r": -0.4229469214700097,
+    "exp_r": -0.42329643739045975,
     "days_active": 47,
-    "forward_t": -7.03,
-    "e_value": 703213178.3204,
+    "forward_t": -7.037,
+    "e_value": 728386777.8479,
     "e_crossed_at": 99,
     "e_crossed_stamp": "2026-10-07 08:15:00+00:00",
     "e_n": 517,
@@ -58337,7 +58337,7 @@
     "last_error_cleared": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:07+00:00"
+      "at": "2026-11-16T04:47:58+00:00"
     },
     "last_error": "no M5 bars from any source for USDPLN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -58466,7 +58466,7 @@
   },
   "USDZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0": {
     "n": 28,
-    "cum_r": 11.185349106923667,
+    "cum_r": 11.561036557820008,
     "max_dd_r": -1.0192384632003506,
     "first_entry": "2026-10-08 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -58477,17 +58477,17 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T14:49:56+00:00",
     "sleeve_id": "6a13b973bf1b3f4d3f65",
-    "last_attempt_at": "2026-11-16T02:58:23+00:00",
+    "last_attempt_at": "2026-11-16T04:48:38+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "promotion_authority": true,
-    "exp_r": 0.3994767538187024,
+    "exp_r": 0.41289416277928603,
     "days_active": 39,
-    "forward_t": 3.631,
-    "e_value": 0.0892,
+    "forward_t": 3.716,
+    "e_value": 0.0868,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 28,
@@ -58505,7 +58505,7 @@
     },
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:23+00:00"
+      "at": "2026-11-16T04:48:39+00:00"
     },
     "runtime_windows_before": [
       {
@@ -58538,7 +58538,7 @@
   },
   "USDZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0": {
     "n": 33,
-    "cum_r": 13.184706682624954,
+    "cum_r": 13.560394133521296,
     "max_dd_r": -1.0192384632003506,
     "first_entry": "2026-09-30 01:00:00+00:00",
     "last_entry": "2026-11-16 01:00:00+00:00",
@@ -58549,17 +58549,17 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-29T21:16:45.486294+00:00",
     "sleeve_id": "1eacb7ab5604680ee119",
-    "last_attempt_at": "2026-11-16T02:58:24+00:00",
+    "last_attempt_at": "2026-11-16T04:48:41+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "promotion_authority": true,
-    "exp_r": 0.39953656614015015,
+    "exp_r": 0.4109210343491302,
     "days_active": 47,
-    "forward_t": 3.964,
-    "e_value": 0.0723,
+    "forward_t": 4.043,
+    "e_value": 0.0706,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 33,
@@ -58572,7 +58572,7 @@
     "last_error_cleared": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:58:24+00:00"
+      "at": "2026-11-16T04:48:41+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for USDZAR covering SHADOW_START 2026-08-16",
@@ -58832,7 +58832,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-30T13:57:22.128330+00:00",
     "sleeve_id": "19eea34157d11899b360",
-    "last_attempt_at": "2026-11-16T02:54:59+00:00",
+    "last_attempt_at": "2026-11-16T04:36:01+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -58853,7 +58853,7 @@
     "last_error_cleared": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:54:59+00:00"
+      "at": "2026-11-16T04:36:01+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 20.96->20.96 spread per lot; round-trip charge 21.5462->21.5462 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for BTCUSD covering SHADOW_START 2026-08-16",
@@ -58967,48 +58967,56 @@
   },
   "engine_pass": {
     "started_at": "2026-11-16T03:55:16+00:00",
-    "rows_reached": 567,
+    "rows_reached": 685,
     "rows": 1016,
     "complete": false,
     "profile": {
-      "seconds": 2361.5,
-      "rows_timed": 567,
+      "seconds": 3279.0,
+      "rows_timed": 685,
       "phase_seconds": {
-        "backtest": 292.5,
-        "fetch": 78.4,
-        "resolve": 20.2,
-        "signals": 998.6
+        "backtest": 338.5,
+        "fetch": 560.5,
+        "resolve": 23.7,
+        "signals": 1163.4
       },
       "phase_calls": {
-        "backtest": 511,
-        "fetch": 80,
-        "resolve": 566,
-        "signals": 508
+        "backtest": 628,
+        "fetch": 104,
+        "resolve": 684,
+        "signals": 625
       },
       "reused": {
-        "backtest": 55,
-        "signals": 58
+        "backtest": 56,
+        "signals": 59
       },
       "family_seconds": {
-        "macro_conditional": 704.4,
-        "cross_asset_residual": 635.4,
-        "carry": 517.6,
-        "overnight_gap_decay": 177.7,
-        "formula": 126.4,
-        "pca_residual": 76.3,
-        "clock_transition": 76.3,
-        "spread_state": 22.8,
+        "cross_asset_residual": 1073.6,
+        "macro_conditional": 782.9,
+        "carry": 545.1,
+        "clock_transition": 327.7,
+        "overnight_gap_decay": 225.8,
+        "formula": 163.4,
+        "pca_residual": 92.3,
+        "spread_state": 31.1,
+        "session_range_breakout": 15.7,
         "range_reversion": 7.7,
-        "session_range_breakout": 3.2,
         "overnight_drift": 2.3
       },
       "chart_seconds": {
-        "M5": 1139.9,
-        "M15": 480.3,
-        "H1": 460.7,
-        "M30": 269.1
+        "M5": 1321.7,
+        "M30": 783.4,
+        "M15": 590.2,
+        "H1": 572.2
       },
       "slowest_rows": [
+        {
+          "key": "CHFJPY.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+          "seconds": 243.01
+        },
+        {
+          "key": "BTCUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=36",
+          "seconds": 230.93
+        },
         {
           "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
           "seconds": 45.87
@@ -59042,6 +59050,10 @@
           "seconds": 25.12
         },
         {
+          "key": "USDPLN.macro_conditional.asia@M5",
+          "seconds": 22.93
+        },
+        {
           "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=48",
           "seconds": 19.45
         },
@@ -59056,18 +59068,6 @@
         {
           "key": "EURILS.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
           "seconds": 17.43
-        },
-        {
-          "key": "USDMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
-          "seconds": 16.63
-        },
-        {
-          "key": "GBPZAR.carry.asia@M5#input_symbol=GBPZAR_session=ny",
-          "seconds": 16.57
-        },
-        {
-          "key": "EURILS.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
-          "seconds": 16.21
         }
       ]
     }
@@ -60511,7 +60511,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "eb35acec3869348a656d",
-    "last_attempt_at": "2026-11-16T02:55:56+00:00",
+    "last_attempt_at": "2026-11-16T04:41:08+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -60528,7 +60528,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:56+00:00"
+      "at": "2026-11-16T04:41:08+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61215,7 +61215,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T01:55:40.903244+00:00",
     "sleeve_id": "3473a05b49b2ea65f3a7",
-    "last_attempt_at": "2026-11-16T02:52:44+00:00",
+    "last_attempt_at": "2026-11-16T04:34:49+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61234,7 +61234,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:44+00:00"
+      "at": "2026-11-16T04:34:50+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61406,7 +61406,7 @@
     "n_historical": 10,
     "broker_offset_h": 0.0,
     "sleeve_id": "c6197ca7e394faf5c291",
-    "last_attempt_at": "2026-11-16T02:53:42+00:00",
+    "last_attempt_at": "2026-11-16T04:35:06+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61423,7 +61423,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:42+00:00"
+      "at": "2026-11-16T04:35:06+00:00"
     },
     "last_error": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61487,7 +61487,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T05:04:16.712120+00:00",
     "sleeve_id": "4be6ad3827af218a9bf1",
-    "last_attempt_at": "2026-11-16T02:53:44+00:00",
+    "last_attempt_at": "2026-11-16T04:35:08+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61506,7 +61506,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:53:44+00:00"
+      "at": "2026-11-16T04:35:08+00:00"
     },
     "last_error": "no M30 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61762,7 +61762,7 @@
     "forward_start": "2026-10-29T05:26:12.692495+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "d8dbcbe84acd0b034cdd",
-    "last_attempt_at": "2026-11-16T02:56:08+00:00",
+    "last_attempt_at": "2026-11-16T04:41:22+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61781,7 +61781,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:08+00:00"
+      "at": "2026-11-16T04:41:22+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61846,7 +61846,7 @@
     "forward_start": "2026-10-29T05:25:26.785945+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "2dcb88a325a7304c8360",
-    "last_attempt_at": "2026-11-16T02:55:58+00:00",
+    "last_attempt_at": "2026-11-16T04:41:11+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61865,7 +61865,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:58+00:00"
+      "at": "2026-11-16T04:41:11+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -61977,7 +61977,7 @@
     "forward_start": "2026-10-29T06:58:00.292294+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 2.0->2.0 spread per lot; round-trip charge 3.8265->3.8265 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "0bf347d02865d7fed9e1",
-    "last_attempt_at": "2026-11-16T02:52:52+00:00",
+    "last_attempt_at": "2026-11-16T04:34:53+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61996,7 +61996,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:52+00:00"
+      "at": "2026-11-16T04:34:53+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -62149,7 +62149,7 @@
     "forward_start": "2026-10-29T06:57:36.993577+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 2.0->2.0 spread per lot; round-trip charge 3.8265->3.8265 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "8e409667d95121960632",
-    "last_attempt_at": "2026-11-16T02:52:41+00:00",
+    "last_attempt_at": "2026-11-16T04:34:48+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62168,7 +62168,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:41+00:00"
+      "at": "2026-11-16T04:34:48+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -62704,7 +62704,7 @@
     "n_historical": 8,
     "broker_offset_h": 0.0,
     "sleeve_id": "5e8bccfb811aa4cfd438",
-    "last_attempt_at": "2026-11-16T02:52:39+00:00",
+    "last_attempt_at": "2026-11-16T04:34:47+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62721,7 +62721,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:39+00:00"
+      "at": "2026-11-16T04:34:47+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -62766,7 +62766,7 @@
     "n_historical": 8,
     "broker_offset_h": 0.0,
     "sleeve_id": "75de19c8824a72d6c555",
-    "last_attempt_at": "2026-11-16T02:52:50+00:00",
+    "last_attempt_at": "2026-11-16T04:34:51+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62783,7 +62783,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:50+00:00"
+      "at": "2026-11-16T04:34:51+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -62867,7 +62867,7 @@
     "n_historical": 8,
     "broker_offset_h": 0.0,
     "sleeve_id": "538e83a9ed9ff38ea30d",
-    "last_attempt_at": "2026-11-16T02:52:47+00:00",
+    "last_attempt_at": "2026-11-16T04:34:50+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62884,7 +62884,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:47+00:00"
+      "at": "2026-11-16T04:34:50+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -62908,7 +62908,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T15:50:56.592271+00:00",
     "sleeve_id": "4cce5e9b80027f275f27",
-    "last_attempt_at": "2026-11-16T02:52:49+00:00",
+    "last_attempt_at": "2026-11-16T04:34:51+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62927,7 +62927,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:49+00:00"
+      "at": "2026-11-16T04:34:51+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -63743,7 +63743,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "2f137e99a98a65dbfc4f",
-    "last_attempt_at": "2026-11-16T02:56:00+00:00",
+    "last_attempt_at": "2026-11-16T04:41:13+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -63760,7 +63760,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:00+00:00"
+      "at": "2026-11-16T04:41:13+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -63864,7 +63864,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "8bd7bf38972dd9826f83",
-    "last_attempt_at": "2026-11-16T02:56:06+00:00",
+    "last_attempt_at": "2026-11-16T04:41:19+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -63881,7 +63881,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:06+00:00"
+      "at": "2026-11-16T04:41:20+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -64682,13 +64682,13 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-30T03:50:29.992232+00:00",
     "sleeve_id": "7b01a21c5d9f803227f7",
-    "last_attempt_at": "2026-11-16T02:52:38+00:00",
+    "last_attempt_at": "2026-11-16T04:34:45+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.0,
-    "days_active": 16,
+    "days_active": 17,
     "forward_t": 0.0,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
@@ -64701,7 +64701,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:38+00:00"
+      "at": "2026-11-16T04:34:45+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -64959,13 +64959,13 @@
     "forward_start": "2026-10-30T04:02:10.385561+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 1.0->1.0 spread per lot; round-trip charge 3.1120->3.1120 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "1d27550be2516c3d4beb",
-    "last_attempt_at": "2026-11-16T02:56:04+00:00",
+    "last_attempt_at": "2026-11-16T04:41:17+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": -1.024466479986822,
-    "days_active": 16,
+    "days_active": 17,
     "forward_t": 0.0,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
@@ -64978,7 +64978,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:56:04+00:00"
+      "at": "2026-11-16T04:41:17+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -65691,7 +65691,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:57:16.895098+00:00",
     "sleeve_id": "5ebbcc90eef9a956d134",
-    "last_attempt_at": "2026-11-16T02:55:53+00:00",
+    "last_attempt_at": "2026-11-16T04:41:05+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -65710,7 +65710,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:53+00:00"
+      "at": "2026-11-16T04:41:05+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -65734,7 +65734,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:57:19.683720+00:00",
     "sleeve_id": "5f7ecb5ce837744063a3",
-    "last_attempt_at": "2026-11-16T02:55:55+00:00",
+    "last_attempt_at": "2026-11-16T04:41:07+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -65753,7 +65753,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:55+00:00"
+      "at": "2026-11-16T04:41:07+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -65777,7 +65777,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:57:14.308628+00:00",
     "sleeve_id": "fbb604a95d8e49a269f1",
-    "last_attempt_at": "2026-11-16T02:55:51+00:00",
+    "last_attempt_at": "2026-11-16T04:40:59+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -65796,7 +65796,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:51+00:00"
+      "at": "2026-11-16T04:41:00+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -65820,7 +65820,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:55:18.910417+00:00",
     "sleeve_id": "ccd0ea8905205bdb9d21",
-    "last_attempt_at": "2026-11-16T02:52:54+00:00",
+    "last_attempt_at": "2026-11-16T04:34:54+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -65839,7 +65839,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:52:54+00:00"
+      "at": "2026-11-16T04:34:54+00:00"
     },
     "last_error": "no H1 bars from any source for AUDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -65863,7 +65863,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:57:13.303353+00:00",
     "sleeve_id": "8a4df80d9f6ee16d084b",
-    "last_attempt_at": "2026-11-16T02:55:48+00:00",
+    "last_attempt_at": "2026-11-16T04:40:56+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -65882,7 +65882,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:55:48+00:00"
+      "at": "2026-11-16T04:40:56+00:00"
     },
     "last_error": "no H1 bars from any source for NZDCAD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -66542,7 +66542,7 @@
     "n_historical": 54,
     "broker_offset_h": 0.0,
     "sleeve_id": "8f33f449ddd34a7a8ca5",
-    "last_attempt_at": "2026-11-16T02:57:16+00:00",
+    "last_attempt_at": "2026-11-16T04:46:42+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -66559,7 +66559,7 @@
     "e_status": "UNMEASURED: 5/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:17+00:00"
+      "at": "2026-11-16T04:46:42+00:00"
     },
     "last_error": "no H1 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -67549,7 +67549,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-11-05T21:53:10.194375+00:00",
     "sleeve_id": "05be8b9c95ae4db85d39",
-    "last_attempt_at": "2026-11-16T02:57:11+00:00",
+    "last_attempt_at": "2026-11-16T04:46:36+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -67568,7 +67568,7 @@
     "e_status": "UNMEASURED: 0/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:11+00:00"
+      "at": "2026-11-16T04:46:36+00:00"
     },
     "last_error": "no H1 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -67693,7 +67693,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-11-05T21:53:12.326229+00:00",
     "sleeve_id": "3c4474b176109d9292fd",
-    "last_attempt_at": "2026-11-16T02:57:14+00:00",
+    "last_attempt_at": "2026-11-16T04:46:39+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -67712,7 +67712,7 @@
     "e_status": "UNMEASURED: 5/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:14+00:00"
+      "at": "2026-11-16T04:46:40+00:00"
     },
     "last_error": "no H1 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -67723,7 +67723,7 @@
   },
   "EURCHF.carry.asia@M15#require_quiet=False_session=asia": {
     "n": 17,
-    "cum_r": 4.758699779443497,
+    "cum_r": 4.5362303689874555,
     "max_dd_r": -2.2682758499293345,
     "first_entry": "2026-11-09 00:30:00+00:00",
     "last_entry": "2026-11-16 01:15:00+00:00",
@@ -67752,17 +67752,17 @@
     "runtime_version": "session-6b08b9bfc3f81de2",
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_start": "2026-11-06T08:50:32+00:00",
-    "exp_r": 0.2799235164378528,
+    "exp_r": 0.26683708052867383,
     "days_active": 9,
     "n_historical": 150,
     "broker_offset_h": 0.0,
     "sleeve_id": "8cc4da896c04fa887dc4",
-    "last_attempt_at": "2026-11-16T02:57:00+00:00",
+    "last_attempt_at": "2026-11-16T04:42:26+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "forward_t": 0.924,
+    "forward_t": 0.877,
     "e_value": "UNMEASURED",
     "e_crossed_at": null,
     "e_crossed_stamp": null,
@@ -67774,7 +67774,7 @@
     "e_status": "UNMEASURED: 17/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:00+00:00"
+      "at": "2026-11-16T04:42:27+00:00"
     },
     "last_error": "no M15 bars from any source for EURCHF covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -67815,11 +67815,11 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_start": "2026-11-09T03:50:17+00:00",
     "exp_r": -0.22790015360984206,
-    "days_active": 6,
+    "days_active": 7,
     "n_historical": 23,
     "broker_offset_h": 0.0,
     "sleeve_id": "5c7219b8ee30b6df3eb7",
-    "last_attempt_at": "2026-11-16T02:57:02+00:00",
+    "last_attempt_at": "2026-11-16T04:42:29+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -67836,7 +67836,7 @@
     "e_status": "UNMEASURED: 1/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:02+00:00"
+      "at": "2026-11-16T04:42:29+00:00"
     },
     "last_error": "no H1 bars from any source for CHFJPY covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -67877,11 +67877,11 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_start": "2026-11-09T03:50:21+00:00",
     "exp_r": 0.16207169260048448,
-    "days_active": 6,
+    "days_active": 7,
     "n_historical": 55,
     "broker_offset_h": 0.0,
     "sleeve_id": "d893b4ee7510ad36b45c",
-    "last_attempt_at": "2026-11-16T02:57:17+00:00",
+    "last_attempt_at": "2026-11-16T04:46:44+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -67898,7 +67898,7 @@
     "e_status": "UNMEASURED: 4/20 trades",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-16T02:57:17+00:00"
+      "at": "2026-11-16T04:46:45+00:00"
     },
     "last_error": "no H1 bars from any source for GBPAUD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
