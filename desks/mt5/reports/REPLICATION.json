@@ -1,5 +1,5 @@
 {
- "at": "2026-11-17T03:37:00+00:00",
+ "at": "2026-11-17T04:38:42+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -27,9 +27,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=a01fa8a08b82bdc9",
-   "certificate": "external.GBPSGD.formula.p=a01fa8a08b82bdc9",
-   "fp": "9b66c3689875c513",
+   "key": "GBPSGD.formula.p=5d09ec0364995124",
+   "certificate": "external.GBPSGD.formula.p=5d09ec0364995124",
+   "fp": "49e046a3843926d1",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,10 +41,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=7eee342c5c00fcbe",
-   "certificate": "external.GBPSGD.formula.p=7eee342c5c00fcbe",
-   "fp": "913279a72953392f",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=be86ad163591a0ec",
+   "certificate": "external.NZDCAD.formula.p=be86ad163591a0ec",
+   "fp": "b7617bcec1b4067d",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -55,10 +55,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=49084fe784b308c9",
-   "certificate": "external.GBPSGD.formula.p=49084fe784b308c9",
-   "fp": "914bceef37f7299d",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=9b5708b609901f7a",
+   "certificate": "external.NZDCAD.formula.p=9b5708b609901f7a",
+   "fp": "1a29966c5fd59dd5",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -69,10 +69,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=dfb271cd8ec46b8f",
-   "certificate": "external.GBPSGD.formula.p=dfb271cd8ec46b8f",
-   "fp": "44cfad5e03da2d7f",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=cbbaaaf6dda25940",
+   "certificate": "external.NZDCAD.formula.p=cbbaaaf6dda25940",
+   "fp": "514e3d314b087808",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -83,10 +83,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=f884c226dfddba57",
-   "certificate": "external.GBPSGD.formula.p=f884c226dfddba57",
-   "fp": "b64b8e178e7ede57",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=5f1e58b6412d345d",
+   "certificate": "external.NZDCAD.formula.p=5f1e58b6412d345d",
+   "fp": "72427898527d994f",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -97,10 +97,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=9cd3b443f2b69e9b",
-   "certificate": "external.GBPSGD.formula.p=9cd3b443f2b69e9b",
-   "fp": "eb5550c6d101aef2",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=acf0d9e91e2e06c4",
+   "certificate": "external.NZDCAD.formula.p=acf0d9e91e2e06c4",
+   "fp": "d1356a468cd22754",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -111,10 +111,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=1cf187d29178083b",
-   "certificate": "external.GBPSGD.formula.p=1cf187d29178083b",
-   "fp": "9f77a3eba6be66f6",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=d0f1821a206666d2",
+   "certificate": "external.NZDCAD.formula.p=d0f1821a206666d2",
+   "fp": "5a9414c56f7980c3",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -125,10 +125,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=cf9962f194169708",
-   "certificate": "external.GBPSGD.formula.p=cf9962f194169708",
-   "fp": "11b9069ec8cbae72",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=ac5babda58f59234",
+   "certificate": "external.NZDCAD.formula.p=ac5babda58f59234",
+   "fp": "a53715dbbd957055",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -139,12 +139,12 @@
   },
   {
    "lane": "forward",
-   "key": "GER40.trend_ma_cross.continuous",
-   "symbol": "GER40",
-   "family": "trend_ma_cross",
+   "key": "US30.vol_transition.continuous",
+   "symbol": "US30",
+   "family": "vol_transition",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'trend_ma_cross'"
+    "no written specification in the spec book for family 'vol_transition'"
    ],
    "ours": {},
    "theirs": {},
@@ -152,8 +152,73 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.momentum_volgate.continuous",
-   "symbol": "NAS100",
+   "key": "US30.volume_spike.continuous",
+   "symbol": "US30",
+   "family": "volume_spike",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'volume_spike'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.carry.continuous",
+   "symbol": "XAGUSD",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.comex_settlement.continuous",
+   "symbol": "XAGUSD",
+   "family": "comex_settlement",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'comex_settlement'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.joint_genome.continuous",
+   "symbol": "XAGUSD",
+   "family": "joint_genome",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'joint_genome'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.level_breakout.continuous",
+   "symbol": "XAGUSD",
+   "family": "level_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'level_breakout'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.momentum_volgate.continuous",
+   "symbol": "XAGUSD",
    "family": "momentum_volgate",
    "verdict": "UNMEASURED",
    "why": [
@@ -165,77 +230,12 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.pin_bar_reversal.continuous",
-   "symbol": "NAS100",
-   "family": "pin_bar_reversal",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'pin_bar_reversal'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "NAS100.range_reversion.continuous",
-   "symbol": "NAS100",
+   "key": "XAGUSD.range_reversion.continuous",
+   "symbol": "XAGUSD",
    "family": "range_reversion",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'range_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "NAS100.trend_ma_cross.continuous",
-   "symbol": "NAS100",
-   "family": "trend_ma_cross",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'trend_ma_cross'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "US30.momentum_volgate.continuous",
-   "symbol": "US30",
-   "family": "momentum_volgate",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'momentum_volgate'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "US30.spread_state.continuous",
-   "symbol": "US30",
-   "family": "spread_state",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'spread_state'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "US30.trend_ma_cross.continuous",
-   "symbol": "US30",
-   "family": "trend_ma_cross",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'trend_ma_cross'"
    ],
    "ours": {},
    "theirs": {},
@@ -245,68 +245,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPSGD.formula.p=a01fa8a08b82bdc9",
+   "what": "GBPSGD.formula.p=5d09ec0364995124",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=7eee342c5c00fcbe",
+   "what": "NZDCAD.formula.p=be86ad163591a0ec",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=49084fe784b308c9",
+   "what": "NZDCAD.formula.p=9b5708b609901f7a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=dfb271cd8ec46b8f",
+   "what": "NZDCAD.formula.p=cbbaaaf6dda25940",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=f884c226dfddba57",
+   "what": "NZDCAD.formula.p=5f1e58b6412d345d",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=9cd3b443f2b69e9b",
+   "what": "NZDCAD.formula.p=acf0d9e91e2e06c4",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=1cf187d29178083b",
+   "what": "NZDCAD.formula.p=d0f1821a206666d2",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=cf9962f194169708",
+   "what": "NZDCAD.formula.p=ac5babda58f59234",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GER40.trend_ma_cross.continuous",
-   "why": "no written specification in the spec book for family 'trend_ma_cross'"
+   "what": "US30.vol_transition.continuous",
+   "why": "no written specification in the spec book for family 'vol_transition'"
   },
   {
-   "what": "NAS100.momentum_volgate.continuous",
+   "what": "US30.volume_spike.continuous",
+   "why": "no written specification in the spec book for family 'volume_spike'"
+  },
+  {
+   "what": "XAGUSD.carry.continuous",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "XAGUSD.comex_settlement.continuous",
+   "why": "no written specification in the spec book for family 'comex_settlement'"
+  },
+  {
+   "what": "XAGUSD.joint_genome.continuous",
+   "why": "no written specification in the spec book for family 'joint_genome'"
+  },
+  {
+   "what": "XAGUSD.level_breakout.continuous",
+   "why": "no written specification in the spec book for family 'level_breakout'"
+  },
+  {
+   "what": "XAGUSD.momentum_volgate.continuous",
    "why": "no written specification in the spec book for family 'momentum_volgate'"
   },
   {
-   "what": "NAS100.pin_bar_reversal.continuous",
-   "why": "no written specification in the spec book for family 'pin_bar_reversal'"
-  },
-  {
-   "what": "NAS100.range_reversion.continuous",
+   "what": "XAGUSD.range_reversion.continuous",
    "why": "no written specification in the spec book for family 'range_reversion'"
-  },
-  {
-   "what": "NAS100.trend_ma_cross.continuous",
-   "why": "no written specification in the spec book for family 'trend_ma_cross'"
-  },
-  {
-   "what": "US30.momentum_volgate.continuous",
-   "why": "no written specification in the spec book for family 'momentum_volgate'"
-  },
-  {
-   "what": "US30.spread_state.continuous",
-   "why": "no written specification in the spec book for family 'spread_state'"
-  },
-  {
-   "what": "US30.trend_ma_cross.continuous",
-   "why": "no written specification in the spec book for family 'trend_ma_cross'"
   }
  ],
  "recorded": {
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 654,
-  "at": "2026-11-17T02:37:16+00:00",
+  "forward": 662,
+  "at": "2026-11-17T03:37:00+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -335,23 +335,23 @@
   ],
   "bars_read_by_this_module": [
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 4.25
+ "seconds": 9.33
 }
