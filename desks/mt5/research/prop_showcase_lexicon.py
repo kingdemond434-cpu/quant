@@ -156,16 +156,18 @@ def cells(claims: list[dict[str, Any]], have: set[str]) -> list[dict[str, Any]]:
                         row = book.setdefault(key, {"symbol": sym, "family": fam,
                                                     "params": params, "styles": set(),
                                                     "sessions": set(), "stories": set(),
-                                                    "firms": set()})
+                                                    "firms": set(), "verification": set()})
                         row["styles"].add(style)
                         if sess:
                             row["sessions"].add(sess)
                         row["stories"].add(c["url"])
                         row["firms"].add(c["firm"])
+                        row["verification"].add(c.get("verification") or "firm_published")
     out = []
     for row in book.values():
         row = {**row, "styles": sorted(row["styles"]), "sessions": sorted(row["sessions"]),
-               "firms": sorted(row["firms"]), "support": len(row["stories"]),
+               "firms": sorted(row["firms"]), "verification": sorted(row["verification"]),
+               "support": len(row["stories"]),
                "stories": sorted(row["stories"])[:8]}
         out.append(row)
     out.sort(key=lambda r: (-r["support"], -len(r["firms"]), r["symbol"], r["family"]))

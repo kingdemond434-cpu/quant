@@ -31,6 +31,9 @@ PIPELINE, each stage counted so conversion is visible (PROP_SHOWCASE.json `funne
   terms     FAIL CLOSED: a firm is contacted only with a `confirmed` verdict and a recorded
             permitting quote in prop_showcase_fetch.TERMS / TERMS_EVIDENCE. None is confirmed
             yet, so the harvest reports BLOCKED_ON_TERMS and fetches nothing.
+  grounds   the lawful route since 2026-11-17: feeds that funded traders and their
+            interviewers syndicate themselves (prop_showcase_grounds.py), each with its own
+            terms row and a verification level that rides on every claim.
   harvest   firm sitemaps (robots.txt Sitemap lines, else /sitemap.xml) -> story-slug URLs ->
             polite fetch (robots consulted, unreadable robots = NOT fetched, 3 s spacing, a cap
             per firm per pass, no login, no cookies, no paywall/CAPTCHA/rate-limit crossing) ->
@@ -76,6 +79,7 @@ if _HERE not in sys.path:                # the two halves live beside this file
     sys.path.insert(0, _HERE)
 
 import prop_showcase_fetch as _fetch  # noqa: E402
+import prop_showcase_grounds as _grounds  # noqa: E402
 from prop_showcase_fetch import (  # noqa: E402, F401
     FIRMS,
     SOURCE,
@@ -218,7 +222,9 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
                                               "t_deflated_sweep", "n_tests_sweep",
                                               "t_deflated_lifetime", "n_tests_lifetime")},
                       "showcase_support": r["support"], "showcase_firms": r["firms"],
-                      "showcase_stories": r["stories"], "selection_prior": SELECTION_PRIORS}))
+                      "showcase_stories": r["stories"],
+                      "showcase_verification": r.get("verification") or [],
+                      "selection_prior": SELECTION_PRIORS}))
     rep: dict[str, Any] = {"cells_built": len(allc), "tests_run": len(screened),
                            "cells_proposed": len(proposals), "skipped": skipped,
                            "top_cells": [{k: r.get(k) for k in (
@@ -283,13 +289,20 @@ def run(budget_s: float = 1800.0, write: bool = True, fetch: bool = True) -> dic
         if p not in sys.path:
             sys.path.insert(0, p)
     t0 = time.monotonic()
-    h = harvest(budget_s=budget_s * 0.4) if fetch else {"skipped": "--no-fetch"}
+    h = harvest(budget_s=budget_s * 0.3) if fetch else {"skipped": "--no-fetch"}
+    hf = (_grounds.harvest_feeds(budget_s=budget_s * 0.2) if fetch
+          else {"skipped": "--no-fetch"})
     claims = load_claims()
     mech = [c for c in claims if c.get("styles") and c.get("instruments")]
     prop = propose(claims, budget_s=max(60.0, budget_s - (time.monotonic() - t0)),
                    write=write)
     doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "source": SOURCE,
-           "harvest": h,
+           "harvest": h, "harvest_feeds": hf,
+           "by_verification": {v: sum(1 for c in mech
+                                      if (c.get("verification") or "firm_published") == v)
+                               for v in _grounds.VERIFICATION},
+           "grounds_terms": {k: v[0] for k, v in _grounds.TERMS.items()},
+           "grounds_refused": _grounds.REFUSED,
            "funnel": {"stories_held": len(claims), "stories_with_mechanism": len(mech),
                       "cells_built": prop["cells_built"], "cells_screened": prop["tests_run"],
                       "cells_proposed": prop["cells_proposed"],

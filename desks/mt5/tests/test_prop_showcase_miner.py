@@ -262,3 +262,73 @@ def test_news_maps_to_no_dead_family_and_asia_uses_both_windows() -> None:
     assert psm._grid("news", None, [], None) == []
     asia = psm._grid("breakout", "asia", [], None)
     assert {p["asia_end"] for _, p in asia} == {7, 8}
+
+
+# ------------------------------------------------------------- self-published grounds (feeds)
+import prop_showcase_grounds as psg  # noqa: E402
+
+_FEED = (b"<rss><channel><title>Show</title>"
+         b"<item><guid>ep-2</guid><title>How a funded trader made $250,000 trading gold</title>"
+         b"<link>https://pod.example/ep-2</link><pubDate>Tue, 03 Nov 2026 10:00:00 GMT</pubDate>"
+         b"<description><![CDATA[<p>He trades the London open breakout on XAUUSD with a "
+         b"1:3 risk to reward and holds for minutes.</p>]]></description></item>"
+         b"<item><guid>ep-1</guid><title>Mindset chat</title><link>https://pod.example/ep-1"
+         b"</link><description>Nothing about a setup.</description></item></channel></rss>")
+_G = {"pod": {"url": "https://pod.example/feed.xml", "kind": "podcast_rss", "claims": "interview"}}
+_GOK: dict = {"terms": {"pod": ("no_ban", "fixture")},
+              "evidence": {"pod": {"url": "https://pod.example/terms", "checked": "2026-11-17",
+                                   "quote": "terms read in full; no clause on automated access"}}}
+
+
+def test_feed_grounds_fail_closed_on_terms(tmp_path: Path,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    f = _FakeFetcher({})
+    # every shipped ground has an open verdict WITH evidence, or it is not contacted
+    for gid in psg.GROUNDS:
+        v = psg.TERMS.get(gid, ("to_confirm", ""))[0]
+        assert v in psg.TERMS_VALUES
+        assert psg.terms_ok(gid) == (v in psg.OPEN_VERDICTS)
+        assert psg.GROUNDS[gid].get("claims") in psg.VERIFICATION
+    assert not set(psg.REFUSED) & {g for g in psg.GROUNDS if psg.terms_ok(g)}
+    # an open verdict without evidence, a refusal and an unlisted ground all stay shut
+    grounds = {k: dict(_G["pod"]) for k in ("a", "b", "c")}
+    rep = psg.harvest_feeds(f, grounds, terms={"a": ("no_ban", ""), "b": ("refused", "s.1")},
+                            evidence={"a": {"url": "https://a.example/terms"}})
+    assert f.hits == [] and rep["new_claims"] == 0
+    assert rep["terms_blocked"] == {"a": "to_confirm", "b": "refused", "c": "to_confirm"}
+    assert rep["harvest_status"].startswith("BLOCKED_ON_TERMS")
+
+
+def test_feed_items_become_claims_with_verification_level(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    pages = {"https://pod.example/robots.txt": (200, b"User-agent: *\nDisallow:\n"),
+             "https://pod.example/feed.xml": (200, _FEED)}
+    f = _FakeFetcher(pages)
+    rep = psg.harvest_feeds(f, _G, **_GOK)
+    assert rep["harvest_status"] == "MEASURED" and rep["new_claims"] == 2
+    assert rep["by_ground"]["pod"]["claims_with_mechanism"] == 1
+    # one request for the feed: no episode page, no audio, no transcript host
+    assert [u for u in f.hits if not u.endswith("robots.txt")] == ["https://pod.example/feed.xml"]
+    claims = {c["url"]: c for c in psm.load_claims(tmp_path / "claims.jsonl")}
+    c = claims["https://pod.example/ep-2"]
+    assert c["verification"] == "interview" and c["firm"] == "pod"
+    assert c["knowable_from"].startswith("2026-11-03") and c["payout_usd_max"] == 250000
+    assert "gold" in c["instruments"] and "london" in c["sessions"]
+    # the level reaches the cell, so the judge can learn which claimants carry edge
+    built = psm.cells(list(claims.values()), {"XAUUSD"})
+    assert built and all(r["verification"] == ["interview"] for r in built)
+    # second pass: nothing re-read as new
+    rep2 = psg.harvest_feeds(_FakeFetcher(pages), _G, **_GOK)
+    assert rep2["new_claims"] == 0
+
+
+def test_feed_blocked_by_robots_is_not_read(tmp_path: Path,
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    f = _FakeFetcher({"https://pod.example/robots.txt": (200, b"User-agent: *\nDisallow: /\n"),
+                      "https://pod.example/feed.xml": (200, _FEED)})
+    rep = psg.harvest_feeds(f, _G, **_GOK)
+    assert "https://pod.example/feed.xml" not in f.hits and rep["new_claims"] == 0
+    assert rep["harvest_status"].startswith("UNMEASURED")
