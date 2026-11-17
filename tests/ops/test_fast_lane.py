@@ -102,10 +102,73 @@ def test_an_existing_test_of_money_code_is_money_and_a_new_one_is_not() -> None:
     assert not fl.money_test(rs, "desks/mt5/tests/test_zz_not_yet_written.py", closure)
 
 
+def test_a_module_the_executors_import_by_bare_name_is_money() -> None:
+    """#1240 audit MF1: prop/ftmo_executor and e8_executor run `from admission_integrity import`
+    through research/ on sys.path, and neither is an entry point."""
+    fast, why = fl.classify(["desks/mt5/research/admission_integrity.py"])
+    assert not fast and "money path" in why, why
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "ops/box_self_heal.py",  # a SYSTEM task that kills processes
+        "ops/ensure_terminal.ps1",  # restarts the live terminal
+        "ops/install_unattended.ps1",
+        "requirements-vps.txt",  # the box's install sets
+        "requirements-deploy.txt",
+        "scripts/zz_anything.sh",  # any shell script, anywhere
+        "scripts/zz_anything.cmd",
+    ],
+)
+def test_box_machinery_is_never_fast(path: str) -> None:
+    """#1240 audit MF2."""
+    fast, why = fl.classify([path])
+    assert not fast and "box machinery" in why, why
+
+
+def test_a_registered_producer_of_a_file_the_money_path_reads_is_money() -> None:
+    """#1240 audit MF3: alpha_breadth declares pf_allocation.json, which the allocator reads."""
+    fast, why = fl.classify(["desks/mt5/research/alpha_breadth.py"])
+    assert not fast and "component registry" in why, why
+
+
+PRODUCER = (
+    "import json\nfrom pathlib import Path\n"
+    "OUT = Path('desks/mt5/reports/pf_allocation.json')\n"
+    "def run():\n    OUT.write_text(json.dumps({'all': 1}))\n"
+)
+
+
+def test_a_new_file_that_writes_what_the_money_path_reads_is_money(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#1240 audit MF3, the unregistered case: the PR's own copy is read, not only the base's."""
+    new = "desks/mt5/research/zz_new_producer.py"
+    monkeypatch.setattr(fl, "head_text", lambda head, path: PRODUCER if path == new else None)
+    fast, why = fl.classify([new], head="HEAD")
+    assert not fast and "newly writes pf_allocation.json" in why, why
+    monkeypatch.setattr(fl, "head_text", lambda head, path: "X = 1\n" if path == new else None)
+    assert fl.classify([new], head="HEAD")[0]
+
+
+def test_a_producer_is_caught_once_the_money_path_reads_its_file() -> None:
+    """#1240 audit MF3, pinned for the exotic cost bar (#1117): once live_policy reads
+    EXOTIC_COST_BAR.json, the file that writes it is money."""
+    src = (
+        "import json\nfrom pathlib import Path\nBAR = 'EXOTIC_COST_BAR.json'\n"
+        "def publish(root):\n    (Path(root) / 'reports' / BAR).write_text(json.dumps({}))\n"
+    )
+    assert fl.money_writes(src, "x.py", {"exotic_cost_bar.json"}) == {"exotic_cost_bar.json"}
+    assert fl.money_writes(src, "x.py", {"sleeves.json"}) == set()
+    reader = "import json\ndef read():\n    return json.load(open('EXOTIC_COST_BAR.json'))\n"
+    assert fl.money_writes(reader, "x.py", {"exotic_cost_bar.json"}) == set()  # a reader only
+
+
 def test_nothing_or_an_unreadable_base_is_not_fast(monkeypatch: pytest.MonkeyPatch) -> None:
     assert not fl.classify([])[0]
     assert not fl.classify(["", "  "])[0]
-    monkeypatch.setattr(fl, "ROOT", ROOT / "no-such-dir")
+    monkeypatch.setattr(fl, "ROOT", ROOT / "no-such-dir")  # a new cache key: read afresh
     fast, why = fl.classify(["docs/x.md"])
     assert not fast and "could not read" in why
 

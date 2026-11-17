@@ -1360,13 +1360,16 @@ def _fast_lane() -> Any:
     return mod
 
 
-def is_fast(names: list[str]) -> tuple[bool, str]:
-    """Is this PR on the fast lane? Only with FAST_ENV on and a classifier that loads; any
-    failure is the normal path."""
+def is_fast(names: list[str], head: str | None = None) -> tuple[bool, str]:
+    """Is this PR on the fast lane? Only with FAST_ENV on, the head fetched (the classifier reads
+    what the head's own files write) and a classifier that loads; any failure is the normal
+    path."""
     if os.environ.get(FAST_ENV) != "1" or not names:
         return False, "fast lane off"
     try:
-        fast, why = _fast_lane().classify(names)
+        if head is not None:
+            _git("fetch", "-q", "--no-tags", "origin", head)
+        fast, why = _fast_lane().classify(names, head=head)
     except Exception as exc:
         return False, f"fast lane unreadable ({type(exc).__name__})"
     return bool(fast), str(why)
@@ -1501,7 +1504,7 @@ def run(
             _status(repo, head, "failure", twhy)
         return 1
     if level in ("LOW", "AUTO") and not touches_workflows(files):
-        fast, fwhy = is_fast(names)
+        fast, fwhy = is_fast(names, head)
         if fast:
             return run_fast(
                 repo, pr, p2, head, base, fwhy, box=box, approvals_issue=approvals_issue

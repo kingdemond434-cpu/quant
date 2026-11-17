@@ -44,11 +44,20 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 #: The promoter writes the LIVE rows the gateway trades (desks/mt5/data/sleeves.json), so its
 #: closure is money too, beside replay-shadow's own entry points.
 EXTRA_ENTRIES = ("desks/mt5/research/promoter.py",)
+#: The directories the money code puts on sys.path and imports bare names from (#1240 audit MF1:
+#: prop/ftmo_executor and e8_executor run `from admission_integrity import ...` through research/).
+SYS_PATH_DIRS = ("desks/mt5/research", "desks/mt5/prop", "desks/mt5/mt5desk", "desks/mt5/scripts")
+#: Box machinery wherever it sits (#1240 audit MF2): anything under ops/, every shell script, and
+#: the box's install sets.
+BOX_PREFIXES = ("ops/",)
+BOX_EXTS = (".ps1", ".psm1", ".cmd", ".bat", ".sh")
+BOX_NAMES = ("requirements*.txt", "*/requirements*.txt")
 #: Release and risk suites: a PR that changes one must take the full path.
 SUITE_LISTS = ("ops/release/risk_suites.txt", "ops/release/trusted_eval_suites.txt")
 #: The one job a fast PR needs (ci.yml).
@@ -117,38 +126,190 @@ def money_test(rs: ModuleType, path: str, closure: set[str]) -> bool:
     return any(m in closure or m.startswith(rs.MONEY_PATH) for m in mine)
 
 
-def classify(paths: Iterable[str]) -> tuple[bool, str]:
-    """(fast, why). Fail closed: an empty list, or anything that cannot be read, is not fast."""
+def money_closure(rs: ModuleType) -> set[str]:
+    """Every file the money path can import (#1240 audit MF1): seeded with the live entry points,
+    the promoter AND every .py under the MONEY_PATH folders (an executor that is no entry point is
+    still money), with bare names resolved against SYS_PATH_DIRS as well as replay-shadow's own
+    roots. `rs` is this module's private copy, so widening its roots changes no other reader."""
+    roots = tuple(getattr(rs, "IMPORT_ROOTS"))  # noqa: B009 (a module loaded by path)
+    setattr(rs, "IMPORT_ROOTS", (*roots, *(d for d in SYS_PATH_DIRS if d not in roots)))  # noqa: B010
+    files = sorted(rs.tree_files(ROOT))
+    seeds = [f for f in files if f.endswith(".py") and f.startswith(rs.MONEY_PATH)]
+    return set(rs.import_closure(ROOT, (*rs.ENTRY_POINTS, *EXTRA_ENTRIES, *seeds)))
+
+
+def is_box(path: str) -> bool:
+    """Box machinery (#1240 audit MF2)."""
+    low = path.lower()
+    named = _match(path, BOX_NAMES) is not None
+    return low.startswith(BOX_PREFIXES) or low.endswith(BOX_EXTS) or named
+
+
+#: Calls that write a file (by attribute or function name), for `written_names`.
+WRITE_CALLS = frozenset({"write_text", "write_bytes", "dump", "to_json", "to_csv", "to_parquet",
+                         "replace", "rename", "writelines", "write"})  # fmt: skip
+
+
+def _writes(call: ast.Call) -> bool:
+    f = call.func
+    name = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else ""
+    low = name.lower()
+    if name in WRITE_CALLS or ("write" in low and low != "writer") or low.startswith("atomic"):
+        return True
+    if name == "open":
+        modes = [*call.args[1:2], *(k.value for k in call.keywords if k.arg == "mode")]
+        return any(
+            isinstance(m, ast.Constant) and isinstance(m.value, str) and set(m.value) & set("wax")
+            for m in modes
+        )
+    return False
+
+
+def written_names(text: str, path: str) -> set[str]:
+    """The file names (base names, lower-cased) a Python file spells inside a scope that writes a
+    file -- a function, or a module-level statement -- directly or through a module-level
+    constant. A superset of what it writes; none for a non-Python file. Raises on a parse error."""
+    if not path.endswith(".py"):
+        return set()
+    tree = ast.parse(text)
+    consts: dict[str, set[str]] = {}
+    for st in tree.body:
+        if isinstance(st, (ast.Assign, ast.AnnAssign)) and st.value is not None:
+            lits = {c.value for c in ast.walk(st.value)
+                    if isinstance(c, ast.Constant) and isinstance(c.value, str)}  # fmt: skip
+            targets = st.targets if isinstance(st, ast.Assign) else [st.target]
+            consts.update({t.id: lits for t in targets if isinstance(t, ast.Name)})
+    scopes: list[ast.AST] = [n for n in ast.walk(tree)
+                             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]  # fmt: skip
+    defs = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+    scopes += [st for st in tree.body if not isinstance(st, defs)]
+    out: set[str] = set()
+    for sc in scopes:
+        if not any(isinstance(c, ast.Call) and _writes(c) for c in ast.walk(sc)):
+            continue
+        for c in ast.walk(sc):
+            if isinstance(c, ast.Constant) and isinstance(c.value, str):
+                out.add(c.value)
+            elif isinstance(c, ast.Name):
+                out |= consts.get(c.id, set())
+    return {x.lower().replace("\\", "/").rsplit("/", 1)[-1] for x in out if 0 < len(x) < 300}
+
+
+def money_writes(text: str, path: str, state: set[str]) -> set[str]:
+    """The files the money path reads that this file spells where it writes (#1240 audit MF3)."""
+    return {b for b in written_names(text, path)
+            if "." in b and (b in state or b.rsplit(".", 1)[0] in state)}  # fmt: skip
+
+
+def producers(state: set[str], closure: set[str], money_path: tuple[str, ...]) -> dict[str, str]:
+    """{code path: why} for every component of the desk's registry (desks/mt5/ops/components.py,
+    the base's, run in its own isolated interpreter) that DECLARES an output the money path reads
+    or a consumer on the money path (#1240 audit MF3). Raises when the registry cannot be built:
+    the caller fails closed."""
+    code = (
+        "import importlib.util, json, sys\n"
+        "sys.path.insert(0, '.')\n"
+        "s = importlib.util.spec_from_file_location('_c', 'desks/mt5/ops/components.py')\n"
+        "m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"
+        "print(json.dumps([[list(c.code_paths), list(c.outputs), list(c.consumers)]\n"
+        "                  for c in m.build_registry()]))\n"
+    )
+    out = subprocess.run([sys.executable, "-I", "-c", code], cwd=ROOT, capture_output=True,
+                         text=True, check=True, timeout=300).stdout  # fmt: skip
+    found: dict[str, str] = {}
+    for paths, outputs, consumers in json.loads(out.strip().splitlines()[-1]):
+        names = [o.split()[0].rsplit("/", 1)[-1].lower() for o in outputs if o.strip()]
+        fed = [b for b in names if b in state or b.rsplit(".", 1)[0] in state]
+        reads = [c for c in consumers if c in closure or str(c).startswith(money_path)]
+        if fed or reads:
+            why = f"writes {fed[0]}" if fed else f"feeds {reads[0]}"
+            for p in paths:
+                found.setdefault(p, why)
+    return found
+
+
+def head_text(head: str | None, path: str) -> str | None:
+    """The PR head's copy of `path`, or None when there is no head or it lacks the file."""
+    if head is None:
+        return None
+    p = subprocess.run(["git", "-C", str(ROOT), "show", f"{head}:{path}"], capture_output=True,
+                       check=False)  # fmt: skip
+    return p.stdout.decode("utf-8", "replace") if p.returncode == 0 else None
+
+
+def _tree_id() -> str:
+    """The checkout's HEAD commit, the cache key below (a moved base is read afresh). Raises."""
+    return subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,
+                          check=True, text=True).stdout.strip()  # fmt: skip
+
+
+@functools.lru_cache(maxsize=2)
+def base_facts(root: str, tree: str) -> Any:
+    """Everything classify reads from the base, once per base commit (the closure walk costs
+    ~10 s): (replay_shadow copy, held patterns, suites, money closure, money state names, roster
+    files, registry producers), or a string saying why it cannot be read. `root` and `tree` are
+    only the cache key."""
+    del root, tree
+    ag = _load("_fast_ag", ".github/scripts/audit_gate.py")
+    rs = _load("_fast_rs", "ops/release/replay_shadow.py")
+    # one ls-tree for the whole PR, not one per file
+    rs.tree_files = functools.lru_cache(maxsize=4)(rs.tree_files)  # type: ignore[attr-defined]
+    extra = ag.protected_patterns()
+    never = ag.never_standing_patterns()
+    if extra is None or never is None:
+        return "the protected list or the ROOT policy is unreadable"
+    held = (*ag.SECRETS, *ag.SEAL_CARRIERS, *ag.PROTECTED, *ag.FORMERLY_PROTECTED, *extra, *never)
+    suites: set[str] = set()
+    for rel in SUITE_LISTS:
+        suites |= _lines(rel)
+    closure = money_closure(rs)
+    state = {x.lower() for x in rs.state_names(ROOT, closure) if "." in x}
+    roster = {*rs.ROSTER_FILES, *rs.ROSTER_HARNESS, rs.MANIFEST}
+    made = producers(state, closure, rs.MONEY_PATH)
+    return rs, held, suites, closure, state, roster, made
+
+
+def classify(paths: Iterable[str], head: str | None = None) -> tuple[bool, str]:
+    """(fast, why). `head`: the PR head's commit; each changed file's head copy is read through
+    git for what it spells (MF3), and the head must be readable when given. Fail closed: an empty
+    list, or anything that cannot be read, is not fast."""
     names = sorted({p.strip() for p in paths if p and p.strip()})
     if not names:
         return False, "no changed paths read"
     try:
-        ag = _load("_fast_ag", ".github/scripts/audit_gate.py")
-        rs = _load("_fast_rs", "ops/release/replay_shadow.py")
-        # one ls-tree for the whole PR, not one per file
-        rs.tree_files = functools.lru_cache(maxsize=4)(rs.tree_files)  # type: ignore[attr-defined]
-        extra = ag.protected_patterns()
-        never = ag.never_standing_patterns()
-        if extra is None or never is None:
-            return False, "the protected list or the ROOT policy is unreadable"
-        held = (*ag.SECRETS, *ag.SEAL_CARRIERS, *ag.PROTECTED, *ag.FORMERLY_PROTECTED, *extra,
-                *never)  # fmt: skip
-        suites: set[str] = set()
-        for rel in SUITE_LISTS:
-            suites |= _lines(rel)
-        closure = rs.import_closure(ROOT, (*rs.ENTRY_POINTS, *EXTRA_ENTRIES))
-        roster = {*rs.ROSTER_FILES, *rs.ROSTER_HARNESS, rs.MANIFEST}
+        facts = base_facts(str(ROOT), _tree_id())
+        if isinstance(facts, str):
+            return False, facts
+        rs, held, suites, closure, state, roster, made = facts
+        if head is not None:
+            subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{head}^{{commit}}"],
+                           capture_output=True, check=True)  # fmt: skip
+        files = rs.tree_files(ROOT)
     except Exception as exc:  # any read or import failure: the full path
         return False, f"the classifier could not read the base ({type(exc).__name__}: {exc})"
     for n in names:
         if pat := _match(n, held):
             return False, f"{n} is protected ({pat})"
+        if is_box(n):
+            return False, f"{n} is box machinery"
         if rs.is_money(n, closure, exempt=set()) or n in roster or n in rs.ENTRY_POINTS:
             return False, f"{n} is on the money path"
         if n in suites:
             return False, f"{n} is a release or risk suite"
-        if is_test(n) and money_test(rs, n, closure):
-            return False, f"{n} tests the money path"
+        if is_test(n):
+            if money_test(rs, n, closure):
+                return False, f"{n} tests the money path"
+            continue
+        if n in made:
+            return False, f"{n} {made[n]}, which the money path reads (component registry)"
+        try:
+            was = money_writes(rs.read(ROOT, n) or "", n, state) if n in files else set()
+            text = head_text(head, n)
+            now = money_writes(text, n, state) if text is not None else set()
+        except (SyntaxError, ValueError):
+            return False, f"{n} does not parse"
+        if new := sorted(now - was):
+            return False, f"{n} newly writes {new[0]}, a file the money path reads"
     return True, f"{len(names)} path(s), none on the money path or the release machinery"
 
 
@@ -169,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--github-output", type=Path)
     a = ap.parse_args(argv)
     try:
-        fast, why = classify(changed(a.base, a.head))
+        fast, why = classify(changed(a.base, a.head), head=a.head)
     except (subprocess.CalledProcessError, OSError) as exc:
         fast, why = False, f"the diff could not be read ({exc})"
     print(json.dumps({"fast": fast, "why": why}))
