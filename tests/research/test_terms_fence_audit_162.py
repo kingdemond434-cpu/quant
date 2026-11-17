@@ -340,10 +340,93 @@ def test_the_hunter_prompt_directs_no_fenced_mining_and_names_the_substitutes() 
     assert "Reddit-maximal" not in (ROOT / "ops" / "run_cro_ai.sh").read_text("utf-8")
 
 
-# --------------------------------------------------------------------- the quarantine ----
-def test_the_docket_build_skips_fenced_rows_with_a_counted_reason() -> None:
+# ------------------------------------------------------------------ the origin lift ----
+#: The principal's 2026-10-13 ruling, under `reddit_origin_lifted` in live_sleeve_policy.json:
+#: the terms gate governs data ACCESS, not an idea's origin. Each test below pins its semantics
+#: under an EXPLICIT policy file, so a later change to the live file moves no assertion silently.
+@pytest.fixture
+def lift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    p = tmp_path / "live_sleeve_policy.json"
+    p.write_text(json.dumps({"reddit_origin_lifted": "2026-10-13, principal: dont ban it"}),
+                 "utf-8")
+    monkeypatch.setattr(tf, "LIFT_POLICY_PATH", p)
+    return p
+
+
+@pytest.fixture
+def no_lift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    p = tmp_path / "live_sleeve_policy_without_the_key.json"
+    p.write_text(json.dumps({"live_symbols": ["XAUUSD"]}), "utf-8")
+    monkeypatch.setattr(tf, "LIFT_POLICY_PATH", p)
+    return p
+
+
+def test_the_live_policy_file_is_what_the_lift_reads() -> None:
+    doc = json.loads(tf.LIFT_POLICY_PATH.read_text("utf-8"))
+    st = tf.lift_status()
+    assert st["readable"] is True
+    assert ("reddit" in st["lifted"]) == ("reddit_origin_lifted" in doc)
+    assert tf.LIFT_POLICY_PATH == DESK / "data" / "live_sleeve_policy.json"
+
+
+def test_an_unreadable_or_absent_policy_fails_closed_toward_the_fence(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    row = {"symbol": "EURUSD", "family": "session_range_breakout",
+           "source": "ext_reddit_EURUSD_session_range_breakout"}
+    bad = tmp_path / "policy.json"
+    bad.write_text("{not json", "utf-8")
+    for p in (bad, tmp_path / "missing.json"):
+        monkeypatch.setattr(tf, "LIFT_POLICY_PATH", p)
+        st = tf.lift_status()
+        assert st["readable"] is False and st["lifted"] == {}
+        assert st["status"].startswith("UNREADABLE")
+        assert tf.quarantined_row(row) == "reddit"
+        assert tf.quarantined_certificate("external.USDJPY.session_range_breakout.rr=2.5_wb=12")
+
+
+def test_the_usdjpy_rr25_certificate_is_not_quarantined_while_the_lift_stands(
+        lift: Path) -> None:
+    for key in ("external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+                "USDJPY.session_range_breakout.rr=2.5_wb=12"):
+        assert tf.quarantined_certificate(key) is None, key
+    assert tf.quarantined_certificate(spec={"symbol": "USDJPY", "family": "session_range_breakout",
+                                            "window": "asia",
+                                            "params": {"rr": 2.5, "wait_bars": 12}}) is None
+
+
+def test_a_reddit_origin_eurusd_srb_row_is_judged_while_the_lift_stands(lift: Path) -> None:
     import merge_hypotheses as mh
-    rows = [{"symbol": "EURUSD", "family": "session_range_breakout",
+    from side_channels import run_external_backtest as reb
+    row = {"symbol": "EURUSD", "family": "session_range_breakout",
+           "params": {"rr": 1.5, "wait_bars": 8},
+           "source": "ext_reddit_EURUSD_session_range_breakout"}
+    mh.label_terms_fenced([row])
+    assert row["provenance_label"] == "reddit_fenced"          # a label is not a ban
+    for q in (mh.quarantine_terms_fenced, reb.quarantine_terms_fenced):
+        kept, rep = q([dict(row)])
+        assert kept == [row] and rep["skipped"] == 0
+        assert rep["origin_lift"]["admitted"] == {"reddit": 1}
+        assert rep["origin_lift"]["policy"] == "LIFTED: reddit"
+
+
+def test_the_lift_never_opens_a_reddit_fetch(lift: Path, web: _FakeWeb,
+                                             wire: _Tripwire) -> None:
+    """The lift is about ORIGIN; every host-level fence still refuses before any connection."""
+    url = "https://www.reddit.com/r/Forex/comments/abc/session_breakout.json"
+    assert tf.platform_of_url(url) == "reddit" and tf.fenced_url(url)
+    with pytest.raises(tf.TermsFenced):
+        tf.check_url(url)
+    with pytest.raises(tf.TermsFenced):
+        tf.guarded_urlopen(url, timeout=1.0)
+    assert web.asked == [] and wire.fenced() == []
+    # A row whose source is Reddit is judged; a row that ALSO names StockTwits stays held.
+    mixed = {"source": "ext_reddit_EURUSD_x", "contributing_sources": ["asia:stocktwits_macro"]}
+    assert tf.quarantined_row(mixed) == "stocktwits" and tf.lifted_row(mixed) is None
+
+
+# --------------------------------------------------------------------- the quarantine ----
+def _docket_rows() -> list[dict[str, Any]]:
+    return [{"symbol": "EURUSD", "family": "session_range_breakout",
              "source": "ext_reddit_EURUSD_session_range_breakout"},
             {"symbol": "BTCUSD", "family": "failed_breakout",
              "source": "miner:asia:stocktwits_macro"},
@@ -352,31 +435,69 @@ def test_the_docket_build_skips_fenced_rows_with_a_counted_reason() -> None:
             {"symbol": "XAUUSD", "family": "x", "source": "miner:forexfactory",
              "provenance_label": "reddit_fenced"},
             {"symbol": "GBPUSD", "family": "overnight_gap_decay", "source": "miner:forexfactory"}]
+
+
+def test_the_docket_build_skips_fenced_rows_with_a_counted_reason(no_lift: Path) -> None:
+    """WITHOUT the origin lift: every fenced row, Reddit-origin included, is held and counted."""
+    import merge_hypotheses as mh
+    rows = _docket_rows()
     mh.label_terms_fenced(rows)
     kept, rep = mh.quarantine_terms_fenced(rows)
     assert [r["symbol"] for r in kept] == ["GBPUSD"]
     assert rep["skipped"] == 4 and rep["by_platform"] == {"reddit": 2, "stocktwits": 2}
     assert "not judgeable" in rep["reason"]
+    assert rep["origin_lift"]["admitted"] == {}
 
 
-def test_the_backtest_stage_skips_fenced_rows_with_a_counted_reason() -> None:
-    from side_channels import run_external_backtest as reb
-    rows = [{"symbol": "USDJPY", "family": "session_range_breakout",
+def test_the_docket_build_judges_reddit_origin_rows_while_the_lift_stands(lift: Path) -> None:
+    """WITH the lift: the two Reddit-ORIGIN rows are judged and counted as admitted by it; the
+    StockTwits rows (not lifted) stay held."""
+    import merge_hypotheses as mh
+    rows = _docket_rows()
+    mh.label_terms_fenced(rows)
+    kept, rep = mh.quarantine_terms_fenced(rows)
+    assert [r["symbol"] for r in kept] == ["EURUSD", "XAUUSD", "GBPUSD"]
+    assert kept[0]["source"] == "ext_reddit_EURUSD_session_range_breakout"
+    assert rep["skipped"] == 2 and rep["by_platform"] == {"stocktwits": 2}
+    assert rep["origin_lift"]["admitted"] == {"reddit": 2}
+
+
+def _backtest_rows() -> list[dict[str, Any]]:
+    return [{"symbol": "USDJPY", "family": "session_range_breakout",
              "source": "ext_reddit_USDJPY_session_range_breakout"},
             {"symbol": "XAUUSD", "family": "adx_channel_hybrid", "source": "external_reddit"},
             {"symbol": "USDJPY", "family": "session_range_breakout",
              "source": "terms_recert:forexfactory+central_bank"}]
-    kept, rep = reb.quarantine_terms_fenced(rows)
+
+
+def test_the_backtest_stage_skips_fenced_rows_with_a_counted_reason(no_lift: Path) -> None:
+    from side_channels import run_external_backtest as reb
+    kept, rep = reb.quarantine_terms_fenced(_backtest_rows())
     assert [r["source"] for r in kept] == ["terms_recert:forexfactory+central_bank"]
     assert rep["skipped"] == 2 and rep["by_platform"] == {"reddit": 2}
     assert rep["reason"] == "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"
     assert rep["missed_growth"]["mechanism"] == "terms_fence_quarantine"
 
 
-def test_the_live_artifacts_hold_no_judgeable_fenced_row_after_quarantine() -> None:
+def test_the_backtest_stage_judges_reddit_origin_rows_while_the_lift_stands(lift: Path) -> None:
+    from side_channels import run_external_backtest as reb
+    kept, rep = reb.quarantine_terms_fenced(_backtest_rows())
+    assert len(kept) == 3 and rep["skipped"] == 0 and rep["by_platform"] == {}
+    assert rep["origin_lift"]["admitted"] == {"reddit": 2}
+    assert rep["missed_growth"]["mechanism"] == "terms_fence_quarantine"
+
+
+@pytest.mark.parametrize("lifted", [False, True])
+def test_the_live_artifacts_hold_no_judgeable_fenced_row_after_quarantine(
+        lifted: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The audit's counts -- 81 fenced/touched rows in external_survivors, 11 in
-    deepened_candidates, 12 in external_backtest_results -- all fall to the quarantine."""
+    deepened_candidates, 12 in external_backtest_results -- all fall to the quarantine WITHOUT
+    the origin lift. WITH it, Reddit-origin rows are judged and only StockTwits ones are held."""
     import merge_hypotheses as mh
+    p = tmp_path / "policy.json"
+    p.write_text(json.dumps({"reddit_origin_lifted": "x"} if lifted else {}), "utf-8")
+    monkeypatch.setattr(tf, "LIFT_POLICY_PATH", p)
+    banned = ("stocktwits",) if lifted else ("reddit", "stocktwits")
     hyp = DESK / "data" / "hypotheses"
     for name, key in (("external_survivors.json", None), ("deepened_candidates.json",
                                                           "candidates"),
@@ -389,7 +510,7 @@ def test_the_live_artifacts_hold_no_judgeable_fenced_row_after_quarantine() -> N
         kept, _rep = mh.quarantine_terms_fenced(rows)
         blob = [json.dumps({k: r.get(k) for k in ("source", "contributing_sources", "id",
                                                   "provenance_label")}).lower() for r in kept]
-        assert not [b for b in blob if "reddit" in b or "stocktwits" in b], name
+        assert not [b for b in blob if any(x in b for x in banned)], name
 
 
 # ------------------------------------------------- the USDJPY certificates and the re-cert ----
@@ -398,7 +519,8 @@ SLEEVES = ("usdjpy_session_range_breakout_asia_session_range_breakout",
            "usdjpy_session_range_breakout_asia_0_wb_12")
 
 
-def test_the_three_usdjpy_sleeves_are_refused_until_recertified() -> None:
+def test_the_three_usdjpy_sleeves_are_refused_until_recertified(no_lift: Path) -> None:
+    """WITHOUT the origin lift (the revert path: delete the policy key)."""
     doc = json.loads((DESK / "data" / "sleeves.json").read_text("utf-8"))
     rows = {r["name"]: r for r in doc["sleeves"] if r.get("name") in SLEEVES}
     assert set(rows) == set(SLEEVES)
@@ -413,11 +535,49 @@ def test_the_three_usdjpy_sleeves_are_refused_until_recertified() -> None:
                                                                         "wait_bars": 12}})
 
 
-def test_the_recert_queue_file_matches_the_quarantine_and_reaches_the_docket(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_usdjpy_reddit_lineage_certificate_is_refused_while_the_lift_stands(
+        lift: Path) -> None:
+    """WITH the lift every entry is keyed by Reddit idea LINEAGE, so none is refused by the
+    terms fence; which of them trades is live_sleeve_policy's `live_sleeves` allowlist."""
+    doc = json.loads((DESK / "data" / "sleeves.json").read_text("utf-8"))
+    rows = {r["name"]: r for r in doc["sleeves"] if r.get("name") in SLEEVES}
+    assert set(rows) == set(SLEEVES)
+    for name, row in rows.items():
+        cell = row["certificate"]["cell"]
+        assert tf.quarantined_certificate(cell, sleeve=name) is None, name
+        assert tf.quarantined_certificate(cell, gated_at=row["certificate"]["gated_at"]) is None
+    for ck in tf.QUARANTINED_CERTIFICATES:
+        assert tf.QUARANTINED_CERTIFICATES[ck]["platform"] == "reddit"
+        assert tf.quarantined_certificate(ck) is None, ck
+
+
+def test_the_recert_queue_file_is_lifted_while_the_lift_stands(
+        lift: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The committed queue is the lift-standing derivation: every row LIFTED, so the docket
+    admits none of them and the Reddit-origin cell stays on the docket as itself."""
     import merge_hypotheses as mh
     q = json.loads((DESK / "data" / "hypotheses" / mh.RECERT_QUEUE).read_text("utf-8"))
     assert q["rows"] == json.loads(json.dumps(tf.recert_queue_rows()))
+    assert {r["recertifies"] for r in q["rows"]} == set(tf.QUARANTINED_CERTIFICATES)
+    assert all(r["status"] == "LIFTED" and r["lifted_by"] == "reddit_origin_lifted"
+               for r in q["rows"])
+    monkeypatch.setattr(mh, "HYP", tmp_path)
+    (tmp_path / mh.RECERT_QUEUE).write_text(json.dumps(q), "utf-8")
+    fenced = {"symbol": "USDJPY", "family": "session_range_breakout",
+              "params": {"rr": 2.5, "wait_bars": 12},
+              "source": "ext_reddit_USDJPY_session_range_breakout"}
+    merged = {mh._identity(fenced): fenced}
+    rep = mh.admit_recert_queue(merged, datetime(2026, 10, 6, 21, tzinfo=UTC))
+    assert rep["admitted"] == 0 and rep["replaced_same_identity"] == 0
+    kept, qrep = mh.quarantine_terms_fenced(list(merged.values()))
+    assert kept == [fenced] and qrep["skipped"] == 0
+
+
+def test_the_recert_queue_matches_the_quarantine_and_reaches_the_docket_without_the_lift(
+        no_lift: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """WITHOUT the lift the derivation returns to QUEUED and the re-cert path works as built."""
+    import merge_hypotheses as mh
+    q = {"rows": json.loads(json.dumps(tf.recert_queue_rows()))}
     assert {r["recertifies"] for r in q["rows"]} == set(tf.QUARANTINED_CERTIFICATES)
     assert all(r["status"] == "QUEUED" and r["lineage"] == ["forexfactory", "central_bank"]
                and not tf.quarantined_row(r) for r in q["rows"])
@@ -435,13 +595,20 @@ def test_the_recert_queue_file_matches_the_quarantine_and_reaches_the_docket(
     assert len(kept) == 4 and qrep["skipped"] == 0
 
 
-def test_the_allocator_feed_carries_gated_at_for_the_quarantine() -> None:
+def test_the_allocator_feed_carries_gated_at_for_the_quarantine(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from research.portfolio_gap import load_survivors
     rows = load_survivors()
     usd = [r for r in rows if r["symbol"] == "USDJPY" and r["family"] == "session_range_breakout"
            and r["window"] == "asia"]
     assert usd and all(r.get("gated_at") for r in usd)
+    p = tmp_path / "policy.json"
+    p.write_text("{}", "utf-8")
+    monkeypatch.setattr(tf, "LIFT_POLICY_PATH", p)               # without the lift: refused
     assert all(tf.quarantined_certificate(spec=r, gated_at=r["gated_at"]) for r in usd)
+    p.write_text(json.dumps({"reddit_origin_lifted": "x"}), "utf-8")
+    tf._lift_cache.clear()                                         # same path, same-ns mtime
+    assert not any(tf.quarantined_certificate(spec=r, gated_at=r["gated_at"]) for r in usd)
 
 
 # ------------------------------------------------------------------ the substitutes ----
@@ -483,7 +650,8 @@ class _P:
         self.report = root / "reports" / "ATTENTION_SUBSTITUTES.json"
 
 
-def test_quarantine_keeps_fenced_rows_in_the_archive_never_deletes(tmp_path: Path) -> None:
+def test_quarantine_keeps_fenced_rows_in_the_archive_never_deletes(tmp_path: Path,
+                                                                    no_lift: Path) -> None:
     """A fenced row leaves the judged docket but is KEPT in the quarantine archive, and a
     second pass neither duplicates nor removes it (keep, never delete)."""
     import merge_hypotheses as mh
@@ -492,8 +660,7 @@ def test_quarantine_keeps_fenced_rows_in_the_archive_never_deletes(tmp_path: Pat
     fenced = {"source": "reddit", "symbol": "EURUSD", "family": "session_range_breakout",
               "url": "https://www.reddit.com/r/Forex/comments/x"}
     clean = {"source": "cftc", "symbol": "XAUUSD", "family": "carry"}
-    if not tf.quarantined_row(fenced):
-        pytest.skip("fence inactive for reddit in this build")
+    assert tf.quarantined_row(fenced) == "reddit"
     arch = tmp_path / "terms_quarantine_docket.json"
     kept, rep = mh.quarantine_terms_fenced([fenced, clean], arch)
     assert kept == [clean]

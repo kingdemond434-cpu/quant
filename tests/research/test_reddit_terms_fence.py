@@ -166,6 +166,7 @@ def test_crowding_miner_reads_the_attention_substitute_not_reddit(
         return json.dumps({"items": items}).encode()
 
     monkeypatch.setattr(fd, "_get", fake_get)
+    monkeypatch.setattr(fd, "robots_refusal", lambda url, agent=fd.WIKI_UA: None)
     att = fd.attention_proxy()
     assert att["status"] == "MEASURED" and att["source"] == "wikipedia_pageviews"
     assert att["z_7d"] is not None and att["z_7d"] > 0
@@ -183,7 +184,74 @@ def test_attention_proxy_is_unmeasured_never_zero_when_nothing_answers(
         raise OSError("down")
 
     monkeypatch.setattr(fd, "_get", dead)
+    monkeypatch.setattr(fd, "robots_refusal", lambda url, agent=fd.WIKI_UA: None)
     assert fd.attention_proxy()["status"] == "UNMEASURED"
+
+
+# ------------------------------------------------- robots, fail closed, on both doors ----
+def _robots_unreadable(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Every robots.txt read fails with a transport error (unreadable, not 404): the gate must
+    refuse. Returns the list the robots reader appends each asked URL to."""
+    import urllib.error
+
+    import index_discovery as idx
+    asked: list[str] = []
+
+    def down(req: Any, *a: Any, **k: Any) -> Any:
+        asked.append(req.full_url if hasattr(req, "full_url") else str(req))
+        raise urllib.error.URLError("network disabled in tests")
+
+    monkeypatch.setattr(idx, "_ROBOTS", {})
+    monkeypatch.setattr(idx.urllib.request, "urlopen", down)
+    return asked
+
+
+def test_free_data_wiki_pageviews_makes_no_request_when_robots_is_unreadable(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import free_data as fd
+    asked = _robots_unreadable(monkeypatch)
+    calls: list[str] = []
+
+    def tripwire(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+        calls.append(url)
+        raise AssertionError("a request was made past an unreadable robots.txt")
+
+    monkeypatch.setattr(fd, "_get", tripwire)
+    monkeypatch.setattr(fd, "ROBOTS_BLOCKED", {"count": 0, "last": None})
+    assert fd.wiki_pageviews("Day_trading") == []
+    assert calls == [] and asked == ["https://wikimedia.org/robots.txt"]
+    assert fd.ROBOTS_BLOCKED["count"] == 1
+    assert "robots.txt unreadable" in fd.ROBOTS_BLOCKED["last"]["why"]
+    att = fd.attention_proxy(("Day_trading", "Retail_forex"))
+    assert calls == []
+    assert att["status"] == "BLOCKED_BY_ROBOTS" and att["robots"]["blocked_by_robots"] == 2
+    assert att["robots"]["missed_growth"]["mechanism"] == "robots_fail_closed"
+
+
+def test_attention_substitutes_default_fetch_makes_no_request_when_robots_is_unreadable(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import attention_substitutes as A
+    _robots_unreadable(monkeypatch)
+    calls: list[str] = []
+
+    def tripwire(url: str, **k: Any) -> Any:
+        calls.append(url)
+        raise AssertionError("a request was made past an unreadable robots.txt")
+
+    monkeypatch.setattr(pf, "get", tripwire)
+    for url in (A.wiki_url("en.wikipedia", "Gold", NOW - timedelta(days=9), NOW),
+                A.gdelt_url('"gold price"', 30)):
+        status, body = A._default_fetch(url)
+        assert status is None and body.startswith(A.BLOCKED_BY_ROBOTS), body
+    monkeypatch.setattr(A, "ROSTER", {"XAUUSD": A.ROSTER["XAUUSD"]})
+    doc = A.run(paths=A.Paths(tmp_path), now=NOW, dry_run=True)
+    assert calls == []
+    assert doc["series"] and all(str(r["status"]).startswith(A.BLOCKED_BY_ROBOTS)
+                                 and r["missed_growth"]["mechanism"] == "robots_fail_closed"
+                                 for r in doc["series"].values())
+    assert doc["robots"]["blocked"] == len(doc["series"])
+    assert all(k.endswith(":" + A.BLOCKED_BY_ROBOTS) for k in doc["status_counts"])
+    assert "contact" not in A.UA.lower() and "@" not in A.UA
 
 
 # ----------------------------------------------------------- existing cells: label only ----
