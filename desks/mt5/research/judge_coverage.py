@@ -1259,19 +1259,19 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             sys.path.insert(0, root)
         from libs.research.research_priors import load, record_outcome, save
     except Exception as exc:
-        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+        out.update(status="UNMEASURED", why=type(exc).__name__)
         return out
     scan = _ledger_scan(ledger or GATE_LEDGER) if 0 < limit <= LEARN_TAIL else None
     if scan is not None and not scan.err:
         lines = list(scan.tail)[-limit:]
     else:
-        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError
+        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError TYPE
         # names the cause in `why`.
         try:
             from libs.ops.tail_read import tail_lines   # from the end: memory of the tail only
             lines = tail_lines(ledger or GATE_LEDGER, limit)
         except OSError as exc:
-            out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+            out.update(status="UNMEASURED", why=type(exc).__name__)
             return out
     _clock = now or datetime.now(tz=UTC)
     _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
@@ -1386,7 +1386,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
                     # the save landed in place (`family_priors`).
                     _PASS[("priors_dir",)] = staged_dir
         except Exception as exc:                                         # pragma: no cover
-            out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}: {exc}")
+            out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}")
     out["families"] = len(seen_fams)
     out["cursor"] = high
     return out
@@ -1598,7 +1598,7 @@ def _fire_probe(sym: str, family: str) -> dict[str, Any]:
             from research.fire_inputs import probe  # type: ignore[no-redef]
         return probe(sym, family, memo=_FIRE_MEMO)
     except Exception as exc:                                   # never costs the pass
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -2059,7 +2059,7 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
         census["release_file_state"] = rstate
         return named, census
     except Exception as exc:                                   # never costs the pass
-        return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        return {}, {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 #: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
@@ -2941,7 +2941,7 @@ def keff_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
     except Exception as exc:
         for r in rows:
             r.pop("_keff", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _occupancy_map() -> Any:
@@ -2974,7 +2974,7 @@ def occupancy_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
         for r in rows:
             r.pop("_occ", None)
             r.pop("_orth", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
@@ -3288,7 +3288,7 @@ def family_stamp(rows: list[dict[str, Any]],
     except Exception as exc:
         for r in rows:
             r.pop("_famdup", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _unseen_families_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
@@ -4225,7 +4225,7 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
                           seconds_per_cell=seconds_per_cell)
     except (Exception, SystemExit) as exc:                     # never costs the docket
         return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
-                      "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+                      "why": type(exc).__name__}
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
@@ -4394,7 +4394,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
-        return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return entry_rows, {"verdict": "UNMEASURED", "why": type(exc).__name__}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
