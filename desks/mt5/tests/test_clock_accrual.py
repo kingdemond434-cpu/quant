@@ -211,6 +211,29 @@ def test_bars_wanted_round_trips_to_the_collectors(tmp_path, monkeypatch) -> Non
     assert ca.bars_wanted(tmp_path / "absent.json") == []
 
 
+
+def test_a_blocked_factor_clock_asks_for_its_factor_legs_too(tmp_path, monkeypatch) -> None:
+    """Breadth port #2: a cross_asset_residual clock is blocked by its factor charts as often as
+    by its own, so the collectors are asked for every leg, own chart first."""
+    assert ca.factor_legs({"symbol": "XAUUSD"},
+                          "XAUUSD.x|factor_symbols=['USDX', 'UST10Y', 'XAUUSD']") == ["USDX",
+                                                                                     "UST10Y"]
+    assert ca.factor_legs({"symbol": "XAUUSD", "params": {"factor_symbols": ["usdx"]}}) == ["USDX"]
+    assert ca.factor_legs(_run()) == []
+    monkeypatch.setattr(ca, "UNIVERSE", tmp_path / "universe")
+    run = _run(params={"factor_symbols": ["USDX", "UST10Y"]})
+    e = _judge({"status": "BLOCKED_NO_BARS", "n": 0, "last_attempt_at": FRESH}, run=run)
+    assert e["bars_wanted"] == {"symbol": "EURUSD", "timeframe": "H1"}
+    assert e["factor_bars_wanted"] == [{"symbol": "USDX", "timeframe": "H1"},
+                                       {"symbol": "UST10Y", "timeframe": "H1"}]
+    _, key = ca.clock_address(run)
+    _write_lane(tmp_path, {str(key): {"status": "BLOCKED_NO_BARS", "n": 0,
+                                      "last_attempt_at": FRESH}})
+    doc = ca.build(now=NOW, shadow_dir=tmp_path, runs=[run], dropped=[], host_live=True)
+    out = tmp_path / "CLOCK_ACCRUAL.json"
+    ca.write(doc, out)
+    assert set(ca.bars_wanted(out)) == {("EURUSD", "H1"), ("USDX", "H1"), ("UST10Y", "H1")}
+
 # ---------------------------------------------------------------- the causes, in their organs
 def _bars(start: str, periods: int, freq: str) -> h1_source.Bars:
     idx = pd.date_range(start, periods=periods, freq=freq, tz="UTC")
