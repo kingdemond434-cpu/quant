@@ -81,8 +81,6 @@ KINDS = (
     # held the judge for 108 h with no row anywhere; it now has a time on it here and a fence
     # (check_judge_coverage `judge_stop`, WARN 12 h / FAIL 24 h).
     "JUDGE_STOP_HONOURED", "JUDGE_STOP_LAPSED",
-    # CRO K3 (2026-11-13): the trading account's leverage changed between two readings.
-    "ACCOUNT_LEVERAGE_CHANGED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
