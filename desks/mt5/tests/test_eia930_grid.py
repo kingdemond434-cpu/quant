@@ -265,7 +265,7 @@ def test_trigger_flags_only_past_the_derived_bound_and_lines_every_stand_down() 
                 "surprise": 0.05, "z": z, "available_time": done, "pit_quality": "live",
                 "n_points": n}
     old = eg._iso(now - timedelta(hours=40))
-    latest = {"US48": pt(3.5), "TEX": pt(-2.5), "CAL": pt(0.3), "NE": pt(None, n=20),
+    latest = {"US48": pt(3.5), "TEX": pt(-2.2), "CAL": pt(0.3), "NE": pt(None, n=20),
               "NY": pt(4.0, h=old, done=old)}
     doc = eg.build_trigger(latest, now, source_status="OK",
                            regions=("US48", "TEX", "CAL", "NE", "NY", "SE"))
