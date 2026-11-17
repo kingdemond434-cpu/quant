@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T20:42:43+00:00",
+ "at": "2026-11-16T23:38:45+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -21,16 +21,16 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 2,
-  "UNMEASURED": 14
+  "MISMATCH": 0,
+  "UNMEASURED": 16
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPAUD.formula.p=42ddd41f78638042",
-   "certificate": "external.GBPAUD.formula.p=42ddd41f78638042",
-   "fp": "c89a84fa56381c4f",
-   "symbol": "GBPAUD",
+   "key": "GBPJPY.formula.p=f135bf254b072a6e",
+   "certificate": "external.GBPJPY.formula.p=f135bf254b072a6e",
+   "fp": "1615bddf0c14edc1",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -41,10 +41,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=0ff78ed4867fd89f",
-   "certificate": "external.GBPCAD.formula.p=0ff78ed4867fd89f",
-   "fp": "cd2abf71fa2a75e0",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=a871e4548fc2a4d0",
+   "certificate": "external.GBPJPY.formula.p=a871e4548fc2a4d0",
+   "fp": "e7c35b39f7c0ba85",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -55,10 +55,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=5e87b57e82560603",
-   "certificate": "external.GBPCAD.formula.p=5e87b57e82560603",
-   "fp": "e338317b2dfee954",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=1f0654b6aa9f8af7",
+   "certificate": "external.GBPJPY.formula.p=1f0654b6aa9f8af7",
+   "fp": "34d9f2be4d3372e4",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -69,10 +69,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=caf1c46ee4575ad1",
-   "certificate": "external.GBPCAD.formula.p=caf1c46ee4575ad1",
-   "fp": "987af7d2a4c200e6",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=bfaf955dbee9527e",
+   "certificate": "external.GBPJPY.formula.p=bfaf955dbee9527e",
+   "fp": "7394b46fd994a149",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -83,10 +83,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=ef0c19f03d397adf",
-   "certificate": "external.GBPCAD.formula.p=ef0c19f03d397adf",
-   "fp": "e58becdb71944310",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=0ff78ed4867fd89f",
+   "certificate": "external.GBPJPY.formula.p=0ff78ed4867fd89f",
+   "fp": "ae6212bad3706c8c",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -97,10 +97,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=40c63e454b4f178e",
-   "certificate": "external.GBPCAD.formula.p=40c63e454b4f178e",
-   "fp": "e6ec1f58bc1ffc64",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=fd6bea7914465df2",
+   "certificate": "external.GBPJPY.formula.p=fd6bea7914465df2",
+   "fp": "891e82c81d55535c",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -111,10 +111,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=19473f19bb8bac5f",
-   "certificate": "external.GBPCAD.formula.p=19473f19bb8bac5f",
-   "fp": "48f451b78144271b",
-   "symbol": "GBPCAD",
+   "key": "GBPJPY.formula.p=585e8c6cf6b4f007",
+   "certificate": "external.GBPJPY.formula.p=585e8c6cf6b4f007",
+   "fp": "08ca14851d20d79b",
+   "symbol": "GBPJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -125,10 +125,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPCAD.formula.p=0b8f577d699b7852",
-   "certificate": "external.GBPCAD.formula.p=0b8f577d699b7852",
-   "fp": "9331730e66411cee",
-   "symbol": "GBPCAD",
+   "key": "GBPMXN.formula.p=ffe6e28ded06cd4e",
+   "certificate": "external.GBPMXN.formula.p=ffe6e28ded06cd4e",
+   "fp": "1921499c3e630981",
+   "symbol": "GBPMXN",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -139,12 +139,12 @@
   },
   {
    "lane": "forward",
-   "key": "NZDJPY.session_range_breakout",
-   "symbol": "NZDJPY",
-   "family": "session_range_breakout",
+   "key": "GBPNZD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "GBPNZD",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -152,88 +152,12 @@
   },
   {
    "lane": "forward",
-   "key": "USDJPY.asia.FAILED_BREAK",
-   "symbol": "USDJPY",
-   "family": "session_range_breakout",
-   "verdict": "MISMATCH",
-   "why": [
-    "POSITION STATE disagrees: ledger open=False, rebuilt open=True"
-   ],
-   "ours": {
-    "n_fills": 56,
-    "pnl_R": 13.991,
-    "cost": {
-     "spread_per_lot": 200.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 184.573,
-     "basis": "universe_registry"
-    },
-    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
-   },
-   "theirs": {
-    "n_trades": 63,
-    "cost_fields": null,
-    "forward_start": "2026-08-25T23:26:08.836901+00:00"
-   },
-   "divergence": {
-    "n_ledger": 63,
-    "n_rebuilt": 56,
-    "matched": 56,
-    "match_share": 0.889,
-    "fill_ratio": 0.889,
-    "median_abs_dR": 0.0325,
-    "pnl_ledger_R": 15.686,
-    "pnl_rebuilt_R": 13.991,
-    "open_ledger": false,
-    "open_rebuilt": true
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "USDJPY.asia.MACRO_FAV",
-   "symbol": "USDJPY",
-   "family": "session_range_breakout",
-   "verdict": "MISMATCH",
-   "why": [
-    "POSITION STATE disagrees: ledger open=False, rebuilt open=True"
-   ],
-   "ours": {
-    "n_fills": 56,
-    "pnl_R": 13.991,
-    "cost": {
-     "spread_per_lot": 200.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 184.573,
-     "basis": "universe_registry"
-    },
-    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
-   },
-   "theirs": {
-    "n_trades": 63,
-    "cost_fields": null,
-    "forward_start": "2026-08-25T23:26:08.836943+00:00"
-   },
-   "divergence": {
-    "n_ledger": 63,
-    "n_rebuilt": 56,
-    "matched": 56,
-    "match_share": 0.889,
-    "fill_ratio": 0.889,
-    "median_abs_dR": 0.0325,
-    "pnl_ledger_R": 15.686,
-    "pnl_rebuilt_R": 13.991,
-    "open_ledger": false,
-    "open_rebuilt": true
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "USDJPY.london_am",
-   "symbol": "USDJPY",
-   "family": "session_range_breakout",
+   "key": "GER40.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "GER40",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -241,12 +165,12 @@
   },
   {
    "lane": "forward",
-   "key": "USDJPY.london_am.FAILED_BREAK",
-   "symbol": "USDJPY",
-   "family": "session_range_breakout",
+   "key": "GER40.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "GER40",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -254,12 +178,12 @@
   },
   {
    "lane": "forward",
-   "key": "USDJPY.london_am.MACRO_FAV",
-   "symbol": "USDJPY",
-   "family": "session_range_breakout",
+   "key": "HKDJPY.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "HKDJPY",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -267,12 +191,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.afternoon",
-   "symbol": "XAUUSD",
-   "family": "session_range_breakout",
+   "key": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "NAS100",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -280,88 +204,119 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.afternoon.MACRO_FAV",
-   "symbol": "XAUUSD",
-   "family": "session_range_breakout",
+   "key": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "NAS100",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NOKSEK.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "NOKSEK",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCAD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "NZDCAD",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
    "divergence": {}
   }
  ],
- "quarantined": [
-  "USDJPY.asia.FAILED_BREAK",
-  "USDJPY.asia.MACRO_FAV"
- ],
+ "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPAUD.formula.p=42ddd41f78638042",
+   "what": "GBPJPY.formula.p=f135bf254b072a6e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=0ff78ed4867fd89f",
+   "what": "GBPJPY.formula.p=a871e4548fc2a4d0",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=5e87b57e82560603",
+   "what": "GBPJPY.formula.p=1f0654b6aa9f8af7",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=caf1c46ee4575ad1",
+   "what": "GBPJPY.formula.p=bfaf955dbee9527e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=ef0c19f03d397adf",
+   "what": "GBPJPY.formula.p=0ff78ed4867fd89f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=40c63e454b4f178e",
+   "what": "GBPJPY.formula.p=fd6bea7914465df2",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=19473f19bb8bac5f",
+   "what": "GBPJPY.formula.p=585e8c6cf6b4f007",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPCAD.formula.p=0b8f577d699b7852",
+   "what": "GBPMXN.formula.p=ffe6e28ded06cd4e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDJPY.session_range_breakout",
-   "why": "no forward ledger on this box for this row"
+   "what": "GBPNZD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "USDJPY.london_am",
-   "why": "no forward ledger on this box for this row"
+   "what": "GER40.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "USDJPY.london_am.FAILED_BREAK",
-   "why": "no forward ledger on this box for this row"
+   "what": "GER40.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "USDJPY.london_am.MACRO_FAV",
-   "why": "no forward ledger on this box for this row"
+   "what": "HKDJPY.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "XAUUSD.afternoon",
-   "why": "no forward ledger on this box for this row"
+   "what": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "XAUUSD.afternoon.MACRO_FAV",
-   "why": "no forward ledger on this box for this row"
+   "what": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "NOKSEK.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "NZDCAD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   }
  ],
  "recorded": {
-  "quarantined": 2,
-  "memory": 2,
-  "candidates": 1612
+  "quarantined": 0,
+  "memory": 0,
+  "candidates": 0
  },
  "cursor": {
-  "forward": 598,
-  "at": "2026-11-16T14:37:55+00:00",
+  "forward": 622,
+  "at": "2026-11-16T22:36:56+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -379,24 +334,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNZD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\HKDJPY_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NOKSEK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 697.79
+ "seconds": 16.14
 }
