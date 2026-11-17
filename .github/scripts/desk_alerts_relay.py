@@ -360,6 +360,26 @@ def compose(p: dict[str, Any], now: datetime) -> str | None:
     return "\n\n".join(parts)[:MAX_BODY]
 
 
+REF_PAGE = 100
+REF_PAGES_MAX = 200
+
+
+def release_refs(call: Call, repo: str) -> list[str] | None:
+    """Every refs/tags/release/* name, or None when the full list cannot be read. The endpoint
+    pages (30 a page by default) and the repo has thousands of release tags, so reading only
+    the first page would miss the running release and page a false lag forever."""
+    out: list[str] = []
+    for page in range(1, REF_PAGES_MAX + 1):
+        st, res = call("GET", f"repos/{repo}/git/matching-refs/tags/release/"
+                              f"?per_page={REF_PAGE}&page={page}", None)
+        if st != 200 or not isinstance(res, list):
+            return None
+        out += [str(r.get("ref")) for r in res if isinstance(r, dict)]
+        if len(res) < REF_PAGE:
+            return out
+    return None
+
+
 def run(call: Call, repo: str, root: Path, now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     alerts, hb = _load(root / ALERTS_REL), _load(root / HEARTBEAT_REL)
@@ -375,9 +395,8 @@ def run(call: Call, repo: str, root: Path, now: datetime | None = None) -> dict[
     p = plan(alerts, hb, relayed, last_dead, now)
     lag = None
     if identity is not None:
-        st, res = call("GET", f"repos/{repo}/git/matching-refs/tags/release/", None)
-        refs = [str(r.get("ref")) for r in res] if st == 200 and isinstance(res, list) else []
-        lag = adopt_lag(identity, refs, now)
+        refs = release_refs(call, repo)
+        lag = None if refs is None else adopt_lag(identity, refs, now)
     p["watch"] = watch(lag, ledger_faults(adopt_text, seal_text), said(cmts, "adoptlag", now),
                        said(cmts, "ledger", now))
     body = compose(p, now)
