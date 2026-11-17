@@ -16,7 +16,7 @@
  "last_sweep_s": 43781.1,
  "uptime_s": 43781.1,
  "last_sweep_ended_utc": "2026-11-17T06:30:42+00:00",
- "heartbeat_utc": "2026-11-17T09:35:12+00:00",
+ "heartbeat_utc": "2026-11-17T09:49:45+00:00",
  "sweep_phase": {
   "pid": 22460,
   "sweep_started_utc": "2026-11-17T06:30:48+00:00",
@@ -142,27 +142,37 @@
      "process": {}
     },
     "build_shards": {
-     "samples": 34,
+     "samples": 118,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < run_sharded_gauntlet.py:_admitted_wave:261 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
-       "n": 33,
-       "share": 0.971
+       "n": 111,
+       "share": 0.941
+      },
+      {
+       "stack": "glob.py:scandir:528 < glob.py:select_wildcard:427 < run_sharded_gauntlet.py:_wave_peaks_mb:160 < run_sharded_gauntlet.py:estimate_mb:186 < run_sharded_gauntlet.py:admits:203 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 3,
+       "share": 0.025
       },
       {
        "stack": "glob.py:scandir:529 < glob.py:select_wildcard:427 < run_sharded_gauntlet.py:_wave_peaks_mb:160 < run_sharded_gauntlet.py:estimate_mb:186 < run_sharded_gauntlet.py:admits:203 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 3,
+       "share": 0.025
+      },
+      {
+       "stack": "_pswindows.py:virtual_memory:187 < __init__.py:virtual_memory:2049 < run_sharded_gauntlet.py:_available_mb:74 < run_sharded_gauntlet.py:<lambda>:175 < run_sharded_gauntlet.py:admits:199 < run_sharded_gauntlet.py:_admitted_wave:255",
        "n": 1,
-       "share": 0.029
+       "share": 0.008
       }
      ],
      "process": {
-      "cpu_s": 20.5,
-      "page_faults": 659667.0,
+      "cpu_s": 73.8,
+      "page_faults": 2441639.0,
       "read_bytes": 0.0,
-      "write_bytes": 24651.0,
-      "sampled_s": 330.0,
+      "write_bytes": 113785.0,
+      "sampled_s": 1170.0,
       "rss_mb_max": 1706.9,
-      "cpu_share_of_wall": 0.062
+      "cpu_share_of_wall": 0.063
      }
     }
    }
@@ -170,11 +180,11 @@
   "shards": {
    "phase": "build",
    "total": 15,
-   "started": 10,
+   "started": 12,
    "done_ok": 0,
    "failed": 0,
    "retries": 0,
-   "running": 10,
+   "running": 12,
    "last_finish_epoch": null,
    "last_finish_utc": null,
    "longest_shard_s": null,
