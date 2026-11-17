@@ -11,7 +11,9 @@ diversified cross-asset portfolio can be tested -- not just FX (which already re
 
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,11 +61,31 @@ def _to_canonical(rates) -> pd.DataFrame:  # type: ignore[no-untyped-def]
     )[list(BAR_COLUMNS)]
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     import MetaTrader5 as mt5
 
-    if not mt5.initialize():
+    # PINNED (2026-11-11): the box runs Fusion and FTMO side by side, and a pathless
+    # `initialize()` took whichever terminal the bridge saw first. Attach by path (default: the
+    # MT5 desk's terminal_path.txt), never launch from Session 0, refuse a foreign server.
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--terminal", default=None, help="terminal64.exe (default: the desk's)")
+    ap.add_argument("--expected-prefix", default=None,
+                    help="server prefix the account must carry (default: the desk's)")
+    args = ap.parse_args(argv)
+    desk = Path(__file__).resolve().parents[1] / "desks" / "mt5"
+    if str(desk) not in sys.path:
+        sys.path.insert(0, str(desk))
+    from mt5desk.config import terminal_path
+    from research.mt5_session import attach_or_initialize, venue_refusal
+
+    path = args.terminal or terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
+    venue = {"expected_prefix": args.expected_prefix} if args.expected_prefix else {}
+    why = venue_refusal(mt5, path, **venue)
+    if why is not None:
+        mt5.shutdown()
+        raise SystemExit(f"refusing to run: wrong venue ({why})")
     acct = mt5.account_info()
     if acct is None or int(acct.trade_mode) != 0:
         mt5.shutdown()
