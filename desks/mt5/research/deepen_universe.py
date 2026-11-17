@@ -357,8 +357,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     import MetaTrader5 as mt5
-    if mt5.terminal_info() is None and not mt5.initialize():
+    from mt5desk.config import terminal_path
+
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch, and only on
+    # Fusion's account -- the box runs FTMO too, and its charts are not this desk's universe.
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         print(f"initialize failed: {mt5.last_error()}")
+        return 1
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        print(f"REFUSED: {why} -- deepening nothing this pass")
+        mt5.shutdown()
         return 1
     ti = mt5.terminal_info()
     print(f"terminal: {ti.name} build {ti.build} | TERMINAL_MAXBARS={ti.maxbars}")
