@@ -152,7 +152,7 @@ def _contains_identifier(text: str, needle: str) -> bool:
     return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
 
 
-def test_identifier_matching_preserves_real_identifiers():
+def test_identifier_matching_preserves_real_identifiers() -> None:
     needle = "987654"
     assert _contains_identifier('account ' + needle, needle)
     assert _contains_identifier('"account": ' + needle + ',', needle)
@@ -278,7 +278,8 @@ def test_a_row_after_the_pinned_prefix_is_judged_and_a_changed_prefix_is_judged_
     # one byte changed inside the prefix: the whole file is judged (and the publisher refuses)
     lines = held.splitlines(keepends=True)
     lines[0] = lines[0].replace("{", "{ ", 1)
-    assert _contains_identifier(_judged_text(path, "".join(lines)), needle)
+    login = next(k for k, v in LIVE.items() if "login" in v)  # the prefix carries the real one
+    assert _matches(_judged_text(path, "".join(lines)), login)
     assert _contains_identifier(_judged_text("desks/mt5/data/other.jsonl", old), needle)
 
 
