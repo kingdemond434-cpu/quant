@@ -176,6 +176,7 @@ def test_breadth_sweep_prefers_under_certified_mechanisms_without_banning_others
         "b": {"shadow_spec": {"family": "carry"}},
     }}), "utf-8")
     monkeypatch.setattr(bs, "CERTIFICATES", canon)
+    monkeypatch.setattr(bs, "JUDGE_COVERAGE", tmp_path / "absent.json")
     _seen(tmp_path, monkeypatch, [])
     key = bs._orthogonal_key()
     unseen = {"symbol": "EURUSD", "family": "vol_transition",
@@ -383,3 +384,47 @@ def test_hunt16_population_is_buildable_and_swept() -> None:
     sweepable, blocked = bs.default_families()
     assert set(h16) <= set(sweepable) | set(blocked)
     assert "dav_bb_meanrev" in sweepable
+
+
+def test_never_mined_families_go_first_then_by_yield_posterior(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The sweep's order comes from the judge's own coverage report: the families it names as
+    never mined lead, then the highest pass-rate posterior, and a family measured at ~0 last --
+    across every chart, so a high-yield family is widened before a dead one is re-tried."""
+    import breadth_sweep as bs
+    cov = tmp_path / "JUDGE_COVERAGE.json"
+    cov.write_text(json.dumps({
+        "unmined_live_families": ["sig_path"],
+        "realised_pass_rate": [
+            {"family": "mass_screen_clock", "judged": 1890, "passed": 300,
+             "posterior_hi": 0.1756},
+            {"family": "entry_conditioned", "judged": 2786, "passed": 290,
+             "posterior_hi": 0.1157},
+            {"family": "ict_fvg", "judged": 14818, "passed": 0, "posterior_hi": 0.0002}]}),
+        "utf-8")
+    monkeypatch.setattr(bs, "JUDGE_COVERAGE", cov)
+    monkeypatch.setattr(bs, "CERTIFICATES", tmp_path / "absent.json")
+    _seen(tmp_path, monkeypatch, [])
+    rank = bs.family_yield_rank()
+    assert rank["sig_path"] == (0, 0.0)
+    assert rank["mass_screen_clock"] < rank["entry_conditioned"] < rank["ict_fvg"]
+    key = bs._orthogonal_key()
+    rows = [{"symbol": "EURUSD", "family": f, "params": {"timeframe": tf}}
+            for f, tf in (("ict_fvg", "M5"), ("entry_conditioned", "H4"),
+                          ("mass_screen_clock", "D1"), ("sig_path", "D1"),
+                          ("mass_screen_clock", "M5"))]
+    ordered = [(r["family"], r["params"]["timeframe"]) for r in sorted(rows, key=key)]
+    assert ordered == [("sig_path", "D1"), ("mass_screen_clock", "M5"),
+                       ("mass_screen_clock", "D1"), ("entry_conditioned", "H4"),
+                       ("ict_fvg", "M5")]
+    # the failure memory reorders only inside a (yield, chart) tier, never across families
+    out, _st = bs.order_by_failure_memory(sorted(rows, key=key),
+                                          memory={"theorems": [{
+                                              "mechanism": "x", "asset_class": "y",
+                                              "selector": "?", "n": 1, "survivors": 0,
+                                              "statement": "x", "provenance": {}}],
+                                              "rules": []})
+    assert [r["family"] for r in out][:2] == ["sig_path", "mass_screen_clock"]
+    # an absent report leaves the order exactly what it was
+    monkeypatch.setattr(bs, "JUDGE_COVERAGE", tmp_path / "absent.json")
+    assert bs.family_yield_rank() == {}

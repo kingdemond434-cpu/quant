@@ -45,6 +45,9 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
 CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+#: The judge's own coverage report: `unmined_live_families` and `realised_pass_rate` (each
+#: family's posterior on its pass rate) order the sweep's families (`family_yield_rank`).
+JUDGE_COVERAGE = DESK / "reports" / "JUDGE_COVERAGE.json"
 
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
@@ -375,8 +378,45 @@ def _certified_family_counts() -> dict[str, int]:
     return counts
 
 
-def _orthogonal_key() -> Any:
-    """Spend a capped merge on intraday, under-certified families, then least-judged pairs.
+def family_yield_rank(path: Path | None = None) -> dict[str, tuple[int, float]]:
+    """{family: (0 never mined / 1 mined, -posterior_hi)} from JUDGE_COVERAGE.json.
+
+    YIELD FIRST, AND THE NEVER-MINED AHEAD OF EVERYTHING (2026-11-17). The capped merge spent
+    itself in chart order, so a family with a measured 16% pass-rate posterior (mass_screen_clock)
+    queued behind thousands of retail-TA cells measured at ~0, and twenty live families the judge
+    names in `unmined_live_families` were never reached at all. Ranked here by the judge's own
+    posterior upper bound (`realised_pass_rate[].posterior_hi`, the optimistic read a bandit
+    explores on), with a never-mined bonus: an unmined family has no posterior yet and its first
+    cells are the cheapest information the sweep can buy. Read from the artifact, never a list.
+    An absent or unreadable report is an empty map, and the order is exactly what it was.
+    """
+    try:
+        doc = json.loads((path or JUDGE_COVERAGE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    out: dict[str, tuple[int, float]] = {}
+    for row in doc.get("realised_pass_rate") or []:
+        if isinstance(row, dict) and row.get("family"):
+            try:
+                hi = float(row.get("posterior_hi") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            out[str(row["family"])] = (1, -hi)
+    unmined = doc.get("unmined_live_families")
+    if not isinstance(unmined, list):
+        fams = doc.get("families")
+        unmined = [f for f, r in (fams.items() if isinstance(fams, dict) else [])
+                   if isinstance(r, dict) and r.get("mined") == 0]
+    for fam in unmined:
+        out[str(fam)] = (0, 0.0)
+    return out
+
+
+def _orthogonal_key(yield_rank: dict[str, tuple[int, float]] | None = None) -> Any:
+    """Spend a capped merge on never-mined and high-yield families first (`family_yield_rank`),
+    then intraday, under-certified families, then least-judged pairs.
 
     No family is banned: a genuinely distinct variant may still pass the full unchanged gates.
     This only prevents a cap from being exhausted by another copy of a saturated mechanism
@@ -388,11 +428,17 @@ def _orthogonal_key() -> Any:
     except Exception:
         by_pair = {}
     certified = _certified_family_counts()
+    if yield_rank is None:
+        yield_rank = family_yield_rank()
 
     def key(r: dict) -> tuple:
         tf = str((r.get("params") or {}).get("timeframe") or "H1")
         fam = str(r["family"])
-        return (_tf_rank(tf), certified.get(fam, 0),
+        # Never-mined families first, then by the judge's yield posterior (highest first), so
+        # a high-yield family is widened over every symbol, chart and session before a family
+        # measured at ~0; inside a family, the old order (intraday, under-certified, least
+        # judged). A family the report does not name sorts with the measured-at-zero ones.
+        return (*yield_rank.get(fam, (1, 0.0)), _tf_rank(tf), certified.get(fam, 0),
                 by_pair.get((str(r["symbol"]).upper(), fam), 0),
                 r["symbol"], r["family"])
     return key
@@ -432,8 +478,9 @@ def cells(only: str | None = None) -> list[dict]:
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest; then
     # least-judged (symbol, family) first, so the cap spends itself on orthogonal ground.
     out.sort(key=_orthogonal_key())
-    # THEN THE FAILURE MEMORY (Tier S S13): inside each chart tier, cells in a neighbourhood the
-    # memory has already mapped as dead go LAST and carry the theorem that maps it.
+    # THEN THE FAILURE MEMORY (Tier S S13): inside each (yield, chart) tier, cells in a
+    # neighbourhood the memory has already mapped as dead go LAST and carry the theorem that maps
+    # it. The tier carries the family's yield rank, so the memory never undoes the yield order.
     out, stats = order_by_failure_memory(out)
     FAILURE_MEMORY_STATS.clear()
     FAILURE_MEMORY_STATS.update(stats)
@@ -485,8 +532,9 @@ def _cell_tf_rank(r: dict) -> int:
     return _tf_rank(str((r.get("params") or {}).get("timeframe") or "H1"))
 
 
-def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tuple[list[dict],
-                                                                                  dict]:
+def order_by_failure_memory(rows: list[dict], memory: dict | None = None,
+                            yield_rank: dict[str, tuple[int, float]] | None = None
+                            ) -> tuple[list[dict], dict]:
     """Consult `libs/tiers/failure_memory` -- the theorems `tier_s.organ_failure_memory` compresses
     hourly from the gate ledger, the forward clocks and the live fills -- and push the cells it
     already maps as dead behind the rest of their chart tier, tagged with the theorem.
@@ -527,7 +575,14 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
         return {"mechanism": mech[fam], "asset_class": acls[sym],
                 "selector": str((r.get("params") or {}).get("session") or "?")}
 
-    return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
+    yr = family_yield_rank() if yield_rank is None else yield_rank
+
+    def tier(r: dict) -> tuple:
+        # (never-mined, -yield posterior, chart): the memory reorders inside a tier and so never
+        # undoes the yield order `_orthogonal_key` set.
+        return (*yr.get(str(r.get("family") or ""), (1, 0.0)), _cell_tf_rank(r))
+
+    return fm.prioritise(rows, mem, desc_of, rank=tier)
 
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
