@@ -61,7 +61,7 @@ import platform
 import socket
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -271,6 +271,14 @@ def load_attestation(paths: Paths) -> dict[str, Any] | None:
     scope["sidecar_rows"] = len(extra)
     doc["scope"] = scope
     return doc
+
+
+def load_attestation_file(out_json: Path) -> dict[str, Any] | None:
+    """`load_attestation` for a monolith named by path; its sidecars are the SIDECAR_DIR beside
+    it. The readers that took a path (health_board, limits_census, committee_ensembles) use
+    this, so an organ a PR added shows there before the attesting host's next full pass."""
+    return load_attestation(replace(Paths.at(), out_json=out_json,
+                                    sidecars=out_json.parent / SIDECAR_DIR))
 
 
 def _machine_id() -> str:
