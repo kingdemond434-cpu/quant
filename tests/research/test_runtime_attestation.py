@@ -703,3 +703,17 @@ def test_changed_paths_reads_committed_and_uncommitted_work(tmp_path: Path) -> N
     (tmp_path / "b.py").write_text("y", encoding="utf-8")
     assert ra.changed_paths(tmp_path, "live") == {"a.py", "b.py"}
     assert ra.changed_paths(tmp_path, "no-such-ref") is None
+
+
+def test_load_attestation_file_merges_the_sidecars_beside_any_monolith(tmp_path: Path) -> None:
+    mono = tmp_path / "elsewhere" / "rt.json"
+    mono.parent.mkdir()
+    mono.write_text(json.dumps({"organs": [_row("a", "LIVE")], "census": {"LIVE": 1},
+                                "scope": {"attested": 1}}), encoding="utf-8")
+    side = mono.parent / ra.SIDECAR_DIR
+    side.mkdir()
+    (side / ra.sidecar_name("b")).write_text(json.dumps(_row("b")), encoding="utf-8")
+    doc = ra.load_attestation_file(mono)
+    assert doc is not None and [r["organ"] for r in doc["organs"]] == ["a", "b"]
+    assert doc["census"] == {"LIVE": 1, "NEVER": 1} and doc["scope"]["attested"] == 2
+    assert ra.load_attestation_file(tmp_path / "absent.json") is None
