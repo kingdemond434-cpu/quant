@@ -352,3 +352,5 @@ libs/ops/env_keys.py
 libs/ops/env_secret.py
 libs/ops/token_refresh.py
 libs/research/forward_ledger.py
+desks/mt5/mt5desk/family_fx_expiry_pin.py
+desks/mt5/mt5desk/family_hazard_shock.py
