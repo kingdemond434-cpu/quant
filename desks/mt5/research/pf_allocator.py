@@ -51,6 +51,13 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -320,6 +327,11 @@ def _log(msg: str) -> None:
 # EVIDENCE
 # ---------------------------------------------------------------------------------------
 
+#: How the last `build_evidence` joined forward ledgers to columns (each named column's clock
+#: status). Published in `pf_allocation.json["forward_join"]`.
+_FORWARD_JOIN: dict[str, Any] = {}
+
+
 def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """The daily-R matrix for every priced sleeve, plus forward days per sleeve.
 
@@ -352,8 +364,13 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
 
     forward: dict[str, dict[str, float]] = {}
     try:
-        from research.portfolio_evidence import daily_series
+        from research.portfolio_evidence import column_clock_status, daily_series
         forward = daily_series()
+        _FORWARD_JOIN.clear()
+        _FORWARD_JOIN.update({"column_clocks": column_clock_status(),
+                              "basis": "libs.research.forward_ledger: one ledger per clock key; "
+                                       "frozen shared legacy files are skipped; named columns "
+                                       "join by exact clock key"})
     except Exception as exc:
         _log(f"forward evidence unavailable ({type(exc).__name__}); backtest basis only")
     return daily, forward
@@ -602,8 +619,8 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         acct["refused"]["shadow"] = f"{shadow} absent on this host"
         return {}, acct
     out: dict[str, pd.Series] = {}
-    for path in sorted(shadow.glob(SCALP_LEDGERS)):
-        name = path.stem[len("ledger_"):]
+    for path in _fl.iter_ledgers(shadow, SCALP_LEDGERS):  # a frozen shared file is no sleeve's
+        name = _fl.label_of(path)
         acct["ledgers"] += 1
         try:
             rows = json.loads(path.read_text("utf-8"))
@@ -2078,18 +2095,36 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     # ledger_<SYM>_<window>.json and the allocator's columns are the sleeve names, so the join is
     # on the file stem. A ledger that does not match a column is simply unused -- never merged
     # into a neighbouring sleeve, which would attribute one edge's hours to another.
+    #
+    # ONE LEDGER PER CLOCK KEY (libs.research.forward_ledger): a legacy file several clock keys
+    # wrote is frozen and skipped here -- in the mirror too -- so a params variant's trades never
+    # condition another sleeve's state. A named allocator column whose clock has another name
+    # (`COLUMN_CLOCKS`: gold_asia -> XAUUSD.asia) reads that clock's OWN ledger by exact key.
     trades: dict[str, list[dict]] = {}
-    for d in (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers"):
+    _dirs = (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers")
+    _frozen = _fl.frozen_names(_dirs)
+    try:
+        from research.portfolio_evidence import COLUMN_CLOCKS as _COLUMN_CLOCKS
+    except ImportError:
+        _COLUMN_CLOCKS = {}
+    _own = {}
+    for _col, _clock in _COLUMN_CLOCKS.items():
+        _p, _st, _why = _fl.resolve(_clock, [d for d in _dirs if d.is_dir()])
+        if _p is not None:
+            _own[_p.name] = _col
+    for d in _dirs:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(d, also_frozen=_frozen):
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except Exception:
                 continue
             if isinstance(rows, list) and rows:
-                trades.setdefault(f.stem[len("ledger_"):], []).extend(
-                    r for r in rows if isinstance(r, dict) and "r_multiple" in r)
+                keep = [r for r in rows if isinstance(r, dict) and "r_multiple" in r]
+                trades.setdefault(_fl.label_of(f), []).extend(keep)
+                if f.name in _own:
+                    trades.setdefault(_own[f.name], []).extend(keep)
     return phase, trades, off
 
 
@@ -5290,6 +5325,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # P12: E[log W] as a function of capital per sleeve, and which edges this account's size
         # is still able to harvest. Read from CAPACITY.json; sizes nothing.
         "capacity_growth": _capacity_growth(),
+        # The forward join made visible (Auditor S4): each named column's clock JOINED /
+        # UNMEASURED_SHARED_LEDGER / NO_LEDGER / UNMEASURED. Absent = the join never ran.
+        "forward_join": dict(_FORWARD_JOIN) or {"status": "UNMEASURED",
+                                                "why": "forward evidence was not built this pass"},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
