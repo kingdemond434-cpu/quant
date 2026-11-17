@@ -527,7 +527,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
             proxy), with the targets named for that series.
-    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly.
+    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly;
+              `pairs` add one bank's distance minus another's for the pair between them.
     """
     mode = str(cv.get("mode") or "curve")
     out: list[tuple[str, pd.DataFrame, pd.DatetimeIndex, list[str], str]] = []
@@ -562,6 +563,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                         pd.DatetimeIndex(v.index), list(targets), "fred_level"))
     elif mode == "reaction":
         for bk in cv.get("banks") or []:
+            if not bk.get("targets"):
+                continue                      # a bank listed only as a leg of `pairs` below
             if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
                 continue
             u = yc[bk["unemployment"]] if bk.get("unemployment") in yc.columns else None
@@ -573,6 +576,33 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                         dynamics(f, list(f.columns), window=int(cv.get("window", 60))),
                         pd.DatetimeIndex(f.index), list(bk.get("targets") or []),
                         "fred_cb_reaction"))
+        # RELATIVE STANCE: one bank's residual minus another's, for the currency pair between
+        # them. Both legs use the inflation-only rule (no unemployment term), because only some
+        # banks have a labour series and a difference of unlike rules would measure the missing
+        # term, not the banks.
+        by_id = {str(b.get("id")): b for b in cv.get("banks") or []}
+        plain: dict[str, pd.DataFrame] = {}
+        for pr in cv.get("pairs") or []:
+            legs = []
+            for side in ("base", "quote"):
+                bk = by_id.get(str(pr.get(side))) or {}
+                bid = str(bk.get("id"))
+                if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
+                    break
+                if bid not in plain:
+                    plain[bid] = reaction_residual(yc[bk["rate"]], yc[bk["inflation"]], None,
+                                                   target=float(bk.get("target", 2.0)))
+                legs.append(plain[bid])
+            if len(legs) < 2:
+                continue
+            d = (legs[0][["resid", "real_rate"]] - legs[1][["resid", "real_rate"]]).dropna()
+            d.columns = ["rel_resid", "rel_real_rate"]
+            if len(d) < MIN_ROWS:
+                continue
+            out.append((f"fred_{cv['id']}_{str(pr['id']).lower()}",
+                        dynamics(d, list(d.columns), window=int(cv.get("window", 60))),
+                        pd.DatetimeIndex(d.index), list(pr.get("targets") or []),
+                        "fred_cb_relative"))
     return out
 
 
@@ -1059,8 +1089,9 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     the row's areas -> columns BIS_CBPOL_<area> and BIS_CPI_<area>.
 
     One request per area for rates (each row repeats a long note, so areas are never batched)
-    and one for all the price indices. The first read asks for history from `history_start`,
-    later reads for the last two years, and what is held is kept under what is newly read.
+    and one for all the price indices; each `probe_areas` code is asked for alone in both
+    tables. An area not yet held is asked for from `history_start`, the rest for the last two
+    years, and what is held is kept under what is newly read.
     Fetches at most every BIS_REFETCH_H hours, and only what the host's robots.txt allows;
     offline, stopped or disallowed, it returns what is held."""
     sid = str(src.get("id") or "bis_stats")
@@ -1072,16 +1103,23 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     due = pd.isna(last) or (pd.Timestamp(now) - last) >= pd.Timedelta(hours=BIS_REFETCH_H)
     if get_text is not None and src.get("terms") == "OPEN" and areas and due and \
             sid not in state.get("hard_stops", {}):
-        def start(key: str) -> str:
-            return (str(src.get("history_start", "2000-01")) if held[key].empty
+        probe = [str(a) for a in src.get("probe_areas") or [] if str(a) not in areas]
+
+        def start(key: str, want: list[str]) -> str:
+            # History for any area not yet held (a newly listed one included), else two years.
+            return (str(src.get("history_start", "2000-01"))
+                    if any(a not in held[key].columns for a in want)
                     else f"{now.year - 2}-{now.month:02d}")
         try:
             got: dict[str, list[pd.DataFrame]] = {"CBPOL": [], "CPI": []}
             jobs: list[tuple[str, str, str | None]] = [
-                ("CBPOL", str(src["rate_url"]).format(area=a, start=start("CBPOL")), None)
-                for a in areas]
-            jobs.append(("CPI", str(src["cpi_url"]).format(areas="+".join(areas),
-                                                           start=start("CPI")), "628"))
+                ("CBPOL", str(src["rate_url"]).format(area=a, start=start("CBPOL", [a])), None)
+                for a in [*areas, *probe]]
+            # A probe area is a code not yet seen in a reply: it is asked for alone, so a
+            # refusal of that one key cannot cost the confirmed areas their reply.
+            for group in [areas, *([a] for a in probe)]:
+                jobs.append(("CPI", str(src["cpi_url"]).format(
+                    areas="+".join(group), start=start("CPI", group)), "628"))
             # Open terms are not a robots yes: the host's robots.txt is read once per pass and
             # every URL is asked of it before the first data request.
             seen: dict[str, str | Exception] = {}
@@ -1101,7 +1139,14 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
                 notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
                 jobs = []
             for key, url, unit in jobs:
-                text = get_text(url)
+                try:
+                    text = get_text(url)
+                except FetchError as exc:
+                    # One key the server does not serve (a 404) is that key's gap, not the
+                    # pass's: note it and keep the others. A refusal is a HardStop, below.
+                    notes.append({"source": sid, "status": "NO_REPLY", "table": key,
+                                  "code": exc.code})
+                    continue
                 if len(text) >= BIS_MAX_CHARS:
                     notes.append({"source": sid, "status": "TRUNCATED", "table": key})
                     continue
@@ -1224,12 +1269,17 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             except HardStop as hs:
                 state.setdefault("hard_stops", {})["fred_rates"] = {"code": hs.code, "at": _now()}
             continue
-        cv = {**cv, "series": cv.get("series") or sorted(
+        # A BIS set that names no FRED series is built from the BIS alone: no FRED request is
+        # made for it and no key is asked for.
+        bis_only = bool(cv.get("bis")) and not cv.get("series")
+        cv = {**cv, "series": [] if bis_only else cv.get("series") or sorted(
             {str(p[k]) for p in cv.get("pairs") or [] for k in ("base", "quote")})}
         sid = f"fred_{cv['id']}"
         raw_path = RAW / f"{sid}.parquet"
         yc = pd.DataFrame()
-        if get is not None and fred.get("terms") == "OPEN" and fkey and \
+        if bis_only:
+            pass
+        elif get is not None and fred.get("terms") == "OPEN" and fkey and \
                 "fred_rates" not in state.get("hard_stops", {}):
             try:
                 yc = fred_curve(cv, fkey, get)
@@ -1241,7 +1291,7 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
                 notes.append({"source": sid, "error": f"{type(exc).__name__}"})
         elif not fkey:
             notes.append({"source": sid, "status": "NEEDS_KEY", "key_env": fred.get("key_env")})
-        if yc.empty and raw_path.exists():
+        if yc.empty and raw_path.exists() and not bis_only:
             yc = pd.read_parquet(raw_path)
         yc = yc[[c for c in cv["series"] if c in yc.columns]].dropna(how="all") if len(yc) else yc
         if cv.get("bis"):

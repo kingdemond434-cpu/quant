@@ -82,7 +82,21 @@ _NOT_A_DECLARATION = ("data/", "reports/", "desks/mt5/data/", "desks/mt5/reports
 #: archive, the moat trio and several data and ops tasks. Each one is a five-minute job on the box (`Get-ScheduledTask
 #: -TaskName <name> | Select -Expand Triggers`) that turns a guess into a fact, and until then this
 #: number is the honest measure of how much of the box cannot be rebuilt from here.
-MAX_UNDECLARED = 14
+#: 2026-11-13: 14 -> 1. MT5-VolArchive, MT5-GoldHourSweep, MT5-CertHygiene and MT5-DashMirror had
+#: their cadences read off their own runners, contracts and installers; MT5-FusionDeadman remains.
+MAX_UNDECLARED = 1
+
+#: Manifested rows whose `installer` is NONE. RATCHET: it may fall, never rise. A new task must
+#: arrive with the file that registers it, or the box that replaces this one never runs it.
+#: Measured 2026-11-13 after six installers landed (MT5-AllocatorPulse, MT5-VolArchive,
+#: MT5-PrivateNetAudit, MT5-GoldHourSweep, MT5-CertHygiene; MT5-DashMirror stays NONE because it belongs
+#: to the mirror box and must never be registered on the trading box): 79 -> 74.
+MAX_NO_INSTALLER = 74
+
+#: An installer must NAME the task it registers -- a manifest line pointing at a real file that
+#: registers something else is NONE wearing a path. MT5Hourly.cmd is the one wrapper that
+#: launches its task rather than registering it by name.
+_INSTALLER_NAME_EXEMPT = frozenset({"MT5-Hourly"})
 
 
 def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
@@ -137,6 +151,12 @@ def check(root: Path | None = None) -> dict[str, object]:
                             and not (base / str(r["installer"])).exists())
     undeclared = sorted(r["name"] for r in rows if r.get("trigger") == "UNDECLARED")
     no_installer = sorted(r["name"] for r in rows if r.get("installer") == "NONE")
+    unnamed_by_installer = sorted(
+        f"{r['name']} -> {r['installer']}" for r in rows
+        if r.get("installer") not in ("", "NONE", None)
+        and r.get("name") not in _INSTALLER_NAME_EXEMPT
+        and (base / str(r["installer"])).exists()
+        and str(r.get("name")) not in (base / str(r["installer"])).read_text("utf-8", errors="ignore"))
     healed = sorted(n for n in refs
                     if any(f.endswith("stall_watch.ps1") for f in refs[n]))
     healed_uninstallable = sorted(set(healed) & set(no_installer))
@@ -149,6 +169,12 @@ def check(root: Path | None = None) -> dict[str, object]:
         problems.append(f"manifest points at a script that is not in this repo: {r}")
     for r in bad_installers:
         problems.append(f"manifest points at an installer that is not in this repo: {r}")
+    for r in unnamed_by_installer:
+        problems.append(f"manifest installer does not name the task it is said to register: {r}")
+    if len(no_installer) > MAX_NO_INSTALLER:
+        problems.append(f"{len(no_installer)} manifest rows carry installer=NONE, above the ratchet "
+                        f"of {MAX_NO_INSTALLER}. A task must arrive with the file that registers "
+                        f"it -- NONE cannot come back silently")
     if len(undeclared) > MAX_UNDECLARED:
         problems.append(f"{len(undeclared)} tasks carry trigger=UNDECLARED, above the ratchet of "
                         f"{MAX_UNDECLARED}. A new task must arrive with its cadence written down "
@@ -159,7 +185,8 @@ def check(root: Path | None = None) -> dict[str, object]:
         "missing_from_manifest": missing,
         "runs_not_in_repo": bad_runs, "installers_not_in_repo": bad_installers,
         "undeclared_triggers": undeclared, "undeclared_ratchet": MAX_UNDECLARED,
-        "no_installer": no_installer,
+        "no_installer": no_installer, "no_installer_ratchet": MAX_NO_INSTALLER,
+        "installers_not_naming_task": unnamed_by_installer,
         "healed_but_uninstallable": healed_uninstallable,
         "status": "BREACH" if problems else ("RATCHETED" if undeclared else "OK"),
         "problems": problems,
