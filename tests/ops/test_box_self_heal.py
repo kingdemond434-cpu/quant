@@ -1133,7 +1133,15 @@ def test_the_watchdog_has_one_registry_organ_and_an_attestation_row() -> None:
     assert "desks/mt5/reports/BOX_SELF_HEAL.json" in organ.outputs
     gaps = c.task_canonical_gaps()
     assert not any("Quant-BoxSelfHeal" in g for v in gaps.values() for g in v), gaps
-    att = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
+    # the merged view: the monolith plus the PR's own sidecar row (runtime_state.d, 2026-11-14)
+    ra_spec = importlib.util.spec_from_file_location(
+        "_bsh_runtime_attestation", ROOT / "desks" / "mt5" / "research" / "runtime_attestation.py")
+    assert ra_spec and ra_spec.loader
+    ra = importlib.util.module_from_spec(ra_spec)
+    sys.modules["_bsh_runtime_attestation"] = ra
+    ra_spec.loader.exec_module(ra)
+    att = ra.load_attestation_file(ROOT / "docs" / "research" / "runtime_state.json")
+    assert att is not None
     assert any(r.get("organ") == organ.component_id for r in att["organs"])
 
 

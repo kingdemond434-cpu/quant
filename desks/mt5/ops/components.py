@@ -950,6 +950,30 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="optional", resource_budget={"budget_s": 60},
             schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
             notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
+        # THE BOX SELF-HEAL WATCHDOG (2026-10-29): the closed table that ends a hung intake task
+        # and a wedged or dead gate. SYSTEM task Quant-BoxSelfHeal every 5 minutes, registered by
+        # desks/mt5/scripts/install_box_self_heal_task.ps1, which runs the admin-only copy in
+        # C:\ProgramData\QuantBox\bin. Declared here because ops/ is outside the executable
+        # areas the birth fence walks, so nothing else gives it a row in the attestation. When its
+        # TASK line lands in box_tasks.manifest (protected; proposed with the patch), this becomes
+        # kind="task" with a TASK_CANONICAL entry, so the manifest task dedupes onto it.
+        ComponentSpec(
+            component_id="executable:ops/box_self_heal.py",
+            kind="executable", host="box",
+            code_paths=("ops/box_self_heal.py", "ops/process_health.py",
+                        "libs/ops/alert_channels.py"),
+            inputs=("C:/ProgramData/QuantBox/logs/workflow_gate.json",
+                    "C:/ProgramData/QuantBox/state/box_self_heal_state.json",
+                    "C:/ProgramData/QuantBox/state/box_self_heal.jsonl"),
+            outputs=("desks/mt5/reports/BOX_SELF_HEAL.json",),
+            consumers=("desks/mt5/scripts/check_desk_health.py", "ops/organ_contract.py"),
+            cadence_s=300, timeout_s=900, progress_metric="passes",
+            expected_artifact_schema="box_self_heal/1",
+            owner="lane:ops", restart_action="restart:task:Quant-BoxSelfHeal",
+            criticality="required", resource_budget={"budget_s": 900},
+            schedule="Quant-BoxSelfHeal", artifact_class="minute",
+            notes="SYSTEM, PT15M limit, IgnoreNew; installer "
+                  "desks/mt5/scripts/install_box_self_heal_task.ps1"),
     ]
 
 

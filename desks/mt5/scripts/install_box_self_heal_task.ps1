@@ -76,7 +76,7 @@ $StateDir = Join-Path $Root 'state'
 #   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
 $Pins = [ordered]@{
     'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'da87e34e4c93cd96fd2e2f0834426bb1718871f25ef5cd3870631cde615359d7' }
-    'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
+    'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = 'da61e6c5e8e467f628dd9ecbd1e6ee33a137f716d922f53837c85a39c87ea32c' }
     'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
 }
 
