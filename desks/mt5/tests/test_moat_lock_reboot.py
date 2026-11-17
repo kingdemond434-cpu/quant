@@ -14,9 +14,26 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.modules.setdefault("MetaTrader5", types.ModuleType("MetaTrader5"))
 
-from moat import moat_recorder as mr  # noqa: E402 -- after the MetaTrader5 stub
+
+def _load_recorder() -> types.ModuleType:
+    """Import the recorder over a TEMPORARY MetaTrader5 stub, then take the stub back out.
+
+    A stub left in sys.modules makes every later `find_spec("MetaTrader5")` raise and every
+    importorskip("MetaTrader5") in the suite run against a module with nothing in it.
+    """
+    had = "MetaTrader5" in sys.modules
+    if not had:
+        sys.modules["MetaTrader5"] = types.ModuleType("MetaTrader5")
+    try:
+        from moat import moat_recorder
+        return moat_recorder
+    finally:
+        if not had:
+            sys.modules.pop("MetaTrader5", None)
+
+
+mr = _load_recorder()
 
 
 def test_same_start_time_is_the_holder(monkeypatch: pytest.MonkeyPatch) -> None:
