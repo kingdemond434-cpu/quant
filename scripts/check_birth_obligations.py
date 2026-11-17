@@ -149,7 +149,12 @@ def _executables(root: Path) -> tuple[set[str], set[str], str]:
     if not objects:
         return set(), set(), f"{UNMEASURED}: no executable areas in this tree"
     clocks = "\n".join(_read(root / c) for c in CLOCK_DECLARATIONS)
+    # The monolith plus one sidecar per organ a PR added (runtime_attestation.SIDECAR_DIR):
+    # PRs write sidecars so they stop re-conflicting on the monolith's counters.
+    sidecars = root / "docs" / "research" / "runtime_state.d"
     attested = _read(root / "docs" / "research" / "runtime_state.json")
+    if sidecars.is_dir():
+        attested += "".join(_read(f) for f in sorted(sidecars.glob("*.json")))
     if not attested.strip():
         return objects, set(), (f"{UNMEASURED}: docs/research/runtime_state.json is absent, so "
                                 f"no executable can be shown to have a row in it")

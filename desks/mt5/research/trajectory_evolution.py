@@ -58,6 +58,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -288,7 +295,7 @@ def forward_index() -> dict[tuple[str, str], dict[str, Any]]:
             rows.setdefault((str(p.get("symbol") or "").upper(),
                              str(p.get("family") or "session_range_breakout")),
                             []).append((float(n), float(exp)))
-    for path in (sorted(SHADOW.glob("ledger_*.json")) if not rows else ()):
+    for path in (_fl.iter_ledgers(SHADOW) if not rows else ()):
         parts, trades = path.stem.split("_"), _read_json(path)
         r = np.asarray([t["r_multiple"] for t in trades or [] if isinstance(t, dict)
                         and isinstance(t.get("r_multiple"), (int, float))], dtype=float)

@@ -58,6 +58,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -362,8 +369,8 @@ def _survivor_forward_pairs() -> list[tuple[float, float]]:
         if not isinstance(row, dict):
             continue
         claim = row.get("expected_edge_r", row.get("edge_r"))
-        led = BASE / "reports" / "shadow" / f"ledger_{key}.json"
-        if claim is None or not led.exists():
+        led = _fl.resolve(str(key), [BASE / "reports" / "shadow"])[0]  # never a frozen file
+        if claim is None or led is None:
             continue
         try:
             fwd = json.loads(led.read_text("utf-8"))

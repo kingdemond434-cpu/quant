@@ -221,6 +221,14 @@ TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/script
 # docs/research/PLUMBING_ALERTS.md. scripts/check_plumbing_watchdog.py wedges the law gate while
 # one outlives its window, INCLUDING the absence of this task's own report.
 TASK name="MT5-PlumbingWatchdog" trigger="every 15 minutes" runs="desks/mt5/research/plumbing_watchdog.py" installer="desks/mt5/scripts/install_plumbing_watchdog_task.ps1" lane="ops"
+# THE PLUMBING PAGER (audit HOLD 2026-10-20). The VPS pager never receives the plumbing or
+# judge inputs (orphan desk-sync-clean), so the box pages them itself, three minutes after the
+# watchdog: CRITICAL plumbing rows, a judge with no new verdict in 6h, UNMEASURED inputs; re-paged
+# every 2h while failing. No ntfy secret = logged NOT ARMED, exit 2, no topic minted; an undelivered
+# due page = exit 3. MT5-PlumbingWatchdog raises either last result as a pager_task defect.
+# Installing user, RunLevel Limited, S4U (Interactive fallback, printed). Each pass writes
+# desks/mt5/reports/PLUMBING_PAGER.json (read by MT5-BoxHeartbeat once its pager check lands).
+TASK name="MT5-PlumbingPager" trigger="every 15 minutes" runs="scripts/run_alerts.py" installer="desks/mt5/scripts/install_plumbing_pager_task.ps1" lane="ops"
 # THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
 # every stopped clock gets a live clock and every dead resident is restarted; verification by
 # observation. SYSTEM, PT12M limit, IgnoreNew.
@@ -314,8 +322,10 @@ TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --
 # Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
 
 # THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
-# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
-TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
+# never wait on an RDP session; runs as the bridge user from the admin-only C:\ProgramData\ClaudeBridge\bin.
+# 2026-11-13: installed with -AtStartup it runs S4U (no stored password) and also starts at boot,
+# after a measured probe that the CLI is signed in without a logon session; else interactive.
+TASK name="Claude-Bridge-Watchdog" trigger="at boot (S4U, -AtStartup) + at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
 # THE UNATTENDED BOX (2026-10-28, zuck: "I wish we could make it so even these become automated
 # not needing me"). With Windows auto-logon on, a reboot logs this user in by itself; the boot
 # session restarts the MT5 terminals that were running before it and locks the console, and the
@@ -338,3 +348,6 @@ TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scrip
 # Clear-access channels only (QUANT_MINERS_ALLOW in the runner): official APIs, open data and
 # local computation. Scrapers and youtube are SET_ASIDE by name; the box never contacts YouTube.
 TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run_side_channel_miners.cmd" installer="scripts/install_side_channel_miners_task.ps1" lane="research" also_runs="desks/mt5/side_channels/run_all_miners.py"
+
+# Desk log rotation (ops/rotate_logs.py): whole-file gzip archive, verified, never discards (2026-11-13).
+TASK name="MT5-RotateLogs" trigger="daily 03:40" runs="ops/rotate_logs.py" installer="desks/mt5/scripts/install_rotate_logs_task.ps1" lane="ops"
