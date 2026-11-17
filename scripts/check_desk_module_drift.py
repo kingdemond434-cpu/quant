@@ -154,6 +154,7 @@ MODULES = [
     "desks/mt5/research/prop_showcase_miner.py",
     "desks/mt5/research/prop_showcase_lexicon.py",
     "desks/mt5/research/prop_showcase_fetch.py",
+    "desks/mt5/research/prop_showcase_grounds.py",
     "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
