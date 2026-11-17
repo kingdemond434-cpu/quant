@@ -19,8 +19,8 @@ A PR is FAST only when EVERY path it changes (both sides of a rename) is:
     task manifest, the Fusion roster files) and not in the static import closure of the live
     entry points PLUS the promoter, which writes the LIVE rows the gateway trades;
   - not a release or risk suite (every file risk_suites.txt or trusted_eval_suites.txt names),
-    and not an existing test whose base copy imports anything on the money path (a NEW test
-    is fine: adding a test never weakens one that guards money).
+    and not an existing test whose base copy itself imports money-path code (a NEW test is
+    fine: adding a test never weakens one that guards money).
 Anything unreadable is NOT fast. Everything here is read from the checkout this runs in, which is
 always the BASE (the gate's own checkout, or the base sha a CI lane job checked out), never the PR.
 
@@ -34,6 +34,7 @@ release, an AUDIT HOLD, and DEACTIVATE RELEASE CONTROLLER on #453 (it switches t
 from __future__ import annotations
 
 import argparse
+import ast
 import fnmatch
 import functools
 import importlib.util
@@ -80,19 +81,40 @@ def is_test(path: str) -> bool:
     return name.endswith(".py") and (name.startswith("test_") or name.endswith("_test.py"))
 
 
+def direct_imports(rs: ModuleType, path: str) -> set[str]:
+    """The repository files this file imports ITSELF (not what those import in turn), resolved
+    the way replay-shadow resolves them. Raises on a file that cannot be parsed."""
+    files = rs.tree_files(ROOT)
+    node = ast.parse(rs.read(ROOT, path) or "")
+    pkg = Path(path).parent.as_posix().split("/")
+    names: list[str] = []
+    for n in ast.walk(node):
+        if isinstance(n, ast.Import):
+            names += [a.name for a in n.names]
+        elif isinstance(n, ast.ImportFrom):
+            mod = n.module or ""
+            if n.level:
+                up = pkg[: len(pkg) - (n.level - 1)] if n.level > 1 else pkg
+                mod = ".".join(x for x in (*up, mod) if x and x != ".")
+            names.append(mod)
+            names += [f"{mod}.{a.name}" for a in n.names if mod]
+    found = {m for name in names for m in rs._module_files(name, files)}
+    # a package's __init__ on the way to a module is no import of money code by itself
+    return {m for m in found if not m.endswith("/__init__.py")} - {path}
+
+
 def money_test(rs: ModuleType, path: str, closure: set[str]) -> bool:
-    """Does the BASE copy of this test import anything on the money path? A test the base does
-    not have yet is new: adding a test can never weaken one that guards money. An unreadable one
-    is money (fail closed)."""
+    """Does the BASE copy of this test import money-path code DIRECTLY? (A test of research code
+    that only reaches the money path through some shared library is not a money test.) A test the
+    base does not have yet is new: adding a test can never weaken one that guards money. An
+    unreadable one is money (fail closed)."""
     if path not in rs.tree_files(ROOT):
         return False
     try:
-        reach = rs.import_closure(ROOT, (path,))
+        mine = direct_imports(rs, path)
     except Exception:
         return True
-    return bool((reach - {path}) & closure) or any(
-        r.startswith(rs.MONEY_PATH) for r in reach if r != path
-    )
+    return any(m in closure or m.startswith(rs.MONEY_PATH) for m in mine)
 
 
 def classify(paths: Iterable[str]) -> tuple[bool, str]:
