@@ -306,6 +306,27 @@ DENY: tuple[tuple[str, str], ...] = (
       for s in ("external_gauntlet", "certification_lane", "fusion_terminal_research_lane",
                 "tape_features")),
     ("pf_allocator", "reads the live terminal and feeds the gateway's sizing; never auto-stopped"),
+    # #1249 audit (replay-shadow pins this table): every word of the harness's SELF_HEAL_FORBIDDEN
+    # and MONEY_WORDS denies too, bare, so a money organ never needs its exact name listed above.
+    # Over-match is the safe side: a denied tree is left alone and reported, never stopped.
+    ("terminal", "an MT5 terminal or terminal lane"),
+    ("promot", "the promoter: it moves sleeves between tiers"),
+    ("order", "the order path"),
+    ("sizing", "the sizing path"),
+    ("alloc", "an allocator: it feeds the gateway's sizing"),
+    ("sleeve", "a sleeve: live capital state"),
+    ("prop", "the prop desk (E8/FTMO/Fusion): it trades"),
+    ("follower", "a follower: it copies trades"),
+    ("window_guard", "the window guard"),
+    ("windowguard", "the window guard"),
+    ("window-guard", "the window guard"),
+    ("window guard", "the window guard"),
+    ("adopt", "release adoption"),
+    ("release", "release adoption and sealing"),
+    ("seal", "release sealing"),
+    ("autotrading", "the terminal's AutoTrading switch"),
+    ("positions_get", "reads live positions"),
+    ("e8", "an E8 prop process"),
 )
 
 #: The kernel's own pseudo-processes have no command line by definition. They are never a target
