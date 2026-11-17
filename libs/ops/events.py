@@ -85,6 +85,9 @@ KINDS = (
     # started after a reboot (ops/ensure_terminal.ps1, 2026-11-17): a reboot needs nobody, and
     # every such close is a row with its pid and outcome.
     "TERMINAL_SESSION0_CLOSED",
+    # ...and restarted the desk's own terminal after it stopped answering every probe for long
+    # enough, with the book safe to interrupt (ops/ensure_terminal.ps1, 2026-11-17).
+    "TERMINAL_HUNG_RESTARTED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

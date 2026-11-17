@@ -157,9 +157,93 @@ if ($local.Count -eq 0) {
     }
 }
 
+# A HUNG DESK TERMINAL IS RESTARTED, NOT WAITED ON (2026-11-17). After the 11-16 reboot the one
+# interactive Fusion terminal stopped answering every reader for ~22h while this watchdog logged
+# "probe failed" each pass, and a restart waited on the principal. The principal's order is that
+# nothing waits on him. Failed probes are counted in a small local file; the terminal is restarted
+# only when ALL of these hold, and every restart is journalled to this log and the event log:
+#   * >= $HungProbes consecutive failed probes spanning >= $HungMinutes minutes (not one blip);
+#   * the book is safe to interrupt: the last published account state shows 0 open positions, or
+#     data/GATEWAY_PAUSED is set -- OR the hang has lasted >= $HungUnmanagedMinutes minutes, when
+#     a terminal that answers nothing is already managing nothing (positions and their stops live
+#     on the broker's server; a restart closes none of them);
+#   * no restart in the last $RestartCooldownMinutes minutes (a terminal that hangs again on start
+#     is a fault for a person, not a loop).
+$HungProbes = 3
+$HungMinutes = 15
+$HungUnmanagedMinutes = 60
+$RestartCooldownMinutes = 60
+$hungPath = Join-Path $root 'desks\mt5\logs\terminal_probe_failures.json'
+$events = Join-Path $root 'desks\mt5\data\events.jsonl'
+
+function Write-Event([hashtable]$fields) {
+    $row = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss+00:00');
+                       producer = 'MT5-TerminalBoot'; host = $env:COMPUTERNAME }
+    foreach ($k in $fields.Keys) { $row[$k] = $fields[$k] }
+    $row['ack_state'] = 'UNACKNOWLEDGED'
+    try {
+        Add-Content -LiteralPath $events -Value ($row | ConvertTo-Json -Compress) -Encoding UTF8
+    } catch {
+        Add-Content -LiteralPath $log -Value "$stamp event log not written: $($_.Exception.GetType().Name)"
+    }
+}
+
+function Read-Hung {
+    try { return (Get-Content -LiteralPath $hungPath -Raw | ConvertFrom-Json) } catch { return $null }
+}
+
 $probeCode = Invoke-ReadOnlyProbe
 if ($probeCode -ne 0) {
+    $now = (Get-Date).ToUniversalTime()
+    $prev = Read-Hung
+    $first = $now; $count = 1; $lastRestart = $null
+    if ($prev) {
+        try { $first = [datetime]::Parse($prev.first_fail_at).ToUniversalTime() } catch { $first = $now }
+        $count = [int]$prev.count + 1
+        if ($prev.last_restart_at) {
+            try { $lastRestart = [datetime]::Parse($prev.last_restart_at).ToUniversalTime() } catch { $lastRestart = $null }
+        }
+    }
+    $hungMin = ($now - $first).TotalMinutes
+    $state = [ordered]@{ first_fail_at = $first.ToString('o'); count = $count;
+                         last_restart_at = $(if ($lastRestart) { $lastRestart.ToString('o') } else { $null }) }
+    $positions = $null
+    try {
+        $acct = Get-Content -LiteralPath (Join-Path $root 'desks\mt5\data\account_state.json') -Raw | ConvertFrom-Json
+        if ($null -ne $acct.open_positions) { $positions = [int]$acct.open_positions }
+    } catch { $positions = $null }
+    $paused = Test-Path -LiteralPath (Join-Path $root 'desks\mt5\data\GATEWAY_PAUSED')
+    $safe = ($positions -eq 0) -or $paused -or ($hungMin -ge $HungUnmanagedMinutes)
+    $cooled = (-not $lastRestart) -or (($now - $lastRestart).TotalMinutes -ge $RestartCooldownMinutes)
+    if ($count -ge $HungProbes -and $hungMin -ge $HungMinutes -and $safe -and $cooled -and $local.Count -eq 1) {
+        $old = $local[0].Id
+        $stopped = $true
+        try { Stop-Process -Id $old -Force -ErrorAction Stop } catch { $stopped = $false }
+        Start-Sleep -Seconds 5
+        if ($stopped) { Start-Process -FilePath $exe -WindowStyle Hidden; Start-Sleep -Seconds 30 }
+        $after = Invoke-ReadOnlyProbe
+        $verdict = if (-not $stopped) { 'stop FAILED' } elseif ($after -eq 0) { 'restarted, probe passed' } else { 'restarted, probe still failing' }
+        Add-Content -LiteralPath $log -Value ("$stamp JOURNAL hung Fusion terminal pid $old ($count failed probes over " +
+            "$([math]::Round($hungMin)) min; open_positions=$positions paused=$paused) $verdict")
+        Write-Event @{ kind = 'TERMINAL_HUNG_RESTARTED'; pid = $old; failed_probes = $count;
+                       hung_minutes = [math]::Round($hungMin); open_positions = $positions;
+                       paused = $paused; outcome = $verdict }
+        $state.last_restart_at = $now.ToString('o')
+        if ($after -eq 0) {
+            Remove-Item -LiteralPath $hungPath -ErrorAction SilentlyContinue
+            $local = @(Get-FusionTerminals | Where-Object { $_.SessionId -eq $session })
+            $newPid = if ($local.Count -ge 1) { $local[0].Id } else { 0 }
+            Write-BootHealth $newPid " (after a hung-terminal restart)"
+            exit 0
+        }
+        $state.first_fail_at = $now.ToString('o'); $state.count = 0
+    } elseif ($count -ge $HungProbes) {
+        Add-Content -LiteralPath $log -Value ("$stamp terminal unanswering for $count probes over $([math]::Round($hungMin)) min; " +
+            "restart held (open_positions=$positions paused=$paused cooled=$cooled local=$($local.Count))")
+    }
+    try { $state | ConvertTo-Json -Compress | Set-Content -LiteralPath $hungPath -Encoding UTF8 } catch { }
     exit 2
 }
+Remove-Item -LiteralPath $hungPath -ErrorAction SilentlyContinue
 Write-BootHealth $local[0].Id ""
 exit 0

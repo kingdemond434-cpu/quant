@@ -92,13 +92,14 @@ def _code(source: str) -> str:
     return "".join(out).lower()
 
 
-def test_terminal_boot_ends_only_a_session_zero_fusion_terminal() -> None:
-    """ONE kill site, and it is narrow (2026-11-17). A headless Session 0 Fusion terminal started by
-    a bare initialize() after a reboot is closed so a reboot needs nobody; nothing else may end."""
+def test_terminal_boot_ends_only_a_session_zero_or_a_hung_fusion_terminal() -> None:
+    """TWO kill sites, both narrow (2026-11-17). A headless Session 0 Fusion terminal started by a
+    bare initialize() after a reboot is closed, and the desk's own terminal is restarted only after
+    it stops answering under the conditions pinned below; nothing else may end."""
     source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
     hits = _KILL.findall(_code(source))
     names = [h if isinstance(h, str) else next(x for x in h if x) for h in hits]
-    assert names == ["stop-process"], hits
+    assert names == ["stop-process", "stop-process"], hits
     kill = source.index("Stop-Process -Id $h.Id")
     # only from an interactive session: the Session 0 exit comes first
     assert source.index("if ($session -eq 0)") < kill
@@ -171,3 +172,27 @@ def test_an_unreadable_terminal_in_our_own_session_blocks_a_launch() -> None:
     branch = source[guard:source.index("refusing to launch a second terminal")]
     assert "Invoke-ReadOnlyProbe" in branch and "Write-BootHealth" in branch
     assert "exit 0" in branch
+
+
+def test_a_hung_terminal_is_restarted_only_under_its_conditions() -> None:
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    kill = source.index("Stop-Process -Id $old")
+    gate = source.rindex("if ($count -ge $HungProbes", 0, kill)
+    cond = source[gate:source.index("{", gate)]
+    for term in ("$count -ge $HungProbes", "$hungMin -ge $HungMinutes", "$safe", "$cooled",
+                 "$local.Count -eq 1"):
+        assert term in cond, term
+    # safe = flat book, paused gateway, or a hang long enough that nothing is being managed
+    assert ("$safe = ($positions -eq 0) -or $paused -or ($hungMin -ge $HungUnmanagedMinutes)"
+            in source)
+    # an unreadable or missing position count is never read as flat
+    assert "if ($null -ne $acct.open_positions)" in source
+    assert "$HungProbes = 3" in source and "$HungMinutes = 15" in source
+    assert "$RestartCooldownMinutes = 60" in source
+    # only the one interactive terminal the census already holds, after the Session 0 exit
+    assert source.index("if ($session -eq 0)") < kill
+    assert "$old = $local[0].Id" in source[gate:kill]
+    # journalled both ways, and health is written only on a passing re-probe
+    after = source[kill:]
+    assert "JOURNAL hung Fusion terminal" in after and "TERMINAL_HUNG_RESTARTED" in after
+    assert after.index("if ($after -eq 0)") < after.index("Write-BootHealth")
