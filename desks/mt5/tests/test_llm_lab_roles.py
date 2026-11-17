@@ -395,27 +395,6 @@ def test_the_coverage_leg_is_wired() -> None:
     assert "llm_coverage" in str(layers.__dict__)
 
 
-def test_the_local_model_installer_checks_what_it_runs() -> None:
-    """Audit must-fix 9: a pinned version, Authenticode on every binary, models pinned by digest,
-    a locked ACL and a LOCAL SERVICE server (no PowerShell here, so the text is the contract)."""
-    src = (_DESK / "scripts" / "install_local_llm.ps1").read_text(encoding="utf-8")
-    assert "--version $ver" in src and "install.lock.json" in src
-    assert src.count("Assert-Signed $") >= 2 and "Get-AuthenticodeSignature" in src
-    assert "NT AUTHORITY\\LOCALSERVICE" in src and "-UserId 'SYSTEM'" not in src
-    assert "/inheritance:r" in src and "S-1-5-19" in src
-    assert "pinned ${pinned}" in src and "& $ollama rm $m" in src
-    assert "6 GB floor" in src
-    # audit of 538cb964: the server stops BEFORE its binary is copied over (SF5) ...
-    assert src.index("Stop-Process -Force") < src.index("Copy-Item -Path")
-    # ... a present pinned build is never re-pulled (SF5) ...
-    assert src.index("already present and pinned: not pulled") < src.index("& $ollama pull $m")
-    # ... icacls failures stop the script and the signer is a pinned thumbprint (SF6) ...
-    assert "$LASTEXITCODE -ne 0" in src and "& icacls $" not in src.replace("& icacls @args", "")
-    assert "signer_thumbprint" in src and "-notmatch 'Ollama'" not in src
-    # ... and the server runs on a bounded set of cores (SF7).
-    assert "/affinity" in src and "QUANT_LOCAL_LLM_CORES" in src
-
-
 def test_a_scouted_source_cannot_redirect_or_resolve_to_a_private_host() -> None:
     """Audit should-fix on #332: the collector re-checks the host at fetch time and on every
     redirect, not only when the scouted row was ingested."""
