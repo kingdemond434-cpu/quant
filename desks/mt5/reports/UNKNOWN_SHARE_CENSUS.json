@@ -2,16 +2,16 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1639809,
+  "docket_unique_cells": 1593106,
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "carving",
-  "utc_day": "2026-11-16",
-  "started_at": "2026-11-16T09:30:49+00:00",
-  "written_at": "2026-11-16T10:09:33+00:00",
-  "cells_planned": 6002,
-  "cells_visited": 6002,
+  "stage": "siblings_minted",
+  "utc_day": "2026-11-17",
+  "started_at": "2026-11-17T12:41:40+00:00",
+  "written_at": "2026-11-17T12:42:46+00:00",
+  "cells_planned": 6000,
+  "cells_visited": 0,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -20,150 +20,63 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 42552,
-    "rss_cap_mb": 10638,
-    "peak_rss_mb": 783
+    "available_mb": 61428,
+    "rss_cap_mb": 15357,
+    "peak_rss_mb": 518
   },
-  "lockbox_cut": "2022-08-22",
-  "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 337,
-  "elapsed_s": 2320.3,
+  "lockbox_cut": null,
+  "lockbox_frac": null,
+  "cells_carved_at_own_tail": null,
+  "elapsed_s": 59.6,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 24,
-    "siblings": 2,
+    "peerless_rows": 1,
+    "siblings": 0,
     "unfilled_by_family": {
-      "triangle": 16,
-      "cross_asset_residual": 3,
-      "relative_value": 2,
-      "pca_residual": 1
+      "correlation_regime": 1
     }
   },
   "sampled_cells": {
-    "cells": 6000,
-    "gate0_rejected": {
-      "symbol_eligibility": 43
-    },
-    "preflight_refused": 2860,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 2037,
-    "judged_built": 1060,
-    "unknown": 150,
-    "unknown_share_of_judged": 0.1415,
-    "wilson95": [
-      0.1218,
-      0.1638
-    ],
-    "unknown_by_reason": {
-      "no_signals": 112,
-      "too_rare": 20,
-      "lockbox_consumed_history": 13,
-      "short_history_after_cut": 5
-    },
-    "unknown_by_cause": {},
-    "unknown_by_family": {
-      "formula": 46,
-      "session_range_breakout": 21,
-      "orderflow_imbalance": 14,
-      "overnight_drift": 9,
-      "htf_anchor_trend": 6,
-      "comex_settlement": 4,
-      "exogenous_conditioner": 4,
-      "execution_state": 4,
-      "regime_split": 3,
-      "asia_momentum": 3,
-      "hedging_demand_close": 3,
-      "session_handoff": 3,
-      "jump": 3,
-      "dow_effect": 3,
-      "vol_transition": 3
-    },
-    "unknown_by_chart": {
-      "H1": 80,
-      "M30": 15,
-      "M15": 13,
-      "M5": 13,
-      "H4": 12,
-      "D1": 9,
-      "M1": 8
-    },
-    "judged_by_chart": {
-      "H1": 490,
-      "M30": 182,
-      "M15": 179,
-      "M5": 142,
-      "H4": 35,
-      "M1": 17,
-      "D1": 15
-    }
-  },
-  "sampled_plus_siblings": {
-    "cells": 6002,
-    "gate0_rejected": {
-      "symbol_eligibility": 43
-    },
-    "preflight_refused": 2860,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 2039,
-    "judged_built": 1060,
-    "unknown": 150,
-    "unknown_share_of_judged": 0.1415,
-    "wilson95": [
-      0.1218,
-      0.1638
-    ],
-    "unknown_by_reason": {
-      "no_signals": 112,
-      "too_rare": 20,
-      "lockbox_consumed_history": 13,
-      "short_history_after_cut": 5
-    },
-    "unknown_by_cause": {},
-    "unknown_by_family": {
-      "formula": 46,
-      "session_range_breakout": 21,
-      "orderflow_imbalance": 14,
-      "overnight_drift": 9,
-      "htf_anchor_trend": 6,
-      "comex_settlement": 4,
-      "exogenous_conditioner": 4,
-      "execution_state": 4,
-      "regime_split": 3,
-      "asia_momentum": 3,
-      "hedging_demand_close": 3,
-      "session_handoff": 3,
-      "jump": 3,
-      "dow_effect": 3,
-      "vol_transition": 3
-    },
-    "unknown_by_chart": {
-      "H1": 80,
-      "M30": 15,
-      "M15": 13,
-      "M5": 13,
-      "H4": 12,
-      "D1": 9,
-      "M1": 8
-    },
-    "judged_by_chart": {
-      "H1": 490,
-      "M30": 182,
-      "M15": 179,
-      "M5": 142,
-      "H4": 35,
-      "M1": 17,
-      "D1": 15
-    }
-  },
-  "siblings_only": {
-    "cells": 2,
+    "cells": 0,
     "gate0_rejected": {},
     "preflight_refused": 0,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 2,
+    "deferred": 0,
+    "judged_built": 0,
+    "unknown": 0,
+    "unknown_share_of_judged": null,
+    "wilson95": null,
+    "unknown_by_reason": {},
+    "unknown_by_cause": {},
+    "unknown_by_family": {},
+    "unknown_by_chart": {},
+    "judged_by_chart": {}
+  },
+  "sampled_plus_siblings": {
+    "cells": 0,
+    "gate0_rejected": {},
+    "preflight_refused": 0,
+    "build_failed": 0,
+    "build_failed_by_reason": {},
+    "deferred": 0,
+    "judged_built": 0,
+    "unknown": 0,
+    "unknown_share_of_judged": null,
+    "wilson95": null,
+    "unknown_by_reason": {},
+    "unknown_by_cause": {},
+    "unknown_by_family": {},
+    "unknown_by_chart": {},
+    "judged_by_chart": {}
+  },
+  "siblings_only": {
+    "cells": 0,
+    "gate0_rejected": {},
+    "preflight_refused": 0,
+    "build_failed": 0,
+    "build_failed_by_reason": {},
+    "deferred": 0,
     "judged_built": 0,
     "unknown": 0,
     "unknown_share_of_judged": null,
