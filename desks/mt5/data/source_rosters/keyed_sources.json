@@ -494,6 +494,17 @@
       "USDJPY": 1,
       "US500": -1
      }
+    },
+    "jolts_quits_rate": {
+     "code": "JTS000000000000000QUR",
+     "lag_days": 42,
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "US500": 1,
+      "NAS100": 1
+     },
+     "why": "Idea N11: JOLTS total nonfarm quits rate (SA); prints about five weeks after the month at 10:00 ET, so +42 days is after every scheduled date. event_states derives its gap to the prior three months."
     }
    },
    "mechanism": "the sticky components (services ex-energy, shelter, wages) are what the Fed path is priced on; the headline FRED list does not carry them",

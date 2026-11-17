@@ -229,6 +229,188 @@
    "note": "BIS statistics. Terms read from the box 2026-11-11 (data.bis.org/help/legal, 'Terms of permitted use of BIS statistics'): use is unrestricted provided the BIS is cited as the source when the statistics are reproduced, and the BIS offers the SDMX API itself. No published rate limit; the BIS may suspend an IP, so this reads at most once every 20 hours. Both key forms were confirmed on the box the same day (WS_CBPOL M.GB; WS_LONG_CPI M.GB+JP.628, unit 628 = index level). Monthly policy rates carry a long note on every row, so each area is one request and history starts in 2000 to stay under the fetcher's 2 MB reply cap. The euro-area code was not confirmed, so the ECB stays on FRED. An area the monthly price table does not carry (quarterly reporters) simply yields no bank: UNMEASURED, never filled."
   }
  ],
+ "event_states": [
+  {
+   "id": "boj_rinban",
+   "idea": "N4",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "copying or reproduction of the content for commercial purposes requires the Bank's prior permission (Public Relations Department)",
+   "terms_url": "https://www.boj.or.jp/en/copyright.htm",
+   "terms_read": "2026-11-17",
+   "url": "https://www.boj.or.jp/en/statistics/boj/fm/ope/index.htm",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "JP225"
+   ],
+   "why": "Idea N4 (noon CRO 2026-11-11): size of each BoJ JGB outright purchase (rinban) against its pre-announced plan as a same-day state for USDJPY, EURJPY and JP225.",
+   "note": "FENCED, not built. Terms read 2026-11-17 by WebFetch (this container's proxy refuses boj.or.jp to curl): information may be copied with credit EXCEPT for commercial purposes, which need prior permission; trading is commercial use (same standard as the SNB ruling on #1087). robots.txt could not be read from here (WebFetch client_error), so it is unverified too. Data format seen: per-operation-day XLSX ope<YYYYMMDD>.xlsx and monthly ope<YYYYMM>.xlsx under /en/statistics/boj/fm/ope/. Unblocks only with the Bank's written permission recorded here. JP225 is not in the universe registry yet."
+  },
+  {
+   "id": "snb_sight_deposits_n5",
+   "idea": "N5",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "non-commercial clause; SNB data not intended for use in connection with financial transactions",
+   "terms_url": "https://www.snb.ch/en/srv/disclaimer_copyright",
+   "terms_read": "2026-11-13",
+   "url": "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
+   "targets": [
+    "EURCHF",
+    "USDCHF",
+    "XAUUSD"
+   ],
+   "why": "Idea N5: weekly change in SNB sight deposits as the footprint of FX intervention.",
+   "note": "FENCED. The adapter itself is PR #1087 (snb_cube, TERMS_BLOCKED: no read, no lake series, no cell). This row only names the fence in the event-state gap list so N5 is never re-proposed as unbuilt."
+  },
+  {
+   "id": "tic_net_foreign_purchases",
+   "idea": "N6",
+   "adapter": "tic_slt",
+   "terms": "OPEN",
+   "terms_clause": "US government work, public domain",
+   "terms_url": "https://home.treasury.gov/data/treasury-international-capital-tic-system",
+   "terms_read": "2026-11-17",
+   "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table1.txt",
+   "total_code": "99996",
+   "value_col": 4,
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 55,
+    "hour": 21,
+    "why": "month M is released mid-month M+2 at 16:00 ET (about day 45-50 after month end); +55 days 21:00 UTC is after every scheduled date"
+   },
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "US500"
+   ],
+   "why": "Idea N6 (noon CRO 2026-11-13): monthly TIC net foreign purchases of US long-term securities against the median of the prior twelve months, a state for USDJPY, EURUSD and US500 after the release.",
+   "note": "slt_table1.txt is tab-delimited, millions of USD, one row per country and month from 2023-02 (Country, Country Code, Date YYYY-MM, then Holdings / Net U.S. Sales / Valuation Change per class; read 2026-11-17 by WebFetch). Grand Total row code 99996 (confirm_on_box: the WebFetch excerpt did not show it). TIC books from the US reporter's side, so net U.S. sales = net foreign purchases (positive = inflow). The legacy snetus.txt history (to 2023-01) is not read yet: a named gap. Robots re-checked with our UA before every read."
+  },
+  {
+   "id": "usda_export_sales",
+   "idea": "N7",
+   "adapter": "none",
+   "terms": "BLOCKED_AUTH",
+   "terms_clause": "US government work, public domain; but the FAS OpenData ESR API is key-gated (API_KEY header) and env_keys_catalog.json holds no FAS key, and the ESRQS API (launched 2026-03-26, no login) has no confirmed endpoint paths",
+   "terms_url": "https://www.fas.usda.gov/newsroom/usda-will-launch-new-export-sales-reporting-and-query-system-esrqs-thursday-march-26-2026",
+   "terms_read": "2026-11-17",
+   "url": "https://apps.fas.usda.gov/OpenData/api/esr/",
+   "targets": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ],
+   "why": "Idea N7 (noon CRO 2026-11-13): Thursday 08:30 ET net export sales for corn, wheat and soybeans against their 4-week average, an event state for the soft CFDs.",
+   "note": "FENCED on ACCESS, not terms. Unblocks with either a free FAS OpenData key added to libs/ops/env_keys_catalog.json (read through env_keys.read_key in the keyed_sources roster) or one box read of the ESRQS API paths. apps.fas.usda.gov robots.txt could not be read from this container."
+  },
+  {
+   "id": "eia_gas_storage_vs5y",
+   "idea": "N8",
+   "adapter": "keyed_store",
+   "terms": "OPEN",
+   "derive": "gas_storage_vs5y",
+   "terms_clause": "US government work, public domain (EIA)",
+   "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+   "terms_read": "inherited from the keyed_sources roster row eia_natgas_storage",
+   "keyed_source": "eia_natgas_storage",
+   "keyed_series": "ng_storage_l48",
+   "url": "keyed_sources:eia_natgas_storage",
+   "targets": [
+    "XNGUSD"
+   ],
+   "why": "Idea N8 (noon CRO 2026-11-13): the Thursday 10:30 ET weekly working-gas change against the five-year average change for that week, an event state for XNGUSD.",
+   "note": "No new fetch and no key here: the keyed_sources leg reads EIA with EIA_API_KEY through env_keys.read_key and keeps a first-value PIT store; this row derives the change and its gap to the prior five years' same-ISO-week mean (at least three years), stamped at the store's own availability (week end + 7 days 17:00 UTC, or first seen live)."
+  },
+  {
+   "id": "nfci_weekly",
+   "idea": "N9",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "permission to reproduce only where 'reproduction is not for the purpose of private and/or commercial gain'; otherwise written permission from the Federal Reserve Bank of Chicago",
+   "terms_url": "https://www.chicagofed.org/utilities/legal-notices",
+   "terms_read": "2026-11-17",
+   "url": "https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv",
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY"
+   ],
+   "why": "Idea N9 (noon CRO 2026-11-14): the weekly change in the Chicago Fed NFCI and ANFCI as a regime state for US500, NAS100, XAUUSD and the JPY crosses.",
+   "note": "FENCED on terms. The Chicago Fed's legal notices grant reproduction only when not for private or commercial gain; trading is commercial gain (same standard as SNB #1087), and FRED is refused for every automated fetch (2026-11-13 ruling). robots.txt on chicagofed.org is empty (read 2026-11-17), so robots is not the block. The file is ready the day permission is recorded: CSV header Friday_of_Week,NFCI,ANFCI,Risk,Credit,Leverage,Nonfinancial_Leverage (MM/DD/YYYY), updated Wednesday 08:30 ET (Thursday in holiday weeks), revised weekly."
+  },
+  {
+   "id": "fed_sloos_ci",
+   "idea": "N10",
+   "adapter": "frb_ddp_zip",
+   "terms": "OPEN",
+   "terms_clause": "information on the Board's website is in the public domain and may be copied and distributed without permission; cite the Board",
+   "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+   "terms_read": "2026-11-17",
+   "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=sloos&filetype=zip",
+   "series_name": "SUBLPDCILS_N.Q",
+   "column": "sloos_ci_tight",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 45,
+    "hour": 20,
+    "why": "a survey dated to its quarter's first day (FRED convention) is released early in the quarter's second month at 14:00 ET; +45 days 20:00 UTC is after every release; a quarter-end dating would only make it later"
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "US30",
+    "EURUSD",
+    "USDJPY",
+    "USDX"
+   ],
+   "why": "Idea N10 (noon CRO 2026-11-14): Senior Loan Officer Survey net % of banks tightening C&I standards (large and middle-market firms) against the prior survey, a slow state for US index CFDs and USD crosses.",
+   "note": "Data Download Program XML package (SDMX-style Series SERIES_NAME / Obs TIME_PERIOD, OBS_VALUE). SERIES_NAME SUBLPDCILS_N.Q is the DDP mnemonic behind FRED DRTSCILM as best known from a container that cannot reach federalreserve.gov (confirm_on_box): a wrong name reads UNPARSED, never zero. The DDP preformatted packages retire 2027-03-31 and the DDP page 2027-07-01: re-point before then. federalreserve.gov robots.txt could not be read from here; it is checked with our UA before every read."
+  },
+  {
+   "id": "jolts_quits_vs3m",
+   "idea": "N11",
+   "adapter": "keyed_store",
+   "terms": "OPEN",
+   "derive": "quits_vs3m",
+   "terms_clause": "BLS material is in the public domain; cite the Bureau of Labor Statistics",
+   "terms_url": "https://www.bls.gov/bls/linksite.htm",
+   "terms_read": "2026-11-17",
+   "keyed_source": "bls_components",
+   "keyed_series": "jolts_quits_rate",
+   "url": "keyed_sources:bls_components",
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "US500",
+    "NAS100"
+   ],
+   "why": "Idea N11 (noon CRO 2026-11-17): the monthly JOLTS quits rate against its prior three-month average, a slow state for USD crosses and US index CFDs after the release.",
+   "note": "Sourced from the BLS API (JTS000000000000000QUR, total nonfarm quits rate SA) through the keyed_sources roster row bls_components, which reads BLS_API_KEY through env_keys.read_key; FRED (JTSQUR) is refused. Stamped at the store's availability: month end + 42 days 14:00 UTC (JOLTS prints about five weeks after the month at 10:00 ET), or first seen live."
+  },
+  {
+   "id": "ust_buybacks",
+   "idea": "N12",
+   "adapter": "fiscaldata_buybacks",
+   "terms": "OPEN",
+   "terms_clause": "available to copy, adapt, redistribute, or otherwise use for non-commercial or commercial purposes; open API, no key",
+   "terms_url": "https://fiscaldata.treasury.gov/api-documentation/",
+   "terms_read": "2026-11-17",
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/buybacks_operations?sort=-operation_date&page[size]=10000",
+   "results_after_min": 60,
+   "targets": [
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "why": "Idea N12 (noon CRO 2026-11-17): size and acceptance of US Treasury buyback operations as a liquidity-support state for USDJPY, XAUUSD and US500 in the days around each operation.",
+   "note": "Fields read 2026-11-17 (234 operations then): operation_date, operation_close_time_est, operation_type, total_par_amt_offered, total_par_amt_accepted, max_par_amt_redeemed. One row per operation day (summed); stamped at the operation's ET close + 60 minutes (results post shortly after the close), 23:00 UTC when the time is unreadable. Robots on api.fiscaldata.treasury.gov is checked with our UA before every read."
+  }
+ ],
  "cftc_markets": [
   {
    "id": "gold",

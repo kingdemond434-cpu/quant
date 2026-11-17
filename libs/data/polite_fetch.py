@@ -220,6 +220,9 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
+    #: The bytes as read (before charset decoding), for the few callers that need a binary
+    #: body such as a zip package; `text` stays the decoded view every other caller reads.
+    body: bytes = b""
 
     @property
     def ok(self) -> bool:
@@ -282,6 +285,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.final_url = str(getattr(fh, "url", "") or url)
                 resp.content_type = ctype
                 resp.text = decode_body(raw, ctype, cenc)
+                resp.body = raw
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
                 break
