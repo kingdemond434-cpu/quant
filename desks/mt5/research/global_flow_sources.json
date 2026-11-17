@@ -284,6 +284,14 @@
    "why": "Korean retail (gaemi) vs foreigners in KOSPI and KOSPI200 futures; foreign flow drives USDKRW."
   },
   {
+   "id": "fed_foreign_custody",
+   "class": "sovereign",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "Fed H.4.1 foreign-official custody holdings were to be read through FRED, which the 2026-11-13 terms ruling refuses for automated fetches. Needs a direct reader of the Federal Reserve's own H.4.1 release with its robots and terms read first.",
+   "why": "Sovereign selling of Treasuries held in custody at the New York Fed (for example to fund FX defence) shows here first."
+  },
+  {
    "id": "cbrt_nonresident",
    "class": "cross_border",
    "region": "TR",
@@ -443,12 +451,6 @@
    "class": "retail",
    "region": "CN",
    "where": "free_stack_sources cn_weibo/cn_xueqiu/cn_guba + local-language content thread"
-  },
-  {
-   "id": "fed_foreign_custody",
-   "class": "sovereign",
-   "region": "global",
-   "where": "futures_state_sources.json fred_sets.global_flow (added with this module)"
   },
   {
    "id": "cftc_commercials",
