@@ -4313,6 +4313,14 @@ _TERMINAL_ARTIFACTS = {
         "standing addendum to the DeepSeek second-flywheel mandate, subordinate to it by its own "
         "header -- scopes the DeepSeek seat's residual work and creates no second authority, "
         "amended by decision only, never a cadence or an inventory",
+    # Classified 2026-11-17 (Governance, #1270): the two rulings LAWS §5e's permission route cites,
+    # vendored so a clone can open them.
+    "docs/policy/llm-relays-terms-ruling-2026-11-17.md":
+        "standing terms ruling cited by LAWS 5e's permission route (relay refusal plus the owner's "
+        "override and its conditions) -- amended by a later ruling only, never a cadence or an inventory",
+    "docs/policy/owner-permission-attestation-2026-11-17.md":
+        "standing owner attestation cited by LAWS 5e's permission route, source by source with its "
+        "conditions -- amended by a later ruling only, never a cadence or an inventory",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
