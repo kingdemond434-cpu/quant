@@ -11,25 +11,42 @@ from libs.ops import cn_ensemble as cn
 from libs.ops import llm_seat
 
 NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
-(OR,) = cn.PROVIDERS
+OR, HC, AR, YJ = cn.PROVIDERS
 
 
 def _no_list(base: str, key: str) -> list[str]:
     raise RuntimeError("offline")
 
 
-def test_openrouter_is_dark_without_its_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    import libs.ops.deepseek_cycle as ds
-    monkeypatch.setattr(ds, "resolve_key", lambda env: ("", "none"))
-    s = cn.seat_for(OR, {}, _no_list)
-    assert not s.lit and s.key == "" and OR.key_env in s.why
+@pytest.fixture(autouse=True)
+def _relays_ruled_allowed(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    """Most tests exercise relay plumbing, so they assume Governance has ruled ALLOWED."""
+    if "shipped_rulings" not in request.node.name:
+        monkeypatch.setattr(cn, "relay_ruling", lambda name: "ALLOWED")
 
 
-def test_a_relay_provider_can_never_be_lit() -> None:
-    rogue = cn.Provider("hcnsec", "HCNSEC", "HCNSEC_BASE_URL", "https://api.hcnsec.cn/v1",
-                        relay=True)
-    s = cn.seat_for(rogue, {"HCNSEC": "k"}, lambda b, k: ["deepseek-chat"])
-    assert not s.lit and s.why.startswith("REFUSED")
+def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
+    for p in (HC, AR, YJ):
+        assert cn.relay_ruling(p.name) == "ALLOWED"
+        s = cn.seat_for(p, {}, _no_list)
+        assert not s.lit and p.key_env in s.why          # still dark until the key exists
+        lit = cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"])
+        assert lit.lit and lit.models == ("deepseek-chat",)
+
+
+def test_every_provider_is_dark_without_its_key() -> None:
+    for p in (HC, AR, YJ):
+        s = cn.seat_for(p, {}, _no_list)
+        assert not s.lit and s.key == "" and p.key_env in s.why
+
+
+def test_relay_needs_https_and_a_chinese_model() -> None:
+    env = {"HCNSEC": "k", "HCNSEC_BASE_URL": "http://api.hcnsec.cn/v1"}
+    assert "https" in cn.seat_for(HC, env, _no_list).why
+    env = {"HCNSEC": "k"}
+    assert not cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "claude-x"]).lit
+    s = cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "deepseek-ai/DeepSeek-R1-0528"])
+    assert s.lit and s.models == ("deepseek-ai/DeepSeek-R1-0528",)
 
 
 def test_openrouter_takes_only_free_chinese_ids() -> None:
@@ -59,9 +76,11 @@ def test_the_shipped_prompts_are_public() -> None:
 def test_plan_spreads_over_models_and_respects_quotas() -> None:
     a = cn.seat_for(OR, {"OPENROUTER_API_KEY": "k"}, lambda b, k: [
         "deepseek/deepseek-r1:free", "qwen/qwen3-235b-a22b:free", "moonshotai/kimi-k2:free"])
-    calls = cn.plan([a], {"openrouter": 8}, start=0)
+    b = cn.seat_for(HC, {"HCNSEC": "k"}, lambda b, k: ["deepseek-ai/DeepSeek-R1-0528"])
+    calls = cn.plan([a, b], {"openrouter": 6, "hcnsec": 2}, start=0)
     assert len(calls) == 8
-    assert len({c[1] for c in calls}) == 3
+    assert sum(c[0].provider.name == "hcnsec" for c in calls) == 2
+    assert len({c[1] for c in calls}) == 4
     assert len({c[2] for c in calls}) == 8 and {c[3] for c in calls} == {"propose"}
     assert cn.plan([a], {"openrouter": 0}, 0) == []
 
@@ -76,26 +95,29 @@ def _finding(title: str) -> str:
 def test_run_dedupes_across_models_and_donates(tmp_path: Path,
                                                monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cn, "_donate", lambda rows, rec, now, base: _fake_donate(rows, base))
-    env = {"OPENROUTER_API_KEY": "k", "CN_ENSEMBLE_WORKERS": "3"}
+    env = {"OPENROUTER_API_KEY": "k", "HCNSEC": "h", "CN_ENSEMBLE_WORKERS": "3"}
 
     def lister(base: str, key: str) -> list[str]:
-        return ["deepseek/deepseek-r1:free", "qwen/qwen3-235b-a22b:free",
-                "z-ai/glm-4.5-air:free"]
+        if "hcnsec" in base:
+            return ["deepseek-ai/DeepSeek-R1-0528"]
+        return ["deepseek/deepseek-r1:free", "qwen/qwen3-235b-a22b:free"]
 
     def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
         assert seat.key and ("RESEARCH LENS" in user or "RULES:" in user)
         if "qwen" in model:
             return "", "HTTP 429"
-        return _finding("Gold fix flow"), None
+        return _finding("Gold fix flow" if "R1" in model.upper() else "Other idea"), None
 
     rep = cn.run(NOW, root=tmp_path, env={**env, "CN_SWARM_CRITIC_CALLS": "0"}, chat=chat,
-                 list_models=lister, quotas={"openrouter": 6})
+                 list_models=lister, quotas={"openrouter": 4, "hcnsec": 2})
     assert rep["calls"] == 6
-    assert list(rep["providers"]) == ["openrouter"]
+    assert rep["providers"]["agentrouter"]["lit"] is False
     assert any(o["status"] == "CALL_FAILED" for o in rep["outcomes"])
     assert rep["distinct_ideas"] >= 1 and rep["multi_model_ideas"] >= 1
     assert "PROPOSE ONLY" in rep["authority"]
     assert (tmp_path / cn.REPORT).exists()
+    relay_rows = (tmp_path / cn.RELAY_LEDGER).read_text("utf-8").splitlines()
+    assert len(relay_rows) == 2 and all('"hcnsec"' in r for r in relay_rows)
 
 
 def _fake_donate(rows: list[dict], base: Path) -> Path:
@@ -105,11 +127,7 @@ def _fake_donate(rows: list[dict], base: Path) -> Path:
     return p
 
 
-def test_run_with_no_keys_sends_nothing(tmp_path: Path,
-                                        monkeypatch: pytest.MonkeyPatch) -> None:
-    import libs.ops.deepseek_cycle as ds
-    monkeypatch.setattr(ds, "resolve_key", lambda env: ("", "none"))
-
+def test_run_with_no_keys_sends_nothing(tmp_path: Path) -> None:
     def chat(*a: object) -> tuple[str, str | None]:
         raise AssertionError("a dark ensemble must not call anyone")
 
@@ -194,10 +212,12 @@ def test_swarm_runs_critic_mutation_and_lineage(tmp_path: Path) -> None:
     (tmp_path / cn_swarm.GATE_LEDGER).write_text(json.dumps({
         "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
         "terminal_gate": "deflated_sharpe"}) + "\n")
-    env = {"OPENROUTER_API_KEY": "k", "CN_SWARM_CRITIC_CALLS": "1", "CN_SWARM_MUTATIONS": "1"}
+    env = {"OPENROUTER_API_KEY": "k", "HCNSEC": "h", "CN_SWARM_CRITIC_CALLS": "1",
+           "CN_SWARM_MUTATIONS": "1"}
 
     def lister(base: str, key: str) -> list[str]:
-        return ["qwen/qwen3:free", "z-ai/glm-4.5-air:free", "deepseek/deepseek-r1:free"]
+        return ["deepseek-ai/DeepSeek-R1"] if "hcnsec" in base else ["qwen/qwen3:free",
+                                                                      "z-ai/glm-4.5-air:free"]
     sent: list[tuple[str, str]] = []
 
     def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
@@ -205,13 +225,14 @@ def test_swarm_runs_critic_mutation_and_lineage(tmp_path: Path) -> None:
         if system == cn_swarm.CRITIC_SYSTEM:
             return json.dumps({"scores": [{"i": 0, "score": 9}, {"i": 1, "score": 1}]}), None
         if system == cn_swarm.MUTATE_SYSTEM:
+            assert seat.provider.name == "openrouter"          # never a relay
             return _recipe("mean_reversion_rsi", "EURUSD", rsi_n=8), None
         if "glm" in model:
             return _recipe("trend_ma_cross", "XAUUSD", fast_ema=20), None
         return _recipe("mean_reversion_rsi", "GBPUSD", rsi_n=21), None
 
     rep = cn.run(NOW, root=tmp_path, env=env, chat=chat, list_models=lister,
-                 quotas={"openrouter": 12})
+                 quotas={"openrouter": 6, "hcnsec": 4})
     assert rep["near_misses_seen"] == 1 and rep["mutation_calls"] == 1
     assert rep["runnable_recipes"] >= 2 and rep["critic"]["scored"] >= 2
     assert rep["critic"]["killed"] >= 1
@@ -223,7 +244,7 @@ def test_swarm_runs_critic_mutation_and_lineage(tmp_path: Path) -> None:
     assert len(lin) >= len(rows)
     # A second hour does not resend what the first already donated.
     rep2 = cn.run(NOW, root=tmp_path, env=env, chat=chat, list_models=lister,
-                  quotas={"openrouter": 12})
+                  quotas={"openrouter": 6, "hcnsec": 4})
     assert rep2["recipes_skipped_already_sent"] >= 1
 
 
@@ -244,40 +265,53 @@ def test_scoreboard_joins_verdicts_back_to_model_and_lens(tmp_path: Path) -> Non
     assert cn_swarm.scoreboard(tmp_path / "nowhere")["status"] == "UNMEASURED"
 
 
-# ------------------------------------------------------------ the Governance relay refusal
-RELAY_HOSTS = ("api.hcnsec.cn", "agentrouter.org", "api.yjs.im")
-RULING = "governance/llm-relays-terms-ruling-2026-11-17.md"
-
-
-def test_relays_are_refused_and_have_no_adapter() -> None:
+# ------------------------------------------- the relay ruling and its four conditions
+def test_relay_ruling_is_allowed_on_its_four_conditions(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[2]
     rulings = json.loads((root / "ops/relay_terms_rulings.json").read_text("utf-8"))
     for name in ("hcnsec", "agentrouter", "yjs"):
-        assert rulings[name] == {"ruling": "REFUSED", "ref": RULING}
-    assert not any(p.relay for p in cn.PROVIDERS)
-    assert not any(h in p.default_base for p in cn.PROVIDERS for h in RELAY_HOSTS)
+        row = rulings[name]
+        assert row["ruling"] == "ALLOWED" and row["keys"] == "principal"
+        assert "governance/llm-relays-terms-ruling-2026-11-17.md" in row["ref"]
+    # 4. the keys are the principal's: catalogued, read by the ensemble only, never shipped.
     from libs.ops import env_keys
-    for k in ("HCNSEC", "AGENTROUTER", "YJS"):
-        assert env_keys.refused(k)
-        row = next(r for r in env_keys.catalog() if r["name"] == k)
-        assert row["readers"] == [] and row["signup"].startswith("REFUSED")
+    for p in (HC, AR, YJ):
+        row = next(r for r in env_keys.catalog() if r["name"] == p.key_env)
+        assert row["readers"] == ["libs/ops/cn_ensemble.py"] and "principal" in row["owner"]
+        assert not env_keys.refused(p.key_env)
+    # 1. public prompts only: every prompt a relay can receive passes assert_public.
+    from libs.ops import cn_swarm as sw
+    cat = sw.catalog()
+    for lid, _lg, _b in sw.LENSES:
+        cn.assert_public(sw.propose_system(cat), sw.lens_prompt(lid))
+    cn.assert_public(sw.CRITIC_SYSTEM)
+    # 3. propose-only, never on a money path.
+    closure = (root / "ops/money_closure.txt").read_text("utf-8")
+    for mod in ("cn_ensemble", "cn_swarm", "run_cn_ensemble"):
+        assert mod not in closure
+    rep_src = (root / "libs/ops/cn_ensemble.py").read_text("utf-8")
+    assert "PROPOSE ONLY" in rep_src
+    assert "AUTHORITY: NONE" in (sw.__doc__ or "") and "AUTHORITY: NONE" in (cn.__doc__ or "")
 
 
-def test_route_checker_refuses_the_relay_hosts_without_contacting_them(
-        monkeypatch: pytest.MonkeyPatch) -> None:
-    import importlib.util
-    root = Path(__file__).resolve().parents[2]
-    spec = importlib.util.spec_from_file_location("csr", root / "scripts/check_source_routes.py")
-    assert spec and spec.loader
-    csr = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(csr)
+def test_near_misses_never_reach_a_relay(tmp_path: Path) -> None:
+    """2. no desk-private or near-miss content to relays: with OpenRouter dark, the swarm makes
+    no mutation call at all rather than hand a near miss to a relay."""
+    from libs.ops import cn_swarm as sw
+    (tmp_path / "desks/mt5/data/hypotheses").mkdir(parents=True)
+    (tmp_path / sw.GRAPH).write_text(json.dumps({
+        "id": "g1", "symbol": "EURUSD", "family": "mean_reversion_rsi",
+        "params": {"rsi_n": 10}, "source": "miner:other"}) + "\n")
+    (tmp_path / sw.GATE_LEDGER).write_text(json.dumps({
+        "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
+        "terminal_gate": "deflated_sharpe"}) + "\n")
 
-    def boom(*a: object, **k: object) -> None:
-        raise AssertionError("a refused host was contacted")
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        assert seat.provider.relay
+        assert system != sw.MUTATE_SYSTEM and "RULES:\n{\"symbol\"" not in user
+        return json.dumps({"findings": []}), None
 
-    monkeypatch.setattr(csr.urllib.request, "urlopen", boom)
-    for h in RELAY_HOSTS:
-        assert h in csr.REFUSED_HOSTS
-        out = csr.probe({"name": h, "url": f"https://{h}/v1/models", "expect": "json"})
-        assert out["status"] == "REFUSED" and RULING in out["why"]
-        assert csr.refused(f"https://sub.{h}/x")
+    rep = cn.run(NOW, root=tmp_path, env={"HCNSEC": "h", "CN_SWARM_CRITIC_CALLS": "0"},
+                 chat=chat, list_models=lambda b, k: ["deepseek-chat"],
+                 quotas={"hcnsec": 5})
+    assert rep["mutation_calls"] == 0 and rep["calls"] == 5

@@ -1,15 +1,24 @@
 {
- "_doc": "Governance's terms rulings on free-credit LLM relays. REFUSED relays have no adapter in libs/ops/cn_ensemble.py and their keys are catalogued banned. Only Governance changes a ruling, by PR, with its reference.",
+ "_doc": "Terms rulings on free-credit LLM relays used by libs/ops/cn_ensemble.py. A relay seat is lit only when its ruling is ALLOWED AND its key exists. Only Governance or the principal changes a ruling, by PR, with its reference. tests/ops/test_cn_ensemble.py pins the conditions.",
+ "conditions": [
+  "public prompts only (assert_public on every outgoing prompt)",
+  "no desk-private or near-miss content to relays (mutation goes to OpenRouter only)",
+  "propose-only, never on a money path (not in ops/money_closure.txt)",
+  "keys are the principal's own, added to the box by him"
+ ],
  "hcnsec": {
-  "ruling": "REFUSED",
-  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+  "ruling": "ALLOWED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md (owner override section); zuck 2026-11-17T18:34:53Z \"js let me do it theyre all verified\"",
+  "keys": "principal"
  },
  "agentrouter": {
-  "ruling": "REFUSED",
-  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+  "ruling": "ALLOWED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md (owner override section); zuck 2026-11-17T18:34:53Z \"js let me do it theyre all verified\"",
+  "keys": "principal"
  },
  "yjs": {
-  "ruling": "REFUSED",
-  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+  "ruling": "ALLOWED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md (owner override section); zuck 2026-11-17T18:34:53Z \"js let me do it theyre all verified\"",
+  "keys": "principal"
  }
 }

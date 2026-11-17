@@ -66,7 +66,9 @@ from libs.ops.env_keys import read_key
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
 SPEND_LEDGER = _ROOT / "data" / "llm_spend.jsonl"
-#: `Seat.source` of a seat on a FREE-CREDIT RELAY (hcnsec, AgentRouter: libs/ops/cn_ensemble.py).
+#: `Seat.source` of a seat on a FREE-CREDIT RELAY (hcnsec, AgentRouter, YJS in
+#: libs/ops/cn_ensemble.py; lit only when ops/relay_terms_rulings.json says ALLOWED and the
+#: principal's key exists).
 #: Its calls draw that relay's own allowance, never OpenRouter's, so they are kept out of
 #: OpenRouter's daily request count and booked at $0 (the credit is granted, not bought).
 FREE_RELAY = "free_relay"
