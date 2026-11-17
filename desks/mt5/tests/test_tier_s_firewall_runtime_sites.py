@@ -6,11 +6,18 @@ which loses its call, or cannot be read, is reported as such rather than as a pa
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
 
-import tier_s
+DESK = Path(__file__).resolve().parents[1]
+ROOT = DESK.parents[1]
+for p in (str(ROOT), str(ROOT / "scripts"), str(DESK / "research"), str(DESK)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+import tier_s  # noqa: E402
 
 
 def test_every_money_path_site_calls_the_firewall_on_this_tree() -> None:
