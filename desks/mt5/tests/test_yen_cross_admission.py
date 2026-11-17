@@ -134,9 +134,13 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
         assert lp.refuse({**srb, "symbol": "USDJPY", "name": name}, pol) is not None
     for name in ("EURUSD.asia#rr=1.5_wait_bars=8", "eurusd_session_range_breakout_asia_rr15_wb8"):
         assert lp.refuse({**srb, "symbol": "EURUSD", "name": name}, pol) is None
+    # The 2026-11-13 lift opens EURUSD to every certified family (its 2026-11-11 one-sleeve
+    # allowlist only opened the door under the old whitelist); the 'discovered' ban stands.
     for name in ("EURUSD.cot_positioning.asia", "eurusd_cot_positioning_asia_p_0"):
         assert lp.refuse({"symbol": "EURUSD", "family": "cot_positioning", "timeframe": "H1",
-                          "name": name}, pol) is not None
+                          "name": name}, pol) is None
+    assert lp.refuse({"symbol": "EURUSD", "family": "discovered", "timeframe": "H1",
+                      "name": "EURUSD.discovered.asia"}, pol) is not None
     assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
                      pol) is not None
     for sym in ("EURZAR", "USDZAR", "AUDCHF"):
