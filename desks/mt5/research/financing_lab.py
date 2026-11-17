@@ -61,6 +61,7 @@ BARS_DIR = DATA / "universe"
 CAPACITY = REPORTS / "CAPACITY.json"
 OUT_EVIDENCE = DATA / "allocator_evidence.json"
 OUT_REPORT = REPORTS / "FINANCING_LAB.json"
+OUT_LEVERAGE = REPORTS / "ACCOUNT_LEVERAGE.json"
 
 BUDGET_S = 600.0
 ACCOUNT_CCY_DEFAULT = "EUR"
@@ -651,6 +652,14 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False) -> dict[str, Any]:
     if not dry_run:
         _atomic_write(OUT_EVIDENCE, evidence_doc)
         _atomic_write(OUT_REPORT, report)
+        # K3 (CRO 2026-11-13): keep the account's leverage from pass to pass and name every
+        # change; a reading only counts when it came from the live terminal.
+        try:
+            from libs.ops.leverage_watch import observe
+            observe(OUT_LEVERAGE, _f(acct["leverage"])
+                    if acct.get("source") == "live terminal" else None)
+        except Exception as exc:  # a report; never a reason to lose the pass
+            unmeasured.append(f"leverage watch: {type(exc).__name__}")
     return {"evidence": evidence_doc, "report": report}
 
 
