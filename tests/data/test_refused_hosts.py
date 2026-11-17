@@ -109,6 +109,6 @@ def test_the_crawler_reports_a_refused_redirect_as_blocked(monkeypatch) -> None:
         def open(self, req, timeout=None):
             raise rh.RefusedRedirect("BLOCKED_ON_TERMS: redirect target refused (test)")
 
-    monkeypatch.setattr(wc, "_refusing_opener", lambda: _Opener())
+    monkeypatch.setattr(wc, "_refusing_opener", lambda *h: _Opener())
     raw, why = wc.fetch("https://lawful.example.org/a")
     assert raw is None and why.startswith("BLOCKED_ON_TERMS")

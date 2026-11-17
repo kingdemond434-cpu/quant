@@ -208,8 +208,8 @@ def test_guarded_urlopen_follows_a_clean_redirect_and_refuses_a_fenced_one(web: 
     assert not [u for u in web.asked if tf.platform_of_url(u)], "a fenced URL was requested"
 
 
-def test_every_fetch_helper_refuses_a_redirect_into_a_fenced_host(web: _FakeWeb,
-                                                                 wire: _Tripwire) -> None:
+def test_every_fetch_helper_refuses_a_redirect_into_a_fenced_host(
+        web: _FakeWeb, wire: _Tripwire, monkeypatch: pytest.MonkeyPatch) -> None:
     import acquire_datasets as ad
     import free_data as fd
     import source_fixer as sf
@@ -226,6 +226,10 @@ def test_every_fetch_helper_refuses_a_redirect_into_a_fenced_host(web: _FakeWeb,
     assert ei.value.reason == tf.BLOCKED_WITH_SUBSTITUTE
     with pytest.raises(tf.TermsFenced):
         fd._get("http://data.example.test/moved.csv")
+    # The crawler fetches through LIVE's refusing opener (refused-host redirects) with the terms
+    # processor added; serve the fake web on that seam too.
+    real_ro = wc._refusing_opener
+    monkeypatch.setattr(wc, "_refusing_opener", lambda *h: real_ro(web, *h))
     raw, why = wc.fetch("http://data.example.test/moved.csv")
     assert raw is None and why.startswith(tf.BLOCKED_WITH_SUBSTITUTE)
     assert sf._probe("http://data.example.test/moved.csv")[1] == "terms_fenced:reddit"
