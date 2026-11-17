@@ -141,9 +141,9 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
     assert gateway._book_key({"name": "gold_asia_v3", "symbol": "XAUUSD"}, E8) == "gold_asia"
 
 
-def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
+def test_live_policy_admits_the_book_and_quarantines_chfnok() -> None:
     pol = live_policy.policy()
-    assert pol.live_symbols == {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"}
+    assert pol.live_symbols == {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS", "EURUSD"}
     assert "discovered" in pol.banned_families
     assert "M15" in pol.banned_timeframes["XAUUSD"]
     # The three gap_decay principals are refused at the door (BOOKS_PATCH v5).
@@ -152,14 +152,22 @@ def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None
         row = {"symbol": sym, "family": "overnight_gap_decay", "exec": "family_market",
                "name": name}
         assert live_policy.refuse(row, pol)
+    # Reddit origin is no fence (principal 2026-10-13): USDJPY admits its rr2.5 sleeve only.
     for name in ("USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12"):
-        assert live_policy.refuse({"symbol": "USDJPY", "name": name}, pol)
+        assert live_policy.refuse({"symbol": "USDJPY", "family": "session_range_breakout",
+                                   "timeframe": "H1", "name": name}, pol) is None
+    for other in ("USDJPY.asia#rr=1.5", "usdjpy_session_range_breakout_asia_5_wb_12"):
+        assert live_policy.refuse({"symbol": "USDJPY", "family": "session_range_breakout",
+                                   "timeframe": "H1", "name": other}, pol)   # rr2.5 only
     for name in ("chfnok_carry_asia_p_98d776f3e210d3e2", "CHFNOK.carry.asia#input_symbol=CHFNOK"):
         assert live_policy.refuse({"symbol": "CHFNOK", "family": "carry", "name": name}, pol)
     doc = json.loads(live_policy.POLICY_FILE.read_text(encoding="utf-8"))
     assert doc["live_sleeves"] == {
-        "USDJPY": [], "CHFNOK": [],
+        "USDJPY": ["USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12"],
+        "CHFNOK": [],
         "EURZAR": ["eurzar_carry_asia_p_8339edce23032d21"],
         "USDNOK": ["usdnok_carry_asia_p_ff35bb7c8427d66f"],
-        "EURILS": ["eurils_formula_asia_p_673857a649d3c271"]}
-    assert "reddit_lineage_quarantine" in doc and "carry_lookahead_quarantine" in doc
+        "EURILS": ["eurils_formula_asia_p_673857a649d3c271"],
+        "EURUSD": ["EURUSD.asia#rr=1.5_wait_bars=8", "eurusd_session_range_breakout_asia_rr15_wb8"]}
+    assert "reddit_lineage_quarantine" not in doc
+    assert "reddit_origin_lifted" in doc and "carry_lookahead_quarantine" in doc

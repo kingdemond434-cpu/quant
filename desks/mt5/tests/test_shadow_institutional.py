@@ -345,8 +345,15 @@ def test_gap_map_has_a_measured_status_on_every_row(tmp_path: Path) -> None:
     assert by["decades of clean history"]["status"] == si.UNMEASURED   # empty tmp tree
     options = by["options surface (vendor)"]
     assert options["detail"]["deribit_sensors_declared"] >= 5
-    # Governance 2026-11-14: Cboe's delayed tables and the FRED VIX row are refused on terms.
-    assert "cboe_delayed_surface" in options["detail"]["refused_for_terms"]
+    # Refused at the door on terms (BLOCKED_ON_TERMS, 2026-11-14): UN Comtrade's rows (its
+    # licence s.5 forbids automated downloading) and Cboe's delayed tables plus the FRED VIX row
+    # (Governance). Cboe stays LABELLED as well, so the gap is named, never silent.
+    refused = set(options["detail"]["refused_for_terms"])
+    # The FRED-hosted rows (vix_level, and the ICE BofA OAS behind us_credit_oas and
+    # credit_spread) are refused under the FRED ruling of 2026-11-13. Equality, not a subset,
+    # so a newly refused source must be named here.
+    assert refused == {"cn_customs_exports", "cn_iron_ore_imports", "cboe_delayed_surface",
+                       "vix_level", "us_credit_oas", "credit_spread"}, refused
     assert "cboe_delayed_surface" in options["detail"]["terms_labelled"]
     # every row that is not fully shadowed NAMES what is missing
     for r in rows:
