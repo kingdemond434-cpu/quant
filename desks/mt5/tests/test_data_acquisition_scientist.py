@@ -190,6 +190,29 @@ def test_a_second_pass_re_requests_nothing_until_the_value_moves_or_the_day_turn
     assert state["kr_krx_short_sale_balance"]["first_requested_at"]
 
 
+@pytest.mark.parametrize("meta", [{"machine_use_allowed": False},
+                                  {"licence": "Terms of use: no scraping"}])
+def test_a_fetch_refused_dataset_is_catalogued_and_never_sampled(
+        meta: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """LAWS 5e act 6 (2026-11-17): robots or terms that refuse automated fetching return
+    FETCH_REFUSED before any network call -- not even robots.txt is read -- and the row is
+    kept out of the crawl queue. It is NOT a hard-boundary refusal."""
+    calls: list[str] = []
+    monkeypatch.setattr(das, "_robots_allows", lambda u: (calls.append(u), (True, "ok"))[1])
+    monkeypatch.setattr(das, "_fetch", lambda u: (calls.append(u), (None, "x"))[1])
+    cand = {"dataset": "xx_terms", "observable": "xx", "url": "https://terms.example/x.csv",
+            **meta}
+    contract, verdict = das.contract_for(cand, {"access": "free"}, "2026-11-17T00:00:00+00:00")
+    assert verdict.refused is False and verdict.fetch_allowed is False
+    assert contract.machine_use_allowed is False
+    got = das.sample(cand, contract, verdict, at="2026-11-17T00:00:00+00:00", code="t",
+                     marks=set())
+    assert got["status"] == "FETCH_REFUSED" and got["missed_growth"]
+    assert calls == []
+    assert das.register_hunt({"url": cand["url"], "machine_use_allowed": False,
+                              "task": "ACQUIRE"}, None) is False
+
+
 def test_dry_run_fetches_nothing_and_writes_nothing(desk: Any) -> None:
     doc = _build(desk, dry_run=True)
     assert doc["dry_run"] and doc["requests"]["built"] >= 2
