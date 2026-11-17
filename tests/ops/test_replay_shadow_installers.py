@@ -46,7 +46,7 @@ def _tree(tmp: Path, text: str, extra: dict[str, str] | None = None) -> Path:
 
 
 def test_an_installer_running_only_a_vouched_target_is_measured(tmp_path: Path) -> None:
-    assert rs.installer_problems(_tree(tmp_path, GOOD), INST, set()) == []
+    assert rs.installer_problems(_tree(tmp_path, GOOD), INST) == []
 
 
 @pytest.mark.parametrize(
@@ -64,15 +64,56 @@ def test_an_installer_running_only_a_vouched_target_is_measured(tmp_path: Path) 
     ],
 )  # fmt: skip
 def test_anything_else_stays_unmeasured(tmp_path: Path, text: str, why: str) -> None:
-    got = rs.installer_problems(_tree(tmp_path, text), INST, set())
+    got = rs.installer_problems(_tree(tmp_path, text), INST)
     assert got and any(why in g for g in got), got
 
 
-def test_a_target_the_replay_imported_is_vouched(tmp_path: Path) -> None:
-    text = GOOD.replace("run_alerts.py", "other_tool.py")
-    tree = _tree(tmp_path, text)
-    assert rs.installer_problems(tree, INST, set())
-    assert rs.installer_problems(tree, INST, {"scripts/other_tool.py"}) == []
+def test_only_the_harness_allowlist_vouches_never_the_replay_imports(tmp_path: Path) -> None:
+    """#1249 audit MF1: an ENTRY_POINT or an imported file is not a vouched installer target."""
+    gw = "desks/mt5/research/run_gateway_loop.py"
+    text = GOOD.replace("scripts\\run_alerts.py", gw.replace("/", "\\"))
+    got = rs.installer_problems(_tree(tmp_path, text, {gw: "x = 1\n"}), INST)
+    assert any("does not vouch" in g for g in got), got
+
+
+# The Auditor's three probes on 616741d98, each a one-line installer that read MEASURED.
+PROBE_1 = (  # a second task for an ENTRY_POINT
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument "
+    "'desks\\mt5\\research\\run_gateway_loop.py'\nRegister-ScheduledTask -TaskName X -Action $a\n"
+)
+PROBE_2 = (  # a cmd chain hidden behind ' # '
+    "$a = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "
+    '"/c scripts\\run_alerts.py # & python -m research.pf_allocator --mode fast"\n'
+    "Register-ScheduledTask -TaskName X -Action $a\n"
+)
+PROBE_3 = (  # a module target, invisible to an extension scan
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument '-m research.run_gateway_loop'\n"
+    "Register-ScheduledTask -TaskName X -Action $a  # see scripts/run_alerts.py\n"
+)
+
+
+@pytest.mark.parametrize("probe", [PROBE_1, PROBE_2, PROBE_3])
+def test_the_audit_probes_stay_unmeasured(tmp_path: Path, probe: str) -> None:
+    extra = {"desks/mt5/research/run_gateway_loop.py": "x = 1\n"}
+    assert rs.installer_problems(_tree(tmp_path, probe, extra), INST)
+
+
+@pytest.mark.parametrize(
+    ("action", "why"),
+    [
+        ("-Execute 'powershell.exe' -Argument 'scripts\\run_alerts.py'", "not python"),
+        ("-Execute $tool -Argument 'scripts\\run_alerts.py'", "not python"),
+        ("-Execute 'python.exe' -Argument 'scripts\\run_alerts.py; x'", "shell chain"),
+        ("-Execute 'python.exe' -Argument '-c print(1)'", "module flag"),
+        ("-Execute 'python.exe' -Argument '--box'", "names no target"),
+    ],
+)  # fmt: skip
+def test_every_action_executes_python_on_a_vouched_script(
+    tmp_path: Path, action: str, why: str
+) -> None:
+    text = f"$a = New-ScheduledTaskAction {action}\nRegister-ScheduledTask -TaskName X -Action $a\n"
+    got = rs.installer_problems(_tree(tmp_path, "$tool = 'x.exe'\n" + text), INST)
+    assert any(why in g for g in got), got
 
 
 def test_the_allowlist_lives_in_the_harness_not_the_tree() -> None:
@@ -193,5 +234,5 @@ def test_the_self_heal_allowlist_never_holds_an_order_path_task() -> None:
 
 def test_a_dotnet_process_launch_is_dynamic(tmp_path: Path) -> None:
     text = GOOD + "$p = [System.Diagnostics.Process]::Start($psi)\n"
-    got = rs.installer_problems(_tree(tmp_path, text), INST, set())
+    got = rs.installer_problems(_tree(tmp_path, text), INST)
     assert any("dynamic execution" in g for g in got), got

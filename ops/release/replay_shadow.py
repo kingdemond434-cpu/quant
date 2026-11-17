@@ -596,15 +596,11 @@ _DOTNET_LAUNCH = re.compile(
 
 
 def _installer_code(text: str) -> str:
-    """The installer's code: `<# ... #>` blocks, whole-line `#` comments and trailing ` # ...`
-    comments dropped (a `#` inside a quoted string is kept: the cut is only at ` #`)."""
+    """The installer's code: `<# ... #>` blocks and whole-line `#` comments dropped. A trailing
+    ` # ...` is KEPT (#1249 audit MF2): inside a quoted -Argument it is not a comment at all, and
+    keeping it can only make the scan see more."""
     text = re.sub(r"<#.*?#>", "", text, flags=re.DOTALL)
-    out = []
-    for ln in text.splitlines():
-        if ln.lstrip().startswith("#"):
-            continue
-        out.append(re.sub(r"\s#\s.*$", "", ln))
-    return "\n".join(out)
+    return "\n".join(ln for ln in text.splitlines() if not ln.lstrip().startswith("#"))
 
 
 def _resolve_ref(ref: str, files: set[str]) -> set[str]:
@@ -619,9 +615,38 @@ def _resolve_ref(ref: str, files: set[str]) -> set[str]:
     return set()
 
 
-def installer_problems(head: Path, path: str, vouched: set[str]) -> list[str]:
+#: How an action names what it runs: `-Execute <x>` and `-Argument <rest of the logical line>`.
+_ACTION = re.compile(r"new-scheduledtaskaction\b(?P<rest>.*)", re.IGNORECASE)
+_EXECUTE = re.compile(r"-execute\s+(?P<x>\$\w+|'[^']*'|\"[^\"]*\"|\S+)", re.IGNORECASE)
+#: What may never appear in an action's arguments: a module or code flag, a shell chain.
+_ARG_BANNED = re.compile(
+    r"(?<![\w-])-[mc]\b|(?<![\w])/[ck]\b|&&|\|\||[;&|]|\bcmd(\.exe)?\b|powershell|pwsh",
+    re.IGNORECASE,
+)
+_PYTHON_EXE = re.compile(
+    r"^['\"]?[^'\"]*\b(python|pythonw|py)(\d[\d.]*)?(\.exe)?['\"]?$", re.IGNORECASE
+)
+
+
+def _logical_lines(code: str) -> list[str]:
+    """Lines with PowerShell's backtick continuations joined."""
+    return re.sub(r"`\s*\n\s*", " ", code).splitlines()
+
+
+def _assigned(code: str, var: str) -> list[str]:
+    """The right-hand sides assigned to `$var` anywhere in `code` (case-insensitive)."""
+    pat = re.compile(r"^\s*\$" + re.escape(var) + r"\s*=\s*(.+)$", re.IGNORECASE)
+    return [m.group(1) for ln in _logical_lines(code) if (m := pat.match(ln))]
+
+
+def installer_problems(head: Path, path: str) -> list[str]:
     """Why a changed PowerShell installer is not MEASURED by its own text; [] when it is.
-    `vouched` is what the replay already stands behind (ENTRY_POINTS, the files it imported)."""
+
+    #1249 audit (MF1-MF3): a target is vouched ONLY by INSTALLER_TARGETS (or a conditional
+    target whose rule passes), never by ENTRY_POINTS or the replay's imports; every action must
+    -Execute python and name, in its -Argument (directly or through a variable assigned in this
+    file), exactly the scripts it runs, each resolved and vouched, with no module flag or shell
+    chain; and every script the code names anywhere must resolve and be vouched."""
     if not path.lower().endswith(".ps1"):
         return ["not a PowerShell installer"]
     raw = read(head, path)
@@ -639,23 +664,52 @@ def installer_problems(head: Path, path: str, vouched: set[str]) -> list[str]:
             why.append(f"dynamic execution beyond the scheduled-task verbs: {ln.strip()[:80]}")
             break
     files = tree_files(head)
-    allowed = {*vouched, *ENTRY_POINTS, *INSTALLER_TARGETS}
-    targets = 0
-    for hit_ref in sorted({m.group(0) for m in _SCRIPT_REF.finditer(code)}):
-        ref, hit = hit_ref, _resolve_ref(hit_ref, files)
-        if not hit:
-            why.append(f"names a script the tree does not hold: {ref[:80]}")
-        elif not hit <= allowed and not all(
-            f in allowed
-            or (f in CONDITIONAL_TARGETS and not CONDITIONAL_TARGETS[f](head))
-            or (f in SELF_HEAL_DEPS and not self_heal_problems(head))
-            for f in hit
-        ):
-            why.append(f"runs a target the replay does not vouch for: {sorted(hit - allowed)[0]}")
-        else:
-            targets += 1
-    if not targets:
-        why.append("names no target the replay vouches for")
+    heal_ok = not self_heal_problems(head) if SELF_HEAL in files else False
+
+    def vouched(f: str) -> bool:
+        if f in INSTALLER_TARGETS:
+            return True
+        if f in CONDITIONAL_TARGETS:
+            return not CONDITIONAL_TARGETS[f](head)
+        return f in SELF_HEAL_DEPS and heal_ok
+
+    def check_refs(text: str, where: str) -> int:
+        n = 0
+        for ref in sorted({m.group(0) for m in _SCRIPT_REF.finditer(text)}):
+            hit = _resolve_ref(ref, files)
+            if not hit:
+                why.append(f"{where} names a script the tree does not hold: {ref[:80]}")
+            elif not all(vouched(f) for f in hit):
+                bad = sorted(f for f in hit if not vouched(f))[0]
+                why.append(f"{where} names a target the replay does not vouch for: {bad}")
+            else:
+                n += 1
+        return n
+
+    check_refs(code, "the code")
+    actions = [m.group("rest") for ln in _logical_lines(code) if (m := _ACTION.search(ln))]
+    for rest in actions:
+        ex = _EXECUTE.search(rest)
+        exe = ex.group("x") if ex else ""
+        if exe.startswith("$"):
+            rhs = _assigned(code, exe[1:])
+            python_var = bool(rhs) and all(
+                re.search(r"get-command\s+(python|pythonw|py)\b", r, re.IGNORECASE)
+                or _PYTHON_EXE.match(r.strip())
+                for r in rhs
+            )
+            if not python_var:
+                why.append(f"an action executes {exe}, which is not python")
+        elif not _PYTHON_EXE.match(exe):
+            why.append(f"an action executes {exe[:40] or 'nothing named'}, which is not python")
+        arg = rest[ex.end() :] if ex else rest
+        if _ARG_BANNED.search(arg.replace('`"', "")):
+            why.append("an action's arguments carry a module flag or a shell chain")
+        text = arg
+        for var in re.findall(r"\$(\w+)", arg):
+            text += "\n" + "\n".join(_assigned(code, var))
+        if not check_refs(text, "an action"):
+            why.append("an action names no target the replay vouches for")
     return list(dict.fromkeys(why))
 
 
@@ -1446,11 +1500,10 @@ def compare(
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     # the installer leg: a changed installer the replay could not import, MEASURED by its text
-    vouched = imported | head_imported
     installers = {
         f for f in changed
         if is_script(f) and f.lower().endswith(".ps1") and f not in exempt and f not in covered
-        and not installer_problems(head, f, vouched)
+        and not installer_problems(head, f)
     }  # fmt: skip
     rows_only = MANIFEST in changed and not manifest_is_money(
         base, head, closure, money, exempt, measured=installers
