@@ -2337,7 +2337,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.get(str(s.get("region") or "?"))
         if not b:
             continue
-        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED", "BLOCKED_ON_TERMS"):
+        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED"):
             b["worked"] += 1
         if s.get("status") == "PRODUCTIVE":
             b["productive"] += 1
