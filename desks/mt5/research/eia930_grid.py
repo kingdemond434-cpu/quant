@@ -833,11 +833,9 @@ def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]
         rec["missing_regions"] = meta.get("missing_regions") or []
         last = _t(state.get("last_success"))
         backfill = last is None
-        if backfill:
-            start = now - timedelta(days=BACKFILL_DAYS)
-        else:   # reach back past an outage too, never further than the first-pass window
-            start = max(now - timedelta(days=BACKFILL_DAYS),
-                        min(now, last) - timedelta(hours=REPULL_H))
+        start = now - timedelta(days=BACKFILL_DAYS)
+        if last is not None:   # reach back past an outage too, never past the first-pass window
+            start = max(start, min(now, last) - timedelta(hours=REPULL_H))
         rows, complete = pull(client, regions, start)
         rec.update(merge(paths, store, rows, now, backfill), parsed=len(rows),
                    status="OK" if rows else "EMPTY", backfill=backfill, complete=complete)
