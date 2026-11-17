@@ -1153,6 +1153,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
+    # THE REPAIR SWEEP THAT GIVES A CLOCKLESS CERTIFICATE ITS CLOCK (principal 2026-11-13: "All
+    # certs passed go on forward clocks immediately"). It sat on the HEAVY plan only, so on a box
+    # running core hourly it ran only when heavy reached it: the census was 165.8 h old. Core,
+    # and due-by-age in libs/ops/leg_rotation.py (hard at 2 h), so it can never starve again.
+    "forward_enrolment",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
