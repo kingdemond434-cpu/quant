@@ -272,9 +272,21 @@ def test_registry_rows_fence_what_their_terms_refuse() -> None:
         assert set(rows[idea]["targets"]) <= set(uni)
 
 
-def test_jolts_series_rides_the_keyed_bls_row() -> None:
-    roster = json.loads((DESK / "data" / "source_rosters" / "keyed_sources.json")
-                        .read_text("utf-8"))
-    bls = next(r for r in roster["sources"] if r["id"] == "bls_components")
+def test_jolts_series_rides_the_keyed_bls_row_from_code(tmp_path: Path) -> None:
+    import keyed_sources as ksl
+    real = DESK / "data" / "source_rosters" / "keyed_sources.json"
+    rows, _bad = ksl.load_roster(real)
+    bls = next(r for r in rows if r["id"] == "bls_components")
     assert bls["series"]["jolts_quits_rate"]["code"] == "JTS000000000000000QUR"
     assert "BLS_API_KEY" in bls["key_env"]
+    # The roster file's own spec wins; a row the file does not carry is never created.
+    doc = json.loads(real.read_text("utf-8"))
+    for r in doc["sources"]:
+        if r["id"] == "bls_components":
+            r["series"]["jolts_quits_rate"] = {"code": "TUNED", "instruments": {}}
+    doc["sources"] = [r for r in doc["sources"] if r["id"] == "bls_components"]
+    p = tmp_path / "roster.json"
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    rows, _ = ksl.load_roster(p)
+    assert [r["id"] for r in rows] == ["bls_components"]
+    assert rows[0]["series"]["jolts_quits_rate"]["code"] == "TUNED"
