@@ -70,6 +70,15 @@ NZDJPY = "nzdjpy_clock_transition_asia_p_caebb3dcbda3756e"
 EQUITY = 485.0
 SYMBOL_OF = {USDNOK: "USDNOK", EURILS: "EURILS", EURZAR: "EURZAR"}
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def _committed_rows() -> dict[str, dict]:
     doc = json.loads((_DESK / "data" / "sleeves.json").read_text(encoding="utf-8"))
@@ -373,19 +382,18 @@ def test_a_live_pinned_row_is_left_to_the_ordinary_roster(tmp_path: Path) -> Non
 
 # ------------------------------------------------------------------ the gateway door: the zeros
 
-def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Path) -> None:
-    # USDJPY rr=2.5 is no longer here: its Reddit-origin quarantine is lifted (live_sleeve_policy
-    # reddit_origin_lifted; zuck 2026-11-05, every account trades every certified sleeve through
-    # the allocator). Its other rr variants stay out: the same breakout bought again.
+def test_gap_decay_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Path) -> None:
+    """NZDJPY and the carry TWINS left this list on 2026-11-13: the principal lifted the symbol
+    whitelist and the one-name-per-symbol allowlist (zuck 19:17:59Z / 19:18Z). USDJPY rr=2.5 left
+    it too: its Reddit-origin quarantine is lifted (live_sleeve_policy reddit_origin_lifted). The
+    named quarantines, the scalp stand-down and USDJPY's other rr variants (the same breakout
+    bought again) still refuse at the gateway's door."""
     rows = _committed_rows()
     live = [{**rows[n], "status": "LIVE", "risk_frac": 0.1} for n in GAP_DECAY]
     live += [
-        {"name": NZDJPY, "symbol": "NZDJPY", "family": "clock_transition", "selector": "asia",
-         "exec": "family_market", "status": "LIVE", "risk_frac": 0.03},
         {"name": "xau_m5_anti_breakout_overlap", "symbol": "XAUUSD", "timeframe": "M5",
          "family": "anti_breakout", "exec": "scalp_market", "status": "LIVE", "risk_frac": 0.03},
         {"name": "USDJPY.asia#rr=1.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
-        *({**rows[t], "status": "LIVE", "risk_frac": 0.03} for t in TWINS if t in rows),
     ]
     kept, notes = dc.load_sleeves_verbose(_sleeves_file(tmp_path, live))
     assert kept == [], [r["name"] for r in kept]

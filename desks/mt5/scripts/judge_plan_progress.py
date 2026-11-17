@@ -33,6 +33,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -87,13 +88,28 @@ def _iso(t: float | None = None) -> str:
 
 
 class PlanTracker:
-    """Hold the plan's step and progress inside `doc` (the launcher's phase document)."""
+    """Hold the plan's step and progress inside `doc` (the launcher's phase document).
+
+    ONE LOCK FOR THE DOCUMENT (v2.2.1). The sealed judge calls `progress` from its pool threads
+    while the sweep's own thread writes log lines through the tee, and the launcher's `_phase`
+    and shard-progress writers share the same `doc`. Every read-modify-write of `doc` and every
+    flush of it holds `lock`; without it a flush's `json.dumps` could iterate the dict while
+    another thread changed it (RuntimeError into the judge's pool thread) or publish a torn mix.
+    The launcher passes ITS lock (`_PHASE_LOCK`, shard progress v2) and its writer
+    (`_flush_phase_doc`); with neither, the tracker serialises its own writers with a private
+    lock. The lock is never held across `on_phase`: the launcher's `_phase` takes the same,
+    non-reentrant lock itself.
+    """
 
     def __init__(self, doc: dict[str, Any], path: Path, *, clock: Any = time.time,
-                 on_phase: Any = None) -> None:
+                 on_phase: Any = None, lock: Any = None, write: Any = None) -> None:
         self.doc, self.path, self.clock = doc, Path(path), clock
         #: The launcher's `_phase`: called when a step is a sweep phase of its own.
         self.on_phase = on_phase
+        #: Guards `doc` and its file; the launcher's own when it passes one.
+        self.lock = lock if lock is not None else threading.Lock()
+        #: Publishes `doc`, called with `lock` held; None writes `path` here.
+        self.write = write
         self._last_write = 0.0
         self._step_t: float | None = None
 
@@ -104,23 +120,26 @@ class PlanTracker:
     def step(self, name: str, line: str | None = None) -> None:
         """Open step `name` (closing the current one) and write the phase document now."""
         now = self.clock()
-        cur = self.doc.get("plan_step")
-        if cur == name:
+        with self.lock:
+            cur = self.doc.get("plan_step")
+            if cur == name:
+                if line:
+                    self.doc["plan_last_marker"] = line[:200]
+                return
+            steps = self.doc.setdefault("plan_steps", {})
+            if cur and self._step_t is not None:
+                steps[cur] = round(float(steps.get(cur, 0.0)) + now - self._step_t, 1)
+            self._step_t = now
+            self.doc["plan_step"] = name
+            self.doc["plan_step_started_utc"] = _iso(now)
             if line:
                 self.doc["plan_last_marker"] = line[:200]
-            return
-        steps = self.doc.setdefault("plan_steps", {})
-        if cur and self._step_t is not None:
-            steps[cur] = round(float(steps.get(cur, 0.0)) + now - self._step_t, 1)
-        self._step_t = now
-        self.doc["plan_step"] = name
-        self.doc["plan_step_started_utc"] = _iso(now)
-        if line:
-            self.doc["plan_last_marker"] = line[:200]
-        phase = PHASE_OF_STEP.get(name)
-        if phase and self.on_phase is not None and self.doc.get("phase") != phase:
+            phase = PHASE_OF_STEP.get(name)
+            to_phase = bool(phase and self.on_phase is not None
+                            and self.doc.get("phase") != phase)
+        if to_phase:
             try:
-                self.on_phase(phase)        # writes the document itself
+                self.on_phase(phase)        # takes the lock and writes the document itself
                 return
             except Exception:
                 pass
@@ -131,10 +150,12 @@ class PlanTracker:
         if not self._in_plan():
             return
         clean = {k: v for k, v in counts.items() if isinstance(v, (int, float, str, type(None)))}
-        self.doc["plan_progress"] = {"step": step or self.doc.get("plan_step"),
-                                     "at": _iso(self.clock()), **clean}
-        if step and step != self.doc.get("plan_step"):
-            self.step(step)                 # a step change writes at once
+        with self.lock:
+            self.doc["plan_progress"] = {"step": step or self.doc.get("plan_step"),
+                                         "at": _iso(self.clock()), **clean}
+            changed = bool(step and step != self.doc.get("plan_step"))
+        if changed:
+            self.step(step or "")           # a step change writes at once
         else:
             self.flush()
 
@@ -145,17 +166,26 @@ class PlanTracker:
         for rx, field in COUNTS:
             m = rx.search(text)
             if m:
-                self.doc.setdefault("plan_counts", {})[field] = int(m.group(1))
+                with self.lock:
+                    self.doc.setdefault("plan_counts", {})[field] = int(m.group(1))
         for rx, name in MARKERS:
             if rx.search(text):
                 self.step(name, text)
                 return
 
     def flush(self, force: bool = False) -> None:
-        now = self.clock()
-        if not force and now - self._last_write < WRITE_EVERY_S:
-            return
-        self._last_write = now
+        with self.lock:
+            now = self.clock()
+            if not force and now - self._last_write < WRITE_EVERY_S:
+                return
+            self._last_write = now
+            if self.write is not None:
+                self.write()                # the launcher's writer; it swallows its own OSError
+                return
+            self._write_own()
+
+    def _write_own(self) -> None:
+        """Publish `doc` to `path`. Caller holds `lock`."""
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.path.with_name(f"{self.path.name}.{os.getpid()}.plan.tmp")
