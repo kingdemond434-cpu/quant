@@ -437,9 +437,13 @@ geometric growth, never forced into a position every second.
 > **AMENDED 2026-11-17 (Governance; supersedes every line of this section that says otherwise):
 > ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES.** Before any automated fetch, the desk reads
 > the host's robots.txt through `robots_gate` with an honest user agent, and refuses the fetch on a
-> `Disallow` for that path or on a robots.txt it cannot read (fail closed). It also refuses a host
-> whose terms forbid automated access, scraping or data mining (the FRED ruling of 2026-11-13, the
-> Wayback/YouTube-mirror and prop-showcase rulings of 2026-11-14). A mirror, cache or archive of a
+> `Disallow` for that path or on a robots.txt it cannot read (fail closed). "Cannot read" is the
+> rule `robots_gate` enforces (#819, Governance 2026-11-10): a 404 or 410 means the host has no
+> robots.txt and the fetch may proceed; a 401, 403, 5xx, timeout, bot wall or parse failure
+> refuses. It also refuses a host whose terms forbid automated access, scraping or data mining
+> (the FRED ruling of 2026-11-13, the Wayback/YouTube-mirror and prop-showcase rulings of
+> 2026-11-14), and a host whose terms the desk has not read or cannot read: unread terms are not
+> "no ban", and the host stays refused until they are read. A mirror, cache or archive of a
 > refused page is the same refusal. A refused source may still be CATALOGUED from what the desk
 > lawfully saw elsewhere (its name, URL, a search result's snippet), labelled
 > `PUBLIC_WITH_TERMS` with the reason in `terms_note`, and never fetched: that is "registered,
@@ -447,7 +451,13 @@ geometric growth, never forced into a position every second.
 > content the desk may lawfully fetch, labels route use and weight evidence and never drop a row;
 > ACCESS_UNCLEAR is mined with its label; credibility is a weight, not a permission. In the deleted
 > brakes below, the robots, machine-use and machine-extraction items are RESTORED as refusals for
-> automated fetching. No session may read this section as a licence to fetch past robots or terms.
+> automated fetching. OWNER OVERRIDES: a source the owner attests is permitted, named source by
+> source in a governance ruling that states its conditions, is fetched within those conditions and
+> no further. The standing ones are `governance/owner-permission-attestation-2026-11-17.md` and
+> `governance/llm-relays-terms-ruling-2026-11-17.md` (owner override). An override never reaches
+> past a robots `Disallow` or an anti-bot/WAF measure unless its ruling says so in words, and it
+> sets no precedent for any source it does not name. No session may read this section as a
+> licence to fetch past robots or terms.
 
 **THE DESK MINES AND TESTS EVERYTHING IT CAN SEE ON THE OPEN INTERNET.** Things published on the
 open internet are lawful to read. Licence, robots, source class and credibility are **ROUTING AND
