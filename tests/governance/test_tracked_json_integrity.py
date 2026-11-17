@@ -33,9 +33,33 @@ def test_every_tracked_json_parses() -> None:
     assert not bad, f"unparseable tracked JSON (corrupt commit?): {bad}"
 
 
+#: Append-only records whose OWN reader takes whitespace-separated JSON values, not one per line.
+#: ADOPT_CLEARS: LIVE dca73be61 (2026-11-14 13:47Z) landed one valid Auditor row pretty-printed
+#: over 33 lines; the record is append-only (adopt_guard.committed_clears proves every version a
+#: byte prefix), so it can never be re-framed -- adopt_guard.parse_clears was widened to read it.
+#: This fence still parses the WHOLE file strictly the same way: a broken value still fails.
+_JSON_STREAM_RECORDS = {"desks/mt5/data/ADOPT_CLEARS.jsonl"}
+
+
+def _parse_json_stream(text: str) -> None:
+    dec, i, end = json.JSONDecoder(), 0, len(text)
+    while True:
+        while i < end and text[i] in " \t\r\n":
+            i += 1
+        if i >= end:
+            return
+        _, i = dec.raw_decode(text, i)
+
+
 def test_every_tracked_jsonl_parses_per_line() -> None:
     bad = []
     for p in _tracked("*.jsonl"):
+        if p.relative_to(_ROOT).as_posix() in _JSON_STREAM_RECORDS:
+            try:
+                _parse_json_stream(p.read_text("utf-8"))
+            except Exception as e:
+                bad.append(f"{p.relative_to(_ROOT)}: {e}")
+            continue
         for n, line in enumerate(p.read_text("utf-8").splitlines(), 1):
             if not line.strip():
                 continue

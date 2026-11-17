@@ -1,37 +1,37 @@
 {
  "reason": "died_unrecorded",
- "detail": "sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill) before it could record why",
- "stalled_utc": "2026-11-13T10:07:37+00:00",
- "pid": 27040,
- "phase": "collect_and_cut",
+ "detail": "sweep pid 32172 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 586s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+ "stalled_utc": "2026-11-16T18:21:07+00:00",
+ "pid": 32172,
+ "phase": "build_shards",
  "shard": null,
  "last_progress": {
-  "beat_utc": "2026-11-13T09:26:27+00:00",
-  "phase": "collect_and_cut",
-  "phase_elapsed_s": 21.3,
+  "beat_utc": "2026-11-16T18:11:21+00:00",
+  "phase": "build_shards",
+  "phase_elapsed_s": 2583.7,
   "shards": {
    "phase": "build",
    "total": 15,
-   "done": 15,
-   "failed": 0,
-   "running": 0,
+   "done": 6,
+   "failed": 9,
+   "running": 8,
    "stalled": 0,
    "slow": 0,
-   "retrying": 0,
+   "retrying": 9,
    "shard_slow_s": 42781.5,
    "shard_idle_kill_s": 1800.0,
-   "wave_started_utc": "2026-11-13T08:52:44+00:00"
+   "wave_started_utc": "2026-11-16T17:28:17+00:00"
   },
   "tree": {
-   "procs": 1,
-   "rss_mb": 380.0,
-   "cpu_s": 3116.9
+   "procs": 17,
+   "rss_mb": 9775.4,
+   "cpu_s": 7249.0
   },
-  "last_progress_utc": "2026-11-13T09:26:27+00:00",
+  "last_progress_utc": "2026-11-16T18:11:21+00:00",
   "idle_s": 0.0
  },
  "counts_toward_widening": false,
- "lost_s": 15396.0,
+ "lost_s": 32406.0,
  "kill": null,
  "restored_from_merge_snapshot": [],
  "lock": "LOCKED",
@@ -150,6 +150,44 @@
    "lost_s": 15396.0,
    "kill": null,
    "restored_from_merge_snapshot": []
+  },
+  {
+   "status": "STALLED",
+   "reason": "died_unrecorded",
+   "detail": "sweep pid 32172 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 586s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+   "stalled_utc": "2026-11-16T18:21:07+00:00",
+   "pid": 32172,
+   "phase": "build_shards",
+   "shard": null,
+   "last_progress": {
+    "beat_utc": "2026-11-16T18:11:21+00:00",
+    "phase": "build_shards",
+    "phase_elapsed_s": 2583.7,
+    "shards": {
+     "phase": "build",
+     "total": 15,
+     "done": 6,
+     "failed": 9,
+     "running": 8,
+     "stalled": 0,
+     "slow": 0,
+     "retrying": 9,
+     "shard_slow_s": 42781.5,
+     "shard_idle_kill_s": 1800.0,
+     "wave_started_utc": "2026-11-16T17:28:17+00:00"
+    },
+    "tree": {
+     "procs": 17,
+     "rss_mb": 9775.4,
+     "cpu_s": 7249.0
+    },
+    "last_progress_utc": "2026-11-16T18:11:21+00:00",
+    "idle_s": 0.0
+   },
+   "counts_toward_widening": false,
+   "lost_s": 32406.0,
+   "kill": null,
+   "restored_from_merge_snapshot": []
   }
  ],
  "missed_growth": [
@@ -188,9 +226,21 @@
    "reason": "died_unrecorded",
    "lost_s": 15396.0,
    "why": "sweep pid 27040 died_unrecorded: sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  },
+  {
+   "day": "2026-11-16",
+   "at": "2026-11-16T18:21:07+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "died_unrecorded",
+   "lost_s": 32406.0,
+   "why": "sweep pid 32172 died_unrecorded: sweep pid 32172 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 586s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) be. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
   }
  ],
- "last_clear_utc": "2026-11-14T12:52:38+00:00",
+ "last_clear_utc": "2026-11-17T17:13:20+00:00",
  "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
  "status": "CLEAR"
 }

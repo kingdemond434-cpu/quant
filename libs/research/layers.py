@@ -268,6 +268,9 @@ LEG_LAYER: dict[str, str] = {
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The open-PR blocker census (scripts/pr_blockers.py), hourly: the machine reading its own
+    # merge queue, not any strategy.
+    "pr_blockers": "meta",
     # The box's bar and tick freshness report, hourly before publication: the machine measuring
     # its own inputs, not any strategy.
     "bars_state": "meta",
@@ -287,6 +290,7 @@ LEG_LAYER: dict[str, str] = {
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information",
     "residual_search": "information", "unseen_frontier": "information",
+    "vocabulary_proposer": "information", "contradiction_miner": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
@@ -689,6 +693,7 @@ LEG_LAYER: dict[str, str] = {
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
+    "six_event_trace": "meta",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')
