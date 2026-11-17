@@ -209,7 +209,7 @@
   ],
   "code_paths_touched": 2549,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-14T17:52:51+00:00",
+  "measured_at": "2026-11-16T20:08:00+00:00",
   "code_paths_differing": 8,
   "code_paths": [
     "desks/mt5/mt5desk/tape.py",
@@ -627,6 +627,10 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/tests/test_blind_reviewer.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/tests/test_clock_liveness.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -844,6 +848,14 @@
     },
     {
       "path": "ops/release/merger/merger_env.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/replay_child.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/replay_shadow.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
