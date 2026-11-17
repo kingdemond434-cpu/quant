@@ -435,6 +435,145 @@ INSTALLER_TARGETS = (
 )  # fmt: skip
 #: What an installer may do that DYNAMIC reads as dynamic: the scheduled-task verbs, and finding
 #: the interpreter by name (`(Get-Command python ...).Source`, a property, not `source`-ing).
+#: CONDITIONAL TARGETS (Governance 2026-11-17 18:45Z): a Python target vouched for only while its
+#: own text passes a static rule run here, on the PR's tree. ops/box_self_heal.py may stop and
+#: start tasks, and only literal names from SELF_HEAL_TASKS; any other action unvouches it.
+SELF_HEAL = "ops/box_self_heal.py"
+#: The tasks the self-healer may /End or /Run. Never a gateway, terminal, promoter or order task:
+#: SELF_HEAL_FORBIDDEN refuses such a name at run time, and a base test pins the exclusion.
+SELF_HEAL_TASKS = frozenset({"MT5-IndependenceIntake", "Quant-WorkflowGate"})
+SELF_HEAL_FORBIDDEN = re.compile(
+    r"gateway|terminal|promot|deadman|e8|ftmo|fusion|order|sizing|alloc|sleeve|prop|"
+    r"executor|follower|window.?guard|adopt|release|seal",
+    re.IGNORECASE,
+)
+#: The only modules it may load by path (_load(name, _dep(<file>, <repo path>))).
+SELF_HEAL_DEPS = frozenset({"ops/process_health.py", "libs/ops/alert_channels.py"})
+_SCHTASKS_VERBS = frozenset({"/Query", "/End", "/Run"})
+_BANNED_CALLS = frozenset({
+    "os.system", "os.startfile", "os.popen", "os.execv", "os.execve", "os.execl", "os.execlp",
+    "os.execvp", "os.spawnl", "os.spawnv", "os.posix_spawn", "subprocess.Popen",
+    "subprocess.call", "subprocess.check_call", "subprocess.check_output", "eval", "exec",
+    "__import__", "runpy.run_path", "runpy.run_module", "importlib.import_module",
+})  # fmt: skip
+_TASK_EDIT = re.compile(
+    r"(register|unregister|set|new)-scheduledtask|/create\b|/delete\b|/change\b",
+    re.IGNORECASE,
+)
+
+
+def _dotted(node: ast.AST) -> str:
+    """`a.b.c` for a Name/Attribute chain, else ''."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+        return ".".join(reversed(parts))
+    return ""
+
+
+def _literal_strs(node: ast.AST | None) -> set[str] | None:
+    """The strings of `frozenset({...})`/`{...}`/`(...)` of literals, else None (not literal)."""
+    if isinstance(node, ast.Call) and _dotted(node.func) in {"frozenset", "set"} and node.args:
+        node = node.args[0]
+    if isinstance(node, (ast.Set, ast.Tuple, ast.List)):
+        out = set()
+        for e in node.elts:
+            if not (isinstance(e, ast.Constant) and isinstance(e.value, str)):
+                return None
+            out.add(e.value)
+        return out
+    return None
+
+
+def self_heal_problems(head: Path) -> list[str]:
+    """Why ops/box_self_heal.py is not a vouched target on `head`; [] when it is. Static only:
+    its task sets are literal and inside SELF_HEAL_TASKS, its one subprocess is schtasks with
+    /Query, /End or /Run inside `_schtasks`, it loads only SELF_HEAL_DEPS by path, and it
+    registers, edits or launches nothing else (Governance 2026-11-17 18:45Z)."""
+    if any(SELF_HEAL_FORBIDDEN.search(t) for t in SELF_HEAL_TASKS):
+        return ["the harness allowlist names an order-path task"]  # never true on a pinned base
+    src = read(head, SELF_HEAL)
+    if src is None:
+        return ["unreadable"]
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return ["cannot be parsed"]
+    why: list[str] = []
+    if _TASK_EDIT.search(src):
+        why.append("names a task-editing verb")
+    sets: dict[str, set[str] | None] = {}
+    for n in tree.body:
+        target = (
+            n.target
+            if isinstance(n, ast.AnnAssign)
+            else (n.targets[0] if isinstance(n, ast.Assign) and len(n.targets) == 1 else None)
+        )
+        value = n.value if isinstance(n, (ast.AnnAssign, ast.Assign)) else None
+        if isinstance(target, ast.Name) and target.id in {"ENDABLE_TASKS", "RUNNABLE_TASKS"}:
+            sets[target.id] = _literal_strs(value)
+    for name in ("ENDABLE_TASKS", "RUNNABLE_TASKS"):
+        got = sets.get(name)
+        if got is None:
+            why.append(f"{name} is not a literal set of task names")
+        elif not got <= SELF_HEAL_TASKS:
+            why.append(
+                f"{name} names a task outside the allowlist: {sorted(got - SELF_HEAL_TASKS)}"
+            )
+    funcs = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    owner: dict[int, str] = {}
+    for fn in funcs.values():
+        for sub in ast.walk(fn):
+            owner.setdefault(id(sub), fn.name)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _dotted(node.func)
+        if name in _BANNED_CALLS:
+            why.append(f"calls {name}")
+        elif name.startswith("subprocess.") and owner.get(id(node)) != "_schtasks":
+            why.append(f"starts a process outside _schtasks: {name}")
+        elif name == "importlib.util.spec_from_file_location" and owner.get(id(node)) != "_load":
+            why.append("loads a module by path outside _load")
+        elif name == "_load":
+            dep = node.args[1] if len(node.args) > 1 else None
+            lits = (
+                [a.value for a in dep.args if isinstance(a, ast.Constant)]
+                if isinstance(dep, ast.Call) and _dotted(dep.func) == "_dep"
+                else []
+            )
+            ok = len(lits) == 2 == len(dep.args) and lits[1] in SELF_HEAL_DEPS  # type: ignore[union-attr]
+            if not ok:
+                why.append("loads a module that is not a literal SELF_HEAL_DEPS path")
+    sch = funcs.get("_schtasks")
+    verbs: set[str] = set()
+    if sch is None:
+        why.append("has no _schtasks")
+    else:
+        tables = [
+            sub.value
+            for sub in ast.walk(sch)
+            if isinstance(sub, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "allowed" for t in sub.targets)
+        ]
+        for tab in tables:
+            if not isinstance(tab, ast.Dict):
+                verbs.add("<computed>")
+                continue
+            for k in tab.keys:
+                ok = isinstance(k, ast.Constant) and isinstance(k.value, str)
+                verbs.add(k.value if ok else "<computed>")  # type: ignore[union-attr]
+        if len(tables) != 1 or not verbs or not verbs <= _SCHTASKS_VERBS:
+            why.append(f"_schtasks allows verbs beyond /Query, /End, /Run: {sorted(verbs)}")
+    return why
+
+
+#: Python targets vouched for only while their rule finds nothing on the PR's tree.
+CONDITIONAL_TARGETS: dict[str, Callable[[Path], list[str]]] = {SELF_HEAL: self_heal_problems}
+
 _INSTALLER_VERBS = re.compile(
     r"(register|set|disable|enable|unregister|start|get|new)-scheduledtask\w*"
     r"|\(get-command\s+(python|py|pythonw)\b[^)]*\)\.source\b",
@@ -446,6 +585,14 @@ _SCRIPT_REF = re.compile(r"[A-Za-z0-9_.\\/:-]+\.(?:py|ps1|psm1|cmd|bat|sh)\b", r
 def _is_row_installer(attrs: dict[str, str], path: str) -> bool:
     """Whether `path` is the row's `installer` (never its `runs` or `also_runs`)."""
     return path == attrs.get("installer", "").strip()
+
+
+#: A process launch DYNAMIC does not spell: .NET's Process.Start / ProcessStartInfo, WMI and COM.
+_DOTNET_LAUNCH = re.compile(
+    r"diagnostics\.process|processstartinfo|::start\s*\(|win32_process|invoke-wmimethod"
+    r"|invoke-cimmethod|new-object\s+-com|wscript\.shell|shell\.application",
+    re.IGNORECASE,
+)
 
 
 def _installer_code(text: str) -> str:
@@ -488,7 +635,7 @@ def installer_problems(head: Path, path: str, vouched: set[str]) -> list[str]:
     if MONEY_WORDS.search(low) or STATE_WORDS.search(low):
         why.append("its code names a venue or switch word")
     for ln in code.splitlines():
-        if DYNAMIC.search(_INSTALLER_VERBS.sub("", ln)):
+        if _DOTNET_LAUNCH.search(ln) or DYNAMIC.search(_INSTALLER_VERBS.sub("", ln)):
             why.append(f"dynamic execution beyond the scheduled-task verbs: {ln.strip()[:80]}")
             break
     files = tree_files(head)
@@ -498,7 +645,12 @@ def installer_problems(head: Path, path: str, vouched: set[str]) -> list[str]:
         ref, hit = hit_ref, _resolve_ref(hit_ref, files)
         if not hit:
             why.append(f"names a script the tree does not hold: {ref[:80]}")
-        elif not hit <= allowed:
+        elif not hit <= allowed and not all(
+            f in allowed
+            or (f in CONDITIONAL_TARGETS and not CONDITIONAL_TARGETS[f](head))
+            or (f in SELF_HEAL_DEPS and not self_heal_problems(head))
+            for f in hit
+        ):
             why.append(f"runs a target the replay does not vouch for: {sorted(hit - allowed)[0]}")
         else:
             targets += 1
