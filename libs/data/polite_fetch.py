@@ -249,9 +249,14 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     host = urlparse(url).netloc.lower()
     open_ = opener or urllib.request.urlopen
     resp = Response(url=url)
-    from libs.data.terms_refused import refused
-    why_refused = refused(url)
-    if why_refused:                   # a terms-refused host (FRED): no request, ever
+    from libs.data.off_limits import off_limits, redirected_off_limits
+    refused = off_limits(url)
+    if refused:                       # an off-limits ground: no request, ever (fail closed)
+        resp.error = refused
+        return resp
+    from libs.data.terms_refused import refused as terms_refused
+    why_refused = terms_refused(url)
+    if why_refused:                   # a terms-refused host (FRED, Yahoo): no request, ever
         resp.error = why_refused
         return resp
     t0 = time.monotonic()
@@ -270,6 +275,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         try:
             req = urllib.request.Request(url, headers=hdr)
             with open_(req, timeout=per_try, context=ssl_context()) as fh:
+                hop = redirected_off_limits(url, str(getattr(fh, "url", "") or url))
+                if hop:                   # an allowed host redirected into a banned one
+                    resp.error = hop
+                    break
                 raw = fh.read(max_bytes)
                 h = getattr(fh, "headers", None)
                 ctype = str(h.get("Content-Type") or "") if h is not None else ""

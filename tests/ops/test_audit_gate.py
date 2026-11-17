@@ -602,6 +602,79 @@ def test_anything_but_the_line_is_still_no_approval(hub: Any, body: str) -> None
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
+# ---------------------- an approval names a change: a re-CLEAR of it keeps his approval (#1196)
+
+
+def _v(verdict: str, sha: str, at: str) -> dict[str, str]:
+    return {"verdict": verdict, "sha": sha, "at": at, "by": "x", "method": "merge"}
+
+
+def test_an_approved_clear_of_the_same_change_covers_a_later_re_clear() -> None:
+    """#1196, 2026-11-17: the Auditor re-CLEARed a clean LIVE merge-in at 15:50Z of a head zuck
+    approved at 15:11Z; on a NEVER-STANDING PR that voided his approval. It no longer does."""
+    same = {A: "p1", B: "p1"}.get
+    found = [_v("CLEAR", B, "2026-11-17T10:00:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")]
+
+    def sc(sha: str) -> bool:
+        return same(sha) == same(A)
+
+    ok, why = ag.approval_covers(found, A, sc, "2026-11-17T15:11:00Z")
+    assert ok and f"CLEAR {B[:9]}" in why
+    # the latest CLEAR alone, as before, still waits for the next approval
+    assert not ag.approved(found[-1], "2026-11-17T15:11:00Z")[0]
+
+
+@pytest.mark.parametrize(
+    "found",
+    [
+        # the earlier CLEAR is of another change
+        [_v("CLEAR", C, "2026-11-17T10:00:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")],
+        # a HOLD came after the earlier CLEAR: his approval no longer speaks for it
+        [
+            _v("CLEAR", A, "2026-11-17T10:00:00Z"),
+            _v("HOLD", A, "2026-11-17T10:30:00Z"),
+            _v("CLEAR", A, "2026-11-17T15:50:00Z"),
+        ],
+        # every CLEAR of this change came after his approval
+        [_v("CLEAR", A, "2026-11-17T15:20:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")],
+        # only one CLEAR, after the approval: unchanged
+        [_v("CLEAR", A, "2026-11-17T15:50:00Z")],
+    ],
+)
+def test_nothing_else_carries_an_approval(found: list[dict[str, str]]) -> None:
+    def sc(sha: str) -> bool:
+        return sha in (A, B)
+
+    assert not ag.approval_covers(found, A, sc, "2026-11-17T15:11:00Z")[0]
+    assert not ag.approval_covers(found, A, sc, None)[0]  # no approval at all
+
+
+def test_a_re_clear_of_an_approved_change_merges_on_his_path(hub: Any) -> None:
+    for box in (False, True):
+        h = hub(
+            comments=[
+                _c(f"AUDIT CLEAR {B}", "2026-10-28T10:00:00Z"),
+                _c(f"AUDIT CLEAR {A}", "2026-10-28T13:00:00Z"),
+            ],
+            approvals=[_ok("2026-10-28T12:00:00Z")],
+        )
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box) == 0
+        (merge,) = _merges(h)
+        assert f"sha={A}" in merge
+
+
+def test_a_re_clear_after_a_hold_still_waits_for_his_next_approval(hub: Any) -> None:
+    h = hub(
+        comments=[
+            _c(f"AUDIT CLEAR {B}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {B}", "2026-10-28T11:00:00Z"),
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T13:00:00Z"),
+        ],
+        approvals=[_ok("2026-10-28T12:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
+
+
 def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     h = hub(
         comments=[
@@ -3068,3 +3141,101 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------------------------------------- trusted-eval: an earlier green while one waits
+def _te_run(i: int, status: str, conclusion: str | None, *, ran_on: str = "b0", pr: int = 7,
+            head: str = "h" * 40) -> dict[str, Any]:
+    return {"id": i, "display_title": f"trusted-eval {pr} {head}", "status": status,
+            "conclusion": conclusion, "created_at": f"2026-11-14T0{i}:00:00Z",
+            "path": ".github/workflows/trusted-eval.yml", "head_branch": "live",
+            "event": "pull_request_target", "head_sha": ran_on}
+
+
+def _te_gh(monkeypatch, runs: list[dict[str, Any]],
+           compare: dict[str, Any] | Exception | None = None) -> list[str]:
+    calls: list[str] = []
+
+    def fake(*args: str, **kw: Any) -> Any:
+        calls.append(args[0])
+        if "/compare/" in args[0]:
+            if isinstance(compare, Exception):
+                raise compare
+            return compare
+        return {"workflow_runs": runs}
+
+    monkeypatch.setattr(ag, "_gh", fake)
+    return calls
+
+
+def test_an_earlier_green_stands_while_a_rerun_waits_when_the_judge_is_unchanged(
+        monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    calls = _te_gh(monkeypatch, runs, {"status": "ahead", "files": [
+        {"filename": "desks/mt5/research/promoter.py"}, {"filename": "docs/LAWS.md"}]})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert ok and "run 1" in why and "a newer run is queued" in why
+    assert any("/compare/b0...live" in c for c in calls)
+
+
+@pytest.mark.parametrize("changed", [
+    "tests/ops/test_audit_gate.py", "desks/mt5/tests/test_x.py", "ops/release/risk_suites.txt",
+    ".github/workflows/trusted-eval.yml", "pyproject.toml", "desks/mt5/conftest.py",
+    "libs/test_helpers.py", "x/site.pth",
+])
+def test_an_earlier_green_does_not_stand_when_a_judge_input_changed(monkeypatch,
+                                                                     changed: str) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    _te_gh(monkeypatch, runs, {"status": "ahead", "files": [{"filename": changed}]})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert not ok and "still running" in why and changed in why
+
+
+@pytest.mark.parametrize("compare", [
+    RuntimeError("boom"), {"status": "diverged", "files": []}, {"status": "behind", "files": []},
+    {"status": "ahead", "files": [{"filename": f"a{i}.py"} for i in range(300)]}, None,
+])
+def test_an_unreadable_or_odd_base_comparison_is_a_no(monkeypatch, compare: Any) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "queued", None)]
+    _te_gh(monkeypatch, runs, compare)
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is False
+
+
+def test_the_newest_completed_failure_wins_over_an_older_green(monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success"), _te_run(2, "completed", "failure"),
+            _te_run(3, "queued", None)]
+    calls = _te_gh(monkeypatch, runs, {"status": "identical", "files": []})
+    ok, why = ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")
+    assert not ok and why.endswith("failure") and not any("/compare/" in c for c in calls)
+
+
+def test_nothing_completed_is_still_running_and_a_newest_green_needs_no_comparison(
+        monkeypatch) -> None:
+    _te_gh(monkeypatch, [_te_run(1, "queued", None)])
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live") == (
+        False, "trusted-eval still running")
+    calls = _te_gh(monkeypatch, [_te_run(1, "completed", "success")])
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is True
+    assert not any("/compare/" in c for c in calls)
+
+
+def test_a_green_for_another_head_or_pr_never_counts(monkeypatch) -> None:
+    runs = [_te_run(1, "completed", "success", head="g" * 40),
+            _te_run(2, "completed", "success", pr=8), _te_run(3, "queued", None)]
+    _te_gh(monkeypatch, runs, {"status": "identical", "files": []})
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live") == (
+        False, "trusted-eval still running")
+
+
+def test_the_gate_reads_more_than_one_page_of_trusted_eval_runs(monkeypatch) -> None:
+    pages: list[str] = []
+    filler = [dict(_te_run(9, "completed", "success", pr=99)) for _ in range(100)]
+
+    def fake(*args: str, **kw: Any) -> Any:
+        pages.append(args[0])
+        return {"workflow_runs": filler if args[0].endswith("&page=1")
+                else [_te_run(1, "completed", "success")]}
+
+    monkeypatch.setattr(ag, "_gh", fake)
+    assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is True
+    assert len(pages) == 2
