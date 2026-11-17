@@ -521,12 +521,31 @@ def robots_refusal(url: str) -> str | None:
     return None if rules.can_fetch(UA, url) else "robots.txt disallows this path"
 
 
+def _fence(url: str) -> str | None:
+    """Why `url` may not be fetched: an off-limits host, or robots refusing it. None = allowed."""
+    from libs.data.off_limits import off_limits
+    return off_limits(url) or robots_refusal(url)
+
+
+class _FencedRedirect(urllib.request.HTTPRedirectHandler):
+    """Every redirect hop is judged again (off-limits hosts, then robots) before it is followed,
+    so an allowed host can never launder a refused one through a 30x."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        refused = _fence(newurl)
+        if refused:
+            raise RobotsRefused(f"redirect refused: {refused}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def http_get(url: str) -> bytes:
-    refused = robots_refusal(url)
+    refused = _fence(url)
     if refused:
         raise RobotsRefused(refused)
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_tls()),
+                                         _FencedRedirect())
+    with opener.open(req, timeout=TIMEOUT) as r:
         body: bytes = r.read(MAX_BYTES)
         return body
 

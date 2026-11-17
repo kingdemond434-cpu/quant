@@ -378,3 +378,20 @@ def test_http_get_fails_closed_when_robots_cannot_be_read_or_disallow(monkeypatc
     allow.parse([])
     monkeypatch.setattr(gh, "_ROBOTS", {host: allow})
     assert gh.robots_refusal(gh.USGS_LIVE) is None
+
+
+def test_a_redirect_hop_is_fenced_again_before_it_is_followed(monkeypatch) -> None:
+    """Auditor SF1 on #1241: an allowed host's 30x into a refused path is never followed."""
+    import urllib.robotparser
+    allow = urllib.robotparser.RobotFileParser()
+    allow.parse([])
+    deny = urllib.robotparser.RobotFileParser()
+    deny.parse(["User-agent: *", "Disallow: /"])
+    monkeypatch.setattr(G, "_ROBOTS", {"https://earthquake.usgs.gov": allow,
+                                       "https://elsewhere.example": deny})
+    h = G._FencedRedirect()
+    req = G.urllib.request.Request(G.USGS_LIVE)
+    with pytest.raises(G.RobotsRefused):
+        h.redirect_request(req, None, 302, "Found", {}, "https://elsewhere.example/x")
+    ok = h.redirect_request(req, None, 302, "Found", {}, "https://earthquake.usgs.gov/other")
+    assert ok is not None and ok.full_url == "https://earthquake.usgs.gov/other"
