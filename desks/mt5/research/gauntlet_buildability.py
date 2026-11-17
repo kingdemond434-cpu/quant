@@ -87,6 +87,20 @@ def _family_table() -> dict[str, Any]:
     for name in dir(families):
         if name.startswith("family_") and callable(getattr(families, name)):
             out[name[len("family_"):]] = getattr(families, name)
+    # THE HUNT16 POPULATION RESOLVES THROUGH `families.__getattr__`, WHICH `dir()` NEVER LISTS
+    # (2026-10-14). The sealed gauntlet asks `getattr(families, f"family_{family}")`, and that
+    # module-level __getattr__ hands back every `run_hunt16.FAMILIES` constructor -- so the judge
+    # builds a dav_* cell without trouble while this table, enumerating `dir(families)`, read all
+    # fourteen as NO_IMPLEMENTATION and `breadth_sweep._testable` set every one aside. Asked the
+    # gauntlet's own way, one name at a time, so the table answers exactly what the judge answers.
+    try:
+        from mt5desk.executables import hunt16_families
+        for name in hunt16_families():
+            fn = getattr(families, f"family_{name}", None)
+            if callable(fn):
+                out.setdefault(str(name), fn)
+    except Exception:
+        pass
     for name, fn in fo.ORTHOGONAL_FAMILIES.items():
         out.setdefault(str(name), fn)
     return out

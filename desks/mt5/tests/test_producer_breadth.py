@@ -362,3 +362,24 @@ def test_the_artifact_is_written_atomically(tmp_path: Path) -> None:
     out = pb.write({"totals": {}, "producers": {}}, tmp_path / "PRODUCER_BREADTH.json")
     assert json.loads(out.read_text()) == {"totals": {}, "producers": {}}
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_hunt16_population_is_buildable_and_swept() -> None:
+    """The dav_* families resolve through `families.__getattr__`, which `dir()` never lists.
+
+    The sealed gauntlet builds them; the buildability table read them as NO_IMPLEMENTATION and the
+    breadth sweep (which read only the decorated and orthogonal populations) never minted a cell,
+    so nine of them sat in JUDGE_COVERAGE with 0 mined (2026-10-14). Pin both halves.
+    """
+    from mt5desk.executables import hunt16_families
+
+    from research import breadth_sweep as bs
+    h16 = sorted(hunt16_families())
+    assert h16, "run_hunt16.FAMILIES did not import"
+    table = gb._family_table()
+    assert set(h16) <= set(table)
+    for fam in h16:
+        assert gb.family_verdict(fam)[0] != gb.NO_IMPLEMENTATION, fam
+    sweepable, blocked = bs.default_families()
+    assert set(h16) <= set(sweepable) | set(blocked)
+    assert "dav_bb_meanrev" in sweepable

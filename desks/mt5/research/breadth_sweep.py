@@ -260,6 +260,19 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
             names[str(name)] = fn
     for name, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
         names.setdefault(str(name), fn)
+    # THE THIRD POPULATION (2026-10-14). `families.live_family_names` -- the set the judge's
+    # coverage report is built from -- includes `run_hunt16.FAMILIES`, and this sweep did not:
+    # nine dav_* families sat in JUDGE_COVERAGE with 0 mined and 0 queued because the only door
+    # they had was a keyword match in donated prose. All fourteen take (bars, side) alone, so they
+    # are swept at defaults exactly like every other price-only family. An import failure adds
+    # nothing and removes nothing.
+    try:
+        from mt5desk.executables import hunt16_families
+        for name, fn in hunt16_families().items():
+            if callable(fn):
+                names.setdefault(str(name), fn)
+    except Exception:
+        pass
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
