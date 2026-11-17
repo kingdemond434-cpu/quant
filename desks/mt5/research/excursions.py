@@ -27,6 +27,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -95,14 +102,14 @@ def run() -> dict:
     for d in LEDGER_DIRS:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(d, also_frozen=_fl.frozen_names(LEDGER_DIRS)):
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _fl.label_of(f)
             sym = _symbol_of(sleeve)
             bars = get(sym)
             if bars is None:
