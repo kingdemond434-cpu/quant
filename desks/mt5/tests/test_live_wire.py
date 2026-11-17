@@ -115,14 +115,21 @@ def test_every_terms_refused_host_in_the_law_is_refused_by_the_registry() -> Non
         assert lw.refusal_of(url, table), url
 
 
-def test_no_crypto_exchange_feed_and_none_can_be_added(tmp_path: Path) -> None:
+def test_crypto_exchange_rows_must_be_labelled_research_signal_inputs(tmp_path: Path) -> None:
+    """Owner ruling 2026-11-17 20:40Z: MT5-only governs trading; crypto venue feeds are research
+    inputs. A crypto-exchange host is legal only under publisher_class crypto_exchange."""
     doc = lw.load_registry()
     crypto = doc["crypto_exchange_domains"]
     for r in doc["feeds"]:
         host = lw.host_of(r["url"]) or ""
-        assert not any(host == d or host.endswith("." + d) for d in crypto), r["id"]
-    bad = json.loads(_registry(tmp_path, [_ok_row(url="https://api.binance.com/ws")]).read_text())
+        if any(host == d or host.endswith("." + d) for d in crypto):
+            assert r["publisher_class"] == "crypto_exchange", r["id"]
+    bad = json.loads(_registry(tmp_path, [_ok_row(url="https://api.binance.com/x")]).read_text())
     assert any("crypto-exchange" in p for p in lw.registry_problems(bad))
+    good_row = _ok_row(url="https://api.binance.com/x")
+    good_row["publisher_class"] = "crypto_exchange"
+    good = json.loads(_registry(tmp_path, [good_row]).read_text())
+    assert not any("crypto-exchange" in p for p in lw.registry_problems(good))
 
 
 def test_the_schema_rejects_an_unreasoned_verdict(tmp_path: Path) -> None:

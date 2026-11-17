@@ -22,8 +22,13 @@ $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew `
               -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
               -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -StartWhenAvailable
 
+# S4U: headless, survives logoff and reboot, no password stored (the house pattern of
+# install_cro_cycle_tasks.ps1 / install_contract_terms_task.ps1). An Interactive token would leave a
+# 2-minute live wire silent whenever Administrator is logged off.
+$principal = New-ScheduledTaskPrincipal -UserId 'Administrator' -LogonType S4U -RunLevel Highest
+
 Register-ScheduledTask -TaskName 'MT5-LiveWire' -Action $action -Trigger $trigger `
-  -Settings $settings -User 'Administrator' -RunLevel Highest -Force | Out-Null
+  -Settings $settings -Principal $principal -Force | Out-Null
 
 $t = Get-ScheduledTask -TaskName 'MT5-LiveWire'
 Write-Output ("MT5-LiveWire registered: " + $t.State)

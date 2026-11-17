@@ -14,7 +14,9 @@ THE REGISTRY IS DATA. Every feed lives in `desks/mt5/data/live_wire_feeds.json`,
 row carries its terms verdict with the reading that settled it; ONLY rows whose verdict is OK are
 ever requested. BLOCKED_ON_TERMS, REFUSED_HOST, DUPLICATE (another organ polls it), NOT_AVAILABLE
 and NOT_LOCATED rows are the measured breadth of what was assessed and why it is not polled, each
-with a missed_growth line. Crypto-exchange feeds are never assessed (MT5 universe mandate).
+with a missed_growth line. Crypto-exchange public feeds are research/signal inputs only (owner
+ruling 2026-11-17 20:40Z: "mt5 only means mt5 only fr trading"): a row on a crypto-exchange
+domain must carry publisher_class `crypto_exchange`, and this organ only ever reads.
 
 EVERY REQUEST IS GATED, FAIL CLOSED, BEFORE A SOCKET OPENS:
   1. the terms-refused host list (the registry's own `refused_hosts`, unioned with
@@ -101,7 +103,7 @@ VERDICTS: frozenset[str] = frozenset({"OK", "BLOCKED_ON_TERMS", "REFUSED_HOST", 
 PUBLISHER_CLASSES: frozenset[str] = frozenset({"central_bank", "statistics", "treasury",
                                                "regulator",
                                                "energy", "government", "hazard", "exchange",
-                                               "refused"})
+                                               "crypto_exchange", "refused"})
 HARD_STOP_STATUS: frozenset[int] = frozenset({401, 403, 429, 451})
 HARD_STOP_S = 24 * 3600
 ROBOTS_TTL_S = 6 * 3600
@@ -213,8 +215,12 @@ def registry_problems(doc: Mapping[str, Any]) -> list[str]:
             out.append(f"{tag}: kind {row.get('kind')!r} not in {sorted(KINDS)}")
         if str(row.get("publisher_class")) not in PUBLISHER_CLASSES:
             out.append(f"{tag}: publisher_class {row.get('publisher_class')!r} unknown")
-        if host and any(_domain_hit(host, d) for d in crypto):
-            out.append(f"{tag}: crypto-exchange host {host} -- forbidden by the MT5 mandate")
+        if (host and any(_domain_hit(host, d) for d in crypto)
+                and str(row.get("publisher_class")) != "crypto_exchange"):
+            # Research/signal use only (owner ruling 2026-11-17 20:40Z); the class makes the row's
+            # nature explicit so a crypto venue can never pass as an official publisher.
+            out.append(f"{tag}: crypto-exchange host {host} must carry publisher_class "
+                       "'crypto_exchange' (research/signal input only; MT5 trades only)")
         terms = row.get("terms")
         if not isinstance(terms, Mapping):
             out.append(f"{tag}: terms must be an object")
@@ -850,7 +856,7 @@ def build_report(doc: Mapping[str, Any], problems: Sequence[str], results: Mappi
                      else str(REGISTRY)),
         "registry_problems": list(problems),
         "probe": doc.get("probe"),
-        "excluded_by_mandate": doc.get("excluded_by_mandate"),
+        "crypto_exchange_rule": doc.get("crypto_exchange_rule"),
         "counts": {
             "assessed": len(feeds), "terms_ok": verdicts.get("OK", 0),
             "blocked_on_terms": verdicts.get("BLOCKED_ON_TERMS", 0),

@@ -9,7 +9,7 @@
   "status": "UNMEASURED",
   "why": "the build container's egress proxy refused every feed host (connect_rejected), so no robots.txt or HEAD probe could be made from it; URLs marked 'listed on ...' were read off the publisher's own feed-listing page through a research reader, the rest are from memory. Robots is enforced at every fetch on the box through index_discovery.robots_refusal (fail closed) and the result is published per feed in reports/LIVE_WIRE.json"
  },
- "excluded_by_mandate": "crypto-exchange websockets and crypto-exchange feeds (Binance, Bybit, OKX, Hyperliquid, Coinbase, Kraken and the rest) are not assessed and never added: the MT5 universe mandate forbids hunting crypto-exchange ground",
+ "crypto_exchange_rule": "owner ruling 2026-11-17 20:40Z (governance/mt5-only-means-trading-ruling-2026-11-17.md): MT5-only governs TRADING; public crypto-exchange feeds are allowed as research/signal inputs under each exchange's own API terms and robots, rows on these domains carry publisher_class crypto_exchange, and nothing here ever places an order. None assessed yet: missed_growth = crypto venue flow/funding/liquidation signals for Fusion crypto CFDs and cross-asset regime remain unread until a dedicated assessment lands",
  "refused_hosts": {
   "stlouisfed.org": "FRED/ALFRED: refused for all automated fetches (terms ruling 2026-11-13)",
   "yahoo.com": "Yahoo terms refuse automated collection without express prior permission",
