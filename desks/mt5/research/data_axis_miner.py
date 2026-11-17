@@ -118,6 +118,9 @@ AXES: tuple[dict, ...] = (
     {"axis": "trade_flow", "id": "un_comtrade",
      "what": "UN Comtrade: bilateral goods flows, monthly",
      "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS",
+     # Never probed: the UN Comtrade licence (s.5) forbids automated browsing or downloading
+     # without prior written UN permission, keyless preview API included (2026-11-14).
+     "terms": "BLOCKED_ON_TERMS: UN Comtrade licence s.5 forbids automated access",
      "binds_to": ["AUDUSD", "USDZAR", "USDMXN", "USDCNH", "XCUUSD"],
      "unblocks": ["macro_conditional"],
      "revision_safe": "revised -- vintage must be captured at read time",
@@ -337,11 +340,13 @@ def build(do_probe: bool) -> dict:
     rows = []
     for a in AXES:
         row = dict(a)
-        if a.get("terms") == "REFUSED":
-            # Refused on terms: never probed, on any pass. Unreachable lawfully, not a network
-            # verdict, and it carries the missed-growth line the refusal costs.
-            row["probe"] = {"reachable": False, "status": None,
-                            "why": f"BLOCKED_ON_TERMS: {a.get('terms_why', '')}",
+        terms = str(a.get("terms") or "")
+        if terms == "REFUSED" or terms.startswith("BLOCKED_ON_TERMS"):
+            # Refused on terms: never contacted, on any pass. Not a network verdict, and it
+            # carries the missed-growth line the refusal costs.
+            why = a.get("terms_why") or terms.removeprefix("BLOCKED_ON_TERMS:").strip()
+            row["probe"] = {"reachable": None, "status": None,
+                            "why": f"BLOCKED_ON_TERMS: {why}",
                             "missed_growth": {"mechanism": f"{a['id']}_terms_refusal",
                                               "lost": a["what"],
                                               "unblocks_lost": list(a.get("unblocks") or []),
