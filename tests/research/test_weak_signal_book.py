@@ -155,3 +155,35 @@ def test_armed_lambda_never_exceeds_what_the_holdout_supports():
     s = out["sizing"]
     assert out["passed"]
     assert s["lambda_armed"] <= min(s["lambda"], s["holdout"]["lambda_from_earlier_folds"])
+
+
+def test_ledoit_wolf_intensity_is_high_for_noise_and_low_for_strong_structure():
+    rng = np.random.default_rng(7)
+    noise = rng.normal(size=(60, 40))
+    f = rng.normal(size=(2000, 1))
+    factor = f @ np.ones((1, 8)) + 0.2 * rng.normal(size=(2000, 8))
+    d_noise = wsb.lw_diagonal_intensity(noise)
+    d_factor = wsb.lw_diagonal_intensity(factor)
+    assert 0.0 <= d_factor < 0.05 < 0.5 < d_noise <= 1.0
+    assert wsb.lw_diagonal_intensity(noise[:, :1]) == 1.0      # one member: nothing to estimate
+
+
+def test_selector_keeps_kelly_only_when_it_clears_bonferroni():
+    rng = np.random.default_rng(3)
+    ew = rng.normal(0.0, 1.0, 1500)
+    better = 0.6 * ew + rng.normal(0.15, 0.8, 1500)
+    same = ew + rng.normal(0.0, 0.01, 1500)
+    assert wsb.select_weighting(better, ew, n_recipes=1, alpha=0.05)["choice"] == "kelly"
+    assert wsb.select_weighting(same, ew, n_recipes=1, alpha=0.05)["choice"] == "equal_weight"
+    lo = wsb.select_weighting(better, ew, n_recipes=1, alpha=0.05)["z_bar"]
+    hi = wsb.select_weighting(better, ew, n_recipes=50, alpha=0.05)["z_bar"]
+    assert hi > lo                                              # more recipes, higher bar
+
+
+def test_judge_reports_its_weighting_and_charges_the_selection():
+    pool = _pool(seed=11)
+    cfg = wsb.BookConfig(min_oos_days=100)
+    out = wsb.judge(pool, cfg, n_trials=10, n_recipes=1)
+    assert out["weighting"]["choice"] in ("kelly", "equal_weight")
+    assert out["gates"]["deflated_sharpe"]["n_trials"] == 11    # two books looked at: +1
+    assert all(f.get("cov_shrink") is not None for f in out["folds"] if f["active"])

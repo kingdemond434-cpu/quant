@@ -581,7 +581,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                 built_status["empty_series"] += 1
                 _INDEX[c] = {"built_utc": _now(), "origin": "empty", "days": 0}
         except Exception as exc:
-            built_status[f"{type(exc).__name__}: {str(exc)[:60]}"] += 1
+            built_status[type(exc).__name__] += 1  # type only (audit 11-14)
     STORE.mkdir(parents=True, exist_ok=True)
     _atomic_write(STORE_INDEX, json.dumps(_INDEX, sort_keys=True))
 
@@ -627,7 +627,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         carry_doc = carry_crash_gate.run_from(series)
         carry_status = str(carry_doc.get("status"))
     except Exception as exc:  # noqa: BLE001 - the book must not die with its side report
-        carry_status = f"ERROR {type(exc).__name__}: {str(exc)[:80]}"
+        carry_status = f"ERROR {type(exc).__name__}"
 
     # Per-member alpha half-life over the same members (report only; never sizes or retires).
     try:
@@ -639,7 +639,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         half_life = {k: hl_doc[k] for k in ("members", "verdicts", "median_half_life_years",
                                              "median_retained")}
     except Exception as exc:  # noqa: BLE001 - the book must not die with its side report
-        half_life = {"status": f"ERROR {type(exc).__name__}: {str(exc)[:80]}"}
+        half_life = {"status": f"ERROR {type(exc).__name__}"}
 
     lt, lt_basis = lifetime_trials()
     rows = trial_rows()
@@ -652,12 +652,14 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
             latest_by_recipe[str(r["recipe"])] = float(r["oos_sr_daily"])
     recipe_srs = list(latest_by_recipe.values())
     pool = wsb.build_pool(series)
-    book = wsb.judge(pool, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs) if pool.ids else {
+    book = wsb.judge(pool, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs,
+                     n_recipes=n_recipes) if pool.ids else {
         "passed": False, "why": "empty pool", "recipe": recipe}
     with_live = None
     if live_series and pool.ids:
         lp = wsb.build_pool({**series, **live_series})
-        wl = wsb.judge(lp, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs)
+        wl = wsb.judge(lp, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs,
+                       n_recipes=n_recipes)
         with_live = {"passed_informative": wl["passed"], "gates": wl["gates"], "oos": wl["oos"],
                      "live_weight": round(sum(m["weight"] for m in wl["members"]
                                               if m["cell"].startswith("LIVE:")), 6),

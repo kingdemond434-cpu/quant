@@ -31,7 +31,11 @@ SIZING IS E[log W] WITHIN SURVIVAL. The unit book (gross weight 1 R) is scaled b
 maximising mean log(1 + lambda r) over the OOS series, capped so that the worst OOS day stays
 inside `daily_loss_cap` and the worst OOS drawdown inside `drawdown_cap`. The caps default to
 HALF of the tightest firm rail (E8: 2.5% daily, 10% floor), so the book can never be the thing
-that breaches a firm. The weights inside the book are the long-only shrunk Kelly solution.
+that breaches a firm. The weights inside the book are the long-only shrunk Kelly solution, with
+the covariance shrunk toward its diagonal by the Ledoit-Wolf intensity measured on each training
+block -- UNLESS that solution fails to beat 1/N over the same admitted members at a Bonferroni z
+across every recipe tried, in which case the book is 1/N. Estimation error is the main enemy of
+a fit over hundreds of weak members; 1/N is what the optimiser has to earn its place against.
 
 PROPOSES ONLY. Nothing here arms, places or sizes a live trade. A PASS publishes the book and its
 members as forward candidates; the certificate path decides the rest.
@@ -51,7 +55,7 @@ import pandas as pd
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 
 #: Bump when the estimator changes. Each distinct recipe digest is charged as one more trial.
-RECIPE_VERSION = 1
+RECIPE_VERSION = 2   # 2: Ledoit-Wolf covariance intensity + Kelly-vs-1/N selector
 
 
 @dataclass(frozen=True)
@@ -64,7 +68,11 @@ class BookConfig:
     max_active: int = 400             # members carried into the covariance solve per fold
     dedupe_corr: float = 0.90         # near-duplicates keep the stronger one
     mean_shrink_k: float = 250.0      # mu * n/(n+k): a member needs ~a year to keep half its mean
-    cov_shrink: float = 0.5           # Sigma -> (1-d) Sigma + d diag(Sigma)
+    # Sigma -> (1-d) Sigma + d diag(Sigma). None = d measured per fold (Ledoit-Wolf intensity
+    # toward the diagonal, Schaefer-Strimmer form), clipped to [cov_shrink_floor, 1].
+    cov_shrink: float | None = None
+    cov_shrink_floor: float = 0.0
+    selector_alpha: float = 0.05      # Kelly must beat 1/N at Bonferroni z over recipes tried
     dsr_bar: float = 0.95             # Tier S bar, fixed
     daily_loss_cap: float = 0.0125    # half of E8's 2.5% daily limit
     drawdown_cap: float = 0.05        # half of E8's 10% floor
@@ -139,6 +147,30 @@ def _project_nonneg(w: np.ndarray) -> np.ndarray:
     return np.asarray(np.maximum(w, 0.0))
 
 
+def lw_diagonal_intensity(x: np.ndarray) -> float:
+    """Ledoit-Wolf optimal shrinkage intensity toward diag(S) (Schaefer & Strimmer 2005, target D).
+
+    d* = sum_{i!=j} Var(s_ij) / sum_{i!=j} s_ij^2, with Var(s_ij) estimated from the products
+    w_tij = x_ti x_tj of the centred data. Computed with two matrix products, never a T x N x N
+    array, so it stays cheap at the 400-member cap. Clipped to [0, 1]; a degenerate input
+    (one member, two days, or no off-diagonal mass) returns 1.0 -- full shrinkage is the safe
+    side of a covariance we cannot estimate.
+    """
+    t, k = x.shape
+    if k < 2 or t < 3:
+        return 1.0
+    xc = x - x.mean(0)
+    s = xc.T @ xc / (t - 1)
+    x2 = xc * xc
+    wbar = xc.T @ xc / t
+    var_s = (x2.T @ x2 - t * wbar * wbar) * t / (t - 1) ** 3
+    off = ~np.eye(k, dtype=bool)
+    den = float((s[off] ** 2).sum())
+    if den <= 0:
+        return 1.0
+    return float(np.clip(var_s[off].sum() / den, 0.0, 1.0))
+
+
 def fit_weights(r: np.ndarray, avail: np.ndarray,
                 cfg: BookConfig) -> tuple[np.ndarray, dict[str, Any]]:
     """Long-only shrunk Kelly weights from TRAINING rows only. Returns (w over all N, receipt).
@@ -183,7 +215,10 @@ def fit_weights(r: np.ndarray, avail: np.ndarray,
     k = np.asarray(keep, int)
     xk = np.where(avail[:, k], r[:, k], 0.0).astype(np.float64)
     cov = np.cov(xk, rowvar=False, ddof=1) if len(k) > 1 else np.atleast_2d(xk.var(ddof=1))
-    cov = (1 - cfg.cov_shrink) * cov + cfg.cov_shrink * np.diag(np.diag(cov))
+    d = (float(cfg.cov_shrink) if cfg.cov_shrink is not None
+         else max(cfg.cov_shrink_floor, lw_diagonal_intensity(xk)))
+    receipt["cov_shrink"] = round(d, 4)
+    cov = (1 - d) * cov + d * np.diag(np.diag(cov))
     m = mu_s[k]
     # Projected gradient ascent on the concave quadratic; step = 1 / largest eigenvalue.
     lmax = float(np.linalg.eigvalsh(cov)[-1]) if len(k) > 1 else float(cov[0, 0])
@@ -194,6 +229,49 @@ def fit_weights(r: np.ndarray, avail: np.ndarray,
     w[k] = wk
     receipt["active"] = int((wk > 0).sum())
     return w, receipt
+
+
+def equal_weight_direction(r: np.ndarray, avail: np.ndarray, cfg: BookConfig) -> np.ndarray:
+    """1/N over the members the training block admits (enough days, positive shrunk mean).
+
+    The same admission rule Kelly uses, so the two books differ ONLY in how they weight: this is
+    the benchmark the optimiser must beat (DeMiguel, Garlappi & Uppal 2009).
+    """
+    mu, sd, nobs = _member_stats(r, avail)
+    ok = (nobs >= cfg.min_obs) & (sd > 0) & (mu * nobs / (nobs + cfg.mean_shrink_k) > 0)
+    e = np.zeros(r.shape[1])
+    if ok.any():
+        e[ok] = 1.0 / ok.sum()
+    return e
+
+
+def select_weighting(kelly: np.ndarray, ew: np.ndarray, *, n_recipes: int,
+                     alpha: float) -> dict[str, Any]:
+    """Kelly or 1/N, chosen on the OOS series by a pre-registered rule.
+
+    1/N is scaled to Kelly's OOS volatility, so the paired test compares edge per unit risk. Kelly
+    is kept only when the paired mean difference clears a one-sided z at alpha / n_recipes
+    (Bonferroni over every recipe this book has ever run); otherwise the optimiser has not shown
+    it adds anything and the book is 1/N. Both choices propose a book: this selects, it never
+    vetoes, and the choice is charged as one more trial in the DSR.
+    """
+    from statistics import NormalDist
+    n = min(len(kelly), len(ew))
+    z_bar = float(NormalDist().inv_cdf(1.0 - alpha / max(int(n_recipes), 1)))
+    out: dict[str, Any] = {"z_bar": round(z_bar, 4), "n_recipes": int(n_recipes),
+                           "alpha": alpha, "days": n}
+    if n < 3 or not np.any(ew[:n]) or not np.any(kelly[:n]):
+        out.update(choice="equal_weight" if np.any(ew[:n]) else "kelly", z=None,
+                   why="degenerate OOS series")
+        return out
+    k, e = kelly[:n], ew[:n]
+    scale = float(k.std(ddof=1) / e.std(ddof=1)) if e.std(ddof=1) > 0 else 1.0
+    diff = k - scale * e
+    se = float(diff.std(ddof=1) / math.sqrt(n))
+    z = float(diff.mean() / se) if se > 0 else 0.0
+    out.update(z=round(z, 4), ew_vol_scale=round(scale, 6),
+               choice="kelly" if z > z_bar else "equal_weight")
+    return out
 
 
 def _blocks(t: int, n_blocks: int) -> list[tuple[int, int]]:
@@ -211,7 +289,9 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict[str, Any]:
     """
     t = pool.r1.shape[0]
     oos1, oos3, best1, folds = [], [], [], []
+    ew1, ew3 = [], []
     share3: list[float] = []
+    ew_share3: list[float] = []
     oos_dates: list[pd.Timestamp] = []
     for k, (a, b) in enumerate(_blocks(t, cfg.n_blocks)):
         if k == 0:
@@ -225,6 +305,10 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict[str, Any]:
         sh = np.where((nobs >= cfg.min_obs) & (sd > 0),
                       mu * nobs / (nobs + cfg.mean_shrink_k) / np.where(sd > 0, sd, 1), -np.inf)
         bi = int(np.argmax(sh)) if np.isfinite(sh).any() else -1
+        e = equal_weight_direction(pool.r1[:end], pool.avail[:end], cfg)
+        ew1.append(pool.r1[a:b] @ e)
+        ew3.append(pool.r3[a:b] @ e)
+        ew_share3.append(float(e[pool.has_3x].sum()) if e.sum() > 0 else 1.0)
         d = w / s if s > 0 else w
         share3.append(float(d[pool.has_3x].sum()) if s > 0 else 1.0)
         oos1.append(pool.r1[a:b] @ d)
@@ -239,6 +323,8 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict[str, Any]:
         return np.concatenate(xs) if xs else np.zeros(0)
 
     return {"oos1": cat(oos1), "oos3": cat(oos3), "best1": cat(best1),
+            "ew1": cat(ew1), "ew3": cat(ew3),
+            "ew_real_3x_weight_share": min(ew_share3) if ew_share3 else 1.0,
             "dates": pd.DatetimeIndex(oos_dates), "folds": folds,
             "fold_lengths": [len(x) for x in oos1],
             "real_3x_weight_share": min(share3) if share3 else 1.0}
@@ -334,10 +420,17 @@ def breadth(pool: Pool, unit: np.ndarray, book_oos: np.ndarray | None = None,
 
 def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
           variance_of_sharpes: float | None = None,
-          recipe_sharpes: Sequence[float] = ()) -> dict[str, Any]:
-    """Run the walk-forward, the five gates, the sizing, and the final full-history weights."""
+          recipe_sharpes: Sequence[float] = (), n_recipes: int = 1) -> dict[str, Any]:
+    """Run the walk-forward, the Kelly-vs-1/N selector, the five gates, the sizing, and the
+    final full-history weights of the chosen weighting."""
     wf = walk_forward(pool, cfg)
-    o1, o3, b1 = wf["oos1"], wf["oos3"], wf["best1"]
+    sel = select_weighting(wf["oos1"], wf["ew1"], n_recipes=n_recipes, alpha=cfg.selector_alpha)
+    use_ew = sel["choice"] == "equal_weight"
+    o1, o3, b1 = (wf["ew1"], wf["ew3"], wf["best1"]) if use_ew else (
+        wf["oos1"], wf["oos3"], wf["best1"])
+    # The selection looked at two books: one more trial on the charge (never a smaller bar).
+    if n_trials is not None:
+        n_trials = int(n_trials) + 1
     gates: dict[str, dict[str, Any]] = {}
     gates["oos_days"] = {"passed": len(o1) >= cfg.min_oos_days, "days": len(o1),
                          "required": cfg.min_oos_days}
@@ -370,7 +463,7 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
                                     "variance_recipes": var_recipes}
     # NEVER VACUOUS (L1.49, audit 11-03): a member with no 3x arm carries r3 = r1, so the gate
     # holds only when every unit of OOS weight sat on members with a real 3x series.
-    share = float(wf["real_3x_weight_share"])
+    share = float(wf["ew_real_3x_weight_share"] if use_ew else wf["real_3x_weight_share"])
     gates["cost_3x"] = {"passed": bool(len(o3) and o3.mean() > 0 and share >= 1.0 - 1e-9),
                         "oos_mean_r_3x": float(o3.mean()) if len(o3) else None,
                         "real_3x_weight_share_min_fold": round(share, 6)}
@@ -379,6 +472,8 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
                                   "best_single_sr_daily": round(sb, 4)}
     passed = all(g["passed"] for g in gates.values())
     w, rec = fit_weights(pool.r1, pool.avail, cfg)
+    if use_ew:
+        w = equal_weight_direction(pool.r1, pool.avail, cfg)
     s = w.sum()
     unit = w / s if s > 0 else w
     sizing = size_lambda(o1, cfg)
@@ -406,7 +501,7 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
                      key=lambda x: -x[1])
     return {
         "recipe": cfg.digest(), "config": asdict(cfg),
-        "passed": passed, "gates": gates,
+        "passed": passed, "gates": gates, "weighting": sel,
         "oos": {"days": len(o1), "sr_daily": round(sr, 4),
                 "sr_annual": round(sr * math.sqrt(252), 3),
                 "mean_r_1x": float(o1.mean()) if len(o1) else None,
