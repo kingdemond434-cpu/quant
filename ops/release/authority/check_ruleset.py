@@ -10,13 +10,22 @@ Safe means:
 - no bypass actor is a placeholder (actor_id 0);
 - no bypass actor is GitHub Actions or any other identity whose credential a PR's own workflow
   can use (#650 audit MF: a same-repo pull_request run gets a write-scoped GITHUB_TOKEN, so an
-  Actions bypass lets any branch push LIVE past the authority).
+  Actions bypass lets any branch push LIVE past the authority);
+- every LIVE writer is converted, OBSERVED on GitHub (writer_problems; bootstrap_level2.ps1 step
+  7 promised this, and until 2026-11-17 nothing checked it). Applying the ruleset while a writer
+  still pushes as a person would silently cut that writer off, and adoption with it.
+
+    ... --state-login quant-state-publisher[bot] --merger-login quant-merger[bot]
+        --converted-at 2026-11-20T10:00:00Z
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
+from collections.abc import Callable, Iterable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -100,6 +109,126 @@ def env_problems(env: dict[str, Any], branch_policies: list[dict[str, Any]]) -> 
     return out
 
 
+LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
+#: How far back every person-made push to LIVE must be one the state App now carries.
+WRITERS_LOOKBACK_H = 72
+#: How long LIVE must be watched after the writers converted, with no person-made write at all.
+WRITERS_QUIET_MIN = 60
+PUSH_TYPES = frozenset({"push", "force_push", "branch_creation", "branch_deletion"})
+WRITE_TYPES = PUSH_TYPES | {"pr_merge"}
+
+
+def _when(x: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else None
+
+
+def writer_problems(events: Iterable[dict[str, Any]],
+                    changed: Callable[[str, str], list[str] | None],
+                    apps: set[str], converted_at: datetime | None, now: datetime,
+                    carried: Callable[[str], bool]) -> tuple[list[str], dict[str, int]]:
+    """(problems, counts) for LIVE's writers (pure over its two callables).
+
+    (a) Every push to LIVE in the last WRITERS_LOOKBACK_H hours by a login that is not one of
+        `apps` changed only paths the state App now carries (`carried`, the publisher's own
+        filter). Anything else is a writer the bootstrap did not convert.
+    (b) Since `converted_at`, nobody but `apps` wrote LIVE at all: no push, and no PR merge
+        (the gate's merges included). At least WRITERS_QUIET_MIN minutes are observed, and the
+        state App pushed at least once in them, so a silent publisher cannot pass for a quiet one.
+    Anything unreadable is a problem: this fails closed."""
+    out: list[str] = []
+    n = {"events": 0, "person_pushes_72h": 0, "uncarried_pushes_72h": 0,
+         "person_writes_since": 0, "app_pushes_since": 0}
+    if converted_at is None:
+        out.append("no --converted-at: the time the box writers converted must be given")
+    since = now - timedelta(hours=WRITERS_LOOKBACK_H)
+    for e in events:
+        n["events"] += 1
+        kind, who = e.get("activity_type"), str((e.get("actor") or {}).get("login") or "")
+        at = _when(e.get("timestamp"))
+        if at is None or kind is None:
+            out.append(f"an activity row cannot be read: {json.dumps(e)[:120]}")
+            continue
+        if at < since or kind not in WRITE_TYPES:
+            continue
+        sha = str(e.get("after") or "")[:9]
+        after = converted_at is not None and at >= converted_at
+        if who in apps:
+            if after and kind in PUSH_TYPES:
+                n["app_pushes_since"] += 1
+            continue
+        if after:
+            n["person_writes_since"] += 1
+            out.append(f"{who} wrote LIVE after the conversion ({kind} {sha} at {e['timestamp']})")
+            continue
+        if kind not in PUSH_TYPES:
+            continue        # a merge before the conversion: the ruleset governs those from now
+        n["person_pushes_72h"] += 1
+        files = changed(str(e.get("before") or ""), str(e.get("after") or ""))
+        if files is None:
+            out.append(f"the paths of {who}'s push {sha} at {e['timestamp']} cannot be read")
+            continue
+        bad = [f for f in files if not carried(f)]
+        if bad:
+            n["uncarried_pushes_72h"] += 1
+            out.append(f"{who} pushed {sha} at {e['timestamp']} with {len(bad)} path(s) no App "
+                       f"carries, e.g. {bad[0]}: that writer is not converted")
+    if converted_at is not None:
+        watched = (now - converted_at).total_seconds() / 60.0
+        if watched < WRITERS_QUIET_MIN:
+            out.append(f"only {watched:.0f} min watched since the conversion; "
+                       f"{WRITERS_QUIET_MIN} needed")
+        if not n["app_pushes_since"]:
+            out.append("the state App has not pushed LIVE since the conversion")
+    return out, n
+
+
+def _carried() -> Callable[[str], bool]:
+    """The publisher's own path filter, so this check and the App can never disagree."""
+    path = Path(__file__).resolve().parents[1] / "publisher" / "publish.py"
+    spec = importlib.util.spec_from_file_location("_cr_publish", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.publishable  # type: ignore[no-any-return]
+
+
+def _gh_rows(path: str) -> list[dict[str, Any]]:
+    import subprocess
+
+    p = subprocess.run(["gh", "api", "--paginate", path, "--jq", ".[]"], capture_output=True,
+                       text=True, check=False)  # fmt: skip
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {path}: {p.stderr.strip()[:200]}")
+    return [json.loads(line) for line in p.stdout.splitlines() if line.strip()]
+
+
+def _changed(repo: str) -> Callable[[str, str], list[str] | None]:
+    def changed(before: str, after: str) -> list[str] | None:
+        if not (before and after) or set(before) == {"0"}:
+            return None
+        try:
+            got = _gh(f"repos/{repo}/compare/{before}...{after}")
+        except (RuntimeError, ValueError):
+            return None
+        files = got.get("files") if isinstance(got, dict) else None
+        if not isinstance(files, list) or len(files) >= 300:   # the API caps the list at 300
+            return None
+        return [str(f.get("filename")) for f in files] + \
+            [str(f.get("previous_filename")) for f in files if f.get("previous_filename")]
+    return changed
+
+
+def _opt(args: list[str], flag: str) -> tuple[str | None, list[str]]:
+    if flag not in args:
+        return None, args
+    i = args.index(flag)
+    return args[i + 1], args[:i] + args[i + 2:]
+
+
 def _gh(path: str) -> Any:
     import subprocess
 
@@ -121,6 +250,9 @@ def main(argv: list[str] | None = None) -> int:
         i = args.index("--master")
         mpath = Path(args[i + 1])
         args = args[:i] + args[i + 2:]
+    state_login, args = _opt(args, "--state-login")
+    merger_login, args = _opt(args, "--merger-login")
+    conv, args = _opt(args, "--converted-at")
     path = Path(args[0]) if args else Path(__file__).with_name("ruleset_live.json")
     live = json.loads(path.read_text(encoding="utf-8"))
     got = problems(live)
@@ -137,6 +269,19 @@ def main(argv: list[str] | None = None) -> int:
             got += env_problems(env, list(pols.get("branch_policies") or []))
         except (RuntimeError, ValueError) as exc:
             got.append(f"could not read environment {SEAL_ENV}: {exc}")
+        apps = {x for x in (state_login, merger_login) if x}
+        if len(apps) != 2 or not all(x.endswith("[bot]") for x in apps):
+            got.append("name both Apps' bot logins (--state-login, --merger-login)")
+        try:
+            rows = _gh_rows(f"repos/{repo}/activity?ref=refs/heads/{LIVE}"
+                            "&time_period=week&per_page=100")
+            bad, counts = writer_problems(rows, _changed(repo), apps,
+                                          _when(conv) if conv else None,
+                                          datetime.now(UTC), _carried())
+            got += bad
+            print("LIVE writers judged: " + ", ".join(f"{k}={v}" for k, v in counts.items()))
+        except (RuntimeError, ValueError) as exc:
+            got.append(f"could not read LIVE's activity: {exc}")
     for p in got:
         print(f"NOT SAFE: {p}")
     if not got:
