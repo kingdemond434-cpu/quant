@@ -220,7 +220,7 @@ def test_every_artifact_is_on_disk_before_the_apply_runs(tmp_path: Path, monkeyp
     assert seen == {"rate": True, "out": True, "env": True}
     doc = json.loads((tmp_path / "JUDGING_THROUGHPUT.json").read_text("utf-8"))
     assert doc["applied"]["machine_env"]["status"] == "FAILED"
-    assert "setx hung" in doc["applied"]["machine_env"]["why"]
+    assert doc["applied"]["machine_env"]["why"] == "TimeoutError", "the type, never the text"
     assert doc["applied"]["cadence"]["status"] == "APPLIED", "one failed step skips no other"
     assert payload["seconds"] >= payload["measure_seconds"] >= 0
 
