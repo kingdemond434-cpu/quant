@@ -9,8 +9,8 @@ TARGETING KIT: enough for a credible approach to the broker's support desk, and 
 scanning a hosting provider's ranges knows what is behind that address and what file to look for.
 
 WHAT THE REVIEW GOT WRONG, AND WHY IT STILL MATTERS. Every identifier it named is RETIRED. The
-account it found (Vantage 34049153) was replaced by Fusion 495044; the host it found
-(95.216.191.70, Hetzner) was replaced by 62.171.172.249. So the published kit points at
+account it found (Vantage 34049153) was replaced by the Fusion login; the host it found
+(95.216.191.70, Hetzner) was replaced by the Contabo box. So the published kit points at
 decommissioned infrastructure and the finding is far less urgent than it reads -- but the reason
 it points at dead infrastructure is that the desk MIGRATED, not that a gate stopped it. The live
 identifiers would land the same way, and two of them already had. That is the defect: the desk's
@@ -21,9 +21,18 @@ SCOPE, deliberately narrow. This fences IDENTIFIERS OF LIVE INFRASTRUCTURE, not 
 that reintroducing one is also caught, and so a reader can see what was already published rather
 than discovering it in a review. Scrubbing them from git HISTORY is a separate, destructive
 operation (`git filter-repo`) that only the principal may authorise.
+
+THE FENCE NO LONGER PUBLISHES WHAT IT FENCES (Audit, 2026-11-17). Until then this file named the
+live login and the live box address in plain text -- excluded from its own scan, so the one
+tracked file guaranteed to carry both was the guard. LIVE entries are now the sha256 of the
+identifier, and the scan hashes every maximal dotted-digit token in the tracked tree. This is
+obfuscation against grep and scrapers, not secrecy: a six-digit login or an IPv4 address is
+recoverable from its hash by enumeration. It stops this file from being the place a scanner finds
+them, which is the threat this fence exists for; it does not unpublish what history holds.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 import subprocess
 from pathlib import Path
@@ -34,9 +43,12 @@ ROOT = Path(__file__).resolve().parents[2]
 #: a restored backup or a copied doc cannot quietly republish them.
 #: LIVE identifiers: zero tolerance. Nothing that names the account or host currently carrying
 #: risk may be committed, and there is no ratchet here -- a new one is a defect, not a debt.
+#: Keyed by sha256 of the identifier, never the identifier itself (see the module docstring).
 LIVE: dict[str, str] = {
-    "495044": "LIVE brokerage login (Fusion)",
-    "62.171.172.249": "LIVE trading box (Contabo) public IP",
+    "c3d502f254a17abd00844878fd202c2b9778e037029caab8d0a0a4c5bf521d6d":
+        "LIVE brokerage login (Fusion)",
+    "a68c1283127ae8dd4a1217933fdbf027e4a48b19b63bfacae9bf05c9e8d1b872":
+        "LIVE trading box (Contabo) public IP",
 }
 
 #: RETIRED identifiers: a DOWNWARD RATCHET, not a hard bar. These are already published, and in
@@ -51,6 +63,22 @@ RETIRED: dict[str, str] = {
 }
 
 FORBIDDEN: dict[str, str] = {**LIVE, **RETIRED}
+
+#: A maximal run of digits joined by dots, bounded by neither: exactly the spans
+#: `_contains_identifier` accepts for a plain needle, so hashing every such token and looking it
+#: up finds the same occurrences as searching for the identifier itself.
+_TOKEN = r"(?<![\d.])\d+(?:\.\d+)*(?![\d.])"
+
+
+def _digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _matches(text: str, key: str) -> bool:
+    """`key` is a LIVE digest or a plain RETIRED identifier."""
+    if key in LIVE:
+        return any(_digest(t) == key for t in re.findall(_TOKEN, text))
+    return _contains_identifier(text, key)
 
 #: Tracked files carrying a retired identifier, measured 2026-09-11. MAY ONLY GO DOWN.
 MAX_RETIRED_SITES = 44
@@ -113,13 +141,13 @@ def _tracked() -> list[str]:
 
 
 def _contains_identifier(text: str, needle: str) -> bool:
-    # A measured decimal such as 7.495044 is not an account identifier.
+    # A measured decimal such as 7.987654 is not an account identifier.
     # Keep integer tokens, quoted identifiers and prose identifiers detectable.
     return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
 
 
 def test_identifier_matching_preserves_real_identifiers():
-    needle = next(iter(LIVE))
+    needle = "987654"
     assert _contains_identifier('account ' + needle, needle)
     assert _contains_identifier('"account": ' + needle + ',', needle)
     assert _contains_identifier('"account": "' + needle + '"', needle)
@@ -129,8 +157,17 @@ def test_identifier_matching_preserves_real_identifiers():
 
 def _hits(needle: str) -> list[str]:
     """Tracked files containing `needle`, via git grep so untracked scratch is never scanned."""
-    out = subprocess.run(["git", "grep", "-l", "-F", needle], cwd=ROOT,
-                         capture_output=True, text=True)
+    if needle in LIVE:
+        # Every tracked text file holding a token whose digest is the key; the token never
+        # appears in this file, so the scan cannot be inverted into a plain search.
+        out = subprocess.run(["git", "grep", "-o", "-I", "-P", _TOKEN], cwd=ROOT,
+                             capture_output=True, text=True)
+        files = sorted({ln.rsplit(":", 1)[0] for ln in out.stdout.splitlines()
+                        if ":" in ln and _digest(ln.rsplit(":", 1)[1]) == needle})
+        out = subprocess.CompletedProcess(out.args, out.returncode, "\n".join(files), "")
+    else:
+        out = subprocess.run(["git", "grep", "-l", "-F", needle], cwd=ROOT,
+                             capture_output=True, text=True)
     # rc 1 means "no matches", which is the passing case and not an error.
     #
     # THIS FILE IS EXCLUDED FROM ITS OWN SCAN. A fence has to name what it forbids, so the
@@ -138,7 +175,7 @@ def _hits(needle: str) -> list[str]:
     # is committed, and the obvious "fix" is to delete the gate. Nothing else is excluded.
     me = Path(__file__).resolve().relative_to(ROOT).as_posix()
     return [q for q in (ln.strip().replace("\\", "/") for ln in out.stdout.splitlines())
-            if q and q != me and _contains_identifier(
+            if q and q != me and _matches(
                 _judged_text(q, (ROOT / q).read_text(encoding="utf-8", errors="replace")),
                 needle)]
 
@@ -186,7 +223,7 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     unneeded = []
     for path in ALLOWED:
         text = (ROOT / path).read_text(encoding="utf-8", errors="replace")
-        if not any(_contains_identifier(text, n) for n in FORBIDDEN):
+        if not any(_matches(text, n) for n in FORBIDDEN):
             unneeded.append(path)
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "
@@ -209,7 +246,7 @@ def test_the_legacy_prefixes_still_need_the_exemption() -> None:
         if not full.exists():
             continue
         prefix = _legacy_prefix(path, full.read_text(encoding="utf-8", errors="replace"))
-        if not any(_contains_identifier(prefix, n) for n in FORBIDDEN):
+        if not any(_matches(prefix, n) for n in FORBIDDEN):
             unneeded.append(path)
     assert not unneeded, (
         f"these ledgers' legacy prefixes no longer carry a forbidden identifier: {unneeded}. "
@@ -217,7 +254,7 @@ def test_the_legacy_prefixes_still_need_the_exemption() -> None:
 
 
 def test_a_row_after_the_pinned_prefix_is_judged_and_a_changed_prefix_is_judged_whole() -> None:
-    needle = next(iter(LIVE))
+    needle = "987654"
     path = "desks/mt5/data/live_ledger.jsonl"
     held = (ROOT / path).read_text(encoding="utf-8")
     pin = LEGACY_PIN[path]
@@ -232,3 +269,23 @@ def test_a_row_after_the_pinned_prefix_is_judged_and_a_changed_prefix_is_judged_
     lines[0] = lines[0].replace("{", "{ ", 1)
     assert _contains_identifier(_judged_text(path, "".join(lines)), needle)
     assert _contains_identifier(_judged_text("desks/mt5/data/other.jsonl", old), needle)
+
+
+def test_the_fence_names_no_live_identifier_in_plain_text() -> None:
+    """Every LIVE key is a sha256 digest, and no token in this file hashes to one."""
+    assert all(re.fullmatch(r"[0-9a-f]{64}", k) for k in LIVE)
+    me = Path(__file__).read_text(encoding="utf-8")
+    assert not [k for k in LIVE if _matches(me, k)]
+
+
+def test_a_hashed_needle_finds_what_the_plain_one_did() -> None:
+    key = _digest("10.20.30.40")
+    LIVE[key] = "synthetic"
+    try:
+        assert _matches("host 10.20.30.40 up", key)
+        assert _matches('"ip": "10.20.30.40"', key)
+        assert not _matches("host 10.20.30.40.5 up", key)
+        assert not _matches("v110.20.30.40", key)
+        assert _matches("10.20.30.40.", key) == _contains_identifier("10.20.30.40.", "10.20.30.40")
+    finally:
+        del LIVE[key]
