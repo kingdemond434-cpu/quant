@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 from desks.mt5.research import forward_verdict  # noqa: E402
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
+from desks.mt5.research.atomic_ledger import write_text_atomic  # noqa: E402
 from desks.mt5.research.shadow_admission import (  # noqa: E402
     SCALP_KEY_PREFIX,
     SCALP_LANE_FAMILY,
@@ -304,9 +305,9 @@ def run(now: datetime | None = None) -> dict:
                           "persisting and the clock can never start")
         n_historical = len(_all) - len(records)
         ledger = SHADOW / f"ledger_{name}.json"
-        ledger.write_text(json.dumps(
+        write_text_atomic(ledger, json.dumps(
             [{**r, "phase": ("forward" if r in records else "historical")} for r in _all],
-            indent=2), "utf-8")
+            indent=2))
         rs = [float(row["r"]) for row in records]
         n = len(rs)
         last_bar = pd.Timestamp(df.index[-1])
