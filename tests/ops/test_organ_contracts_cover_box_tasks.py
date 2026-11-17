@@ -20,6 +20,8 @@ import time
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -83,7 +85,9 @@ def test_cert_hygiene_is_the_frontier_audit_component_that_runs_it() -> None:
     assert "certificate_hygiene.py" in cmd
 
 
-def test_paused_by_names_the_marker_and_its_age_only(tmp_path: Path, monkeypatch) -> None:
+def test_paused_by_names_the_marker_and_its_age_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     marker = tmp_path / "desks" / "mt5" / "data" / "GATEWAY_PAUSED"
     marker.parent.mkdir(parents=True)
     marker.write_text("EQUITY FLOOR 266.01 < 315.00 account 51234567", "utf-8")
