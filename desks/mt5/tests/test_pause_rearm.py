@@ -73,11 +73,17 @@ def test_backoff_doubles_per_rearm_in_24h_and_caps(tmp_path: Path) -> None:
     assert pr.decide(paused, ok, hist, now=T0 + timedelta(minutes=31))["backoff_min"] == 30.0
 
 
-def test_the_gateway_lifts_before_it_reads_the_pause() -> None:
-    src = (Path(__file__).resolve().parent.parent / "mt5desk" / "gateway.py").read_text("utf-8")
-    main = src[src.index("def main() -> None:"):]
-    assert main.index("_lift_own_auto_pause()") < main.index("if gateway_paused():")
+def test_the_loop_lifts_before_the_gateway_reads_the_pause() -> None:
+    desk = Path(__file__).resolve().parent.parent
+    loop = (desk / "research" / "run_gateway_loop.py").read_text("utf-8")
+    body = loop[loop.index("def main() -> None:"):]
+    assert body.index('getattr(gateway, "_lift_own_auto_pause", None)') < body.index(
+        "lift()") < body.index("gateway.main()")
+    src = (desk / "mt5desk" / "gateway.py").read_text("utf-8")
     lift = src[src.index("def _lift_own_auto_pause"):src.index("def main() -> None:")]
     assert "JOURNAL GATEWAY AUTO RE-ARMED" in lift and "GATEWAY_AUTO_REARMED" in lift
+    # main() itself is unchanged: its first statement is still the pause read (audit E13)
+    main = src[src.index("def main() -> None:"):]
+    assert main.split("\n")[1].strip() == "if gateway_paused():"
     # the writer's tag is the reader's tag
     assert f'f"{pr.PAUSE_TAG} {{now()}}' in src

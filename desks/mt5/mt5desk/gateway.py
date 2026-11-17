@@ -4930,6 +4930,9 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
 def _lift_own_auto_pause() -> None:
     """Lift the gateway's OWN placement auto-pause once the terminal answers again (2026-11-17).
 
+    Called by the one loop wrapper (research/run_gateway_loop.py) immediately BEFORE `main()`,
+    so `main()`'s first statement stays the pause read the audit pinned (E13).
+
     Rules in `mt5desk.pause_rearm`: the body must start "AUTO-PAUSED", the read-only terminal
     probe must have passed since the pause, and a doubling backoff must have elapsed. A pause a
     person or the ruin rail wrote is never touched. Never raises: a broken lift leaves the pause.
@@ -4957,7 +4960,6 @@ def _lift_own_auto_pause() -> None:
 
 
 def main() -> None:
-    _lift_own_auto_pause()
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
         return
