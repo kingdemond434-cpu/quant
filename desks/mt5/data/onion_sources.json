@@ -1,0 +1,134 @@
+{
+  "_doc": "THE ONION ROSTER: every onion-layer source the onion forest has assessed, refused ones included. Reviewed input, never written by an organ (box-side address and terms reads go to data/onion_roster_state.json). A row is FETCHED only when its address is VERIFIED from the publisher's OWN clearnet page and its terms_verdict is ALLOWED; a mirror inherits its publisher's clearnet terms and robots (governance/tor-proxy-ruling-2026-11-17.md). Kinds allowed: news_mirror, institution_mirror, public_forum (after per-source review), dataset, index. Markets, leak/ransomware sites, carding sites, dump sites and any recursive crawler are excluded by RULE and never appear as rows (libs/data/onion_fetch + research/onion_forest.FORBIDDEN_KINDS). Text claims only.",
+  "assessed_at": "2026-11-17",
+  "assessed_from": "cloud container: the egress proxy refused every publisher host (bbc.co.uk, propublica.org, nytimes.com, dw.com, voanews.com, rferl.org, theguardian.com, zenodo.org, torproject.org answered CONNECT 403), so no publisher page and no terms page could be read through the robots gate. Every candidate address below is therefore UNVERIFIED_ADDRESS and every terms verdict TERMS_UNREAD until the box reads them (onion_forest.verify_roster runs every pass on the box, clearnet only, robots-gated). Addresses are listed as CANDIDATES to check verbatim on the named publisher page; none is ever fetched until that check passes.",
+  "excluded_by_rule": [
+    {"category": "darknet markets", "why": "never: owner's N7 rule and the tor-proxy ruling line 4"},
+    {"category": "Dread and market-adjacent forums", "why": "never: owner's N7 rule; the 20:33Z widening to public forums excludes any market, leak or carding venue"},
+    {"category": "leak, dump and ransomware sites", "why": "never by SOURCE KIND; a claim that merely says 'leaked' elsewhere is a rumour claim, not an exclusion (20:34-20:35Z)"},
+    {"category": "carding sites", "why": "never: possession of card data is itself unlawful"},
+    {"category": "recursive onion crawler / link following", "why": "never: allowlist of reviewed feeds and pages only"}
+  ],
+  "sources": [
+    {
+      "id": "bbc_news", "publisher": "BBC", "kind": "news_mirror", "language": "en",
+      "onion_host": "bbcnewsd73hkzno2ini43t4gblxvycyac5aw4gnv7t2rccijh7745uqd.onion",
+      "feed_urls": ["https://www.bbcnewsd73hkzno2ini43t4gblxvycyac5aw4gnv7t2rccijh7745uqd.onion/news/business/rss.xml"],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.bbc.co.uk/news/technology-50150981",
+      "terms_url": "https://www.bbc.co.uk/usingthebbc/terms",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "terms page unreachable from the cloud container; read on the box. Reading hint, NOT a verdict: the BBC terms are expected to limit use to personal, non-commercial use, in which case this row becomes BLOCKED_ON_TERMS.",
+      "attachments": false,
+      "mechanism_note": "business and world news: policy, commodity and FX event claims for MT5 macro instruments"
+    },
+    {
+      "id": "nytimes", "publisher": "The New York Times", "kind": "news_mirror", "language": "en",
+      "onion_host": "nytimesn7cgmftshazwhfgzm37qxb44r64ytbb2dj3x62d2lljsciiyd.onion",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://open.nytimes.com/https-open-nytimes-com-the-new-york-times-as-a-tor-onion-service-e0d0b67b7482",
+      "terms_url": "https://help.nytimes.com/hc/en-us/articles/115014893428-Terms-of-Service",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "terms page unreachable from the cloud container. Reading hint, NOT a verdict: the NYT terms are expected to prohibit robots, scrapers and text and data mining, in which case this row becomes BLOCKED_ON_TERMS. No feed URL is listed until the terms are read.",
+      "attachments": false,
+      "mechanism_note": "markets and policy reporting"
+    },
+    {
+      "id": "propublica", "publisher": "ProPublica", "kind": "news_mirror", "language": "en",
+      "onion_host": "p53lf57qovyuvwsc6xnrppyply3vtqm7l6pcobkmyqsiofyeznfu5uqd.onion",
+      "feed_urls": ["http://p53lf57qovyuvwsc6xnrppyply3vtqm7l6pcobkmyqsiofyeznfu5uqd.onion/feeds/propublica/main"],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.propublica.org/nerds/a-more-secure-and-anonymous-propublica-using-tor-hidden-services",
+      "terms_url": "https://www.propublica.org/legal/",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "terms page unreachable from the cloud container. Reading hint, NOT a verdict: ProPublica's republishing licence is non-commercial; whether reading for claims (no republication) is allowed needs the terms text.",
+      "attachments": false,
+      "mechanism_note": "investigations into regulators, energy and trade; slow policy-risk claims"
+    },
+    {
+      "id": "dw", "publisher": "Deutsche Welle", "kind": "news_mirror", "language": "de",
+      "onion_host": "dwnewsgngmhlplxy6o2twbgndk2gp2bndsdflbxmn2dbqkxbmmkqhkid.onion",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.dw.com/en/",
+      "terms_url": "https://www.dw.com/en/legal-notice/a-17269681",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "neither the address page nor the terms could be read from the cloud container; the address_source is DW's front page until the box finds DW's own onion announcement. No feed URL is listed until both are read.",
+      "attachments": false,
+      "mechanism_note": "European and German economy and energy-policy reporting (EUR crosses, DE40, gas)"
+    },
+    {
+      "id": "voa", "publisher": "Voice of America", "kind": "news_mirror", "language": "en",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.voanews.com/",
+      "terms_url": "https://www.voanews.com/p/5338.html",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "no onion address known from a VOA page; VOA content is described as largely US-government public domain, which would make it the lane's likeliest ALLOWED row once its terms page is read on the box.",
+      "attachments": false,
+      "mechanism_note": "multilingual world service: sanctions, energy and EM politics"
+    },
+    {
+      "id": "rferl", "publisher": "Radio Free Europe/Radio Liberty", "kind": "news_mirror", "language": "ru",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.rferl.org/",
+      "terms_url": "https://www.rferl.org/p/5342.html",
+      "terms_verdict": "TERMS_UNREAD",
+      "terms_why": "no onion address known from an RFE/RL page; terms unread.",
+      "attachments": false,
+      "mechanism_note": "Russia/CIS/Caucasus energy, sanctions and FX-regime reporting (complements the russia_cis forest)"
+    },
+    {
+      "id": "guardian_securedrop", "publisher": "The Guardian", "kind": "news_mirror", "language": "en",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.theguardian.com/securedrop",
+      "terms_url": "https://www.theguardian.com/help/terms-of-service",
+      "terms_verdict": "REFUSED",
+      "terms_why": "REFUSED: the Guardian's onion service is SecureDrop, a source-submission system for whistleblowers, not a text mirror. It is never read; there is no Guardian text page on the onion layer to assess.",
+      "attachments": false,
+      "mechanism_note": "none: not a publication surface"
+    },
+    {
+      "id": "torproject", "publisher": "The Tor Project", "kind": "institution_mirror", "language": "en",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://www.torproject.org/",
+      "terms_url": "https://www.torproject.org/about/trademark/",
+      "terms_verdict": "REFUSED",
+      "terms_why": "NO_MECHANISM: the Tor Project's own site carries software and network news, which names no testable mechanism for an MT5 instrument. Refused on relevance, not on terms.",
+      "attachments": false,
+      "mechanism_note": "none"
+    },
+    {
+      "id": "zenodo_tor_onion_graph", "publisher": "Zenodo (academic Tor onion-graph datasets)", "kind": "dataset", "language": "en",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://zenodo.org/search?q=tor%20onion%20graph",
+      "terms_url": "https://about.zenodo.org/terms/",
+      "terms_verdict": "REFUSED",
+      "terms_why": "NO_MECHANISM (11-11 verdict re-confirmed, not re-read: zenodo.org refused CONNECT from the container): the academic onion-graph datasets are hyperlink and service-uptime telemetry of onion sites. They carry no text claim and name no market mechanism; their CC licences (per record) are moot. It is clearnet and would never travel over Tor in any case.",
+      "attachments": false,
+      "mechanism_note": "none: network structure, not market claims"
+    },
+    {
+      "id": "ahmia", "publisher": "Ahmia (onion search index)", "kind": "index", "language": "en",
+      "onion_host": "",
+      "feed_urls": [],
+      "address_status": "UNVERIFIED_ADDRESS",
+      "address_source": "https://ahmia.fi/",
+      "terms_url": "https://ahmia.fi/",
+      "terms_verdict": "REFUSED",
+      "terms_why": "REFUSED on terms (11-11 verdict stands, tor-proxy ruling line 5): Ahmia's terms and the MNPI gate. A search index would also be the route into a crawl, which this lane does not do.",
+      "attachments": false,
+      "mechanism_note": "none: an index, not a source"
+    }
+  ]
+}

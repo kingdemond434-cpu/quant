@@ -487,6 +487,7 @@ LEG_LAYER: dict[str, str] = {
     "forest_africa": "information",
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
+    "forest_onion": "information",
     "external_federation": "information", "federation_ops": "information",
     # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
     # donates hypotheses and representations: what the desk can know, so information.
