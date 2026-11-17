@@ -594,7 +594,8 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
-                            else result_meaning(name, code)),
+                            else result_meaning(name, code) if verdict == "FAILING"
+                            else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,

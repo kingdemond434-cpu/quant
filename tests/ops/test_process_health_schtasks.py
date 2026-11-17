@@ -633,3 +633,15 @@ def test_never_stale_never_reregisters_the_integrity_alarm() -> None:
     spec.loader.exec_module(ns)
     diag = ns.TASK_DIAGNOSIS[("MT5-TickIntegrity", 2)]
     assert "ALARM" in diag and "Never re-register" in diag
+
+
+def test_a_stale_integrity_row_keeps_the_generic_code_2_text(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # A stale or absent report with code 2 may really be a missing script: no ALARM wording.
+    row = {"TaskName": "\\MT5-TickIntegrity", "Status": "Ready",
+           "Scheduled Task State": "Enabled", "Last Result": "2"}
+    monkeypatch.setattr(ph, "_tasks", lambda: ([row], "OK schtasks"))
+    _doc, by = _build(monkeypatch, tmp_path, {"MT5-TickIntegrity": ("absent.json", 360, "i")})
+    ti = by["MT5-TickIntegrity"]
+    assert ti["verdict"] == "NO_ARTIFACT" and ti["last_result"] == "file not found"
