@@ -120,7 +120,10 @@ def test_probes_and_routes_report_blocked_terms(no_network) -> None:
     import data_alternates as A
     out = R.probe({"name": "fred_graph_csv",
                    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"})
-    assert out["status"] == "BLOCKED_TERMS"
+    # LIVE's host-level fence (libs.data.refused_hosts, #1166) refuses FRED first and reports
+    # BLOCKED_ON_TERMS; this branch's FRED-family fence reports BLOCKED_TERMS. Either is a refusal,
+    # and neither ever reaches the network (no_network would raise).
+    assert out["status"] in ("BLOCKED_ON_TERMS", "BLOCKED_TERMS")
     with pytest.raises(RuntimeError, match="BLOCKED_TERMS"):
         A.fred_route("DGS10")
 
