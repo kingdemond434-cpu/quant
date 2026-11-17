@@ -23,6 +23,20 @@ WF = ROOT / ".github" / "workflows"
 #: The only `if:` a gating job may carry: same-repo only, and (since 2026-11-14) skip a draft.
 DRAFT_SKIP = "github.event_name != 'pull_request' || !github.event.pull_request.draft"
 SAME_REPO = "github.event.pull_request.head.repo.full_name == github.repository"
+#: (Governance, 2026-11-14) A box-state/ PR may skip CI: the gate merges it with no CI on the
+#: box-state path, which refuses anything but the box app's ungoverned state, and returns before
+#: any other path -- so a code PR on such a branch can never merge, with or without checks.
+#: Without the skip, the box's 15-minute state PRs would each start the whole suite.
+BOX_SKIP = "!startsWith(github.head_ref, 'box-state/')"
+
+
+def _box_skip_is_backed(cond: str | None) -> None:
+    """A job that skips box-state/ heads needs the gate's box-state path to exist and to own
+    exactly that prefix; otherwise the skip would leave a mergeable PR untested."""
+    if cond and BOX_SKIP in cond:
+        ag = _gate()
+        assert getattr(ag, "BOX_STATE_BRANCH", None) == "box-state/", "no box-state path"
+        assert callable(getattr(ag, "merge_box_state", None)), "no box-state path"
 
 
 def _wf(name: str) -> dict[Any, Any]:
@@ -80,7 +94,9 @@ def test_ci_keeps_each_gating_job_running_on_every_ready_pr(name: str) -> None:
     on = _on(ci)
     assert "pull_request" in on and "push" in on
     job = ci["jobs"][name]
-    assert job.get("if") in (None, DRAFT_SKIP), f"{name} may skip only a draft: {job.get('if')}"
+    allowed = (None, DRAFT_SKIP, BOX_SKIP, f"({DRAFT_SKIP}) && {BOX_SKIP}")
+    assert job.get("if") in allowed, f"{name} may skip only a draft or box state: {job.get('if')}"
+    _box_skip_is_backed(job.get("if"))
     _no_soft_fail(job, name)
 
 
@@ -117,9 +133,12 @@ def test_release_gates_keep_each_auto_job(name: str) -> None:
     on = _on(rg)
     assert "pull_request" in on
     job = rg["jobs"][name]
-    assert job.get("if") in (SAME_REPO, f"{SAME_REPO} && !github.event.pull_request.draft"), (
-        f"{name} may skip only a fork or a draft: {job.get('if')}"
+    draft = f"{SAME_REPO} && !github.event.pull_request.draft"
+    allowed = (SAME_REPO, draft, f"{SAME_REPO} && {BOX_SKIP}", f"{draft} && {BOX_SKIP}")
+    assert job.get("if") in allowed, (
+        f"{name} may skip only a fork, a draft or box state: {job.get('if')}"
     )
+    _box_skip_is_backed(job.get("if"))
     _no_soft_fail(job, name)
 
 
