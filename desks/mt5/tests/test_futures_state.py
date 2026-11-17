@@ -860,7 +860,7 @@ def test_shipped_bis_reaction_row_matches_its_source() -> None:
         assert b["targets"] and b["target"] > 0
         assert b.get("unemployment") is None or b["unemployment"] in row["series"]
     assert {b["unemployment"] for b in row["banks"] if "unemployment" in b} == set(row["series"])
-    assert len({b["id"] for b in row["banks"]}) == len(row["banks"]) == len(src["areas"])
+    assert len({b["id"] for b in row["banks"]}) == len(row["banks"]) <= len(src["areas"])
     # Built end to end from BIS-shaped columns: one series per bank that has both inputs.
     n = 120
     idx = pd.date_range("2010-01-01", periods=n, freq="MS", tz="UTC")
@@ -951,3 +951,142 @@ def test_a_cftc_set_refused_by_robots_is_named_not_errored(tmp_desk: Path,
     _pos, info = fs.cftc_market({"id": "gold", "like": "%GOLD%"}, src, fs.fetch_json, {})
     assert info["sets"]["cftc_legacy_futonly"].startswith("BLOCKED_BY_ROBOTS")
     assert len(fs.ROBOTS_BLOCKED) == 1
+
+
+def test_relative_stance_is_the_difference_of_two_like_for_like_residuals() -> None:
+    n = 160
+    idx = pd.date_range("2008-01-01", periods=n, freq="MS", tz="UTC")
+    rng = np.random.default_rng(5)
+    yc = pd.DataFrame({"RA": 2 + np.cumsum(rng.normal(0, 0.1, n)),
+                       "PA": 100 * np.cumprod(1 + rng.normal(0.002, 0.002, n)),
+                       "RB": 1 + np.cumsum(rng.normal(0, 0.1, n)),
+                       "PB": 100 * np.cumprod(1 + rng.normal(0.001, 0.002, n)),
+                       "UA": 5 + np.cumsum(rng.normal(0, 0.05, n))}, index=idx)
+    cv = {"id": "rel", "mode": "reaction", "window": 60, "banks": [
+        {"id": "a", "rate": "RA", "inflation": "PA", "unemployment": "UA", "target": 2.0},
+        {"id": "b", "rate": "RB", "inflation": "PB", "target": 1.0},
+        {"id": "gone", "rate": "MISSING", "inflation": "PB"}],
+        "pairs": [{"id": "AAABBB", "base": "a", "quote": "b", "targets": ["EURUSD"]},
+                  {"id": "nope", "base": "a", "quote": "gone", "targets": ["GBPUSD"]},
+                  {"id": "unknown", "base": "a", "quote": "zz", "targets": ["USDJPY"]}]}
+    out = fs.fred_outputs(cv, yc)
+    # Banks with no targets are legs only: one series, for the one pair with both legs held.
+    assert [(o[0], o[3], o[4]) for o in out] == [("fred_rel_aaabbb", ["EURUSD"],
+                                                  "fred_cb_relative")]
+    feat, when = out[0][1], out[0][2]
+    # Like for like: bank a's unemployment series is NOT used in the difference.
+    a = fs.reaction_residual(yc["RA"], yc["PA"], None, target=2.0)
+    b = fs.reaction_residual(yc["RB"], yc["PB"], None, target=1.0)
+    want = (a["resid"] - b["resid"]).dropna()
+    got = pd.Series(feat["rel_resid"].to_numpy(), index=when)
+    pd.testing.assert_series_equal(got, want, check_names=False, check_freq=False)
+    assert {"rel_resid", "rel_real_rate", "rel_resid_chg"} <= set(feat.columns)
+    # Strictly causal: later months never change an earlier row.
+    cut = fs.fred_outputs(cv, yc.iloc[:130])[0]
+    assert (cut[1]["rel_resid"].to_numpy() == feat["rel_resid"].to_numpy()[:len(cut[1])]).all()
+
+
+def test_shipped_relative_stance_row_is_majors_and_crosses_only() -> None:
+    import json
+    reg = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    row = next(r for r in reg["fred_sets"] if r["id"] == "cb_relative_stance")
+    src = next(s for s in reg["sources"] if s["id"] == "bis_stats")
+    assert row["bis"] is True and row["avail_lag_days"] >= 75        # the later of the two feeds
+    ids = {b["id"] for b in row["banks"]}
+    assert len(ids) == len(row["banks"]) and not any(b.get("targets") for b in row["banks"])
+    # FRED is refused for automated fetches (ruling of 2026-11-13): no leg is a FRED id, the row
+    # names no FRED series, and every leg is a BIS column for a listed or probed area.
+    assert not row.get("series")
+    known = {*src["areas"], *src["probe_areas"]}
+    for b in row["banks"]:
+        assert b["rate"] == f"BIS_CBPOL_{b['rate'].split('_')[-1]}", b
+        assert b["inflation"] == f"BIS_CPI_{b['inflation'].split('_')[-1]}", b
+        assert {b["rate"].split("_")[-1], b["inflation"].split("_")[-1]} <= known, b
+    assert not set(src["probe_areas"]) & set(src["areas"])
+    universe = json.loads((fs.DESK / "data" / "universe" / "universe.json").read_text(
+        encoding="utf-8"))
+    for p in row["pairs"]:
+        assert {p["base"], p["quote"]} <= ids and p["base"] != p["quote"]
+        (sym,) = p["targets"]
+        assert p["id"] == sym.lower() and universe[sym]["asset_class"] == "Forex", sym
+    assert len({p["id"] for p in row["pairs"]}) == len(row["pairs"])
+    # The per-bank rows are untouched: every bank there still has targets.
+    for rid in ("cb_reaction", "cb_reaction_bis"):
+        assert all(b["targets"] for b in next(r for r in reg["fred_sets"] if r["id"] == rid)["banks"])
+
+
+def test_bis_probe_area_is_asked_alone_and_its_absence_costs_nothing_else(tmp_desk: Path) -> None:
+    import urllib.error
+    from datetime import UTC, datetime, timedelta
+    (tmp_desk / "raw").mkdir()
+    months = pd.date_range("2000-01-01", periods=60, freq="MS", tz="UTC")
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        if url.endswith("robots.txt"):
+            raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
+        calls.append(url)
+        if "XM" in url:
+            raise fs.FetchError(404, url, "HTTP 404")                 # the code is not served
+        if "WS_CBPOL" in url:
+            return _bis_rate_csv(url.split("M.")[1].split("?")[0], months)
+        return _bis_cpi_csv(["GB"], months)
+
+    src = {**_bis_src(["GB"]), "probe_areas": ["XM"]}
+    state: dict[str, Any] = {}
+    notes: list[dict[str, Any]] = []
+    now = datetime(2026, 11, 17, 12, tzinfo=UTC)
+    out = fs.bis_collect(src, get_text, state, notes, now)
+    # The probe never rides in the confirmed areas' request.
+    assert calls == ["https://bis.test/WS_CBPOL/M.GB?startPeriod=2000-01",
+                     "https://bis.test/WS_CBPOL/M.XM?startPeriod=2000-01",
+                     "https://bis.test/WS_LONG_CPI/M.GB.628?startPeriod=2000-01",
+                     "https://bis.test/WS_LONG_CPI/M.XM.628?startPeriod=2000-01"]
+    assert sorted(out.columns) == ["BIS_CBPOL_GB", "BIS_CPI_GB"] and len(out) == 60
+    assert [(n["status"], n["table"], n["code"]) for n in notes] == [
+        ("NO_REPLY", "CBPOL", 404), ("NO_REPLY", "CPI", 404)]
+    assert "hard_stops" not in state and state["bis_last_fetch"]
+    # An area not yet held is asked for from the start of history; a held one for two years.
+    calls.clear()
+    fs.bis_collect({**_bis_src(["GB", "JP"])}, get_text, state, notes, now + timedelta(hours=21))
+    assert calls[0].endswith("M.GB?startPeriod=2024-11")
+    assert calls[1].endswith("M.JP?startPeriod=2000-01")
+    assert calls[2].endswith("M.GB+JP.628?startPeriod=2000-01")
+
+
+def test_a_bis_only_set_never_asks_fred(tmp_desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.error
+    (tmp_desk / "raw").mkdir()
+    months = pd.date_range("2000-01-01", periods=200, freq="MS", tz="UTC")
+    monkeypatch.setenv("FRED_API_KEY", "k" * 32)
+
+    def get_text(url: str) -> str:
+        if url.endswith("robots.txt"):
+            raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
+        if "WS_CBPOL" in url:
+            a = url.split("M.")[1].split("?")[0]
+            return _bis_rate_csv(a, months, level=1.0 if a == "US" else 3.0)
+        return _bis_cpi_csv(["GB", "US"], months)
+
+    fred_calls: list[str] = []
+
+    def get(url: str) -> Any:
+        fred_calls.append(url)
+        return {}
+
+    reg = {"sources": [{"id": "fred_rates", "terms": "OPEN", "key_env": ["FRED_API_KEY"]},
+                       _bis_src(["GB", "US"])],
+           "fred_sets": [{"id": "rel", "mode": "reaction", "bis": True, "avail_lag_days": 75,
+                          "window": 60,
+                          "banks": [{"id": "fed", "rate": "BIS_CBPOL_US", "inflation": "BIS_CPI_US"},
+                                    {"id": "boe", "rate": "BIS_CBPOL_GB", "inflation": "BIS_CPI_GB"}],
+                          "pairs": [{"id": "GBPUSD", "base": "boe", "quote": "fed",
+                                     "targets": ["GBPUSD"]}]}]}
+    built, frames, notes = fs.build_market_series(reg, get=get, state={}, bars=lambda s: None,
+                                                  get_text=get_text)
+    assert fred_calls == []                       # not even for a series named after a bank id
+    assert not [n for n in notes if n.get("status") == "NEEDS_KEY"]
+    assert built["fred_rel_gbpusd"]["kind"] == "fred_cb_relative"
+    f = frames["fred_rel_gbpusd"]
+    lead = pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(f["event_time"], utc=True)
+    assert (lead >= pd.Timedelta(days=75)).all()
