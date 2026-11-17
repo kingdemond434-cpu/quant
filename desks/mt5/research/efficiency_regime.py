@@ -71,13 +71,13 @@ def sleeve_zone(name: str, symbol: str | None = None) -> tuple[str, str]:
     parts = str(name or "").replace("#", ".").split(".")
     sym = symbol or parts[0]
     sess = "ANY"
-    for p in parts[1:]:
+    for p in (parts if symbol else parts[1:]):
         tok = p.split("@")[0].lower()
         if tok in SESSION_TOKENS:
             sess = tok
             break
         for s in SESSION_TOKENS:                       # gold_asia, gold_london_am
-            if tok.endswith("_" + s) or tok == s:
+            if tok.endswith("_" + s) and (sess == "ANY" or len(s) > len(sess)):
                 sess = s
     return str(sym).upper(), sess
 
