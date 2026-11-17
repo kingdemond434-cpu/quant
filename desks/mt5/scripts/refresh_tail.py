@@ -371,10 +371,7 @@ def main() -> int:
     BaseException: a bare exit here would tear down the entire cycle -- promotion chain included
     -- because a terminal was shut, rather than skipping one step.
     """
-    # attach_or_initialize, never a bare initialize(): run from a SYSTEM task in Session 0, a bare
-    # call starts a headless logged-out terminal beside the desk's own (2026-11-12, 11-16).
-    from research.mt5_session import attach_or_initialize
-    if mt5 is None or not attach_or_initialize(mt5, path=TERMINAL):
+    if mt5 is None or (mt5.terminal_info() is None and not mt5.initialize(path=TERMINAL)):
         # NO TERMINAL, BUT STILL WORK TO DO. The derived series are an aggregate of files this
         # box already holds, so they rebuild here as well as on the trading box -- which is what
         # keeps the daily clock alive on the VPS, where the terminal never exists.

@@ -81,13 +81,6 @@ KINDS = (
     # held the judge for 108 h with no row anywhere; it now has a time on it here and a fence
     # (check_judge_coverage `judge_stop`, WARN 12 h / FAIL 24 h).
     "JUDGE_STOP_HONOURED", "JUDGE_STOP_LAPSED",
-    # MT5-TerminalBoot closed a headless Session 0 Fusion terminal that a bare initialize() had
-    # started after a reboot (ops/ensure_terminal.ps1, 2026-11-17): a reboot needs nobody, and
-    # every such close is a row with its pid and outcome.
-    "TERMINAL_SESSION0_CLOSED",
-    # ...and restarted the desk's own terminal after it stopped answering every probe for long
-    # enough, with the book safe to interrupt (ops/ensure_terminal.ps1, 2026-11-17).
-    "TERMINAL_HUNG_RESTARTED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
