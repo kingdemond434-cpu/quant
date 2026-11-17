@@ -315,9 +315,11 @@ def _queued(repo: str) -> list[dict[str, Any]]:
 
 
 def _live_jobs_waiting(repo: str, base: str) -> list[dict[str, Any]]:
-    """Rule 2c's reads: in-progress LIVE runs and their jobs."""
-    runs = _gh(f"repos/{repo}/actions/runs?status=in_progress&branch={base}&per_page=50")
-    return live_waiting(runs.get("workflow_runs") or [],
+    """Rule 2c's reads: LIVE runs in progress, or queued again for a later job, and their jobs."""
+    runs = [r for st in ("in_progress", "queued") for r in
+            _gh(f"repos/{repo}/actions/runs?status={st}&branch={base}&per_page=50")
+            .get("workflow_runs") or []]
+    return live_waiting(runs,
                         lambda rid: _gh(f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100")
                         .get("jobs") or [], base)
 
@@ -328,10 +330,11 @@ def live_waiting(running: list[dict[str, Any]], jobs: Callable[[int], list[dict[
     (quality, money-path, coverage-floor, seal, promote), and each joins the queue only when the
     one before it ends, behind every PR run queued meanwhile. The run itself then reads
     `in_progress`, so rule 2 never saw it: the release-cutting promote job of 9ce7d3f27 waited from
-    19:09Z behind 281 queued runs and no release could be cut. Each in-progress LIVE push or
-    dispatch run with a job still waiting for a runner is returned as a LIVE run queued since that
-    job joined the queue, so plan() moves the PR runs queued before it behind it (pure over its
-    reads, so the tests drive it)."""
+    19:09Z behind 281 queued runs and no release could be cut. A run whose first jobs are done
+    can also read `queued` again, and rule 2 then timed it from run_started_at (hours earlier), so
+    the PR runs queued in between stayed ahead of its job. Each LIVE push or dispatch run with a
+    job still waiting for a runner is returned as a LIVE run queued since that JOB joined the
+    queue, so plan() moves every PR run queued before it behind it (pure over its reads)."""
     out: list[dict[str, Any]] = []
     for r in running:
         if r.get("event") not in LIVE_EVENTS or str(r.get("head_branch")) != base:

@@ -940,3 +940,17 @@ def test_rule_2c_a_live_run_waiting_on_its_promote_job_puts_pr_runs_behind_it() 
     heads = {"claude/a": "a", "claude/b": "b"}
     assert lf.plan(NOW, [*got, before, after], heads) == ([], [2])
     assert lf.plan(NOW, [before, after], heads) == ([], [])     # without 2c nothing moved
+
+
+def test_rule_2c_times_a_requeued_live_run_from_its_waiting_job_not_its_start() -> None:
+    lf = _lf()
+    t = lambda m: (NOW - timedelta(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    run = {"id": 7, "event": "push", "head_branch": lf.LIVE, "head_sha": "s", "status": "queued",
+           "run_started_at": t(300)}                       # seal done; promote queued at t(80)
+    got = lf.live_waiting([run], lambda rid: [
+        {"status": "completed", "created_at": t(300), "runner_name": "r"},
+        {"status": "queued", "created_at": t(80), "runner_name": ""}])
+    pr = {"id": 2, "event": "pull_request", "head_branch": "claude/a", "head_sha": "a",
+          "status": "queued", "run_started_at": t(120)}    # after the run started, before promote
+    assert lf.plan(NOW, [run, pr], {"claude/a": "a"}) == ([], [])       # rule 2 alone: missed
+    assert lf.plan(NOW, [run, *got, pr], {"claude/a": "a"}) == ([], [2])
