@@ -85,9 +85,9 @@ def test_the_verdict_clause_holds_promote_only() -> None:
     """The PROMOTE branch is guarded by the hold; the KILL branch is not."""
     src = (DESK / "research" / "shadow_forward.py").read_text("utf-8")
     i = src.index("held = restamp_hold(key, st)")
-    block = src[i:i + 1400]
-    assert "if held and st[\"exp_r\"] > PROMOTE_MIN_EXP" in block
-    assert block.index("if held and") < block.index('st["status"] = "PROMOTION CANDIDATE"')
+    block = src[i:i + 2400]
+    assert "elif held and st[\"exp_r\"] > PROMOTE_MIN_EXP" in block
+    assert block.index("elif held and") < block.index('st["status"] = "PROMOTION CANDIDATE"')
     assert 'st["status"] = "KILL"' in block
 
 
@@ -124,7 +124,7 @@ def test_a_negative_expectancy_forgoes_nothing(tmp_path: Path, held: dict[str, s
 
 def test_the_held_promote_branch_writes_the_line() -> None:
     src = (DESK / "research" / "shadow_forward.py").read_text("utf-8")
-    i = src.index("VERDICT PROMOTE HELD")
+    i = src.index("VERDICT PROMOTE HELD ({RESTAMP_HOLD})")
     assert "record_restamp_missed_growth(key, st)" in src[i:i + 300]
 
 
