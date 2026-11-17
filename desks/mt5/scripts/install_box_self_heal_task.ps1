@@ -142,7 +142,7 @@ $Python = 'C:\Program Files\Python314\python.exe'
 if (-not (Test-Path $Python)) {
     $cand = (Get-Command python.exe -ErrorAction Stop).Source
     $why = Test-DirAdminOnly (Split-Path -Parent $cand)
-    if ($why) { throw "refusing PATH python at $cand: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
+    if ($why) { throw "refusing PATH python at ${cand}: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
     $Python = $cand
 }
 $PyHome = Split-Path -Parent $Python
