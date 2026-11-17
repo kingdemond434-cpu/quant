@@ -74,6 +74,7 @@ class Provider:
     default_base: str
     relay: bool                  # True: a free-credit relay (its own allowance, public prompt)
     models_env: str = ""         # optional comma-separated model override
+    key_aliases: tuple[str, ...] = ()   # other names the same key may be saved under
 
 
 PROVIDERS: tuple[Provider, ...] = (
@@ -88,8 +89,9 @@ PROVIDERS: tuple[Provider, ...] = (
              relay=True, models_env="AGENTROUTER_MODELS"),
     # yjs (api.yjs.im), the principal's third relay (2026-11-17). Same contract: DARK until the
     # `YJS` key exists, https only, Chinese-lab models only, public prompts only.
+    # The principal saved this key as YJSS on the box (2026-11-17); both names are read.
     Provider("yjs", "YJS", "YJS_BASE_URL", "https://api.yjs.im/v1", relay=True,
-             models_env="YJS_MODELS"),
+             models_env="YJS_MODELS", key_aliases=("YJSS",)),
 )
 
 #: The swarm's lenses (one public source or region each) live in `cn_swarm.LENSES`.
@@ -178,6 +180,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
                     why=f"DARK: no ALLOWED terms ruling ({RULINGS} says "
                         f"{relay_ruling(p.name)})")
     key = _read(p.key_env, env)
+    for alias in p.key_aliases:
+        key = key or _read(alias, env)
     if not key and p.name == "openrouter":
         try:
             from libs.ops.deepseek_cycle import resolve_key

@@ -423,3 +423,11 @@ def test_dead_family_findings_are_not_donated(tmp_path: Path) -> None:
     assert rep["runnable_recipes"] == 0
     assert rep["steering_by_yield"]["findings_dropped_dead_family"] >= 1
     assert "ict_fvg" in rep["steering_by_yield"]["pruned_families"]
+
+
+def test_yjs_key_saved_as_yjss_lights_the_seat() -> None:
+    s = cn.seat_for(YJ, {"YJSS": "k"}, lambda b, k: ["deepseek-chat"])
+    assert s.lit and s.key == "k"
+    from libs.ops import env_keys
+    row = next(r for r in env_keys.catalog() if r["name"] == "YJSS")
+    assert row["readers"] == ["libs/ops/cn_ensemble.py"] and not env_keys.refused("YJSS")
