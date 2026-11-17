@@ -1,18 +1,20 @@
-"""Accrue genuine contract-level gold and WTI curves for MT5 research.
+"""Gold and WTI contract curves for MT5 research: REFUSED ON TERMS, this collector opens no socket.
 
-Continuous front-month prices cannot identify roll yield or calendar spreads. This collector keeps
-each delayed public contract separately, including its expiry and volume, and publishes a long
-point-in-time panel. Missing contracts remain missing; no synthetic curve is manufactured.
+Continuous front-month prices cannot identify roll yield or calendar spreads, so this collector
+used to keep each delayed contract separately (expiry, volume) in a long point-in-time panel. Its
+only source was Yahoo's chart endpoint, and Yahoo's terms refuse automated fetches on every route
+(Audit HOLD on #898, 2026-11-14; the same standard #1177 applied to FRED). So the fetch is REMOVED,
+not switched off, and no later session can re-enable it by flipping a flag. `main` writes a
+BLOCKED_ON_TERMS record with its missed-growth line and leaves the held parquets in
+data/futures_curves/ exactly as they are, labelled by their `source_id`/`source_class` columns and
+listed in the report. The curve shape helpers stay: they are pure, and a lawful source (the
+exchange's own settlements, once its terms read OPEN) would feed them.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,7 +23,34 @@ import pandas as pd
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "futures_curves"
 REPORT = BASE / "reports" / "futures_curve_coverage.json"
-UA = "Mozilla/5.0 (compatible; quant-research/1.0)"
+#: The registry row this collector's output belongs to. Its class travels with the report, and
+#: `curve_strategy_screen.mint_permission` reads it before any cell is minted.
+SOURCE_ID = "yahoo_futures"
+REGISTRY = BASE / "research" / "futures_state_sources.json"
+YAHOO_TERMS = ("BLOCKED_ON_TERMS: Yahoo (query1.finance.yahoo.com) refuses automated fetches on "
+               "every route (Audit HOLD on #898, 2026-11-14); no socket is opened")
+MISSED_GROWTH = {
+    "mechanism": "yahoo_futures_terms_refusal",
+    "lost": "the daily refresh of the GC and CL contract curves (roll yield, calendar spreads, "
+            "contract volume) that curve_strategy_screen reads for its idea rows",
+    "stand_in": "the held data/futures_curves/*_curve.parquet panels (labelled, not refreshed); "
+                "exchange settlements only once cme_settlements reads OPEN",
+    "verdict": "a gap, not a zero",
+}
+
+
+def source_class(registry: Path = REGISTRY) -> str:
+    """The registry's terms class for SOURCE_ID; UNREADABLE when the row cannot be read."""
+    try:
+        doc = json.loads(registry.read_text(encoding="utf-8"))
+        for row in doc.get("sources") or []:
+            if isinstance(row, dict) and row.get("id") == SOURCE_ID:
+                return str(row.get("terms") or "MISSING")
+    except (OSError, ValueError, AttributeError):
+        return "UNREADABLE"
+    return "MISSING"
+
+
 MONTH_CODE = dict(zip(range(1, 13), "FGHJKMNQUVXZ", strict=True))
 PRODUCTS = {
     "GC": {"suffix": "CMX", "months": (2, 4, 6, 8, 10, 12)},
@@ -46,46 +75,6 @@ def contract_month_anchor(symbol: str) -> pd.Timestamp:
         return pd.NaT
     month, year = CODE_MONTH[match.group(1)], 2000 + int(match.group(2))
     return pd.Timestamp(year=year, month=month, day=1, tz="UTC") + pd.offsets.MonthEnd(0)
-
-
-def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
-    encoded = urllib.parse.quote(symbol, safe="")
-    url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}"
-           "?period1=0&period2=4102444800&interval=1d&events=history")
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    try:
-        with urllib.request.urlopen(req, timeout=45) as response:
-            payload = json.load(response)
-    except urllib.error.HTTPError as exc:
-        if exc.code in (400, 404):
-            return pd.DataFrame(), {"symbol": symbol, "status": "NOT_LISTED"}
-        raise
-    result = (payload.get("chart", {}).get("result") or [])
-    if not result:
-        return pd.DataFrame(), {"symbol": symbol, "status": "NO_RESULT"}
-    raw = result[0]
-    stamps = raw.get("timestamp") or []
-    quote = (raw.get("indicators", {}).get("quote") or [{}])[0]
-    meta = raw.get("meta") or {}
-    if not stamps:
-        return pd.DataFrame(), {"symbol": symbol, "status": "EMPTY"}
-    frame = pd.DataFrame({
-        "date": pd.to_datetime(stamps, unit="s", utc=True).normalize(),
-        "open": quote.get("open"), "high": quote.get("high"),
-        "low": quote.get("low"), "close": quote.get("close"),
-        "volume": quote.get("volume"),
-    }).dropna(subset=["close"])
-    expiry = meta.get("expireDate")
-    expiry_source = "yahoo_expireDate" if expiry else "contract_code_month_end_anchor"
-    expiry_value = (pd.to_datetime(expiry, unit="s", utc=True).normalize()
-                    if expiry else contract_month_anchor(symbol))
-    frame["symbol"] = symbol
-    frame["expiration"] = expiry_value
-    frame["expiration_source"] = expiry_source
-    frame = frame.drop_duplicates(subset=["date"], keep="last").sort_values("date")
-    return frame, {"symbol": symbol, "status": "OK", "rows": len(frame),
-                   "expiration": None if pd.isna(expiry_value) else str(expiry_value),
-                   "expiration_source": expiry_source}
 
 
 def build_curve(contracts: list[pd.DataFrame], root: str) -> pd.DataFrame:
@@ -114,47 +103,45 @@ def build_curve(contracts: list[pd.DataFrame], root: str) -> pd.DataFrame:
     return frame.merge(pair[["date", "calendar_spread", "annualized_roll_yield"]], on="date")
 
 
+def held_panels(out: Path | None = None) -> list[dict]:
+    """The curve panels already on disk, left exactly as they are: name, rows, last date."""
+    out = OUT if out is None else out
+    rows = []
+    for path in sorted(out.glob("*_curve.parquet")) if out.exists() else []:
+        try:
+            frame = pd.read_parquet(path)
+            last = frame["date"].max() if "date" in frame.columns else None
+            rows.append({"file": path.name, "rows": int(len(frame)),
+                         "last_date": None if last is None or pd.isna(last) else str(last),
+                         "source_class": (str(frame["source_class"].iloc[0])
+                                          if "source_class" in frame.columns and len(frame)
+                                          else "UNLABELLED")})
+        except Exception as exc:
+            rows.append({"file": path.name, "error": type(exc).__name__})
+    return rows
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--years-back", type=int, default=4)
-    parser.add_argument("--years-forward", type=int, default=2)
-    parser.add_argument("--sleep", type=float, default=0.2)
-    args = parser.parse_args(argv)
-    year = datetime.now(UTC).year
-    coverage, usable = [], 0
-    for root, spec in PRODUCTS.items():
-        frames = []
-        for y in range(year - args.years_back, year + args.years_forward + 1):
-            for month in spec["months"]:
-                symbol = contract_symbol(root, y, month)
-                try:
-                    frame, row = fetch_contract(symbol)
-                except Exception as exc:
-                    frame, row = pd.DataFrame(), {"symbol": symbol, "status": "FAILED",
-                                                  "error": f"{type(exc).__name__}: {exc}"}
-                coverage.append(row)
-                if not frame.empty:
-                    frames.append(frame)
-                time.sleep(max(args.sleep, 0.0))
-        if frames:
-            panel = build_curve(frames, root)
-            OUT.mkdir(parents=True, exist_ok=True)
-            panel.to_parquet(OUT / f"{root}_curve.parquet", index=False, compression="zstd")
-            usable += int(panel["annualized_roll_yield"].notna().sum())
+    """Write the refusal record. Opens no socket and never touches a held panel."""
+    argparse.ArgumentParser(description=__doc__).parse_args(argv)
     report = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "source": "Yahoo delayed contract quotes; research only",
-        "contracts": coverage,
-        "usable_curve_dates": usable,
+        "source": "Yahoo delayed contract quotes -- REFUSED ON TERMS, not fetched",
+        "source_id": SOURCE_ID,
+        "source_class": source_class(),
+        "blocked_on_terms": YAHOO_TERMS,
+        "missed_growth": MISSED_GROWTH,
+        "requests_made": 0,
+        "contracts": [],
+        "held_panels": held_panels(),
+        "usable_curve_dates": 0,
         "promotion_authority": False,
-        "exact_expiry_sensitive_use": "BLOCKED without authoritative contract calendar",
-        "status": "MEASURED" if usable else "UNMEASURED",
+        "status": "BLOCKED_ON_TERMS",
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(json.dumps({"status": report["status"], "usable_curve_dates": usable,
-                      "contracts_attempted": len(coverage)}, indent=2))
-    return 0 if usable else 2
+    print(f"  {YAHOO_TERMS}; held panels left as they are, nothing fetched")
+    return 0
 
 
 if __name__ == "__main__":
