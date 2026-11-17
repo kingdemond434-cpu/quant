@@ -434,6 +434,21 @@ geometric growth, never forced into a position every second.
 
 ## 5e. THE ACCESS ROUTING LAW (principal's standing order, 2026-09-23, permanent — REPLACES the 2026-09-17 text in full)
 
+> **AMENDED 2026-11-17 (Governance; supersedes every line of this section that says otherwise):
+> ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES.** Before any automated fetch, the desk reads
+> the host's robots.txt through `robots_gate` with an honest user agent, and refuses the fetch on a
+> `Disallow` for that path or on a robots.txt it cannot read (fail closed). It also refuses a host
+> whose terms forbid automated access, scraping or data mining (the FRED ruling of 2026-11-13, the
+> Wayback/YouTube-mirror and prop-showcase rulings of 2026-11-14). A mirror, cache or archive of a
+> refused page is the same refusal. A refused source may still be CATALOGUED from what the desk
+> lawfully saw elsewhere (its name, URL, a search result's snippet), labelled
+> `PUBLIC_WITH_TERMS` with the reason in `terms_note`, and never fetched: that is "registered,
+> never scraped", and it is the rule, not a brake. Everything else in this section stands: on
+> content the desk may lawfully fetch, labels route use and weight evidence and never drop a row;
+> ACCESS_UNCLEAR is mined with its label; credibility is a weight, not a permission. In the deleted
+> brakes below, the robots, machine-use and machine-extraction items are RESTORED as refusals for
+> automated fetching. No session may read this section as a licence to fetch past robots or terms.
+
 **THE DESK MINES AND TESTS EVERYTHING IT CAN SEE ON THE OPEN INTERNET.** Things published on the
 open internet are lawful to read. Licence, robots, source class and credibility are **ROUTING AND
 PROVENANCE LABELS on the row**: they describe what the desk may **REDISTRIBUTE or publish**, and
