@@ -67,3 +67,56 @@ def attach_or_initialize(
     if timeout is not None:
         kwargs["timeout"] = timeout
     return bool(mt5.initialize(**kwargs))
+
+
+#: The desk's execution account is Fusion. A tape recorded off FTMO, E8 or a demo is the wrong
+#: broker's quotes filed under Fusion symbols -- spreads, hours and price feed all differ.
+EXPECTED_SERVER_PREFIX = "FusionMarkets-"
+
+
+def same_terminal(configured: str, attached_dir: str | None) -> bool:
+    """`terminal_info().path` is the terminal's DIRECTORY; terminal_path.txt names its exe."""
+    if not attached_dir:
+        return False
+
+    def norm(x: str) -> str:
+        return x.replace("/", "\\").rstrip("\\").lower()
+    conf = norm(configured)
+    if conf.endswith("\\terminal64.exe"):
+        conf = conf[: -len("\\terminal64.exe")]
+    return conf == norm(attached_dir)
+
+
+def venue_refusal(mt5: Any, path: str | None,
+                  expected_prefix: str = EXPECTED_SERVER_PREFIX) -> str | None:
+    """Why the terminal this process is attached to is NOT the desk's, or None when it is.
+
+    THE COIN FLIP (2026-11-11, Desk health). The box runs two logged-in terminals in one
+    session, Fusion and FTMO, and an attach without a path takes whichever the bridge sees
+    first, so restart order decided which broker an organ read. Attaching by path is the pin;
+    this is the proof: the attached account's server must be Fusion's and, when a path is
+    configured, the attached terminal must be that one. An unreadable answer is a refusal.
+
+    THE REASON IS PUBLISHED (2026-11-14, Auditor MF1 on #982): it reaches report fields, the
+    spread tape's `why` and leg tails in a public repository, so it is a fixed phrase. It never
+    carries the attached server name or either terminal path -- only the expected prefix, which
+    is the desk's own constant.
+    """
+    try:
+        info = mt5.account_info()
+    except Exception as exc:
+        return f"account_info() raised {type(exc).__name__}"
+    server = str(getattr(info, "server", "") or "") if info is not None else ""
+    if not server.startswith(expected_prefix):
+        return (f"attached server is not {expected_prefix}*" if server
+                else "attached terminal reports no server")
+    if path:
+        try:
+            tinfo = mt5.terminal_info()
+        except Exception as exc:
+            return f"terminal_info() raised {type(exc).__name__}"
+        attached = str(getattr(tinfo, "path", "") or "") if tinfo is not None else ""
+        if not same_terminal(path, attached):
+            return ("attached terminal is not the configured one" if attached
+                    else "attached terminal reports no path")
+    return None
