@@ -1,4 +1,4 @@
-# ruff: noqa: RUF001  -- native-language lens briefs use CJK punctuation on purpose
+# ruff: noqa: RUF001, E501  -- native-language lens briefs (CJK, Arabic, Thai ...) by design
 """THE SWARM LAYER OF THE CHINESE-MODEL ENSEMBLE: lenses, runnable recipes, critic, mutation,
 and the per-model / per-lens scoreboard that steers it (principal, 2026-11-17: "swarms ... find
 edges from everywhere using all sources individually, then amalgamate them into testable cells
@@ -100,6 +100,53 @@ LENSES: tuple[tuple[str, str, str], ...] = (
      "unwinds and risk-off episodes in USDMXN, USDZAR, USDTRY and friends"),
     ("gulf_india_gold", "en", "Dubai and Mumbai physical gold demand, Indian import duty changes "
      "and festival seasons (Diwali, Akshaya Tritiya) as gold drivers"),
+    # WORLDWIDE, OBSCURE FIRST (principal, 2026-11-17: "the swarm should do worldwide all unknown
+    # sources"). Each brief is in the region's own language and asks for the LITTLE-KNOWN local
+    # publishers -- regional central-bank bulletins, provincial statistics, local exchanges and
+    # trader communities -- that English-language quants rarely read.
+    ("latam_es", "es", "boletines poco conocidos de bancos centrales y oficinas de estadistica de "
+     "Mexico, Chile, Colombia, Peru y Argentina, flujos de AFORE y AFP, subastas locales de bonos "
+     "y foros de traders hispanohablantes: efectos predecibles en USDMXN, USDCLP, cobre y oro"),
+    ("brazil_pt", "pt", "publicacoes pouco conhecidas do Banco Central do Brasil, Tesouro, B3, "
+     "CONAB e IBGE, fluxos de exportadores e foros de traders brasileiros: padroes previsiveis "
+     "em USDBRL, soja, cafe, acucar e no indice brasileiro"),
+    ("mena_ar", "ar", "النشرات غير المعروفة للبنوك المركزية والهيئات الاحصائية في السعودية والامارات "
+     "ومصر وتركيا، وتدفقات الذهب في دبي، وقرارات اوبك+ ومواسم رمضان والحج: انماط تداول قابلة "
+     "للاختبار في الذهب والنفط والعملات"),
+    ("russia_cis_ru", "ru", "малоизвестные публикации Банка России, Минфина, Мосбиржи, Росстата и "
+     "центробанков Казахстана и Узбекистана, а также форумы русскоязычных трейдеров: проверяемые "
+     "закономерности в золоте, нефти, металлах и валютах"),
+    ("eastern_europe", "pl", "malo znane publikacje NBP, CNB, MNB i banku centralnego Rumunii, "
+     "aukcje obligacji, przeplywy funduszy emerytalnych i fora inwestorow: przewidywalne wzorce w "
+     "EURPLN, EURCZK, EURHUF i indeksach regionu"),
+    ("turkey_tr", "tr", "TCMB, TUIK ve Borsa Istanbul'un az bilinen yayinlari, ihracatci doviz "
+     "akislari, altin ithalati ve yerel yatirimci forumlari: USDTRY, altin ve endeksler icin "
+     "test edilebilir oruntuler"),
+    ("india_hi", "hi", "भारतीय रिज़र्व बैंक, MCX, SEBI और राज्य स्तरीय आंकड़ों के कम ज्ञात प्रकाशन, "
+     "सोने का आयात, त्योहारों का मौसम और भारतीय ट्रेडर समुदाय: USDINR, सोना और सूचकांकों में "
+     "परीक्षण योग्य पैटर्न"),
+    ("indonesia_malaysia", "id", "publikasi yang kurang dikenal dari Bank Indonesia, BPS, Bank "
+     "Negara Malaysia, Bursa Malaysia dan forum trader lokal, ekspor batu bara, CPO dan nikel: pola "
+     "yang dapat diuji pada USDIDR, USDMYR, emas dan komoditas"),
+    ("thailand_vietnam", "th", "สิ่งพิมพ์ที่ไม่ค่อยมีคนรู้จักของธนาคารแห่งประเทศไทย สมาคมค้าทองคำ "
+     "ตลาดหลักทรัพย์ และธนาคารแห่งรัฐเวียดนาม รวมถึงชุมชนเทรดเดอร์ท้องถิ่น: รูปแบบที่ทดสอบได้ในทองคำ "
+     "USDTHB และดัชนีในภูมิภาค"),
+    ("africa_anglophone", "en", "little-known publications of the South African Reserve Bank, "
+     "Central Bank of Nigeria, Central Bank of Kenya, Bank of Ghana, JSE and Zambian and Chilean "
+     "copper-belt statistics, plus African trader communities: testable patterns in USDZAR, gold, "
+     "platinum and copper"),
+    ("africa_francophone", "fr", "publications peu connues de la BCEAO, de la BEAC, de Bank "
+     "Al-Maghrib, de la BRVM et des offices statistiques d'Afrique francophone, et forums de "
+     "traders: regularites testables sur l'or, le cacao, le cafe et l'EUR"),
+    ("europe_regional", "de", "wenig beachtete Veroeffentlichungen von Landeszentralbanken, "
+     "Bundesbank-Regionalumfragen, Ifo-Branchendaten, SNB- und OeNB-Statistiken sowie "
+     "deutschsprachige Traderforen: testbare Muster in EUR, CHF, DAX und Metallen"),
+    ("nordics_oceania", "en", "little-known Norges Bank, Riksbank, Danmarks Nationalbank, ABS, "
+     "Stats NZ, RBA regional liaison and dairy-auction publications: testable patterns in NOK, "
+     "SEK, AUD, NZD and their commodity drivers"),
+    ("source_scout", "en", "PUBLIC SOURCES nobody in Western quant finance reads: name obscure "
+     "official, exchange, industry or community publishers in any country and language whose "
+     "releases could move FX, gold, metals, energy or index CFDs"),
     ("academic_literature", "en", "published papers and working papers (SSRN, arXiv q-fin, BIS, "
      "central-bank research) whose effect is still plausible in FX, metals, energy and indices"),
     ("microstructure_sessions", "en", "session opens and closes, liquidity gaps, spread changes "
@@ -116,13 +163,28 @@ _LANG_ASK = {
     "ja": "日本語の一次資料から学んだ知識で考えてください。JSONの値は英語で構いません。",
     "ko": "한국어 1차 자료에서 배운 지식으로 생각하세요. JSON 값은 영어로 써도 됩니다.",
     "en": "",
+    "es": "Piensa con lo que aprendiste de las fuentes originales en espanol. Los valores JSON pueden ir en ingles.",
+    "pt": "Pense com o que aprendeu das fontes originais em portugues. Os valores JSON podem ser em ingles.",
+    "ar": "فكر بما تعلمته من المصادر الاصلية باللغة العربية. يمكن كتابة قيم JSON بالانجليزية.",
+    "ru": "Опирайся на знания из первоисточников на русском языке. Значения JSON можно писать по-английски.",
+    "pl": "Korzystaj z wiedzy ze zrodel w jezyku polskim i regionalnych. Wartosci JSON moga byc po angielsku.",
+    "tr": "Turkce birincil kaynaklardan ogrendiklerinle dusun. JSON degerleri Ingilizce olabilir.",
+    "hi": "हिंदी और भारतीय मूल स्रोतों से सीखे ज्ञान से सोचें। JSON मान अंग्रेज़ी में हो सकते हैं।",
+    "id": "Berpikirlah dengan pengetahuan dari sumber asli berbahasa Indonesia dan Melayu. Nilai JSON boleh dalam bahasa Inggris.",
+    "th": "คิดจากความรู้ที่ได้จากแหล่งข้อมูลต้นฉบับภาษาไทยและเวียดนาม ค่า JSON เขียนเป็นภาษาอังกฤษได้",
+    "fr": "Raisonne avec ce que tu as appris des sources originales en francais. Les valeurs JSON peuvent etre en anglais.",
+    "de": "Denke mit dem Wissen aus deutschsprachigen Originalquellen. JSON-Werte duerfen englisch sein.",
 }
 
 
-def lens_prompt(lens: str) -> str:
+DISCOVERED_LENS = "discovered_sources"
+
+
+def lens_prompt(lens: str, extra: Mapping[str, str] | None = None) -> str:
     lang = next((lg for lid, lg, _b in LENSES if lid == lens), "en")
     ask = _LANG_ASK.get(lang, "")
-    return f"RESEARCH LENS ({lens}): {LENS_BRIEF[lens]}." + (f"\n{ask}" if ask else "")
+    brief = (extra or {}).get(lens) or LENS_BRIEF[lens]
+    return f"RESEARCH LENS ({lens}): {brief}." + (f"\n{ask}" if ask else "")
 
 
 # ----------------------------------------------------------------------- recipe catalogue
@@ -483,3 +545,102 @@ def near_misses(root: Path, limit: int = 30, max_rows: int = 400_000) -> list[di
 def recent_ids(root: Path, days: int, now: datetime) -> set[str]:
     since = now - timedelta(days=days)
     return {str(r.get("gid")) for r in lineage(root, since) if r.get("gid")}
+
+
+# ---------------------------------------------------------------------- source discovery
+#: The `source_scout` lens asks for SOURCES, not trades. Each answer is registered as a CANDIDATE
+#: source in the moat registry through `scout_swarm.register_expansions` (parent
+#: `seat:cn_swarm`): registration is not permission to fetch. A candidate is crawled only by the
+#: desk's collectors, only once the parent's ROI gate opens, and every fetch still passes
+#: `robots_gate` and the terms checks. Nothing here fetches anything.
+SCOUT_LENS = "source_scout"
+SOURCES_LEDGER = "data/cn_swarm_sources.jsonl"
+SCOUT_PARENT = "seat:cn_swarm"
+
+SCOUT_SYSTEM = (
+    "You are a source scout for a research team. Name PUBLIC, FREE, little-known publishers "
+    "(official statistics offices, regional central-bank bulletins, exchanges, industry "
+    "associations, port and customs data, commodity boards, local trader communities) in any "
+    "country and language whose releases could predict moves in FX, gold, metals, energy or "
+    "equity-index CFDs. Prefer the obscure over the famous; never name a paywalled, "
+    "members-only source, or a crypto exchange.\n"
+    'Return ONLY JSON: {"sources": [{"name": "publisher", "url": "https://...", '
+    '"country": "ISO code", "language": "ISO code", "publishes": "what and how often", '
+    '"why": "the market it could move and how"}]}\nGive up to 10.')
+
+_CRYPTO = ("binance", "bybit", "okx", "hyperliquid", "deribit", "kraken", "coinbase", "bitmex",
+           "kucoin", "huobi", "gate.io", "bitfinex")
+
+
+def parse_sources(text: str) -> list[dict[str, str]]:
+    t = text.strip()
+    a, b = t.find("{"), t.rfind("}")
+    if a < 0 or b <= a:
+        return []
+    try:
+        doc = json.loads(t[a:b + 1])
+    except ValueError:
+        return []
+    out = []
+    for r in doc.get("sources") or [] if isinstance(doc, dict) else []:
+        if not isinstance(r, dict):
+            continue
+        url = str(r.get("url") or "").strip()
+        name = str(r.get("name") or "").strip()
+        if not (url.startswith("https://") and name) or len(url) > 300 or " " in url:
+            continue
+        if any(c in url.lower() for c in _CRYPTO):
+            continue
+        out.append({"name": name[:120], "url": url,
+                    "country": str(r.get("country") or "")[:8],
+                    "language": str(r.get("language") or "")[:8],
+                    "publishes": str(r.get("publishes") or "")[:300],
+                    "why": str(r.get("why") or "")[:300]})
+    return out
+
+
+def _host_path(url: str) -> str:
+    from urllib.parse import urlparse
+    u = urlparse(url)
+    return f"{(u.netloc or '').lower()}{u.path.rstrip('/')}"
+
+
+def known_sources(root: Path) -> set[str]:
+    return {_host_path(str(r.get("url", ""))) for r in _jsonl(root / SOURCES_LEDGER)}
+
+
+def register_sources(urls: list[str], dry: bool = False) -> dict[str, Any]:
+    """Candidates into the moat registry, or UNMEASURED saying why they could not be."""
+    import sys
+    root = Path(__file__).resolve().parents[2]
+    for p in (root / "desks" / "mt5" / "research", root / "desks" / "mt5", root):
+        if str(p) not in sys.path:
+            sys.path.insert(0, str(p))
+    try:
+        import scout_swarm
+
+        from libs.moat import registry
+        conn = registry.connect()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"registry unavailable: {type(exc).__name__}"}
+    try:
+        got = scout_swarm.register_expansions(SCOUT_PARENT, {"datasets": urls}, conn, dry=dry)
+        conn.commit()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"registration failed: {type(exc).__name__}"}
+    finally:
+        conn.close()
+    return {"status": "REGISTERED", **{k: v for k, v in got.items() if k != "ids"}}
+
+
+def discovered_brief(root: Path, rng: random.Random, n: int = 4) -> str | None:
+    """A lens built from sources the scouts found earlier: the swarm then mines them for ideas
+    from what the model knows of them (still nothing is fetched here)."""
+    rows = list(_jsonl(root / SOURCES_LEDGER))[-200:]
+    if not rows:
+        return None
+    pick = rng.sample(rows, min(n, len(rows)))
+    names = "; ".join(f"{r.get('name')} ({r.get('country')}, {r.get('publishes', '')[:80]})"
+                      for r in pick)
+    return ("what these little-known public publishers release, and which predictable price "
+            f"behaviour in FX, gold, metals, energy or index CFDs it could drive: {names}")

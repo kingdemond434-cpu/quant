@@ -284,7 +284,7 @@ def test_relay_ruling_is_allowed_on_its_four_conditions(tmp_path: Path) -> None:
     cat = sw.catalog()
     for lid, _lg, _b in sw.LENSES:
         cn.assert_public(sw.propose_system(cat), sw.lens_prompt(lid))
-    cn.assert_public(sw.CRITIC_SYSTEM)
+    cn.assert_public(sw.CRITIC_SYSTEM, sw.SCOUT_SYSTEM)
     # 3. propose-only, never on a money path.
     closure = (root / "ops/money_closure.txt").read_text("utf-8")
     for mod in ("cn_ensemble", "cn_swarm", "run_cn_ensemble"):
@@ -315,3 +315,76 @@ def test_near_misses_never_reach_a_relay(tmp_path: Path) -> None:
                  chat=chat, list_models=lambda b, k: ["deepseek-chat"],
                  quotas={"hcnsec": 5})
     assert rep["mutation_calls"] == 0 and rep["calls"] == 5
+
+
+def test_worldwide_lenses_cover_every_region_in_its_own_language() -> None:
+    from libs.ops import cn_swarm as sw
+    langs = {lg for _l, lg, _b in sw.LENSES}
+    assert {"zh", "ja", "ko", "es", "pt", "ar", "ru", "pl", "tr", "hi", "id", "th", "fr",
+            "de"} <= langs
+    assert all(lg in sw._LANG_ASK for lg in langs)
+    assert sw.SCOUT_LENS in sw.LENS_BRIEF
+
+
+def test_source_scouts_feed_the_ledger_and_the_next_hour(tmp_path: Path) -> None:
+    from libs.ops import cn_swarm as sw
+    env = {"OPENROUTER_API_KEY": "k", "CN_SWARM_CRITIC_CALLS": "0"}
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        if system == sw.SCOUT_SYSTEM:
+            return json.dumps({"sources": [
+                {"name": "Bank of Ghana bulletin", "url": "https://www.bog.gov.gh/stats",
+                 "country": "GH", "language": "en", "publishes": "monthly", "why": "gold"},
+                {"name": "bad", "url": "http://insecure.example"},
+                {"name": "exchange", "url": "https://www.binance.com/x"}]}), None
+        assert sw.DISCOVERED_LENS not in user or "Bank of Ghana" in user
+        return json.dumps({"findings": []}), None
+
+    lens_all = [lid for lid, _lg, _b in sw.LENSES]
+    calls = len(lens_all)
+    rep = cn.run(NOW, root=tmp_path, env=env, chat=chat,
+                 list_models=lambda b, k: ["qwen/qwen3:free"], quotas={"openrouter": calls})
+    assert rep["sources_discovered"] == 1
+    assert rep["sources_registration"]["status"] == "SKIPPED"
+    rows = (tmp_path / sw.SOURCES_LEDGER).read_text("utf-8").splitlines()
+    assert len(rows) == 1 and "bog.gov.gh" in rows[0]
+    rep2 = cn.run(NOW, root=tmp_path, env=env, chat=chat,
+                  list_models=lambda b, k: ["qwen/qwen3:free"], quotas={"openrouter": calls + 1})
+    assert rep2["sources_discovered"] == 0 and rep2["lenses"] == calls + 1
+
+
+def test_mutation_derived_recipes_never_reach_a_relay_critic(tmp_path: Path) -> None:
+    """Auditor MF1: a recipe descended from a desk near miss is scored on OpenRouter or not at
+    all; the relay critic only ever sees recipes from public lenses."""
+    from libs.ops import cn_swarm as sw
+    (tmp_path / "desks/mt5/data/hypotheses").mkdir(parents=True)
+    (tmp_path / sw.GRAPH).write_text(json.dumps({
+        "id": "g1", "symbol": "EURUSD", "family": "mean_reversion_rsi",
+        "params": {"rsi_n": 10}, "source": "miner:other"}) + "\n")
+    (tmp_path / sw.GATE_LEDGER).write_text(json.dumps({
+        "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
+        "terminal_gate": "deflated_sharpe"}) + "\n")
+    env = {"OPENROUTER_API_KEY": "k", "HCNSEC": "h", "CN_SWARM_CRITIC_CALLS": "2",
+           "CN_SWARM_MUTATIONS": "1"}
+    critics: list[tuple[str, str]] = []
+
+    def lister(base: str, key: str) -> list[str]:
+        return ["deepseek-chat"] if "hcnsec" in base else ["qwen/qwen3:free"]
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        if system == sw.CRITIC_SYSTEM:
+            critics.append((seat.provider.name, user))
+            n = user.count('"i":')
+            return json.dumps({"scores": [{"i": i, "score": 8} for i in range(n)]}), None
+        if system == sw.MUTATE_SYSTEM:
+            assert not seat.provider.relay
+            return _recipe("mean_reversion_rsi", "USDCHF", rsi_n=8), None
+        return _recipe("trend_ma_cross", "XAUUSD", fast_ema=20), None
+
+    rep = cn.run(NOW, root=tmp_path, env=env, chat=chat, list_models=lister,
+                 quotas={"openrouter": 9, "hcnsec": 6})
+    assert rep["mutation_calls"] == 1
+    relay_seen = " ".join(u for who, u in critics if who == "hcnsec")
+    or_seen = " ".join(u for who, u in critics if who == "openrouter")
+    assert "XAUUSD" in relay_seen and "USDCHF" not in relay_seen
+    assert "USDCHF" in or_seen

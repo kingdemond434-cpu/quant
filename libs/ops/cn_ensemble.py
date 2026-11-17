@@ -373,6 +373,12 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     board = cn_swarm.scoreboard(base)
     lens_ids = [lid for lid, _lg, _b in cn_swarm.LENSES]
     model_ids = [f"{s.provider.name}:{m}" for s in seats if s.lit for m in s.models]
+    # The scouts' earlier finds become a lens of their own (names only; nothing is fetched).
+    extra: dict[str, str] = {}
+    found_brief = cn_swarm.discovered_brief(base, rng)
+    if found_brief:
+        extra[cn_swarm.DISCOVERED_LENS] = found_brief
+        lens_ids.append(cn_swarm.DISCOVERED_LENS)
     lens_order = cn_swarm.ordered(
         lens_ids, cn_swarm.weights(lens_ids, board.get("by_lens") or {}, rng), rng)
     model_order = cn_swarm.ordered(
@@ -393,6 +399,10 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     if orseat and near:
         n_mut = min(_env_int(e, "CN_SWARM_MUTATIONS", 3), max(0, quotas.get("openrouter", 0) // 3))
         quotas["openrouter"] = quotas.get("openrouter", 0) - n_mut
+    # One OpenRouter critic call for the mutation-derived recipes: they descend from the desk's
+    # own near misses, so they are never scored by a relay (Auditor MF1, 2026-11-17).
+    mut_critic = 1 if (n_mut and critic_cap and quotas.get("openrouter", 0) > 1) else 0
+    quotas["openrouter"] = quotas.get("openrouter", 0) - mut_critic
 
     calls = plan(seats, quotas, int(now.timestamp() // 3600), lens_order, model_order)
     if orseat and n_mut:
@@ -413,7 +423,8 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             batch = near[(k * 3) % max(1, len(near)):][:3] or near[:3]
             system, user = cn_swarm.MUTATE_SYSTEM, cn_swarm.mutate_user(batch, cat)
         else:
-            system, user = psys, cn_swarm.lens_prompt(lens)
+            system = cn_swarm.SCOUT_SYSTEM if lens == cn_swarm.SCOUT_LENS else psys
+            user = cn_swarm.lens_prompt(lens, extra)
         try:
             assert_public(system, user)
         except ValueError as exc:
@@ -427,12 +438,38 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                                           "model": model, "ok": not err})
         if err:
             return {**head, "status": "CALL_FAILED", "why": str(err)[:300]}, []
+        if lens == cn_swarm.SCOUT_LENS:
+            srcs = cn_swarm.parse_sources(text)
+            return {**head, "status": "OK", "n_sources": len(srcs)}, [{"_source": x}
+                                                                       for x in srcs]
         found = _parse(text)
         return {**head, "status": "OK", "n_findings": len(found)}, found
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=workers) as pool:
         results = list(pool.map(one, calls))
+
+    # SOURCE DISCOVERY: new scout finds into the ledger and the moat registry as candidates.
+    known = cn_swarm.known_sources(base)
+    new_sources: list[dict[str, Any]] = []
+    for (_s, model, _l, _t), (_o, found) in zip(calls, results, strict=True):
+        for f in found:
+            src = f.get("_source") if isinstance(f, dict) else None
+            if not src:
+                continue
+            hp = cn_swarm._host_path(src["url"])
+            if hp in known:
+                continue
+            known.add(hp)
+            new_sources.append({**src, "at": _iso(now), "model": model})
+    for src in new_sources:
+        _append(base / cn_swarm.SOURCES_LEDGER, src)
+    registered = (cn_swarm.register_sources([x["url"] for x in new_sources])
+                  if new_sources and root is None else
+                  {"status": "SKIPPED", "why": "no new sources" if not new_sources
+                   else "test root: registry not touched"})
+    results = [(o, [f for f in fs if not (isinstance(f, dict) and "_source" in f)])
+               for o, fs in results]
 
     seen_before = cn_swarm.recent_ids(base, 30, now)
     ideas: dict[str, dict[str, Any]] = {}
@@ -479,25 +516,32 @@ def run(now: datetime | None = None, *, root: Path | None = None,
 
     # CRITIC: a different model scores the recipes; below the floor they are not donated.
     floor = float(e.get("CN_SWARM_CRITIC_FLOOR", "4") or 4)
-    crit = {"seat": None, "scored": 0, "killed": 0, "failed_calls": 0}
-    pending = sorted(recipes.values(), key=lambda r: (-len(r["models"]), r["gid"]))
-    if critic_seat and pending:
+    crit: dict[str, Any] = {"seat": None, "scored": 0, "killed": 0, "failed_calls": 0}
+    ranked = sorted(recipes.values(), key=lambda r: (-len(r["models"]), r["gid"]))
+    private = [r for r in ranked if any(ag["task"] == "mutate" for ag in r["agents"])]
+    public = [r for r in ranked if r not in private]
+    jobs: list[tuple[Seat, int, list[dict[str, Any]]]] = []
+    if critic_seat and public:
+        jobs.append((critic_seat, critic_calls, public))
+    if orseat and mut_critic and private:
+        jobs.append((orseat, mut_critic, private))       # never a relay
+    crit["private_unscored"] = len(private) if not (orseat and mut_critic) else 0
+    for cseat, ncalls, pending in jobs:
         used = {m for r in pending for m in r["models"]}
-        cmodel = next((m for m in critic_seat.models if m not in used), critic_seat.models[0])
-        crit["seat"] = f"{critic_seat.provider.name}:{cmodel}"
-        size = max(1, -(-len(pending) // max(1, critic_calls)))
-        size = min(size, 25)
-        for b in range(min(critic_calls, -(-len(pending) // size))):
+        cmodel = next((m for m in cseat.models if m not in used), cseat.models[0])
+        crit.setdefault("seats", []).append(f"{cseat.provider.name}:{cmodel}")
+        crit["seat"] = crit["seat"] or f"{cseat.provider.name}:{cmodel}"
+        size = min(25, max(1, -(-len(pending) // max(1, ncalls))))
+        for b in range(min(ncalls, -(-len(pending) // size))):
             batch = pending[b * size:(b + 1) * size]
             user = cn_swarm.critic_user(batch)
             try:
                 assert_public(cn_swarm.CRITIC_SYSTEM, user)
-                text, err = do(critic_seat, cmodel, cn_swarm.CRITIC_SYSTEM, user)
+                text, err = do(cseat, cmodel, cn_swarm.CRITIC_SYSTEM, user)
             except Exception as exc:
                 text, err = "", str(exc)
-            if critic_seat.provider.relay:
-                _append(base / RELAY_LEDGER, {"utc": _iso(_now()),
-                                              "relay": critic_seat.provider.name,
+            if cseat.provider.relay:
+                _append(base / RELAY_LEDGER, {"utc": _iso(_now()), "relay": cseat.provider.name,
                                               "model": cmodel, "ok": not err})
             if err:
                 crit["failed_calls"] += 1
@@ -546,6 +590,9 @@ def run(now: datetime | None = None, *, root: Path | None = None,
         "recipes_donated": len(keep),
         "recipes_skipped_already_sent": dup_old,
         "critic": crit,
+        "sources_discovered": len(new_sources),
+        "sources_registration": registered,
+        "lenses": len(lens_ids),
         "prose_ideas": len(ideas),
         "distinct_ideas": len(ideas) + len(keep),
         "single_model_ideas": sum(len(r["models"]) == 1 for r in ideas.values()),
@@ -579,7 +626,9 @@ def _append(path: Path, row: dict[str, Any]) -> None:
 
 
 _LENS_LANG = {lid: lg for lid, lg, _b in cn_swarm.LENSES}
-_CULTURE = {"zh": "CN/zh", "ja": "JP/ja", "ko": "KR/ko"}
+_CULTURE = {"zh": "CN/zh", "ja": "JP/ja", "ko": "KR/ko", "es": "LATAM/es", "pt": "BR/pt",
+            "ar": "MENA/ar", "ru": "RU/ru", "pl": "CEE/pl", "tr": "TR/tr", "hi": "IN/hi",
+            "id": "ID/id", "th": "TH/th", "fr": "AFR/fr", "de": "DE/de"}
 
 
 def _donate(rows: list[dict[str, Any]], recipes: list[dict[str, Any]], now: datetime,
