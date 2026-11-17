@@ -246,7 +246,7 @@ def test_exception_text_never_carries_a_credential(text: str, secret: str) -> No
     for doc in (text, {"why_unmeasured": text}, {"errors": [text]}):
         out = json.dumps(redact(doc, _BOX))
         assert secret not in out, f"{secret!r} survived: {out}"
-        assert WITHHELD in out
+        assert "withheld" in out
 
 
 def test_a_count_named_like_a_secret_keeps_its_number() -> None:
