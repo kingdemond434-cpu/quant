@@ -3242,11 +3242,19 @@ def _redact(url: str, src: Source) -> str:
 
 def http_get(url: str, secrets: tuple[str, ...] = ()) -> tuple[bytes, str]:
     from libs.data.keyed_sources import keyed_opener
+    from libs.data.off_limits import off_limits, redirected_off_limits
+    refused = off_limits(url)
+    if refused:
+        raise PermissionError(refused)
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     # The key rides in this url's query or PATH (NASA FIRMS): the opener strips it from, or
     # refuses, any redirect that would carry it to another host. A path key is only found when
     # the opener is told the secret (re-audit of #252), so `collect` passes the source's key.
+    # A redirect that lands on an off-limits ground is refused too, before its body is read.
     with keyed_opener(_tls(), secrets=secrets).open(req, timeout=TIMEOUT) as r:
+        hop = redirected_off_limits(url, r.geturl())
+        if hop:
+            raise PermissionError(hop)
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
