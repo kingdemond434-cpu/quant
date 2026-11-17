@@ -34,6 +34,14 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
      and only when that head has no newer run of the same workflow. A run with any started job,
      or one this call or the ledger already owns, is never touched here.
 
+  5. CLEARED RE-RUN (2026-11-17, coordinator: #1214 and #1217, CLEARed and approved, sat at
+     "CI failed: cancelled" with nothing re-queuing them). A cancelled `pull_request` run on a
+     CURRENT open-PR head that carries a trusted, unedited AUDIT CLEAR is re-run whoever
+     cancelled it and whether or not a job had started: a CLEARed head is next to merge, and its
+     CI is owed. At most MAX_CLEARED_RERUN per call, created in the last UNSTARTED_H hours, on an
+     attempt below MAX_CLEARED_ATTEMPT (so a run cancelled on purpose again and again is let
+     go), newest per (head, workflow), and only when that head has no newer run of the workflow.
+
 `pull_request_target` runs (the audit gate: its head_sha is the base's) are never touched, nor
 push, dispatch or schedule runs, nor a run that has started: each is re-read just before its
 cancel. Every open PR is listed (any base), and the runs are read before the PRs, so a head that
@@ -74,6 +82,9 @@ BUDGET_S = 300.0
 #: Rule 4: re-runs of never-started cancelled PR runs per call, and how far back it looks.
 MAX_UNSTARTED = 20
 UNSTARTED_H = 24.0
+#: Rule 5: re-runs of cancelled runs on CLEARed heads per call, and the attempt it stops at.
+MAX_CLEARED_RERUN = 10
+MAX_CLEARED_ATTEMPT = 3
 
 
 def _gh(path: str, method: str = "GET") -> Any:
@@ -168,6 +179,38 @@ def unstarted_candidates(
     return out
 
 
+def cleared_candidates(
+    now: datetime,
+    cancelled: list[dict[str, Any]],
+    heads: dict[str, str],
+    owned: set[int] = frozenset(),  # type: ignore[assignment]
+) -> list[dict[str, Any]]:
+    """Rule 5's candidates from already-fetched cancelled runs (pure): `pull_request` runs on a
+    current PR head, recent, attempt below MAX_CLEARED_ATTEMPT, not owned by the ledger, newest
+    per (head sha, workflow). Whether the head is CLEARed is read per candidate afterwards."""
+    seen: set[tuple[str, str]] = set()
+    out: list[dict[str, Any]] = []
+    for r in sorted(cancelled, key=lambda r: str(r.get("created_at")), reverse=True):
+        key = (str(r.get("head_sha")), str(r.get("workflow_id") or r.get("name")))
+        if key in seen:
+            continue
+        seen.add(key)
+        age = _age_min(now, r.get("created_at"))
+        if (
+            r.get("event") != "pull_request"
+            or r.get("status") != "completed"
+            or r.get("conclusion") != "cancelled"
+            or int(r.get("run_attempt") or 1) >= MAX_CLEARED_ATTEMPT
+            or int(r["id"]) in owned
+            or heads.get(str(r.get("head_branch"))) != str(r.get("head_sha"))
+            or age is None
+            or age > UNSTARTED_H * 60
+        ):
+            continue
+        out.append(r)
+    return out
+
+
 def never_started(jobs: list[dict[str, Any]]) -> bool:
     """True only when the run has jobs and NONE of them reached a runner or ran a step."""
     return bool(jobs) and all(
@@ -175,15 +218,21 @@ def never_started(jobs: list[dict[str, Any]]) -> bool:
     )
 
 
-def _rerun_unstarted(
-    repo: str, now: datetime, heads: dict[str, str], owned: set[int], over: Callable[[], bool]
-) -> int:
+def _cancelled(repo: str, now: datetime) -> list[dict[str, Any]]:
+    """Cancelled `pull_request` runs created in the last UNSTARTED_H hours (rules 4 and 5)."""
     since = now.timestamp() - UNSTARTED_H * 3600
     day = datetime.fromtimestamp(since, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     got = _gh(f"repos/{repo}/actions/runs?status=cancelled&event=pull_request"
               f"&created=%3E%3D{day}&per_page=100") or {}  # fmt: skip
+    return list(got.get("workflow_runs") or [])
+
+
+def _rerun_unstarted(
+    repo: str, now: datetime, heads: dict[str, str], owned: set[int], over: Callable[[], bool]
+) -> int:
+    got = _cancelled(repo, now)
     done = 0
-    for r in unstarted_candidates(now, got.get("workflow_runs") or [], heads, owned):
+    for r in unstarted_candidates(now, got, heads, owned):
         if done >= MAX_UNSTARTED or over():
             break
         rid = int(r["id"])
@@ -203,6 +252,52 @@ def _rerun_unstarted(
             done += 1
         except RuntimeError as exc:
             print(f"  never-started {rid}: {exc}")
+    return done
+
+
+def _rerun_cleared(
+    repo: str,
+    now: datetime,
+    heads: dict[str, str],
+    owned: set[int],
+    over: Callable[[], bool],
+    got: list[dict[str, Any]],
+) -> int:
+    """Rule 5 over the cancelled runs rule 4 already listed. A CLEAR read that fails leaves the
+    run alone this call; the next call reads it again."""
+    clear_at = _clear_at()
+    done = 0
+    for r in cleared_candidates(now, got, heads, owned):
+        if done >= MAX_CLEARED_RERUN or over():
+            break
+        rid = int(r["id"])
+        n = _NUMBERS.get(str(r.get("head_branch")))
+        if not n:
+            continue
+        try:
+            notes: list[dict[str, Any]] = []
+            for page in range(1, 6):
+                batch = _gh(f"repos/{repo}/issues/{n}/comments?per_page=100&page={page}") or []
+                notes += batch
+                if len(batch) < 100:
+                    break
+            if not clear_at(notes, str(r.get("head_sha"))):
+                continue
+            newer = (_gh(f"repos/{repo}/actions/runs?head_sha={r['head_sha']}&per_page=100")
+                     or {}).get("workflow_runs") or []  # fmt: skip
+            if any(
+                x.get("workflow_id") == r.get("workflow_id")
+                and str(x.get("created_at")) > str(r.get("created_at"))
+                for x in newer
+            ):
+                continue  # that head already has a newer run of this workflow
+            cur = _gh(f"repos/{repo}/actions/runs/{rid}") or {}
+            if cur.get("status") != "completed" or cur.get("conclusion") != "cancelled":
+                continue  # someone re-ran it meanwhile
+            _gh(f"repos/{repo}/actions/runs/{rid}/rerun", "POST")
+            done += 1
+        except RuntimeError as exc:
+            print(f"  cleared re-run {rid}: {exc}")
     return done
 
 
@@ -389,11 +484,19 @@ def run(
             unstarted = _rerun_unstarted(repo, now, heads, owned, over)
         except Exception as exc:  # rule 4 never costs rules 1-3, whatever it hits
             print(f"  never-started skipped: {type(exc).__name__}: {exc}")
+    cleared_rerun = 0
+    if not over():
+        owned = {r["id"] for r in cancelled + owed + keep}
+        try:
+            cleared_rerun = _rerun_cleared(repo, now, heads, owned, over, _cancelled(repo, now))
+        except Exception as exc:  # rule 5 never costs rules 1-4, whatever it hits
+            print(f"  cleared re-run skipped: {type(exc).__name__}: {exc}")
     _save(state, {"at": at, "owed": keep, "cancelled_superseded": len(waste),
                   "moved_behind_live": len(cancelled), "rerun": rerun,
-                  "rerun_never_started": unstarted, "given_up": given_up})  # fmt: skip
+                  "rerun_never_started": unstarted, "rerun_cleared": cleared_rerun,
+                  "given_up": given_up})  # fmt: skip
     print(f"live-first: re-ran {rerun}, {len(keep)} owed to the next call, {given_up} given up, "
-          f"{unstarted} never-started re-run")  # fmt: skip
+          f"{unstarted} never-started re-run, {cleared_rerun} CLEARed re-run")  # fmt: skip
     return 2 if given_up else 0
 
 

@@ -870,3 +870,48 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_a_cancelled_run_on_a_cleared_head_is_rerun_whoever_cancelled_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """2026-11-17: #1214 and #1217 (CLEARed, approved) sat at "CI failed: cancelled" after a
+    cancel of a run with a started job; rule 4 only re-runs never-started runs. Rule 5 re-runs a
+    cancelled run on a CLEARed current head, once per attempt, below MAX_CLEARED_ATTEMPT."""
+    lf = _lf()
+    lf._NUMBERS.update({"c": 7, "u": 8})
+    heads = {"c": "abcdef1234", "u": "1234abcd"}
+
+    def run(rid: int, b: str, sha: str, attempt: int = 1, age: int = 30) -> dict[str, Any]:
+        return {"id": rid, "event": "pull_request", "status": "completed",
+                "conclusion": "cancelled", "head_branch": b, "head_sha": sha,
+                "run_attempt": attempt, "workflow_id": 1, "created_at": _iso(age)}  # fmt: skip
+
+    got = [run(1, "c", "abcdef1234"), run(2, "u", "1234abcd"), run(3, "c", "oldsha"),
+           run(4, "c", "abcdef1234", age=60)]  # fmt: skip
+    cands = lf.cleared_candidates(NOW, got, heads)
+    assert [r["id"] for r in cands] == [1, 2]  # 3 is a stale head; 4 is older, same workflow
+    assert lf.cleared_candidates(NOW, [run(1, "c", "abcdef1234", attempt=3)], heads) == []
+    assert lf.cleared_candidates(NOW, [run(1, "c", "abcdef1234", age=25 * 60)], heads) == []
+    assert [r["id"] for r in lf.cleared_candidates(NOW, got, heads, owned={1})] == [2]
+
+    note = {"body": "AUDIT CLEAR abcdef1", "author_association": "OWNER", "created_at": "t",
+            "updated_at": "t"}  # fmt: skip
+    posts: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        if method == "POST":
+            posts.append(path)
+            return None
+        if "/issues/7/" in path:
+            return [note]
+        if "/issues/8/" in path:
+            return []
+        if "?head_sha=" in path:
+            return {"workflow_runs": [got[0]]}
+        rid = int(path.rsplit("/", 1)[1])
+        return {"status": "completed", "conclusion": "cancelled", "id": rid}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf._rerun_cleared("o/r", NOW, heads, set(), lambda: False, got) == 1
+    assert posts == ["repos/o/r/actions/runs/1/rerun"]  # the uncleared head's run is left alone
