@@ -103,25 +103,32 @@ def _exc_reason(exc: BaseException) -> str:
     return type(exc).__name__ + (f" errno={errno}" if isinstance(errno, int) else "")
 
 
-#: Absolute paths that survive the root substitution: a drive letter (C:\ or C:/), a UNC or
-#: doubled-backslash root, and a POSIX root: a `/` not preceded by a word character, a dot, a
-#: colon, another slash or a placeholder's `>`. So `n/a`, `8/12`, a URL and a repo-relative
-#: `data/x.json` are untouched.
+#: Absolute paths, after the desk and repo roots are swapped for sentinels (v2.3). A path may hold
+#: spaces (`C:\Program Files\...`) and nothing reliably ends one, so a match runs from the root
+#: TO THE END OF THE LINE: losing the rest of a quoted line is the price of never leaking its
+#: tail. The roots: a drive letter anywhere (`C:\`, `C:/`, but not a URL's `s://`), a doubled
+#: backslash (UNC), a `file:` URL, and a POSIX `/` followed by a path character and not preceded
+#: by a word character, a dot, a colon or a slash (`n/a`, `8/12`, `https://x/y`, `data/x.json`
+#: survive; `-/home`, `>/home`, `(/home`, `~/x` do not). Only a desk/repo SENTINEL may precede a
+#: `/` and keep the relative tail, and a sentinel cannot occur in quoted text (NULs are stripped).
+_DESK_SENTINEL, _ROOT_SENTINEL = "\x00D\x00", "\x00R\x00"
 _ABS_PATH = re.compile(
-    r"(?<![A-Za-z0-9])[A-Za-z]:[\\/][^\s'\"<>|,;)]*"
-    r"|\\\\[^\s'\"<>|,;)]+"
-    r"|(?<![\w.:/~>-])/[^\s'\"<>|,;)]+")
+    r"[A-Za-z]:(?:\\|/(?!/))[^\r\n]*"
+    r"|\\\\[^\r\n]*"
+    r"|file:/[^\r\n]*"
+    r"|(?<![\w.:/\x00])/(?=[^\s/])[^\r\n]*")
 PATH_PLACEHOLDER = "<path>"
 
 
 def _publishable(text: str) -> str:
     """A string fit for the public repository: no desk/repo root, no absolute local path."""
-    out = str(text)
-    for root, tag in ((DESK, "<desk_root>"), (ROOT, "<repo>")):
-        for form in {str(root), root.as_posix()}:
+    out = str(text).replace("\x00", "")
+    for root, tag in ((DESK, _DESK_SENTINEL), (ROOT, _ROOT_SENTINEL)):
+        for form in sorted({str(root), root.as_posix()}, key=len, reverse=True):
             if len(form) > 1:
                 out = out.replace(form, tag)
-    return _ABS_PATH.sub(PATH_PLACEHOLDER, out)
+    out = _ABS_PATH.sub(PATH_PLACEHOLDER, out)
+    return out.replace(_DESK_SENTINEL, "<desk_root>").replace(_ROOT_SENTINEL, "<repo>")
 
 
 def _desk_root_published() -> str:

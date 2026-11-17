@@ -27,9 +27,12 @@ UNC = r"\\fileserver\share\quant\data"
 POSIX = "/home/someone/quant/secret_account_dir/data/file.json"
 RAW = f"boom: could not read {WIN} via {UNC} or {POSIX} (raw parser text 'Expecting value')"
 
-#: What an absolute path looks like in a published string: a POSIX root (a `/` at the start or
-#: after whitespace, a bracket, a quote or `=`), a drive-letter root, or a backslash pair.
-_ABSOLUTE = re.compile(r"(?:^|[\s(\[\"'=])/\w|(?<![A-Za-z0-9])[A-Za-z]:[\\/]|\\\\")
+#: What an absolute path looks like in a published string (v2.3, stricter than the code's own
+#: rule is allowed to be lax): a `/` + path character after anything but a word character, a dot,
+#: a colon, a slash or a desk/repo placeholder; a drive letter anywhere (not a URL's `s://`); or a
+#: backslash pair.
+_ABSOLUTE = re.compile(r"(?<![\w.:/])(?<!<desk_root>)(?<!<repo>)/\w"
+                       r"|[A-Za-z]:(?:\\|/(?!/))|\\\\")
 
 
 def _load() -> Any:
@@ -80,7 +83,8 @@ def _raise(*_a: Any, **_k: Any) -> Any:
 
 
 def test_the_path_regex_this_file_relies_on_actually_matches_paths() -> None:
-    for s in (WIN, UNC, POSIX, "C:/x", f"read ({POSIX})", "x '/etc/passwd'"):
+    for s in (WIN, UNC, POSIX, "C:/x", f"read ({POSIX})", "x '/etc/passwd'", "a-/home/u",
+              "x>/home/u", "aC:\\Users", "~/x"):
         assert _ABSOLUTE.search(s), s
     for s in ("data/BARS_STATE.json", "n/a", "8/12", "https://dash.example/x",
               "PermissionError errno=13", "desks/mt5"):
@@ -168,3 +172,64 @@ def test_the_source_never_interpolates_an_exception() -> None:
     assert not re.search(r"\{exc(?:!r|!s)?\}|str\(exc\)", src.replace(
         "never str(exc)", "")), "a finding interpolates raw exception text"
     assert '"desk_root": str(DESK)' not in src
+
+
+# ------------------------------------------------------------------ v2.3: the regex's own gaps
+#: Hostile shapes the v2.2 regex let through: a path with SPACES leaked its tail, and a `/` after
+#: `-`, `>` or `~`, or a drive letter glued to a word, was not a root at all.
+HOSTILE = (
+    r"C:\Program Files\Quant Desk\tailsecret one\file.json",
+    "C:/Program Files/Quant Desk/tailsecret two.json",
+    r"\\fileserver\my share\tailsecret three",
+    "/home/some one/tailsecret four/x.json",
+    "a-/home/u/tailsecret five",
+    "x>/home/u/tailsecret six",
+    "~/tailsecret seven/x",
+    "aC:\\Users\\tailsecret eight",
+    "file:///home/u/tailsecret nine",
+    "(/opt/My Desk/tailsecret ten)",
+    "<desk_root>/../../home/tailsecret eleven",
+)
+
+
+@pytest.mark.parametrize("hostile", HOSTILE)
+def test_v23_a_path_never_leaks_its_tail_or_slips_the_lookbehind(health: Any,
+                                                                 hostile: str) -> None:
+    out = health._publishable(f"push refused: {hostile} -- retry later")
+    assert "tailsecret" not in out and not _ABSOLUTE.search(out), out
+    assert out.startswith("push refused: "), "the text before the root survives"
+
+
+@pytest.mark.parametrize("hostile", HOSTILE)
+def test_v23_the_alert_and_sync_lines_never_leak_a_path(health: Any, hostile: str) -> None:
+    """The lines check_state_flow and check_stall_watch_alerts quote verbatim from other organs."""
+    (health.DESK / "reports" / "BOX_STATE_FLOW.json").write_text(json.dumps({
+        "verdict": "STALLED", "why": f"why {hostile}",
+        "local_commits_not_on_origin": f"3 at {hostile}",
+        "sync_log": {"last_refusal_line": f"refused {hostile}"},
+        "alerts": {"line": f"no channel {hostile}"}}), "utf-8")
+    (health.DESK / "data" / "stall_watch.json").write_text(json.dumps({
+        "alerts_line": f"stall {hostile}", "checked_at": hostile,
+        "state_flow_watch": hostile}), "utf-8")
+    health.check_state_flow()
+    health.check_stall_watch_alerts()
+    doc = health.report("t")
+    assert len(doc["findings"]) >= 3
+    for s in _strings(doc):
+        assert "tailsecret" not in s and not _ABSOLUTE.search(s), s
+
+
+def test_v23_sentinels_cannot_be_forged_and_relative_text_survives(health: Any) -> None:
+    # A forged sentinel is stripped of its NULs, so it can never shield an absolute path as a
+    # "<desk_root>/..." tail: what is left is the forger's own relative text, or <path>.
+    for forged in ("\x00D\x00/home/u/tailsecret", "x \x00D\x00 /home/u/tailsecret",
+                   "\x00R\x00C:\\Users\\tailsecret"):
+        out = health._publishable(forged)
+        assert "\x00" not in out and "<desk_root>" not in out and "<repo>" not in out, out
+        assert not _ABSOLUTE.search(out), out
+    assert health._publishable("x \x00D\x00 /home/u/tailsecret") == "x D <path>"
+    d = health.DESK
+    assert health._publishable(f"{d}/data/My File.json old") == "<desk_root>/data/My File.json old"
+    keep = ("data/BARS_STATE.json is 3.1h old -- n/a; 8/12 at https://dash.example/x and / or "
+            "MT5-Hourly 12:00:00")
+    assert health._publishable(keep) == keep
