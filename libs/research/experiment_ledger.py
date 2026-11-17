@@ -95,26 +95,80 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+def _intel_roots() -> tuple[Path, Path]:
+    """Both intelligence roots the compiler reads and `scripts/disk_guard.INTEL_DIRS` rolls up.
+    Derived from DESK at call time, so a caller (or test) that points DESK elsewhere moves both."""
+    return DESK / "data" / "intelligence", DESK.parent.parent / "data" / "intelligence"
+
+
+def _discovery_docs() -> Any:
+    """(seat, document) for every proposer contract that carries a `tests_run`, ONCE: the live
+    `discoveries_*.json` files AND the `rollup_<day>.jsonl.gz` archives `disk_guard.rollup`
+    compacts them into after RETAIN_DAYS (one document per line, the originals deleted).
+
+    THE UNDER-COUNT THIS ENDS (audit 2026-10-14). Reading only the live files meant every rolled
+    contract's `tests_run` silently left the lifetime count. CHARGE ONCE: a document is keyed by
+    the sha256 of its canonical JSON, so a file whose unlink failed after its rollup line was
+    written, a re-run append of the same file, or a mirror under the second root is counted a
+    single time. A document is the unit disk_guard writes, so a live list file is read element
+    by element exactly as its rollup lines will be (its count is the same before and after)."""
+    import gzip
+    import zlib
+
+    seen: set[str] = set()
+
+    def _once(doc: Any) -> bool:
+        if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
+            return False
+        key = hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":"),
+                                        default=str).encode("utf-8")).hexdigest()
+        if key in seen:
+            return False
+        seen.add(key)
+        return True
+
+    for base in dict.fromkeys(_intel_roots()):
+        for f in sorted(glob.glob(str(base / "*" / "discoveries_*.json"))):
+            try:
+                raw = json.loads(Path(f).read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            seat = Path(f).parent.name
+            for doc in (raw if isinstance(raw, list) else [raw]):
+                if _once(doc):
+                    yield seat, doc
+        for f in sorted(glob.glob(str(base / "*" / "rollup_*.jsonl.gz"))):
+            seat = Path(f).parent.name
+            try:
+                with gzip.open(f, "rt", encoding="utf-8") as fh:
+                    for ln in fh:
+                        if '"tests_run"' not in ln:
+                            continue
+                        try:
+                            doc = json.loads(ln)
+                        except ValueError:
+                            continue
+                        if _once(doc):
+                            yield seat, doc
+            except (OSError, EOFError, zlib.error):
+                # a torn archive keeps every line read before the tear: never a smaller count
+                # than what was readable
+                continue
+
+
 def _proposer_counts() -> tuple[int, dict[str, int]]:
-    """`tests_run` on every discovery file, attributed to the families it proposed."""
+    """`tests_run` on every discovery contract (live files and disk_guard rollups), attributed
+    to the families it proposed."""
     total = 0
     by_fam: dict[str, int] = {}
-    intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
     # The learned miners re-run the SAME grid x symbols x thresholds every day, so their daily
     # discovery files repeat one charge; they are reconciled below against the trial ledger.
     learned_files: dict[str, tuple[int, set[str]]] = {}
-    for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
-        try:
-            doc = json.loads(Path(f).read_text("utf-8"))
-        except (OSError, ValueError):
-            continue
-        if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
-            continue
+    for seat, doc in _discovery_docs():
         n = int(doc["tests_run"])
         fams = {str(r.get("family")) for r in (doc.get("discoveries") or [])
                 if isinstance(r, dict) and r.get("family")}
-        seat = Path(f).parent.name
         if seat.startswith("learned_"):
             prev_n, prev_f = learned_files.get(seat, (0, set()))
             learned_files[seat] = (max(prev_n, n), prev_f | fams)
