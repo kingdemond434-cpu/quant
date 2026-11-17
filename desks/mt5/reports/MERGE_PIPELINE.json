@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-13T12:36:31+00:00",
+  "at": "2026-11-17T17:36:29+00:00",
   "status": "RED",
   "red": [
-    "WATCH_BLIND: gh api repos/kingdemond434-cpu/quant/issues/994/comments?per_page=100: Get \"https://api.github.com/repos/kingdemond434-cpu/quant/issues/994/comments?per_page=100\": net/http: TLS handshake timeout"
+    "WATCH_BLIND: gh api repos/kingdemond434-cpu/quant/commits/14eeeea3ec8d6efc6ef55853af9799f0b075ddaa/check-runs?per_page=100: timed out after 45.0s"
   ]
 }

@@ -1,0 +1,51 @@
+{
+ "version": 1,
+ "why": "Frozen probe grid for the Fusion-roster replay leg (ops/release/replay_child.py fusion_roster_leg). Read from the BASE harness only; a PR that changes this file FAILS replay-shadow (Auditor MF2). Rows are derived from both trees' live_sleeve_policy.json and CERT_BOOK_LIVE.json names plus these probes, and the SAME rows go to both trees. Probe families, timeframes and execs are the grid's PLUS every banned_* value either tree's policy names (Auditor MF6); a policy change the probes cannot reach keeps the file UNMEASURED.",
+ "symbols": [
+  "XAUUSD",
+  "XAGUSD",
+  "EURUSD",
+  "USDJPY",
+  "GBPUSD",
+  "AUDUSD",
+  "NZDUSD",
+  "USDCAD",
+  "USDCHF",
+  "EURJPY",
+  "GBPJPY",
+  "CADJPY",
+  "NZDJPY",
+  "EURZAR",
+  "USDZAR",
+  "USDNOK",
+  "EURILS",
+  "CHFNOK",
+  "AUDCHF"
+ ],
+ "families": [
+  "session_range_breakout",
+  "carry",
+  "overnight_gap_decay",
+  "formula",
+  "clock_transition",
+  "anti_breakout",
+  "momentum",
+  "discovered"
+ ],
+ "timeframes": [
+  "",
+  "M5",
+  "M15",
+  "H1"
+ ],
+ "venues": [
+  "fusion",
+  "e8",
+  "ftmo"
+ ],
+ "max_rows": 4000,
+ "execs": [
+  "",
+  "scalp_market"
+ ]
+}
