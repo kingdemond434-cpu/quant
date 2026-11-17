@@ -391,7 +391,7 @@ def test_an_index_persisted_before_the_future_bound_rebuilds(tmp_path: Path) -> 
     good.catch_up()
     doc = dict(good._state(), schema=2, buckets={}, max_ts=now.timestamp() + 40 * 86400.0)
     state.write_bytes(pickle.dumps(doc))
-    assert gli.SCHEMA == 3
+    assert gli.SCHEMA >= 3       # 4 since the image merge carried ruled_cells in
     again = LedgerIndex.load(path, state)
     assert again.offset == 0 and again.catch_up()["consumed_bytes"] == path.stat().st_size
     assert again.window_rows(now.timestamp() - 86400.0, now.timestamp())[2] == 31
@@ -664,7 +664,9 @@ def test_without_a_code_identity_the_bank_is_unchanged(monkeypatch) -> None:
     out = jc.update_unrunnable_bank({"c": _named("c")}, at=NOW.isoformat())
     assert out["build_failure_memo"]["status"] == "OFF"
     later = NOW + timedelta(days=jc.BUILD_FAILED_RETRY_DAYS + 1)
-    assert jc.update_unrunnable_bank({}, at=later.isoformat())["readmitted_on_bar_growth"] == 1
+    # The blind weekly timer still re-admits it (LIVE counts it by cause: `retry_days`).
+    assert jc.update_unrunnable_bank({}, at=later.isoformat())["readmitted_by_cause"] == {
+        "retry_days": 1}
 
 
 # --------------------------------------------------------------- the resident judge's standing
