@@ -61,6 +61,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -213,7 +220,7 @@ def collect(notes: list[dict[str, str]], stats: dict[str, Any]) -> dict[str, Sle
         if str(row.get("status") or "") not in pa.FORWARD_STATUSES:
             skipped += 1
             continue
-        led = pa._read_json(SHADOW_DIR / f"ledger_{str(key).replace('.', '_')}.json", [])
+        led = _fl.read_rows(str(key), [SHADOW_DIR])[0] or []  # its own file, never a frozen one
         out[str(key)] = Sleeve(
             str(key), "forward", str(key).split(".")[0], str(row.get("status")),
             [t for r in (led if isinstance(led, list) else [])
@@ -256,7 +263,7 @@ def collect(notes: list[dict[str, str]], stats: dict[str, Any]) -> dict[str, Sle
     for sleeve in out.values():
         if sleeve.trades:
             continue
-        led = pa._read_json(SHADOW_DIR / f"ledger_{sleeve.name}.json", [])
+        led = _fl.read_rows(str(sleeve.name), [SHADOW_DIR])[0] or []
         rows_f = [t for r in (led if isinstance(led, list) else [])
                   if isinstance(r, dict) and str(r.get("phase") or "") == "forward"
                   and (t := _trade_of(r)) is not None]
