@@ -20,8 +20,8 @@ Pinned here:
      that record is the only evidence the next session gets. It is how this defect was found.
   3. A populated pass writes normally, and the guard can never become a reason not to refresh.
   4. The write is ATOMIC, so a crash mid-write cannot truncate an axis by the slower route.
-  5. The FRED fetch carries its own allowlisted client token, scoped to FRED so the three axes
-     that were working on the shared one keep working.
+  5. The FRED axis is refused on terms (governance FRED ruling 2026-11-13): it opens no socket,
+     and `--apply` never overwrites the held axis with its refusal record.
 """
 from __future__ import annotations
 
@@ -132,27 +132,28 @@ def test_run_all_reports_the_refusals_it_made(tmp_path: Path, monkeypatch: pytes
     assert json.loads((tmp_path / "fred.json").read_text(encoding="utf-8"))["n_series"] == 7
 
 
-def test_the_fred_token_is_scoped_and_honest() -> None:
-    """MEASURED on the box: the publisher's edge accepts urllib's own `Python-urllib` token (HTTP
-    200) and tarpits an unrecognised one. The first token is the client that actually sends the
-    request -- never another client's name to slip a filter (audit of #138, MF2). The desk's own
-    identity stays as the second token, and the shared `UA` is untouched because BIS, COT and ECB
-    work on it."""
+def test_the_fred_axis_is_refused_on_terms_and_opens_no_socket(monkeypatch, tmp_path) -> None:
+    """Governance FRED ruling 2026-11-13 (Audit thread 2026-11-14): FRED is terms-refused for
+    every automated fetch, so ingest_fred opens no socket, names every series as refused, carries
+    its missed-growth line, and `--apply` never overwrites the held axis with the refusal."""
     import urllib.request
 
     from research import axis_ingest as ai
 
-    first = ai.FRED_UA.split()[0]
-    assert first == f"Python-urllib/{urllib.request.__version__}", first
-    assert "curl" not in ai.FRED_UA.lower(), "never impersonate another client to pass a filter"
-    assert "quant-desk-axis-ingest" in ai.FRED_UA, (
-        "the allowlisted token is PREFIXED, never substituted -- the desk still identifies itself")
-    assert ai.UA == "quant-desk-axis-ingest/1.0 (research)", (
-        "the shared token must not change: three axes were ingesting 85.9 MB, 1.1 MB and 786 KB "
-        "on it, and a global change would risk them to repair a fourth")
+    def _no_socket(*_a, **_k):
+        raise AssertionError("ingest_fred opened a socket to a terms-refused host")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _no_socket)
+    doc = ai.ingest_fred()
+    assert doc["n_series"] == 0 and doc["blocked_on_terms"].startswith("BLOCKED_ON_TERMS")
+    assert set(doc["failed"]) == set(ai.FRED_SERIES)
+    assert doc["missed_growth"]["verdict"] == "a gap, not a zero"
     src = (_DESK / "research" / "axis_ingest.py").read_text(encoding="utf-8")
-    fred_call = src.split("def ingest_fred", 1)[1]
-    assert 'headers={"User-Agent": FRED_UA}' in fred_call, (
-        "ingest_fred must send the scoped token, not the shared one")
-    assert 'headers={"User-Agent": UA}' in src.split("def ingest_fred", 1)[0], (
-        "the other ingesters must still send the shared token")
+    assert "fredgraph.csv?id=" not in src and "FRED_UA" not in src
+    held = tmp_path / "fred.json"
+    held.write_text('{"n_series": 7}', encoding="utf-8")
+    monkeypatch.setattr(ai, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(ai, "REPORT", tmp_path / "report.json")
+    assert ai.main(["--axis", "fred", "--apply"]) == 0
+    assert held.read_text(encoding="utf-8") == '{"n_series": 7}'
+

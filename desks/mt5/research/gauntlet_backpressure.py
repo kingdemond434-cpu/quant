@@ -141,6 +141,15 @@ def _at(value: Any) -> datetime | None:
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
+def _age_h(value: Any, now: datetime) -> float | None:
+    """Hours from `value` to `now`, or None when `value` cannot be read as a time.
+
+    None is UNMEASURED and never 0.0: a block whose vintage cannot be parsed is not fresh.
+    """
+    t = _at(value)
+    return None if t is None else round((now - t).total_seconds() / 3600.0, 2)
+
+
 def _read_json(path: Path, note: dict[str, str]) -> Any:
     """Parse `path`, or record exactly why it produced nothing. Never raises."""
     try:
@@ -1070,14 +1079,39 @@ def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None,
     full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
     doc.update({
         "at": at.isoformat(timespec="seconds"), "mode": "core", "full_at": full_at,
+        # THE AGE OF THE CARRIED WINDOW, AS A NUMBER, BECAUSE "check `full_at`" WAS NOT ENOUGH
+        # (measured 2026-11-14). The note below has always said a reader needing a fresh window
+        # must check `full_at` and never `at`, and it is right -- but it left the reader to do the
+        # subtraction, and nothing in the report said how big the answer was. Measured on the box
+        # this pass: `at` 2026-11-14T12:52:39Z, `mode` core, `full_at` 2026-11-09T15:34:33Z. So
+        # `windows["24h"]` -- which is where CRO duty D34's named metrics (judged_per_day against
+        # created_per_day) come from -- was a correct 24-hour rate measured 117.3 HOURS (four days
+        # and 21 hours) earlier, republished under a timestamp an hour old. Its intake per_hour of
+        # 1236.583 was read as current while the judge's docket had in fact taken no new cell for
+        # 30 hours, which `JUDGING_BURNDOWN.json` measured correctly at 0.0/h over 24h. Two
+        # judging meters appearing to disagree, when one of them was simply old and said so in a
+        # field nobody divides.
+        #
+        # WHY THE CORE IS THE RIGHT PLACE TO PUBLISH IT. The full build is what goes missing: the
+        # leg runs it with `--budget-s 480` under a 600 s cap, the core republish deliberately
+        # goes FIRST so a full build killed by that budget still refreshes the two blocks the
+        # judge's controllers read -- and a full build that dies then writes nothing at all, so it
+        # cannot report its own failure. The core always runs, so the core is the only pass that
+        # can state the carried window's age. This file's own history records the same class
+        # already ("which is how GAUNTLET_BACKPRESSURE went a week stale"); the 480/600 budget
+        # pair was that fix, and `full_at` five days behind is the evidence it is still short.
+        # A null `full_at` reads UNMEASURED, never zero.
+        "full_age_h": (None if not full_at else _age_h(full_at, at)),
         "capacity": cap,
         "core": {"at": at.isoformat(timespec="seconds"), "inputs": dict(note),
                  "testing_24h": testing,
                  "re_measured": ["capacity", "core.testing_24h"],
                  "carried_from_full_at": full_at,
+                 "carried_age_h": (None if not full_at else _age_h(full_at, at)),
                  "why": ("every block other than `capacity` and `core.testing_24h` is the last "
                          "FULL build's, stamped `full_at`, and unchanged; a reader that needs "
-                         "a fresh window must check `full_at`, never `at`")},
+                         "a fresh window must check `full_at`, never `at` -- and `full_age_h` "
+                         "is that gap in hours, so it never has to be derived to be noticed")},
     })
     return doc
 
@@ -1198,6 +1232,7 @@ def main(argv: list[str] | None = None) -> int:
     doc = build(budget_s=a.budget_s, started=started)
     doc["mode"] = "full"
     doc["full_at"] = doc["at"]
+    doc["full_age_h"] = 0.0          # this build IS the vintage; see `full_age_h` in build_core
     w = doc["windows"][WINDOWS[0][0]]
     print(f"gauntlet backpressure {doc['at']}")
     for name, _ in WINDOWS:
