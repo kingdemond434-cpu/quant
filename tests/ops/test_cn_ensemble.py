@@ -14,6 +14,19 @@ NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
 OR, HC, AR, YJ = cn.PROVIDERS
 
 
+@pytest.fixture(autouse=True)
+def _relays_ruled_allowed(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    """Most tests exercise relay plumbing, so they assume Governance has ruled ALLOWED."""
+    if "shipped_rulings" not in request.node.name:
+        monkeypatch.setattr(cn, "relay_ruling", lambda name: "ALLOWED")
+
+
+def test_shipped_rulings_keep_every_relay_dark_with_a_key() -> None:
+    for p in (HC, AR, YJ):
+        s = cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"])
+        assert not s.lit and "Governance" in s.why and s.key == ""
+
+
 def _no_list(base: str, key: str) -> list[str]:
     raise RuntimeError("offline")
 

@@ -146,11 +146,37 @@ class Seat:
     why: str = ""
 
 
+RULINGS = "ops/relay_terms_rulings.json"
+
+
+def relay_ruling(name: str) -> str:
+    """Governance's terms ruling for a free-credit relay: ALLOWED, or why not. Fail closed."""
+    try:
+        doc = json.loads((_ROOT / RULINGS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return "UNREADABLE"
+    row = doc.get(name) if isinstance(doc, dict) else None
+    return str(row.get("ruling") or "PENDING") if isinstance(row, dict) else "ABSENT"
+
+
+def _read(name: str, env: Mapping[str, str] | None) -> str:
+    """A key through `env_keys.read_key` (registry, then process env; catalog refusals apply).
+    An explicit `env` mapping (tests, dry runs) is read as given."""
+    if env is not None:
+        return str(env.get(name, "") or "").strip()
+    from libs.ops.env_keys import read_key
+    return str(read_key(name) or "").strip()
+
+
 def seat_for(p: Provider, env: Mapping[str, str] | None = None,
              list_models: Callable[[str, str], list[str]] | None = None) -> Seat:
     """The provider's seat, or a DARK seat saying why. Never raises, never prints a key."""
     e = os.environ if env is None else env
-    key = str(e.get(p.key_env, "") or "").strip()
+    if p.relay and relay_ruling(p.name) != "ALLOWED":
+        return Seat(p, p.default_base, "",
+                    why=f"DARK: awaiting Governance terms ruling ({RULINGS} says "
+                        f"{relay_ruling(p.name)})")
+    key = _read(p.key_env, env)
     if not key and p.name == "openrouter":
         try:
             from libs.ops.deepseek_cycle import resolve_key
