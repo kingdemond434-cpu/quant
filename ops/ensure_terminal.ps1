@@ -167,9 +167,16 @@ if ($local.Count -eq 0) {
 #     data/GATEWAY_PAUSED is set -- OR the hang has lasted >= $HungUnmanagedMinutes minutes, when
 #     a terminal that answers nothing is already managing nothing (positions and their stops live
 #     on the broker's server; a restart closes none of them);
-#   * no restart in the last $RestartCooldownMinutes minutes (a terminal that hangs again on start
-#     is a fault for a person, not a loop).
+#   * no restart in the last $RestartCooldownMinutes minutes, and fewer than $MaxRestartsPerDay
+#     restarts this UTC day (a terminal that hangs again on start is a fault for a person, not a
+#     loop: the cap journals RESTART_CAP and holds);
+#   * the failures are the probe's OWN "terminal did not answer" code (rc 2, initialize failed).
+#     rc 99 (python or the probe missing) and rc 1 (an import error, a traceback, account_info
+#     None) say the PROBE is broken, not the terminal; counting them would end a working desk
+#     terminal every hour after a bad push (Auditor MF2, 2026-11-17).
 $HungProbes = 3
+$HangCode = 2
+$MaxRestartsPerDay = 3
 $HungMinutes = 15
 $HungUnmanagedMinutes = 60
 $RestartCooldownMinutes = 60
@@ -195,16 +202,27 @@ function Read-Hung {
 # THE COOLDOWN OUTLIVES A PASSING PROBE. The file is never deleted: a pass resets the failure
 # count but keeps last_restart_at, or a terminal that answers once and hangs again would be
 # restarted every three probes forever (Auditor MF1, 2026-11-17).
-function Write-HungCleared($lastRestartAt) {
-    $cleared = [ordered]@{ first_fail_at = $null; count = 0; last_restart_at = $lastRestartAt }
+function Write-HungCleared($kept) {
+    $cleared = [ordered]@{ first_fail_at = $null; count = 0;
+                           last_restart_at = $(if ($kept) { $kept.last_restart_at } else { $null });
+                           restart_day = $(if ($kept) { $kept.restart_day } else { $null });
+                           restarts_on_day = $(if ($kept -and $kept.restarts_on_day) { [int]$kept.restarts_on_day } else { 0 }) }
     try { $cleared | ConvertTo-Json -Compress | Set-Content -LiteralPath $hungPath -Encoding UTF8 } catch { }
 }
 
 $probeCode = Invoke-ReadOnlyProbe
-if ($probeCode -ne 0) {
+if ($probeCode -ne 0 -and $probeCode -ne $HangCode) {
+    # The probe itself is broken: never counted toward a restart, and the count is left as it was.
+    Add-Content -LiteralPath $log -Value "$stamp probe rc=$probeCode is not the hang code; terminal restart count untouched"
+    exit 2
+}
+if ($probeCode -eq $HangCode) {
     $now = (Get-Date).ToUniversalTime()
     $prev = Read-Hung
     $first = $now; $count = 1; $lastRestart = $null
+    # not ISO: PS7 ConvertFrom-Json would read an ISO date back as a DateTime
+    $today = $now.ToString('yyyyMMdd'); $restartsToday = 0
+    if ($prev -and $prev.restart_day -eq $today -and $prev.restarts_on_day) { $restartsToday = [int]$prev.restarts_on_day }
     if ($prev) {
         try { $first = [datetime]::Parse($prev.first_fail_at).ToUniversalTime() } catch { $first = $now }
         $count = [int]$prev.count + 1
@@ -214,7 +232,8 @@ if ($probeCode -ne 0) {
     }
     $hungMin = ($now - $first).TotalMinutes
     $state = [ordered]@{ first_fail_at = $first.ToString('o'); count = $count;
-                         last_restart_at = $(if ($lastRestart) { $lastRestart.ToString('o') } else { $null }) }
+                         last_restart_at = $(if ($lastRestart) { $lastRestart.ToString('o') } else { $null });
+                         restart_day = $today; restarts_on_day = $restartsToday }
     $positions = $null
     try {
         $acct = Get-Content -LiteralPath (Join-Path $root 'desks\mt5\data\account_state.json') -Raw | ConvertFrom-Json
@@ -223,7 +242,8 @@ if ($probeCode -ne 0) {
     $paused = Test-Path -LiteralPath (Join-Path $root 'desks\mt5\data\GATEWAY_PAUSED')
     $safe = ($positions -eq 0) -or $paused -or ($hungMin -ge $HungUnmanagedMinutes)
     $cooled = (-not $lastRestart) -or (($now - $lastRestart).TotalMinutes -ge $RestartCooldownMinutes)
-    if ($count -ge $HungProbes -and $hungMin -ge $HungMinutes -and $safe -and $cooled -and $local.Count -eq 1) {
+    $underCap = $restartsToday -lt $MaxRestartsPerDay
+    if ($count -ge $HungProbes -and $hungMin -ge $HungMinutes -and $safe -and $cooled -and $underCap -and $local.Count -eq 1) {
         $old = $local[0].Id
         $stopped = $true
         try { Stop-Process -Id $old -Force -ErrorAction Stop } catch { $stopped = $false }
@@ -237,14 +257,22 @@ if ($probeCode -ne 0) {
                        hung_minutes = [math]::Round($hungMin); open_positions = $positions;
                        paused = $paused; outcome = $verdict }
         $state.last_restart_at = $now.ToString('o')
+        $state.restarts_on_day = $restartsToday + 1
         if ($after -eq 0) {
-            Write-HungCleared $state.last_restart_at
+            Write-HungCleared ([pscustomobject]$state)
             $local = @(Get-FusionTerminals | Where-Object { $_.SessionId -eq $session })
             $newPid = if ($local.Count -ge 1) { $local[0].Id } else { 0 }
             Write-BootHealth $newPid " (after a hung-terminal restart)"
             exit 0
         }
         $state.first_fail_at = $now.ToString('o'); $state.count = 0
+    } elseif ($count -ge $HungProbes -and -not $underCap) {
+        Add-Content -LiteralPath $log -Value ("$stamp JOURNAL RESTART_CAP: $restartsToday terminal restarts today; " +
+            "holding until the UTC day turns (a terminal that keeps hanging is a fault for a person)")
+        if ($count -eq $HungProbes) {             # once per held episode, not every pass
+            Write-Event @{ kind = 'TERMINAL_HUNG_RESTARTED'; outcome = 'RESTART_CAP held'; failed_probes = $count;
+                           restarts_today = $restartsToday }
+        }
     } elseif ($count -ge $HungProbes) {
         Add-Content -LiteralPath $log -Value ("$stamp terminal unanswering for $count probes over $([math]::Round($hungMin)) min; " +
             "restart held (open_positions=$positions paused=$paused cooled=$cooled local=$($local.Count))")
@@ -252,7 +280,6 @@ if ($probeCode -ne 0) {
     try { $state | ConvertTo-Json -Compress | Set-Content -LiteralPath $hungPath -Encoding UTF8 } catch { }
     exit 2
 }
-$kept = Read-Hung
-Write-HungCleared $(if ($kept) { $kept.last_restart_at } else { $null })
+Write-HungCleared (Read-Hung)
 Write-BootHealth $local[0].Id ""
 exit 0

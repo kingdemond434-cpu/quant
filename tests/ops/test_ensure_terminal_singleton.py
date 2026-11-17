@@ -153,7 +153,7 @@ def test_terminal_boot_refuses_session_zero_and_probes_ipc_without_orders() -> N
     assert "refusing a headless launch" in source
     assert "if ($terminals.Count -gt 0 -and $local.Count -eq 0)" in source
     assert "probe_terminal.py" in source
-    assert "$probeCode -ne 0" in source
+    assert "$probeCode -ne 0" in source and "$probeCode -eq $HangCode" in source
     assert "allow_send=1" not in source
 
 
@@ -180,7 +180,7 @@ def test_a_hung_terminal_is_restarted_only_under_its_conditions() -> None:
     gate = source.rindex("if ($count -ge $HungProbes", 0, kill)
     cond = source[gate:source.index("{", gate)]
     for term in ("$count -ge $HungProbes", "$hungMin -ge $HungMinutes", "$safe", "$cooled",
-                 "$local.Count -eq 1"):
+                 "$underCap", "$local.Count -eq 1"):
         assert term in cond, term
     # safe = flat book, paused gateway, or a hang long enough that nothing is being managed
     assert ("$safe = ($positions -eq 0) -or $paused -or ($hungMin -ge $HungUnmanagedMinutes)"
@@ -188,7 +188,7 @@ def test_a_hung_terminal_is_restarted_only_under_its_conditions() -> None:
     # an unreadable or missing position count is never read as flat
     assert "if ($null -ne $acct.open_positions)" in source
     assert "$HungProbes = 3" in source and "$HungMinutes = 15" in source
-    assert "$RestartCooldownMinutes = 60" in source
+    assert "$RestartCooldownMinutes = 60" in source and "$MaxRestartsPerDay = 3" in source
     # only the one interactive terminal the census already holds, after the Session 0 exit
     assert source.index("if ($session -eq 0)") < kill
     assert "$old = $local[0].Id" in source[gate:kill]
@@ -204,13 +204,40 @@ def test_a_passing_probe_keeps_the_restart_cooldown() -> None:
     last_restart_at, or a terminal that answers once and hangs again restarts every 3 probes."""
     source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
     assert "Remove-Item -LiteralPath $hungPath" not in source
-    assert "first_fail_at = $null; count = 0; last_restart_at = $lastRestartAt" in source
+    assert "first_fail_at = $null; count = 0;" in source
+    cleared = source[source.index("function Write-HungCleared"):]
+    cleared = cleared[:cleared.index("\n}\n")]
+    assert "$kept.last_restart_at" in cleared and "$kept.restarts_on_day" in cleared
     restart_pass = source[source.index("if ($after -eq 0)"):]
-    assert restart_pass.index("Write-HungCleared $state.last_restart_at") < restart_pass.index(
+    assert restart_pass.index("Write-HungCleared ([pscustomobject]$state)") < restart_pass.index(
         "Write-BootHealth")
-    # the restart stamps last_restart_at before that write
-    assert source.index("$state.last_restart_at = $now.ToString('o')") < source.index(
-        "Write-HungCleared $state.last_restart_at")
-    tail = source[source.rindex("$kept = Read-Hung"):]
-    assert "Write-HungCleared $(if ($kept) { $kept.last_restart_at } else { $null })" in tail
-    assert tail.index("Write-HungCleared") < tail.index("Write-BootHealth")
+    # the restart stamps last_restart_at and the day's count before that write
+    write = source.index("Write-HungCleared ([pscustomobject]$state)")
+    assert source.index("$state.last_restart_at = $now.ToString('o')") < write
+    assert source.index("$state.restarts_on_day = $restartsToday + 1") < write
+    tail = source[source.rindex("Write-HungCleared (Read-Hung)"):]
+    assert "Write-BootHealth" in tail
+
+
+def test_only_the_hang_code_counts_toward_a_restart() -> None:
+    """Auditor MF2 (2026-11-17): rc 99 (no python / no probe) and rc 1 (import error,
+    traceback, account_info None) mean the PROBE is broken; they exit before the failure count
+    is read or written, so they can never reach Stop-Process."""
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "$HangCode = 2" in source
+    probe = (ROOT / "desks" / "mt5" / "research" / "probe_terminal.py").read_text(encoding="utf-8")
+    assert "if not ok:\n    sys.exit(2)" in probe
+    broken = source.index("if ($probeCode -ne 0 -and $probeCode -ne $HangCode) {")
+    hang = source.index("if ($probeCode -eq $HangCode) {")
+    assert broken < hang < source.index("Stop-Process -Id $old")
+    branch = source[broken:hang]
+    assert "exit 2" in branch
+    for forbidden in ("Read-Hung", "Set-Content", "$hungPath", "Stop-Process", "$count"):
+        assert forbidden not in branch, forbidden
+
+
+def test_restarts_are_capped_per_day_and_the_cap_is_journalled() -> None:
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "$underCap = $restartsToday -lt $MaxRestartsPerDay" in source
+    assert "$today = $now.ToString('yyyyMMdd')" in source
+    assert "JOURNAL RESTART_CAP" in source and "'RESTART_CAP held'" in source
