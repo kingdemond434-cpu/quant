@@ -566,6 +566,33 @@ def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> 
     return True, f"approved by zuck at {at}"
 
 
+def approval_covers(
+    found: list[dict[str, str]],
+    head: str,
+    same_change: Callable[[str], bool],
+    at: str | None,
+    stands: bool = False,
+) -> tuple[bool, str]:
+    """Does zuck's approval cover the PR's latest CLEAR (`found[-1]`)? First as `approved` reads
+    it. Failing that, it still covers when he approved an EARLIER CLEAR of this same change: a
+    CLEAR typed before his approval whose sha is the head, or carries to it byte for byte
+    (`same_change`, the patch-id `cleared` uses), with no HOLD after it. His approval names a
+    change, not a comment time: a re-CLEAR of a clean LIVE merge-in of a head he approved voided
+    it on a NEVER-STANDING PR (#1196, 2026-11-17 15:50Z). A HOLD after that CLEAR, or any other
+    change, still needs a CLEAR he approves."""
+    ok, why = approved(found[-1], at, stands)
+    if ok or at is None:
+        return ok, why
+    for v in reversed(found[:-1]):
+        if v["verdict"] != "CLEAR":
+            break  # a HOLD after it: an earlier approval no longer speaks for this change
+        if v["at"] < at and (v["sha"] == head or same_change(v["sha"])):
+            return True, (
+                f"approved by zuck at {at}: he approved CLEAR {v['sha'][:9]}, the same change"
+            )
+    return ok, why
+
+
 def cleared(
     found: list[dict[str, str]], head: str, same_change: Callable[[str], bool]
 ) -> tuple[dict[str, str] | None, str]:
@@ -778,7 +805,13 @@ REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
 #: and counts the notice as sent only on exit 0 (scripts/send_alert.py: a channel delivered it).
 #: Unset, no notice can go out, so no window ever starts and nothing merges by the registry.
 REGISTRY_NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
-REGISTRY_HOLD_H = 24.0
+#: zuck 2026-11-13 12:14Z ("Nothing should be protected ... everything done as fast as possible"):
+#: no veto wait. A delivered notice merges on the same sweep; every other condition still binds.
+REGISTRY_HOLD_H = 0.0
+#: Audit HOLD on #1088 (MF1): a PR touching a ROOT_POLICY root_files / enforced_root_files path
+#: (this gate, the authority, trusted-eval, the publisher, the merger, workflow_gate) keeps the
+#: 24 h veto on the registry path, so the next edit to the release machinery is never same-sweep.
+ROOT_REGISTRY_HOLD_H = 24.0
 #: A row dated this far past the gate's clock is refused (clock skew allowance).
 REGISTRY_SKEW_S = 300.0
 #: The marker in a registry merge's commit title (auto_revert() looks for it).
@@ -801,18 +834,50 @@ def registry_rows(path: str | None) -> tuple[list[dict[str, Any]], str]:
     return rows, ""
 
 
-def notice_title(pr: int, head: str) -> str:
-    return f"PR #{pr} {head[:9]} auto-merges from the box in {REGISTRY_HOLD_H:.0f} h unless vetoed"
+def touches_root(files: list[Mapping[str, Any]]) -> bool:
+    """True when any changed path (or a rename's old path) matches the gate's OWN copy of
+    ROOT_POLICY.json root_files or enforced_root_files. Fails closed: an unreadable policy or
+    an empty file list counts as ROOT, so the longer window applies."""
+    try:
+        policy = json.loads((AUTHORITY_DIR / "ROOT_POLICY.json").read_text(encoding="utf-8"))
+        pats = [*policy["root_files"], *(policy.get("enforced_root_files") or ())]
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    if not files:
+        return True
+    for f in files:
+        for n in (f.get("filename"), f.get("previous_filename")):
+            if n and any(fnmatch.fnmatchcase(str(n).lower(), p.lower()) for p in pats):
+                return True
+    return False
+
+
+def registry_hold_h(root: bool) -> float:
+    """The registry veto window for a PR: ROOT_REGISTRY_HOLD_H when it touches ROOT."""
+    return max(REGISTRY_HOLD_H, ROOT_REGISTRY_HOLD_H) if root else REGISTRY_HOLD_H
+
+
+def notice_title(pr: int, head: str, hold_h: float | None = None) -> str:
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
+    if hold <= 0:
+        return f"PR #{pr} {head[:9]} auto-merges from the box now (Auditor CLEAR, all checks green)"
+    return f"PR #{pr} {head[:9]} auto-merges from the box in {hold:.0f} h unless vetoed"
 
 
 def registry_window(
-    seen_path: Path, pr: int, head: str, now: datetime, notify: Callable[[str, str], bool]
+    seen_path: Path,
+    pr: int,
+    head: str,
+    now: datetime,
+    notify: Callable[[str, str], bool],
+    hold_h: float | None = None,
 ) -> tuple[datetime | None, str]:
     """(when the veto window for (pr, head) started, or None; why). The start is the gate's own
     record of the moment its notice was DELIVERED, kept in `seen_path` beside the registry. The
     first time a head is seen the notice is sent; the window starts only if it went out, and a
     failed send is tried again by the next sweep. An unreadable record, or one that cannot be
     written, starts nothing."""
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
     key = f"{pr}:{head}"
     try:
         seen = json.loads(seen_path.read_text(encoding="utf-8")) if seen_path.exists() else {}
@@ -829,12 +894,12 @@ def registry_window(
             return None, "the veto-window record has a bad time"
         return at, ""
     body = (
-        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {REGISTRY_HOLD_H:.0f} h "
+        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {hold:.0f} h "
         "with every check green. To stop it: an AUDIT HOLD on the PR, a HOLD row, DEACTIVATE "
         "merges, or a new push."
     )
     try:
-        sent = bool(notify(notice_title(pr, head), body))
+        sent = bool(notify(notice_title(pr, head, hold), body))
     except Exception as exc:
         return None, f"the veto notice failed ({type(exc).__name__}); the next sweep retries"
     if not sent:
@@ -846,7 +911,9 @@ def registry_window(
         os.replace(tmp, seen_path)
     except OSError as exc:
         return None, f"the veto-window record could not be written ({type(exc).__name__})"
-    return None, f"veto notice sent for {head[:9]}: the {REGISTRY_HOLD_H:.0f} h window starts now"
+    if hold <= 0:
+        return now, ""  # no wait: the delivered notice is the only step, so this sweep merges
+    return None, f"veto notice sent for {head[:9]}: the {hold:.0f} h window starts now"
 
 
 def run_notify(title: str, body: str) -> bool:
@@ -916,10 +983,12 @@ def registry_clear(
     head: str,
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime | None = None,
+    hold_h: float | None = None,
 ) -> tuple[dict[str, str] | None, str]:
     """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
     is called only once the row itself qualifies, and gives the gate's own window start."""
     now = now or datetime.now(UTC)
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
     mine = [r for r in rows if r.get("pr") == pr]
     if not mine:
         return None, "no registry verdict"
@@ -939,10 +1008,8 @@ def registry_clear(
     if start is None:
         return None, wwhy
     age_h = (now - start).total_seconds() / 3600.0
-    if age_h < REGISTRY_HOLD_H:
-        return None, (
-            f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
-        )
+    if age_h < hold:
+        return None, f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {hold:.0f} h"
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
     ruled = {job: sorted(ids) for job, ids in false_fails(last).items()}
     got = {**got, "by": "registry", "false_fail": json.dumps(ruled, sort_keys=True)}
@@ -1492,9 +1559,13 @@ def run(
         if (
             ours
             and boards
-            and approved(last, approval_at(boards[-1]), standing(level, boards[-1], names, te, ce))[
-                0
-            ]
+            and approval_covers(
+                found,
+                head,
+                same_change,
+                approval_at(boards[-1]),
+                standing(level, boards[-1], names, te, ce),
+            )[0]
         ):
             return "zuck approved its CLEAR of this head"
         return None
@@ -1584,7 +1655,9 @@ def run(
                 "--slurp",
             )
             board = _flat(ap)
-            ok, awhy = approved(clear, approval_at(board), standing(level, board, names, te, ce))
+            ok, awhy = approval_covers(
+                found, head, same_change, approval_at(board), standing(level, board, names, te, ce)
+            )
             if ok and awhy.startswith(STANDING_WHY):
                 # it rests on the standing approval, not a comment newer than the CLEAR: the
                 # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
@@ -1655,8 +1728,14 @@ def run(
             return None, f"{mwhy}; registry: {fwhy}"
         now = datetime.now(UTC)
         seen = Path(path + ".window.json")
+        hold = registry_hold_h(touches_root(files))
         return registry_clear(
-            rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
+            rows,
+            pr,
+            head,
+            lambda: registry_window(seen, pr, head, now, run_notify, hold),
+            now,
+            hold,
         )
 
     clear, why = verdict_now()
