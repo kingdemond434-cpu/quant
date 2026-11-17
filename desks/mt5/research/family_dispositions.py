@@ -7,8 +7,8 @@ family through exactly two lookups -- `mt5desk.families.family_<name>` and
 cell is built, refused with "no implementation of family", parked as `build_failed`, re-admitted
 on the retry clock and refused again. Nothing about that is visible as a reason.
 
-Each name gets exactly ONE of three dispositions here, decided by reading the code that minted it
-and the code that would have to judge it:
+Each name gets exactly ONE disposition here (ALIAS, NEVER_JUDGED or BUILT), decided by reading
+the code that minted it and the code that would have to judge it:
 
   ALIAS          the name is a SPELLING of a mechanism the judge already builds, with the same
                  rule, the same chart and the same direction. A fresh descendant is minted under
@@ -21,10 +21,13 @@ and the code that would have to judge it:
                  reader reports it as UNMEASURED with its cause (L1.28a) instead of as backlog
                  that a judge owes, or as a cell that silently vanished.
 
-A name that would need a BUILDER is recorded as NEVER_JUDGED with the code
-`BUILDER_NEEDS_CLOSURE_EDIT` and the file the registration would have to go in: both registries
-are box entry-point import closure (`ops/money_closure.txt`), and a builder the judge cannot reach
-is not a builder.
+BUILT (2026-11-17, principal's yes): `fair_value_gap` (restored in `mt5desk/families.py`) and
+the two scalp twins `anti_donchian_breakout` / `anti_three_bar_momentum` (registered in
+`families_orthogonal.ORTHOGONAL_FAMILIES`, wrapping the scalp lane's own executable). They are
+ordinary families now and hold no family-level reason. A scalp-twin ROW that does not carry the
+whole recipe (`scalp_session`, `stop_atr`, `target_atr`, `max_hold`) is stamped
+`SCALP_RECIPE_MISSING` instead of having a session, stop or hold guessed for it: rows minted from
+forward-clock keys carry none of the four.
 
 WHAT IS DELIBERATELY NOT AN ALIAS, and why (each one measured, not assumed):
 
@@ -38,8 +41,7 @@ WHAT IS DELIBERATELY NOT AN ALIAS, and why (each one measured, not assumed):
       twin: neither `donchian_breakout` nor `three_bar_momentum` exists in either registry. Both
       anti-signals are `-signal` of the scalp lane's own `scalp_family_expansion._base_signals`,
       built bar-by-bar by `mt5desk.scalp_families.family_scalp` and judged by
-      `scripts/scalp_gauntlet.py`. The builder exists; registering it with the main judge is the
-      closure edit named below.
+      `scripts/scalp_gauntlet.py`; the main judge now reaches that same executable.
   ny_open@M15 -> opening_range. The forward clocks this name came from
       (`XAUUSD.ny_open@M15[#...]`, desks/mt5/data/sleeve_registry.json) are
       `session_range_breakout` with range 13->14 UTC on M15 -- the variant
@@ -69,17 +71,20 @@ ALIAS = "ALIAS"
 NEVER_JUDGED = "NEVER_JUDGED"
 
 #: The codes a never-judged family can carry. Each names who resolves it.
-BUILDER_NEEDS_CLOSURE_EDIT = "BUILDER_NEEDS_CLOSURE_EDIT"
 MECHANISM_LABEL_NOT_A_RULE = "MECHANISM_LABEL_NOT_A_RULE"
 CONDITIONER_NOT_A_SLEEVE = "CONDITIONER_NOT_A_SLEEVE"
 NO_SERIES_NO_PIT_CLOCK = "NO_SERIES_NO_PIT_CLOCK"
 NO_FAMILY_NAMED = "NO_FAMILY_NAMED"
 #: Stamped on an ORIGINAL row whose descendant carries the registered family.
 ALIASED_TO_REGISTERED_FAMILY = "ALIASED_TO_REGISTERED_FAMILY"
+#: Stamped on a ROW of a built scalp twin that lacks part of the lane's recipe.
+SCALP_RECIPE_MISSING = "SCALP_RECIPE_MISSING"
+BUILT = "BUILT"
 
 REASON_CODES: frozenset[str] = frozenset({
-    BUILDER_NEEDS_CLOSURE_EDIT, MECHANISM_LABEL_NOT_A_RULE, CONDITIONER_NOT_A_SLEEVE,
-    NO_SERIES_NO_PIT_CLOCK, NO_FAMILY_NAMED, ALIASED_TO_REGISTERED_FAMILY})
+    MECHANISM_LABEL_NOT_A_RULE, CONDITIONER_NOT_A_SLEEVE,
+    NO_SERIES_NO_PIT_CLOCK, NO_FAMILY_NAMED, ALIASED_TO_REGISTERED_FAMILY,
+    SCALP_RECIPE_MISSING})
 
 
 @dataclass(frozen=True)
@@ -116,44 +121,11 @@ ALIASES: dict[str, Alias] = {
              "cell; the registry's `direction: LONG` is the placeholder every sleeve carries")),
 }
 
-_SCALP_ROUTE = ("the scalp lane judges it: builder `mt5desk.scalp_families.family_scalp`, "
-                "gauntlet `scripts/scalp_gauntlet.py`. The main judge reaches it only once an "
-                "entry for it is registered in ORTHOGONAL_FAMILIES (box closure, principal-gated); "
-                "a registered entry still needs the recipe (session, stop_atr, target_atr, "
-                "max_hold) on the cell, which rows minted from forward-clock keys do not carry")
-
-
 def _label(code: str, why: str, route: str) -> NeverJudged:
     return NeverJudged(code=code, why=why, route=route)
 
 
 NEVER_JUDGED_FAMILIES: dict[str, NeverJudged] = {
-    "anti_donchian_breakout": NeverJudged(
-        code=BUILDER_NEEDS_CLOSURE_EDIT,
-        why=("fade of the scalp lane's 20-bar Donchian break (`-donchian_breakout` in "
-             "scalp_family_expansion._base_signals). No `donchian_breakout` exists in either "
-             "judge registry, so there is no main-lane twin to sign-flip"),
-        route=_SCALP_ROUTE,
-        closure_file="desks/mt5/mt5desk/families_orthogonal.py",
-        builder="mt5desk.scalp_families.family_scalp(df, family='anti_donchian_breakout', ...)"),
-    "anti_three_bar_momentum": NeverJudged(
-        code=BUILDER_NEEDS_CLOSURE_EDIT,
-        why=("fade of the scalp lane's three-bar 1.25-ATR burst (`-three_bar_momentum` in "
-             "scalp_family_expansion._base_signals). No `three_bar_momentum` exists in either "
-             "judge registry, so there is no main-lane twin to sign-flip"),
-        route=_SCALP_ROUTE,
-        closure_file="desks/mt5/mt5desk/families_orthogonal.py",
-        builder="mt5desk.scalp_families.family_scalp(df, family='anti_three_bar_momentum', ...)"),
-    "fair_value_gap": NeverJudged(
-        code=BUILDER_NEEDS_CLOSURE_EDIT,
-        why=("a distinct price-only rule whose builder was retired: three-bar gap, LIMIT entry "
-             "resting inside the gap for wait_bars, min_gap_atr, stop beyond the far edge, no "
-             "trend filter (family_fair_value_gap, 326166543). ict_fvg is NOT it: market entry "
-             "at the next open, 1.2-ATR stop, 8/34 EMA trend filter"),
-        route=("restore `family_fair_value_gap` (closed bars i-2..i, resting trigger from i+1: "
-               "causal) in the families module, principal-gated"),
-        closure_file="desks/mt5/mt5desk/families.py",
-        builder="family_fair_value_gap at commit 326166543"),
     "conditioning_model": _label(
         CONDITIONER_NOT_A_SLEEVE,
         "model_search / factor_model_coevolution enqueue a (representation, learner) cell with "
@@ -172,6 +144,35 @@ NEVER_JUDGED_FAMILIES: dict[str, NeverJudged] = {
         "rule to build and nothing to alias",
         "the producer that minted it names the family it meant"),
 }
+
+#: Built 2026-11-17 on the principal's yes: name -> (where the builder lives, what it is).
+BUILT_FAMILIES: dict[str, tuple[str, str]] = {
+    "fair_value_gap": (
+        "mt5desk.families.family_fair_value_gap",
+        "restored from 326166543: three-bar gap, LIMIT entry resting inside it for wait_bars, "
+        "min_gap_atr, stop beyond the far edge, no trend filter -- NOT ict_fvg"),
+    "anti_donchian_breakout": (
+        "mt5desk.families_orthogonal.ORTHOGONAL_FAMILIES['anti_donchian_breakout']",
+        "the scalp lane's -donchian_breakout via scalp_families.family_scalp; no main-lane twin"),
+    "anti_three_bar_momentum": (
+        "mt5desk.families_orthogonal.ORTHOGONAL_FAMILIES['anti_three_bar_momentum']",
+        "the scalp lane's -three_bar_momentum via scalp_families.family_scalp; no main-lane "
+        "twin"),
+}
+
+#: The scalp twins' recipe: every key the registered wrapper requires. `session` is NOT it --
+#: the judge pops `session` and applies the desk's hour window, a different rule.
+SCALP_TWINS: frozenset[str] = frozenset({"anti_donchian_breakout", "anti_three_bar_momentum"})
+SCALP_RECIPE: tuple[str, ...] = ("scalp_session", "stop_atr", "target_atr", "max_hold")
+
+
+def scalp_recipe_missing(row: dict[str, Any]) -> list[str]:
+    """The recipe keys a scalp-twin row lacks ([] for a complete row or any other family)."""
+    if str(row.get("family") or "") not in SCALP_TWINS:
+        return []
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    return [k for k in SCALP_RECIPE if params.get(k) in (None, "")]
+
 
 #: transformation_miners' MECHANISM CONTRACTS, which some producers write into `family`. A
 #: mechanism is one payer and several expressions (`axis_registry._FAMILY_GROUPS`), so a label
@@ -334,6 +335,13 @@ def stamp_never_judged(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in rows:
         if not isinstance(row, dict):
             continue
+        lacking = scalp_recipe_missing(row)
+        if lacking:
+            row["never_judged_reason"] = SCALP_RECIPE_MISSING
+            row["never_judged_missing"] = lacking
+            by_family[str(row.get("family"))] += 1
+            by_reason[SCALP_RECIPE_MISSING] += 1
+            continue
         d = disposition(row.get("family"))
         if d is None:
             continue
@@ -352,4 +360,9 @@ def stamp_never_judged(rows: list[dict[str, Any]]) -> dict[str, Any]:
 def table() -> dict[str, dict[str, Any]]:
     """Every family this module disposes of, for reports."""
     names = sorted({*ALIASES, *NEVER_JUDGED_FAMILIES})
-    return {n: d for n in names if (d := disposition(n)) is not None}
+    out = {n: d for n in names if (d := disposition(n)) is not None}
+    for name, (builder, why) in BUILT_FAMILIES.items():
+        out[name] = {"disposition": BUILT, "builder": builder, "why": why,
+                     **({"row_reason_when_recipe_missing": SCALP_RECIPE_MISSING,
+                         "recipe": list(SCALP_RECIPE)} if name in SCALP_TWINS else {})}
+    return out

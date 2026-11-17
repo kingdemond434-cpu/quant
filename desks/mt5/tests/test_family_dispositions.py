@@ -2,8 +2,9 @@
 
 Pins (a) the alias is an exact spelling of the registered family (signature, sleeve identity,
 causality of the built signals), (b) the anti_* names are the sign-flipped twins of the scalp
-lane's own signals and have no main-registry twin to alias, (c) every other name carries a
-named never_judged_reason, and the docket keeps every row.
+lane's own signals, have no main-registry twin to alias, and are BUILT through the registered
+wrapper (direction and causality pinned), (c) fair_value_gap is BUILT, causal and not ict_fvg,
+(d) every other name carries a named never_judged_reason, and the docket keeps every row.
 """
 from __future__ import annotations
 
@@ -66,30 +67,41 @@ def _sigs(signals) -> list[tuple]:
              round(float(s.target), 8)) for s in signals]
 
 
+BUILT = ("fair_value_gap", "anti_donchian_breakout", "anti_three_bar_momentum")
+RECIPE = {"scalp_session": "all", "stop_atr": 1.0, "target_atr": 1.5, "max_hold": 6}
+
+
 # ------------------------------------------------------------------ the table is whole and named
-def test_every_unbuilt_family_has_exactly_one_named_disposition() -> None:
+def test_every_unbuilt_family_has_exactly_one_disposition() -> None:
     table = fd.table()
     assert set(NEVER_BUILT) <= set(table)
     for fam in NEVER_BUILT:
         d = table[fam]
+        assert d["why"]
+        if fam in BUILT:
+            assert d["disposition"] == fd.BUILT and fd.disposition(fam) is None
+            continue
         assert d["disposition"] in (fd.ALIAS, fd.NEVER_JUDGED)
         assert d["never_judged_reason"] in fd.REASON_CODES
-        assert d["why"]
         assert not (fam in fd.ALIASES and fam in fd.NEVER_JUDGED_FAMILIES)
 
 
-def test_no_disposed_name_is_already_registered() -> None:
-    """A name the judge can build needs no disposition; one here would hide a working family."""
+def test_built_families_are_registered_and_the_rest_are_not() -> None:
+    """A BUILT name must resolve in the judge's two lookups; a never-judged or alias name must
+    not, or its reason would hide a working family."""
     reg = _registry()
-    assert not [f for f in fd.table() if f in reg]
+    assert all(f in reg for f in fd.BUILT_FAMILIES)
+    assert not [f for f, d in fd.table().items() if d["disposition"] != fd.BUILT and f in reg]
 
 
-def test_builder_needs_closure_names_a_real_closure_file() -> None:
-    closure = set((_ROOT / "ops" / "money_closure.txt").read_text("utf-8").split())
-    for fam, nj in fd.NEVER_JUDGED_FAMILIES.items():
-        if nj.code == fd.BUILDER_NEEDS_CLOSURE_EDIT:
-            assert nj.closure_file in closure, fam
-            assert (_ROOT / str(nj.closure_file)).exists()
+def test_scalp_recipe_is_exactly_what_the_registered_wrapper_requires() -> None:
+    reg = _registry()
+    for fam in fd.SCALP_TWINS:
+        params = inspect.signature(reg[fam]).parameters
+        required = {k for k, p in params.items()
+                    if k != "df" and p.default is inspect.Parameter.empty}
+        assert required == set(fd.SCALP_RECIPE)
+        assert "session" not in params          # the judge pops `session`: never the lane's
 
 
 def test_mechanism_labels_map_to_several_expressions_never_one_alias() -> None:
@@ -174,50 +186,123 @@ def test_anti_twins_are_exact_sign_flips_and_have_no_main_lane_twin() -> None:
         assert base not in _registry()           # nothing on the main lane to alias to
 
 
-def test_anti_builder_direction_is_opposite_to_its_base_bar_for_bar() -> None:
+@pytest.mark.parametrize("base", ["donchian_breakout", "three_bar_momentum"])
+def test_registered_anti_wrapper_is_minus_its_base_bar_for_bar(base: str) -> None:
+    """Direction: through the REGISTERED wrapper, anti fires on exactly the base's bars with the
+    opposite side, and its bracket is the base's mirrored about the same entry."""
     from mt5desk import scalp_families as sf
     bars = _bars(3000)
-    kw = {"session": "all", "stop_atr": 1.0, "target_atr": 1.5, "max_hold": 6}
-    for base in ("donchian_breakout", "three_bar_momentum"):
-        b = {pd.Timestamp(s.time): s.side for s in sf.family_scalp(bars, family=base, **kw)}
-        a = {pd.Timestamp(s.time): s.side for s in sf.family_scalp(bars, family=f"anti_{base}",
-                                                                  **kw)}
-        assert b and set(a) == set(b)
-        assert all(a[t] == -b[t] for t in a)
+    anti = _registry()[f"anti_{base}"](bars, **RECIPE)
+    b = {pd.Timestamp(s.time): s for s in sf.family_scalp(
+        bars, family=base, session="all", stop_atr=1.0, target_atr=1.5, max_hold=6)}
+    a = {pd.Timestamp(s.time): s for s in anti}
+    assert b and set(a) == set(b)
+    for t, s in a.items():
+        assert s.side == -b[t].side
+        assert s.ttl_bars == b[t].ttl_bars
+        entry_a = s.stop + s.side * 1.0 * ((s.target - s.stop) / (s.side * 2.5))
+        entry_b = b[t].stop + b[t].side * 1.0 * ((b[t].target - b[t].stop) / (b[t].side * 2.5))
+        assert entry_a == pytest.approx(entry_b)
 
 
-def test_anti_builder_is_causal() -> None:
+def test_registered_anti_wrapper_matches_the_scalp_lane_exactly() -> None:
     from mt5desk import scalp_families as sf
+    bars = _bars(3000)
+    for fam in fd.SCALP_TWINS:
+        got = _sigs(_registry()[fam](bars, **{**RECIPE, "scalp_session": "overlap"}))
+        want = _sigs(sf.family_scalp(bars, family=fam, session="overlap", stop_atr=1.0,
+                                     target_atr=1.5, max_hold=6))
+        assert got == want
+
+
+@pytest.mark.parametrize("fam", ["anti_donchian_breakout", "anti_three_bar_momentum"])
+def test_registered_anti_wrapper_is_causal(fam: str) -> None:
+    """A future bar never changes a past signal."""
+    fn = _registry()[fam]
     full = _bars(3000)
     cut = full.index[2000]
-    kw = {"family": "anti_donchian_breakout", "session": "all", "stop_atr": 1.0,
-          "target_atr": 1.5, "max_hold": 6}
     shocked = full.copy()
     shocked.loc[shocked.index > cut, ["open", "high", "low", "close"]] += 50.0
-    a = [s for s in _sigs(sf.family_scalp(full, **kw)) if s[0] < cut]
-    b = [s for s in _sigs(sf.family_scalp(shocked, **kw)) if s[0] < cut]
+    a = [s for s in _sigs(fn(full, **RECIPE)) if s[0] < cut]
+    b = [s for s in _sigs(fn(shocked, **RECIPE)) if s[0] < cut]
     assert a and a == b
 
 
+def test_registered_anti_wrapper_refuses_a_guessed_or_missing_recipe() -> None:
+    fn = _registry()["anti_donchian_breakout"]
+    with pytest.raises(ValueError):
+        fn(_bars(200), **{**RECIPE, "scalp_session": "lunch"})
+    with pytest.raises(TypeError):
+        fn(_bars(200), scalp_session="all")
+
+
+# ------------------------------------------------------------------ fair_value_gap, rebuilt
 def test_fair_value_gap_is_not_ict_fvg() -> None:
     """ict_fvg takes neither the gap filter nor the resting limit entry fair_value_gap needs."""
-    sig = set(inspect.signature(_registry()["ict_fvg"]).parameters)
+    reg = _registry()
+    sig = set(inspect.signature(reg["ict_fvg"]).parameters)
     assert not ({"min_gap_atr", "fill_depth", "wait_bars"} & sig)
     assert "ema_slow" in sig                                     # the trend filter it adds
-    assert fd.never_judged_reason("fair_value_gap") == fd.BUILDER_NEEDS_CLOSURE_EDIT
+    assert {"min_gap_atr", "fill_depth", "wait_bars"} <= set(
+        inspect.signature(reg["fair_value_gap"]).parameters)
+
+
+def test_fair_value_gap_direction_and_resting_entry_inside_the_gap() -> None:
+    fn = _registry()["fair_value_gap"]
+    bars = _bars(3000, freq="1h")
+    sigs = fn(bars, fill_depth=0.5)
+    assert {s.side for s in sigs} == {1, -1}
+    hi, lo = bars["high"].to_numpy(), bars["low"].to_numpy()
+    pos = {t: i for i, t in enumerate(bars.index)}
+    for s in sigs:
+        i = pos[pd.Timestamp(s.time)]
+        if s.side == 1:
+            assert lo[i] > hi[i - 2] and hi[i - 2] < s.trigger < lo[i] and s.stop < hi[i - 2]
+            assert s.target > s.trigger
+        else:
+            assert hi[i] < lo[i - 2] and hi[i] < s.trigger < lo[i - 2] and s.stop > lo[i - 2]
+            assert s.target < s.trigger
+        assert s.wait_bars == 12
+
+
+def test_fair_value_gap_is_causal() -> None:
+    """A future bar never changes a past signal."""
+    fn = _registry()["fair_value_gap"]
+    full = _bars(3000, freq="1h")
+    cut = full.index[2000]
+    shocked = full.copy()
+    shocked.loc[shocked.index > cut, ["open", "high", "low", "close"]] *= 1.05
+    a = [s for s in _sigs(fn(full)) if s[0] < cut]
+    b = [s for s in _sigs(fn(shocked)) if s[0] < cut]
+    trunc = [s for s in _sigs(fn(full.loc[:cut])) if s[0] < cut - pd.Timedelta("3h")]
+    assert a and a == b
+    assert trunc == [s for s in a if s[0] < cut - pd.Timedelta("3h")]
 
 
 # ------------------------------------------------------------------ rows are kept and named
 def test_stamp_never_judged_keeps_every_row_and_names_the_reason() -> None:
     rows = [{"symbol": "EURUSD", "family": f, "params": {}} for f in NEVER_BUILT]
     rows.append({"symbol": "EURUSD", "family": "carry", "params": {}})
+    rows.append({"symbol": "XAUUSD", "family": "anti_donchian_breakout",
+                 "params": {**RECIPE, "timeframe": "M15"}})
     census = fd.stamp_never_judged(rows)
-    assert len(rows) == len(NEVER_BUILT) + 1
-    assert census["stamped"] == len(NEVER_BUILT)
-    assert "never_judged_reason" not in rows[-1]
-    by = {r["family"]: r for r in rows}
+    assert len(rows) == len(NEVER_BUILT) + 2
+    assert census["stamped"] == len(NEVER_BUILT) - 1           # fair_value_gap is just built
+    assert "never_judged_reason" not in rows[-2]               # a registered family
+    assert "never_judged_reason" not in rows[-1]               # a complete scalp recipe
+    by = {r["family"]: r for r in rows[:len(NEVER_BUILT)]}
+    assert "never_judged_reason" not in by["fair_value_gap"]
+    assert by["anti_three_bar_momentum"]["never_judged_reason"] == fd.SCALP_RECIPE_MISSING
+    assert by["anti_three_bar_momentum"]["never_judged_missing"] == list(fd.SCALP_RECIPE)
     assert by["ny_open@M15"]["alias_of"] == "session_range_breakout"
     assert by["unknown"]["never_judged_reason"] == fd.NO_FAMILY_NAMED
+
+
+def test_a_desk_session_is_not_the_scalp_recipe() -> None:
+    row = {"family": "anti_donchian_breakout",
+           "params": {"session": "new_york", "stop_atr": 1.0, "target_atr": 1.5,
+                      "max_hold": 9}}
+    assert fd.scalp_recipe_missing(row) == ["scalp_session"]
 
 
 def test_buildability_and_judge_coverage_name_the_reason() -> None:
@@ -227,8 +312,11 @@ def test_buildability_and_judge_coverage_name_the_reason() -> None:
     gb.family_verdict.cache_clear()
     verdict, why = gb.family_verdict("conditioning_model")
     assert verdict == gb.NO_IMPLEMENTATION and fd.CONDITIONER_NOT_A_SLEEVE in why
-    table = {"fair_value_gap": {"unjudged": 17}, "carry": {"unjudged": 3}}
+    assert gb.family_verdict("fair_value_gap")[0] == gb.BUILDABLE
+    table = {"regional_information": {"unjudged": 17}, "fair_value_gap": {"unjudged": 5},
+             "carry": {"unjudged": 3}}
     block = jc._never_judged_annotate(table)
     assert block["status"] == "MEASURED" and block["unjudged_named"] == 17
-    assert table["fair_value_gap"]["never_judged_reason"] == fd.BUILDER_NEEDS_CLOSURE_EDIT
+    assert table["regional_information"]["never_judged_reason"] == fd.NO_SERIES_NO_PIT_CLOCK
     assert "never_judged_reason" not in table["carry"]
+    assert "never_judged_reason" not in table["fair_value_gap"]
