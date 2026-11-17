@@ -619,6 +619,8 @@ desks/mt5/data/universe_ftmo/
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
 
+# judge core share: the affinity it changed and must restore (research/judge_core_share.py)
+desks/mt5/data/judge_core_share_state.json
 # proposer_common.donate_per_family: the cells each converting producer has already charged
 # (one JSONL per source). Box state; losing it re-charges once, never under-counts.
 desks/mt5/data/donation_ledgers/

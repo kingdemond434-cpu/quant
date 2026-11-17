@@ -111,7 +111,9 @@ _JUDGE_SCRIPTS = frozenset({"external_gauntlet.py", "run_sharded_gauntlet.py", "
 _WARM_SCRIPTS = frozenset({"warm_gauntlet_cache.py"})
 _AUDIT_MARK = "run_frontier_audit.cmd"
 _LIVE_SCRIPTS = frozenset(
-    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py"}
+    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py",
+     # the FTMO lane is armed live (audit of 3697de46): it is live, never a miner
+     "ftmo_executor.py", "ftmo_follower.py", "ftmo_follow.py"}
 )
 _LIVE_NAMES = frozenset({"terminal64.exe"})
 
