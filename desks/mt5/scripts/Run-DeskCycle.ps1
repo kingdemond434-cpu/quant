@@ -102,6 +102,7 @@ foreach ($document in $Documents) {
         $document.Length = $contents.Length
     } catch {
         Write-Cycle ("FATAL: CRO document {0} unreadable: {1}; refusing to run an agent with no brief" -f $document.Name, $_.Exception.Message)
+        Write-Cycle "launcher exit rc=2"
         exit 2
     }
 }
@@ -217,6 +218,7 @@ if (-not $resolved) {
     Write-Cycle "    - pass -AgentCommand with the full path to the executable."
     Write-Cycle "  Exiting NON-ZERO on purpose: a task that cannot do its job must not report"
     Write-Cycle "  success, or the task list stays green while nothing runs."
+    Write-Cycle "launcher exit rc=3"
     exit 3
 }
 Write-Cycle "agent $($resolved.Source)"
@@ -282,6 +284,7 @@ if ($agentName -eq "claude") {
     # works in its own clone (provision_midnight_lane_clone.ps1); no extra writable dir is added.
     if (-not (Test-Path -LiteralPath (Join-Path $LaneClone ".git"))) {
         Write-Cycle ("FATAL: lane clone {0} missing; run provision_midnight_lane_clone.ps1 elevated" -f $LaneClone)
+        Write-Cycle "launcher exit rc=3"
         exit 3
     }
     # The clone must still be SEALED: the sandbox may write inside it, never replace what this
@@ -291,6 +294,7 @@ if ($agentName -eq "claude") {
     $unsealed = @(Get-LaneCloneProblems $LaneClone @("S-1-5-32-544", "S-1-5-18", $me))
     if ($unsealed.Count) {
         Write-Cycle ("FATAL: lane clone not sealed, refusing to run Codex: {0}" -f ($unsealed -join " | "))
+        Write-Cycle "launcher exit rc=3"
         exit 3
     }
     $agentArgs = @("exec", "--full-auto", "--cd", $LaneClone, "-")
@@ -351,6 +355,7 @@ if (-not $WhatIfOnly) {
         $why = if ($lease) { "{0} held by {1} until {2}" -f $lease.status, $lease.controller, $lease.expires_at } else { $claimJson.Trim() }
         Write-Cycle "lease NOT acquired ($why) -- refusing a second controller; the next hourly firing retries"
         # Non-zero so a lane that never gets the lease is visible in the task history.
+        Write-Cycle "launcher exit rc=5"
         exit 5
     }
     $LeaseEpoch = [int]$lease.epoch
@@ -510,6 +515,7 @@ try {
     }
 } catch {
     Write-Cycle ("FATAL: agent invocation raised: {0}" -f $_.Exception.Message)
+    Write-Cycle "launcher exit rc=4"
     exit 4
 }
 

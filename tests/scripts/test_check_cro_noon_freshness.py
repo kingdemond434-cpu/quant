@@ -87,3 +87,44 @@ def test_a_bom_first_row_counts_and_bad_bytes_are_red(tmp_path: Path) -> None:
     bad = tmp_path / "bad.jsonl"
     bad.write_bytes(b"\xff\xfe\x00garbage")
     assert chk.measure(bad, now)["status"] == "RED"
+
+
+def _state(tmp_path: Path, rc: int | None, at: str | None) -> Path:
+    p = tmp_path / "CRO_NOON_STATE.json"
+    p.write_text(json.dumps({"lane": "noon", "last_rc": rc, "last_rc_at": at}), "utf-8")
+    return p
+
+
+def test_a_non_zero_launch_after_the_last_landing_is_red(tmp_path: Path) -> None:
+    """K6: an early exit (rc 5, lease not acquired) writes no ledger row; the published lane
+    state carries it, and a fresh ledger must not hide it."""
+    p = _ledger(tmp_path, [{"lane": "noon", "event": "end", "rc": 0,
+                            "at": "2026-11-16T12:30:00+00:00"}])
+    now = chk.datetime.fromisoformat("2026-11-17T13:00:00+00:00")
+    st = _state(tmp_path, 5, "2026-11-17T12:00:05+00:00")
+    doc = chk.measure(p, now, state=st)
+    assert doc["status"] == "RED" and "rc=5" in doc["why"] and doc["last_launch_rc"] == 5
+
+
+def test_a_landing_after_the_failed_launch_stays_green(tmp_path: Path) -> None:
+    p = _ledger(tmp_path, [{"lane": "noon", "event": "end", "rc": 0,
+                            "at": "2026-11-17T14:00:00+00:00"}])
+    now = chk.datetime.fromisoformat("2026-11-17T15:00:00+00:00")
+    st = _state(tmp_path, 1, "2026-11-17T12:10:00+00:00")
+    assert chk.measure(p, now, state=st)["status"] == "GREEN"
+
+
+def test_an_absent_or_clean_state_changes_nothing(tmp_path: Path) -> None:
+    p = _ledger(tmp_path, [{"lane": "noon", "event": "end", "rc": 0,
+                            "at": "2026-11-17T12:30:00+00:00"}])
+    now = chk.datetime.fromisoformat("2026-11-17T15:00:00+00:00")
+    doc = chk.measure(p, now, state=tmp_path / "absent.json")
+    assert doc["status"] == "GREEN" and doc["published_state"] == "UNMEASURED"
+    st = _state(tmp_path, 0, "2026-11-17T13:00:00+00:00")
+    assert chk.measure(p, now, state=st)["status"] == "GREEN"
+
+
+def test_the_artifact_carries_no_local_path(tmp_path: Path) -> None:
+    p = _ledger(tmp_path, [])
+    doc = chk.measure(p, chk.datetime.fromisoformat("2026-11-17T15:00:00+00:00"))
+    assert not str(doc["ledger"]).startswith("/") and ":\\" not in str(doc["ledger"])

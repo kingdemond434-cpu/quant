@@ -628,3 +628,9 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# The noon CRO lane's own state and its freshness verdict (K6), the committee health (D27) and
+# the daily P&L explain (K4), published by sync_shadow_to_git $reportPaths (2026-11-17).
+!desks/mt5/reports/CRO_NOON_STATE.json
+!desks/mt5/reports/CRO_NOON_FRESHNESS.json
+!desks/mt5/reports/COMMITTEE_HEALTH.json
+!desks/mt5/reports/PNL_EXPLAIN.json

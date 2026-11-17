@@ -2,7 +2,7 @@
 """RED WHEN NO NOON CRO PASS HAS LANDED IN 26 HOURS.
 
     python scripts/check_cro_noon_freshness.py [--ledger <cro_cycle_ledger.jsonl>] [--out <json>]
-        [--max-age-h 26] [--now <iso>]
+        [--state <CRO_NOON_STATE.json>] [--max-age-h 26] [--now <iso>]
 
 Clock: hourly leg `cro_noon_freshness` (desks/mt5/research/hourly_cycle.py, CORE). Artifact:
 desks/mt5/reports/CRO_NOON_FRESHNESS.json.
@@ -19,6 +19,15 @@ more than ten minutes in the future is malformed, not fresh. An absent, unreadab
 ledger, or one with no landed noon row at all, is RED, never GREEN (L1.28a: absence never
 resolves to a clean verdict).
 
+A NON-ZERO EXIT IS RED TOO (K6, 2026-11-17). The launcher's early exits (5 when the lease is not
+acquired, 3 when the agent CLI is missing, ...) write no ledger row at all, so a lane that keeps
+failing to start read only as "age" until 26 h had passed. `scripts/publish_cro_lane_state.py`
+(hourly leg `cro_lane_state`, just before this one) publishes the lane's checkpoint and log tail
+as desks/mt5/reports/CRO_NOON_STATE.json with the last exit code it read. When that code is
+non-zero and is NEWER than the newest landed noon pass, this check is RED whatever the age. An
+absent or unreadable state file changes nothing here and is recorded as `published_state:
+UNMEASURED`.
+
 Exits 0 on GREEN and 2 on RED: 2 is declared a verdict exit for this leg in hourly_cycle's
 VERDICT_EXITS, so a RED hour is recorded as the reading it is, not as a failed leg. The noon CRO
 routine reads the artifact and routes a RED to Desk health.
@@ -34,6 +43,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LEDGER = ROOT / "desks" / "mt5" / "data" / "cro_cycle_ledger.jsonl"
 ARTIFACT = ROOT / "desks" / "mt5" / "reports" / "CRO_NOON_FRESHNESS.json"
+NOON_STATE = ROOT / "desks" / "mt5" / "reports" / "CRO_NOON_STATE.json"
 NOON_LANES = ("noon", "noon_box")
 MAX_AGE_H = 26.0
 FUTURE_SLACK = timedelta(minutes=10)
@@ -62,8 +72,55 @@ def _landed(row: dict) -> bool:
     return event == "end" and row.get("rc") == 0
 
 
-def measure(ledger: Path, now: datetime, max_age_h: float = MAX_AGE_H) -> dict:
-    doc: dict = {"at": now.isoformat(), "ledger": str(ledger), "max_age_h": max_age_h,
+def _published_exit(path: Path | None) -> tuple[str, int | None, datetime | None]:
+    """(status, last rc, when) from the published noon lane state; UNMEASURED when unreadable."""
+    if path is None:
+        return "UNMEASURED", None, None
+    try:
+        doc = json.loads(path.read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return "UNMEASURED", None, None
+    if not isinstance(doc, dict):
+        return "UNMEASURED", None, None
+    rc = doc.get("last_rc")
+    if not isinstance(rc, int) or isinstance(rc, bool):
+        return "UNMEASURED", None, None
+    stamp = _row_time({"at": doc.get("last_rc_at")})
+    return "PRESENT", rc, (stamp[0] if stamp else None)
+
+
+def _rel(p: Path) -> str:
+    """A repository-relative name: published artifacts carry no local paths."""
+    try:
+        return p.resolve().relative_to(ROOT).as_posix()
+    except (OSError, ValueError):
+        return p.name
+
+
+def measure(ledger: Path, now: datetime, max_age_h: float = MAX_AGE_H,
+            state: Path | None = None) -> dict:
+    doc = _measure(ledger, now, max_age_h)
+    st, rc, rc_at = _published_exit(state)
+    doc.update(published_state=st, last_launch_rc=rc,
+               last_launch_rc_at=rc_at.isoformat() if rc_at else None)
+    if st != "PRESENT" or rc in (None, 0):
+        return doc
+    last = doc.get("last_noon_at")
+    landed_after = False
+    if last and rc_at is not None:
+        landed_after = datetime.fromisoformat(last) >= rc_at
+    elif last and rc_at is None:
+        landed_after = True  # an undated exit cannot outrank a dated landing
+    if landed_after:
+        return doc
+    return {**doc, "status": "RED",
+            "why": f"last noon launch exited rc={rc}"
+            + (f" at {rc_at.isoformat()}" if rc_at else "")
+            + ", after the newest landed pass; " + doc["why"]}
+
+
+def _measure(ledger: Path, now: datetime, max_age_h: float) -> dict:
+    doc: dict = {"at": now.isoformat(), "ledger": _rel(ledger), "max_age_h": max_age_h,
                  "lanes": list(NOON_LANES), "last_noon_at": None, "last_noon_lane": None,
                  "last_noon_date_only": None, "age_h": None, "noon_rows": 0,
                  "landed_rows": 0, "future_rows": 0, "malformed_rows": 0}
@@ -114,12 +171,16 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--ledger", type=Path, default=LEDGER)
     ap.add_argument("--out", type=Path, default=ARTIFACT)
+    ap.add_argument("--state", type=Path, default=None,
+                    help="published noon lane state (scripts/publish_cro_lane_state.py); "
+                         "defaults to the desk's own only when --ledger is the desk's own")
     ap.add_argument("--max-age-h", type=float, default=MAX_AGE_H)
     ap.add_argument("--now", help="ISO timestamp to measure against (tests); default: now, UTC")
     a = ap.parse_args(argv)
     now = (datetime.fromisoformat(a.now.replace("Z", "+00:00")) if a.now
            else datetime.now(UTC))
-    doc = measure(a.ledger, now, a.max_age_h)
+    state = a.state or (NOON_STATE if a.ledger == LEDGER else None)
+    doc = measure(a.ledger, now, a.max_age_h, state)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(doc, indent=1), "utf-8")
     print(json.dumps({"status": doc["status"], "age_h": doc["age_h"], "why": doc["why"]}))

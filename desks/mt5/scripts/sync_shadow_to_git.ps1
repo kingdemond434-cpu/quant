@@ -888,6 +888,18 @@ $reportPaths = @(
     # (decay_live.json follows in its own PR: its writer is a money-closure file whose status
     # strings must first stop carrying exception text, and that change has its own veto clock.)
     "desks/mt5/reports/LOSS_LEARNER.json",
+    # THE NOON CRO LANE, SEEN OFF THE BOX (K6, 2026-11-17): its checkpoint and the scrubbed tail
+    # of its log (scripts/publish_cro_lane_state.py, hourly leg cro_lane_state), and the RED/GREEN
+    # verdict that reads them (cro_noon_freshness). The lane exited 5 on 11-13 and 1 on 11-17 and
+    # neither was visible to any cloud session. No pid, path, host, key or money figure.
+    "desks/mt5/reports/CRO_NOON_STATE.json",
+    "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
+    # committee health per specialist (CRO duty D27; research/committee_ensembles.py, hourly
+    # leg committee_ensembles): written on the box since the leg landed, never published
+    "desks/mt5/reports/COMMITTEE_HEALTH.json",
+    # the daily P&L explain (K4; research/pnl_explain.py, hourly leg pnl_explain): bps of
+    # notional and shares per account label, never a login, server or currency amount
+    "desks/mt5/reports/PNL_EXPLAIN.json",
     "desks/mt5/data/loss_learning/replacements.jsonl",
     "desks/mt5/data/loss_learning/BOOK_ROLLOUTS.json",
     # the too-good-to-be-true forensics (libs/validation/plausibility): every flagged cell's
