@@ -365,16 +365,22 @@ REF_PAGES_MAX = 200
 
 
 def release_refs(call: Call, repo: str) -> list[str] | None:
-    """Every refs/tags/release/* name, or None when the full list cannot be read. The endpoint
-    pages (30 a page by default) and the repo has thousands of release tags, so reading only
-    the first page would miss the running release and page a false lag forever."""
+    """Every refs/tags/release/* name, or None when the full list cannot be read. Measured
+    2026-11-17: the endpoint returns all ~1,000 refs at once and ignores page/per_page. Should it
+    ever start paging, the loop follows the pages; a page that repeats refs already read means
+    the list is complete."""
     out: list[str] = []
+    seen: set[str] = set()
     for page in range(1, REF_PAGES_MAX + 1):
         st, res = call("GET", f"repos/{repo}/git/matching-refs/tags/release/"
                               f"?per_page={REF_PAGE}&page={page}", None)
         if st != 200 or not isinstance(res, list):
             return None
-        out += [str(r.get("ref")) for r in res if isinstance(r, dict)]
+        got = [str(r.get("ref")) for r in res if isinstance(r, dict)]
+        if got and got[0] in seen:      # page ignored: the whole list came back again
+            return out
+        out += got
+        seen.update(got)
         if len(res) < REF_PAGE:
             return out
     return None

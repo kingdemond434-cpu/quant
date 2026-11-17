@@ -219,15 +219,20 @@ class Tags(Fake):
         super().__init__()
         self.refs = refs
         self.broken_pages: set[int] = set()
+        self.paged = False
+        self.ref_calls = 0
 
     def __call__(self, method: str, path: str, payload: dict[str, Any] | None
                  ) -> tuple[int, Any]:
         if "matching-refs/tags/release/" in path:
-            # the real endpoint pages: 30 by default, per_page up to 100
             q = dict(kv.split("=", 1) for kv in path.partition("?")[2].split("&") if "=" in kv)
-            per, page = min(int(q.get("per_page", 30)), 100), int(q.get("page", 1))
+            page = int(q.get("page", 1))
+            self.ref_calls += 1
             if page in self.broken_pages:
                 return 502, None
+            if not self.paged:   # the real endpoint (measured): everything, page ignored
+                return 200, [{"ref": r} for r in self.refs]
+            per = min(int(q.get("per_page", 30)), 100)
             return 200, [{"ref": r} for r in self.refs[(page - 1) * per:page * per]]
         return super().__call__(method, path, payload)
 
@@ -265,20 +270,29 @@ def test_a_ledger_row_the_box_cannot_read_pages_and_its_fix_is_said(tmp_path: Pa
     assert relay.run(f, REPO, tmp_path, NOW)["ledger"] == "OK"
 
 
-def test_the_lag_reads_every_page_of_release_tags(tmp_path: Path) -> None:
-    """2,000+ release tags: the running one sits far past the first page. Reading one page
-    would call every tag 'newer' and page a false lag forever."""
+def test_the_lag_reads_every_release_tag_whether_or_not_the_endpoint_pages(tmp_path: Path
+                                                                        ) -> None:
+    """1,000+ release tags. Today the endpoint returns them all and ignores page=; if it ever
+    paged, reading one page would miss the running tag and page a false lag forever."""
     base = datetime(2026, 1, 1, tzinfo=UTC)
     refs = [f"refs/tags/release/{(base + timedelta(hours=i)).strftime('%Y%m%dT%H%M%SZ')}-"
             f"{i:012x}" for i in range(250)]
-    running = f"{249:012x}" + "0" * 28              # the newest tag, on page 3 of 100
-    f = Tags(refs)
-    assert relay.release_refs(f, REPO) == refs
+    running = f"{249:012x}" + "0" * 28              # the newest tag
+    for paged, calls in ((False, 2), (True, 3)):
+        f = Tags(refs)
+        f.paged = paged
+        assert relay.release_refs(f, REPO) == refs
+        assert f.ref_calls == calls                 # no 200-call loop on an unpaged endpoint
+        _box(tmp_path, running)
+        assert relay.run(f, REPO, tmp_path, NOW)["action"] == "QUIET"
+        assert not any("BOX NOT ADOPTING" in c["body"] for c in f.cmts)
+    # unpaged and genuinely behind: the lag is measured and pages
+    f = Tags([*refs, "refs/tags/release/20261111T020000Z-" + "c" * 12])
     _box(tmp_path, running)
-    assert relay.run(f, REPO, tmp_path, NOW)["action"] == "QUIET"
-    assert not any("BOX NOT ADOPTING" in c["body"] for c in f.cmts)
+    assert relay.run(f, REPO, tmp_path, NOW)["adoptlag"] == "LAGGING"
     # a page that cannot be read means the lag cannot be measured: no page, no false alarm
-    f.broken_pages = {2}
+    f = Tags(refs)
+    f.paged, f.broken_pages = True, {2}
     assert relay.release_refs(f, REPO) is None
     _box(tmp_path, "f" * 40)
     assert relay.run(f, REPO, tmp_path, NOW)["action"] == "QUIET"
