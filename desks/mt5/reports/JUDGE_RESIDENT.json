@@ -12,7 +12,7 @@
  "consecutive_hangs": 0,
  "sweep_started_utc": "2026-11-16T18:21:01+00:00",
  "hang_limit_s": 172800.0,
- "heartbeat_utc": "2026-11-17T03:49:52+00:00",
+ "heartbeat_utc": "2026-11-17T04:04:54+00:00",
  "sweep_phase": {
   "pid": 14192,
   "sweep_started_utc": "2026-11-16T18:21:07+00:00",
@@ -241,15 +241,43 @@
      }
     },
     "merge_and_publish": {
-     "samples": 1,
+     "samples": 69,
      "top": [
       {
-       "stack": "generic.py:__setstate__:2225 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
-       "n": 1,
-       "share": 1.0
+       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 28,
+       "share": 0.406
+      },
+      {
+       "stack": "base.py:_simple_new:662 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 5,
+       "share": 0.072
+      },
+      {
+       "stack": "base.py:_reset_identity:832 < base.py:_simple_new:666 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808",
+       "n": 4,
+       "share": 0.058
+      },
+      {
+       "stack": "base.py:_simple_new:671 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 4,
+       "share": 0.058
+      },
+      {
+       "stack": "base.py:ensure_index:7659 < managers.py:__setstate__:1945 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 4,
+       "share": 0.058
       }
      ],
-     "process": {}
+     "process": {
+      "cpu_s": 853.0,
+      "page_faults": 2133222.0,
+      "read_bytes": 3734652811.0,
+      "write_bytes": 153073.0,
+      "sampled_s": 680.0,
+      "rss_mb_max": 9944.1,
+      "cpu_share_of_wall": 1.254
+     }
     }
    }
   },
