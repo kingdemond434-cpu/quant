@@ -928,6 +928,9 @@ def test_a_file_key_gets_the_shared_redaction_scrub_and_redirect_guard(
         def read(self, n: int = -1) -> bytes:
             return b'{"echo": "' + token.encode() + b'"}'
 
+        def geturl(self) -> str:
+            return "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
+
     class _Opener:
         def __init__(self, secrets: tuple[str, ...]) -> None:
             self.secrets = secrets
