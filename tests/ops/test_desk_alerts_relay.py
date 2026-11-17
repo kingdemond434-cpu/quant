@@ -155,3 +155,21 @@ def test_a_huge_issue_is_read_newest_first_and_the_scan_stays_bounded(tmp_path: 
     assert r["action"] == "QUIET", r
     assert f.gets[0].endswith("page=35") and len(f.gets) <= relay.MAX_PAGES
     assert f.gets == [g for g in f.gets if int(g.rsplit("page=", 1)[1]) >= 34]
+
+
+def test_the_relay_never_follows_a_redirect_with_its_token() -> None:
+    """tests/data/test_keyed_fetch_fence.py: urlopen copies the bearer token to whatever host a
+    30x names. The relay's opener refuses every redirect instead of following it."""
+    import importlib.util
+    import urllib.request
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[2] / ".github" / "scripts" / "desk_alerts_relay.py"
+    spec = importlib.util.spec_from_file_location("relay_redirect", src)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    req = urllib.request.Request("https://api.github.com/x", headers={"Authorization": "Bearer t"})
+    handler = mod._NoRedirect()
+    assert handler.redirect_request(req, None, 302, "Found", {}, "https://evil.example/") is None
+    assert "urlopen(" not in src.read_text("utf-8")
