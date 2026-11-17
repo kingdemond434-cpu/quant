@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """VIDEO TRANSCRIPT FETCHER -- free, keyless, multi-family route rotation.
 
+YOUTUBE IS REFUSED, 2026-11-14 (governance/wayback-youtube-ruling-2026-11-14.md). The Piped and
+Invidious rotation described below was a mirror route around YouTube's own terms, which is
+banned, so it was removed: `youtube()` raises TranscriptUnavailable carrying the terms reason and
+its missed_growth line, and sends no request. Bilibili is unaffected. The measured history below
+is kept because it records why no YouTube route ever served.
+
 ROUTE STATUS, MEASURED 2026-08-27 (supersedes the 2026-07-26 "works from this VPS" claim, which
 is no longer true and had been silently returning nothing for weeks):
 
@@ -32,20 +38,16 @@ import re
 import sys
 import urllib.request
 
-# SEEDS ONLY (LAWS anti-hardcode): the live list is refreshed from the public directories at
-# call time; these are the fallback if the directory fetch fails. Both families are tried because
-# they fail independently -- Piped by host death, Invidious by empty caption bodies.
-_PIPED = (
-    "https://pipedapi.adminforge.de",
-    "https://pipedapi.kavin.rocks",
-    "https://pipedapi.drgns.space",
-    "https://pipedapi.reallyaweso.me",
-)
-_PIPED_DIRECTORY = ("https://raw.githubusercontent.com/TeamPiped/documentation/main/"
-                    "content/docs/public-instances/index.md")
-_INVIDIOUS_DIRECTORY = "https://api.invidious.io/instances.json"
+_UA = {"User-Agent": "quant-desk-video-transcript/1.0 (research)"}
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk video-transcript)"}
+#: YouTube transcripts are refused on every automated route (Governance,
+#: governance/wayback-youtube-ruling-2026-11-14.md): no YouTube API key, the box never contacts
+#: YouTube, and a keyless Piped/Invidious mirror is YouTube content reached around YouTube's own
+#: terms -- a banned mirror route. youtube() therefore sends no request at all.
+YOUTUBE_TERMS = ("terms-refused: YouTube transcripts through YouTube or any keyless mirror "
+                 "(Piped, Invidious) are refused (wayback-youtube-ruling-2026-11-14)")
+YOUTUBE_MISSED_GROWTH = ("missed_growth: no YouTube transcripts reach the video lanes; "
+                         "video mechanisms are mined from text, code and Bilibili routes")
 
 
 def _get(url: str, timeout: int = 25) -> bytes:
@@ -77,81 +79,11 @@ class TranscriptUnavailable(RuntimeError):
                          + "; ".join(attempts[-6:]))
 
 
-def _live_piped() -> list[str]:
-    """Refresh Piped hosts from the public directory; fall back to the seeds on any failure."""
-    try:
-        md = _get(_PIPED_DIRECTORY, timeout=20).decode("utf-8", "replace")
-        hosts = sorted(set(re.findall(r"https?://[a-z0-9.-]*pipedapi[a-z0-9.-]*", md)))
-        return hosts or list(_PIPED)
-    except Exception:
-        return list(_PIPED)
-
-
-def _live_invidious() -> list[str]:
-    """Public Invidious instances reachable over https, best-uptime first."""
-    try:
-        data = json.loads(_get(_INVIDIOUS_DIRECTORY, timeout=20).decode())
-    except Exception:
-        return []
-    out = []
-    for _name, info in data:
-        uri = (info or {}).get("uri") or ""
-        if info and info.get("type") == "https" and uri.startswith("https://"):
-            mon = info.get("monitor") or {}
-            out.append((-(mon.get("uptime") or 0.0), uri))
-    return [u for _s, u in sorted(out)]
-
-
-def _invidious_text(host: str, vid: str, lang: str) -> str:
-    """Invidious caption route. Its index frequently serves while its TEXT serves zero bytes --
-    that empty body is the documented 2026-08-27 failure mode and must not read as success."""
-    body = _get(f"{host}/api/v1/captions/{vid}", timeout=25)
-    if not body.lstrip().startswith(b"{"):
-        raise ValueError("not json (tarpit/interstitial html)")
-    caps = json.loads(body).get("captions") or []
-    if not caps:
-        raise ValueError("no caption tracks")
-    pick = next((c for c in caps if (c.get("languageCode") or "").startswith(lang)), caps[0])
-    url = pick.get("url") or ""
-    if url.startswith("/"):
-        url = host + url
-    return _clean(_get(url, timeout=35).decode(errors="ignore"))
-
-
 def youtube(video: str, lang: str = "en") -> tuple[str, str]:
-    """Return (transcript, route) for a YouTube id/URL, rotating Piped then Invidious.
-
-    Raises TranscriptUnavailable listing every attempt -- callers record ACCESS_LIMIT, never an
-    empty transcript. An empty caption body counts as a FAILURE of that route, not as a result.
-    """
-    vid = video
-    m = re.search(r"(?:v=|youtu\.be/|shorts/)([A-Za-z0-9_-]{11})", video)
-    if m:
-        vid = m.group(1)
-    attempts: list[str] = []
-    for host in _live_piped():
-        try:
-            meta = json.loads(_get(f"{host}/streams/{vid}").decode())
-            subs = meta.get("subtitles") or []
-            if not subs:
-                attempts.append(f"{host}: no subtitle tracks")
-                continue
-            pick = next((s for s in subs if (s.get("code") or "").startswith(lang)), subs[0])
-            text = _clean(_get(pick["url"], timeout=35).decode(errors="ignore"))
-            if text:
-                return text, host
-            attempts.append(f"{host}: empty caption body")
-        except Exception as exc:
-            attempts.append(f"{host}: {type(exc).__name__} {exc}")
-    for host in _live_invidious():
-        try:
-            text = _invidious_text(host, vid, lang)
-            if text:
-                return text, host
-            attempts.append(f"{host}: empty caption body")
-        except Exception as exc:
-            attempts.append(f"{host}: {type(exc).__name__} {exc}")
-    raise TranscriptUnavailable(attempts)
+    """Refused on terms: always raises TranscriptUnavailable with the terms reason and its
+    missed_growth line, before any request. Callers record ACCESS_LIMIT, never an empty
+    transcript, so the video stays a named gap rather than reading as one that held nothing."""
+    raise TranscriptUnavailable([f"{YOUTUBE_TERMS}; {YOUTUBE_MISSED_GROWTH}"])
 
 
 def bilibili(bvid: str, lang: str = "") -> tuple[str, str]:

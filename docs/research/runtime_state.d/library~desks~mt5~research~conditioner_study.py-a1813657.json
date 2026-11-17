@@ -1,0 +1,37 @@
+{
+ "organ": "library:desks/mt5/research/conditioner_study.py",
+ "kind": "library",
+ "code": [
+  "desks/mt5/research/conditioner_study.py"
+ ],
+ "clock": "daily_cycle:conditioner_study",
+ "cadence_s": 86400,
+ "max_silence_s": 172800,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/CONDITIONER_STUDY.json",
+ "artifact_declared": "desks/mt5/reports/CONDITIONER_STUDY.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 318342,
+ "artifact_bytes": 1849,
+ "artifact_sha256": "f52206952e8e8931144ab3b15c95b09e368eb05856f24f26cd54f2c9e10d5c98",
+ "summary": {
+  "status": "MEASURED"
+ },
+ "progress_metric": "UNMEASURED",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-17T15:07:55+00:00",
+ "only_missing": {
+  "at": "2026-11-17T15:07:55+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
