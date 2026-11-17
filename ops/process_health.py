@@ -603,8 +603,48 @@ def log_tail(path: Path, last_run: str = "") -> dict[str, Any]:
     if st.st_size > TAIL_BYTES and lines:
         lines = lines[1:]   # the first line of a mid-file read is a fragment
     doc["state"] = "OK"
-    doc["tail"] = [redact_line(ln) for ln in lines[-TAIL_LINES:]]
+    doc.update(digest_lines(lines))
+    if ran is not None:
+        doc["ran_min"] = round(max(0.0, (mtime - ran).total_seconds()) / 60.0, 1)
     return doc
+
+
+#: A Python exception class at the head of a line: a traceback's last line or `Type: msg`.
+_EXC_HEAD = re.compile(r"^\s*(?:[A-Za-z_][\w]*\.)*([A-Za-z_]\w{0,80}(?:Error|Exception|Exit|"
+                       r"Interrupt|Expired|Timeout|Failure|Warning))\b")
+#: A wrapper's per-step failure line (ops/run_frontier_audit.cmd: `!!! organ FAILED rc=N: ...`).
+_STEP_FAILED = re.compile(r"FAILED rc=(-?\d+):?\s*(.*)$")
+#: The step's NAME: a script's file name or a `-m` module, never its arguments.
+_STEP_NAME = re.compile(r"(?:-m\s+([A-Za-z_][\w.]*))|([\w.-]+\.(?:py|ps1|cmd|bat))\b")
+_START = re.compile(r"^=== .* start\b")
+_END = re.compile(r"^=== .* end\b")
+
+
+def digest_lines(lines: list[str]) -> dict[str, Any]:
+    """What a failing run's log may say on a PUBLIC board: structure, never its words (Auditor,
+    #1261: an exception message or a log line is free text, and no denylist fences free text).
+    The exception TYPE, each wrapper step that failed (its script name and rc), whether the run
+    reached its own end marker, and a line count. The text itself stays in the log on the box."""
+    exc_type = None
+    failed: list[dict[str, Any]] = []
+    started = ended = -1
+    for i, ln in enumerate(lines):
+        m = _EXC_HEAD.match(ln)
+        if m:
+            exc_type = m.group(1)
+        f = _STEP_FAILED.search(ln)
+        if f:
+            n = _STEP_NAME.search(f.group(2))
+            failed.append({"step": (n.group(1) or n.group(2)) if n else None,
+                           "rc": int(f.group(1))})
+        if _START.match(ln):
+            started = i
+        if _END.match(ln):
+            ended = i
+    return {"lines": len(lines), "exception_type": exc_type,
+            "traceback": any(ln.startswith("Traceback (most recent call last)") for ln in lines),
+            "failed_steps": failed[-20:],
+            "reached_end": None if started < 0 else ended > started}
 
 
 def failure_evidence(task: dict[str, str]) -> dict[str, Any]:

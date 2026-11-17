@@ -1,4 +1,4 @@
-"""A FAILING task's row carries the redacted tail of the log its command writes into.
+"""A FAILING task's row carries a STRUCTURED digest of the log its command writes into.
 
 Hourly-pass idea 629 (2026-11-11): MergeDocket returned 1 for hours while a hung earlier run
 held its log open, and the board said only "generic failure". These pin where the tail comes
@@ -53,8 +53,8 @@ def test_log_tail_is_bounded_and_says_whether_the_last_run_wrote(tmp_path):
     os.utime(log, (old, old))
     ran = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(time.time() - 60))
     doc = ph.log_tail(log, ran)
-    assert doc["state"] == "OK" and len(doc["tail"]) == ph.TAIL_LINES
-    assert doc["tail"][-1].startswith("line 4999") and "SEKRET" not in " ".join(doc["tail"])
+    assert doc["state"] == "OK" and "tail" not in doc and doc["lines"] > 0
+    assert "SEKRET" not in json.dumps(doc) and "line 4999" not in json.dumps(doc)
     assert doc["written_by_last_run"] is False
     assert ph.log_tail(log, "N/A")["written_by_last_run"] is None
 
@@ -62,7 +62,8 @@ def test_log_tail_is_bounded_and_says_whether_the_last_run_wrote(tmp_path):
 def test_utf16_powershell_log_is_decoded(tmp_path):
     log = tmp_path / "ps.log"
     log.write_bytes("\ufeffThe process cannot access the file\r\n".encode("utf-16-le"))
-    assert ph.log_tail(log)["tail"] == ["The process cannot access the file"]
+    doc = ph.log_tail(log)
+    assert doc["state"] == "OK" and doc["lines"] == 1 and "cannot access" not in json.dumps(doc)
 
 
 def test_failure_evidence_reports_no_log_and_reads_redirects(tmp_path):
@@ -72,7 +73,8 @@ def test_failure_evidence_reports_no_log_and_reads_redirects(tmp_path):
     log.write_text("Traceback\nRuntimeError: boom\n", "utf-8")
     ev = ph.failure_evidence({"TaskName": "\\MT5-X", "Task To Run": f"py x.py >> {log} 2>&1",
                               "Last Run Time": "N/A"})
-    assert ev["state"] == "READ" and ev["logs"][0]["tail"][-1] == "RuntimeError: boom"
+    assert ev["state"] == "READ" and ev["logs"][0]["exception_type"] == "RuntimeError"
+    assert "boom" not in json.dumps(ev)
 
 
 def test_only_failing_rows_carry_evidence(monkeypatch, tmp_path):
@@ -90,7 +92,8 @@ def test_only_failing_rows_carry_evidence(monkeypatch, tmp_path):
     monkeypatch.setattr(ph, "_contracts", lambda: {})
     rows = {r["name"]: r for r in ph.build()["processes"]}
     assert rows["MT5-Bad"]["verdict"] == "FAILING"
-    assert rows["MT5-Bad"]["failure_evidence"]["logs"][0]["tail"] == ["boom"]
+    assert rows["MT5-Bad"]["failure_evidence"]["logs"][0]["lines"] == 1
+    assert "boom" not in json.dumps(rows["MT5-Bad"]["failure_evidence"])
     assert rows["MT5-Good"]["failure_evidence"] is None
     # PUBLIC FILE (Auditor SF on #1032): the log is named by its file name, and no absolute path
     # survives anywhere in the evidence, its `why` text or its tail.
@@ -121,3 +124,46 @@ def test_money_path_tasks_publish_no_tail(tmp_path):
     for name in ("\\MT5-Gateway", "\\MT5-FTMO-Allocator", "\\MT5-E8-OcoWatch"):
         ev = ph.failure_evidence({"TaskName": name, "Task To Run": f"py x.py >> {log} 2>&1"})
         assert ev["state"] == "WITHHELD" and "logs" not in ev
+
+
+# --- NO LOG WORDS ON A PUBLIC BOARD (2026-11-17, the #1261 Auditor rule) -------------------------
+
+_FRONTIER_LOG = """=== MT5-FrontierAudit start Tue 17/11/2026  5:10:00.12
+Traceback (most recent call last):
+  File "C:\\opt\\quant\\desks\\mt5\\research\\market_posteriors.py", line 9, in <module>
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='x.gov'): /v1?api_key=SEKRET
+!!! organ FAILED rc=1: "desks\\mt5\\research\\market_posteriors.py" --apply
+!!! organ FAILED rc=-1073741819: -m libs.ops.scaling_laws
+"""
+
+
+def test_the_digest_names_type_steps_and_end_and_no_words(tmp_path):
+    log = tmp_path / "MT5-FrontierAudit.log"
+    log.write_text(_FRONTIER_LOG, "utf-8")
+    doc = ph.log_tail(log)
+    assert doc["exception_type"] == "ConnectionError" and doc["traceback"] is True
+    assert doc["failed_steps"] == [{"step": "market_posteriors.py", "rc": 1},
+                                   {"step": "libs.ops.scaling_laws", "rc": -1073741819}]
+    assert doc["reached_end"] is False          # started, never wrote its end marker: cut off
+    out = json.dumps(doc)
+    for word in ("SEKRET", "x.gov", "HTTPSConnectionPool", "api_key", "--apply", "line 9"):
+        assert word not in out, word
+
+
+def test_a_run_that_reached_its_end_says_so(tmp_path):
+    log = tmp_path / "t.log"
+    log.write_text("=== T start\nok\n=== T end: all organs exited 0\n", "utf-8")
+    doc = ph.log_tail(log)
+    assert doc["reached_end"] is True and doc["failed_steps"] == [] and doc["exception_type"] is None
+
+
+def test_every_published_digest_value_is_structure(tmp_path):
+    """Strings in a digest are only an exception type or a step name: identifier-shaped."""
+    import re
+    log = tmp_path / "x.log"
+    log.write_text(_FRONTIER_LOG * 3, "utf-8")
+    doc = ph.log_tail(log)
+    for k in ("exception_type",):
+        assert re.fullmatch(r"[A-Za-z_]\w*", doc[k])
+    for step in doc["failed_steps"]:
+        assert re.fullmatch(r"[\w.-]+", step["step"]) and isinstance(step["rc"], int)
