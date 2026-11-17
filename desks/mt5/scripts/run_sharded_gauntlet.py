@@ -2433,17 +2433,24 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
             root.wait(timeout=10)
     # A SURVIVOR IS KILLED AGAIN BEFORE IT IS NAMED: anything seen and still alive gets one
     # more SIGKILL and a bounded settle, so a slow reap under load is not reported as an orphan.
-    survivors = [p for p in seen.values() if not gone(p)]
-    for p in survivors:
+    # THE LAST SCAN GETS THE SAME TREATMENT (CI 2026-11-14, twice in one hour: orphans [5686]
+    # with killed 4 and wall_s 0.17, and [4884] for a grandchild the same test then saw gone).
+    # A descendant the final scan still lists was named straight away, with no kill and no
+    # settle, so a child caught mid-exit under xdist load read as an orphan. Now every
+    # candidate, seen or newly listed, is killed and settled first; only one that outlives the
+    # settle is named. A newly listed one counts as a kill; a re-kill of a seen one does not.
+    survivors = {p.pid: p for p in seen.values() if not gone(p)}
+    with contextlib.suppress(psutil.Error):
+        for k in live_kids():
+            survivors.setdefault(k.pid, k)
+    for pid_, p in survivors.items():
         with contextlib.suppress(psutil.Error):
             p.kill()
-    settle(survivors, KILL_RESETTLE_S)
-    orphans: set[int] = set()
-    for p in seen.values():
-        if not gone(p):
-            orphans.add(p.pid)
-    with contextlib.suppress(psutil.Error):
-        orphans.update(k.pid for k in live_kids())
+            if pid_ not in seen:
+                killed += 1
+                seen[pid_] = p
+    settle(list(survivors.values()), KILL_RESETTLE_S)
+    orphans = {p.pid for p in survivors.values() if not gone(p)}
     out.update(killed=killed, orphans=sorted(orphans), wall_s=round(time.monotonic() - t0, 2))
     return out
 
@@ -3648,11 +3655,11 @@ def _publish_priority(key: str, value: Any) -> str:
     f54ac4dd007: two processes merging at once could each drop the other's block, and with it an
     `unspilled` line), and the temporary name is unique per writer. Returns WRITTEN or FAILED:
     ... and never raises; a FAILED publish is printed to stderr, never silent."""
-    from libs.research.artifact_chain import _locked
-    from scripts import judge_priority as jp
-
     status = "WRITTEN"
     try:
+        from libs.research.artifact_chain import _locked
+        from scripts import judge_priority as jp
+
         JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
         with _locked(JUDGE_PRIORITY_DECISION, PUBLISH_PRIORITY_LOCK_S) as held:
             if not held:
