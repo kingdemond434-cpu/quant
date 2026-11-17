@@ -2607,3 +2607,35 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+# FX OPTION-EXPIRY STRIKE PINNING INTO THE 10:00 NEW YORK CUT, THEN RELEASE (2026-10-13, the
+# novel-style lane N1). Loads its own point-in-time strike ladder (the lake frame
+# `fx_option_expiry_strikes`, written by research/novel_style_lanes.py) given only `symbol`, so the
+# gauntlet builds it through its ordinary `fn(h1, **params)` call. `symbol` is a REQUIRED keyword
+# argument, so the sweep names it unsuppliable instead of calling it blind. Its source is HELD on
+# terms today, so the frame is absent on every host and the family returns [] (UNMEASURED).
+from mt5desk.family_fx_expiry_pin import family_fx_expiry_pin  # noqa: E402
+
+ORTHOGONAL_FAMILIES["fx_expiry_pin"] = family_fx_expiry_pin
+FAMILY_INPUTS["fx_expiry_pin"] = (
+    "public FX option prints aggregated to a PIT strike ladder per pair and expiry, plus price",
+    "data/lake/series/fx_option_expiry_strikes.csv")
+FAMILY_TIMEFRAMES["fx_expiry_pin"] = (
+    ("H1",),
+    "the cut is one instant a day (10:00 New York) and the pin is read a few bars before it; "
+    "the lead and release windows are counted in H1 bars")
+
+# NATURAL-HAZARD SHOCK (2026-10-14, the novel-style lane N3). Loads its own point-in-time event
+# frame (`natural_hazard_events`, written by research/geoint_hazards.py: USGS M6+ near JP/TW/CL,
+# NHC Gulf cones) given `symbol` and `kind`, both REQUIRED keyword arguments, so the gauntlet
+# rebuilds it from the cell's params and the sweep names it unsuppliable.
+from mt5desk.family_hazard_shock import family_hazard_shock  # noqa: E402
+
+ORTHOGONAL_FAMILIES["hazard_shock"] = family_hazard_shock
+FAMILY_INPUTS["hazard_shock"] = (
+    "public hazard notices (USGS quakes, NHC cones) at their publication instant, plus price",
+    "data/lake/series/natural_hazard_events.csv")
+FAMILY_TIMEFRAMES["hazard_shock"] = (
+    ("H1",),
+    "a notice is one instant; entry is the first H1 bar opening after it and the hold is "
+    "counted in H1 bars")

@@ -278,7 +278,10 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     # cross_asset_graph's lead_lag cell is buildable since 76895fedc, so the registry's fresh
     # cell FEEDS the lead-lag cluster: it is no longer listed as unfed at all.
     assert "cross_asset_lead_lag" not in unfed
-    assert unfed["options_implied"].startswith("NO_FAMILY")
+    # options_implied gained a family on 2026-10-13 (fx_expiry_pin), so it is UNMINTED, not
+    # NO_FAMILY; execution_entry still has none and keeps the NO_FAMILY path pinned.
+    assert unfed["options_implied"].startswith("UNMINTED")
+    assert unfed["execution_entry"].startswith("NO_FAMILY")
 
 
 def test_a_producer_no_source_can_see_is_unmeasured_never_zero(

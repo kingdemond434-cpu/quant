@@ -1089,9 +1089,23 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         })
 
     rows: list[dict[str, Any]] = []
+    comp_hours = comp.get("hours", {}) if isinstance(comp.get("hours"), dict) else {}
+    # THE LEG JOIN (measured 2026-10-14 on the box's PRODUCER_YIELD.json): every one of the 357
+    # `leg:<name>` rows read 0.0 compute hours over 7 days -- the 149 CORE legs (promoter,
+    # publish_survivors) included, which certainly ran -- because the compute ledger names a
+    # leg's run by its BARE name (`_costed` -> `open_run(name, kind="hourly_cycle")`) and the
+    # lookup used the roster's `leg:` key. A leg's ledger hours are therefore read under its bare
+    # name, and claimed ONCE: a bare roster row of the same name (an executable stem) does not
+    # also count them, so no department total double-counts a pass.
+    leg_claims = {k[4:] for k in roster if k.startswith("leg:") and k[4:] in comp_hours}
     for key, meta in sorted(roster.items()):
         m = per.get(key, {})
-        hours_row = comp.get("hours", {}).get(key) or {}
+        if key.startswith("leg:"):
+            hours_row = comp_hours.get(key) or comp_hours.get(key[4:]) or {}
+        elif key in leg_claims:
+            hours_row = {}
+        else:
+            hours_row = comp_hours.get(key) or {}
         ledger_h = float(hours_row.get("hours") or 0.0)
         reg_h = float(m.get("registry_compute_s") or 0.0) / 3600.0
         total_h = round(ledger_h + reg_h, 4)

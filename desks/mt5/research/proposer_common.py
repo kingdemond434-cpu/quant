@@ -656,3 +656,44 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
 def identity(symbol: str, family: str, params: dict) -> str:
     return hashlib.sha256(json.dumps({"symbol": symbol, "family": family, "params": params},
                                      sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+
+def prior_identities(source: str, intel: Path | None = None) -> set[str]:
+    """Cells `source` already donated: the donation contract IS the record, so a proposer that
+    re-reads the same evidence every hour donates each identity once, never hourly.
+
+    Reads every `discoveries_*.json` contract in the seat and every `rollup_<day>.jsonl.gz` that
+    `scripts/disk_guard.py rollup` compacted aged contracts into (one contract per line): a cell
+    rolled up there was still donated. An unreadable file is skipped, never read as "nothing
+    donated" for the files that were readable."""
+    import gzip
+    seat = (intel or INTEL) / source
+    seen: set[str] = set()
+
+    def _take(doc: Any) -> None:
+        rows = (doc.get("discoveries") if isinstance(doc, dict) and "discoveries" in doc
+                else doc if isinstance(doc, list) else [doc])
+        for c in rows or []:
+            if isinstance(c, dict) and c.get("family"):
+                raw = c.get("params")
+                params: dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+                seen.add(identity(str(c.get("symbol")), str(c.get("family")), params))
+
+    if not seat.is_dir():
+        return seen
+    for f in sorted(seat.glob("discoveries_*.json")):
+        try:
+            _take(json.loads(f.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    for f in sorted(seat.glob("rollup_*.jsonl.gz")):
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        _take(json.loads(line))
+                    except ValueError:
+                        continue
+        except (OSError, EOFError):
+            continue
+    return seen

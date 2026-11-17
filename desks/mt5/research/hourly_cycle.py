@@ -1337,8 +1337,6 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "tape_deepen", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
-                     # free public POS/card/location/satellite proxies as PIT series
-                     "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1374,6 +1372,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # MOVED FROM data 2026-10-14: free public POS/card/location/satellite
+                     # proxies as PIT series. The data department's last leg with measured
+                     # compute on the box's PRODUCER_YIELD (7d) sits at line ~4530 of this file;
+                     # this leg sits at ~5290, behind lake_promote/asia_*. The intel department
+                     # measurably reaches ~5430 (deep_forest, proposer_seat), so its pass reaches
+                     # this leg. The GEOINT hazard reader rides beside it.
+                     "alt_proxies", "geoint_hazards",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
@@ -1445,7 +1450,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # novel-style lanes (FX expiry pinning, Swiss gold flows), both HELD
+                     "novel_style_lanes"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2293,10 +2300,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # No fetch (both sources HELD on terms): reads alt_proxies' row and STYLE_NOVELTY.json.
+    "novel_style_lanes": 120,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
+    # USGS live feed + a one-time FDSN backfill per box + NHC CurrentStorms; stops at 120 s.
+    "geoint_hazards": 180,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -4555,6 +4566,13 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # NOVEL-STYLE LANES (2026-10-13): N1 FX option-expiry strike pinning into the 10:00 NY cut
+    # (mt5desk.family_fx_expiry_pin) and N2 Swiss gold exports by destination (alt_proxies row
+    # ch_bazg_gold_exports). Both sources are HELD on terms and never fetched; the leg publishes
+    # the terms verdicts, the pre-registered cells as IDEAS_ONLY and each lane's novelty against
+    # STYLE_NOVELTY.json (UNMEASURED when that artifact is absent).
+    nsl = _costed("novel_style_lanes", lambda: _producer(
+        "novel_style_lanes", "research/novel_style_lanes.py", "--once"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -5928,6 +5946,11 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # GEOINT HAZARDS (2026-10-14, novel-style lanes N3/N4): USGS M6+ quakes near JP/TW/CL and NHC
+    # Gulf storm cones as PIT events (lake natural_hazard_events -> mt5desk.family_hazard_shock
+    # cells), plus the GEOINT source ledger (FIRMS, PortWatch, Sentinel-5P NEEDS_KEY).
+    geo = _costed("geoint_hazards", lambda: _producer(
+        "geoint_hazards", "research/geoint_hazards.py", "--once", "--budget-s", "120"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6536,6 +6559,7 @@ def main() -> None:
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "novel_style_lanes": nsl,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -6633,6 +6657,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "geoint_hazards": geo,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
