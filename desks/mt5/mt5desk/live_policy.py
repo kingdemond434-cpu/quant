@@ -178,16 +178,25 @@ EXOTIC_BAR_MAX_AGE_H = 3.0
 
 
 _MAJORS = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
+#: ISO 4217 codes of currencies a broker quotes against the majors. Both legs must be ISO
+#: currencies for the fallback to call a symbol FX at all, so oil (XTIUSD, XBRUSD), gas (XNGUSD),
+#: metals (XAU, XAG, XPT, XPD are ISO "X" units, excluded here) and crypto (BTCUSD, ETHUSD) are
+#: never refused by it (Auditor SF, 2026-11-14).
+_ISO_FX = _MAJORS | frozenset({
+    "SEK", "NOK", "DKK", "PLN", "HUF", "CZK", "TRY", "ZAR", "MXN", "SGD", "HKD", "CNH", "CNY",
+    "ILS", "RUB", "THB", "INR", "KRW", "TWD", "BRL", "CLP", "COP", "PEN", "IDR", "PHP", "MYR",
+    "SAR", "AED", "KWD", "QAR", "BHD", "EGP", "NGN", "KES", "RON", "BGN", "HRK", "ISK", "ARS",
+    "VND", "PKR", "KZT", "UAH", "GEL", "MAD", "TND", "JOD", "OMR", "LKR", "BDT"})
 
 
 class _MaybeExotic(frozenset):  # type: ignore[type-arg]
-    """Membership = a six-letter FX pair with any leg outside the eight majors."""
+    """Membership = a six-letter pair of two ISO currencies with a leg outside the majors."""
 
     def __contains__(self, sym: object) -> bool:
         s = str(sym or "").upper()[:6]
-        return (len(s) == 6 and s.isalpha()
-                and not (s[:3] in _MAJORS and s[3:] in _MAJORS)
-                and not s.startswith(("XAU", "XAG", "XPT", "XPD")))
+        a, b = s[:3], s[3:6]
+        return (len(s) == 6 and a in _ISO_FX and b in _ISO_FX
+                and not (a in _MAJORS and b in _MAJORS))
 
 
 _MAYBE_EXOTIC: frozenset[str] = _MaybeExotic()

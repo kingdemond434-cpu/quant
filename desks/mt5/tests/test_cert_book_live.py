@@ -150,7 +150,7 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
     assert gateway._book_key({"name": "gold_asia_v3", "symbol": "XAUUSD"}, E8) == "gold_asia"
 
 
-def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
+def test_live_policy_admits_the_book_and_quarantines_chfnok() -> None:
     pol = live_policy.policy()
     # principal zuck 2026-11-13: the live symbol whitelist is lifted; named quarantines stand
     assert pol.live_symbols == {"*"}
@@ -162,13 +162,20 @@ def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None
         row = {"symbol": sym, "family": "overnight_gap_decay", "exec": "family_market",
                "name": name}
         assert live_policy.refuse(row, pol)
+    # Reddit origin is no fence (principal 2026-10-13): USDJPY admits its rr2.5 sleeve only.
     for name in ("USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12"):
-        assert live_policy.refuse({"symbol": "USDJPY", "name": name}, pol)
+        assert live_policy.refuse({"symbol": "USDJPY", "family": "session_range_breakout",
+                                   "timeframe": "H1", "name": name}, pol) is None
+    for other in ("USDJPY.asia#rr=1.5", "usdjpy_session_range_breakout_asia_5_wb_12"):
+        assert live_policy.refuse({"symbol": "USDJPY", "family": "session_range_breakout",
+                                   "timeframe": "H1", "name": other}, pol)   # rr2.5 only
     for name in ("chfnok_carry_asia_p_98d776f3e210d3e2", "CHFNOK.carry.asia#input_symbol=CHFNOK"):
         assert live_policy.refuse({"symbol": "CHFNOK", "family": "carry", "name": name}, pol)
     doc = json.loads(live_policy.POLICY_FILE.read_text(encoding="utf-8"))
-    assert doc["live_sleeves"] == {}
+    assert doc["live_sleeves"] == {
+        "USDJPY": ["USDJPY.asia#rr=2.5", "usdjpy_session_range_breakout_asia_rr25_wb12"]}
     assert doc["superseded_2026_11_13"]["live_sleeves"]["CHFNOK"] == []
     assert live_policy.refuse({"symbol": "CHFNOK", "family": "formula",
                                "name": "CHFNOK.formula.asia"}, pol) is None
-    assert "reddit_lineage_quarantine" in doc and "carry_lookahead_quarantine" in doc
+    assert "reddit_lineage_quarantine" not in doc
+    assert "reddit_origin_lifted" in doc and "carry_lookahead_quarantine" in doc

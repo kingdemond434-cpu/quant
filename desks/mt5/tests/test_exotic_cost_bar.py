@@ -147,7 +147,8 @@ def test_an_unreadable_universe_fails_closed(tmp_path: Path,
     for sym in ("GBPSEK", "USDMXN", "EURZAR.a"):
         why = str(lp.refuse({"symbol": sym, "name": "GBPSEK.formula.asia"}, p))
         assert "UNMEASURED" in why and "unreadable" in why
-    for sym in ("EURUSD", "GBPJPY", "XAUUSD", "US500", "XAGUSD"):
+    for sym in ("EURUSD", "GBPJPY", "XAUUSD", "US500", "XAGUSD", "XTIUSD", "XBRUSD", "XNGUSD",
+                "BTCUSD", "ETHUSD"):
         assert lp.refuse({"symbol": sym, "name": "x"}, p) is None
     (tmp_path / "universe.json").write_text(json.dumps({"EURUSD": {"asset_class": "Forex"}}),
                                             "utf-8")

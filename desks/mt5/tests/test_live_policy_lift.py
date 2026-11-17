@@ -36,9 +36,13 @@ def test_the_tracked_policy_admits_every_symbol_and_keeps_the_named_quarantines(
                      pol) is None
     assert lp.refuse({"symbol": "AUDSGD", "name": "AUDSGD.carry.asia", "family": "carry"},
                      pol) is None
-    for name in ("chfnok_carry_asia_p_98d776f3e210d3e2", "USDJPY.asia#rr=2.5",
+    for name in ("chfnok_carry_asia_p_98d776f3e210d3e2",
                  "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"):
         assert "quarantined" in (lp.refuse({"symbol": "X", "name": name}, pol) or "")
+    # USDJPY rr=2.5's Reddit-origin quarantine is lifted (reddit_origin_lifted); live_sleeves
+    # keeps it the one USDJPY breakout variant admitted.
+    assert lp.refuse({"symbol": "USDJPY", "name": "USDJPY.asia#rr=2.5"}, pol) is None
+    assert lp.refuse({"symbol": "USDJPY", "name": "USDJPY.asia#rr=1.5"}, pol)
     # what stands
     assert lp.refuse({"symbol": "XAUUSD", "name": "g", "timeframe": "M15"}, pol)
     assert lp.refuse({"symbol": "EURUSD", "name": "d", "family": "discovered"}, pol)
