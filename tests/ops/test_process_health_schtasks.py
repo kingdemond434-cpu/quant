@@ -600,3 +600,36 @@ def test_the_account_key_backup_is_reported_and_a_bad_one_is_attention(
     assert b["size_bytes"] == (None if backup is None else 64)
     assert hashlib.sha256(b"k" * 64).hexdigest() not in repr(doc)
     assert doc["n_needing_attention"] == (0 if state == "ok" else 1)
+
+
+# MT5-TickIntegrity RETURNS 2 ON PURPOSE (its alarm). Measured 2026-11-17 22:45Z: the box row read
+# FAILING "file not found" every hour and was taken for a broken registration. The verdict stays
+# FAILING; the words name the alarm, and every other task's bare 2 keeps the generic meaning.
+def test_tick_integrity_code_2_reads_as_its_alarm_not_a_missing_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    rows = [
+        {"TaskName": f"\\{n}", "Status": "Ready", "Scheduled Task State": "Enabled",
+         "Last Result": "2"}
+        for n in ("MT5-TickIntegrity", "MT5-Hourly")
+    ]
+    monkeypatch.setattr(ph, "_tasks", lambda: (rows, "OK schtasks"))
+    _doc, by = _build(monkeypatch, tmp_path, {
+        "MT5-TickIntegrity": ("fresh.json", 360, "integrity"),
+        "MT5-Hourly": ("fresh.json", 120, "hourly"),
+    })
+    ti, hourly = by["MT5-TickIntegrity"], by["MT5-Hourly"]
+    assert ti["verdict"] == "FAILING" and ti["last_result_code"] == 2
+    assert ti["why"].startswith("ALARM") and "TICK_INTEGRITY.json" in ti["last_result"]
+    assert "file not found" not in ti["why"]
+    assert hourly["verdict"] == "FAILING" and hourly["why"] == "file not found"
+
+
+def test_never_stale_never_reregisters_the_integrity_alarm() -> None:
+    spec = importlib.util.spec_from_file_location(
+        "never_stale_for_test", Path(__file__).resolve().parents[2] / "ops" / "never_stale.py")
+    assert spec is not None and spec.loader is not None
+    ns = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ns)
+    diag = ns.TASK_DIAGNOSIS[("MT5-TickIntegrity", 2)]
+    assert "ALARM" in diag and "Never re-register" in diag
