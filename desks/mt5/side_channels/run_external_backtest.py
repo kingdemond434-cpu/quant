@@ -617,7 +617,9 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     return testable, coverage
 
 
-def quarantine_terms_fenced(rows: list[dict], archive: Path | None = None) -> tuple[list[dict], dict]:
+def quarantine_terms_fenced(
+    rows: list[dict], archive: Path | None = None
+) -> tuple[list[dict], dict]:
     """SKIP every row on a terms-fenced lineage (libs/data/terms_fence.py: Reddit and its mirrors,
     StockTwits, X), counted by platform. The docket build quarantines too; this is the second
     lock, because `test_grid.json` (the bridge) and the merged results file reach this stage

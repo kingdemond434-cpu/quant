@@ -586,7 +586,8 @@ def archive_quarantined(rows: list[dict[str, Any]], path: Path) -> dict[str, Any
             loaded = json.loads(path.read_text(encoding="utf-8"))
             existing = loaded if isinstance(loaded, list) else [loaded]
         except (OSError, ValueError):
-            aside = path.with_suffix(path.suffix + f".unreadable.{datetime.now(UTC):%Y%m%dT%H%M%SZ}")
+            stamp = f"{datetime.now(UTC):%Y%m%dT%H%M%SZ}"
+            aside = path.with_suffix(path.suffix + f".unreadable.{stamp}")
             path.replace(aside)
             existing = []
     seen = {json.dumps(r, sort_keys=True, default=str) for r in existing}

@@ -765,7 +765,9 @@ def label_terms_fenced(rows: list[dict]) -> dict:
 TERMS_QUARANTINE_ARCHIVE = HYP / "terms_quarantine_docket.json"
 
 
-def quarantine_terms_fenced(rows: list[dict], archive: Path | None = None) -> tuple[list[dict], dict]:
+def quarantine_terms_fenced(
+    rows: list[dict], archive: Path | None = None
+) -> tuple[list[dict], dict]:
     """THE QUARANTINE (audit of #162, 2026-10-06): every docket row `terms_fence.quarantined_row`
     names -- fenced by its own source, route or URL, touched by a fenced contributing source, or
     already carrying a fenced `provenance_label` -- is SKIPPED, so no judge ever sees it. Counted
