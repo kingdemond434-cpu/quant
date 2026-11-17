@@ -118,6 +118,9 @@ AXES: tuple[dict, ...] = (
     {"axis": "trade_flow", "id": "un_comtrade",
      "what": "UN Comtrade: bilateral goods flows, monthly",
      "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS",
+     # Never probed: the UN Comtrade licence (s.5) forbids automated browsing or downloading
+     # without prior written UN permission, keyless preview API included (2026-11-14).
+     "terms": "BLOCKED_ON_TERMS: UN Comtrade licence s.5 forbids automated access",
      "binds_to": ["AUDUSD", "USDZAR", "USDMXN", "USDCNH", "XCUUSD"],
      "unblocks": ["macro_conditional"],
      "revision_safe": "revised -- vintage must be captured at read time",
@@ -334,8 +337,12 @@ def build(do_probe: bool) -> dict:
     rows = []
     for a in AXES:
         row = dict(a)
-        row["probe"] = probe(a["url"]) if do_probe else {"reachable": None,
-                                                         "why": "not probed this pass"}
+        if str(a.get("terms") or "").startswith("BLOCKED_ON_TERMS"):
+            # A terms refusal is not an unreachable host: it is never contacted at all.
+            row["probe"] = {"reachable": None, "why": a["terms"]}
+        else:
+            row["probe"] = probe(a["url"]) if do_probe else {"reachable": None,
+                                                             "why": "not probed this pass"}
         rows.append(row)
     reach = [r for r in rows if r["probe"].get("reachable") is True]
     unreach = [r for r in rows if r["probe"].get("reachable") is False]

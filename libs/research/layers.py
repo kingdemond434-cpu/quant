@@ -287,6 +287,7 @@ LEG_LAYER: dict[str, str] = {
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information",
     "residual_search": "information", "unseen_frontier": "information",
+    "vocabulary_proposer": "information", "contradiction_miner": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     # GAP_MAP row 40: an early-warning STATE axis (what the market is becoming), never a sizer.
@@ -673,7 +674,7 @@ LEG_LAYER: dict[str, str] = {
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
-    "acquire_datasets": "information", "dukascopy_backfill": "information",
+    "acquire_datasets": "information", "tape_deepen": "information",
     # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
     # ledger of which keys are set measures the desk itself: meta
     "keyed_sources": "information", "credential_coverage": "meta",
