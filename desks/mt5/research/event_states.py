@@ -197,7 +197,10 @@ def parse_buybacks(doc: Any) -> pd.DataFrame:
     bn), offered par, capacity (max par redeemed), and the close time in UTC (`closed_utc`,
     the operation's ET close; NaT when unreadable). Several operations on one day are summed."""
     rows = []
-    for r in (doc or {}).get("data") or [] if isinstance(doc, dict) else []:
+    data = doc.get("data") if isinstance(doc, dict) else None
+    for r in data if isinstance(data, list) else []:
+        if not isinstance(r, dict):
+            continue
         try:
             day = pd.Timestamp(str(r.get("operation_date")))
         except (ValueError, TypeError):
