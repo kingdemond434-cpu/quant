@@ -1,33 +1,33 @@
 {
- "at": "2026-11-17T17:16:02+00:00",
+ "at": "2026-11-17T20:01:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.98,
-   "why": "no new verdict for 1.0h (last 2026-11-17T16:17:05+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 3.73,
+   "why": "no new verdict for 3.7h (last 2026-11-17T16:17:05+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": true,
    "low": true,
    "floor": 4.0,
-   "docket_depth": 1309367,
-   "busy_judge_cores": 0.36,
-   "busy_other_cores": 14.01,
-   "why": "judge tree at 0.36 cores (others 14.01) with a docket pending (resident SWEEPING, queue depth 1309367); floor 4; under the floor on every reading for 2.6h (limit 1h)",
-   "low_since": "2026-11-17T14:41:10+00:00",
-   "hours": 2.58
+   "docket_depth": 1313383,
+   "busy_judge_cores": 1.46,
+   "busy_other_cores": 13.75,
+   "why": "judge tree at 1.46 cores (others 13.75) with a docket pending (resident SWEEPING, queue depth 1313383); floor 4; under the floor on every reading for 2.1h (limit 1h)",
+   "low_since": "2026-11-17T17:56:09+00:00",
+   "hours": 2.08
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.3,
+   "heartbeat_age_min": 0.4,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 10496: heartbeat 0.3 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 10496: heartbeat 0.4 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 0.04,
+   "hours": 2.79,
    "limit_h": 25.59,
-   "why": "0.0h since the last sweep ended (2026-11-17T17:13:41+00:00), status SWEEPING; limit 25.59h"
+   "why": "2.8h since the last sweep ended (2026-11-17T17:13:41+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -43,10 +43,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "plan",
-   "hours": 0.04,
+   "phase": "prewarm",
+   "hours": 2.56,
    "known_phase": true,
-   "why": "sweep phase plan has run 0.0h since 2026-11-17T17:13:47+00:00 (limit 4.5h)"
+   "why": "sweep phase prewarm has run 2.6h since 2026-11-17T17:27:42+00:00 (limit 8.56h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,7 +91,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 10496,
-  "heartbeat_utc": "2026-11-17T17:15:43+00:00",
+  "heartbeat_utc": "2026-11-17T20:00:39+00:00",
   "last_sweep_ended_utc": "2026-11-17T17:13:41+00:00",
   "last_rc": 0
  },
