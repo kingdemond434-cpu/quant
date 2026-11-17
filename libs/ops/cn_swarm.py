@@ -720,7 +720,7 @@ SCIENCE_LENSES: tuple[tuple[str, str], ...] = (
      "rising autocorrelation and variance that warn of a regime break"),
     ("science_hawkes_excitation", "self-exciting point processes (earthquake aftershocks): "
      "bursts of activity that raise the odds of further bursts, then decay"),
-    ("science_diffusion_barrier", "diffusion against a reflecting or absorbing barrier: price "
+    ("science_brownian_barrier", "Brownian motion against a reflecting or absorbing barrier: price "
      "near a recent extreme behaves differently from price in open space"),
     ("science_oscillator_damping", "damped and driven oscillators: an overshoot that rings back "
      "with a characteristic period and decay set by the session clock"),
