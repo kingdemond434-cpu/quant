@@ -163,6 +163,15 @@ ALWAYS_RUN: frozenset[str] = frozenset({
 DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
     "tier_s": (2.5, 4.0),
     "replication_civilization": (2.5, 4.0),
+    # THE CERTIFICATE -> CLOCK CHAIN (principal 2026-11-13: "All certs passed go on forward clocks
+    # immediately and hrly pass monitors if it's staleness"). All three were ordinary rotation
+    # members, and the box's last published FORWARD_ENROLMENT.json was 165.8 h old,
+    # CERTIFICATE_CLOCK_LAW.json 145 h: the repair sweep that gives a clockless certificate its
+    # clock, and the two fences that make a stalled clock loud, waited days for a rotation slot.
+    # Forced from 1 h, hard at 2 h: the census is never older than the 2 h SLA plus one runtime.
+    "forward_enrolment": (1.0, 2.0),
+    "certificate_clock_law": (1.0, 2.0),
+    "clock_accrual": (1.0, 2.0),
 }
 
 #: THE CLOCK IS THE ARTIFACT, NOT THE RUN (Auditor MF1, 2026-11-05). Attendance stamps a leg when
@@ -176,6 +185,9 @@ DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
     "tier_s": (("reports/tier_s/ONLINE_FDR_ROWS.json", "generated_utc"),
                ("data/tier_s/PROMOTION_FREEZE.json", "at")),
     "replication_civilization": (("reports/REPLICATION.json", "at"),),
+    "forward_enrolment": (("reports/FORWARD_ENROLMENT.json", "at"),),
+    "certificate_clock_law": (("reports/CERTIFICATE_CLOCK_LAW.json", "at"),),
+    "clock_accrual": (("reports/CLOCK_ACCRUAL.json", "at"),),
 }
 
 #: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and
