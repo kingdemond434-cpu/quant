@@ -2669,7 +2669,7 @@ FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
 # the lane's exact executable (`scalp_families.family_scalp`), imported inside the call so the
 # import closure is unchanged. The session is passed as `scalp_session` because the judge's cell
 # builder pops `session` and applies the desk's hour window, a different rule from the lane's.
-_SCALP_SESSIONS: tuple[str, ...] = ("all", "london", "new_york", "overlap")
+_SCALP_SESSIONS: tuple[str, ...] = ("all", "asia", "london", "new_york", "overlap")
 
 
 def _scalp_family(name: str) -> Callable[..., list[Signal]]:
