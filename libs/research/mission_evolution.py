@@ -167,7 +167,9 @@ def evolve(parent: Mission, y: Yield, stamp: str,
     got_t = {_norm(k): int(v) for k, v in y.terms.items()}
     terms: dict[str, float] = {}
     retired = dict(parent.retired)
-    grown, decayed, gone = [], [], []
+    grown: list[str] = []
+    decayed: list[str] = []
+    gone: list[str] = []
     seeds = set(parent.seeds)
     for t, w in sorted(parent.terms.items()):
         nw = _step(w, got_t.get(t, 0), t in tried_t)
@@ -183,7 +185,7 @@ def evolve(parent: Mission, y: Yield, stamp: str,
                 gone.append(t)
                 continue
         terms[t] = _r(nw)
-    added = []
+    added: list[str] = []
     harvest = sorted(((_norm(k), int(v)) for k, v in y.harvest.items() if _norm(k)),
                      key=lambda kv: (-kv[1], kv[0]))
     for t, n in harvest:
