@@ -34,6 +34,40 @@ $local = @($terminals | Where-Object { $_.SessionId -eq $session })
 $unreadableLocal = @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
     Where-Object { -not $_.Path -and $_.SessionId -eq $session })
 
+# A SESSION-0 FUSION TERMINAL IS NEVER THE DESK'S TERMINAL, AND IS CLOSED HERE (2026-11-17).
+# After the 11-12 and 11-16 reboots a SYSTEM task's bare initialize() started terminal64 headless
+# in Session 0 with no login. Nothing can use it: it has no desktop to log in on, no reader may
+# attach to it (test_system_tasks_never_launch_session0_terminal), and this watchdog refused to
+# launch beside it -- so the feed sat dark until the principal closed it by hand, twice. The
+# principal's standing order is that a reboot needs nobody. So: from an INTERACTIVE session only
+# (Session 0 exited above), every terminal64 whose Path is EXACTLY the Fusion executable and
+# whose SessionId is 0 is closed, journalled to this log and to the event log, and the census is
+# re-read. Closing a terminal closes no position (positions live on the broker's server). A
+# terminal in any OTHER interactive session, or another broker's terminal, is never touched: the
+# refusals below still hold for those.
+$headless = @($terminals | Where-Object { $_.SessionId -eq 0 })
+if ($headless.Count -gt 0) {
+    $events = Join-Path $root 'desks\mt5\data\events.jsonl'
+    foreach ($h in $headless) {
+        $closed = $true
+        try { Stop-Process -Id $h.Id -Force -ErrorAction Stop } catch { $closed = $false }
+        $verdict = if ($closed) { 'closed' } else { 'close FAILED' }
+        Add-Content -LiteralPath $log -Value "$stamp JOURNAL headless Session 0 Fusion terminal pid $($h.Id) $verdict from session $session; re-reading the census"
+        $row = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss+00:00');
+                           kind = 'TERMINAL_SESSION0_CLOSED'; producer = 'MT5-TerminalBoot';
+                           host = $env:COMPUTERNAME; pid = $h.Id; watchdog_session = $session;
+                           closed = $closed; ack_state = 'UNACKNOWLEDGED' }
+        try {
+            Add-Content -LiteralPath $events -Value ($row | ConvertTo-Json -Compress) -Encoding UTF8
+        } catch {
+            Add-Content -LiteralPath $log -Value "$stamp event log not written: $($_.Exception.GetType().Name)"
+        }
+    }
+    Start-Sleep -Seconds 3
+    $terminals = Get-FusionTerminals
+    $local = @($terminals | Where-Object { $_.SessionId -eq $session })
+}
+
 # A terminal in another session may own live state. Refuse to kill it or launch
 # another on the same data directory without controlled reconciliation.
 if ($terminals.Count -gt 0 -and $local.Count -eq 0) {

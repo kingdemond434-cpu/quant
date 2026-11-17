@@ -21,7 +21,6 @@ def test_terminal_boot_health_file_is_written_on_a_passed_probe_only() -> None:
     assert "Where-Object { $_.SessionId -eq $session }" in source
     assert "if ($terminals.Count -gt 1)" in source
     assert "refusing automatic termination of an unverified owner" in source
-    assert "Stop-Process" not in source
 
 
 def test_terminal_boot_never_kills_a_different_broker_terminal() -> None:
@@ -93,10 +92,28 @@ def _code(source: str) -> str:
     return "".join(out).lower()
 
 
-def test_terminal_boot_never_kills_a_terminal() -> None:
+def test_terminal_boot_ends_only_a_session_zero_fusion_terminal() -> None:
+    """ONE kill site, and it is narrow (2026-11-17). A headless Session 0 Fusion terminal started by
+    a bare initialize() after a reboot is closed so a reboot needs nobody; nothing else may end."""
     source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
     hits = _KILL.findall(_code(source))
-    assert not hits, f"the watchdog can end a process: {hits}"
+    names = [h if isinstance(h, str) else next(x for x in h if x) for h in hits]
+    assert names == ["stop-process"], hits
+    kill = source.index("Stop-Process -Id $h.Id")
+    # only from an interactive session: the Session 0 exit comes first
+    assert source.index("if ($session -eq 0)") < kill
+    # only Fusion terminals (exact executable path), and only those in Session 0
+    assert "$headless = @($terminals | Where-Object { $_.SessionId -eq 0 })" in source
+    assert source.index("$headless = @($terminals") < kill
+    assert "foreach ($h in $headless)" in source[:kill]
+    # journalled to the log and the event log, then the census is re-read before any refusal
+    branch = source[kill:source.index("if ($terminals.Count -gt 0 -and $local.Count -eq 0)")]
+    assert "JOURNAL headless Session 0 Fusion terminal" in branch
+    assert "TERMINAL_SESSION0_CLOSED" in branch and "events.jsonl" in source
+    assert "$terminals = Get-FusionTerminals" in branch
+    # a terminal in another interactive session is still refused, never ended
+    assert "controlled recovery required" in source
+    assert "Get-Process terminal64 | Stop-Process" not in source
 
 
 def test_the_kill_pin_catches_every_spelling() -> None:
