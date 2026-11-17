@@ -10,11 +10,13 @@ series through its own once-in-a-lifetime cell door, so this module adds no hour
 registry path and no second minting clock. Rows live in `global_flow_sources.json` beside the
 code: add a source there; a row whose adapter is `none` is a NAMED GAP with its reason.
 
-SOURCES: snb_sight, gld_holdings, nse_part_oi, mof_weekly (see the rows).
+SOURCES: snb_sight, nse_part_oi, mof_weekly (see the rows).
 
-HONEST ACCESS. Robots is read as a routing label (LAWS 5e: PUBLIC / PUBLIC_WITH_TERMS /
-ACCESS_UNCLEAR, carried on each series); 401/403/429/451 is a hard stop recorded in state and
-never retried; no login, key, captcha or paywall is touched. The cloud build cannot reach any
+HONEST ACCESS. Robots FAILS CLOSED (Governance ruling 2026-11-10, #819): no data request is
+sent unless the host's robots.txt positively allows that exact URL. A Disallow, an unreadable
+robots.txt or no robots reader at all is a counted BLOCKED_BY_ROBOTS note with its
+missed_growth line. 401/403/429/451 is a hard stop recorded in state and never retried; no
+login, key, captcha or paywall is touched. The cloud build cannot reach any
 of these hosts, so every parser is written to the publisher's documented layout, tested on a
 fixture, and its live yield is UNMEASURED until the box runs it. A parser that reads zero rows
 says so in `notes` with the first bytes it saw, so the next pass can fix it rather than guess.
@@ -56,6 +58,10 @@ class HardStop(Exception):
     def __init__(self, code: int, url: str):
         super().__init__(f"HTTP {code}")
         self.code, self.url = code, url
+
+
+class RobotsRefused(Exception):
+    """robots.txt does not positively allow this exact URL. No request was sent."""
 
 
 class Missing(Exception):
@@ -262,6 +268,55 @@ def _save_raw(name: str, df: pd.DataFrame) -> None:
     _atomic_parquet(_raw(name), df)
 
 
+def robots_gate(get_text: Callable[[str], str] | None) -> Callable[[str], str | None]:
+    """url -> None when robots.txt allows that exact URL for our agent, else why not.
+
+    The stricter rule governs: a missing robots.txt (404/410) allows; 401/403 disallows the
+    whole host; any other failure to read it, or no reader at all, is a refusal. One read per
+    host per pass, failures included."""
+    import urllib.parse
+    import urllib.robotparser
+    cache: dict[str, Any] = {}
+
+    def rules(scheme: str, host: str) -> Any:
+        if get_text is None:
+            return "no robots reader this pass"
+        try:
+            text = get_text(f"{scheme}://{host}/robots.txt")
+        except Exception as exc:
+            code = getattr(exc, "code", None)
+            if code in (404, 410):
+                text = ""
+            elif code in (401, 403):
+                return f"robots.txt answered {code}: whole host disallowed"
+            else:
+                return f"robots.txt unreadable ({type(exc).__name__})"
+        rp = urllib.robotparser.RobotFileParser()
+        rp.parse(str(text).splitlines())
+        return rp
+
+    def refusal(url: str) -> str | None:
+        p = urllib.parse.urlsplit(url)
+        key = f"{p.scheme}://{p.netloc}"
+        if key not in cache:
+            cache[key] = rules(p.scheme, p.netloc)
+        r = cache[key]
+        if isinstance(r, str):
+            return r
+        return None if r.can_fetch(UA, url) else "robots.txt disallows this path"
+    return refusal
+
+
+def _gated(get: Callable[..., str], refusal: Callable[[str], str | None]) -> Callable[..., str]:
+    """`get`, but a URL robots does not allow raises RobotsRefused before any request."""
+    def fetch(url: str, **kw: Any) -> str:
+        why = refusal(url)
+        if why:
+            raise RobotsRefused(why)
+        return get(url, **kw)
+    return fetch
+
+
 def _whole_file(src: Mapping[str, Any], get: Callable[..., str], parse: Callable[[str], Any],
                 notes: list[dict[str, Any]]) -> pd.DataFrame:
     text = get(src["url"], max_bytes=int(src.get("max_bytes", 4_000_000)))
@@ -404,7 +459,7 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
             ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame]]:
     """Every live row -> (built, frames) in futures_state's shape. `get=None` reads only what
     is already held (offline / dry passes)."""
-    from research.futures_state import dynamics, robots_allow, stamped
+    from research.futures_state import dynamics, stamped
     reg = registry if registry is not None else json.loads(REGISTRY.read_text(encoding="utf-8"))
     now = now or datetime.now(UTC)
     deadline = budget if budget is not None else time.monotonic() + 300.0
@@ -412,35 +467,30 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
     built: dict[str, dict[str, Any]] = {}
     frames: dict[str, pd.DataFrame] = {}
     access: dict[str, str] = {}
+    fetch = _gated(get, robots_gate(get_text)) if get is not None else None
     for src in reg.get("sources") or []:
         sid, adapter = str(src["id"]), str(src.get("adapter") or "none")
         if adapter == "none":
             continue
         df = pd.DataFrame()
-        live = get is not None and f"gf_{sid}" not in stops and time.monotonic() < deadline
-        if live and get_text is not None and src.get("url"):
-            probe = src.get("robots_url") or src["url"].format(
-                ddmmyyyy="01012024")
-            # LAWS 5e: robots is a ROUTING LABEL, never a refusal (the #651 access_label
-            # pattern). Only 401/403/429/451 or a WAF page stop a source (HardStop below).
-            try:
-                label = "PUBLIC" if robots_allow(probe, get_text) else "PUBLIC_WITH_TERMS"
-            except Exception:
-                label = "ACCESS_UNCLEAR"
-            access[sid] = label
-            if label != "PUBLIC":
-                notes.append({"source": sid, "access_label": label,
-                              "terms_note": "robots.txt disallows or is unreadable; read under"
-                                            " LAWS 5e, nothing redistributed"})
+        live = fetch is not None and f"gf_{sid}" not in stops and time.monotonic() < deadline
         try:
-            if live and adapter in PARSERS:
-                df = _whole_file(src, get, PARSERS[adapter], notes)
-            elif live and adapter == "nse_daily":
-                df = _nse_days(src, get, state, notes, now.date(), deadline)
+            if live and fetch is not None and adapter in PARSERS:
+                df = _whole_file(src, fetch, PARSERS[adapter], notes)
+            elif live and fetch is not None and adapter == "nse_daily":
+                df = _nse_days(src, fetch, state, notes, now.date(), deadline)
             elif adapter == "cb_hazard":
                 df = _hazard(src, bars, notes)
             elif adapter == "session_window":
                 df = _session(src, bars, notes)
+            if live and adapter not in ("cb_hazard", "session_window"):
+                access[sid] = "PUBLIC"
+        except RobotsRefused as rr:
+            access[sid] = "BLOCKED_BY_ROBOTS"
+            notes.append({"source": sid, "status": "BLOCKED_BY_ROBOTS", "why": str(rr),
+                          "missed_growth": f"{sid} not fetched ({rr}); what it carries for "
+                                           f"{', '.join(src.get('targets') or []) or 'its targets'}"
+                                           " is UNMEASURED this pass"})
         except HardStop as hs:
             stops[f"gf_{sid}"] = {"code": hs.code, "at": now.isoformat(timespec="seconds")}
         except Exception as exc:

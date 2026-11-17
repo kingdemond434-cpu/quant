@@ -479,22 +479,9 @@
    "id": "gld_holdings",
    "class": "etf",
    "region": "US",
-   "adapter": "gld_archive",
-   "url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv",
-   "avail_lag_days": 1,
-   "avail_hour_utc": 6,
-   "window": 252,
-   "log_change_cols": [
-    "tonnes"
-   ],
-   "targets": [
-    "XAUUSD",
-    "XAGUSD",
-    "XAUEUR",
-    "XAUAUD"
-   ],
-   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying.",
-   "pit_source": "spdr_gld_holdings"
+   "adapter": "none",
+   "blocked_by": "SPDR GLD (spdrgoldshares.com) is on the desk's terms-refused list, so its holdings archive is never fetched. A lawful substitute needs its own terms read first.",
+   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying."
   },
   {
    "id": "nse_part_oi",
