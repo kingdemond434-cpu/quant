@@ -717,25 +717,34 @@ def organ_firewall() -> dict[str, Any]:
                        else 0.0}}
 
 
-#: The money-path sites that must consult the firewall AT RUNTIME (Tier S layer 12), and the call
-#: each one's source must carry. Read from the files on every pass, so a site that loses its
+#: The money-path sites that must consult the firewall AT RUNTIME (Tier S layer 12), and the
+#: function each one's source must CALL (an AST call node: a `def` of the same name is not a call,
+#: so a site whose calls were removed reads False even while it still defines the wrapper). Read from the files on every pass, so a site that loses its
 #: call reads False here the hour it happens instead of the ledger asserting it from memory.
 FIREWALL_RUNTIME_SITES = (
-    ("desks/mt5/research/universal_gate.py", "judge_refusal("),
-    ("desks/mt5/scripts/external_gauntlet.py", "judge_refusal("),
-    ("libs/autodiscovery/orchestrator.py", "lockbox_accepts("),
+    ("desks/mt5/research/universal_gate.py", "judge_refusal"),
+    ("desks/mt5/scripts/external_gauntlet.py", "judge_refusal"),
+    ("libs/autodiscovery/orchestrator.py", "lockbox_accepts"),
 )
 
 
 def _firewall_runtime_sites() -> dict[str, bool | str]:
     """{site: True when its source calls the firewall, False when it does not}. An unreadable
     site is UNMEASURED, never False and never True (L1.28a)."""
+    import ast
+
     out: dict[str, bool | str] = {}
-    for rel, needle in FIREWALL_RUNTIME_SITES:
+    for rel, fn in FIREWALL_RUNTIME_SITES:
         try:
-            out[rel] = needle in (ROOT / rel).read_text(encoding="utf-8")
-        except OSError:
+            tree = ast.parse((ROOT / rel).read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, ValueError):
             out[rel] = "UNMEASURED"
+            continue
+        out[rel] = any(
+            isinstance(n, ast.Call)
+            and ((isinstance(n.func, ast.Name) and n.func.id == fn)
+                 or (isinstance(n.func, ast.Attribute) and n.func.attr == fn))
+            for n in ast.walk(tree))
     return out
 
 
