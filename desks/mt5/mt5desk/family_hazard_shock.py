@@ -29,6 +29,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from mt5desk.families import Signal, _atr, _h1
+from mt5desk.family_generic import _hold_bars
 
 from libs.research.bar_clock import to_bar_time
 
@@ -108,6 +109,10 @@ def family_hazard_shock(
     d = _h1(bars)
     if len(d) < int(atr_n) + 3:
         return []
+    # NO TIMEFRAME RESTRICTION: `hold_bars` and `fade_after` are HOURS of market time (H1 bars),
+    # turned into this chart's own bars, so the rule means the same thing on every rung.
+    hold = _hold_bars(max(1, int(hold_bars)), d)
+    fade = _hold_bars(max(1, int(fade_after)), d)
     index = pd.DatetimeIndex(d.index)
     atr = _atr(d, int(atr_n)).to_numpy()
     close = d["close"].astype(float).to_numpy()
@@ -124,7 +129,7 @@ def family_hazard_shock(
         if mode == "drift":
             i, direction = pos, polarity * int(prior_side)
         else:
-            i = pos + max(1, int(fade_after))
+            i = pos + fade
             if i >= len(d) - 1:
                 continue
             move = float(close[i] - close[pos - 1])
@@ -138,7 +143,7 @@ def family_hazard_shock(
         risk = float(stop_atr) * a
         signals.append(Signal(time=index[i], side=direction, stop=px - direction * risk,
                               target=px + direction * risk * float(rr),
-                              ttl_bars=max(1, int(hold_bars)),
+                              ttl_bars=hold,
                               tag=f"hazard_shock.{kind}.{mode}", trigger=None, wait_bars=1))
-        busy_until = i + max(1, int(hold_bars))
+        busy_until = i + hold
     return signals

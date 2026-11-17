@@ -2635,7 +2635,5 @@ ORTHOGONAL_FAMILIES["hazard_shock"] = family_hazard_shock
 FAMILY_INPUTS["hazard_shock"] = (
     "public hazard notices (USGS quakes, NHC cones) at their publication instant, plus price",
     "data/lake/series/natural_hazard_events.csv")
-FAMILY_TIMEFRAMES["hazard_shock"] = (
-    ("H1",),
-    "a notice is one instant; entry is the first H1 bar opening after it and the hold is "
-    "counted in H1 bars")
+# NO TIMEFRAME RESTRICTION: entry is the first bar opening after the notice on whatever chart the
+# cell carries, and the hold and fade windows are hours of market time in the chart's own bars.
