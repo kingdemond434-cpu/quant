@@ -7,8 +7,8 @@
 # provides that port, and nothing else.
 #
 # WHAT IT DOES, FAIL CLOSED AT EVERY STEP.
-#  1. Refuses to run at all while $PinnedSha256 is not a 64-hex value (it ships as a failing
-#     placeholder: the container that wrote it could not reach torproject.org to read the sums).
+#  1. Refuses to run at all while $PinnedSha256 is not a 64-hex value (a bump of $TorVersion must
+#     re-pin the hash from that version's published sums file in the same edit).
 #  2. Downloads the official Tor Expert Bundle for Windows x86_64 at the PINNED version from the
 #     Tor Project's own archive ONLY:
 #       https://archive.torproject.org/tor-package-archive/torbrowser/<ver>/
@@ -35,8 +35,12 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # ---- PINS. Update the two together, from the sums file named above, never from anywhere else.
-$TorVersion   = '14.0.4'
-$PinnedSha256 = 'UNPINNED-READ-sha256sums-signed-build.txt-ON-THE-BOX-BEFORE-INSTALL'
+$TorVersion   = '16.0.1'
+# Pinned 2026-11-17 from the published sums file for 16.0.1 (tor 0.4.9.16), the current stable
+# Expert Bundle on the Tor Project's download page, read from the published sums file (the dist
+# mirror serves the identical file):
+#   https://archive.torproject.org/tor-package-archive/torbrowser/16.0.1/sha256sums-signed-build.txt
+$PinnedSha256 = '9eed3c3ff1fe43df034ce360196c9ec95472560d77ff55614d0cd5120edea27b'
 
 $ArchiveBase = "https://archive.torproject.org/tor-package-archive/torbrowser/$TorVersion"
 $BundleName  = "tor-expert-bundle-windows-x86_64-$TorVersion.tar.gz"
