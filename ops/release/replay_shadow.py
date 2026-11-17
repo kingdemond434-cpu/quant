@@ -421,6 +421,92 @@ def exempt_scripts(
     return scripts - money_scripts(trees, closure, listed)
 
 
+#: POWERSHELL INSTALLERS, JUDGED STATICALLY (Governance ruling 2026-11-17 18:25Z, option (a)).
+#: The replay imports only Python, so a new box task installer under SCRIPT_DIRS read UNMEASURED
+#: for ever (#1230). An installer is MEASURED, with its own text as the evidence, only when every
+#: script its code names is a target the replay already vouches for: an ENTRY_POINT, a Python file
+#: the replay imported, or a row of INSTALLER_TARGETS below. Its code (comments stripped) must
+#: register a scheduled task, name no venue or switch word, and run nothing dynamic beyond the
+#: scheduled-task verbs. Anything else stays UNMEASURED (fail closed). The allowlist lives HERE,
+#: in the harness (the base's checkout), so a PR can never vouch for its own target.
+INSTALLER_TARGETS = (
+    "scripts/run_alerts.py",  # the pager: reads reports and pages; no order, sizing or switch
+    "desks/mt5/scripts/stall_watch.ps1",  # the stall watcher: task health and re-enables
+)  # fmt: skip
+#: What an installer may do that DYNAMIC reads as dynamic: the scheduled-task verbs, and finding
+#: the interpreter by name (`(Get-Command python ...).Source`, a property, not `source`-ing).
+_INSTALLER_VERBS = re.compile(
+    r"(register|set|disable|enable|unregister|start|get|new)-scheduledtask\w*"
+    r"|\(get-command\s+(python|py|pythonw)\b[^)]*\)\.source\b",
+    re.IGNORECASE,
+)
+_SCRIPT_REF = re.compile(r"[A-Za-z0-9_.\\/:-]+\.(?:py|ps1|psm1|cmd|bat|sh)\b", re.IGNORECASE)
+
+
+def _is_row_installer(attrs: dict[str, str], path: str) -> bool:
+    """Whether `path` is the row's `installer` (never its `runs` or `also_runs`)."""
+    return path == attrs.get("installer", "").strip()
+
+
+def _installer_code(text: str) -> str:
+    """The installer's code: `<# ... #>` blocks, whole-line `#` comments and trailing ` # ...`
+    comments dropped (a `#` inside a quoted string is kept: the cut is only at ` #`)."""
+    text = re.sub(r"<#.*?#>", "", text, flags=re.DOTALL)
+    out = []
+    for ln in text.splitlines():
+        if ln.lstrip().startswith("#"):
+            continue
+        out.append(re.sub(r"\s#\s.*$", "", ln))
+    return "\n".join(out)
+
+
+def _resolve_ref(ref: str, files: set[str]) -> set[str]:
+    """The repo files a script reference can mean: the longest repo-relative tail that names a
+    file, backslashes read as slashes. Empty when nothing in the tree matches (unresolved)."""
+    parts = [x for x in ref.replace("\\", "/").split("/") if x and not x.endswith(":")]
+    for i in range(len(parts)):
+        tail = "/".join(parts[i:])
+        hit = {f for f in files if f == tail or f.endswith("/" + tail)}
+        if hit:
+            return hit
+    return set()
+
+
+def installer_problems(head: Path, path: str, vouched: set[str]) -> list[str]:
+    """Why a changed PowerShell installer is not MEASURED by its own text; [] when it is.
+    `vouched` is what the replay already stands behind (ENTRY_POINTS, the files it imported)."""
+    if not path.lower().endswith(".ps1"):
+        return ["not a PowerShell installer"]
+    raw = read(head, path)
+    if raw is None:
+        return ["unreadable"]
+    code = _installer_code(raw)
+    if not re.search(r"new-scheduledtaskaction", code, re.IGNORECASE):
+        return ["registers no scheduled task action"]
+    why: list[str] = []
+    low = code.lower()
+    if MONEY_WORDS.search(low) or STATE_WORDS.search(low):
+        why.append("its code names a venue or switch word")
+    for ln in code.splitlines():
+        if DYNAMIC.search(_INSTALLER_VERBS.sub("", ln)):
+            why.append(f"dynamic execution beyond the scheduled-task verbs: {ln.strip()[:80]}")
+            break
+    files = tree_files(head)
+    allowed = {*vouched, *ENTRY_POINTS, *INSTALLER_TARGETS}
+    targets = 0
+    for hit_ref in sorted({m.group(0) for m in _SCRIPT_REF.finditer(code)}):
+        ref, hit = hit_ref, _resolve_ref(hit_ref, files)
+        if not hit:
+            why.append(f"names a script the tree does not hold: {ref[:80]}")
+        elif not hit <= allowed:
+            why.append(f"runs a target the replay does not vouch for: {sorted(hit - allowed)[0]}")
+        else:
+            targets += 1
+    if not targets:
+        why.append("names no target the replay vouches for")
+    return list(dict.fromkeys(why))
+
+
 #: The box's task table. A data file under MONEY_PATH, so any change to it is money path, unless
 #: every line it changes is a TASK row that names nothing money (manifest_is_money): the rows for
 #: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
@@ -462,7 +548,12 @@ def _held_tasks(tree: Path) -> set[str] | None:
 
 
 def manifest_is_money(
-    base: Path, head: Path, closure: set[str], money: set[str], exempt: set[str]
+    base: Path,
+    head: Path,
+    closure: set[str],
+    money: set[str],
+    exempt: set[str],
+    measured: frozenset[str] | set[str] = frozenset(),
 ) -> bool:
     """Whether the change to MANIFEST is money path. Comments and blank lines are prose. Every
     other added or removed line must be a TASK row whose raw text names no venue, state or
@@ -488,7 +579,9 @@ def manifest_is_money(
         Path(f).stem.lower() for f in {*closure, *ENTRY_POINTS} if Path(f).name != "__init__.py"
     }
     names = (_money_names(base, closure) - dirs) | state_names(base, closure)
-    names |= {n for m in money for n in (Path(m).name.lower(), Path(m).stem.lower())}
+    names |= {
+        n for m in money - set(measured) for n in (Path(m).name.lower(), Path(m).stem.lower())
+    }
     held = _held_tasks(base)
     if held is None:
         return True
@@ -517,6 +610,8 @@ def manifest_is_money(
         for p in paths:
             if not _PLAIN_PATH.fullmatch(p) or any(seg in ("", ".", "..") for seg in p.split("/")):
                 return True  # only a plain repo path is compared as the file it names (v3 MF1)
+            if _is_row_installer(attrs, p) and p in measured:
+                continue  # an installer the installer leg MEASURED by its own text
             if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
                 return True
             if is_script(p) and p not in exempt:
@@ -1198,10 +1293,19 @@ def compare(
                 problems += [f"UNMEASURED fusion roster: {f} {why}" for why in roster_gaps[f]]
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
-    rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
+    # the installer leg: a changed installer the replay could not import, MEASURED by its text
+    vouched = imported | head_imported
+    installers = {
+        f for f in changed
+        if is_script(f) and f.lower().endswith(".ps1") and f not in exempt and f not in covered
+        and not installer_problems(head, f, vouched)
+    }  # fmt: skip
+    rows_only = MANIFEST in changed and not manifest_is_money(
+        base, head, closure, money, exempt, measured=installers
+    )
     uncovered = sorted(
         f for f in changed
-        if is_money(f, closure, exempt=exempt) and f not in covered
+        if is_money(f, closure, exempt=exempt) and f not in covered and f not in installers
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
@@ -1241,6 +1345,8 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # installers MEASURED by their own text (installer_problems): every target vouched for
+        "installers_measured": sorted(installers),
     }
 
 
