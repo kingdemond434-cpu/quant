@@ -628,3 +628,12 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# The sandbox federation's evidence and the organ censuses, published by sync_shadow_to_git
+# $reportPaths (Governance 2026-11-17); each writer redacts through libs/ops/public_report.py.
+!desks/mt5/reports/SANDBOX_RUNNER.json
+!desks/mt5/reports/SANDBOX_ROSTER.json
+!desks/mt5/reports/SANDBOX_LIVENESS.json
+!desks/mt5/reports/ORGAN_CENSUS.json
+!desks/mt5/reports/PRODUCER_CENSUS.json
+!desks/mt5/reports/PRODUCTIVITY_CENSUS.json
+!desks/mt5/reports/dead_architecture.json

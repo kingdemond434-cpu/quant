@@ -394,7 +394,11 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     doc = census()
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.ops.public_report import redact  # the published copy carries no host layout
+    args.out.write_text(json.dumps(redact(doc), indent=1, default=str), "utf-8")
     n_burn, n_cont = len(doc["burning"]), len(doc["contested_artifacts"])
     print(f"dead architecture: {doc['n_organs']} organs that write something; {doc['counts']}; "
           f"BURNING {n_burn} (ratchet {MAX_BURNING}); CONTESTED {n_cont} "

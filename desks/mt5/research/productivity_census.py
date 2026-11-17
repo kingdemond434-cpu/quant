@@ -101,6 +101,7 @@ PRODUCER_YIELD = REPORTS / "PRODUCER_YIELD.json"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from libs.ops.public_report import redact  # noqa: E402
 from libs.research import attribution as _attr  # noqa: E402
 
 # The window every rate in this census is computed over. Compute hours come from the compute
@@ -1553,7 +1554,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         tmp = OUT.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(census, indent=2, default=str), encoding="utf-8")
+        tmp.write_text(json.dumps(redact(census), indent=2, default=str), encoding="utf-8")
         os.replace(tmp, OUT)
         DOC.parent.mkdir(parents=True, exist_ok=True)
         DOC.write_text(render(census), encoding="utf-8")

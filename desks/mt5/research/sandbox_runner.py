@@ -52,6 +52,7 @@ for _p in (str(ROOT), str(DESK)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.ops.public_report import redact  # noqa: E402
 from libs.research import adapters as A  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import licence_reader as LR  # noqa: E402
@@ -872,13 +873,13 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     if not dry_run:
         state["at"] = doc["at"]
         state["last_bundle"] = doc["bundle"]
-        _write(state_path, state)
+        _write(state_path, redact(state))
         if rows and isinstance(fed_state, dict):
             fed_state["systems"] = {**fed_rows(fed_state), **rows}
             fed_state.setdefault("at", doc["at"])
             with contextlib.suppress(OSError):
                 _write(fed_state_path, fed_state)
-        _write(report_path, doc)
+        _write(report_path, redact(doc))
     return doc
 
 

@@ -897,6 +897,21 @@ $reportPaths = @(
     "desks/mt5/data/plausibility/LEAK_PROVEN.json",
     "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
     "desks/mt5/data/tape/tape_state.json",
+    # EVERY SANDBOX SHOWS FRESH PRODUCTION EVERY PASS (zuck, 2026-11-17; Governance ruling 20:44Z).
+    # The federation's runner, its roster and liveness verdict, the runner's own per-system state
+    # and the organ censuses were written hourly on the box and read by no one off it, so a dark
+    # or stalled system could not be named from the branch. Each writer redacts host layout and
+    # credentials before writing (libs/ops/public_report.py); the 4 MB cap above still applies.
+    # tests/ops/test_sandbox_evidence_publication.py pins this block, its .gitignore lines and
+    # the redaction.
+    "desks/mt5/reports/SANDBOX_RUNNER.json",
+    "desks/mt5/reports/SANDBOX_ROSTER.json",
+    "desks/mt5/reports/SANDBOX_LIVENESS.json",
+    "desks/mt5/data/sandbox_runner_state.json",
+    "desks/mt5/reports/ORGAN_CENSUS.json",
+    "desks/mt5/reports/PRODUCER_CENSUS.json",
+    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
+    "desks/mt5/reports/dead_architecture.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
