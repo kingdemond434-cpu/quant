@@ -54,6 +54,10 @@ sys.path.insert(0, str(BASE))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
+from libs.data.refused_hosts import RefusedRedirect  # noqa: E402
+from libs.data.refused_hosts import opener as _refusing_opener  # noqa: E402
+from libs.data.refused_hosts import refusal as terms_refusal  # noqa: E402
+
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
@@ -195,7 +199,13 @@ def _ascii_url(url: str) -> str:
 
 
 def fetch(url: str) -> tuple[bytes | None, str]:
-    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
+    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour.
+
+    A host whose own terms refuse automated contact (libs.data.refused_hosts) is never
+    requested, whichever seed, frontier row or link led here."""
+    refused = terms_refusal(url)
+    if refused:
+        return None, f"BLOCKED_ON_TERMS: {refused}"
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
@@ -204,11 +214,15 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # Redirects are checked hop by hop: a lawful page that redirects to a refused host
+        # stops before the refused host is contacted (RefusedRedirect is a URLError).
+        with _refusing_opener().open(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
+    except RefusedRedirect as exc:
+        return None, str(exc.reason)
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -434,7 +448,7 @@ _API_RE = re.compile(
 
 
 _DATA_HOSTS = (
-    "stlouisfed.org", "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
+    "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
     "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
     # zh
@@ -446,7 +460,7 @@ _DATA_HOSTS = (
     # Free historical tick/M1 for exactly the instrument classes Fusion quotes -- FX majors and
     # crosses, metals, indices, energy. This is the raw material the ten gates measure on, and
     # the desk has none of it beyond what its own recorder has collected since it started.
-    "dukascopy.com", "histdata.com", "truefx.com", "forextester.com",
+    "histdata.com", "truefx.com", "forextester.com",
     "firstratedata.com", "kibot.com", "tickstory.com", "pepperstone.com",
     # ---- BROKER CONTRACT SPECIFICATIONS -------------------------------------------------------
     # THE HIGHEST-CONVERTING CLASS THE DESK HAS EVER MINED. `broker_swaps` turned 248 evidence
@@ -478,7 +492,7 @@ _DATA_HOSTS = (
     "bundesbank.de", "banque-france.fr", "snb.ch", "rba.gov.au", "bankofcanada.ca",
     "bankofengland.co.uk", "rbnz.govt.nz", "norges-bank.no", "riksbank.se", "cbr.ru",
     # (d) EXCHANGES for the metals, energy and index underlyings the desk trades as CFDs.
-    "lme.com", "theice.com", "eurex.com", "nasdaq.com", "euronext.com", "tocom.or.jp",
+    "lme.com", "eurex.com", "nasdaq.com", "euronext.com", "tocom.or.jp",
 )
 
 
@@ -682,7 +696,6 @@ SEEDS = (
     #
     # en / official
     "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
-    "https://fred.stlouisfed.org/categories",
     "https://www.newyorkfed.org/markets/data-hub",
     "https://www.bis.org/statistics/index.htm",
     "https://www.ecb.europa.eu/stats/html/index.en.html",
@@ -711,7 +724,6 @@ SEEDS = (
     # ones relative to MT5. These are free-at-point-of-use historical tick/M1 archives whose
     # coverage IS the Fusion universe -- FX majors and crosses, XAU/XAG, indices, energy -- not
     # equities-only feeds that would resolve to symbols this desk cannot trade.
-    "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
     "https://www.histdata.com/download-free-forex-data/",
     "https://www.truefx.com/truefx-historical-downloads/",
     "https://forextester.com/data/datasources",
@@ -838,7 +850,6 @@ SEEDS = (
     "https://alphaarchitect.com/blog/",
     "https://macrosynergy.com/research/",
     "https://www.cmegroup.com/insights/economic-research.html",
-    "https://www.cboe.com/insights/",
     "https://www.trade2win.com/",
     "https://www.bankofengland.co.uk/working-paper/working-papers",
     "https://www.bankofcanada.ca/research/staff-working-papers/",
@@ -855,7 +866,6 @@ SEEDS = (
     "https://www.gold.org/goldhub/data",
     "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
     "https://www.treasurydirect.gov/auctions/announcements-data-results/",
-    "https://alfred.stlouisfed.org/",
     # eu (de / fr / it / es / nl)
     "https://www.wallstreet-online.de/diskussion/",
     "https://stock3.com/",
@@ -942,6 +952,8 @@ def paid_substitute_seeds() -> tuple[str, ...]:
 def seed(sources: dict[str, wf.Source]) -> int:
     added = 0
     for url in (*SEEDS, *frontier_seeds(), *paid_substitute_seeds()):
+        if terms_refusal(url):
+            continue                      # a terms-refused host is never seeded
         if wf.add(sources, url, via="seed"):
             added += 1
     return added
@@ -1013,6 +1025,14 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             log(f"run budget {run_budget_s}s spent; {len(picked)} planned, stopping here. "
                 f"The frontier resumes next hour rather than restarting.")
             break
+
+        if terms_refusal(src.url):
+            # Refused on terms: no request and no politeness wait. Counted as a failure so the
+            # frontier's own scoring moves the hour to ground the desk may read.
+            src.failures += 1
+            src.consecutive_failures += 1
+            failures["BLOCKED_ON_TERMS"] += 1
+            continue
 
         gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
         if gap > 0:

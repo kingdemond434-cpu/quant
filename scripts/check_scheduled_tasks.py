@@ -69,6 +69,8 @@ EXTRA_DECLARED = ("MT5-AdoptRelease", "MT5-ResearchSupervisor", "MT5-ShadowSync"
                   # their own installers, so their absence has to be a defect here or nothing
                   # would ever notice the gate going quiet again.
                   "MT5-LawGate", "MT5-PlumbingWatchdog",
+                  # the box's own pager for plumbing + judge stalls (install_plumbing_pager_task.ps1)
+                  "MT5-PlumbingPager",
                   "E8-Executor", "E8-Book", "E8-Spreads")
 
 #: A git writer older than this is not working, it is stuck. The adopt script waits nine minutes
