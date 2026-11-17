@@ -53,9 +53,12 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository && (
         github.event.action != 'labeled' || github.event.label.name == 'audit-clear')
     # Job-level, so a run for an unrelated label (skipped by `if`) never cancels a waiting gate;
-    # a new push does, and its own run decides.
+    # a new push does, and its own run decides. A workflow_run event has no PR number, and the bare
+    # group `audit-gate-` was shared by EVERY workflow_run run's (skipped) gate job, across all
+    # PRs (11-13: 110 queued; 11-17 22:38Z: 132 queued + 83 pending, none running, and #1244 --
+    # CLEARed, approved, green at 22:05Z -- left unmerged). Such a run gets a group of its own.
     concurrency:
-      group: audit-gate-${{ github.event.pull_request.number }}
+      group: audit-gate-${{ github.event.pull_request.number || format('run-{0}', github.run_id) }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     # One look, never a wait (2026-10-29: gates polling up to 300 min held the runners their own

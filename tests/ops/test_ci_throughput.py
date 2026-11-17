@@ -114,6 +114,11 @@ def test_the_gate_keeps_one_waiting_run_per_pr() -> None:
     # an unrelated label waits in its own group, so it never replaces a waiting gate run
     assert "github.event.label.name != 'audit-clear')" in top and "'noise' || 'gate'" in top
     assert "cancel-in-progress: false" in top  # never cut off a gate that is merging
+    # a workflow_run run has no PR number: its skipped gate job never shares one bare group
+    assert (
+        "audit-gate-${{ github.event.pull_request.number || format('run-{0}', github.run_id) }}"
+        in text
+    )
 
 
 def test_release_gates_supersede_an_old_head() -> None:
