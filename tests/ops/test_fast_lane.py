@@ -167,7 +167,9 @@ def _merged(hub: Hub) -> bool:
     return any(path.endswith("/pulls/7/merge") for path, _ in hub.writes)
 
 
-def test_a_green_smoke_merges_with_no_clear_and_no_approval(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_green_smoke_merges_with_no_clear_and_no_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     hub = Hub()
     assert _run(monkeypatch, hub) == 0
     merge = next(d for path, d in hub.writes if path.endswith("/pulls/7/merge"))
