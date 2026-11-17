@@ -222,11 +222,15 @@
     "NZ",
     "MX",
     "ZA",
-    "TR"
+    "TR",
+    "US"
+   ],
+   "probe_areas": [
+    "XM"
    ],
    "history_start": "2000-01",
    "citation": "Source: Bank for International Settlements, central bank policy rates (WS_CBPOL) and consumer prices (WS_LONG_CPI), BIS Data Portal, https://data.bis.org",
-   "note": "BIS statistics. Terms read from the box 2026-11-11 (data.bis.org/help/legal, 'Terms of permitted use of BIS statistics'): use is unrestricted provided the BIS is cited as the source when the statistics are reproduced, and the BIS offers the SDMX API itself. No published rate limit; the BIS may suspend an IP, so this reads at most once every 20 hours. Both key forms were confirmed on the box the same day (WS_CBPOL M.GB; WS_LONG_CPI M.GB+JP.628, unit 628 = index level). Monthly policy rates carry a long note on every row, so each area is one request and history starts in 2000 to stay under the fetcher's 2 MB reply cap. The euro-area code was not confirmed, so the ECB stays on FRED. An area the monthly price table does not carry (quarterly reporters) simply yields no bank: UNMEASURED, never filled."
+   "note": "BIS statistics. Terms read from the box 2026-11-11 (data.bis.org/help/legal, 'Terms of permitted use of BIS statistics'): use is unrestricted provided the BIS is cited as the source when the statistics are reproduced, and the BIS offers the SDMX API itself. No published rate limit; the BIS may suspend an IP, so this reads at most once every 20 hours. Both key forms were confirmed on the box the same day (WS_CBPOL M.GB; WS_LONG_CPI M.GB+JP.628, unit 628 = index level). Monthly policy rates carry a long note on every row, so each area is one request and history starts in 2000 to stay under the fetcher's 2 MB reply cap. The euro-area code has not been seen in a reply (FR3 box read, 2026-11-11), so XM is listed under probe_areas: it is asked for alone in both tables, a missing reply is noted as NO_REPLY and leaves the euro pairs UNMEASURED, and nothing is filled from another feed. An area the monthly price table does not carry (quarterly reporters) simply yields no bank: UNMEASURED, never filled."
   }
  ],
  "cftc_markets": [
@@ -1644,24 +1648,18 @@
    "bis": true,
    "avail_lag_days": 75,
    "window": 120,
-   "note": "Relative policy stance for the major pairs and crosses: the base currency's central bank's Taylor-rule residual minus the quote currency's, and the same difference of their real policy rates. Both legs use the inflation-only rule so the difference compares like with like (cb_reaction's Fed series carries an unemployment term the others lack). Built only from series the desk already collects (FRED for the Fed and ECB, the BIS for the rest; source bis_stats). Available 75 days after the month's first day, the later of the two feeds. Current vintage, so first prints are required before any certificate. No exotic pair is listed (breadth order of 2026-11-13). Australia and New Zealand publish CPI quarterly, so their pairs stay UNMEASURED until the monthly table carries them. Question for the gauntlet: does the currency of the bank that is tighter relative to its own rule keep appreciating, or does the gap close?",
-   "series": [
-    "DFF",
-    "CPIAUCSL",
-    "ECBDFR",
-    "CP0000EZ19M086NEST"
-   ],
+   "note": "Relative policy stance for the major pairs and crosses: the base currency's central bank's Taylor-rule residual minus the quote currency's, and the same difference of their real policy rates. Both legs use the inflation-only rule so the difference compares like with like (cb_reaction's Fed series carries an unemployment term the others lack). Every leg comes from the BIS (source bis_stats: policy rates and consumer price indices), the Fed and ECB legs included: no FRED series is read for this row, because FRED is refused for automated fetches (ruling of 2026-11-13). The euro-area legs use the probe code XM; until a reply carries it the five euro pairs are UNMEASURED. Available 75 days after the month's first day. Current vintage, so first prints are required before any certificate. No exotic pair is listed (breadth order of 2026-11-13). Australia and New Zealand publish CPI quarterly, so their pairs stay UNMEASURED until the monthly table carries them. Question for the gauntlet: does the currency of the bank that is tighter relative to its own rule keep appreciating, or does the gap close?",
    "banks": [
     {
      "id": "fed",
-     "rate": "DFF",
-     "inflation": "CPIAUCSL",
+     "rate": "BIS_CBPOL_US",
+     "inflation": "BIS_CPI_US",
      "target": 2.0
     },
     {
      "id": "ecb",
-     "rate": "ECBDFR",
-     "inflation": "CP0000EZ19M086NEST",
+     "rate": "BIS_CBPOL_XM",
+     "inflation": "BIS_CPI_XM",
      "target": 2.0
     },
     {
