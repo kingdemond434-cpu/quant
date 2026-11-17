@@ -296,8 +296,12 @@ def fake_net(monkeypatch: pytest.MonkeyPatch) -> Any:
 
     def install(script: dict[str, tuple[int, dict[str, str], bytes]]) -> _FakeNet:
         net = _FakeNet(script)
-        monkeypatch.setattr(urllib.request.HTTPSHandler, "https_open", net)
-        monkeypatch.setattr(urllib.request.HTTPHandler, "http_open", net)
+
+        def _open(handler: Any, req: urllib.request.Request) -> Any:
+            return net(handler, req)
+
+        monkeypatch.setattr(urllib.request.HTTPSHandler, "https_open", _open)
+        monkeypatch.setattr(urllib.request.HTTPHandler, "http_open", _open)
         return net
 
     monkeypatch.setattr(polite_fetch.GATE, "wait", lambda *a, **k: None)
@@ -375,7 +379,11 @@ def test_cboe_output_lands_only_under_the_gitignored_owner_permitted_dir() -> No
         "shadow_institutional_t", REPO / "desks" / "mt5" / "research" / "shadow_institutional.py")
     assert spec and spec.loader
     si = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(si)
+    sys.modules[spec.name] = si
+    try:
+        spec.loader.exec_module(si)
+    finally:
+        sys.modules.pop(spec.name, None)
     assert si.OWNER_OBSERVABLES["cboe_delayed_surface"] == gex
 
 
