@@ -130,8 +130,6 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # report on every pass, sent or refused, so a stale report means the organ stopped.
     "MT5-FTMO-Executor":  ("desks/mt5/reports/FTMO_EXEC.json", 15,
                            "five-minute FTMO sleeve placement off the allocator book, or why not"),
-    "MT5-FTMO-Follower":  ("desks/mt5/reports/FTMO_FOLLOWER.json", 10,
-                           "the one-minute FTMO gold follower and mirror bracket, or why not"),
     "MT5-FTMO-VenueReader": ("desks/mt5/reports/FTMO_ACCOUNT_STATE.json", 15,
                              "the FTMO account's phase, equity room and days traded"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
