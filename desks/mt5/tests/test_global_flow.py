@@ -103,6 +103,10 @@ def tmp_raw(tmp_path, monkeypatch):
     return tmp_path
 
 
+def _allow(url):
+    return "User-agent: *\nAllow: /"
+
+
 def _reg(**over):
     src = {"id": "gld_holdings", "class": "etf", "region": "US", "adapter": "gld_archive",
            "url": "https://example.test/gld.csv", "avail_lag_days": 1, "avail_hour_utc": 6,
@@ -115,7 +119,7 @@ def _reg(**over):
 def test_collect_stamps_after_observation(tmp_raw):
     notes: list = []
     built, frames = gf.collect(get=lambda url, **k: _gld(), state={}, notes=notes,
-                               get_text=None, now=datetime(2026, 3, 1, tzinfo=UTC),
+                               get_text=_allow, now=datetime(2026, 3, 1, tzinfo=UTC),
                                registry=_reg())
     f = frames["flow_gld_holdings"]
     assert built["flow_gld_holdings"]["kind"] == "flow_etf"
@@ -132,9 +136,9 @@ def test_hard_stop_is_recorded_and_not_retried(tmp_raw):
         calls.append(url)
         raise gf.HardStop(403, url)
     state: dict = {}
-    gf.collect(get=refuse, state=state, notes=[], registry=_reg())
+    gf.collect(get=refuse, state=state, notes=[], get_text=_allow, registry=_reg())
     assert "gf_gld_holdings" in state["hard_stops"]
-    gf.collect(get=refuse, state=state, notes=[], registry=_reg())
+    gf.collect(get=refuse, state=state, notes=[], get_text=_allow, registry=_reg())
     assert len(calls) == 1
 
 
@@ -142,7 +146,8 @@ def test_offline_reads_only_held(tmp_raw):
     notes: list = []
     built, _ = gf.collect(get=None, state={}, notes=notes, registry=_reg())
     assert built == {} and notes[0]["status"] == "UNMEASURED"
-    gf.collect(get=lambda url, **k: _gld(), state={}, notes=[], registry=_reg())
+    gf.collect(get=lambda url, **k: _gld(), state={}, notes=[], get_text=_allow,
+               registry=_reg())
     built, _ = gf.collect(get=None, state={}, notes=[], registry=_reg())
     assert "flow_gld_holdings" in built
 
@@ -158,12 +163,12 @@ def test_nse_walks_days_and_remembers_holidays(tmp_raw):
     src = {"id": "nse_part_oi", "class": "retail", "adapter": "nse_daily",
            "url": "https://example.test/fao_participant_oi_{ddmmyyyy}.csv", "targets": ["USDINR"]}
     state: dict = {}
-    gf.collect(get=get, state=state, notes=[], registry={"sources": [src]},
+    gf.collect(get=get, state=state, notes=[], get_text=_allow, registry={"sources": [src]},
                now=datetime(2026, 11, 3, tzinfo=UTC))
     assert len(asked) == gf.NSE_DAYS_PER_PASS
     assert "2026-10-31" not in state["global_flow_nse_seen"]          # a Saturday: never asked
     first = len(asked)
-    gf.collect(get=get, state=state, notes=[], registry={"sources": [src]},
+    gf.collect(get=get, state=state, notes=[], get_text=_allow, registry={"sources": [src]},
                now=datetime(2026, 11, 3, tzinfo=UTC))
     assert not set(asked[first:]) & set(asked[:first])                # nothing asked twice
 
@@ -207,9 +212,73 @@ def test_first_seen_floors_recent_rows_and_keeps_backfill():
     assert later.iloc[1] == pd.Timestamp(now)               # the stamp never moves
 
 
-def test_robots_disallow_is_a_label_not_a_stop(tmp_raw):
+class _Http(Exception):
+    def __init__(self, code):
+        super().__init__(f"HTTP {code}")
+        self.code = code
+
+
+def _raises(exc):
+    def get_text(url):
+        raise exc
+    return get_text
+
+
+@pytest.mark.parametrize("get_text", [
+    lambda url: "User-agent: *\nDisallow: /",          # an explicit Disallow
+    _raises(_Http(403)),                                # 401/403: the whole host is closed
+    _raises(_Http(500)),                                # unreadable is never permission
+    _raises(TimeoutError("slow")),
+    None,                                               # no robots reader at all
+])
+def test_no_data_request_without_a_robots_yes(tmp_raw, get_text):
+    asked: list = []
+
+    def get(url, **k):
+        asked.append(url)
+        return _gld()
     notes: list = []
-    built, _ = gf.collect(get=lambda url, **k: _gld(), state={}, notes=notes,
-                          get_text=lambda url: "User-agent: *\nDisallow: /", registry=_reg())
-    assert built["flow_gld_holdings"]["access_label"] == "PUBLIC_WITH_TERMS"
-    assert any(n.get("access_label") == "PUBLIC_WITH_TERMS" for n in notes)
+    state: dict = {}
+    built, _ = gf.collect(get=get, state=state, notes=notes, get_text=get_text, registry=_reg())
+    assert asked == [] and built == {}
+    blocked = [n for n in notes if n.get("status") == "BLOCKED_BY_ROBOTS"]
+    assert len(blocked) == 1 and blocked[0]["source"] == "gld_holdings"
+    assert "XAUUSD" in blocked[0]["missed_growth"]
+    assert "gf_gld_holdings" not in state.get("hard_stops", {})   # asked again next pass
+
+
+@pytest.mark.parametrize("code", [404, 410])
+def test_a_missing_robots_file_allows(tmp_raw, code):
+    built, _ = gf.collect(get=lambda url, **k: _gld(), state={}, notes=[],
+                          get_text=_raises(_Http(code)), registry=_reg())
+    assert built["flow_gld_holdings"]["access_label"] == "PUBLIC"
+
+
+def test_robots_is_asked_for_the_exact_url_and_once_per_host(tmp_raw):
+    reads: list = []
+    asked: list = []
+
+    def get_text(url):
+        reads.append(url)
+        return "User-agent: *\nDisallow: /closed/"
+
+    def get(url, **k):
+        asked.append(url)
+        return _NSE
+    src = {"id": "nse_part_oi", "class": "retail", "adapter": "nse_daily",
+           "url": "https://example.test/closed/oi_{ddmmyyyy}.csv", "targets": ["USDINR"]}
+    notes: list = []
+    gf.collect(get=get, state={}, notes=notes, get_text=get_text,
+               registry={"sources": [src, {**src, "id": "nse_b"}]},
+               now=datetime(2026, 11, 3, tzinfo=UTC))
+    assert asked == [] and reads == ["https://example.test/robots.txt"]
+    assert sum(n.get("status") == "BLOCKED_BY_ROBOTS" for n in notes) == 2
+
+
+def test_the_shipped_registry_fetches_no_terms_refused_host():
+    reg = json.loads(gf.REGISTRY.read_text(encoding="utf-8"))
+    live = [s for s in reg["sources"] if s.get("adapter", "none") != "none"]
+    assert not [s["id"] for s in live if "spdrgoldshares" in str(s.get("url", ""))]
+    gld = next(s for s in reg["sources"] if s["id"] == "gld_holdings")
+    assert gld["adapter"] == "none" and "terms" in gld["blocked_by"]
+
