@@ -26,6 +26,33 @@ UNIVERSE = BASE / "data" / "universe"
 OUT = BASE / "reports" / "curve_strategy_screen.json"
 SERIES = BASE / "data" / "cell_series" / "curve_compendium"
 PROXIES = {"GC": ("XAUUSD",), "CL": ("XTIUSD", "USOIL", "WTIUSD")}
+REGISTRY = BASE / "research" / "futures_state_sources.json"
+#: The registry rows the GC/CL curves come from: Yahoo's delayed quotes of CME/COMEX/NYMEX
+#: contracts. A cell may be MINTED from them only while every one of these rows reads OPEN.
+CURVE_SOURCES = ("yahoo_futures", "cme_settlements")
+
+
+def mint_permission(registry: Path = REGISTRY) -> dict:
+    """May the curves mint trading cells? (Governance ruling 2026-11-11 00:41Z.)
+
+    Only when every CURVE_SOURCES row in futures_state_sources.json reads terms OPEN. IDEAS_ONLY,
+    HELD, any other class, a missing row or an unreadable registry all answer no: the screen may
+    still read the curves and propose ideas, but writes no cell series, and the universal gate
+    reads none. Fails closed by construction."""
+    classes: dict[str, str] = {}
+    try:
+        doc = json.loads(registry.read_text(encoding="utf-8"))
+        rows = {r.get("id"): r for r in doc.get("sources") or [] if isinstance(r, dict)}
+        for sid in CURVE_SOURCES:
+            classes[sid] = str((rows.get(sid) or {}).get("terms") or "MISSING")
+    except (OSError, ValueError, AttributeError) as exc:
+        return {"mint": False, "classes": {sid: "UNREADABLE" for sid in CURVE_SOURCES},
+                "why": f"registry unreadable: {type(exc).__name__}"}
+    closed = {sid: c for sid, c in classes.items() if c != "OPEN"}
+    return {"mint": not closed, "classes": classes,
+            "why": "every curve source reads OPEN" if not closed else
+            "ideas only: " + ", ".join(f"{k}={v}" for k, v in sorted(closed.items())),
+            "reopens": "every CURVE_SOURCES row in futures_state_sources.json reads terms OPEN"}
 
 
 def endpoint_hp(values: pd.Series, window: int = 128, lam: float = 129_600.0) -> pd.Series:
@@ -81,7 +108,9 @@ def _proxy(root: str) -> tuple[str, Path] | None:
 def run() -> dict:
     meta = json.loads((UNIVERSE / "universe.json").read_text("utf-8"))
     rows = []
-    SERIES.mkdir(parents=True, exist_ok=True)
+    permit = mint_permission()
+    if permit["mint"]:
+        SERIES.mkdir(parents=True, exist_ok=True)
     for root in PROXIES:
         curve_path, proxy = CURVES / f"{root}_curve.parquet", _proxy(root)
         if not curve_path.exists() or proxy is None:
@@ -96,19 +125,30 @@ def run() -> dict:
         close.index = pd.to_datetime(close.index, utc=True).normalize()
         for family, position in strategy_positions(front).items():
             returns = costed_returns(close, position, meta.get(symbol, {})).dropna()
-            stress = costed_returns(
-                close, position, meta.get(symbol, {}), spread_crossings=3.0,
-            ).reindex(returns.index)
-            pd.concat([returns, stress.rename("stress_x3_return")], axis=1).to_parquet(
-                SERIES / f"{root}_{family}.parquet", compression="zstd",
-            )
+            if permit["mint"]:
+                stress = costed_returns(
+                    close, position, meta.get(symbol, {}), spread_crossings=3.0,
+                ).reindex(returns.index)
+                pd.concat([returns, stress.rename("stress_x3_return")], axis=1).to_parquet(
+                    SERIES / f"{root}_{family}.parquet", compression="zstd",
+                )
             mean, sd = float(returns.mean()), float(returns.std(ddof=1))
             t_stat = mean / (sd / math.sqrt(len(returns))) if len(returns) > 1 and sd > 0 else 0.0
+            positive = len(returns) >= 60 and mean > 0
             rows.append({"root": root, "symbol": symbol, "family": family, "status": "MEASURED",
                          "n_days": len(returns), "mean_daily_net": mean, "t_stat": t_stat,
-                         "disposition": "GAUNTLET_REQUIRED" if len(returns) >= 60 and mean > 0
-                         else "REJECT"})
-    report = {"rows": rows, "promotion_authority": False,
+                         "disposition": ("REJECT" if not positive else "GAUNTLET_REQUIRED"
+                                         if permit["mint"] else "IDEA_ONLY")})
+    ideas = [r for r in rows if r.get("disposition") == "IDEA_ONLY"]
+    # The fence's two-sided missed-growth line: what it holds back (positive screens that could
+    # not be minted) and what reopens it. No certificate exists for them, so no E[log W] is
+    # claimed: UNMEASURED, said with the count, never a clean zero.
+    missed = {"gate": "curve_terms_fence", "verdict": "NOT_BINDING" if permit["mint"] or not ideas
+              else "UNMEASURED", "held_cells": len(ideas),
+              "held": [f"{r['root']}_{r['family']}" for r in ideas],
+              "why": permit["why"], "reopens": permit.get("reopens")}
+    report = {"rows": rows, "promotion_authority": False, "mint_permission": permit,
+              "missed_growth": [missed],
               "next_gate": "universal original ten gates over the complete dated series matrix"}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2), encoding="utf-8")

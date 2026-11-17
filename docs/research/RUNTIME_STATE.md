@@ -14,8 +14,8 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 837 | no artifact and no run record on this host |
-| **UNMEASURED** | 44 | artifact present, cadence undeclared -- nothing here may call it late |
+| **NEVER** | 838 | no artifact and no run record on this host |
+| **UNMEASURED** | 43 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (837)
+## NEVER (838)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1055,11 +1055,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `library:libs/ops/keys_needed.py` | `import:desks/mt5/research/credential_coverage.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/KEYS_NEEDED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cluster_judge` | `hourly_cycle:cluster_judge` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLUSTER_JUDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:decay_verdicts` | `hourly_cycle:decay_verdicts` | UNMEASURED UNMEASURED | `desks/mt5/reports/DECAY_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:ais_norway` | `hourly_cycle:ais_norway` | UNMEASURED UNMEASURED | `desks/mt5/reports/AIS_NORWAY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:crowding_conditioner` | `hourly_cycle:crowding_conditioner` | UNMEASURED UNMEASURED | `desks/mt5/reports/CROWDING_CONDITIONER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `library:scripts/screen_cot_positioning.py` | `import:desks/mt5/research/crowding_conditioner.py` | UNMEASURED UNMEASURED | `reports/axis_screens/cot_positioning.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/dukascopy_backfill.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DUKASCOPY_BACKFILL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:tape_deepen` | `hourly_cycle:tape_deepen` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_DEEPEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:contradiction_miner` | `hourly_cycle:contradiction_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTRADICTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:vocabulary_proposer` | `hourly_cycle:vocabulary_proposer` | UNMEASURED UNMEASURED | `desks/mt5/reports/VOCABULARY_PROPOSALS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
-## UNMEASURED (44)
+## UNMEASURED (43)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1106,5 +1107,4 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:libs/ops/login_fence.py` | `invoked:desks/mt5/scripts/sync_shadow_to_git.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/LOGIN_FENCE.json` | 0.1h | 694B | `d755037c4dc247f0` | status=UNMEASURED |
 | `fence:check_seal_clears` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `fa046250ab0e1b85` | ok=True |
 | `executable:scripts/sign_train.py` | `invoked:scripts/check_seal_clears.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `fa046250ab0e1b85` | ok=True |
-| `leg:event_calendar` | `hourly_cycle:event_calendar` | UNMEASURED UNMEASURED | `data/event_calendar.json` | 8.6d | 5K | `b20b74c1945b78c6` | UNMEASURED |
 

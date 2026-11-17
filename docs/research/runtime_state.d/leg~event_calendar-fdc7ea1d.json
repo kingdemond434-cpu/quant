@@ -1,0 +1,35 @@
+{
+ "organ": "leg:event_calendar",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/event_calendar_refresh.py"
+ ],
+ "clock": "hourly_cycle:event_calendar",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "data/event_calendar.json",
+ "artifact_declared": "data/event_calendar.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 1036630,
+ "artifact_bytes": 5043,
+ "artifact_sha256": "b20b74c1945b78c6dca6289d3ffadc39b72c6eb4d62a6b498ea7e9472caed5c2",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-17T15:20:36+00:00",
+ "only_missing": {
+  "at": "2026-11-17T15:20:36+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
