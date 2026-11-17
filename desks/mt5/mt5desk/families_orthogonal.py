@@ -2689,7 +2689,3 @@ for _name in ("anti_donchian_breakout", "anti_three_bar_momentum"):
     ORTHOGONAL_FAMILIES[_name] = _scalp_family(_name)
     FAMILY_INPUTS[_name] = ("price only, the scalp lane's own bars",
                             "data/universe/*_M1.parquet / *_M5.parquet / *_M15.parquet")
-    FAMILY_TIMEFRAMES[_name] = (
-        ("M1", "M5", "M15"),
-        "a scalp-lane rule: its signal, ATR bracket and max_hold are defined on the lane's own "
-        "M1/M5/M15 bars, so an H1 or slower build would judge a rule nobody proposed")
