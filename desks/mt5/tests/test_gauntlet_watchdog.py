@@ -1393,3 +1393,27 @@ def test_a_non_list_keys_field_is_read_as_none_and_never_carried(bad):
     assert line is not None
     keys = _stall()["billed_resume_keys"]
     assert isinstance(keys, list) and keys == [line["resume_key"]]
+
+
+# ------------------------------- a malformed history / missed_growth field (v2.2.1 nit)
+@pytest.mark.parametrize("field", ["missed_growth", "history"])
+@pytest.mark.parametrize("bad", [7, 7.5, "xy", {"a": 1}])
+def test_a_non_list_history_or_missed_growth_never_raises_and_is_never_carried(field, bad):
+    """An int there used to raise TypeError inside the very writer whose record it was; a string
+    or a map was splatted into the list. Each writer must run, and every field it writes must be a
+    list of its own rows."""
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    _resume_record()
+    # each writer, and the fields it writes (record_resume_delay leaves history to the others)
+    for write, keys in (
+        (lambda: runner.record_stall("filler", detail="x"), ("missed_growth", "history")),
+        (lambda: runner.record_resume_delay(runner.STALL_RC), ("missed_growth",)),
+        (lambda: runner.record_slow("run_deadline", detail="y"), ("history",)),
+    ):
+        runner.STALL.write_text(json.dumps({field: bad}), encoding="utf-8")
+        write()
+        after = _stall()
+        for key in keys:
+            got = after.get(key, [])
+            assert isinstance(got, list), (key, got)
+            assert all(isinstance(m, dict) for m in got), (key, got)
