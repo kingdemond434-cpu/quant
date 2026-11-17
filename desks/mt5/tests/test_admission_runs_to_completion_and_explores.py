@@ -279,4 +279,6 @@ def test_run_explores_before_the_proof_on_the_published_book_and_never_moves_the
     assert "warm=prev_admission.get(\"warm\") or {}" in src, "partial solves must be carried"
     assert 'strftime("%Y%m%d")' in src, "one draw per UTC day"
     assert "total_heat=float(sum(explored.values()))" in src
-    assert 'book.total_heat if nt.get("binding") else verdict.total_heat' in src
+    # the held book's total, or the book's own total inside the band (published_heat_total)
+    assert "book.total_heat, verdict.total_heat, verdict.effective_ceiling," in src
+    assert 'held=bool(nt.get("binding"))' in src
