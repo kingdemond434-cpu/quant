@@ -154,7 +154,8 @@ def test_a_run_that_reached_its_end_says_so(tmp_path):
     log = tmp_path / "t.log"
     log.write_text("=== T start\nok\n=== T end: all organs exited 0\n", "utf-8")
     doc = ph.log_tail(log)
-    assert doc["reached_end"] is True and doc["failed_steps"] == [] and doc["exception_type"] is None
+    assert doc["reached_end"] is True and doc["failed_steps"] == []
+    assert doc["exception_type"] is None
 
 
 def test_every_published_digest_value_is_structure(tmp_path):
