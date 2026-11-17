@@ -41,7 +41,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 bkps = [int(b) for b in algo.predict(pen=pen)]
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "penalty": pen,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             edges = [0, *bkps]
             seg_vol = [float(np.std(r[a:b])) for a, b in pairwise(edges)

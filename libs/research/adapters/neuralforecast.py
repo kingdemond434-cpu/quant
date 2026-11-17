@@ -44,7 +44,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             path = np.asarray(fc["NHITS"], dtype=float)[:H]
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "zoo_forecast_path", "symbol": f.symbol, "model": "NHITS",
                      "steps": STEPS, "horizon_bars": H, "path_rel": np.exp(path - c[-1]) - 1.0,

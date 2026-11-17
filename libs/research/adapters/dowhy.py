@@ -57,7 +57,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                              "method": "backdoor.linear_regression + placebo refuter"})
             except Exception as exc:
                 rows.append({"kind": "UNMEASURED", "treatment": a.symbol, "outcome": b.symbol,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
     return A.packet(SYSTEM, bundle, trials=trials, research_methods=rows)
 
 

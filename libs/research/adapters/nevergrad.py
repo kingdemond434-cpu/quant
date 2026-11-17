@@ -83,7 +83,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 "mean_reversion_bollinger", [f.symbol],
                 f"UNMEASURED: nevergrad raised {type(exc).__name__} on {f.symbol}",
                 horizon=bundle.horizons[0], source=SYSTEM,
-                evidence={"why": f"{type(exc).__name__}: {exc}"[:200]}))
+                evidence={"why": f"{A.exc_text(exc)}"[:200]}))
             continue
         trials += len(seen)
         for loss, window, k, ev in sorted(seen, key=lambda t: t[0])[:KEEP]:

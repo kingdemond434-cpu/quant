@@ -44,7 +44,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             api = "timesfm 1.x/2.x TimesFm"
     except Exception as exc:
         return A.unmeasured(SYSTEM, bundle, f"TimesFM weights not loadable offline: "
-                                            f"{type(exc).__name__}: {exc}"[:220])
+                                            f"{A.exc_text(exc)}"[:220])
     deadline = A.Deadline(bundle.compute_budget_s)
     trials = 0
     reps: list[dict[str, Any]] = []
@@ -59,7 +59,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             point = np.asarray(out[0][0], dtype=float)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "foundation_point_path", "symbol": f.symbol, "api": api,
                      "horizon_bars": H, "path_rel": (point[:H] / c[-1] - 1.0),

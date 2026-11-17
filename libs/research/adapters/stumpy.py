@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 nn = np.asarray(mp[:, 1], dtype=int)
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "m": m,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             finite = np.where(np.isfinite(dist), dist, np.inf)
             i = int(np.argmin(finite))

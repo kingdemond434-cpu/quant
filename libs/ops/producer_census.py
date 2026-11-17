@@ -46,6 +46,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops.public_report import exc_text
+
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
 
@@ -917,7 +919,7 @@ def _relight_without_plane(plans: Sequence[Relight], *, base: Path,
                                cwd=cwd, check=False)
             return {"rc": r.returncode, "tail": (r.stdout or r.stderr or "").strip()[-200:]}
         except (OSError, subprocess.SubprocessError) as exc:
-            return {"rc": None, "tail": f"{type(exc).__name__}: {exc}"}
+            return {"rc": None, "tail": exc_text(exc, "producer_census")}
 
     use = runner or run
     out: list[dict[str, Any]] = []
@@ -972,7 +974,8 @@ def apply_relight(plans: Sequence[Relight], *, root: Path | None = None,
     except Exception as exc:                                 # pragma: no cover - import guard
         return [{"producer": p.producer, "action": p.action, "result": "UNMEASURED",
                  "relit": False,
-                 "why": f"the control plane is not importable here: {type(exc).__name__}: {exc}"}
+                 "why": ("the control plane is not importable here: "
+                        f"{exc_text(exc)}")}
                 for p in plans]
     if not has_plane:
         #: AN OLDER CONTROL PLANE IS NOT A REASON NOT TO RELIGHT. A box that has not yet adopted

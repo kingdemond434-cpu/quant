@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         growth = float(np.log(max(float(result.v.iloc[-1] / result.v.iloc[0]), 1e-12)))
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=1, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     return A.packet(SYSTEM, bundle, trials=1, research_methods=[
         {"kind": "portfolio_evidence", "challenger": "cvxportfolio SinglePeriodOptimization",
          "gamma_risk": GAMMA, "weights_evidence": weights, "log_growth_in_sample": growth,

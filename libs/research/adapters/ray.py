@@ -36,7 +36,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         ray.init(ignore_reinit_error=True, include_dashboard=False, num_cpus=2,
                  logging_level="ERROR", log_to_driver=False)
     except Exception as exc:
-        return A.unmeasured(SYSTEM, bundle, f"ray.init failed: {type(exc).__name__}: {exc}"[:200])
+        return A.unmeasured(SYSTEM, bundle, f"ray.init failed: {A.exc_text(exc)}"[:200])
     try:
         evaluate = ray.remote(A.ma_cross_objective)
         for f in bundle.frames("H1")[:MAX_SYMBOLS]:

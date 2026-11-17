@@ -49,7 +49,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 centers = np.asarray(km.cluster_centers_)[:, :, 0]
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "k": k,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             by: list[dict[str, Any]] = []
             for c in range(k):

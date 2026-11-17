@@ -39,7 +39,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         g = np.asarray(cg.G.graph)
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=trials, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     mechs: list[dict[str, Any]] = []
     undirected: list[dict[str, str]] = []
     for i in range(len(names)):

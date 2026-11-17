@@ -41,6 +41,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from libs.ops.public_report import exc_text as exc_text  # re-exported for every adapter
 from libs.research.external_federation import PACKET_FORBIDDEN, ExternalResearchPacket
 
 #: A candidate row that names a registered price-only family compiles as STRUCTURED_HYPOTHESIS

@@ -31,7 +31,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         asks = np.asarray(l1["best_asks"], dtype=float)
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=1, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     n = int(min(bids.shape[0], asks.shape[0]))
     spread = (asks[:n, 1] - bids[:n, 1]) if n and bids.ndim == 2 else np.asarray([])
     ds = {"kind": "simulated_l1_book", "config": "rmsc04", "seed": bundle.seed,

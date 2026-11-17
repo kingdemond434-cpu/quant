@@ -37,7 +37,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 np.abs(r))]
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         edges = [0, *sorted(cps), r.shape[0]]
         vols = [float(np.std(r[a:b])) for a, b in pairwise(edges) if b > a + 5]

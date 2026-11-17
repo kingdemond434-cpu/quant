@@ -101,7 +101,7 @@ PRODUCER_YIELD = REPORTS / "PRODUCER_YIELD.json"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from libs.ops.public_report import redact  # noqa: E402
+from libs.ops.public_report import exc_text, redact  # noqa: E402
 from libs.research import attribution as _attr  # noqa: E402
 
 # The window every rate in this census is computed over. Compute hours come from the compute
@@ -401,7 +401,7 @@ def measure_registry(db: Path) -> dict[str, Any]:
     try:
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=20.0)
     except sqlite3.Error as exc:
-        out["why"] = f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"
+        out["why"] = f"{UNMEASURED}: registry unopenable ({exc_text(exc)})"
         return out
     out["available"] = True
     per: dict[str, dict[str, Any]] = defaultdict(lambda: defaultdict(float))
@@ -680,7 +680,7 @@ def measure_compute(window_days: float) -> dict[str, Any]:
     try:
         agg = cost_by_run(window_days=int(max(1, round(window_days))))
     except Exception as exc:
-        out["why"] = f"{UNMEASURED}: cost_by_run failed ({type(exc).__name__}: {exc})"
+        out["why"] = f"{UNMEASURED}: cost_by_run failed ({exc_text(exc)})"
         return out
     out["available"] = True
     out["hours"] = {_norm(k): {"hours": float(v.get("hours") or 0.0),

@@ -259,3 +259,119 @@ def test_a_count_named_like_a_secret_keeps_its_number() -> None:
 def test_a_withheld_query_is_still_readable() -> None:
     out = public_string(f"GET /v1?series=GDP&api_key={_HEX40}", _BOX)
     assert out == f"GET /v1?series={WITHHELD}&api_key={WITHHELD}"
+
+
+# --- AUDIT HOLD 2 (2026-11-17): a denylist cannot fence an exception's message ------------------
+#
+# So no published field carries one. A writer formats an exception ONLY through
+# `public_report.exc_text(exc)` (its type name; the message goes to the task's log on the box),
+# error-named keys keep only a type name, and subprocess output keys are withheld whole.
+
+from libs.ops.public_report import WITHHELD_OUTPUT, exc_text  # noqa: E402
+
+_AUDIT_STRINGS = (
+    f"GET https://www.example.mx/api/indicadores/{_HEX40}/json failed",       # key in the path
+    "headers={'X-Api-Key': 'abcd1234efgh5678'}",                              # header dict
+    '{"token": "abc 123 secret"}',                                            # spaced value
+    f"retrying with key={_HEX32}",                                            # bare key=
+    f"GET /v1?api_key%3D{_HEX40}",                                            # URL-encoded
+)
+
+
+@pytest.mark.parametrize("message", _AUDIT_STRINGS)
+def test_an_exception_publishes_its_type_and_nothing_else(message: str) -> None:
+    for exc in (ValueError(message), ConnectionError(message), KeyError(message)):
+        assert exc_text(exc) == type(exc).__name__
+        for doc in ({"why": f"adapter raised: {exc_text(exc)}"}, {"error": exc_text(exc)},
+                    {"errors": [f"EURUSD/momentum: {exc_text(exc)}"]}):
+            assert message not in json.dumps(redact(doc, _BOX))
+
+
+@pytest.mark.parametrize("message", _AUDIT_STRINGS)
+def test_an_error_field_holding_a_message_is_withheld(message: str) -> None:
+    """The backstop for a writer that bypasses exc_text: error keys keep a type name only."""
+    for key in ("error", "install_error", "ledger_error", "rejected", "errors"):
+        out = redact({key: message if key != "errors" else [message]}, _BOX)
+        assert json.dumps(out).count(WITHHELD_OUTPUT) == 1, (key, out)
+
+
+@pytest.mark.parametrize("message", _AUDIT_STRINGS)
+def test_a_typed_message_in_free_text_loses_its_message(message: str) -> None:
+    for exc_type in ("ValueError", "HTTPError", "ConnectTimeout", "JSONDecodeError"):
+        out = public_string(f"adapter raised: {exc_type}: {message}", _BOX)
+        assert message not in out and exc_type in out, out
+
+
+def test_subprocess_output_is_withheld_whole() -> None:
+    doc = {"stdout_tail": ["Looking in indexes: https://u:p@pypi.example/simple"],
+           "tail": "token abc", "stderr": "x", "traceback": "Traceback ..."}
+    assert set(redact(doc, _BOX).values()) == {WITHHELD_OUTPUT}
+
+
+#: Every module whose text can reach a published sandbox or census report.
+_CHAIN = sorted({
+    *(p.relative_to(ROOT).as_posix() for p in (ROOT / "libs/research/adapters").glob("*.py")),
+    *(p.relative_to(ROOT).as_posix()
+      for p in (ROOT / "desks/mt5/research/sandboxes").glob("*.py")),
+    "desks/mt5/research/sandbox_runner.py", "desks/mt5/research/sandbox_roster.py",
+    "desks/mt5/research/sandbox_provision.py", "desks/mt5/research/productivity_census.py",
+    "scripts/check_sandbox_liveness.py", "scripts/check_organ_census.py",
+    "scripts/check_seat_health.py", "scripts/check_dead_architecture.py",
+    "libs/research/sandbox.py", "libs/research/licence_reader.py", "libs/ops/producer_census.py",
+    "libs/ops/organ_census.py",
+})
+_ALLOWED_CALLS = {"exc_text", "type", "isinstance", "print", "getattr", "hasattr"}
+_LOG_METHODS = {"exception", "warning", "error", "info", "debug", "exc_text"}
+
+
+def _formats_an_exception(src: str) -> list[int]:
+    """Lines where an `except ... as NAME` body uses NAME other than through exc_text/type/print
+    (or re-raising): each is a place an exception's MESSAGE could reach a report."""
+    import ast
+
+    tree = ast.parse(src)
+    parent: dict[ast.AST, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parent[child] = node
+    bad: list[int] = []
+    for h in ast.walk(tree):
+        if not isinstance(h, ast.ExceptHandler) or not h.name:
+            continue
+        for stmt in h.body:
+            for n in ast.walk(stmt):
+                if not (isinstance(n, ast.Name) and n.id == h.name
+                        and isinstance(n.ctx, ast.Load)):
+                    continue
+                p: ast.AST | None = parent.get(n)
+                ok = False
+                while p is not None and not ok:
+                    if isinstance(p, ast.Call):
+                        f = p.func
+                        ok = ((isinstance(f, ast.Name) and f.id in _ALLOWED_CALLS)
+                              or (isinstance(f, ast.Attribute) and f.attr in _LOG_METHODS))
+                    if isinstance(p, ast.Raise):
+                        ok = True
+                    if isinstance(p, ast.stmt):
+                        break
+                    p = parent.get(p)
+                if not ok:
+                    bad.append(n.lineno)
+    return bad
+
+
+def test_the_chain_is_found() -> None:
+    assert len(_CHAIN) >= 100, f"only {len(_CHAIN)} modules found: the scan is blind"
+
+
+@pytest.mark.parametrize("rel", _CHAIN)
+def test_no_writer_in_the_chain_formats_an_exception_message(rel: str) -> None:
+    lines = _formats_an_exception((ROOT / rel).read_text("utf-8"))
+    assert not lines, (f"{rel} formats an exception outside exc_text() at line(s) {lines}: its "
+                       "message could reach a public report")
+
+
+def test_the_scan_catches_the_shape_it_fences() -> None:
+    src = ("try:\n    pass\nexcept Exception as exc:\n    why = f'{type(exc).__name__}: {exc}'\n"
+           "    other = str(exc)\n    ok = exc_text(exc)\n")
+    assert _formats_an_exception(src) == [4, 5]

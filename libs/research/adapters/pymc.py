@@ -48,7 +48,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                                            "nu says the last window was fat-tailed"})
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
     return A.packet(SYSTEM, bundle, trials=trials, representations=reps)
 
 

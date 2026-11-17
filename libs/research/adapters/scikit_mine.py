@@ -75,7 +75,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             found = _patterns(itemsets.SLIM(), D)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         multi = sorted((p for p in found if len(p[0]) >= 2), key=lambda p: -p[1])[:MAX_PATTERNS]
         reps.append({"kind": "sequential_event_pattern", "symbol": f.symbol,

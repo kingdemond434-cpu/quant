@@ -39,7 +39,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             pred = np.asarray(esn.run(X[-200:]), dtype=float).reshape(-1)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         yt = y[-200:]
         reps.append({"kind": "reservoir_forecast", "symbol": f.symbol, "units": UNITS,

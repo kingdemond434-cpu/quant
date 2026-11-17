@@ -46,7 +46,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                             else 0.0)
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "window": w,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 break
         if not pers:
             continue

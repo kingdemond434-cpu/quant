@@ -67,7 +67,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             s = np.asarray(samples.numpy(), dtype=float)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "sbi_posterior", "symbol": f.symbol, "world": "GARCH(1,1)",
                      "alpha_mean": float(s[:, 1].mean()), "beta_mean": float(s[:, 2].mean()),

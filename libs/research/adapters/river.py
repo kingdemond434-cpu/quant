@@ -57,7 +57,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                         drifts.append(f.time[i + 1])
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "lr": lr,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             arr = np.asarray(residuals)
             reps.append({"kind": "online_residual_signal", "symbol": f.symbol,

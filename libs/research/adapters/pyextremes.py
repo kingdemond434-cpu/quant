@@ -48,7 +48,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 last = extremes.index[-1] if n_exc else None
             except Exception as exc:
                 reps.append({"kind": "UNMEASURED", "symbol": f.symbol, "quantile": q,
-                             "why": f"{type(exc).__name__}: {exc}"[:200]})
+                             "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             bars_since = int((idx[-1] - last) / pd.Timedelta(hours=1)) if last is not None \
                 else None

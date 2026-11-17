@@ -38,7 +38,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         edges = np.asarray(adj.get_edge_list() if hasattr(adj, "get_edge_list") else [])
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=trials, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     mechs = [{"kind": "transfer_entropy_link", "source": names[int(e[0])],
               "target": names[int(e[1])], "lag_bars": int(e[2]),
               "mechanism": f"{names[int(e[0])]} transfers information to {names[int(e[1])]}"}

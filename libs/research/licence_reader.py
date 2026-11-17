@@ -33,6 +33,7 @@ from typing import Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from libs.ops.public_report import exc_text
 from libs.research import external_federation as fed
 from libs.research import sandbox as sb
 
@@ -255,7 +256,7 @@ def pip_download_wheel(requirement: str, dest: Path, *, timeout_s: int = PIP_TIM
         proc = subprocess.run(argv, cwd=str(dest), env=sb.scrub_env(), capture_output=True,
                               text=True, timeout=timeout_s, check=False)
     except (subprocess.TimeoutExpired, OSError) as exc:
-        return None, f"pip download failed to complete: {type(exc).__name__}: {exc}"
+        return None, f"pip download failed to complete: {exc_text(exc)}"
     wheels = sorted(dest.glob("*.whl"), key=lambda p: p.stat().st_mtime)
     if proc.returncode != 0 or not wheels:
         tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:] or ["no output"]
@@ -298,7 +299,7 @@ def read_pypi(system_id: str, distribution: str, *, version: str = "",
         except Exception as exc:
             return LicenceReading(system_id, why=(f"{why}; " if why else "")
                                   + f"PyPI index unreadable for {distribution!r}: "
-                                    f"{type(exc).__name__}: {str(exc)[:160]}", read_at=stamp,
+                                    f"{exc_text(exc)}", read_at=stamp,
                                   source=f"pypi:{distribution}")
         info = doc.get("info") if isinstance(doc, dict) else None
         if not isinstance(info, Mapping):

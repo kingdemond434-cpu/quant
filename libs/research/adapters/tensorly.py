@@ -56,7 +56,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             fa = [np.asarray(tl.to_numpy(x)) for x in factors]
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "rank": rank,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "cp_latent_factors", "rank": rank, "shape": list(tensor.shape),
                      "symbols": [f.symbol for f in frames], "features": list(FEATURES),

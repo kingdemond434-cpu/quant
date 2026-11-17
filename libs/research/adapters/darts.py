@@ -39,7 +39,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             pred = np.asarray(model.predict(len(test)).values(), dtype=float).reshape(-1)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         actual = c[cut:]
         err_model = float(np.mean(np.abs(actual - pred)))

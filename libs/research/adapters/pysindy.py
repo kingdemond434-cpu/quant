@@ -49,7 +49,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 r2 = float(model.score(X, t=1.0))
             except Exception as exc:
                 mechs.append({"kind": "UNMEASURED", "symbol": f.symbol, "threshold": th,
-                              "why": f"{type(exc).__name__}: {exc}"[:200]})
+                              "why": f"{A.exc_text(exc)}"[:200]})
                 continue
             mechs.append({"kind": "governing_equation", "symbol": f.symbol,
                           "timeframe": f.timeframe, "state": ["p: demeaned log price",

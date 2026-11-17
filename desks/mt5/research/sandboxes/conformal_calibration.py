@@ -93,7 +93,7 @@ def _write_calibration(ctx: CellContext, table: dict[str, Any]) -> str:
         os.replace(tmp, path)
         return str(path)
     except OSError as exc:
-        return f"UNWRITTEN: {type(exc).__name__}: {exc}"
+        return f"UNWRITTEN: {A.exc_text(exc)}"
 
 
 def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:

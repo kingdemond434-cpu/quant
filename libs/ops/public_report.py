@@ -26,7 +26,9 @@ fence is the host and the account, never the measurement. Never raises; never pr
 """
 from __future__ import annotations
 
+import contextlib
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -87,8 +89,43 @@ def public_string(text: str, root: Path = ROOT) -> str:
     s = _UNC.sub(PATH, s)
     s = _WIN_ABS.sub(PATH, s)
     s = _POSIX_ABS.sub(PATH, s)
+    s = _EXC_MSG.sub(lambda m: f"{m.group(1)} [message withheld on the box]", s)
     from libs.ops.account_withhold import public_text
     return public_text(s)
+
+
+def exc_text(exc: BaseException, where: str = "") -> str:
+    """What a PUBLISHED field may say about an exception: its type name, nothing else (Audit
+    HOLD 2, 2026-11-17). An exception's message is free text from a library, a URL or a server --
+    a key in a URL path, an `X-Api-Key` header, a URL-encoded query -- and no denylist fences
+    free text. The full message goes to this process's stderr, which is the task's own log on
+    the box, and never into a report."""
+    name = type(exc).__name__
+    with contextlib.suppress(Exception):  # logging must never turn into the failure
+        print(f"[{where or 'error'}] {name}: {exc}", file=sys.stderr)
+    return name
+
+
+#: Strings shaped `SomeError: message` (or `...Exception:`/`...Exit:`) anywhere in a published
+#: value lose their message: the backstop for a writer this file was never told about.
+_EXC_MSG = re.compile(r"\b([A-Z][A-Za-z0-9_]*(?:Error|Exception|Exit|Interrupt|Expired|Timeout))"
+                      r"(?::\s*|\(\s*)[^\n]*")
+#: Keys whose values are a subprocess's own output or an exception's text.
+_OUTPUT_KEY = re.compile(r"(?i)(?:^|_)(stdout|stderr|stdout_tail|stderr_tail|tail|traceback)$")
+#: Keys that name an error: they may carry an exception TYPE (optionally after a fixed label such
+#: as `EURUSD/momentum: `), never its message.
+_ERROR_KEY = re.compile(r"(?i)(?:^|_)(rejected|exception|exc|error|errors)$")
+#: The one thing an error field may still say: an exception's type name (`exc_text`'s output).
+_BARE_TYPE = re.compile(r"(?:[A-Za-z0-9_./|\-]{1,120}: )?[A-Za-z_][A-Za-z0-9_.]{0,80}")
+
+
+def _output(v: Any) -> Any:
+    if isinstance(v, str):
+        return v if _BARE_TYPE.fullmatch(v) else WITHHELD_OUTPUT
+    if isinstance(v, (list, tuple)):
+        return [_output(x) for x in v]
+    return WITHHELD_OUTPUT
+WITHHELD_OUTPUT = "[output withheld on the box]"
 
 
 def redact(node: Any, root: Path = ROOT) -> Any:
@@ -104,7 +141,11 @@ def redact(node: Any, root: Path = ROOT) -> Any:
         for k, v in node.items():
             key = str(k)
             counted = isinstance(v, (int, float)) and _COUNT_KEY.search(key)
-            if (_SECRET_KEY.search(key) and v is not None and not counted
+            if _OUTPUT_KEY.search(key) and isinstance(v, (str, list, tuple)) and v:
+                out[k] = WITHHELD_OUTPUT
+            elif _ERROR_KEY.search(key) and isinstance(v, (str, list, tuple)) and v:
+                out[k] = _output(v)
+            elif (_SECRET_KEY.search(key) and v is not None and not counted
                     and not isinstance(v, (bool, dict, list))):
                 out[k] = WITHHELD
             else:

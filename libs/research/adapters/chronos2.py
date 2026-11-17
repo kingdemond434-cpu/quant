@@ -56,7 +56,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             qa = np.asarray(q[0], dtype=float)
         except Exception as exc:
             reps.append({"kind": "UNMEASURED", "symbol": f.symbol,
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
             continue
         reps.append({"kind": "foundation_quantiles", "symbol": f.symbol, "horizon_bars": H,
                      "q10_rel": (qa[:, 0] / c[-1] - 1.0), "q50_rel": (qa[:, 1] / c[-1] - 1.0),

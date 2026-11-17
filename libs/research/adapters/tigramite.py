@@ -40,7 +40,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         v = np.asarray(res["val_matrix"], dtype=float)
     except Exception as exc:
         return A.packet(SYSTEM, bundle, trials=trials, research_methods=[
-            {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
+            {"kind": "UNMEASURED", "why": f"{A.exc_text(exc)}"[:200]}])
     mechs: list[dict[str, Any]] = []
     for i, cause in enumerate(names):
         for j, effect in enumerate(names):

@@ -356,7 +356,7 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                 engine_note += " + libs.research.coevolution reference"
         except Exception as exc:
             rows.append({"kind": "UNMEASURED", "engine": "libs.research.coevolution",
-                         "why": f"{type(exc).__name__}: {exc}"[:200]})
+                         "why": f"{A.exc_text(exc)}"[:200]})
     _ = math
     return A.packet(SYSTEM, bundle, trials=trials, candidates=cands, representations=reps,
                     research_methods=rows, note=engine_note)

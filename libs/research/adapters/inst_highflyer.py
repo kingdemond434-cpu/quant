@@ -33,7 +33,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                 fh.readline()
             text = fh.read().decode("utf-8", errors="replace")
     except OSError as exc:
-        return A.unmeasured(SYSTEM, bundle, f"{type(exc).__name__}: {exc}"[:200])
+        return A.unmeasured(SYSTEM, bundle, f"{A.exc_text(exc)}"[:200])
     seconds: dict[str, float] = {}
     runs: dict[str, int] = {}
     n_rows = 0
