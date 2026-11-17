@@ -336,3 +336,84 @@ def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
     dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
     assert dec.deferred == {"b"} and not dec.unschedulable
     assert "leads the next pass" in dec.why["b"]
+
+
+# THE MUST-REACH RESERVE (2026-11-14): the always-run legs cost 3,419 s against a 2,640 s budget
+# and the pass dies in file order, so the money and safety legs late in the file were the ones lost.
+
+
+def test_must_reach_is_the_money_and_safety_set_and_throughput_is_pinned_apart() -> None:
+    for leg in ("promoter", "forward_reconcile", "heal_clocks", "publish_state", "decay_monitor",
+                "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
+                "tier_s_door", "record_tape", "smoke_release", "health"):
+        assert leg in LR.MUST_REACH, leg
+    assert LR.YIELD_TO_RESERVE <= LR.ALWAYS_RUN, "a yielding leg must still be pinned (admitted)"
+    assert not (LR.YIELD_TO_RESERVE & LR.MUST_REACH)
+    real = set(LR.legs_in_order())
+    assert real >= LR.YIELD_TO_RESERVE, "every throughput pin names a real leg of the cycle"
+
+
+def _reserve_pass() -> tuple[LR.Decision, LR.Attendance]:
+    roster = ["intake_catchup", "judging_throughput", "promoter", "decay_monitor"]
+    att = _att(dict.fromkeys(roster, 5),
+               costs={"intake_catchup": 1500.0, "judging_throughput": 300.0,
+                      "promoter": 100.0, "decay_monitor": 5.0})
+    return LR.plan_pass(roster, att, plan="core", budget_s=1000.0), att
+
+
+def test_a_pinned_throughput_leg_gives_way_to_the_must_reach_legs_ahead() -> None:
+    dec, att = _reserve_pass()
+    assert {"intake_catchup", "promoter"} <= dec.admitted, "pins stay admitted"
+    ok, why = dec.should_run("intake_catchup", att, elapsed_s=100.0, ran=[])
+    assert not ok and why.startswith("reserve:") and "105s" in why
+    assert "intake_catchup" in dec.yielded_to_reserve
+    # the must-reach legs themselves never yield, however late the pass is
+    for leg in ("promoter", "decay_monitor"):
+        assert dec.should_run(leg, att, elapsed_s=10_000.0, ran=[])[0]
+
+
+def test_a_pinned_throughput_leg_runs_when_the_reserve_still_fits() -> None:
+    dec, att = _reserve_pass()
+    att.costs["intake_catchup"] = [500.0]
+    assert dec.should_run("intake_catchup", att, elapsed_s=0.0, ran=[])[0]  # 0+500+105 <= 1000
+    assert not dec.yielded_to_reserve
+
+
+def test_the_reserve_counts_only_must_reach_legs_ahead_and_not_yet_run() -> None:
+    roster = ["promoter", "judging_throughput", "decay_monitor"]
+    att = _att(dict.fromkeys(roster, 5),
+               costs={"promoter": 400.0, "judging_throughput": 300.0, "decay_monitor": 5.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1000.0)
+    assert dec.reserve_ahead_s("judging_throughput", att, ran=["promoter"]) == 5.0
+    assert dec.should_run("judging_throughput", att, elapsed_s=600.0, ran=["promoter"])[0]
+    assert dec.reserve_ahead_s("decay_monitor", att) == 0.0
+    assert dec.reserve_ahead_s("not_in_roster", att) == 0.0
+
+
+def test_a_never_run_leg_yields_to_the_reserve_and_otherwise_keeps_its_old_rule() -> None:
+    roster = ["dark", "promoter"]
+    att = _att({"dark": 0, "promoter": 5}, costs={"dark": 900.0, "promoter": 200.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1200.0)
+    assert "dark" in dec.admitted
+    assert not dec.should_run("dark", att, elapsed_s=200.0, ran=[])[0]   # 200+900+200 > 1200
+    assert dec.should_run("dark", att, elapsed_s=0.0, ran=[])[0]         # 0+900+200 <= 1200
+    # with nothing must-reach ahead, a never-run leg is still never yielded on overrun
+    assert dec.should_run("dark", att, elapsed_s=10_000.0, ran=["promoter"])[0]
+
+
+def test_a_leg_forced_by_age_never_yields_to_the_reserve() -> None:
+    now = datetime.now(tz=UTC)
+    roster = ["tier_s", "promoter"]
+    att = _att_aged({"tier_s": 3, "promoter": 3}, {"tier_s": 5.0},
+                    {"tier_s": 1500.0, "promoter": 500.0}, now)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1000.0, now=now)
+    assert "tier_s" in dec.forced
+    assert dec.should_run("tier_s", att, elapsed_s=900.0, ran=[])[0]
+
+
+def test_record_publishes_the_reserve_and_who_gave_way(tmp_path: Path) -> None:
+    dec, att = _reserve_pass()
+    dec.should_run("intake_catchup", att, elapsed_s=100.0, ran=[])
+    doc = LR.record(dec, att, [], path=tmp_path / "LEG_ROTATION.json")
+    assert doc["must_reach_s"] == 105.0 and doc["yield_to_reserve_s"] == 1800.0
+    assert list(doc["yielded_to_reserve"]) == ["intake_catchup"]

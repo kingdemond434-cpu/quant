@@ -136,6 +136,24 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
 })
 
+#: ALWAYS-RUN IS NOT THE SAME AS MUST-REACH (2026-11-14, Desk health + Architecture). Measured on
+#: the box: the always-run legs cost 3,419 s against the core's 2,640 s budget, and the pass is
+#: killed at PT55M in FILE ORDER -- so the cheap money and safety legs late in the file
+#: (`promoter`, `decay_monitor`, `fill_markout`, `forward_reconcile`, `publish_state`) were the
+#: ones lost, while throughput legs earlier in the file ran in full. MT5-HourlyCore.log listed
+#: decay_monitor, desk_health, fill_markout, placement_interlock and box_state_freshness as
+#: NEVER RUN although every one of them was pinned here.
+#:
+#: The legs below stay pinned (admitted every pass, never rotated out) but they are THROUGHPUT,
+#: not money or safety: each YIELDS when starting it would eat the seconds the must-reach legs
+#: still ahead of it in this pass need. Every other always-run leg is must-reach. A yielded leg
+#: is the oldest next pass and leads it; nothing is cancelled and no budget shrinks.
+YIELD_TO_RESERVE: frozenset[str] = frozenset({
+    "intake_catchup",      # hands waiting discoveries to the judge; the judge has its own clock
+    "judging_throughput",  # the judge's capacity plan; its 300 s budget is research throughput
+})
+MUST_REACH: frozenset[str] = ALWAYS_RUN - YIELD_TO_RESERVE
+
 
 #: DUE-BY-AGE LEGS (2026-11-05): heavy legs whose consumer needs them FRESH, not EVERY HOUR.
 #:
@@ -354,13 +372,28 @@ class Decision:
     #: legs whose cost exceeds what the budget can EVER give them after the always-run and forced
     #: legs: "it leads the next pass" would be false for them, every pass (see plan_pass)
     unschedulable: dict[str, float] = field(default_factory=dict)
+    #: legs that gave way at run time to the must-reach legs still ahead (see should_run)
+    yielded_to_reserve: dict[str, str] = field(default_factory=dict)
+
+    def reserve_ahead_s(self, leg: str, att: Attendance, ran: Any = ()) -> float:
+        """The planned seconds of the must-reach legs AFTER `leg` in file order that this pass
+        admitted and has not yet run. Legs before `leg` are not counted: whatever happened to
+        them, waiting cannot reach them now."""
+        try:
+            idx = self.roster.index(leg)
+        except ValueError:
+            return 0.0
+        done = set(ran or ())
+        return sum(att.cost_s(n) for n in self.roster[idx + 1:]
+                   if n in MUST_REACH and n in self.admitted and n not in done)
 
     def runs(self, leg: str) -> bool:
         """Does `leg` run in this pass? An unknown leg always runs (rotation never invents a veto
         for something it does not know about)."""
         return leg not in self.deferred
 
-    def should_run(self, leg: str, att: Attendance, elapsed_s: float) -> tuple[bool, str]:
+    def should_run(self, leg: str, att: Attendance, elapsed_s: float,
+                   ran: Any = ()) -> tuple[bool, str]:
         """The runtime half of the decision: admission, then the clock that is actually elapsing.
 
         PLANNED SECONDS ARE AN ESTIMATE AND ESTIMATES ARE WRONG. When the head of a pass overruns
@@ -369,13 +402,32 @@ class Decision:
         budget, a leg that HAS run before yields the rest of the pass to the legs that never have.
         Nothing is cancelled: a yielded leg is the oldest one next pass and therefore leads it.
 
-        The always-run set and the never-run set are never yielded. A never-run leg is the whole
-        point of the pass, and it carries its own `--budget-s`, so it cannot run away with the
-        clock it was finally given.
+        THE MUST-REACH RESERVE (2026-11-14). Must-reach legs (MUST_REACH) and legs forced by age
+        never yield. Every other leg -- a throughput leg that is pinned (YIELD_TO_RESERVE), a
+        never-run leg, a rotated-in leg -- yields when its own cost plus the must-reach legs
+        still AHEAD of it would carry the pass past its budget: the kill comes in file order, so
+        a slow leg early in the file was taking the promoter's and the safety fences' seconds.
+        With no must-reach leg left ahead, the rules below are exactly what they were. `ran` is
+        the legs this pass has already run; the cycle passes it.
+
+        Past that, the always-run set and the never-run set are never yielded. A never-run leg is
+        the whole point of the pass, and it carries its own `--budget-s`, so it cannot run away
+        with the clock it was finally given.
         """
         if leg in self.deferred:
             return False, self.why.get(leg, "deferred by rotation")
-        if leg in ALWAYS_RUN or leg in self.forced:
+        if leg in MUST_REACH or leg in self.forced:
+            return True, ""
+        if self.budget_s > 0:
+            ahead = self.reserve_ahead_s(leg, att, ran)
+            cost = att.cost_s(leg)
+            if ahead > 0 and elapsed_s + cost + ahead > self.budget_s:
+                why = (f"reserve: {elapsed_s:.0f}s elapsed + its {cost:.0f}s + {ahead:.0f}s for "
+                       f"the must-reach legs still ahead > the {self.budget_s:.0f}s budget; it "
+                       "gives way to them and leads the next pass")
+                self.yielded_to_reserve[leg] = why
+                return False, why
+        if leg in ALWAYS_RUN:
             return True, ""
         if self.budget_s > 0 and elapsed_s > self.budget_s and att.runs.get(leg, 0) > 0:
             return False, (f"budget overrun at {elapsed_s:.0f}s of {self.budget_s:.0f}s: this "
@@ -530,6 +582,12 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "deferred_this_pass": sorted(dec.deferred),
         "forced_due_by_age": sorted(dec.forced),
         "unschedulable_over_s": dict(sorted(dec.unschedulable.items())),
+        # THE MUST-REACH RESERVE, MEASURED: what the money and safety legs cost together, what the
+        # pinned throughput legs cost, and who gave way to the reserve this pass.
+        "must_reach_s": round(sum(att.cost_s(n) for n in dec.roster if n in MUST_REACH), 1),
+        "yield_to_reserve_s": round(sum(att.cost_s(n) for n in dec.roster
+                                        if n in YIELD_TO_RESERVE), 1),
+        "yielded_to_reserve": dict(sorted(dec.yielded_to_reserve.items())),
         "due_by_age_h": {k: {"soft_h": v[0], "hard_h": v[1]} for k, v in DUE_BY_AGE_H.items()},
         # THE TWO LINES THE FENCE READS. A leg that never ran is a claim the desk cannot cash
         # (L1.49), so it is published by name rather than inferred from an absent artifact.
