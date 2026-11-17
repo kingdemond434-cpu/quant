@@ -23,6 +23,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
@@ -262,19 +263,55 @@ ATTENTION_ARTICLES = ("Algorithmic_trading", "Day_trading", "Foreign_exchange_ma
                       "Technical_analysis", "Retail_forex")
 
 
+WIKI_UA = "quant-research-desk/1.0 (attention research; keyless REST client)"
+
+#: Every Wikimedia request refused by the robots gate, counted per pass and reported by
+#: `attention_proxy` with its missed_growth line: a refusal is never a silent empty series.
+ROBOTS_BLOCKED: dict[str, Any] = {"count": 0, "last": None}
+ROBOTS_MISSED_GROWTH = {
+    "mechanism": "robots_fail_closed",
+    "what_is_lost": "the Wikipedia pageview attention series for this article, and the "
+                    "retail-adoption proxy crowding_miner reads from it",
+    "size": "UNMEASURED",
+    "reopens_when": "the host's robots.txt is readable and allows the path for this agent"}
+
+
+def robots_refusal(url: str, agent: str = WIKI_UA) -> str | None:
+    """The repo's robots gate (index_discovery.robots_refusal), FAIL CLOSED: 404/410 allow,
+    401/403 deny, anything else unreadable refuses. A gate that cannot load refuses too."""
+    try:
+        import sys as _sys
+        _here = str(Path(__file__).resolve().parent)
+        if _here not in _sys.path:
+            _sys.path.insert(0, _here)
+        import index_discovery as idx
+    except Exception as exc:  # no gate means no request
+        return f"robots gate unavailable ({type(exc).__name__})"
+    try:
+        return idx.robots_refusal(url, agent=agent)
+    except Exception as exc:  # unreadable is not permission
+        return f"robots.txt unreadable ({type(exc).__name__})"
+
+
 def wiki_pageviews(article: str, project: str = "en.wikipedia", days: int = 60,
                    end: datetime | None = None) -> list[tuple[str, int]]:
     """Daily user pageviews for one article from the Wikimedia REST API (keyless; the Wikimedia
-    pageview data is CC0). Returns [(YYYYMMDD, views)] oldest first, or [] on any failure."""
+    pageview data is CC0). Returns [(YYYYMMDD, views)] oldest first, or [] on any failure. The
+    host's robots.txt is read FIRST and fails closed; a refusal is counted in ROBOTS_BLOCKED
+    (BLOCKED_BY_ROBOTS in `attention_proxy`), never a request."""
     from datetime import timedelta
     e = (end or datetime.now(UTC)) - timedelta(days=1)
     b = e - timedelta(days=max(1, days) - 1)
     url = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
            f"{project}/all-access/user/{urllib.parse.quote(article, safe='')}/daily/"
            f"{b:%Y%m%d}/{e:%Y%m%d}")
+    refused = robots_refusal(url)
+    if refused:
+        ROBOTS_BLOCKED["count"] = int(ROBOTS_BLOCKED["count"]) + 1
+        ROBOTS_BLOCKED["last"] = {"url": url, "why": refused}
+        return []
     try:
-        data = json.loads(_get(url, headers={
-            "User-Agent": "quant-research-desk/1.0 (attention research; keyless REST client)"}))
+        data = json.loads(_get(url, headers={"User-Agent": WIKI_UA}))
     except Exception:
         return []
     out = []
@@ -289,9 +326,19 @@ def attention_proxy(articles: tuple[str, ...] = ATTENTION_ARTICLES) -> dict:
     """Retail attention to systematic trading, from Wikipedia pageviews: the lawful substitute for
     the r/algotrading hot listing. `latest_views` is the sum of the last full day, `z_7d` the
     last seven days against the prior fifty-three. UNMEASURED (never 0) when nothing answered."""
+    blocked0 = int(ROBOTS_BLOCKED["count"])
     per: dict[str, list[tuple[str, int]]] = {a: wiki_pageviews(a) for a in articles}
+    blocked = int(ROBOTS_BLOCKED["count"]) - blocked0
+    robots = {"blocked_by_robots": blocked, "last": ROBOTS_BLOCKED["last"] if blocked else None,
+              "missed_growth": dict(ROBOTS_MISSED_GROWTH)} if blocked else None
     got = {a: v for a, v in per.items() if v}
     if not got:
+        if blocked:
+            return {"status": "BLOCKED_BY_ROBOTS",
+                    "why": f"{blocked} of {len(articles)} Wikimedia requests refused by the "
+                           "robots gate (fail closed)",
+                    "source": "wikipedia_pageviews", "articles": list(articles),
+                    "robots": robots}
         return {"status": "UNMEASURED", "why": "no Wikimedia pageview series answered",
                 "source": "wikipedia_pageviews", "articles": list(articles)}
     days: dict[str, int] = {}
@@ -308,7 +355,8 @@ def attention_proxy(articles: tuple[str, ...] = ATTENTION_ARTICLES) -> dict:
     return {"status": "MEASURED", "source": "wikipedia_pageviews",
             "articles": sorted(got), "articles_missing": sorted(set(articles) - set(got)),
             "latest_day": sorted(days)[-1], "latest_views": series[-1],
-            "mean_7d": round(sum(recent) / len(recent), 1), "z_7d": z, "n_days": len(series)}
+            "mean_7d": round(sum(recent) / len(recent), 1), "z_7d": z, "n_days": len(series),
+            **({"robots": robots} if robots else {})}
 
 
 def now_iso() -> str:

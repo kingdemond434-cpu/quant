@@ -42,6 +42,11 @@ through `label_row`, and the docket build (merge_hypotheses) and the backtest st
 (run_external_backtest) then SKIP every `quarantined_row` with a counted reason, so no fenced
 row reaches a judge. A certificate already earned under a fenced lineage is refused promotion
 until re-certified on a clean one (`quarantined_certificate`).
+
+THE ORIGIN LIFT (principal 2026-10-13, live_sleeve_policy.json `reddit_origin_lifted`): the terms
+gate governs data ACCESS, not an idea's origin. While that key stands, a row or certificate fenced
+ONLY by Reddit idea origin is not quarantined (`lift_status`, `lifted_row`); every fetch fence and
+the label stay. An unreadable policy file fails closed toward the fence.
 """
 from __future__ import annotations
 
@@ -444,22 +449,114 @@ def label_row(row: dict[str, Any]) -> str | None:
 _LABELS = {str(p["label"]): name for name, p in PLATFORMS.items()}
 
 
+# ------------------------------------------------------------- THE ORIGIN LIFT ----
+#: THE TERMS GATE GOVERNS DATA ACCESS, NOT AN IDEA'S ORIGIN (principal 2026-10-13, "no its not
+#: banned ... dont ban it", recorded under `reddit_origin_lifted` in the live sleeve policy). A
+#: hypothesis that a Reddit post once NAMED is judged on MT5 prices the desk fetched lawfully; no
+#: Reddit data reaches the judge, so its origin is not a reason to keep it from one. WHILE THAT
+#: KEY STANDS, a row or certificate fenced ONLY by Reddit idea origin (source, route, URL field,
+#: contributing source, `provenance_label`, or a certificate's lineage) is NOT quarantined.
+#: Everything that fences FETCHING stays exactly as it is: hosts, URLs, routes, the guarded opener
+#: and redirect handler all still refuse Reddit, and `label_row` still labels the row -- a label
+#: is not a ban. Which Reddit-origin sleeves may TRADE is the live sleeve policy's own allowlist
+#: (`live_sleeves`), not this fence. FAILS CLOSED: an absent, unreadable or malformed policy file,
+#: or one without the key, means the lift does not stand and the quarantine applies.
+ORIGIN_LIFTS: dict[str, str] = {"reddit": "reddit_origin_lifted"}
+LIFT_POLICY_PATH = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / \
+    "live_sleeve_policy.json"
+_lift_cache: dict[str, Any] = {}
+
+
+def lift_status() -> dict[str, Any]:
+    """Which origin lifts stand, read from the live sleeve policy (cached on path + mtime).
+    `{"path", "readable", "lifted": {platform: policy_text}, "status"}`; unreadable -> nothing
+    lifted, status names why (fail closed toward the fence)."""
+    path = Path(LIFT_POLICY_PATH)
+    try:
+        mt = path.stat().st_mtime_ns
+    except OSError as e:
+        return {"path": str(path), "readable": False, "lifted": {},
+                "status": f"UNREADABLE ({type(e).__name__}): origin lift not applied, fence "
+                          "stands"}
+    key = (str(path), mt)
+    if _lift_cache.get("key") == key:
+        return dict(_lift_cache["val"])
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(doc, Mapping):
+            raise ValueError("policy is not an object")
+    except (OSError, ValueError) as e:
+        val: dict[str, Any] = {
+            "path": str(path), "readable": False, "lifted": {},
+            "status": f"UNREADABLE ({type(e).__name__}): origin lift not applied, fence stands"}
+    else:
+        lifted = {plat: str(doc[k]) for plat, k in ORIGIN_LIFTS.items()
+                  if k in doc and doc[k] not in (None, "", False)}
+        val = {"path": str(path), "readable": True, "lifted": lifted,
+               "status": "LIFTED: " + ", ".join(sorted(lifted)) if lifted else "NO_LIFT"}
+    _lift_cache.update(key=key, val=val)
+    return dict(val)
+
+
+def origin_lifted(platform: str) -> bool:
+    """True when `platform`'s idea-origin quarantine is lifted by a standing policy key."""
+    return platform in lift_status()["lifted"]
+
+
+def _row_platforms(row: Mapping[str, Any]) -> list[str]:
+    """EVERY fenced platform a row names by origin (source / origin / miner, route, URL field,
+    contributing source, provenance_label, terms_fence stamp), in that order, deduplicated."""
+    out: list[str] = []
+
+    def add(p: str | None) -> None:
+        if p and p not in out:
+            out.append(p)
+
+    for s in (row.get("source"), row.get("origin"), row.get("miner")):
+        add(fenced_source(str(s or "")))
+    route = str(row.get("route") or "").split(":", 1)[0].lower()
+    for name, spec in PLATFORMS.items():
+        if _active(name) and route in spec["routes"]:
+            add(name)
+    for f in _URL_FIELDS:
+        v = row.get(f)
+        if isinstance(v, str):
+            add(platform_of_url(v))
+    cs = row.get("contributing_sources")
+    for s in cs if isinstance(cs, list) else []:
+        add(fenced_source(str(s or "")))
+    lab = str(row.get("provenance_label") or "")
+    if lab in _LABELS:
+        add(_LABELS[lab])
+    tfv = row.get("terms_fence")
+    if isinstance(tfv, Mapping) and str(tfv.get("platform") or "") in PLATFORMS:
+        add(str(tfv["platform"]))
+    return out
+
+
+def lifted_row(row: Mapping[str, Any]) -> str | None:
+    """The platform whose origin lift ADMITS a row the quarantine would otherwise hold: the row
+    is fenced by origin, and only by lifted platforms. None when the row is clean or still held.
+    Read by the docket and backtest quarantines to COUNT what the lift let through."""
+    if not isinstance(row, Mapping):
+        return None
+    plats = _row_platforms(row)
+    if plats and all(origin_lifted(p) for p in plats):
+        return plats[0]
+    return None
+
+
 def quarantined_row(row: Mapping[str, Any]) -> str | None:
     """THE QUARANTINE TEST (fails closed): the platform when a docket / candidate / backtest row
     is fenced by its own source, route or URL, was touched by a fenced contributing source, or
     already carries a fenced `provenance_label`. A quarantined row is NOT judged: the docket
-    build and the backtest stage skip it and count it. None for a clean row."""
+    build and the backtest stage skip it and count it. None for a clean row, and None for a row
+    fenced ONLY by a platform whose origin lift stands (`lift_status`)."""
     if not isinstance(row, Mapping):
         return None
-    p = touched_row(row)
-    if p:
-        return p
-    lab = str(row.get("provenance_label") or "")
-    if lab in _LABELS:
-        return _LABELS[lab]
-    tfv = row.get("terms_fence")
-    if isinstance(tfv, Mapping) and str(tfv.get("platform") or "") in PLATFORMS:
-        return str(tfv["platform"])
+    for p in _row_platforms(row):
+        if not origin_lifted(p):
+            return p
     return None
 
 
@@ -472,6 +569,12 @@ def quarantined_row(row: Mapping[str, Any]) -> str | None:
 #: when its `gated_at` is AFTER `requeued_at` -- judged from a docket every fenced row is now
 #: quarantined out of. The rr=2.5 certificate came from the same lineage and has no sleeve; it is
 #: held the same way so it cannot become one.
+#: NEUTRALISED WHILE THE ORIGIN LIFT STANDS (live_sleeve_policy `reddit_origin_lifted`, 2026-10-13):
+#: every entry here is keyed by its Reddit idea LINEAGE, not by any Reddit data it consumed (the
+#: cells trade MT5 prices only), so `quarantined_certificate` refuses none of them and the
+#: re-certification queue marks them LIFTED. The entries stay as the record and as the revert
+#: path: delete the policy key and the hold returns. rr=1.5 / rr=2.0 are kept out of trading by
+#: the policy's own `live_sleeves` allowlist (why_not_all_four), not by this fence.
 QUARANTINED_CERTIFICATES: dict[str, dict[str, Any]] = {
     f"external.USDJPY.session_range_breakout{sfx}": {
         "platform": "reddit", "lineage": "ext_reddit_USDJPY_session_range_breakout",
@@ -528,6 +631,10 @@ def quarantined_certificate(key: str = "", *, spec: Mapping[str, Any] | None = N
                    and _norm_params(spec.get("params")) == _norm_params(q["params"]))
         if not hit:
             continue
+        if origin_lifted(q["platform"]):
+            # The lineage is an idea ORIGIN; the origin lift stands, so the origin is no reason
+            # to refuse the certificate. Whether it trades is the live sleeve policy's call.
+            return None
         if gated_at is not None and _after_iso(gated_at, q["requeued_at"]):
             return None
         p = PLATFORMS[q["platform"]]
@@ -541,14 +648,24 @@ def quarantined_certificate(key: str = "", *, spec: Mapping[str, Any] | None = N
 def recert_queue_rows() -> list[dict[str, Any]]:
     """The docket rows that re-certify each quarantined certificate on its clean lineage --
     the content of data/hypotheses/terms_recert_queue.json, derived here so the file and the
-    quarantine can never disagree."""
-    return [{"symbol": q["symbol"], "family": q["family"], "selector": q["selector"],
-             "params": dict(q["params"]),
-             "source": "terms_recert:" + "+".join(q["recert_lineage"]),
-             "lineage": list(q["recert_lineage"]), "recertifies": ck,
-             "replaces_lineage": q["lineage"], "sleeve": q["sleeve"],
-             "requeued_at": q["requeued_at"], "status": "QUEUED"}
-            for ck, q in QUARANTINED_CERTIFICATES.items()]
+    quarantine can never disagree. A certificate whose platform's origin lift stands is not
+    quarantined, so its row is `LIFTED` (naming the policy key), not `QUEUED`: the docket admits
+    only QUEUED rows, so the Reddit-origin cell stays on the docket as itself and the gauntlet
+    certifies it there."""
+    out: list[dict[str, Any]] = []
+    for ck, q in QUARANTINED_CERTIFICATES.items():
+        row: dict[str, Any] = {
+            "symbol": q["symbol"], "family": q["family"], "selector": q["selector"],
+            "params": dict(q["params"]),
+            "source": "terms_recert:" + "+".join(q["recert_lineage"]),
+            "lineage": list(q["recert_lineage"]), "recertifies": ck,
+            "replaces_lineage": q["lineage"], "sleeve": q["sleeve"],
+            "requeued_at": q["requeued_at"], "status": "QUEUED"}
+        if origin_lifted(q["platform"]):
+            row["status"] = "LIFTED"
+            row["lifted_by"] = ORIGIN_LIFTS[q["platform"]]
+        out.append(row)
+    return out
 
 
 def registry_rows() -> list[dict[str, Any]]:

@@ -145,20 +145,22 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
     return out
 
 
-def robots_refusal(url: str) -> str | None:
+def robots_refusal(url: str, agent: str | None = None) -> str | None:
     """None when the host's robots.txt allows this exact path for our agent, else why not.
 
     THE STRICTER RULE GOVERNS (Governance ruling 2026-11-10, PR #819): a robots.txt Disallow
     covering the exact fetched path stops the fetch, and robots that cannot be read are not read
     as permission. Every request this module makes goes through here, the index APIs included;
-    a robots.txt fetch itself is the one request that cannot be gated by its own answer."""
+    a robots.txt fetch itself is the one request that cannot be gated by its own answer.
+    `agent` is the caller's own User-Agent, matched against the rules (default: this module's);
+    other organs reuse this gate rather than re-deriving its fail-closed semantics."""
     parts = urllib.parse.urlsplit(url)
     if parts.path == "/robots.txt":
         return None
     rules = _robots_for(parts.scheme, parts.netloc)
     if isinstance(rules, str):
         return rules
-    if not rules.can_fetch(UA, url):
+    if not rules.can_fetch(agent or UA, url):
         return "robots.txt disallows this path"
     return None
 

@@ -1,5 +1,5 @@
 {
- "about": "TERMS RE-CERTIFICATION QUEUE (audit of PR #162, 2026-10-06). Each QUEUED row re-proposes a cell whose certificate was judged under a terms-fenced lineage, on the Forex Factory / central-bank lineage alone. merge_hypotheses.admit_recert_queue admits every QUEUED row to the docket (external_survivors.json) on every run, replacing any banked fenced copy of the same cell; the sealed gauntlet judges it in its normal rotation. The promoter refuses the certificate (terms_fence.quarantined_certificate) until its gated_at is after requeued_at. Rows are derived from terms_fence.QUARANTINED_CERTIFICATES (recert_queue_rows).",
+ "about": "TERMS RE-CERTIFICATION QUEUE (audit of PR #162, 2026-10-06). Each QUEUED row re-proposes a cell whose certificate was judged under a terms-fenced lineage, on the Forex Factory / central-bank lineage alone. merge_hypotheses.admit_recert_queue admits every QUEUED row to the docket (external_survivors.json) on every run, replacing any banked fenced copy of the same cell; the sealed gauntlet judges it in its normal rotation. The promoter refuses the certificate (terms_fence.quarantined_certificate) until its gated_at is after requeued_at. Rows are derived from terms_fence.QUARANTINED_CERTIFICATES (recert_queue_rows). ORIGIN LIFT (live_sleeve_policy.json `reddit_origin_lifted`, principal 2026-10-13: the terms gate governs data ACCESS, not an idea's origin): while that key stands every row here is LIFTED, not QUEUED, so admit_recert_queue admits none of them, quarantined_certificate refuses none of these certificates, and the Reddit-origin cells stay on the docket as themselves for the gauntlet to certify. Remove the key and the derived rows return to QUEUED.",
  "rows": [
   {
    "symbol": "USDJPY",
@@ -15,7 +15,8 @@
    "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
    "sleeve": "usdjpy_session_range_breakout_asia_session_range_breakout",
    "requeued_at": "2026-10-06T00:00:00+00:00",
-   "status": "QUEUED"
+   "status": "LIFTED",
+   "lifted_by": "reddit_origin_lifted"
   },
   {
    "symbol": "USDJPY",
@@ -34,7 +35,8 @@
    "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
    "sleeve": "usdjpy_session_range_breakout_asia_5_wb_12",
    "requeued_at": "2026-10-06T00:00:00+00:00",
-   "status": "QUEUED"
+   "status": "LIFTED",
+   "lifted_by": "reddit_origin_lifted"
   },
   {
    "symbol": "USDJPY",
@@ -53,7 +55,8 @@
    "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
    "sleeve": "usdjpy_session_range_breakout_asia_0_wb_12",
    "requeued_at": "2026-10-06T00:00:00+00:00",
-   "status": "QUEUED"
+   "status": "LIFTED",
+   "lifted_by": "reddit_origin_lifted"
   },
   {
    "symbol": "USDJPY",
@@ -72,7 +75,8 @@
    "replaces_lineage": "ext_reddit_USDJPY_session_range_breakout",
    "sleeve": null,
    "requeued_at": "2026-10-06T00:00:00+00:00",
-   "status": "QUEUED"
+   "status": "LIFTED",
+   "lifted_by": "reddit_origin_lifted"
   }
  ]
 }

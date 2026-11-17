@@ -629,8 +629,12 @@ def quarantine_terms_fenced(
     kept: list[dict] = []
     held: list[dict] = []
     by_platform: Counter = Counter()
+    lifted: Counter = Counter()
     for r in rows:
         p = tf.quarantined_row(r) if isinstance(r, dict) else None
+        lp = tf.lifted_row(r) if isinstance(r, dict) and not p else None
+        if lp:
+            lifted[lp] += 1
         if p:
             by_platform[p] += 1
             held.append(r)
@@ -645,6 +649,10 @@ def quarantine_terms_fenced(
                           "size": "UNMEASURED",
                           "reopens_when": "the platform grants automated use, or the cell "
                                           "re-certifies on a clean lineage"}}
+    # THE ORIGIN LIFT (live_sleeve_policy `reddit_origin_lifted`): rows fenced only by a lifted
+    # platform's idea origin are JUDGED, counted here so the lift is never silent.
+    rep["origin_lift"] = {"admitted": dict(lifted), "policy": tf.lift_status()["status"],
+                          "rule": "the terms gate governs data ACCESS, not an idea's origin"}
     if archive is not None:
         rep["archive"] = tf.archive_quarantined(held, archive)
     return kept, rep

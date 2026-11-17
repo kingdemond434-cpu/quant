@@ -163,7 +163,34 @@ def _atomic(p: Path, doc: Any) -> None:
 Fetch = Callable[[str], tuple[int | None, str]]
 
 
+#: A door whose host's robots.txt refuses us, or cannot be read, is BLOCKED_BY_ROBOTS: a named,
+#: counted status with its missed_growth line, never a silent miss and never an assumed allow.
+BLOCKED_BY_ROBOTS = "BLOCKED_BY_ROBOTS"
+ROBOTS_MISSED_GROWTH = {
+    "mechanism": "robots_fail_closed",
+    "what_is_lost": "the attention series this door would have published, and the cells it "
+                    "would have minted from them",
+    "size": "UNMEASURED",
+    "reopens_when": "the host's robots.txt is readable and allows the path for this agent"}
+
+
+def robots_refusal(url: str) -> str | None:
+    """The repo's robots gate (index_discovery.robots_refusal), FAIL CLOSED: 404/410 allow,
+    401/403 deny, anything else unreadable refuses. A gate that cannot load refuses too."""
+    try:
+        import index_discovery as idx
+    except Exception as exc:  # no gate means no request
+        return f"robots gate unavailable ({type(exc).__name__})"
+    try:
+        return idx.robots_refusal(url, agent=UA)
+    except Exception as exc:  # unreadable is not permission
+        return f"robots.txt unreadable ({type(exc).__name__})"
+
+
 def _default_fetch(url: str) -> tuple[int | None, str]:
+    refused = robots_refusal(url)
+    if refused:
+        return None, f"{BLOCKED_BY_ROBOTS}: {refused}"
     from libs.data import polite_fetch as pf
     r = pf.get(url, headers={"User-Agent": UA, "Accept": "application/json"}, timeout=25.0,
                retries=1, leg=SEAT, max_bytes=4_000_000)
@@ -236,6 +263,8 @@ def fetch_series(row: Mapping[str, Any], now: datetime, fetch: Fetch) -> tuple[d
     if fenced:                                   # never, by construction -- and pinned by a test
         return {}, f"{tf.PLATFORMS[fenced]['status']}:{fenced}"
     status, body = fetch(url)
+    if status is None and str(body).startswith(BLOCKED_BY_ROBOTS):
+        return {}, str(body)[:160]
     if status is None or not (200 <= int(status) < 300):
         return {}, f"HTTP {status}" if status else f"TRANSPORT: {str(body)[:80]}"
     try:
@@ -443,6 +472,8 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
         pts, status = fetch_series(row, now, fetch)
         rec: dict[str, Any] = {"status": status, "door": row["door"], "symbol": row["symbol"],
                                "points_fetched": len(pts)}
+        if str(status).startswith(BLOCKED_BY_ROBOTS):
+            rec["missed_growth"] = dict(ROBOTS_MISSED_GROWTH)
         if pts and not dry_run:
             lake_rows = merge_obs(paths, sid, pts, now)
             rec["lake"] = write_lake(paths, sid, lake_rows)
@@ -483,6 +514,10 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
            "substitutes": substitute_summary(plan, recs, lake_points, take),
            "fenced_platforms": tf.registry_rows(),
            "series": recs, "status_counts": by_door,
+           "robots": {"blocked": sum(1 for r in recs.values()
+                                     if str(r["status"]).startswith(BLOCKED_BY_ROBOTS)),
+                      "rule": "fail closed: 404/410 allow, 401/403 deny, unreadable refuses",
+                      "missed_growth": dict(ROBOTS_MISSED_GROWTH)},
            "cells": {"grid": len(cells), "built": len(take),
                      "donated_ever": len(state.get("donated") or []),
                      "minted": int(donation.get("donated") or 0),
