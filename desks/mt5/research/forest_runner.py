@@ -483,7 +483,9 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
             res.note("country_lab", f"{UNMEASURED}: {type(exc).__name__}: {str(exc)[:120]}")
         try:
             from libs.research import polyglot as pg
-            for lang in run.spec.languages:
+            # An EVOLVING forest's search vocabulary is its own mission (below), not the
+            # polyglot tables: those would re-seed it with the same fixed terms every pass.
+            for lang in () if run.spec.evolving else run.spec.languages:
                 for layer in LAYERS:
                     with contextlib.suppress(Exception):
                         got = pg.native_queries(lang, layer, limit=6)

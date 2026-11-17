@@ -10,6 +10,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -288,10 +289,27 @@ def test_tor_installer_is_pinned_torproject_only_loopback_and_credential_free():
     assert "-notmatch '^[0-9a-f]{64}$'" in src, "an unpinned hash refuses to install"
     assert "Get-FileHash -Algorithm SHA256" in src
     urls = re.findall(r"https?://[^\s'\"<>)]+", src)
-    assert urls and all(re.match(r"https://(archive|www)\.torproject\.org/", u) for u in urls)
+    hosts = {urlsplit(u.replace("\\", "")).hostname for u in urls}
+    assert urls and hosts <= {"archive.torproject.org", "www.torproject.org"}
     assert "SocksPort 127.0.0.1:9050" in src and "ClientOnly 1" in src
     assert "ControlPort 0" in src and "ExitRelay 0" in src and "ORPort 0" in src
     assert not re.search(r"SocksPort\s+(0\.0\.0\.0|\d+\s*$)", src, re.M)
     assert "--service install -options -f" in src
     assert "[switch]$IfMissing" in src
     assert CREDENTIAL.search(src) is None
+
+
+def test_the_forest_scout_seeds_from_the_evolving_mission_head(tmp_path, monkeypatch):
+    from research import forest_runner as fr
+    log = tmp_path / "onion.jsonl"
+    m = ME.seed("onion", "base.", ["oil", "gold"], ["pub"], stamp="s0")
+    ME.append(log, m)
+    child, diff, _ = ME.evolve(m, ME.Yield(terms={"gold": 2}, tried_terms=["oil", "gold"],
+                                           harvest={"XAUUSD": 2}), "s1")
+    ME.append(log, child, diff)
+    monkeypatch.setattr(F, "mission_log", lambda fid, desk=None: log)
+    doc = fr.run_pass("onion", budget_s=60, workers=1, dry_run=True, roles=["source_scouts"])
+    scout = next(r for r in doc["roles"] if r["role"] == F.SCOUT_ROLE)
+    assert any(s.startswith(f"mission:{child.version}") for s in scout["seeded_by"])
+    assert not any(s.startswith("polyglot") for s in scout["seeded_by"])
+    assert not any(s == "mandate_seeds" for s in scout["seeded_by"])

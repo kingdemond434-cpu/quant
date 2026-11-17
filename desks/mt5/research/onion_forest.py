@@ -320,7 +320,8 @@ def dump_shape(text: str) -> str | None:
     return None
 
 
-_RUMOUR = re.compile(r"(?i)\b(insider|rumou?r|sources? (say|said|familiar)|people familiar|"
+_RUMOUR = re.compile(r"(?i)\b(insiders?|rumou?rs?|sources? (say|said|familiar)|"
+                     r"people familiar|"
                      r"according to (sources|people)|reportedly|unconfirmed|leak(ed|s)?|"
                      r"confidential|not yet public|internal (memo|document))\b")
 _LEAK = re.compile(r"(?i)\bleak(ed|s|ing)?\b")
@@ -501,9 +502,9 @@ def corroboration(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
                                                   "confirming report from another source yet")}
 
 
-def _ledger(path: Path = CLAIMS, max_rows: int = 20000) -> list[dict[str, Any]]:
+def _ledger(path: Path | None = None, max_rows: int = 20000) -> list[dict[str, Any]]:
     try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()[-max_rows:]
+        lines = Path(path or CLAIMS).read_text(encoding="utf-8").splitlines()[-max_rows:]
     except OSError:
         return []
     out = []
@@ -550,11 +551,18 @@ def _donate(claims: list[dict[str, Any]], at: str) -> dict[str, Any]:
     return out
 
 
-def current_mission(roster_ids: list[str], at: str, log: Path = MISSION_LOG) -> ME.Mission:
-    got = ME.head(log)
+def current_mission(roster_ids: list[str], at: str, log: Path | None = None) -> ME.Mission:
+    got = ME.head(log or MISSION_LOG)
     if got is not None:
         return got
     return ME.seed(FOREST, BASE_MISSION, SEED_TERMS, roster_ids, stamp=at)
+
+
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(DESK.resolve()).as_posix()
+    except ValueError:
+        return str(path)
 
 
 def run(budget_s: float = 600.0, *, write: bool = True, network: bool = True,
@@ -645,7 +653,7 @@ def run(budget_s: float = 600.0, *, write: bool = True, network: bool = True,
         "candidates_donated": donated,
         "mission": {"version": child.version, "parent": child.parent,
                     "generation": child.generation, "text": child.text, "changed": changed,
-                    "diff": diff, "log": str(MISSION_LOG.relative_to(DESK)),
+                    "diff": diff, "log": _rel(MISSION_LOG),
                     "chain": ME.verify_chain(MISSION_LOG) if write else "dry run"},
         "fetch_log": fetcher.log[:60],
         "missed_growth": missed,
