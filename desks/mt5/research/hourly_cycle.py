@@ -1353,7 +1353,8 @@ FOREST_DEPARTMENTS: tuple[str, ...] = ("korea", "china", "russia_cis", "south_as
 #: The global-layer forests: a LAYER of the world rather than a place, so they do not get a
 #: region resident of their own -- they run on the `regions` resident beside global_research_os.
 GLOBAL_FOREST_LEGS: tuple[str, ...] = ("forest_global_web", "forest_global_academic_code",
-                                       "forest_global_physical_data", "forest_global_market_data")
+                                       "forest_global_physical_data", "forest_global_market_data",
+                                       "forest_onion")
 
 #: THE IN-PROCESS REPORT STEPS (2026-11-14, six orphan idea-pass bundles). Each is a small
 #: report-only module under research/ whose `main()` writes ONE artifact under reports/ from files
@@ -2655,6 +2656,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     **{f"forest_{_fid}": 3_300 for _fid in
        (*FOREST_DEPARTMENTS, "global_web", "global_academic_code", "global_physical_data",
         "global_market_data", "japan", "global_macro")},
+    # The onion layer reads an allowlist through Tor (one request per host per 10 s); it asks for
+    # 900 s and the cap sits above that so it writes its report and mission version every pass.
+    "forest_onion": 1_200,
 }
 
 #: A PRICE MAY LENGTHEN A LEG AND MAY NEVER SHORTEN IT PAST ITS OWN STOPPING POINT.
@@ -5870,6 +5874,14 @@ def main() -> None:
     forests_out["forest_global_macro"] = _costed("forest_global_macro", lambda: _producer(
         "forest_global_macro", "research/forest_runner.py", "--forest", "global_macro",
         "--once", "--budget-s", "3000", "--mine-grounds"))
+    # THE ONION LAYER (principal 2026-11-17 20:31-20:35Z) rides the same `regions` resident: an
+    # allowlist of official .onion mirrors and reviewed sources, read through a local Tor SOCKS
+    # port by `onion_forest` (the forest's own miner), its mission evolving every pass. With no
+    # Tor on the box it still runs, reports TOR_ABSENT with its missed_growth line, and reads the
+    # publishers' clearnet pages to verify addresses and terms.
+    forests_out["forest_onion"] = _costed("forest_onion", lambda: _producer(
+        "forest_onion", "research/forest_runner.py", "--forest", "onion", "--once",
+        "--budget-s", "900", "--mine-grounds"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
