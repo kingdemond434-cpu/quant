@@ -452,35 +452,95 @@ class TxnRecoveryRefused(RuntimeError):
     The manifest is KEPT; every pass refuses to read on until it is resolved by hand."""
 
 
-def _apply_ops(ops: list[list[Any]], *, checked: bool = False) -> None:
-    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent.
+#: Targets other organs also write. `beta.json` and `dirichlet.json` are research_priors'
+#: posterior, rewritten by every `record_outcome` caller (eight on this desk) at any moment. A
+#: change to one after this pass's commit point is ANOTHER WRITER'S UPDATE, not corruption, so
+#: recovery lets it stand (SUPERSEDED) instead of refusing forever (audit of v2.3, S1).
+TXN_SHARED_TARGETS = frozenset({"beta.json", "dirichlet.json"})
+#: A manifest younger than this may belong to a pass still renaming; recovery only ever rolls
+#: such a manifest FORWARD (idempotent with its owner), never back and never refuses it for good.
+TXN_LIVE_GRACE_S = 120.0
 
-    `checked` is recovery's mode (audit of v2.1). Every op is classified BEFORE any is applied:
-    PENDING (staged present, target as it was at the commit point), APPLIED (staged gone, target
-    is the staged file renamed: same mtime and size), or a refusal -- the target changed since
-    the commit point (another writer; rolling forward would clobber it) or the staged file is
-    missing and the target is not it (rolling the rest forward would half-apply the pass). A
-    refusal raises `TxnRecoveryRefused` and applies NOTHING. Two recoveries racing on one
-    manifest meet a file the other already moved; that is suppressed, never raised.
+
+def _classify_ops(ops: list[list[Any]]) -> dict[str, Any]:
+    """What recovery would do with a committed manifest, decided before anything moves.
+
+    Each replace op is one of
+      PENDING   staged present, target as it was at the commit point;
+      APPLIED   staged gone, target is the staged file renamed (same mtime and size);
+      CHANGED   staged present, but the target was rewritten after the commit point;
+      MISSING   staged gone and the target is not it (renamed, then rewritten -- or lost).
+    and the manifest's decision is
+      "forward"   nothing CHANGED or MISSING: roll every op forward;
+      "rollback"  NOTHING was applied yet (no APPLIED, no MISSING) but a target CHANGED: the
+                  pass is undone -- staged files and manifest removed, every target left as the
+                  other writer made it. Nothing of the pass landed, so the next pass re-reads the
+                  same cursor and teaches exactly once;
+      "forward" with `superseded`  part of the pass landed and the only CHANGED/MISSING targets
+                  are SHARED ones: those keep the other writer's bytes, the rest roll forward;
+      "refuse"    part of the pass landed and a target nobody else writes CHANGED or went
+                  MISSING: no automatic choice is safe (see the README runbook).
+    A manifest from before v2.2 carries no stats; every op on it reads PENDING or APPLIED.
     """
-    if checked:
-        bad: list[str] = []
-        for entry in ops:
-            op, final, staged = entry[0], entry[1], entry[2]
-            pre = entry[3] if len(entry) > 3 else None
-            post = entry[4] if len(entry) > 4 else None
-            if op != "replace":
-                continue
-            dst_now = _fstat(Path(final))
-            if Path(staged).exists():
-                if len(entry) > 3 and dst_now != pre:
-                    bad.append(f"{Path(final).name}: changed since the commit point")
-            elif len(entry) > 4 and dst_now != post:
-                bad.append(f"{Path(final).name}: staged file missing and target is not it")
-        if bad:
-            raise TxnRecoveryRefused("; ".join(bad))
+    states: dict[str, str] = {}
     for entry in ops:
         op, final, staged = entry[0], entry[1], entry[2]
+        if op != "replace":
+            continue
+        pre = entry[3] if len(entry) > 3 else None
+        post = entry[4] if len(entry) > 4 else None
+        dst_now = _fstat(Path(final))
+        if Path(staged).exists():
+            states[final] = "CHANGED" if len(entry) > 3 and dst_now != pre else "PENDING"
+        else:
+            states[final] = "MISSING" if len(entry) > 4 and dst_now != post else "APPLIED"
+    landed = any(v in ("APPLIED", "MISSING") for v in states.values())
+    off = {f: v for f, v in states.items() if v in ("CHANGED", "MISSING")}
+    shared = {f for f in off if Path(f).name in TXN_SHARED_TARGETS}
+    if not off:
+        decision = "forward"
+    elif not landed:
+        decision = "rollback"
+    elif set(off) <= shared:
+        decision = "forward"
+    else:
+        decision = "refuse"
+    return {"decision": decision, "states": states, "superseded": sorted(shared) if
+            decision == "forward" else [],
+            "why": "; ".join(f"{Path(f).name}: {v.lower()} since the commit point"
+                             for f, v in sorted(off.items()))}
+
+
+def _rollback_ops(ops: list[list[Any]]) -> None:
+    """Undo a pass none of whose writes landed: its staged files (and staged dirs) go."""
+    import shutil
+    for entry in ops:
+        if entry[0] != "replace" or not entry[2]:
+            continue
+        staged = Path(entry[2])
+        with contextlib.suppress(OSError):
+            staged.unlink()
+        if TXN_TAG in staged.parent.name:
+            shutil.rmtree(staged.parent, ignore_errors=True)
+
+
+def _apply_ops(ops: list[list[Any]], *, checked: bool = False,
+               skip: frozenset[str] | set[str] = frozenset()) -> None:
+    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent.
+
+    `checked` is recovery's mode: `_classify_ops` decides first, and a "refuse" raises
+    `TxnRecoveryRefused` with NOTHING applied. `skip` names SUPERSEDED targets left as another
+    writer made them. Two recoveries racing on one manifest meet a file the other already moved;
+    that is suppressed, never raised.
+    """
+    if checked:
+        plan = _classify_ops(ops)
+        if plan["decision"] == "refuse":
+            raise TxnRecoveryRefused(plan["why"])
+    for entry in ops:
+        op, final, staged = entry[0], entry[1], entry[2]
+        if final in skip:
+            continue
         dst = Path(final)
         if op == "replace":
             src = Path(staged)
@@ -497,7 +557,9 @@ class _Txn:
     """The staged writes of one pass, committed together at `write` (or at the end of `build`)."""
 
     def __init__(self, manifest_dir: Path) -> None:
-        self.id = f"{os.getpid()}-{time.time_ns()}"
+        # pid + clock + a random suffix: two live transactions can never share an id, so one's
+        # discard can never take the other's staged dir (audit of v2.3, S3).
+        self.id = f"{os.getpid()}-{time.time_ns()}-{uuid.uuid4().hex[:12]}"
         self.manifest_dir = manifest_dir
         self.ops: dict[str, list[Any]] = {}
         self.staged_dirs: list[Path] = []
@@ -718,22 +780,49 @@ def recover_transactions(ratchet: Path | None = None) -> int:
                 print(f"judge coverage: unreadable transaction manifest set aside as "
                       f"{aside.name}", file=sys.stderr, flush=True)
                 continue
-            try:
-                _apply_ops(doc["ops"], checked=True)
-            except TxnRecoveryRefused as exc:
-                raise TxnRecoveryRefused(f"{m.name} kept, nothing applied: {exc}") from None
-            rolled += 1
+            plan = _classify_ops(doc["ops"])
+            young = False
+            with contextlib.suppress(OSError):
+                young = time.time() - m.stat().st_mtime < TXN_LIVE_GRACE_S
+            if plan["decision"] != "forward" and young:
+                # Its pass may still be renaming: undoing or judging it now could race the
+                # owner into a half-applied state. Fail this pass loud; the next one decides.
+                raise TxnRecoveryRefused(f"{m.name} is {TXN_LIVE_GRACE_S:.0f}s-young and would "
+                                         f"be {plan['decision']}: left to its owner this pass")
+            if plan["decision"] == "refuse":
+                raise TxnRecoveryRefused(f"{m.name} kept, nothing applied: {plan['why']} "
+                                         "(runbook: patches/judge_coverage_fast/README.md, "
+                                         "'Resolving a refused recovery')")
+            if plan["decision"] == "rollback":
+                _rollback_ops(doc["ops"])
+                print(f"judge coverage: {m.name} rolled BACK, nothing of that pass had landed "
+                      f"and {plan['why']}", file=sys.stderr, flush=True)
+            else:
+                _apply_ops(doc["ops"], skip=set(plan["superseded"]))
+                if plan["superseded"]:
+                    print(f"judge coverage: {m.name} rolled forward; another writer's "
+                          f"{', '.join(Path(f).name for f in plan['superseded'])} kept "
+                          f"(superseded)", file=sys.stderr, flush=True)
+                rolled += 1
             with contextlib.suppress(FileNotFoundError):
                 m.unlink()
     # Staged files a kept or set-aside manifest names are evidence, not orphans.
+    # A `.json.tmp` is a manifest that never reached its rename: the commit point was NOT
+    # passed, so the files it names are orphans like any other (audit of v2.3, S2). Only a
+    # kept `.json` manifest protects what it names; the stale `.tmp` itself is swept below.
     named: set[str] = set()
     for d in dirs:
-        for m in d.glob(f"{TXN_MANIFEST_PREFIX}*") if d.is_dir() else []:
+        for m in d.glob(f"{TXN_MANIFEST_PREFIX}*.json") if d.is_dir() else []:
             with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
                 for o in json.loads(m.read_text("utf-8")).get("ops") or []:
                     if isinstance(o, list) and len(o) >= 3 and o[2]:
                         named.add(str(o[2]))
     cutoff = time.time() - TXN_ORPHAN_AGE_S
+    for d in dirs:
+        for t in d.glob(f"{TXN_MANIFEST_PREFIX}*.json.tmp") if d.is_dir() else []:
+            with contextlib.suppress(OSError):
+                if t.stat().st_mtime < cutoff:
+                    t.unlink()
     for d in dirs:
         for p in d.glob(f"*{TXN_TAG}*") if d.is_dir() else []:
             if str(p) in named or any(n.startswith(str(p) + os.sep) for n in named):
@@ -747,6 +836,18 @@ def recover_transactions(ratchet: Path | None = None) -> int:
                 else:
                     p.unlink()
     return rolled
+
+
+def refused_manifests(ratchet: Path | None = None) -> list[str]:
+    """READ-ONLY: every kept manifest recovery would refuse, as "<name>: <why>". Nothing moves."""
+    out: list[str] = []
+    for d in _txn_dirs(ratchet):
+        for m in sorted(d.glob(f"{TXN_MANIFEST_PREFIX}*.json")) if d.is_dir() else []:
+            with contextlib.suppress(OSError, ValueError, TypeError, AttributeError, IndexError):
+                plan = _classify_ops(json.loads(m.read_text("utf-8"))["ops"])
+                if plan["decision"] == "refuse":
+                    out.append(f"{m.name}: {plan['why']}")
+    return out
 
 
 def _txn_current() -> _Txn | None:
@@ -1259,19 +1360,19 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             sys.path.insert(0, root)
         from libs.research.research_priors import load, record_outcome, save
     except Exception as exc:
-        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+        out.update(status="UNMEASURED", why=type(exc).__name__)
         return out
     scan = _ledger_scan(ledger or GATE_LEDGER) if 0 < limit <= LEARN_TAIL else None
     if scan is not None and not scan.err:
         lines = list(scan.tail)[-limit:]
     else:
-        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError
+        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError TYPE
         # names the cause in `why`.
         try:
             from libs.ops.tail_read import tail_lines   # from the end: memory of the tail only
             lines = tail_lines(ledger or GATE_LEDGER, limit)
         except OSError as exc:
-            out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+            out.update(status="UNMEASURED", why=type(exc).__name__)
             return out
     _clock = now or datetime.now(tz=UTC)
     _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
@@ -1386,7 +1487,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
                     # the save landed in place (`family_priors`).
                     _PASS[("priors_dir",)] = staged_dir
         except Exception as exc:                                         # pragma: no cover
-            out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}: {exc}")
+            out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}")
     out["families"] = len(seen_fams)
     out["cursor"] = high
     return out
@@ -1598,7 +1699,7 @@ def _fire_probe(sym: str, family: str) -> dict[str, Any]:
             from research.fire_inputs import probe  # type: ignore[no-redef]
         return probe(sym, family, memo=_FIRE_MEMO)
     except Exception as exc:                                   # never costs the pass
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -2059,7 +2160,7 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
         census["release_file_state"] = rstate
         return named, census
     except Exception as exc:                                   # never costs the pass
-        return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        return {}, {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 #: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
@@ -2941,7 +3042,7 @@ def keff_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
     except Exception as exc:
         for r in rows:
             r.pop("_keff", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _occupancy_map() -> Any:
@@ -2974,7 +3075,7 @@ def occupancy_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
         for r in rows:
             r.pop("_occ", None)
             r.pop("_orth", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
@@ -3310,7 +3411,7 @@ def family_stamp(rows: list[dict[str, Any]],
     except Exception as exc:
         for r in rows:
             r.pop("_famdup", None)
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 def _unseen_families_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
@@ -4247,7 +4348,7 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
                           seconds_per_cell=seconds_per_cell)
     except (Exception, SystemExit) as exc:                     # never costs the docket
         return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
-                      "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+                      "why": type(exc).__name__}
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
@@ -4273,8 +4374,17 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
     # reached nothing here is written directly again (MF1): a kept manifest rolls forward.
     entry_rows = list(rows)
     commit_reached = False
+    # A ROW THAT IS NOT AN OBJECT IS CARRIED, COUNTED AND NEVER ORDERED (audit of v2.3, S4). It
+    # used to raise below (`'str'.get`), and since the pass became one transaction that raise
+    # discarded everything it had learnt -- a malformed docket stalled the priors. `build`
+    # already ignores such rows; here they ride at the tail, untouched, so no row is lost.
+    bad = [r for r in rows if not isinstance(r, dict)]
+    if bad:
+        rows = [r for r in rows if isinstance(r, dict)]
     try:
         doc = build(rows, now=now, defer=publish)
+        if bad:
+            doc["non_object_rows_carried"] = len(bad)
         if not doc.get("families"):
             _txn = doc.pop("_txn", None)
             # THE ROWS SHIP UNFILTERED HERE, so nothing is parked out of this docket: the parked
@@ -4284,7 +4394,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             if _txn is not None:
                 commit_reached = True
                 _txn.commit()
-            return rows, doc
+            return entry_rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
         judged_cells, _, _ = judged_index(now=now)
@@ -4398,7 +4508,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         if publish:
             commit_reached = True
             write(doc)
-        return ordered, doc
+        return ordered + bad, doc
     except Exception as exc:                                             # pragma: no cover
         # A deferred pass that failed after build must not leave its staging in live dirs.
         _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
@@ -4412,11 +4522,13 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                                                       / PARKED_TRIAL_ROWS.name):
             _write_parked_trials([], None)
         for _r in entry_rows:
+            if not isinstance(_r, dict):
+                continue                 # a carried non-object row (S4) has no stamps
             # `_famdup` (judge-families' stamp) too: on efde2f1c4 a fault after `family_stamp`
             # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
-        return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return entry_rows, {"verdict": "UNMEASURED", "why": type(exc).__name__}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
@@ -4683,6 +4795,41 @@ def reuse_fresh(*, started_at: datetime | None = None, now: datetime | None = No
     return fresh, verdict
 
 
+def txn_status(ratchet: Path | None = None) -> int:
+    """READ-ONLY. One line per kept manifest, one per target, then exit 0, or 5 if refused."""
+    refused = False
+    for d in _txn_dirs(ratchet):
+        for m in sorted(d.glob(f"{TXN_MANIFEST_PREFIX}*.json")) if d.is_dir() else []:
+            try:
+                plan = _classify_ops(json.loads(m.read_text("utf-8"))["ops"])
+            except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
+                print(f"{m.name}: UNREADABLE ({type(exc).__name__}); recovery sets it aside")
+                continue
+            refused = refused or plan["decision"] == "refuse"
+            print(f"{m.name}: {plan['decision'].upper()}"
+                  + (f" -- {plan['why']}" if plan["why"] else ""))
+            for final, state in plan["states"].items():
+                print(f"    {state:<8} {final}")
+    return RECOVERY_REFUSED_EXIT if refused else 0
+
+
+def txn_force_forward(name: str, ratchet: Path | None = None) -> int:
+    """The runbook's manual resolution of a REFUSED manifest: every staged file it still holds
+    is renamed over its target -- the pass is finished as committed -- and the manifest goes.
+    A target another organ rewrote after the commit point loses that rewrite; that is the
+    choice the operator makes by running this, which is why nothing automatic does it."""
+    for d in _txn_dirs(ratchet):
+        m = d / Path(name).name
+        if m.is_file():
+            ops = json.loads(m.read_text("utf-8"))["ops"]
+            _apply_ops(ops)
+            m.unlink()
+            print(f"judge coverage: {m.name} forced forward by hand")
+            return 0
+    print(f"judge coverage: no kept manifest named {name}", file=sys.stderr)
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
@@ -4696,7 +4843,17 @@ def main(argv: list[str] | None = None) -> int:
                     help="compute nothing: verify that merge_hypotheses published this cycle's "
                          "coverage and exit 0, or exit 4 with JUDGE_COVERAGE_REUSE.json naming "
                          "why not. Never writes the report or the ratchet")
+    ap.add_argument("--txn-status", action="store_true",
+                    help="READ-ONLY: print every kept transaction manifest and what recovery "
+                         "would do with it, per target; exit 5 if any would be refused")
+    ap.add_argument("--txn-force-forward", metavar="MANIFEST",
+                    help="the runbook's one manual act: finish a REFUSED manifest by rolling "
+                         "every staged file it still holds forward over its target")
     args = ap.parse_args(argv)
+    if args.txn_status:
+        return txn_status()
+    if args.txn_force_forward:
+        return txn_force_forward(args.txn_force_forward)
     if args.reuse_fresh:
         fresh, verdict = reuse_fresh()
         print(json.dumps(verdict, indent=1) if args.json else

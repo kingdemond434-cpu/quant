@@ -1152,7 +1152,13 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
+    "policy_lift_reopen",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
+    # THE REPAIR SWEEP THAT GIVES A CLOCKLESS CERTIFICATE ITS CLOCK (principal 2026-11-13: "All
+    # certs passed go on forward clocks immediately"). It sat on the HEAVY plan only, so on a box
+    # running core hourly it ran only when heavy reached it: the census was 165.8 h old. Core,
+    # and due-by-age in libs/ops/leg_rotation.py (hard at 2 h), so it can never starve again.
+    "forward_enrolment",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
@@ -1202,6 +1208,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # network, two small reads; the cloud hourly pass runs the full GitHub half.
     "arch_health",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
+    # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
+    # and dead-replacement RED checks, and the weights the free panel spends its calls by.
+    # Artifact readers, seconds each.
+    "llm_yield", "llm_budget_census",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1483,6 +1494,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
+                     "llm_yield", "llm_budget_census",
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
@@ -2390,6 +2402,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
+    "policy_lift_reopen": 120,
     "six_event_trace": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -5867,6 +5880,11 @@ def main() -> None:
     # retire walk applies the same thresholds it applies at 22:00. Running it here changes no
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
+    # THE LIFTED WHITELIST'S RE-OPENER (principal 2026-11-13), immediately before the promoter:
+    # a row the live policy alone retired, whose clock is still a candidate AND verified as a net-
+    # of-cost edge, is renamed so the sealed promoter re-judges that clock through every door.
+    plr = _costed("policy_lift_reopen", lambda: _producer(
+        "policy_lift_reopen", "research/policy_lift_reopen.py"))
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
     # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
     # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
@@ -6487,6 +6505,14 @@ def main() -> None:
     # of producers that burned compute for no unique cell, ranked by compute.
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
+    # WHAT EVERY MODEL AND GENERATOR TURNED ITS CALLS INTO (item 26, IDEA_QUEUE row 251). Writes
+    # reports/LLM_YIELD.json and data/llm_model_priority.json, which free_panel.available reads
+    # so the next call goes to the models that convert; exits 1 on a silent-success streak or a
+    # DEAD producer whose declared replacement is DEAD. The budget census beside it says who spent
+    # the day's requests and how many were wasted; it had a clock in its docstring and none here.
+    llmy = _costed("llm_yield", lambda: _producer("llm_yield", "research/llm_yield.py"))
+    lbc = _costed("llm_budget_census", lambda: _producer(
+        "llm_budget_census", "research/llm_budget_census.py"))
     # PRODUCER BREADTH (principal 2026-09-30: every producer at worldwide orthogonal breadth,
     # every cell testable). Per producer: its clock, last production, cells in 24h/7d, the
     # symbols/charts/sessions/families covered against what it could reach, the share the SEALED
@@ -6725,6 +6751,7 @@ def main() -> None:
                     "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl, "pr_blockers": pbk,
@@ -6758,7 +6785,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
-                    "promoter": pr,
+                    "promoter": pr, "policy_lift_reopen": plr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8", newline="\n")

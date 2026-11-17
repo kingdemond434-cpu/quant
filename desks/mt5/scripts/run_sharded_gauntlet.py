@@ -813,8 +813,8 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
                "idle_s") if k in hb},
            "counts_toward_widening": counts, "lost_s": lost_s,
            "kill": kill, "restored_from_merge_snapshot": restored or []}
-    history = [*(prev.get("history") or []), row][-STALL_HISTORY:]
-    mg = [*(prev.get("missed_growth") or []),
+    history = [*_list_field(prev, "history"), row][-STALL_HISTORY:]
+    mg = [*_list_field(prev, "missed_growth"),
           _missed_growth_line(reason, lost_s, f"sweep pid {row['pid']} {reason}: {detail[:200]}")
           ][-MISSED_GROWTH_HISTORY:]
     # WHAT A STALL RECORD MUST NOT DROP (audit HOLD of 9c0976b76): this doc is rebuilt from `row`,
@@ -837,6 +837,14 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     with contextlib.suppress(Exception):
         print(f"{datetime.now(UTC).isoformat()} GAUNTLET STALL: {reason} -- {detail}", flush=True)
     return doc
+
+
+def _list_field(prev: dict[str, Any], key: str) -> list[Any]:
+    """`prev[key]` when it is a list, else [] (v2.2.1 nit): an int there (a corrupt stall record)
+    used to raise TypeError inside record_stall and record_resume_delay, losing the very record
+    being written. A malformed value is dropped, never carried forward."""
+    raw = prev.get(key)
+    return list(raw) if isinstance(raw, list) else []
 
 
 def _billed_keys(prev: dict[str, Any]) -> list[str]:
@@ -934,7 +942,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
     # the missed-growth history, and the last resume line. Reading only the last one double-billed
     # whenever a stall record was written between two end paths.
     billed = set(_billed_keys(prev))
-    billed |= {str(m.get("resume_key")) for m in (prev.get("missed_growth") or [])
+    billed |= {str(m.get("resume_key")) for m in _list_field(prev, "missed_growth")
                if isinstance(m, dict) and m.get("resume_key")}
     last = prev.get("plan_resume")
     if isinstance(last, dict) and last.get("resume_key"):
@@ -945,7 +953,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
         sweep_s = (time.time() - t0) if isinstance(t0, float) else None
     line = {**_resume_delay_line(doc, sweep_s, plan_kept=rc != 0),
             "resume_key": key, "ended": ended, "rc": rc}
-    mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
+    mg = [*_list_field(prev, "missed_growth"), line][-MISSED_GROWTH_HISTORY:]
     keys = [*_billed_keys(prev), key][-BILLED_RESUME_HISTORY:]
     _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
                                "plan_resume": line, "billed_resume_keys": keys})
@@ -975,7 +983,7 @@ def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None =
                         if k in hb}}
     status = "STALLED" if prev.get("status") == "STALLED" else "SLOW"
     doc = {**prev, **_lock_stamp(prev), "status": status, "slow": row,
-           "history": [*(prev.get("history") or []), row][-STALL_HISTORY:],
+           "history": [*_list_field(prev, "history"), row][-STALL_HISTORY:],
            "consecutive": int(prev.get("consecutive") or 0)}
     _write_json_atomic(STALL, doc)
     with contextlib.suppress(Exception):
@@ -3688,6 +3696,18 @@ def _publish_priority(key: str, value: Any) -> str:
     return status
 
 
+def _plan_tracker() -> Any:
+    """The sweep's PlanTracker, on the launcher's own lock and writer (judge plan v2.2.1).
+
+    PLAN_PROGRESS_HOOK calls arrive on the sealed judge's pool threads; `_phase` and
+    `_shard_progress` write the same `_PHASE_DOC`. One lock, `_PHASE_LOCK`, now covers all three,
+    and every flush goes through `_flush_phase_doc` (one atomic writer, one "_" filter). The
+    tracker never holds the lock across `on_phase`: `_phase` takes it, and it is not reentrant."""
+    from scripts.judge_plan_progress import PlanTracker
+    return PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase, lock=_PHASE_LOCK,
+                       write=_flush_phase_doc)
+
+
 def _sweep_logged() -> int:
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3695,8 +3715,7 @@ def _sweep_logged() -> int:
         old_out, old_err = sys.stdout, sys.stderr
         # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
         # the sealed image's progress hook, where it has one, its counts. Reports only.
-        from scripts.judge_plan_progress import PlanTracker
-        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)
+        plan = _plan_tracker()
         plan.step("lane_and_docket")
         sys.stdout = sys.stderr = plan.tee(log)
         try:
