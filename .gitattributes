@@ -1,0 +1,8 @@
+# APPEND-ONLY AND LINE-SET FILES MERGE BY UNION (2026-11-17: 38 of 87 conflicting PRs collided on
+# context/decision_journal.jsonl alone, every one a pure append on both sides). Any local `git
+# merge` (a session merging LIVE in, the box's Adopt-Release) keeps both sides' lines instead of
+# stopping. GitHub's own merge button ignores merge drivers; scripts/resolve_pr_conflicts.py does
+# the same resolution for a PR branch, plus the generated runtime_state files.
+context/decision_journal.jsonl merge=union
+ops/money_closure.txt merge=union
+.gitignore merge=union
