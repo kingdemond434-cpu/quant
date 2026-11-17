@@ -101,8 +101,10 @@ def test_each_source_fetches_when_enabled_and_refuses_when_false(tmp_path: Path,
     assert row["status"] == "BLOCKED_ON_TERMS" and "disabled" in row["why"]
     assert row["missed_growth"].startswith("missed_growth")
     assert "permission" not in row                       # nothing fetched under the attestation
-    hosts = json.loads(REAL.read_text())["sources"][SEVEN.index(sid)]["hosts"]
-    assert not [u for u in off.calls if any(h in u for h in hosts)]
+    # its own endpoint is never requested (two BoJ rows share a host, so match the path)
+    eps = json.loads(REAL.read_text())["sources"][SEVEN.index(sid)]["endpoints"]
+    stems = [e.split("{", 1)[0] for e in eps]
+    assert not [u for u in off.data_calls() if any(u.startswith(st) for st in stems)]
     assert op.is_permitted(sid, _perm(tmp_path)) and not op.is_permitted(
         sid, _perm(tmp_path, **{sid: False}))
 
