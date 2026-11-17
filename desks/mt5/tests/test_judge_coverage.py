@@ -270,6 +270,30 @@ def test_the_floor_survives_the_value_ranking() -> None:
     assert quota["tiny"] == 3
 
 
+def test_an_exhausted_family_keeps_a_trimmed_floor_and_its_cells_go_down_the_ranking() -> None:
+    """YIELD-AWARE FLOOR: 5k+ verdicts at p_hi <= 0.1% trims the floor, never to zero."""
+    backlog = {"winner": 5_000, "dead": 5_000, "fresh": 5_000, "young_dead": 5_000}
+    ranking = [
+        {"family": "fresh", "realised_judged": 0, "p_optimistic": 1.0},
+        {"family": "winner", "realised_judged": 7_523, "p_optimistic": 0.104},
+        {"family": "young_dead", "realised_judged": 4_999, "p_optimistic": 0.0009},
+        {"family": "dead", "realised_judged": 20_186, "p_optimistic": 0.000747},
+    ]
+    assert jc.exhausted_families(ranking) == {"dead"}
+    floors = jc.family_floors(backlog, 4_000, ranking=ranking)
+    assert floors == {"winner": 250, "fresh": 250, "young_dead": 250, "dead": 25}
+    quota = jc.allocate(backlog, 4_000, ranking=ranking)
+    assert quota["dead"] == 25, "an exhausted family is still explored every pass"
+    assert sum(quota.values()) == 4_000
+    assert quota["fresh"] == 3_475, "the freed floor goes down the value ranking"
+    # Without the record, nothing is trimmed: an unmeasured family keeps its full floor.
+    bare = [{"family": f} for f in ("fresh", "winner", "young_dead", "dead")]
+    assert jc.family_floors(backlog, 4_000, ranking=bare)["dead"] == 250
+    # A one-cell floor is never trimmed below one cell.
+    tiny = jc.family_floors({"dead": 10, "other": 10}, 4, ranking=ranking)
+    assert tiny["dead"] == 1
+
+
 def test_the_remainder_goes_down_the_ranking() -> None:
     """A lower-ranked family gets remainder only once every higher one is fully drained."""
     backlog = {"best": 500, "worst": 500}
