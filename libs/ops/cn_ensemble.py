@@ -499,10 +499,10 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             r = (cn_swarm.validate_formula(f, lens) if science
                  else cn_swarm.validate_recipe(f, cat) if cat else None)
             if r is None:
-                k = _key(str(f["title"]))
-                if not k:
+                ik = _key(str(f["title"]))
+                if not ik:
                     continue
-                row = ideas.setdefault(k, {**f, "models": [], "roles": []})
+                row = ideas.setdefault(ik, {**f, "models": [], "roles": []})
                 if model not in row["models"]:
                     row["models"].append(model)
                 if lens not in row["roles"]:
@@ -570,7 +570,7 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     keep = [r for r in recipes.values()
             if r.get("prior_score") is None or float(r["prior_score"]) >= floor]
     crit["killed"] = len(recipes) - len(keep)
-    keep.sort(key=lambda r: (-(r.get("prior_score") if r.get("prior_score") is not None
+    keep.sort(key=lambda r: (-(float(r["prior_score"]) if r.get("prior_score") is not None
                                else floor), -len(r["models"])))
 
     path = _donate(list(ideas.values()), keep, now, base) if (ideas or keep) else None
@@ -584,12 +584,12 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     by_model: dict[str, dict[str, int]] = {}
     by_lens: dict[str, dict[str, int]] = {}
     for o in outcomes:
-        for d, k in ((by_model, f"{o['provider']}:{o['model']}"), (by_lens, o["lens"])):
-            b = d.setdefault(k, {"calls": 0, "ok": 0, "ideas": 0, "recipes": 0})
-            b["calls"] += 1
-            b["ok"] += o["status"] == "OK"
-            b["ideas"] += int(o.get("n_findings") or 0)
-            b["recipes"] += int(o.get("n_recipes") or 0)
+        for d, dk in ((by_model, f"{o['provider']}:{o['model']}"), (by_lens, o["lens"])):
+            bk = d.setdefault(dk, {"calls": 0, "ok": 0, "ideas": 0, "recipes": 0})
+            bk["calls"] += 1
+            bk["ok"] += o["status"] == "OK"
+            bk["ideas"] += int(o.get("n_findings") or 0)
+            bk["recipes"] += int(o.get("n_recipes") or 0)
     report = {
         "generated_utc": _iso(now),
         "authority": "PROPOSE ONLY: no sizing, capital, promotion or live-trading authority",

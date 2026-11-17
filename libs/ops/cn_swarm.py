@@ -260,12 +260,12 @@ def _coerce(value: Any, default: Any) -> Any:
             raise ValueError("band")
         return v
     if isinstance(default, float):
-        v = float(value)
-        if v != v or abs(v) > 1e6:
+        fv = float(value)
+        if fv != fv or abs(fv) > 1e6:
             raise ValueError("nan")
-        if default > 0 and not (default / 20 <= v <= default * 20):
+        if default > 0 and not (default / 20 <= fv <= default * 20):
             raise ValueError("band")
-        return v
+        return fv
     if isinstance(default, str):
         s = str(value).strip()
         if not s or len(s) > 24 or not re.fullmatch(r"[A-Za-z0-9_.\-]+", s):
@@ -511,8 +511,9 @@ def scoreboard(root: Path) -> dict[str, Any]:
     ids: dict[str, tuple[str, str, dict[str, Any]]] = {}
     for g in _jsonl(root / GRAPH):
         if str(g.get("source", "")) == DONOR_SOURCE and g.get("id"):
+            gp = g.get("params")
             ids[str(g["id"])] = (str(g.get("symbol", "")).upper(), str(g.get("family", "")),
-                                 g.get("params") if isinstance(g.get("params"), dict) else {})
+                                 gp if isinstance(gp, dict) else {})
     verdict: dict[str, tuple[bool, str]] = {}
     for v in _jsonl(ledger):
         gid = str(v.get("graph_id") or "")
@@ -673,7 +674,7 @@ def register_sources(urls: list[str], dry: bool = False) -> dict[str, Any]:
         if str(p) not in sys.path:
             sys.path.insert(0, str(p))
     try:
-        import scout_swarm
+        import scout_swarm  # type: ignore[import-not-found]
 
         from libs.moat import registry
         conn = registry.connect()
