@@ -29,6 +29,11 @@ declaration so it can never drift back up.
                            or the desk paid, and it is not in the declaration.
   RATCHET-UP   (exit 2) -- the declared debt grew.
   STALE        (exit 2) -- the artifact is older than its own declared cadence allows.
+  QUOTES-STALE (exit 2) -- the artifact is fresh but the TERMINAL READINGS it priced from are
+                           not (`quotes.verdict` STALE, older than `quotes.stale_after_s`). The
+                           report is rebuilt hourly from a cache when the terminal does not
+                           answer, so its own stamp says nothing about the quotes' age:
+                           measured 2026-10-20, a 27-day-old cache behind an OK verdict.
 
 Run: python scripts/check_cost_truth.py [--json] [--ratchet PATH] [--report PATH]
 """
@@ -47,8 +52,8 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "COST_TRUTH.json"
 SURFACE = ROOT / "desks" / "mt5" / "reports" / "EXECUTION_COST_SURFACE.json"
 RATCHET = ROOT / "desks" / "mt5" / "data" / "cost_truth_ratchet.json"
 
-OK, UNMEASURED, OVERCHARGED, RATCHET_UP, STALE = (
-    "OK", "UNMEASURED", "OVERCHARGED", "RATCHET-UP", "STALE")
+OK, UNMEASURED, OVERCHARGED, RATCHET_UP, STALE, QUOTES_STALE = (
+    "OK", "UNMEASURED", "OVERCHARGED", "RATCHET-UP", "STALE", "QUOTES-STALE")
 #: Mirrors `cost_truth.OVERCHARGE_TOL`. The artifact publishes its own tolerance and that one
 #: wins when present, so the two can never drift apart silently.
 DEFAULT_TOL = 1.5
@@ -144,17 +149,43 @@ def judge(rep: Any, ratchet: Any, surface: Any) -> dict[str, Any]:
                       f"cadence of {round(stale_s / 3600, 1)}h: the desk is refusing candidates "
                       "on a cost reading older than its own clock")
         return out
+    quotes = rep.get("quotes") if isinstance(rep.get("quotes"), dict) else {}
+    out["quotes"] = {k: quotes.get(k) for k in ("verdict", "at", "age_s", "stale_after_s",
+                                                "n_readings", "n_stale",
+                                                "n_zero_or_absent_spread")} if quotes else None
+    # EVERY FINDING IS EVALUATED AND REPORTED (audit 2026-10-20): a stale quote set must not
+    # mask a new overcharge or a rising commission, so all three are judged and listed, and the
+    # headline is the first in the order OVERCHARGED, RATCHET-UP, QUOTES-STALE.
+    findings: list[tuple[str, str]] = []
     if new:
-        out["verdict"], out["exit"] = OVERCHARGED, 2
-        out["why"] = (f"{len(new)} symbol(s) charged above {tol}x what the broker quotes and not "
-                      f"in the declaration: {', '.join(new[:8])}. Either correct the charge or "
-                      "declare it with an owner -- an overcharged symbol kills real edge and "
-                      "leaves no other trace")
-        return out
+        findings.append((OVERCHARGED,
+                         f"{len(new)} symbol(s) charged above {tol}x what the broker quotes and "
+                         f"not in the declaration: {', '.join(new[:8])}. Either correct the "
+                         "charge or declare it with an owner -- an overcharged symbol kills real "
+                         "edge and leaves no other trace"))
     if comm is not None and declared_comm is not None and comm > declared_comm + 1e-9:
-        out["verdict"], out["exit"] = RATCHET_UP, 2
-        out["why"] = (f"the commission overcharge rose from {declared_comm}x to {comm}x; "
-                      "commission is the dominant term of every refusal on this account")
+        findings.append((RATCHET_UP,
+                         f"the commission overcharge rose from {declared_comm}x to {comm}x; "
+                         "commission is the dominant term of every refusal on this account"))
+    if str(quotes.get("verdict") or "") == "STALE":
+        findings.append((QUOTES_STALE,
+                         f"COST_TRUTH.json is fresh but priced from terminal readings stamped "
+                         f"{quotes.get('at')} ({quotes.get('why')}); terminal: "
+                         f"{rep.get('terminal_why')}"))
+    out["findings"] = [{"verdict": v, "why": w} for v, w in findings]
+    if findings:
+        out["verdict"], out["exit"] = findings[0][0], 2
+        out["why"] = " | ".join(f"{v}: {w}" for v, w in findings)
+        return out
+    # OK NEEDS QUOTES THAT WERE MEASURED (audit 2026-10-20, v2 delta must-fix 1). A report with no
+    # `quotes` block, or one whose quotes are UNMEASURED, priced its comparison on nothing the
+    # terminal said this cadence; reading that as OK turned absence into a pass (L1.28a).
+    qv = str(quotes.get("verdict") or "") if quotes else ""
+    if qv != "FRESH":
+        out["verdict"], out["exit"] = UNMEASURED, 0
+        out["why"] = ("no quotes block in COST_TRUTH.json" if not quotes else
+                      f"terminal quotes are {qv or 'unlabelled'} ({quotes.get('why')}); the "
+                      "overcharge comparison has no measured broker side, so it is not OK")
         return out
     out["verdict"], out["exit"] = OK, 0
     out["why"] = (f"{len(found)} overcharged symbol(s), all declared; commission overcharge "

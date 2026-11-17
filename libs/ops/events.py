@@ -59,6 +59,7 @@ KINDS = (
     # measured cost restored, so "the cost model was re-measured" is a transition with a time
     # on it and not a file that quietly changed.
     "COST_TRUTH_MEASURED",
+    "COST_TRUTH_QUOTES_STALE",
     # A destructive pass REFUSED to remove because its reference was empty, stale beyond its lease
     # or unreadable (LAWS 7, `libs/ops/reference_freshness.py`). It carries the reference, the
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
