@@ -21,6 +21,8 @@ def test_parse_cell_and_sleeve_zone():
     assert er.parse_cell("") is None
     assert er.sleeve_zone("XAUUSD.asia#rr=2.5") == ("XAUUSD", "asia")
     assert er.sleeve_zone("gold_london_am", "XAUUSD") == ("XAUUSD", "london_am")
+    assert er.sleeve_zone("gold_london_am") == ("XAUUSD", "london_am")
+    assert er.sleeve_zone("gold_asia") == ("XAUUSD", "asia")
 
 
 def _verdicts():
@@ -54,7 +56,10 @@ def test_elog_test_with_and_without():
                "entry_time": "2026-11-10T01:00:00", "risk_frac": 0.01}]
     t = er.elog_test(z, trades)
     assert t["status"] == "MEASURED" and t["n_removed"] == 1
-    assert t["verdict"] == "FILTER_HELPS" and t["delta"] > 0
+    assert t["delta"] > 0 and t["delta_ci95"][0] <= t["delta"] <= t["delta_ci95"][1]
+    assert t["verdict"] in ("FILTER_HELPS", "UNRESOLVED")
+    many = [dict(tr, entry_time=f"2026-11-{d:02d}T01:00:00") for d in range(1, 29) for tr in trades]
+    assert er.elog_test(z, many)["verdict"] == "FILTER_HELPS"
     assert er.elog_test(z, [])["status"] == "UNMEASURED"
 
 

@@ -47,6 +47,10 @@ MIN_DEAD_N = 30
 DEFAULT_RISK_FRAC = 0.005
 TOP_K = 200
 INTENDED_CONSUMER = "allocator regime input / sleeve stand-down filter, only if the test is positive"
+#: Forward clocks with a bare name (`gold_asia`, `gold_london_am`) carry no symbol in the name.
+BARE_PREFIX_SYMBOL = {"gold": "XAUUSD", "silver": "XAGUSD"}
+#: Day-block bootstrap draws for the with/without delta's interval.
+BOOT_N = 2000
 SESSION_TOKENS = frozenset({"asia", "london", "london_am", "afternoon", "ny", "newyork", "us",
                             "eu", "overlap", "close", "open", "pacific", "tokyo", "sydney"})
 
@@ -69,9 +73,12 @@ def parse_cell(cell: str) -> tuple[str, str, str] | None:
 def sleeve_zone(name: str, symbol: str | None = None) -> tuple[str, str]:
     """(symbol, session) for a sleeve name such as `XAUUSD.asia#rr=2.5` or `USDZAR.ogd.asia`."""
     parts = str(name or "").replace("#", ".").split(".")
+    bare = len(parts) == 1 and "_" in parts[0]
+    if not symbol and bare and parts[0].lower().split("_")[0] in BARE_PREFIX_SYMBOL:
+        symbol = BARE_PREFIX_SYMBOL[parts[0].lower().split("_")[0]]
     sym = symbol or parts[0]
     sess = "ANY"
-    for p in (parts if symbol else parts[1:]):
+    for p in (parts if (symbol or bare) else parts[1:]):
         tok = p.split("@")[0].lower()
         if tok in SESSION_TOKENS:
             sess = tok
@@ -168,6 +175,7 @@ def forward_sleeves() -> list[dict[str, Any]]:
         for k, v in d.items():
             if isinstance(v, dict) and "n" in v and "cum_r" in v:
                 out.append({"sleeve": k, "clock": p.name, "n": v.get("n"),
+                            "symbol": v.get("symbol") or (v.get("shadow_spec") or {}).get("symbol"),
                             "exp_r": v.get("exp_r"), "status": v.get("status")})
     return out
 
@@ -209,11 +217,28 @@ def elog_test(z: dict[str, Any], trades: list[dict[str, Any]]) -> dict[str, Any]
     nd = len(days_all)
     w = sum(days_all.values()) / nd
     wo = sum(days_kept.get(d, 0.0) for d in days_all) / nd
+    diffs = [days_kept.get(d, 0.0) - days_all[d] for d in sorted(days_all)]
+    lo, hi = _boot_ci(diffs)
     return {"status": "MEASURED", "n_trades": len(trades), "n_removed": removed, "n_days": nd,
             "elog_per_day_with": round(w, 7), "elog_per_day_without": round(wo, 7),
             "delta": round(wo - w, 7),
-            "verdict": ("FILTER_HELPS" if wo > w else
+            "delta_ci95": [round(lo, 7), round(hi, 7)],
+            "in_sample": ("the dead map and the trades share history; FILTER_HELPS needs the "
+                          "whole 95% day-block interval above zero"),
+            "verdict": ("FILTER_HELPS" if lo > 0 else
+                        "UNRESOLVED" if wo > w else
                         "NO_EFFECT" if removed == 0 else "FILTER_COSTS_GROWTH")}
+
+
+def _boot_ci(diffs: list[float], n: int = BOOT_N, seed: int = 0) -> tuple[float, float]:
+    """95% interval of the mean per-day delta, resampling whole days."""
+    import random
+    if not diffs:
+        return 0.0, 0.0
+    rng = random.Random(seed)
+    k = len(diffs)
+    means = sorted(sum(diffs[rng.randrange(k)] for _ in range(k)) / k for _ in range(n))
+    return means[int(0.025 * n)], means[int(0.975 * n) - 1]
 
 
 def build(now: datetime | None = None) -> dict[str, Any]:
@@ -232,9 +257,9 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     z = zones(v)
     doc["zones"] = z
     fwd = forward_sleeves()
-    prop = [dict(s, zone=".".join(sleeve_zone(s["sleeve"])),
+    prop = [dict(s, zone=".".join(sleeve_zone(s["sleeve"], s.get("symbol"))),
                  proposal="STAND_DOWN_PROPOSED")
-            for s in fwd if is_dead(z, *sleeve_zone(s["sleeve"]))]
+            for s in fwd if is_dead(z, *sleeve_zone(s["sleeve"], s.get("symbol")))]
     doc["forward_sleeves"] = len(fwd)
     doc["proposal"] = prop
     trades = live_trades()
