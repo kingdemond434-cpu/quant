@@ -60,6 +60,17 @@ OUT.mkdir(parents=True, exist_ok=True)
 API = "https://api.stlouisfed.org/fred/series/observations"
 RELEASES = "https://api.stlouisfed.org/fred/release/dates"
 
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md).
+#: Nothing here contacts stlouisfed.org; vintages already in the lake stay readable through
+#: `vintage_as_of`, and the primary publishers (BLS, BEA, Census, Treasury) are the route.
+BLOCKED_ON_TERMS = ("FRED/ALFRED terms refuse automated access "
+                    "(governance/fred-terms-ruling-2026-11-13.md)")
+MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
+                 "what_is_lost": "new ALFRED first-print vintages for macro conditioning",
+                 "size": "UNMEASURED",
+                 "stand_in": "primary-publisher first prints (BLS and peers) where a reader exists",
+                 "reopens_when": "the St. Louis Fed grants written permission for automated use"}
+
 #: The series where revision actually bites. Daily market series (DGS10, VIXCLS) are essentially
 #: never revised, so they are omitted -- pulling every vintage of a series that has one is a large
 #: download that answers a question nobody asked. These are the released, revised, surprising ones.
@@ -96,6 +107,8 @@ def api_key() -> str | None:
 
 
 def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
+    print(f"  {series_id}: BLOCKED_ON_TERMS -- {BLOCKED_ON_TERMS}", flush=True)
+    return None
     """Every vintage of one series, as a tidy frame.
 
     `output_type=2` asks ALFRED for ALL vintages in one response: one column per vintage date,
@@ -217,9 +230,14 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     wanted = {s.upper() for s in argv} or set(SERIES)
 
-    key = api_key()
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
               "requested": sorted(wanted)}
+    report.update({"status": "BLOCKED_ON_TERMS", "reason": BLOCKED_ON_TERMS,
+                   "missed_growth": MISSED_GROWTH, "written": 0})
+    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(f"ALFRED BLOCKED_ON_TERMS -- {BLOCKED_ON_TERMS}")
+    return 2
+    key = api_key()
 
     if not key:
         # FAILS CLOSED. The tempting fallback -- reuse fetch_fred's revised series and label it

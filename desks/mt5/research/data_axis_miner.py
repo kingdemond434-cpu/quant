@@ -85,6 +85,8 @@ AXES: tuple[dict, ...] = (
     {"axis": "macro_state", "id": "fred_series",
      "what": "FRED: rates, spreads, DXY, real yields, breakevens -- daily, dated",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
+     "terms": "BLOCKED_ON_TERMS: FRED terms refuse all automated fetches "
+              "(governance/fred-terms-ruling-2026-11-13.md)",
      "binds_to": ["XAUUSD", "USDJPY", "EURUSD", "UST10Y", "US500", "NAS100"],
      "unblocks": ["macro_conditional"],
      "revision_safe": "VINTAGES EXIST (ALFRED) but the plain CSV is the CURRENT vintage only -- "
