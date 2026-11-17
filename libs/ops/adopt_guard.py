@@ -428,7 +428,7 @@ class Clear:
     source: dict[str, Any] | None = None
 
 
-def _json_objects(text: str) -> Iterator[tuple[int, Any]]:
+def _json_objects(text: str, skipped: list[str] | None = None) -> Iterator[tuple[int, Any]]:
     """Each top-level JSON value in `text`, with the line it starts on. Values are separated by
     whitespace only; anything else is not JSON and refuses the file.
 
@@ -437,7 +437,10 @@ def _json_objects(text: str) -> Iterator[tuple[int, Any]]:
     target carrying it refused the whole file, and because the record must stay append-only
     (`committed_clears`) no later commit could repair it: every release after it would have been
     HOLD forever. The row itself is well-formed; only the reader's framing was narrower than
-    JSON. A row still has to be one complete object that passes every check below."""
+    JSON. A row still has to be one complete object that passes every check below.
+
+    `skipped` (the tolerant reader, see parse_clears): text that is not JSON is recorded there
+    and the read resumes at the next line, instead of refusing the file."""
     dec = json.JSONDecoder()
     i, end = 0, len(text)
     while True:
@@ -447,46 +450,84 @@ def _json_objects(text: str) -> Iterator[tuple[int, Any]]:
             return
         n = text.count("\n", 0, i) + 1
         try:
-            d, i = dec.raw_decode(text, i)
+            d, j = dec.raw_decode(text, i)
         except ValueError as exc:
-            raise GuardError(f"{CLEARS_REL}:{n} is not JSON") from exc
+            if skipped is None:
+                raise GuardError(f"{CLEARS_REL}:{n} is not JSON") from exc
+            k = text.find("\n", i)
+            k = end if k < 0 else k + 1
+            skipped.append(f"{CLEARS_REL}:{n} is not JSON: {text[i:k].strip()[:120]!r}")
+            _no_hold(text[i:k], n)
+            i = k
+            continue
         yield n, d
+        i = j
 
 
-def parse_clears(text: str) -> list[Clear]:
-    """Fail closed: one malformed row refuses the whole file, never a silent skip."""
+#: What the last tolerant parse_clears skipped (the guard prints it; the relay pages on it).
+LAST_SKIPPED: list[str] = []
+
+
+def _no_hold(raw: str, n: int) -> None:
+    """A skipped piece that might be (part of) a HOLD is never skipped: a lost HOLD would vouch
+    for what the Auditor held. That still refuses the whole file, as before."""
+    if "HOLD" in raw:
+        raise GuardError(f"{CLEARS_REL}:{n} is malformed and may be a HOLD: refusing the file")
+
+
+def parse_clears(text: str, *, strict: bool = True) -> list[Clear]:
+    """`strict` (the default, and every single-row check): one malformed row refuses the whole
+    file. The box's adopt read (`committed_clears`) is tolerant instead (zuck 2026-11-17, after
+    the 11-14 row held every release for three days): a malformed row is SKIPPED and recorded in
+    LAST_SKIPPED and on stderr, never silently. A skipped row vouches for nothing, so skipping
+    only ever withholds a CLEAR; a piece that may be a HOLD still refuses the file (_no_hold)."""
     rows: list[Clear] = []
-    for n, d in _json_objects(text):
-        if not isinstance(d, dict):
-            raise GuardError(f"{CLEARS_REL}:{n} is not an object")
-        commit, verdict, rep = d.get("commit"), d.get("verdict"), d.get("report")
-        if not isinstance(commit, str) or not HEX40.match(commit):
-            raise GuardError(f"{CLEARS_REL}:{n} commit is not 40 hex")
-        if verdict not in ("CLEAR", "HOLD"):
-            raise GuardError(f"{CLEARS_REL}:{n} verdict must be CLEAR or HOLD")
-        if not isinstance(rep, str) or not REPORT.match(rep) or ".." in rep:
-            raise GuardError(f"{CLEARS_REL}:{n} report must name reports/audit/<...>.md")
-        rsha = d.get("report_sha256")
-        if rsha is not None and not (isinstance(rsha, str) and HEX64.match(rsha)):
-            raise GuardError(f"{CLEARS_REL}:{n} report_sha256 must be 64 hex")
-        paths = d.get("paths", {})
-        if not isinstance(paths, dict) or (verdict == "CLEAR" and not paths):
-            raise GuardError(f"{CLEARS_REL}:{n} a CLEAR row must list the paths it read")
-        for p, b in paths.items():
-            if not isinstance(p, str) or not p or p.startswith("/") or ".." in p.split("/"):
-                raise GuardError(f"{CLEARS_REL}:{n} bad path {p!r}")
-            if b is not None and not (isinstance(b, str) and HEX40.match(b)):
-                raise GuardError(f"{CLEARS_REL}:{n} object for {p} is not 40 hex or null")
-        lifts = d.get("lifts_rollback", [])
-        if not isinstance(lifts, list) or not all(
-            isinstance(x, str) and HEX40.match(x) for x in lifts
-        ):
-            raise GuardError(f"{CLEARS_REL}:{n} lifts_rollback must be a list of 40-hex commits")
-        by, source = d.get("by", ""), d.get("source")
-        if not isinstance(by, str) or (source is not None and not isinstance(source, dict)):
-            raise GuardError(f"{CLEARS_REL}:{n} by must be text and source an object")
-        rows.append(Clear(commit, verdict, rep, dict(paths), tuple(lifts), by, source))
+    skipped: list[str] | None = None if strict else []
+    for n, d in _json_objects(text, skipped):
+        if skipped is not None:
+            try:
+                rows.append(_row(n, d))
+            except GuardError as exc:
+                _no_hold(json.dumps(d), n)
+                skipped.append(str(exc))
+            continue
+        rows.append(_row(n, d))
+    if skipped is not None:
+        LAST_SKIPPED[:] = skipped
+        for why in skipped:
+            print(f"adopt_guard: SKIPPED a malformed ADOPT_CLEARS row ({why})", file=sys.stderr)
     return rows
+
+
+def _row(n: int, d: Any) -> Clear:
+    """One row's checks: any failure raises GuardError naming line `n`."""
+    if not isinstance(d, dict):
+        raise GuardError(f"{CLEARS_REL}:{n} is not an object")
+    commit, verdict, rep = d.get("commit"), d.get("verdict"), d.get("report")
+    if not isinstance(commit, str) or not HEX40.match(commit):
+        raise GuardError(f"{CLEARS_REL}:{n} commit is not 40 hex")
+    if verdict not in ("CLEAR", "HOLD"):
+        raise GuardError(f"{CLEARS_REL}:{n} verdict must be CLEAR or HOLD")
+    if not isinstance(rep, str) or not REPORT.match(rep) or ".." in rep:
+        raise GuardError(f"{CLEARS_REL}:{n} report must name reports/audit/<...>.md")
+    rsha = d.get("report_sha256")
+    if rsha is not None and not (isinstance(rsha, str) and HEX64.match(rsha)):
+        raise GuardError(f"{CLEARS_REL}:{n} report_sha256 must be 64 hex")
+    paths = d.get("paths", {})
+    if not isinstance(paths, dict) or (verdict == "CLEAR" and not paths):
+        raise GuardError(f"{CLEARS_REL}:{n} a CLEAR row must list the paths it read")
+    for p, b in paths.items():
+        if not isinstance(p, str) or not p or p.startswith("/") or ".." in p.split("/"):
+            raise GuardError(f"{CLEARS_REL}:{n} bad path {p!r}")
+        if b is not None and not (isinstance(b, str) and HEX40.match(b)):
+            raise GuardError(f"{CLEARS_REL}:{n} object for {p} is not 40 hex or null")
+    lifts = d.get("lifts_rollback", [])
+    if not isinstance(lifts, list) or not all(isinstance(x, str) and HEX40.match(x) for x in lifts):
+        raise GuardError(f"{CLEARS_REL}:{n} lifts_rollback must be a list of 40-hex commits")
+    by, source = d.get("by", ""), d.get("source")
+    if not isinstance(by, str) or (source is not None and not isinstance(source, dict)):
+        raise GuardError(f"{CLEARS_REL}:{n} by must be text and source an object")
+    return Clear(commit, verdict, rep, dict(paths), tuple(lifts), by, source)
 
 
 def vouched(rows: Iterable[Clear]) -> set[tuple[str, str | None]]:
@@ -620,7 +661,7 @@ def committed_clears(root: Path, target: str, versions: _Versions | None = None)
                 f"{CLEARS_REL} at {c[:12]} is not a prefix of the target's "
                 "copy: a row was edited or dropped"
             )
-    return parse_clears(final.decode("utf-8"))
+    return parse_clears(final.decode("utf-8"), strict=False)
 
 
 # MERGE-TIME ROWS (R2f; Governance 2026-11-04 12:51Z). A `by: audit-gate` CLEAR is written by

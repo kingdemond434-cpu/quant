@@ -1152,3 +1152,48 @@ def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
     text = json.dumps(_ROW) + "\n" + json.dumps(_ROW, indent=1) + "\n\n{oops\n"
     with pytest.raises(ag.GuardError, match=rf":{text.count(chr(10))} is not JSON"):
         ag.parse_clears(text)
+
+
+# TOLERANT ADOPT READ (zuck 2026-11-17: "this should never happen again"). The box's read of the
+# record skips a malformed row loudly instead of refusing every release. A skipped row vouches
+# for nothing, so skipping only withholds; a piece that may be a HOLD still refuses the file.
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "{",
+        json.dumps(_ROW, indent=1)[:-1],
+        "[" + json.dumps(_ROW) + "]",
+        "7",
+        json.dumps({**_ROW, "commit": "short"}),
+        json.dumps({**_ROW, "paths": {"../x": None}}),
+    ],
+)
+def test_the_tolerant_read_skips_a_malformed_row_loudly_and_keeps_the_rest(
+    bad: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    other = {**_ROW, "commit": "b" * 40, "paths": {"y.py": "2" * 40}}
+    text = json.dumps(_ROW) + "\n" + bad + "\n" + json.dumps(other) + "\n"
+    rows = ag.parse_clears(text, strict=False)
+    assert [r.commit for r in rows] == ["a" * 40, "b" * 40]
+    assert ag.LAST_SKIPPED and all(ag.CLEARS_REL in s for s in ag.LAST_SKIPPED)
+    assert "SKIPPED a malformed ADOPT_CLEARS row" in capsys.readouterr().err
+    with pytest.raises(ag.GuardError):  # the strict read is unchanged
+        ag.parse_clears(text)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        json.dumps({**_ROW, "verdict": "HOLD", "commit": "short"}),
+        json.dumps({**_ROW, "verdict": "HOLD"}, indent=1)[:-1],
+    ],
+)
+def test_a_malformed_row_that_may_be_a_hold_still_refuses_the_file(bad: str) -> None:
+    with pytest.raises(ag.GuardError, match="may be a HOLD"):
+        ag.parse_clears(json.dumps(_ROW) + "\n" + bad + "\n", strict=False)
+
+
+def test_the_11_14_record_reads_whole_under_both_readers() -> None:
+    text = (Path(__file__).resolve().parents[2] / ag.CLEARS_REL).read_text(encoding="utf-8")
+    assert ag.parse_clears(text) == ag.parse_clears(text, strict=False)
+    assert ag.LAST_SKIPPED == []
