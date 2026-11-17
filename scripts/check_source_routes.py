@@ -42,6 +42,7 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
@@ -51,13 +52,18 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
 #:
 #: Probes are HEAD-like GETs of a few KB. Endpoints needing a key are declared with `needs_key`
 #: so an auth failure is never confused with a route change.
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md),
+#: and a route probe is automated contact: the three FRED rows are REFUSED, kept as a record.
+_FRED_TERMS_WHY = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+                   "(governance/fred-terms-ruling-2026-11-13.md)")
 ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "fred_series", "url": "https://api.stlouisfed.org/fred/series/observations",
-     "expect": "json", "needs_key": True},
+     "expect": "json", "needs_key": True, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
     {"name": "fred_release_dates", "url": "https://api.stlouisfed.org/fred/release/dates",
-     "expect": "json", "needs_key": True},
+     "expect": "json", "needs_key": True, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
     {"name": "fred_graph_csv",
-     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10", "expect": "csv"},
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10", "expect": "csv",
+     "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
     {"name": "ecb_eurofxref_hist",
      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", "expect": "xml"},
     {"name": "dukascopy_datafeed", "url": "https://datafeed.dukascopy.com/datafeed",
@@ -88,6 +94,10 @@ MIN_BODY_BYTES = 64
 
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
+    url_host = (urlsplit(str(route.get("url") or "")).hostname or "").lower().rstrip(".")
+    if url_host == "stlouisfed.org" or url_host.endswith(".stlouisfed.org"):
+        # Whatever the row says: no stlouisfed.org host is probed (FRED terms ruling).
+        route = {**route, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY}
     if str(route.get("terms") or "").upper() == "REFUSED":
         # A route probe is still an automated contact: a terms-REFUSED route is never requested.
         return {"name": str(route.get("name")), "url": str(route.get("url")),

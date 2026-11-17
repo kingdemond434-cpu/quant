@@ -10,9 +10,9 @@ Macro state vector for the desk:
 - equities: SP500, NASDAQCOM, NIKKEI225
 - policy/liquidity: DFF, SOFR, WALCL (Fed balance sheet)
 
-NOTE revision policy: fredgraph CSV = current vintage only (revised). True
-point-in-time vintages need a free ALFRED API key - upgrade path registered in
-data_registry.json. Daily refresh recommended.
+REFUSED ON TERMS (governance/fred-terms-ruling-2026-11-13.md): FRED/ALFRED terms refuse every
+automated fetch. `fetch` raises before any request is built and `main` writes a BLOCKED_ON_TERMS
+state file with its missed_growth line. Parquet files already in the lake stay readable.
 """
 
 import json
@@ -20,7 +20,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
 
 OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -60,31 +59,30 @@ SERIES = {
 }
 
 
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md).
+BLOCKED_ON_TERMS = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+                    "(governance/fred-terms-ruling-2026-11-13.md)")
+MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
+                 "what_is_lost": "fresh fredgraph series for the research lake",
+                 "size": "UNMEASURED",
+                 "stand_in": "primary publishers (Fed H.15/H.10, Treasury, BLS, ECB)",
+                 "reopens_when": "the St. Louis Fed grants written permission for automated use"}
+
+
 def fetch(sid: str) -> pd.DataFrame:
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-    df = pd.read_csv(url, skiprows=1, index_col=0, parse_dates=True)
-    df.index = pd.to_datetime(df.index, utc=True)
-    df = df.rename(columns={df.columns[0]: sid})
-    df = df[~df[sid].isna()]
-    return df
+    """REFUSED ON TERMS: raises before any request is built. Kept so callers fail loudly."""
+    raise RuntimeError(f"BLOCKED_ON_TERMS: {sid}: {BLOCKED_ON_TERMS}")
 
 
 def main() -> None:
-    summary = {}
-    for sid, note in SERIES.items():
-        try:
-            df = fetch(sid)
-            df.to_parquet(OUT / f"fred_{sid}.parquet")
-            summary[sid] = {"bars": len(df), "first": str(df.index.min()),
-                            "last": str(df.index.max()), "note": note}
-            print(f"{sid}: {len(df)} rows {df.index.min().date()} -> {df.index.max().date()}")
-        except Exception as e:  # noqa: BLE001
-            summary[sid] = {"error": repr(e)}
-            print(f"{sid}: FAILED {e!r}")
+    """Write the BLOCKED_ON_TERMS state file. Nothing is fetched; lake parquet stays as it is."""
+    summary = {sid: {"status": "BLOCKED_ON_TERMS", "note": note} for sid, note in SERIES.items()}
     (OUT / "fred_fetch_state.json").write_text(
         json.dumps({"fetched_at": datetime.now(timezone.utc).isoformat(),
-                    "revision_policy": "current vintage only; ALFRED API key = point-in-time upgrade",
-                    "series": summary}, indent=2), encoding="utf-8")
+                    "status": "BLOCKED_ON_TERMS", "reason": BLOCKED_ON_TERMS,
+                    "missed_growth": MISSED_GROWTH, "series": summary}, indent=2),
+        encoding="utf-8")
+    print(f"FRED BLOCKED_ON_TERMS -- {BLOCKED_ON_TERMS}")
 
 
 if __name__ == "__main__":

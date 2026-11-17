@@ -45,7 +45,23 @@ _OUT = _ROOT / "data/cot_screen_summary.json"
 _DOC = _ROOT / "docs/research/COT_SCREEN_RESULT.md"
 
 _COT_URL = "https://www.cftc.gov/files/dea/history/deacot{year}.zip"
-_FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+_FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"  # REFUSED, record only
+#: FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md).
+#: `_fred` reads a price leg already cached on disk and never requests a missing one.
+FRED_REFUSAL = {
+    "status": "BLOCKED_ON_TERMS",
+    "reason": ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+               "(governance/fred-terms-ruling-2026-11-13.md); cached legs stay readable"),
+    "missed_growth": {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": "the COT screen's price legs for assets not already cached",
+                      "size": "UNMEASURED",
+                      "stand_in": "the desk's own MT5 bars once the screen is repointed to them",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use")}}
+
+
+class FredTermsRefused(ValueError):
+    """A FRED price leg that is not on disk: refused on terms, never requested."""
 
 # COT market-name substring -> FRED price series. Only pairs with a licence-clean price leg are
 # included; see the module docstring for what was dropped and why.
@@ -116,7 +132,11 @@ def _cot_year(year: int) -> list[dict[str, str]]:
 
 
 def _fred(sid: str) -> dict[str, float]:
-    blob = _fetch(_FRED_URL.format(sid=sid), _CACHE / f"fred_{sid}.csv")
+    cached = _CACHE / f"fred_{sid}.csv"
+    if not (cached.exists() and cached.stat().st_size > 0):
+        # REFUSED ON TERMS before any request is built; data already on disk is still read.
+        raise FredTermsRefused(f"{sid}: {FRED_REFUSAL['reason']}")
+    blob = cached.read_bytes()
     out: dict[str, float] = {}
     for row in csv.DictReader(io.StringIO(blob.decode("utf-8"))):
         vals = list(row.values())
@@ -274,6 +294,9 @@ def main() -> int:
             continue
         try:
             prices = _fred(sid)
+        except FredTermsRefused:
+            dropped.append(f"{asset}: FRED {sid} BLOCKED_ON_TERMS (not cached; never requested)")
+            continue
         except (OSError, ValueError) as e:
             dropped.append(f"{asset}: FRED {sid} unavailable ({type(e).__name__})")
             continue
@@ -333,8 +356,9 @@ def main() -> int:
         "stage": "A (SCREEN -- zero promotion authority)",
         "assets_used": sorted({r["asset"] for r in decay_rows}),
         "assets_dropped": dropped,
-        "price_source": "FRED keyless CSV (public domain); Stooq NOT used -- JS proof-of-work bot "
-                        "gate, and register #80 is an OPEN principal ruling on defeating anti-bot "
+        "fred_terms": FRED_REFUSAL,
+        "price_source": "FRED keyless CSV, CACHED COPIES ONLY (terms-refused); Stooq NOT "
+                        "used -- JS proof-of-work bot gate, and register #80 is an OPEN principal ruling on defeating anti-bot "
                         "gates; Yahoo chart endpoint returned HTTP 429",
         "trials_charged": trials,
         "decay": {"rows": decay_rows, "median_measured_decay": med_decay,

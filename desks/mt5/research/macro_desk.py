@@ -74,7 +74,10 @@ def _mom(x: pd.Series, yoy: bool = False) -> float | None:
 def series_state(series_id: str) -> dict:
     d = fd.fred_series(series_id)
     if not d:
-        return {"series": series_id, "ok": False}
+        # FRED is refused on terms (governance/fred-terms-ruling-2026-11-13.md): a series with no
+        # cache and no publisher mirror is UNMEASURED, with the refusal and its missed_growth.
+        return {"series": series_id, "ok": False, "status": "UNMEASURED",
+                "fred": fd.fred_refusal(series_id)}
     s = pd.Series(d).sort_index()
     s.index = pd.to_datetime(s.index)
     out = {"series": series_id, "ok": True, "last": float(s.iloc[-1]),

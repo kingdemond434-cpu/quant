@@ -3966,8 +3966,15 @@ def fred_macro() -> dict:
         out: dict = {"status": "FRESH", "age_h": round(age / 3600.0, 2),
                      "at": datetime.now(UTC).isoformat()}
     else:
+        # FRED is refused on terms (governance/fred-terms-ruling-2026-11-13.md): the collector
+        # builds no request and writes data/fred_macro_status.json; the archive on disk stays.
         out = _producer("fred_macro", "scripts/collect_fred_macro.py")
         out["age_h_before"] = (round(age / 3600.0, 2) if age != float("inf") else None)
+        try:
+            st = json.loads((REPO / "data" / "fred_macro_status.json").read_text("utf-8"))
+            out["fred_terms"] = {k: st.get(k) for k in ("status", "reason", "missed_growth")}
+        except (OSError, ValueError):
+            out["fred_terms"] = {"status": "UNMEASURED", "why": "no fred_macro_status.json"}
     try:
         if str(BASE) not in sys.path:
             sys.path.insert(0, str(BASE))

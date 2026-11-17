@@ -1,20 +1,16 @@
-"""Daily FRED macro archiver -- free US-macro context for macro-crypto relative value.
+"""FRED macro archiver -- REFUSED ON TERMS; it now writes only its BLOCKED_ON_TERMS status.
 
-Unlike the OI/LS and stablecoin clocks (which must ACCUMULATE forward days), FRED serves deep
-history on day one, so this family is immediately backtestable against the crypto lake: each run
-re-fetches the last ~800 observations per series and overwrites the archive (idempotent,
-self-healing). Series chosen for crypto relevance, not macro completeness:
+FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md).
+This collector used to pull ~11.5 years of DGS10, T10Y2Y, VIXCLS, DTWEXBGS, WALCL, M2SL and DFII10
+from the FRED API each run, record their vintages (libs.research.vintage) and overwrite
+`data/fred_macro.json`, `data/fred_macro_long.json` and `web/fred_macro.json`.
 
-  DGS10     10y Treasury yield        (risk-free anchor / carry-vs-rates competition)
-  T10Y2Y    2s10s curve               (macro regime / recession signal)
-  VIXCLS    VIX                       (cross-asset risk appetite; crypto vol correlate)
-  DTWEXBGS  broad dollar index        (USD liquidity; inverse crypto beta)
-  WALCL     Fed balance sheet (W)     (system liquidity; the 2020-22 crypto liquidity driver)
-  M2SL      M2 money supply (M)       (broad liquidity; slow regime context)
-
-Key: data/secrets/fred.json {"key": "..."} or FRED_API_KEY env. No key -> graceful skip
-(exit 0, cycle stays green). API host verified reachable from the VPS 2026-07-16 (the
-registry's old "blocked" note was the website host, not api.stlouisfed.org).
+Now `main` reads no key and builds no request. It writes `data/fred_macro_status.json`
+(status BLOCKED_ON_TERMS, a reason citing the ruling, a missed_growth line) and exits 0, so the
+hourly `fred_macro` leg stays honest rather than red. The archives and the vintage log already
+on disk are left exactly as they are and stay readable by their consumers
+(`mt5desk.macro_view`, `libs.portfolio.macro_state`, `libs.portfolio.leg_factors`,
+`orthogonal_sweep`), whose own freshness rules decay a stale archive toward "no claim".
 
     python scripts/collect_fred_macro.py
 """
@@ -22,112 +18,41 @@ registry's old "blocked" note was the website host, not api.stlouisfed.org).
 from __future__ import annotations
 
 import json
-import os
 import sys
-import urllib.parse
-import urllib.request
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
-from libs.research.vintage import record  # noqa: E402
+from libs.data.fred_terms import FredTermsRefused, refusal  # noqa: E402
 
-_KEYFILE = Path("data/secrets/fred.json")
 _ARCHIVE = Path("data/fred_macro.json")
-_WEB = Path("web/fred_macro.json")
-_BASE = "https://api.stlouisfed.org/fred/series/observations"
-#: DFII10 (10-year TIPS real yield) added 2026-09-16 for the macro state's `real_rates` axis.
+_STATUS = Path("data/fred_macro_status.json")
+#: The series the archive holds. Named so the status says what is no longer refreshed.
 _SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
-#: ~11.5y fetched: the allocator's regime kernel (`libs.portfolio.macro_state`) ranks each day's
-#: state against its trailing year and needs that state on EVERY day of the backtest matrix
-#: (2018+) -- a day with no state is excluded from the regime contrast, and at 1200 days two
-#: thirds of every sleeve's history was excluded (measured 2026-09-16). The full fetch goes to
-#: `_ARCHIVE_LONG`; `_ARCHIVE` keeps the rolling `_SHORT_DAYS` window its consumers were built on.
-_LOOKBACK_DAYS = 4200
-_SHORT_DAYS = 1200
-_ARCHIVE_LONG = Path("data/fred_macro_long.json")
-
-
-def _key() -> str | None:
-    k = os.environ.get("FRED_API_KEY")
-    if k:
-        return k
-    try:
-        return str(json.loads(_KEYFILE.read_text("utf-8"))["key"])
-    except (OSError, json.JSONDecodeError, KeyError):
-        return None
 
 
 def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
-    start = (datetime.now(tz=UTC) - timedelta(days=_LOOKBACK_DAYS)).date().isoformat()
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
-                                "observation_start": start})
-    req = urllib.request.Request(f"{_BASE}?{q}", headers={"User-Agent": "quant-fred/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        obs = json.loads(r.read()).get("observations", [])
-    out: list[tuple[str, float]] = []
-    for o in obs:
-        v = o.get("value", ".")
-        if v not in (".", "", None):                     # FRED encodes missing as "."
-            out.append((str(o["date"]), float(v)))
-    return out
+    """REFUSED ON TERMS before any request is built. A caller that still asks fails loudly."""
+    raise FredTermsRefused(sid)
+
+
+def refuse() -> dict[str, Any]:
+    """Write and return the BLOCKED_ON_TERMS status. The archives on disk are not touched."""
+    doc: dict[str, Any] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                           **refusal("collect_fred_macro"), "series": list(_SERIES),
+                           "archive_kept": str(_ARCHIVE), "archive_present": _ARCHIVE.exists()}
+    _STATUS.parent.mkdir(parents=True, exist_ok=True)
+    _STATUS.write_text(json.dumps(doc, indent=1), "utf-8")
+    print(f"fred-macro: {doc['status']} -- {doc['reason']}")
+    return doc
 
 
 def main() -> None:
-    key = _key()
-    if not key:
-        print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")
-        return
-    series: dict[str, list[tuple[str, float]]] = {}
-    for sid in _SERIES:
-        try:
-            series[sid] = _fetch(key, sid)
-        except Exception as e:                           # one dead series never kills the rest
-            print(f"fred-macro: {sid} FAILED {e!r}"[:120])
-    if not series:
-        raise SystemExit("fred-macro: zero series fetched -- check the key")
-    ts = datetime.now(tz=UTC).isoformat()
-
-    # R0316: RECORD THE VINTAGE BEFORE OVERWRITING THE ARCHIVE. `_ARCHIVE.write_text` replaces the
-    # file wholesale AND `_LOOKBACK_DAYS` truncates to a rolling window, so until now every run
-    # destroyed the previous vintage permanently -- on a box that has network, for series FRED
-    # revises (M2SL and WALCL both restate). That is why screen_fred_macro_axis drops M2SL outright
-    # as "untestable honestly from this archive": the archive could not answer what was knowable at
-    # the time. The store appends only CHANGED values, so a run that revises nothing costs nothing,
-    # and the daily overwrite below is now lossless rather than destructive. Vintages cannot be
-    # back-filled -- a day not captured is gone -- which is why this sits ahead of the write.
-    revised = 0
-    for sid, rows in series.items():
-        revised += record(_ROOT, sid, dict(rows), vintage=ts)
-
-    _ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
-    # TWO ARCHIVES FROM ONE FETCH. `data/fred_macro.json` keeps its rolling `_SHORT_DAYS` window
-    # because `orthogonal_sweep._macro_series` ranks each print against an EXPANDING history: on
-    # the full 11-year fetch the dollar's 2024-2026 level is above 98% of everything before it,
-    # the regime reads "high" on every bar, and `test_the_macro_regime_is_a_series_not_a_
-    # broadcast_scalar` fails (measured 2026-09-16). `data/fred_macro_long.json` holds the whole
-    # fetch for the allocator's regime kernel and factor set (`libs.portfolio.macro_state`,
-    # `libs.portfolio.leg_factors`), which rank against a TRAILING year and need every day of the
-    # backtest matrix to carry a state.
-    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
-    cut = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
-    short = {sid: [r for r in rows if r[0] >= cut] for sid, rows in series.items()}
-    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short}), "utf-8")
-    latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
-                    "chg_30obs": (round(rows[-1][1] - rows[-31][1], 4)
-                                  if len(rows) > 31 else None)}
-              for sid, rows in series.items() if rows}
-    _WEB.parent.mkdir(parents=True, exist_ok=True)
-    _WEB.write_text(json.dumps({
-        "updated": ts, "latest": latest,
-        "note": ("Free FRED macro context (macro-crypto relative value family). Deep history "
-                 "from day one -- backtestable immediately, no forward clock needed."),
-    }, indent=2), "utf-8")
-    n = sum(len(r) for r in series.values())
-    print(f"fred-macro: {len(series)}/{len(_SERIES)} series, {n} obs -> {_ARCHIVE}; "
-          f"{revised} new-or-revised values -> {_ROOT / 'data/vintages'}")
+    """FRED is refused on terms: no key is read, no request is built, exit 0."""
+    refuse()
 
 
 if __name__ == "__main__":

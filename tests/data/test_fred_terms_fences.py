@@ -22,10 +22,20 @@ def _no_request(*a: Any, **k: Any) -> None:
     raise AssertionError("a FRED request was made")
 
 
+def _no_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    """fetch_alfred no longer imports requests; the HTTP layers it could reach fail the test."""
+    import urllib.request
+
+    import requests
+    monkeypatch.setattr(requests.sessions.Session, "request", _no_request)
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", _no_request)
+
+
 def test_fetch_alfred_main_is_blocked_and_never_requests(monkeypatch: pytest.MonkeyPatch,
                                                         tmp_path: Path) -> None:
     from research import fetch_alfred as fa
-    monkeypatch.setattr(fa.requests, "get", _no_request)
+    assert not hasattr(fa, "requests"), "the dead network body and its import are gone"
+    _no_transport(monkeypatch)
     monkeypatch.setattr(fa, "REPORTS", tmp_path)
     monkeypatch.setenv("FRED_API_KEY", "dummy-not-a-key")
     assert fa.main(["DGS10"]) == 2
@@ -37,7 +47,7 @@ def test_fetch_alfred_main_is_blocked_and_never_requests(monkeypatch: pytest.Mon
 
 def test_fetch_vintages_never_requests(monkeypatch: pytest.MonkeyPatch) -> None:
     from research import fetch_alfred as fa
-    monkeypatch.setattr(fa.requests, "get", _no_request)
+    _no_transport(monkeypatch)
     assert fa.fetch_vintages("DGS10", "dummy-not-a-key") is None
 
 

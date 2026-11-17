@@ -1,8 +1,9 @@
 """FREE_DATA: keyless public-data collectors (no API keys, no paid feeds).
 
 Sources (all lawful, public, first-party):
-  - FRED / ALFRED fredgraph.csv (rates, policy, macro, gold, oil, DXY, VIX)
-    vintage_date param => point-in-time history (no API key needed)
+  - FRED / ALFRED: REFUSED ON TERMS (governance/fred-terms-ruling-2026-11-13.md). `fred_series`
+    builds no stlouisfed.org request; it serves the on-disk cache, then the DBnomics mirror of
+    the primary publisher where one is mapped, and otherwise returns None (`FRED_REFUSAL`).
   - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
   - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
@@ -13,8 +14,6 @@ Network timeouts are short; results are cached to data/free_data_cache/.
 
 from __future__ import annotations
 
-import csv
-import io
 import json
 import time
 import urllib.parse
@@ -68,44 +67,50 @@ FRED_FIELDS = {"DGS2", "DGS10", "T10Y2Y", "DFEDTARU", "DFF", "SOFR", "RRPONTSYD"
                "DEXJPUS", "DEXUSEU", "DEXCAUS", "DEXUSUK", "DEXCHUS"}
 
 
+#: FRED/ALFRED TERMS REFUSE EVERY AUTOMATED FETCH (governance/fred-terms-ruling-2026-11-13.md).
+#: The same words as `libs/data/fred_terms.py` (pinned equal by a test); copied rather than
+#: imported because this module sits in the money closure and must not grow it.
+FRED_TERMS_RULING = "governance/fred-terms-ruling-2026-11-13.md"
+FRED_TERMS_STATUS = "BLOCKED_ON_TERMS"
+FRED_TERMS_REASON = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fetch "
+                     f"({FRED_TERMS_RULING}); nothing is requested, data already on disk stays "
+                     "readable")
+FRED_MISSED_GROWTH = {
+    "mechanism": "fred_terms_refusal",
+    "what_is_lost": "fresh FRED/ALFRED series and vintages for the macro, rates and FX legs",
+    "size": "UNMEASURED",
+    "stand_in": ("primary publishers (Fed H.15/H.10/H.4.1, Treasury, BLS, BEA, ECB) and the "
+                 "DBnomics mirrors of those publishers where a reader exists"),
+    "reopens_when": "the St. Louis Fed grants written permission for automated use",
+}
+FRED_REFUSAL = {"status": FRED_TERMS_STATUS, "reason": FRED_TERMS_REASON,
+                "ruling": FRED_TERMS_RULING, "missed_growth": FRED_MISSED_GROWTH}
+
+
+def fred_refusal(what: str = "") -> dict:
+    """The refusal record a caller reports beside a None from `fred_series`."""
+    out = {**FRED_REFUSAL, "missed_growth": dict(FRED_MISSED_GROWTH)}
+    if what:
+        out["what"] = what
+    return out
+
+
 def fred_series(series_id: str, start: str = "2010-01-01",
                 vintage: str | None = None) -> dict[str, float] | None:
-    """Fetch a FRED series as {iso_date: value}. Keyless via fredgraph.csv.
-    vintage_date => ALFRED point-in-time view of that series."""
-    base = "https://alfred.stlouisfed.org/graph/fredgraph.csv" if vintage \
-        else "https://fred.stlouisfed.org/graph/fredgraph.csv"
-    q = {"id": series_id, "cosd": start}
-    if vintage:
-        q["vintage_date"] = vintage
-    url = base + "?" + urllib.parse.urlencode(q)
+    """{iso_date: value} for a FRED id, WITHOUT contacting FRED or ALFRED.
+
+    REFUSED ON TERMS before any request is built. What it still serves: the on-disk cache (data
+    already held stays readable), then -- current vintage only -- the DBnomics mirror of the
+    primary publisher where `scripts/data_alternates.DBNOMICS_MIRROR` maps the id. Otherwise
+    None, its no-data shape; `fred_refusal(series_id)` says why. `start` is kept for callers."""
     key = f"fred_{series_id}_{vintage or 'cur'}"
     hit = _cache_get(key)
     if hit:
         return hit
-    try:
-        raw = _get(url).decode("utf-8", "replace")
-        rows = list(csv.reader(io.StringIO(raw)))
-        out: dict[str, float] = {}
-        for row in rows[1:]:
-            if len(row) < 2 or row[0].startswith("."):
-                continue
-            v = row[1].strip()
-            if v and v != ".":
-                try:
-                    out[row[0]] = float(v)
-                except ValueError:
-                    pass
-        if len(out) > 30:
-            _cache_put(key, out)
-            return out
-        return _fred_alternate(series_id, vintage, key)
-    except Exception:
-        # A BLOCKED PRIMARY MUST NOT STARVE THE FAMILY (2026-08-27: FRED timed out for days,
-        # macro_state went 5 days stale, and macro_conditional produced zero signals on 297
-        # straight sweep passes while the staleness read as quiet ground). The alternate route
-        # registry (scripts/data_alternates) serves the same series from the DBnomics mirror,
-        # with provenance recorded -- a switched source is a fact, never a silent substitution.
-        return _fred_alternate(series_id, vintage, key)
+    # A REFUSED PRIMARY MUST NOT STARVE THE FAMILY (2026-08-27: FRED timed out for days and
+    # macro_conditional produced zero signals). The alternate registry serves the same
+    # measurement from the publisher's own series via DBnomics, with provenance recorded.
+    return _fred_alternate(series_id, vintage, key)
 
 
 def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):
@@ -120,7 +125,7 @@ def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):
         out = dbnomics_route(series_id)
         if len(out) > 30:
             _cache_put(cache_key, out)
-            print(f"free_data: {series_id} served by DBNOMICS mirror (primary blocked)")
+            print(f"free_data: {series_id} served by DBNOMICS mirror (FRED refused on terms)")
             return out
     except Exception:
         pass

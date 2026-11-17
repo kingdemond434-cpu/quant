@@ -32,11 +32,10 @@ point-in-time is worse than no series at all: the first is a silent lookahead in
 that touches it, the second is a visible gap. Absence of a vintage is never permission to use the
 revision.
 
-    Free key, 30 seconds, no cost: https://fredaccount.stlouisfed.org/apikeys
-    Save it to secrets/fred_api_key (one line), or set FRED_API_KEY.
-
-    python research/fetch_alfred.py                # all series
-    python research/fetch_alfred.py DGS10 T10YIE   # a subset
+REFUSED ON TERMS (governance/fred-terms-ruling-2026-11-13.md): FRED/ALFRED terms refuse every
+automated fetch, so `fetch_vintages` returns None and `main` writes a BLOCKED_ON_TERMS report
+before any request is built, key or no key. Vintages already in the lake stay readable through
+`vintage_as_of`; the primary publishers (BLS, BEA, Census, Treasury) are the route.
 """
 
 from __future__ import annotations
@@ -48,7 +47,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -107,65 +105,15 @@ def api_key() -> str | None:
 
 
 def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
+    """Every vintage of one series -- REFUSED on terms, so always None, before any request.
+
+    The ALFRED request this used to make (`output_type=2` with the full realtime span) is not
+    sent: FRED/ALFRED terms refuse automated access (governance/fred-terms-ruling-2026-11-13.md).
+    `key` and `timeout` are kept so existing callers need no change. Vintages already in
+    `OUT` stay readable through `vintage_as_of`.
+    """
     print(f"  {series_id}: BLOCKED_ON_TERMS -- {BLOCKED_ON_TERMS}", flush=True)
     return None
-    """Every vintage of one series, as a tidy frame.
-
-    `output_type=2` asks ALFRED for ALL vintages in one response: one column per vintage date,
-    one row per observation date. That is the whole revision history in a single request, which
-    matters because the alternative is one request per vintage per series.
-    """
-    # THE REALTIME SPAN IS NOT OPTIONAL, and omitting it fails SILENTLY in the worst possible
-    # way. `output_type=2` asks for observations by vintage date, but FRED defaults
-    # realtime_start and realtime_end to TODAY -- so the response contains exactly one vintage,
-    # today's, which is the fully revised series this module exists to refuse. It returns 200,
-    # parses cleanly, writes a file, and reports success.
-    #
-    # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
-    # 1947 to today -- the distance from the oldest observation to the only vintage present.
-    # A number that absurd is the file saying it has one vintage without knowing how to say so.
-    r = requests.get(API, params={"series_id": series_id, "api_key": key,
-                                  "file_type": "json", "output_type": 2,
-                                  "realtime_start": "1776-07-04",   # FRED's minimum
-                                  "realtime_end": "9999-12-31"},    # FRED's maximum
-                     timeout=timeout)
-    if r.status_code != 200:
-        print(f"  {series_id}: HTTP {r.status_code} {r.text[:120]}", flush=True)
-        return None
-    obs = r.json().get("observations", [])
-    if not obs:
-        return None
-
-    # VECTORISED, BECAUSE THE PYTHON LOOP OOM-KILLED A 4GB BOX. CPI carries ~950 observations
-    # across ~800 vintages: the previous version built 760,000 dicts in a list before touching
-    # pandas, which is roughly 150MB of dict overhead alone, then doubled it constructing the
-    # DataFrame. The process was killed mid-series and left a partial lake behind.
-    #
-    # Reshaping wide->long with melt does the same work inside pandas, and float32 halves what
-    # survives it. Precision is irrelevant here: these are macro prints with 1-3 significant
-    # decimals, not prices.
-    wide = pd.DataFrame(obs)
-    del obs
-    vint_cols = [c for c in wide.columns
-                 if c != "date" and "_" in c
-                 and (s := c.rsplit("_", 1)[-1]).isdigit() and len(s) == 8]
-    if not vint_cols:
-        return None
-    long = wide[["date"] + vint_cols].melt(
-        id_vars="date", var_name="_vintage", value_name="value")
-    del wide
-    long = long[long["value"].ne(".") & long["value"].notna()]
-    if long.empty:
-        return None
-    long["value"] = pd.to_numeric(long["value"], errors="coerce", downcast="float")
-    long = long[long["value"].notna()]
-    long["observation_date"] = pd.to_datetime(long["date"], errors="coerce")
-    long["realtime_date"] = pd.to_datetime(
-        long["_vintage"].str.rsplit("_", n=1).str[-1], format="%Y%m%d", errors="coerce")
-    long = long[long["observation_date"].notna() & long["realtime_date"].notna()]
-    out = long[["observation_date", "realtime_date", "value"]]
-    del long
-    return out.sort_values(["observation_date", "realtime_date"]).reset_index(drop=True)
 
 
 def vintage_as_of(df: pd.DataFrame, as_of: str | datetime) -> pd.Series:
@@ -227,102 +175,22 @@ def release_lag(df: pd.DataFrame) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    argv = sys.argv[1:] if argv is None else argv
-    wanted = {s.upper() for s in argv} or set(SERIES)
+    """Write the BLOCKED_ON_TERMS report and return 2. Nothing is fetched or written to the lake.
 
+    No scheduled leg, box task or hourly_cycle step runs this module (data_scout only names it
+    as a `how_to_fetch` string), so the non-zero exit trips no clock.
+    """
+    argv = sys.argv[1:] if argv is None else argv
+    wanted = {s.upper() for s in argv if not s.startswith("--")} or set(SERIES)
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-              "requested": sorted(wanted)}
-    report.update({"status": "BLOCKED_ON_TERMS", "reason": BLOCKED_ON_TERMS,
-                   "missed_growth": MISSED_GROWTH, "written": 0})
+              "requested": sorted(wanted),
+              "status": "BLOCKED_ON_TERMS", "reason": BLOCKED_ON_TERMS,
+              "missed_growth": MISSED_GROWTH, "written": 0,
+              "path": str(OUT),
+              "usage": "research: from research.fetch_alfred import vintage_as_of"}
     (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"ALFRED BLOCKED_ON_TERMS -- {BLOCKED_ON_TERMS}")
     return 2
-    key = api_key()
-
-    if not key:
-        # FAILS CLOSED. The tempting fallback -- reuse fetch_fred's revised series and label it
-        # point-in-time -- would put a silent lookahead into every backtest that touched it.
-        report.update({
-            "status": "UNAVAILABLE",
-            "reason": ("no ALFRED/FRED API key. Point-in-time vintages REQUIRE one. This module "
-                       "refuses to fall back to the revised series in data/lake, because a "
-                       "revised series labelled point-in-time is a silent lookahead in every "
-                       "backtest that reads it -- the same defect class as the day_states join "
-                       "that manufactured 180 false survivors."),
-            "fix": ("free key at https://fredaccount.stlouisfed.org/apikeys, then write it to "
-                    "secrets/fred_api_key (one line) or export FRED_API_KEY"),
-            "written": 0})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
-                                                      encoding="utf-8")
-        print("ALFRED UNAVAILABLE -- no API key.")
-        print(report["fix"])
-        return 2
-
-    force = "--force" in argv
-    written, lags, failed, skipped = 0, {}, [], []
-    for sid in sorted(wanted):
-        # RESUMABLE. A full vintage history is a large download and the box has 4GB; if the OOM
-        # killer takes the process mid-run, restarting must not re-fetch what already landed.
-        # Each series is written before the next is requested, so completed work survives.
-        out_path = OUT / f"{sid}.parquet"
-        if out_path.exists() and not force:
-            skipped.append(sid)
-            print(f"{sid}: already on disk, skipping (--force to refetch)", flush=True)
-            continue
-        print(f"{sid}: fetching all vintages...", flush=True)
-        try:
-            df = fetch_vintages(sid, key)
-        except Exception as exc:                                    # noqa: BLE001
-            print(f"  {sid}: {type(exc).__name__}: {exc}", flush=True)
-            failed.append(sid)
-            continue
-        if df is None or df.empty:
-            failed.append(sid)
-            continue
-        n_vint = df["realtime_date"].nunique()
-        lag = release_lag(df)
-        # A SINGLE VINTAGE IS A FAILED FETCH, NOT A NEVER-REVISED SERIES. Every series in SERIES
-        # was chosen BECAUSE revision bites it -- GDP, payrolls, CPI are revised for years. One
-        # vintage means the request returned the current revision, which is precisely the data
-        # this module refuses. Rejected rather than written, because a revised series sitting in
-        # the point-in-time lake is a silent lookahead in every backtest that reads it.
-        if n_vint < 2:
-            failed.append(sid)
-            print(f"  {sid}: REJECTED -- only {n_vint} vintage returned. This is the revised "
-                  f"series, not a point-in-time history. Not written.", flush=True)
-            continue
-        # Same check from the other side: a first-print lag of decades is arithmetic on a single
-        # vintage, not a publication delay. Monthly data prints within ~60 days; quarterly ~120.
-        _med = lag.get("median_days") if lag else None
-        if _med is not None and _med == _med and _med > 400:
-            failed.append(sid)
-            print(f"  {sid}: REJECTED -- median release lag {lag['median_days']:.0f}d is not a "
-                  f"publication delay. The vintage history is wrong. Not written.", flush=True)
-            continue
-        df.to_parquet(out_path, index=False)
-        lags[sid] = lag
-        written += 1
-        _exc = lag.get("excluded_predating_vintage_record", 0)
-        print(f"  {sid}: {len(df):,} rows, {n_vint} vintages, "
-              f"median release lag {lag.get('median_days', float('nan')):.0f}d"
-              + (f" ({_exc} obs predate the vintage record, excluded from the lag)"
-                 if _exc else ""), flush=True)
-        # Released before the next request, not at the next garbage collection. On a 4GB box the
-        # peak that matters is two series held at once, and that peak is what got the process
-        # killed.
-        del df
-        import gc; gc.collect()
-
-    report.update({"status": "OK" if (written or skipped) else "EMPTY", "written": written,
-                   "skipped_already_present": skipped,
-                   "failed": failed, "release_lag_days": lags,
-                   "path": str(OUT),
-                   "usage": "research: from research.fetch_alfred import vintage_as_of"})
-    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"\n{written} written to {OUT}"
-          + (f", {len(skipped)} already present" if skipped else "")
-          + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))
-    return 0 if (written or skipped) else 1
 
 
 if __name__ == "__main__":

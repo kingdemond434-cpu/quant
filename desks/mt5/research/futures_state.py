@@ -690,6 +690,8 @@ def reaction_residual(rate: pd.Series, price_index: pd.Series,
 
 
 def fred_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) -> pd.DataFrame:
+    # Reached only when futures_state_sources.json's fred_rates terms read OPEN. They read
+    # REFUSED (governance/fred-terms-ruling-2026-11-13.md), so the caller never passes `get`.
     cols: dict[str, pd.Series] = {}
     for s in curve["series"]:
         q = urllib.parse.urlencode({"series_id": s, "api_key": key, "file_type": "json"})
@@ -730,6 +732,8 @@ def alfred_first_prints(series: str, key: str, get: Callable[[str], Any],
     or outside `weekdays` when the series has a fixed schedule (payrolls on Friday, claims on
     Thursday, each with the holiday-shifted day before). Such rows are dropped and counted.
     """
+    # Reached with a live `get` only when fred_rates terms read OPEN; they read REFUSED
+    # (governance/fred-terms-ruling-2026-11-13.md), so production passes no transport.
     q = urllib.parse.urlencode({"series_id": series, "api_key": key, "file_type": "json",
                                 "realtime_start": "1776-07-04", "realtime_end": "9999-12-31",
                                 "output_type": ALFRED_INITIAL})

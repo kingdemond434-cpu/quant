@@ -80,11 +80,8 @@ signal[k] is observed strictly inside period k and predicts period k+1.
 from __future__ import annotations
 
 import json
-import os
 import re
 import sys
-import urllib.parse
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -95,13 +92,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from libs.alpha_factory.hypothesis_novelty import PriorIdea, hypothesis_novelty  # noqa: E402
-from libs.data.keyed_sources import keyed_urlopen  # noqa: E402
+from libs.data.fred_terms import FredTermsRefused, refusal  # noqa: E402
 from libs.research.alpha_economics import Idea, ev_score  # noqa: E402
 from libs.research.axis_screen import stage_a_screen  # noqa: E402
 
 OUT = ROOT / "data/fred_macro_screen.json"
 DEEP = ROOT / "data/fred_macro_deep.json"
-FRED = "https://api.stlouisfed.org/fred/series/observations"
+FRED = "https://api.stlouisfed.org/fred/series/observations"  # REFUSED on terms; record only
 ZWIN = {1: 20, 5: 12, 20: 6}
 TRIALS: list[dict] = []
 
@@ -260,14 +257,17 @@ def novelty(name: str, statement: str, features: tuple[str, ...]) -> dict:
 
 
 # --------------------------------------------------------------------------------------- data ---
-def fred_deep(sid: str, key: str) -> pd.Series:
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
-                                "observation_start": "1900-01-01"})
-    req = urllib.request.Request(f"{FRED}?{q}", headers={"User-Agent": "quant-fred-screen/1.0"})
-    with keyed_urlopen(req, timeout=45, secrets=(key,)) as r:
-        obs = json.loads(r.read()).get("observations", [])
-    d = {pd.Timestamp(o["date"], tz="UTC"): float(o["value"])
-         for o in obs if o.get("value") not in (".", "", None)}
+def fred_deep(sid: str) -> pd.Series:
+    """The deep history ALREADY ON DISK in `DEEP`, never a request.
+
+    FRED/ALFRED terms refuse every automated fetch (governance/fred-terms-ruling-2026-11-13.md),
+    so a series absent from the archive raises `FredTermsRefused` before anything is built."""
+    try:
+        doc = json.loads(DEEP.read_text("utf-8"))
+        rows = (doc.get("series") or {})[sid]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise FredTermsRefused(f"{sid} not in {DEEP.name}") from exc
+    d = {pd.Timestamp(r[0], tz="UTC"): float(r[1]) for r in rows if r and len(r) > 1}
     return pd.Series(d).sort_index()
 
 
@@ -336,10 +336,8 @@ def transform(sid: str, s: pd.Series) -> pd.Series:
 
 
 def main() -> None:
-    # The env var the principal sets (FRED_API_KEY) first, then the desk's key file -- the same
-    # two places scripts/collect_fred_macro.py reads. Never printed.
-    key = os.environ.get("FRED_API_KEY", "").strip() or json.loads(
-        (ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
+    # FRED is refused on terms: no key is read and nothing is fetched. The screen runs on the
+    # deep history already archived in DEEP; a series missing there is BLOCKED_ON_TERMS.
     btc = target_close()
     print(f"{_TARGET} leg (MT5 H1 -> daily close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}\n")
@@ -358,13 +356,18 @@ def main() -> None:
         ev[c[1]] = e
         print(f"  EV {c[1]:34s} {e['ev']:<8} p_survive={e['p_survive']:<7} -> {e['verdict']}")
 
-    deep: dict[str, list] = {}
     print("\n" + "=" * 100)
     print("STAGE-A SCREENS (audited harness, artifact gate baked in, NO clock passed on any cell)")
     print("=" * 100)
     for sid, name, mech, _constr, horizons, _feat, _idea in CANDIDATES:
-        raw = fred_deep(sid, key)
-        deep[sid] = [[d.strftime("%Y-%m-%d"), v] for d, v in raw.items()]
+        try:
+            raw = fred_deep(sid)
+        except FredTermsRefused as exc:
+            TRIALS.append({"axis": "fred_macro", "series": sid, "construction": name,
+                           "verdict": "BLOCKED_ON_TERMS", "n": 0, "note": str(exc),
+                           "missed_growth": refusal(sid)["missed_growth"]})
+            print(f"  {name}: BLOCKED_ON_TERMS -- {exc}")
+            continue
         s = transform(sid, raw)
         common = s.index.intersection(btc.index)
         if len(common) < 60:
@@ -391,11 +394,6 @@ def main() -> None:
                   "span": f"{common.min().date()}..{common.max().date()}",
                   "novelty": nov[name], "ev": ev[name]})
 
-    DEEP.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
-                                "note": "deep FRED history fetched for RESEARCH only -- the daily "
-                                        "collector (scripts/collect_fred_macro.py, 1200d window) "
-                                        "and web/fred_macro.json are untouched",
-                                "series": deep}, indent=1), "utf-8")
     payload = {
         "updated": datetime.now(tz=UTC).isoformat(),
         "stage": "A (zero promotion authority) -- no cell was passed a clock; none can start one",
@@ -413,12 +411,13 @@ def main() -> None:
         "novelty_gate": list(nov.values()),
         "ev_gate": list(ev.values()),
         "trials": TRIALS,
+        "fred_terms": refusal("screen_fred_macro_axis"),
     }
     OUT.write_text(json.dumps(payload, indent=1), "utf-8")
     print(f"\n{len(TRIALS)} DSR-counted trials -> {OUT}")
     for v in sorted({t["verdict"] for t in TRIALS}):
         print(f"  {v}: {sum(1 for t in TRIALS if t['verdict'] == v)}")
-    print(f"  deep FRED history archived -> {DEEP}")
+    print(f"  deep FRED history read from {DEEP} (never re-fetched: FRED is refused on terms)")
 
 
 if __name__ == "__main__":

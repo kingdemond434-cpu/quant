@@ -149,9 +149,11 @@ CREDENTIALS: tuple[Credential, ...] = (
     Credential(
         name="fred.json",
         shape=("key",),
-        unlocks="FRED macro series (rates, liquidity, the macro regime axis)",
-        without="the macro collector skips gracefully and the regime axis is price-only",
-        how="https://fredaccount.stlouisfed.org/apikeys -- free, instant",
+        unlocks=("nothing while FRED is BLOCKED_ON_TERMS (governance/fred-terms-ruling-"
+                 "2026-11-13.md): no collector requests FRED even with this key"),
+        without="no change: the macro collectors refuse FRED on terms with or without a key",
+        how=("BLOCKED_ON_TERMS -- do not request a key; record only: "
+             "https://fredaccount.stlouisfed.org/apikeys"),
         tier="research"),
     Credential(
         name="naver.json",

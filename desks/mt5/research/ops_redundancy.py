@@ -398,8 +398,10 @@ def _independent_closes(symbol: str) -> tuple[dict[str, float], str]:
         f = (fred_series(sid, start="2026-01-01") or {}) if sid else {}
     except Exception:
         f = {}
+    # FRED itself is refused on terms (governance/fred-terms-ruling-2026-11-13.md):
+    # `fred_series` never contacts it, so an empty answer reads BLOCKED_ON_TERMS, not "none".
     return ({str(k)[:10]: float(v) for k, v in f.items() if isinstance(v, (int, float))},
-            f"fred:{sid}" if f else "none")
+            f"fred:{sid}" if f else ("BLOCKED_ON_TERMS:fred" if sid else "none"))
 
 
 def market_data_crosscheck(network: bool = True, venue: Any = None,
@@ -420,6 +422,9 @@ def market_data_crosscheck(network: bool = True, venue: Any = None,
         if len(common) < 3:
             pairs[sym] = {"status": "UNMEASURED", "n_common_days": len(common),
                           "why": ("no venue bars on this host" if not a else
+                                  ("independent source unreachable; the FRED H.10 fallback "
+                                   "is BLOCKED_ON_TERMS") if not b and
+                                  str(src).startswith("BLOCKED_ON_TERMS") else
                                   "independent source unreachable" if not b else
                                   "fewer than 3 common days")}
             continue
@@ -433,7 +438,8 @@ def market_data_crosscheck(network: bool = True, venue: Any = None,
            "status": ("UNMEASURED" if not measured else
                       "FAIL" if any(v["status"] == "FAIL" for v in measured) else "PASS"),
            "tolerance": XCHECK_TOL,
-           "independent_source": "Yahoo Finance daily close, else FRED H.10 noon rates",
+           "independent_source": ("Yahoo Finance daily close; the FRED H.10 fallback is "
+                                  "BLOCKED_ON_TERMS (governance/fred-terms-ruling-2026-11-13.md)"),
            "pairs": pairs}
     if measured:
         try:

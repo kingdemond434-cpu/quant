@@ -196,6 +196,8 @@ class YahooVolSource:
         self.range = range_
         self.fresh_range = fresh_range
         self._fred_ok = True
+        #: UNMEASURED until the FRED fallback is asked; BLOCKED_ON_TERMS once it answers empty.
+        self.fred_status = "UNMEASURED"
 
     def series(self, ticker: str) -> dict[str, float] | None:
         history = self._chart(ticker, self.range)
@@ -249,12 +251,17 @@ class YahooVolSource:
                "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
         if not sid or not self._fred_ok:
             return None
+        # FRED is refused on terms (governance/fred-terms-ruling-2026-11-13.md). `fred_series`
+        # builds no FRED request: it serves only the on-disk cache or a publisher mirror, so an
+        # empty answer is BLOCKED_ON_TERMS and the series is recorded unavailable, not flat.
         try:
             from research import free_data as fd
             got = fd.fred_series(sid, start="2015-01-01")
         except Exception:
             self._fred_ok = False
             return None
+        if not got:
+            self.fred_status = "BLOCKED_ON_TERMS"
         return {str(k): float(v) for k, v in got.items()} if got else None
 
 
