@@ -932,7 +932,9 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     PAUSED.write_text(
         f"AUTO-PAUSED {now()}: {n} consecutive placement passes with ZERO accepted "
         f"orders.\n\n" + "\n".join(f"  {d}" for d in diags) +
-        "\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
+        "\n\nNothing has traded. The gateway lifts this pause itself once the terminal probe "
+        "passes again and a backoff has elapsed (mt5desk/pause_rearm.py); delete this file to "
+        "re-arm sooner.\n",
         encoding="utf-8")
     log("GATEWAY AUTO-PAUSED: no order has been accepted in "
         f"{n} consecutive passes. Nothing is trading; the reason is in "
@@ -4925,7 +4927,37 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
+def _lift_own_auto_pause() -> None:
+    """Lift the gateway's OWN placement auto-pause once the terminal answers again (2026-11-17).
+
+    Rules in `mt5desk.pause_rearm`: the body must start "AUTO-PAUSED", the read-only terminal
+    probe must have passed since the pause, and a doubling backoff must have elapsed. A pause a
+    person or the ruin rail wrote is never touched. Never raises: a broken lift leaves the pause.
+    """
+    try:
+        from mt5desk import pause_rearm
+        v = pause_rearm.maybe_rearm(PAUSED, BASE / "data" / "terminal_boot_ok.json",
+                                    BASE / "logs" / "gateway_rearm.json")
+    except Exception as exc:  # the pause stands on any failure here
+        log(f"auto-pause lift not attempted: {type(exc).__name__}: {exc}")
+        return
+    if v.get("why") == "no pause file":
+        return
+    if not v.get("rearm"):
+        log(f"gateway pause held: {v.get('why')}")
+        return
+    log(f"JOURNAL GATEWAY AUTO RE-ARMED: {v.get('why')} (was: {v.get('first_line')})")
+    try:
+        from libs.ops.events import emit
+        emit("GATEWAY_AUTO_REARMED", producer="MT5-Gateway", paused_at=v.get("paused_at"),
+             probe_passed_at=v.get("probe_passed_at"), backoff_min=v.get("backoff_min"),
+             rearms_24h=v.get("rearms_24h"), reason=v.get("first_line"))
+    except Exception as exc:  # the gateway log line above is the journal
+        log(f"event log not written: {type(exc).__name__}")
+
+
 def main() -> None:
+    _lift_own_auto_pause()
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
         return
