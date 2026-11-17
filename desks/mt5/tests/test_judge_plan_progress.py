@@ -158,7 +158,9 @@ def test_a_broken_tracker_never_breaks_the_log(tmp_path) -> None:
 def test_the_launcher_wires_the_tee_and_the_hook() -> None:
     src = (Path(__file__).resolve().parents[1] / "scripts" / "run_sharded_gauntlet.py").read_text(
         "utf-8")
-    assert "PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)" in src
+    assert "plan = _plan_tracker()" in src
+    assert ("PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase, lock=_PHASE_LOCK,\n"
+            "                       write=_flush_phase_doc)") in src
     assert "sys.stdout = sys.stderr = plan.tee(log)" in src
     assert "plan.attach(judge)" in src
 
@@ -573,3 +575,44 @@ def test_a_flush_that_meets_a_concurrent_change_is_skipped_never_raised(tmp_path
     tr.step("lane_and_docket")                   # and through step's own forced flush
     assert not path.exists(), "nothing half-written: the next flush writes the stamp"
     assert not list(tmp_path.glob("*.tmp")), "and no tmp is left behind"
+
+
+def test_the_launchers_tracker_shares_its_lock_with_phase_and_shard_progress(
+        tmp_path, monkeypatch) -> None:
+    """The coordinator's case: a hook flush from a pool thread overlapping the launcher's own
+    writers of `_PHASE_DOC`. The tracker the launcher builds must exclude `_shard_progress` (and
+    `_phase`, the same lock) for the whole of its flush."""
+    from scripts import run_sharded_gauntlet as runner
+
+    doc = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", doc)
+    tr = runner._plan_tracker()
+    assert tr.lock is runner._PHASE_LOCK
+    errors = _overlap_probe(tr, doc, lambda: None)
+    assert errors == [], errors
+    # and the launcher's writer really is excluded: _shard_progress takes the lock itself
+    doc2 = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    monkeypatch.setattr(runner, "_PHASE_DOC", doc2)
+    tr2 = runner._plan_tracker()
+    got: list[BaseException] = []
+
+    def other() -> None:
+        doc2.iterating.wait(5.0)
+        runner._shard_progress("begin", "build_shards", total=2)   # adds "shards"
+        doc2.mutated.set()
+
+    t = threading.Thread(target=other)
+    t.start()
+    doc2.armed = True
+    try:
+        tr2.progress("gate0", done=1, total=2)
+    except BaseException as exc:                          # it IS the finding
+        got.append(exc)
+    t.join(5.0)
+    assert not t.is_alive() and got == [], got
+    pub = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert pub["shards"]["total"] == 2 and pub["plan_progress"]["done"] == 1
+    assert not [k for k in pub if str(k).startswith("_")]
+    tr2.progress("prewarm", submitted=1)                  # on_phase -> _phase: no deadlock
+    assert doc2["phase"] == "prewarm"

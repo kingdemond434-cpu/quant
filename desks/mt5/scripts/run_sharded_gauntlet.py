@@ -3696,6 +3696,18 @@ def _publish_priority(key: str, value: Any) -> str:
     return status
 
 
+def _plan_tracker() -> Any:
+    """The sweep's PlanTracker, on the launcher's own lock and writer (judge plan v2.2.1).
+
+    PLAN_PROGRESS_HOOK calls arrive on the sealed judge's pool threads; `_phase` and
+    `_shard_progress` write the same `_PHASE_DOC`. One lock, `_PHASE_LOCK`, now covers all three,
+    and every flush goes through `_flush_phase_doc` (one atomic writer, one "_" filter). The
+    tracker never holds the lock across `on_phase`: `_phase` takes it, and it is not reentrant."""
+    from scripts.judge_plan_progress import PlanTracker
+    return PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase, lock=_PHASE_LOCK,
+                       write=_flush_phase_doc)
+
+
 def _sweep_logged() -> int:
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3703,8 +3715,7 @@ def _sweep_logged() -> int:
         old_out, old_err = sys.stdout, sys.stderr
         # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
         # the sealed image's progress hook, where it has one, its counts. Reports only.
-        from scripts.judge_plan_progress import PlanTracker
-        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)
+        plan = _plan_tracker()
         plan.step("lane_and_docket")
         sys.stdout = sys.stderr = plan.tee(log)
         try:
