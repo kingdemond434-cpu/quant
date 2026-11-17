@@ -222,3 +222,40 @@ def test_a_copy_present_here_is_already_clean(rel: str) -> None:
     text = p.read_text("utf-8", errors="ignore")
     found = [m.group(0)[:6] for m in _CREDENTIAL.finditer(text)]
     assert not found, f"{rel} on this host carries credential-shaped text: {found}"
+
+
+# --- AUDIT HOLD MF1 (2026-11-17): exception text quoted credentials through redact() -------------
+
+_HEX40 = "0123456789abcdef0123456789abcdef01234567"
+_HEX32 = "fedcba9876543210fedcba9876543210"
+
+
+@pytest.mark.parametrize(("text", "secret"), [
+    ("adapter raised: ConnectionError: HTTPSConnectionPool(host='api.example.gov', port=443): "
+     f"Max retries exceeded with url: /v1/obs?series=GDP&api_key={_HEX40}&fmt=json", _HEX40),
+    (f"REJECTED_WITH_EVIDENCE: GET https://api.example.gov/v2?registrationkey={_HEX32} -> 401",
+     _HEX32),
+    ('cell import failed: ValueError: bad config {"token": "s3cr3t-value-123", "n": 3}',
+     "s3cr3t-value-123"),
+    ("ledger_error: KeyError {'api_key': 'abcdEFGH1234zz'}", "abcdEFGH1234zz"),
+    ("errors: login refused password=hunter2hunter2 for the seat", "hunter2hunter2"),
+    ("adapter raised: HTTPError 403: Authorization: Bearer eyJhbGciOi.payload.sig", "eyJhbGciOi"),
+    ("clone failed: https://bob:pw-123456@git.example.org/r.git", "pw-123456"),
+])
+def test_exception_text_never_carries_a_credential(text: str, secret: str) -> None:
+    for doc in (text, {"why_unmeasured": text}, {"errors": [text]}):
+        out = json.dumps(redact(doc, _BOX))
+        assert secret not in out, f"{secret!r} survived: {out}"
+        assert WITHHELD in out
+
+
+def test_a_count_named_like_a_secret_keeps_its_number() -> None:
+    clean = redact({"n_token": 3, "token_count": 4, "n_tokens": 5, "token": "abc",
+                    "login": 51234567}, _BOX)
+    assert (clean["n_token"], clean["token_count"]) == (3, 4)
+    assert clean["token"] == WITHHELD and clean["login"] == WITHHELD
+
+
+def test_a_withheld_query_is_still_readable() -> None:
+    out = public_string(f"GET /v1?series=GDP&api_key={_HEX40}", _BOX)
+    assert out == f"GET /v1?series={WITHHELD}&api_key={WITHHELD}"

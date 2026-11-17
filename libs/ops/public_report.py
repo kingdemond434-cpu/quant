@@ -15,8 +15,11 @@ through `redact()` before the bytes reach disk, and the publisher never has to g
   * money figures with a currency mark, IP addresses, host names and `server=`/`login=`/`host=`
     pairs inside free text are withheld by `libs.ops.account_withhold.public_text`;
   * a value under a host, server, login, account, password, token, secret or key-shaped KEY is
-    withheld whole (`[withheld]`), and so is a string shaped like a credential (`ghp_...`,
-    `sk-...`, a PEM block), wherever it sits.
+    withheld whole (`[withheld]`) unless it is a count (`n_token: 3`), and so is a string shaped
+    like a credential (`ghp_...`, `sk-...`, a PEM block), wherever it sits;
+  * inside free text -- exception messages above all -- every URL query VALUE, any
+    `user:pass@` in a URL, and the value of any secret-named pair (`{"token": "..."}`,
+    `password=...`, `Authorization: Bearer ...`) are withheld; the names stay readable.
 
 Research numbers (pnl in R, Sharpe, counts, seconds, cells) are left exactly as written: the
 fence is the host and the account, never the measurement. Never raises; never prints a value.
@@ -41,6 +44,20 @@ _SECRET_KEY = re.compile(
 _TOKEN = re.compile(r"(?:\bgh[pousr]_[A-Za-z0-9]{20,}|\bgithub_pat_[A-Za-z0-9_]{20,}|"
                     r"\bsk-[A-Za-z0-9_\-]{16,}|\bxox[abpr]-[A-Za-z0-9\-]{10,}|"
                     r"\bAKIA[0-9A-Z]{16}\b|-----BEGIN [A-Z ]*PRIVATE KEY-----)")
+#: Every query-string value in a URL (`?api_key=...&registrationkey=...`): a request error quotes
+#: the URL it failed on, and a query value is where an API key travels. Names stay, values go.
+_QUERY_VALUE = re.compile(r"([?&;][A-Za-z0-9_.\-\[\]]+=)[^&\s\"'#<>)\]}]+")
+#: `user:password@` in a URL.
+_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.\-]*://)[^/\s@\"']+@")
+#: A secret-named pair inside free text, quoted or not: `{"token": "abc"}`, `{'api_key': 'x'}`,
+#: `password=hunter2`, `Authorization: Bearer abc`. The NAME stays so the error stays readable.
+_SECRET_PAIR = re.compile(
+    r"(?i)([\"']?[A-Za-z0-9_\-]*(?:token|secret|passw(?:or)?d|passwd|pwd|api_?key|apikey|"
+    r"access_?key|private_?key|registration_?key|client_?secret|credential|authorization|auth|"
+    r"cookie|session_?id|signature|sig)[A-Za-z0-9_\-]*[\"']?\s*[:=]\s*)"
+    r"(?:(?:bearer|basic|token)\s+)?([\"']?)(?!\[withheld\])[^\s\"',;&}\]]+\2")
+#: A COUNT is never a secret, whatever its key says (`n_token`, `token_count`).
+_COUNT_KEY = re.compile(r"(?i)^(?:n|num|count|max|min|total)_|_(?:count|n|total|len)$")
 #: An absolute path that is not under this repository.
 #: A space continues the path only when the next word carries a separator (`Program Files\\x`).
 _WIN_ABS = re.compile(r"(?i)(?<![A-Za-z0-9])[A-Z]:[\\/]"
@@ -64,6 +81,9 @@ def public_string(text: str, root: Path = ROOT) -> str:
             s = re.sub(re.escape(r) + r"[\\/]?([^\s\"'<>|,;]*)",
                        lambda m: m.group(1).replace("\\", "/") or ".", s)
     s = _TOKEN.sub(WITHHELD, s)
+    s = _USERINFO.sub(lambda m: f"{m.group(1)}{WITHHELD}@", s)
+    s = _QUERY_VALUE.sub(lambda m: f"{m.group(1)}{WITHHELD}", s)
+    s = _SECRET_PAIR.sub(lambda m: f"{m.group(1)}{m.group(2)}{WITHHELD}{m.group(2)}", s)
     s = _UNC.sub(PATH, s)
     s = _WIN_ABS.sub(PATH, s)
     s = _POSIX_ABS.sub(PATH, s)
@@ -83,7 +103,9 @@ def redact(node: Any, root: Path = ROOT) -> Any:
         out: dict[Any, Any] = {}
         for k, v in node.items():
             key = str(k)
-            if _SECRET_KEY.search(key) and v is not None and not isinstance(v, (bool, dict, list)):
+            counted = isinstance(v, (int, float)) and _COUNT_KEY.search(key)
+            if (_SECRET_KEY.search(key) and v is not None and not counted
+                    and not isinstance(v, (bool, dict, list))):
                 out[k] = WITHHELD
             else:
                 out[k] = redact(v, root)
