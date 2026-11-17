@@ -512,7 +512,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
             proxy), with the targets named for that series.
-    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly.
+    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly;
+              `pairs` add one bank's distance minus another's for the pair between them.
     """
     mode = str(cv.get("mode") or "curve")
     out: list[tuple[str, pd.DataFrame, pd.DatetimeIndex, list[str], str]] = []
@@ -547,6 +548,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                         pd.DatetimeIndex(v.index), list(targets), "fred_level"))
     elif mode == "reaction":
         for bk in cv.get("banks") or []:
+            if not bk.get("targets"):
+                continue                      # a bank listed only as a leg of `pairs` below
             if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
                 continue
             u = yc[bk["unemployment"]] if bk.get("unemployment") in yc.columns else None
@@ -558,6 +561,33 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                         dynamics(f, list(f.columns), window=int(cv.get("window", 60))),
                         pd.DatetimeIndex(f.index), list(bk.get("targets") or []),
                         "fred_cb_reaction"))
+        # RELATIVE STANCE: one bank's residual minus another's, for the currency pair between
+        # them. Both legs use the inflation-only rule (no unemployment term), because only some
+        # banks have a labour series and a difference of unlike rules would measure the missing
+        # term, not the banks.
+        by_id = {str(b.get("id")): b for b in cv.get("banks") or []}
+        plain: dict[str, pd.DataFrame] = {}
+        for pr in cv.get("pairs") or []:
+            legs = []
+            for side in ("base", "quote"):
+                bk = by_id.get(str(pr.get(side))) or {}
+                bid = str(bk.get("id"))
+                if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
+                    break
+                if bid not in plain:
+                    plain[bid] = reaction_residual(yc[bk["rate"]], yc[bk["inflation"]], None,
+                                                   target=float(bk.get("target", 2.0)))
+                legs.append(plain[bid])
+            if len(legs) < 2:
+                continue
+            d = (legs[0][["resid", "real_rate"]] - legs[1][["resid", "real_rate"]]).dropna()
+            d.columns = ["rel_resid", "rel_real_rate"]
+            if len(d) < MIN_ROWS:
+                continue
+            out.append((f"fred_{cv['id']}_{str(pr['id']).lower()}",
+                        dynamics(d, list(d.columns), window=int(cv.get("window", 60))),
+                        pd.DatetimeIndex(d.index), list(pr.get("targets") or []),
+                        "fred_cb_relative"))
     return out
 
 
