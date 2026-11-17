@@ -914,6 +914,23 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="daily_cycle:proposers", artifact_class="daily",
             notes=("book_forensics.run() inside daily_cycle._proposers on MT5-Daily: the "
                    "alive+dead genome, its base rates, priors and screened cells")),
+        # THE REGIME-DISAGREEMENT MINER'S CLOCK (ROMAN-0806, 2026-11-11). Run by name
+        # (`__import__`) inside daily_cycle._proposers beside regime_split_miner, so the reach
+        # walk cannot see the edge; declared here on its own code path with that step's clock.
+        ComponentSpec(
+            component_id="executable:desks/mt5/research/regime_disagreement_miner.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/research/regime_disagreement_miner.py",),
+            outputs=("desks/mt5/reports/regime_disagreement_miner.json",),
+            consumers=("desks/mt5/research/proposer_common.py",),
+            cadence_s=86_400, timeout_s=3_600, progress_metric="tests_run",
+            expected_artifact_schema="desks/mt5/reports/regime_disagreement_miner.json",
+            owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+            criticality="optional", resource_budget={"budget_s": 3600},
+            schedule="daily_cycle:proposers", artifact_class="daily",
+            notes=("regime_disagreement_miner.run() inside daily_cycle._proposers on MT5-Daily: "
+                   "our own regime systems' disagreement gating every price-only family, "
+                   "survivors donated through proposer_common.donate")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",

@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-17T14:41:31.958968+00:00",
+ "generated_utc": "2026-11-17T21:36:49.620529+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -127,10 +127,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
@@ -138,10 +138,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
@@ -149,10 +149,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
@@ -182,10 +182,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
@@ -193,10 +193,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
@@ -204,10 +204,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
@@ -215,10 +215,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=44136fa355b3678a": {
@@ -4666,9 +4666,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 4,
+    "confidence": 0.6667,
+    "sd": 0.1307,
     "status": "UNMEASURED"
    }
   },
@@ -4677,9 +4677,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 4,
+    "confidence": 0.6667,
+    "sd": 0.1307,
     "status": "UNMEASURED"
    }
   },
@@ -5661,9 +5661,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 4,
+    "confidence": 0.6667,
+    "sd": 0.1307,
     "status": "UNMEASURED"
    }
   },
@@ -5672,9 +5672,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 4,
+    "confidence": 0.6667,
+    "sd": 0.1307,
     "status": "UNMEASURED"
    }
   },
@@ -5683,9 +5683,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 4,
+    "confidence": 0.6667,
+    "sd": 0.1307,
     "status": "UNMEASURED"
    }
   },
@@ -14741,10 +14741,8 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 3,
-    "confidence": 0.1538,
-    "sd": 0.1317,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.USDSGD@M15.turn_of_month.p=dd57d3a4a1855f7a": {
@@ -14752,10 +14750,8 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 3,
-    "confidence": 0.1538,
-    "sd": 0.1317,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.NZDCHF@M30.jump.p=2da06abf3c103f63": {
@@ -19813,10 +19809,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUAUD.session_range_breakout.p=5f70c5aef97b074e": {
@@ -19824,10 +19820,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.p=dc21bb20d07c626c": {
@@ -19835,10 +19831,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.p=da4f0d84a1acf8d1": {
@@ -19846,10 +19842,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.p=f048e1c2a57e6cc0": {
@@ -19857,10 +19853,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNZD@M30.spread_state.p=0f5f6a3589c17080": {
@@ -19912,10 +19908,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPAUD.session_range_breakout.p=5b6d1b84c12c293e": {
@@ -19923,10 +19919,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_drift.p=fcb472cc5bf01a3c": {
@@ -25496,10 +25492,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPAUD.session_range_breakout.p=e06c22699c7ab9c6": {
@@ -25507,10 +25503,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.CADJPY@M15.formula.p=a1dd01b8835b723b": {
@@ -42205,10 +42201,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPAUD.session_range_breakout.p=1e4dcf17165f27ff": {
@@ -42216,10 +42212,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M15.formula.p=dbc4ab53ce0b52b2": {
@@ -54327,10 +54323,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCAD@M15.formula.p=875952c13bf9933e": {
@@ -86430,10 +86426,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=b48fdee0934bfdda": {
@@ -86587,10 +86583,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=325e7785fea0f490": {
@@ -102679,10 +102675,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.AUDJPY.overnight_gap_decay.p=325e7785fea0f490": {
@@ -111740,10 +111736,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD@M5.session_range_breakout.p=e514522e4c131e69": {
@@ -111751,10 +111747,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=2e207194b89df839": {
@@ -114757,10 +114753,10 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 14,
-    "confidence": 0.7879,
-    "sd": 0.0701,
-    "status": "SUPPORTED"
+    "n_oos": 22,
+    "confidence": 0.5778,
+    "sd": 0.0728,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF@M15.formula.p=f7c0f5efd90cd78a": {
@@ -120752,6 +120748,81 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.NZDSGD@M15.clock_transition.p=0135538fa2229f7d": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.4412,
+    "sd": 0.0839,
+    "status": "CONTESTED"
+   }
+  },
+  "external.USDTHB@M15.formula.p=b8fe67ed0f602d74": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 20,
+    "confidence": 0.2609,
+    "sd": 0.0641,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPMXN.entry_conditioned.p=8a202718c1c34f1f": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "entry_conditioned",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFSGD.overnight_gap_decay.p=f5fa6bd9a24ceaf6": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.overnight_gap_decay.p=f5fa6bd9a24ceaf6": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.overnight_gap_decay.p=f7a60fcae2cb97a4": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.overnight_gap_decay.p=f7a60fcae2cb97a4": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
    }
   }
  },

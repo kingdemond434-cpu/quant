@@ -157,6 +157,7 @@ MODULES = [
     "desks/mt5/research/garch_vs_ewma.py",
     "desks/mt5/research/vol_managed_sizing.py",
     "desks/mt5/research/conditioner_study.py",
+    "desks/mt5/research/decay_backtest.py",
     "desks/mt5/research/loss_learner.py",
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
