@@ -1,0 +1,207 @@
+{
+ "class": "shipping_ais",
+ "label": "Shipping, AIS vessel tracking, freight rates, port activity",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:baltic_exchange:baltic_dry_and_freight_indices",
+   "vendor": "Baltic Exchange",
+   "dataset": "Baltic Dry and freight indices",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Dry bulk and tanker freight rates",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:cargometrics:shipping_intelligence",
+   "vendor": "CargoMetrics",
+   "dataset": "Shipping Intelligence",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Commercial vessel tracking and trade volume analysis",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:clarksons_research:shipping_intelligence_network",
+   "vendor": "Clarksons Research",
+   "dataset": "Shipping Intelligence Network",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Fleet, freight and trade data",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:drewry:container_freight_rate_insight",
+   "vendor": "Drewry",
+   "dataset": "Container freight rate insight",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Contract and spot container rates",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.drewry.co.uk/supply-chain-advisors/world-container-index-weekly-update",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "World Container Index headline, weekly, free on the vendor site"
+   }
+  },
+  {
+   "id": "paid:kpler:lng_and_dry_bulk_cargo_tracking",
+   "vendor": "Kpler",
+   "dataset": "LNG and dry bulk cargo tracking",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Cargo flows and floating storage",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:marinetraffic:ship_tracking",
+   "vendor": "MarineTraffic",
+   "dataset": "Ship Tracking",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Real-time vessel location and maritime traffic data",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:spire_global:ais_ship_data",
+   "vendor": "Spire Global",
+   "dataset": "AIS Ship Data",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Satellite-derived vessel tracking and positioning",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:vortexa:energy_cargo_tracking",
+   "vendor": "Vortexa",
+   "dataset": "Energy Cargo Tracking",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Waterborne energy cargo and freight intelligence",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:windward:energy_shipping",
+   "vendor": "Windward",
+   "dataset": "Energy Shipping",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Oil, LNG and energy commodity shipment tracking",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:xeneta:ocean_freight_rate_benchmarks",
+   "vendor": "Xeneta",
+   "dataset": "Ocean freight rate benchmarks",
+   "class": "shipping_ais",
+   "region": "global",
+   "measures": "Container freight rates",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://xsi.xeneta.com/",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "XSI public indices, monthly, free on the vendor site"
+   }
+  }
+ ]
+}

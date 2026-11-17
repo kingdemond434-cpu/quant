@@ -260,6 +260,11 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     # THE REDIRECT GUARD: the default opener refuses a 30x into a fenced platform
     # (`terms_fence.FencedRedirectHandler`); a caller-supplied opener is the caller's own test.
     open_ = opener or _tf.guarded_urlopen
+    from libs.data.off_limits import off_limits, redirected_off_limits
+    refused = off_limits(url)
+    if refused:                       # an off-limits ground: no request, ever (fail closed)
+        resp.error = refused
+        return resp
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:
@@ -276,6 +281,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         try:
             req = urllib.request.Request(url, headers=hdr)
             with open_(req, timeout=per_try, context=ssl_context()) as fh:
+                hop = redirected_off_limits(url, str(getattr(fh, "url", "") or url))
+                if hop:                   # an allowed host redirected into a banned one
+                    resp.error = hop
+                    break
                 raw = fh.read(max_bytes)
                 h = getattr(fh, "headers", None)
                 ctype = str(h.get("Content-Type") or "") if h is not None else ""

@@ -52,7 +52,7 @@ from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
-from research.mt5_session import attach_or_initialize
+from research.mt5_session import attach_or_initialize, venue_refusal
 
 #: The dtype every source must return. Field names match MT5's own tick struct so the MT5
 #: implementation is a zero-copy pass-through and the fake cannot drift from it.
@@ -69,6 +69,17 @@ TICK_DTYPE = np.dtype([
 
 #: MT5's COPY_TICKS_ALL. Named here so the fake and the tests do not import MetaTrader5.
 COPY_TICKS_ALL = 3
+
+
+def _robust_clock(stamps: list[int]) -> int | None:
+    """The broker's clock from every symbol's last stamp: the SECOND-newest (audit 2026-10-29,
+    S1). The newest alone let one forward-glitched stamp end the window in the future -- +10/+30/
+    +59/+90 s lost 2/22/51/82 of 3,461 ticks. On a live broker the two newest are within a
+    second, so this is late by that much at most, and late is lossless. One stamp: that one."""
+    vals = sorted(v for v in stamps if v > 0)
+    if not vals:
+        return None
+    return vals[-2] if len(vals) >= 2 else vals[-1]
 
 
 class TickSourceError(RuntimeError):
@@ -129,20 +140,40 @@ class Mt5TickSource:
     def __init__(self, terminal_path: str | None = None) -> None:
         self._terminal_path = terminal_path
         self._initialised = False
+        #: Why the attached terminal was refused as not the desk's (None while it is accepted).
+        self.refusal: str | None = None
 
     def _mt5(self) -> Any:
         import MetaTrader5 as mt5  # the vendor's own casing
         return mt5
 
+    def _venue_ok(self, mt5: Any) -> bool:
+        """THE TAPE IS FUSION'S OR IT IS NOTHING (2026-11-11). Two logged-in terminals share this
+        box's session, Fusion and FTMO. A tape filed under Fusion symbols but read off FTMO is
+        another broker's spreads, hours and prices, and nothing downstream could tell. A refused
+        terminal is detached (so the next attempt re-attaches by path) and the cycle reads as
+        SOURCE_UNAVAILABLE: a named gap the integrity checker and backfill already handle."""
+        why = venue_refusal(mt5, self._terminal_path)
+        if why != self.refusal:
+            print(f"tick source: REFUSED the attached terminal -- {why}" if why else
+                  "tick source: attached terminal verified as the desk's (Fusion)", flush=True)
+        self.refusal = why
+        if why is None:
+            return True
+        with suppress(Exception):
+            mt5.shutdown()
+        self._initialised = False
+        return False
+
     def initialize(self) -> bool:
         """Connect, or say why not. Idempotent: safe to call every cycle after a restart."""
         mt5 = self._mt5()
         if mt5.terminal_info() is not None:
-            self._initialised = True
-            return True
+            self._initialised = self._venue_ok(mt5)
+            return self._initialised
         ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000)
-        self._initialised = ok
-        return ok
+        self._initialised = ok and self._venue_ok(mt5)
+        return self._initialised
 
     def alive(self) -> bool:
         try:
@@ -160,6 +191,10 @@ class Mt5TickSource:
                 return self.initialize()
             except Exception:
                 return False
+        # Asked every cycle, not once: a terminal can be logged into another account while the
+        # recorder runs, and the first tick read off it would be filed as Fusion's.
+        if not self._venue_ok(mt5):
+            return False
         return bool(getattr(info, "connected", True))
 
     def symbols(self) -> list[str]:
@@ -223,6 +258,23 @@ class Mt5TickSource:
             return np.empty(0, dtype=TICK_DTYPE)
         return arr
 
+    def server_now_ms(self, symbols: list[str]) -> int | None:
+        """The broker's own clock, measured: the newest `time_msc` any listed symbol's last tick
+        carries. Never ahead of the broker's true now (a stamp is only ever in the past), so a
+        window ending here cannot outrun ticks the server has not stamped yet. None when no
+        symbol answers -- the recorder then falls back to its late, lossless bound."""
+        mt5 = self._mt5()
+        got: list[int] = []
+        for sym in symbols:
+            try:
+                t = mt5.symbol_info_tick(sym)
+            except Exception:
+                continue
+            v = int(getattr(t, "time_msc", 0) or 0) if t is not None else 0
+            if v > 0:
+                got.append(v)
+        return _robust_clock(got)
+
     def clock_probe(self, symbol: str) -> tuple[int, int] | None:
         mt5 = self._mt5()
         try:
@@ -264,6 +316,8 @@ class FakeTickSource:
         #: Symbols the source reports but returns nothing for (a delisted-but-listed instrument).
         self.silent_symbols: set[str] = set()
         self.clock_skew_ms = 0
+        #: The broker clock `server_now_ms` reports; None = unmeasurable (the recorder falls back).
+        self.server_clock_ms: int | None = None
         self.calls: list[tuple[str, int, int]] = []
 
     def alive(self) -> bool:
@@ -284,6 +338,9 @@ class FakeTickSource:
         if symbol not in self._symbols:
             return None
         return SymbolSpec(symbol=symbol, point=self.point, digits=self.digits, trade_mode=4)
+
+    def server_now_ms(self, symbols: list[str]) -> int | None:
+        return self.server_clock_ms if self.is_alive else None
 
     def clock_probe(self, symbol: str) -> tuple[int, int] | None:
         if not self.is_alive:

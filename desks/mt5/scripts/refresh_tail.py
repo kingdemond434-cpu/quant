@@ -118,6 +118,15 @@ def _forward_priority() -> set[str]:
         symbol = str(key).split(".", 1)[0].split("@", 1)[0].strip()
         if symbol:
             priority.add(symbol)
+    # AND EVERY CHART THE ACCRUAL DIAGNOSTIC SAYS A CLOCK IS WAITING FOR, across every lane --
+    # the scalp lane's STALE_SOURCE clocks included, which this state file never carries.
+    try:
+        doc = json.loads((desk_root() / "reports" / "CLOCK_ACCRUAL.json").read_text("utf-8"))
+        for row in (doc.get("bars_wanted") or []) if isinstance(doc, dict) else []:
+            if isinstance(row, dict) and row.get("symbol"):
+                priority.add(str(row["symbol"]))
+    except (OSError, ValueError):
+        pass
     return priority
 
 

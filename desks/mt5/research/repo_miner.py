@@ -21,7 +21,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
-import os
 import sys
 import urllib.request
 from datetime import UTC, datetime
@@ -33,6 +32,8 @@ _ROOT = _DESK.parent.parent
 for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
+
+from libs.ops.env_keys import read_key  # noqa: E402
 
 WATCHLIST = _DESK / "data" / "repo_watchlist.json"
 CACHE = _DESK / "data" / "repo_cache"
@@ -62,10 +63,11 @@ def _watchlist() -> dict[str, Any]:
 def _get(url: str, timeout: float = 20.0) -> Any:
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
                                                "User-Agent": "quant-repo-miner"})
-    tok = os.environ.get("GITHUB_TOKEN")
+    tok = read_key("GITHUB_TOKEN") or None
     if tok:
         req.add_header("Authorization", f"Bearer {tok}")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, secrets=(tok,) if tok else ()) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -164,6 +166,10 @@ def run(fetch: bool = True, write: bool = True) -> dict[str, Any]:
                           "symbols": list((c.get("instruments") or {}).get("analogues") or []),
                           "lang": c.get("lang"), "claim_hash": c["claim_hash"], "status": None,
                           "consumer": "deepening_worker (repo_mechanism)",
+                          # SOURCE PROVENANCE (libs.research.source_provenance).
+                          "source_url": str(doc.get("url") or ""),
+                          "retrieved_at": doc.get("fetched_utc") or doc.get("pushed_at"),
+                          "content_hash": c["claim_hash"], "ground": full,
                           "quantities": c["quantities"], "horizon": c["horizon"]})
         mined.append({"repo": full, "license": doc.get("license"), "stars": doc.get("stars"),
                       "claims": len(claims), "cached": "fetched_utc" in doc,

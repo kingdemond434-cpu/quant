@@ -230,7 +230,7 @@ def test_only_named_and_active_entries_are_marked_and_a_written_mark_is_popped()
 
 def test_below_the_ruin_line_nothing_is_marked() -> None:
     rows = [{"name": n} for n in FOUR]
-    notes = dc.stamp_minlot_override(rows, frozenset(FOUR), dc.PROMOTED_MIN_EQUITY - 1)
+    notes = dc.stamp_minlot_override(rows, frozenset(FOUR), dc.FUSION_RUIN_FLOOR_EUR - 1)
     assert not any(r.get("minlot_override") for r in rows) and len(notes) == 6
     dc.stamp_minlot_override(rows, frozenset(FOUR), float("nan"))
     assert not any(r.get("minlot_override") for r in rows)
@@ -373,7 +373,10 @@ def test_a_live_pinned_row_is_left_to_the_ordinary_roster(tmp_path: Path) -> Non
 
 # ------------------------------------------------------------------ the gateway door: the zeros
 
-def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_never_reach_the_roster(tmp_path: Path) -> None:
+def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Path) -> None:
+    # USDJPY rr=2.5 is no longer here: its Reddit-origin quarantine is lifted (live_sleeve_policy
+    # reddit_origin_lifted; zuck 2026-11-05, every account trades every certified sleeve through
+    # the allocator). Its other rr variants stay out: the same breakout bought again.
     rows = _committed_rows()
     live = [{**rows[n], "status": "LIVE", "risk_frac": 0.1} for n in GAP_DECAY]
     live += [
@@ -381,7 +384,7 @@ def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_never_reach_the_roster(tmp_path: 
          "exec": "family_market", "status": "LIVE", "risk_frac": 0.03},
         {"name": "xau_m5_anti_breakout_overlap", "symbol": "XAUUSD", "timeframe": "M5",
          "family": "anti_breakout", "exec": "scalp_market", "status": "LIVE", "risk_frac": 0.03},
-        {"name": "USDJPY.asia#rr=2.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
+        {"name": "USDJPY.asia#rr=1.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
         *({**rows[t], "status": "LIVE", "risk_frac": 0.03} for t in TWINS if t in rows),
     ]
     kept, notes = dc.load_sleeves_verbose(_sleeves_file(tmp_path, live))

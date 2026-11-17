@@ -88,6 +88,8 @@ STATE = ROUTES_DIR / "state.json"
 #: the host's own terms page. No row, an unread page or a prohibiting clause: nothing is fetched,
 #: the portal reports TERMS_UNVERIFIED, and the report lists it. Fail closed (audit of #192).
 TERMS_EVIDENCE = ROUTES_DIR / "terms_evidence.json"
+#: The status a terms-refused portal, request or endpoint carries.
+BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
 #: Parsed listings and the dedup index: reconstructible (the index from the discoveries files,
 #: the listings by one request), so gitignored like every other cache on this desk.
 CACHE = ROUTES_DIR / "cache"
@@ -141,6 +143,56 @@ def permitted_hosts(evidence: Mapping[str, Mapping[str, Any]]) -> frozenset[str]
 def terms_permit(host: str, permitted: Iterable[str]) -> bool:
     h = host.lower().split(":")[0].rstrip(".")
     return bool(h) and any(h == p or h.endswith("." + p) for p in permitted)
+
+
+#: HOSTS WHOSE OWN TERMS REFUSE AUTOMATED CONTACT (the desk's settled rulings of 2026-11-13 and
+#: 2026-11-14), by registrable domain: the host and every subdomain. A catalogue may still LIST a
+#: dataset on one of them; this organ never requests it (no catalogue page, no CDX query of its
+#: domain, no robots.txt read) and never writes its URL as an endpoint for the acquirer. The
+#: acquirer's own TERMS_REFUSED_HOSTS is merged in at import, so the two never disagree.
+#: UNCLEAR TERMS FAIL CLOSED: a host whose reconciliation is pending is listed until it settles.
+TERMS_REFUSED: dict[str, str] = {
+    "stlouisfed.org": "FRED/ALFRED: refused for all automated fetches (ruling 2026-11-13)",
+    "yahoo.com": "Yahoo terms s.2(d)(ix) refuse automated collection (ruling 2026-11-13)",
+    "yahooapis.com": "Yahoo: the same terms cover its API host (ruling 2026-11-13)",
+    "comtrade.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "comtradeplus.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "comtradeapi.un.org": "UN Comtrade licence s.5 forbids automated browsing or downloading",
+    "cboe.com": "Cboe terms refuse automated collection of its data",
+    "theice.com": "ICE terms refuse automated collection of its data",
+    "archive.org": ("Internet Archive terms limit use to scholarship and research purposes only "
+                    "(wayback-youtube-ruling-2026-11-14)"),
+    "youtube.com": "the desk never contacts YouTube (ruling 2026-11-14)",
+    "youtu.be": "the desk never contacts YouTube (ruling 2026-11-14)",
+    "youtube-nocookie.com": "the desk never contacts YouTube (ruling 2026-11-14)",
+    "ytimg.com": "the desk never contacts YouTube (ruling 2026-11-14)",
+    "dukascopy.com": "Dukascopy terms of use refuse bots and commercial use of its data",
+    "portwatch.imf.org": ("IMF PortWatch: terms reconciliation pending; unclear terms fail "
+                          "closed until it settles"),
+}
+try:
+    from acquire_datasets import TERMS_REFUSED_HOSTS as _ACQ_REFUSED
+except Exception:  # noqa: BLE001  # pragma: no cover - the list above stands alone
+    _ACQ_REFUSED = {}
+for _h, _why in dict(_ACQ_REFUSED).items():
+    TERMS_REFUSED.setdefault(str(_h).lower(), str(_why))
+#: What a terms refusal costs, published with every count of it (Rule 1: never a silent cut).
+TERMS_REFUSED_MISSED_GROWTH = (
+    "missed_growth: datasets these hosts publish are not discovered or acquired through the "
+    "catalogue routes; their information is UNMEASURED from here (a gap, not a zero) until a "
+    "lawful mirror with permitting terms is catalogued or the ruling changes")
+
+
+def terms_refused(host: str) -> str | None:
+    """The ruling that refuses `host` (and its subdomains), or None. An empty host is refused:
+    its terms cannot be read, and unclear terms fail closed."""
+    h = str(host or "").lower().split(":")[0].rstrip(".")
+    if not h:
+        return "no readable host: its terms cannot be read (fail closed)"
+    for dom, why in TERMS_REFUSED.items():
+        if h == dom or h.endswith("." + dom):
+            return why
+    return None
 
 # ----------------------------------------------------------------------------- formats ----
 #: Formats the acquirer can parse (delimited text, workbooks, JSON, archives of CSV, parquet).
@@ -354,6 +406,7 @@ class Session:
         self.refusals: Counter[str] = Counter()
         self.labels: Counter[str] = Counter()
         self.robots_disallow: set[str] = set()
+        self.terms_refused_hosts: set[str] = set()
         self._last: dict[str, float] = {}
         self.http: dict[str, Any] = state.setdefault("http", {})
         self.robots: dict[str, Any] = state.setdefault("robots", {})
@@ -415,6 +468,10 @@ class Session:
             conditional: bool = True, accept: str = "") -> Response | None:
         """One polite request. None = this run's budget is spent (not a failure of the URL)."""
         host = host_of(url)
+        if terms_refused(host):
+            self.refusals[BLOCKED_ON_TERMS] += 1
+            self.terms_refused_hosts.add(host)
+            return Response(-1, error=BLOCKED_ON_TERMS)
         if is_blocked(host, self.blocked):
             self.refusals["BLOCKED_HOST"] += 1
             return Response(-1, error="BLOCKED_HOST")
@@ -914,10 +971,12 @@ def build_row(portal: Mapping[str, Any], route: str, entry: Mapping[str, Any], n
     blocked = tuple(blocked)
     endpoints: list[str] = []
     keyed: list[str] = []
-    unparsed = [str(u) for u in entry.get("unparsed") or []]
+    unparsed = [str(u) for u in entry.get("unparsed") or []
+                if not (_http_url(str(u)) and terms_refused(host_of(str(u))))]
     landing_like: list[str] = []
     formats: set[str] = set()
     n_blocked = 0
+    n_terms_refused = 0
     for d in entry.get("dists") or []:
         url = str(d.get("url") or "").strip()
         if not url:
@@ -925,6 +984,9 @@ def build_row(portal: Mapping[str, Any], route: str, entry: Mapping[str, Any], n
         f = norm_format(d.get("format"), d.get("media"))
         if f:
             formats.add(f)
+        if _http_url(url) and terms_refused(host_of(url)):
+            n_terms_refused += 1
+            continue
         if _http_url(url) and is_blocked(host_of(url), blocked):
             n_blocked += 1
             continue
@@ -975,6 +1037,7 @@ def build_row(portal: Mapping[str, Any], route: str, entry: Mapping[str, Any], n
         "endpoints": endpoints, "n_endpoints": len(endpoints),
         "keyed_endpoints": keyed, "unparsed_endpoints": unparsed,
         "n_landing_resources": len(landing_like), "n_blocked_resources": n_blocked,
+        "n_terms_refused_resources": n_terms_refused,
         "access": access, "mirror_of": None,
     }
     for k in ("tabular_item_assets", "keywords", "observed_at", "crawled_at", "data_url",
@@ -983,6 +1046,9 @@ def build_row(portal: Mapping[str, Any], route: str, entry: Mapping[str, Any], n
             row[k] = entry[k]
     if entry.get("observation_class"):
         row["observation_class"] = True
+    if n_terms_refused:
+        row["terms_note"] = (f"{BLOCKED_ON_TERMS}: {n_terms_refused} resource(s) on terms-refused "
+                             f"hosts dropped; {TERMS_REFUSED_MISSED_GROWTH}")
     return row
 
 
@@ -1386,6 +1452,10 @@ def _route_cdx(sess: Session, portal: Mapping[str, Any], st: dict[str, Any],
     cursors: dict[str, Any] = st.setdefault("cdx", {})
     statuses: Counter[str] = Counter()
     for domain in portal.get("domains") or []:
+        if terms_refused(str(domain)):
+            statuses[BLOCKED_ON_TERMS] += 1
+            sess.terms_refused_hosts.add(str(domain).lower())
+            continue
         if is_blocked(str(domain), sess.blocked):
             statuses["BLOCKED_HOST"] += 1
             continue
@@ -1567,7 +1637,12 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
                           "remainder": st.get("remainder", UNMEASURED),
                           "unit": st.get("unit", "datasets")}
             continue
-        if is_blocked(host_of(str(p.get("base") or "")), blocked):
+        if terms_refused(host_of(str(p.get("base") or ""))):
+            v = Visit(status=BLOCKED_ON_TERMS, remainder=UNMEASURED,
+                      detail={"why": terms_refused(host_of(str(p.get("base") or ""))),
+                              "missed_growth": TERMS_REFUSED_MISSED_GROWTH})
+            sess.terms_refused_hosts.add(host_of(str(p.get("base") or "")))
+        elif is_blocked(host_of(str(p.get("base") or "")), blocked):
             v = Visit(status="BLOCKED_HOST", remainder=0)
         elif route != "keyed" and not terms_permit(host_of(str(p.get("base") or "")),
                                                    sess.permitted):
@@ -1629,6 +1704,15 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, fetch: Fetch | None = None,
         "terms": {"evidence": TERMS_EVIDENCE.name, "permitted_hosts": len(sess.permitted),
                   "unverified_portals": sorted(pid for pid, r in table.items()
                                                if r.get("status") == "TERMS_UNVERIFIED")},
+        "blocked_on_terms": {
+            "portals": sorted(pid for pid, r in table.items()
+                              if r.get("status") == BLOCKED_ON_TERMS),
+            "requests_refused": int(sess.refusals.get(BLOCKED_ON_TERMS, 0)),
+            "hosts": sorted(sess.terms_refused_hosts),
+            "resources_dropped": sum(int(r.get("n_terms_refused_resources") or 0)
+                                     for r in rows_all),
+            "refused_domains": sorted(TERMS_REFUSED),
+            "missed_growth": TERMS_REFUSED_MISSED_GROWTH},
         "budget_s": budget_s, "spent_s": round(sess.clock() - sess.started, 1),
         "remainder_total": sum(int(r["remainder"]) for r in table.values()
                                if isinstance(r.get("remainder"), int)),

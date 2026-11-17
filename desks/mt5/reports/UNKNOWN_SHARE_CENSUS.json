@@ -2,16 +2,16 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1550805,
+  "docket_unique_cells": 1593106,
   "sample": 6000,
   "overlay": [],
-  "complete": false,
-  "stage": "siblings_minted",
-  "utc_day": "2026-10-28",
-  "started_at": "2026-10-28T01:35:18+00:00",
-  "written_at": "2026-10-28T01:39:19+00:00",
-  "cells_planned": 6164,
-  "cells_visited": 0,
+  "complete": true,
+  "stage": "complete",
+  "utc_day": "2026-11-17",
+  "started_at": "2026-11-17T12:41:40+00:00",
+  "written_at": "2026-11-17T13:16:29+00:00",
+  "cells_planned": 6000,
+  "cells_visited": 6000,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -20,60 +20,141 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 70088,
-    "rss_cap_mb": 17522,
-    "peak_rss_mb": 502
+    "available_mb": 61428,
+    "rss_cap_mb": 15357,
+    "peak_rss_mb": 760
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 211.4,
+  "lockbox_cut": "2022-11-26",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 193,
+  "elapsed_s": 2082.7,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 277,
-    "siblings": 164,
+    "peerless_rows": 1,
+    "siblings": 0,
     "unfilled_by_family": {
-      "correlation_regime": 8,
-      "pca_residual": 16,
-      "triangle": 42,
-      "cross_asset_residual": 22,
-      "lead_lag": 19,
-      "relative_value": 6
+      "correlation_regime": 1
     }
   },
   "sampled_cells": {
-    "cells": 0,
+    "cells": 6000,
     "gate0_rejected": {},
-    "preflight_refused": 0,
+    "preflight_refused": 2930,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
-    "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "deferred": 2414,
+    "judged_built": 656,
+    "unknown": 56,
+    "unknown_share_of_judged": 0.0854,
+    "wilson95": [
+      0.0663,
+      0.1092
+    ],
+    "unknown_by_reason": {
+      "no_signals": 37,
+      "too_rare": 14,
+      "lockbox_consumed_history": 4,
+      "short_history_after_cut": 1
+    },
+    "unknown_by_cause": {
+      "never_fires": 20,
+      "session_excludes_fire_hour": 11,
+      "too_rare": 7,
+      "session_thins_below_60": 7,
+      "input_absent:orderflow_imbalance": 6,
+      "lockbox_consumed_history": 4,
+      "short_history_after_cut": 1
+    },
+    "unknown_by_family": {
+      "formula": 25,
+      "session_range_breakout": 10,
+      "orderflow_imbalance": 6,
+      "htf_anchor_trend": 4,
+      "overnight_drift": 4,
+      "vol_transition": 2,
+      "exogenous_conditioner": 1,
+      "joint_genome": 1,
+      "multi_speed_trend": 1,
+      "pca_residual": 1,
+      "jump": 1
+    },
+    "unknown_by_chart": {
+      "H1": 42,
+      "H4": 4,
+      "D1": 4,
+      "M30": 3,
+      "M15": 2,
+      "M5": 1
+    },
+    "judged_by_chart": {
+      "H1": 321,
+      "M30": 122,
+      "M15": 101,
+      "M5": 82,
+      "H4": 18,
+      "D1": 7,
+      "M1": 5
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
+    "cells": 6000,
     "gate0_rejected": {},
-    "preflight_refused": 0,
+    "preflight_refused": 2930,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
-    "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "deferred": 2414,
+    "judged_built": 656,
+    "unknown": 56,
+    "unknown_share_of_judged": 0.0854,
+    "wilson95": [
+      0.0663,
+      0.1092
+    ],
+    "unknown_by_reason": {
+      "no_signals": 37,
+      "too_rare": 14,
+      "lockbox_consumed_history": 4,
+      "short_history_after_cut": 1
+    },
+    "unknown_by_cause": {
+      "never_fires": 20,
+      "session_excludes_fire_hour": 11,
+      "too_rare": 7,
+      "session_thins_below_60": 7,
+      "input_absent:orderflow_imbalance": 6,
+      "lockbox_consumed_history": 4,
+      "short_history_after_cut": 1
+    },
+    "unknown_by_family": {
+      "formula": 25,
+      "session_range_breakout": 10,
+      "orderflow_imbalance": 6,
+      "htf_anchor_trend": 4,
+      "overnight_drift": 4,
+      "vol_transition": 2,
+      "exogenous_conditioner": 1,
+      "joint_genome": 1,
+      "multi_speed_trend": 1,
+      "pca_residual": 1,
+      "jump": 1
+    },
+    "unknown_by_chart": {
+      "H1": 42,
+      "H4": 4,
+      "D1": 4,
+      "M30": 3,
+      "M15": 2,
+      "M5": 1
+    },
+    "judged_by_chart": {
+      "H1": 321,
+      "M30": 122,
+      "M15": 101,
+      "M5": 82,
+      "H4": 18,
+      "D1": 7,
+      "M1": 5
+    }
   },
   "siblings_only": {
     "cells": 0,

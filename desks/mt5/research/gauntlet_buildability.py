@@ -60,6 +60,19 @@ DATA_INPUT_ARGS: frozenset[str] = frozenset({
     "spread_series", "flow", "extra", "leg_b", "leg_c", "surface", "_runner",
 })
 
+#: Parameters that NAME ANOTHER INSTRUMENT'S SERIES which the family loads itself from the bar
+#: store (`mt5desk/families_specialist.py`, the class books' contract). A cell carries them by
+#: value, so the gauntlet can build the cell -- but a family reading one is NOT price-only, and
+#: until 2026-09-30 this module's verdict said it was ("supplies every data input it reads").
+CONDITIONING_ARGS: frozenset[str] = frozenset({"risk_symbol", "bond_symbol", "cond_symbol"})
+
+#: DATA inputs that are another instrument's BARS (conditioned); any other is exogenous.
+_BAR_INPUTS: frozenset[str] = frozenset({"driver", "peer", "peers", "factors", "leg_b", "leg_c"})
+
+PRICE_ONLY = "price_only"
+CONDITIONED = "conditioned"
+EXOGENOUS = "exogenous"
+
 #: Branches that exist in `build_cell` and hand the family an input it cannot read. Declared,
 #: because a wrong shape is not visible in the branch's text; each is proved by a test.
 SEALED_INPUT_DEFECTS: dict[str, str] = {}
@@ -131,6 +144,44 @@ def _signature_needs(fn: Any) -> tuple[list[str], list[str]]:
     return data, required
 
 
+def information_class(family: str, params: dict[str, Any] | None = None) -> str:
+    """`price_only`, `conditioned` (reads another instrument's bars) or `exogenous` (reads a
+    dataset that is not a price series). The specialist families DECLARE theirs
+    (`families_specialist.INFORMATION_CLASS`); any other family is read from its signature: a
+    DATA input the gauntlet hands in is exogenous, a CONDITIONING_ARGS series is conditioned."""
+    fam = str(family or "")
+    try:
+        from mt5desk.families_specialist import information_class as declared
+        got = declared(fam, params)
+        if got:
+            return got
+    except Exception:
+        pass
+    try:
+        fn = _family_table().get(fam)
+    except Exception:
+        fn = None
+    if fn is None:
+        return PRICE_ONLY
+    data, _req = _signature_needs(fn)
+    if data:
+        return CONDITIONED if set(data) <= _BAR_INPUTS else EXOGENOUS
+    try:
+        names = set(list(inspect.signature(fn).parameters)[1:])
+    except (TypeError, ValueError):
+        names = set()
+    return CONDITIONED if names & CONDITIONING_ARGS else PRICE_ONLY
+
+
+def foreign_series(family: str) -> list[str]:
+    """The datasets a non-price family reads, as declared beside it; [] for a price-only one."""
+    try:
+        from mt5desk.families_specialist import FOREIGN_SERIES
+    except Exception:
+        return []
+    return [path for _param, path in FOREIGN_SERIES.get(str(family or ""), ())]
+
+
 @lru_cache(maxsize=256)
 def family_verdict(family: str) -> tuple[str, str]:
     """`(verdict, why)` for a family, independent of any one cell's parameters."""
@@ -164,6 +215,12 @@ def family_verdict(family: str) -> tuple[str, str]:
                 f"branch that loads them, so the family is called with None and every cell "
                 f"builds with ZERO signals. Remedy (principal-gated, the gauntlet is sealed): "
                 f"a build_cell branch for {fam}.")
+    info = information_class(fam)
+    if info != PRICE_ONLY and foreign_series(fam):
+        reads = foreign_series(fam)
+        return BUILDABLE, (f"the gauntlet resolves the family; it is {info.upper()}, not "
+                           f"price-only, and loads its own foreign series from what the cell "
+                           f"carries ({'; '.join(reads) or 'declared by its parameters'})")
     return BUILDABLE, "the gauntlet resolves the family and supplies every data input it reads"
 
 
@@ -193,6 +250,15 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     missing = [r for r in _required(str(family)) if r not in p]
     if missing:
         return MISSING_PARAMS, f"{family} requires {missing} and the cell does not carry them"
+    try:
+        from mt5desk.families_specialist import FOREIGN_SERIES
+        named = [k for k, _path in FOREIGN_SERIES.get(str(family), ()) if k]
+    except Exception:
+        named = []
+    blank = [k for k in named if k in p and not p.get(k)]
+    if blank:
+        return MISSING_PARAMS, (f"{family} is {information_class(family, p)}: the cell names an "
+                                f"empty series in {blank}, so the family would read nothing")
     if family == "clock_transition":
         from mt5desk.family_clock_transition import CATALOGUE, MODES
         label, hour = p.get("label"), p.get("stamp_hour")
@@ -210,5 +276,5 @@ def census() -> dict[str, dict[str, str]]:
     out: dict[str, dict[str, str]] = {}
     for fam in family_names():
         v, why = family_verdict(fam)
-        out[fam] = {"verdict": v, "why": why}
+        out[fam] = {"verdict": v, "why": why, "information": information_class(fam)}
     return out

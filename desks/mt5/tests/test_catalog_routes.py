@@ -634,3 +634,49 @@ def test_open_africa_is_not_permitted_without_a_permitting_clause():
     ev = cr.load_terms_evidence()
     assert ev["open.africa"]["verdict"] != "PERMITS"
     assert not cr.terms_permit("open.africa", cr.permitted_hosts(ev))
+
+
+# ------------------------------------------------------------------ terms-refused hosts ----
+@pytest.mark.parametrize("host", ["fred.stlouisfed.org", "alfred.stlouisfed.org",
+                                  "query1.finance.yahoo.com", "comtradeapi.un.org",
+                                  "cdn.cboe.com", "www.theice.com", "web.archive.org",
+                                  "www.youtube.com", "youtu.be", "datafeed.dukascopy.com",
+                                  "portwatch.imf.org", ""])
+def test_terms_refused_hosts_fail_closed(host: str) -> None:
+    assert cr.terms_refused(host)
+
+
+@pytest.mark.parametrize("host", ["data-api.ecb.europa.eu", "catalog.data.gov", "api.imf.org"])
+def test_hosts_without_a_ruling_are_not_terms_refused(host: str) -> None:
+    # api.imf.org is still refused, by its own quoted PROHIBITS evidence (TERMS_UNVERIFIED).
+    assert cr.terms_refused(host) is None
+
+
+def test_a_terms_refused_portal_and_endpoint_are_never_touched_and_cost_is_named(
+        box: Path) -> None:
+    """A portal on a refused host is BLOCKED_ON_TERMS with a missed_growth line, even when terms
+    evidence would permit it; a refused resource is dropped from the acquirer's endpoints."""
+    ev = json.loads(cr.TERMS_EVIDENCE.read_text())
+    ev["hosts"]["stlouisfed.org"] = _PERMITS
+    cr.TERMS_EVIDENCE.write_text(json.dumps(ev))
+    bad = {**CKAN, "id": "fred_ckan", "base": "https://api.stlouisfed.org"}
+    pkg = _pkg(9)
+    pkg["resources"].append({"url": "https://fred.stlouisfed.org/data/X.csv", "format": "CSV"})
+    net = Net({"portal.example.org/api/3/action/package_search":
+               lambda u, h: _json({"success": True, "result": {"count": 1, "results": [pkg]}})})
+    r = _run(box, _roster(box, [bad, CKAN]), net)
+    assert r["portals"]["fred_ckan"]["status"] == cr.BLOCKED_ON_TERMS
+    assert "missed_growth" in r["portals"]["fred_ckan"]["missed_growth"]
+    assert not any("stlouisfed" in u for u, _ in net.calls)
+    (row,) = json.loads((cr.WORLD / "discoveries_catalog_20261006.json").read_text())
+    assert all("stlouisfed" not in u for u in row["endpoints"])
+    assert row["n_terms_refused_resources"] == 1
+    assert cr.BLOCKED_ON_TERMS in row["terms_note"]
+    bot = r["blocked_on_terms"]
+    assert bot["portals"] == ["fred_ckan"] and bot["resources_dropped"] == 1
+    assert bot["missed_growth"].startswith("missed_growth:")
+
+
+def test_the_real_roster_names_no_terms_refused_portal_as_permitted() -> None:
+    allowed = cr.permitted_hosts(cr.load_terms_evidence())
+    assert not [h for h in allowed if cr.terms_refused(h)]

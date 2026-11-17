@@ -17,12 +17,26 @@ MERGES). It also FAILS when:
   file, another book): nothing here measured it, and an unmeasured change is never a pass. The
   money path is DERIVED from the base, not listed by hand: the static import closure (an AST
   walk, nothing run) of every entry point the box's tasks run to size or place orders, plus the
-  desk's scripts, ops, books and state directories (#457 audit MF2);
+  desk's books and state directories, plus every script under desks/mt5/scripts/ and ops/
+  except the reviewed exceptions in ops/release/not_money_scripts.txt (`money_scripts`, fail
+  closed) (#457 audit MF2, #508 audit);
 - it changes a module-level UPPER_CASE constant in a money-path file (a knob: a rail count, a
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
 - the PR's tree raises where the base did not.
+
+THE FUSION ROSTER (2026-11-14, Auditor MF1-MF5 on the Governance design). The two roster data
+files (ROSTER_FILES) are covered only by the child's Fusion-roster leg: rows derived from BOTH
+trees' names and the frozen base grid (ops/release/fusion_roster_grid.json), the same rows on both
+trees, every door's outcome compared. A file is covered only where the leg reaches every change
+in it (roster_unmeasured: MF6 policy keys and resolved values, MF7 venue blocks only). A missing
+or failed leg on either tree is UNMEASURED; a PR
+that touches the grid or the leg (ROSTER_HARNESS) FAILS; diffs are printed as kind, symbol and a
+sanitised row name, never free text. When the ONLY problem is that rows flip between admitted and
+refused, and the flips equal exactly one declared row for this PR number and this full head sha in
+the registry at $QUANT_EXPECTED_DIVERGENCE (every refusal carrying its missed_growth line), the
+verdict is MATCHES_DECLARED: still a non-zero exit, never a PASS. Any other divergence FAILS.
 
 LIMIT: the PR's code runs in the child that writes its own result, so a PR written to fool this
 check can. That is the reviewer's job (independent-review); this check catches regressions.
@@ -42,6 +56,8 @@ import secrets
 import subprocess
 import sys
 import tempfile
+import unicodedata
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -61,6 +77,46 @@ ENTRY_POINTS = (
     "desks/mt5/prop/e8_executor.py", "desks/mt5/prop/e8_gold.py", "desks/mt5/prop/e8_book.py",
     "desks/mt5/prop/ftmo_follower.py",
 )  # fmt: skip
+#: SCRIPTS: MONEY PATH UNLESS SHOWN OTHERWISE (2026-10-29; #508 audit HOLD on a text scan that
+#: failed OPEN). Every shell script and stand-alone Python tool under SCRIPT_DIRS is money path
+#: (the replay imports only Python, so a change to one reads UNMEASURED: the manual path). The
+#: one way out is a REVIEWED exception: listed in ops/release/not_money_scripts.txt, read from
+#: THIS checkout (the base's, PROTECTED: a PR can never list itself), and then only while
+#:   - neither the base's nor the PR's text, raw (comments too: stripping can only remove money),
+#:     names a money-path module or package (any form: file, stem, dotted, package-prefixed),
+#:     a venue word (MONEY_WORDS), a state or switch file the money path reads (derived from the
+#:     closure's own string literals, plus STATE_WORDS), or a money-path script;
+#:   - the PR adds no line of dynamic execution (DYNAMIC) the reviewed base did not have;
+#:   - no money-path script calls, sources or names it (the callee direction);
+#:   - it can be read in every tree it is in (a read failure is money path).
+SCRIPT_EXTS = (".ps1", ".psm1", ".cmd", ".bat", ".sh")
+SCRIPT_DIRS = ("desks/mt5/scripts/", "desks/mt5/ops/")
+NOT_MONEY = HERE / "not_money_scripts.txt"
+MONEY_WORDS = re.compile(
+    r"terminal64|metatrader|autotrading|mt5[-_]?gateway|ftmo|fusion|(?<![a-z0-9])e8(?![0-9])"
+    r"|order_send|order_check|positions_get",
+    re.IGNORECASE,
+)
+#: The floor of switch and book names; `state_names` adds every file and flag name the closure's
+#: own code spells out.
+STATE_WORDS = re.compile(
+    r"sleeves\.json|gateway_state|gateway_paused|cashcarry_kill|deadman|freeze|live_door"
+    r"|sleeve_registry|account_state|retired|minlot|min_lot|sovereign|release_stop|kill",
+    re.IGNORECASE,
+)
+#: A line that can run something no scan can name: indirect calls, encoded or evaluated text,
+#: task starts, sourcing, and Python's dynamic import and process calls.
+DYNAMIC = re.compile(
+    r"invoke-expression|\biex\b|-enc(odedcommand)?\b|-e\s+[a-z0-9+/=]{20,}|start-process|start-job"
+    r"|invoke-command|start-scheduledtask|register-scheduledtask|schtasks|\bcall\b|^\s*\.\s"
+    r"|\bsource\b|importlib|__import__|runpy|\bexec\s*\(|\beval\s*\(|subprocess|os\.system"
+    r"|os\.popen|os\.exec|os\.spawn|&\s*[$(\"']|cmd(\.exe)?\s+/[ck]|powershell(\.exe)?\s"
+    r"|pwsh(\.exe)?\s|python\S*\s+-[cm]\b|sys\.path"
+    # #508 v2 audit
+    r"|scriptblock|invokescript|invoke-item|(set|disable|unregister)-scheduledtask|stop-process"
+    r"|getattr\s*\(|__builtins__|\bcompile\s*\(|pickle|posix_spawn|\bpty\b|from\s+os\s+import",
+    re.IGNORECASE | re.MULTILINE,
+)
 #: Where `import x` resolves on the box: the repository root and the desk.
 IMPORT_ROOTS = ("", "desks/mt5")
 KNOB = re.compile(r"^[A-Z][A-Z0-9_]*$")
@@ -84,6 +140,16 @@ HOURS = (0.5, 6.95, 7.03, 7.25, 8.0, 10.0, 13.03, 13.5, 15.0, 17.03, 17.5, 19.0,
 SHAPES = ("range", "up_break", "down_break", "wide", "gap")
 DAYS = ("2026-10-13", "2026-10-15")
 TIMEOUT_S = 300
+#: The Fusion roster's data, covered only by the child's roster leg (never by an import).
+ROSTER_FILES = ("desks/mt5/data/live_sleeve_policy.json", "desks/mt5/data/CERT_BOOK_LIVE.json")
+#: The leg and its frozen grid: a PR touching either can no longer be measured by them (MF2).
+ROSTER_HARNESS = ("ops/release/fusion_roster_grid.json", "ops/release/replay_child.py")
+ROSTER_GRID = HERE / "fusion_roster_grid.json"
+#: A row name that may be printed: no spaces, no paths, no prose (MF5).
+SAFE_NAME = re.compile(r"^[A-Za-z0-9_.#=-]{1,96}$")
+_BOOK_KEY = re.compile(r"^([A-Z]{6})_([a-z0-9_]+)_([a-z]+)$")
+DECLARED_ENV = "QUANT_EXPECTED_DIVERGENCE"
+MATCHES_DECLARED = "MATCHES_DECLARED"
 
 
 def _long(day: str, qty: float = 0.15) -> dict[str, Any]:
@@ -174,11 +240,18 @@ def read(tree: Path, path: str) -> str | None:
     if _is_git(tree):
         p = subprocess.run(
             ["git", "-C", str(tree), "show", f"HEAD:{path}"],
-            capture_output=True, text=True, check=False,
+            capture_output=True, check=False,
         )  # fmt: skip
-        return p.stdout if p.returncode == 0 else None
+        return _text(p.stdout) if p.returncode == 0 else None
     f = tree / path
-    return f.read_text("utf-8", errors="replace") if f.is_file() else None
+    return _text(f.read_bytes()) if f.is_file() else None
+
+
+def _text(raw: bytes) -> str:
+    """Any encoding reads (#508 audit: a UTF-16 script crashed the run): undecodable bytes are
+    replaced, NULs dropped and the text NFKC-normalised, so every scan sees plain words."""
+    text = raw.decode("utf-8", errors="replace").replace("\x00", "")
+    return unicodedata.normalize("NFKC", text)  # fullwidth letters read as ASCII
 
 
 def _module_files(dotted: str, files: set[str]) -> list[str]:
@@ -231,7 +304,230 @@ def import_closure(tree: Path, entries: tuple[str, ...] = ENTRY_POINTS) -> set[s
     return seen
 
 
-def is_money(path: str, closure: set[str]) -> bool:
+def is_script(path: str) -> bool:
+    """A shell script or a stand-alone Python tool under SCRIPT_DIRS."""
+    return path.startswith(SCRIPT_DIRS) and path.lower().endswith((*SCRIPT_EXTS, ".py"))
+
+
+def listed_not_money(path: Path = NOT_MONEY) -> set[str]:
+    """The reviewed exceptions: one repo path per line, `#` starts a comment (the why)."""
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return set()
+    return {ln.split("#", 1)[0].strip() for ln in lines if ln.split("#", 1)[0].strip()}
+
+
+def state_names(tree: Path, closure: set[str]) -> set[str]:
+    """Every file or flag name the money path's own code spells out: string literals that end in
+    a data extension (by base name and stem), and UPPER_SNAKE names a flag file may carry."""
+    out: set[str] = set()
+    for f in closure:
+        try:
+            node = ast.parse(read(tree, f) or "")
+        except (SyntaxError, ValueError):
+            continue
+        for n in ast.walk(node):
+            if not (isinstance(n, ast.Constant) and isinstance(n.value, str)):
+                continue
+            v = n.value.strip()
+            base = re.split(r"[\\/]", v)[-1]
+            m = re.fullmatch(r"([\w.-]+)\.(json|jsonl|csv|parquet|flag|lock|txt|ya?ml)", base)
+            if m and len(m.group(1)) >= 4:
+                out |= {base.lower(), m.group(1).lower()}
+            elif re.fullmatch(r"[A-Z][A-Z0-9]*(_[A-Z0-9]+)+", v) and len(v) >= 6:
+                out.add(v.lower())
+    return out
+
+
+def _names_any(text: str, names: set[str]) -> bool:
+    """Any name as a whole word or path segment, never as the tail of a longer one (`backup.py`
+    inside `offsite_backup.py`); `.` and `\\` around it are separators, so `mt5desk.gateway`,
+    `from mt5desk import gateway` and `scripts\\x` all count."""
+    return any(re.search(r"(?<![\w-])" + re.escape(n) + r"(?![\w-])", text) for n in names)
+
+
+def _money_names(tree: Path, closure: set[str]) -> set[str]:
+    """How a script can name the money path's Python: file, stem, every dotted suffix and
+    package-prefixed form, and each package directory the closure imports through."""
+    names: set[str] = set()
+    for f in {*closure, *ENTRY_POINTS}:
+        p = Path(f)
+        if p.name == "__init__.py":
+            names.add(p.parent.name.lower())
+            continue
+        names |= {p.name.lower(), p.stem.lower()}
+        parts = f[:-3].lower().split("/")
+        names |= {".".join(parts[i:]) for i in range(len(parts) - 1)}
+    return {n for n in names if len(n) >= 3}
+
+
+def money_scripts(
+    trees: tuple[Path, ...], closure: set[str], listed: set[str] | None = None
+) -> set[str]:
+    """The scripts under SCRIPT_DIRS that are money path in `trees` (the base first, then the
+    PR): all of them but the listed exceptions that pass every test in the note above."""
+    listed = listed_not_money() if listed is None else listed
+    files = {t: tree_files(t) for t in trees}
+    scripts = {f for t in trees for f in files[t] if is_script(f)}
+    names = _money_names(trees[0], closure)
+    states = state_names(trees[0], closure)
+    text: dict[str, list[str]] = {}
+    money: set[str] = set()
+    for f in sorted(scripts):
+        got = []
+        for t in trees:
+            if f in files[t]:
+                x = read(t, f)
+                if x is None:  # unreadable (a lazy blob on a blobless checkout): money path
+                    money.add(f)
+                got.append((x or "").lower())
+        text[f] = got
+    stems = {f: {Path(f).name.lower(), Path(f).stem.lower()} for f in scripts}
+    for f in scripts - money:
+        if f not in listed or f in closure or f in ENTRY_POINTS:
+            money.add(f)
+            continue
+        got = text[f]
+        in_base = f in files[trees[0]]
+        base_lines = (
+            {ln.strip() for ln in got[0].splitlines() if DYNAMIC.search(ln)} if in_base else set()
+        )
+        dyn = {ln.strip() for x in got for ln in x.splitlines() if DYNAMIC.search(ln)}
+        if (
+            any(MONEY_WORDS.search(x) or STATE_WORDS.search(x) for x in got)
+            or any(_names_any(x, names | states) for x in got)
+            or dyn - base_lines  # dynamic execution the reviewed base did not have
+        ):
+            money.add(f)
+    while True:  # a listed script that names or is named by a money-path script is one
+        free = scripts - money
+        more = {
+            f for f in free
+            if any(_names_any(x, set().union(*(stems[m] for m in money))) for x in text[f])
+            or any(_names_any(x, stems[f]) for m in money for x in text[m])
+        }  # fmt: skip
+        if not more:
+            return money
+        money |= more
+
+
+def exempt_scripts(
+    trees: tuple[Path, ...], closure: set[str], listed: set[str] | None = None
+) -> set[str]:
+    """The scripts in `trees` that are NOT money path: the only way out for a script. A script
+    any caller never showed here (one added only in a tree it did not pass) stays money."""
+    scripts = {f for t in trees for f in tree_files(t) if is_script(f)}
+    return scripts - money_scripts(trees, closure, listed)
+
+
+#: The box's task table. A data file under MONEY_PATH, so any change to it is money path, unless
+#: every line it changes is a TASK row that names nothing money (manifest_is_money): the rows for
+#: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
+MANIFEST = "desks/mt5/ops/box_tasks.manifest"
+_ATTR = re.compile(r'(\w+)="([^"]*)"')
+#: The only path a free row may name: repo-relative, plain (no `..`, `.`, `%VAR%`, `$x`, drive,
+#: backslash, quote or space), so the string compared here is the file the box runs (#508 v3 MF1).
+_PLAIN_PATH = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*")
+#: Lanes whose rows may change without the manual path; money and prop rows never do (v3 MF3).
+_FREE_LANES = frozenset({"ops", "research", "data"})
+COMPONENTS = "desks/mt5/ops/components.py"
+
+
+def _held_tasks(tree: Path) -> set[str] | None:
+    """components.REQUIRED_TASKS and TASK_CANONICAL's keys, read by ast from `tree` (None when
+    unreadable): the control plane's own rows, which never change as free rows."""
+    try:
+        node = ast.parse(read(tree, COMPONENTS) or "")
+    except (SyntaxError, ValueError):
+        return None
+    out: set[str] = set()
+    for n in node.body:
+        if isinstance(n, ast.AnnAssign) and n.value is not None:
+            target, v = n.target, n.value
+        elif isinstance(n, ast.Assign) and len(n.targets) == 1:
+            target, v = n.targets[0], n.value
+        else:
+            continue
+        if not isinstance(target, ast.Name):
+            continue
+        try:
+            if target.id == "REQUIRED_TASKS" and isinstance(v, ast.Call) and v.args:
+                out |= {str(x) for x in ast.literal_eval(v.args[0])}
+            elif target.id == "TASK_CANONICAL":
+                out |= {str(x) for x in ast.literal_eval(v)}
+        except ValueError:
+            return None
+    return out or None
+
+
+def manifest_is_money(
+    base: Path, head: Path, closure: set[str], money: set[str], exempt: set[str]
+) -> bool:
+    """Whether the change to MANIFEST is money path. Comments and blank lines are prose. Every
+    other added or removed line must be a TASK row whose raw text names no venue, state or
+    money-path name, and whose runs, also_runs and installer are each a file that is not money
+    path (a script under SCRIPT_DIRS only when `exempt` clears it). Anything else, or a tree
+    that cannot be read, is money (fail closed)."""
+    b, h = read(base, MANIFEST), read(head, MANIFEST)
+    if b is None or h is None:
+        return True
+
+    def rows(text: str) -> list[str]:
+        return [
+            x.strip() for x in text.splitlines() if x.strip() and not x.lstrip().startswith("#")
+        ]
+
+    was, now = rows(b), rows(h)
+    changed = [x for x in now if x not in was] + [x for x in was if x not in now]
+    if len(was) != len(now) and not changed:  # a row duplicated or dropped twice over
+        return True
+    # a package directory's bare name ("ops", "data") is no name here: every row's lane and path
+    # use those words, and a path inside such a package is caught below, file by file
+    dirs = {Path(f).parent.name.lower() for f in closure} - {
+        Path(f).stem.lower() for f in {*closure, *ENTRY_POINTS} if Path(f).name != "__init__.py"
+    }
+    names = (_money_names(base, closure) - dirs) | state_names(base, closure)
+    names |= {n for m in money for n in (Path(m).name.lower(), Path(m).stem.lower())}
+    held = _held_tasks(base)
+    if held is None:
+        return True
+    held_cf = {t.casefold() for t in held}
+
+    def names_in(rows_: list[str]) -> list[str]:
+        return [dict(_ATTR.findall(x)).get("name", "").casefold() for x in rows_]
+
+    in_was, in_now = names_in(was), names_in(now)
+    for line in changed:
+        low = line.lower()
+        if not line.startswith("TASK "):
+            return True
+        if MONEY_WORDS.search(low) or STATE_WORDS.search(low) or _names_any(low, names):
+            return True
+        attrs = dict(_ATTR.findall(line))
+        name = attrs.get("name", "").casefold()
+        # a row of a money or prop lane, or of the control plane, never changes freely (v3 MF3)
+        if not name or attrs.get("lane") not in _FREE_LANES or name in held_cf:
+            return True
+        # one row per name, any case, in each tree: a second row rebinds that task (v3 MF2)
+        if in_was.count(name) > 1 or in_now.count(name) > 1:
+            return True
+        paths = [p.strip() for k in ("runs", "also_runs", "installer")
+                 for p in attrs.get(k, "").split(",") if p.strip()]  # fmt: skip
+        for p in paths:
+            if not _PLAIN_PATH.fullmatch(p) or any(seg in ("", ".", "..") for seg in p.split("/")):
+                return True  # only a plain repo path is compared as the file it names (v3 MF1)
+            if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
+                return True
+            if is_script(p) and p not in exempt:
+                return True
+    return False
+
+
+def is_money(path: str, closure: set[str], *, exempt: set[str] | None = None) -> bool:
+    """A script under SCRIPT_DIRS is money unless `exempt` names it (fail closed, #508 audit)."""
+    if is_script(path):
+        return path not in (exempt or set())
     return path.startswith(MONEY_PATH) or path in closure
 
 
@@ -239,13 +535,55 @@ def knobs(src: str) -> dict[str, list[str]]:
     """{name: [ast of every value it is given]} for the knobs a file sets: module-level and
     class-level UPPER_CASE names (`Class.NAME`), and every function's parameter defaults
     (`f(arg=)`, `Class.f(arg=)`), since a rail can move through any of them (#457 audit)."""
+    return bindings(src, lambda n: bool(KNOB.match(n)))
+
+
+def bindings(src: str, keep: Callable[[str], bool]) -> dict[str, list[str]]:
+    """{name: [every way the file binds it]} at module and class scope, for the names `keep`
+    accepts, plus every function's parameter defaults. A plain `NAME = value` records the
+    value's ast; any other binding records a marked entry that can never equal a pinned value,
+    so a ceiling row sees it as a second value (#554 audit SF): `NAME += 1`, a tuple or starred
+    target, a walrus, `global NAME` assigned in a function, `del NAME`, `import x as NAME`, a
+    for/with/except target, and every guarded body (if, for, while, with, try, try*, match)."""
     out: dict[str, list[str]] = {}
 
-    def walk(body: list[ast.stmt], prefix: str) -> None:
+    def put(name: str, val: str) -> None:
+        if keep(name.rsplit(".", 1)[-1].split("(", 1)[0]) or name.endswith("=)"):
+            out.setdefault(name, []).append(val)
+
+    def target(t: ast.expr, prefix: str, val: str) -> None:
+        if isinstance(t, ast.Name):
+            put(f"{prefix}{t.id}", val)
+        elif isinstance(t, ast.Tuple | ast.List):
+            for e in t.elts:
+                target(e, prefix, f"UNPACKED {val}")
+        elif isinstance(t, ast.Starred):
+            target(t.value, prefix, f"STARRED {val}")
+
+    def walrus(node: ast.AST, prefix: str) -> None:
+        for n in ast.walk(node):
+            if isinstance(n, ast.NamedExpr) and isinstance(n.target, ast.Name):
+                put(f"{prefix}{n.target.id}", f"WALRUS {ast.dump(n.value)}")
+
+    def globals_in(fn: ast.AST) -> None:
+        """`global NAME` in a function: its assignments there bind the module's NAME."""
+        names = {g for n in ast.walk(fn) if isinstance(n, ast.Global) for g in n.names}
+        for n in ast.walk(fn):
+            ts: list[ast.expr] = []
+            if isinstance(n, ast.Assign):
+                ts = list(n.targets)
+            elif isinstance(n, ast.AugAssign | ast.AnnAssign):
+                ts = [n.target]
+            for t in ts:
+                for x in ast.walk(t):
+                    if isinstance(x, ast.Name) and x.id in names:
+                        put(x.id, f"GLOBAL {ast.dump(n)}")
+
+    def walk(body: list[ast.stmt], prefix: str, guarded: bool = False) -> None:
         for n in body:
             if isinstance(n, ast.ClassDef):
                 walk(n.body, f"{prefix}{n.name}.")
-            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            elif isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef):
                 a = n.args
                 pos = [*a.posonlyargs, *a.args]
                 pairs = list(zip(pos[len(pos) - len(a.defaults) :], a.defaults, strict=True))
@@ -253,17 +591,55 @@ def knobs(src: str) -> dict[str, list[str]]:
                 for arg, default in pairs:
                     out.setdefault(f"{prefix}{n.name}({arg.arg}=)", []).append(ast.dump(default))
                 walk(n.body, f"{prefix}{n.name}.")  # nested functions' defaults too
-            elif isinstance(n, (ast.If, ast.Try, ast.With, ast.For, ast.While)):
-                # a constant set inside a guard is still a knob
-                for part in ("body", "orelse", "finalbody"):
-                    walk(getattr(n, part, None) or [], prefix)
-                for h in getattr(n, "handlers", None) or []:
-                    walk(h.body, prefix)
-            elif isinstance(n, (ast.Assign, ast.AnnAssign)) and n.value is not None:
-                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
-                for t in targets:
-                    if isinstance(t, ast.Name) and KNOB.match(t.id):
-                        out.setdefault(f"{prefix}{t.id}", []).append(ast.dump(n.value))
+                globals_in(n)
+            elif isinstance(n, ast.Assign):
+                walrus(n.value, prefix)
+                for t in n.targets:
+                    plain = isinstance(t, ast.Name) and not guarded
+                    target(t, prefix, ast.dump(n.value) if plain else f"BOUND {ast.dump(n.value)}")
+            elif isinstance(n, ast.AnnAssign):
+                if n.value is not None:
+                    walrus(n.value, prefix)
+                    v = ast.dump(n.value)
+                    target(n.target, prefix, v if not guarded else f"BOUND {v}")
+            elif isinstance(n, ast.AugAssign):
+                target(n.target, prefix, f"AUGMENTED {ast.dump(n)}")
+            elif isinstance(n, ast.Delete):
+                for t in n.targets:
+                    target(t, prefix, "DELETED")
+            elif isinstance(n, ast.Import | ast.ImportFrom):
+                for al in n.names:
+                    name = al.asname or al.name.split(".", 1)[0]
+                    put(f"{prefix}{name}", f"IMPORTED {ast.dump(n)}")
+            elif isinstance(n, ast.For | ast.AsyncFor):
+                target(n.target, prefix, f"LOOPED {ast.dump(n.iter)}")
+                walrus(n.iter, prefix)
+                walk(n.body + n.orelse, prefix, True)
+            elif isinstance(n, ast.With | ast.AsyncWith):
+                for item in n.items:
+                    walrus(item.context_expr, prefix)
+                    if item.optional_vars is not None:
+                        target(item.optional_vars, prefix, "WITH")
+                walk(n.body, prefix, True)
+            elif isinstance(n, ast.If | ast.While):
+                walrus(n.test, prefix)
+                walk(n.body + n.orelse, prefix, True)
+            elif isinstance(n, ast.Try | ast.TryStar):
+                walk(n.body + n.orelse + n.finalbody, prefix, True)
+                for h in n.handlers:
+                    if h.name:
+                        put(f"{prefix}{h.name}", "EXCEPT")
+                    walk(h.body, prefix, True)
+            elif isinstance(n, ast.Match):
+                walrus(n.subject, prefix)
+                for case in n.cases:
+                    for x in ast.walk(case.pattern):
+                        bound = getattr(x, "name", None) or getattr(x, "rest", None)
+                        if isinstance(bound, str):
+                            put(f"{prefix}{bound}", "MATCHED")
+                    walk(case.body, prefix, True)
+            else:
+                walrus(n, prefix)
 
     walk(ast.parse(src).body, "")
     return out
@@ -278,14 +654,18 @@ def bounded() -> dict[str, set[str]]:
             out.setdefault(f, set()).update(names)
     for f, name in (doc.get("superset") or {}).items():
         out.setdefault(f, set()).add(name)
+    for f, names in (doc.get("source") or {}).items():
+        out.setdefault(f, set()).update(names)
     return out
 
 
-def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str]) -> list[str]:
+def knob_changes(
+    base: Path, head: Path, changed: list[str], closure: set[str], exempt: set[str] | None = None
+) -> list[str]:
     problems = []
     held = bounded()
     for f in changed:
-        if not f.endswith(".py") or not is_money(f, closure):
+        if not f.endswith(".py") or not is_money(f, closure, exempt=exempt):
             continue
         try:
             was = knobs(read(base, f) or "")
@@ -300,6 +680,26 @@ def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str]) 
                     "take the manual path"
                 )
     return problems
+
+
+def new_and_bounded(base: Path, head: Path, head_imported: set[str]) -> set[str]:
+    """New money files the HEAD's replay ran (no base can import a file it lacks) whose every
+    knob a ceiling already holds, from the base's ceilings.json. The replay shows their code
+    decides like the base on the grid; the ceilings, not the replay, vouch for their values
+    (#553 audit: a clean replay never measures a knob). A file with one unbounded knob stays
+    UNMEASURED."""
+    held = bounded()
+    out = set()
+    for f in head_imported:
+        if not f.endswith(".py") or read(base, f) is not None:
+            continue
+        try:
+            names = set(knobs(read(head, f) or ""))
+        except SyntaxError:
+            continue
+        if names <= held.get(f, set()):
+            out.add(f)
+    return out
 
 
 def canon(value: Any) -> Any:
@@ -339,6 +739,8 @@ def decisions(step: dict[str, Any]) -> dict[str, Any]:
             "committed_usd": (doc.get("committed_risk") or {}).get("total_usd"),
             "windows": ((doc.get("state") or {}).get("windows")),
             "intents": step.get("intents"),
+            # the FTMO lane at the same step (replay_child.ftmo_step): executor and reader
+            "ftmo": step.get("ftmo"),
         }
     )
 
@@ -372,8 +774,318 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
         return json.loads(out.read_text("utf-8"))
 
 
+def _load(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _symbol_of(name: str) -> str:
+    head = name.split("_", 1)[0].split(".", 1)[0].upper()
+    if head in ("GOLD", "XAU"):
+        return "XAUUSD"
+    return head if re.fullmatch(r"[A-Z]{6}", head) else ""
+
+
+def _policy_values(trees: tuple[Path, ...]) -> dict[str, set[str]]:
+    """Every banned family, timeframe and exec either tree's policy file names."""
+    fams: set[str] = set()
+    tfs: set[str] = set()
+    execs: set[str] = set()
+    for tree in trees:
+        pol = _load(tree / ROSTER_FILES[0])
+        pol = pol if isinstance(pol, dict) else {}
+        fams |= {str(f).lower() for f in _as_list(pol.get("banned_families"))}
+        execs |= {str(e).lower() for e in _as_list(pol.get("banned_execs"))}
+        bt = pol.get("banned_timeframes")
+        for vals in bt.values() if isinstance(bt, dict) else []:
+            tfs |= {str(v).upper() for v in _as_list(vals)}
+    return {"families": fams, "timeframes": tfs, "execs": execs}
+
+
+def _as_list(x: Any) -> list[Any]:
+    return x if isinstance(x, list) else []
+
+
+def roster_rows(trees: tuple[Path, ...], grid: dict[str, Any]) -> list[dict[str, Any]]:
+    """Rows for the roster leg, each with a unique printable `id`: every name either tree's policy
+    or certified book carries; the probes (symbol x family x timeframe, and symbol x exec) over
+    every symbol either tree or the grid names, with the grid's families, timeframes and execs
+    PLUS every banned_* value either tree names (MF6); and each named live sleeve again under every
+    probed family, timeframe and exec, so a ban still reaches a symbol whose live_sleeves list
+    refuses every anonymous probe. Unprintable names are dropped (MF5)."""
+    venues = [str(v) for v in grid.get("venues") or []]
+    banned = _policy_values(trees)
+    fams = sorted({str(f).lower() for f in grid.get("families") or []} | banned["families"])
+    tfs = sorted({str(t).upper() for t in grid.get("timeframes") or []} | banned["timeframes"])
+    execs = sorted({str(e).lower() for e in grid.get("execs") or []} | banned["execs"])
+    symbols = {str(x).upper() for x in grid.get("symbols") or []}
+    rows: dict[str, dict[str, Any]] = {}
+
+    def put(rid: str, row: dict[str, Any]) -> None:
+        printable = all(
+            SAFE_NAME.match(str(v)) for k, v in row.items() if k != "id" and v != ""
+        )  # fmt: skip
+        if SAFE_NAME.match(rid) and printable and row.get("symbol"):
+            rows.setdefault(rid, {"id": rid, "family": "", "timeframe": "", "exec": "", **row})
+
+    named: list[tuple[str, str]] = []
+    for tree in trees:
+        pol = _load(tree / ROSTER_FILES[0])
+        pol = pol if isinstance(pol, dict) else {}
+        book = _load(tree / ROSTER_FILES[1])
+        book = book if isinstance(book, dict) else {}
+        symbols |= {str(x).upper() for x in _as_list(pol.get("live_symbols")) if str(x) != "*"}
+        bt = pol.get("banned_timeframes")
+        symbols |= {str(k).upper() for k in (bt if isinstance(bt, dict) else {}) if k != "*"}
+        ls = pol.get("live_sleeves")
+        for sym, names in sorted((ls if isinstance(ls, dict) else {}).items()):
+            symbols.add(str(sym).upper())
+            named += [(str(n), str(sym).upper()) for n in _as_list(names)]
+        keys: set[str] = set()
+        for block in (*venues, "e8_pending", "excluded"):
+            if isinstance(book.get(block), dict):
+                keys |= {str(k) for k in book[block]}
+        for k in sorted(keys):
+            m = _BOOK_KEY.match(k)
+            if m:
+                put(k, {"name": k, "book_key": k, "symbol": m.group(1), "family": m.group(2),
+                        "selector": m.group(3)})  # fmt: skip
+            else:
+                put(k, {"name": k, "book_key": k, "symbol": _symbol_of(k)})
+    for n, sym in sorted(set(named)):
+        put(n, {"name": n, "symbol": sym})
+        for fam in fams:
+            put(f"{n}=fam.{fam}", {"name": n, "symbol": sym, "family": fam})
+        for tf in tfs:
+            put(f"{n}=tf.{tf}", {"name": n, "symbol": sym, "timeframe": tf})
+        for ex in execs:
+            put(f"{n}=exec.{ex}", {"name": n, "symbol": sym, "exec": ex})
+    for sym in sorted(x for x in symbols if SAFE_NAME.match(x)):
+        for fam in fams:
+            for tf in tfs:
+                rid = f"probe.{sym}.{fam}.{tf or 'any'}"
+                put(rid, {"name": rid, "symbol": sym, "family": fam, "timeframe": tf})
+        for ex in execs:
+            rid = f"probe.{sym}.exec.{ex or 'none'}"
+            put(rid, {"name": rid, "symbol": sym, "exec": ex})
+    return [rows[k] for k in sorted(rows)]
+
+
+def roster_diff(
+    b: dict[str, Any], h: dict[str, Any], rows: list[dict[str, Any]]
+) -> list[tuple[str, str, str]]:
+    """(kind, symbol, row id) for every outcome the head decides differently. Kinds: `admit` and
+    `refuse` (the live policy door flipped), `zero:<venue>`, `book:<venue>`, `e8`."""
+    sym = {str(r["id"]): str(r["symbol"]) for r in rows}
+    out: list[tuple[str, str, str]] = []
+    br, hr = b.get("rows") or {}, h.get("rows") or {}
+    for rid in sorted(set(br) | set(hr)):
+        if rid not in sym:
+            continue
+        x, y = br.get(rid) or {}, hr.get(rid) or {}
+        if bool(x.get("admitted")) != bool(y.get("admitted")):
+            out.append(("admit" if y.get("admitted") else "refuse", sym[rid], rid))
+        xz, yz = x.get("zero") or {}, y.get("zero") or {}
+        for v in sorted(set(xz) | set(yz)):
+            if xz.get(v) != yz.get(v):
+                out.append((f"zero:{v}", sym[rid], rid))
+    bb, hb = b.get("books") or {}, h.get("books") or {}
+    for v in sorted(set(bb) | set(hb)):
+        x, y = bb.get(v), hb.get(v)
+        if (x is None) != (y is None):
+            out.append((f"book:{v}", "*", "void" if y is None else "restored"))
+            continue
+        for k in sorted(set(x or {}) | set(y or {})):
+            if (x or {}).get(k) != (y or {}).get(k):
+                out.append((f"book:{v}", _symbol_of(k) or "*",
+                            k if SAFE_NAME.match(k) else "<unprintable>"))  # fmt: skip
+    if (b.get("e8") or {}) != (h.get("e8") or {}):
+        out.append(("e8", "*", "live_admissible"))
+    return out
+
+
+#: The live policy keys the leg resolves (replay_child.POLICY_MEASURED) and probes.
+POLICY_MEASURED = (
+    "live_symbols", "banned_timeframes", "banned_families", "banned_execs", "live_sleeves",
+)  # fmt: skip
+
+
+def _is_test(f: str) -> bool:
+    return "tests/" in f or f.rsplit("/", 1)[-1].startswith("test_")
+
+
+def _read_by_code(trees: tuple[Path, ...], key: str) -> bool:
+    """True when any non-test Python file in either tree spells `key` as a string literal: a key
+    some code may read is never prose, whatever its name (MF6). Fails closed on a search error."""
+    lits = (f'"{key}"', f"'{key}'")
+    for tree in trees:
+        if _is_git(tree):
+            p = subprocess.run(
+                ["git", "-C", str(tree), "grep", "-l", "-F", "-e", lits[0], "-e", lits[1],
+                 "HEAD", "--", "*.py"],
+                capture_output=True, text=True, check=False,
+            )  # fmt: skip
+            if p.returncode not in (0, 1):
+                return True
+            hits = [ln.split(":", 1)[-1] for ln in p.stdout.splitlines()]
+        else:
+            hits = [
+                f for f in tree_files(tree)
+                if f.endswith(".py") and any(x in (read(tree, f) or x) for x in lits)
+            ]  # fmt: skip
+        if any(not _is_test(f) for f in hits):
+            return True
+    return False
+
+
+def _top_diff(a: Any, b: Any) -> list[str]:
+    a = a if isinstance(a, dict) else {}
+    b = b if isinstance(b, dict) else {}
+    return sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+
+
+def _printable(k: str) -> str:
+    return k if SAFE_NAME.match(k) else "<unprintable>"
+
+
+def roster_unmeasured(
+    base: Path,
+    head: Path,
+    legs: dict[str, Any],
+    rows: list[dict[str, Any]],
+    flips: list[tuple[str, str, str]],
+    venues: list[str],
+) -> dict[str, list[str]]:
+    """Why each roster file stays UNMEASURED although the leg ran (Auditor MF6, MF7).
+
+    live_sleeve_policy.json: every top-level key that differs must be one the leg resolves
+    (POLICY_MEASURED) or prose no code reads; and every value the two RESOLVED policies (code
+    defaults included) disagree on must flip at least one row that carries it -- a change the
+    probes cannot reach is a change nobody measured.
+    CERT_BOOK_LIVE.json: every top-level block that differs must be a venue block the leg reads
+    through load_cert_book; every other block has readers the leg never runs."""
+    out: dict[str, list[str]] = {f: [] for f in ROSTER_FILES}
+    pol_file, book_file = ROSTER_FILES
+    for k in _top_diff(_load(base / pol_file), _load(head / pol_file)):
+        if k not in POLICY_MEASURED and _read_by_code((base, head), k):
+            out[pol_file].append(f"key {_printable(k)} is read by code the leg does not run")
+    byid = {str(r["id"]): r for r in rows}
+    flipped = [byid[rid] for k, _s, rid in flips if k in ("admit", "refuse") and rid in byid]
+
+    def reached(field: str, value: str, symbol: str = "*") -> bool:
+        return any(
+            str(r.get(field) or "").upper() == value.upper()
+            and (symbol == "*" or str(r.get("symbol")) == symbol)
+            for r in flipped
+        )  # fmt: skip
+
+    bp = (legs.get("base") or {}).get("policy")
+    hp = (legs.get("head") or {}).get("policy")
+    if not (isinstance(bp, dict) and isinstance(hp, dict)):
+        out[pol_file].append("the leg did not report the resolved policy")
+    else:
+        for key, field in (("banned_families", "family"), ("banned_execs", "exec")):
+            for v in sorted(set(_as_list(bp.get(key))) ^ set(_as_list(hp.get(key)))):
+                if not reached(field, str(v)):
+                    out[pol_file].append(f"{key} {_printable(str(v))} flips no probed row")
+        for v in sorted(
+            set(_as_list(bp.get("live_symbols"))) ^ set(_as_list(hp.get("live_symbols")))
+        ):
+            if not reached("symbol", str(v)):
+                out[pol_file].append(f"live_symbols {_printable(str(v))} flips no probed row")
+        btf, htf = bp.get("banned_timeframes") or {}, hp.get("banned_timeframes") or {}
+        for sym in sorted(set(btf) | set(htf)):
+            for v in sorted(set(_as_list(btf.get(sym))) ^ set(_as_list(htf.get(sym)))):
+                if not reached("timeframe", str(v), str(sym)):
+                    out[pol_file].append(
+                        f"banned_timeframes {_printable(str(sym))} {_printable(str(v))} "
+                        "flips no probed row"
+                    )
+        bls, hls = bp.get("live_sleeves") or {}, hp.get("live_sleeves") or {}
+        for sym in sorted(set(bls) | set(hls)):
+            x, y = bls.get(sym), hls.get(sym)
+            if x == y:
+                continue
+            if x is None or y is None:  # the symbol's restriction appeared or went
+                if not reached("symbol", str(sym)):
+                    out[pol_file].append(f"live_sleeves {_printable(str(sym))} flips no row")
+                continue
+            for n in sorted(set(_as_list(x)) ^ set(_as_list(y))):
+                if not reached("name", str(n), str(sym)):
+                    out[pol_file].append(
+                        f"live_sleeves {_printable(str(sym))} {_printable(str(n))} flips no row"
+                    )
+    for k in _top_diff(_load(base / book_file), _load(head / book_file)):
+        if k not in venues:
+            out[book_file].append(
+                f"block {_printable(k)} has readers the leg does not run (not a venue block)"
+            )
+    return out
+
+
+def _pr_and_head() -> tuple[int | None, str]:
+    pr, head = os.environ.get("PR") or "", os.environ.get("HEAD_SHA") or ""
+    if not (pr and head) and os.environ.get("GITHUB_EVENT_PATH"):
+        ev = (_load(Path(os.environ["GITHUB_EVENT_PATH"])) or {}).get("pull_request") or {}
+        pr = pr or str(ev.get("number") or "")
+        head = head or str((ev.get("head") or {}).get("sha") or "")
+    return (int(pr) if pr.isdigit() else None), head
+
+
+def declared_match(
+    diffs: list[tuple[str, str, str]], declared: Any, pr: int | None, head_sha: str
+) -> str | None:
+    """None when `diffs` equal exactly one declared row for this PR and this full head sha;
+    otherwise why not (MF3/MF4). Only admit/refuse flips are declarable."""
+    if not re.fullmatch(r"[0-9a-f]{40}", head_sha or "") or pr is None:
+        return "no PR number or no full 40-hex head sha to match a declaration against"
+    other = sorted({k for k, _s, _n in diffs if k not in ("admit", "refuse")})
+    if other:
+        return f"undeclarable divergence ({', '.join(other)})"
+    rows = declared.get("rows") if isinstance(declared, dict) else declared
+    mine = [
+        r for r in rows or []
+        if isinstance(r, dict) and r.get("pr") == pr and r.get("head_sha") == head_sha
+    ]  # fmt: skip
+    if len(mine) != 1:
+        return f"{len(mine)} declared rows for this PR at this head (exactly one is required)"
+    row = mine[0]
+    refuse = row.get("refuse") or []
+    if not all(
+        isinstance(r, dict) and isinstance(r.get("missed_growth"), str)
+        and r["missed_growth"].strip() for r in refuse
+    ):  # fmt: skip
+        return "a declared refusal carries no missed_growth line"
+    want_admit = {str(n) for n in row.get("admit") or []}
+    want_refuse = {str(r.get("name")) for r in refuse}
+    got_admit = {n for k, _s, n in diffs if k == "admit"}
+    got_refuse = {n for k, _s, n in diffs if k == "refuse"}
+    if (want_admit, want_refuse) != (got_admit, got_refuse):
+        return "the measured flips differ from the declared admit/refuse sets"
+    return None
+
+
+def roster_grid() -> dict[str, Any]:
+    grid = _load(ROSTER_GRID)
+    if not isinstance(grid, dict):
+        raise ValueError("ops/release/fusion_roster_grid.json is unreadable")
+    return grid
+
+
+FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
+
+
 def compare(
-    base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
+    base: Path,
+    head: Path,
+    changed: list[str],
+    grid: list[dict[str, Any]] | None = None,
+    *,
+    declared: Any = None,
+    pr: int | None = None,
+    head_sha: str | None = None,
 ) -> dict[str, Any]:
     grid = scenarios() if grid is None else grid
     # fresh fingerprints each run, the same for both trees: fooling the replay needs code that
@@ -381,8 +1093,30 @@ def compare(
     who = {"account_id": 10_000 + secrets.randbelow(89_999_999), "server": secrets.token_hex(5)}
     grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
+    # The roster leg is owed where the base HAS the roster (as the FTMO leg below). Its rows ride
+    # on the first scenario only: one measurement, both trees, the same rows (MF1).
+    roster_owed = (base / ROSTER_FILES[0]).is_file()
+    roster: dict[str, Any] | None = None
+    roster_rows_: list[dict[str, Any]] = []
+    if roster_owed and grid:
+        rg = roster_grid()
+        roster_rows_ = roster_rows((base, head), rg)
+        if len(roster_rows_) > int(rg.get("max_rows") or 0):
+            problems.append(
+                f"UNMEASURED fusion roster: {len(roster_rows_)} rows exceed the grid's max_rows"
+            )
+            roster_rows_ = []
+        else:
+            roster = {"rows": roster_rows_, "venues": list(rg.get("venues") or [])}
+            grid[0] = {**grid[0], "fusion_roster": roster}
+    roster_legs: dict[str, Any] = {}
     imported: set[str] = set()
+    head_imported: set[str] = set()
     placed = 0
+    ftmo_rows = 0
+    # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
+    # the lane existed, has nothing to measure; a head that adds it is a new money file).
+    ftmo_owed = (base / FTMO_EXECUTOR).is_file()
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
         if "crash" in b:
@@ -391,13 +1125,31 @@ def compare(
         if "crash" in h:
             problems.append(f"{sc['id']}: the PR's tree crashed ({h['crash']})")
             continue
-        base_root = str(base.resolve())
+        if "fusion_roster" in sc:
+            roster_legs = {"base": b.get("fusion_roster"), "head": h.get("fusion_roster")}
+        base_root, head_root = str(base.resolve()), str(head.resolve())
         imported.update(
             Path(f).relative_to(base_root).as_posix()
             for f in b["imported"]
             if f.startswith(base_root + "/")
         )
+        head_imported.update(
+            Path(f).relative_to(head_root).as_posix()
+            for f in h.get("imported") or []
+            if f.startswith(head_root + "/")
+        )
         for bs, hs in zip(b["steps"], h["steps"], strict=True):
+            fb = bs.get("ftmo") or {}
+            ftmo_err = (
+                fb.get("setup_error") or fb.get("error") or (fb.get("exec") or {}).get("error")
+            )
+            if ftmo_err and ftmo_owed:
+                # the FTMO leg must run on the base, or its agreement with the head is vacuous
+                problems.append(
+                    f"UNMEASURED {sc['id']} @{bs['hour']}: the base FTMO leg raised "
+                    f"{str(ftmo_err)[:200]}"
+                )
+            ftmo_rows += len((fb.get("exec") or {}).get("sleeves") or [])
             if bs.get("error"):
                 problems.append(f"UNMEASURED {sc['id']} @{bs['hour']}: base raised {bs['error']}")
                 continue
@@ -413,18 +1165,82 @@ def compare(
                 )
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
+    if ftmo_owed and not ftmo_rows:
+        problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
+    roster_flips: list[tuple[str, str, str]] = []
+    roster_ok = False
+    if roster is not None:
+        for side in ("base", "head"):
+            leg = roster_legs.get(side)
+            if not isinstance(leg, dict) or "error" in leg:
+                kind = "missing" if not isinstance(leg, dict) else str(leg["error"]).split(":")[0]
+                kind = kind if SAFE_NAME.match(kind.replace(" ", "_")) else "error"
+                problems.append(f"UNMEASURED fusion roster: the {side} leg did not run ({kind})")
+        if not any(p.startswith("UNMEASURED fusion roster") for p in problems):
+            roster_ok = True
+            roster_flips = roster_diff(roster_legs["base"], roster_legs["head"], roster_rows_)
+    touched = sorted(f for f in changed if f in ROSTER_HARNESS)
+    problems += [
+        f"the PR changes the Fusion-roster replay harness (it cannot measure itself): {f}"
+        for f in touched
+    ]
     closure = import_closure(base)
-    uncovered = sorted(f for f in changed if is_money(f, closure) and f not in imported)
+    covered = imported | new_and_bounded(base, head, head_imported)
+    roster_gaps: dict[str, list[str]] = {}
+    if roster_ok and roster is not None:
+        roster_gaps = roster_unmeasured(
+            base, head, roster_legs, roster_rows_, roster_flips, list(roster["venues"])
+        )
+        for f in ROSTER_FILES:
+            if not roster_gaps[f]:
+                covered.add(f)
+            elif f in changed:
+                problems += [f"UNMEASURED fusion roster: {f} {why}" for why in roster_gaps[f]]
+    exempt = exempt_scripts((base, head), closure)
+    money = money_scripts((base, head), closure)
+    rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
+    uncovered = sorted(
+        f for f in changed
+        if is_money(f, closure, exempt=exempt) and f not in covered
+        and not (f == MANIFEST and rows_only)
+    )  # fmt: skip
+    not_money = sorted(f for f in changed if is_script(f) and f in exempt)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
-    problems += knob_changes(base, head, changed, closure)
+    problems += knob_changes(base, head, changed, closure, exempt)
+    flips = [f"fusion roster {k} {sym} {name}" for k, sym, name in roster_flips]
+    verdict = "FAIL" if problems or flips else "PASS"
+    declared_why = "not considered: the PR has other problems" if problems else None
+    if flips and not problems:
+        if declared is None and os.environ.get(DECLARED_ENV):
+            declared = _load(Path(os.environ[DECLARED_ENV]))
+        if pr is None and head_sha is None:
+            pr, head_sha = _pr_and_head()
+        declared_why = (
+            "no declared-divergence registry"
+            if declared is None
+            else declared_match(roster_flips, declared, pr, head_sha or "")
+        )
+        if declared_why is None:
+            verdict = MATCHES_DECLARED
     return {
-        "verdict": "FAIL" if problems else "PASS",
+        "verdict": verdict,
+        "fusion_roster": {
+            "measured": roster_ok,
+            "covered": sorted(f for f in ROSTER_FILES if roster_ok and not roster_gaps.get(f)),
+            "rows": len(roster_rows_),
+            "divergence": [list(x) for x in roster_flips],
+            "declared": None if not flips else (declared_why or "matched"),
+        },
         "scenarios": len(grid),
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
-        "problems": problems,
+        "problems": problems + flips,
+        # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
+        "not_money_scripts": not_money,
+        # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
+        "not_money_manifest": rows_only,
     }
 
 
@@ -445,6 +1261,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     for p in rep["problems"][:200]:
         print(" -", p)
+    why = (rep.get("fusion_roster") or {}).get("declared")
+    if why:
+        print(f"FUSION-ROSTER declaration: {why}")
     return 0 if rep["verdict"] == "PASS" else 1
 
 

@@ -1,0 +1,1499 @@
+{
+ "note": "Paid-dataset class taxonomy for the paid-substitute engine. `terms` are the per-language search vocabulary the substitute hunter composes into search targets; `instruments` map a class and region onto MT5 instruments (checked against universe_policy at mint time). `owner: asia` marks the nine classes the Asia thread also owns.",
+ "languages": [
+  "en",
+  "zh",
+  "ja",
+  "ko",
+  "ru",
+  "pt",
+  "es",
+  "de",
+  "fr",
+  "tr",
+  "ar",
+  "hi"
+ ],
+ "classes": {
+  "macro": {
+   "id": "macro",
+   "label": "Macro and economic statistics (PIT, vintages, nowcasts)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "macroeconomic time series open data",
+    "zh": "宏观经济 数据 下载",
+    "ja": "マクロ経済 統計 データ ダウンロード",
+    "ko": "거시경제 통계 데이터 다운로드",
+    "ru": "макроэкономическая статистика открытые данные",
+    "pt": "dados macroeconômicos abertos séries temporais",
+    "es": "datos macroeconómicos abiertos series de tiempo",
+    "de": "makroökonomische Zeitreihen offene Daten",
+    "fr": "séries macroéconomiques données ouvertes",
+    "tr": "makroekonomik zaman serisi açık veri",
+    "ar": "بيانات الاقتصاد الكلي مفتوحة سلاسل زمنية",
+    "hi": "व्यापक आर्थिक आंकड़े खुला डेटा"
+   },
+   "instruments": {
+    "US": [
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "US500",
+     "UST10Y"
+    ],
+    "EU": [
+     "EURUSD",
+     "GER40",
+     "EUSTX50"
+    ],
+    "GB": [
+     "GBPUSD",
+     "UK100",
+     "UKGILT"
+    ],
+    "JP": [
+     "USDJPY",
+     "JPN225"
+    ],
+    "CN": [
+     "USDCNH",
+     "CHINAH",
+     "HK50",
+     "AUDUSD"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "IN": [
+     "USDINR"
+    ],
+    "BR": [
+     "USDBRL"
+    ],
+    "global": [
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "positioning": {
+   "id": "positioning",
+   "label": "Positioning (COT-like, investor-type flows, short interest)",
+   "owner": "asia",
+   "terms": {
+    "en": "futures positioning report commitments of traders data",
+    "zh": "期货 持仓报告 数据",
+    "ja": "投資部門別 売買状況 建玉 データ",
+    "ko": "투자자별 매매동향 선물 포지션 데이터",
+    "ru": "открытые позиции участников фьючерсы данные",
+    "pt": "posições em aberto por tipo de investidor dados",
+    "es": "posiciones abiertas por tipo de inversor datos",
+    "de": "Positionierung Terminkontrakte Händlerpositionen Daten",
+    "fr": "positions des opérateurs contrats à terme données",
+    "tr": "yatırımcı türüne göre pozisyon verisi vadeli",
+    "ar": "مراكز المتداولين العقود الآجلة بيانات",
+    "hi": "वायदा पोजीशन निवेशक प्रकार आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "XTIUSD",
+     "US500",
+     "CORN",
+     "WHEAT"
+    ],
+    "JP": [
+     "JPN225",
+     "USDJPY"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "CN": [
+     "CHINAH",
+     "HK50"
+    ],
+    "global": [
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "flows": {
+   "id": "flows",
+   "label": "Fund and capital flows (ETF/mutual fund, cross-border portfolio flows)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "fund flows weekly data free",
+    "zh": "资金流向 基金 周度 数据",
+    "ja": "対外及び対内証券売買 週次 データ",
+    "ko": "외국인 자금흐름 데이터",
+    "ru": "потоки капитала фонды данные",
+    "pt": "fluxo de capital estrangeiro dados",
+    "es": "flujos de fondos datos semanales",
+    "de": "Fondsflüsse Kapitalströme Daten",
+    "fr": "flux de fonds données hebdomadaires",
+    "tr": "yabancı portföy akımları verisi",
+    "ar": "تدفقات رؤوس الأموال الصناديق بيانات",
+    "hi": "विदेशी पोर्टफोलियो प्रवाह आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "USDX",
+     "UST10Y"
+    ],
+    "JP": [
+     "USDJPY",
+     "JPN225"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "TW": [
+     "USDKRW",
+     "TSMC"
+    ],
+    "IN": [
+     "USDINR"
+    ],
+    "global": [
+     "USDX",
+     "US500",
+     "EURUSD"
+    ]
+   }
+  },
+  "sentiment": {
+   "id": "sentiment",
+   "label": "Investor and consumer sentiment",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "investor sentiment survey index data",
+    "zh": "投资者情绪 指数 数据",
+    "ja": "投資家心理 指数 データ",
+    "ko": "투자심리 지수 데이터",
+    "ru": "индекс настроений инвесторов данные",
+    "pt": "índice de sentimento do investidor dados",
+    "es": "índice de sentimiento inversor datos",
+    "de": "Anlegerstimmung Index Daten",
+    "fr": "indice de sentiment des investisseurs données",
+    "tr": "yatırımcı duyarlılık endeksi verisi",
+    "ar": "مؤشر معنويات المستثمرين بيانات",
+    "hi": "निवेशक भावना सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "NAS100",
+     "USDX"
+    ],
+    "global": [
+     "US500",
+     "XAUUSD",
+     "USDJPY"
+    ]
+   }
+  },
+  "news_nlp": {
+   "id": "news_nlp",
+   "label": "News analytics, NLP event and tone data (GDELT-like)",
+   "owner": "asia",
+   "terms": {
+    "en": "news event tone dataset open",
+    "zh": "新闻 情感 事件 数据集",
+    "ja": "ニュース 感情 イベント データセット",
+    "ko": "뉴스 감성 이벤트 데이터셋",
+    "ru": "новости тональность события набор данных",
+    "pt": "notícias sentimento eventos base de dados",
+    "es": "noticias tono eventos conjunto de datos",
+    "de": "Nachrichten Tonalität Ereignisse Datensatz",
+    "fr": "actualités tonalité événements jeu de données",
+    "tr": "haber duygu olay veri seti",
+    "ar": "الأخبار المشاعر الأحداث مجموعة بيانات",
+    "hi": "समाचार भावना घटना डेटासेट"
+   },
+   "instruments": {
+    "global": [
+     "XAUUSD",
+     "US500",
+     "USDJPY",
+     "XTIUSD",
+     "EURUSD"
+    ]
+   }
+  },
+  "consensus_estimates": {
+   "id": "consensus_estimates",
+   "label": "Consensus forecasts and analyst estimates",
+   "owner": "asia",
+   "terms": {
+    "en": "consensus forecast survey of professional forecasters data",
+    "zh": "一致预期 分析师预测 数据",
+    "ja": "市場予想 コンセンサス データ",
+    "ko": "컨센서스 전망치 데이터",
+    "ru": "консенсус прогноз аналитиков данные",
+    "pt": "consenso de mercado projeções focus dados",
+    "es": "consenso de analistas previsiones datos",
+    "de": "Konsensprognosen Analystenschätzungen Daten",
+    "fr": "consensus prévisions analystes données",
+    "tr": "piyasa beklenti anketi verisi",
+    "ar": "توقعات المحللين الإجماع بيانات",
+    "hi": "विश्लेषक अनुमान सर्वसम्मति आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "USDX",
+     "UST10Y"
+    ],
+    "EU": [
+     "EURUSD",
+     "EUSTX50"
+    ],
+    "BR": [
+     "USDBRL"
+    ],
+    "JP": [
+     "USDJPY",
+     "JPN225"
+    ],
+    "global": [
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "corporate_events": {
+   "id": "corporate_events",
+   "label": "Corporate filings, disclosures, earnings and guidance events",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "company filings disclosure full text search",
+    "zh": "上市公司 公告 披露 数据",
+    "ja": "適時開示 決算短信 データ",
+    "ko": "전자공시 공시 데이터",
+    "ru": "раскрытие информации эмитентов данные",
+    "pt": "fatos relevantes companhias abertas dados",
+    "es": "hechos relevantes emisores datos",
+    "de": "Ad-hoc-Mitteilungen Unternehmensmeldungen Daten",
+    "fr": "informations réglementées émetteurs données",
+    "tr": "KAP bildirimleri şirket verisi",
+    "ar": "إفصاحات الشركات المدرجة بيانات",
+    "hi": "कंपनी घोषणाएं प्रकटीकरण आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "NAS100"
+    ],
+    "JP": [
+     "JPN225"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "CN": [
+     "CHINAH",
+     "HK50"
+    ],
+    "global": [
+     "US500",
+     "NAS100"
+    ]
+   }
+  },
+  "calendars": {
+   "id": "calendars",
+   "label": "Economic, central-bank and earnings calendars",
+   "owner": "asia",
+   "terms": {
+    "en": "economic calendar release dates machine readable",
+    "zh": "经济日历 数据发布 时间表",
+    "ja": "経済指標 発表予定 カレンダー",
+    "ko": "경제지표 발표 일정",
+    "ru": "экономический календарь даты публикации",
+    "pt": "calendário econômico divulgação",
+    "es": "calendario económico publicaciones",
+    "de": "Wirtschaftskalender Veröffentlichungstermine",
+    "fr": "calendrier économique publications",
+    "tr": "ekonomik takvim veri açıklama tarihleri",
+    "ar": "التقويم الاقتصادي مواعيد النشر",
+    "hi": "आर्थिक कैलेंडर जारी तिथियां"
+   },
+   "instruments": {
+    "global": [
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "shipping_ais": {
+   "id": "shipping_ais",
+   "label": "Shipping, AIS vessel tracking, freight rates, port activity",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "AIS vessel port calls open data freight index",
+    "zh": "船舶 AIS 港口 数据 运价指数",
+    "ja": "船舶 AIS 港湾 データ 運賃指数",
+    "ko": "선박 AIS 항만 데이터 운임지수",
+    "ru": "AIS суда порты открытые данные фрахт",
+    "pt": "AIS navios portos dados abertos frete",
+    "es": "AIS buques puertos datos abiertos fletes",
+    "de": "AIS Schiffe Häfen offene Daten Frachtraten",
+    "fr": "AIS navires ports données ouvertes fret",
+    "tr": "AIS gemi liman açık veri navlun",
+    "ar": "بيانات السفن AIS الموانئ الشحن",
+    "hi": "जहाज AIS बंदरगाह डेटा माल भाड़ा"
+   },
+   "instruments": {
+    "global": [
+     "XTIUSD",
+     "XBRUSD",
+     "XCUUSD",
+     "AUDUSD",
+     "USDCNH"
+    ],
+    "CN": [
+     "USDCNH",
+     "AUDUSD",
+     "XCUUSD"
+    ]
+   }
+  },
+  "commodities_physical": {
+   "id": "commodities_physical",
+   "label": "Physical commodity fundamentals (inventories, production, crop, energy balances)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "commodity inventories weekly statistics data",
+    "zh": "大宗商品 库存 周度 数据",
+    "ja": "商品 在庫 統計 データ",
+    "ko": "원자재 재고 통계 데이터",
+    "ru": "запасы сырья статистика данные",
+    "pt": "estoques commodities safra dados conab",
+    "es": "inventarios materias primas estadísticas datos",
+    "de": "Rohstoff Lagerbestände Statistik Daten",
+    "fr": "stocks matières premières statistiques données",
+    "tr": "emtia stokları istatistik verisi",
+    "ar": "مخزونات السلع إحصاءات بيانات",
+    "hi": "कमोडिटी भंडार आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "XTIUSD",
+     "XNGUSD",
+     "CORN",
+     "WHEAT",
+     "SOYBEAN"
+    ],
+    "global": [
+     "XTIUSD",
+     "XBRUSD",
+     "XCUUSD",
+     "XAUUSD",
+     "SUGAR",
+     "USCOCOA"
+    ],
+    "BR": [
+     "SOYBEAN",
+     "SUGAR",
+     "COFARA",
+     "USDBRL"
+    ],
+    "CN": [
+     "XCUUSD",
+     "XALUSD",
+     "XZNUSD"
+    ]
+   }
+  },
+  "weather": {
+   "id": "weather",
+   "label": "Weather, climate and degree-day data",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "weather observations degree days open data",
+    "zh": "气象 观测 数据 下载",
+    "ja": "気象 観測 データ ダウンロード",
+    "ko": "기상 관측 자료 다운로드",
+    "ru": "метеонаблюдения архив данные",
+    "pt": "dados meteorológicos observações",
+    "es": "datos meteorológicos observaciones abiertos",
+    "de": "Wetterdaten Beobachtungen offene Daten",
+    "fr": "données météorologiques observations ouvertes",
+    "tr": "meteorolojik gözlem verisi",
+    "ar": "بيانات الأرصاد الجوية الرصد",
+    "hi": "मौसम अवलोकन डेटा"
+   },
+   "instruments": {
+    "US": [
+     "XNGUSD",
+     "CORN",
+     "WHEAT",
+     "SOYBEAN"
+    ],
+    "EU": [
+     "XNGUSD"
+    ],
+    "BR": [
+     "COFARA",
+     "SUGAR",
+     "SOYBEAN"
+    ],
+    "global": [
+     "XNGUSD",
+     "CORN",
+     "WHEAT",
+     "USCOCOA",
+     "COFARA"
+    ]
+   }
+  },
+  "satellite": {
+   "id": "satellite",
+   "label": "Satellite and earth-observation derived activity (nightlights, NO2, fires, imagery)",
+   "owner": "asia",
+   "terms": {
+    "en": "satellite earth observation open data NO2 nightlights",
+    "zh": "卫星 遥感 数据 开放 夜间灯光",
+    "ja": "衛星 観測 データ 公開 夜間光",
+    "ko": "위성 관측 자료 공개 야간조도",
+    "ru": "спутниковые данные открытые ночные огни",
+    "pt": "dados de satélite abertos luzes noturnas",
+    "es": "datos satelitales abiertos luces nocturnas",
+    "de": "Satellitendaten offen Nachtlichter",
+    "fr": "données satellitaires ouvertes lumières nocturnes",
+    "tr": "uydu verisi açık gece ışıkları",
+    "ar": "بيانات الأقمار الصناعية المفتوحة",
+    "hi": "उपग्रह डेटा खुला रात्रि प्रकाश"
+   },
+   "instruments": {
+    "CN": [
+     "USDCNH",
+     "XCUUSD",
+     "AUDUSD",
+     "HK50"
+    ],
+    "global": [
+     "XTIUSD",
+     "XCUUSD",
+     "AUDUSD",
+     "USDCNH"
+    ]
+   }
+  },
+  "card_consumer": {
+   "id": "card_consumer",
+   "label": "Card transactions and consumer spending panels",
+   "owner": "asia",
+   "terms": {
+    "en": "card spending weekly data free",
+    "zh": "银行卡 消费 数据",
+    "ja": "カード 消費 データ 週次",
+    "ko": "카드 승인액 소비 데이터",
+    "ru": "траты по картам потребительские расходы данные",
+    "pt": "gastos com cartão consumo dados",
+    "es": "gasto con tarjeta consumo datos",
+    "de": "Kartenzahlungen Konsumausgaben Daten",
+    "fr": "dépenses par carte consommation données",
+    "tr": "kartlı harcamalar verisi",
+    "ar": "إنفاق البطاقات الاستهلاك بيانات",
+    "hi": "कार्ड खर्च उपभोक्ता आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "USDX",
+     "Walmart",
+     "Target",
+     "Amazon"
+    ],
+    "GB": [
+     "GBPUSD",
+     "UK100"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "global": [
+     "US500",
+     "USDX"
+    ]
+   }
+  },
+  "foot_traffic": {
+   "id": "foot_traffic",
+   "label": "Foot traffic, mobility and travel throughput",
+   "owner": "asia",
+   "terms": {
+    "en": "mobility foot traffic travel throughput data",
+    "zh": "客流 出行 人流 数据",
+    "ja": "人流 来訪者 データ",
+    "ko": "유동인구 이동 데이터",
+    "ru": "пассажиропоток мобильность данные",
+    "pt": "mobilidade fluxo de pessoas dados",
+    "es": "movilidad afluencia datos",
+    "de": "Mobilität Passantenfrequenz Daten",
+    "fr": "mobilité fréquentation données",
+    "tr": "hareketlilik yolcu sayısı verisi",
+    "ar": "بيانات التنقل حركة المسافرين",
+    "hi": "आवाजाही यात्री आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "Airbnb",
+     "Booking",
+     "Uber"
+    ],
+    "JP": [
+     "JPN225",
+     "USDJPY"
+    ],
+    "global": [
+     "US500",
+     "XTIUSD"
+    ]
+   }
+  },
+  "web_traffic": {
+   "id": "web_traffic",
+   "label": "Web traffic, search interest and page views",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "website page views open data api",
+    "zh": "网站 访问量 搜索指数 数据",
+    "ja": "ウェブ 閲覧数 検索 データ",
+    "ko": "웹 방문 검색량 데이터",
+    "ru": "посещаемость сайтов поисковые запросы данные",
+    "pt": "visualizações de página dados abertos",
+    "es": "visitas web páginas vistas datos",
+    "de": "Seitenaufrufe Webverkehr Daten",
+    "fr": "pages vues trafic web données",
+    "tr": "web trafiği sayfa görüntüleme verisi",
+    "ar": "زيارات المواقع مشاهدات الصفحات بيانات",
+    "hi": "वेबसाइट पेज व्यू आंकड़े"
+   },
+   "instruments": {
+    "global": [
+     "US500",
+     "NAS100",
+     "XAUUSD"
+    ]
+   }
+  },
+  "app_data": {
+   "id": "app_data",
+   "label": "Mobile app downloads and rankings",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "app store top charts ranking history",
+    "zh": "应用 排行榜 下载量 数据",
+    "ja": "アプリ ランキング 推移 データ",
+    "ko": "앱 순위 다운로드 데이터",
+    "ru": "рейтинг приложений загрузки данные",
+    "pt": "ranking de aplicativos downloads dados",
+    "es": "ranking de aplicaciones descargas datos",
+    "de": "App Charts Downloads Daten",
+    "fr": "classement des applications téléchargements données",
+    "tr": "uygulama sıralaması indirme verisi",
+    "ar": "ترتيب التطبيقات التنزيلات بيانات",
+    "hi": "ऐप रैंकिंग डाउनलोड आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "NAS100",
+     "Meta",
+     "Uber",
+     "Spotify"
+    ],
+    "CN": [
+     "HK50",
+     "TMEGroup",
+     "AlibabaGroup"
+    ],
+    "global": [
+     "NAS100"
+    ]
+   }
+  },
+  "jobs": {
+   "id": "jobs",
+   "label": "Job postings, hiring and labour-market alternative data",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "job postings index data free",
+    "zh": "招聘 岗位 数据 指数",
+    "ja": "求人 件数 データ",
+    "ko": "채용공고 구인 데이터",
+    "ru": "вакансии количество данные",
+    "pt": "vagas de emprego dados",
+    "es": "ofertas de empleo datos",
+    "de": "Stellenanzeigen Daten Index",
+    "fr": "offres d'emploi données",
+    "tr": "iş ilanları verisi",
+    "ar": "إعلانات الوظائف بيانات",
+    "hi": "नौकरी विज्ञापन आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "USDX",
+     "US500",
+     "UST10Y"
+    ],
+    "global": [
+     "USDX",
+     "US500"
+    ]
+   }
+  },
+  "patents": {
+   "id": "patents",
+   "label": "Patents and innovation filings",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "patent grants bulk data download",
+    "zh": "专利 数据 批量 下载",
+    "ja": "特許 データ 一括 ダウンロード",
+    "ko": "특허 데이터 대량 다운로드",
+    "ru": "патенты открытые данные",
+    "pt": "patentes dados abertos",
+    "es": "patentes datos abiertos",
+    "de": "Patente Massendaten Download",
+    "fr": "brevets données ouvertes",
+    "tr": "patent açık veri",
+    "ar": "براءات الاختراع بيانات مفتوحة",
+    "hi": "पेटेंट खुला डेटा"
+   },
+   "instruments": {
+    "US": [
+     "NAS100"
+    ],
+    "global": [
+     "NAS100",
+     "US500"
+    ]
+   }
+  },
+  "esg": {
+   "id": "esg",
+   "label": "ESG, emissions and controversy data",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "facility emissions open data greenhouse gas",
+    "zh": "碳排放 企业 数据 公开",
+    "ja": "排出量 事業所 公開 データ",
+    "ko": "온실가스 배출량 공개 데이터",
+    "ru": "выбросы предприятий открытые данные",
+    "pt": "emissões gases de efeito estufa dados abertos",
+    "es": "emisiones gases efecto invernadero datos abiertos",
+    "de": "Emissionen Anlagen offene Daten",
+    "fr": "émissions gaz à effet de serre données ouvertes",
+    "tr": "sera gazı emisyon açık veri",
+    "ar": "انبعاثات غازات الدفيئة بيانات مفتوحة",
+    "hi": "ग्रीनहाउस गैस उत्सर्जन खुला डेटा"
+   },
+   "instruments": {
+    "EU": [
+     "XNGUSD",
+     "EUSTX50"
+    ],
+    "global": [
+     "XNGUSD",
+     "XTIUSD"
+    ]
+   }
+  },
+  "fx_order_flow": {
+   "id": "fx_order_flow",
+   "label": "FX volumes, order flow and dealer positioning",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "FX turnover volume survey data",
+    "zh": "外汇 交易量 数据",
+    "ja": "外国為替 取引高 データ",
+    "ko": "외환 거래량 데이터",
+    "ru": "объем торгов валютой данные",
+    "pt": "volume câmbio dados",
+    "es": "volumen de divisas datos",
+    "de": "Devisenhandel Umsatz Daten",
+    "fr": "volume de change données",
+    "tr": "döviz işlem hacmi verisi",
+    "ar": "حجم تداول العملات بيانات",
+    "hi": "विदेशी मुद्रा कारोबार मात्रा आंकड़े"
+   },
+   "instruments": {
+    "global": [
+     "EURUSD",
+     "USDJPY",
+     "GBPUSD",
+     "AUDUSD",
+     "USDCAD",
+     "USDCHF"
+    ]
+   }
+  },
+  "options_vol": {
+   "id": "options_vol",
+   "label": "Options, implied volatility and derivatives analytics",
+   "owner": "asia",
+   "terms": {
+    "en": "implied volatility index history csv",
+    "zh": "期权 隐含波动率 指数 数据",
+    "ja": "オプション インプライドボラティリティ 指数 データ",
+    "ko": "옵션 내재변동성 지수 데이터",
+    "ru": "опционы подразумеваемая волатильность индекс данные",
+    "pt": "opções volatilidade implícita índice dados",
+    "es": "opciones volatilidad implícita índice datos",
+    "de": "Optionen implizite Volatilität Index Daten",
+    "fr": "options volatilité implicite indice données",
+    "tr": "opsiyon zımni oynaklık endeksi verisi",
+    "ar": "الخيارات التقلب الضمني مؤشر بيانات",
+    "hi": "ऑप्शंस निहित अस्थिरता सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "NAS100",
+     "US30"
+    ],
+    "JP": [
+     "JPN225"
+    ],
+    "EU": [
+     "EUSTX50",
+     "GER40"
+    ],
+    "global": [
+     "US500",
+     "XAUUSD",
+     "EURUSD",
+     "USDJPY"
+    ]
+   }
+  },
+  "rates_curves": {
+   "id": "rates_curves",
+   "label": "Government yield curves and money-market rates",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "government bond yield curve daily csv",
+    "zh": "国债 收益率曲线 日度 数据",
+    "ja": "国債 金利 情報 日次",
+    "ko": "국고채 금리 일별 데이터",
+    "ru": "кривая доходности ОФЗ данные",
+    "pt": "curva de juros títulos públicos dados",
+    "es": "curva de rendimientos bonos datos",
+    "de": "Zinsstrukturkurve Bundesanleihen Daten",
+    "fr": "courbe des taux obligations d'état données",
+    "tr": "devlet tahvili getiri eğrisi verisi",
+    "ar": "منحنى عائد السندات الحكومية بيانات",
+    "hi": "सरकारी बॉन्ड यील्ड कर्व आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "UST10Y",
+     "UST05Y",
+     "USDX",
+     "USDJPY"
+    ],
+    "EU": [
+     "EURUSD"
+    ],
+    "GB": [
+     "UKGILT",
+     "GBPUSD"
+    ],
+    "JP": [
+     "USDJPY"
+    ],
+    "global": [
+     "UST10Y",
+     "USDX",
+     "XAUUSD"
+    ]
+   }
+  },
+  "credit": {
+   "id": "credit",
+   "label": "Credit spreads, CDS and corporate bond aggregates",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "corporate bond spread index daily data",
+    "zh": "信用利差 公司债 数据",
+    "ja": "社債 スプレッド データ",
+    "ko": "회사채 신용스프레드 데이터",
+    "ru": "кредитные спреды корпоративные облигации данные",
+    "pt": "spread de crédito debêntures dados",
+    "es": "diferencial de crédito bonos corporativos datos",
+    "de": "Kreditspreads Unternehmensanleihen Daten",
+    "fr": "spreads de crédit obligations d'entreprises données",
+    "tr": "kredi spreadi şirket tahvili verisi",
+    "ar": "فروق الائتمان سندات الشركات بيانات",
+    "hi": "क्रेडिट स्प्रेड कॉर्पोरेट बॉन्ड आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "UST10Y",
+     "USDX"
+    ],
+    "global": [
+     "US500",
+     "XAUUSD",
+     "USDJPY"
+    ]
+   }
+  },
+  "ticks": {
+   "id": "ticks",
+   "label": "Tick and intraday market data",
+   "owner": "asia",
+   "terms": {
+    "en": "historical tick data free download",
+    "zh": "历史 tick 数据 免费 下载",
+    "ja": "ティックデータ 無料 ダウンロード",
+    "ko": "틱 데이터 무료 다운로드",
+    "ru": "тиковые данные бесплатно скачать",
+    "pt": "dados de tick históricos grátis",
+    "es": "datos tick históricos gratis",
+    "de": "Tickdaten kostenlos historisch",
+    "fr": "données tick historiques gratuites",
+    "tr": "tik verisi ücretsiz indir",
+    "ar": "بيانات التيك التاريخية مجانا",
+    "hi": "टिक डेटा मुफ्त डाउनलोड"
+   },
+   "instruments": {
+    "global": [
+     "EURUSD",
+     "USDJPY",
+     "GBPUSD",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "trade_customs": {
+   "id": "trade_customs",
+   "label": "Customs, trade flows and bill-of-lading data",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "customs trade statistics monthly open data",
+    "zh": "海关 进出口 统计 数据",
+    "ja": "貿易統計 税関 データ",
+    "ko": "수출입 통계 관세청 데이터",
+    "ru": "таможенная статистика внешней торговли данные",
+    "pt": "estatísticas de comércio exterior dados",
+    "es": "estadísticas comercio exterior aduanas datos",
+    "de": "Außenhandelsstatistik Zoll Daten",
+    "fr": "statistiques douanières commerce extérieur données",
+    "tr": "dış ticaret istatistikleri gümrük verisi",
+    "ar": "إحصاءات التجارة الخارجية الجمارك بيانات",
+    "hi": "विदेश व्यापार सीमा शुल्क आंकड़े"
+   },
+   "instruments": {
+    "CN": [
+     "USDCNH",
+     "AUDUSD",
+     "XCUUSD"
+    ],
+    "KR": [
+     "USDKRW"
+    ],
+    "JP": [
+     "USDJPY"
+    ],
+    "global": [
+     "USDCNH",
+     "AUDUSD",
+     "EURUSD"
+    ]
+   }
+  },
+  "pricing": {
+   "id": "pricing",
+   "label": "Online prices, CPI nowcasts and e-commerce pricing",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "online price index scraped prices data",
+    "zh": "网络 价格 指数 数据",
+    "ja": "オンライン 価格 指数 データ",
+    "ko": "온라인 물가 지수 데이터",
+    "ru": "онлайн цены индекс данные",
+    "pt": "índice de preços online dados",
+    "es": "índice de precios en línea datos",
+    "de": "Online Preisindex Daten",
+    "fr": "indice des prix en ligne données",
+    "tr": "çevrimiçi fiyat endeksi verisi",
+    "ar": "مؤشر الأسعار عبر الإنترنت بيانات",
+    "hi": "ऑनलाइन मूल्य सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "UST10Y",
+     "USDX",
+     "XAUUSD"
+    ],
+    "global": [
+     "USDX",
+     "XAUUSD"
+    ]
+   }
+  },
+  "real_estate": {
+   "id": "real_estate",
+   "label": "Real-estate prices and transactions",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "house price index transactions open data",
+    "zh": "房价 指数 成交 数据",
+    "ja": "不動産 価格 指数 取引 データ",
+    "ko": "주택가격 지수 거래 데이터",
+    "ru": "индекс цен на жилье сделки данные",
+    "pt": "índice de preços de imóveis dados",
+    "es": "índice de precios de vivienda datos",
+    "de": "Immobilienpreisindex Transaktionen Daten",
+    "fr": "indice des prix immobiliers transactions données",
+    "tr": "konut fiyat endeksi verisi",
+    "ar": "مؤشر أسعار المساكن بيانات",
+    "hi": "आवास मूल्य सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "UST10Y"
+    ],
+    "GB": [
+     "GBPUSD",
+     "UK100"
+    ],
+    "global": [
+     "US500"
+    ]
+   }
+  },
+  "energy_power": {
+   "id": "energy_power",
+   "label": "Power grid load, generation and electricity prices",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "electricity load generation day-ahead price open data",
+    "zh": "电力 负荷 发电 数据",
+    "ja": "電力 需給 スポット価格 データ",
+    "ko": "전력 수요 발전량 데이터",
+    "ru": "электроэнергия потребление генерация данные",
+    "pt": "carga de energia elétrica geração dados",
+    "es": "demanda eléctrica generación precios datos",
+    "de": "Stromverbrauch Erzeugung Day-Ahead Preise Daten",
+    "fr": "consommation électricité production prix données",
+    "tr": "elektrik tüketimi üretim piyasa fiyatı verisi",
+    "ar": "أحمال الكهرباء التوليد بيانات",
+    "hi": "बिजली मांग उत्पादन आंकड़े"
+   },
+   "instruments": {
+    "EU": [
+     "XNGUSD",
+     "GER40"
+    ],
+    "US": [
+     "XNGUSD"
+    ],
+    "global": [
+     "XNGUSD",
+     "XTIUSD"
+    ]
+   }
+  },
+  "supply_chain": {
+   "id": "supply_chain",
+   "label": "Supply-chain pressure, freight and delivery times",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "supply chain pressure index freight data",
+    "zh": "供应链 压力 指数 数据",
+    "ja": "サプライチェーン 圧力 指数 データ",
+    "ko": "공급망 압력 지수 데이터",
+    "ru": "индекс давления цепочек поставок данные",
+    "pt": "índice de pressão da cadeia de suprimentos dados",
+    "es": "índice de presión cadena de suministro datos",
+    "de": "Lieferketten Druck Index Daten",
+    "fr": "indice de pression chaîne d'approvisionnement données",
+    "tr": "tedarik zinciri baskı endeksi verisi",
+    "ar": "مؤشر ضغط سلاسل الإمداد بيانات",
+    "hi": "आपूर्ति श्रृंखला दबाव सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "global": [
+     "USDX",
+     "XCUUSD",
+     "US500",
+     "USDCNH"
+    ]
+   }
+  },
+  "expert_surveys": {
+   "id": "expert_surveys",
+   "label": "Business and expert surveys (PMI-like, diffusion indices)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "business survey diffusion index data",
+    "zh": "采购经理指数 调查 数据",
+    "ja": "短観 業況判断 調査 データ",
+    "ko": "기업경기실사지수 데이터",
+    "ru": "индекс деловой активности опрос данные",
+    "pt": "sondagem industrial índice de confiança dados",
+    "es": "encuesta de confianza empresarial datos",
+    "de": "Geschäftsklima Umfrage Index Daten",
+    "fr": "enquête de conjoncture climat des affaires données",
+    "tr": "iktisadi yönelim anketi verisi",
+    "ar": "مسح مديري المشتريات بيانات",
+    "hi": "व्यावसायिक सर्वेक्षण सूचकांक आंकड़े"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "USDX"
+    ],
+    "EU": [
+     "EURUSD",
+     "GER40"
+    ],
+    "JP": [
+     "USDJPY",
+     "JPN225"
+    ],
+    "CN": [
+     "USDCNH",
+     "AUDUSD"
+    ],
+    "global": [
+     "USDX",
+     "EURUSD",
+     "USDJPY",
+     "XAUUSD",
+     "US500"
+    ]
+   }
+  },
+  "web_scraped_corporate": {
+   "id": "web_scraped_corporate",
+   "label": "Web-scraped corporate KPIs (store counts, hiring, pricing pages)",
+   "owner": "paid_substitute_engine",
+   "terms": {
+    "en": "company store locations count dataset",
+    "zh": "企业 门店 数量 数据集",
+    "ja": "企業 店舗数 データセット",
+    "ko": "기업 매장 수 데이터셋",
+    "ru": "количество магазинов компании данные",
+    "pt": "número de lojas empresa dados",
+    "es": "número de tiendas empresa datos",
+    "de": "Filialanzahl Unternehmen Datensatz",
+    "fr": "nombre de magasins entreprise données",
+    "tr": "şirket mağaza sayısı verisi",
+    "ar": "عدد متاجر الشركة بيانات",
+    "hi": "कंपनी स्टोर संख्या डेटा"
+   },
+   "instruments": {
+    "US": [
+     "US500",
+     "NAS100"
+    ],
+    "global": [
+     "US500"
+    ]
+   }
+  }
+ },
+ "targets": {
+  "gov_open_data": {
+   "en": [
+    "data.gov",
+    "data.gov.uk",
+    "data.europa.eu"
+   ],
+   "zh": [
+    "data.stats.gov.cn"
+   ],
+   "ja": [
+    "data.e-gov.go.jp",
+    "e-stat.go.jp"
+   ],
+   "ko": [
+    "data.go.kr"
+   ],
+   "ru": [
+    "rosstat.gov.ru"
+   ],
+   "pt": [
+    "dados.gov.br"
+   ],
+   "es": [
+    "datos.gob.es",
+    "datos.gob.mx"
+   ],
+   "de": [
+    "govdata.de"
+   ],
+   "fr": [
+    "data.gouv.fr"
+   ],
+   "tr": [
+    "data.tuik.gov.tr"
+   ],
+   "ar": [
+    "open.data.gov.sa"
+   ],
+   "hi": [
+    "data.gov.in"
+   ]
+  },
+  "statistics_office": {
+   "en": [
+    "census.gov",
+    "bls.gov",
+    "ons.gov.uk",
+    "abs.gov.au"
+   ],
+   "zh": [
+    "stats.gov.cn",
+    "censtatd.gov.hk"
+   ],
+   "ja": [
+    "stat.go.jp"
+   ],
+   "ko": [
+    "kostat.go.kr"
+   ],
+   "ru": [
+    "rosstat.gov.ru"
+   ],
+   "pt": [
+    "ibge.gov.br"
+   ],
+   "es": [
+    "ine.es",
+    "inegi.org.mx"
+   ],
+   "de": [
+    "destatis.de"
+   ],
+   "fr": [
+    "insee.fr"
+   ],
+   "tr": [
+    "tuik.gov.tr"
+   ],
+   "ar": [
+    "stats.gov.sa"
+   ],
+   "hi": [
+    "mospi.gov.in"
+   ]
+  },
+  "central_bank": {
+   "en": [
+    "federalreserve.gov",
+    "newyorkfed.org",
+    "ecb.europa.eu",
+    "bankofengland.co.uk",
+    "bis.org"
+   ],
+   "zh": [
+    "pbc.gov.cn"
+   ],
+   "ja": [
+    "boj.or.jp"
+   ],
+   "ko": [
+    "ecos.bok.or.kr"
+   ],
+   "ru": [
+    "cbr.ru"
+   ],
+   "pt": [
+    "bcb.gov.br"
+   ],
+   "es": [
+    "bde.es",
+    "banxico.org.mx"
+   ],
+   "de": [
+    "bundesbank.de"
+   ],
+   "fr": [
+    "banque-france.fr"
+   ],
+   "tr": [
+    "evds2.tcmb.gov.tr"
+   ],
+   "ar": [
+    "sama.gov.sa"
+   ],
+   "hi": [
+    "rbi.org.in"
+   ]
+  },
+  "exchange": {
+   "en": [
+    "cmegroup.com",
+    "cboe.com",
+    "theocc.com"
+   ],
+   "zh": [
+    "shfe.com.cn",
+    "dce.com.cn",
+    "czce.com.cn",
+    "hkex.com.hk"
+   ],
+   "ja": [
+    "jpx.co.jp"
+   ],
+   "ko": [
+    "data.krx.co.kr"
+   ],
+   "ru": [
+    "moex.com"
+   ],
+   "pt": [
+    "b3.com.br"
+   ],
+   "es": [
+    "bolsasymercados.es"
+   ],
+   "de": [
+    "deutsche-boerse.com",
+    "eex.com"
+   ],
+   "fr": [
+    "euronext.com"
+   ],
+   "tr": [
+    "borsaistanbul.com"
+   ],
+   "ar": [
+    "saudiexchange.sa"
+   ],
+   "hi": [
+    "nseindia.com"
+   ]
+  },
+  "regulator": {
+   "en": [
+    "cftc.gov",
+    "sec.gov",
+    "finra.org",
+    "fca.org.uk",
+    "esma.europa.eu"
+   ],
+   "zh": [
+    "csrc.gov.cn"
+   ],
+   "ja": [
+    "fsa.go.jp"
+   ],
+   "ko": [
+    "dart.fss.or.kr"
+   ],
+   "ru": [
+    "cbr.ru"
+   ],
+   "pt": [
+    "cvm.gov.br"
+   ],
+   "es": [
+    "cnmv.es"
+   ],
+   "de": [
+    "bafin.de"
+   ],
+   "fr": [
+    "amf-france.org"
+   ],
+   "tr": [
+    "spk.gov.tr"
+   ],
+   "ar": [
+    "cma.org.sa"
+   ],
+   "hi": [
+    "sebi.gov.in"
+   ]
+  },
+  "academic_replication": {
+   "en": [
+    "openicpsr.org",
+    "dataverse.harvard.edu",
+    "osf.io"
+   ],
+   "zh": [
+    "cnopendata.com"
+   ],
+   "ja": [
+    "ssjda.iss.u-tokyo.ac.jp"
+   ],
+   "ko": [
+    "kossda.snu.ac.kr"
+   ],
+   "ru": [
+    "sophist.hse.ru"
+   ],
+   "pt": [
+    "dataverse.fgv.br"
+   ],
+   "es": [
+    "datosabiertos.unam.mx"
+   ],
+   "de": [
+    "gesis.org"
+   ],
+   "fr": [
+    "data.sciencespo.fr"
+   ],
+   "tr": [
+    "tubitak.gov.tr"
+   ],
+   "ar": [
+    "data.worldbank.org"
+   ],
+   "hi": [
+    "data.gov.in"
+   ]
+  },
+  "github": {
+   "*": [
+    "github.com"
+   ],
+   "zh": [
+    "github.com",
+    "gitee.com"
+   ]
+  },
+  "kaggle": {
+   "en": [
+    "kaggle.com"
+   ]
+  },
+  "zenodo": {
+   "en": [
+    "zenodo.org"
+   ]
+  },
+  "public_web": {
+   "*": [
+    ""
+   ]
+  }
+ },
+ "region_languages": {
+  "US": [
+   "en",
+   "es"
+  ],
+  "GB": [
+   "en"
+  ],
+  "EU": [
+   "en",
+   "de",
+   "fr",
+   "es"
+  ],
+  "JP": [
+   "ja",
+   "en"
+  ],
+  "CN": [
+   "zh",
+   "en"
+  ],
+  "HK": [
+   "zh",
+   "en"
+  ],
+  "TW": [
+   "zh",
+   "en"
+  ],
+  "KR": [
+   "ko",
+   "en"
+  ],
+  "IN": [
+   "hi",
+   "en"
+  ],
+  "RU": [
+   "ru",
+   "en"
+  ],
+  "BR": [
+   "pt",
+   "en"
+  ],
+  "LATAM": [
+   "es",
+   "pt",
+   "en"
+  ],
+  "MENA": [
+   "ar",
+   "tr",
+   "en"
+  ],
+  "TR": [
+   "tr",
+   "en"
+  ],
+  "SA": [
+   "ar",
+   "en"
+  ],
+  "DE": [
+   "de",
+   "en"
+  ],
+  "FR": [
+   "fr",
+   "en"
+  ],
+  "AU": [
+   "en"
+  ],
+  "CA": [
+   "en",
+   "fr"
+  ],
+  "SG": [
+   "en",
+   "zh"
+  ],
+  "global": [
+   "en",
+   "zh",
+   "ja",
+   "ko",
+   "ru",
+   "pt",
+   "es",
+   "de",
+   "fr",
+   "tr",
+   "ar",
+   "hi"
+  ]
+ }
+}

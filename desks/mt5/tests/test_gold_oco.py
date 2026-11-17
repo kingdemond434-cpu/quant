@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -276,6 +277,48 @@ def test_on_a_day_e8_set_its_own_twin_is_cancelled_and_never_re_placed() -> None
     assert oco.legs_to_cancel("e8", entry, [{"id": 1, "side": "long"},
                                             {"id": 2, "side": "short"}]) == [
         {"id": 2, "side": "short"}]
+
+
+class _LiveE8Venue(_E8Venue):
+    """A TradeLocker book that drops an order once it is cancelled."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        t = int(datetime(2026, 10, 21, 5, 36, tzinfo=UTC).timestamp() * 1000)
+        self.pos = [{"id": 9, "tradableInstrumentId": 6102, "side": "buy", "openDate": t}]
+        self.ords = [{"id": 502, "tradableInstrumentId": 6102, "side": "sell"}]
+
+    def cancel(self, order_id: int) -> bool:
+        self.ords = [o for o in self.ords if int(o["id"]) != int(order_id)]
+        return super().cancel(order_id)
+
+    def positions(self) -> list:
+        return list(self.pos)
+
+    def orders(self) -> list:
+        return list(self.ords)
+
+    def instrument_id(self, symbol: str) -> int:
+        return 6102
+
+
+def test_the_twin_cancel_republishes_e8s_gold_state_in_the_same_pass() -> None:
+    """11-04 (Desk health, measured): the twin was cancelled at 05:36:25Z but E8's published
+    state still listed it, so the FTMO follower read "e8 rests a gold short entry" 10 s later
+    and waited a whole cadence. The cancel now republishes E8's lane before the pass ends."""
+    from prop import e8_gold as g
+    _world("oco")
+    _flat("e8", e8_key(), positions=[{"id": 9, "side": "long", "opened_date": DAY}],
+          orders=[{"id": 502, "side": "short"}])
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed   # stale twin
+    venue, state = _LiveE8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {502}
+    assert doc["gold_oco"]["republished_after_cancel"] is True
+    st, _ = oco.read_lane("e8")
+    assert st is not None and st["orders"] == []
+    assert oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
 
 
 # ======================================================================== both fill in one pass
@@ -610,7 +653,8 @@ def test_no_raw_login_in_any_written_state() -> None:
                    if f.is_file() and f.name.startswith("gold_"))
     assert blob
     for login in (E8_LOGIN, FU_LOGIN, FT_LOGIN):
-        assert str(login) not in blob
+        # A whole number only: a timestamp's microseconds (".313377") once contained 31337.
+        assert not re.search(rf"(?<!\d){login}(?!\d)", blob)
 
 
 # ======================================================================== v2: blind cancels all
@@ -1139,7 +1183,8 @@ def _late_main(tmp_path, monkeypatch, mt5) -> dict:
 def _e8_claimed(side: str, minutes_before: float) -> None:
     _e8_fills(ga._DAY, side)
     days, _ = oco.read_directions()
-    days[ga._DAY]["claimed_at"] = (ga._WHEN - timedelta(minutes=minutes_before)).isoformat()
+    # claimed_at is real UTC: the harness wall clock is _WHEN_UTC (_WHEN is broker time).
+    days[ga._DAY]["claimed_at"] = (ga._WHEN_UTC - timedelta(minutes=minutes_before)).isoformat()
     oco._save_days(days, ga._DAY)
 
 

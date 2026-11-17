@@ -29,7 +29,7 @@ import math
 import re
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -148,6 +148,18 @@ CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 #: the allocator's fractions stop meaning anything. Dormant is the honest state there; a
 #: smaller book that cannot represent its own weights is not.
 PROMOTED_MIN_EQUITY = 300.0
+#: EUR. THE FUSION RUIN LINE (principal zuck 2026-11-05 16:10:57Z: "lower the Fusion equity floor
+#: to EUR 10"; journal D-20261105-042). Below it no Fusion sleeve trades at all; above it every
+#: order is judged on its own size -- allocator sovereignty sends nothing below the venue minimum
+#: and FUSION_MAX_TRADE_RISK_FRAC refuses any order risking more than 10%. Derived: the cheapest
+#: admitted sleeve's measured 0.01-lot stop risk (EUR 0.58, usdnok_carry, n=6) over the 10%
+#: per-trade rail = EUR 5.8, rounded up. proposals/fusion_deadman.EQUITY_FLOOR_EUR is the same
+#: number (pinned by test). It is also the line below which the 0.01-lot book stops: SAME RISK ON
+#: A SMALL ACCOUNT (zuck 2026-11-05 22:53Z: "Fusion should risk the same btw and not reduce its
+#: risk", "Until equity rises to normal"; D-20261105-043) -- the book keeps its own sizing,
+#: max(0.01 lot, 0.75%), at any equity above the ruin line, every order still capped by the 10%
+#: per-trade rail (`minlot_override_size`) and the day by the daily-loss rail.
+FUSION_RUIN_FLOOR_EUR = 10.0
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
@@ -929,12 +941,15 @@ def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
     """Mark, in place, the roster entries the override sizes this pass; clear every other mark.
 
     The mark is set HERE and nowhere else: a `minlot_override` field arriving on a sleeves.json
-    row is popped, so no writer can opt a row in. Below `PROMOTED_MIN_EQUITY` (the ruin line the
-    principal's waiver was priced at) nothing is marked and sizing reverts to sovereignty.
+    row is popped, so no writer can opt a row in. Below `FUSION_RUIN_FLOOR_EUR` (the ruin line)
+    nothing is marked and sizing reverts to sovereignty. It was PROMOTED_MIN_EQUITY (EUR 300),
+    which on a EUR 266 account reverted gold_asia to a 0.75% target below the 0.01 lot -- no
+    order, i.e. its risk cut to zero for being small; the principal ruled that out (2026-11-05).
+    Every marked order is still capped by the 10% per-trade rail in `minlot_override_size`.
     """
     notes: list[str] = []
     ok_equity = isinstance(equity, (int, float)) and math.isfinite(float(equity)) \
-        and float(equity) >= PROMOTED_MIN_EQUITY
+        and float(equity) >= FUSION_RUIN_FLOOR_EUR
     for s in sleeves:
         s.pop("minlot_override", None)
         name = str(s.get("name") or "")
@@ -943,7 +958,7 @@ def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
                 s["minlot_override"] = True
             else:
                 notes.append(f"MINLOT_OVERRIDE {name}: equity {equity} below "
-                             f"{PROMOTED_MIN_EQUITY:.0f}; sized by sovereignty this pass")
+                             f"{FUSION_RUIN_FLOOR_EUR:.0f}; sized by sovereignty this pass")
     return notes
 
 
@@ -1663,6 +1678,26 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return budget, why
     except Exception as exc:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
+
+
+def fold_book_aliases(keys: Mapping[str, str | None]) -> dict[str, str]:
+    """ONE ORDER PER BOOK KEY (hourly pass / Auditor MUST-FIX, 2026-11-04). The allocator prices a
+    (symbol, family, window) CELL once; every roster row that `_book_key` folds onto that cell
+    would otherwise send the cell's whole fraction, so k LIVE variants of one cell sent k times
+    its risk and `cap_by_heat` only trims the total. Given {row name: book key or None}, returns
+    {alias row name: the row that carries the key}: the carrier is the first name in sorted order
+    (deterministic across passes), every other row on the key is an ALIAS that sends nothing."""
+    carrier: dict[str, str] = {}
+    folded: dict[str, str] = {}
+    for name in sorted(keys):
+        k = keys[name]
+        if k is None:
+            continue
+        if k in carrier:
+            folded[name] = carrier[k]
+        else:
+            carrier[k] = name
+    return folded
 
 
 def book_from_allocation(total: float, book: object, book_fallback: object, *,

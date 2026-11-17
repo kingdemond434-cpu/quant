@@ -138,6 +138,59 @@ def test_publish_appends_one_history_line_per_pass(tmp_path):
     assert json.loads(out.read_text("utf-8"))["fence"]["status"] in ("UNMEASURED", "RED")
 
 
+def test_no_frontier_and_no_stats_is_unmeasured_not_all_never_attempted(tmp_path):
+    """SF2: with neither attempt source present every ground would read NEVER_ATTEMPTED -- a
+    count derived from nothing. That is UNMEASURED, and no history line is written for it."""
+    src = tmp_path / "sources.json"
+    src.write_text(json.dumps({"grounds": [_g("a"), _g("b")]}), "utf-8")
+    doc = fa.build(now=NOW, sources=src, frontier=tmp_path / "no_f.json",
+                   stats=tmp_path / "no_s.json")
+    assert doc["status"] == fa.UNMEASURED
+    assert doc["summary"]["named"] == 2
+    assert doc["summary"]["never_attempted"] == fa.UNMEASURED
+    assert fa.judge(doc, [], NOW)["status"] == fa.UNMEASURED
+    hp = tmp_path / "hist.jsonl"
+    fa.publish(out=tmp_path / "out.json", history_path=hp, now=NOW, sources=src,
+               frontier=tmp_path / "no_f.json", stats=tmp_path / "no_s.json")
+    assert not hp.exists()
+
+
+def test_the_history_trim_keeps_every_valid_line_and_drops_malformed(tmp_path, monkeypatch):
+    """SF3: malformed lines stay out, but they never use up the window -- a valid reading is
+    lost only to the cap -- and the rewrite is tmp + os.replace."""
+    monkeypatch.setattr(fa, "MAX_HISTORY", 5)
+    hp = tmp_path / "hist.jsonl"
+    valid = [json.dumps({"at": _iso(NOW - timedelta(hours=10 - i)), "summary": {"i": i}})
+             for i in range(4)]
+    hp.write_text("\n".join([valid[0], "{torn", valid[1], valid[2], "not json", valid[3]])
+                  + "\n", "utf-8")
+    assert [h["summary"]["i"] for h in fa.history(hp)] == [0, 1, 2, 3]
+    paths = _files(tmp_path, [_g("a")], {"a": {"outcome": "NAMED_ONLY"}}, {})
+    fa.publish(out=tmp_path / "out.json", history_path=hp, now=NOW, **paths)
+    lines = hp.read_text("utf-8").splitlines()
+    assert lines[:4] == valid                          # every valid line, verbatim
+    assert len(lines) == 5 and "never_attempted" in lines[-1]
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_the_atomic_write_never_falls_back_to_a_direct_write(tmp_path, monkeypatch):
+    target = tmp_path / "hist.jsonl"
+    target.write_text("old\n", "utf-8")
+
+    def locked(*_a: Any) -> None:
+        raise PermissionError("held by a reader")
+    monkeypatch.setattr(fa.os, "replace", locked)
+    monkeypatch.setattr(fa.time, "sleep", lambda _s: None)
+    try:
+        fa._atomic(target, "new\n")
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("a failed replace must raise, never write in place")
+    assert target.read_text("utf-8") == "old\n"
+    assert not list(tmp_path.glob("*.tmp"))
+
+
 def test_an_absent_registry_is_unmeasured_never_zero(tmp_path):
     doc = fa.build(now=NOW, sources=tmp_path / "absent.json", frontier=tmp_path / "f.json",
                    stats=tmp_path / "s.json")

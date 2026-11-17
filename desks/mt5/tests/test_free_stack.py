@@ -7,10 +7,8 @@ at a temp store, so nothing a test writes lands in the desk's own data or report
 """
 from __future__ import annotations
 
-import io
 import json
 import sys
-import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -34,31 +32,16 @@ def _fx(name: str) -> bytes:
     return (FIX / name).read_bytes()
 
 
-def _house_zip() -> bytes:
-    xml = ("<FinancialDisclosure><Member><Last>X</Last><FilingType>P</FilingType>"
-           "<FilingDate>9/21/2026</FilingDate><DocID>1</DocID></Member><Member><Last>Y</Last>"
-           "<FilingType>O</FilingType><FilingDate>9/21/2026</FilingDate><DocID>2</DocID>"
-           "</Member><Member><Last>Z</Last><FilingType>P</FilingType><FilingDate>9/22/2026"
-           "</FilingDate><DocID>3</DocID></Member></FinancialDisclosure>")
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w") as zf:
-        zf.writestr("2026FD.xml", xml)
-    return buf.getvalue()
-
-
 ROUTES: list[tuple[str, object]] = [
     ("rss.applemarketingtools.com", "apple_rss.synthetic.json"),
     ("m.weibo.cn", "weibo_search.synthetic.json"),
     ("xueqiu.com", "xueqiu_waf.synthetic.html"),
-    ("zhihu.sogou.com", "sogou_zhihu.synthetic.html"),
     ("guba.eastmoney.com", "guba_list.synthetic.html"),
     ("example-ir.jp/ir/library/2026q1", "ir_doc_q1.synthetic.html"),
     ("example-ir.jp/ir/2025q4", "ir_doc_q4.synthetic.html"),
     ("example-ir.jp/ir/", "ir_page.synthetic.html"),
     ("trends.google.com/trends/api/explore", "trends_explore.synthetic.txt"),
     ("trends.google.com/trends/api/widgetdata", "trends_multiline.synthetic.txt"),
-    ("disclosures-clerk.house.gov", _house_zip),
-    ("house-stock-watcher", "stockwatcher.synthetic.json"),
     ("api.coinpaprika.com/v1/tickers/btc", "paprika_btc.synthetic.json"),
     ("api.coinpaprika.com/v1/global", "paprika_global.synthetic.json"),
     ("reddit.com", "reddit_new.synthetic.json"),
@@ -179,12 +162,6 @@ def test_trends_column_is_a_within_response_log_change() -> None:
     assert fs.parse_trends_explore(_fx("trends_explore.synthetic.txt")).get("token") == "TOK"
 
 
-def test_congress_is_dated_by_disclosure_and_mapped() -> None:
-    tx = fs.parse_stockwatcher(_fx("stockwatcher.synthetic.json"))
-    assert {t["disclosed"] for t in tx} == {"2026-09-21", "2026-09-22"}
-    assert len(fs.parse_house_fd_index(_house_zip())) == 3
-
-
 def test_catalogue_refuses_exchange_hosts_and_reads_rst_and_md() -> None:
     md = fs.parse_catalogue(_fx("awesome_alt_data_README.recorded.md"), "alt")
     rst = fs.parse_catalogue(_fx("awesome_public_datasets_economics.recorded.rst"), "apd")
@@ -242,7 +219,10 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
-    assert per["congress_trades"]["status"] == "OK"
+    # off-limits grounds and statute-barred reports are refused before any request
+    for sid in ("congress_trades", "cn_zhihu"):
+        assert per[sid]["status"] == "BLOCKED_TERMS", sid
+        assert per[sid]["attempts"] == 0 and "UNMEASURED" in per[sid]["missed_growth"], sid
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
     # a live yield is never claimed from a fixture run

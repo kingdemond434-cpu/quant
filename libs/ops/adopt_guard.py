@@ -249,6 +249,56 @@ def is_governed_state(rel: str) -> bool:
     )
 
 
+#: THE BOX PUBLISHES ITS STATE WITHOUT COMMITTING IT (2026-10-30). MT5-ShadowSync
+#: (sync_shadow_to_git.ps1) builds each fifteen-minute state commit with commit-tree onto origin's
+#: tip and pushes it; the box's own HEAD never takes it. So sleeves.json and BARS_STATE.json, which
+#: only the box writes, read here as "origin changed it, the box did not", and ADOPT_TIP took the
+#: tip's blob of each: a new blob every fifteen minutes that no CLEAR row could ever pin. Every pass
+#: from 10-30 10:30Z held on exactly those two paths (HOLD_UNAUDITED 2 of 92). A state path whose
+#: target blob IS the blob this box itself last published is the box's measurement, exactly like
+#: one the box committed. The proof is the box's own sync log, which never leaves the box: a commit
+#: is the box's only when that log names it, it is a non-merge commit inside merge-base..target,
+#: and its subject is the publisher's. A missing log proves nothing and exempts nothing.
+PUBLISH_LOG_REL = "desks/mt5/logs/sync_shadow_to_git.log"
+_PUBLISHED = re.compile(r"published box state onto origin/\S+ as ([0-9a-f]{12}) \(")
+_BOX_SUBJECT = re.compile(r"^mt5 box state \d{4}-\d{2}-\d{2}_\d{4} \(published onto origin")
+
+
+def box_published(root: Path, base: str, target: str) -> dict[str, str]:
+    """Every path's object as this box last published it onto origin in `base..target`."""
+    try:
+        log = (root / PUBLISH_LOG_REL).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    ours = set(_PUBLISHED.findall(log))
+    if not ours:
+        return {}
+    out = _git(
+        root,
+        "log",
+        "--reverse",
+        "--no-merges",
+        "--raw",
+        "--no-abbrev",
+        "--no-renames",
+        "-z",
+        "--format=%x01%H %s",
+        f"{base}..{target}",
+    )
+    blobs: dict[str, str] = {}
+    for chunk in out.split("\x01")[1:]:
+        head, _, raw = chunk.partition("\n")
+        sha, _, subject = head.partition(" ")
+        if sha[:12] not in ours or not _BOX_SUBJECT.match(subject):
+            continue
+        fields = [f for f in raw.split("\0") if f.strip()]
+        for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
+            parts = meta.strip().split()
+            if len(parts) == 5 and parts[0].startswith(":"):
+                blobs[rel] = parts[3]
+    return blobs
+
+
 def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> list[str]:
     """Every path this adoption would change on the box that needs an auditor's word.
 
@@ -257,7 +307,8 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     exactly what the seal is about to vouch for, so it needs a CLEAR like any other (adopter v2
     audit, probe 16). STATE: changed by origin since the box and origin diverged and NOT changed
     by the box in that time (Adopt-Release keeps the box's copy of those), where the target's
-    object differs from what the box holds.
+    object differs from what the box holds and is not the object the box itself last published
+    onto origin (`box_published`).
     """
     head = _rev(root, head)
     mb = _git(root, "merge-base", head, target).strip()
@@ -265,10 +316,13 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     origin_changed = set(_changed(root, mb, target)) if HEX40.match(mb) else set()
     t_tree, h_tree = _tree(root, target), _tree(root, head)
     code = {p for p in _changed(root, sealed, target) if is_code(p)}
+    published = box_published(root, mb, target) if HEX40.match(mb) else {}
     state = {
         p
         for p in origin_changed - box_changed
-        if is_governed_state(p) and t_tree.get(p) != h_tree.get(p)
+        if is_governed_state(p)
+        and t_tree.get(p) != h_tree.get(p)
+        and (p not in published or published[p] != t_tree.get(p))
     }
     return sorted(code | state)
 
@@ -368,6 +422,10 @@ class Clear:
     report: str
     paths: dict[str, str | None] = field(default_factory=dict)
     lifts_rollback: tuple[str, ...] = ()
+    #: "" for an Auditor-landed row; GATE_BY for a merge-time row, which counts only once
+    #: `authenticated` re-verifies its source on this box (ops/release/adopt_rows.py, R2f)
+    by: str = ""
+    source: dict[str, Any] | None = None
 
 
 def parse_clears(text: str) -> list[Clear]:
@@ -405,7 +463,10 @@ def parse_clears(text: str) -> list[Clear]:
             isinstance(x, str) and HEX40.match(x) for x in lifts
         ):
             raise GuardError(f"{CLEARS_REL}:{n} lifts_rollback must be a list of 40-hex commits")
-        rows.append(Clear(commit, verdict, rep, dict(paths), tuple(lifts)))
+        by, source = d.get("by", ""), d.get("source")
+        if not isinstance(by, str) or (source is not None and not isinstance(source, dict)):
+            raise GuardError(f"{CLEARS_REL}:{n} by must be text and source an object")
+        rows.append(Clear(commit, verdict, rep, dict(paths), tuple(lifts), by, source))
     return rows
 
 
@@ -432,26 +493,204 @@ def lifted_rollbacks(rows: Iterable[Clear]) -> set[str]:
     }
 
 
-def committed_clears(root: Path, target: str) -> list[Clear]:
+class _Versions:
+    """Every version of one file across the commits a walk names, in a constant number of git
+    calls, shared by every walk that is handed the same instance (2026-11-04). Measured on the
+    trading box: proving ADOPT_CLEARS append-only spawned one `rev-list` and one `show` per
+    commit and per parent, twice (target, then origin tip) -- 388 git calls, 1495 s, at ~3.5 s a
+    spawn under the box's memory load, and a `pre` that ran 58 min holding the git-writer mutex.
+    The same proof now costs one `rev-list --stdin`, one `cat-file --batch-check` and one
+    `cat-file --batch` per walk, with blobs and parents remembered across walks."""
+
+    def __init__(self, root: Path, rel: str) -> None:
+        self.root, self.rel = root, rel
+        self.parents: dict[str, list[str]] = {}
+        self.oid: dict[str, str | None] = {}
+        self.data: dict[str, bytes] = {}
+
+    def _batch(self, args: list[str], lines: list[str]) -> bytes:
+        p = subprocess.run(
+            ["git", "-C", str(self.root), *args],
+            input=("\n".join(lines) + "\n").encode("utf-8"),
+            capture_output=True,
+            check=False,
+            timeout=300,
+        )
+        if p.returncode != 0:
+            err = p.stderr.decode("utf-8", "replace").strip()[:300]
+            raise GuardError(f"git {' '.join(args[:2])} failed: {err}")
+        return p.stdout
+
+    def load_parents(self, shas: list[str]) -> None:
+        need = [s for s in dict.fromkeys(shas) if s not in self.parents]
+        if not need:
+            return
+        out = self._batch(["rev-list", "--no-walk=unsorted", "--parents", "--stdin"], need)
+        for line in out.decode("utf-8", "replace").splitlines():
+            parts = line.split()
+            if parts:
+                self.parents[parts[0]] = parts[1:]
+        missing = [s for s in need if s not in self.parents]
+        if missing:
+            raise GuardError(f"rev-list --parents returned nothing for {missing[0][:12]}")
+
+    def load(self, commits: list[str]) -> None:
+        need = [c for c in dict.fromkeys(commits) if c not in self.oid]
+        if need:
+            out = (
+                self._batch(
+                    ["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+                    [f"{c}:{self.rel}" for c in need],
+                )
+                .decode("utf-8", "replace")
+                .splitlines()
+            )
+            if len(out) != len(need):
+                raise GuardError(f"cat-file --batch-check answered {len(out)} of {len(need)}")
+            for c, line in zip(need, out, strict=True):
+                parts = line.split()
+                if line.endswith(" missing"):
+                    self.oid[c] = None
+                elif len(parts) == 2 and HEX40.match(parts[0]) and parts[1] == "blob":
+                    self.oid[c] = parts[0]
+                else:  # anything but a plain blob or an absence: read it the old way
+                    ver = _show(self.root, c, self.rel)
+                    key = f"show:{c}"
+                    self.oid[c] = None if ver is None else key
+                    if ver is not None:
+                        self.data[key] = ver
+        want = [o for o in dict.fromkeys(self.oid[c] for c in commits) if o and o not in self.data]
+        if not want:
+            return
+        raw = self._batch(["cat-file", "--batch"], want)
+        at = 0
+        for o in want:
+            nl = raw.index(b"\n", at)
+            head = raw[at:nl].decode("utf-8", "replace").split()
+            if len(head) != 3 or head[0] != o:
+                raise GuardError(f"cat-file --batch: unexpected header for {o[:12]}")
+            size = int(head[2])
+            self.data[o] = raw[nl + 1 : nl + 1 + size]
+            at = nl + 1 + size + 1
+
+    def at(self, commit: str) -> bytes | None:
+        self.load([commit])
+        o = self.oid[commit]
+        return None if o is None else self.data[o]
+
+
+def committed_clears(root: Path, target: str, versions: _Versions | None = None) -> list[Clear]:
     """The rows as the TARGET commit carries them, after proving no version in its history was
     edited or truncated: every earlier version must be a byte prefix of the target's."""
     if _git(root, "rev-parse", "--is-shallow-repository").strip() == "true":
         raise GuardError(
             "shallow clone: the CLEAR record's history cannot be checked (git fetch --unshallow)"
         )
-    final = _show(root, target, CLEARS_REL)
+    v = versions if versions is not None else _Versions(root, CLEARS_REL)
+    final = v.at(target)
     if final is None:
         return []
     shas = _git(root, "log", "--full-history", "--format=%H", target, "--", CLEARS_REL).split()
-    for sha in shas:
-        for c in (sha, *_git(root, "rev-list", "--parents", "-n", "1", sha).split()[1:]):
-            ver = _show(root, c, CLEARS_REL)
-            if ver is not None and not final.startswith(ver):
-                raise GuardError(
-                    f"{CLEARS_REL} at {c[:12]} is not a prefix of the target's "
-                    "copy: a row was edited or dropped"
-                )
+    v.load_parents(shas)
+    every = [c for sha in shas for c in (sha, *v.parents[sha])]
+    v.load(every)
+    for c in every:
+        ver = v.at(c)
+        if ver is not None and not final.startswith(ver):
+            raise GuardError(
+                f"{CLEARS_REL} at {c[:12]} is not a prefix of the target's "
+                "copy: a row was edited or dropped"
+            )
     return parse_clears(final.decode("utf-8"))
+
+
+# MERGE-TIME ROWS (R2f; Governance 2026-11-04 12:51Z). A `by: audit-gate` CLEAR is written by
+# ops/release/adopt_rows.py from an authority attestation or an Auditor registry row. Where it
+# sits proves nothing -- anyone holding the repo token can push to LIVE -- so it counts only after
+# this box re-verifies it: the signed attestation against the pinned key, or the box registry's
+# own latest row, and every (path, blob) against the merged head. One that fails is absent.
+GATE_BY = "audit-gate"
+LIVE_REF = "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3"
+
+
+def _adopt_rows(root: Path) -> Any:
+    import importlib.util
+
+    f = root / "ops" / "release" / "adopt_rows.py"
+    spec = importlib.util.spec_from_file_location("_guard_adopt_rows", f)
+    if spec is None or spec.loader is None:
+        raise ImportError(str(f))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def authenticated(
+    root: Path, rows: list[Clear], env: dict[str, str] | None = None
+) -> tuple[list[Clear], list[str]]:
+    """(the rows that count, why each merge-time CLEAR that did not was dropped)."""
+    if not any(r.by == GATE_BY and r.verdict == "CLEAR" for r in rows):
+        return rows, []
+    try:
+        ar = _adopt_rows(root)
+        authority = ar.Authority.load(root, env)
+        git = ar.git_in(root)
+    except Exception as exc:  # no verifier in this tree: every merge-time row is absent
+        return [r for r in rows if not (r.by == GATE_BY and r.verdict == "CLEAR")], [
+            f"merge-time rows not verifiable ({type(exc).__name__})"
+        ]
+    reg = (env if env is not None else os.environ).get(ar.REGISTRY_ENV)
+    held = {r.commit for r in rows if r.verdict == "HOLD"}
+    keep: list[Clear] = []
+    dropped: list[str] = []
+    for r in rows:
+        if r.by == GATE_BY and r.verdict == "CLEAR":
+            if (r.source or {}).get("head") in held:
+                dropped.append(f"{r.commit[:12]}: an Auditor HOLD names its cleared head")
+                continue
+            row = {"commit": r.commit, "verdict": r.verdict, "paths": r.paths, "source": r.source}
+            ok, why = ar.verify_row(git, row, authority=authority, registry_path=reg)
+            if not ok:
+                dropped.append(f"{r.commit[:12]}: {why}")
+                continue
+        keep.append(r)
+    return keep, dropped
+
+
+def _origin_tip(root: Path) -> str | None:
+    p = _run(root, "rev-parse", "--verify", f"{LIVE_REF}^{{commit}}")
+    tip = p.stdout.decode().strip() if p.returncode == 0 else ""
+    return tip if HEX40.match(tip) else None
+
+
+def _key(r: Clear) -> str:
+    return json.dumps(
+        [r.commit, r.verdict, r.report, r.paths, list(r.lifts_rollback), r.by, r.source],
+        sort_keys=True,
+    )
+
+
+def effective_clears(root: Path, target: str) -> list[Clear]:
+    """The record the guard judges `target` by (Auditor 2026-11-04 13:03Z, condition 4). The
+    TARGET's own copy is the base set. From origin LIVE's copy (proved append-only like the
+    target's) only two kinds of row are added: every HOLD, from any author and whatever the
+    target's ancestry (fail closed is the safe direction); and, when the target is in origin's
+    history, `by: audit-gate` CLEARs, which `authenticated` must then re-verify. A plain CLEAR that
+    exists only on origin never counts: it has not ridden a tagged release and nothing can
+    authenticate it."""
+    versions = _Versions(root, CLEARS_REL)
+    base = committed_clears(root, target, versions)
+    tip = _origin_tip(root)
+    if tip is None or tip == target:
+        return base
+    have = {_key(r) for r in base}
+    extra = [r for r in committed_clears(root, tip, versions) if _key(r) not in have]
+    ancestor = _run(root, "merge-base", "--is-ancestor", target, tip).returncode == 0
+    return base + [
+        r
+        for r in extra
+        if r.verdict == "HOLD" or (ancestor and r.verdict == "CLEAR" and r.by == GATE_BY)
+    ]
 
 
 def uncovered(root: Path, paths: list[str], target: str, clears: list[Clear]) -> list[str]:
@@ -569,7 +808,7 @@ def pre(
         return HOLD, {"decision": "HOLD_BLACKOUT", "reason": why}
     target = _rev(root, target)
     sealed = sealed_code_sha(root)
-    clears = committed_clears(root, target)
+    clears, unverified = authenticated(root, effective_clears(root, target))
     delta = governed_delta(root, sealed, target)
     miss = uncovered(root, delta, target, clears)
     if miss:
@@ -580,6 +819,7 @@ def pre(
             "reason": f"{len(miss)} of {len(delta)} governed path(s) carry content no "
             f"effective auditor CLEAR vouches for",
             "uncovered": miss[:50],
+            "unverified_rows": unverified[:20],
         }
     hits = rolled_back_hits(root, delta, target, clears, load_rollbacks(root))
     if hits:

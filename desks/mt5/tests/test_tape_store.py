@@ -88,8 +88,22 @@ def test_a_segment_carries_its_own_manifest_row_so_it_is_never_an_orphan_mystery
 
 
 # ------------------------------------------------------------------ the write --
-def test_writing_the_same_ticks_twice_is_idempotent(store: ts.TapeStore) -> None:
-    """Content addressing: identical bytes are the same segment, not a second copy."""
+def test_writing_the_same_ticks_twice_is_idempotent(store: ts.TapeStore,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """Content addressing: identical bytes are the same segment, not a second copy.
+
+    `written_at` is inside the hashed metadata at one-second resolution, so two writes that
+    straddle a second boundary are content-equal and digest-different BY DESIGN (see the
+    compaction note). The clock is frozen so the claim under test -- identical bytes are one
+    segment -- is what decides the result, not where the second hand happened to be on CI."""
+    frozen = ts.datetime(2026, 9, 5, 12, 0, 0, tzinfo=ts.UTC)
+
+    class _Frozen(ts.datetime):  # type: ignore[misc,valid-type]
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[no-untyped-def,override]
+            return frozen
+
+    monkeypatch.setattr(ts, "datetime", _Frozen)
     t = _ticks(200)
     a = store.write_segment("EURUSD", DAY, t, 1e-5, 5)
     b = store.write_segment("EURUSD", DAY, t, 1e-5, 5)

@@ -85,6 +85,7 @@ EXPLOIT_DEPARTMENTS: frozenset[str] = frozenset({"validate", "forward", "executi
 OVERHEAD_DEPARTMENTS: frozenset[str] = frozenset({"meta", "rest"})
 FRONTIER_LEGS: frozenset[str] = frozenset({
     "residual_hunt", "unseen_frontier", "world_lab", "research_evolution", "coverage_tensor",
+    "global_coverage_tensor",
     "source_frontier", "exogenous_search", "qd_frontier", "residual_queue", "world_model",
     "representation_forge", "missed_trade_archaeologist"})
 #: hypothesis-graph `source` prefix -> the tier that minted the cell.

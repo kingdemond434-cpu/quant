@@ -1057,6 +1057,7 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "cross_sectional_class_momentum": "cross_sectional_risk_premium",
     "cross_sectional_class_value": "cross_sectional_risk_premium",
     "cross_sectional_class_low_vol": "cross_sectional_risk_premium",
+    "cross_sectional_class_carry": "cross_sectional_risk_premium",
     "cross_sectional_class_reversal": "liquidity_provision_immediacy",
     "lead_lag_class_catchup": "relative_value_convergence",
     "crisis_only_class_defensive": "positioning_crowding_unwind",

@@ -414,7 +414,8 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
                                           "Content-Type": "application/json"})
     from libs.ops import openrouter_guard
     openrouter_guard.check_request(req)
-    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
     # A 200 WITH AN ERROR BODY IS THE PROVIDER TALKING, NOT A BUG IN THIS FILE.
     #
@@ -646,6 +647,10 @@ def _donate(findings: list[dict]) -> Path | None:
             "symbols": [],
             "url": f"kimi://{f.get('date')}/wave{f.get('wave')}/{digest}",
         })
+        # PROVENANCE: the seat's own id and the donation time; a seat reads no page, so it
+        # carries no source_url (libs.research.source_provenance).
+        from libs.research.source_provenance import stamp_row
+        stamp_row(discoveries[-1], ground="kimi", retrieved_at=now.isoformat(timespec="seconds"))
     from libs.data.pit import stamp_or_refuse
 
     discoveries, refused = stamp_or_refuse(discoveries, "kimi_k3_deep_forest")

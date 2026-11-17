@@ -79,9 +79,14 @@ def symbol_info_tick(symbol):
     if fault == "tick_none":
         return None
     # A live quote is stamped now; the stale one is two hours old while the terminal is up and
-    # connected -- a symbol whose feed stopped while the rest of the book still ticks.
+    # connected -- a symbol whose feed stopped while the rest of the book still ticks. Stamped
+    # on the BROKER's clock (New York wall time + 7h), as MetaTrader stamps it: the gateway
+    # converts it to UTC before ageing it.
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _Z
+    _off = _dt.now(_Z("America/New_York")).utcoffset().total_seconds() + 7 * 3600
     return NS(bid=100.0, ask=100.05,
-              time=int(time.time()) - (7200 if fault == "stale_tick" else 0))
+              time=int(time.time() + _off) - (7200 if fault == "stale_tick" else 0))
 def symbol_info(symbol):
     return NS(point=0.01, trade_stops_level=0, expiration_mode=0, volume_min=0.01,
               volume_step=0.01, trade_contract_size=100.0, digits=2)

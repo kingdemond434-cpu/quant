@@ -140,6 +140,10 @@ SYMBOL_KEYED: frozenset[str] = frozenset({"tape_day", "universe_bars", "moat_ser
                                           "sleeve_ledger"})
 #: A handoff discovery counts as exploitation only once it has actually converted.
 CONVERTED_STATES: frozenset[str] = frozenset({"COMPILED", "QUEUED", "TESTED"})
+#: The reason prefix this organ writes when it BLOCKS a handoff whose symbol MetaTrader's registry
+#: does not carry. Such a block is a ROUTE, not a disposition: it re-routes every pass and never
+#: enters the index's BLOCKED set (which would ratchet the share up and the stranded count down).
+UNCLASSIFIED_REASON = "UNCLASSIFIED:"
 #: WHAT MAKES EACH KIND POINT-IN-TIME, per dataset. A file mtime says when the desk wrote the
 #: bytes and never when the world could read them, so it is NOT a PIT stamp and is not counted
 #: as one -- question 2 of the utilization audit is answered off this table and the per-unit
@@ -336,7 +340,7 @@ def _write_atomic(path: Path, payload: Any) -> None:
 
 
 def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATION_BYTES
-               ) -> tuple[dict[str, int], int]:
+               ) -> tuple[dict[str, int], int, str]:
     """Each unit's MOST RECENT disposition over the ledger's recent tail plus this pass.
 
     WHY THE FENCED NUMBER IS NOT THIS PASS'S SHARE. The window rotates, so one pass is heavy on
@@ -348,6 +352,7 @@ def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATI
     than of the cursor. The per-pass number is still published, as `pass_share`.
     """
     latest: dict[str, str] = {}
+    read_error = ""          # "" read, "absent" no ledger yet, else why the read failed
     try:
         size = path.stat().st_size
         with path.open("rb") as fh:
@@ -364,15 +369,17 @@ def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATI
                     continue
                 if isinstance(row, dict) and row.get("unit_id") and row.get("disposition"):
                     latest[f"{row.get('kind')}:{row['unit_id']}"] = str(row["disposition"])
-    except OSError:
-        pass
+    except FileNotFoundError:
+        read_error = "absent"
+    except OSError as exc:
+        read_error = f"{type(exc).__name__}: {exc}"
     for row in rows:
         latest[f"{row.get('kind')}:{row.get('unit_id')}"] = str(row.get("disposition"))
     tally: dict[str, int] = dict.fromkeys(DISPOSITIONS, 0)
     for verdict in latest.values():
         if verdict in tally:
             tally[verdict] += 1
-    return tally, len(latest)
+    return tally, len(latest), read_error
 
 
 def _append_jsonl(path: Path, rows: list[dict[str, Any]]) -> int:
@@ -983,6 +990,8 @@ def build_index(conn: Any, wanted: set[str] | None = None,
             if keys:
                 by_id[did] = keys
             if state == "BLOCKED":
+                if own and str(row.get("blocked_reason") or "").startswith(UNCLASSIFIED_REASON):
+                    continue        # this organ's own route, re-derived every pass (see route_of)
                 idx.blocked.update(keys)
             elif not own or state in CONVERTED_STATES:
                 idx.exploited.update(keys)
@@ -1234,6 +1243,9 @@ ROUTE_CONSUMERS: dict[str, str] = {
     "block_unclassified": ("universe classification: BLOCKED with the reason until MetaTrader's "
                            "registry classifies the symbol -- absence of a class is not a "
                            "permission (universe_policy)"),
+    "await_registry": ("universe classification, UNMEASURED: MetaTrader's class registry was not "
+                       "read this pass, so the unit is neither blocked nor compiled; it re-routes "
+                       "the next pass the registry is readable"),
 }
 #: The price-only mechanisms a registered family implements, rotated per unit so the stranded
 #: instruments are spread over the mechanism axis instead of all tested for one idea.
@@ -1256,8 +1268,22 @@ def _lane(symbol: str) -> str:
         return "unclassified"
 
 
+def _class_registry_read() -> bool:
+    """Was MetaTrader's class registry POSITIVELY read? An absent or unreadable universe.json
+    makes every symbol read UNCLASSIFIED, and that is UNMEASURED input, never a reason to BLOCK."""
+    try:
+        from research import universe_policy as up
+        return bool(up._registry())
+    except Exception:
+        return False
+
+
 def route_of(unit: Unit) -> dict[str, Any]:
-    """The ONE consumer a stranded unit is routed to, with what that consumer needs."""
+    """The ONE consumer a stranded unit is routed to, with what that consumer needs.
+
+    `block_unclassified` only when the class registry was positively read and the symbol is not
+    in it. With the registry unread the unit goes to `await_registry`: no handoff, no BLOCK, and
+    it re-routes next pass -- an UNMEASURED class is not a lawful disposition."""
     syms = [s for s in unit.symbols if s]
     lanes = {s: _lane(s) for s in syms}
     hyp = [s for s in syms if lanes[s] == "hypothesis"]
@@ -1279,10 +1305,14 @@ def route_of(unit: Unit) -> dict[str, Any]:
     if unit.kind in SYMBOL_KEYED and syms and not hyp:
         action = "class_book" if any(v == "event" for v in lanes.values()) \
             else "block_unclassified"
+        if action == "block_unclassified" and not _class_registry_read():
+            action = "await_registry"
     else:
         action = "compile_now"
+    # An all-event (or all-unclassified) text unit routes with symbols=[] EXPLICITLY: the
+    # compiler reads an absent key as "use the discovery's assets", which are the share CFDs.
     return {"action": action, "consumer": ROUTE_CONSUMERS[action], "mechanism": mech,
-            "information": info, "symbols": hyp if action == "compile_now" else syms,
+            "information": info, "symbols": list(hyp) if action == "compile_now" else syms,
             "chart": unit.chart,
             "why": unit.text or f"stranded {unit.kind} {unit.unit_id}: routed to {mech or 'text'}"}
 
@@ -1329,6 +1359,15 @@ def hand_to_compiler(units: list[Unit], conn: Any, limit: int = MAX_STRANDED_HAN
         new += int(created)
         seen += int(not created)
     return new, seen
+
+
+def _discovery_state(did: str, conn: Any) -> tuple[str, str]:
+    """(state, blocked_reason) of one discovery as the registry holds it now."""
+    row = conn.execute("SELECT state, blocked_reason FROM discoveries WHERE discovery_id=?",
+                       (did,)).fetchone()
+    if row is None:
+        return "", ""
+    return str(row[0] or "").upper(), str(row[1] or "")
 
 
 def _load_routes(path: Path | None = None) -> dict[str, Any]:
@@ -1385,16 +1424,23 @@ def route_stranded(units: list[Unit], conn: Any, *, deadline: float | None = Non
             try:
                 did, created = _handoff(unit, conn, route)
                 handoffs[created] += 1
+                current, why_now = _discovery_state(did, conn)
                 if action == "block_unclassified":
-                    R.set_discovery_state(did, "BLOCKED", reason=(
-                        f"UNCLASSIFIED: {', '.join(unit.symbols)} carries no asset class in "
-                        "MetaTrader's registry, so no lane may hunt it; it reroutes the pass "
-                        "after it is classified"), conn=conn)
+                    # NEVER BLOCK A HANDOFF THAT ALREADY CONVERTED: a stale or partial index can
+                    # read an exploited unit as STRANDED, and the block would erase its cells.
+                    if current not in CONVERTED_STATES:
+                        R.set_discovery_state(did, "BLOCKED", reason=(
+                            f"{UNCLASSIFIED_REASON} {', '.join(unit.symbols)} carries no asset "
+                            "class in MetaTrader's registry, so no lane may hunt it; it reroutes "
+                            "the pass after it is classified"), conn=conn)
                 else:
+                    if current == "BLOCKED" and why_now.startswith(UNCLASSIFIED_REASON):
+                        # classified since: the route's own block is lifted so the drain sees it
+                        R.set_discovery_state(did, "UNPROCESSED", reason="", conn=conn)
                     overrides[did] = {k: v for k, v in (
                         ("mechanism", route["mechanism"]), ("information", route["information"]),
-                        ("symbols", route["symbols"]), ("chart", route["chart"]),
-                        ("why", route["why"])) if v}
+                        ("chart", route["chart"]), ("why", route["why"])) if v}
+                    overrides[did]["symbols"] = list(route["symbols"])
             except Exception as exc:
                 unrouted.append(ident)
                 errors.append(f"{ident}: {type(exc).__name__}: {exc}")
@@ -1633,8 +1679,24 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
                          "why": f"{len(unstated)} qualified datum(s) carry no downstream state: "
                                 + DOWNSTREAM_RULE})
         handed = repeats = 0
-        routing = route_stranded(stranded, c, dry_run=dry_run,
+        # AN INCOMPLETE INDEX MAY NOT ACT. A deadline-stopped or erroring registry read leaves
+        # exploited units reading STRANDED; routing them would re-compile (a second trial charge)
+        # or BLOCK a handoff that already converted. The routes are still derived and published,
+        # but nothing is written, and the stranded ratchet is not fed.
+        index_ok = idx.complete and not idx.errors
+        if idx.errors:
+            gaps.append({"what": "registry index", "why": "the registry read raised ("
+                         + "; ".join(idx.errors[:3]) + "): routing writes skipped and the "
+                         "stranded count is UNMEASURED this pass"})
+        routing = route_stranded(stranded, c, dry_run=dry_run or not index_ok,
                                  deadline=started + DRAIN_SHARE * float(budget_s))
+        if not index_ok:
+            routing["writes_skipped"] = "registry index incomplete or in error"
+        if (routing.get("by_action") or {}).get("await_registry"):
+            gaps.append({"what": "universe class registry",
+                         "why": "MetaTrader's class registry was not read: "
+                                f"{routing['by_action']['await_registry']} unit(s) await it, "
+                                "neither BLOCKED nor compiled -- UNMEASURED, not a disposition"})
         handed, repeats = int(routing.get("handoffs_new") or 0), \
             int(routing.get("handoffs_existing") or 0)
         counts = dict(sorted(counts.items(), key=lambda kv: -kv[1])[:MAX_STRANDING_COUNTS])
@@ -1644,7 +1706,13 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
         pass_share = (None if past_grace <= 0 else
                       round((totals["EXPLOITED"] + totals["EXPLOITED_MACRO"] + totals["BLOCKED"])
                             / past_grace, 6))
-        pop, pop_units = population(LEDGER, rows)
+        pop, pop_units, ledger_error = population(LEDGER, rows)
+        ledger_ok = ledger_error == "" or (ledger_error == "absent" and passes == 1)
+        if not ledger_ok:
+            gaps.append({"what": str(LEDGER), "why": f"the ledger tail was not read "
+                         f"({ledger_error}): the population is this pass alone, so the stranded "
+                         "count is UNMEASURED and the ratchet is not fed"})
+        stranded_measured = index_ok and ledger_ok
         pop_past_grace = pop_units - pop["PENDING"]
         share = (None if pop_past_grace <= 0 else
                  round((pop["EXPLOITED"] + pop["EXPLOITED_MACRO"] + pop["BLOCKED"])
@@ -1665,6 +1733,9 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
             # `n_stranded_units` is the fenced count (check_ingestion_exploitation ratchets it
             # DOWN only) and `stranded_routing.unrouted` must be 0.
             "n_stranded_units": int(pop.get("STRANDED") or 0),
+            # False when the index was incomplete or the ledger tail unread: the fence then
+            # neither lowers its floor nor judges against it.
+            "stranded_units_measured": stranded_measured,
             "stranded_routing": routing,
             "top_stranded": [{"kind": u.kind, "unit_id": u.unit_id, "path": u.path,
                               "ingested_at": u.at or UNMEASURED,

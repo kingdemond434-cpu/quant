@@ -1,14 +1,14 @@
 {
- "generated_utc": "2026-10-28T18:00:56+00:00",
+ "generated_utc": "2026-11-17T16:44:29+00:00",
  "fence": "judge_alive",
- "verdict": "UNMEASURED",
- "state": "UNMEASURED",
- "why": "no GAUNTLET_HEARTBEAT.json or GAUNTLET_STALL.json: the sweep watchdog has not reported on this tree",
+ "verdict": "FAIL",
+ "state": "FAIL",
+ "why": "sweep pid 13936 reads RUNNING but its heartbeat is 16 min old (> 10 min): the sweep's watchdog is wedged or the process was frozen",
  "checks": [
   {
    "metric": "judge_alive",
-   "state": "UNMEASURED",
-   "why": "no GAUNTLET_HEARTBEAT.json or GAUNTLET_STALL.json: the sweep watchdog has not reported on this tree"
+   "state": "FAIL",
+   "why": "sweep pid 13936 reads RUNNING but its heartbeat is 16 min old (> 10 min): the sweep's watchdog is wedged or the process was frozen"
   },
   {
    "metric": "judge_stop",

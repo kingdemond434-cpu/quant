@@ -415,6 +415,24 @@ def _age_min(path: Path) -> float | None:
         return None
 
 
+def _artifact_age(artifact: str) -> float | None:
+    """A contract's age as organ_contract judges it: the INTERNAL stamp for the artifacts its
+    INTERNAL_STAMPS names (a status rewritten every pass proves only that the process beats),
+    the file's mtime (`_age_min`) for every other one."""
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        from organ_contract import (  # type: ignore[import-not-found]
+            INTERNAL_STAMPS,
+            artifact_age_min,
+        )
+    except Exception:
+        return _age_min(ROOT / artifact)
+    if artifact in INTERNAL_STAMPS:
+        return artifact_age_min(artifact, root=ROOT)  # type: ignore[no-any-return]
+    return _age_min(ROOT / artifact)
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -423,6 +441,29 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return dict(CONTRACTS)
     except Exception:
         return {}
+
+
+def claude_settings() -> dict[str, Any]:
+    """Whether the Claude Code settings files that shape the box's Remote Control sessions parse
+    (ops/claude_settings_health.py, read-only, no values). Off Windows it is NOT_APPLICABLE: the
+    files it checks live on the box. A broken file is ATTENTION -- 2026-11-13 the bridge user's
+    settings.json lost its leading brace and the no-prompt mode silently never loaded."""
+    if os.name != "nt":
+        return {"status": "NOT_APPLICABLE", "why": "the settings it checks live on the Windows box"}
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        import claude_settings_health  # type: ignore[import-not-found]
+        rep = claude_settings_health.check()
+        try:
+            claude_settings_health.OUT.parent.mkdir(parents=True, exist_ok=True)
+            claude_settings_health.OUT.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        # only the projection is published: no path, user name, line, column or message
+        return dict(claude_settings_health.publishable(rep))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
 
 
 #: Account-key states that are a definite fault: every stamp fails closed until a human restores
@@ -487,7 +528,7 @@ def build() -> dict[str, Any]:
         if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
-        age = _age_min(ROOT / artifact) if artifact else None
+        age = _artifact_age(artifact) if artifact else None
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -552,7 +593,7 @@ def build() -> dict[str, Any]:
     for organ, (artifact, max_age, purpose) in contracts.items():
         if organ in seen:
             continue
-        age = _age_min(ROOT / artifact)
+        age = _artifact_age(artifact)
         inventory_ok = scheduler_status.startswith("OK ")
         # Parenthesised contracts describe an artifact of an existing scheduled task, not a
         # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms
@@ -606,7 +647,9 @@ def build() -> dict[str, Any]:
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    settings = claude_settings()
+    settings_fault = settings.get("status") == "BROKEN"
+    if key_fault or backup_fault or settings_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -627,11 +670,14 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(settings_fault),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
         "account_key_backup": backup,
+        # THE CLAUDE CODE SETTINGS FILES (2026-11-13): BROKEN when one does not parse, which means
+        # its permission mode never loaded; the repair is a person's (Repair-ClaudeSettings.ps1).
+        "claude_settings": settings,
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
