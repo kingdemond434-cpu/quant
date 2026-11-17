@@ -79,7 +79,7 @@ import re
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -428,16 +428,35 @@ class Clear:
     source: dict[str, Any] | None = None
 
 
-def parse_clears(text: str) -> list[Clear]:
-    """Fail closed: one malformed line refuses the whole file, never a silent skip."""
-    rows: list[Clear] = []
-    for n, line in enumerate(text.splitlines(), 1):
-        if not line.strip():
-            continue
+def _json_objects(text: str) -> Iterator[tuple[int, Any]]:
+    """Each top-level JSON value in `text`, with the line it starts on. Values are separated by
+    whitespace only; anything else is not JSON and refuses the file.
+
+    WHY NOT ONE ROW PER LINE (2026-11-14 13:47Z, LIVE dca73be61). A valid Auditor row was landed
+    pretty-printed across 33 lines. Read line by line, line 154 was `{` -- not JSON -- so every
+    target carrying it refused the whole file, and because the record must stay append-only
+    (`committed_clears`) no later commit could repair it: every release after it would have been
+    HOLD forever. The row itself is well-formed; only the reader's framing was narrower than
+    JSON. A row still has to be one complete object that passes every check below."""
+    dec = json.JSONDecoder()
+    i, end = 0, len(text)
+    while True:
+        while i < end and text[i] in " \t\r\n":
+            i += 1
+        if i >= end:
+            return
+        n = text.count("\n", 0, i) + 1
         try:
-            d = json.loads(line)
+            d, i = dec.raw_decode(text, i)
         except ValueError as exc:
             raise GuardError(f"{CLEARS_REL}:{n} is not JSON") from exc
+        yield n, d
+
+
+def parse_clears(text: str) -> list[Clear]:
+    """Fail closed: one malformed row refuses the whole file, never a silent skip."""
+    rows: list[Clear] = []
+    for n, d in _json_objects(text):
         if not isinstance(d, dict):
             raise GuardError(f"{CLEARS_REL}:{n} is not an object")
         commit, verdict, rep = d.get("commit"), d.get("verdict"), d.get("report")

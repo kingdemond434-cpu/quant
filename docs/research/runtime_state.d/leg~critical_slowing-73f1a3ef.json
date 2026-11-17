@@ -1,0 +1,28 @@
+{
+ "organ": "leg:critical_slowing",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/critical_slowing_state.py"
+ ],
+ "clock": "hourly_cycle:critical_slowing",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/CRITICAL_SLOWING.json",
+ "artifact_declared": "desks/mt5/reports/CRITICAL_SLOWING.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "a person (HUMAN_READ in libs/ops/capability_graph.py); allocator state input pen",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-13T12:37:45+00:00"
+}
