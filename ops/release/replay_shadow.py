@@ -488,11 +488,44 @@ def _literal_strs(node: ast.AST | None) -> set[str] | None:
     return None
 
 
+#: A process launch through the Win32 API (ctypes), which no Python-level ban sees.
+_NATIVE_LAUNCH = re.compile(r"createprocess|shellexecute|winexec|createremotethread", re.IGNORECASE)
+_GUARDED_MODULES = frozenset(
+    {"subprocess", "os", "importlib", "runpy", "ctypes", "multiprocessing"}
+)
+#: The one guard _schtasks must open with (after `allowed = {...}`), compared as an AST.
+_SCHTASKS_GUARD = ast.dump(
+    ast.parse("verb not in allowed or task not in allowed[verb]", mode="eval").body
+)
+
+
+def _owner_map(tree: ast.AST) -> dict[int, str]:
+    """id(node) -> the name of the innermost function holding it."""
+    owner: dict[int, str] = {}
+
+    def visit(node: ast.AST, fn: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            name = child.name if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) else fn
+            owner[id(child)] = name
+            visit(child, name)
+
+    visit(tree, "")
+    return owner
+
+
 def self_heal_problems(head: Path) -> list[str]:
-    """Why ops/box_self_heal.py is not a vouched target on `head`; [] when it is. Static only:
-    its task sets are literal and inside SELF_HEAL_TASKS, its one subprocess is schtasks with
-    /Query, /End or /Run inside `_schtasks`, it loads only SELF_HEAL_DEPS by path, and it
-    registers, edits or launches nothing else (Governance 2026-11-17 18:45Z)."""
+    """Why ops/box_self_heal.py is not a vouched target on `head`; [] when it is. Static only
+    (Governance 2026-11-17 18:45Z; #1249 audit MF2):
+    - the process and loader modules are imported plainly (`import subprocess`), never aliased or
+      from-imported, and the name `subprocess` is used only inside `_schtasks`;
+    - no banned call or attribute anywhere (os.system, Popen, exec, eval, runpy, getattr on a
+      guarded module, ...);
+    - ENDABLE_TASKS / RUNNABLE_TASKS are literal sets inside SELF_HEAL_TASKS, and no task name in
+      them matches SELF_HEAL_FORBIDDEN;
+    - `_schtasks(verb, task, ...)` opens with `allowed = {<literal verbs>: <those sets>}` and the
+      exact guard `if verb not in allowed or task not in allowed[verb]: raise`, never rebinds
+      `verb`, `task` or `allowed`, so every call site, whatever it passes, is checked at the call;
+    - modules load by path only inside `_load`, and only literal SELF_HEAL_DEPS."""
     if any(SELF_HEAL_FORBIDDEN.search(t) for t in SELF_HEAL_TASKS):
         return ["the harness allowlist names an order-path task"]  # never true on a pinned base
     src = read(head, SELF_HEAL)
@@ -505,6 +538,76 @@ def self_heal_problems(head: Path) -> list[str]:
     why: list[str] = []
     if _TASK_EDIT.search(src):
         why.append("names a task-editing verb")
+    docs = {
+        id(n.body[0].value)
+        for n in ast.walk(tree)
+        if isinstance(n, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        and n.body
+        and isinstance(n.body[0], ast.Expr)
+        and isinstance(n.body[0].value, ast.Constant)
+    }
+    for node in ast.walk(tree):  # code only: identifiers and non-docstring strings
+        text = (
+            node.id
+            if isinstance(node, ast.Name)
+            else node.attr
+            if isinstance(node, ast.Attribute)
+            else node.value
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and id(node) not in docs
+            else ""
+        )
+        if _NATIVE_LAUNCH.search(text):
+            why.append("names a native process launch")
+            break
+    owner = _owner_map(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for al in node.names:
+                if al.name.split(".")[0] in _GUARDED_MODULES and al.asname:
+                    why.append(f"aliases {al.name}")
+        elif isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            plain_wintypes = mod == "ctypes" and [a.name for a in node.names] == ["wintypes"]
+            if mod.split(".")[0] in _GUARDED_MODULES and not plain_wintypes:
+                why.append(f"from-imports {mod}")
+        elif isinstance(node, ast.Name) and node.id == "subprocess":
+            if owner.get(id(node)) != "_schtasks":
+                why.append("uses subprocess outside _schtasks")
+        elif isinstance(node, ast.Attribute):
+            name = _dotted(node)
+            if name in _BANNED_CALLS:
+                why.append(f"names {name}")
+        elif isinstance(node, ast.Call):
+            name = _dotted(node.func)
+            if name in _BANNED_CALLS or name in {
+                "setattr",
+                "vars",
+                "globals",
+                "locals",
+                "__import__",
+            }:
+                why.append(f"calls {name}")
+            elif name == "getattr" and (
+                not node.args
+                or (isinstance(node.args[0], ast.Name) and node.args[0].id in _GUARDED_MODULES)
+            ):
+                why.append("calls getattr on a process or loader module")
+            elif (
+                name == "importlib.util.spec_from_file_location" and owner.get(id(node)) != "_load"
+            ):
+                why.append("loads a module by path outside _load")
+            elif name == "_load":
+                dep = node.args[1] if len(node.args) > 1 else None
+                lits = (
+                    [a.value for a in dep.args if isinstance(a, ast.Constant)]
+                    if isinstance(dep, ast.Call) and _dotted(dep.func) == "_dep"
+                    else []
+                )
+                ok = len(lits) == 2 == len(dep.args) and lits[1] in SELF_HEAL_DEPS  # type: ignore[union-attr]
+                if not ok:
+                    why.append("loads a module that is not a literal SELF_HEAL_DEPS path")
     sets: dict[str, set[str] | None] = {}
     for n in tree.body:
         target = (
@@ -514,61 +617,85 @@ def self_heal_problems(head: Path) -> list[str]:
         )
         value = n.value if isinstance(n, (ast.AnnAssign, ast.Assign)) else None
         if isinstance(target, ast.Name) and target.id in {"ENDABLE_TASKS", "RUNNABLE_TASKS"}:
-            sets[target.id] = _literal_strs(value)
+            if target.id in sets:
+                sets[target.id] = None  # bound twice
+            else:
+                sets[target.id] = _literal_strs(value)
+    for node in ast.walk(tree):  # rebinding anywhere else (a function, an augmented assign)
+        if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)) and node not in tree.body:
+            tgts = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if any(
+                isinstance(t, ast.Name) and t.id in {"ENDABLE_TASKS", "RUNNABLE_TASKS"}
+                for t in tgts
+            ):
+                why.append("rebinds a task set")
     for name in ("ENDABLE_TASKS", "RUNNABLE_TASKS"):
         got = sets.get(name)
         if got is None:
-            why.append(f"{name} is not a literal set of task names")
+            why.append(f"{name} is not one literal set of task names")
         elif not got <= SELF_HEAL_TASKS:
             why.append(
                 f"{name} names a task outside the allowlist: {sorted(got - SELF_HEAL_TASKS)}"
             )
-    funcs = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
-    owner: dict[int, str] = {}
-    for fn in funcs.values():
-        for sub in ast.walk(fn):
-            owner.setdefault(id(sub), fn.name)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        name = _dotted(node.func)
-        if name in _BANNED_CALLS:
-            why.append(f"calls {name}")
-        elif name.startswith("subprocess.") and owner.get(id(node)) != "_schtasks":
-            why.append(f"starts a process outside _schtasks: {name}")
-        elif name == "importlib.util.spec_from_file_location" and owner.get(id(node)) != "_load":
-            why.append("loads a module by path outside _load")
-        elif name == "_load":
-            dep = node.args[1] if len(node.args) > 1 else None
-            lits = (
-                [a.value for a in dep.args if isinstance(a, ast.Constant)]
-                if isinstance(dep, ast.Call) and _dotted(dep.func) == "_dep"
+        elif any(SELF_HEAL_FORBIDDEN.search(t) for t in got):
+            why.append(f"{name} names an order-path task")
+    schs = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_schtasks"]
+    if len(schs) != 1:
+        why.append("has no single module-level _schtasks")
+    else:
+        sch = schs[0]
+        params = [a.arg for a in sch.args.args]
+        body = [
+            st
+            for st in sch.body
+            if not (isinstance(st, ast.Expr) and isinstance(st.value, ast.Constant))
+        ]
+        tab = body[0] if body else None
+        guard = body[1] if len(body) > 1 else None
+        verbs: set[str] = set()
+        if not (
+            isinstance(tab, ast.Assign)
+            and len(tab.targets) == 1
+            and isinstance(tab.targets[0], ast.Name)
+            and tab.targets[0].id == "allowed"
+            and isinstance(tab.value, ast.Dict)
+        ):
+            why.append("_schtasks does not open with a literal `allowed` table")
+        else:
+            for k, v in zip(tab.value.keys, tab.value.values, strict=True):
+                verbs.add(
+                    k.value
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str)
+                    else "<computed>"
+                )
+                names = {x.id for x in ast.walk(v) if isinstance(x, ast.Name)}
+                if not names or not names <= {"ENDABLE_TASKS", "RUNNABLE_TASKS"}:
+                    why.append(
+                        "_schtasks's table maps a verb to something other than the task sets"
+                    )
+            if not verbs or not verbs <= _SCHTASKS_VERBS:
+                why.append(f"_schtasks allows verbs beyond /Query, /End, /Run: {sorted(verbs)}")
+        if params[:2] != ["verb", "task"] or not (
+            isinstance(guard, ast.If)
+            and ast.dump(guard.test) == _SCHTASKS_GUARD
+            and len(guard.body) == 1
+            and isinstance(guard.body[0], ast.Raise)
+            and not guard.orelse
+        ):
+            why.append("_schtasks does not open with the exact verb/task guard")
+        for node in ast.walk(sch):
+            tgts = (
+                node.targets
+                if isinstance(node, ast.Assign)
+                else [node.target]
+                if isinstance(node, (ast.AugAssign, ast.AnnAssign, ast.For, ast.NamedExpr))
                 else []
             )
-            ok = len(lits) == 2 == len(dep.args) and lits[1] in SELF_HEAL_DEPS  # type: ignore[union-attr]
-            if not ok:
-                why.append("loads a module that is not a literal SELF_HEAL_DEPS path")
-    sch = funcs.get("_schtasks")
-    verbs: set[str] = set()
-    if sch is None:
-        why.append("has no _schtasks")
-    else:
-        tables = [
-            sub.value
-            for sub in ast.walk(sch)
-            if isinstance(sub, ast.Assign)
-            and any(isinstance(t, ast.Name) and t.id == "allowed" for t in sub.targets)
-        ]
-        for tab in tables:
-            if not isinstance(tab, ast.Dict):
-                verbs.add("<computed>")
-                continue
-            for k in tab.keys:
-                ok = isinstance(k, ast.Constant) and isinstance(k.value, str)
-                verbs.add(k.value if ok else "<computed>")  # type: ignore[union-attr]
-        if len(tables) != 1 or not verbs or not verbs <= _SCHTASKS_VERBS:
-            why.append(f"_schtasks allows verbs beyond /Query, /End, /Run: {sorted(verbs)}")
-    return why
+            if node is not tab and any(
+                isinstance(t, ast.Name) and t.id in {"verb", "task", "allowed"} for t in tgts
+            ):
+                why.append("_schtasks rebinds verb, task or allowed")
+    return list(dict.fromkeys(why))
 
 
 #: Python targets vouched for only while their rule finds nothing on the PR's tree.
@@ -615,38 +742,120 @@ def _resolve_ref(ref: str, files: set[str]) -> set[str]:
     return set()
 
 
-#: How an action names what it runs: `-Execute <x>` and `-Argument <rest of the logical line>`.
-_ACTION = re.compile(r"new-scheduledtaskaction\b(?P<rest>.*)", re.IGNORECASE)
-_EXECUTE = re.compile(r"-execute\s+(?P<x>\$\w+|'[^']*'|\"[^\"]*\"|\S+)", re.IGNORECASE)
-#: What may never appear in an action's arguments: a module or code flag, a shell chain.
+#: An action's -Execute / -Argument value: a quoted string, a parenthesised expression, a variable.
+_VALUE = r"(?P<v>'[^']*'|\"(?:`.|[^\"`])*\"|\((?:[^()]|\([^()]*\))*\)|\$\w+|\S+)"
+_EXECUTE = re.compile(r"-execute\s+" + _VALUE, re.IGNORECASE)
+_ARGUMENT = re.compile(r"-argument\s+" + _VALUE, re.IGNORECASE)
+#: What may never appear in an expanded argument: a module or code flag, a shell chain.
 _ARG_BANNED = re.compile(
-    r"(?<![\w-])-[mc]\b|(?<![\w])/[ck]\b|&&|\|\||[;&|]|\bcmd(\.exe)?\b|powershell|pwsh",
+    r"(?<![\w-])-[mc]\b|(?<![\w])/[ck]\b|&&|\|\||[;&|<>]|\bcmd(\.exe)?\b|powershell|pwsh",
     re.IGNORECASE,
 )
-_PYTHON_EXE = re.compile(
-    r"^['\"]?[^'\"]*\b(python|pythonw|py)(\d[\d.]*)?(\.exe)?['\"]?$", re.IGNORECASE
+_PYTHON_EXE = re.compile(r"^[^'\";|&\s]*\b(python|pythonw|py)(\d[\d.]*)?(\.exe)?$", re.IGNORECASE)
+#: Interpreter flags that may come before the script: they run nothing of their own.
+_PY_FLAGS_1 = frozenset({"-u", "-b", "-B", "-E", "-I", "-s", "-S", "-O", "-OO", "-q"})
+_PY_FLAGS_2 = frozenset({"-W", "-X"})
+#: Indirect or typed variable binding, which the one-assignment model cannot follow.
+_INDIRECT_VAR = re.compile(
+    r"\b(set|new)-variable\b|(?<![\w-])(sv|nv)\s|\$\{|\$(script|global|local|private):"
+    r"|\[ref\]|-outvariable\b|-ov\b",
+    re.IGNORECASE,
 )
+#: A typed binding (`[string]$x = ...`, a param() entry): the caller can override a parameter,
+#: so a variable bound this way is a binding the leg cannot evaluate.
+_TYPED_BIND = re.compile(r"\[[\w.\[\]]+\]\s*\$(\w+)")
+_ASSIGN = re.compile(r"^\s*\$(\w+)\s*=\s*(.+?)\s*$")
+_ROOT_MARK = "\x00ROOT\x00"
+_PY_MARK = "\x00PYTHON\x00"
 
 
 def _logical_lines(code: str) -> list[str]:
     """Lines with PowerShell's backtick continuations joined."""
-    return re.sub(r"`\s*\n\s*", " ", code).splitlines()
+    return re.sub(r"`[ \t]*\r?\n\s*", " ", code).splitlines()
 
 
-def _assigned(code: str, var: str) -> list[str]:
-    """The right-hand sides assigned to `$var` anywhere in `code` (case-insensitive)."""
-    pat = re.compile(r"^\s*\$" + re.escape(var) + r"\s*=\s*(.+)$", re.IGNORECASE)
-    return [m.group(1) for ln in _logical_lines(code) if (m := pat.match(ln))]
+class _Unresolved(Exception):
+    pass
+
+
+def _expander(code: str) -> Callable[[str], str]:
+    """expand(expr) -> the literal string an installer expression evaluates to, under a model
+    that accepts only: 'lit', "text" with $var / $($var) inside, (\"fmt\" -f a, b), $var bound
+    by exactly ONE plain `$var = <one of these>` line, `Join-Path $x 'lit'` (a path under some
+    root), and `(Get-Command python ...).Source`. Anything else raises _Unresolved."""
+    binds: dict[str, list[str]] = {}
+    for ln in _logical_lines(code):
+        m = _ASSIGN.match(ln)
+        if m:
+            binds.setdefault(m.group(1).lower(), []).append(m.group(2))
+    for m in _TYPED_BIND.finditer(code):  # typed or param() bindings: never evaluable
+        binds.setdefault(m.group(1).lower(), []).append("<typed>")
+    for ln in _logical_lines(code):  # foreach / pipeline bindings to a name are other binders
+        for m in re.finditer(r"foreach\s*\(\s*\$(\w+)", ln, re.IGNORECASE):
+            binds.setdefault(m.group(1).lower(), []).append("<loop>")
+
+    def var(name: str, depth: int) -> str:
+        rhs = binds.get(name.lower(), [])
+        if len(rhs) != 1:
+            raise _Unresolved(f"${name} is bound {len(rhs)} times")
+        return expand(rhs[0], depth + 1)
+
+    def expand(expr: str, depth: int = 0) -> str:
+        if depth > 8:
+            raise _Unresolved("too deep")
+        e = expr.strip()
+        if re.fullmatch(r"'[^']*'", e):
+            return e[1:-1]
+        if re.fullmatch(r"\"(?:`.|[^\"`])*\"", e):
+            body = e[1:-1].replace('`"', '"')
+            if re.search(r"\$\((?!\$\w+\))", body):
+                raise _Unresolved("a subexpression in a string")
+            return re.sub(
+                r"\$\(\$(\w+)\)|\$(\w+)",
+                lambda m: var(m.group(1) or m.group(2), depth),
+                body,
+            )
+        if re.fullmatch(r"\$\w+", e):
+            return var(e[1:], depth)
+        m = re.fullmatch(
+            r"\(\s*get-command\s+(python|pythonw|py)\b[^()]*\)\.source", e, re.IGNORECASE
+        )
+        if m:
+            return _PY_MARK
+        m = re.fullmatch(r"join-path\s+\$\w+\s+('[^']*')", e, re.IGNORECASE)
+        if m:
+            return _ROOT_MARK + "/" + m.group(1)[1:-1]
+        m = re.fullmatch(r"\(\s*(\"(?:`.|[^\"`])*\"|'[^']*')\s+-f\s+(.+)\)", e, re.IGNORECASE)
+        if m:
+            fmt = expand(m.group(1), depth + 1)
+            args = [expand(x, depth + 1) for x in m.group(2).split(",")]
+            try:
+                return fmt.format(*args)
+            except (IndexError, KeyError, ValueError) as exc:
+                raise _Unresolved("a format that does not fill") from exc
+        if re.fullmatch(r"\(([^()]*)\)", e):
+            return expand(e[1:-1], depth + 1)
+        raise _Unresolved(f"cannot evaluate {e[:40]!r}")
+
+    return expand
+
+
+def _argv(arg: str) -> list[str]:
+    """Whitespace tokens of an expanded argument string, quotes dropped."""
+    return [t.strip("'\"") for t in arg.split() if t.strip("'\"")]
 
 
 def installer_problems(head: Path, path: str) -> list[str]:
     """Why a changed PowerShell installer is not MEASURED by its own text; [] when it is.
 
-    #1249 audit (MF1-MF3): a target is vouched ONLY by INSTALLER_TARGETS (or a conditional
-    target whose rule passes), never by ENTRY_POINTS or the replay's imports; every action must
-    -Execute python and name, in its -Argument (directly or through a variable assigned in this
-    file), exactly the scripts it runs, each resolved and vouched, with no module flag or shell
-    chain; and every script the code names anywhere must resolve and be vouched."""
+    #1249 audit: a target is vouched ONLY by INSTALLER_TARGETS (or a conditional target whose
+    rule passes), never by ENTRY_POINTS or the replay's imports (MF1 v1). Every action's
+    -Execute and -Argument, wherever they sit on the (continuation-joined) line, are EVALUATED
+    under a one-plain-assignment model (_expander); anything it cannot evaluate, any typed or
+    indirect binding, is UNMEASURED (MF1 v2). The evaluated -Execute must be python; the
+    evaluated -Argument may carry no module/code flag or shell chain, and its first token after
+    interpreter flags must be a vouched script (MF3). Every script the code names anywhere must
+    resolve and be vouched."""
     if not path.lower().endswith(".ps1"):
         return ["not a PowerShell installer"]
     raw = read(head, path)
@@ -659,6 +868,8 @@ def installer_problems(head: Path, path: str) -> list[str]:
     low = code.lower()
     if MONEY_WORDS.search(low) or STATE_WORDS.search(low):
         why.append("its code names a venue or switch word")
+    if _INDIRECT_VAR.search(code):
+        why.append("binds a variable indirectly or with a type, which the leg cannot follow")
     for ln in code.splitlines():
         if _DOTNET_LAUNCH.search(ln) or DYNAMIC.search(_INSTALLER_VERBS.sub("", ln)):
             why.append(f"dynamic execution beyond the scheduled-task verbs: {ln.strip()[:80]}")
@@ -673,43 +884,45 @@ def installer_problems(head: Path, path: str) -> list[str]:
             return not CONDITIONAL_TARGETS[f](head)
         return f in SELF_HEAL_DEPS and heal_ok
 
-    def check_refs(text: str, where: str) -> int:
-        n = 0
-        for ref in sorted({m.group(0) for m in _SCRIPT_REF.finditer(text)}):
-            hit = _resolve_ref(ref, files)
-            if not hit:
-                why.append(f"{where} names a script the tree does not hold: {ref[:80]}")
-            elif not all(vouched(f) for f in hit):
-                bad = sorted(f for f in hit if not vouched(f))[0]
-                why.append(f"{where} names a target the replay does not vouch for: {bad}")
-            else:
-                n += 1
-        return n
-
-    check_refs(code, "the code")
-    actions = [m.group("rest") for ln in _logical_lines(code) if (m := _ACTION.search(ln))]
-    for rest in actions:
-        ex = _EXECUTE.search(rest)
-        exe = ex.group("x") if ex else ""
-        if exe.startswith("$"):
-            rhs = _assigned(code, exe[1:])
-            python_var = bool(rhs) and all(
-                re.search(r"get-command\s+(python|pythonw|py)\b", r, re.IGNORECASE)
-                or _PYTHON_EXE.match(r.strip())
-                for r in rhs
-            )
-            if not python_var:
-                why.append(f"an action executes {exe}, which is not python")
-        elif not _PYTHON_EXE.match(exe):
-            why.append(f"an action executes {exe[:40] or 'nothing named'}, which is not python")
-        arg = rest[ex.end() :] if ex else rest
-        if _ARG_BANNED.search(arg.replace('`"', "")):
+    for ref in sorted({m.group(0) for m in _SCRIPT_REF.finditer(code)}):
+        hit = _resolve_ref(ref, files)
+        if not hit:
+            why.append(f"the code names a script the tree does not hold: {ref[:80]}")
+        elif not all(vouched(f) for f in hit):
+            bad = sorted(f for f in hit if not vouched(f))[0]
+            why.append(f"the code names a target the replay does not vouch for: {bad}")
+    expand = _expander(code)
+    actions = [
+        ln
+        for ln in _logical_lines(code)
+        if re.search(r"new-scheduledtaskaction", ln, re.IGNORECASE)
+    ]
+    for ln in actions:
+        ex, ar = _EXECUTE.search(ln), _ARGUMENT.search(ln)
+        if ex is None or ar is None:
+            why.append("an action has no -Execute or no -Argument the leg can read")
+            continue
+        try:
+            exe, arg = expand(ex.group("v")), expand(ar.group("v"))
+        except _Unresolved as exc:
+            why.append(f"an action cannot be evaluated: {exc}")
+            continue
+        if exe != _PY_MARK and not _PYTHON_EXE.match(exe):
+            why.append(f"an action executes {exe[:40]!r}, which is not python")
+        if _ARG_BANNED.search(arg):
             why.append("an action's arguments carry a module flag or a shell chain")
-        text = arg
-        for var in re.findall(r"\$(\w+)", arg):
-            text += "\n" + "\n".join(_assigned(code, var))
-        if not check_refs(text, "an action"):
-            why.append("an action names no target the replay vouches for")
+        toks = _argv(arg)
+        i = 0
+        while i < len(toks) and toks[i].startswith("-"):
+            i += 2 if toks[i] in _PY_FLAGS_2 else 1 if toks[i] in _PY_FLAGS_1 else len(toks)
+        first = toks[i] if i < len(toks) else ""
+        hit = (
+            _resolve_ref(first.replace(_ROOT_MARK + "/", ""), files)
+            if _SCRIPT_REF.fullmatch(first.replace(_ROOT_MARK + "/", ""))
+            else set()
+        )
+        if not hit or not all(vouched(f) for f in hit):
+            why.append(f"an action's script is not a vouched target: {first[:60]!r}")
     return list(dict.fromkeys(why))
 
 

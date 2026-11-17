@@ -105,7 +105,7 @@ def test_the_audit_probes_stay_unmeasured(tmp_path: Path, probe: str) -> None:
         ("-Execute $tool -Argument 'scripts\\run_alerts.py'", "not python"),
         ("-Execute 'python.exe' -Argument 'scripts\\run_alerts.py; x'", "shell chain"),
         ("-Execute 'python.exe' -Argument '-c print(1)'", "module flag"),
-        ("-Execute 'python.exe' -Argument '--box'", "names no target"),
+        ("-Execute 'python.exe' -Argument '--box'", "not a vouched target"),
     ],
 )  # fmt: skip
 def test_every_action_executes_python_on_a_vouched_script(
@@ -179,8 +179,11 @@ def _load(modname, path):
 
 
 def _schtasks(verb, task):
+    # the only subprocess
     allowed = {"/Query": ENDABLE_TASKS | RUNNABLE_TASKS, "/End": ENDABLE_TASKS,
                "/Run": RUNNABLE_TASKS}
+    if verb not in allowed or task not in allowed[verb]:
+        raise ValueError(task)
     r = subprocess.run(["schtasks.exe", verb, "/TN", task], check=False)
     return {"rc": r.returncode, "argv": verb}
 
@@ -208,7 +211,7 @@ def test_the_self_healer_is_vouched_while_it_only_stops_and_starts_literal_tasks
     [
         (HEAL.replace('"Quant-WorkflowGate"})\n', '"MT5-Gateway"})\n', 1), "outside the allowlist"),
         (HEAL.replace('frozenset({"Quant-WorkflowGate"})', "frozenset(load_names())"),
-         "not a literal"),
+         "literal set"),
         (HEAL.replace('"/Run": RUNNABLE_TASKS', '"/Run": RUNNABLE_TASKS, "/Create": X'), "/Create"),
         (HEAL + "\nsubprocess.run(['python', 'x.py'])\n", "outside _schtasks"),
         (HEAL + "\nimport os\nos.system('x')\n", "calls os.system"),
@@ -236,3 +239,68 @@ def test_a_dotnet_process_launch_is_dynamic(tmp_path: Path) -> None:
     text = GOOD + "$p = [System.Diagnostics.Process]::Start($psi)\n"
     got = rs.installer_problems(_tree(tmp_path, text), INST)
     assert any("dynamic execution" in g for g in got), got
+
+
+# The Auditor's probes on fa89cc752 (#1249 HOLD 19:07Z), each read MEASURED there.
+_ACT = "Register-ScheduledTask -TaskName X -Action $a\n"
+PROBES_V2 = [
+    # MF1: a variable whose value is a module flag, expanded into the argument
+    "$m = '-m research.run_gateway_loop'\n$s = 'scripts\\run_alerts.py'\n"
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument \"$m $s\"\n" + _ACT,
+    # MF1: a typed binding the old assignment scan missed
+    "[string]$m = '-m research.run_gateway_loop'\n"
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument $m\n" + _ACT,
+    # MF1: Set-Variable
+    "Set-Variable -Name m -Value '-m research.run_gateway_loop'\n"
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument $m  # scripts/run_alerts.py\n"
+    + _ACT,
+    # MF1: -Argument before -Execute
+    "$a = New-ScheduledTaskAction -Argument '-m research.run_gateway_loop' -Execute 'python.exe'"
+    "  # scripts/run_alerts.py\n" + _ACT,
+    # a parameter's default is the caller's to override
+    "param([string]$s = 'scripts\\run_alerts.py')\n"
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument $s\n" + _ACT,
+    # a variable bound twice
+    "$s = 'scripts\\run_alerts.py'\n$s = 'desks\\mt5\\research\\run_gateway_loop.py'\n"
+    "$a = New-ScheduledTaskAction -Execute 'python.exe' -Argument $s\n" + _ACT,
+]
+
+
+@pytest.mark.parametrize("probe", PROBES_V2)
+def test_the_second_audit_probes_stay_unmeasured(tmp_path: Path, probe: str) -> None:
+    extra = {"desks/mt5/research/run_gateway_loop.py": "x = 1\n"}
+    assert rs.installer_problems(_tree(tmp_path, probe, extra), INST)
+
+
+def test_an_argument_before_execute_is_still_read(tmp_path: Path) -> None:
+    text = "$a = New-ScheduledTaskAction -Argument 'scripts\\run_alerts.py' -Execute 'python.exe'\n"
+    assert rs.installer_problems(_tree(tmp_path, text + _ACT), INST) == []
+
+
+HEAL_ESCAPES = [
+    # MF2: an alias escapes a check on the name `subprocess`
+    HEAL.replace("import subprocess\n", "import subprocess as sp\n", 1),
+    HEAL + "\nfrom subprocess import run\n",
+    HEAL + "\ndef f():\n    subprocess.run(['python', 'x.py'])\n",
+    HEAL + "\nrun = getattr(subprocess, 'run')\n",
+    # MF2: the guard dropped, so a call site can name any task
+    HEAL.replace(
+        "    if verb not in allowed or task not in allowed[verb]:\n"
+        "        raise ValueError(task)\n",
+        "",
+    )
+    + "\n_schtasks('/End', 'MT5-Gateway')\n",
+    # the guard weakened
+    HEAL.replace("or task not in allowed[verb]", "and task not in allowed[verb]"),
+    # task rebound inside _schtasks
+    HEAL.replace("    r = subprocess.run(", "    task = 'MT5-Gateway'\n    r = subprocess.run("),
+    # the task set rebound later
+    HEAL + "\ndef g():\n    global ENDABLE_TASKS\n    ENDABLE_TASKS = frozenset({'MT5-Gateway'})\n",
+    # a native launch through ctypes
+    HEAL + "\nimport ctypes\nctypes.windll.kernel32.CreateProcessW(None)\n",
+]
+
+
+@pytest.mark.parametrize("text", HEAL_ESCAPES)
+def test_the_self_heal_escapes_unvouch_it(tmp_path: Path, text: str) -> None:
+    assert rs.self_heal_problems(_heal(tmp_path, text))
