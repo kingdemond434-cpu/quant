@@ -950,7 +950,7 @@ def _never_judged_annotate(table: dict[str, dict[str, Any]]) -> dict[str, Any]:
             sys.path.insert(0, desk)
         from research import family_dispositions as fd
     except Exception as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": "UNMEASURED", "why": f"family_dispositions unimportable ({type(exc).__name__})"}
     named: dict[str, Any] = {}
     for fam, row in table.items():
         d = fd.disposition(fam)
