@@ -270,28 +270,77 @@ def test_the_floor_survives_the_value_ranking() -> None:
     assert quota["tiny"] == 3
 
 
-def test_an_exhausted_family_keeps_a_trimmed_floor_and_its_cells_go_down_the_ranking() -> None:
-    """YIELD-AWARE FLOOR: 5k+ verdicts at p_hi <= 0.1% trims the floor, never to zero."""
-    backlog = {"winner": 5_000, "dead": 5_000, "fresh": 5_000, "young_dead": 5_000}
+def _yield_ranking() -> list[dict[str, object]]:
+    """A value ranking as `_build` publishes it: never-judged first, the dead family last."""
+    return [
+        {"family": "fresh", "realised_judged": 0, "p_optimistic": 1.0, "judged_variants": 0},
+        {"family": "winner", "realised_judged": 7_523, "p_optimistic": 0.104,
+         "judged_variants": 50},
+        {"family": "young_dead", "realised_judged": 4_999, "p_optimistic": 0.0009,
+         "judged_variants": 50},
+        {"family": "narrow_dead", "realised_judged": 12_000, "p_optimistic": 0.0002,
+         "judged_variants": 4},
+        {"family": "dead", "realised_judged": 20_186, "p_optimistic": 0.000747,
+         "judged_variants": 50},
+    ]
+
+
+_YIELD_BACKLOG = {"winner": 5_000, "dead": 5_000, "fresh": 5_000, "young_dead": 5_000,
+                  "narrow_dead": 5_000}
+
+
+def test_only_a_broad_long_dead_record_is_exhausted() -> None:
+    """5k+ verdicts AND 50+ distinct variants AND p_hi <= 0.1%: all three, or no trim."""
+    assert jc.exhausted_families(_yield_ranking()) == {"dead"}
+
+
+def test_a_few_variants_judged_thousands_of_times_keep_the_full_floor() -> None:
+    """BREADTH GUARD: thousands of verdicts on four variants condemn the variants, not the family."""
+    floors = jc.family_floors(_YIELD_BACKLOG, 5_000, ranking=_yield_ranking())
+    assert floors["narrow_dead"] == floors["winner"] == 250
+
+
+def test_unmeasured_new_and_swarm_born_families_keep_the_full_floor() -> None:
+    """No record, a short record, or a missing field is never a trim (L1.28a)."""
+    backlog = {"swarm_born_x": 500, "new_family": 500, "no_fields": 500, "dead": 500}
     ranking = [
-        {"family": "fresh", "realised_judged": 0, "p_optimistic": 1.0},
-        {"family": "winner", "realised_judged": 7_523, "p_optimistic": 0.104},
-        {"family": "young_dead", "realised_judged": 4_999, "p_optimistic": 0.0009},
+        {"family": "swarm_born_x", "realised_judged": 12, "p_optimistic": 0.31,
+         "judged_variants": 3},
+        {"family": "new_family", "realised_judged": 0, "p_optimistic": 1.0,
+         "judged_variants": 0},
+        {"family": "no_fields"},
         {"family": "dead", "realised_judged": 20_186, "p_optimistic": 0.000747},
     ]
-    assert jc.exhausted_families(ranking) == {"dead"}
-    floors = jc.family_floors(backlog, 4_000, ranking=ranking)
-    assert floors == {"winner": 250, "fresh": 250, "young_dead": 250, "dead": 25}
-    quota = jc.allocate(backlog, 4_000, ranking=ranking)
+    assert jc.exhausted_families(ranking) == set(), "a missing variant count is no trim"
+    floors = jc.family_floors(backlog, 2_000, ranking=ranking)
+    assert set(floors.values()) == {125}
+
+
+def test_the_trimmed_floor_is_a_tenth_and_never_zero() -> None:
+    floors = jc.family_floors(_YIELD_BACKLOG, 5_000, ranking=_yield_ranking())
+    assert floors["dead"] == 25 == floors["winner"] // 10
+    tiny = jc.family_floors({"dead": 10, "other": 10}, 4, ranking=_yield_ranking())
+    assert tiny["dead"] == 1, "a one-cell floor is never trimmed to zero"
+    quota = jc.allocate(_YIELD_BACKLOG, 5_000, ranking=_yield_ranking())
     assert quota["dead"] == 25, "an exhausted family is still explored every pass"
-    assert sum(quota.values()) == 4_000
-    assert quota["fresh"] == 3_475, "the freed floor goes down the value ranking"
-    # Without the record, nothing is trimmed: an unmeasured family keeps its full floor.
-    bare = [{"family": f} for f in ("fresh", "winner", "young_dead", "dead")]
-    assert jc.family_floors(backlog, 4_000, ranking=bare)["dead"] == 250
-    # A one-cell floor is never trimmed below one cell.
-    tiny = jc.family_floors({"dead": 10, "other": 10}, 4, ranking=ranking)
-    assert tiny["dead"] == 1
+    assert set(_YIELD_BACKLOG) <= {f for f, q in quota.items() if q >= 1}, "nothing retired"
+
+
+def test_never_judged_families_lead_the_value_remainder() -> None:
+    """The cells an exhausted family gives up go first to the p_hi = 1.0 family."""
+    quota = jc.allocate(_YIELD_BACKLOG, 5_000, ranking=_yield_ranking())
+    assert sum(quota.values()) == 5_000
+    assert quota["fresh"] == 250 + (5_000 - 4 * 250 - 25)
+    assert quota["winner"] == quota["young_dead"] == quota["narrow_dead"] == 250
+    # Without the record nothing is trimmed: the same hour, the dead family at full floor.
+    bare = [{"family": f} for f in ("fresh", "winner", "young_dead", "narrow_dead", "dead")]
+    assert jc.family_floors(_YIELD_BACKLOG, 5_000, ranking=bare)["dead"] == 250
+
+
+def test_the_published_ranking_carries_the_variant_count() -> None:
+    """The guard reads `judged_variants`, so the coverage report must publish it."""
+    src = Path(jc.__file__).read_text(encoding="utf-8")
+    assert '_rk["judged_variants"] = len(judged_variants' in src
 
 
 def test_the_remainder_goes_down_the_ranking() -> None:
