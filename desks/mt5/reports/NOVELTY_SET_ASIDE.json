@@ -1,7 +1,7 @@
 {
- "at": "2026-11-17T06:44:44+00:00",
+ "at": "2026-11-17T12:26:40+00:00",
  "screened": 1500,
- "set_aside": 297,
+ "set_aside": 287,
  "rows": [
   {
    "sym": "AUDCAD",
@@ -1724,66 +1724,6 @@
    "family": "formula",
    "twin": "external.NZDSGD@M15.formula.p=e5bea0421d97f5ba",
    "why": "every measurable dimension reads as a twin of external.NZDSGD@M15.formula.p=e5bea0421d97f5ba (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDSGD",
-   "family": "formula",
-   "twin": "external.USDSGD@M15.formula.p=a4a4e7fef4889601",
-   "why": "every measurable dimension reads as a twin of external.USDSGD@M15.formula.p=a4a4e7fef4889601 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDTHB",
-   "family": "formula",
-   "twin": "external.USDTHB@M15.formula.p=41508d76291cb577",
-   "why": "every measurable dimension reads as a twin of external.USDTHB@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "USDZAR",
-   "family": "formula",
-   "twin": "external.USDZAR@M15.formula.p=06518eb21053e6aa",
-   "why": "every measurable dimension reads as a twin of external.USDZAR@M15.formula.p=06518eb21053e6aa (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "XAUUSD",
-   "family": "formula",
-   "twin": "external.XAUUSD@M15.formula.p=40d75478991cedae",
-   "why": "every measurable dimension reads as a twin of external.XAUUSD@M15.formula.p=40d75478991cedae (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
