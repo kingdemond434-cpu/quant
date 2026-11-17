@@ -240,9 +240,10 @@ GITHUB_TOKEN_FILE = "~/.gh_token"    # noqa: S105 -- dotfile PATH, not a credent
 
 def github_token() -> str | None:
     """The token, or None. Absence is a normal state, not an error."""
-    import os
     from pathlib import Path
-    tok = os.environ.get(GITHUB_TOKEN_ENV, "").strip()
+
+    from libs.ops.env_keys import read_key
+    tok = read_key(GITHUB_TOKEN_ENV)
     if tok:
         return tok
     path = Path(GITHUB_TOKEN_FILE).expanduser()
@@ -276,7 +277,8 @@ def github(query: str, *, kind: str = "repositories", limit: int = 20
         **_UA, "Authorization": f"Bearer {tok}",
         "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as fh:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=30, secrets=(tok,)) as fh:
             body = json.loads(fh.read().decode("utf8", errors="ignore"))
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
