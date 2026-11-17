@@ -1730,7 +1730,7 @@ class _Run:
         # terms forbid automated reading; the row says so and carries its missed-growth line.
         refusal = ground_refusal(g)
         if refusal:
-            self.status.append({**row, "status": "REFUSED", "why": refusal,
+            self.status.append({**row, "status": "BLOCKED_ON_TERMS", "why": refusal,
                                 "missed_growth": TERMS_REFUSED_MISSED_GROWTH})
             return
         if not self.fetch:
@@ -2337,7 +2337,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.get(str(s.get("region") or "?"))
         if not b:
             continue
-        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED", "REFUSED"):
+        if s.get("status") not in ("BUDGET_EXHAUSTED", "SKIPPED", "BLOCKED_ON_TERMS"):
             b["worked"] += 1
         if s.get("status") == "PRODUCTIVE":
             b["productive"] += 1
@@ -2374,7 +2374,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            # and its missed-growth line, so a refusal is on the report rather than in a silence.
            "refused": [{"ground": s.get("ground"), "why": s.get("why"),
                         "missed_growth": s.get("missed_growth")}
-                       for s in grounds_status if s.get("status") == "REFUSED"],
+                       for s in grounds_status if s.get("status") == "BLOCKED_ON_TERMS"
+                       and str(s.get("why") or "").startswith("TERMS_REFUSED")],
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,
@@ -2552,10 +2553,10 @@ def _checkpoint(r: _Run, f: _Run, ckpt: dict[str, Any]) -> None:
                         fh.write(json.dumps(row, ensure_ascii=False) + "\n")
         # A ground the box could not reach because the BOX had no network was not attempted;
         # recording it BLOCKED would move it out of NAMED_ONLY without anyone having tried it.
-        # A REFUSED ground was not attempted either: no request was built for it, so it is
+        # A ground refused on terms was not attempted either: no request was built for it, so it is
         # neither an attempt in the counters nor a move out of NAMED_ONLY.
         sts = [s for s in f.status if "ground" in s
-               and s.get("status") not in ("NO_NETWORK", "REFUSED")]
+               and s.get("status") not in ("NO_NETWORK", "BLOCKED_ON_TERMS")]
         if sts:
             with _xlock("deep_forest_frontier"):
                 _record_frontier(sts, [])

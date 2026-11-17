@@ -88,7 +88,7 @@ def test_a_refused_ground_builds_no_request_on_any_route(monkeypatch, tmp_path) 
                   "site": "bigquant.com", "queries": ["因子"]})
     assert calls == []
     rows = [s for s in run.status if "ground" in s]
-    assert [s["status"] for s in rows] == ["REFUSED"] * 3
+    assert [s["status"] for s in rows] == ["BLOCKED_ON_TERMS"] * 3
     assert all(s["why"].startswith("TERMS_REFUSED") for s in rows)
     assert all(s["missed_growth"].startswith("missed_growth:") for s in rows)
 
@@ -100,7 +100,8 @@ def test_a_refusal_is_not_recorded_as_an_attempt(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(dfm, "_record_vector_stats", lambda sts: recorded.append(sts))
     run = _run(monkeypatch, tmp_path)
     f = run.fork()
-    f.status.append({"ground": "BigQuant 社区", "status": "REFUSED", "why": "TERMS_REFUSED: x"})
+    f.status.append({"ground": "BigQuant 社区", "status": "BLOCKED_ON_TERMS",
+                     "why": "TERMS_REFUSED: x"})
     dfm._checkpoint(run, f, {"last_seen_save": 0.0})
     assert recorded == []
 
