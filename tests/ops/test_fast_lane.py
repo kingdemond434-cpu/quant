@@ -60,7 +60,7 @@ def test_research_docs_and_new_tests_are_fast(paths: list[str]) -> None:
         ("libs/execution/zz_new.py", "money path"),
         ("desks/mt5/data/sleeves.json", "protected"),  # what the gateway trades
         ("data/zz.json", "money path"),
-        ("desks/mt5/scripts/zz_report.ps1", "money path"),  # every desk script, no exemption
+        ("desks/mt5/scripts/zz_report.ps1", "box machinery"),  # every shell script
         ("desks/mt5/scripts/zz_report.py", "money path"),
         ("desks/mt5/research/promoter.py", "protected"),  # writes the LIVE rows
         ("desks/mt5/research/pf_allocator.py", "protected"),
