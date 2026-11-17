@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore")
 from collections import Counter  # noqa: E402
 from functools import lru_cache  # noqa: E402
 from pathlib import Path  # noqa: E402
+from typing import Any  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
@@ -616,7 +617,7 @@ def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     return testable, coverage
 
 
-def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
+def quarantine_terms_fenced(rows: list[dict], archive: Path | None = None) -> tuple[list[dict], dict]:
     """SKIP every row on a terms-fenced lineage (libs/data/terms_fence.py: Reddit and its mirrors,
     StockTwits, X), counted by platform. The docket build quarantines too; this is the second
     lock, because `test_grid.json` (the bridge) and the merged results file reach this stage
@@ -624,15 +625,27 @@ def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
     on an unfenced grid."""
     from libs.data import terms_fence as tf
     kept: list[dict] = []
+    held: list[dict] = []
     by_platform: Counter = Counter()
     for r in rows:
         p = tf.quarantined_row(r) if isinstance(r, dict) else None
         if p:
             by_platform[p] += 1
+            held.append(r)
             continue
         kept.append(r)
-    return kept, {"skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
-                  "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"}
+    rep: dict[str, Any] = {
+        "skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
+        "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable",
+        "missed_growth": {"mechanism": "terms_fence_quarantine",
+                          "what_is_lost": "backtests of cells whose lineage is a terms-fenced "
+                                          "platform",
+                          "size": "UNMEASURED",
+                          "reopens_when": "the platform grants automated use, or the cell "
+                                          "re-certifies on a clean lineage"}}
+    if archive is not None:
+        rep["archive"] = tf.archive_quarantined(held, archive)
+    return kept, rep
 
 
 def _budget_s() -> float:
@@ -724,11 +737,13 @@ def run_all() -> list[dict]:
         prior_by_key = {}
     # RESULTS ALREADY BANKED FROM A FENCED LINEAGE LEAVE THE ARTIFACT TOO (the merge consumes it
     # as a producer): counted beside the grid's own quarantine.
-    _kept_prior, _q_prior = quarantine_terms_fenced(list(prior_by_key.values()))
+    _kept_prior, _q_prior = quarantine_terms_fenced(
+        list(prior_by_key.values()),
+        BASE / "data" / "hypotheses" / "terms_quarantine_results.json")
     if _q_prior["skipped"]:
         prior_by_key = {_cell_key(r): r for r in _kept_prior}
         print(f"  terms fence: {_q_prior['skipped']} banked result row(s) from a fenced lineage "
-              f"dropped {_q_prior['by_platform']}")
+              f"moved to the quarantine archive {_q_prior['by_platform']}")
     terms_q["banked_results_dropped"] = _q_prior["skipped"]
 
     # Untested cells sort before tested ones ("" < any ISO timestamp), then oldest first.

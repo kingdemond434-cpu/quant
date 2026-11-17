@@ -368,8 +368,9 @@ def test_the_backtest_stage_skips_fenced_rows_with_a_counted_reason() -> None:
              "source": "terms_recert:forexfactory+central_bank"}]
     kept, rep = reb.quarantine_terms_fenced(rows)
     assert [r["source"] for r in kept] == ["terms_recert:forexfactory+central_bank"]
-    assert rep == {"skipped": 2, "by_platform": {"reddit": 2},
-                   "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"}
+    assert rep["skipped"] == 2 and rep["by_platform"] == {"reddit": 2}
+    assert rep["reason"] == "terms-fenced provenance (libs/data/terms_fence.py): not judgeable"
+    assert rep["missed_growth"]["mechanism"] == "terms_fence_quarantine"
 
 
 def test_the_live_artifacts_hold_no_judgeable_fenced_row_after_quarantine() -> None:
@@ -480,3 +481,27 @@ def test_a_substitutes_run_that_raises_still_publishes_its_artifact(
 class _P:
     def __init__(self, root: Path) -> None:
         self.report = root / "reports" / "ATTENTION_SUBSTITUTES.json"
+
+
+def test_quarantine_keeps_fenced_rows_in_the_archive_never_deletes(tmp_path: Path) -> None:
+    """A fenced row leaves the judged docket but is KEPT in the quarantine archive, and a
+    second pass neither duplicates nor removes it (keep, never delete)."""
+    import merge_hypotheses as mh
+    from side_channels import run_external_backtest as reb
+
+    fenced = {"source": "reddit", "symbol": "EURUSD", "family": "session_range_breakout",
+              "url": "https://www.reddit.com/r/Forex/comments/x"}
+    clean = {"source": "cftc", "symbol": "XAUUSD", "family": "carry"}
+    if not tf.quarantined_row(fenced):
+        pytest.skip("fence inactive for reddit in this build")
+    arch = tmp_path / "terms_quarantine_docket.json"
+    kept, rep = mh.quarantine_terms_fenced([fenced, clean], arch)
+    assert kept == [clean]
+    assert rep["archive"]["archived_new"] == 1
+    assert rep["missed_growth"]["mechanism"] == "terms_fence_quarantine"
+    kept2, rep2 = mh.quarantine_terms_fenced([fenced, clean], arch)
+    assert kept2 == [clean] and rep2["archive"]["archived_new"] == 0
+    import json as _json
+    assert _json.loads(arch.read_text(encoding="utf-8")) == [fenced]
+    kept3, rep3 = reb.quarantine_terms_fenced([fenced], tmp_path / "results.json")
+    assert kept3 == [] and rep3["archive"]["archived_new"] == 1

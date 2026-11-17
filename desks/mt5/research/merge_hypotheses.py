@@ -761,7 +761,11 @@ def label_terms_fenced(rows: list[dict]) -> dict:
             "rule": "label every touched row; `quarantine_terms_fenced` then keeps it from a judge"}
 
 
-def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
+#: Fenced docket rows are KEPT here, never deleted: evidence no judge reads.
+TERMS_QUARANTINE_ARCHIVE = HYP / "terms_quarantine_docket.json"
+
+
+def quarantine_terms_fenced(rows: list[dict], archive: Path | None = None) -> tuple[list[dict], dict]:
     """THE QUARANTINE (audit of #162, 2026-10-06): every docket row `terms_fence.quarantined_row`
     names -- fenced by its own source, route or URL, touched by a fenced contributing source, or
     already carrying a fenced `provenance_label` -- is SKIPPED, so no judge ever sees it. Counted
@@ -773,6 +777,7 @@ def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
         sys.path.insert(0, root)
     from libs.data import terms_fence as tf
     kept: list[dict] = []
+    held: list[dict] = []
     by_platform: dict[str, int] = {}
     by_producer: dict[str, int] = {}
     for r in rows:
@@ -781,12 +786,23 @@ def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
             by_platform[p] = by_platform.get(p, 0) + 1
             prod = str(r.get("producer") or r.get("source") or "unknown")
             by_producer[prod] = by_producer.get(prod, 0) + 1
+            held.append(r)
             continue
         kept.append(r)
-    return kept, {"skipped": sum(by_platform.values()), "by_platform": by_platform,
-                  "by_producer": dict(sorted(by_producer.items(), key=lambda kv: -kv[1])[:20]),
-                  "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable",
-                  "rule": "skip and count; the row is never handed to a judge"}
+    rep: dict[str, Any] = {
+        "skipped": sum(by_platform.values()), "by_platform": by_platform,
+        "by_producer": dict(sorted(by_producer.items(), key=lambda kv: -kv[1])[:20]),
+        "reason": "terms-fenced provenance (libs/data/terms_fence.py): not judgeable",
+        "rule": "skip and count; the row is never handed to a judge and never deleted: it is "
+                "kept in the quarantine archive",
+        "missed_growth": {"mechanism": "terms_fence_quarantine",
+                          "what_is_lost": "judging of cells whose lineage is a terms-fenced platform",
+                          "size": "UNMEASURED",
+                          "reopens_when": "the platform grants automated use, or the cell "
+                                          "re-certifies on a clean lineage (recert queue)"}}
+    if archive is not None:
+        rep["archive"] = tf.archive_quarantined(held, archive)
+    return kept, rep
 
 
 #: THE TERMS RE-CERTIFICATION QUEUE. Rows that re-certify, on a clean lineage, a certificate
@@ -1303,7 +1319,7 @@ def main() -> int:
     # LABEL, THEN QUARANTINE (terms fence, audit of #162): every touched row is labelled, and no
     # fenced row reaches the docket the judge reads.
     terms_labels = label_terms_fenced(rows_out)
-    rows_out, terms_quarantine = quarantine_terms_fenced(rows_out)
+    rows_out, terms_quarantine = quarantine_terms_fenced(rows_out, TERMS_QUARANTINE_ARCHIVE)
     if terms_quarantine["skipped"]:
         print(f"   terms fence: {terms_quarantine['skipped']} fenced row(s) QUARANTINED, not "
               f"judged {terms_quarantine['by_platform']}")
@@ -1312,7 +1328,7 @@ def main() -> int:
         if isinstance(prior, list) and prior:
             # The preserved docket is quarantined too: preserving it must not preserve a
             # fenced row for the judge.
-            kept_prior, q_prior = quarantine_terms_fenced(prior)
+            kept_prior, q_prior = quarantine_terms_fenced(prior, TERMS_QUARANTINE_ARCHIVE)
             if q_prior["skipped"]:
                 _write_docket_atomically(TARGET, kept_prior)
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "

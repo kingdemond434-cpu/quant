@@ -49,6 +49,7 @@ import json
 import urllib.request
 from collections.abc import Mapping
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -569,3 +570,36 @@ def refusal(platform: str, **extra: Any) -> dict[str, Any]:
 
 if __name__ == "__main__":
     print(json.dumps(registry_rows(), indent=1))
+
+
+def archive_quarantined(rows: list[dict[str, Any]], path: Path) -> dict[str, Any]:
+    """KEEP, NEVER DELETE: a fenced row leaves the file a judge reads but is never lost. Every
+    quarantined row is merged into `path` (a JSON list), keyed by its full canonical JSON, so the
+    archive only grows: a row already archived is not duplicated and nothing is ever removed.
+    The archive is evidence, read by no judge. An unreadable archive is kept aside, never
+    overwritten, and the pass reports it."""
+    if not rows:
+        return {"archived_new": 0, "path": str(path)}
+    existing: list[Any] = []
+    if path.exists():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            existing = loaded if isinstance(loaded, list) else [loaded]
+        except (OSError, ValueError):
+            aside = path.with_suffix(path.suffix + f".unreadable.{datetime.now():%Y%m%dT%H%M%S}")
+            path.replace(aside)
+            existing = []
+    seen = {json.dumps(r, sort_keys=True, default=str) for r in existing}
+    new = 0
+    for r in rows:
+        k = json.dumps(r, sort_keys=True, default=str)
+        if k not in seen:
+            seen.add(k)
+            existing.append(r)
+            new += 1
+    if new:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(existing, indent=1, default=str), encoding="utf-8")
+        tmp.replace(path)
+    return {"archived_new": new, "archived_total": len(existing), "path": str(path)}
