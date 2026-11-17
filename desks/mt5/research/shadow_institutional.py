@@ -408,8 +408,11 @@ _CBOE = Sensor(
 #: fetched by research/owner_permitted_sources.py (robots fail closed, 401/403/429/451 a hard
 #: stop) and reduced to one net dealer-gamma observation per pass in this file, every row
 #: stamped permission=owner_attestation_2026-11-17.
+#: The observable lives under the GITIGNORED data/owner_permitted/: Cboe-derived rows never reach
+#: the public repo (the old tracked data/observables/cboe_spx_options.jsonl is not read).
 OWNER_OBSERVABLES: dict[str, Path] = {
-    "cboe_delayed_surface": DESK / "data" / "observables" / "cboe_spx_options.jsonl"}
+    "cboe_delayed_surface": DESK / "data" / "owner_permitted" / "cboe_options"
+                            / "cboe_spx_options.jsonl"}
 
 
 def owner_permitted(sensor: Sensor) -> bool:

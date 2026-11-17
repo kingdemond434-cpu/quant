@@ -14,12 +14,14 @@ from libs.research_os.adapters import owned_data as O
 @pytest.fixture
 def estate(tmp_path, monkeypatch):
     desk = tmp_path / "desks/mt5"
-    for directory in ("data/cot", "data/universe", "data/observables"):
+    for directory in ("data/cot", "data/universe", "data/observables",
+                      "data/owner_permitted/cboe_options"):
         (desk / directory).mkdir(parents=True)
     monkeypatch.setattr(O, "ROOT", tmp_path)
     monkeypatch.setattr(O, "DESK", desk)
     monkeypatch.setattr(F, "ROOT", tmp_path)
     monkeypatch.setattr(F, "OBS", desk / "data/observables")
+    monkeypatch.setattr(F, "OWNER_PERMITTED", desk / "data/owner_permitted")
     return desk
 
 
@@ -139,7 +141,10 @@ def test_vix_close_is_not_knowable_at_its_own_daily_open(estate):
 
 
 def test_gamma_requires_real_forward_history_and_respects_fetch_time(estate):
-    path = estate / "data/observables/cboe_spx_options.jsonl"
+    path = estate / "data/owner_permitted/cboe_options/cboe_spx_options.jsonl"
+    # the tracked legacy path is NOT read: Cboe-derived rows live only under the gitignored dir
+    (estate / "data/observables/cboe_spx_options.jsonl").write_text(
+        json.dumps({"fetched_at": "2026-01-01T00:00:00+00:00", "net_gex": 99}))
     rows = [{"fetched_at": stamp.isoformat(), "net_gex": i}
             for i, stamp in enumerate(pd.date_range("2026-01-02", periods=30, freq="h", tz="UTC"))]
     adapter = F.GammaExposureAdapter()

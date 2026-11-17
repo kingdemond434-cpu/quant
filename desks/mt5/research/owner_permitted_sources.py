@@ -15,9 +15,13 @@ WHAT A PASS DOES, per source:
     401/403/429/451 is a hard stop. The raw bytes land under ``data/owner_permitted/<id>/``
     (repo root ``data/`` is gitignored: publisher bytes never enter the public repo) with a
     ``.meta.json`` sidecar carrying ``permission=owner_attestation_2026-11-17``.
+  * 401/403/429/451 HOLDS the source for 24h (``libs.data.owner_permissions.HOLDS``, gitignored
+    ``data/``): while held it is skipped (status HELD) with its missed_growth line and nothing
+    is requested.
   * the Cboe chain is also reduced to one dealer-gamma observation appended to
-    ``data/observables/cboe_spx_options.jsonl`` (the file GammaExposureAdapter and
-    shadow_institutional's ``cboe_delayed_surface`` read), stamped with the same provenance.
+    ``data/owner_permitted/cboe_options/cboe_spx_options.jsonl`` (GITIGNORED: Cboe-derived rows
+    never reach the public repo; the file GammaExposureAdapter and shadow_institutional's
+    ``cboe_delayed_surface`` read), stamped with the same provenance.
     Parsing the other six is downstream (status NEEDS_PARSER, said, never hidden).
 
 ARTIFACT: ``reports/owner_permitted_sources.json`` -- metadata only, every row stamped.
@@ -44,8 +48,7 @@ from libs.data import owner_permissions as op  # noqa: E402
 
 REPORT = BASE / "reports" / "owner_permitted_sources.json"
 RAW = REPO / "data" / "owner_permitted"
-OBSERVABLES = BASE / "data" / "observables"
-GEX_FILE = OBSERVABLES / "cboe_spx_options.jsonl"
+GEX_FILE = op.CBOE_GEX_FILE
 GEX_SOURCE = "exchange_options_gamma"
 #: The seven the attestation names. A row deleted from the file still shows here, refused.
 ATTESTED: tuple[str, ...] = ("hkex_stock_connect", "boj_etf_purchases", "korea_nps_flows",
@@ -114,7 +117,7 @@ def append_gex(f: op.Fetched, out: Path = GEX_FILE) -> dict[str, Any]:
 
 def run(*, path: Path | None = None, transport: op.Transport | None = None,
         today: date | None = None, raw_root: Path = RAW, gex_file: Path = GEX_FILE,
-        budget_s: float = 300.0) -> dict[str, Any]:
+        budget_s: float = 300.0, holds: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     rows, why = op.load(path)
     ids = list(ATTESTED) + [i for i in rows if i not in ATTESTED]
@@ -138,7 +141,7 @@ def run(*, path: Path | None = None, transport: op.Transport | None = None,
                 fetches.append({"url": ep, "status": "budget", "why": "pass budget spent"})
                 break
             url = render(str(ep), today)
-            f = op.permitted_get(sid, url, transport=transport, path=path)
+            f = op.permitted_get(sid, url, transport=transport, path=path, holds=holds)
             one: dict[str, Any] = {"url": url, "status": f.status, "why": f.why,
                                    "http": f.http, "fetched_at": f.fetched_at}
             if f.ok:
@@ -150,13 +153,15 @@ def run(*, path: Path | None = None, transport: op.Transport | None = None,
                         one["parse"] = f"{type(exc).__name__}: {str(exc)[:120]}"
                 one.update(op.provenance(sid))
             fetches.append(one)
-            if f.status == "hard_stop":
+            if f.status in ("hard_stop", "held") or (
+                    f.status == "robots_refused" and f.http in op.HARD_STOP):
                 break
         ok = any(x.get("status") == "ok" for x in fetches)
         rec.update({"status": ("FETCHED" if ok and sid == GEX_SOURCE else
                                "FETCHED_NEEDS_PARSER" if ok else
                                "HARD_STOP" if any(x.get("status") == "hard_stop"
                                                   for x in fetches) else
+                               "HELD" if any(x.get("status") == "held" for x in fetches) else
                                "ROBOTS_REFUSED" if any(x.get("status") == "robots_refused"
                                                        for x in fetches) else
                                "UNREACHED"),

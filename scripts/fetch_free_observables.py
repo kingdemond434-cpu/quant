@@ -44,6 +44,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "desks" / "mt5" / "data" / "observables"
 OUT = ROOT / "data" / "free_observables.json"
+#: Owner-gated (Cboe-derived) output lands under the GITIGNORED owner_permitted directory, never in
+#: the tracked OBS: publisher-derived rows do not enter the public repo.
+OWNER_OUT = ROOT / "desks" / "mt5" / "data" / "owner_permitted" / "cboe_options"
 
 _UA = {"User-Agent": "Mozilla/5.0 (quant-desk research fetcher)"}
 
@@ -235,15 +238,17 @@ def main() -> int:
         # SNAPSHOTS APPEND, HISTORIES REPLACE. A gamma reading is one observation of a series
         # this desk is building; overwriting it would discard the only history that will ever
         # exist, because the source has no history endpoint.
+        dest = OWNER_OUT if name in OWNER_GATED else OBS
+        dest.mkdir(parents=True, exist_ok=True)
         if meta["kind"] == "snapshot":
-            path = OBS / f"{name}.jsonl"
+            path = dest / f"{name}.jsonl"
             with path.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(parsed) + "\n")
             n = sum(1 for _ in path.open(encoding="utf-8"))
             summary = {"ok": True, "path": str(path.relative_to(ROOT)), "observations": n}
             print(f"  ok   {name:22s} appended, {n} observation(s) -- {meta['unblocks']}")
         else:
-            path = OBS / f"{name}.json"
+            path = dest / f"{name}.json"
             path.write_text(json.dumps(parsed, indent=1), "utf-8")
             summary = {"ok": True, "path": str(path.relative_to(ROOT)),
                        "rows": parsed.get("rows") or parsed.get("events")}

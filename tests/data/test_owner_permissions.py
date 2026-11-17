@@ -3,11 +3,16 @@ reader fails closed, provenance rides on every row, robots and hard stops still 
 can unlock a hard-refused host. The HTTP layer is a fixture transport throughout: no network."""
 from __future__ import annotations
 
+import email.message
 import importlib.util
+import io
 import json
+import subprocess
 import sys
 import types
-from datetime import date
+import urllib.request
+import urllib.response
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +28,14 @@ CHAIN = json.dumps({"timestamp": "2026-11-16 16:15:00", "data": {
     "current_price": 6000.0, "options": [
         {"option": "SPX261120C06000000", "gamma": 0.002, "open_interest": 1000},
         {"option": "SPX261120P05900000", "gamma": 0.001, "open_interest": 500}]}}).encode()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_holds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Every test holds into its own file: no test writes the box's real hard-stop state."""
+    p = tmp_path / "holds" / "hard_stops.json"
+    monkeypatch.setattr(op, "HOLDS", p)
+    return p
 
 
 def _organ() -> types.ModuleType:
@@ -255,3 +268,195 @@ def test_the_unscheduled_observables_script_keeps_vix_refused_and_gates_the_chai
     w.calls.clear()
     body, why = ffo._gated_get("cboe_spx_options", ffo.SOURCES["cboe_spx_options"]["url"])
     assert body is None and "disabled" in why and w.calls == []
+
+# --------------------------------------------------------------------------- MF1: redirect hops
+class _FakeNet:
+    """Replaces urllib's HTTP(S) handlers' network call: the REAL opener, redirect handler and
+    error processors run; only the socket is scripted. Records every URL actually requested."""
+
+    def __init__(self, script: dict[str, tuple[int, dict[str, str], bytes]]) -> None:
+        self.script = script
+        self.requested: list[str] = []
+
+    def __call__(self, handler: Any, req: urllib.request.Request) -> Any:
+        url = req.full_url
+        self.requested.append(url)
+        code, hdrs, body = self.script.get(url, (404, {}, b""))
+        msg = email.message.Message()
+        for k, v in hdrs.items():
+            msg[k] = v
+        resp = urllib.response.addinfourl(io.BytesIO(body), msg, url, code)
+        resp.msg = "scripted"  # type: ignore[attr-defined]
+        return resp
+
+
+@pytest.fixture
+def fake_net(monkeypatch: pytest.MonkeyPatch) -> Any:
+    from libs.data import polite_fetch
+
+    def install(script: dict[str, tuple[int, dict[str, str], bytes]]) -> _FakeNet:
+        net = _FakeNet(script)
+        monkeypatch.setattr(urllib.request.HTTPSHandler, "https_open", net)
+        monkeypatch.setattr(urllib.request.HTTPHandler, "http_open", net)
+        return net
+
+    monkeypatch.setattr(polite_fetch.GATE, "wait", lambda *a, **k: None)
+    return install
+
+
+NFCI = "https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv"
+
+
+@pytest.mark.parametrize("target", [
+    "https://api.stlouisfed.org/fred/series/observations?series_id=NFCI",
+    "https://finance.yahoo.com/quote/NFCI",
+    "https://www.snb.ch/elsewhere"])                 # not hard-refused, but not this row's host
+def test_a_redirect_hop_is_refused_before_it_is_requested(
+        tmp_path: Path, fake_net: Any, target: str) -> None:
+    net = fake_net({
+        "https://www.chicagofed.org/robots.txt": (404, {}, b""),
+        NFCI: (302, {"Location": target}, b""),
+        target: (200, {"Content-Type": "text/csv"}, b"leaked,bytes\n")})
+    f = op.permitted_get("chicagofed_nfci", NFCI, path=_perm(tmp_path))
+    assert f.status == "refused" and "redirect" in f.why and not f.body
+    assert net.requested == ["https://www.chicagofed.org/robots.txt", NFCI]   # NO second hop
+
+
+def test_the_transport_alone_refuses_a_hard_refused_hop(fake_net: Any) -> None:
+    net = fake_net({"https://example.org/a": (302, {"Location": "https://api.stlouisfed.org/x"},
+                                              b"")})
+    code, body, final, _ct, err = op._urllib_transport("https://example.org/a", {}, 5.0)
+    assert code is None and not body and err.startswith(op.REDIRECT_REFUSED)
+    assert final == "https://api.stlouisfed.org/x"
+    assert net.requested == ["https://example.org/a"]
+
+
+def test_a_robots_redirect_into_a_refused_host_is_never_requested(
+        tmp_path: Path, fake_net: Any) -> None:
+    net = fake_net({"https://www.chicagofed.org/robots.txt":
+                    (301, {"Location": "https://finance.yahoo.com/robots.txt"}, b"")})
+    f = op.permitted_get("chicagofed_nfci", NFCI, path=_perm(tmp_path))
+    assert f.status == "robots_refused" and op.REDIRECT_REFUSED in f.why
+    assert net.requested == ["https://www.chicagofed.org/robots.txt"]
+
+
+def test_a_redirect_inside_the_row_is_followed(tmp_path: Path, fake_net: Any) -> None:
+    moved = "https://www.chicagofed.org/moved.csv"
+    net = fake_net({"https://www.chicagofed.org/robots.txt": (404, {}, b""),
+                    NFCI: (302, {"Location": moved}, b""),
+                    moved: (200, {"Content-Type": "text/csv"}, b"date,nfci\n")})
+    f = op.permitted_get("chicagofed_nfci", NFCI, path=_perm(tmp_path))
+    assert f.ok and f.body == b"date,nfci\n" and net.requested[-1] == moved
+
+
+# --------------------------------------------------------------------------- MF2: robots codes
+@pytest.mark.parametrize("code,allowed", [
+    (404, True), (410, True), (401, False), (403, False), (400, False), (405, False),
+    (406, False), (418, False), (429, False), (451, False), (500, False), (503, False),
+    (301, False)])
+def test_robots_allows_only_404_and_410_as_no_file(code: int, allowed: bool) -> None:
+    ok, why = op.robots_allows("https://data.snb.ch/api/x", Wire(robots=(code, b"")))
+    assert ok is allowed, why
+    if code in (401, 403):
+        assert "denied" in why
+
+
+# --------------------------------------------------------------------------- MF3: output path
+def test_cboe_output_lands_only_under_the_gitignored_owner_permitted_dir() -> None:
+    gex = op.CBOE_GEX_FILE
+    assert gex == _organ().GEX_FILE
+    rel = gex.relative_to(REPO).as_posix()
+    assert rel == "desks/mt5/data/owner_permitted/cboe_options/cboe_spx_options.jsonl"
+    r = subprocess.run(["git", "-C", str(REPO), "check-ignore", "-q", rel], check=False)
+    assert r.returncode == 0, f"{rel} is not gitignored"
+    from libs.research_os.adapters import fetched_data
+    assert gex == fetched_data.OWNER_PERMITTED / fetched_data.GEX_RELPATH
+    spec = importlib.util.spec_from_file_location(
+        "shadow_institutional_t", REPO / "desks" / "mt5" / "research" / "shadow_institutional.py")
+    assert spec and spec.loader
+    si = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(si)
+    assert si.OWNER_OBSERVABLES["cboe_delayed_surface"] == gex
+
+
+def test_the_organ_writes_the_gex_row_there_and_nowhere_tracked(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    organ = _organ()
+    gex = tmp_path / "desks/mt5/data/owner_permitted/cboe_options/cboe_spx_options.jsonl"
+    monkeypatch.setattr(organ, "GEX_FILE", gex)
+    before = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain"],
+                            capture_output=True, text=True, check=True).stdout
+    # default gex_file is bound at def time: pass the module's own default explicitly
+    organ.run(path=_perm(tmp_path), transport=Wire(), today=date(2026, 11, 17),
+              raw_root=tmp_path / "raw", gex_file=organ.GEX_FILE)
+    assert [json.loads(x)["permission"] for x in gex.read_text().splitlines()] == [
+        "owner_attestation_2026-11-17"]
+    after = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain"],
+                           capture_output=True, text=True, check=True).stdout
+    assert after == before                                   # nothing tracked was touched
+
+
+def test_the_observables_script_writes_owner_gated_output_under_the_ignored_dir() -> None:
+    spec = importlib.util.spec_from_file_location(
+        "ffo_t2", REPO / "scripts" / "fetch_free_observables.py")
+    assert spec and spec.loader
+    ffo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ffo)
+    assert op.CBOE_GEX_FILE.parent == ffo.OWNER_OUT
+    rel = (ffo.OWNER_OUT / "cboe_spx_options.jsonl").relative_to(REPO).as_posix()
+    assert subprocess.run(["git", "-C", str(REPO), "check-ignore", "-q", rel],
+                          check=False).returncode == 0
+
+
+# --------------------------------------------------------------------------- SF: 24h hold
+@pytest.mark.parametrize("code", [401, 403, 429, 451])
+def test_a_hard_stop_is_held_24h_and_skipped_with_missed_growth(
+        tmp_path: Path, code: int, _isolated_holds: Path) -> None:
+    organ = _organ()
+    w = Wire(data=(code, b""))
+    organ.run(path=_perm(tmp_path), transport=w, today=date(2026, 11, 17),
+              raw_root=tmp_path / "raw", gex_file=tmp_path / "gex.jsonl")
+    holds = json.loads(_isolated_holds.read_text(encoding="utf-8"))
+    assert set(holds) == set(SEVEN) and {h["http"] for h in holds.values()} == {code}
+    until = datetime.fromisoformat(holds["snb_sight_deposits"]["until"])
+    assert timedelta(hours=23, minutes=59) < until - datetime.now(UTC) <= timedelta(hours=24)
+    # the next pass, within the hold: nothing is requested, every source is HELD with its line
+    w2 = Wire()
+    doc = organ.run(path=_perm(tmp_path), transport=w2, today=date(2026, 11, 17),
+                    raw_root=tmp_path / "raw", gex_file=tmp_path / "gex.jsonl")
+    assert {r["status"] for r in doc["sources"]} == {"HELD"}
+    assert w2.calls == []
+    for r in doc["sources"]:
+        assert r["missed_growth"].startswith("missed_growth")
+        assert "missed_growth" in r["fetches"][0]["why"] and "held until" in r["fetches"][0]["why"]
+
+
+def test_a_hold_lifts_after_24h(tmp_path: Path, _isolated_holds: Path) -> None:
+    past = (datetime.now(UTC) - timedelta(seconds=1)).isoformat(timespec="seconds")
+    _isolated_holds.parent.mkdir(parents=True, exist_ok=True)
+    _isolated_holds.write_text(json.dumps({"snb_sight_deposits": {
+        "until": past, "http": 429, "why": "x"}}), encoding="utf-8")
+    assert op.held("snb_sight_deposits") is None
+    w = Wire()
+    f = op.permitted_get("snb_sight_deposits", "https://data.snb.ch/api/x",
+                         transport=w, path=_perm(tmp_path))
+    assert f.ok and w.data_calls() == ["https://data.snb.ch/api/x"]
+
+
+@pytest.mark.parametrize("code", [401, 403, 429, 451])
+def test_a_robots_hard_stop_is_held_too(tmp_path: Path, code: int) -> None:
+    w = Wire(robots=(code, b""))
+    f = op.permitted_get("snb_sight_deposits", "https://data.snb.ch/api/x",
+                         transport=w, path=_perm(tmp_path))
+    assert f.status == "robots_refused" and "held until" in f.why and "missed_growth" in f.why
+    assert op.held("snb_sight_deposits") is not None
+    w2 = Wire()
+    f = op.permitted_get("snb_sight_deposits", "https://data.snb.ch/api/x",
+                         transport=w2, path=_perm(tmp_path))
+    assert f.status == "held" and w2.calls == []
+
+
+def test_the_default_hold_file_is_gitignored() -> None:
+    rel = (REPO / "data" / "owner_permitted" / "hard_stops.json").relative_to(REPO).as_posix()
+    assert subprocess.run(["git", "-C", str(REPO), "check-ignore", "-q", rel],
+                          check=False).returncode == 0
