@@ -18,6 +18,8 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
      and re-run: the re-run queues behind LIVE, nothing is lost.
   2c. A LIVE RUN WAITING ON A LATER JOB counts as queued LIVE (live_waiting(): its chained seal
      and promote jobs queue behind PR runs while the run reads in_progress).
+  2d. A CLEARED PR RUN WAITING ON A LATER JOB waits first too (pr_waiting()); being started, it
+     is never cancelled itself.
   2b. CLEARED FIRST (zuck 22:08Z "yes", standing: never ask about queue order again). A PR whose
      current head carries a trusted, unedited AUDIT CLEAR waits like LIVE: once one of its runs
      has been queued LIVE_FIRST_MIN, every queued run of a PR WITHOUT a CLEAR that joined before
@@ -129,8 +131,15 @@ def plan(
     head is audit-CLEARed: they wait like LIVE and are never moved. Only `pull_request` runs are
     candidates."""
     prs = [r for r in queued if r.get("event") == "pull_request"]
+    # A run returned by pr_waiting() has started jobs: it can WAIT FIRST (rule 2d) but is never
+    # cancelled, whether as superseded or as ahead.
+    movable = [r for r in prs if not r.get("live_first_job_waiting")]
     known = [r for r in prs if str(r.get("head_branch")) in heads]
-    waste = [int(r["id"]) for r in known if str(r.get("head_sha")) != heads[str(r["head_branch"])]]
+    waste = [
+        int(r["id"])
+        for r in known
+        if r in movable and str(r.get("head_sha")) != heads[str(r["head_branch"])]
+    ]
     current = [r for r in known if str(r.get("head_sha")) == heads[str(r["head_branch"])]]
     first = [
         r for r in queued if r.get("event") in LIVE_EVENTS and str(r.get("head_branch")) == base
@@ -144,7 +153,7 @@ def plan(
     ahead = [
         int(r["id"])
         for r in current
-        if str(r.get("head_branch")) not in cleared and _queued_at(r) < newest
+        if r in movable and str(r.get("head_branch")) not in cleared and _queued_at(r) < newest
     ]
     return waste, ahead
 
@@ -316,16 +325,24 @@ def _queued(repo: str) -> list[dict[str, Any]]:
 
 def _live_jobs_waiting(repo: str, base: str) -> list[dict[str, Any]]:
     """Rule 2c's reads: LIVE runs in progress, or queued again for a later job, and their jobs."""
-    runs = [r for st in ("in_progress", "queued") for r in
-            _gh(f"repos/{repo}/actions/runs?status={st}&branch={base}&per_page=50")
-            .get("workflow_runs") or []]
-    return live_waiting(runs,
-                        lambda rid: _gh(f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100")
-                        .get("jobs") or [], base)
+    runs = [
+        r
+        for st in ("in_progress", "queued")
+        for r in _gh(f"repos/{repo}/actions/runs?status={st}&branch={base}&per_page=50").get(
+            "workflow_runs"
+        )
+        or []
+    ]
+    return live_waiting(
+        runs,
+        lambda rid: _gh(f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100").get("jobs") or [],
+        base,
+    )
 
 
-def live_waiting(running: list[dict[str, Any]], jobs: Callable[[int], list[dict[str, Any]]],
-                 base: str = LIVE) -> list[dict[str, Any]]:
+def live_waiting(
+    running: list[dict[str, Any]], jobs: Callable[[int], list[dict[str, Any]]], base: str = LIVE
+) -> list[dict[str, Any]]:
     """RULE 2c (2026-11-17 20:31Z, zuck: "it shouldn't need me"). ci.yml chains LIVE's jobs
     (quality, money-path, coverage-floor, seal, promote), and each joins the queue only when the
     one before it ends, behind every PR run queued meanwhile. The run itself then reads
@@ -339,13 +356,69 @@ def live_waiting(running: list[dict[str, Any]], jobs: Callable[[int], list[dict[
     for r in running:
         if r.get("event") not in LIVE_EVENTS or str(r.get("head_branch")) != base:
             continue
-        waiting = [str(j.get("created_at")) for j in jobs(int(r["id"]))
-                   if j.get("status") in ("queued", "waiting", "pending") and j.get("created_at")
-                   and not j.get("runner_name")]
+        waiting = [
+            str(j.get("created_at"))
+            for j in jobs(int(r["id"]))
+            if j.get("status") in ("queued", "waiting", "pending")
+            and j.get("created_at")
+            and not j.get("runner_name")
+        ]
         if waiting:
-            out.append({**r, "status": "queued", "run_started_at": min(waiting),
-                        "live_first_job_waiting": True})
+            out.append(
+                {
+                    **r,
+                    "status": "queued",
+                    "run_started_at": min(waiting),
+                    "live_first_job_waiting": True,
+                }
+            )
     return out
+
+
+def pr_waiting(
+    running: list[dict[str, Any]], jobs: Callable[[int], list[dict[str, Any]]]
+) -> list[dict[str, Any]]:
+    """RULE 2d (2026-11-17 21:39Z, Hourly pass + Governance). Rule 2c for PR runs: #1244, the
+    CLEARed and approved fix LIVE's quality waited on, had quality and money-path done and its
+    chained coverage-floor job queued from 21:09:50Z behind 73 PR runs re-queued at 20:40-21:09Z.
+    The run read `in_progress`, so rule 2b never saw it and a bulk cancel by hand was needed. Each
+    in-progress `pull_request` run with a job waiting for a runner is returned as queued since that
+    job joined; plan() lets it wait first only when its head is CLEARed, and never cancels it."""
+    out: list[dict[str, Any]] = []
+    for r in running:
+        if r.get("event") != "pull_request" or r.get("status") != "in_progress":
+            continue
+        waiting = [
+            str(j.get("created_at"))
+            for j in jobs(int(r["id"]))
+            if j.get("status") in ("queued", "waiting", "pending")
+            and j.get("created_at")
+            and not j.get("runner_name")
+        ]
+        if waiting:
+            out.append(
+                {
+                    **r,
+                    "status": "queued",
+                    "run_started_at": min(waiting),
+                    "live_first_job_waiting": True,
+                }
+            )
+    return out
+
+
+def _pr_jobs_waiting(repo: str) -> list[dict[str, Any]]:
+    """Rule 2d's reads: in-progress PR runs and their jobs (at most 100 runs; the plan runs 20)."""
+    runs = (
+        _gh(f"repos/{repo}/actions/runs?status=in_progress&event=pull_request&per_page=100").get(
+            "workflow_runs"
+        )
+        or []
+    )
+    return pr_waiting(
+        runs,
+        lambda rid: _gh(f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100").get("jobs") or [],
+    )
 
 
 _NUMBERS: dict[str, int] = {}  # head branch -> PR number, from the last _heads() listing
@@ -446,6 +519,10 @@ def run(
         queued += _live_jobs_waiting(repo, base)
     except Exception as exc:
         print(f"  rule 2c skipped: {type(exc).__name__}: {exc}")
+    try:  # rule 2d never costs rules 1-2c, whatever it hits
+        queued += _pr_jobs_waiting(repo)
+    except Exception as exc:
+        print(f"  rule 2d skipped: {type(exc).__name__}: {exc}")
     heads = _heads(repo)
     try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
         cleared = _cleared(repo, queued, heads, over)
