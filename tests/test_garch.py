@@ -47,20 +47,21 @@ def test_gjr_finds_the_asymmetry_and_plain_garch_data_has_none() -> None:
     assert flat is not None and flat.gamma < 0.05
 
 
-def test_filter_is_riskmetrics_at_the_ewma_corner_and_one_bar_fresher() -> None:
-    # omega=0, alpha=1-lam, beta=lam IS the RiskMetrics recursion. The shipped `ewma_variance`
-    # writes its forecast for bar i BEFORE folding in r[i-1], so it equals this filter shifted
-    # one bar later: safe (never look-ahead) but one bar staler than it needs to be.
+def test_filter_is_riskmetrics_at_the_ewma_corner() -> None:
+    # omega=0, alpha=1-lam, beta=lam IS the RiskMetrics recursion. Seeded with the same h0 the
+    # EWMA uses (the first squared return), the two forecasts agree bar for bar with no shift.
+    # `ewma_variance` leaves bar 0 empty (no return precedes it), so the comparison starts at 1.
     r = _simulate(400, omega=2e-6, alpha=0.10, beta=0.80)
     lam = 0.94
+    h0 = float(r[0] ** 2)
     e = ewma_variance(r, lam=lam)
-    g = garch.filter_variance(r, 0.0, 1.0 - lam, lam, h0=float(e[1]))
-    np.testing.assert_allclose(g[:len(r) - 1], e[1:], rtol=1e-9)
-    # and the filter's own forecast for bar i moves with r[i-1], never with r[i]
+    g = garch.filter_variance(r, 0.0, 1.0 - lam, lam, h0=h0)
+    np.testing.assert_allclose(g[1:len(r)], e[1:], rtol=1e-9)
+    # and the forecast for bar i moves with r[i-1], never with r[i]: no look-ahead
     bumped = r.copy()
     bumped[200] *= 10.0
-    g2 = garch.filter_variance(bumped, 0.0, 1.0 - lam, lam, h0=float(e[1]))
-    assert g2[200] == g[200] and g2[201] > g[201]
+    e2 = ewma_variance(bumped, lam=lam)
+    assert e2[200] == e[200] and e2[201] > e[201]
 
 
 def test_walk_forward_has_no_lookahead() -> None:
