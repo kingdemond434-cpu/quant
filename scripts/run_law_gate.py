@@ -34,6 +34,7 @@ enforcement itself).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
@@ -738,6 +739,11 @@ def _dirty(root: Path) -> list[str]:
 #: keeps the reaper off a sibling law gate that is merely slow -- the only way to be wrong here is
 #: to delete a checkout still being read, so the threshold is deliberately far past the maximum.
 _ORPHAN_AFTER_S = 2 * 60 * 60
+# A checkout no live process holds is an orphan long before two hours. Measured 2026-11-03 on a
+# 14 GB cloud container: concurrent pushes, each wrapped in a caller's `timeout`, left 12 GB of
+# `lawgate-head-*` (1-3.8 GB each, no longer 150 MB) inside one hour and filled the disk while the
+# age rule still called every one of them alive. Past this floor, "nobody holds it" reaps it.
+_UNHELD_AFTER_S = 10 * 60
 
 
 def _is_tmpfs(path: Path) -> bool:
@@ -787,6 +793,77 @@ def _checkout_base() -> Path:
     return base
 
 
+def _within(path: str, d: Path) -> bool:
+    ds = str(d)
+    return path == ds or path.startswith(ds + os.sep)
+
+
+_OWNER_PID = "owner.pid"
+
+
+def _owner_alive(d: Path) -> bool:
+    """True when the gate that allocated `d` is still running, by the pid file it wrote there.
+
+    A live gate whose own cwd sits elsewhere and touches its checkout only through short git or
+    pytest children holds NO cwd or fd inside it between steps, so the /proc census alone would
+    read it as unheld and a concurrent gate could reap it mid-run. The pid file closes that gap.
+    A missing or unreadable pid file says nothing either way (False); a pid we may not signal is
+    alive (PermissionError), and a reused pid only delays the reap to the 2 h rule -- never early.
+    """
+    if os.name == "nt":
+        # os.kill(pid, 0) TERMINATES the process on Windows. Never probe there; the 2 h rule and
+        # the blind-census fallback already guard every dir on that host.
+        return False
+    try:
+        pid = int((d / _OWNER_PID).read_text().strip())
+    except (OSError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _held_paths() -> set[str] | None:
+    """Every cwd and open file of every live process, or None when /proc cannot say.
+
+    None is UNMEASURED, and the reaper then falls back to the age rule alone: an unreadable /proc
+    (Windows, a hardened container) must never read as "nobody holds it".
+    """
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return None
+    held: set[str] = set()
+    try:
+        pids = [p for p in proc.iterdir() if p.name.isdigit()]
+    except OSError:
+        return None
+    readable = 0
+    for p in pids:
+        try:
+            held.add(os.readlink(p / "cwd"))
+            readable += 1
+        except OSError:
+            continue
+        try:
+            for fd in (p / "fd").iterdir():
+                try:
+                    held.add(os.readlink(fd))
+                except OSError:
+                    continue
+        except OSError:
+            continue
+    # Not even our own cwd was readable: the census is blind, not empty.
+    return held if readable else None
+
+
 def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """Delete lawgate HEAD checkouts left by runs that DIED before reaching their own cleanup.
 
@@ -822,9 +899,17 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
         except OSError:
             continue                        # unreadable base is not this gate's verdict to fail
     candidates.sort()
+    held = _held_paths()
     for d in candidates:
         try:
-            if not d.is_dir() or now - d.stat().st_mtime < _ORPHAN_AFTER_S:
+            if not d.is_dir():
+                continue
+            age = now - d.stat().st_mtime
+            # Unheld: reap past the short floor. Held, or holders UNMEASURED: only past the
+            # lifetime a live run cannot reach -- never reap what a running gate may be using.
+            unheld = (held is not None and not any(_within(h, d) for h in held)
+                      and not _owner_alive(d))
+            if age < (_UNHELD_AFTER_S if unheld else _ORPHAN_AFTER_S):
                 continue
         except OSError:
             continue                        # vanished under us -- a concurrent reaper is fine
@@ -863,6 +948,9 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
+    # No pid file (write failed): the 2 h rule still guards a held dir.
+    with contextlib.suppress(OSError):
+        (tmp / _OWNER_PID).write_text(str(os.getpid()))
     wt = tmp / "t"
     try:
         # HEAD now contains 49,295 files / 3.8GB on the trading host. Parallel

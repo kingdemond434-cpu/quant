@@ -16,6 +16,14 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
 import box_heartbeat as hb  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _fresh_census(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The census check never reads the checkout's own box state; fresh unless a test ages it."""
+    census = tmp_path / "fresh_clock_liveness.json"
+    census.write_text("{}")
+    monkeypatch.setattr(hb, "CLOCK_LIVENESS", census)
+
+
 def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: float,
            fence: str = "GREEN") -> None:
     g, w, s = tmp / "DESK_STALE.json", tmp / "stall_watch.json", tmp / "SILENT_ORGANS.json"
@@ -27,6 +35,7 @@ def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: floa
     monkeypatch.setattr(hb, "GATEWAY_BEAT", g)
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", w)
     monkeypatch.setattr(hb, "SILENT_ORGANS", s)
+    os.utime(hb.CLOCK_LIVENESS, (now - 5 * 60, now - 5 * 60))
 
 
 def test_fx_week() -> None:
@@ -53,6 +62,7 @@ def test_absence_fails_and_closed_market_excuses_only_gateway(
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", tmp_path / "none2.json")
     monkeypatch.setattr(hb, "SILENT_ORGANS", tmp_path / "none3.json")
     sat = datetime(2026, 10, 3, 12, tzinfo=UTC).timestamp()
+    os.utime(hb.CLOCK_LIVENESS, (sat - 60, sat - 60))
     r = hb.measure(sat, research={"age_days": None}, disk_free_gb=50)
     assert r["failing"] == ["research", "silent", "watchdog"]
 
@@ -70,6 +80,27 @@ def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
     hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(reading))
     assert len(sent) == 1
     assert json.loads(out.read_text())["since"] == d1["since"]
+
+
+def test_a_stale_or_absent_clock_census_fails(tmp_path: Path,
+                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """The census stopped for 44h on the box while its last reading still looked clean."""
+    now = 2_000_000_000.0
+    census = tmp_path / "CLOCK_LIVENESS.json"
+    census.write_text("{}")
+    os.utime(census, (now - 44 * 3600, now - 44 * 3600))
+    monkeypatch.setattr(hb, "CLOCK_LIVENESS", census)
+    d = hb.measure(now, research={"age_days": 0.0}, disk_free_gb=50.0)
+    assert d["checks"]["clock_census"]["fail"] and "clock_census" in d["failing"]
+    os.utime(census, (now - 600, now - 600))
+    assert not hb.measure(now, research={"age_days": 0.0},
+                          disk_free_gb=50.0)["checks"]["clock_census"]["fail"]
+    os.utime(census, (now + 3600, now + 3600))       # a future stamp is not a fresh census
+    assert hb.measure(now, research={"age_days": 0.0},
+                      disk_free_gb=50.0)["checks"]["clock_census"]["fail"]
+    census.unlink()
+    assert hb.measure(now, research={"age_days": 0.0},
+                      disk_free_gb=50.0)["checks"]["clock_census"]["fail"]
 
 
 def test_url_is_read_but_never_written(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
