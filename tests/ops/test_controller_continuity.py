@@ -204,3 +204,32 @@ def test_a_dead_pass_reclaims_only_its_own_lease_at_its_own_epoch(tmp_path: Path
         ]
         == "LEASE_HELD"
     )
+
+
+def test_the_lease_is_anchored_to_the_repository_not_the_callers_directory(tmp_path,
+                                                                          monkeypatch) -> None:
+    """A relative lease path gives every working directory its own lease.
+
+    MEASURED 2026-11-14. The three defaults were bare relative paths, so from a git worktree
+    `_read` found no file, `_validate` saw no active lease, and the control plane refused with
+    "stale or foreign fencing token" -- a message about the token for a fault about the path --
+    while `data/controller_lease.json` in the repository held a LIVE lease belonging to the very
+    caller being refused. The CRO cycle tells a lane to work in a worktree AND to checkpoint after
+    each closure, so both instructions could not be followed at once.
+
+    A lease is the one piece of state that must never have two copies.
+    """
+    from libs.ops import controller_continuity as cc
+
+    root = Path(cc.__file__).resolve().parents[2]
+    for path in (cc.DEFAULT_STATE, cc.DEFAULT_CHECKPOINT, cc.DEFAULT_HISTORY):
+        assert path.is_absolute(), path
+        assert path.parent == root / "data", path
+
+    # ... and the anchor does not move when the caller does.
+    monkeypatch.chdir(tmp_path)
+    import importlib
+
+    again = importlib.reload(cc)
+    assert again.DEFAULT_STATE.parent == root / "data"
+    assert again.DEFAULT_STATE.name == "controller_lease.json"
