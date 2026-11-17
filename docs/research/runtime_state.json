@@ -746,13 +746,13 @@
     ]
    },
    {
-    "at": "2026-11-13T12:42:54+00:00",
+    "at": "2026-11-14T11:40:59+00:00",
     "host": "vm",
     "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:exploration_share"
+     "leg:pr_blockers"
     ]
    }
   ]
@@ -28048,12 +28048,12 @@
    "measured_at": "2026-11-14T10:29:27+00:00"
   },
   {
-   "organ": "leg:exploration_share",
+   "organ": "leg:pr_blockers",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/exploration_share.py"
+    "scripts/pr_blockers.py"
    ],
-   "clock": "hourly_cycle:exploration_share",
+   "clock": "hourly_cycle:pr_blockers",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -28061,8 +28061,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/EXPLORATION_SHARE.json",
-   "artifact_declared": "desks/mt5/reports/EXPLORATION_SHARE.json",
+   "artifact": "desks/mt5/reports/PR_BLOCKERS.json",
+   "artifact_declared": "desks/mt5/reports/PR_BLOCKERS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -28073,7 +28073,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
-   "measured_at": "2026-11-13T12:42:54+00:00"
+   "measured_at": "2026-11-14T11:40:59+00:00"
   }
  ],
  "ratchet": {

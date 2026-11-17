@@ -1059,7 +1059,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:tape_deepen` | `hourly_cycle:tape_deepen` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_DEEPEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:contradiction_miner` | `hourly_cycle:contradiction_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTRADICTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:vocabulary_proposer` | `hourly_cycle:vocabulary_proposer` | UNMEASURED UNMEASURED | `desks/mt5/reports/VOCABULARY_PROPOSALS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:exploration_share` | `hourly_cycle:exploration_share` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPLORATION_SHARE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:pr_blockers` | `hourly_cycle:pr_blockers` | UNMEASURED UNMEASURED | `desks/mt5/reports/PR_BLOCKERS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
