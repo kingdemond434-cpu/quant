@@ -47,6 +47,8 @@ from libs.ops.agent_denials import scrub as scrub_keys  # noqa: E402
 from libs.ops.win_write import write_text_resilient  # noqa: E402
 
 DESK = ROOT / "desks" / "mt5"
+#: The noon lane's report (the leg's lane); `--lane midnight` writes CRO_MIDNIGHT_STATE.json.
+OUT = DESK / "reports" / "CRO_NOON_STATE.json"
 TAIL_LINES = 80
 #: Read at most this much of the log's end: the log only grows, and the tail is all we publish.
 TAIL_BYTES = 256 * 1024
@@ -176,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     state = a.state or DESK / "data" / f"cycle_state_{a.lane}.json"
     log = a.log or DESK / "logs" / f"cycle_{a.lane}.log"
-    out = a.out or DESK / "reports" / f"CRO_{a.lane.upper()}_STATE.json"
+    out = a.out or (OUT if a.lane == "noon" else OUT.with_name(f"CRO_{a.lane.upper()}_STATE.json"))
     doc = build(a.lane, state, log, a.tail, datetime.now(UTC))
     out.parent.mkdir(parents=True, exist_ok=True)
     write_text_resilient(out, json.dumps(doc, indent=1) + "\n")
