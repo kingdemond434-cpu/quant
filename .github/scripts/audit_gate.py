@@ -273,11 +273,23 @@ CI_APP = "github-actions"
 WORKFLOW_OF = {
     **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
     "trusted-eval": ".github/workflows/trusted-eval.yml",
+    "smoke": ".github/workflows/ci.yml",
     **dict.fromkeys(
         ("risk-invariants", "replay-shadow", "independent-review"),
         ".github/workflows/release-gates.yml",
     ),
 }
+#: THE FAST LANE (zuck 2026-11-17 17:15Z/17:18Z: "strip all checks of anything that doesn't touch
+#: live money ... forever"). With FAST_ENV set to 1 (audit-gate.yml sets it), a LOW or AUTO PR that
+#: .github/scripts/fast_lane.py reads as touching no money path, no release or box machinery and
+#: no check (from THIS checkout, the base's) merges on its one `smoke` job alone: no Auditor
+#: CLEAR, no APPROVE MERGES, no AUTO job, no trusted-eval, and no bring-up of LIVE first (LIVE's
+#: own push run judges the merged tree, and the box seals only a green LIVE). What still stops
+#: it: an AUDIT HOLD on the PR, DEACTIVATE RELEASE CONTROLLER on #453, a draft (it merges once
+#: marked ready), and a red smoke. Unset, the gate behaves exactly as before.
+FAST_ENV = "QUANT_FAST_LANE"
+FAST_JOB = "smoke"
+FAST_TITLE = "FAST lane"
 #: The free reviewer's "no model answered" mark (ops/release/independent_review.py): a review
 #: that ended this way is QUEUED -- re-run later, never a pass and never a quarantine.
 REVIEWER = "independent-review"
@@ -1334,6 +1346,91 @@ def _status(repo: str, sha: str, state: str, why: str) -> None:
         _summary(f"(status not posted: {exc})")
 
 
+def _fast_lane() -> Any:
+    """.github/scripts/fast_lane.py from THIS checkout (the base's), loaded by path."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_gate_fast_lane", Path(__file__).resolve().parent / "fast_lane.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("fast_lane.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def is_fast(names: list[str]) -> tuple[bool, str]:
+    """Is this PR on the fast lane? Only with FAST_ENV on and a classifier that loads; any
+    failure is the normal path."""
+    if os.environ.get(FAST_ENV) != "1" or not names:
+        return False, "fast lane off"
+    try:
+        fast, why = _fast_lane().classify(names)
+    except Exception as exc:
+        return False, f"fast lane unreadable ({type(exc).__name__})"
+    return bool(fast), str(why)
+
+
+def run_fast(
+    repo: str,
+    pr: int,
+    p: Mapping[str, Any],
+    head: str,
+    base: str,
+    why: str,
+    *,
+    box: bool,
+    approvals_issue: int,
+) -> int:
+    """Merge a fast-lane PR on its genuine `smoke` job alone (see FAST_ENV)."""
+    board = _flat(_gh(f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                      "--paginate", "--slurp"))  # fmt: skip
+    on, owhy = activated(board)
+    tag = f"#{pr} @ {head[:9]}: {FAST_TITLE} ({why})"
+
+    def stop(state: str, reason: str, rc: int) -> int:
+        if not box:
+            _status(repo, head, state, f"{FAST_TITLE}: {reason}"[:140])
+        _summary(f"{tag}: not merged -- {reason}")
+        return rc
+
+    if not on:
+        return stop("pending", owhy, 0)
+
+    def held() -> str | None:
+        found = verdicts(_flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
+                                   "--paginate", "--slurp")))  # fmt: skip
+        if found and found[-1]["verdict"] != "CLEAR":
+            return f"AUDIT HOLD {found[-1]['sha'][:9]} stands"
+        return None
+
+    if hold := held():
+        return stop("pending", hold, 0)
+    if p.get("draft"):
+        return stop("pending", "a draft: it merges once it is marked ready", 0)
+    pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
+    runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
+    state, cwhy = checks(runs, (FAST_JOB,), provenance(repo, pr, head))
+    if state == "fail":
+        return stop("failure", f"CI {cwhy}", 1)
+    if state != "pass":
+        return stop("pending", f"CI {cwhy}", 0)
+    if str(_gh(f"repos/{repo}/pulls/{pr}")["head"]["sha"]) != head:
+        _summary(f"{tag}: the head moved; its own run decides")
+        return 0
+    if hold := held():
+        return stop("pending", hold, 0)
+    _gh(f"repos/{repo}/pulls/{pr}/merge", "-X", "PUT",
+        data={"sha": head, "merge_method": "merge",
+              "commit_title": f"Merge #{pr} ({FAST_TITLE}, no comment: {why})"[:250]})  # fmt: skip
+    _summary(f"{tag}: MERGED{' from the box' if box else ''}")
+    if not box:
+        _gh(f"repos/{repo}/actions/workflows/ci.yml/dispatches", "-X", "POST", data={"ref": base})
+        _summary(f"dispatched ci.yml on {base}")
+    return 0
+
+
 def touches_workflows(files: Iterable[Mapping[str, Any]]) -> bool:
     """True when the PR changes .github/workflows/** (a rename counts from either side)."""
     for f in files:
@@ -1403,6 +1500,12 @@ def run(
         if not box:
             _status(repo, head, "failure", twhy)
         return 1
+    if level in ("LOW", "AUTO") and not touches_workflows(files):
+        fast, fwhy = is_fast(names)
+        if fast:
+            return run_fast(
+                repo, pr, p2, head, base, fwhy, box=box, approvals_issue=approvals_issue
+            )
 
     def switches() -> tuple[bool, str]:
         board = _flat(
@@ -1779,7 +1882,10 @@ def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> 
 
 
 def is_registry_merge(msg: str) -> bool:
-    return msg.startswith("Merge #") and REGISTRY_TITLE in msg.split("\n", 1)[0]
+    """A merge no human approved: the registry path, or the fast lane (a fast merge that turns
+    LIVE red is reverted the same way)."""
+    first = msg.split("\n", 1)[0]
+    return msg.startswith("Merge #") and (REGISTRY_TITLE in first or f"({FAST_TITLE}," in first)
 
 
 def _ci_conclusions(repo: str, sha: str) -> list[str]:

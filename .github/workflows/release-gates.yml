@@ -27,18 +27,65 @@ permissions:
   pull-requests: read
 
 jobs:
+  # THE FAST LANE (zuck 2026-11-17: "strip all checks of anything that doesn't touch live money ...
+  # forever"). The base's .github/scripts/fast_lane.py reads the PR's paths against the BASE's
+  # money closure (never the PR's code). On a fast PR every step of the heavy jobs below is
+  # skipped and the job reports under a "(fast lane: not run)" name, so the gate can never read it
+  # as the real check; `smoke` is the one job such a PR needs. A push, a dispatch, any read error,
+  # or a base without the classifier is never fast.
+  lane:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      fast: ${{ steps.lane.outputs.fast }}
+    steps:
+      - name: The base (the classifier and the money closure come from it, never from the PR)
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fast lane? (no money path, no release or box machinery, no check)
+        id: lane
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          no() { echo "fast=false" >> "$GITHUB_OUTPUT"; echo "not fast: $1"; exit 0; }
+          case "$EVENT" in pull_request|pull_request_target) ;; *) no "$EVENT run" ;; esac
+          [ "$SAME_REPO" = true ] || no "a fork"
+          [ -f .github/scripts/fast_lane.py ] || no "the base has no classifier"
+          git fetch -q --no-tags origin "$HEAD" || no "the head could not be fetched"
+          python -I .github/scripts/fast_lane.py --base "$BASE" --head "$HEAD" \
+            --github-output "$GITHUB_OUTPUT" || no "the classifier failed"
+
   risk-invariants:
+    name: "${{ needs.lane.outputs.fast == 'true' && 'risk-invariants (fast lane: not run)' || 'risk-invariants' }}"
+    needs: [lane]
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        if: needs.lane.outputs.fast != 'true'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Take the ceilings, suites and their tests from the base
+        if: needs.lane.outputs.fast != 'true'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -47,32 +94,39 @@ jobs:
           xargs -a "$RUNNER_TEMP/suites" git checkout "$BASE" --
 
       - uses: actions/setup-python@v5
+        if: needs.lane.outputs.fast != 'true'
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
           # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
       - name: Install (pinned dev extras)
+        if: needs.lane.outputs.fast != 'true'
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
       - name: Ceilings and rail lists (static, from git)
+        if: needs.lane.outputs.fast != 'true'
         run: >-
           python -I ops/release/risk_invariants.py
           --head "${{ github.event.pull_request.head.sha }}"
           --base "${{ github.event.pull_request.base.sha }}"
 
       - name: Risk suites (base tests, PR code)
+        if: needs.lane.outputs.fast != 'true'
         run: xargs -a "$RUNNER_TEMP/suites" pytest -q -p no:randomly -p no:cacheprovider --timeout=600
 
   replay-shadow:
+    name: "${{ needs.lane.outputs.fast == 'true' && 'replay-shadow (fast lane: not run)' || 'replay-shadow' }}"
+    needs: [lane]
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       # The harness is the base's, in a directory the PR's tree never touches.
       - uses: actions/checkout@v4
+        if: needs.lane.outputs.fast != 'true'
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: harness
@@ -81,6 +135,7 @@ jobs:
 
       # Each tree holds on disk only what the live book imports and reads (code, books, state).
       - uses: actions/checkout@v4
+        if: needs.lane.outputs.fast != 'true'
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
@@ -101,6 +156,7 @@ jobs:
           persist-credentials: false
 
       - uses: actions/checkout@v4
+        if: needs.lane.outputs.fast != 'true'
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: head
@@ -119,6 +175,7 @@ jobs:
           persist-credentials: false
 
       - uses: actions/setup-python@v5
+        if: needs.lane.outputs.fast != 'true'
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -127,6 +184,7 @@ jobs:
       # The base's declared dependencies only, never the project itself: an installed copy of
       # either tree would answer imports the other tree is missing.
       - name: Install the base's dependencies
+        if: needs.lane.outputs.fast != 'true'
         working-directory: base
         run: |
           python -m pip install --upgrade pip
@@ -139,6 +197,7 @@ jobs:
       # Every changed path, both sides of a rename, from the PR's paginated file list (the
       # compare API stops at 300 files). The count must match the PR's own, on this very head.
       - name: The PR's changed paths
+        if: needs.lane.outputs.fast != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
@@ -165,6 +224,7 @@ jobs:
       # The Auditor's declared Fusion-roster divergences, from the BASE (harness) only: a PR can
       # never declare its own. A match is MATCHES_DECLARED, which still exits 1 here.
       - name: Replay the live E8 book, base against PR
+        if: needs.lane.outputs.fast != 'true'
         env:
           QUANT_EXPECTED_DIVERGENCE: harness/ops/release/expected_divergence.json
         run: >-
@@ -174,7 +234,7 @@ jobs:
       # The report, for the release authority: it re-reads a MATCHES_DECLARED from here, re-matches
       # it against the base's registry itself, and maps it to CONTROLLER (policy.declared_replay).
       - name: Keep the replay report
-        if: always()
+        if: ${{ needs.lane.outputs.fast != 'true' && (always()) }}
         uses: actions/upload-artifact@v4
         with:
           name: replay-shadow-report-${{ github.run_attempt }}
@@ -183,6 +243,8 @@ jobs:
           retention-days: 14
 
   independent-review:
+    name: "${{ needs.lane.outputs.fast == 'true' && 'independent-review (fast lane: not run)' || 'independent-review' }}"
+    needs: [lane]
     if: github.event.pull_request.head.repo.full_name == github.repository
     # Free and keyless (ops/release/independent_review.py): open-weight models run on this runner
     # under a sha256-pinned Ollama, each asked only when its manifest matches the pin in
@@ -202,6 +264,7 @@ jobs:
       # unpinned it, and timed out each time. LIVE is protected, so its tip is as trusted as any
       # base sha; any other base keeps its exact sha.
       - uses: actions/checkout@v4
+        if: needs.lane.outputs.fast != 'true'
         with:
           ref: >-
             ${{ github.event.pull_request.base.ref == 'claude/llm-auto-upgrade-verify-gcjac3'
@@ -210,6 +273,7 @@ jobs:
           persist-credentials: false
 
       - uses: actions/setup-python@v5
+        if: needs.lane.outputs.fast != 'true'
         with:
           python-version: "3.11"
 
@@ -217,6 +281,7 @@ jobs:
       # #457 audit MF1: no install script and no sudo. The release archive runs only when its
       # sha256 matches the PROTECTED pin, and the server runs as the runner user.
       - name: Serve the pinned open-weight reviewers on this runner
+        if: needs.lane.outputs.fast != 'true'
         continue-on-error: true
         timeout-minutes: 30
         env:
@@ -245,6 +310,7 @@ jobs:
           done
 
       - name: Review the whole diff
+        if: needs.lane.outputs.fast != 'true'
         env:
           OPENROUTER_FREE_KEY: ${{ secrets.OPENROUTER_FREE_KEY }}
           GEMINI_FREE_KEY: ${{ secrets.GEMINI_FREE_KEY }}
