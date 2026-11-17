@@ -192,6 +192,14 @@ function Read-Hung {
     try { return (Get-Content -LiteralPath $hungPath -Raw | ConvertFrom-Json) } catch { return $null }
 }
 
+# THE COOLDOWN OUTLIVES A PASSING PROBE. The file is never deleted: a pass resets the failure
+# count but keeps last_restart_at, or a terminal that answers once and hangs again would be
+# restarted every three probes forever (Auditor MF1, 2026-11-17).
+function Write-HungCleared($lastRestartAt) {
+    $cleared = [ordered]@{ first_fail_at = $null; count = 0; last_restart_at = $lastRestartAt }
+    try { $cleared | ConvertTo-Json -Compress | Set-Content -LiteralPath $hungPath -Encoding UTF8 } catch { }
+}
+
 $probeCode = Invoke-ReadOnlyProbe
 if ($probeCode -ne 0) {
     $now = (Get-Date).ToUniversalTime()
@@ -230,7 +238,7 @@ if ($probeCode -ne 0) {
                        paused = $paused; outcome = $verdict }
         $state.last_restart_at = $now.ToString('o')
         if ($after -eq 0) {
-            Remove-Item -LiteralPath $hungPath -ErrorAction SilentlyContinue
+            Write-HungCleared $state.last_restart_at
             $local = @(Get-FusionTerminals | Where-Object { $_.SessionId -eq $session })
             $newPid = if ($local.Count -ge 1) { $local[0].Id } else { 0 }
             Write-BootHealth $newPid " (after a hung-terminal restart)"
@@ -244,6 +252,7 @@ if ($probeCode -ne 0) {
     try { $state | ConvertTo-Json -Compress | Set-Content -LiteralPath $hungPath -Encoding UTF8 } catch { }
     exit 2
 }
-Remove-Item -LiteralPath $hungPath -ErrorAction SilentlyContinue
+$kept = Read-Hung
+Write-HungCleared $(if ($kept) { $kept.last_restart_at } else { $null })
 Write-BootHealth $local[0].Id ""
 exit 0

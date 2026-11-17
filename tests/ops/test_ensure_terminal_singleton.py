@@ -196,3 +196,21 @@ def test_a_hung_terminal_is_restarted_only_under_its_conditions() -> None:
     after = source[kill:]
     assert "JOURNAL hung Fusion terminal" in after and "TERMINAL_HUNG_RESTARTED" in after
     assert after.index("if ($after -eq 0)") < after.index("Write-BootHealth")
+
+
+def test_a_passing_probe_keeps_the_restart_cooldown() -> None:
+    """Auditor MF1 (2026-11-17): the cooldown lives in the probe-failure file, so the file is
+    never deleted; a pass -- after a restart or on its own -- resets the count and KEEPS
+    last_restart_at, or a terminal that answers once and hangs again restarts every 3 probes."""
+    source = (ROOT / "ops" / "ensure_terminal.ps1").read_text(encoding="utf-8")
+    assert "Remove-Item -LiteralPath $hungPath" not in source
+    assert "first_fail_at = $null; count = 0; last_restart_at = $lastRestartAt" in source
+    restart_pass = source[source.index("if ($after -eq 0)"):]
+    assert restart_pass.index("Write-HungCleared $state.last_restart_at") < restart_pass.index(
+        "Write-BootHealth")
+    # the restart stamps last_restart_at before that write
+    assert source.index("$state.last_restart_at = $now.ToString('o')") < source.index(
+        "Write-HungCleared $state.last_restart_at")
+    tail = source[source.rindex("$kept = Read-Hung"):]
+    assert "Write-HungCleared $(if ($kept) { $kept.last_restart_at } else { $null })" in tail
+    assert tail.index("Write-HungCleared") < tail.index("Write-BootHealth")
