@@ -146,6 +146,14 @@ def decode_hour(blob: bytes, symbol: str, t: datetime) -> tuple[list, str]:
     return rows, "ok"
 
 
+#: TERMS-REFUSED (2026-11-14). Dukascopy's terms of use refuse automated download of its
+#: datafeed, so this desk never contacts it: #891 was closed on that ruling, and the hourly
+#: backfill leg that called this was replaced by `recorders/tape_deepen.py`, which copies the
+#: desk's own Fusion terminal's tick store instead. The decoder above stays (it reads bytes a
+#: human already holds); the network call below is unreachable while this is True.
+TERMS_REFUSED = True
+
+
 def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
                retries: int = 4, pause: float = 0.0) -> tuple[list, str]:
     """One hour of ticks, with backoff. Returns (rows, status) — never silent.
@@ -158,6 +166,8 @@ def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
 
     404 is NOT retried: on this feed it means the hour genuinely does not exist.
     """
+    if TERMS_REFUSED:
+        return [], "terms_refused"
     url = hour_url(symbol, t)
     last = "unknown"
     for attempt in range(retries):
