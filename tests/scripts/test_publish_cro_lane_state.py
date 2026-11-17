@@ -12,7 +12,8 @@ import publish_cro_lane_state as pub  # noqa: E402
 
 
 def _run(tmp_path: Path, state: dict | None, log: list[str] | None, tail: int = 80) -> dict:
-    sp, lp, out = tmp_path / "cycle_state_noon.json", tmp_path / "cycle_noon.log", tmp_path / "o.json"
+    sp, lp = tmp_path / "cycle_state_noon.json", tmp_path / "cycle_noon.log"
+    out = tmp_path / "o.json"
     if state is not None:
         # The launcher writes with PowerShell 5.1's BOM.
         sp.write_bytes(b"\xef\xbb\xbf" + json.dumps(state).encode())
@@ -45,7 +46,7 @@ def test_the_state_is_the_fallback_and_absence_is_unmeasured(tmp_path: Path) -> 
 def test_secrets_paths_hosts_and_money_are_scrubbed(tmp_path: Path) -> None:
     doc = _run(tmp_path, {"lane": "noon", "status": "RUNNING", "report": "equity 12,345.67",
                           "server": "Broker-Live", "binding_constraint": r"C:\opt\quant\x.py"},
-               [r"2026-11-17T12:00:01+00:00 [noon] agent C:\Users\Administrator\.local\bin\claude.exe",
+               [r"2026-11-17T12:00:01+00:00 [noon] agent C:\Users\Administrator\bin\claude.exe",
                 "2026-11-17T12:00:02+00:00 [noon] api_key=sk-ant-abcdefghijklmnop on vmi3571445",
                 "2026-11-17T12:00:03+00:00 [noon] read data/secrets/keys.env from 10.1.2.3",
                 "2026-11-17T12:30:00+00:00 [noon] cycle end rc=0 after 30 min"])
