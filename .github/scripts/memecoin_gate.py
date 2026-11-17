@@ -11,9 +11,10 @@ THE RULE. The box (zuck's own gh login, `--box`) merges an open, non-draft memec
      names a LIVE_WORDS token (the paper/live switch, the earned-stage ladder, the signer's
      acknowledgement, the execution venue). A fenced PR is zuck's: it is never merged here.
      A file list or patch the API truncates or omits reads as fenced (fail closed).
-     Narrow exceptions (Governance 2026-11-17): PAPER_ONLY_PATHS, edited in place, while no
-     changed line reaches a key, the box's state or a non-loopback endpoint; and docs/*.md,
-     which may NAME the switch (path patterns still apply).
+     Two narrow exceptions (Governance 2026-11-17), neither a content deny-list: NAME_ONLY_EXEMPT
+     lifts ONE path pattern from ONE exact file that the pattern catches by name only (the file
+     keeps every other pattern and the full LIVE_WORDS scan, i.e. exactly the scrutiny of any
+     other src/ file); and docs/*.md may NAME the switch in prose (path patterns still apply).
   2. AUDITOR CLEAR: the latest row for this PR in the box-local memecoin registry
      (MEMECOIN_REGISTRY_ENV, rows {"pr","sha","verdict","at"}, a file no PR can write) is CLEAR
      for the EXACT head. A HOLD row is a veto. The registry is separate from quant's, so PR
@@ -78,37 +79,13 @@ LIVE_WORDS = re.compile(
     r"|\.sign\(|SigningKey|Signature::new",
     re.IGNORECASE,
 )
-#: Narrow exceptions to LIVE_PATHS (2026-11-17, Governance ruling): files a pattern catches by
-#: NAME that cannot reach the signer, a key or a live endpoint. Each keeps the LIVE_WORDS line
-#: scan AND adds a stricter one (`PAPER_ONLY_FORBID`), so a change that starts touching keys,
-#: signing, the network or the box's state still reads as fenced. A real *wallet*/keypair file,
-#: and every other deploy/ script, stays fenced.
-PAPER_ONLY_PATHS = (
-    # read-only health summary: one loopback GET, prints JSON, changes nothing
-    "deploy/windows/memecoin-health.ps1",
-    # public-wallet SCORING (hit rates of other people's addresses); holds no key
-    "src/strategies/wallet_intelligence.py",
-)  # fmt: skip
-#: Any changed line in a PAPER_ONLY_PATHS file naming one of these is fenced again: keys and
-#: signing, environment writes, and any network endpoint that is not this machine's loopback.
-PAPER_ONLY_FORBID = re.compile(
-    r"keypair|private|secret|mnemonic|seed[_ ]?phrase|base58|\bsign|signature|id\.json"
-    r"|os\.environ|SetEnvironmentVariable|setx"
-    r"|https?://(?!127\.0\.0\.1[:/]|localhost[:/])"
-    r"|requests\.|aiohttp|httpx|urllib|websocket|rpc_url|RPC_URL",
-    re.IGNORECASE,
-)
-#: And for a .ps1 in the list, any write, start, task, ACL or dynamic-execution verb, or an output
-#: redirection other than to $null. Such a script can then write nothing, start nothing and call
-#: nothing but loopback, so it may READ and REPORT the switch (`dry_run=$j.dry_run`): for it these
-#: two scans replace LIVE_WORDS. A .py in the list keeps LIVE_WORDS as well.
-PAPER_ONLY_SCRIPT_FORBID = re.compile(
-    r"\b(Set|New|Remove|Stop|Start|Restart|Register|Unregister|Enable|Disable|Copy|Move|Rename"
-    r"|Clear|Invoke|Add|Out|Export|Import)-\w+"
-    r"|schtasks|sc\.exe|icacls|\[IO\.(File|Directory)\]|\biex\b|cmd(\.exe)?\s+/c|powershell"
-    r"|\$env:\w+\s*=|>{1,2}(?!\s*\$null)",
-    re.IGNORECASE,
-)
+#: file -> the ONE LIVE_PATHS pattern that catches it by name only. Exact names, edited in place
+#: (no rename onto or off the name). Every other pattern and the LIVE_WORDS scan still apply, so
+#: such a file gets the same scrutiny as any unfenced src/ module, never less.
+NAME_ONLY_EXEMPT = {
+    # scores OTHER people's public wallets (hit rates); holds, reads and signs with no key
+    "src/strategies/wallet_intelligence.py": "*wallet*",
+}
 #: Prose cannot execute: a Markdown file under docs/ that NAMES the switch is not the switch.
 #: Path patterns still apply to it; only the LIVE_WORDS line scan is skipped.
 DOC_PATHS = ("docs/*.md",)
@@ -125,19 +102,9 @@ def fenced(files: Iterable[Mapping[str, Any]]) -> str | None:
         n += 1
         name = str(f.get("filename") or "")
         prev = str(f.get("previous_filename") or "")
-        # an exception holds only for a file edited in place: a rename into or out of it, or a
-        # status other than modified/added, is read against LIVE_PATHS as before
-        paper = (
-            name in PAPER_ONLY_PATHS
-            and not prev
-            and f.get("status", "modified")
-            in (
-                "modified",
-                "added",
-            )
-        )
+        lifted = NAME_ONLY_EXEMPT.get(name) if not prev else None
         for path in filter(None, (name, prev)):
-            if not paper and any(fnmatch.fnmatch(path, p) for p in LIVE_PATHS):
+            if any(fnmatch.fnmatch(path, p) for p in LIVE_PATHS if p != lifted):
                 return f"{path} is on the live fence"
         patch = f.get("patch")
         pure_rename = f.get("status") == "renamed" and int(f.get("changes") or 0) == 0
@@ -146,16 +113,10 @@ def fenced(files: Iterable[Mapping[str, Any]]) -> str | None:
             return f"{name}: the API returned no patch to read, so the fence cannot clear it"
         doc = not prev and any(fnmatch.fnmatch(name, p) for p in DOC_PATHS)
         for line in str(patch or "").splitlines():
-            if line[:1] not in "+-" or line.startswith(("+++", "---")):
-                continue
-            script = paper and name.endswith(".ps1")
-            if not doc and not script and LIVE_WORDS.search(line):
+            if doc:
+                break
+            if line[:1] in "+-" and not line.startswith(("+++", "---")) and LIVE_WORDS.search(line):
                 return f"{name}: a changed line names the live switch ({line[:80].strip()!r})"
-            if paper and (
-                PAPER_ONLY_FORBID.search(line) or (script and PAPER_ONLY_SCRIPT_FORBID.search(line))
-            ):
-                why = "a paper-only file's changed line reaches keys, state or the network"
-                return f"{name}: {why} ({line[:80].strip()!r})"
     if n == 0:
         return "the PR's file list is empty or unreadable"
     if n >= MAX_FILES:
