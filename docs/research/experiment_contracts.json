@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "efficiency_regime": {
+   "hypothesis": "Zones (symbol, symbol x session) where the judge has ruled on enough cells that zero passes is improbable at the desk's base rate mark efficient markets; standing sleeves down inside them raises realised E[log W] per day on the live ledger's own trades.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "n_dead_zones",
+    "better": "up",
+    "organ": "report:EFFICIENCY_REGIME.json"
+   },
+   "falsifier": {
+    "metric": "n_dead_zones",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no zone ever reads DEAD, so the failure map carries no regime information at this resolution"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
