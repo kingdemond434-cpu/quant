@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -160,6 +161,101 @@ def test_the_launcher_wires_the_tee_and_the_hook() -> None:
     assert "PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)" in src
     assert "sys.stdout = sys.stderr = plan.tee(log)" in src
     assert "plan.attach(judge)" in src
+
+
+# ------------------------------------------- one lock for the phase document (v2.2.1 should-fix)
+class _SlowDoc(dict):
+    """A phase document whose flush pauses after its first key, so a second writer that does
+    not wait for the lock lands mid-iteration (a deterministic interleaving, not a race)."""
+
+    def __init__(self, *a, **k) -> None:
+        super().__init__(*a, **k)
+        self.iterating, self.mutated, self.armed = threading.Event(), threading.Event(), False
+
+    def items(self):  # type: ignore[override]
+        for i, kv in enumerate(super().items()):
+            yield kv
+            if i == 0 and self.armed:
+                self.armed = False
+                self.iterating.set()
+                self.mutated.wait(0.5)
+
+
+def _overlap_probe(tr: jpp.PlanTracker, doc: _SlowDoc, mutate) -> list[BaseException]:
+    """Run a hook flush on this thread while `mutate` (a writer holding the document's lock)
+    runs on another the moment the flush is mid-document. Returns what the hook raised."""
+    lock = getattr(tr, "lock", None) or threading.Lock()   # the old tracker had no lock to share
+    errors: list[BaseException] = []
+
+    def other() -> None:
+        doc.iterating.wait(5.0)
+        with lock:
+            mutate()
+        doc.mutated.set()
+
+    t = threading.Thread(target=other)
+    t.start()
+    doc.armed = True
+    try:
+        tr.progress("gate0", done=1, total=2)            # the sealed judge's pool thread
+    except BaseException as exc:                          # it IS the finding
+        errors.append(exc)
+    t.join(5.0)
+    assert not t.is_alive()
+    return errors
+
+
+def test_a_hook_flush_never_overlaps_another_writer_of_the_phase_document(tmp_path) -> None:
+    """PLAN_PROGRESS_HOOK runs on a pool thread; `_phase` and the tee write the same document.
+    Without the lock, the flush iterated the dict while it changed size and raised into the
+    judge's pool thread."""
+    doc = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    tr = jpp.PlanTracker(doc, path)
+    errors = _overlap_probe(tr, doc, lambda: doc.update(phase_started_utc="x", shards={}))
+    assert errors == [], errors
+    assert json.loads(path.read_text("utf-8"))["plan_progress"]["done"] == 1
+    assert doc["shards"] == {}, "the other writer still ran, after the flush"
+
+
+def test_a_step_into_its_own_phase_never_holds_the_lock_across_on_phase(tmp_path) -> None:
+    """The launcher's `_phase` takes the same NON-reentrant lock; a tracker holding it across
+    `on_phase` would deadlock the sweep at the pre-warm boundary."""
+    lock = threading.Lock()
+    doc = {"pid": 1, "phase": "plan", "phases": {}}
+    seen: list[str] = []
+
+    def on_phase(name: str) -> None:
+        assert lock.acquire(timeout=2.0), "on_phase was called with the lock held"
+        try:
+            doc["phase"] = name
+            seen.append(name)
+        finally:
+            lock.release()
+
+    path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    tr = _locked_tracker(doc, path, on_phase, lock)
+    tr.progress("prewarm", submitted=3)
+    assert seen == ["prewarm"] and doc["plan_step"] == "prewarm"
+
+
+def _locked_tracker(doc, path, on_phase, lock) -> jpp.PlanTracker:
+    try:
+        return jpp.PlanTracker(doc, path, on_phase=on_phase, lock=lock)
+    except TypeError:                                      # an image before v2.2.1
+        return jpp.PlanTracker(doc, path, on_phase=on_phase)
+
+
+def test_the_launchers_writer_is_called_with_the_lock_held(tmp_path) -> None:
+    lock = threading.Lock()
+    held: list[bool] = []
+    doc = {"pid": 1, "phase": "plan", "phases": {}}
+    tr = jpp.PlanTracker(doc, tmp_path / "p.json", lock=lock,
+                         write=lambda: held.append(lock.locked()))
+    tr.progress("gate0", done=1)
+    tr.step("order")
+    assert held == [True, True]
+    assert not (tmp_path / "p.json").exists(), "the launcher's writer replaces the tracker's own"
 
 
 # ------------------------------------------------------------- the sealed half (patch present)
