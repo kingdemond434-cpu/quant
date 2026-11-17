@@ -163,7 +163,7 @@ def test_no_ruled_path_is_ignored_by_name_elsewhere() -> None:
 def test_the_producer_redacts_before_writing(rel: str) -> None:
     src_rel, expr = PRODUCERS[rel]
     src = (ROOT / src_rel).read_text("utf-8")
-    assert "from libs.ops.public_report import redact" in src, src_rel
+    assert re.search(r"from libs\.ops\.public_report import [\w, ]*\bredact\b", src), src_rel
     assert expr in src, f"{src_rel} writes {rel} without redact(): {expr!r} not found"
 
 

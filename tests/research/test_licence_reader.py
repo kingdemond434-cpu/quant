@@ -92,7 +92,10 @@ def test_read_pypi_stays_unverified_with_the_reason_when_the_index_is_unreadable
     def broken(url: str) -> bytes:
         raise OSError("offline")
     r = LR.read_pypi("z", "z", fetch=broken)
-    assert not r.read and "PyPI index unreadable" in r.why and "offline" in r.why
+    # The reason names the exception TYPE; its message stays in the box's log (audit HOLD 2 on
+    # #1261: an exception message is free text and can carry a credential onto a public branch).
+    assert not r.read and "PyPI index unreadable" in r.why and "OSError" in r.why
+    assert "offline" not in r.why
     r2 = LR.read_pypi("w", "w", fetch=_pypi_fetch({"license": "", "classifiers": [],
                                                    "version": "1"}))
     assert not r2.read and "no License-Expression" in r2.why
