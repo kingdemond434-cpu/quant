@@ -345,6 +345,9 @@ def step_value(step: str, r_after: list[float], fade_factor: float = 0.5) -> dic
     if not r_after:
         return {"value_r": None, "n_after": 0, "status": "UNMEASURED"}
     tot = sum(r_after)
+    # A step may carry its cause after a colon ("HEALTHY->FADE:veto", decay_backtest): it is
+    # priced as the move it makes.
+    step = str(step).split(":", 1)[0]
     if step == "RETIRE->FADE":
         v = fade_factor * tot
     elif step == "HEALTHY->FADE":
