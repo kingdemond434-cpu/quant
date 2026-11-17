@@ -525,11 +525,15 @@ the row as PUBLIC_WITH_TERMS with its reason in `terms_note` (catalogued, never 
 when a governance ruling names it, source by source, with its conditions, and one of these holds:
 (a) the host has given written permission, recorded in the ruling with its evidence (URL, date and
 the quoted grant) and accepted by the principal; or (b) the principal rules an override himself,
-in his own words, with the conditions it carries. The fetch stays inside those conditions. An
-override never reaches past a robots `Disallow` or an anti-bot/WAF measure unless the ruling says
-so in words, and it sets no precedent for any source it does not name. Standing rulings:
-`governance/owner-permission-attestation-2026-11-17.md` and
-`governance/llm-relays-terms-ruling-2026-11-17.md` (owner override).
+in his own words, with the conditions it carries. The fetch stays inside those conditions. **An
+override lifts a TERMS refusal only.** It never reaches past a robots `Disallow`, a robots.txt that
+cannot be read, or any anti-bot, WAF or challenge measure, and it sets no precedent for any source
+it does not name. (Scope, not an exception: robots.txt governs crawling and fetching of a host's
+pages and files. A call to a service's documented API, under an account and key the principal
+holds, is governed by that API's terms; it is still refused outright the moment the API path
+returns a bot wall or challenge.) Standing rulings, vendored so a clone can open them:
+`docs/policy/owner-permission-attestation-2026-11-17.md` and
+`docs/policy/llm-relays-terms-ruling-2026-11-17.md` (owner override section).
 
 Enforced by `libs/research/access_classifier.py` (`PRINCIPLE`, `HARD_BOUNDARY`,
 `HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`), `desks/mt5/research/evidence_router.py`, the
