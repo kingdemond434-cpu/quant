@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -157,9 +158,106 @@ def test_a_broken_tracker_never_breaks_the_log(tmp_path) -> None:
 def test_the_launcher_wires_the_tee_and_the_hook() -> None:
     src = (Path(__file__).resolve().parents[1] / "scripts" / "run_sharded_gauntlet.py").read_text(
         "utf-8")
-    assert "PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)" in src
+    assert "plan = _plan_tracker()" in src
+    assert ("PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase, lock=_PHASE_LOCK,\n"
+            "                       write=_flush_phase_doc)") in src
     assert "sys.stdout = sys.stderr = plan.tee(log)" in src
     assert "plan.attach(judge)" in src
+
+
+# ------------------------------------------- one lock for the phase document (v2.2.1 should-fix)
+class _SlowDoc(dict):
+    """A phase document whose flush pauses after its first key, so a second writer that does
+    not wait for the lock lands mid-iteration (a deterministic interleaving, not a race)."""
+
+    def __init__(self, *a, **k) -> None:
+        super().__init__(*a, **k)
+        self.iterating, self.mutated, self.armed = threading.Event(), threading.Event(), False
+
+    def items(self):  # type: ignore[override]
+        for i, kv in enumerate(super().items()):
+            yield kv
+            if i == 0 and self.armed:
+                self.armed = False
+                self.iterating.set()
+                self.mutated.wait(0.5)
+
+
+def _overlap_probe(tr: jpp.PlanTracker, doc: _SlowDoc, mutate) -> list[BaseException]:
+    """Run a hook flush on this thread while `mutate` (a writer holding the document's lock)
+    runs on another the moment the flush is mid-document. Returns what the hook raised."""
+    lock = getattr(tr, "lock", None) or threading.Lock()   # the old tracker had no lock to share
+    errors: list[BaseException] = []
+
+    def other() -> None:
+        doc.iterating.wait(5.0)
+        with lock:
+            mutate()
+        doc.mutated.set()
+
+    t = threading.Thread(target=other)
+    t.start()
+    doc.armed = True
+    try:
+        tr.progress("gate0", done=1, total=2)            # the sealed judge's pool thread
+    except BaseException as exc:                          # it IS the finding
+        errors.append(exc)
+    t.join(5.0)
+    assert not t.is_alive()
+    return errors
+
+
+def test_a_hook_flush_never_overlaps_another_writer_of_the_phase_document(tmp_path) -> None:
+    """PLAN_PROGRESS_HOOK runs on a pool thread; `_phase` and the tee write the same document.
+    Without the lock, the flush iterated the dict while it changed size and raised into the
+    judge's pool thread."""
+    doc = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    tr = jpp.PlanTracker(doc, path)
+    errors = _overlap_probe(tr, doc, lambda: doc.update(phase_started_utc="x", shards={}))
+    assert errors == [], errors
+    assert json.loads(path.read_text("utf-8"))["plan_progress"]["done"] == 1
+    assert doc["shards"] == {}, "the other writer still ran, after the flush"
+
+
+def test_a_step_into_its_own_phase_never_holds_the_lock_across_on_phase(tmp_path) -> None:
+    """The launcher's `_phase` takes the same NON-reentrant lock; a tracker holding it across
+    `on_phase` would deadlock the sweep at the pre-warm boundary."""
+    lock = threading.Lock()
+    doc = {"pid": 1, "phase": "plan", "phases": {}}
+    seen: list[str] = []
+
+    def on_phase(name: str) -> None:
+        assert lock.acquire(timeout=2.0), "on_phase was called with the lock held"
+        try:
+            doc["phase"] = name
+            seen.append(name)
+        finally:
+            lock.release()
+
+    path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    tr = _locked_tracker(doc, path, on_phase, lock)
+    tr.progress("prewarm", submitted=3)
+    assert seen == ["prewarm"] and doc["plan_step"] == "prewarm"
+
+
+def _locked_tracker(doc, path, on_phase, lock) -> jpp.PlanTracker:
+    try:
+        return jpp.PlanTracker(doc, path, on_phase=on_phase, lock=lock)
+    except TypeError:                                      # an image before v2.2.1
+        return jpp.PlanTracker(doc, path, on_phase=on_phase)
+
+
+def test_the_launchers_writer_is_called_with_the_lock_held(tmp_path) -> None:
+    lock = threading.Lock()
+    held: list[bool] = []
+    doc = {"pid": 1, "phase": "plan", "phases": {}}
+    tr = jpp.PlanTracker(doc, tmp_path / "p.json", lock=lock,
+                         write=lambda: held.append(lock.locked()))
+    tr.progress("gate0", done=1)
+    tr.step("order")
+    assert held == [True, True]
+    assert not (tmp_path / "p.json").exists(), "the launcher's writer replaces the tracker's own"
 
 
 # ------------------------------------------------------------- the sealed half (patch present)
@@ -477,3 +575,44 @@ def test_a_flush_that_meets_a_concurrent_change_is_skipped_never_raised(tmp_path
     tr.step("lane_and_docket")                   # and through step's own forced flush
     assert not path.exists(), "nothing half-written: the next flush writes the stamp"
     assert not list(tmp_path.glob("*.tmp")), "and no tmp is left behind"
+
+
+def test_the_launchers_tracker_shares_its_lock_with_phase_and_shard_progress(
+        tmp_path, monkeypatch) -> None:
+    """The coordinator's case: a hook flush from a pool thread overlapping the launcher's own
+    writers of `_PHASE_DOC`. The tracker the launcher builds must exclude `_shard_progress` (and
+    `_phase`, the same lock) for the whole of its flush."""
+    from scripts import run_sharded_gauntlet as runner
+
+    doc = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", doc)
+    tr = runner._plan_tracker()
+    assert tr.lock is runner._PHASE_LOCK
+    errors = _overlap_probe(tr, doc, lambda: None)
+    assert errors == [], errors
+    # and the launcher's writer really is excluded: _shard_progress takes the lock itself
+    doc2 = _SlowDoc({"pid": 1, "phase": "plan", "phases": {}, "plan_step": "gate0"})
+    monkeypatch.setattr(runner, "_PHASE_DOC", doc2)
+    tr2 = runner._plan_tracker()
+    got: list[BaseException] = []
+
+    def other() -> None:
+        doc2.iterating.wait(5.0)
+        runner._shard_progress("begin", "build_shards", total=2)   # adds "shards"
+        doc2.mutated.set()
+
+    t = threading.Thread(target=other)
+    t.start()
+    doc2.armed = True
+    try:
+        tr2.progress("gate0", done=1, total=2)
+    except BaseException as exc:                          # it IS the finding
+        got.append(exc)
+    t.join(5.0)
+    assert not t.is_alive() and got == [], got
+    pub = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert pub["shards"]["total"] == 2 and pub["plan_progress"]["done"] == 1
+    assert not [k for k in pub if str(k).startswith("_")]
+    tr2.progress("prewarm", submitted=1)                  # on_phase -> _phase: no deadlock
+    assert doc2["phase"] == "prewarm"
