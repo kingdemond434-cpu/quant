@@ -16,7 +16,6 @@ import io
 import json
 import sys
 import urllib.error
-import urllib.request
 import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -892,12 +891,21 @@ def test_accept_header_is_sent_only_for_the_bnm_source(
 
     class _Resp(io.BytesIO):
         headers: ClassVar[dict[str, str]] = {"Content-Type": "application/json"}
+        url = ""
 
-    def fake_urlopen(req: Any, timeout: float = 0, context: Any = None) -> _Resp:
-        sent.append(req.get_header("Accept"))
-        return _Resp(b"{}")
+        def geturl(self) -> str:
+            return self.url
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    class _Opener:                       # LIVE's http_get opens through keyed_opener
+        def open(self, req: Any, timeout: float = 0) -> _Resp:
+            sent.append(req.get_header("Accept"))
+            r = _Resp(b"{}")
+            r.url = req.full_url
+            return r
+
+    import libs.data.keyed_sources as keyed_sources
+    monkeypatch.setattr(keyed_sources, "keyed_opener",
+                        lambda *a, **k: _Opener())
     A.http_get("https://example.invalid/x")
     A.http_get("https://example.invalid/y", A.BY_ID["my_bnm_kijang_emas"].accept)
     assert sent == ["*/*", "application/vnd.BNM.API.v1+json"]
