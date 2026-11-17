@@ -719,8 +719,9 @@ def organ_firewall() -> dict[str, Any]:
 
 #: The money-path sites that must consult the firewall AT RUNTIME (Tier S layer 12), and the
 #: function each one's source must CALL (an AST call node: a `def` of the same name is not a call,
-#: so a site whose calls were removed reads False even while it still defines the wrapper). Read from the files on every pass, so a site that loses its
-#: call reads False here the hour it happens instead of the ledger asserting it from memory.
+#: so a site whose calls were removed reads False even while it still defines the wrapper). Read
+#: from the files on every pass, so a site that loses its call reads False here the hour it
+#: happens instead of the ledger asserting it from memory.
 FIREWALL_RUNTIME_SITES = (
     ("desks/mt5/research/universal_gate.py", "judge_refusal"),
     ("desks/mt5/scripts/external_gauntlet.py", "judge_refusal"),
