@@ -101,7 +101,10 @@ if (-not (Test-Path $py)) {
 # "when did this start failing", and only a history answers it. Failing to write the log NEVER
 # fails the adoption -- an unwritable log is a lost diagnostic, not a reason to stop delivering
 # code to a live trading box.
-$script:AdoptLog = Join-Path $PSScriptRoot "..\logs\adopt_and_seal.log"
+# THE BOX TREE'S LOG, not this script's folder (adopt_once audit MF1): a run from a release
+# checkout (-GuardRoot) must leave its lines where plumbing_watchdog and the freshness fence read.
+# For the scheduled task $RepoRoot is three levels above this script, so the path is unchanged.
+$script:AdoptLog = Join-Path $RepoRoot "desks\mt5\logs\adopt_and_seal.log"
 try {
     $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:AdoptLog) -ErrorAction Stop
 } catch { $script:AdoptLog = $null }
@@ -283,6 +286,14 @@ if ($GuardRoot) {
     if ($LASTEXITCODE -ne 0 -or $script:GuardHead -notmatch '^[0-9a-f]{40}$' -or $grDirty.Count -gt 0) {
         Log ("GUARD ROOT {0} is not a clean checkout (head '{1}', {2} changed path(s)); not adopting" -f $guardDir, $script:GuardHead, $grDirty.Count)
         Done 8 "guard-root-unclean"
+    }
+    # RELEASED CODE ONLY, BEFORE IT RUNS ANYTHING (adopt_once audit SF1): heal and state-verify
+    # run from here before the release gate, so the checkout must already be inside production
+    # (the ref ci.yml's promote job fast-forwards), which adopt_once fetches into the checkout.
+    & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Log ("GUARD ROOT head {0} is not inside origin/production in {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardDir)
+        Done 8 "guard-root-not-released"
     }
     $script:GuardScript = Join-Path $guardDir "scripts\adopt_guard.py"
     $script:GuardRootArgs = @("--root", $RepoRoot)

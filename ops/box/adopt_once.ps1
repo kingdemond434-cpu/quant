@@ -18,7 +18,8 @@
       3. Clones the public repository into C:\ProgramData\QuantBox\adopt-once\<tag> (its own
          folder, never C:\opt\quant) and fetches the tag and the live branch.
       4. Verifies the tag's commit: starts with the tag's 12 hex, is on the live branch, carries
-         the guard fix (#1216, ccc2fbb39), and its Adopt-And-Seal.ps1 takes -GuardRoot.
+         the guard fix (#1216, ccc2fbb39), is inside production (CI's promoted release), and its
+         Adopt-And-Seal.ps1 takes -GuardRoot.
       5. Checks out that commit and runs ITS Adopt-And-Seal.ps1 -RepoRoot C:\opt\quant
          -GuardRoot <that checkout>. The release gate and every guard step (heal, state-verify,
          pre, hold, smoke, blackout, health, rollback) run exactly as the hourly task runs them,
@@ -106,8 +107,9 @@ if ((Git @("clone", "-q", "--filter=blob:none", "--no-checkout", "https://github
     Finish 3 "NOT STARTED: the clone failed (network?). Nothing on the box changed."
 }
 $fetch = @("-C", $stage, "fetch", "-q", "--no-tags", "origin",
-           "+refs/heads/${Live}:refs/remotes/origin/${Live}", "+refs/tags/${Tag}:refs/tags/${Tag}")
-if ((Git $fetch) -ne 0) { Finish 3 "NOT STARTED: could not fetch $Tag or the live branch. Nothing on the box changed." }
+           "+refs/heads/${Live}:refs/remotes/origin/${Live}", "+refs/heads/production:refs/remotes/origin/production",
+           "+refs/tags/${Tag}:refs/tags/${Tag}")
+if ((Git $fetch) -ne 0) { Finish 3 "NOT STARTED: could not fetch $Tag, the live branch or production. Nothing on the box changed." }
 
 # 4. THE TAG'S COMMIT, VERIFIED.
 $sha = (& git -C $stage rev-parse "refs/tags/$Tag^{commit}" 2>$null | Out-String).Trim()
@@ -116,6 +118,9 @@ Say "commit: $sha"
 if (-not $sha.StartsWith($short)) { Finish 4 "NOT STARTED: $Tag names $($sha.Substring(0, 12)), not $short." }
 & git -C $stage merge-base --is-ancestor $sha "refs/remotes/origin/$Live" 2>$null
 if ($LASTEXITCODE -ne 0) { Finish 4 "NOT STARTED: $($sha.Substring(0, 12)) is not on the live branch." }
+# INSIDE PRODUCTION, so the release the box's gate picks is never older than this guard (audit SF1).
+& git -C $stage merge-base --is-ancestor $sha "refs/remotes/origin/production" 2>$null
+if ($LASTEXITCODE -ne 0) { Finish 4 "NOT STARTED: $($sha.Substring(0, 12)) is not released to production yet; wait for CI's promote job." }
 & git -C $stage merge-base --is-ancestor $GuardFix $sha 2>$null
 if ($LASTEXITCODE -ne 0) { Finish 4 "NOT STARTED: this release does not carry the guard fix (#1216); use a newer release." }
 if ((Git @("-C", $stage, "-c", "advice.detachedHead=false", "checkout", "-q", "--detach", $sha)) -ne 0) {

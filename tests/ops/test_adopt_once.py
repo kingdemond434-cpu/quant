@@ -69,3 +69,21 @@ def test_adopt_once_verifies_the_tag_and_skips_nothing() -> None:
 def test_the_stage_is_never_the_live_tree() -> None:
     assert '$stage = Join-Path (Join-Path $Root "adopt-once")' in ONCE
     assert '[string] $Root = "C:\\ProgramData\\QuantBox"' in ONCE
+
+
+def test_the_adopt_log_lands_in_the_box_tree() -> None:
+    """Audit MF1: a run from a release checkout logs where the box's watchers read."""
+    assert '$script:AdoptLog = Join-Path $RepoRoot "desks\\mt5\\logs\\adopt_and_seal.log"' in ADOPT
+    assert 'Join-Path $PSScriptRoot "..\\logs' not in ADOPT
+    assert ADOPT.index("if (-not $RepoRoot) {") < ADOPT.index("$script:AdoptLog = Join-Path")
+
+
+def test_a_guard_root_must_be_released_before_it_runs_anything() -> None:
+    """Audit SF1: inside production before heal; adopt_once checks the same."""
+    rel = ADOPT.index('merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production"')
+    assert (
+        rel < ADOPT.index('Invoke-AdoptGuard @("heal"')
+        and 'Done 8 "guard-root-not-released"' in ADOPT
+    )
+    assert "+refs/heads/production:refs/remotes/origin/production" in ONCE
+    assert 'merge-base --is-ancestor $sha "refs/remotes/origin/production"' in ONCE
