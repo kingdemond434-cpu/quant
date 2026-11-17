@@ -202,7 +202,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-17T22:57:53.620816+00:00",
     "sleeve_id": "73ed3869ca53b69765b3",
-    "last_attempt_at": "2026-11-17T11:40:27.985864+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.494612+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -228,7 +228,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "certificate_drift": true,
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -624,7 +624,7 @@
     "bar_file_present": true
   },
   "last_run": "2026-11-17",
-  "updated_at": "2026-11-17T13:34:50+00:00",
+  "updated_at": "2026-11-17T13:50:06+00:00",
   "configured_sleeves": 1016,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -19226,7 +19226,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:36:57+00:00",
     "sleeve_id": "67e84cb9f177846ef99d",
-    "last_attempt_at": "2026-11-17T11:35:14.465192+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.018353+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -19289,7 +19289,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -19311,7 +19311,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:41:04.077323+00:00",
     "sleeve_id": "3f70143cb1243c5f76fd",
-    "last_attempt_at": "2026-11-17T11:35:14.466255+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.032470+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -19335,7 +19335,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -19357,7 +19357,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:37:27+00:00",
     "sleeve_id": "a0aa9fbbf251993a8927",
-    "last_attempt_at": "2026-11-17T11:35:14.474121+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.102892+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -19420,7 +19420,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -19442,7 +19442,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:38:03+00:00",
     "sleeve_id": "c8251839fcc378e4aa17",
-    "last_attempt_at": "2026-11-17T11:35:14.490165+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.108475+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -19505,7 +19505,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -19527,7 +19527,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:41:41.097503+00:00",
     "sleeve_id": "ebe992184ecbae3ac35b",
-    "last_attempt_at": "2026-11-17T11:35:14.507398+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.122065+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -19551,7 +19551,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -21198,7 +21198,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:43:01+00:00",
     "sleeve_id": "91192e25a4ef8419a612",
-    "last_attempt_at": "2026-11-17T11:37:07.136110+00:00",
+    "last_attempt_at": "2026-11-17T13:37:24.196287+00:00",
     "bar_source": "CACHE:FRA40_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -21261,7 +21261,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for FRA40 covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:37:07+00:00"
+      "at": "2026-11-17T13:37:24+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 0.7->0.7 spread per lot; round-trip charge 4.7000->4.7000 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for FRA40 covering SHADOW_START 2026-08-16",
@@ -26623,7 +26623,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:43+00:00",
     "sleeve_id": "77b437a78b5a05b76cb7",
-    "last_attempt_at": "2026-11-17T11:37:44.653338+00:00",
+    "last_attempt_at": "2026-11-17T13:44:29.526796+00:00",
     "bar_source": "CACHE:GBPSGD_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -26686,7 +26686,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:37:44+00:00"
+      "at": "2026-11-17T13:44:29+00:00"
     },
     "last_error": "no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -26708,7 +26708,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:46+00:00",
     "sleeve_id": "513820ad9d393e8d3343",
-    "last_attempt_at": "2026-11-17T11:37:44.664048+00:00",
+    "last_attempt_at": "2026-11-17T13:44:29.831581+00:00",
     "bar_source": "CACHE:GBPSGD_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -26771,7 +26771,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:37:44+00:00"
+      "at": "2026-11-17T13:44:29+00:00"
     },
     "last_error": "no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -26793,7 +26793,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:50+00:00",
     "sleeve_id": "5c28606f36fa922d00ed",
-    "last_attempt_at": "2026-11-17T11:37:44.666471+00:00",
+    "last_attempt_at": "2026-11-17T13:44:29.833124+00:00",
     "bar_source": "CACHE:GBPSGD_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -26856,7 +26856,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:37:44+00:00"
+      "at": "2026-11-17T13:44:29+00:00"
     },
     "last_error": "no M15 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -26878,7 +26878,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.710352+00:00",
     "sleeve_id": "83ad16afae3c68bca18c",
-    "last_attempt_at": "2026-11-17T11:38:39.433427+00:00",
+    "last_attempt_at": "2026-11-17T13:45:58.184147+00:00",
     "bar_source": "CACHE:GBPSGD_M30.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -26902,7 +26902,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M30 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:38:39+00:00"
+      "at": "2026-11-17T13:45:58+00:00"
     },
     "last_error": "no M30 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -26924,7 +26924,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:54+00:00",
     "sleeve_id": "73bf9e2958f561d5a0cc",
-    "last_attempt_at": "2026-11-17T11:39:15.010476+00:00",
+    "last_attempt_at": "2026-11-17T13:47:22.123230+00:00",
     "bar_source": "CACHE:GBPSGD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -26987,7 +26987,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:15+00:00"
+      "at": "2026-11-17T13:47:22+00:00"
     },
     "last_error": "no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27009,7 +27009,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:04:58+00:00",
     "sleeve_id": "9f101bb64b24117f6a25",
-    "last_attempt_at": "2026-11-17T11:39:15.011408+00:00",
+    "last_attempt_at": "2026-11-17T13:47:22.240673+00:00",
     "bar_source": "CACHE:GBPSGD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27072,7 +27072,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:15+00:00"
+      "at": "2026-11-17T13:47:22+00:00"
     },
     "last_error": "no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27094,7 +27094,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.710359+00:00",
     "sleeve_id": "790e24cea3541e26c0c0",
-    "last_attempt_at": "2026-11-17T11:39:15.012203+00:00",
+    "last_attempt_at": "2026-11-17T13:47:22.241445+00:00",
     "bar_source": "CACHE:GBPSGD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27118,7 +27118,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:15+00:00"
+      "at": "2026-11-17T13:47:22+00:00"
     },
     "last_error": "no M5 bars from any source for GBPSGD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27140,7 +27140,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:57:45.698811+00:00",
     "sleeve_id": "2e41ccfe29a5b34c8174",
-    "last_attempt_at": "2026-11-17T11:40:27.835649+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.402770+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27164,7 +27164,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27185,7 +27185,7 @@
     "evidence_note": "28 forward observation(s) since the clock froze; 27 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T14:35:49+00:00",
-    "last_attempt_at": "2026-11-17T11:40:27.950611+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.421790+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27215,7 +27215,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "runtime_windows_before": [
       {
@@ -27259,7 +27259,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:57:49.680271+00:00",
     "sleeve_id": "b1a4c89d5a9fa81c6873",
-    "last_attempt_at": "2026-11-17T11:40:27.953238+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.423162+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27283,7 +27283,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27305,7 +27305,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:57:50.994667+00:00",
     "sleeve_id": "c2dc4dff0aaf92b0db8e",
-    "last_attempt_at": "2026-11-17T11:40:27.955066+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.436250+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27329,7 +27329,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27351,7 +27351,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:57:52.692442+00:00",
     "sleeve_id": "e17ecef2444647ab8ab1",
-    "last_attempt_at": "2026-11-17T11:40:27.956731+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.440422+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27375,7 +27375,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27397,7 +27397,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:57:57.891397+00:00",
     "sleeve_id": "3504940489636ba0633a",
-    "last_attempt_at": "2026-11-17T11:40:27.987010+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.507782+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27421,7 +27421,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27443,7 +27443,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:56:26+00:00",
     "sleeve_id": "c99d034e2bd6c2537893",
-    "last_attempt_at": "2026-11-17T11:41:22.288981+00:00",
+    "last_attempt_at": "2026-11-17T13:42:21.002175+00:00",
     "bar_source": "CACHE:GBPZAR_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27506,7 +27506,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:22+00:00"
+      "at": "2026-11-17T13:42:21+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 678.0->584.0000000000001 spread per lot; round-trip charge 36.5963->31.6498 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "last_error": "no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -27529,7 +27529,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:58:16.079666+00:00",
     "sleeve_id": "550fb1c905e09fd5bfd3",
-    "last_attempt_at": "2026-11-17T11:41:22.707806+00:00",
+    "last_attempt_at": "2026-11-17T13:42:21.003274+00:00",
     "bar_source": "CACHE:GBPZAR_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27553,7 +27553,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:22+00:00"
+      "at": "2026-11-17T13:42:21+00:00"
     },
     "last_error": "no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27575,7 +27575,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:58:26.103462+00:00",
     "sleeve_id": "1fca9c202437b68bab43",
-    "last_attempt_at": "2026-11-17T11:41:22.709729+00:00",
+    "last_attempt_at": "2026-11-17T13:42:21.005162+00:00",
     "bar_source": "CACHE:GBPZAR_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27599,7 +27599,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:22+00:00"
+      "at": "2026-11-17T13:42:21+00:00"
     },
     "last_error": "no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27621,7 +27621,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:56:30+00:00",
     "sleeve_id": "76371008ccd260823b79",
-    "last_attempt_at": "2026-11-17T11:41:58.389641+00:00",
+    "last_attempt_at": "2026-11-17T13:43:20.996222+00:00",
     "bar_source": "CACHE:GBPZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27684,7 +27684,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:58+00:00"
+      "at": "2026-11-17T13:43:20+00:00"
     },
     "last_error": "no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27706,7 +27706,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:58:45.077885+00:00",
     "sleeve_id": "de3282c7ceb65e07bf08",
-    "last_attempt_at": "2026-11-17T11:41:58.391058+00:00",
+    "last_attempt_at": "2026-11-17T13:43:21.613771+00:00",
     "bar_source": "CACHE:GBPZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27730,7 +27730,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:58+00:00"
+      "at": "2026-11-17T13:43:21+00:00"
     },
     "last_error": "no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -27752,7 +27752,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:58:59.592513+00:00",
     "sleeve_id": "524a0a829b0e31b8fd41",
-    "last_attempt_at": "2026-11-17T11:41:58.395171+00:00",
+    "last_attempt_at": "2026-11-17T13:43:21.628082+00:00",
     "bar_source": "CACHE:GBPZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -27776,7 +27776,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:58+00:00"
+      "at": "2026-11-17T13:43:21+00:00"
     },
     "last_error": "no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -31073,7 +31073,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T23:08:57.078689+00:00",
     "sleeve_id": "51be5dd3f8daf3095bff",
-    "last_attempt_at": "2026-11-17T11:36:28.921877+00:00",
+    "last_attempt_at": "2026-11-17T13:36:23.002053+00:00",
     "bar_source": "CACHE:USDILS_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -31097,7 +31097,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for USDILS covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:36:28+00:00"
+      "at": "2026-11-17T13:36:23+00:00"
     },
     "last_error": "no M5 bars from any source for USDILS covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -42815,7 +42815,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:17:10+00:00",
     "sleeve_id": "2e220fd978797bfc1a57",
-    "last_attempt_at": "2026-11-17T11:35:50.024713+00:00",
+    "last_attempt_at": "2026-11-17T13:35:27.033522+00:00",
     "bar_source": "CACHE:XNGUSD_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -42878,7 +42878,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for XNGUSD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:50+00:00"
+      "at": "2026-11-17T13:35:27+00:00"
     },
     "last_error": "no M5 bars from any source for XNGUSD covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53282,7 +53282,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:49:22.100664+00:00",
     "sleeve_id": "92ca37ae06145c1c49b2",
-    "last_attempt_at": "2026-11-17T11:35:14.451660+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.001425+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53306,7 +53306,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53328,7 +53328,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:36:49+00:00",
     "sleeve_id": "fab71a4f7d9f56c8898c",
-    "last_attempt_at": "2026-11-17T11:35:14.452660+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.002687+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53391,7 +53391,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53413,7 +53413,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:49:53.392753+00:00",
     "sleeve_id": "aa8c110a6bd4af03d116",
-    "last_attempt_at": "2026-11-17T11:35:14.461429+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.017232+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53437,7 +53437,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53459,7 +53459,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:37:13+00:00",
     "sleeve_id": "60e3c67cdccc1530e655",
-    "last_attempt_at": "2026-11-17T11:35:14.470976+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.048638+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53522,7 +53522,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53544,7 +53544,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:37:23+00:00",
     "sleeve_id": "16ba194e5538abdb7567",
-    "last_attempt_at": "2026-11-17T11:35:14.473262+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.085382+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53607,7 +53607,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53629,7 +53629,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:52:06.385677+00:00",
     "sleeve_id": "17f6821c3afada6797e0",
-    "last_attempt_at": "2026-11-17T11:35:14.474883+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.105563+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53653,7 +53653,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53675,7 +53675,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:37:35+00:00",
     "sleeve_id": "b460348af9dbdcc51016",
-    "last_attempt_at": "2026-11-17T11:35:14.475546+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.106558+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53738,7 +53738,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53760,7 +53760,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:37:42+00:00",
     "sleeve_id": "42b7635035ac669a2142",
-    "last_attempt_at": "2026-11-17T11:35:14.488790+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.107551+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53823,7 +53823,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -53845,7 +53845,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:53:11.791482+00:00",
     "sleeve_id": "51c3d85bea6a4f376182",
-    "last_attempt_at": "2026-11-17T11:35:14.505600+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.120910+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -53869,7 +53869,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -57988,7 +57988,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T12:16:04.097318+00:00",
     "sleeve_id": "b065289445d3be15afa3",
-    "last_attempt_at": "2026-11-17T11:41:22.708898+00:00",
+    "last_attempt_at": "2026-11-17T13:42:21.004284+00:00",
     "bar_source": "CACHE:GBPZAR_M15.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -58012,7 +58012,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:22+00:00"
+      "at": "2026-11-17T13:42:21+00:00"
     },
     "last_error": "no M15 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -58644,7 +58644,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T15:39:28.501132+00:00",
     "sleeve_id": "72d7332455c974ff3b03",
-    "last_attempt_at": "2026-11-17T11:35:14.467250+00:00",
+    "last_attempt_at": "2026-11-17T13:34:51.033730+00:00",
     "bar_source": "CACHE:EURMXN_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -58668,7 +58668,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:35:14+00:00"
+      "at": "2026-11-17T13:34:51+00:00"
     },
     "last_error": "no M5 bars from any source for EURMXN covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -59383,7 +59383,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T16:14:51.693916+00:00",
     "sleeve_id": "4df031a07deb3231e2f0",
-    "last_attempt_at": "2026-11-17T11:41:58.394212+00:00",
+    "last_attempt_at": "2026-11-17T13:43:21.626236+00:00",
     "bar_source": "CACHE:GBPZAR_M5.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -59407,7 +59407,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:41:58+00:00"
+      "at": "2026-11-17T13:43:21+00:00"
     },
     "last_error": "no M5 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
     "bars_wanted": {
@@ -59769,7 +59769,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-29T21:08:20.713196+00:00",
     "sleeve_id": "927cb7dbb3ebb9782773",
-    "last_attempt_at": "2026-11-17T11:40:27.834439+00:00",
+    "last_attempt_at": "2026-11-17T13:50:06.942145+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -59793,7 +59793,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:50:06+00:00"
     },
     "certificate_drift": true,
     "gate_reason": "DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean",
@@ -60773,99 +60773,92 @@
     "bar_file_present": true
   },
   "engine_pass": {
-    "started_at": "2026-11-17T11:55:46+00:00",
-    "rows_reached": 960,
+    "started_at": "2026-11-17T13:42:55+00:00",
+    "rows_reached": 16,
     "rows": 1016,
     "complete": false,
     "profile": {
-      "seconds": 5951.4,
-      "rows_timed": 960,
+      "seconds": 519.2,
+      "rows_timed": 16,
       "phase_seconds": {
-        "fetch": 5882.2
+        "fetch": 430.4
       },
       "phase_calls": {
-        "fetch": 150
+        "fetch": 5
       },
       "reused": {},
       "family_seconds": {
-        "cross_asset_residual": 2747.1,
-        "carry": 850.1,
-        "clock_transition": 620.4,
-        "formula": 616.0,
-        "overnight_gap_decay": 511.7,
-        "macro_conditional": 410.6,
-        "session_range_breakout": 138.2,
-        "range_reversion": 49.6,
-        "spread_state": 0.4,
-        "pca_residual": 0.1,
-        "overnight_drift": 0.0
+        "cross_asset_residual": 178.5,
+        "clock_transition": 169.3,
+        "overnight_gap_decay": 83.9,
+        "macro_conditional": 0.0
       },
       "chart_seconds": {
-        "M5": 1639.4,
-        "H1": 1539.6,
-        "M15": 1406.4,
-        "M30": 1358.9
+        "H1": 164.7,
+        "M15": 94.5,
+        "M30": 88.5,
+        "M5": 83.9
       },
       "slowest_rows": [
         {
-          "key": "XAGUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=london_side_mode=revert_ttl_bars=8",
-          "seconds": 73.49
+          "key": "GBPSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+          "seconds": 94.51
         },
         {
-          "key": "USDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
-          "seconds": 62.17
+          "key": "GBPSGD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+          "seconds": 88.47
         },
         {
-          "key": "USDPLN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-          "seconds": 62.16
+          "key": "GBPSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+          "seconds": 83.94
         },
         {
-          "key": "USDNOK.carry.asia@M5#input_symbol=USDNOK_session=ny",
-          "seconds": 60.46
+          "key": "EURSGD.overnight_gap_decay.asia#regime=low_vol",
+          "seconds": 83.86
         },
         {
-          "key": "USDSGD.overnight_gap_decay.asia#representation=cross_asset",
-          "seconds": 57.23
+          "key": "GBPZAR.clock_transition.asia#label=tokyo_open_representation=price_only_side=1_stamp_hour=0",
+          "seconds": 80.81
         },
         {
-          "key": "US30.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 56.83
+          "key": "EURSGD.overnight_gap_decay.asia#representation=price_only_session=overlap",
+          "seconds": 0.01
         },
         {
-          "key": "XAGUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 56.05
+          "key": "EURSGD.overnight_gap_decay.asia#representation=price_only_session=asia",
+          "seconds": 0.01
         },
         {
-          "key": "USDCHF.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
-          "seconds": 55.1
+          "key": "EURSGD.overnight_gap_decay.asia#selector=asia",
+          "seconds": 0.01
         },
         {
-          "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_session=ny_ttl_bars=6",
-          "seconds": 54.92
+          "key": "EURSGD.overnight_gap_decay.asia#representation=price_only",
+          "seconds": 0.0
         },
         {
-          "key": "USDTHB.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 54.53
+          "key": "EURSGD.overnight_gap_decay.asia#session=asia",
+          "seconds": 0.0
         },
         {
-          "key": "AUDCAD.cross_asset_residual.asia@M15#factor_symbols=['BTCUSD']_session=asia",
-          "seconds": 54.51
+          "key": "GBPSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+          "seconds": 0.0
         },
         {
-          "key": "GBPCHF.formula.asia#atr_n=20_entry_z=1.5_expr=spread_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-          "seconds": 53.37
+          "key": "EURSGD.overnight_gap_decay.asia#session=overlap",
+          "seconds": 0.0
         },
         {
-          "key": "XAUEUR.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 52.64
+          "key": "GBPSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+          "seconds": 0.0
         },
         {
-          "key": "XCUUSD.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
-          "seconds": 52.47
+          "key": "EURSGD.overnight_gap_decay.asia",
+          "seconds": 0.0
         },
         {
-          "key": "XAUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-          "seconds": 52.4
+          "key": "GBPSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDNOK']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+          "seconds": 0.0
         }
       ]
     }
@@ -61353,7 +61346,7 @@
     "forward_start": "2026-10-17T03:15:36.559551+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 584.0->584.0 spread per lot; round-trip charge 31.6498->31.6498 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "12ce2f28e8cde0fcf09c",
-    "last_attempt_at": "2026-11-17T11:40:27.984646+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.491313+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61373,7 +61366,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -61400,7 +61393,7 @@
     "forward_start": "2026-10-17T03:15:26.749866+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 584.0->584.0 spread per lot; round-trip charge 31.6498->31.6498 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "6be5536c7d9da349c400",
-    "last_attempt_at": "2026-11-17T11:40:27.958591+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.442256+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -61420,7 +61413,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -61994,7 +61987,7 @@
     "n_historical": 31,
     "broker_offset_h": 0.0,
     "sleeve_id": "b7283ff748e129932e47",
-    "last_attempt_at": "2026-11-17T11:40:27.972298+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.490179+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62012,7 +62005,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -62241,7 +62234,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-17T03:54:16.631991+00:00",
     "sleeve_id": "7a1d27106da306585130",
-    "last_attempt_at": "2026-11-17T11:40:27.959692+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.443163+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62261,7 +62254,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -62287,7 +62280,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-17T03:54:19.456859+00:00",
     "sleeve_id": "9cfad3fad23851698e1a",
-    "last_attempt_at": "2026-11-17T11:40:27.962640+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.489005+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62307,7 +62300,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -62355,7 +62348,7 @@
     "n_historical": 31,
     "broker_offset_h": 0.0,
     "sleeve_id": "606b637a77462390a7fe",
-    "last_attempt_at": "2026-11-17T11:40:27.960970+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.487087+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -62373,7 +62366,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -62464,7 +62457,7 @@
     "forward_start": "2026-10-29T01:06:16.210225+00:00",
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 2.0->2.0 spread per lot; round-trip charge 4.1918->4.1918 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "c0e836ade06fb516e0a8",
-    "last_attempt_at": "2026-11-17T11:39:50.352084+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.121031+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -62484,7 +62477,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -62532,7 +62525,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 2.0->2.0 spread per lot; round-trip charge 4.1918->4.1918 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "971ec5317884aa31eaa8",
-    "last_attempt_at": "2026-11-17T11:39:50.349894+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.107933+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -62550,7 +62543,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -63036,7 +63029,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T02:00:23.989305+00:00",
     "sleeve_id": "66c609d2dc407d0671a2",
-    "last_attempt_at": "2026-11-17T11:39:50.353960+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.132050+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -63056,7 +63049,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -63237,7 +63230,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T02:00:21.690419+00:00",
     "sleeve_id": "945a3b2e7c8bc95fc7a5",
-    "last_attempt_at": "2026-11-17T11:39:50.351566+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.117734+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -63257,7 +63250,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -64645,7 +64638,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T12:03:15.504804+00:00",
     "sleeve_id": "e6ad1ac921f4ace1b5b7",
-    "last_attempt_at": "2026-11-17T11:39:50.353253+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.129434+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -64665,7 +64658,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -64911,7 +64904,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-29T12:01:50.796060+00:00",
     "sleeve_id": "1507d304dd1336788d49",
-    "last_attempt_at": "2026-11-17T11:39:50.350897+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.114787+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -64931,7 +64924,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -65635,7 +65628,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 2.0->2.0 spread per lot; round-trip charge 4.1918->4.1918 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "687e4c51d2e62d37700a",
-    "last_attempt_at": "2026-11-17T11:39:50.352696+00:00",
+    "last_attempt_at": "2026-11-17T13:48:46.126368+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -65653,7 +65646,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:50+00:00"
+      "at": "2026-11-17T13:48:46+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
@@ -67661,7 +67654,7 @@
     "broker_offset_h": 0.0,
     "cost_rebased_why": "cost model corrected after the clock froze (2.0->2.0 commission, 722.0->722.0 spread per lot; round-trip charge 39.1105->39.1105 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost.",
     "sleeve_id": "902cafadb20077ff2456",
-    "last_attempt_at": "2026-11-17T11:40:27.957692+00:00",
+    "last_attempt_at": "2026-11-17T13:41:38.441469+00:00",
     "bar_source": "CACHE:GBPZAR_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -67679,7 +67672,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:40:27+00:00"
+      "at": "2026-11-17T13:41:38+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for GBPZAR covering SHADOW_START 2026-08-16",
@@ -67951,7 +67944,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-31T21:57:00.909242+00:00",
     "sleeve_id": "cdf1ff7d9657997872d7",
-    "last_attempt_at": "2026-11-17T11:39:49.970738+00:00",
+    "last_attempt_at": "2026-11-17T13:48:45.903295+00:00",
     "bar_source": "CACHE:EURSGD_H1.parquet",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": true,
@@ -67971,7 +67964,7 @@
     "forward_evidence": {
       "status": "UNMEASURED",
       "why": "BLOCKED_NO_BARS: no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
-      "at": "2026-11-17T11:39:49+00:00"
+      "at": "2026-11-17T13:48:45+00:00"
     },
     "last_error_seen_at": null,
     "last_error_cleared": "no H1 bars from any source for EURSGD covering SHADOW_START 2026-08-16",
