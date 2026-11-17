@@ -65,6 +65,11 @@ class World:
         self.verdicts: list[dict[str, str]] | None = [
             {"verdict": "CLEAR", "sha": C, "at": "2026-11-17T20:07:00Z", "by": "kingdemond434-cpu"}]
         self.excluded: tuple[str, ...] | None = (".github/workflows/*", "libs/ops/release.py")
+        self.closure: frozenset[str] | None = frozenset({"desks/mt5/research/free_data.py"})
+        #: LIVE's blobs now: event_states.py is not on LIVE yet; gone.py still is
+        self.live: dict[str, tuple[bool, str | None]] = {
+            "desks/mt5/research/event_states.py": (True, None),
+            "desks/mt5/research/gone.py": (True, "9" * 40)}
 
     def run(self) -> list[str]:
         head = self.head if self.head is not None else (self.base or b"") + self.row + b"\n"
@@ -73,7 +78,9 @@ class World:
         return la.check(self.files, self.opener, MERGER, self.base, head, reads.get,
                         lambda n, c: self.target if (n, c) == (PR, C) else None,
                         lambda c, p: self.blobs.get(p, (False, None)),
-                        lambda n: self.verdicts if n == PR else None, self.excluded)
+                        lambda n: self.verdicts if n == PR else None, self.excluded,
+                        self.closure, lambda p: self.live.get(p, (False, None)),
+                        lambda p: not p.startswith(("docs/", "reports/")))
 
 
 def _refused(w: World, needle: str) -> None:
@@ -90,7 +97,8 @@ def test_c9_only_the_merger_app_may_open_it() -> None:
     w.opener = "kingdemond434-cpu"
     _refused(w, "not the merger App")
     assert la.check(w.files, MERGER, None, BASE, BASE, lambda n: None, lambda n, c: None,
-                    lambda c, p: (False, None), lambda n: [], ())[0].startswith("opened by")
+                    lambda c, p: (False, None), lambda n: [], (), frozenset(),
+                    lambda p: (True, None), lambda p: True)[0].startswith("opened by")
 
 
 def test_c2_an_edited_or_deleted_row_is_not_append_only() -> None:
@@ -229,3 +237,68 @@ def test_a_ledger_change_is_ledger_append_or_root_never_auto() -> None:
          "patch_id": "p", "checks": ("pass", "ok"), "fresh": True}
     assert pol.decide(f)[0] == "CLEAR"
     assert pol.decide({**f, "hold": "AUDIT HOLD x"})[0] == "HOLD"
+
+
+def test_mf1_a_money_closure_member_is_excluded_and_an_unread_closure_refuses() -> None:
+    p = "desks/mt5/research/free_data.py"
+    w = World()
+    w.row = _row(paths={**PATHS, p: "a" * 40})
+    assert w.target is not None
+    w.target["files"][p] = "modified"
+    w.blobs[p] = (True, "a" * 40)
+    _refused(w, "excluded path")
+    w = World()
+    w.closure = None
+    _refused(w, "money closure cannot be read")
+
+
+def test_mf2a_a_pr_that_changes_any_excluded_path_refuses_whatever_the_row_lists() -> None:
+    w = World()                        # the non-money half of a money PR
+    assert w.target is not None
+    w.target["files"]["desks/mt5/research/free_data.py"] = "modified"
+    w.blobs["desks/mt5/research/free_data.py"] = (True, "f" * 40)
+    _refused(w, "changes excluded path")
+
+
+def test_mf2b_every_changed_path_live_lacks_must_be_in_the_row() -> None:
+    p = "desks/mt5/research/futures_state.py"
+    w = World()
+    assert w.target is not None
+    w.target["files"][p] = "added"
+    w.blobs[p] = (True, "c" * 40)
+    w.live[p] = (True, None)
+    _refused(w, "leaves it out")
+    w.live[p] = (True, "c" * 40)       # already byte-identical on LIVE: may be left out
+    assert w.run() == []
+    del w.live[p]                      # cannot tell: fail closed
+    _refused(w, "cannot tell")
+    w = World()                        # state such as docs/ is not code: no coverage needed
+    assert w.target is not None
+    w.target["files"]["docs/research/RUNTIME_STATE.md"] = "modified"
+    assert w.run() == []
+
+
+def test_mf3_any_newer_audit_hold_on_the_pr_beats_the_clear() -> None:
+    w = World()
+    assert w.verdicts is not None
+    w.verdicts.append({"verdict": "HOLD", "sha": "f" * 40, "at": "2026-11-17T20:30:00Z",
+                       "by": "x"})
+    _refused(w, "is newer than the CLEAR")
+    w = World()                        # a HOLD older than the CLEAR does not
+    assert w.verdicts is not None
+    w.verdicts.insert(0, {"verdict": "HOLD", "sha": "f" * 40, "at": "2026-11-17T19:00:00Z",
+                          "by": "x"})
+    assert w.run() == []
+
+
+def test_the_code_rule_is_adopt_guards() -> None:
+    sys.path.insert(0, str(ROOT))
+    from libs.ops import adopt_guard, release
+
+    assert la.SCRIPT_SUFFIXES == adopt_guard.SCRIPT_SUFFIXES
+    code = la.code_rule(release)
+    for p in ("docs/research/RUNTIME_STATE.md", "docs/research/tier_s_program.json",
+              "scripts/live_first_ci.py", "desks/mt5/research/futures_state_sources.json",
+              "desks/mt5/data/x.ps1", "ops/box/a.ps1", "reports/audit/x.md"):
+        assert code(p) == adopt_guard.is_code(p), p
+    assert not code("docs/research/RUNTIME_STATE.md") and code("scripts/live_first_ci.py")

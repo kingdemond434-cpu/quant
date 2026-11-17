@@ -272,12 +272,24 @@ def ledger_problems(ag: Any, repo: str, p: dict[str, Any], files: list[dict[str,
         except (RuntimeError, ValueError, KeyError, TypeError):
             return None
 
+    def base_blob(path: str) -> tuple[bool, str | None]:
+        b = _git_bytes("rev-parse", "--verify", "-q", f"origin/{base}:{path}")
+        if b is not None:
+            return True, b.decode().strip() or None
+        return _git_bytes("rev-parse", "--verify", "-q", f"origin/{base}") is not None, None
+
+    raw = _git_bytes("show", f"origin/{base}:ops/money_closure.txt")
+    closure = None if raw is None else frozenset(
+        x.strip() for x in raw.decode("utf-8", "replace").splitlines()
+        if x.strip() and not x.lstrip().startswith("#"))
+    code = la.code_rule(_load("_auth_release", HERE.parents[2] / "libs" / "ops" / "release.py"))
+
     excluded = ag.never_standing_patterns()
     return list(la.check(
         files, str((p.get("user") or {}).get("login") or ""), merger_login,
         _git_bytes("show", f"origin/{base}:{la.LEDGER}"), _git_bytes("show", f"{head}:{la.LEDGER}"),
         lambda n: _git_bytes("show", f"{head}:{n}"), target, blob_at, verdicts,
-        tuple(excluded) if excluded is not None else None))
+        tuple(excluded) if excluded is not None else None, closure, base_blob, code))
 
 
 #: An artifact larger than this is not a replay report.

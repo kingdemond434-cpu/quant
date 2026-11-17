@@ -15,11 +15,18 @@ Conditions (Governance 20:12Z, Auditor 20:17Z and 20:18Z, 2026-11-17), each refu
   C10 the authority recomputes the row: each path is a file the target PR changes (merge-base..
       the CLEARed commit, both sides of a rename); each object id is that path's blob at the
       CLEARed commit, or null when that commit deletes it. A mismatch or extra path refuses.
-  C11 the newest trusted, unedited AUDIT verdict on the target PR for that exact commit is CLEAR
-      (a later HOLD on the same commit refuses, whatever happened on other heads).
-  C12 a row naming an excluded path (money closure, NEVER_STANDING and root lists, .github/**,
-      ops/release/**, seal carriers, box adopt/seal machinery), or a seal-carrier head, is forged
-      by definition: the Auditor never issues those.
+      COVERAGE (#1256 audit MF2b): every changed CODE path (`code`, adopt_guard.is_code's rule)
+      whose blob at the commit differs from the base branch's must be in the row (the Auditor
+      leaves out paths already identical on LIVE, and state such as docs/), so no row adopts
+      part of a PR's code.
+  C11 the newest trusted, unedited AUDIT verdict on the target PR for that exact commit is CLEAR,
+      and NO AUDIT HOLD on that PR, on any head, is newer than that CLEAR (#1256 audit MF3: a
+      HOLD on a later head often names a defect the earlier head has too).
+  C12 an excluded path is forged by definition: the Auditor never issues those. Excluded are the
+      money closure's members as listed at the base (#1256 audit MF1) and the file itself,
+      NEVER_STANDING and root lists, .github/**, ops/release/**, seal carriers, box adopt/seal
+      machinery. If the target PR changes ANY excluded path, whatever the row lists, it refuses
+      (MF2a: CLEARed is not adopt-eligible). A seal-carrier head refuses too.
   C13 one row per (PR, commit): not already in the base ledger, not twice in the PR.
   C9  the PR is opened by the merger App.
   C5  anything unreadable refuses (fail closed).
@@ -42,6 +49,19 @@ REPORT_RX = re.compile(
     r"^reports/audit/\d{4}-\d{2}-\d{2}/adopt_clear_pr([1-9]\d*)_([0-9a-f]{9})\.(md|row\.json)$")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 SEAL_CARRIER_REF = "claude/seal-carrier-"
+#: adopt_guard.SCRIPT_SUFFIXES (a test pins them equal): a script is code wherever it sits.
+SCRIPT_SUFFIXES = (".py", ".ps1", ".psm1", ".cmd", ".bat", ".sh", ".mq5", ".mqh")
+
+
+def code_rule(release: Any) -> Callable[[str], bool]:
+    """adopt_guard.is_code over libs/ops/release.py (NEVER_STANDING), loaded by the caller."""
+    def code(path: str) -> bool:
+        if release.is_build_artifact(path):
+            return False
+        if path.lower().endswith(SCRIPT_SUFFIXES):
+            return True
+        return path not in release.NON_CODE and not release.is_state_path(path)
+    return code
 #: Paths the Auditor never vouches for by ADOPT row (C12), on top of the gate's NEVER_STANDING and
 #: ROOT_POLICY lists, which the caller passes in as `excluded`.
 EXCLUDED = (
@@ -80,11 +100,21 @@ def check(
     blob_at: BlobAt,
     verdicts: Verdicts,
     excluded: tuple[str, ...] | None,
+    closure: frozenset[str] | None = None,
+    base_blob: Callable[[str], tuple[bool, str | None]] | None = None,
+    code: Callable[[str], bool] | None = None,
 ) -> list[str]:
-    """Why this rows-only PR may NOT pass as LEDGER_APPEND; [] when every condition holds."""
+    """Why this rows-only PR may NOT pass as LEDGER_APPEND; [] when every condition holds.
+    `closure`: ops/money_closure.txt's members at the base; `base_blob`: a path's blob on the base
+    branch now. Either None refuses (fail closed)."""
     out: list[str] = []
     if excluded is None:
         return ["the NEVER_STANDING / root lists cannot be read (fail closed)"]
+    if closure is None:
+        return ["the money closure cannot be read at the base (fail closed)"]
+    if base_blob is None or code is None:
+        return ["the base branch's blobs or the code rule cannot be read (fail closed)"]
+    excluded = (*excluded, *sorted(closure))
     if not merger_login or opener != merger_login:
         out.append(f"opened by {opener or '?'}, not the merger App ({merger_login or 'unknown'})")
     added: set[str] = set()
@@ -117,7 +147,7 @@ def check(
     rows: set[str] = set()
     for i, line in enumerate(lines, 1):
         out += [f"row {i}: {w}" for w in _row(line, added, used, rows, have, read_head, target,
-                                              blob_at, verdicts, excluded)]
+                                              blob_at, verdicts, excluded, base_blob, code)]
     if added - used:
         out.append(f"report files no row uses: {sorted(added - used)}")
     return out
@@ -133,7 +163,9 @@ def _commit(line: bytes) -> str | None:
 
 def _row(line: bytes, added: set[str], used: set[str], rows: set[str], have: set[str | None],
          read_head: Callable[[str], bytes | None], target: Target, blob_at: BlobAt,
-         verdicts: Verdicts, excluded: tuple[str, ...]) -> list[str]:
+         verdicts: Verdicts, excluded: tuple[str, ...],
+         base_blob: Callable[[str], tuple[bool, str | None]],
+         code: Callable[[str], bool]) -> list[str]:
     try:
         d = json.loads(line)
     except ValueError:
@@ -172,12 +204,28 @@ def _row(line: bytes, added: set[str], used: set[str], rows: set[str], have: set
     mine = [v for v in found if v.get("sha") == commit]
     if not mine or mine[-1].get("verdict") != "CLEAR":
         out.append(f"the newest AUDIT verdict on #{pr} for {commit[:9]} is not CLEAR")
+    else:
+        later = [v for v in found if v.get("verdict") != "CLEAR"
+                 and str(v.get("at") or "") > str(mine[-1].get("at") or "")]
+        if later:
+            out.append(f"an AUDIT HOLD on #{pr} ({str(later[-1].get('sha'))[:9]}, "
+                       f"{later[-1].get('at')}) is newer than the CLEAR of {commit[:9]}")
     t = target(pr, commit)
     if t is None:
         return [*out, f"#{pr}'s changes up to {commit[:9]} cannot be read"]
     if str(t.get("head_ref") or "").lower().startswith(SEAL_CARRIER_REF):
         out.append(f"#{pr} is a seal carrier: never adopted by row")
     changed = t.get("files") or {}
+    hit = sorted(p for p in changed if _excluded(str(p), excluded))
+    if hit:
+        out.append(f"#{pr} changes excluded path(s), e.g. {hit[0]}: never adopted by row")
+    for p in sorted(x for x in set(changed) - set(paths) if code(str(x))):
+        ok, now = base_blob(str(p))
+        got, then = blob_at(commit, str(p))
+        if not (ok and got):
+            out.append(f"{p}: cannot tell whether LIVE already has it (fail closed)")
+        elif now != then:
+            out.append(f"{p}: #{pr} changes it and LIVE differs, yet the row leaves it out")
     for p, oid in paths.items():
         if _excluded(str(p), excluded):
             out.append(f"{p}: an excluded path; the Auditor never vouches for it by ADOPT row")
