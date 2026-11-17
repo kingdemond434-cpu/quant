@@ -94,14 +94,10 @@ def test_the_closure_of_the_live_entry_points_is_money() -> None:
 def test_an_existing_test_of_money_code_is_money_and_a_new_one_is_not() -> None:
     rs = _load("rs_fast_t2", "ops/release/replay_shadow.py")
     closure = rs.import_closure(ROOT, (*rs.ENTRY_POINTS, *fl.EXTRA_ENTRIES))
-    files = rs.tree_files(ROOT)
-    money_tests = [
-        f for f in sorted(files)
-        if f.startswith("desks/mt5/tests/test_") and f.endswith(".py")
-        and fl.money_test(rs, f, closure)
-    ]  # fmt: skip
-    assert money_tests, "no desk test imports the money path"
-    fast, why = fl.classify([money_tests[0]])
+    # imports mt5desk (the MONEY_PATH folder) and is in no suite list
+    money_test = "desks/mt5/tests/test_account_key_stamp.py"
+    assert fl.money_test(rs, money_test, closure)
+    fast, why = fl.classify([money_test])
     assert not fast and "tests the money path" in why, why
     assert not fl.money_test(rs, "desks/mt5/tests/test_zz_not_yet_written.py", closure)
 
