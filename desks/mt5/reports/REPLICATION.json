@@ -1,5 +1,5 @@
 {
- "at": "2026-11-17T02:37:16+00:00",
+ "at": "2026-11-17T03:37:00+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -27,9 +27,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=71c71543385ac02f",
-   "certificate": "external.GBPSGD.formula.p=71c71543385ac02f",
-   "fp": "473b3811122df4bb",
+   "key": "GBPSGD.formula.p=a01fa8a08b82bdc9",
+   "certificate": "external.GBPSGD.formula.p=a01fa8a08b82bdc9",
+   "fp": "9b66c3689875c513",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,9 +41,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=9e697bf69fbaa5ac",
-   "certificate": "external.GBPSGD.formula.p=9e697bf69fbaa5ac",
-   "fp": "8269be6396ab2c82",
+   "key": "GBPSGD.formula.p=7eee342c5c00fcbe",
+   "certificate": "external.GBPSGD.formula.p=7eee342c5c00fcbe",
+   "fp": "913279a72953392f",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -55,9 +55,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=705c52f5c6b7c620",
-   "certificate": "external.GBPSGD.formula.p=705c52f5c6b7c620",
-   "fp": "d77ce3eacc9a48c7",
+   "key": "GBPSGD.formula.p=49084fe784b308c9",
+   "certificate": "external.GBPSGD.formula.p=49084fe784b308c9",
+   "fp": "914bceef37f7299d",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -69,9 +69,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=b0235de7e7d8a672",
-   "certificate": "external.GBPSGD.formula.p=b0235de7e7d8a672",
-   "fp": "7315e48c64656f88",
+   "key": "GBPSGD.formula.p=dfb271cd8ec46b8f",
+   "certificate": "external.GBPSGD.formula.p=dfb271cd8ec46b8f",
+   "fp": "44cfad5e03da2d7f",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -83,9 +83,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=994ac745fd4084c4",
-   "certificate": "external.GBPSGD.formula.p=994ac745fd4084c4",
-   "fp": "a4511135302d2892",
+   "key": "GBPSGD.formula.p=f884c226dfddba57",
+   "certificate": "external.GBPSGD.formula.p=f884c226dfddba57",
+   "fp": "b64b8e178e7ede57",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -97,9 +97,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=9513c1a57cf2de7c",
-   "certificate": "external.GBPSGD.formula.p=9513c1a57cf2de7c",
-   "fp": "04b75c61beac85e0",
+   "key": "GBPSGD.formula.p=9cd3b443f2b69e9b",
+   "certificate": "external.GBPSGD.formula.p=9cd3b443f2b69e9b",
+   "fp": "eb5550c6d101aef2",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -111,9 +111,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=90a13460e8a6efa6",
-   "certificate": "external.GBPSGD.formula.p=90a13460e8a6efa6",
-   "fp": "3f5d360d40ea79d6",
+   "key": "GBPSGD.formula.p=1cf187d29178083b",
+   "certificate": "external.GBPSGD.formula.p=1cf187d29178083b",
+   "fp": "9f77a3eba6be66f6",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -125,9 +125,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=0765f104fe87949f",
-   "certificate": "external.GBPSGD.formula.p=0765f104fe87949f",
-   "fp": "dca9f23b2dc7431e",
+   "key": "GBPSGD.formula.p=cf9962f194169708",
+   "certificate": "external.GBPSGD.formula.p=cf9962f194169708",
+   "fp": "11b9069ec8cbae72",
    "symbol": "GBPSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -139,12 +139,12 @@
   },
   {
    "lane": "forward",
-   "key": "BTCUSD.turn_of_month.continuous",
-   "symbol": "BTCUSD",
-   "family": "turn_of_month",
+   "key": "GER40.trend_ma_cross.continuous",
+   "symbol": "GER40",
+   "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
+    "no written specification in the spec book for family 'trend_ma_cross'"
    ],
    "ours": {},
    "theirs": {},
@@ -152,34 +152,8 @@
   },
   {
    "lane": "forward",
-   "key": "BTCUSD.vol_mean_reversion.continuous",
-   "symbol": "BTCUSD",
-   "family": "vol_mean_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "COFROB.style_premia.continuous",
-   "symbol": "COFROB",
-   "family": "style_premia",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'style_premia'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "FRA40.momentum_volgate.continuous",
-   "symbol": "FRA40",
+   "key": "NAS100.momentum_volgate.continuous",
+   "symbol": "NAS100",
    "family": "momentum_volgate",
    "verdict": "UNMEASURED",
    "why": [
@@ -191,12 +165,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.engulfing_reversal.continuous",
-   "symbol": "XAUUSD",
-   "family": "engulfing_reversal",
+   "key": "NAS100.pin_bar_reversal.continuous",
+   "symbol": "NAS100",
+   "family": "pin_bar_reversal",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'engulfing_reversal'"
+    "no written specification in the spec book for family 'pin_bar_reversal'"
    ],
    "ours": {},
    "theirs": {},
@@ -204,21 +178,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.level_breakout.continuous",
-   "symbol": "XAUUSD",
-   "family": "level_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'level_breakout'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.range_reversion.continuous",
-   "symbol": "XAUUSD",
+   "key": "NAS100.range_reversion.continuous",
+   "symbol": "NAS100",
    "family": "range_reversion",
    "verdict": "UNMEASURED",
    "why": [
@@ -230,12 +191,51 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.vol_mean_reversion.continuous",
-   "symbol": "XAUUSD",
-   "family": "vol_mean_reversion",
+   "key": "NAS100.trend_ma_cross.continuous",
+   "symbol": "NAS100",
+   "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
+    "no written specification in the spec book for family 'trend_ma_cross'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "US30.momentum_volgate.continuous",
+   "symbol": "US30",
+   "family": "momentum_volgate",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'momentum_volgate'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "US30.spread_state.continuous",
+   "symbol": "US30",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "US30.trend_ma_cross.continuous",
+   "symbol": "US30",
+   "family": "trend_ma_cross",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'trend_ma_cross'"
    ],
    "ours": {},
    "theirs": {},
@@ -245,68 +245,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPSGD.formula.p=71c71543385ac02f",
+   "what": "GBPSGD.formula.p=a01fa8a08b82bdc9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=9e697bf69fbaa5ac",
+   "what": "GBPSGD.formula.p=7eee342c5c00fcbe",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=705c52f5c6b7c620",
+   "what": "GBPSGD.formula.p=49084fe784b308c9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=b0235de7e7d8a672",
+   "what": "GBPSGD.formula.p=dfb271cd8ec46b8f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=994ac745fd4084c4",
+   "what": "GBPSGD.formula.p=f884c226dfddba57",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=9513c1a57cf2de7c",
+   "what": "GBPSGD.formula.p=9cd3b443f2b69e9b",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=90a13460e8a6efa6",
+   "what": "GBPSGD.formula.p=1cf187d29178083b",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=0765f104fe87949f",
+   "what": "GBPSGD.formula.p=cf9962f194169708",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "BTCUSD.turn_of_month.continuous",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
+   "what": "GER40.trend_ma_cross.continuous",
+   "why": "no written specification in the spec book for family 'trend_ma_cross'"
   },
   {
-   "what": "BTCUSD.vol_mean_reversion.continuous",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
-  },
-  {
-   "what": "COFROB.style_premia.continuous",
-   "why": "no written specification in the spec book for family 'style_premia'"
-  },
-  {
-   "what": "FRA40.momentum_volgate.continuous",
+   "what": "NAS100.momentum_volgate.continuous",
    "why": "no written specification in the spec book for family 'momentum_volgate'"
   },
   {
-   "what": "XAUUSD.engulfing_reversal.continuous",
-   "why": "no written specification in the spec book for family 'engulfing_reversal'"
+   "what": "NAS100.pin_bar_reversal.continuous",
+   "why": "no written specification in the spec book for family 'pin_bar_reversal'"
   },
   {
-   "what": "XAUUSD.level_breakout.continuous",
-   "why": "no written specification in the spec book for family 'level_breakout'"
-  },
-  {
-   "what": "XAUUSD.range_reversion.continuous",
+   "what": "NAS100.range_reversion.continuous",
    "why": "no written specification in the spec book for family 'range_reversion'"
   },
   {
-   "what": "XAUUSD.vol_mean_reversion.continuous",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
+   "what": "NAS100.trend_ma_cross.continuous",
+   "why": "no written specification in the spec book for family 'trend_ma_cross'"
+  },
+  {
+   "what": "US30.momentum_volgate.continuous",
+   "why": "no written specification in the spec book for family 'momentum_volgate'"
+  },
+  {
+   "what": "US30.spread_state.continuous",
+   "why": "no written specification in the spec book for family 'spread_state'"
+  },
+  {
+   "what": "US30.trend_ma_cross.continuous",
+   "why": "no written specification in the spec book for family 'trend_ma_cross'"
   }
  ],
  "recorded": {
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 646,
-  "at": "2026-11-17T01:36:47+00:00",
+  "forward": 654,
+  "at": "2026-11-17T02:37:16+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -342,16 +342,16 @@
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\COFROB_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\FRA40_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 6.36
+ "seconds": 4.25
 }

@@ -1,21 +1,19 @@
 {
- "at": "2026-11-17T03:31:02+00:00",
+ "at": "2026-11-17T03:46:05+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 18.59,
-   "why": "no new verdict for 18.6h (last 2026-11-16T08:55:24+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 18.84,
+   "why": "no new verdict for 18.8h (last 2026-11-16T08:55:24+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
-   "low": true,
+   "low": false,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.98,
-   "busy_other_cores": 14.88,
-   "why": "judge tree at 0.98 cores (others 14.88) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.1h (limit 1h)",
-   "low_since": "2026-11-17T03:26:07+00:00",
-   "hours": 0.08
+   "busy_judge_cores": 9.52,
+   "busy_other_cores": 8.05,
+   "why": "judge tree at 9.52 cores (others 8.05) with a docket pending (resident SWEEPING, queue depth None); floor 4"
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +23,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 9.17,
+   "hours": 9.42,
    "limit_h": 25.59,
-   "why": "9.2h since the last sweep ended (None), status SWEEPING; limit 25.59h"
+   "why": "9.4h since the last sweep ended (None), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -40,10 +38,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "collect_and_cut",
-   "hours": 0.08,
+   "phase": "rule_shards",
+   "hours": 0.06,
    "known_phase": true,
-   "why": "sweep phase collect_and_cut has run 0.1h since 2026-11-17T03:26:08+00:00 (limit 1h)"
+   "why": "sweep phase rule_shards has run 0.1h since 2026-11-17T03:42:34+00:00 (limit 1h)"
   },
   "host_unreadable": {
    "open": false,
@@ -88,7 +86,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 10496,
-  "heartbeat_utc": "2026-11-17T03:30:49+00:00",
+  "heartbeat_utc": "2026-11-17T03:45:51+00:00",
   "last_sweep_ended_utc": null,
   "last_rc": null
  },
