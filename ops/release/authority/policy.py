@@ -12,6 +12,10 @@ CLASSES (strictest file wins):
                  configuration). Needs the base-run `trusted-eval` job on top of every gating and
                  AUTO job: the PR's own `pull_request` runs are self-attested for these files.
   AUTO / LOW  -- the gate's own tiers; every gating and AUTO job.
+  LEDGER_APPEND -- a PR that only appends the Auditor's ADOPT rows (ledger_append.py), each
+                 recomputed from GitHub and tied to his CLEAR comment. Gating jobs only, no veto:
+                 the content is a verbatim copy of a decision already made. Any other change to a
+                 CLEAR ledger is ROOT.
 
 MATCHES_DECLARED (replay-shadow's Fusion-roster verdict, ops/release/replay_shadow.py): a PR whose
 only red required job is replay-shadow, whose report says MATCHES_DECLARED, and whose measured
@@ -44,6 +48,8 @@ CEILINGS = "ops/release/ceilings.json"
 #: The Auditor's declared Fusion-roster divergences, read from the BASE only (a PR cannot declare
 #: its own): {"rows": [{"pr", "head_sha", "admit": [name], "refuse": [{"name", "missed_growth"}]}]}
 DECLARED_REGISTRY = "ops/release/expected_divergence.json"
+#: ledger_append.LEDGER and SEAL_LEDGER: a PR changing either is LEDGER_APPEND or ROOT, never AUTO.
+CLEAR_LEDGERS = ("desks/mt5/data/ADOPT_CLEARS.jsonl", "desks/mt5/data/SEAL_CLEARS.jsonl")
 MATCHES_DECLARED = "MATCHES_DECLARED"
 _FLIP_KINDS = ("admit", "refuse")
 
@@ -161,12 +167,20 @@ def classify(
     read_base: Callable[[str], str | None],
     read_head: Callable[[str], str | None],
     enforced: bool = False,
+    ledger: list[str] | None = None,
 ) -> tuple[str, list[str]]:
     """(class, reasons). `files`: every changed path (both sides of a rename). `enforced`: the
     authority READ GitHub's LIVE ruleset requiring its status as active this pass (Level 2);
-    False on any doubt, which keeps `enforced_root_files` ROOT."""
+    False on any doubt, which keeps `enforced_root_files` ROOT. `ledger`: ledger_append.check()'s
+    problems when the PR changes a CLEAR ledger ([] = every condition holds; None = not judged)."""
     if gate_tier == "REFUSED":
         return "REFUSED", ["a secrets path: never merged"]
+    if any(f in CLEAR_LEDGERS for f in files):
+        if ledger is None:
+            return "ROOT", ["a CLEAR ledger changed and LEDGER_APPEND was not proven"]
+        if ledger:
+            return "ROOT", ["LEDGER_APPEND refused: " + "; ".join(ledger)]
+        return "LEDGER_APPEND", ["the Auditor's ADOPT rows, each recomputed and tied to his CLEAR"]
     machinery = [f for f in files if _match(f, policy.get("enforced_root_files") or ())]
     root = [f for f in files if _match(f, policy["root_files"])]
     if not enforced:
@@ -213,7 +227,7 @@ def decide(f: Mapping[str, Any]) -> tuple[str, list[str]]:
     cls = f.get("cls")
     if cls in ("REFUSED", "ROOT"):
         return "HOLD", [f"{cls}: " + "; ".join(f.get("cls_reasons") or [])]
-    if cls not in ("CONTROLLER", "AUTO", "LOW"):
+    if cls not in ("CONTROLLER", "AUTO", "LOW", "LEDGER_APPEND"):
         return "HOLD", [f"unknown class {cls!r}: fail closed"]
     if f.get("hold"):
         return "HOLD", [f"an AUDIT HOLD stands: {f['hold']}"]
@@ -237,7 +251,10 @@ def decide(f: Mapping[str, Any]) -> tuple[str, list[str]]:
 
 def required_jobs(cls: str, gating: tuple[str, ...], auto: tuple[str, ...], policy: Mapping):
     """The head's own check runs every class needs. A CONTROLLER PR's base-run trusted-eval is
-    not a check run on the head (pull_request_target runs on the base), so it is read apart."""
+    not a check run on the head (pull_request_target runs on the base), so it is read apart.
+    LEDGER_APPEND adds rows only, no code: the gating jobs alone."""
+    if cls == "LEDGER_APPEND":
+        return gating
     return gating + auto
 
 

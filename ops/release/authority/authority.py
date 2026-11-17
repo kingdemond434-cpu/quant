@@ -148,9 +148,10 @@ def level2_enforced(ag: Any, repo: str, base: str) -> tuple[bool, str]:
 
 
 def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
-          enforced: bool = False) -> dict[str, Any]:  # fmt: skip
+          enforced: bool = False, merger_login: str | None = None) -> dict[str, Any]:  # fmt: skip
     """Everything decide() needs, read by the authority itself. Any read error raises.
-    `enforced`: level2_enforced() this pass."""
+    `enforced`: level2_enforced() this pass. `merger_login`: MERGER_APP.json's, for
+    LEDGER_APPEND (None: no such PR can pass)."""
     p = ag._gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     f: dict[str, Any] = {
@@ -180,8 +181,11 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
 
         return read
 
+    ledger = None
+    if any(n in pol.CLEAR_LEDGERS for n in names):
+        ledger = ledger_problems(ag, repo, p, files, base, head, merger_login)
     cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head),
-                            enforced=enforced)  # fmt: skip
+                            enforced=enforced, ledger=ledger)  # fmt: skip
     f.update(tier=level, tier_why=twhy, cls=cls, cls_reasons=why, files=names)
     found = ag.verdicts(ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
                                         "--paginate", "--slurp")))  # fmt: skip
@@ -191,7 +195,7 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                             "--paginate", "--slurp"))  # fmt: skip
     f["deactivated"] = not ag.activated(board)[0]
     f["patch_id"] = ag.patch_id(base, head)
-    if cls in ("CONTROLLER", "AUTO", "LOW"):
+    if cls in ("CONTROLLER", "AUTO", "LOW", "LEDGER_APPEND"):
         need = pol.required_jobs(cls, ag.GATING_JOBS, ag.AUTO_JOBS, policy)
         pages = ag._gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
@@ -226,6 +230,54 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                 f["evidence"]["trusted-eval"] = ewhy
         f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
     return f
+
+
+MERGER_APP_FILE = "MERGER_APP.json"  # in the registry folder: {"login": "<slug>[bot]"} (Level 2)
+
+
+def ledger_problems(ag: Any, repo: str, p: dict[str, Any], files: list[dict[str, Any]],
+                    base: str, head: str, merger_login: str | None) -> list[str]:
+    """ledger_append.check() over GitHub, every read by the authority itself."""
+    la = _load("_auth_ledger_append", HERE / "ledger_append.py")
+
+    def target(n: int, commit: str) -> dict[str, Any] | None:
+        try:
+            tp = ag._gh(f"repos/{repo}/pulls/{n}")
+            cmp = ag._gh(f"repos/{repo}/compare/{tp['base']['sha']}...{commit}")
+        except (RuntimeError, ValueError, KeyError, TypeError):
+            return None
+        got = cmp.get("files") if isinstance(cmp, dict) else None
+        if not isinstance(got, list) or len(got) >= 300:   # the API caps the list at 300
+            return None
+        out: dict[str, str] = {}
+        for x in got:
+            out[str(x.get("filename"))] = str(x.get("status"))
+            if x.get("previous_filename"):
+                out[str(x["previous_filename"])] = "renamed-from"
+        return {"head_ref": str(tp["head"].get("ref") or ""), "files": out}
+
+    def blob_at(commit: str, path: str) -> tuple[bool, str | None]:
+        if _git_bytes("cat-file", "-e", f"{commit}^{{commit}}") is None:
+            ag._git("fetch", "-q", "--no-tags", "origin", commit)
+        b = _git_bytes("rev-parse", "--verify", "-q", f"{commit}:{path}")
+        if b is not None:
+            return True, b.decode().strip() or None
+        ok = _git_bytes("cat-file", "-e", f"{commit}^{{commit}}") is not None
+        return ok, None      # the commit is there and has no such path: deleted (null)
+
+    def verdicts(n: int) -> list[dict[str, str]] | None:
+        try:
+            return list(ag.verdicts(ag._flat(ag._gh(
+                f"repos/{repo}/issues/{n}/comments?per_page=100", "--paginate", "--slurp"))))
+        except (RuntimeError, ValueError, KeyError, TypeError):
+            return None
+
+    excluded = ag.never_standing_patterns()
+    return list(la.check(
+        files, str((p.get("user") or {}).get("login") or ""), merger_login,
+        _git_bytes("show", f"origin/{base}:{la.LEDGER}"), _git_bytes("show", f"{head}:{la.LEDGER}"),
+        lambda n: _git_bytes("show", f"{head}:{n}"), target, blob_at, verdicts,
+        tuple(excluded) if excluded is not None else None))
 
 
 #: An artifact larger than this is not a replay report.
@@ -381,10 +433,10 @@ def status_for(
     a merge inside the 24 h window even from a rewritten gate. ROOT never gets success: it goes
     through the owner's admin pull-request bypass."""
     now = now or datetime.now(UTC)
-    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
+    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER", "LEDGER_APPEND"):
         return "failure", f"{f.get('cls')}: the owner's path, never this status"[:140]
     if verdict == "CLEAR":
-        if f.get("cls") in ("AUTO", "LOW"):
+        if f.get("cls") in ("AUTO", "LOW", "LEDGER_APPEND"):
             return "success", "CLEAR"
         if since is None:
             return "pending", "CLEAR, veto window not started"
@@ -618,6 +670,11 @@ def main(argv: list[str] | None = None) -> int:
     enforced, ewhy = level2_enforced(ag, a.repo, base)
     print(f"level 2: {'ENFORCED' if enforced else 'not enforced'} -- {ewhy}", flush=True)
     veto_h = float(policy.get("veto_hours", 24))
+    try:
+        merger = str(json.loads((Path(a.out).parent / MERGER_APP_FILE).read_text("utf-8"))
+                     ["login"]) or None
+    except (OSError, ValueError, KeyError, TypeError):
+        merger = None       # no merger App yet: no LEDGER_APPEND PR can pass
     rc = 0
     started = time.monotonic()
     judged: list[int] = []
@@ -630,7 +687,7 @@ def main(argv: list[str] | None = None) -> int:
             break
         judged.append(n)
         try:
-            f = facts(ag, a.repo, n, base, policy, enforced=enforced)
+            f = facts(ag, a.repo, n, base, policy, enforced=enforced, merger_login=merger)
             verdict, reasons = pol.decide(f)
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, ValueError) as exc:
             print(f"#{n}: not judged: {exc}")
