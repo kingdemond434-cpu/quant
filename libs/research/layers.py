@@ -487,6 +487,7 @@ LEG_LAYER: dict[str, str] = {
     "forest_europe": "information", "forest_north_america": "information",
     "forest_latam": "information", "forest_mena": "information",
     "forest_africa": "information",
+    "forest_japan": "information", "forest_global_macro": "information",
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
     "external_federation": "information", "federation_ops": "information",

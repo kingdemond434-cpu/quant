@@ -1462,6 +1462,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
                      "alpha_capture"), "macro"),
+    # the global-macro forest rides the macro resident (`forests.RIDES`)
+    "forest_global_macro": "macro",
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1537,6 +1539,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "unknown_census"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
+    # the Japan forest rides the Japan resident (`forests.RIDES`), beside the Japan division
+    "forest_japan": "japan",
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
     # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
@@ -2499,7 +2503,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # this desk eighty-four forward clocks -- so the cycle's own limit sits above it.
     **{f"forest_{_fid}": 3_300 for _fid in
        (*FOREST_DEPARTMENTS, "global_web", "global_academic_code", "global_physical_data",
-        "global_market_data")},
+        "global_market_data", "japan", "global_macro")},
 }
 
 #: A PRICE MAY LENGTHEN A LEG AND MAY NEVER SHORTEN IT PAST ITS OWN STOPPING POINT.
@@ -5549,6 +5553,19 @@ def main() -> None:
         "forest_global_market_data", lambda: _producer(
             "forest_global_market_data", "research/forest_runner.py", "--forest",
             "global_market_data", "--once", "--budget-s", "3000", "--mine-grounds"))
+    # THE TWO RIDING FORESTS. `libs.research.forests.RIDES` has said since the federation was
+    # written that Japan rides MT5-Dept-Japan and global macro rides MT5-Dept-Macro, but no leg
+    # of either department ever invoked `forest_runner` for them -- the japan department ran
+    # only `japan_department` and macro only its macro legs -- so both forests were registered,
+    # budgeted by `allocation_for`, and never once run. These two legs make RIDES true: each
+    # forest runs hourly on the resident the registry already names for it, and each leaves
+    # its own artifact (reports/FOREST_JAPAN.json, reports/FOREST_GLOBAL_MACRO.json).
+    forests_out["forest_japan"] = _costed("forest_japan", lambda: _producer(
+        "forest_japan", "research/forest_runner.py", "--forest", "japan", "--once",
+        "--budget-s", "3000", "--mine-grounds"))
+    forests_out["forest_global_macro"] = _costed("forest_global_macro", lambda: _producer(
+        "forest_global_macro", "research/forest_runner.py", "--forest", "global_macro",
+        "--once", "--budget-s", "3000", "--mine-grounds"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
