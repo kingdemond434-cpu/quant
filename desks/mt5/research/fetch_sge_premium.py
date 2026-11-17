@@ -240,8 +240,16 @@ def build_premium(sge_cny_g: pd.Series, intl_usd_oz: pd.Series,
     return df
 
 
+#: SGE's own terms page has not been read and recorded (alt_proxies: cn_sge_premium to_confirm).
+#: Until it is, this series is IDEAS ONLY: it may inform research, never mint a trading cell
+#: (Governance 2026-11-11 00:49Z). Both stamps travel on the report and on every parquet row.
+TERMS = "TO_CONFIRM"
+USE = "IDEAS_ONLY"
+
+
 def main() -> int:
-    report: dict[str, object] = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    report: dict[str, object] = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                 "terms": TERMS, "use": USE}
     print("SGE Au99.99 + Au(T+D)...", flush=True)
     prints, prov = fetch_sge()
     if "au9999_cny_g" not in prints:
@@ -302,6 +310,7 @@ def main() -> int:
     df["intl_source"] = "fusion_xauusd_h1_0700Z"
     df["usdcny_source"] = cny_source
     df["fetched_at"] = report["at"]
+    df["terms"], df["use"] = TERMS, USE
     df.to_parquet(OUT / "sge_premium.parquet")
     recent = df["premium_usd_oz"].tail(20)
     report.update({"status": "OK", "rows": int(len(df)),

@@ -55,6 +55,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 from desks.mt5.research import terms_fences  # noqa: E402
 
 from libs.data import free_stack as fs  # noqa: E402
+from libs.data.off_limits import STATUS as OFF_LIMITS_STATUS  # noqa: E402
+from libs.data.off_limits import off_limits  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
 #: The leg's own artifact (the runtime attestation reads this binding).
@@ -578,6 +580,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
+        refused = next((r for r in (off_limits(str(row.get(k) or ""))
+                                    for k in ("url", "mirror_url")) if r), None)
+        if refused:                    # an off-limits ground or a statute: no request, ever
+            st.update({"last_status": OFF_LIMITS_STATUS, "last_error": refused,
+                       "last_attempt": _iso(now),
+                       "missed_growth": (f"{sid} is never fetched ({refused}); what it carried "
+                                         "is UNMEASURED, not zero")})
+            continue
         fence = terms_fences.seat_fenced(sid, fences)
         if fence is not None:
             # a source whose own terms (or statute) forbid commercial use is never fetched
@@ -684,6 +694,7 @@ def build_report(rows: list[dict[str, Any]], complaints: list[str], cursor: dict
             "columns": len(columns.get(sid) or {}),
             "last_success": st.get("last_success") or (UNMEASURED if never else None),
             "last_error": st.get("last_error") or "",
+            **({"missed_growth": st["missed_growth"]} if st.get("missed_growth") else {}),
             "next_due": st.get("next_due"),
             "yield_24h": _window(store, sid, now, 24.0),
             "yield_7d": _window(store, sid, now, 168.0),
