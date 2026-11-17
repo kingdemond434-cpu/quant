@@ -918,6 +918,41 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
         merged[key] = row
         parked.pop(key, None)
 
+    # NO RE-STAMP (2026-10-20). The seal below writes ONE attestation header over every row it
+    # holds, and `merged` starts as a copy of the old seal -- so a row judged under the previous
+    # attestation, which the judge itself had taken out of its survivor set into
+    # `pending_rejudge` (external_gauntlet.remint_partition), stayed here and was re-stamped with
+    # the new header. Measured on the box's LOCKBOX_RECERT.json 2026-10-20 11:44Z: 12 of 52
+    # canon certificates under `...-v3-reserved-lockbox` with their pre-v3 `gated_at`, and 7 more
+    # re-gated 09-24..29 (before v3 landed) with lockbox Sharpe == WF Sharpe. Such a row now
+    # waits in the seal's own `pending_rejudge`, outside the survivor set, exactly as the judge
+    # holds it in the report; a fresh verdict republished by the judge brings it straight back.
+    # ONE PARK, TWO RULES (Judge resolution of the image merge, 2026-11-10). LIVE's `parked`
+    # (#126: gates evaluated before the attestation in force, or a seal of another attestation)
+    # and the image's `restamp_holdback` (the judge holds the key outside its survivor set, or a
+    # reserved-lockbox basis the row's lockbox is not independent of) refuse DIFFERENT re-stamps,
+    # so neither replaces the other. Both now write the ONE `pending_rejudge` block: the holdback
+    # runs over what the date rule left in `merged`, seeded with `parked`, so a row is parked
+    # once, keeps its wait, and leaves only by a re-judge.
+    for key in parked_now:
+        row = parked.get(key)
+        if isinstance(row, dict):
+            prior = _pend.get(key) if isinstance(_pend, dict) else None
+            since = prior.get("pending_since") if isinstance(prior, dict) else None
+            parked[key] = {**row, "pending_since": since or row.get("pending_since")
+                           or now.isoformat(),
+                           "pending_reason": row.get("pending_reason") or (
+                               "gates evaluated before the attestation in force"
+                               if not seal_other_attestation else
+                               "the seal's own attestation is a different one")}
+    att_stamped = doc_report.get("gate_policy") if attested_report else ATTESTATION
+    parked, held_back = restamp_holdback(merged, {"pending_rejudge": parked},
+                                         doc_report if attested_report else {},
+                                         set(survivors) | set(recovered), att_stamped,
+                                         now.isoformat(), prior_pending=_pend)
+    record["held_for_rejudge"] = len(held_back)
+    record["held_for_rejudge_keys"] = held_back[:60]
+
     # ONE EXECUTABLE IDENTITY, ONE CERTIFICATE ROW.  Keeping aliases in the survivor mapping does
     # not create more evidence; it makes one clock oscillate between two equivalent certificate
     # names and the frozen-identity guard correctly reads that as mutation.  Collapse only by the
@@ -940,7 +975,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
         record.update(status="REFUSED_SHRINK", sealed=False, admitted=0,
                       why=f"merge would shrink the seal {len(seal_before)} -> {len(merged)}")
         return record
-    if not merged:
+    if not merged and not parked:
         record.update(status="REFUSED_EMPTY", sealed=False, admitted=0,
                       why="an empty canon is never published; an empty docket does not revoke "
                           "past verdicts")
@@ -962,20 +997,33 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     doc_new.pop("pending_rejudge", None)
     if parked:
         doc_new["pending_rejudge"] = parked
+    # A revocation must SAY it revoked (check_authority_ratchet.REVOCATION_KEYS), and the record
+    # is APPEND-ONLY (audit 2026-10-20): a list deduped on (kind, keys) that never shrinks.
+    new_revocations: list[dict[str, Any]] = []
     if parked_now:
-        # A revocation must SAY it revoked (check_authority_ratchet.REVOCATION_KEYS).
-        doc_new["revocation"] = {
+        new_revocations.append({
             "at": now.isoformat(), "by": "research/canon_publication.py",
             "kind": "pending_rejudge_under_attestation_in_force",
             "attestation_floor": record["attestation_floor"],
             "seal_attestation_differed": seal_other_attestation,
             "parked": len(parked_now), "keys": sorted(parked_now)[:50],
             "why": ("gates evaluated before the attestation in force; parked until the judge "
-                    "re-mints them, never carried under the new header")}
+                    "re-mints them, never carried under the new header")})
+    if held_back:
+        new_revocations.append({
+            "kind": "reattestation", "at": now.isoformat(), "keys": sorted(held_back),
+            "left_survivor_set": len(held_back), "by": "research/canon_publication.py",
+            "why": "rows not judged under the attestation stamped on this seal wait for a "
+                   "fresh verdict; never re-stamped"})
+    if new_revocations:
+        from libs.ops.revocation_log import merge_revocations
+        doc_new["revocation"] = merge_revocations(doc_seal.get("revocation"), *new_revocations)
+    all_parked_now = sorted(set(parked_now) | set(held_back))
     record["pending_rejudge"] = len(parked)
-    record["parked_this_pass"] = len(parked_now)
+    record["parked_this_pass"] = len(all_parked_now)
     record["rejected_on_rejudge"] = sorted(rejected_on_rejudge)
-    record["missed_growth"] = parking_missed_growth(sorted(parked), parked_now, now.isoformat())
+    record["missed_growth"] = parking_missed_growth(sorted(parked), all_parked_now,
+                                                    now.isoformat())
     doc_new.update({
         "n": len(merged),
         "survivors": merged,
@@ -1002,6 +1050,78 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                   seal_n_after=len(merged), seal_swept_at_after=swept_at,
                   atomic="tempfile + fsync + os.replace in the destination directory")
     return record
+
+
+def restamp_reason(row: dict[str, Any], attestation: Any, judge_holds: bool,
+                   republished: bool) -> str | None:
+    """Why `row` may not sit under `attestation`'s header, or None when it may.
+
+    Two refusals:
+      * the judge's own report holds the key outside its survivor set (pending re-judge, or
+        retired under the attestation in force) and the judge did not republish it this pass;
+      * the attestation carries a reserved-lockbox basis and the row's lockbox is not an
+        independent held-out reading (`lockbox_recert.lockbox_independence`) -- INCLUDING a row
+        with no lockbox number at all. Auditor's ruling 2026-10-20: the holdback is reversible,
+        and keeping the row would read an absent gate 9 as a pass (L1.28a).
+    """
+    if judge_holds and not republished:
+        return ("the judge holds this key outside its survivor set (pending_rejudge or "
+                "retired_certificates) under the attestation in force")
+    basis = attestation.get("lockbox_basis") if isinstance(attestation, dict) else None
+    if not basis:
+        return None
+    try:
+        from lockbox_recert import INDEPENDENT, NOT_INDEPENDENT, lockbox_independence
+    except ImportError:                                  # pragma: no cover - import-context dep
+        from research.lockbox_recert import (  # type: ignore[no-redef]
+            INDEPENDENT,
+            NOT_INDEPENDENT,
+            lockbox_independence,
+        )
+    ind = lockbox_independence(row.get("gates"), str(basis))
+    return None if ind["verdict"] == INDEPENDENT else f"{NOT_INDEPENDENT}: " + "; ".join(ind["why"])
+
+
+def restamp_holdback(merged: dict[str, Any], doc_seal: dict[str, Any], doc_report: dict[str, Any],
+                     republished: set[str], attestation: Any,
+                     now_iso: str, prior_pending: Any = None) -> tuple[dict[str, Any], list[str]]:
+    """Move every row of `merged` that would be re-stamped into the seal's `pending_rejudge`.
+
+    Mutates `merged`. Returns (the seal's pending block after this pass, the keys moved now). A
+    pending row the judge republishes this pass leaves the block -- the fresh row is in `merged`.
+    `prior_pending` is the block as the seal held it BEFORE this pass, read only for each row's
+    `pending_since`; it defaults to `doc_seal`'s own block. The caller that seeds `doc_seal` with
+    a block it has already edited this pass must pass it, or a republished row loses its wait.
+    """
+    old = doc_seal.get("pending_rejudge")
+    pending: dict[str, Any] = dict(old) if isinstance(old, dict) else {}
+    for key in republished:
+        if key in merged:
+            pending.pop(key, None)
+    holds: set[str] = set()
+    for block in ("pending_rejudge", "retired_certificates"):
+        b = doc_report.get(block) if isinstance(doc_report, dict) else None
+        if isinstance(b, dict):
+            holds |= set(b)
+    moved: list[str] = []
+    for key in sorted(merged):
+        row = merged[key]
+        if not isinstance(row, dict):
+            continue
+        why = restamp_reason(row, attestation, key in holds, key in republished)
+        if why is None:
+            continue
+        back = dict(merged.pop(key))
+        # THE WAIT KEEPS ITS AGE (audit 2026-10-20, v2 delta): a row the judge republishes every
+        # pass returns here every pass, and stamping `now` each time erased how long it has waited.
+        ages = prior_pending if isinstance(prior_pending, dict) else old
+        prior = ages.get(key) if isinstance(ages, dict) else None
+        since = prior.get("pending_since") if isinstance(prior, dict) else None
+        back["pending_since"] = since or back.get("pending_since") or now_iso
+        back["pending_reason"] = why
+        pending[key] = back
+        moved.append(key)
+    return pending, moved
 
 
 def main(argv: list[str] | None = None) -> int:

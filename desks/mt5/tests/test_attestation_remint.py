@@ -31,7 +31,14 @@ STALE_POLICY = {**ATTESTATION, "version": "mt5-original-universal-10-v2-calibrat
 
 
 def _gates() -> dict:
-    return {g: {"passed": True} for g in GATES}
+    """Ten passes, gate 9 a held-out v4 lockbox under the attestation's basis (the same fixture as
+    test_canon_publication._passing_gates): since the image merge the canon's re-stamp guard holds
+    a row without one, which is not what these tests are about."""
+    gates: dict[str, dict] = {g: {"passed": True} for g in GATES}
+    gates["lockbox"] = {"passed": True, "lockbox_sharpe": 0.31, "cut": "2024-12-19",
+                        "basis": ATTESTATION["lockbox_basis"]}
+    gates["walk_forward"] = {"passed": True, "oos_sharpe": 0.52}
+    return gates
 
 
 def _row(sym: str, gated_at: str, params: dict | None = None) -> dict:
@@ -212,7 +219,9 @@ def test_the_canon_parks_what_predates_the_attestation_and_seals_what_was_re_jud
     assert set(doc["survivors"]) == {"external.A"}
     assert doc["survivors"]["external.A"]["gated_at"] == NEW
     assert set(doc["pending_rejudge"]) == {"external.OLD", "external.RESTAMPED"}
-    assert doc["revocation"]["kind"] == "pending_rejudge_under_attestation_in_force"
+    # the revocation record is the append-only list (libs.ops.revocation_log), one entry per
+    # (kind, keys); the park says it revoked
+    assert [e["kind"] for e in doc["revocation"]] == ["pending_rejudge_under_attestation_in_force"]
     assert rec["refused_rows"]["predates_attestation"] == 1
 
 

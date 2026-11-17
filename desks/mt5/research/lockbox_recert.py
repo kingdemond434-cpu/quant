@@ -23,6 +23,8 @@ WHAT IT DOES. For each certificate in the baseline, it finds where the certifica
   PENDING    in `pending_rejudge`, or still under a stale header: not yet reached by a sweep
   RESTAMPED  under the header in force but with the baseline's own `gated_at`: the re-stamp the
              re-mint exists to prevent. A breach, never a pass
+  LOCKBOX_NOT_INDEPENDENT  re-gated after the baseline, but its lockbox is not a held-out
+             reading (equal to WF, never carved, or another basis): UNMEASURED, never a pass
   ABSENT     in none of the above
 
 and records both Sharpes before and after. DONE is: every certificate REMINTED or RETIRED, none
@@ -60,7 +62,13 @@ REPORT = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 BASELINE = ROOT / "docs" / "research" / "lockbox_v4_recert_baseline.json"
 OUT = DESK / "reports" / "LOCKBOX_RECERT.json"
 UNMEASURED = "UNMEASURED"
-STATES = ("REMINTED", "RETIRED", "PENDING", "RESTAMPED", "ABSENT")
+STATES = ("REMINTED", "RETIRED", "PENDING", "RESTAMPED", "LOCKBOX_NOT_INDEPENDENT", "ABSENT")
+#: The verdict for a lockbox that is not a held-out reading: the same number as walk-forward, a
+#: lockbox never carved before the program matrix, or one carved under another basis. It is an
+#: UNMEASURED lockbox -- never a pass -- and the certificate needs a fresh judge verdict.
+NOT_INDEPENDENT = "LOCKBOX_NOT_INDEPENDENT"
+INDEPENDENT = "INDEPENDENT"
+SLEEVES = DESK / "data" / "sleeves.json"
 
 
 def _read(p: Path) -> Any:
@@ -109,6 +117,49 @@ def attestation_version() -> str:
         return f"{UNMEASURED}: gate_policy unreadable ({type(exc).__name__})"
 
 
+def attestation_lockbox_basis() -> str | None:
+    """The lockbox basis of the attestation in force (`gate_policy.ATTESTATION`), or None."""
+    try:
+        import gate_policy
+        basis = gate_policy.ATTESTATION.get("lockbox_basis")
+    except Exception:                            # the judge's module is the only source
+        return None
+    return str(basis) if basis else None
+
+
+def lockbox_independence(gates: Any, basis: str | None = None) -> dict[str, Any]:
+    """Whether a certificate's gate 9 is a HELD-OUT reading, or gate 7 read a second time.
+
+    INDEPENDENT needs all of: a numeric lockbox Sharpe; the carve the judge stamps on a v4 lockbox
+    (`cut`, set in external_gauntlet right after `gate_policy.lockbox_stage`) together with its
+    `basis`; that basis equal to the attestation's (when the caller names one); and a lockbox
+    Sharpe that is not the walk-forward OOS Sharpe. A lockbox that equals WF to four places is the
+    pre-v4 defect itself (`lockbox_sharpe := wf_oos`) or a copied field; one with no carve was
+    never held out, so its window overlaps WF by construction. Each reads LOCKBOX_NOT_INDEPENDENT,
+    which is UNMEASURED: it is never a pass, and absence of the fields never reads as independence.
+    """
+    gates = gates if isinstance(gates, dict) else {}
+    lb = gates.get("lockbox") if isinstance(gates.get("lockbox"), dict) else {}
+    wf = gates.get("walk_forward") if isinstance(gates.get("walk_forward"), dict) else {}
+    lb_sr, wf_sr = _num(lb.get("lockbox_sharpe")), _num(wf.get("oos_sharpe"))
+    why: list[str] = []
+    if lb_sr is None:
+        why.append("no numeric lockbox Sharpe: no held-out reading exists")
+    if lb_sr is not None and wf_sr is not None and lb_sr == wf_sr:
+        why.append(f"lockbox Sharpe {lb_sr} == walk-forward OOS Sharpe {wf_sr}: gate 9 restates "
+                   "gate 7 (same data or a copied field)")
+    if not lb.get("cut"):
+        why.append("no lockbox carve recorded: the held-out window was never reserved before the "
+                   "program matrix, so it overlaps the walk-forward window")
+    row_basis = lb.get("basis")
+    if not row_basis:
+        why.append("no lockbox basis recorded: judged before the reserved-lockbox attestation")
+    elif basis and str(row_basis) != basis:
+        why.append("lockbox basis differs from the attestation in force")
+    return {"verdict": NOT_INDEPENDENT if why else INDEPENDENT, "why": why,
+            "lockbox_sharpe": lb_sr, "wf_sharpe": wf_sr, "cut": lb.get("cut")}
+
+
 def _version(doc: Any) -> str | None:
     gp = doc.get("gate_policy") if isinstance(doc, dict) else None
     return str(gp.get("version")) if isinstance(gp, dict) and gp.get("version") else None
@@ -125,8 +176,15 @@ def baseline_row(key: str, row: dict[str, Any], version: str | None) -> dict[str
 
 
 def locate(key: str, before: dict[str, Any], stores: list[tuple[str, Any]],
-           current: str) -> dict[str, Any]:
-    """Where certificate `key` stands now, and its Sharpes there."""
+           current: str, basis: str | None = None) -> dict[str, Any]:
+    """Where certificate `key` stands now, and its Sharpes there.
+
+    A row under the header in force that is newer than its baseline is REMINTED only when its
+    lockbox is independent (`lockbox_independence`). A newer `gated_at` alone proves a re-judge
+    happened, not that it happened under the reserved lockbox: measured 2026-10-20, 7 rows gated
+    2026-09-24..29 -- before the v3 attestation landed -- sat in the canon under the v3 header with
+    lockbox == WF, and read REMINTED. They read LOCKBOX_NOT_INDEPENDENT now.
+    """
     b_at = _ts(before.get("gated_at"))
 
     def rejudged(row: dict[str, Any]) -> bool:
@@ -141,6 +199,11 @@ def locate(key: str, before: dict[str, Any], stores: list[tuple[str, Any]],
         for k in dict.fromkeys((key, new_key)):
             row = surv.get(k)
             if isinstance(row, dict) and rejudged(row):
+                ind = lockbox_independence(row.get("gates"), basis)
+                if ind["verdict"] != INDEPENDENT:
+                    return {"state": NOT_INDEPENDENT, "store": name, "key": k, **sharpes(row),
+                            "gated_at": row.get("gated_at"), "attestation": current,
+                            "lockbox": UNMEASURED, "why": "; ".join(ind["why"])}
                 return {"state": "REMINTED", "store": name, "key": k, **sharpes(row),
                         "gated_at": row.get("gated_at"), "attestation": current}
     for name, doc in stores:                      # 2. retired (a v4 failure keeps its old gates)
@@ -169,9 +232,12 @@ def locate(key: str, before: dict[str, Any], stores: list[tuple[str, Any]],
 
 def build(*, canon: Path = CANON, report: Path = REPORT, baseline: Path = BASELINE,
           previous: Any = None, current: str | None = None,
-          now: datetime | None = None) -> dict[str, Any]:
+          now: datetime | None = None, basis: str | None = None,
+          sleeves: Path | None = SLEEVES) -> dict[str, Any]:
     now = now or datetime.now(UTC)
-    current = current or attestation_version()
+    if current is None:
+        current = attestation_version()
+        basis = basis or attestation_lockbox_basis()
     stores = [("canon", _read(canon)), ("report", _read(report))]
     seed = _read(baseline) or {}
     before: dict[str, dict[str, Any]] = {}
@@ -189,12 +255,20 @@ def build(*, canon: Path = CANON, report: Path = REPORT, baseline: Path = BASELI
                 before[k] = {**baseline_row(k, row, _version(canon_doc)), "source": "box_canon"}
     rows: dict[str, dict[str, Any]] = {}
     for k in sorted(before):
-        rows[k] = {"before": before[k], "after": locate(k, before[k], stores, current)}
+        rows[k] = {"before": before[k], "after": locate(k, before[k], stores, current, basis)}
     counts = {s: sum(1 for r in rows.values() if r["after"]["state"] == s) for s in STATES}
-    reminted = [r for r in rows.values() if r["after"]["state"] == "REMINTED"]
+    # every row re-gated after its baseline, held out or not: the 7 that still read lockbox == WF
+    # on 2026-10-20 are counted here even though they are no longer called REMINTED
+    reminted = [r for r in rows.values() if r["after"]["state"] in ("REMINTED", NOT_INDEPENDENT)]
     after_eq = sum(1 for r in reminted if r["after"].get("lockbox_equals_wf"))
     before_eq = sum(1 for r in rows.values() if r["before"].get("lockbox_equals_wf"))
     done = bool(rows) and counts["REMINTED"] + counts["RETIRED"] == len(rows) and after_eq == 0
+    # THE RE-JUDGE LIST: every certificate whose standing is not a fresh verdict under the
+    # attestation in force -- re-stamped, not independent, or still waiting.
+    rejudge = sorted(k for k, r in rows.items()
+                     if r["after"]["state"] in ("RESTAMPED", NOT_INDEPENDENT, "PENDING"))
+    holders = sleeve_holders(set(rejudge), sleeves)
+    breach = counts["RESTAMPED"] + counts[NOT_INDEPENDENT]
     return {
         "generated_utc": now.isoformat(timespec="seconds"),
         "attestation_in_force": current,
@@ -205,13 +279,79 @@ def build(*, canon: Path = CANON, report: Path = REPORT, baseline: Path = BASELI
         "n_certificates": len(rows), "counts": counts,
         "before_lockbox_equals_wf": before_eq, "after_lockbox_equals_wf": after_eq,
         "restamped": counts["RESTAMPED"],
+        "lockbox_not_independent": counts[NOT_INDEPENDENT],
+        "lockbox_basis_in_force": basis,
         "done": done,
         "done_rule": ("every certificate REMINTED or RETIRED under the attestation in force, none "
-                      "RESTAMPED, and 0 REMINTED rows with lockbox Sharpe == WF Sharpe"),
-        "status": ("DONE" if done else "BREACH: re-stamped without a re-judge"
-                   if counts["RESTAMPED"] else "IN_PROGRESS" if rows else UNMEASURED),
+                      "RESTAMPED, none LOCKBOX_NOT_INDEPENDENT, and 0 REMINTED rows with lockbox "
+                      "Sharpe == WF Sharpe; REMINTED needs an independent held-out lockbox"),
+        "status": ("DONE" if done else
+                   "BREACH: re-stamped without a re-judge" if counts["RESTAMPED"] else
+                   f"BREACH: {NOT_INDEPENDENT}" if counts[NOT_INDEPENDENT] else
+                   "IN_PROGRESS" if rows else UNMEASURED),
+        "breach": breach,
+        "rejudge_required": rejudge,
+        "n_rejudge_required": len(rejudge),
+        "held_by_sleeves": holders,
+        "missed_growth": missed_growth_lines(rejudge, holders, now),
         "certificates": rows,
     }
+
+
+def missed_growth_lines(rejudge: list[str], holders: dict[str, Any],
+                        now: datetime) -> list[dict[str, Any]]:
+    """The holdback's missed-growth line (GROWTH GOVERNANCE Rule 1; auditor's ruling 2026-10-20).
+
+    Holding a certificate for a fresh verdict is a capital modifier, so it publishes its bill.
+    The sleeves holding these certificates are STANDBY at 0 risk, so the deployed risk withheld
+    is 0; what the held certificates WOULD have earned is unknown until they are re-judged, so
+    the value is UNMEASURED -- never a clean zero. Published here, in the shape
+    `missed_growth.published_gate_lines` carries into MISSED_GROWTH.json; never appended to the
+    rail-keyed ledger (the rail register is a sealed file this hold is not registered in).
+    """
+    if not rejudge:
+        return []
+    # AN UNREAD REGISTRY IS NOT ZERO RISK (audit 2026-10-20, v2 delta): when the sleeve registry
+    # is UNMEASURED, or any holder's risk_frac is unreadable, the withheld risk is UNMEASURED too.
+    measured = isinstance(holders, dict) and holders.get("status") == "MEASURED"
+    sl = holders.get("sleeves") if measured else None
+    sl = sl if isinstance(sl, list) else []
+    readable = measured and all(isinstance(h.get("risk_frac"), (int, float))
+                                or h.get("risk_frac") is None for h in sl)
+    risk: float | None = (round(sum(float(h.get("risk_frac") or 0.0) for h in sl), 6)
+                          if readable else None)
+    return [{"day": now.date().isoformat(), "gate": "lockbox_rejudge_holdback",
+             "verdict": UNMEASURED, "value": None, "value_status": UNMEASURED,
+             "n_certificates": len(rejudge), "n_sleeves": len(sl) if measured else None,
+             "n_live_sleeves": int(holders.get("n_live") or 0) if measured else None,
+             "risk_frac_withheld": risk,
+             "risk_frac_status": "MEASURED" if readable else UNMEASURED,
+             "why": ("certificates held for a fresh judge verdict under the attestation in "
+                     "force; their sleeves hold no capital, and the growth they would add is "
+                     "unknown until they are re-judged")}]
+
+
+def sleeve_holders(keys: set[str], path: Path | None = SLEEVES) -> dict[str, Any]:
+    """Which LIVE or STANDBY sleeves hold one of `keys` as their certificate. Read-only."""
+    if path is None:
+        return {"status": UNMEASURED, "why": "no sleeve registry given"}
+    doc = _read(path)
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    rows = list(rows.values()) if isinstance(rows, dict) else rows
+    if not isinstance(rows, list):
+        return {"status": UNMEASURED, "why": f"{path.name} absent or unreadable"}
+    held: list[dict[str, Any]] = []
+    for s in rows:
+        if not isinstance(s, dict) or str(s.get("status")) not in ("LIVE", "STANDBY"):
+            continue
+        cert = s.get("certificate")
+        cell = cert.get("cell") if isinstance(cert, dict) else cert
+        if isinstance(cell, str) and cell in keys:
+            held.append({"sleeve": s.get("name"), "status": s.get("status"), "certificate": cell,
+                         "risk_frac": s.get("risk_frac")})
+    return {"status": "MEASURED", "n_live": sum(1 for h in held if h["status"] == "LIVE"),
+            "n_standby": sum(1 for h in held if h["status"] == "STANDBY"), "sleeves": held,
+            "note": "reported only: this organ retires and resizes nothing"}
 
 
 def write(doc: dict[str, Any], out: Path = OUT) -> None:
@@ -246,8 +386,9 @@ def main(argv: list[str] | None = None) -> int:
                                           "before_lockbox_equals_wf",
                                           "after_lockbox_equals_wf")}))
     print(f"  -> {OUT}")
-    # A re-stamp is the one outcome the re-mint exists to prevent: fail the leg so it is seen.
-    return 3 if doc["restamped"] else 0
+    # A re-stamp, or a lockbox that is not held out, is the outcome the re-mint exists to
+    # prevent: fail the leg so it is seen.
+    return 3 if doc["breach"] else 0
 
 
 if __name__ == "__main__":
