@@ -392,6 +392,7 @@ desks/mt5/data/parity_hunt_targets.json
 !desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 !desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json
 !desks/mt5/reports/markout.json
+!desks/mt5/reports/MARKOUT_V2.json
 # THE ATTRIBUTION CHAIN'S LEDGERS (2026-09-08), published by sync_shadow_to_git.ps1's $relPaths
 # beside markout.json. attribution_chain.json is caught by `**/reports/*` above and needs this
 # negation; the three JSONL under desks/mt5/data/ match no exclusion today and are named here so
@@ -526,6 +527,7 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/MATH_LAB.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
