@@ -566,6 +566,33 @@ def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> 
     return True, f"approved by zuck at {at}"
 
 
+def approval_covers(
+    found: list[dict[str, str]],
+    head: str,
+    same_change: Callable[[str], bool],
+    at: str | None,
+    stands: bool = False,
+) -> tuple[bool, str]:
+    """Does zuck's approval cover the PR's latest CLEAR (`found[-1]`)? First as `approved` reads
+    it. Failing that, it still covers when he approved an EARLIER CLEAR of this same change: a
+    CLEAR typed before his approval whose sha is the head, or carries to it byte for byte
+    (`same_change`, the patch-id `cleared` uses), with no HOLD after it. His approval names a
+    change, not a comment time: a re-CLEAR of a clean LIVE merge-in of a head he approved voided
+    it on a NEVER-STANDING PR (#1196, 2026-11-17 15:50Z). A HOLD after that CLEAR, or any other
+    change, still needs a CLEAR he approves."""
+    ok, why = approved(found[-1], at, stands)
+    if ok or at is None:
+        return ok, why
+    for v in reversed(found[:-1]):
+        if v["verdict"] != "CLEAR":
+            break  # a HOLD after it: an earlier approval no longer speaks for this change
+        if v["at"] < at and (v["sha"] == head or same_change(v["sha"])):
+            return True, (
+                f"approved by zuck at {at}: he approved CLEAR {v['sha'][:9]}, the same change"
+            )
+    return ok, why
+
+
 def cleared(
     found: list[dict[str, str]], head: str, same_change: Callable[[str], bool]
 ) -> tuple[dict[str, str] | None, str]:
@@ -1445,9 +1472,13 @@ def run(
         if (
             ours
             and boards
-            and approved(last, approval_at(boards[-1]), standing(level, boards[-1], names, te, ce))[
-                0
-            ]
+            and approval_covers(
+                found,
+                head,
+                same_change,
+                approval_at(boards[-1]),
+                standing(level, boards[-1], names, te, ce),
+            )[0]
         ):
             return "zuck approved its CLEAR of this head"
         return None
@@ -1537,7 +1568,9 @@ def run(
                 "--slurp",
             )
             board = _flat(ap)
-            ok, awhy = approved(clear, approval_at(board), standing(level, board, names, te, ce))
+            ok, awhy = approval_covers(
+                found, head, same_change, approval_at(board), standing(level, board, names, te, ce)
+            )
             if ok and awhy.startswith(STANDING_WHY):
                 # it rests on the standing approval, not a comment newer than the CLEAR: the
                 # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
