@@ -139,21 +139,37 @@ RERUN_MAX_PER_DAY = 4
 RERUNS = ROOT / "desks" / "mt5" / "logs" / "never_stale_reruns.json"
 MANIFEST = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
 ORDER_PATH_LANES = frozenset({"money", "prop"})
+#: THE ORDER PATH BY NAME, whatever its lane says (Auditor MF2 on #1226, 2026-11-17): the
+#: order-placing MT5-GatewayResident carries lane "ops", and MT5-Gateway is not in the manifest at
+#: all, so the lane alone let a failing gateway be re-run. fnmatch patterns, case-insensitive.
+ORDER_PATH_NAMES = ("MT5-Gateway*", "E8-*", "MT5-E8*", "MT5-FTMO*", "*FTMO*", "*Deadman*",
+                    "*E8WindowGuard*")
 
 
-def _order_path_tasks() -> frozenset[str] | None:
-    """Task names whose manifest lane is on the order path; None when the manifest is unreadable
-    (then nothing is re-run: an unread lane is not a research lane)."""
+def _manifest_tasks() -> tuple[frozenset[str] | None, frozenset[str] | None]:
+    """(order-path task names by lane, every task name the manifest lists); (None, None) when the
+    manifest is unreadable -- then nothing is re-run: an unread lane is not a research lane."""
     import re
     try:
         text = MANIFEST.read_text(encoding="utf-8")
     except OSError:
-        return None
-    out = set()
-    for m in re.finditer(r'^TASK\s+name="([^"]+)".*?lane="([^"]+)"', text, re.M):
-        if m.group(2) in ORDER_PATH_LANES:
-            out.add(m.group(1))
-    return frozenset(out)
+        return None, None
+    order, known = set(), set()
+    for m in re.finditer(r'^TASK\s+name="([^"]+)"(.*)$', text, re.M):
+        known.add(m.group(1))
+        lane = re.search(r'lane="([^"]+)"', m.group(2))
+        if lane and lane.group(1) in ORDER_PATH_LANES:
+            order.add(m.group(1))
+    return frozenset(order), frozenset(known)
+
+
+def _rerunnable(task: str, order_path: frozenset[str] | None,
+                known: frozenset[str] | None) -> bool:
+    """Off the order path by lane AND by name, and a task the manifest actually lists."""
+    import fnmatch
+    if order_path is None or known is None or task not in known or task in order_path:
+        return False
+    return not any(fnmatch.fnmatch(task.lower(), p.lower()) for p in ORDER_PATH_NAMES)
 
 
 def _rerun_allowed(task: str, history: dict[str, Any], now: datetime) -> tuple[bool, str]:
@@ -310,7 +326,7 @@ def run(apply: bool) -> dict:
     acted: list[dict] = []
     escalated: list[dict] = []
     uncontracted: list[str] = []
-    order_path = _order_path_tasks()
+    order_path, known_tasks = _manifest_tasks()
     reruns = _read(RERUNS)
     reruns = reruns if isinstance(reruns, dict) else {}
     now = datetime.now(tz=UTC)
@@ -355,7 +371,7 @@ def run(apply: bool) -> dict:
         task = str(row.get("task") or name.split(" (", 1)[0].strip() or name)
         held = ""
         if (verdict == "FAILING" and diag is None and isinstance(code, int)
-                and order_path is not None and task not in order_path):
+                and _rerunnable(task, order_path, known_tasks)):
             ok_rerun, held = _rerun_allowed(task, reruns, now)
             if ok_rerun:
                 if not apply:

@@ -21,6 +21,9 @@ import never_stale as ns  # noqa: E402
 MANIFEST = '''TASK name="MT5-Research" trigger="hourly" runs="x.py" installer="NONE" lane="research"
 TASK name="MT5-GatewayResident" trigger="startup" runs="g.py" installer="NONE" lane="money"
 TASK name="MT5-E8WindowGuard" trigger="1 min" runs="e.py" installer="NONE" lane="prop"
+TASK name="MT5-GatewayResident2" trigger="10 min" runs="g.py" installer="NONE" lane="ops"
+TASK name="MT5-FTMO-Allocator" trigger="hourly" runs="f.py" installer="NONE" lane="ops"
+TASK name="MT5-FusionDeadmanDryRun" trigger="5 min" runs="d.py" installer="NONE" lane="research"
 '''
 
 
@@ -90,3 +93,28 @@ def test_dry_run_changes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     doc, started = _run(tmp_path, monkeypatch, [_failing("MT5-Research", 1)], apply=False)
     assert started == [] and doc["acted"][0]["action"] == "would re-run"
     assert not (tmp_path / "reruns.json").exists()
+
+
+def test_the_order_path_by_name_is_never_rerun_whatever_its_lane(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor MF2 on #1226: MT5-GatewayResident carries lane "ops" on the box."""
+    rows = [_failing("MT5-GatewayResident2", 1), _failing("MT5-FTMO-Allocator", 1),
+            _failing("MT5-FusionDeadmanDryRun", 1)]
+    doc, started = _run(tmp_path, monkeypatch, rows)
+    assert started == []
+    assert {e["task"] for e in doc["escalated"]} == {r["name"] for r in rows}
+
+
+def test_a_task_missing_from_the_manifest_is_never_rerun(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MT5-Gateway is not in the manifest at all; an unknown task is never re-run."""
+    doc, started = _run(tmp_path, monkeypatch, [_failing("MT5-Gateway", 1),
+                                                _failing("MT5-Unlisted", 1)])
+    assert started == [] and len(doc["escalated"]) == 2
+
+
+def test_the_real_manifest_keeps_the_gateway_off_the_rerun_path() -> None:
+    order, known = ns._manifest_tasks()
+    assert known and "MT5-GatewayResident" in known
+    for t in ("MT5-GatewayResident", "MT5-Gateway", "MT5-E8WindowGuard"):
+        assert not ns._rerunnable(t, order, known), t

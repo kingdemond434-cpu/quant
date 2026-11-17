@@ -57,3 +57,22 @@ def test_the_event_kinds_are_registered() -> None:
     from libs.ops.events import KINDS
     for k in ("TASK_AUTO_REENABLED", "FEED_AUTO_KICKED", "GATEWAY_AUTO_REARMED"):
         assert k in KINDS, k
+
+
+def test_a_deliberate_adopter_disable_writes_its_hold_marker() -> None:
+    """Auditor MF1 on #1226: migrate_to_new_box disables MT5-AdoptRelease on purpose; without the
+    marker StallWatch would re-enable it within ten minutes."""
+    src = (ROOT / "ops" / "migrate_to_new_box.ps1").read_text(encoding="utf-8-sig")
+    off = src.index("Disable-ScheduledTask -TaskName MT5-AdoptRelease")
+    hold = src.index("TASK_HOLD_MT5-AdoptRelease")
+    assert off < hold < off + 800
+    assert "Set-Content -LiteralPath $adoptHold" in src
+    # every other deliberate Disable of a control task in ops/ and the desk scripts carries one
+    names = _block("$controlTasks = @(", ")")
+    for p in list((ROOT / "ops").rglob("*.ps1")) + list((ROOT / "desks" / "mt5").rglob("*.ps1")):
+        text = p.read_text(encoding="utf-8-sig", errors="replace")
+        for t in ("MT5-TerminalBoot", "MT5-AdoptRelease", "MT5-DeskState", "MT5-ShadowSync",
+                  "MT5-Universe", "MT5-ClockFixer", "MT5-NeverStale"):
+            if f"Disable-ScheduledTask -TaskName {t}" in text:
+                assert f"TASK_HOLD_{t}" in text, (p, t)
+        assert names
