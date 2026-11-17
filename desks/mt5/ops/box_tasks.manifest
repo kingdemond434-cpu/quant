@@ -147,6 +147,8 @@ TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/resea
 # laboratory to run here, 24/7, with no session and no laptop. One hourly call, offset to :24 so it
 # does not coincide with the merge docket (:14/:44) or the gauntlet's :00/:05 slots. Research
 # generation only: it proposes, the canonical compiler and gauntlet decide.
+# MT5-DeepSeek also runs scripts/run_cn_ensemble.py (ops/run_deepseek_windows.ps1:50), the CN-model
+# research ensemble: that task is its clock.
 TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run_deepseek_windows.ps1"  installer="desks/mt5/scripts/install_deepseek_brain_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat

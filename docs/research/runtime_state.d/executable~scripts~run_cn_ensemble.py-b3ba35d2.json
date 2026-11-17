@@ -1,0 +1,35 @@
+{
+ "organ": "executable:scripts/run_cn_ensemble.py",
+ "kind": "executable",
+ "code": [
+  "scripts/run_cn_ensemble.py"
+ ],
+ "clock": "task:MT5-DeepSeek (ops/run_deepseek_windows.ps1:50)",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "added by hand: LIVE 9e4f657a4 landed this executable with no attested row, failing check_birth_obligations on every push; no run record on this host",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "UNMEASURED",
+ "artifact_declared": "UNMEASURED",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-17T21:29:48+00:00",
+ "only_missing": {
+  "at": "2026-11-17T21:29:48+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
