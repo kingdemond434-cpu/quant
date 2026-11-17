@@ -308,8 +308,11 @@ def classify(paths: Iterable[str], head: str | None = None) -> tuple[bool, str]:
             now = money_writes(text, n, state) if text is not None else set()
         except (SyntaxError, ValueError):
             return False, f"{n} does not parse"
-        if new := sorted(now - was):
-            return False, f"{n} newly writes {new[0]}, a file the money path reads"
+        # either side: a file that already writes such a name is a producer the PR can change
+        # (#1240 audit, second pass), and one the PR makes write it is a new producer
+        if hit := sorted(now | was):
+            side = "writes" if hit[0] in was else "newly writes"
+            return False, f"{n} {side} {hit[0]}, a file the money path reads"
     return True, f"{len(names)} path(s), none on the money path or the release machinery"
 
 

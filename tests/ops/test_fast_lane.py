@@ -152,6 +152,17 @@ def test_a_new_file_that_writes_what_the_money_path_reads_is_money(
     assert fl.classify([new], head="HEAD")[0]
 
 
+@pytest.mark.parametrize(
+    "path",
+    ["desks/mt5/repair_identity.py", "desks/mt5/clear17.py", "desks/mt5/inputdiag.py"],
+)
+def test_a_file_that_already_writes_what_the_money_path_reads_is_money(path: str) -> None:
+    """#1240 audit, second pass: repair_identity and clear17 write shadow_state.json (the
+    promoter reads it) and inputdiag writes macro_state.json; a fast PR could change either."""
+    fast, why = fl.classify([path])
+    assert not fast and "a file the money path reads" in why, why
+
+
 def test_a_producer_is_caught_once_the_money_path_reads_its_file() -> None:
     """#1240 audit MF3, pinned for the exotic cost bar (#1117): once live_policy reads
     EXOTIC_COST_BAR.json, the file that writes it is money."""
