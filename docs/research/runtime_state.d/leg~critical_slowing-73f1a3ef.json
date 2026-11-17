@@ -24,5 +24,12 @@
  "consumer": "a person (HUMAN_READ in libs/ops/capability_graph.py); allocator state input pen",
  "measured_on": "vm",
  "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
- "measured_at": "2026-11-13T12:37:45+00:00"
+ "measured_at": "2026-11-17T18:17:45+00:00",
+ "only_missing": {
+  "at": "2026-11-17T18:17:45+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
