@@ -26,6 +26,12 @@ INPUTS = {
     "world_model": DESK / "reports" / "WORLD_MODEL.json",
 }
 REFUSED_ACCESS = {"REFUSED", "ILLEGAL", "AUTH_REQUIRED", "PAYWALL_BYPASS"}
+#: MAXIMUM INPUT AGE, in hours (2026-10-21). macro_state.json sat at 2026-09-12 for six weeks and
+#: this organ read it as MEASURED on every pass, so its tilts carried a fresh `at` over a frozen
+#: macro picture. An input named here older than its ceiling -- or carrying no readable stamp --
+#: is UNMEASURED: it is not consumed and emits no tilt. macro_desk writes hourly, so 6h is five
+#: missed cycles.
+MAX_AGE_H: dict[str, float] = {"macro_state": 6.0}
 
 
 def _read(path: Path) -> Any:
@@ -45,7 +51,8 @@ def _atomic(path: Path, doc: Any) -> None:
 def _stamp(doc: Any) -> datetime | None:
     if not isinstance(doc, Mapping):
         return None
-    for key in ("available_time", "at", "generated_utc", "generated_at", "updated_at"):
+    for key in ("available_time", "at", "generated_utc", "generated_at", "updated_at",
+                "updated"):
         raw = doc.get(key)
         if not raw:
             continue
@@ -98,8 +105,21 @@ def build(now: datetime | None = None) -> dict[str, Any]:
         stamp = _stamp(doc)
         future = stamp is not None and stamp > now
         status = "MISSING" if doc is None else "WITHHELD_FUTURE" if future else "MEASURED"
+        age_h = (now - stamp).total_seconds() / 3600.0 if stamp is not None else None
+        ceiling = MAX_AGE_H.get(name)
+        stale_reason = None
+        if status == "MEASURED" and ceiling is not None:
+            if age_h is None:
+                status, stale_reason = "UNMEASURED", "no readable timestamp; age unprovable"
+            elif age_h > ceiling:
+                status = "UNMEASURED"
+                stale_reason = f"stale: {age_h:.1f}h old, past the {ceiling:g}h ceiling"
         inputs[name] = {"path": str(path), "status": status,
                         "available_time": stamp.isoformat() if stamp else "UNMEASURED"}
+        if age_h is not None:
+            inputs[name]["age_h"] = round(age_h, 2)
+        if stale_reason:
+            inputs[name]["reason"] = stale_reason
         if status == "MEASURED":
             docs[name] = doc
             try:

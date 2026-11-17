@@ -909,7 +909,12 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # ITS SIBLING, WRITTEN BY THE SAME macro_desk LOOP (2026-10-21). The branch copy of
+    # macro_state.json stopped at 2026-09-12 (an ad-hoc box commit) because nothing listed it
+    # here, while the box rewrote it hourly. Small JSON; `updated` inside it is what readers
+    # and the DATA-MACRO fence judge, never this file's mtime.
+    "desks/mt5/data/macro_state.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

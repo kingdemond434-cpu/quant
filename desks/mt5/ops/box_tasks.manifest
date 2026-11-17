@@ -94,7 +94,11 @@ TASK name="MT5-Gauntlet"           trigger="resident (sweeps back to back); ever
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
-TASK name="MT5-ResearchSupervisor" trigger="every 30 minutes, at :26" runs="desks/mt5/research/research_supervisor.py"   installer="NONE" lane="research"
+# MT5-ResearchSupervisor RECONCILED 2026-10-21 to what Install-QuantWindows.ps1 actually registers
+# (its own Register-ScheduledTask block): a 5-minute repetition, IgnoreNew, 72h execution limit,
+# SYSTEM, pythonw. The line used to read "every 30 minutes, at :26" with installer NONE, which
+# predated that block. The installer cadence is unchanged; only this declaration moved to it.
+TASK name="MT5-ResearchSupervisor" trigger="every 5 minutes (repeating, IgnoreNew; persistent worker, 72h limit)" runs="desks/mt5/research/research_supervisor.py"   installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt5/research/qquant_gates.py"          installer="NONE" lane="research"
 
 # Declared here because their installers are in the repo and were read to write these lines.
