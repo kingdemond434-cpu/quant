@@ -180,7 +180,7 @@ _DIRTY = {
     "server": "FusionMarkets-Live",
     "api_key": "abc123def456",
     "detail": r"C:\opt\quant\desks\mt5\reports\SANDBOX_RUNNER.json is absent",
-    "why": "adapter raised: OSError at /home/quant/quant-platform/x.py via 62.171.172.249",
+    "why": "adapter raised: OSError at /home/quant/quant-platform/x.py via 203.0.113.7",
     "note": "server=FusionMarkets-Live login: 51234567 equity 101,234.50 on dash.example.xyz",
     "leak": "token ghp_abcdefghijklmnopqrstuvwxyz0123456789 and sk-abcdefghijklmnop1234",
     "share": r"\\fileserver\share\dump.csv",
@@ -188,7 +188,7 @@ _DIRTY = {
               "cells": ["momentum|EURUSD|1h"], "folder": r"C:\opt\quant\sandboxes\gh_owner"}],
 }
 _NEEDLES = ("vmi3571445", "VMI3571445", "51234567", "FusionMarkets", "abc123def456",
-            "Administrator", "Program Files", "/home/quant", "62.171.172.249", "101,234",
+            "Administrator", "Program Files", "/home/quant", "203.0.113.7", "101,234",
             "dash.example.xyz", "ghp_", "sk-abc", "fileserver", "C:\\", "C:/")
 
 
