@@ -1,5 +1,5 @@
 {
- "at": "2026-11-17T19:39:22+00:00",
+ "at": "2026-11-17T21:38:16+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,9 +9,9 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-17T19:38:55+00:00",
+   "at": "2026-11-17T21:38:01+00:00",
    "bandit_at": "2026-11-17T01:34:34.597103+00:00",
-   "hour": "2026-11-17T19",
+   "hour": "2026-11-17T21",
    "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
@@ -42,7 +42,7 @@
    "department_why": "no `spend` block on RESEARCH_DEPARTMENTS.json",
    "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-17T06",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-17T20",
    "engine_factor": 1.0,
    "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
    "meta_factor": 2.0,
@@ -50,7 +50,7 @@
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: unmeasured; par",
    "paradigm_factor": 1.0,
-   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0381 vs equal share 0.0667 = x0.57 -> x1.00 (one-sided)",
+   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0226 vs equal share 0.0667 = x0.34 -> x1.00 (one-sided)",
    "factor": 2.0,
    "applied_s": 480,
    "applied": true,
