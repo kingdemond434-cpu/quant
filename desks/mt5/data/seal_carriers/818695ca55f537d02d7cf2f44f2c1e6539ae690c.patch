@@ -1,0 +1,31 @@
+From 818695ca55f537d02d7cf2f44f2c1e6539ae690c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 15:29:29 +0000
+Subject: [PATCH] promoter: attach through mt5_session, never a bare
+ initialize()
+
+The account-in-hand read runs in the SYSTEM hourly (Session 0). A bare
+initialize() there starts a headless, logged-out Fusion terminal beside
+the desk's own (2026-11-12, 2026-11-16). attach_or_initialize returns
+False in Session 0 or beside a competing terminal, and the existing
+UNKNOWN branch handles it.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015KZUqqTS9y57t7UF63E1Yb
+
+diff --git a/desks/mt5/research/promoter.py b/desks/mt5/research/promoter.py
+index 57eb00b19f0a9abef7c7b736eaafe2020b84e66e..39a903f508d1e7845ac0edc61f338f0d485f2644 100644
+--- a/desks/mt5/research/promoter.py
++++ b/desks/mt5/research/promoter.py
+@@ -950,7 +950,10 @@ def account_in_hand() -> dict:
+                 path = terminal_path()
+             except Exception:
+                 path = ""
+-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
++            # never a bare initialize() from the SYSTEM hourly: it would start a headless
++            # Session 0 terminal beside the desk's own (2026-11-12, 11-16)
++            from research.mt5_session import attach_or_initialize
++            opened = attach_or_initialize(mt5, path=path or None)
+             if not opened:
+                 plog(f"account in hand: terminal unreachable ({mt5.last_error()}); UNKNOWN")
+                 return provenance.current_account(None)
