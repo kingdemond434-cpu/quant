@@ -1079,3 +1079,38 @@ def test_the_box_republishing_over_an_origin_edit_is_the_boxs(repo: Path) -> Non
     edit = _origin(repo, _head(repo), {rel: '{"gold": 0.5}\n'})
     target = _publish(repo, edit, {rel: '{"gold": 0.03}\n'})
     assert ag.pre(repo, target, now=QUIET, offset_h=summer)[0] == ag.GO
+
+
+def test_proving_the_clear_record_costs_a_constant_number_of_git_calls(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-04, measured on the box: one rev-list and one show per commit and per parent,
+    twice, was 388 git calls and a 58-minute `pre`. The proof must not grow with history."""
+    head = _head(repo)
+    for i in range(12):
+        change = _origin(repo, head, {"libs/x.py": f"X = {i}\n"})
+        head = _with_clears(repo, change, _clear(repo, change))
+    real = subprocess.run
+    calls: list[list[str]] = []
+
+    def counting(cmd: Any, *a: Any, **k: Any) -> Any:
+        calls.append(list(cmd))
+        return real(cmd, *a, **k)
+
+    monkeypatch.setattr(ag.subprocess, "run", counting)
+    rows = ag.committed_clears(repo, head)
+    assert len(rows) == 12
+    assert len(calls) <= 8, [c[3:5] for c in calls]  # was 2 + 2 per commit and parent
+
+
+def test_an_edited_version_behind_a_merge_parent_is_still_refused(repo: Path) -> None:
+    """The batched walk must read every parent, as the per-commit walk did."""
+    change = _origin(repo, _head(repo), {"libs/x.py": "X = 2\n"})
+    side = _with_clears(
+        repo, change, {"commit": change, "verdict": "HOLD", "report": "reports/audit/a/Y.md"}
+    )
+    main = _with_clears(repo, change, _clear(repo, change))
+    _g(repo, "checkout", "-q", main)
+    _g(repo, "merge", "-q", "--no-edit", "-s", "ours", side)
+    with pytest.raises(ag.GuardError, match="not a prefix"):
+        ag.committed_clears(repo, _head(repo))

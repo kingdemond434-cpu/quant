@@ -600,6 +600,15 @@ function Ensure-Signed {
     }
 }
 
+# ------------------------------------------------ 1b. the box's stuck steps, healed as SYSTEM
+# The ROOT pin at the wrong path, a jammed gate clone and stale bin copies used to each wait for
+# a person in an elevated window. ops\box\box_selfheal.ps1 says what each step will and will not
+# do; every step acts only on its exact stuck shape and never stops the seal.
+$selfheal = Join-Path $RepoRoot "ops\box\box_selfheal.ps1"
+if (Test-Path $selfheal) {
+    try { . $selfheal; Invoke-BoxSelfHeal } catch { Log "selfheal: could not load: $($_.Exception.Message)" }
+}
+
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
 if (-not $head) { Log "cannot read HEAD"; Undo-Adoption "HEAD unreadable after adoption" 2 "head-unreadable" }

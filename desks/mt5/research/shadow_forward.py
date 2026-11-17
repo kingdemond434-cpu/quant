@@ -4,7 +4,8 @@ Deterministic replay on real live H1 bars from SHADOW_START forward. Same
 families/engine code as the backtest -> identical signals given identical bars.
 No capital: fills simulated at actual bar opens with the account cost model.
 
-Ledger: reports/shadow/ledger_<sym>_<window>.json (full trade list, idempotent).
+Ledger: reports/shadow/ledger_<clock key, dots as underscores>.json (full trade list,
+idempotent; one file per clock key -- libs.research.forward_ledger).
 State:  reports/shadow/shadow_state.json (per sleeve n / cumR / exp / maxDD /
 days / status; runs once per UTC day).
 
@@ -175,6 +176,70 @@ def _row_hold(row: tuple) -> str:
     return str(row[8] or "") if len(row) > 8 else ""
 
 
+#: RE-STAMPED, NEVER RE-JUDGED (2026-11-13). The lockbox ledger (`research/lockbox_recert.py`)
+#: rules a certificate RESTAMPED when it sits under the attestation in force still carrying the
+#: gated_at it was judged on BEFORE that attestation existed: a header was flipped over it, no
+#: judge ran. Seven such rows were found on the box (USDJPY and XAUUSD session_range_breakout,
+#: all gated 2026-08-26). Their clocks keep running -- forward evidence is still worth having --
+#: but none of them may become a PROMOTION CANDIDATE until a sweep re-judges it under the header
+#: it wears (`attestation_remint` queues them). Positive evidence only: an absent or unreadable
+#: ledger holds nothing, exactly as an absent ledger never voids a gold retirement.
+LOCKBOX_RECERT_FILE = BASE / "reports" / "LOCKBOX_RECERT.json"
+REMINT_STATUS_FILE = BASE / "reports" / "REMINT_STATUS.json"
+RESTAMP_HOLD = "HELD_RESTAMPED_NOT_REJUDGED"
+#: clock key -> certificate key, for every clock enrolled from a re-stamped certificate this pass.
+RESTAMP_HELD: dict[str, str] = {}
+#: GROWTH RULE 1: the hold is a veto on PROMOTE, so every held verdict writes what it forgoes.
+MISSED_GROWTH_LEDGER = BASE / "data" / "missed_growth.jsonl"
+RESTAMP_RAIL = "restamp_promotion_hold"
+
+
+def restamped_certificates(lockbox: Path | None = None,
+                           remint: Path | None = None) -> set[str]:
+    """Certificate keys the desk has POSITIVE evidence were re-stamped without a re-judge."""
+    out: set[str] = set()
+    try:
+        doc = json.loads((lockbox or LOCKBOX_RECERT_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    for k, row in ((doc or {}).get("certificates") or {}).items() if isinstance(doc, dict) else ():
+        after = row.get("after") if isinstance(row, dict) else None
+        if isinstance(after, dict) and after.get("state") == "RESTAMPED":
+            out.add(str(after.get("key") or k))
+    try:
+        rem = json.loads((remint or REMINT_STATUS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rem = None
+    if isinstance(rem, dict):
+        out.update(str(k) for k in (rem.get("restamped_not_rejudged") or []))
+    return out
+
+
+def restamp_hold(key: str, st: dict) -> bool:
+    """Hold `key`'s promotion if its certificate is re-stamped; release a stale hold otherwise.
+
+    Returns True when the clock is held. It holds the NEXT verdict only: a clock already a
+    PROMOTION CANDIDATE keeps its status and is only marked, because un-promoting a row the
+    promoter may already have written LIVE is a change to the live book, which no session makes
+    on its own (the mark is what the report and the principal read)."""
+    cert = RESTAMP_HELD.get(key)
+    if cert is None:
+        if st.get("promotion_hold") == RESTAMP_HOLD:
+            st.pop("promotion_hold", None)
+            st.pop("promotion_hold_certificate", None)
+            st.pop("promotion_hold_since", None)
+        return False
+    if st.get("promotion_hold") != RESTAMP_HOLD or not st.get("promotion_hold_since"):
+        st["promotion_hold_since"] = datetime.now(UTC).isoformat(timespec="seconds")
+    st["promotion_hold"] = RESTAMP_HOLD
+    st["promotion_hold_certificate"] = cert
+    if st.get("status") == "PROMOTION CANDIDATE":
+        slog(f"{key}: ALREADY A PROMOTION CANDIDATE on certificate {cert}, which was re-stamped "
+             f"and never re-judged -- marked; its status is left as it is (a live-book change "
+             f"is not a session's)")
+    return True
+
+
 def _integrity_door() -> tuple[object | None, set[str], str]:
     """(gate, keys that own a clock enrolled BEFORE the door existed, why).
 
@@ -216,6 +281,50 @@ def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str)
                      params=run.get("params"))
 
 
+def record_restamp_missed_growth(key: str, st: dict, now: datetime | None = None,
+                                 ledger: Path | None = None) -> bool:
+    """One missed-growth line per held PROMOTE verdict per day (Growth Rule 1).
+
+    `value` is the clock's own forward expectancy in R, floored at 0: what the held promotion
+    would have earned per trade had the certificate been re-judged already. Returns True when a
+    NEW line was written; never raises (a ledger it cannot write is logged, not fatal)."""
+    path = ledger or MISSED_GROWTH_LEDGER
+    stamp = now or datetime.now(UTC)
+    day = stamp.date().isoformat()
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if RESTAMP_RAIL in line and day in line and key in line:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if (row.get("rail") == RESTAMP_RAIL and row.get("day") == day
+                        and row.get("cell") == key):
+                    return False
+    except OSError:
+        pass
+    try:
+        exp = float(st.get("exp_r") or 0.0)
+    except (TypeError, ValueError):
+        exp = 0.0
+    row = {"day": day, "rail": RESTAMP_RAIL, "value": max(exp, 0.0),
+           "at": stamp.isoformat(timespec="seconds"), "cell": key,
+           "certificate": st.get("promotion_hold_certificate"), "n": st.get("n"),
+           "exp_r": st.get("exp_r"), "max_dd_r": st.get("max_dd_r"),
+           "held_since": st.get("promotion_hold_since"),
+           "why": "PROMOTE verdict held: certificate re-stamped under the attestation in force, "
+                  "never re-judged; releases on the pass after its re-judge",
+           "two_sided": True}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+    except OSError as exc:
+        slog(f"missed-growth ledger not written ({type(exc).__name__})")
+        return False
+    return True
+
+
 def certified_sleeves() -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
 
@@ -230,6 +339,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     """
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
+    RESTAMP_HELD.clear()
+    restamped = restamped_certificates()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -257,6 +368,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                     HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
                                               "key": key, "reason": reason})
                     slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
+                if str(run.get("certificate") or "") in restamped:
+                    RESTAMP_HELD[key] = str(run["certificate"])
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -291,6 +404,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
                                           "reason": reason})
                 slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
+            if str(run.get("certificate") or "") in restamped:
+                RESTAMP_HELD[key] = str(run["certificate"])
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
@@ -695,22 +810,6 @@ def fill_hour_costs(costs, meta: dict, sym: str, sigs, timeframe: str,
     return dataclasses.replace(costs, spread_per_lot=hour_costs.spread_per_lot), basis, pts
 
 
-#: Per-clock forward ledgers, one file per full clock key (params and chart included).
-CLOCK_LEDGER_DIR = SHADOW_DIR / "clock_ledgers"
-_UNSAFE_NAME = set('<>:"/\\|?*\'[] ,')
-
-
-def clock_ledger_path(key: str, sym: str, fam: str, win: str) -> Path:
-    """The clock's OWN ledger file. Readable name when the key is filesystem-safe and short;
-    otherwise symbol_family_window plus a hash of the full key -- unique either way."""
-    import hashlib
-    stem = str(key).replace(".", "_")
-    if len(stem) > 120 or any(c in _UNSAFE_NAME for c in stem):
-        digest = hashlib.sha1(str(key).encode("utf-8")).hexdigest()[:16]
-        stem = f"{sym}_{fam}_{win}_{digest}"
-    return CLOCK_LEDGER_DIR / f"ledger_{stem}.json"
-
-
 def frozen_costs(key: str):
     """Return the cost basis frozen with ``key``, or ``None`` if it is unavailable.
 
@@ -1004,6 +1103,23 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # Clock creation is cheap and grants no capital.  Persist the complete enrolment set before
     # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
     checkpoint_enrolments(enrolled, state, state_path)
+    # ONE LEDGER PER CLOCK KEY (libs.research.forward_ledger, P8-J1). The file name used to drop
+    # the parameter signature, chart and side, so every parameterisation of a cell wrote ONE file
+    # and readers got one clock's trades under another's name. Every legacy file more than one
+    # key maps to -- over this pass's keys AND every key the state has ever held -- is frozen
+    # (append-only registry, nothing deleted), and each clock writes its own file from here on.
+    # The replay runs from SHADOW_START every pass, so a clock's own file holds its whole record
+    # after the first pass.
+    from libs.research import forward_ledger as _fl
+    _all_keys = {sleeve_key(r[0], r[1], r[2], r[3] if len(r) > 3 else "session_range_breakout",
+                            r[4] if len(r) > 4 else "LONG") for r in enrolled}
+    _all_keys |= {str(k) for k, v in state.items() if isinstance(v, dict) and "n" in v}
+    try:
+        shared_ledgers = _fl.freeze_collisions(sorted(_all_keys), SHADOW_DIR)
+    except Exception as exc:     # the registry is bookkeeping; the pass still writes per key
+        slog(f"shared-ledger registry not written ({type(exc).__name__}: {exc}); "
+             f"collisions computed in memory")
+        shared_ledgers = {n: {"members": m} for n, m in _fl.collisions(_all_keys).items()}
     seen: set[str] = set()
     for i_row, row in enumerate(enrolled):
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
@@ -1377,8 +1493,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                      f"pooled basis this pass")
             st["spread_basis"] = _spread_basis
             st["spread_pts_charged"] = _spread_pts
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            ledger = _fl.writer_path(key, SHADOW_DIR, shared_ledgers)
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
                 slog(f"{key}: session filter corrected; prior state archived and a "
@@ -1434,20 +1549,6 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   **_stamp}
                  for t in all_trades],
                 indent=2)
-            # THE CLOCK'S OWN LEDGER (2026-11-13). The legacy name above carries no params and no
-            # chart, so every parameterization of one symbol x family x window overwrote the same
-            # file: measured on the box, the 170 promotion candidates shared 55 files and only 41
-            # ledgers matched their own clock, leaving per-trade R -- and so independence (k_eff)
-            # -- UNMEASURED for 129. Each clock now also writes its own file, named by its full
-            # key, and records where (`ledger_file`). The legacy file is still written for the
-            # readers that open it by the old name; it remains a last-writer record.
-            _own = clock_ledger_path(key, sym, fam, win)
-            try:
-                _own.parent.mkdir(parents=True, exist_ok=True)
-                _own.write_text(_ledger_text, encoding="utf-8")
-                st["ledger_file"] = _own.relative_to(BASE).as_posix()
-            except OSError as exc:
-                slog(f"{key}: own ledger not written ({type(exc).__name__})")
             ledger.write_text(_ledger_text, encoding="utf-8")
             try:
                 import MetaTrader5 as _mt5
@@ -1729,6 +1830,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
+            held = restamp_hold(key, st)
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
                 if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD \
                         and st.get(PROMOTION_HOLD_FIELD):
@@ -1739,6 +1841,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["matured_promotion_held"] = st[PROMOTION_HOLD_FIELD]
                     slog(f"{key}: VERDICT PROMOTE HELD n={st['n']} exp={st['exp_r']:.3f}R -- "
                          f"{st[PROMOTION_HOLD_FIELD]}")
+                elif held and st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    # Only the PROMOTE verdict waits on the re-judge; a KILL is the clock's own
+                    # forward record and needs no certificate to stand.
+                    slog(f"{key}: VERDICT PROMOTE HELD ({RESTAMP_HOLD}) n={st['n']} "
+                         f"exp={st['exp_r']:.3f}R")
+                    record_restamp_missed_growth(key, st)
                 elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                     st.pop("matured_promotion_held", None)
                     st["status"] = "PROMOTION CANDIDATE"
