@@ -1294,7 +1294,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
-    "box_state_freshness", "desk_health",
+    "box_state_freshness", "desk_health", "pr_blockers",
     # HOW FRESH THE BOX'S BARS AND TICKS ARE (2026-10-21): parquet footers only, ~0.4 s and one
     # report (data/BARS_STATE.json) that `publish_state` right after it carries. Bars never cross
     # the wire, so this is the only off-box evidence that the feed is alive. Non-money-path.
@@ -1512,6 +1512,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
+                     # THE SIX-EVENT TRACE (CRO duty D26): one read of recorded artifacts, ~5 s.
+                     # Not core: a never-run meta leg is admitted ahead of every stale one.
+                     "six_event_trace",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2382,6 +2385,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
+    "six_event_trace": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -6303,6 +6307,12 @@ def main() -> None:
     # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
     cnf = _costed("cro_noon_freshness", lambda: _producer(
         "cro_noon_freshness", "scripts/check_cro_noon_freshness.py"))
+    # THE SIX-EVENT TRACE, OFF THE DAILY CHAIN (2026-11-10). Its only clock was step 36 of 39 in
+    # `daily_cycle`, behind research steps measured at 9,056 s, so reports/six_event_trace.json
+    # stood at 2026-10-03 while the CRO pass (STEP 4C, duty D26) read it as today's. `--step`
+    # runs that one step here, unchanged, and leaves the day's stamp alone (as `fill_markout`).
+    sxt = _costed("six_event_trace", lambda: _producer(
+        "six_event_trace", "research/daily_cycle.py", "--step", "six_event_trace"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6494,6 +6504,9 @@ def main() -> None:
                                                           "--once", "--budget-s", "300"))
     # (bars_state, box_state_freshness and desk_health moved to the head of the pass, 2026-11-10:
     # see the comment beside `health`.)
+    # WHAT HOLDS EACH OPEN PR (backlog 11-03): one named blocker per PR, read-only GETs, under
+    # this leg's budget; published by `publish_state` below as reports/PR_BLOCKERS.json.
+    pbk = _costed("pr_blockers", lambda: _producer("pr_blockers", "scripts/pr_blockers.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -6666,7 +6679,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
-                    "cro_noon_freshness": cnf,
+                    "cro_noon_freshness": cnf, "six_event_trace": sxt,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
@@ -6696,7 +6709,7 @@ def main() -> None:
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
-                    "box_state_freshness": bsf, "desk_health": dhl,
+                    "box_state_freshness": bsf, "desk_health": dhl, "pr_blockers": pbk,
                     "bars_state": bst,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
