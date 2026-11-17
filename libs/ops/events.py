@@ -81,6 +81,10 @@ KINDS = (
     # held the judge for 108 h with no row anywhere; it now has a time on it here and a fence
     # (check_judge_coverage `judge_stop`, WARN 12 h / FAIL 24 h).
     "JUDGE_STOP_HONOURED", "JUDGE_STOP_LAPSED",
+    # ROUTINE RECOVERY WITHOUT A PERSON (principal, 2026-11-17): the gateway lifts its own
+    # placement auto-pause once the terminal probe passes again (mt5desk/pause_rearm.py); the
+    # desk re-enables a disabled required task and kicks a stale feed (ops/reboot_drill.ps1).
+    "GATEWAY_AUTO_REARMED", "TASK_AUTO_REENABLED", "FEED_AUTO_KICKED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
