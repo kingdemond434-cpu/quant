@@ -38,6 +38,9 @@ jobs:
             .github/scripts/desk_alerts_relay.py
             desks/mt5/reports/DESK_ALERTS.json
             desks/mt5/reports/BOX_HEARTBEAT.json
+            desks/mt5/data/release_identity.json
+            desks/mt5/data/ADOPT_CLEARS.jsonl
+            desks/mt5/data/SEAL_CLEARS.jsonl
           sparse-checkout-cone-mode: false
       - name: relay transitions and the dead-man (no secrets)
         env:

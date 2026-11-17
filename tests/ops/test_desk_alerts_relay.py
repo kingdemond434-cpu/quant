@@ -136,7 +136,8 @@ def test_the_workflow_is_one_small_hourly_secret_free_job() -> None:
             assert len(ref) == 40 and all(c in "0123456789abcdef" for c in ref), step["uses"]
     sparse = job["steps"][0]["with"]["sparse-checkout"].split()
     assert sparse == [".github/scripts/desk_alerts_relay.py", relay.ALERTS_REL,
-                      relay.HEARTBEAT_REL]
+                      relay.HEARTBEAT_REL, relay.IDENTITY_REL, relay.ADOPT_CLEARS_REL,
+                      relay.SEAL_CLEARS_REL]
     assert job["steps"][0]["with"]["persist-credentials"] is False
 
 
@@ -173,3 +174,86 @@ def test_the_relay_never_follows_a_redirect_with_its_token() -> None:
     handler = mod._NoRedirect()
     assert handler.redirect_request(req, None, 302, "Found", {}, "https://evil.example/") is None
     assert "urlopen(" not in src.read_text("utf-8")
+
+
+# ADOPT LAG AND LEDGER (zuck 2026-11-17: "this should never happen again"). The 11-14 malformed
+# ADOPT_CLEARS row held the box for three days and nothing paged.
+_ROW = {"commit": "a" * 40, "verdict": "CLEAR", "report": "reports/audit/a.md",
+        "paths": {"x.py": None}}
+
+
+def test_ledger_faults_name_what_the_box_reader_would_refuse() -> None:
+    good = json.dumps(_ROW)
+    legacy = json.dumps({**_ROW, "commit": next(iter(relay.LEGACY_MULTILINE))}, indent=1)
+    assert relay.ledger_faults(good + "\n" + legacy + "\n", '{"path": "p", "verdict": "CLEAR"}\n'
+                               ) == []
+    pretty = json.dumps(_ROW, indent=1)
+    got = relay.ledger_faults(good + "\n" + pretty + "\n{oops\n7\n", "not json\n{}\n")
+    assert got == [
+        "ADOPT_CLEARS.jsonl:2 spans several lines",
+        "ADOPT_CLEARS.jsonl:10 is not JSON",
+        "ADOPT_CLEARS.jsonl:11 is not a row (commit, verdict)",
+        "SEAL_CLEARS.jsonl:1 is not JSON",
+        "SEAL_CLEARS.jsonl:2 is not a row (path, verdict)",
+    ]
+
+
+def test_adopt_lag_counts_from_the_oldest_release_the_box_has_not_taken() -> None:
+    run_sha = "b" * 40
+    refs = ["refs/tags/release/20261111T100000Z-" + "b" * 12,
+            "refs/tags/release/20261111T120000Z-" + "c" * 12,
+            "refs/tags/release/20261111T113000Z-" + "d" * 12, "refs/tags/other"]
+    lag = relay.adopt_lag({"release_sha": run_sha}, refs, NOW)
+    assert lag == {"hours": 0.5, "oldest": "release/20261111T113000Z-" + "d" * 12,
+                   "running": "b" * 12}
+    assert relay.adopt_lag({"release_sha": "c" * 40}, refs, NOW)["hours"] == 0.0
+    # the box's release is older than every listed tag: the oldest listed is the lower bound
+    lag = relay.adopt_lag({"release_sha": "e" * 40}, refs, NOW)
+    assert lag["hours"] == 2.0
+    assert relay.adopt_lag(None, refs, NOW) is None
+    assert relay.adopt_lag({"release_sha": "short"}, refs, NOW) is None
+
+
+class Tags(Fake):
+    def __init__(self, refs: list[str]) -> None:
+        super().__init__()
+        self.refs = refs
+
+    def __call__(self, method: str, path: str, payload: dict[str, Any] | None
+                 ) -> tuple[int, Any]:
+        if "matching-refs/tags/release/" in path:
+            return 200, [{"ref": r} for r in self.refs]
+        return super().__call__(method, path, payload)
+
+
+def _box(root: Path, release_sha: str, adopt: str = "", seal: str = "") -> None:
+    data = root / "desks" / "mt5" / "data"
+    data.mkdir(parents=True, exist_ok=True)
+    (data / "release_identity.json").write_text(json.dumps({"release_sha": release_sha}))
+    (data / "ADOPT_CLEARS.jsonl").write_text(adopt)
+    (data / "SEAL_CLEARS.jsonl").write_text(seal)
+
+
+def test_a_box_that_stops_adopting_pages_reminds_and_says_its_return_once(tmp_path: Path) -> None:
+    old = "refs/tags/release/20261111T020000Z-" + "c" * 12   # 10 h before NOW
+    f = Tags([old])
+    _box(tmp_path, "b" * 40)
+    r = relay.run(f, REPO, tmp_path, NOW)
+    assert r["adoptlag"] == "LAGGING" and "BOX NOT ADOPTING" in f.cmts[-1]["body"]
+    assert relay.run(f, REPO, tmp_path, NOW)["action"] == "QUIET"       # said, inside the window
+    later = NOW + timedelta(hours=relay.RELAY_WINDOW_H + 1)
+    assert relay.run(f, REPO, tmp_path, later)["adoptlag"] == "LAGGING"  # a reminder
+    _box(tmp_path, "c" * 40)
+    r = relay.run(f, REPO, tmp_path, later)
+    assert r["adoptlag"] == "CURRENT" and "ADOPTING AGAIN" in f.cmts[-1]["body"]
+    assert relay.run(f, REPO, tmp_path, later)["action"] == "QUIET"
+
+
+def test_a_ledger_row_the_box_cannot_read_pages_and_its_fix_is_said(tmp_path: Path) -> None:
+    f = Tags([])
+    _box(tmp_path, "b" * 40, adopt=json.dumps(_ROW, indent=1) + "\n")
+    r = relay.run(f, REPO, tmp_path, NOW)
+    assert r["ledger"] == "BAD" and "spans several lines" in f.cmts[-1]["body"]
+    assert relay.run(f, REPO, tmp_path, NOW)["action"] == "QUIET"
+    _box(tmp_path, "b" * 40, adopt=json.dumps(_ROW) + "\n")
+    assert relay.run(f, REPO, tmp_path, NOW)["ledger"] == "OK"
