@@ -845,9 +845,24 @@ def _fred_ids() -> list[str]:
 #: `search` seeds the DBnomics frontier with datasets that answer the same need.
 LEGACY_PROBES: dict[str, dict[str, Any]] = {
     "bis_eer": {"direct": "WS_EER", "search": "effective exchange rate"},
+    # BLOCKED_ON_TERMS: kept as a record of the door, never knocked on. The DBnomics search
+    # still seeds the frontier (a different host); the SPDR url is never requested.
     "spdr_gld_holdings": {"url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/"
                                  "GLD_US_archive_EN.csv", "mode": "csv", "stems": ["XAU"],
-                          "freq": "daily", "search": "gold reserves"},
+                          "freq": "daily", "search": "gold reserves",
+                          "blocked_on_terms": (
+                              "spdrgoldshares.com terms: personal, non-commercial use only; no "
+                              "access other than the website's navigational structure "
+                              "(re-read 2026-11-17; same verdict as research/fetch_gld.py)"),
+                          "missed_growth": {
+                              "mechanism": "gld_terms_refusal",
+                              "what_is_lost": ("GLD daily physical holdings flow as a "
+                                               "conditioner for XAUUSD/XAGUSD"),
+                              "size": "UNMEASURED",
+                              "stand_in": ("DBnomics 'gold reserves' frontier seeds; CFTC COT "
+                                           "metals positioning"),
+                              "reopens_when": ("SPDR grants written permission for automated "
+                                               "retrieval")}},
     "sge_benchmark": {"url": "https://en.sge.com.cn/data_BenchmarkPrice", "mode": "csv",
                       "stems": ["XAU"], "search": "gold price"},
     "shfe_gold": {"url": "https://www.shfe.com.cn/data/dailydata/kx/kx{bday}.dat",
@@ -1258,6 +1273,12 @@ def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until:
             if _rank(drow.get("lifecycle", "")) >= 2:
                 rec["status"] = "QUALITY-PASSED"
             stats[f"legacy:{rec['status']}"] += 1
+            continue
+        if probe.get("blocked_on_terms"):
+            # Terms refuse automated retrieval: the direct door is never requested.
+            rec.update({"status": "BLOCKED_ON_TERMS", "reason": probe["blocked_on_terms"],
+                        "missed_growth": probe.get("missed_growth")})
+            stats["legacy:BLOCKED_ON_TERMS"] += 1
             continue
         if not probe.get("url"):
             rec["reason"] = "no keyless endpoint known; frontier seeded by search"

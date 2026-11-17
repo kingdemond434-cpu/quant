@@ -9,6 +9,8 @@ import json
 import os
 import stat
 import sys
+import time
+from collections import Counter
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -479,3 +481,29 @@ def test_parity_targets_get_a_share_of_the_never_fetched_tier(tmp_path, monkeypa
     assert sorted(order) == sorted(plain) and order[-1] == "P/old"
     assert order.index("Q/cpi") == W.PARITY_EVERY - 1
     assert [k for k in order if k.startswith("P/d")] == [f"P/d{i}" for i in range(8)]
+
+
+def test_spdr_gld_row_is_blocked_on_terms_and_never_requested(box, monkeypatch):
+    """SPDR's terms refuse automated retrieval: the row stays as a record, its own door is never
+    knocked on, and the refusal carries its reason and a missed_growth line."""
+    spdr = W.LEGACY_PROBES["spdr_gld_holdings"]
+    assert "spdrgoldshares.com" in spdr["url"] and spdr["blocked_on_terms"]
+    assert spdr["missed_growth"]["mechanism"] == "gld_terms_refusal"
+    monkeypatch.setattr(W, "LEGACY_PROBES", {"spdr_gld_holdings": spdr})
+    asked: list[str] = []
+
+    def fetch(url: str, timeout: float) -> bytes:
+        asked.append(url)
+        if "spdrgoldshares" in url:
+            raise AssertionError("SPDR was requested past its terms refusal")
+        return json.dumps({"results": {"docs": []}}).encode()
+
+    cat = {"legacy": {}, "datasets": {}}
+    stats: Counter[str] = Counter()
+    W.attempt_legacy(W.Client(fetch, time.monotonic() + 60), cat, now=NOW,
+                     until=time.monotonic() + 60, stats=stats, qstats=Counter())
+    assert not any("spdrgoldshares" in u for u in asked)
+    rec = cat["legacy"]["spdr_gld_holdings"]
+    assert rec["status"] == "BLOCKED_ON_TERMS" and "non-commercial" in rec["reason"]
+    assert rec["missed_growth"]["reopens_when"]
+    assert stats["legacy:BLOCKED_ON_TERMS"] == 1
