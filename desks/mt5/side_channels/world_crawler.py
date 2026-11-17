@@ -133,6 +133,29 @@ def _evict_one(sources: dict) -> bool:
     return True
 
 
+#: FRED/ALFRED/FRASER (stlouisfed.org) terms refuse every automated fetch
+#: (governance/fred-terms-ruling-2026-11-13.md). It is no seed and no data host, and `fetch`
+#: refuses it before a request is built, whichever frontier row or link put the URL in hand.
+FRED_TERMS_REFUSAL = ("BLOCKED_ON_TERMS: FRED/ALFRED (stlouisfed.org) terms refuse every "
+                      "automated fetch (governance/fred-terms-ruling-2026-11-13.md)")
+FRED_MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
+                      "what_is_lost": "FRED/ALFRED/FRASER pages as crawl leads",
+                      "size": "UNMEASURED",
+                      "stand_in": "the primary publishers' own data hubs on the frontier",
+                      "reopens_when": ("the St. Louis Fed grants written permission for "
+                                       "automated use")}
+
+
+def _terms_refused(url: str) -> str:
+    try:
+        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ""
+    if host == "stlouisfed.org" or host.endswith(".stlouisfed.org"):
+        return FRED_TERMS_REFUSAL
+    return ""
+
+
 def log(msg: str) -> None:
     print(f"[{datetime.now(tz=UTC):%H:%M:%S}] {msg}", flush=True)
 
@@ -194,35 +217,12 @@ def _ascii_url(url: str) -> str:
     return url
 
 
-#: FRED/ALFRED/FRASER (stlouisfed.org) terms refuse every automated fetch
-#: (governance/fred-terms-ruling-2026-11-13.md). The seeds and the data-host hint still NAME the
-#: ground; `fetch` refuses it before a request is built, whichever path put the URL in hand.
-FRED_TERMS_REFUSAL = ("BLOCKED_ON_TERMS: FRED/ALFRED (stlouisfed.org) terms refuse every "
-                      "automated fetch (governance/fred-terms-ruling-2026-11-13.md)")
-FRED_MISSED_GROWTH = {"mechanism": "fred_terms_refusal",
-                      "what_is_lost": "FRED/ALFRED/FRASER pages as crawl leads",
-                      "size": "UNMEASURED",
-                      "stand_in": "the primary publishers' own data hubs on the frontier",
-                      "reopens_when": ("the St. Louis Fed grants written permission for "
-                                       "automated use")}
-
-
-def _terms_refused(url: str) -> str:
-    try:
-        host = (urlparse(str(url)).hostname or "").lower().rstrip(".")
-    except ValueError:
-        return ""
-    if host == "stlouisfed.org" or host.endswith(".stlouisfed.org"):
-        return FRED_TERMS_REFUSAL
-    return ""
-
-
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
-    refused = _terms_refused(url)
-    if refused:
-        return None, refused
     try:
+        # FRED terms ruling: a stlouisfed.org URL is refused before a request is built.
+        if _terms_refused(url):
+            return None, _terms_refused(url)
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
             "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
@@ -460,7 +460,7 @@ _API_RE = re.compile(
 
 
 _DATA_HOSTS = (
-    "stlouisfed.org", "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
+    "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
     "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
     # zh
@@ -708,7 +708,6 @@ SEEDS = (
     #
     # en / official
     "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
-    "https://fred.stlouisfed.org/categories",  # BLOCKED_ON_TERMS: fetch() refuses, record only
     "https://www.newyorkfed.org/markets/data-hub",
     "https://www.bis.org/statistics/index.htm",
     "https://www.ecb.europa.eu/stats/html/index.en.html",
@@ -881,7 +880,6 @@ SEEDS = (
     "https://www.gold.org/goldhub/data",
     "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
     "https://www.treasurydirect.gov/auctions/announcements-data-results/",
-    "https://alfred.stlouisfed.org/",  # BLOCKED_ON_TERMS: fetch() refuses, record only
     # eu (de / fr / it / es / nl)
     "https://www.wallstreet-online.de/diskussion/",
     "https://stock3.com/",

@@ -217,8 +217,9 @@ def test_world_dataset_hunter_declares_no_fred_door_and_refuses_one(asked: list[
     assert asked == []
 
 
-def test_world_crawler_fetch_refuses_every_fred_seed(asked: list[str]) -> None:
+def test_world_crawler_fetch_refuses_every_fred_page(asked: list[str]) -> None:
     import world_crawler as wc
+    assert not [u for u in wc.SEEDS if FRED_HOST.search(u)]
     for url in ("https://fred.stlouisfed.org/categories", "https://alfred.stlouisfed.org/"):
         raw, why = wc.fetch(url)
         assert raw is None and why.startswith("BLOCKED_ON_TERMS")

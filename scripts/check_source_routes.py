@@ -58,12 +58,12 @@ _FRED_TERMS_WHY = ("FRED/ALFRED (stlouisfed.org) terms refuse every automated fe
                    "(governance/fred-terms-ruling-2026-11-13.md)")
 ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "fred_series", "url": "https://api.stlouisfed.org/fred/series/observations",
-     "expect": "json", "needs_key": True, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
+     "expect": "json", "needs_key": True, "terms": "REFUSED"},
     {"name": "fred_release_dates", "url": "https://api.stlouisfed.org/fred/release/dates",
-     "expect": "json", "needs_key": True, "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
+     "expect": "json", "needs_key": True, "terms": "REFUSED"},
     {"name": "fred_graph_csv",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10", "expect": "csv",
-     "terms": "REFUSED", "terms_why": _FRED_TERMS_WHY},
+     "terms": "REFUSED"},
     {"name": "ecb_eurofxref_hist",
      "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml", "expect": "xml"},
     {"name": "dukascopy_datafeed", "url": "https://datafeed.dukascopy.com/datafeed",
