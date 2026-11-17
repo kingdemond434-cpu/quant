@@ -351,4 +351,5 @@ libs/portfolio/input_arms.py
 libs/ops/env_keys.py
 libs/ops/env_secret.py
 libs/ops/token_refresh.py
+desks/mt5/mt5desk/principal_stops.py
 libs/research/forward_ledger.py

@@ -55,6 +55,7 @@ def test_no_basis_is_unmeasured(roster: Path) -> None:
     assert h is None and "EURNOK" in why
 
 
+@pytest.mark.usefixtures("replication_passes")
 def test_a_live_row_without_a_basis_is_standby_and_one_with_it_stays_live(roster: Path) -> None:
     rows = [{"name": "XAUUSD.clocked.asia", "symbol": "XAUUSD", "family": "f",
              "status": "LIVE", "risk_frac": 0.01, "certificate": "XAUUSD.clocked.asia"},

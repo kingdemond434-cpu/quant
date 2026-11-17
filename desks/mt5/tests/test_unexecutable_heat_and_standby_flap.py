@@ -158,7 +158,7 @@ def test_an_unrecoverable_lossy_row_keeps_yesterdays_behaviour(canon, monkeypatc
 
 # ------------------------------------------------------------------ 2. the hourly un-demotion
 @pytest.fixture()
-def healer(tmp_path, monkeypatch):
+def healer(tmp_path, monkeypatch, fresh_tier_s_door):
     path = _DESK / "scripts" / "heal_silent_demotions.py"
     spec = importlib.util.spec_from_file_location("heal_silent_demotions_t", path)
     assert spec is not None and spec.loader is not None
@@ -166,6 +166,8 @@ def healer(tmp_path, monkeypatch):
     spec.loader.exec_module(mod)
     sleeves = tmp_path / "sleeves.json"
     monkeypatch.setattr(mod, "SLEEVES", sleeves)
+    # The healer now restores only against a readable stops record (principal_stops, 2026-10-14).
+    (tmp_path / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
 
     def run(rows: list[dict]) -> dict[str, str]:
         sleeves.write_text(json.dumps({"sleeves": rows}), encoding="utf-8")
