@@ -60,7 +60,6 @@ desks/mt5/mt5desk/mass_screen_rules.py
 desks/mt5/mt5desk/multiplicity.py
 desks/mt5/mt5desk/netting.py
 desks/mt5/mt5desk/order_door.py
-desks/mt5/mt5desk/pause_rearm.py
 desks/mt5/mt5desk/position_manager.py
 desks/mt5/mt5desk/mt5_manage.py
 desks/mt5/mt5desk/provenance.py

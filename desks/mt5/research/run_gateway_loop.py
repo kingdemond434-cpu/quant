@@ -178,13 +178,6 @@ def main() -> None:
     LOCK.write_text(str(__import__("os").getpid()), encoding="utf-8")
     dog = start_watchdog()
     try:
-        # THE GATEWAY'S OWN AUTO-PAUSE IS LIFTED HERE, BEFORE THE PASS READS IT (2026-11-17):
-        # only its own "AUTO-PAUSED" tag, only after a passed terminal probe and a backoff
-        # (mt5desk/pause_rearm.py). Never raises; a pause a person wrote is never touched. Read
-        # with getattr so a gateway module from before this change still gets its pass.
-        lift = getattr(gateway, "_lift_own_auto_pause", None)
-        if callable(lift):
-            lift()
         gateway.main()
         # A PASS THAT REACHED THE TERMINAL (adopter v6 audit): main() also returns early when
         # paused or when connect() fails, and those say nothing about the code working. Every
