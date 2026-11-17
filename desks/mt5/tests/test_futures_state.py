@@ -1090,3 +1090,19 @@ def test_a_bis_only_set_never_asks_fred(tmp_desk: Path, monkeypatch: pytest.Monk
     f = frames["fred_rel_gbpusd"]
     lead = pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(f["event_time"], utc=True)
     assert (lead >= pd.Timedelta(days=75)).all()
+
+
+def test_no_fred_route_is_open_in_the_futures_state_registry() -> None:
+    """FRED terms refuse every automated fetch (2026-11-13 ruling): no registry row whose URL is
+    on stlouisfed.org may read OPEN, so the `terms == "OPEN"` gate never calls the FRED API even
+    when a FRED key is present. Each refused row names why and carries its missed_growth."""
+    import json as _json
+    doc = _json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    rows = doc if isinstance(doc, list) else [r for v in doc.values() if isinstance(v, list)
+                                              for r in v]
+    fred = [r for r in rows if isinstance(r, dict) and "stlouisfed.org" in str(r.get("url", ""))]
+    assert fred, "the FRED rows stay in the registry as a record"
+    for r in fred:
+        assert r.get("terms") == "REFUSED", r.get("id")
+        assert "fred-terms-ruling" in str(r.get("terms_why", ""))
+        assert r["missed_growth"]["mechanism"] == "fred_terms_refusal"
