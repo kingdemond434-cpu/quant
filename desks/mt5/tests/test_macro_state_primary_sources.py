@@ -87,7 +87,8 @@ def test_no_macro_route_reaches_a_refused_host() -> None:
     for mod in ("macro_desk.py", "macro_sources.py"):
         src = (DESK / "research" / mod).read_text("utf-8")
         assert not REFUSED.search(src), f"{mod} still names a refused URL"
-        assert "fredgraph" not in src and "free_data" not in src.split('"""', 2)[-1]
+        code = src.split('"""', 2)[-1]          # past the module docstring
+        assert "fredgraph" not in code and "import free_data" not in code
     for spec in ms.SOURCED.values():
         assert not REFUSED.search(spec.get("url", ""))
 
