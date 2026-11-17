@@ -442,6 +442,7 @@ def test_hourly_mine_gdelt_seeds_obey_robots_and_never_bare_urlopen(
     import urllib.request as _ur
 
     import hourly_cycle as hc
+
     from research import index_discovery as idx
 
     monkeypatch.setattr(hc, "BASE", tmp_path)

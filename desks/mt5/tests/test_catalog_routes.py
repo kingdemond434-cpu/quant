@@ -72,7 +72,7 @@ def box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cr, "REPORT", tmp_path / "reports" / "CATALOG_ROUTES.json")
     ev = tmp_path / "catalog_routes" / "terms_evidence.json"
     ev.parent.mkdir(parents=True, exist_ok=True)
-    ev.write_text(json.dumps({"hosts": {h: _PERMITS for h in TEST_HOSTS}}))
+    ev.write_text(json.dumps({"hosts": dict.fromkeys(TEST_HOSTS, _PERMITS)}))
     monkeypatch.setattr(cr, "TERMS_EVIDENCE", ev)
     return tmp_path
 
