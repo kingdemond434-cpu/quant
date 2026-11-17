@@ -9,15 +9,16 @@ that overlap less than five calls to one. This organ puts each hour's research q
 spread of those models and keeps every distinct idea, marking which ones only a single model
 produced (the orthogonal tail) and which several converged on.
 
-WHERE THE MODELS COME FROM. Three providers, each fail-closed:
-  * OpenRouter, free ids only (the existing OPENROUTER key; `openrouter_guard` refuses any
-    paid id). Its daily free allowance is SHARED with every other organ, so this organ takes at
-    most `CN_ENSEMBLE_OPENROUTER_SHARE` of the day's budget, spread across the hours.
-  * hcnsec (api.hcnsec.cn) and AgentRouter (agentrouter.org): free-credit relays the principal
-    chose (2026-11-17). Each needs its key (`HCNSEC`, `AGENTROUTER`), which the principal adds to
-    the box; with no key the provider is DARK and nothing is sent. Both are third-party relays
-    that probably forward upstream vendors' keys and whose logging is opaque, so they receive
-    the PUBLIC prompt below and nothing else.
+WHERE THE MODELS COME FROM. OpenRouter, free ids only (the existing OPENROUTER key;
+`openrouter_guard` refuses any paid id), every free Chinese-lab id it lists that day. Its daily
+free allowance is SHARED with every other organ, so this organ takes at most
+`CN_ENSEMBLE_OPENROUTER_SHARE` of the day's budget, spread across the hours.
+
+NO FREE-CREDIT RELAYS. hcnsec, AgentRouter and YJS were REFUSED on terms by Governance
+(governance/llm-relays-terms-ruling-2026-11-17.md: robots disallow or unreadable terms, undisclosed
+upstream keys, no logging policy). They have no adapter here, their keys are catalogued `banned`,
+`scripts/check_source_routes.py` refuses their hosts, and a test pins all of it. The lawful route
+to more Chinese models is each vendor's own free tier under its own terms.
 
 WHAT IS SENT: PUBLIC TEXT ONLY, for every provider. A role, a public research brief and the
 output contract. Never the desk's packet, survivors, certificates, edges, sleeves, strategy code,
@@ -47,7 +48,6 @@ from libs.ops import cn_swarm
 _ROOT = Path(__file__).resolve().parents[2]
 DONATE_DIR = "data/intelligence/cn_ensemble"
 REPORT = "desks/mt5/reports/CN_MODEL_ENSEMBLE.json"
-RELAY_LEDGER = "data/cn_ensemble_relay_calls.jsonl"
 
 #: Free Chinese-model ids on OpenRouter. Data, not a ranking: every id gets turns, and an id the
 #: provider stops serving shows up as a CALL_FAILED row in the report, never a silent gap.
@@ -60,7 +60,7 @@ OPENROUTER_CN_MODELS: tuple[str, ...] = (
     "z-ai/glm-5.2:free",
 )
 
-#: Model-family words that mark an id as Chinese-lab on a relay's /models list.
+#: Model-family words that mark an id as Chinese-lab on a provider's /models list.
 CN_FAMILY = re.compile(
     r"deepseek|qwen|qwq|glm|chatglm|zhipu|kimi|moonshot|minimax|abab|doubao|ernie|hunyuan"
     r"|baichuan|\byi-|step-|internlm|spark", re.IGNORECASE)
@@ -72,7 +72,7 @@ class Provider:
     key_env: str                 # the env var the principal sets; a missing key is DARK
     base_env: str
     default_base: str
-    relay: bool                  # True: a free-credit relay (its own allowance, public prompt)
+    relay: bool = False          # always False: free-credit relays are refused (see above)
     models_env: str = ""         # optional comma-separated model override
 
 
@@ -80,16 +80,10 @@ PROVIDERS: tuple[Provider, ...] = (
     Provider("openrouter", "OPENROUTER_API_KEY", "CN_ENSEMBLE_OPENROUTER_BASE",
              "https://openrouter.ai/api/v1", relay=False,
              models_env="CN_ENSEMBLE_OPENROUTER_MODELS"),
-    # Both relays run the "new-api" gateway: OpenAI chat/completions at /v1, Bearer auth. The
-    # base is an env override because neither publishes it in a page this desk could verify.
-    Provider("hcnsec", "HCNSEC", "HCNSEC_BASE_URL", "https://api.hcnsec.cn/v1", relay=True,
-             models_env="HCNSEC_MODELS"),
-    Provider("agentrouter", "AGENTROUTER", "AGENTROUTER_BASE_URL", "https://agentrouter.org/v1",
-             relay=True, models_env="AGENTROUTER_MODELS"),
-    # yjs (api.yjs.im), the principal's third relay (2026-11-17). Same contract: DARK until the
-    # `YJS` key exists, https only, Chinese-lab models only, public prompts only.
-    Provider("yjs", "YJS", "YJS_BASE_URL", "https://api.yjs.im/v1", relay=True,
-             models_env="YJS_MODELS"),
+    # NO FREE-CREDIT RELAYS. hcnsec, AgentRouter and YJS were REFUSED on terms by Governance
+    # (governance/llm-relays-terms-ruling-2026-11-17.md): they may forward upstream vendors' keys.
+    # Their adapters are removed, their keys are catalogued `banned` (env_keys.read_key returns
+    # nothing), and ops/relay_terms_rulings.json records REFUSED; a test fails if any returns.
 )
 
 #: The swarm's lenses (one public source or region each) live in `cn_swarm.LENSES`.
@@ -146,19 +140,6 @@ class Seat:
     why: str = ""
 
 
-RULINGS = "ops/relay_terms_rulings.json"
-
-
-def relay_ruling(name: str) -> str:
-    """Governance's terms ruling for a free-credit relay: ALLOWED, or why not. Fail closed."""
-    try:
-        doc = json.loads((_ROOT / RULINGS).read_text("utf-8"))
-    except (OSError, ValueError):
-        return "UNREADABLE"
-    row = doc.get(name) if isinstance(doc, dict) else None
-    return str(row.get("ruling") or "PENDING") if isinstance(row, dict) else "ABSENT"
-
-
 def _read(name: str, env: Mapping[str, str] | None) -> str:
     """A key through `env_keys.read_key` (registry, then process env; catalog refusals apply).
     An explicit `env` mapping (tests, dry runs) is read as given."""
@@ -172,10 +153,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
              list_models: Callable[[str, str], list[str]] | None = None) -> Seat:
     """The provider's seat, or a DARK seat saying why. Never raises, never prints a key."""
     e = os.environ if env is None else env
-    if p.relay and relay_ruling(p.name) != "ALLOWED":
-        return Seat(p, p.default_base, "",
-                    why=f"DARK: awaiting Governance terms ruling ({RULINGS} says "
-                        f"{relay_ruling(p.name)})")
+    if p.relay:
+        return Seat(p, p.default_base, "", why="REFUSED: free-credit relays are refused on terms")
     key = _read(p.key_env, env)
     if not key and p.name == "openrouter":
         try:
@@ -191,7 +170,7 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
     override = [m.strip() for m in str(e.get(p.models_env, "") or "").split(",") if m.strip()]
     if override:
         models = override
-    elif not p.relay:
+    else:
         # EVERY free Chinese-lab id OpenRouter serves today (new ones join with no edit, retired
         # ones drop out); the static list is only the fallback when /models cannot be read.
         try:
@@ -200,18 +179,9 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
             listed = []
         live = [m for m in listed if m.endswith(":free") and CN_FAMILY.search(m)]
         models = live or list(OPENROUTER_CN_MODELS)
-    else:
-        try:
-            listed = (list_models or _list_models)(base, key)
-        except Exception as exc:
-            return Seat(p, base, "", why=f"DARK: /models unreachable ({type(exc).__name__})")
-        models = [m for m in listed if CN_FAMILY.search(m)]
-        if not models:
-            return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
-    if not p.relay:
-        models = [m for m in models if m.endswith(":free")]     # no paid id, ever
-        if not models:
-            return Seat(p, base, "", why="DARK: no :free model configured")
+    models = [m for m in models if m.endswith(":free")]         # no paid id, ever
+    if not models:
+        return Seat(p, base, "", why="DARK: no :free model configured")
     return Seat(p, base, key, tuple(dict.fromkeys(models)), lit=True)
 
 
@@ -227,7 +197,7 @@ def _chat(seat: Seat, model: str, system: str, user: str) -> tuple[str, str | No
     """One call through `llm_seat` so the token ledger has one writer and every row."""
     from libs.ops import llm_seat
     s = llm_seat.Seat(name=f"cn_{seat.provider.name}", base_url=seat.base_url, key=seat.key,
-                      model=model, source=llm_seat.FREE_RELAY if seat.provider.relay else "")
+                      model=model, source="")
     return llm_seat.chat(user, system=system, seat=s, max_tokens=4000, temperature=0.9)
 
 
@@ -260,16 +230,6 @@ def _openrouter_calls_today(now: datetime) -> int:
     except OSError:
         return 0
     return n
-
-
-def _relay_calls_today(root: Path, name: str, now: datetime) -> int:
-    path = root / RELAY_LEDGER
-    stamp = now.strftime("%Y-%m-%d")
-    try:
-        lines = path.read_text("utf-8").splitlines()
-    except OSError:
-        return 0
-    return sum(1 for ln in lines if f'"{name}"' in ln and stamp in ln)
 
 
 def _parse(text: str) -> list[dict[str, Any]]:
@@ -350,20 +310,15 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     rng = rng or random.Random(int(now.timestamp()))  # noqa: S311 -- steering draws, not crypto
     seats = [seat_for(p, e, list_models) for p in PROVIDERS]
     if quotas is None:
-        share = float(e.get("CN_ENSEMBLE_OPENROUTER_SHARE", "0.35") or 0.35)
-        relay_daily = _env_int(e, "CN_ENSEMBLE_RELAY_DAILY", 240)
+        share = float(e.get("CN_ENSEMBLE_OPENROUTER_SHARE", "0.5") or 0.5)
         q: dict[str, int] = {}
         for s in seats:
             if not s.lit:
                 continue
-            if s.provider.relay:
-                left = relay_daily - _relay_calls_today(base, s.provider.name, now)
-                q[s.provider.name] = max(0, -(-left // max(1, 24 - now.hour)))
-            else:
-                try:
-                    q[s.provider.name] = openrouter_quota(now, share)
-                except Exception:
-                    q[s.provider.name] = 0
+            try:
+                q[s.provider.name] = openrouter_quota(now, share)
+            except Exception:
+                q[s.provider.name] = 0
         quotas = q
     quotas = dict(quotas)
     cat = cn_swarm.catalog()
@@ -380,9 +335,8 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     # RESERVE: critic calls (any lit seat) and mutation calls (OpenRouter only: they carry the
     # desk's own near-miss rules, which never go to a free-credit relay).
     critic_cap = _env_int(e, "CN_SWARM_CRITIC_CALLS", 3)
-    critic_seat = next((s for s in seats if s.lit and s.provider.relay
-                        and quotas.get(s.provider.name, 0) > critic_cap), None) or next(
-        (s for s in seats if s.lit and quotas.get(s.provider.name, 0) > critic_cap), None)
+    critic_seat = next((s for s in seats if s.lit and quotas.get(s.provider.name, 0) > critic_cap),
+                       None)
     critic_calls = critic_cap if critic_seat else 0
     if critic_seat:
         quotas[critic_seat.provider.name] -= critic_calls
@@ -421,9 +375,6 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             text, err = do(seat, model, system, user)
         except Exception as exc:
             text, err = "", f"{type(exc).__name__}: {exc}"
-        if seat.provider.relay:
-            _append(base / RELAY_LEDGER, {"utc": _iso(_now()), "relay": seat.provider.name,
-                                          "model": model, "ok": not err})
         if err:
             return {**head, "status": "CALL_FAILED", "why": str(err)[:300]}, []
         found = _parse(text)
@@ -494,10 +445,6 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                 text, err = do(critic_seat, cmodel, cn_swarm.CRITIC_SYSTEM, user)
             except Exception as exc:
                 text, err = "", str(exc)
-            if critic_seat.provider.relay:
-                _append(base / RELAY_LEDGER, {"utc": _iso(_now()),
-                                              "relay": critic_seat.provider.name,
-                                              "model": cmodel, "ok": not err})
             if err:
                 crit["failed_calls"] += 1
                 continue

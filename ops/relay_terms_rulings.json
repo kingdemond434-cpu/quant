@@ -1,6 +1,15 @@
 {
- "_doc": "Governance's terms ruling per free-credit LLM relay used by libs/ops/cn_ensemble.py. A relay seat stays DARK unless its ruling is ALLOWED, whatever keys exist. Only Governance changes a ruling, by PR, with its reference. Why: these relays may forward upstream vendors' keys (Auditor, 2026-11-17).",
- "hcnsec": {"ruling": "PENDING", "ref": null},
- "agentrouter": {"ruling": "PENDING", "ref": null},
- "yjs": {"ruling": "PENDING", "ref": null}
+ "_doc": "Governance's terms rulings on free-credit LLM relays. REFUSED relays have no adapter in libs/ops/cn_ensemble.py and their keys are catalogued banned. Only Governance changes a ruling, by PR, with its reference.",
+ "hcnsec": {
+  "ruling": "REFUSED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+ },
+ "agentrouter": {
+  "ruling": "REFUSED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+ },
+ "yjs": {
+  "ruling": "REFUSED",
+  "ref": "governance/llm-relays-terms-ruling-2026-11-17.md"
+ }
 }

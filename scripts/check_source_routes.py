@@ -84,11 +84,34 @@ _ACCEPT = {
 MIN_BODY_BYTES = 64
 
 
+#: HOSTS GOVERNANCE REFUSED, by suffix (the host and its subdomains): no route to them is ever
+#: probed, and a route declared against one reads REFUSED. The value is the ruling.
+REFUSED_HOSTS: dict[str, str] = {
+    "api.hcnsec.cn": "LLM relay refused (governance/llm-relays-terms-ruling-2026-11-17.md)",
+    "agentrouter.org": "LLM relay refused (governance/llm-relays-terms-ruling-2026-11-17.md)",
+    "api.yjs.im": "LLM relay refused (governance/llm-relays-terms-ruling-2026-11-17.md)",
+}
+
+
+def refused(url: str) -> str | None:
+    """The ruling that refuses `url`'s host, or None."""
+    import urllib.parse
+    host = (urllib.parse.urlsplit(str(url)).hostname or "").lower()
+    for suffix, why in REFUSED_HOSTS.items():
+        if host == suffix or host.endswith("." + suffix):
+            return why
+    return None
+
+
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    why = refused(url)
+    if why:
+        out.update(status="REFUSED", why=why)           # never contacted
+        return out
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -164,7 +187,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"source routes: {len(results)} probed -> {census}")
     for r in results:
         mark = {"OK": "  ok    ", "MOVED": "  MOVED ", "HTTP_ERROR": "  http  ",
-                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr "}.get(str(r["status"]), "  ?    ")
+                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr ",
+                "REFUSED": "  refsd "}.get(str(r["status"]), "  ?    ")
         print(f"{mark}{r['name']!s:22} {str(r.get('why') or r.get('content_type') or '')[:70]}")
     print(f"  -> {OUT}")
     # MOVED is the only fatal verdict. An honest HTTP error or an unreachable host is loud and

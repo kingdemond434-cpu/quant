@@ -1110,40 +1110,34 @@
   },
   {
    "name": "HCNSEC",
-   "group": "free_llm",
-   "cost": "free credits (relay)",
+   "group": "banned",
+   "cost": "refused",
    "machine": "box",
-   "signup": "https://api.hcnsec.cn",
-   "unlocks": "hcnsec relay seat of the Chinese-model swarm (public prompts only); stays DARK until ops/relay_terms_rulings.json rules it ALLOWED",
-   "readers": [
-    "libs/ops/cn_ensemble.py"
-   ],
+   "signup": "REFUSED (governance/llm-relays-terms-ruling-2026-11-17.md)",
+   "unlocks": "NOTHING: relay refused on terms by Governance (governance/llm-relays-terms-ruling-2026-11-17.md); read_key returns nothing",
+   "readers": [],
    "owner": "LLM research lab (Chinese-model swarm)",
    "file_fallback": "none"
   },
   {
    "name": "AGENTROUTER",
-   "group": "free_llm",
-   "cost": "free credits (relay)",
+   "group": "banned",
+   "cost": "refused",
    "machine": "box",
-   "signup": "https://agentrouter.org",
-   "unlocks": "AgentRouter relay seat of the Chinese-model swarm (public prompts only); stays DARK until ops/relay_terms_rulings.json rules it ALLOWED",
-   "readers": [
-    "libs/ops/cn_ensemble.py"
-   ],
+   "signup": "REFUSED (governance/llm-relays-terms-ruling-2026-11-17.md)",
+   "unlocks": "NOTHING: relay refused on terms by Governance (governance/llm-relays-terms-ruling-2026-11-17.md); read_key returns nothing",
+   "readers": [],
    "owner": "LLM research lab (Chinese-model swarm)",
    "file_fallback": "none"
   },
   {
    "name": "YJS",
-   "group": "free_llm",
-   "cost": "free credits (relay)",
+   "group": "banned",
+   "cost": "refused",
    "machine": "box",
-   "signup": "https://api.yjs.im",
-   "unlocks": "yjs relay seat of the Chinese-model swarm (public prompts only); stays DARK until ops/relay_terms_rulings.json rules it ALLOWED",
-   "readers": [
-    "libs/ops/cn_ensemble.py"
-   ],
+   "signup": "REFUSED (governance/llm-relays-terms-ruling-2026-11-17.md)",
+   "unlocks": "NOTHING: relay refused on terms by Governance (governance/llm-relays-terms-ruling-2026-11-17.md); read_key returns nothing",
+   "readers": [],
    "owner": "LLM research lab (Chinese-model swarm)",
    "file_fallback": "none"
   }
