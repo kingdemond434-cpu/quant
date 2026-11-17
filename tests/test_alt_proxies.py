@@ -601,3 +601,20 @@ def test_a_refused_route_is_never_fetched_but_its_fixtures_still_parse(tmp_path)
                     fixtures=None, deadline=_t.monotonic() + 30, getter=getter)
     assert rec["status"] == "BLOCKED_ON_ROBOTS" and not calls
     assert "/*/na/ntt/" in rec["why"] and rec["missed_growth"]
+def test_the_default_getter_hands_the_path_key_to_the_redirect_guard(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """FIRMS carries its key in the URL PATH; the redirect guard only finds a path key when it
+    is told the secret, so `collect` must pass it to the opener (re-audit of #252)."""
+    from libs.data import keyed_sources as ks
+    secret = "s3cr3t-map-key-123"
+    monkeypatch.setenv("FIRMS_MAP_KEY", secret)
+    handed: list[tuple[str, ...]] = []
+
+    def opener(tls: Any = None, drop: Any = (), secrets: Any = ()) -> Any:
+        handed.append(tuple(secrets))
+        raise OSError("no network in tests")
+
+    monkeypatch.setattr(ks, "keyed_opener", opener)
+    A.collect(_tmp_desk(tmp_path), A.BY_ID["cn_firms_industrial"], {}, NOW, fetch=True,
+              fixtures=None, deadline=1e18)
+    assert handed and all(h == (secret,) for h in handed)
