@@ -1,8 +1,24 @@
-"""Alpha101 adapter (REBUILT, numpy only) -- six of the published formulaic alphas (Kakushadze
-2015) evaluated as PARENT GENOMES on this bundle's own bars. Each (alpha, frame) is one charged
-trial; the measurement is the rank information coefficient against the next bar's return, and
-the SIGN of that IC chooses the family the hypothesis is donated under. Nothing here ranks,
-sizes or approves -- the ten gates do."""
+"""Alpha101 adapter (REBUILT, numpy only) -- ALL 101 published formulaic alphas (Kakushadze 2015,
+arXiv:1601.00991) evaluated as one CROSS-SECTIONAL PANEL over this bundle's own bars.
+
+`libs/research/formulaic_alphas.py` is the evaluator: the paper's operator algebra written in the
+desk's own causal numpy (rank across the symbols present at a bar, ts_* per symbol over its own
+bars, indneutralize within the peer class MetaTrader's registry gives each instrument), the
+declared CFD proxies named (tick volume, tick-volume ADV, typical price for vwap), and `cap`
+UNMEASURED because no honest proxy exists. This adapter turns that panel into a packet:
+
+  * every alpha with a measurable status is ONE CHARGED TRIAL for its cross-sectional rank IC,
+    plus one per symbol whose time-series rank IC against the forward return is measured;
+  * every finite (alpha, symbol) association is donated as a STRUCTURED_HYPOTHESIS under a
+    registered price-only family -- the SIGN chooses momentum or reversion, never a strength
+    threshold, so a weak association is donated exactly like a strong one -- parameterised at
+    the alpha's own median window, so different alphas reach the gates as different cells;
+  * UNMEASURED alphas are reported by name with the field that has no proxy.
+
+THE TWO-LANE ORDER. The donated families are per-symbol statistical families, so the panel holds
+only instruments `universe_policy.may_hypothesise` admits; a share CFD or an UNCLASSIFIED symbol
+is set aside and named. Nothing here ranks alphas, sizes or approves -- the ten gates do.
+"""
 from __future__ import annotations
 
 from typing import Any
@@ -14,109 +30,118 @@ SYSTEM = "alpha101"
 CAPABILITY_FAMILY = "dsl_program_search"
 LICENCE_EXPECTED = "N/A (published method)"
 RUNS_WITHOUT_LIBRARY = True
+MIN_BARS = 120
 
 
-def _rank(v: Any) -> Any:
-    """Ranks in [0, 1] -- the transform every formulaic-alpha family is written in."""
-    import numpy as np
-    x = np.asarray(v, dtype=float)
-    return np.argsort(np.argsort(x)).astype(float) / max(x.shape[0] - 1, 1)
+def horizon_bars(horizon: str, timeframe: str = "H1") -> int:
+    """'4h' on an H1 panel is 4 bars; '24h' is 24; anything unreadable is one bar."""
+    s = str(horizon).strip().lower()
+    per_h = {"H1": 1.0, "M30": 2.0, "M15": 4.0, "M5": 12.0, "H4": 0.25}.get(timeframe, 1.0)
+    try:
+        if s.endswith("h"):
+            return max(1, round(float(s[:-1]) * per_h))
+        if s.endswith("d"):
+            return max(1, round(float(s[:-1]) * 24 * per_h))
+    except ValueError:
+        return 1
+    return 1
 
 
-def _ic(a: Any, b: Any) -> float:
-    """Rank correlation of two aligned series, non-finite rows dropped. A MEASUREMENT of
-    association, never a verdict: the sign picks the family and the gauntlet judges it."""
-    import numpy as np
-    x, y = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
-    m = np.isfinite(x) & np.isfinite(y)
-    if int(m.sum()) < 30 or float(np.std(x[m])) <= 0.0 or float(np.std(y[m])) <= 0.0:
-        return float("nan")
-    return float(np.corrcoef(_rank(x[m]), _rank(y[m]))[0, 1])
+def family_for(ic: float, window: int) -> tuple[str, dict[str, int]]:
+    """The SIGN picks the family: a positive association is momentum, a negative one reversion;
+    the alpha's median window parameterises it."""
+    w = max(2, min(int(window), 100))
+    if ic > 0:
+        return "trend_ma_cross", {"fast_ema": w, "slow_ema": max(3 * w, w + 1)}
+    return "mean_reversion_rsi", {"rsi_n": max(2, min(w, 50))}
 
 
-def _fwd(frame: A.BarFrame) -> Any:
-    """Next-bar log return, aligned to the bar the signal is known at (NaN in the last slot)."""
-    import numpy as np
-    return np.concatenate([frame.log_returns(), [np.nan]])
-
-
-def _family(ic: float) -> str:
-    """The SIGN chooses: a positive association is momentum, a negative one reversion. Never a
-    strength threshold -- a weak association is donated exactly like a strong one."""
-    return "trend_ma_cross" if ic > 0 else "mean_reversion_rsi"
-
-
-def _d(x: Any, k: int) -> Any:
-    """delta(x, k) with a NaN pad, so an index never borrows a value it could not know."""
-    import numpy as np
-    out = np.full(x.shape[0], np.nan)
-    if x.shape[0] > k:
-        out[k:] = x[k:] - x[:-k]
-    return out
-
-
-def _roll_mean(x: Any, w: int) -> Any:
-    import numpy as np
-    out = np.full(x.shape[0], np.nan)
-    if x.shape[0] >= w:
-        c = np.cumsum(np.insert(x, 0, 0.0))
-        out[w - 1:] = (c[w:] - c[:-w]) / w
-    return out
-
-
-def _sdiv(a: Any, b: Any) -> Any:
-    import numpy as np
-    return a / np.where(np.abs(b) < 1e-12, np.nan, b)
+def lane_split(frames: list[A.BarFrame]) -> tuple[list[A.BarFrame], list[dict[str, Any]],
+                                                  dict[str, dict[str, Any]]]:
+    from libs.research import formulaic_alphas as F
+    classes = F.registry_classes([f.symbol for f in frames])
+    kept = [f for f in frames if classes[f.symbol]["hypothesis"]]
+    aside = [{"symbol": f.symbol, "why": classes[f.symbol]["why"] or
+              "not admitted by universe_policy.may_hypothesise (share CFD or UNCLASSIFIED)"}
+             for f in frames if not classes[f.symbol]["hypothesis"]]
+    return kept, aside, classes
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     import numpy as np
-    frames = [f for f in bundle.frames("H1") if len(f) > 120]
+
+    from libs.research import formulaic_alphas as F
+
+    frames = [f for f in bundle.frames("H1") if len(f) > MIN_BARS]
     if not frames:
-        return A.unmeasured(SYSTEM, bundle, "no H1 frame carries more than 120 bars")
+        return A.unmeasured(SYSTEM, bundle, f"no H1 frame carries more than {MIN_BARS} bars")
+    kept, aside, classes = lane_split(frames)
+    if not kept:
+        return A.unmeasured(SYSTEM, bundle, "no frame is in the hypothesis lane: "
+                            + "; ".join(f"{r['symbol']}: {r['why']}" for r in aside)[:400])
     deadline = A.Deadline(bundle.compute_budget_s)
+    panel = F.panel_from_frames(kept, {s: c["group"] for s, c in classes.items()})
+    h = horizon_bars(bundle.horizons[0] if bundle.horizons else "1h")
+    with np.errstate(all="ignore"):
+        fwd = F.forward_returns(panel, h)
+    census = F.census()
+    ids = list(F.ALPHAS)
+    k = bundle.seed % len(ids)
+    order = ids[k:] + ids[:k]          # a pass the budget cuts short starts elsewhere next hour
     reps: list[dict[str, Any]] = []
     cands: list[dict[str, Any]] = []
     trials = 0
-    for f in frames:
+    not_reached: list[str] = []
+    for aid in order:
         if deadline.expired():
-            break
-        o = np.asarray(f.open, dtype=float)
-        h = np.asarray(f.high, dtype=float)
-        lo = np.asarray(f.low, dtype=float)
-        c = np.asarray(f.close, dtype=float)
-        v = np.asarray(f.volume, dtype=float)
-        fwd = _fwd(f)
-        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-            vwap = (h + lo + c) / 3.0
-            alphas: dict[str, Any] = {
-                "alpha012": np.sign(_d(v, 1)) * -_d(c, 1),
-                "alpha023": np.where(_roll_mean(h, 20) < h, -_d(h, 2), 0.0),
-                "alpha041": np.sqrt(np.maximum(h * lo, 0.0)) - vwap,
-                "alpha053": -_d(_sdiv((c - lo) - (h - c), np.maximum(c - lo, 1e-9)), 9),
-                "alpha054": -_sdiv((lo - c) * np.power(o, 5.0), (lo - h) * np.power(c, 5.0)),
-                "alpha101": _sdiv(c - o, h - lo + 1e-3),
-            }
-        for name, sig in alphas.items():
+            not_reached.append(aid)
+            continue
+        info = census[aid]
+        sig, why = F.evaluate(aid, panel)
+        if sig is None:
+            reps.append({"kind": "formulaic_alpha", "alpha": aid, "status": "UNMEASURED",
+                         "why": why, "proxies": info["proxies"]})
+            continue
+        trials += 1
+        with np.errstate(all="ignore"):
+            xic, n_rows = F.xs_ic(sig, fwd)
+        per_symbol: dict[str, float | None] = {}
+        for j, sym in enumerate(panel.symbols):
+            idx = np.flatnonzero(panel.present[:, j])
             trials += 1
-            ic = _ic(sig, fwd)
-            row = {"kind": "formulaic_alpha", "alpha": name, "symbol": f.symbol,
-                   "timeframe": f.timeframe, "ic_rank": None if np.isnan(ic) else ic,
-                   "n_bars": len(f), "source": "Kakushadze (2015) 101 Formulaic Alphas, "
-                                               "single-series variant on this bundle"}
-            reps.append(row)
+            ic = F.rank_ic(sig[idx, j], fwd[idx, j])
+            per_symbol[sym] = None if np.isnan(ic) else ic
             if np.isnan(ic):
                 continue
+            fam, params = family_for(ic, info["horizon_bars"])
             cands.append(A.candidate(
-                _family(ic), [f.symbol],
-                f"{f.symbol} {f.timeframe}: published formulaic alpha {name} scores a rank IC of "
-                f"{ic:+.4f} against the next bar's return over {len(f)} bars -- "
-                f"{'momentum' if ic > 0 else 'mean reversion'} at that horizon",
+                fam, [sym],
+                f"{sym} H1: published formulaic alpha {aid} ({info['status'].lower()}"
+                f"{', proxies ' + '/'.join(info['proxies']) if info['proxies'] else ''}) scores "
+                f"a rank IC of {ic:+.4f} against the {h}-bar forward return over {idx.size} "
+                f"bars -- {'momentum' if ic > 0 else 'mean reversion'} at window "
+                f"{info['horizon_bars']}",
                 horizon=bundle.horizons[0], source=SYSTEM,
-                evidence={"alpha": name, "ic_rank": ic, "n_bars": len(f),
-                          "method": "rank IC of a published formulaic alpha, single series"}))
+                evidence={"alpha": aid, "ic_rank": ic, "n_bars": int(idx.size),
+                          "status": info["status"], "proxies": info["proxies"],
+                          "parameters": params, "forward_bars": h,
+                          "method": "time-series rank IC of a cross-sectional formulaic alpha "
+                                    "(desk numpy operators, causal)"}))
+        reps.append({"kind": "formulaic_alpha", "alpha": aid, "status": info["status"],
+                     "proxies": info["proxies"], "xs_ic_mean": None if np.isnan(xic) else xic,
+                     "xs_bars": n_rows, "ic_by_symbol": per_symbol,
+                     "horizon_bars": info["horizon_bars"], "forward_bars": h,
+                     "symbols": list(panel.symbols)})
+    counts = F.census_counts(census)
+    reps.insert(0, {"kind": "formulaic_alpha_census", "n_alphas": len(F.ALPHAS), **counts,
+                    "proxies": F.PROXIES, "no_proxy": F.NO_PROXY,
+                    "not_reached_this_pass": not_reached, "set_aside_by_lane": aside,
+                    "panel_symbols": list(panel.symbols),
+                    "groups": dict(zip(panel.symbols, panel.groups, strict=True)),
+                    "source": "Kakushadze (2015) 101 Formulaic Alphas; desk numpy operators"})
     return A.packet(SYSTEM, bundle, trials=trials, representations=reps, candidates=cands,
-                    note=f"{len(reps)} (alpha, frame) evaluations")
+                    note=f"{len(F.ALPHAS) - len(not_reached)} of {len(F.ALPHAS)} alphas over "
+                         f"{len(panel.symbols)} symbols; {counts}")
 
 
 if __name__ == "__main__":

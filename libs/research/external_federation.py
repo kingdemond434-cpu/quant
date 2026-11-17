@@ -696,6 +696,13 @@ SEEDS: tuple[ExternalSystem, ...] = (
                    "REBUILT", _s("dsl_program_search",), _s("hypothesis_language",),
                    notes="public formulas only; WorldQuant BRAIN data, private alphas and any "
                          "platform extraction are excluded by its terms and by LAWS 5h"),
+    ExternalSystem("kakushadze151", "151 Trading Strategies (Kakushadze & Serur 2018, SSRN)",
+                   "paper:151-trading-strategies",
+                   "the survey's MT5-applicable strategies as desk-coded hypotheses; every other "
+                   "row named UNMEASURED or INAPPLICABLE with its reason", "REBUILT",
+                   _s("dsl_program_search",), _s("hypothesis_language",),
+                   notes="public paper only; the catalogue is reconstructed by the desk and "
+                         "every implementation is desk numpy"),
     ExternalSystem("worldquant_brain_public", "WorldQuant BRAIN (public operators only)",
                    "public:worldquant-brain", "public operator semantics, tutorials, papers",
                    "REBUILT", _s("dsl_program_search", "institutional_capability"),
