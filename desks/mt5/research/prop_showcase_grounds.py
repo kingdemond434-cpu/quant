@@ -57,36 +57,39 @@ GROUNDS: dict[str, dict[str, Any]] = {
         "url": "https://feeds.captivate.fm/twoblokestradinglearntotradeonline/",
         "kind": "podcast_rss", "claims": "interview", "lang": "en",
         "home": "https://twoblokestrading.com/"},
+    "desiretotrade": {"url": "https://desiretotrade.libsyn.com/rss", "kind": "podcast_rss",
+                      "claims": "interview", "lang": "en",
+                      "home": "https://www.desiretotrade.com/"},
+    "pricesquawk": {"url": "https://pricesquawk.com/feed/podcast/", "kind": "podcast_rss",
+                    "claims": "interview", "lang": "en", "home": "https://pricesquawk.com/"},
 }
 
 #: (verdict, why). Unlisted = to_confirm. See the module docstring for the vocabulary.
 _BASIS = ("principal 2026-11-17 20:49Z: where the terms do not ban it and the site does not "
           "block the honest agent, read it")
+_HOST_UNREAD = ("feed host terms unread (Auditor HOLD 2026-11-17): an unreadable terms page is "
+                "not evidence of no ban; reopens when the host terms are read and silent")
 TERMS: dict[str, tuple[str, str]] = {
-    "chatwithtraders": ("no_ban", _BASIS),
-    "twoblokestrading": ("no_ban", _BASIS),
+    "chatwithtraders": ("to_confirm", _HOST_UNREAD + "; megaphone.spotify.com/terms is "
+                        "robots-disallowed"),
+    "twoblokestrading": ("to_confirm", _HOST_UNREAD + "; captivate.fm/terms-of-service "
+                         "returned an error"),
+    "desiretotrade": ("to_confirm", "Libsyn Master Terms 5.1(g): \"use any robot, spider, data "
+                      "scraping, extraction tool or similar mechanism with respect to the Libsyn "
+                      "Platform\" (libsyn.com/tos-policies/tos-website/); not silence"),
+    "pricesquawk": ("no_terms", _BASIS),
 }
 
 #: Evidence per open ground: `url` (terms page read, or the home page where none is linked),
 #: `checked` (date) and `quote` (the permitting clause for `confirmed`; for no_ban/no_terms a
 #: plain statement of what was read and found absent).
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
-    "chatwithtraders": {
-        "url": "https://chatwithtraders.com/disclaimer", "checked": "2026-11-17",
-        "quote": ("NO BAN FOUND: the site links no terms page; its only legal page (Disclaimer) "
-                  "says content is for \"informational, educational, or entertainment purposes "
-                  "only\" and has no clause on automated access, copying or commercial use. The "
-                  "site footer itself publishes this feed under \"Follow Our Podcast: RSS\". "
-                  "robots.txt: empty Disallow. NOT READ: the feed host's own terms "
-                  "(megaphone.fm); its robots.txt is checked on every request")},
-    "twoblokestrading": {
-        "url": "https://twoblokestrading.com/disclaimer/", "checked": "2026-11-17",
-        "quote": ("NO BAN FOUND: the site's only legal page (Disclaimer) says the site \"is for "
-                  "educational use only\" and has no clause on automated access, copying or "
-                  "commercial use. The site itself links this feed as \"rss feed\". Its own "
-                  "robots.txt disallows /feed/ on twoblokestrading.com, which this ground never "
-                  "requests. NOT READ: the feed host's own terms (captivate.fm); its robots.txt "
-                  "is checked on every request")},
+    "pricesquawk": {
+        "url": "https://pricesquawk.com/", "checked": "2026-11-17",
+        "quote": ("NO TERMS PUBLISHED: the home page links a Privacy Policy and risk and "
+                  "testimonial disclosures only, no terms of use; robots.txt has an empty "
+                  "Disallow; the feed is served from the publisher's own domain and carries no "
+                  "copyright line")},
 }
 
 #: Grounds looked at and shut, with the clause. Kept so the next pass does not re-ask, and so
@@ -104,6 +107,13 @@ REFUSED: dict[str, dict[str, str]] = {
         "url": "https://www.forex.in.rs/robots.txt", "checked": "2026-11-17",
         "quote": "robots.txt disallows about 23 named AI and data crawlers site-wide and says "
                  "so in a comment; this agent is not named, the intent is, so it is not read"},
+    "toptradersunplugged": {
+        "url": "https://feeds.captivate.fm/top-traders-unplugged/", "checked": "2026-11-17",
+        "quote": "feed copyright: \"The content can not be used for commercial use without "
+                 "written permission from CMC AG.\""},
+    "fxnx": {
+        "url": "https://fxnx.com/legal/terms-of-service.pdf", "checked": "2026-11-17",
+        "quote": "s5: \"scrape or copy the Services with bots without our written consent;\""},
     "tradethepool": {
         "url": "https://tradethepool.com/terms-and-conditions", "checked": "2026-11-17",
         "quote": "compile, collect or assemble information pertaining to the Website in order "

@@ -332,3 +332,14 @@ def test_feed_blocked_by_robots_is_not_read(tmp_path: Path,
     rep = psg.harvest_feeds(f, _G, **_GOK)
     assert "https://pod.example/feed.xml" not in f.hits and rep["new_claims"] == 0
     assert rep["harvest_status"].startswith("UNMEASURED")
+
+
+def test_grounds_with_unread_host_terms_ship_shut() -> None:
+    # Auditor HOLD 2026-11-17: an unreadable host terms page is not evidence of no ban
+    for gid in ("chatwithtraders", "twoblokestrading", "desiretotrade"):
+        assert gid in psg.GROUNDS and not psg.terms_ok(gid)
+    # an open ground is served from the publisher's own domain or has host terms on record
+    from urllib.parse import urlsplit
+    for gid, cfg in psg.GROUNDS.items():
+        if psg.terms_ok(gid) and psg.TERMS[gid][0] != "confirmed":
+            assert urlsplit(cfg["url"]).netloc == urlsplit(cfg["home"]).netloc
