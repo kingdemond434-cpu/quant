@@ -1,21 +1,21 @@
 {
- "at": "2026-11-17T00:31:02+00:00",
+ "at": "2026-11-17T01:01:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 15.59,
-   "why": "no new verdict for 15.6h (last 2026-11-16T08:55:24+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 16.09,
+   "why": "no new verdict for 16.1h (last 2026-11-16T08:55:24+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.02,
-   "busy_other_cores": 17.13,
-   "why": "judge tree at 0.02 cores (others 17.13) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.1h (limit 1h)",
+   "busy_judge_cores": 0.03,
+   "busy_other_cores": 15.58,
+   "why": "judge tree at 0.03 cores (others 15.58) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.6h (limit 1h)",
    "low_since": "2026-11-17T00:26:08+00:00",
-   "hours": 0.08
+   "hours": 0.58
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +25,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 6.17,
+   "hours": 6.67,
    "limit_h": 25.59,
-   "why": "6.2h since the last sweep ended (None), status SWEEPING; limit 25.59h"
+   "why": "6.7h since the last sweep ended (None), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -41,9 +41,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "prewarm",
-   "hours": 5.85,
+   "hours": 6.35,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 5.9h since 2026-11-16T18:40:02+00:00 (limit 12.61h)"
+   "why": "sweep phase prewarm has run 6.4h since 2026-11-16T18:40:02+00:00 (limit 12.61h)"
   },
   "host_unreadable": {
    "open": false,
@@ -88,7 +88,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 10496,
-  "heartbeat_utc": "2026-11-17T00:30:44+00:00",
+  "heartbeat_utc": "2026-11-17T01:00:47+00:00",
   "last_sweep_ended_utc": null,
   "last_rc": null
  },
