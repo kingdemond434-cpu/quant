@@ -74,7 +74,6 @@ import io
 import itertools
 import json
 import math
-import ntpath
 import os
 import re
 import sys
@@ -95,6 +94,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.ops.env_keys import read_key  # noqa: E402
+from libs.ops.env_keys import refused as key_refused  # noqa: E402
 
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
@@ -3192,55 +3192,16 @@ CONFIG_DEFAULTS: dict[str, str] = {
 #: THE BOX'S KEYS, LOADED BY NAME AT RUNTIME (coordinator decision 2026-11-11). The leg runs under
 #: MT5-Dept-Data as SYSTEM, which does not inherit the keys the principal set in Administrator's
 #: User scope, so ALT_PROXIES.json read every key False while the keys sat on the box. Each
-#: declared `key_env` NOT already in the process environment is looked up, in order, in
-#: data/secrets/alt_keys.json ({"NAME": "value"}, gitignored with all of data/secrets/) and then in
-#: the Environment key of each user hive Windows has loaded under HKEY_USERS. Values land in this
-#: process's os.environ only: never printed, logged, written or committed. The report carries the
-#: SOURCE of each name ("env" / "secrets_file" / "registry_user" / absent), never a value.
+#: declared `key_env` is looked up, in order, through LIVE's reader `libs.ops.env_keys.read_key`
+#: (machine registry, THIS account's registry, process env) and then in data/secrets/alt_keys.json
+#: ({"NAME": "value"}, gitignored with all of data/secrets/). No other account's hive is ever read
+#: for a value (audit of #201, e32ae64ffe: "no hive sweep or export"); a key set under the wrong
+#: account is the checkers' to REPORT by name (scripts/check_keys.py), never this leg's to load.
+#: A name the catalog refuses (paid, non-commercial, banned: `env_keys.refused`) is never loaded
+#: from any source. A file value lands in this process's os.environ only: never printed, logged,
+#: written or committed. The report carries the SOURCE of each name ("read_key" / "secrets_file" /
+#: "refused" / absent), never a value.
 BOX_KEYS_FILE = DESK / "data" / "secrets" / "alt_keys.json"
-
-
-#: Names two loaded hives held with DIFFERENT values on the last registry read (names only): the
-#: first SID's value is used, and the report says the choice was ambiguous.
-REGISTRY_CONFLICTS: set[str] = set()
-
-
-def _registry_user_env(names: set[str]) -> dict[str, str]:
-    """Values for `names` from loaded user hives (HKEY_USERS\\<sid>\\Environment). Windows only;
-    {} anywhere else or on any error. Hives of logged-off users are not loaded and are skipped.
-    A REG_EXPAND_SZ value is expanded; one that still holds a `%` after expansion is skipped."""
-    REGISTRY_CONFLICTS.clear()
-    if not names or sys.platform != "win32":
-        return {}
-    out: dict[str, str] = {}
-    with contextlib.suppress(Exception):
-        import winreg  # type: ignore[import-not-found,unused-ignore]
-        root: Any = winreg.HKEY_USERS
-        i = 0
-        while True:
-            try:
-                sid = winreg.EnumKey(root, i)
-            except OSError:
-                break
-            i += 1
-            if not sid.startswith("S-1-5-21-") or sid.endswith("_Classes"):
-                continue
-            with contextlib.suppress(OSError), winreg.OpenKey(root, sid + "\\Environment") as k:
-                for name in names:
-                    with contextlib.suppress(OSError):
-                        val, typ = winreg.QueryValueEx(k, name)
-                        if not isinstance(val, str):
-                            continue
-                        if typ == getattr(winreg, "REG_EXPAND_SZ", 2):
-                            val = ntpath.expandvars(val)
-                        val = val.strip()
-                        if not val or "%" in val:
-                            continue
-                        if name not in out:
-                            out[name] = val
-                        elif out[name] != val:
-                            REGISTRY_CONFLICTS.add(name)
-    return out
 
 
 #: Keys other lanes read straight from a box secrets file, reported here by PRESENCE only (True /
@@ -3264,34 +3225,30 @@ def secrets_presence(secrets_dir: Path | None = None) -> dict[str, bool]:
 
 
 def load_box_keys(environ: Any = None, keys_file: Path | None = None,
-                  registry: Callable[[set[str]], dict[str, str]] | None = None) -> dict[str, str]:
-    """Fill each declared key_env missing from `environ` (default os.environ) from the box's
-    secrets file, then from loaded user hives. Returns {name: source}, never a value."""
+                  reader: Callable[[str], str] | None = None) -> dict[str, str]:
+    """Resolve each declared key_env: first `reader` (default LIVE's `read_key`; with an injected
+    `environ` and no reader, that mapping stands in for it), then the box's secrets file, whose
+    value is set in `environ` (default os.environ). A refused name is loaded from neither.
+    Returns {name: source}, never a value."""
     env: Any = os.environ if environ is None else environ
+    if reader is None:
+        reader = read_key if environ is None else (lambda n: str(env.get(n) or "").strip())
     wanted = sorted({s.key_env for s in SOURCES if s.key_env})
     source: dict[str, str] = {}
-    missing: set[str] = set()
+    held: Any = None
     for name in wanted:
-        # LIVE's reader (machine registry, this account's registry, process env) answers first
-        # on the real environment, so a key it already finds is never shadowed by a file copy.
-        if str(env.get(name) or "").strip() or (environ is None and read_key(name)):
-            source[name] = "env"
-        else:
-            missing.add(name)
-    if missing:
-        held = _read_json(keys_file or BOX_KEYS_FILE, {})
-        if isinstance(held, dict):
-            for name in sorted(missing):
-                val = held.get(name)
-                if isinstance(val, str) and val.strip():
-                    env[name] = val.strip()
-                    source[name] = "secrets_file"
-        missing -= set(source)
-    if missing:
-        for name, val in (registry or _registry_user_env)(set(missing)).items():
-            if name in missing:
-                env[name] = val
-                source[name] = "registry_user"
+        if key_refused(name):
+            source[name] = "refused"
+            continue
+        if str(reader(name) or "").strip():
+            source[name] = "read_key"
+            continue
+        if held is None:
+            held = _read_json(keys_file or BOX_KEYS_FILE, {})
+        val = held.get(name) if isinstance(held, dict) else None
+        if isinstance(val, str) and val.strip():
+            env[name] = val.strip()
+            source[name] = "secrets_file"
     return source
 
 
@@ -4575,10 +4532,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
         "keys": {s.key_env: bool(read_key(s.key_env)) for s in SOURCES if s.key_env},
-        # where each present key was found (env / secrets_file / registry_user), never its value
+        # where each key was found (read_key / secrets_file) or that it is refused; never a value
         "key_source": dict(sorted((key_source or {}).items())),
-        # names two loaded user hives held with different values (first SID used); never values
-        "registry_user_conflict": sorted(REGISTRY_CONFLICTS),
         "secrets_presence": secrets_presence(),
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
