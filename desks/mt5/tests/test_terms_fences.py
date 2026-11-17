@@ -188,7 +188,9 @@ def test_the_free_stack_hunter_does_not_fetch_a_fenced_source(tmp_path, monkeypa
     fh.run(store=store, roster=_congress_roster(tmp_path), fetch=no_fetch,
            only=["congress_trades"], live=False)
     cursor = json.loads(store.cursor.read_text("utf-8"))
-    assert cursor["congress_trades"]["last_status"] == "REFUSED_TERMS"
+    # LIVE's off-limits statute check (5 U.S.C. 13107(c)) refuses it first; the terms fence
+    # is the second wall behind it. Either refusal: never fetched, cost named.
+    assert cursor["congress_trades"]["last_status"] in ("REFUSED_TERMS", fh.OFF_LIMITS_STATUS)
     assert cursor["congress_trades"]["missed_growth"]
 
 
@@ -237,7 +239,8 @@ def test_hunter_refuses_congress_even_when_the_roster_allows_machine_use(tmp_pat
     store = fh.Store(tmp_path)
     fh.run(store=store, roster=roster, fetch=no_fetch, only=["congress_trades"], live=False)
     st = json.loads(store.cursor.read_text("utf-8"))["congress_trades"]
-    assert st["last_status"] == "REFUSED_TERMS" and "13107" in st["last_error"]
+    assert st["last_status"] in ("REFUSED_TERMS", fh.OFF_LIMITS_STATUS)
+    assert "13107" in st["last_error"]
 
 
 def test_proposer_mints_nothing_from_congress_whose_roster_row_allows_machine_use(

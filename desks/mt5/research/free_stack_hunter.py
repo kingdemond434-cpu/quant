@@ -587,6 +587,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
                        "last_attempt": _iso(now),
                        "missed_growth": (f"{sid} is never fetched ({refused}); what it carried "
                                          "is UNMEASURED, not zero")})
+            write_json(store.cursor, cursor)       # the refusal is visible on the cursor
             continue
         fence = terms_fences.seat_fenced(sid, fences)
         if fence is not None:
