@@ -179,14 +179,31 @@ foreach ($pat in $patterns) {
   }
 }
 
+# A DELIBERATE DISABLE IS NOT A FAULT (2026-10-22 in the reboot drill, here 2026-11-17). A task
+# disabled on purpose carries desks\mt5\data\TASK_HOLD_<name> (first line: why); no heal below
+# re-enables it. Remove the marker to let it heal.
+function Test-TaskHeld([string]$name) { Test-Path (Join-Path $base ("data\TASK_HOLD_" + $name)) }
+# Every heal that changes a task's state is also an event row (desks\mt5\data\events.jsonl), so
+# the board sees what was healed without reading this file's actions list.
+function Write-HealEvent([hashtable]$fields) {
+  $row = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss+00:00');
+                     producer = 'MT5-StallWatch'; host = $env:COMPUTERNAME }
+  foreach ($k in $fields.Keys) { $row[$k] = $fields[$k] }
+  $row['ack_state'] = 'UNACKNOWLEDGED'
+  try { Add-Content -LiteralPath (Join-Path $base 'data\events.jsonl') -Value ($row | ConvertTo-Json -Compress) -Encoding UTF8 } catch { }
+}
+
 # DISABLED research tasks come back on; a task whose last TWO results failed while idle is
 # re-run (IgnoreNew makes the retry safe; a task that fails again surfaces on the next pass).
 foreach ($tn in $researchTasks) {
   $q = schtasks /Query /TN $tn /FO CSV /V 2>$null | ConvertFrom-Csv
   if (-not $q) { continue }
-  if ($q.Status -eq 'Disabled') {
+  if ($q.Status -eq 'Disabled' -and (Test-TaskHeld $tn)) {
+    $actions += "DISABLED ${tn}: HELD by data\TASK_HOLD_$tn -- left as is"
+  } elseif ($q.Status -eq 'Disabled') {
     Enable-ScheduledTask -TaskName $tn | Out-Null
     $actions += "DISABLED ${tn}: re-enabled"
+    Write-HealEvent @{ kind = 'TASK_AUTO_REENABLED'; task = $tn; lane = 'research' }
   }
   $lr = [int64]($q.'Last Result')
   if ($q.Status -eq 'Ready' -and $lr -ne 0 -and $lr -ne 267009 -and $lr -ne 267014) {
@@ -217,6 +234,49 @@ foreach ($tn in $researchTasks) {
     $procsOut[$failKey] = @{ cpu = $lr; at = $now.ToString('o') }
   }
 }
+
+# THE CONTROL PLANE COMES BACK ON TOO (principal 2026-11-17: routine recovery never waits on a
+# person). The research loop above heals research only; the tasks that keep the desk ALIVE --
+# the terminal watchdog, the release adopter, the state feed, the box->origin sync, the universe,
+# the clock fixer and the staleness healer -- were re-enabled only by the DAILY reboot drill, and
+# three of them by nothing at all. A Windows race that flips one Disabled (result 267014, seen
+# twice) then left the desk deaf or frozen until somebody looked. They are re-enabled here, on
+# this ten-minute clock, unless a TASK_HOLD_<name> marker says the disable was deliberate.
+# Enabling only lets the task run its own registered action on its own trigger; it starts
+# nothing, kills nothing, and the gateway and the E8 guard (the order paths) are not in the set.
+$controlTasks = @('MT5-TerminalBoot', 'MT5-AdoptRelease', 'MT5-DeskState', 'MT5-ShadowSync',
+                  'MT5-Universe', 'MT5-ClockFixer', 'MT5-NeverStale')
+foreach ($tn in $controlTasks) {
+  $q = schtasks /Query /TN $tn /FO CSV 2>$null | ConvertFrom-Csv
+  if (-not $q -or $q.Status -ne 'Disabled') { continue }
+  if (Test-TaskHeld $tn) {
+    $actions += "DISABLED ${tn}: HELD by data\TASK_HOLD_$tn -- left as is"
+    continue
+  }
+  Enable-ScheduledTask -TaskName $tn | Out-Null
+  $actions += "JOURNAL DISABLED ${tn}: control-plane task re-enabled"
+  Write-HealEvent @{ kind = 'TASK_AUTO_REENABLED'; task = $tn; lane = 'control' }
+}
+
+# A STALE DESK FEED IS KICKED, NOT ONLY REPORTED (2026-11-17). web\desk_state.json is rebuilt
+# every 15 minutes by MT5-DeskState; when it is older than $feedStaleMin and the task is not
+# already running, the task is started once (its own action, idempotent). The reboot drill only
+# ever raised an alarm for this, once a day.
+$feedStaleMin = 45
+try {
+  $feed = 'C:\opt\quant\web\desk_state.json'
+  $feedAge = if (Test-Path $feed) { ((Get-Date) - (Get-Item $feed).LastWriteTime).TotalMinutes } else { [double]::PositiveInfinity }
+  if ($feedAge -gt $feedStaleMin -and -not (Test-TaskHeld 'MT5-DeskState')) {
+    $q = schtasks /Query /TN 'MT5-DeskState' /FO CSV 2>$null | ConvertFrom-Csv
+    if ($q -and $q.Status -eq 'Ready') {
+      schtasks /Run /TN 'MT5-DeskState' | Out-Null
+      $ageTxt = if ([double]::IsInfinity($feedAge)) { 'absent' } else { "$([math]::Round($feedAge)) min old" }
+      $actions += "JOURNAL STALE FEED: web\desk_state.json $ageTxt -- MT5-DeskState started"
+      Write-HealEvent @{ kind = 'FEED_AUTO_KICKED'; task = 'MT5-DeskState'; feed = 'web/desk_state.json';
+                         age_min = $(if ([double]::IsInfinity($feedAge)) { $null } else { [math]::Round($feedAge) }) }
+    }
+  }
+} catch { $actions += "STALE FEED CHECK UNRUNNABLE: $($_.Exception.GetType().Name)" }
 
 # RAM FLOOR (2026-08-28). This box has 8GB and runs the live MT5 terminal alongside the miners.
 # Measured the night the sweep stalled: 0.3GB free, edge_search at 4.3GB, the gauntlet thrashing
