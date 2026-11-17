@@ -712,11 +712,31 @@ def organ_firewall() -> dict[str, Any]:
     st["baseline"] = {**base, "at": NOW.isoformat()}
     _save_state("firewall", st)
     return {"audit": audit, "ratchet": rat, "seeded_rules": base.get("seeded"),
-            "runtime_checks_remaining": "money-path call sites (universal_gate, "
-            "external_gauntlet, the autodiscovery orchestrator's lockbox open) do not yet call "
-            "firewall.may / firewall.lockbox_accepts: a desktop session's edit",
+            "runtime_checks": _firewall_runtime_sites(),
             "metric": {"violations": audit["n_violations"], "breach": 1.0 if rat["breach"]
                        else 0.0}}
+
+
+#: The money-path sites that must consult the firewall AT RUNTIME (Tier S layer 12), and the call
+#: each one's source must carry. Read from the files on every pass, so a site that loses its
+#: call reads False here the hour it happens instead of the ledger asserting it from memory.
+FIREWALL_RUNTIME_SITES = (
+    ("desks/mt5/research/universal_gate.py", "judge_refusal("),
+    ("desks/mt5/scripts/external_gauntlet.py", "judge_refusal("),
+    ("libs/autodiscovery/orchestrator.py", "lockbox_accepts("),
+)
+
+
+def _firewall_runtime_sites() -> dict[str, bool | str]:
+    """{site: True when its source calls the firewall, False when it does not}. An unreadable
+    site is UNMEASURED, never False and never True (L1.28a)."""
+    out: dict[str, bool | str] = {}
+    for rel, needle in FIREWALL_RUNTIME_SITES:
+        try:
+            out[rel] = needle in (ROOT / rel).read_text(encoding="utf-8")
+        except OSError:
+            out[rel] = "UNMEASURED"
+    return out
 
 
 def _incumbent_validator() -> meta_benchmark.ValidatorConfig:

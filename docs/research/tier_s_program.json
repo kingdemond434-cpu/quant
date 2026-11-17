@@ -15,14 +15,15 @@
    "files": [
     "libs/tiers/truth_kernel.py",
     "desks/mt5/research/tier_s.py",
-    "libs/tiers/promotion_authority.py"
+    "libs/tiers/promotion_authority.py",
+    "desks/mt5/scripts/external_gauntlet.py"
    ],
    "extends": [
     "desks/mt5/research/certificate_truth.py"
    ],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "status": "BLOCKED_ON_USER",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.journal_ok",
@@ -30,7 +31,7 @@
     "organ": "truth_kernel",
     "bar": 1.0
    },
-   "remaining": "the gauntlet reading cert.dsr_threshold / cert.gates_required / lockbox.min_fraction from the constitution: external_gauntlet.py is a signed judge file, routed to the desktop session; the promotion door already enforces the constitution (a loosened, unratified rule set withholds every new live row)"
+   "remaining": "the trading box's own attestation: a tier_s pass there writing TRUTH_KERNEL.json fresh with its contract not REJECTED. The gauntlet reads cert.dsr_threshold / cert.gates_required / lockbox.min_fraction from the constitution through truth_kernel.gauntlet_thresholds (external_gauntlet.py:77-85), and the promotion door enforces it"
   },
   {
    "id": "S02",
@@ -262,19 +263,22 @@
    "files": [
     "libs/tiers/firewall.py",
     "desks/mt5/research/tier_s.py",
-    "desks/mt5/tests/test_tier_s_adversarial.py"
+    "desks/mt5/tests/test_tier_s_adversarial.py",
+    "desks/mt5/research/universal_gate.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "libs/autodiscovery/orchestrator.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FIREWALL.json",
-   "status": "PARTIAL",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.violations",
     "better": "down",
     "organ": "firewall"
    },
-   "remaining": "runtime may()/lockbox_accepts calls at money-path sites (universal_gate, external_gauntlet, the autodiscovery orchestrator's lockbox open): signed judge files, routed to the desktop session"
+   "remaining": "the trading box's own attestation: a tier_s pass there writing FIREWALL.json fresh with every `runtime_checks` site True and its contract not REJECTED. The runtime calls are in place: universal_gate.judge_refusal and external_gauntlet.judge_refusal (both fail closed through libs/tiers/firewall.judge_refusal), and the autodiscovery orchestrator calls firewall.lockbox_accepts on the frozen candidate before open_lockbox"
   },
   {
    "id": "S13",
