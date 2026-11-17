@@ -18,6 +18,7 @@ it (a starved key tomorrow costs more than a thinner sweep today).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -26,8 +27,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from fetch_video_transcript import TranscriptUnavailable as _TranscriptUnavailable
 from fetch_video_transcript import youtube as _yt_transcript
+
+_R = Path(__file__).resolve().parent.parent   # the repo root, for libs.data.keyed_sources
+if str(_R) not in sys.path:
+    sys.path.insert(0, str(_R))
 
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
@@ -48,13 +54,24 @@ SEED_QUERIES = [
 ]
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
 
+#: zuck's requested channels (QuantGuild, Algovibes, ...) live in the transcript miner's config;
+#: the corpus follows every one of them too, so a blocked caption route never blinds discovery.
+CHANNEL_CONFIG = ROOT / "config" / "video_mining_channels.json"
+
+
+def configured_handles() -> list[str]:
+    cfg = read_json(CHANNEL_CONFIG, {})
+    return [str(c.get("handle", "")).lstrip("@") for c in cfg.get("channels", []) if c.get("handle")]
+
 
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
+    raise PermissionError(f"{YOUTUBE_API_TERMS}; {YOUTUBE_API_MISSED_GROWTH}")
     if spent[0] + cost > UNIT_BUDGET:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
     params["key"] = KEYFILE.read_text("utf-8").strip()
     url = f"{API}/{endpoint}?{urllib.parse.urlencode(params)}"
-    with urllib.request.urlopen(url, timeout=30) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(url, timeout=30, secrets=(params["key"],)) as r:
         spent[0] += cost
         return json.load(r)
 
@@ -97,7 +114,37 @@ def fetch_transcript(video_id: str) -> tuple[str | None, str | None]:
     return (text[:20000], None) if text else (None, "TRANSCRIPT_UNAVAILABLE")
 
 
+#: The YouTube Data API is refused (wayback-youtube-ruling-2026-11-14 and zuck's standing rules:
+#: no YouTube API key, the box never contacts YouTube). The collector therefore records the
+#: refusal where the coverage ledger is read and sends no request, with or without a key.
+YOUTUBE_API_TERMS = ("terms-refused: the YouTube Data API and caption routes are refused; the "
+                     "box never contacts YouTube (wayback-youtube-ruling-2026-11-14)")
+YOUTUBE_API_MISSED_GROWTH = ("missed_growth: no YouTube channel, upload or description links "
+                             "reach the video hunter; its digs use text, code and Bilibili "
+                             "routes")
+
+
+def record_refusal(now: datetime) -> dict:
+    """Write the refusal into the coverage ledger (L1.28a: never a silent zero)."""
+    report = {"ts": now.isoformat(), "status": "BLOCKED_ON_TERMS", "videos": 0,
+              "requests_sent": 0, "terms": YOUTUBE_API_TERMS,
+              "missed_growth": YOUTUBE_API_MISSED_GROWTH}
+    cov = read_json(COVERAGE, {})
+    cov.update({"last_sweep": now.isoformat(), **report})
+    COVERAGE.parent.mkdir(parents=True, exist_ok=True)
+    COVERAGE.write_text(json.dumps(cov, indent=1), "utf-8")
+    return report
+
+
 def main() -> int:
+    report = record_refusal(datetime.now(tz=UTC))
+    print(f"youtube corpus: {report['status']} -- {YOUTUBE_API_TERMS}; "
+          f"{YOUTUBE_API_MISSED_GROWTH}")
+    return 0
+
+
+def _refused_sweep() -> int:
+    """The refused Data API sweep, kept for the record; nothing calls it."""
     if not KEYFILE.exists():
         print("youtube key absent (data/secrets/youtube_api_key) -- nothing collected, "
               "exiting quietly; the dig falls back to text/code routes")
@@ -115,8 +162,9 @@ def main() -> int:
         # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
         # search only when the search quota works at all this run.
         search_dead = False
-        unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
-                      and q not in reg["discovered"]][:6]
+        seeds = configured_handles() + [q for q in SEED_QUERIES if q not in configured_handles()]
+        unresolved = [q for q in seeds if q not in reg["channels"]
+                      and q not in reg["discovered"]][:12]
         for q in unresolved:
             handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
             try:
@@ -194,9 +242,17 @@ def main() -> int:
         report["errors"].append(str(exc))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
+    # The off-box Actions job sets YOUTUBE_CORPUS_NO_TRANSCRIPTS=1: the only caption route
+    # (fetch_video_transcript) reaches robots-Disallowed paths via third-party mirrors, which
+    # the rules ban, so that job keeps titles/descriptions/links from the official API only.
+    no_t = os.environ.get("YOUTUBE_CORPUS_NO_TRANSCRIPTS") == "1"
     got_t, attempted = 0, 0
     unresolved: dict[str, int] = {}
+    if no_t:
+        unresolved["ROBOTS_DISALLOWED_SKIPPED"] = len(rows)
     for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True):
+        if no_t:
+            break
         if got_t >= TRANSCRIPTS_PER_RUN:
             break
         vid = row.get("video_id")
