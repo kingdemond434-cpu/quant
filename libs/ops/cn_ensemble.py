@@ -432,7 +432,8 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             batch = near[(k * 3) % max(1, len(near)):][:3] or near[:3]
             system, user = cn_swarm.MUTATE_SYSTEM, cn_swarm.mutate_user(batch, cat)
         else:
-            system = cn_swarm.SCOUT_SYSTEM if lens == cn_swarm.SCOUT_LENS else psys
+            system = (cn_swarm.formula_system() if lens.startswith(cn_swarm.SCIENCE_PREFIX)
+                      else cn_swarm.SCOUT_SYSTEM if lens == cn_swarm.SCOUT_LENS else psys)
             user = cn_swarm.lens_prompt(lens, extra)
         try:
             assert_public(system, user)
@@ -488,11 +489,15 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     for (seat, model, lens, task), (outcome, found) in zip(calls, results, strict=True):
         outcomes.append(outcome)
         n_rec = 0
+        science = lens.startswith(cn_swarm.SCIENCE_PREFIX)
         for f in found:
-            if str(f.get("family") or "") in dead_set:
+            # a cross-science analog is a NEW never-judged family (its own expr); the dead-family
+            # prune is about catalogue families, so it never drops one
+            if not science and str(f.get("family") or "") in dead_set:
                 pruned_dead += 1
                 continue
-            r = cn_swarm.validate_recipe(f, cat) if cat else None
+            r = (cn_swarm.validate_formula(f, lens) if science
+                 else cn_swarm.validate_recipe(f, cat) if cat else None)
             if r is None:
                 k = _key(str(f["title"]))
                 if not k:

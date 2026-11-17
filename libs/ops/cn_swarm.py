@@ -156,7 +156,7 @@ LENSES: tuple[tuple[str, str, str], ...] = (
     ("contrarian_retail", "en", "popular retail trading beliefs in these markets that are probably "
      "wrong, and the rule that profits from the crowd acting on them"),
 )
-LENS_BRIEF = {lid: brief for lid, _lang, brief in LENSES}
+LENS_BRIEF = {lid: brief for lid, _lang, brief in LENSES}  # science lenses join below
 
 _LANG_ASK = {
     "zh": "请用你从中文原始资料中学到的知识来思考。JSON字段值可以用英文写。",
@@ -700,3 +700,96 @@ def discovered_brief(root: Path, rng: random.Random, n: int = 4) -> str | None:
                       for r in pick)
     return ("what these little-known public publishers release, and which predictable price "
             f"behaviour in FX, gold, metals, energy or index CFDs it could drive: {names}")
+
+
+# ------------------------------------------------------------- cross-science analog families
+#: Models borrowed from other sciences (Hourly pass ideas duty, 2026-11-17). Each lens asks for
+#: the analog as a FORMULA in the desk's causal alpha grammar (`libs.research.alpha_grammar`),
+#: built from the instrument's own bars only, so it compiles straight into the `formula` family.
+#: `population` in its params names the analog (provenance, never a tuned parameter), which makes
+#: each analog its own never-judged cell population for the breadth floor.
+SCIENCE_PREFIX = "science_"
+SCIENCE_LENSES: tuple[tuple[str, str], ...] = (
+    ("science_predator_prey", "ecology's predator-prey (Lotka-Volterra) cycles between two "
+     "populations, e.g. momentum traders feeding on trend while mean-reverters feed on them"),
+    ("science_sir_contagion", "epidemiology's SIR contagion: a move that infects activity and "
+     "volatility, spreads, peaks and burns out as the susceptible pool is exhausted"),
+    ("science_queueing_refill", "queueing theory: liquidity consumed by aggressive flow and "
+     "refilled at a finite rate, so price impact decays as the queue rebuilds"),
+    ("science_critical_slowing", "physics' critical slowing down before a phase transition: "
+     "rising autocorrelation and variance that warn of a regime break"),
+    ("science_hawkes_excitation", "self-exciting point processes (earthquake aftershocks): "
+     "bursts of activity that raise the odds of further bursts, then decay"),
+    ("science_diffusion_barrier", "diffusion against a reflecting or absorbing barrier: price "
+     "near a recent extreme behaves differently from price in open space"),
+    ("science_oscillator_damping", "damped and driven oscillators: an overshoot that rings back "
+     "with a characteristic period and decay set by the session clock"),
+    ("science_entropy_order", "information entropy: low-entropy, orderly flow that precedes a "
+     "directional move versus high-entropy noise"),
+)
+SCIENCE_BRIEF = dict(SCIENCE_LENSES)
+
+
+def formula_system() -> str:
+    from libs.research import alpha_grammar as g
+    return (
+        "You are one agent in a research swarm that borrows models from other sciences. Turn "
+        "the science model you are given into a TRADING SIGNAL written as a formula over one "
+        "instrument's own bars, in this exact grammar (prefix calls, nothing else):\n"
+        f"- terminals: {', '.join(g.BAR_TERMINALS)} (ret = return, range = high-low, "
+        "activity = tick count, flow = signed tick flow, vol = realised volatility)\n"
+        f"- one-argument: {', '.join(g.UNARY)}\n"
+        f"- windowed (child, window): {', '.join(g.WINDOWED)}\n"
+        f"- two-argument: {', '.join(g.BINARY)}\n"
+        f"- two-argument windowed (a, b, window): {', '.join(x for x in g.BINARY_WINDOWED if 'group' not in x)}\n"
+        f"- windows: {', '.join(str(w) for w in g.WINDOWS)}; at most {g.MAX_DEPTH} levels deep\n"
+        "Never add a price to a count or a return: combine like with like, or z-score first.\n"
+        "The signal is z-scored and traded when extreme: side_mode 'follow' trades with its "
+        "sign, 'fade' against it.\n"
+        "Return ONLY JSON: "
+        '{"findings": [{"title": "short label", "analog": "the science model", '
+        '"mechanism": "why markets should behave like this model", '
+        '"testable_claim": "what the signal predicts", '
+        '"expr": "zscore(sub(mean(flow, 12), mean(flow, 48)), 120)", '
+        '"side_mode": "follow | fade", "hold_bars": 8, "entry_z": 1.5, '
+        '"symbols": ["EURUSD", "XAUUSD"]}]}\nGive up to 6 findings.')
+
+
+def validate_formula(f: Mapping[str, Any], analog: str) -> dict[str, Any] | None:
+    """A `formula` recipe when the expression parses and is valid on bar terminals only."""
+    try:
+        from libs.research import alpha_grammar as g
+        expr = g.from_str(str(f.get("expr") or ""))
+    except Exception:
+        return None
+    if not g.is_valid(expr, terminals=g.BAR_TERMINALS) or g.complexity(expr) > 24:
+        return None
+    params: dict[str, Any] = {"expr": expr, "population": f"llm_{analog}"}
+    side = str(f.get("side_mode") or "follow")
+    if side not in ("follow", "fade"):
+        return None
+    if side != "follow":
+        params["side_mode"] = side
+    try:
+        hb = round(float(f.get("hold_bars", 8)))
+        ez = float(f.get("entry_z", 1.5))
+    except (TypeError, ValueError):
+        return None
+    if not (1 <= hb <= 240 and 0.5 <= ez <= 4.0):
+        return None
+    if hb != 8:
+        params["hold_bars"] = hb
+    if ez != 1.5:
+        params["entry_z"] = ez
+    syms = []
+    for s in f.get("symbols") or []:
+        u = str(s).upper().replace("/", "").strip()
+        if _SYM.match(u) and u not in syms:
+            syms.append(u)
+    if not syms:
+        return None
+    return {"family": "formula", "params": params, "symbols": syms[:6]}
+
+
+LENSES = LENSES + tuple((lid, "en", brief) for lid, brief in SCIENCE_LENSES)
+LENS_BRIEF.update(SCIENCE_BRIEF)

@@ -431,3 +431,57 @@ def test_yjs_key_saved_as_yjss_lights_the_seat() -> None:
     from libs.ops import env_keys
     row = next(r for r in env_keys.catalog() if r["name"] == "YJSS")
     assert row["readers"] == ["libs/ops/cn_ensemble.py"] and not env_keys.refused("YJSS")
+
+
+SCI_EXPR = "zscore(sub(mean(flow, 12), mean(flow, 48)), 120)"
+
+
+def test_validate_formula_admits_only_bar_only_grammar() -> None:
+    from libs.ops import cn_swarm as sw
+    ok = sw.validate_formula({"expr": SCI_EXPR, "symbols": ["eurusd", "XAU/USD"],
+                              "side_mode": "fade", "hold_bars": 12}, "science_sir_contagion")
+    assert ok is not None and ok["family"] == "formula"
+    assert ok["symbols"] == ["EURUSD", "XAUUSD"]
+    assert ok["params"]["population"] == "llm_science_sir_contagion"
+    assert ok["params"]["side_mode"] == "fade" and ok["params"]["hold_bars"] == 12
+    for bad in ("ts_zscore(close, 20)", "zscore(close, 7)", "add(std(close, 24), std(ret, 24))",
+                "zscore(dxy, 24)", "", "not a formula ((("):
+        assert sw.validate_formula({"expr": bad, "symbols": ["EURUSD"]}, "science_x") is None
+    assert sw.validate_formula({"expr": SCI_EXPR, "symbols": []}, "science_x") is None
+    assert sw.validate_formula({"expr": SCI_EXPR, "symbols": ["EURUSD"], "hold_bars": 999},
+                               "science_x") is None
+
+
+def test_science_lenses_are_public_and_cover_the_four_asked_analogs() -> None:
+    from libs.ops import cn_swarm as sw
+    ids = {lid for lid, _lg, _b in sw.LENSES if lid.startswith(sw.SCIENCE_PREFIX)}
+    assert {"science_predator_prey", "science_sir_contagion", "science_queueing_refill",
+            "science_critical_slowing"} <= ids
+    for lid in ids:
+        cn.assert_public(sw.formula_system(), sw.lens_prompt(lid))
+    from libs.research import alpha_grammar as g
+    assert g.is_valid(g.from_str(SCI_EXPR), terminals=g.BAR_TERMINALS)  # the prompt's example
+
+
+def test_science_lens_donates_a_formula_recipe(tmp_path: Path,
+                                              monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import cn_swarm as sw
+    donated: list[dict] = []
+    monkeypatch.setattr(cn, "_donate", lambda rows, rec, now, base: (donated.extend(rec),
+                                                                     _fake_donate(rows, base))[1])
+    monkeypatch.setattr(sw, "steer_catalog", lambda cat, yld: (dict(cat), ["formula"]))
+    env = {"OPENROUTER_API_KEY": "k", "CN_SWARM_CRITIC_CALLS": "0"}
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        if system == sw.formula_system():
+            return json.dumps({"findings": [{"title": "contagion", "analog": "SIR",
+                                             "mechanism": "m", "testable_claim": "c",
+                                             "expr": SCI_EXPR, "symbols": ["EURUSD"]}]}), None
+        return json.dumps({"findings": []}), None
+
+    calls = len(sw.LENSES)
+    rep = cn.run(NOW, root=tmp_path, env=env, chat=chat,
+                 list_models=lambda b, k: ["qwen/qwen3:free"], quotas={"openrouter": calls})
+    assert rep["runnable_recipes"] >= 1
+    pops = {r["params"]["population"] for r in donated if r.get("family") == "formula"}
+    assert pops and all(p.startswith("llm_science_") for p in pops)
