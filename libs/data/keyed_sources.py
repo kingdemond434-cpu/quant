@@ -290,20 +290,25 @@ def _carries(url: str, secrets: Iterable[str]) -> bool:
 
 
 def keyed_opener(tls: Any = None, drop: Iterable[str] = (),
-                 secrets: Iterable[str] = ()) -> urllib.request.OpenerDirector:
-    """An opener for keyed requests: the caller's TLS context and credential-safe redirects."""
+                 secrets: Iterable[str] = (),
+                 handlers: Iterable[urllib.request.BaseHandler] = (),
+                 ) -> urllib.request.OpenerDirector:
+    """An opener for keyed requests: the caller's TLS context and credential-safe redirects.
+    `handlers` are added after them (a request processor such as the terms fence's
+    `TermsGuardProcessor`, which checks every hop); none of them may be a redirect handler."""
     return urllib.request.build_opener(urllib.request.HTTPSHandler(context=tls),
-                                       SameHostAuthRedirect(drop, secrets))
+                                       SameHostAuthRedirect(drop, secrets), *handlers)
 
 
 def keyed_urlopen(req: urllib.request.Request | str, *, timeout: float, context: Any = None,
-                  secrets: Iterable[str] = ()) -> Any:
+                  secrets: Iterable[str] = (),
+                  handlers: Iterable[urllib.request.BaseHandler] = ()) -> Any:
     """`urllib.request.urlopen` for a request that carries a credential (a bearer header, a key
     in the query or path): same TLS context, but every redirect goes through
     `SameHostAuthRedirect`, so the credential never follows a 30x to another host or down to
     http. Plain `urlopen` copies every header to whatever host a redirect names (audit of the
     keyed fetches, 2026-10-07)."""
-    return keyed_opener(context, secrets=secrets).open(req, timeout=timeout)
+    return keyed_opener(context, secrets=secrets, handlers=handlers).open(req, timeout=timeout)
 
 
 def _period(text: str) -> date | None:

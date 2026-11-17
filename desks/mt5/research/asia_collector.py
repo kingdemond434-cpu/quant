@@ -542,11 +542,10 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # cross-host redirect target, so the bearer / declared key header is dropped there.
     from libs.data import terms_fence as _tfg
     from libs.data.keyed_sources import keyed_opener, scrub_body
-    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
+    # THE REDIRECT GUARD on the keyed path too: every hop is checked against the terms fence.
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,),
+                           (_tfg.TermsGuardProcessor(),))
               if _key else None)
-    if opener is not None:
-        # THE REDIRECT GUARD on the keyed path too: every hop is checked against the terms fence.
-        opener.add_handler(_tfg.TermsGuardProcessor())
     try:
         # THE REDIRECT GUARD: a 30x into a terms-fenced platform is refused, never followed.
         with (opener.open(req, timeout=timeout) if opener else

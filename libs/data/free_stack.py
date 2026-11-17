@@ -114,10 +114,10 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
         # LIVE's credential-safe redirects, plus THE REDIRECT GUARD: the terms processor runs on
         # the first request and every redirected one, so a 30x into a terms-fenced platform
         # raises before a connection is opened.
-        from libs.data.keyed_sources import SameHostAuthRedirect
+        from libs.data.keyed_sources import keyed_urlopen
         _tf.check_request(url, hdr)
-        opener = urllib.request.build_opener(SameHostAuthRedirect(), _tf.TermsGuardProcessor())
-        with opener.open(req, timeout=HTTP_TIMEOUT_S) as resp:
+        with keyed_urlopen(req, timeout=HTTP_TIMEOUT_S,
+                           handlers=(_tf.TermsGuardProcessor(),)) as resp:
             if redirected_off_limits(url, resp.geturl()):
                 raise FetchError("off_limits", f"redirect from {url}")
             raw: bytes = resp.read(MAX_BYTES + 1)

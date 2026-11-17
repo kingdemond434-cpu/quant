@@ -101,6 +101,13 @@ def web(monkeypatch: pytest.MonkeyPatch, wire: _Tripwire) -> _FakeWeb:
     real = tf.guarded_opener
     monkeypatch.setattr(tf, "guarded_opener",
                         lambda context=None, *h: real(context, fake, *h))
+    # free_stack fetches through LIVE's credential-safe keyed opener with the terms processor
+    # added, so the fake web is served on that seam too.
+    from libs.data import keyed_sources as ks
+    real_keyed = ks.keyed_opener
+    monkeypatch.setattr(ks, "keyed_opener",
+                        lambda tls=None, drop=(), secrets=(), handlers=():
+                        real_keyed(tls, drop, secrets, (fake, *handlers)))
     return fake
 
 

@@ -229,7 +229,10 @@ def test_the_shared_fetch_path_obeys_robots_and_fails_closed() -> None:
     repo = Path(__file__).resolve().parents[2]
     acol = (repo / "desks/mt5/research/asia_collector.py").read_text("utf-8")
     assert 'rec.update({"status": ROBOTS_STATUS' in acol
-    fetch_at = acol.index("urllib.request.urlopen(req, timeout=timeout")
+    # The keyless fetch goes through the terms fence's guarded opener (#192), the keyed one
+    # through keyed_opener; robots must be read before the first of them.
+    fetch_at = min(acol.index("guarded_urlopen(req, timeout=timeout"),
+                   acol.index("opener.open(req, timeout=timeout"))
     assert acol.index("allowed, why_robots = _robots_allows(url)") < fetch_at
     das = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
     assert '"status": "ROBOTS_REFUSED"' in das
