@@ -384,27 +384,77 @@ def test_the_skew_is_the_desks_one_tolerance() -> None:
     assert jc.PRIORS_FUTURE_SKEW_S == 300
 
 
-def test_recovery_refuses_to_clobber_a_target_written_after_the_commit_point(
+def _age(paths, by: float) -> None:
+    t = time.time() - by
+    for x in paths:
+        os.utime(x, (t, t))
+
+
+def test_a_target_rewritten_before_anything_landed_rolls_the_pass_back(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """v2.2 refused this for good (S1). Nothing of the pass had landed, so undoing it is exact:
+    the other writer's bytes stand, every other target is as it was, and the next pass teaches
+    from the same cursor once."""
     p, _txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
     beta = p["priors"] / "beta.json"
     beta.parent.mkdir(parents=True, exist_ok=True)
     beta.write_text('{"written": "by another organ after the commit point"}', "utf-8")
     before = _state(p)
-    with pytest.raises(jc.TxnRecoveryRefused, match=r"beta\.json: changed since the commit"):
+    # Young, it may be a live pass's: never undone under its owner, loud for this pass only.
+    with pytest.raises(jc.TxnRecoveryRefused, match="young"):
         jc.recover_transactions()
-    assert _state(p) == before, "NOTHING applied: not the report, not the ratchet"
-    assert manifest.exists(), "the manifest is kept for whoever resolves it"
-    # And the orphan sweep never takes the staged files a kept manifest names.
-    old = time.time() - jc.TXN_ORPHAN_AGE_S - 60
-    for x in (tmp_path / "run").rglob(f"*{jc.TXN_TAG}*"):
-        os.utime(x, (old, old))
-    with pytest.raises(jc.TxnRecoveryRefused):
+    assert manifest.exists() and _state(p) == before
+    _age([manifest], jc.TXN_LIVE_GRACE_S + 5)
+    assert jc.recover_transactions() == 0
+    assert not manifest.exists() and _state(p) == before, "rolled BACK: nothing applied"
+    assert not _leftovers(tmp_path / "run"), "its staged files went with it"
+    assert jc.refused_manifests() == []
+
+
+def test_a_shared_target_rewritten_after_it_landed_is_superseded_not_refused(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The audit's wedge (S1): killed after beta.json was renamed, then one of the eight
+    record_outcome writers rewrote it. That is the other writer's update, not damage: it stands,
+    the rest of the pass rolls forward, and the leg is never wedged."""
+    ref = _point(monkeypatch, tmp_path / "ref")
+    rows = _inputs(tmp_path / "ref")
+    _pass(rows)
+    reference = _state(ref)
+    p, _txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
+    ops = json.loads(manifest.read_text("utf-8"))["ops"]
+    first = ops[0]
+    assert Path(first[1]).name in jc.TXN_SHARED_TARGETS, "priors are staged first"
+    jc._apply_ops([first])                                   # killed one rename in
+    Path(first[1]).write_text('{"rewritten": "by record_outcome"}', "utf-8")
+    _age([manifest], jc.TXN_LIVE_GRACE_S + 5)
+    assert jc.refused_manifests() == []
+    assert jc.recover_transactions() == 1
+    got = _state(p)
+    name = Path(first[1]).name
+    assert json.loads(Path(first[1]).read_text("utf-8")) == {"rewritten": "by record_outcome"}
+    assert {k: v for k, v in got.items() if k != name} == \
+        {k: v for k, v in reference.items() if k != name}, "everything else landed"
+    assert not manifest.exists()
+    assert jc.main(["--once", "--budget-s", "600"]) == 0, "the next pass runs"
+
+
+def test_a_refusal_names_its_runbook_and_force_forward_resolves_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+        ) -> None:
+    p, _txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
+    ops = json.loads(manifest.read_text("utf-8"))["ops"]
+    jc._apply_ops(ops[:2])                                   # part of the pass landed ...
+    p["bank"].write_text("{}", "utf-8")                      # ... and a sole-owner target moved
+    _age([manifest], jc.TXN_LIVE_GRACE_S + 5)
+    with pytest.raises(jc.TxnRecoveryRefused, match="Resolving a refused recovery"):
         jc.recover_transactions()
-    assert all(Path(o[2]).exists() for o in json.loads(manifest.read_text("utf-8"))["ops"]
-               if o[0] == "replace")
-    rc = jc.main(["--once", "--budget-s", "600"])
-    assert rc == jc.RECOVERY_REFUSED_EXIT and _state(p) == before
+    assert [r.split(":")[0] for r in jc.refused_manifests()] == [manifest.name]
+    assert jc.main(["--txn-status"]) == jc.RECOVERY_REFUSED_EXIT
+    out = capsys.readouterr().out
+    assert "REFUSE" in out and "CHANGED" in out and "unrunnable_specs.json" in out
+    assert jc.main(["--txn-force-forward", manifest.name]) == 0
+    assert not manifest.exists() and jc.main(["--txn-status"]) == 0
+    assert jc.main(["--once", "--budget-s", "600"]) == 0
 
 
 def test_a_missing_staged_file_fails_loud_and_never_half_applies(
@@ -412,7 +462,8 @@ def test_a_missing_staged_file_fails_loud_and_never_half_applies(
     p, txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
     before = _state(p)
     Path(txn.ops[str(p["ratchet"])][2]).unlink()            # the ratchet's staged copy is gone
-    with pytest.raises(jc.TxnRecoveryRefused, match=r"judge_backlog_ratchet\.json: staged file"):
+    _age([manifest], jc.TXN_LIVE_GRACE_S + 5)
+    with pytest.raises(jc.TxnRecoveryRefused, match=r"judge_backlog_ratchet\.json: missing"):
         jc.recover_transactions()
     assert _state(p) == before, "the report did not move without the ratchet"
     assert manifest.exists()
@@ -557,3 +608,53 @@ def test_every_reader_takes_a_naive_stamp_as_utc(tmp_path: Path) -> None:
             time.tzset()
     assert got == ref
     assert jc._ts("2026-10-20T20:00:00") == NOW
+
+
+
+# --- v2.4: the audit of v2.3 ---
+
+def test_a_manifest_killed_before_its_rename_protects_nothing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """S2: a `.json.tmp` never passed the commit point; its staged copies are orphans."""
+    p = _point(monkeypatch, tmp_path / "run")
+    rows = _inputs(tmp_path / "run")
+    before = _state(p)
+    doc = jc.build([dict(r) for r in rows], now=NOW, defer=True)
+    txn = doc.pop("_txn")
+    jc._write_staged(doc, txn, report=None, ratchet=None)
+    jc._PASS = None
+    tmp = txn.manifest().with_name(txn.manifest().name + ".tmp")
+    tmp.write_text(json.dumps({"id": txn.id, "ops": [list(o) for o in txn.ops.values()]}),
+                   "utf-8")                                 # killed before os.replace
+    _age([*(tmp_path / "run").rglob(f"*{jc.TXN_TAG}*"), tmp], jc.TXN_ORPHAN_AGE_S + 60)
+    assert jc.recover_transactions() == 0
+    assert not _leftovers(tmp_path / "run"), "staged copies and the .tmp are swept"
+    assert _state(p) == before
+
+
+def test_two_transactions_in_one_instant_never_share_an_id(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """S3: pid + time_ns alone collided, and one's discard took the other's staged dir."""
+    monkeypatch.setattr(jc.time, "time_ns", lambda: 1_761_000_000_000_000_000)
+    a, b = jc._Txn(tmp_path), jc._Txn(tmp_path)
+    assert a.id != b.id
+    da, db = a.staged_dir(tmp_path / "pri"), b.staged_dir(tmp_path / "pri")
+    da.mkdir(parents=True)
+    db.mkdir(parents=True)
+    b.discard()
+    assert da.exists(), "b's discard never takes a's staged dir"
+
+
+def test_a_non_object_docket_row_is_carried_and_the_priors_still_learn(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """S4: `'str'.get` used to end the ordering, and with it the transaction that holds the
+    pass's teaching. The row now rides at the tail, counted, and the pass commits."""
+    p = _point(monkeypatch, tmp_path)
+    rows = _inputs(tmp_path)
+    docket = [dict(r) for r in rows] + ["not a row", 7]
+    out, doc = jc.order_docket(docket, publish=True, now=NOW)
+    assert doc.get("verdict") != "UNMEASURED" and doc.get("families")
+    assert doc["non_object_rows_carried"] == 2
+    assert len(out) == len(docket) and out[-2:] == ["not a row", 7], "no row is lost"
+    assert _family_n(p) == {"alpha": 30, "beta": 30, "gamma": 30}, "the priors learnt"
+    assert not _leftovers(tmp_path)

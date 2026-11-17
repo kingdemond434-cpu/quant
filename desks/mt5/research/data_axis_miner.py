@@ -138,6 +138,9 @@ AXES: tuple[dict, ...] = (
     {"axis": "microstructure", "id": "dukascopy_ticks",
      "what": "Dukascopy tick bid/ask back to ~2003 -- the SPREAD SERIES itself",
      "url": "https://datafeed.dukascopy.com/datafeed/XAUUSD/2025/05/03/14h_ticks.bi5",
+     "terms": "REFUSED",
+     "terms_why": ("Dukascopy's terms of use refuse automated access and commercial use "
+                   "(data_universe_map.json dukascopy_bi5_datafeed_VERDICT)"),
      "binds_to": ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY"],
      "unblocks": ["liquidity_regime"],
      "revision_safe": "yes -- tick history is not revised",
@@ -337,12 +340,21 @@ def build(do_probe: bool) -> dict:
     rows = []
     for a in AXES:
         row = dict(a)
-        if str(a.get("terms") or "").startswith("BLOCKED_ON_TERMS"):
-            # A terms refusal is not an unreachable host: it is never contacted at all.
-            row["probe"] = {"reachable": None, "why": a["terms"]}
+        terms = str(a.get("terms") or "")
+        if terms == "REFUSED" or terms.startswith("BLOCKED_ON_TERMS"):
+            # Refused on terms: never contacted, on any pass. Not a network verdict, and it
+            # carries the missed-growth line the refusal costs.
+            why = a.get("terms_why") or terms.removeprefix("BLOCKED_ON_TERMS:").strip()
+            row["probe"] = {"reachable": None, "status": None,
+                            "why": f"BLOCKED_ON_TERMS: {why}",
+                            "missed_growth": {"mechanism": f"{a['id']}_terms_refusal",
+                                              "lost": a["what"],
+                                              "unblocks_lost": list(a.get("unblocks") or []),
+                                              "verdict": "a gap, not a zero"}}
+        elif do_probe:
+            row["probe"] = probe(a["url"])
         else:
-            row["probe"] = probe(a["url"]) if do_probe else {"reachable": None,
-                                                             "why": "not probed this pass"}
+            row["probe"] = {"reachable": None, "why": "not probed this pass"}
         rows.append(row)
     reach = [r for r in rows if r["probe"].get("reachable") is True]
     unreach = [r for r in rows if r["probe"].get("reachable") is False]
