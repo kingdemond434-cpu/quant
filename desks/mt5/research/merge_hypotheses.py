@@ -1052,7 +1052,7 @@ def main() -> int:
                   f"({_alias_report['already_present']} already present); never-judged "
                   f"stamped {family_dispositions['never_judged']['by_reason']}")
     except Exception as exc:
-        family_dispositions = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        family_dispositions = {"status": f"FAILED: {type(exc).__name__}"}
         print(f"   family dispositions unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
     if unrouted:
