@@ -34,6 +34,8 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 import llm_lab as lab  # noqa: E402
+import llm_lab_cells as lab_cells  # noqa: E402
+import llm_lab_core as lab_core  # noqa: E402
 
 HOURLY = _DESK / "research" / "hourly_cycle.py"
 
@@ -48,7 +50,9 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                       "DATA_REQUESTS": "data_requests.jsonl", "JEV_JOBS": "jev_jobs.jsonl",
                       "CALLS": "calls.json", "MODEL_CUTOFFS": "model_cutoffs.json",
                       "ROTATION": "model_rotation.json"}.items():
-        monkeypatch.setattr(lab, name, sd / rel if rel else sd)
+        for mod in (lab, lab_core, lab_cells):  # every module the name lives in
+            if hasattr(mod, name):
+                monkeypatch.setattr(mod, name, sd / rel if rel else sd)
     monkeypatch.setattr(lab, "DONATE_DIR", tmp_path / "intelligence" / "llm_lab")
     monkeypatch.setattr(lab, "REPORT", tmp_path / "reports" / "LLM_LAB.json")
     monkeypatch.setattr(lab, "VERDICTS", tmp_path / "none.jsonl")
@@ -200,13 +204,13 @@ def test_owed_coordinates_are_visited_in_cursor_order_and_never_forgotten(state:
     a = lab.LAB_BY_KEY["B"]
     onto = lab._ontology()
     rng = random.Random(1)  # noqa: S311
-    lab.COLD_SHARE, lab.YIELD_SHARE = 0.0, 0.0
+    lab_core.COLD_SHARE, lab_core.YIELD_SHARE = 0.0, 0.0
     try:
         c1, why1 = lab.choose_coordinate(a, onto, cov, rng)
         cov.touch(lab.coord_id(c1), c1, "DISCOVERED")
         c2, why2 = lab.choose_coordinate(a, onto, cov, rng)
     finally:
-        lab.COLD_SHARE, lab.YIELD_SHARE = 0.15, 0.20
+        lab_core.COLD_SHARE, lab_core.YIELD_SHARE = 0.15, 0.20
     assert why1 == why2 == "owed" and c1 != c2
     o = lab.owed(cov, onto)
     assert o["visited"] == 1 and o["owed"] == o["coordinates"] - 1
@@ -572,7 +576,7 @@ def test_a_steered_draw_keeps_its_mechanism_and_says_why(state: Path) -> None:
     cov = lab.Coverage.load()
     onto = lab._ontology()
     rng = random.Random(3)  # noqa: S311
-    lab.EXOTIC_KEEP = 0.0
+    lab_core.EXOTIC_KEEP = 0.0
     try:
         for _ in range(400):
             c, why = lab.choose_coordinate(lab.LAB_BY_KEY["B"], onto, cov, rng)
@@ -580,7 +584,7 @@ def test_a_steered_draw_keeps_its_mechanism_and_says_why(state: Path) -> None:
             if "+" in why:
                 assert c["asset_class"] in lab.GAP_CLASSES
     finally:
-        lab.EXOTIC_KEEP = 0.5
+        lab_core.EXOTIC_KEEP = 0.5
 
 
 def test_the_exotic_cap_is_enforced_per_pass_even_when_every_draw_is_exotic() -> None:

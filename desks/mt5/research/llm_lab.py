@@ -146,7 +146,6 @@ from llm_lab_core import (  # noqa: E402,F401  (re-exported: callers read them o
     MODELS,
     NOVELTY_CLASSES,
     ONTOLOGY,
-    ORGAN,
     PRIORITY_LABS,
     PROBE_CACHE_NAME,
     PROBE_TIMEOUT_S,
@@ -191,7 +190,6 @@ from llm_lab_core import (  # noqa: E402,F401  (re-exported: callers read them o
     _rel,
     _resolve_symbols,
     _save_ontology,
-    _seat,
     _series_present,
     _symbols_for,
     _validate,
@@ -229,6 +227,7 @@ from llm_lab_core import (  # noqa: E402,F401  (re-exported: callers read them o
 )
 
 DONATE_DIR = BASE / "data" / "intelligence" / "llm_lab"
+ORGAN = "llm_lab"
 REPORT = BASE / "reports" / "LLM_LAB.json"
 GAUNTLET = BASE / "scripts" / "external_gauntlet.py"
 VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
@@ -343,6 +342,15 @@ def build_ask(lab: Lab, coord: dict[str, str], why: str, model: str, reg: dict[s
     task = (f"{lab.mandate} Propose genuinely new mechanisms for the coordinate given. "
             f"{TASK_RULES}")
     return Ask(lab, coord, why, model, ctx[:40], task)
+
+
+def _seat() -> Any:
+    """The proposer seat, or None. Guarded: a box without it plans the pass and calls nothing."""
+    try:
+        from libs.research import proposer_seat
+    except Exception:                                  # pragma: no cover - defensive
+        return None
+    return proposer_seat
 
 
 def _call(ask: Ask, n: int, timeout: float) -> list[Any]:

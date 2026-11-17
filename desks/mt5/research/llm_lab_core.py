@@ -43,7 +43,6 @@ JEV_JOBS = STATE_DIR / "jev_jobs.jsonl"
 CALLS = STATE_DIR / "calls.json"
 ROTATION = STATE_DIR / "model_rotation.json"
 
-ORGAN = "llm_lab"
 UNMEASURED = "UNMEASURED"
 RULE = ("THE LAB PROPOSES, THE DESK JUDGES: every row here is a hypothesis for the canonical "
         "gauntlet with no credibility inherited and no bypass")
@@ -985,14 +984,6 @@ def _validate_attack(payload: Any) -> str | None:
         return "an attack needs a target node and an alternative explanation"
     return None
 
-
-def _seat() -> Any:
-    """The proposer seat, or None. Guarded: a box without it plans the pass and calls nothing."""
-    try:
-        from libs.research import proposer_seat
-    except Exception:                                  # pragma: no cover - defensive
-        return None
-    return proposer_seat
 
 
 @dataclass
