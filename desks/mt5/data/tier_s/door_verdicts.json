@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-17T10:41:09.535999+00:00",
+ "generated_utc": "2026-11-17T11:36:56.828700+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -4666,9 +4666,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 6,
+    "confidence": 0.5333,
+    "sd": 0.1247,
     "status": "UNMEASURED"
    }
   },
@@ -4677,9 +4677,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 6,
+    "confidence": 0.5333,
+    "sd": 0.1247,
     "status": "UNMEASURED"
    }
   },
@@ -5661,9 +5661,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 6,
+    "confidence": 0.5333,
+    "sd": 0.1247,
     "status": "UNMEASURED"
    }
   },
@@ -5672,9 +5672,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 6,
+    "confidence": 0.5333,
+    "sd": 0.1247,
     "status": "UNMEASURED"
    }
   },
@@ -5683,9 +5683,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.5926,
-    "sd": 0.129,
+    "n_oos": 6,
+    "confidence": 0.5333,
+    "sd": 0.1247,
     "status": "UNMEASURED"
    }
   },
@@ -14741,9 +14741,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.0909,
-    "sd": 0.083,
+    "n_oos": 3,
+    "confidence": 0.1538,
+    "sd": 0.1317,
     "status": "UNMEASURED"
    }
   },
@@ -14752,9 +14752,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.0909,
-    "sd": 0.083,
+    "n_oos": 3,
+    "confidence": 0.1538,
+    "sd": 0.1317,
     "status": "UNMEASURED"
    }
   },
@@ -14781,8 +14781,10 @@
    "review_failed": [],
    "family": "style_premia",
    "theory": {
-    "status": "UNMEASURED",
-    "n_oos": 0
+    "n_oos": 1,
+    "confidence": 0.2857,
+    "sd": 0.213,
+    "status": "UNMEASURED"
    }
   },
   "external.EURNOK@M15.carry.p=fe01fef7fb21fe47": {
