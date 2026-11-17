@@ -34,6 +34,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -77,6 +78,25 @@ SOURCES: dict[str, dict[str, str]] = {
         "kind": "history",
     },
 }
+
+
+#: CBOE IS TERMS-REFUSED FOR AUTOMATED READS (governance FRED ruling addendum 2026-11-14, the
+#: 11-13 options memo) EXCEPT where the owner's 2026-11-17 attestation reopens it: the SPX option
+#: chain (options OI/gamma) under owner_permissions row `exchange_options_gamma`. The VIX history
+#: is not options OI/gamma and has no row, so it stays refused. Each Cboe source names the row it
+#: needs; `libs.data.owner_permissions` fails closed, keeps robots fail-closed and makes
+#: 401/403/429/451 a hard stop, and every fetched row carries permission=owner_attestation_2026-11-17.
+OWNER_GATED: dict[str, str] = {"cboe_spx_options": "exchange_options_gamma",
+                               "cboe_vix_history": "cboe_vix_history"}
+
+
+def _gated_get(name: str, url: str) -> tuple[bytes | None, str]:
+    """(body, why) for a source that needs an owner row; (None, refusal) otherwise."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.data import owner_permissions as op
+    f = op.permitted_get(OWNER_GATED[name], url)
+    return (f.body, "") if f.ok else (None, f"{f.status}: {f.why}")
 
 
 def _get(url: str, timeout: int = 90) -> bytes | None:
@@ -185,7 +205,16 @@ def main() -> int:
 
     print(f"FREE OBSERVABLES {now.isoformat(timespec='seconds')}")
     for name, meta in SOURCES.items():
-        raw = _get(meta["url"])
+        if name in OWNER_GATED:
+            raw, why = _gated_get(name, meta["url"])
+            if raw is None:
+                report["sources"][name] = {"ok": False, "why": why, "unblocks": meta["unblocks"],
+                                           "missed_growth": f"missed_growth: {meta['unblocks']}"
+                                                            " is UNMEASURED from this source"}
+                print(f"  HELD {name:22s} {why[:100]}")
+                continue
+        else:
+            raw = _get(meta["url"])
         if raw is None:
             report["sources"][name] = {"ok": False, "why": "unreachable",
                                        "unblocks": meta["unblocks"]}
@@ -193,6 +222,10 @@ def main() -> int:
             continue
         try:
             parsed = _PARSERS[name](raw, now)
+            if name in OWNER_GATED:
+                parsed.update({"permission": "owner_attestation_2026-11-17",
+                               "provenance": "permission=owner_attestation_2026-11-17",
+                               "source": OWNER_GATED[name]})
         except Exception as exc:
             report["sources"][name] = {"ok": False,
                                        "why": f"{type(exc).__name__}: {str(exc)[:110]}"}

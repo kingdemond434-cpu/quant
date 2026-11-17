@@ -46,6 +46,15 @@ def _series(n: int, *, slope: float = 0.0, noise: float = 0.0, seed: int = 7
             for i, d in enumerate(_days(n))]
 
 
+@pytest.fixture(autouse=True)
+def _no_owner_permission(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every test here reads the DEFAULT fence: the owner-permissions file is pointed at a path
+    that does not exist, so the Cboe row is refused whatever the tree's flags say. The owner-
+    attested path is pinned on its own by the tests at the end of this file."""
+    from libs.data import owner_permissions
+    monkeypatch.setattr(owner_permissions, "PERMISSIONS", tmp_path / "absent_permissions.json")
+
+
 @pytest.fixture
 def tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     """An empty synthetic desk: axes, universe, fixtures, report, and an empty registry."""
@@ -455,3 +464,46 @@ def test_whole_pass_dry_run_writes_nothing(tree: dict[str, Path]) -> None:
     assert doc["dry_run"] is True
     assert not tree["report"].exists()
     assert list(tree["axes"].glob("shadow_*.json")) == []
+
+
+# ----------------------------------------------------- the owner attestation (2026-11-17) on Cboe
+def _owner_file(tmp_path: Path, enabled: bool) -> Path:
+    real = _DESK / "data" / "owner_permissions.json"
+    doc = json.loads(real.read_text(encoding="utf-8"))
+    for r in doc["sources"]:
+        if r["id"] == "exchange_options_gamma":
+            r["enabled"] = enabled
+    p = tmp_path / "owner_permissions.json"
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    return p
+
+
+def test_cboe_row_is_read_from_the_attested_observable_while_its_flag_is_true(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tree: dict[str, Path]) -> None:
+    from libs.data import owner_permissions
+    obs = tmp_path / "cboe_spx_options.jsonl"
+    obs.write_text("\n".join(json.dumps(r) for r in (
+        {"fetched_at": "2026-11-16T15:00:00+00:00", "net_gex": 1.5,
+         "permission": "owner_attestation_2026-11-17"},
+        {"fetched_at": "2026-11-17T15:00:00+00:00", "net_gex": -2.0,
+         "permission": "owner_attestation_2026-11-17"},
+        {"fetched_at": "2026-11-18T15:00:00+00:00", "net_gex": 9.0})) + "\n", encoding="utf-8")
+    monkeypatch.setitem(si.OWNER_OBSERVABLES, "cboe_delayed_surface", obs)
+    cboe = next(s for s in si.CRYPTO_SENSORS if s.sensor_id == "cboe_delayed_surface")
+    monkeypatch.setattr(owner_permissions, "PERMISSIONS", _owner_file(tmp_path, True))
+    guard = si.Guard(no_fetch=False)
+    _r, _m, status = si._gather("global_risk_appetite", (cboe,), axes=tree["axes"],
+                                universe=tree["universe"], guard=guard)
+    row = status[0]
+    assert row["state"] == si.HELD and row["n"] == 2          # the unstamped row is ignored
+    assert row["permission"] == "owner_attestation_2026-11-17"
+    assert guard.refused == [] and guard.calls == 0           # read, never fetched by this door
+    payload, why = guard.get(cboe)
+    assert payload is None and "never fetched" in why and guard.calls == 0
+
+    monkeypatch.setattr(owner_permissions, "PERMISSIONS", _owner_file(tmp_path, False))
+    guard = si.Guard(no_fetch=False)
+    _r, _m, status = si._gather("global_risk_appetite", (cboe,), axes=tree["axes"],
+                                universe=tree["universe"], guard=guard)
+    assert status[0]["state"] == si.REFUSED and "permission" not in status[0]
+    assert guard.refused and "BLOCKED_ON_TERMS" in guard.refused[0]["why"]

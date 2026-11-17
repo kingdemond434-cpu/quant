@@ -1,0 +1,141 @@
+{
+ "_doc": "OWNER-ATTESTED PERMISSIONS (2026-11-17). One row per publisher the owner states granted automated use. This is an OWNER ATTESTATION, not a verified publisher grant: the permission emails were lost and the owner takes responsibility. Every fetched row and artifact carries provenance permission=owner_attestation_2026-11-17. Read by libs/data/owner_permissions.py, which fails closed: a missing, unreadable or malformed file, a missing row, or enabled=false means NOT permitted. robots.txt still fails closed, 401/403/429/451 is still a hard stop, honest UA, polite rate, no login/paywall/CAPTCHA bypass, no paid APIs. A row can never unlock a hard-refused host (FRED/ALFRED, Reddit, Yahoo, UN Comtrade, archive.org/Wayback, YouTube, Dukascopy, ICE, SPDR, IMF PortWatch, prop-firm sites, and the off_limits.py grounds).",
+ "basis": "owner_attestation_2026-11-17",
+ "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+ "cited_messages": [
+  "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+  "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+  "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+  "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+ ],
+ "revert": "Set the source's \"enabled\" to false (or delete its row) and commit. The next pass of research/owner_permitted_sources.py and every fence that consults libs/data/owner_permissions.py refuses that source again, with its missed_growth line. If a publisher objects, its flag goes false the same day.",
+ "sources": [
+  {
+   "id": "hkex_stock_connect",
+   "name": "HKEX Stock Connect daily statistics (northbound/southbound turnover)",
+   "hosts": ["www.hkex.com.hk"],
+   "endpoints": ["https://www.hkex.com.hk/eng/csm/DailyStat/data_tab_daily_{yyyymmdd}e.js"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["HK50", "CHINAH", "USDCNH"],
+   "missed_growth": "missed_growth: mainland/HK cross-border equity flow (Stock Connect turnover) is UNMEASURED for HK50, CHINAH and USDCNH while this source is refused."
+  },
+  {
+   "id": "boj_etf_purchases",
+   "name": "Bank of Japan accounts (ETF holdings, every ten days)",
+   "hosts": ["www.boj.or.jp"],
+   "endpoints": ["https://www.boj.or.jp/en/statistics/boj/other/acmai/index.htm"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["JPN225", "USDJPY"],
+   "missed_growth": "missed_growth: the BoJ's ETF book (purchases, and since 2025 its disposal path) is UNMEASURED as a JPN225/USDJPY state while this source is refused."
+  },
+  {
+   "id": "korea_nps_flows",
+   "name": "Korea National Pension Service fund status (asset allocation and flows)",
+   "hosts": ["fund.nps.or.kr"],
+   "endpoints": ["https://fund.nps.or.kr/eng/"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["USDKRW"],
+   "missed_growth": "missed_growth: NPS overseas allocation and FX hedge flow (the largest single USD/KRW actor) is UNMEASURED while this source is refused."
+  },
+  {
+   "id": "boj_jgb_operations",
+   "name": "Bank of Japan market operations (JGB outright purchases, rinban)",
+   "hosts": ["www.boj.or.jp"],
+   "endpoints": ["https://www.boj.or.jp/en/statistics/boj/fm/ope/index.htm"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["USDJPY", "EURJPY", "JPN225"],
+   "missed_growth": "missed_growth: rinban size against plan (idea N4) is UNMEASURED as a same-day state for USDJPY, EURJPY and JPN225 while this source is refused."
+  },
+  {
+   "id": "snb_sight_deposits",
+   "name": "SNB data portal: weekly sight deposits (intervention footprint)",
+   "hosts": ["data.snb.ch"],
+   "endpoints": ["https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["EURCHF", "USDCHF", "XAUUSD"],
+   "missed_growth": "missed_growth: the weekly change in SNB sight deposits (idea N5, the intervention footprint) is UNMEASURED for EURCHF, USDCHF and XAUUSD while this source is refused."
+  },
+  {
+   "id": "chicagofed_nfci",
+   "name": "Chicago Fed NFCI and ANFCI (weekly CSV, chicagofed.org only, never FRED)",
+   "hosts": ["www.chicagofed.org"],
+   "endpoints": ["https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["US500", "NAS100", "XAUUSD", "USDJPY", "EURJPY"],
+   "missed_growth": "missed_growth: the weekly NFCI/ANFCI regime state (idea N9) is UNMEASURED for US500, NAS100, XAUUSD and the JPY crosses while this source is refused; FRED stays refused and is never a fallback."
+  },
+  {
+   "id": "exchange_options_gamma",
+   "name": "Cboe delayed SPX option chain (open interest and greeks, dealer gamma)",
+   "hosts": ["cdn.cboe.com"],
+   "endpoints": ["https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"],
+   "enabled": true,
+   "basis": "owner_attestation_2026-11-17",
+   "cited_messages": [
+    "cmsg_012XFUfE12Rvggnu86fDb8prAeAPFd81YuWLwCn35YzE2a",
+    "cmsg_012XFUfE12Rvggnu86fDb8prMZuBdkBKECkf814cPmcttJ",
+    "cmsg_012XFUfE12Rvggnu86fDb8prXortAUJMrtEaicXsScCd6R",
+    "cmsg_012XFUfE12Rvggnu86fDb8pr2br98iDWcpzTjbVn4zPUhp"
+   ],
+   "governance": "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md",
+   "revert": "set enabled to false; the source is refused again on the next pass",
+   "targets": ["US500", "NAS100"],
+   "scope_note": "Covers the options OI/gamma chain fenced by the 11-13 options memo (shadow_institutional cboe_delayed_surface). Cboe VIX index history is NOT options OI/gamma and stays refused.",
+   "missed_growth": "missed_growth: dealer gamma exposure (options_hedging) and the equity-options surface sensor for US500/NAS100 are UNMEASURED while this source is refused; the CFTC options-on-futures book stands in."
+  }
+ ]
+}

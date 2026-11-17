@@ -1339,6 +1339,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # the seven owner-attested sources (2026-11-17), each behind its own flag
+                     "owner_permitted_sources",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -2298,6 +2300,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # owner_permitted_sources stops itself at --budget-s 240; the cap sits above it.
+    "owner_permitted_sources": 300,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -5932,6 +5936,14 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # THE OWNER-ATTESTED SOURCES (governance/owner-permission-attestation-2026-11-17.md): HKEX
+    # Stock Connect, BoJ ETF holdings and JGB operations, Korea NPS, SNB sight deposits, the
+    # Chicago Fed NFCI (chicagofed.org only) and the Cboe SPX chain. Each is fetched only while
+    # its data/owner_permissions.json row is enabled; robots fails closed, 401/403/429/451 is a
+    # hard stop, and every row is stamped permission=owner_attestation_2026-11-17.
+    ops_ = _costed("owner_permitted_sources", lambda: _producer(
+        "owner_permitted_sources", "research/owner_permitted_sources.py", "--once",
+        "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6646,6 +6658,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "owner_permitted_sources": ops_,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

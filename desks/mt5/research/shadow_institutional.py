@@ -146,6 +146,10 @@ class Sensor:
     verb: str = ""
     robots: str = "api"
     terms_note: str = ""
+    #: An owner_permissions.json row id. While that row is enabled the refused row above is READ
+    #: from the owner-permitted collector's observable instead of being refused; otherwise the
+    #: licence refusal stands. Empty: the row has no owner attestation.
+    owner_permission: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -394,7 +398,52 @@ _CBOE = Sensor(
     what="delayed equity option quotes as an options-surface sensor", fetch_class=UNMEASURED,
     source="Cboe delayed quote tables", cadence="delayed", pit_lag_days=0.0,
     machine_use_allowed=False, sign=-1, consumers=("US500", "NAS100"),
-    licence=_CBOE_REFUSAL, terms_note=_CBOE_MISSED)
+    licence=_CBOE_REFUSAL, terms_note=_CBOE_MISSED, owner_permission="exchange_options_gamma")
+
+#: OWNER ATTESTATION 2026-11-17 (governance/owner-permission-attestation-2026-11-17.md): the
+#: owner states Cboe granted automated use of the options OI/gamma chain. The refusal above stays
+#: the default and returns the moment the `exchange_options_gamma` row in
+#: data/owner_permissions.json is false, missing or unreadable (libs/data/owner_permissions.py
+#: fails closed). While it is enabled the sensor is READ, never fetched here: the chain is
+#: fetched by research/owner_permitted_sources.py (robots fail closed, 401/403/429/451 a hard
+#: stop) and reduced to one net dealer-gamma observation per pass in this file, every row
+#: stamped permission=owner_attestation_2026-11-17.
+OWNER_OBSERVABLES: dict[str, Path] = {
+    "cboe_delayed_surface": DESK / "data" / "observables" / "cboe_spx_options.jsonl"}
+
+
+def owner_permitted(sensor: Sensor) -> bool:
+    """True only while the sensor's owner_permissions row is enabled (fail closed)."""
+    if not sensor.owner_permission:
+        return False
+    try:
+        from libs.data import owner_permissions
+        return owner_permissions.is_permitted(sensor.owner_permission)
+    except Exception:
+        return False
+
+
+def owner_points(sensor: Sensor, path: Path | None = None) -> tuple[list[tuple[str, float]], str]:
+    """(day, net_gex) from the owner-permitted observable, last reading per day, only rows that
+    carry the attestation's provenance."""
+    p = path or OWNER_OBSERVABLES.get(sensor.sensor_id)
+    if p is None:
+        return [], "no owner-permitted observable is declared for this sensor"
+    by_day: dict[str, float] = {}
+    try:
+        lines = p.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return [], f"{p.name} unreadable ({type(exc).__name__}): UNMEASURED, not barren"
+    for line in lines:
+        try:
+            row = json.loads(line)
+            if row.get("permission") != "owner_attestation_2026-11-17":
+                continue
+            by_day[str(row["fetched_at"])[:10]] = float(row["net_gex"])
+        except (ValueError, KeyError, TypeError, AttributeError):
+            continue
+    pts = sorted(by_day.items())
+    return pts, ("" if pts else f"{p.name} holds no attested observation yet: UNMEASURED")
 
 
 def _sensor(latent: str, row: Sequence[Any]) -> Sensor:
@@ -576,6 +625,10 @@ class Guard:
     def get(self, sensor: Sensor, *, params: Mapping[str, str] | None = None
             ) -> tuple[Any, str]:
         """JSON for one sensor, or (None, why). Only the hard boundary stops the wire."""
+        if sensor.owner_permission and owner_permitted(sensor):
+            # Owner-attested rows are READ from the collector's observable, never fetched here.
+            return None, ("owner-permitted row: read from its observable by _gather, never "
+                          "fetched by this door")
         if not sensor.machine_use_allowed:
             # ONE OF THE FIVE REFUSED ACTS ONLY (LAWS 5e, 2026-09-23). A terms or licence note
             # has not reached this branch since then; it rides on `terms_note` instead.
@@ -1115,7 +1168,8 @@ def gap_map(latents: Mapping[str, LatentEstimate], vault: Mapping[str, Any],
         elif how == "crypto_options":
             n = len([s for s in crypto_ok if s.sensor_id.startswith("deribit_")])
             # Hard-boundary refusals only since LAWS 5e; a terms note is in `terms_labelled`.
-            refused = [s.sensor_id for s in sensors if not s.machine_use_allowed]
+            refused = [s.sensor_id for s in sensors
+                       if not s.machine_use_allowed and not owner_permitted(s)]
             rec["detail"] = {"deribit_sensors_declared": n, "deribit_sensors": n,
                              "refused_for_terms": refused,
                              "terms_labelled": [s.sensor_id for s in sensors if s.terms_note]}
@@ -1212,7 +1266,10 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
     for s in sensors:
         pts: list[tuple[str, float]] = []
         why = ""
-        if not s.machine_use_allowed:
+        owner = owner_permitted(s)
+        if owner:
+            pts, why = owner_points(s)
+        elif not s.machine_use_allowed:
             # HARD BOUNDARY ONLY (LAWS 5e): a row reaches here only when it names the refused act
             # in its licence line -- since 2026-11-14 that includes the Cboe and FRED VIX rows,
             # whose owners' terms refuse automated extraction (governance FRED ruling addendum).
@@ -1237,13 +1294,15 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
             readings[s.sensor_id] = pts
         else:
             missing.append({"sensor": s.sensor_id, "why": why or UNMEASURED})
-        state = (REFUSED if not s.machine_use_allowed else
+        state = (REFUSED if not s.machine_use_allowed and not owner else
                  HELD if pts else
                  REACHABLE if s.fetch_class == "public_endpoint" else UNMEASURED)
         status.append({"sensor": s.sensor_id, "latent": s.latent, "state": state,
                        "fetch_class": s.fetch_class, "machine_use_allowed": s.machine_use_allowed,
                        "terms_note": s.terms_note, "licence": s.licence,
                        "consumers": list(s.consumers), "n": len(pts),
+                       **({"permission": "owner_attestation_2026-11-17",
+                           "owner_permission": s.owner_permission} if owner else {}),
                        "first": pts[0][0] if pts else None, "last": pts[-1][0] if pts else None,
                        "why": why or None})
     return readings, missing, status
