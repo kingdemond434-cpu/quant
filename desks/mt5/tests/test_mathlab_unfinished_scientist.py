@@ -117,3 +117,23 @@ def test_the_hard_exit_fires_even_when_the_pass_raised() -> None:
     assert time.monotonic() - t0 < 45                 # did not wait for the 60 s thread
     assert proc.returncode == 1
     assert "judge blew up" in proc.stderr             # the failure is still read as one
+
+
+def test_a_failed_scientist_publishes_only_the_exception_type(capsys) -> None:
+    """Audit HOLD on fa7fd434c: the pool-failure row reaches MATH_LAB.json (published from the
+    box), so it carries the exception's TYPE only; the path goes to stderr, never the report."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def boom() -> None:
+        raise OSError(r"C:\opt\quant\data\secrets\key.txt: denied")
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        futures = {"physics": pool.submit(boom)}
+        out, late = ML.collect(futures, time.monotonic() + 30,
+                               lambda k, s, why: ML.unfinished_row(time.monotonic(), s, why))
+    row = out["physics"]
+    assert late == []
+    assert row["why"] == "OSError"
+    assert row["unmeasured"] == ["FAILED: OSError"]
+    assert "secrets" not in repr(row)
+    assert "secrets" in capsys.readouterr().err

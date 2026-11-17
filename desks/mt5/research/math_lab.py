@@ -1103,7 +1103,7 @@ def collect(futures: dict[Any, Future[Any]], deadline: float,
         try:
             out[key] = fut.result()
         except Exception as exc:
-            out[key] = failed(key, "FAILED", f"{type(exc).__name__}: {exc}")
+            out[key] = failed(key, "FAILED", _exc_name(exc, f"pool {key}"))
     ABANDONED_THREADS += sum(1 for k in late if not futures[k].done())
     return out, late
 
