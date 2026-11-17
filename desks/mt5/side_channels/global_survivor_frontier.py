@@ -192,6 +192,25 @@ def run_and_save() -> dict:
                 queries.append(q)
         if len(queries) >= QUERIES_PER_RUN * 2:
             break
+    # NEVER EXHAUSTED (2026-11-03, principal: every miner 24/7, "unknowns similar etc"). The
+    # native lexicon is finite, so a locale used to run out of queries and every later pass on it
+    # searched nothing. Two refills, in order: SIMILAR -- every population this locale already
+    # found becomes a seed for the populations that look like it; then a new LAP -- the used
+    # queries are released, because a search index re-asked a month later returns new hosts.
+    if len(queries) < QUERIES_PER_RUN:
+        for ax, entry in sorted(pops["populations"].items(),
+                                key=lambda kv: -int(kv[1].get("score") or 0)):
+            if locale not in (entry.get("language_windows") or []):
+                continue
+            for q in (f"{ax} alternative copy trading", f"sites like {ax}"):
+                if q not in seen_q and q not in queries:
+                    queries.append(q)
+            if len(queries) >= QUERIES_PER_RUN:
+                break
+    if not queries:
+        st.setdefault("laps", {})[locale] = int(st.get("laps", {}).get(locale, 0)) + 1
+        st.setdefault("queries_done", {})[locale] = []
+        queries = [f"{t} {pair}" for t in terms for pair in ("MT5", "MT4", "ranking")]
     queries = queries[:QUERIES_PER_RUN]
 
     rows, graduated, new_pops = [], [], 0
@@ -250,7 +269,8 @@ def run_and_save() -> dict:
         rows = write_discoveries(OUT / f'discoveries_{now:%Y%m%d_%H%M}.json', rows)
     POPULATIONS.write_text(json.dumps(pops, indent=1), "utf-8")
     FRONTIER.write_text(json.dumps(cov, indent=1), "utf-8")
-    st["queries_done"][locale] = sorted(set(st["queries_done"][locale]))[-400:]
+    st.setdefault("queries_done", {})[locale] = sorted(
+        set(st["queries_done"].get(locale, [])))[-400:]
     STATE.write_text(json.dumps(st, indent=0), "utf-8")
     print(f"frontier [{locale}/{meta['region']}"
           f"{' OPEN' if meta['open_frontier'] else ''}]: {len(queries)} native queries, "
