@@ -63,6 +63,17 @@ MARK_RX = re.compile(rf"<!-- {MARK}:(outbox|deadman):([A-Za-z0-9_.:+-]+) -->")
 Call = Callable[[str, str, dict[str, Any] | None], tuple[int, Any]]
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A redirect is refused, never followed: urlopen would copy the bearer token to whatever
+    host a 30x names (tests/data/test_keyed_fetch_fence.py). The API answers this call directly."""
+
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 def http(token: str) -> Call:
     def call(method: str, path: str, payload: dict[str, Any] | None) -> tuple[int, Any]:
         data = None if payload is None else json.dumps(payload).encode("utf-8")
@@ -73,7 +84,7 @@ def http(token: str) -> Call:
                      "X-GitHub-Api-Version": "2022-11-28",
                      **({"Content-Type": "application/json"} if data else {})})
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with _OPENER.open(req, timeout=30) as r:
                 body = r.read()
                 return r.status, (json.loads(body) if body else None)
         except urllib.error.HTTPError as exc:
