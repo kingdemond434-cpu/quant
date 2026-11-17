@@ -16,6 +16,8 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
   2. When a push or workflow_dispatch run on LIVE has been queued LIVE_FIRST_MIN or more, every
      queued `pull_request` run on a CURRENT PR head that joined the queue before it is cancelled
      and re-run: the re-run queues behind LIVE, nothing is lost.
+  2c. A LIVE RUN WAITING ON A LATER JOB counts as queued LIVE (live_waiting(): its chained seal
+     and promote jobs queue behind PR runs while the run reads in_progress).
   2b. CLEARED FIRST (zuck 22:08Z "yes", standing: never ask about queue order again). A PR whose
      current head carries a trusted, unedited AUDIT CLEAR waits like LIVE: once one of its runs
      has been queued LIVE_FIRST_MIN, every queued run of a PR WITHOUT a CLEAR that joined before
@@ -312,6 +314,37 @@ def _queued(repo: str) -> list[dict[str, Any]]:
     return out
 
 
+def _live_jobs_waiting(repo: str, base: str) -> list[dict[str, Any]]:
+    """Rule 2c's reads: in-progress LIVE runs and their jobs."""
+    runs = _gh(f"repos/{repo}/actions/runs?status=in_progress&branch={base}&per_page=50")
+    return live_waiting(runs.get("workflow_runs") or [],
+                        lambda rid: _gh(f"repos/{repo}/actions/runs/{rid}/jobs?per_page=100")
+                        .get("jobs") or [], base)
+
+
+def live_waiting(running: list[dict[str, Any]], jobs: Callable[[int], list[dict[str, Any]]],
+                 base: str = LIVE) -> list[dict[str, Any]]:
+    """RULE 2c (2026-11-17 20:31Z, zuck: "it shouldn't need me"). ci.yml chains LIVE's jobs
+    (quality, money-path, coverage-floor, seal, promote), and each joins the queue only when the
+    one before it ends, behind every PR run queued meanwhile. The run itself then reads
+    `in_progress`, so rule 2 never saw it: the release-cutting promote job of 9ce7d3f27 waited from
+    19:09Z behind 281 queued runs and no release could be cut. Each in-progress LIVE push or
+    dispatch run with a job still waiting for a runner is returned as a LIVE run queued since that
+    job joined the queue, so plan() moves the PR runs queued before it behind it (pure over its
+    reads, so the tests drive it)."""
+    out: list[dict[str, Any]] = []
+    for r in running:
+        if r.get("event") not in LIVE_EVENTS or str(r.get("head_branch")) != base:
+            continue
+        waiting = [str(j.get("created_at")) for j in jobs(int(r["id"]))
+                   if j.get("status") in ("queued", "waiting", "pending") and j.get("created_at")
+                   and not j.get("runner_name")]
+        if waiting:
+            out.append({**r, "status": "queued", "run_started_at": min(waiting),
+                        "live_first_job_waiting": True})
+    return out
+
+
 _NUMBERS: dict[str, int] = {}  # head branch -> PR number, from the last _heads() listing
 
 
@@ -406,6 +439,10 @@ def run(
     now = datetime.now(UTC)
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
+    try:  # rule 2c never costs rules 1-2, whatever it hits
+        queued += _live_jobs_waiting(repo, base)
+    except Exception as exc:
+        print(f"  rule 2c skipped: {type(exc).__name__}: {exc}")
     heads = _heads(repo)
     try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
         cleared = _cleared(repo, queued, heads, over)

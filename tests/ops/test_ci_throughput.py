@@ -915,3 +915,28 @@ def test_a_cancelled_run_on_a_cleared_head_is_rerun_whoever_cancelled_it(
     monkeypatch.setattr(lf, "_gh", gh)
     assert lf._rerun_cleared("o/r", NOW, heads, set(), lambda: False, got) == 1
     assert posts == ["repos/o/r/actions/runs/1/rerun"]  # the uncleared head's run is left alone
+
+
+def test_rule_2c_a_live_run_waiting_on_its_promote_job_puts_pr_runs_behind_it() -> None:
+    """2026-11-17: 9ce7d3f27's promote job (the one that cuts the release) waited from 19:09Z
+    behind 281 queued runs while its run read in_progress, so rule 2 never saw it."""
+    lf = _lf()
+    live_sha = "9ce7d3f27" + "0" * 31
+    t = lambda m: (NOW - timedelta(minutes=m)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    running = [{"id": 7, "event": "push", "head_branch": lf.LIVE, "head_sha": live_sha,
+                "status": "in_progress", "run_started_at": t(200)},
+               {"id": 8, "event": "pull_request", "head_branch": lf.LIVE, "head_sha": "x"},
+               {"id": 9, "event": "push", "head_branch": lf.LIVE, "head_sha": "y"}]
+    jobs = {7: [{"status": "completed", "created_at": t(200), "runner_name": "r1"},
+                {"status": "queued", "created_at": t(80), "runner_name": None}],
+            8: [{"status": "queued", "created_at": t(90)}],
+            9: [{"status": "in_progress", "created_at": t(10), "runner_name": "r2"}]}
+    got = lf.live_waiting(running, lambda rid: jobs[rid])
+    assert [g["id"] for g in got] == [7] and got[0]["run_started_at"] == t(80)
+    before = {"id": 2, "event": "pull_request", "head_branch": "claude/a", "head_sha": "a",
+              "status": "queued", "run_started_at": t(120)}
+    after = {"id": 3, "event": "pull_request", "head_branch": "claude/b", "head_sha": "b",
+             "status": "queued", "run_started_at": t(30)}
+    heads = {"claude/a": "a", "claude/b": "b"}
+    assert lf.plan(NOW, [*got, before, after], heads) == ([], [2])
+    assert lf.plan(NOW, [before, after], heads) == ([], [])     # without 2c nothing moved
