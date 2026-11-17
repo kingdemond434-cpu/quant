@@ -488,7 +488,7 @@ def check_rails() -> None:
         t = time.time()
         checks = hb.rail_checks(t, hb.fx_open(datetime.fromtimestamp(t, tz=UTC)))
     except Exception as exc:
-        _unknown(f"rail readings unavailable ({type(exc).__name__}: {exc}) -- UNMEASURED, not fine")
+        _unknown(f"rail readings unavailable ({type(exc).__name__}) -- UNMEASURED, not fine")
         print()
         return
     d = checks["deadman"]
