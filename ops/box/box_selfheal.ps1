@@ -33,6 +33,12 @@
 #     fix to ops\box\*.ps1 used to wait for a person to re-run install_unattended.ps1. The copies are
 #     refreshed from this tree ONLY while its root digest equals the registry pin. workflow_gate.ps1
 #     is a ROOT file (enforced_root_files), so a copy only ever carries code the ROOT path approved.
+#
+#  4. INSTALLER APPLY (zuck, 2026-11-17 19:56Z: no more one-time admin installs). Runs
+#     ops\box\apply_installers.py --apply on the tree just adopted: each row of
+#     ops\box\auto_installers.json, once per installer version, never a credential or auth
+#     installer, every run (and every refusal) in an append-only ledger beside this one. Only as
+#     SYSTEM or an Administrator; a failed row is logged and never stops the seal.
 
 $QB = Join-Path $env:ProgramData "QuantBox"
 $OwnerPin = "C:\opt\authority\ROOT_PIN.json"
@@ -227,6 +233,17 @@ function Invoke-BinRefresh([string] $treeDigest) {
     return "bin: copies already match the pinned tree"
 }
 
+function Invoke-InstallerApply {
+    if (-not (Test-RunnerIsAdmin)) { return "installer apply: not SYSTEM or an Administrator; nothing run" }
+    $applier = Join-Path $RepoRoot "ops\box\apply_installers.py"
+    if (-not (Test-Path -LiteralPath $applier)) { return "installer apply: $applier absent" }
+    $ledger = Join-Path $QB "logs\installer_ledger.jsonl"
+    $out = @(& $py @pyArgs $applier --apply --ledger $ledger 2>&1 | ForEach-Object { "$_" })
+    $code = $LASTEXITCODE
+    $null = Write-HealLedger @{ step = "installer_apply"; rc = $code; lines = @($out | Select-Object -First 20) }
+    return ("installer apply: exit {0}: {1}" -f $code, (($out | Select-Object -First 8) -join " | "))
+}
+
 function Invoke-BoxSelfHeal {
     try {
         $live = Get-LiveRootDigest
@@ -234,7 +251,8 @@ function Invoke-BoxSelfHeal {
         foreach ($step in @(
                 { Invoke-PinRelocation $live },
                 { Invoke-GateCloneReset },
-                { Invoke-BinRefresh $tree })) {
+                { Invoke-BinRefresh $tree },
+                { Invoke-InstallerApply })) {
             try { Log ("selfheal: " + (& $step)) | Out-Host } catch { Log "selfheal: step failed: $($_.Exception.Message)" | Out-Host }
         }
     } catch {
