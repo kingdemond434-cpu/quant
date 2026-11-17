@@ -367,7 +367,12 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                     q[s.provider.name] = 0
         quotas = q
     quotas = dict(quotas)
-    cat = cn_swarm.catalog()
+    # STEER BY WHAT PASSES: dead families (judged often, never passing) leave the prompt and
+    # their recipes are not donated; the rest are listed best realised yield first.
+    yld = cn_swarm.family_yield(base)
+    cat, dead = cn_swarm.steer_catalog(cn_swarm.catalog(), yld)
+    dead_set = set(dead)
+    pruned_dead = 0
 
     # STEER: the scoreboard's Thompson order over models and lenses (floored exploration).
     board = cn_swarm.scoreboard(base)
@@ -480,6 +485,9 @@ def run(now: datetime | None = None, *, root: Path | None = None,
         outcomes.append(outcome)
         n_rec = 0
         for f in found:
+            if str(f.get("family") or "") in dead_set:
+                pruned_dead += 1
+                continue
             r = cn_swarm.validate_recipe(f, cat) if cat else None
             if r is None:
                 k = _key(str(f["title"]))
@@ -582,6 +590,10 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                                         "quota_this_run": int(quotas.get(s.provider.name, 0))}
                       for s in seats},
         "catalog_families": len(cat),
+        "steering_by_yield": {"source": "JUDGE_COVERAGE" if yld else "fallback list",
+                              "pruned_families": dead,
+                              "findings_dropped_dead_family": pruned_dead,
+                              "top_families": list(cat)[:8]},
         "calls": len(outcomes),
         "ok_calls": sum(o["status"] == "OK" for o in outcomes),
         "mutation_calls": sum(o["task"] == "mutate" for o in outcomes),

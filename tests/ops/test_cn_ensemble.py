@@ -207,8 +207,8 @@ def test_swarm_runs_critic_mutation_and_lineage(tmp_path: Path) -> None:
     # A near miss on the judge's ledger, resolvable through the graph.
     (tmp_path / "desks/mt5/data/hypotheses").mkdir(parents=True)
     (tmp_path / cn_swarm.GRAPH).write_text(json.dumps({
-        "id": "g1", "symbol": "EURUSD", "family": "mean_reversion_rsi",
-        "params": {"rsi_n": 10, "timeframe": "M15"}, "source": "miner:other"}) + "\n")
+        "id": "g1", "symbol": "EURUSD", "family": "overnight_drift",
+        "params": {"hold_bars": 10, "timeframe": "M15"}, "source": "miner:other"}) + "\n")
     (tmp_path / cn_swarm.GATE_LEDGER).write_text(json.dumps({
         "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
         "terminal_gate": "deflated_sharpe"}) + "\n")
@@ -226,10 +226,10 @@ def test_swarm_runs_critic_mutation_and_lineage(tmp_path: Path) -> None:
             return json.dumps({"scores": [{"i": 0, "score": 9}, {"i": 1, "score": 1}]}), None
         if system == cn_swarm.MUTATE_SYSTEM:
             assert seat.provider.name == "openrouter"          # never a relay
-            return _recipe("mean_reversion_rsi", "EURUSD", rsi_n=8), None
+            return _recipe("overnight_drift", "EURUSD", hold_bars=6), None
         if "glm" in model:
-            return _recipe("trend_ma_cross", "XAUUSD", fast_ema=20), None
-        return _recipe("mean_reversion_rsi", "GBPUSD", rsi_n=21), None
+            return _recipe("momentum_volgate", "XAUUSD", mom_n=12), None
+        return _recipe("overnight_drift", "GBPUSD", hold_bars=16), None
 
     rep = cn.run(NOW, root=tmp_path, env=env, chat=chat, list_models=lister,
                  quotas={"openrouter": 6, "hcnsec": 4})
@@ -300,8 +300,8 @@ def test_near_misses_never_reach_a_relay(tmp_path: Path) -> None:
     from libs.ops import cn_swarm as sw
     (tmp_path / "desks/mt5/data/hypotheses").mkdir(parents=True)
     (tmp_path / sw.GRAPH).write_text(json.dumps({
-        "id": "g1", "symbol": "EURUSD", "family": "mean_reversion_rsi",
-        "params": {"rsi_n": 10}, "source": "miner:other"}) + "\n")
+        "id": "g1", "symbol": "EURUSD", "family": "overnight_drift",
+        "params": {"hold_bars": 10}, "source": "miner:other"}) + "\n")
     (tmp_path / sw.GATE_LEDGER).write_text(json.dumps({
         "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
         "terminal_gate": "deflated_sharpe"}) + "\n")
@@ -359,8 +359,8 @@ def test_mutation_derived_recipes_never_reach_a_relay_critic(tmp_path: Path) -> 
     from libs.ops import cn_swarm as sw
     (tmp_path / "desks/mt5/data/hypotheses").mkdir(parents=True)
     (tmp_path / sw.GRAPH).write_text(json.dumps({
-        "id": "g1", "symbol": "EURUSD", "family": "mean_reversion_rsi",
-        "params": {"rsi_n": 10}, "source": "miner:other"}) + "\n")
+        "id": "g1", "symbol": "EURUSD", "family": "overnight_drift",
+        "params": {"hold_bars": 10}, "source": "miner:other"}) + "\n")
     (tmp_path / sw.GATE_LEDGER).write_text(json.dumps({
         "at": "2026-11-17T00:00:00", "graph_id": "g1", "passed": False,
         "terminal_gate": "deflated_sharpe"}) + "\n")
@@ -378,8 +378,8 @@ def test_mutation_derived_recipes_never_reach_a_relay_critic(tmp_path: Path) -> 
             return json.dumps({"scores": [{"i": i, "score": 8} for i in range(n)]}), None
         if system == sw.MUTATE_SYSTEM:
             assert not seat.provider.relay
-            return _recipe("mean_reversion_rsi", "USDCHF", rsi_n=8), None
-        return _recipe("trend_ma_cross", "XAUUSD", fast_ema=20), None
+            return _recipe("overnight_drift", "USDCHF", hold_bars=6), None
+        return _recipe("momentum_volgate", "XAUUSD", mom_n=12), None
 
     rep = cn.run(NOW, root=tmp_path, env=env, chat=chat, list_models=lister,
                  quotas={"openrouter": 9, "hcnsec": 6})
@@ -388,3 +388,38 @@ def test_mutation_derived_recipes_never_reach_a_relay_critic(tmp_path: Path) -> 
     or_seen = " ".join(u for who, u in critics if who == "openrouter")
     assert "XAUUSD" in relay_seen and "USDCHF" not in relay_seen
     assert "USDCHF" in or_seen
+
+
+def test_steering_prunes_dead_families_and_ranks_by_realised_yield(tmp_path: Path) -> None:
+    from libs.ops import cn_swarm as sw
+    cat = {"ict_fvg": {"a": 1}, "overnight_gap_decay": {"a": 1}, "dow_effect": {"a": 1},
+           "brand_new": {"a": 1}}
+    yld = {"ict_fvg": {"judged": 14818, "passed": 0, "mean": 0.0001, "hi": 0.0002},
+           "overnight_gap_decay": {"judged": 7523, "passed": 436, "mean": 0.058, "hi": 0.063},
+           "dow_effect": {"judged": 1744, "passed": 0, "mean": 0.0005, "hi": 0.0017}}
+    live, dead = sw.steer_catalog(cat, yld)
+    assert dead == ["dow_effect", "ict_fvg"]
+    assert list(live) == ["overnight_gap_decay", "brand_new"]
+    # Off the box (no coverage report) the fallback list still prunes the retail-TA set.
+    live2, dead2 = sw.steer_catalog({"ict_fvg": {}, "overnight_drift": {}}, {})
+    assert dead2 == ["ict_fvg"] and list(live2) == ["overnight_drift"]
+    # The report is read from the judge's own field.
+    (tmp_path / "desks/mt5/reports").mkdir(parents=True)
+    (tmp_path / sw.COVERAGE).write_text(json.dumps({"realised_pass_rate": [
+        {"family": "clock_transition", "judged": 13103, "passed": 934,
+         "posterior_mean": 0.071, "posterior_hi": 0.076}]}))
+    assert sw.family_yield(tmp_path)["clock_transition"]["passed"] == 934
+    cn.assert_public(sw.MECHANISM_STEER)
+
+
+def test_dead_family_findings_are_not_donated(tmp_path: Path) -> None:
+    env = {"OPENROUTER_API_KEY": "k", "CN_SWARM_CRITIC_CALLS": "0"}
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        return _recipe("ict_fvg", "EURUSD", ema_fast=5), None
+
+    rep = cn.run(NOW, root=tmp_path, env=env, chat=chat,
+                 list_models=lambda b, k: ["qwen/qwen3:free"], quotas={"openrouter": 3})
+    assert rep["runnable_recipes"] == 0
+    assert rep["steering_by_yield"]["findings_dropped_dead_family"] >= 1
+    assert "ict_fvg" in rep["steering_by_yield"]["pruned_families"]

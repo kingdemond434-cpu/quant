@@ -326,6 +326,62 @@ def genome_id(symbol: str, family: str, params: Mapping[str, Any]) -> str:
 
 
 # ------------------------------------------------------------------------------ prompts
+#: WHAT ACTUALLY PASSES (Hourly evolve pass, 2026-11-17, from the judge's realised pass rates):
+#: structural clock and flow mechanisms carry the passes; retail chart patterns sit at zero
+#: after thousands of judgings each. Qualitative on purpose: no desk number goes in a prompt.
+MECHANISM_STEER = (
+    "What tends to survive testing: effects tied to the CLOCK and to FORCED FLOWS -- session "
+    "and time-of-day transitions, overnight gaps and their decay, settlement, fixing and "
+    "auction timing, month- and quarter-end rebalancing, rules whose ENTRY is conditioned on a "
+    "state (volatility, trend, carry, risk-on/off), and carry with conditioning. What almost "
+    "never survives: retail chart patterns and indicator crosses (RSI or Bollinger reversion, "
+    "engulfing and pin bars, moving-average crosses, fair-value gaps, opening-range breakouts). "
+    "Do not propose those unless a specific forced participant explains them.\n\n")
+
+COVERAGE = "desks/mt5/reports/JUDGE_COVERAGE.json"
+#: A family judged at least this often whose pass-rate upper bound is below DEAD_HI is pruned
+#: from the prompt and its recipes are not donated: it has had its chance.
+DEAD_MIN_JUDGED = 1000
+DEAD_HI = 0.003
+#: Used only where the judge's coverage report is absent (any host but the box): the families
+#: the 2026-11-17 yield table showed at zero after thousands of judgings each.
+DEAD_FALLBACK = frozenset({"ict_fvg", "mean_reversion_rsi", "mean_reversion_bollinger",
+                           "engulfing_reversal", "pin_bar_reversal", "trend_ma_cross",
+                           "opening_range", "volatility_squeeze", "asia_momentum",
+                           "london_close_momentum", "level_breakout", "failed_breakout"})
+
+
+def family_yield(root: Path) -> dict[str, dict[str, float]]:
+    """The judge's realised pass rate per family (`JUDGE_COVERAGE.json`), or {} off the box."""
+    try:
+        doc = json.loads((root / COVERAGE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, dict[str, float]] = {}
+    for r in doc.get("realised_pass_rate") or [] if isinstance(doc, dict) else []:
+        if isinstance(r, dict) and r.get("family"):
+            out[str(r["family"])] = {"judged": float(r.get("judged") or 0),
+                                     "passed": float(r.get("passed") or 0),
+                                     "mean": float(r.get("posterior_mean") or 0),
+                                     "hi": float(r.get("posterior_hi") or 0)}
+    return out
+
+
+def steer_catalog(cat: Mapping[str, Mapping[str, Any]], yld: Mapping[str, Mapping[str, float]]
+                  ) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    """(catalogue with dead families removed, best realised yield first, unjudged families kept
+    in the middle for exploration; the pruned names)."""
+    if yld:
+        dead = sorted(f for f in cat if f in yld and yld[f]["judged"] >= DEAD_MIN_JUDGED
+                      and yld[f]["hi"] < DEAD_HI)
+    else:
+        dead = sorted(f for f in cat if f in DEAD_FALLBACK)
+    live = [f for f in cat if f not in dead]
+    explore = 0.01                                    # unjudged: between the winners and the rest
+    live.sort(key=lambda f: -(yld[f]["mean"] if f in yld else explore))
+    return {f: dict(cat[f]) for f in live}, dead
+
+
 def propose_system(cat: Mapping[str, Mapping[str, Any]]) -> str:
     recipe = (
         "Where the idea fits one of these rule templates, ALSO give it as a runnable recipe: "
@@ -337,7 +393,7 @@ def propose_system(cat: Mapping[str, Mapping[str, Any]]) -> str:
         "liquid FX, gold, silver, metals, energy and equity-index CFDs; you decide nothing. "
         "Every idea will be tested by an independent statistical judge on historical data with "
         "costs, and most will fail, which is expected. Prefer unusual, specific ideas from your "
-        "lens over ones every trader already knows.\n\n" + recipe +
+        "lens over ones every trader already knows.\n\n" + MECHANISM_STEER + recipe +
         "Return ONLY valid JSON, no prose outside it:\n"
         '{"findings": [{"title": "short label", '
         '"mechanism": "the economic reason the effect exists: who pays, and why they cannot stop", '
