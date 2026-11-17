@@ -246,7 +246,7 @@ def test_the_report_carries_the_principle_the_boundary_and_the_counts(organ) -> 
     doc = json.loads(er.REPORT.read_text(encoding="utf-8"))
     assert doc["principle"].startswith("The desk mines and tests everything")
     assert "no material non-public information" in doc["hard_boundary"]
-    assert len(doc["hard_boundary"]) == 5, "the boundary is five ACTS and must not grow"
+    assert len(doc["hard_boundary"]) == 6, "the boundary is six ACTS and must not grow"
     assert doc["stages"] == ["DISCOVER", "CAPTURE_METADATA", "LEGAL_ACCESS", "EVIDENCE_CLASS",
                              "RESEARCH"]
     # EVERY label is a key, including the ones with no rows: a zero that is present is a

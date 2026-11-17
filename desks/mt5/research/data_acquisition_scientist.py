@@ -11,11 +11,12 @@ country packs' datasets DECLARED ABSENT -- plus the data scout's needs. Candidat
 dataset, measured for redundancy against what the desk already holds (`data_scout`'s held marks),
 priced off the scout's catalogue where a route is declared, and gated by a DatasetContract whose
 `admissible()` is the LEGALITY HARD GATE: the indicator is a multiplier of zero, never a term
-traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
-a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
-carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
-reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
-deleted.
+traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE. Beside it, LAWS 5e
+as amended 2026-11-17 makes ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES: a dataset whose
+terms declare `machine_use_allowed=false` (or forbid machine extraction / automated access) is
+REGISTERED, NEVER FETCHED -- its sample returns FETCH_REFUSED and it never enters the crawl queue;
+a robots Disallow or an unreadable robots.txt returns ROBOTS_REFUSED at the fetch path. Other
+terms notes still travel as a `terms_note` that routes REDISTRIBUTION.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
@@ -549,15 +550,22 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
            at: str, code: str, marks: set[str]) -> dict[str, Any]:
     """A small sample, or the named reason there is none. NEVER a new scraper.
 
-    LAWS 5e (2026-09-23): a robots Disallow and a `machine_use_allowed=false` used to return
-    BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken.
-    Both were discovery brakes; both are deleted. The robots verdict is still READ, because it is
-    worth recording, and it now travels on the sample as `terms_note`.
+    LAWS 5e as amended 2026-11-17: ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES. A verdict
+    with `fetch_allowed=False` (the dataset's terms declare `machine_use_allowed=false`, forbid
+    machine extraction or automated access, or a robots Disallow is on the metadata) returns
+    FETCH_REFUSED before any network call: registered, never fetched. A robots Disallow or an
+    unreadable robots.txt read at the fetch path returns ROBOTS_REFUSED (fail closed).
     """
     url = str(cand.get("url") or "")
     if verdict.refused:
         return {"dataset": cand["dataset"], "status": "REFUSED_HARD_BOUNDARY",
                 "why": f"{verdict.access_label}: {verdict.reason}"}
+    if not verdict.fetch_allowed:
+        return {"dataset": cand["dataset"], "status": "FETCH_REFUSED", "url": url,
+                "why": verdict.fetch_refusal, "terms_note": verdict.terms_note,
+                "missed_growth": ("the sample is withheld because the source's robots or terms "
+                                  "refuse automated fetching; the dataset stays catalogued and "
+                                  "a lawful substitute route is the scouts' source hunt")}
     if not contract.admissible():
         return {"dataset": cand["dataset"], "status": "REFUSED_INADMISSIBLE",
                 "why": "; ".join(contract.admission().reasons)}
@@ -698,11 +706,11 @@ def register_hunt(row: dict[str, Any], conn: Any) -> bool:
     """OPEN THE ACQUISITION TASK IN THE REGISTRY'S SOURCE-HUNT QUEUE: a `sources` row in status
     `candidate` (the scout swarm's crawl queue) carrying the URL.
 
-    LAWS 5e (2026-09-23): `machine_use_allowed is False` used to keep a row out of the crawl
-    queue. It no longer can -- the field is False only for the five refused acts, and the terms
-    fact travels on the row's `licence_note` as a redistribution label. A dataset with NO URL is
-    still registered as a dataset source by `data_scout._register_source` instead, because there
-    is no address to crawl.
+    `machine_use_allowed is False` keeps a row out of the crawl queue: since LAWS 5e as amended
+    2026-11-17 the field is False for the five refused acts AND for a dataset whose robots or
+    terms refuse automated fetching -- registered, never fetched. A dataset with NO URL is still
+    registered as a dataset source by `data_scout._register_source` instead, because there is no
+    address to crawl.
     """
     url = str(row.get("url") or "")
     if not url or row.get("machine_use_allowed") is False or row.get("task") != "ACQUIRE":
@@ -869,9 +877,11 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         blocked = [{"dataset": r["dataset"], "ev_if_legal": r["ev_if_legal"],
                     "reasons": r["admission"]["reasons"]}
                    for r in scored if not r["admission"]["admitted"]]
-        # EMPTY BY CONSTRUCTION SINCE LAWS 5e: `machine_use_allowed` is False only for the five
-        # refused acts, so a row here is a hard-boundary refusal, never a terms note.
+        # LAWS 5e as amended 2026-11-17: `machine_use_allowed` is False for the five refused acts
+        # AND for a robots/terms fetch refusal. The two are reported separately below.
         no_machine = [r["dataset"] for r in scored if r["machine_use_allowed"] is False]
+        hard_refused = [r["dataset"] for r in scored if r["_verdict"].refused]
+        fetch_refused = [d for d in no_machine if d not in set(hard_refused)]
         top = [r for r in scored if r["ev_hunt"] > 0.0 and not r["held_already"]][:top_k]
         samples: dict[str, dict[str, Any]] = {}
         for r in [t for t in top if t["task"] == "ACQUIRE"]:
@@ -935,9 +945,11 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "legality": {"gate": DC.LEGALITY_RULE,
                      "admissible": sum(1 for r in scored if r["admission"]["admitted"]),
                      "blocked": blocked[:40], "n_blocked": len(blocked),
-                     "refused_hard_boundary": no_machine[:40],
-                     "registered_no_machine_extraction": no_machine[:40],
+                     "refused_hard_boundary": hard_refused[:40],
+                     # registered, never fetched: robots/terms refuse automated fetching
+                     "registered_no_machine_extraction": fetch_refused[:40],
                      "removed_brakes": list(AC.REMOVED_BRAKES),
+                     "fetch_refusals": list(AC.FETCH_REFUSALS),
                      "hard_boundary": list(AC.HARD_BOUNDARY),
                      "by_task": {t: sum(1 for r in scored if r["task"] == t)
                                  for t in ("ACQUIRE", "SOURCE_HUNT", "REFUSED")},

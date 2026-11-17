@@ -34,13 +34,14 @@ principal's deep-forest order named, never a hard-coded list in a crawler. The n
 `source_registry` pass prices them like any other ground, and the next crawl spends on them by
 their own measured share.
 
-EVERYTHING IS MINED (LAWS 5e, 2026-09-23). A row the registry marks `machine_use_allowed=false`,
-`route=unreachable` or "snippets only" used to be DROPPED from the pass and from expansion. Those
-were the desk's own discovery brakes, not legal requirements, and they are deleted: the registry's
-note is now a ROUTING LABEL carried on the row (`terms_note`), never a skip. The ONLY refusal left
-is one of the five acts of `libs.research.access_classifier.HARD_BOUNDARY` -- a credential dump, an
-authenticated surface, MNPI, stolen data, personal-data harvesting -- and the registry declares
-those with an access label, not with a licence note.
+ROBOTS AND TERMS DECIDE WHETHER THE DESK FETCHES (LAWS 5e as amended 2026-11-17). A row the
+registry marks `machine_use_allowed=false`, "snippets only" / "NOT FETCHABLE", or a robots
+Disallow is REFUSED from every fetch list here (the pass, the crawl order and neighbour
+expansion): the source stays catalogued in the registry and is never fetched -- "registered, never
+scraped". `route=unreachable` is a fact about reachability, not a terms refusal, and stays a
+ROUTING LABEL carried on the row (`terms_note`). The other refusal is one of the five acts of
+`libs.research.access_classifier.HARD_BOUNDARY` -- a credential dump, an authenticated surface,
+MNPI, stolen data, personal-data harvesting -- which the registry declares with an access label.
 """
 from __future__ import annotations
 
@@ -210,18 +211,26 @@ def _refused_labels() -> tuple[str, ...]:
         return _REFUSED_LABELS
 
 
-def machine_use_allowed(row: Any) -> tuple[bool, str]:
-    """IS THIS ROW MINED? Yes, unless it carries one of the five refused acts.
+#: The prefix a fetch refusal's reason carries, so a caller (coverage_drain.refusal_for) can tell
+#: a robots/terms refusal from a hard-boundary one without re-deriving the law.
+FETCH_REFUSED = "FETCH_REFUSED"
 
-    LAWS 5e (2026-09-23): licence, terms, robots, `machine_use_allowed=false`, `route=unreachable`
-    and "snippets only" are ROUTING AND PROVENANCE LABELS -- they say what the desk may
-    REDISTRIBUTE and how the row is provenanced, never whether it may be read, extracted or
-    tested. The four refusals this function used to return were discovery brakes the desk imposed
-    on itself; they are deleted and the note travels with the row instead.
+#: Robots verdicts that refuse the fetch (the classifier's `ROBOTS_REFUSING`, copied literally so
+#: this module stays importable inside a crawler subprocess with no `libs/`).
+_ROBOTS_REFUSING: tuple[str, ...] = ("disallow", "disallowed", "barred", "blocked", "unreadable")
+
+
+def machine_use_allowed(row: Any) -> tuple[bool, str]:
+    """MAY THE DESK FETCH THIS ROW AUTOMATICALLY? (bool, the reason or the label it carries).
+
+    False on one of the five refused acts, and -- LAWS 5e as amended 2026-11-17 -- on a robots or
+    terms refusal: `machine_use_allowed=false`, "snippets only" / "NOT FETCHABLE", or a robots
+    Disallow. Such a source stays catalogued in the registry and is never fetched; the reason
+    starts with `FETCH_REFUSED`. `route=unreachable` is not a terms refusal and stays a label.
 
     The name and the `(bool, str)` signature are unchanged because other organs import this
-    (`coverage_drain.machine_use_allowed(reg_row)` among them); what changed is that the bool is
-    True for everything off the hard boundary, and the string is the LABEL rather than an excuse.
+    (`coverage_drain.refusal_for` among them). True never licenses a fetch on its own: the fetch
+    path still reads robots.txt through the robots gate, which fails closed.
     """
     if not isinstance(row, dict):
         return True, "no registry row: mined, with no terms label to carry"
@@ -230,16 +239,23 @@ def machine_use_allowed(row: Any) -> tuple[bool, str]:
         return False, f"hard boundary: access_label={label}"
     if row.get("requires_auth") is True or row.get("is_mnpi") is True:
         return False, "hard boundary: authenticated surface or declared MNPI"
-    notes: list[str] = []
+    refusals: list[str] = []
     if row.get("machine_use_allowed") is False:
-        notes.append("registry declares machine_use_allowed=false")
-    if str(row.get("route") or "") == "unreachable":
-        notes.append("registry route=unreachable")
+        refusals.append("registry declares machine_use_allowed=false")
     if row.get("snippets_only"):
-        notes.append("registry: search-index snippets only")
+        refusals.append("registry: search-index snippets only")
+    robots = str(row.get("robots") or "").strip().lower()
+    if robots in _ROBOTS_REFUSING:
+        refusals.append(f"robots={robots}")
     note = str(row.get("licence_note") or "")
     if "NOT FETCHABLE" in note.upper() or "SNIPPETS ONLY" in note.upper():
-        notes.append(f"registry licence note: {note}")
+        refusals.append(f"registry licence note: {note}")
+    if refusals:
+        return False, (f"{FETCH_REFUSED} (LAWS 5e, 2026-11-17): " + "; ".join(refusals)
+                       + "; catalogued, never fetched")
+    notes: list[str] = []
+    if str(row.get("route") or "") == "unreachable":
+        notes.append("registry route=unreachable")
     if notes:
         return True, ("mined with its label attached [" + "; ".join(notes)
                       + "]; redistribution withheld by its terms")
@@ -312,8 +328,8 @@ def weight_grounds(grounds: list[dict[str, Any]], state: dict[str, Any] | None =
         row = rows.get(sid) if sid else None
         allowed, why = machine_use_allowed(row)
         if not allowed:
-            # THE ONLY DROP LEFT: one of the five refused acts. A licence, robots or
-            # "snippets only" note is a label on the ground below, never a skip (LAWS 5e).
+            # One of the five refused acts, or a robots/terms fetch refusal (LAWS 5e as amended
+            # 2026-11-17): the ground stays catalogued in the registry and is never fetched.
             meta["n_refused"] += 1
             meta.setdefault("refused", []).append({"ground": g.get("name"), "why": why})
             continue
@@ -343,9 +359,9 @@ def order_picked(picked: list[Any], state: dict[str, Any] | None = None
     The run stops on its clock, so the head of this list is the budget. A source the registry
     does not know keeps the mean factor of 1.0 and therefore keeps its original position among
     its equals -- python's sort is stable, so an unknown source is never pushed to the back and
-    never dropped. A source carrying a licence, robots or "snippets only" note is CRAWLED with
-    that note recorded as its label (LAWS 5e); the only removal left is one of the five refused
-    acts of the hard boundary.
+    never dropped. A source whose robots or terms refuse the fetch (`machine_use_allowed=false`,
+    snippets only, robots Disallow -- LAWS 5e as amended 2026-11-17) or that carries one of the
+    five refused acts is removed from the crawl and stays catalogued; any other note is a label.
     """
     st = state if state is not None else load()
     meta: dict[str, Any] = {"status": st.get("status"), "why": st.get("why"),
@@ -419,8 +435,9 @@ def expand(observations: dict[str, list[tuple[str, str]]], state: dict[str, Any]
     `observations` maps a source key (its id, name, url or host -- whatever the crawler had in
     hand) to the `(url, anchor)` links that source actually served this pass. Nothing is invented:
     a neighbour must have been SEEN on a page the desk fetched, and its parent must be a source
-    the registry prices. A parent carrying a terms/robots label mints its neighbours WITH that
-    label copied onto them (LAWS 5e); only a parent on the hard boundary mints none.
+    the registry prices. A parent carrying a terms label mints its neighbours WITH that label
+    copied onto them (LAWS 5e); a parent on the hard boundary, or whose robots or terms refuse
+    the fetch (2026-11-17), mints none -- its links were never lawfully fetched.
     """
     gpath, spath = grounds_path or GROUNDS, state_path or STATE
     st = state if state is not None else load()

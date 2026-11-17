@@ -60,35 +60,42 @@ def test_a_login_protected_page_is_still_refused() -> None:
     assert "REFUSED" in routed.why
 
 
-def test_a_robots_disallowed_page_is_now_mined_and_labelled() -> None:
-    """A robots.txt Disallow was read as a refusal and is now a LABEL. The page is mined and
-    tested in full; what the label withholds is redistribution."""
+def test_a_robots_disallowed_page_is_catalogued_and_never_fetched() -> None:
+    """INVERTED 2026-11-17 (LAWS 5e act 6). A robots.txt Disallow refuses the automated fetch
+    again. The row is NOT dropped: it is catalogued as PUBLIC_WITH_TERMS from what was lawfully
+    seen elsewhere, with the reason in `terms_note`, and never fetched."""
     routed = ac.route({"source_id": "forum", "url": "https://forum.test/threads",
                        "robots": "disallow", "source_class": "media"},
                       {"claim": "the desk over there is short the carry"})
 
     assert routed.verdict.access_label == "PUBLIC_WITH_TERMS"
-    assert routed.researchable is True
-    assert routed.verdict.machine_use_allowed is True
-    assert routed.verdict.may("machine_extract") is True
-    assert routed.verdict.may("store_raw") is True
-    # The fact is not lost -- it moved to the routing label and the provenance note.
+    assert routed.researchable is True and routed.dropped is False
+    assert routed.verdict.refused is False, "act 6 is not a refused LABEL"
+    assert routed.verdict.fetch_allowed is False
+    assert routed.verdict.machine_use_allowed is False
+    assert routed.verdict.may("machine_extract") is False
+    assert routed.verdict.may("store_raw") is False
+    assert routed.verdict.may("fetch_api") is False
+    assert routed.verdict.may("register") is True
     assert routed.verdict.redistribute_allowed is False
     assert "robots=disallow" in routed.verdict.terms_note
     assert routed.evidence is not None
     assert routed.evidence.provenance["terms_note"] == routed.verdict.terms_note
+    assert routed.evidence.provenance["fetch_allowed"] is False
 
 
 # ----------------------------------------------------------------- the boundary, exactly five
 
-def test_the_hard_boundary_is_exactly_five_acts() -> None:
-    """A sixth entry here is a new brake wearing the boundary's clothes. The count is pinned so
-    it cannot be added quietly."""
-    assert len(ac.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 5
+def test_the_hard_boundary_is_exactly_six_acts() -> None:
+    """A seventh entry here is a new brake wearing the boundary's clothes. The count is pinned so
+    it cannot be added quietly. Act 6 is the Governance amendment of 2026-11-17."""
+    assert len(ac.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 6
     joined = " | ".join(ac.HARD_BOUNDARY).lower()
     for act in ("credential theft", "logging in as someone else", "access control", "paywall",
-                "material non-public", "stolen or leaked", "doxxing"):
+                "material non-public", "stolen or leaked", "doxxing",
+                "no automated fetch that the host's robots.txt or terms refuse"):
         assert act in joined, act
+    assert ac.HARD_BOUNDARY[5] == ac.FETCH_ACT
 
 
 def test_only_three_labels_are_ever_refused() -> None:
@@ -102,8 +109,10 @@ def test_only_three_labels_are_ever_refused() -> None:
 @pytest.mark.parametrize("label", [lab for lab in ac.ACCESS_LABELS
                                    if lab not in ac.REFUSED_LABELS])
 def test_every_mined_label_grants_the_full_mining_vocabulary(label: str) -> None:
-    """No label withholds discovery, ingestion, representation or testing -- only
-    `redistribute` is ever withheld, and that is a publication question."""
+    """No label withholds discovery, ingestion, representation or testing of content the desk
+    may fetch -- only `redistribute` is withheld by the label, and that is a publication
+    question. Act 6 withholds the FETCH uses on the VERDICT of a refused row, never in this
+    table (see `test_each_fetch_refusal_is_enforced`)."""
     uses = ac.ROUTING[label]["allowed_uses"]
     for use in ac.MINING_USES:
         assert use in uses, f"{label} withholds {use}"
@@ -117,17 +126,49 @@ def test_no_routing_row_quarantines_anything() -> None:
 
 
 def test_the_deleted_brakes_are_named_in_the_module() -> None:
-    """A later session must not re-derive the old caution from silence (LAWS 5e)."""
+    """A later session must not re-derive the old caution from silence (LAWS 5e). The robots,
+    machine-use and machine-extraction items are RESTORED as fetch refusals (2026-11-17) and are
+    no longer named as deleted."""
     named = " | ".join(ac.REMOVED_BRAKES).lower()
-    for brake in ("quarantine", "machine-extraction veto", "robots", "machine_use_allowed",
-                  "public/licensed sources only"):
+    for brake in ("quarantine", "public/licensed sources only", "source-class and credibility"):
         assert brake in named, brake
+    for restored in ("machine-extraction veto", "robots", "machine_use_allowed"):
+        assert restored not in named, restored
+    assert set(ac.FETCH_REFUSALS).isdisjoint(ac.REMOVED_BRAKES)
 
 
-def test_the_principle_says_labels_never_stop_mining() -> None:
+@pytest.mark.parametrize(("item", "meta"), [
+    ("machine-extraction veto on PUBLIC_WITH_TERMS", {"machine_extraction_allowed": False}),
+    ("robots.txt Disallow treated as a refusal", {"robots": "disallow"}),
+    ("machine_use_allowed=false treated as 'registered, never scraped'",
+     {"machine_use_allowed": False}),
+])
+def test_each_fetch_refusal_is_enforced(item: str, meta: dict) -> None:
+    """Every item of FETCH_REFUSALS is a LIVE refusal of the automated fetch (LAWS 5e act 6):
+    catalogued as PUBLIC_WITH_TERMS, reason in terms_note, never fetched, never dropped."""
+    assert item in ac.FETCH_REFUSALS
+    routed = ac.route({"source_id": "s", "url": "https://host.test/p", **meta},
+                      {"claim": "a snippet seen in a search result"})
+    v = routed.verdict
+    assert v.access_label == "PUBLIC_WITH_TERMS"
+    assert v.fetch_allowed is False and v.fetchable is False and v.machine_use_allowed is False
+    assert v.refused is False and routed.dropped is False
+    for use in ac.FETCH_USES:
+        assert not v.may(use), (item, use)
+    assert v.may("register")
+    assert v.fetch_refusal and v.fetch_refusal in v.terms_note
+    assert "never fetched" in v.terms_note
+
+
+def test_every_fetch_refusal_item_is_covered_by_a_test() -> None:
+    assert len(ac.FETCH_REFUSALS) == 3
+
+
+def test_the_principle_says_robots_and_terms_decide_the_fetch() -> None:
     text = ac.PRINCIPLE.lower()
     assert "mines and tests everything" in text
-    assert "never stop discovery, ingestion, representation or testing" in text
+    assert "robots and terms decide whether the desk fetches" in text
+    assert "never stop ingestion, representation or testing of that content" in text
 
 
 # ------------------------------------------------------------- the weight axis is not a brake

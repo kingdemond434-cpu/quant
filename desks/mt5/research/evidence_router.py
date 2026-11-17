@@ -110,10 +110,12 @@ KIND_CLASS: dict[str, str] = {
     "interview": "practitioner", "web": "media", "archive": "archive",
 }
 
-RULE = ("the desk mines and tests everything it can see on the open internet; licence, robots, "
-        "source class and credibility route REDISTRIBUTION and WEIGHT and never stop discovery, "
-        "ingestion, representation or testing -- five stages on every source, three independent "
-        "labels, no quarantine, nothing discarded")
+RULE = ("the desk mines and tests everything it may lawfully fetch on the open internet; robots "
+        "and terms decide whether the desk fetches (a refused source is catalogued, never "
+        "fetched -- LAWS 5e as amended 2026-11-17); on fetchable content licence, source class "
+        "and credibility route REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, "
+        "representation or testing -- five stages on every source, three independent labels, "
+        "no quarantine, nothing discarded")
 
 
 def _now() -> str:
@@ -275,9 +277,13 @@ def route_source(meta: dict[str, Any]) -> dict[str, Any]:
         # column is kept so an old reader finds a 0 rather than a missing field.
         "quarantine": 1 if v.quarantine else 0,
         "refused": v.refused,
-        # TRUE for every label but the refused three: the terms fact lives below, in
-        # `redistribute_allowed` and `terms_note`, where it routes publication and not mining.
+        # FALSE for the refused three AND for a source whose robots or terms refuse the automated
+        # fetch (LAWS 5e as amended 2026-11-17): that source is catalogued, never fetched, and
+        # `fetch_refusal` names why. Other terms facts live in `redistribute_allowed` and
+        # `terms_note`, where they route publication and not mining.
         "machine_use_allowed": v.machine_use_allowed,
+        "fetch_allowed": v.fetch_allowed,
+        "fetch_refusal": v.fetch_refusal,
         "redistribute_allowed": v.redistribute_allowed,
         "terms_note": v.terms_note,
         "allowed_uses": list(v.allowed_uses),
@@ -464,6 +470,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
         # of them is mined now; what the list names is what the desk may not REPUBLISH.
         "redistribution_restricted": sorted(
             v["source_id"] for v in routed_rows if not v.get("redistribute_allowed", False)),
+        # CATALOGUED, NEVER FETCHED (LAWS 5e as amended 2026-11-17): robots or terms refuse the
+        # automated fetch. The rows stay in the registry with their reason.
+        "fetch_refused": sorted(
+            v["source_id"] for v in routed_rows
+            if not v.get("fetch_allowed", True) and not v.get("refused")),
         "intelligence_scan": intel_stats,
         "budget_s": budget_s, "budget_hit": budget_hit,
         "elapsed_s": round(time.monotonic() - t0, 2),

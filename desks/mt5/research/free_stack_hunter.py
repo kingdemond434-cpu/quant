@@ -149,19 +149,33 @@ def load_roster(path: Path = ROSTER) -> tuple[list[dict[str, Any]], list[str]]:
 
 
 def access(row: dict[str, Any]) -> dict[str, Any]:
-    """The access router's label for this row (LAWS 5e). Never a brake except the hard five."""
+    """The access router's label for this row (LAWS 5e). Refuses on acts 1-5, and -- act 6,
+    2026-11-17 -- on robots or terms that refuse the automated fetch (`fetchable` False): the
+    row's own `machine_use_allowed=false`, a terms verdict of refused/to_confirm, or a robots
+    Disallow. A row that cannot be classified is not fetched on a declared
+    `machine_use_allowed=false` either."""
     try:
         from libs.research.access_classifier import classify
-        v = classify({"url": row.get("url") or row.get("home") or "", "licence":
-                      row.get("licence"), "terms": row.get("terms_note", ""),
-                      "requires_auth": str(row.get("auth", "none")) != "none",
-                      "source_class": row.get("source_class", "public_web"),
-                      "obtained": "public_api"})
+        meta: dict[str, Any] = {
+            "url": row.get("url") or row.get("home") or "", "licence": row.get("licence"),
+            "terms": row.get("terms_note", ""),
+            "requires_auth": str(row.get("auth", "none")) != "none",
+            "source_class": row.get("source_class", "public_web"), "obtained": "public_api"}
+        for key in ("machine_use_allowed", "robots"):
+            if row.get(key) is not None:
+                meta[key] = row.get(key)
+        if isinstance(row.get("terms"), str):
+            meta["terms_verdict"] = row.get("terms")
+        v = classify(meta)
         return {"label": str(v.access_label), "mined": bool(v.mined),
+                "fetchable": bool(v.fetchable), "fetch_refusal": v.fetch_refusal,
                 "machine_use_allowed": bool(v.machine_use_allowed),
                 "redistribute_allowed": bool(v.redistribute_allowed), "reason": v.reason}
     except Exception as exc:
         return {"label": UNMEASURED, "mined": True,
+                "fetchable": row.get("machine_use_allowed") is not False,
+                "fetch_refusal": ("the row declares machine_use_allowed=false"
+                                  if row.get("machine_use_allowed") is False else ""),
                 "machine_use_allowed": row.get("machine_use_allowed"),
                 "redistribute_allowed": False,
                 "reason": f"access_classifier unavailable: {type(exc).__name__}"}
@@ -579,6 +593,13 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         if not acc["mined"]:
             st.update({"last_status": "REFUSED_HARD_BOUNDARY", "last_error": acc["reason"],
                        "last_attempt": _iso(now)})
+            continue
+        if not acc.get("fetchable", True):     # LAWS 5e act 6: catalogued, never fetched
+            st.update({"last_status": "FETCH_REFUSED", "last_error": acc.get("fetch_refusal"),
+                       "last_attempt": _iso(now),
+                       "missed_growth": (f"{sid} is catalogued, never fetched: its robots or "
+                                         "terms refuse automated access; what it carried is "
+                                         "UNMEASURED, not zero")})
             continue
         s0 = time.monotonic()
         if row.get("kind") == "cn_exchange":

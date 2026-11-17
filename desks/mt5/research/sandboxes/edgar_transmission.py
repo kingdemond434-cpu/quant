@@ -57,7 +57,7 @@ def _cache(ctx: CellContext) -> Path:
 
 
 def machine_use_allowed(url: str) -> tuple[bool, str]:
-    """IS THIS EDGAR ENDPOINT MINED? Yes, unless the classifier names one of the five refused acts.
+    """IS THIS EDGAR ENDPOINT FETCHED? Yes, unless the classifier names a refused act (1-6).
 
     LAWS 5e (2026-09-23): an unreadable classifier used to return False, which stopped the fetch
     -- "absence is not a permission" applied to the DESK'S OWN import path rather than to a
@@ -71,7 +71,7 @@ def machine_use_allowed(url: str) -> tuple[bool, str]:
         v = ac.classify({"url": url, "source_class": "official_statement", "licence": "public",
                          "is_open_data": True, "robots": "allowed",
                          "terms": "SEC fair access: 10 requests/second with a User-Agent"})
-        return not v.refused, v.reason
+        return v.fetchable, v.reason          # acts 1-5, and act 6 (robots/terms, 2026-11-17)
     except Exception as exc:
         return True, (f"classifier unavailable ({type(exc).__name__}): a public federal filing "
                       f"index is mined regardless; the import failure is the note, not a refusal")

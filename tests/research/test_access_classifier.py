@@ -14,6 +14,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
@@ -55,15 +57,20 @@ def test_the_principle_and_the_hard_boundary_are_carried_verbatim() -> None:
     """REWRITTEN 2026-09-23 (LAWS 5e). The principle used to read "mine aggressively; classify
     precisely; restrict only the specific use that is actually prohibited", and the boundary was
     six content-shaped clauses. The law now says labels never stop mining at all, and the
-    boundary is FIVE ACTS."""
-    assert "mines and tests everything" in ac.PRINCIPLE.lower()
-    assert "never stop discovery, ingestion, representation or testing" in ac.PRINCIPLE.lower()
-    assert len(ac.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 5
+    boundary is FIVE ACTS. AMENDED 2026-11-17 (LAWS 5e act 6): robots and terms decide whether
+    the desk fetches, and the boundary is SIX acts."""
+    text = ac.PRINCIPLE.lower()
+    assert "mines and tests everything" in text
+    assert "robots and terms decide whether the desk fetches" in text
+    assert "catalogued, never fetched" in text
+    assert "never stop ingestion, representation or testing of that content" in text
+    assert len(ac.HARD_BOUNDARY) == ac.HARD_BOUNDARY_COUNT == 6
     for clause in ("no credential theft or logging in as someone else",
                    "no bypassing an access control or a paywall",
                    "no material non-public information",
                    "no stolen or leaked private data",
-                   "no personal data harvesting or doxxing"):
+                   "no personal data harvesting or doxxing",
+                   "no automated fetch that the host's robots.txt or terms refuse"):
         assert clause in ac.HARD_BOUNDARY
     assert ac.STAGES == ("DISCOVER", "CAPTURE_METADATA", "LEGAL_ACCESS", "EVIDENCE_CLASS",
                          "RESEARCH")
@@ -127,32 +134,68 @@ def test_a_leaked_looking_obtained_path_is_refused_without_any_keyword() -> None
     assert v.access_label == "STOLEN_UNAUTHORIZED"
 
 
-# -------------------------------------------------------------------- terms: route, not drop --
-def test_machine_use_disallowed_is_a_redistribution_label_and_is_still_mined() -> None:
-    """WAS `test_machine_use_disallowed_routes_to_manual_or_api_and_is_never_scraped`. Dropping
-    `machine_extract` and `store_raw` was a discovery brake, not a legal requirement: the terms
-    bear on REDISTRIBUTION. Every mining use is restored and the fact moves to the label."""
+# ----------------------------------------- terms: catalogued, never fetched (LAWS 5e act 6) --
+def test_machine_use_disallowed_is_catalogued_and_never_fetched() -> None:
+    """INVERTED 2026-11-17 (LAWS 5e act 6). From 2026-09-23 this row was mined in full; the
+    amendment RESTORES `machine_use_allowed=false` as "registered, never scraped". The row is
+    kept and researchable from its catalogue entry; the fetch uses are withheld."""
     v = ac.classify({"url": "https://example.com/data", "machine_use_allowed": False})
     assert v.access_label == "PUBLIC_WITH_TERMS"
-    assert v.machine_use_allowed is True
-    assert v.may("machine_extract") and v.may("store_raw")
-    assert v.may("register") and v.may("read_manual") and v.may("fetch_api")
-    assert v.may("alpha_input") and v.refused is False and v.quarantine is False
-    # THE FACT IS NOT LOST -- it routes redistribution and lands in the provenance note.
+    assert v.machine_use_allowed is False and v.fetch_allowed is False and v.fetchable is False
+    for use in ac.FETCH_USES:
+        assert not v.may(use), use
+    assert v.may("register") and v.may("read_manual") and v.may("alpha_input")
+    assert v.refused is False and v.quarantine is False and v.mined is True
     assert v.redistribute_allowed is False
-    assert "machine_use_allowed=false" in v.terms_note
+    assert "machine_use_allowed=false" in v.terms_note and "never fetched" in v.terms_note
+    assert "machine_use_allowed=false" in v.fetch_refusal
     out = ac.route({"url": "https://example.com/data", "machine_use_allowed": False},
                    {"claim": "cash-and-carry basis widens into quarter end"})
-    assert out.researchable is True and out.stage == "RESEARCH"
-    assert "redistribution withheld, mining is not" in out.why
+    assert out.researchable is True and out.stage == "RESEARCH" and out.dropped is False
+    assert out.evidence is not None and out.evidence.provenance["fetch_allowed"] is False
+    assert "catalogued" in out.why
 
 
 def test_a_robots_disallow_is_the_same_fact_in_another_format() -> None:
-    """Both were refusals; both are labels now, and they still agree with each other."""
+    """Both are fetch refusals again (act 6), and they still agree with each other."""
     v = ac.classify({"url": "https://example.com/x", "robots": "disallow"})
-    assert v.access_label == "PUBLIC_WITH_TERMS" and v.machine_use_allowed is True
-    assert v.may("machine_extract") and v.may("fetch_api")
+    assert v.access_label == "PUBLIC_WITH_TERMS" and v.machine_use_allowed is False
+    assert not v.may("machine_extract") and not v.may("fetch_api")
+    assert v.fetch_allowed is False
     assert v.redistribute_allowed is False and "robots=disallow" in v.terms_note
+
+
+def test_a_robots_disallow_beats_an_open_licence() -> None:
+    """An open-data licence does not override the host's robots file."""
+    v = ac.classify({"url": "https://example.com/x", "licence": "CC0", "robots": "disallow"})
+    assert v.access_label == "PUBLIC_WITH_TERMS" and v.fetch_allowed is False
+
+
+@pytest.mark.parametrize("meta", [
+    {"terms_verdict": "to_confirm"}, {"terms_status": "unread"}, {"terms": "unreadable"},
+    {"terms_read": False}, {"terms_verdict": "refused"},
+    {"terms": "Terms of use: no scraping of this site"},
+    {"terms_forbid_automated": True}, {"machine_extraction_allowed": False},
+    {"robots": "unreadable"}, {"mirror_of_refused": True},
+])
+def test_unread_or_forbidding_terms_refuse_the_fetch(meta: dict) -> None:
+    """LAWS 5e act 6: terms that forbid automated access, and terms the desk has not read or
+    cannot read, refuse the fetch. A mirror of a refused page is the same refusal."""
+    v = ac.classify({"url": "https://example.com/x", **meta})
+    assert v.fetch_allowed is False and v.access_label == "PUBLIC_WITH_TERMS", meta
+    assert v.refused is False and v.fetch_refusal
+
+
+@pytest.mark.parametrize("meta", [{}, {"robots": "unknown"}, {"robots": "allowed"},
+                                  {"terms_verdict": "confirmed"},
+                                  {"terms": "terms of use: attribution required"}])
+def test_unmeasured_robots_and_terms_do_not_refuse_inside_the_pure_classifier(
+        meta: dict) -> None:
+    """classify() does no IO: no robots key / `unknown` and no terms verdict are UNMEASURED. The
+    fetch path reads the files (robots_gate fails closed). A verdict of True is necessary, never
+    sufficient."""
+    v = ac.classify({"url": "https://example.com/x", **meta})
+    assert v.fetch_allowed is True, meta
 
 
 # ----------------------------------------------------------------------------- independence --

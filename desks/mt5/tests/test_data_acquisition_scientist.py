@@ -129,16 +129,17 @@ def test_legality_is_a_hard_gate_never_a_term(desk: Any) -> None:
     ranked = {r["dataset"]: r for r in doc["ranked"]}
     assert ranked["kr_leaked_broker_book"]["ev"] == 0.0
     assert "kr_leaked_broker_book" not in doc["requests"]["datasets"]
-    # LAWS 5e (2026-09-23): a pack source class declaring `machine_use_allowed: false` used to
-    # land in `registered_no_machine_extraction` and be blocked for an unresolved MNPI review.
-    # Both were access brakes. Only the five refused acts land there now, and the leaked book is
-    # exactly one of them.
+    # Only refused acts 1-5 land in `refused_hard_boundary`, and the leaked book is one of them.
+    # A robots/terms fetch refusal (act 6, 2026-11-17) is reported separately as
+    # `registered_no_machine_extraction`: catalogued, never fetched -- never a hard refusal.
     assert doc["legality"]["refused_hard_boundary"] == ["kr_leaked_broker_book"]
     assert "kr_layer_app_ecosystem" not in doc["legality"]["refused_hard_boundary"]
+    assert "kr_leaked_broker_book" not in doc["legality"]["registered_no_machine_extraction"]
+    assert doc["legality"]["fetch_refusals"] == list(das.AC.FETCH_REFUSALS)
     assert all("dump.example" not in u for u in desk["calls"]["fetch"])
     assert doc["legality"]["gate"] == DC.LEGALITY_RULE
     assert doc["legality"]["hard_boundary"] == list(das.AC.HARD_BOUNDARY)
-    assert len(doc["legality"]["hard_boundary"]) == das.AC.HARD_BOUNDARY_COUNT == 5
+    assert len(doc["legality"]["hard_boundary"]) == das.AC.HARD_BOUNDARY_COUNT == 6
     assert doc["legality"]["removed_brakes"], "the deleted brakes are named, not forgotten"
 
 
