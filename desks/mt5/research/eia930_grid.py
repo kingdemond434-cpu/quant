@@ -340,16 +340,21 @@ class Client:
     """Every request of a pass: throttled, counted, hard-stopped, key redacted from errors."""
 
     def __init__(self, get: Getter, key: str, *, sleep: Callable[[float], None] = time.sleep,
-                 max_requests: int = MAX_REQUESTS, min_interval_s: float = MIN_INTERVAL_S
-                 ) -> None:
+                 max_requests: int = MAX_REQUESTS, min_interval_s: float = MIN_INTERVAL_S,
+                 deadline: float = math.inf) -> None:
         self.get, self.key, self.sleep = get, key, sleep
         self.max_requests, self.min_interval_s = max_requests, min_interval_s
+        self.deadline = deadline          # time.monotonic() by which the last request must end
         self.requests = 0
         self._last = -math.inf
 
     def _pace(self) -> None:
         if self.requests >= self.max_requests:
             raise Refused(f"BUDGET:request budget of {self.max_requests} per pass spent")
+        # The wall clock too: a request that could still be running at the leg's deadline is
+        # never started, so a kill can never land between a hard stop and its state write.
+        if time.monotonic() + self.min_interval_s + TIMEOUT > self.deadline:
+            raise Refused("BUDGET:wall-clock budget of this pass spent")
         wait = self.min_interval_s - (time.monotonic() - self._last)
         if wait > 0 and self.requests:
             self.sleep(wait)
@@ -629,11 +634,14 @@ def surprise_series(store: Mapping[str, Mapping[str, Any]]) -> dict[str, list[di
     out: dict[str, list[dict[str, Any]]] = {}
     for reg, pts in by.items():
         pts.sort(key=lambda p: p["event_time"])
-        vals: list[float] = []
-        for p in pts:
-            z = zscore(vals, p["value"])
+        for i, p in enumerate(pts):
+            # point-in-time: only strictly earlier hours that were already AVAILABLE when this
+            # row was, so a later backfill never leaks into an earlier row's z
+            # (scan bounded to a week past the window, so a long store stays linear)
+            lo = max(0, i - Z_WINDOW_H - 168)
+            prior = [q["value"] for q in pts[lo:i] if q["available_time"] <= p["available_time"]]
+            z = zscore(prior, p["value"])
             p["z"] = None if z is None else round(z, 6)
-            vals.append(p["value"])
         out[reg] = pts
     return out
 
@@ -803,7 +811,7 @@ def _resolve_key(environ: Mapping[str, str] | None) -> str:
 
 def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]], *,
             get: Getter, now: datetime, environ: Mapping[str, str] | None,
-            sleep: Callable[[float], None]) -> dict[str, Any]:
+            sleep: Callable[[float], None], deadline: float = math.inf) -> dict[str, Any]:
     """One fetch: gates, metadata, data, merge. Returns the record; raises Refused by name."""
     stop = state.get("hard_stop") or {}
     until = _t(stop.get("until"))
@@ -813,7 +821,7 @@ def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]
     if refused:
         raise Refused(refused)
     key = _resolve_key(environ)
-    client = Client(get, key, sleep=sleep)
+    client = Client(get, key, sleep=sleep, deadline=deadline)
     rec: dict[str, Any] = {}
     try:
         meta = state.get("metadata") or {}
@@ -823,8 +831,13 @@ def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]
             state["metadata"] = meta
         regions = list(meta.get("regions") or [])
         rec["missing_regions"] = meta.get("missing_regions") or []
-        backfill = not state.get("last_success")
-        start = now - (timedelta(days=BACKFILL_DAYS) if backfill else timedelta(hours=REPULL_H))
+        last = _t(state.get("last_success"))
+        backfill = last is None
+        if backfill:
+            start = now - timedelta(days=BACKFILL_DAYS)
+        else:   # reach back past an outage too, never further than the first-pass window
+            start = max(now - timedelta(days=BACKFILL_DAYS),
+                        min(now, last) - timedelta(hours=REPULL_H))
         rows, complete = pull(client, regions, start)
         rec.update(merge(paths, store, rows, now, backfill), parsed=len(rows),
                    status="OK" if rows else "EMPTY", backfill=backfill, complete=complete)
@@ -848,10 +861,12 @@ def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]
 def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
         get: Getter | None = None, now: datetime | None = None,
         environ: Mapping[str, str] | None = None, sleep: Callable[[float], None] = time.sleep,
-        donate: Callable[[str, list[dict[str, Any]], int], dict[str, Any]] | None = None
-        ) -> dict[str, Any]:
+        donate: Callable[[str, list[dict[str, Any]], int], dict[str, Any]] | None = None,
+        budget_s: float | None = None) -> dict[str, Any]:
     now = now or _now()
     t0 = time.monotonic()
+    # fetching gets the budget less a margin for the store merge, lake, cells and report
+    deadline = math.inf if budget_s is None else t0 + max(0.0, budget_s - 30.0)
     state = _read(paths.state, {}) or {}
     store = load_store(paths)
     rec: dict[str, Any] = {}
@@ -862,7 +877,7 @@ def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
         getter = get or http_get
         try:
             rec = collect(paths, state, store, get=getter, now=now, environ=environ,
-                          sleep=sleep)
+                          sleep=sleep, deadline=deadline)
             status = str(rec.get("status"))
         except Refused as r:
             status = str(r).split(":", 1)[0]
@@ -903,11 +918,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--budget-s", type=float, default=240.0,
-                    help="accepted for the leg contract; the request budget bounds the pass")
+                    help="wall-clock seconds for the pass; no request starts that could outrun it")
     ap.add_argument("--no-fetch", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
-    doc = run(fetch=not a.no_fetch, dry_run=a.dry_run)
+    doc = run(fetch=not a.no_fetch, dry_run=a.dry_run, budget_s=a.budget_s)
     print(json.dumps({"status": doc["status"], "store_rows": doc["store_rows"],
                       "trigger": doc["trigger"], "cells": {k: doc["cells"][k] for k in
                                                           ("grid", "built", "minted")}},

@@ -374,3 +374,56 @@ def test_no_fetch_writes_from_the_store_without_a_request(tmp_path: Path) -> Non
                  donate=lambda *_a: {"donated": 0})
     assert doc["status"] == "NO_FETCH" and fake.urls == []
     assert json.loads(paths.trigger.read_text("utf-8"))["status"] == "UNMEASURED"
+
+
+# ------------------------------------------------- Auditor SFs on 8148ac9a2e (2026-11-17) ----
+def test_the_wall_clock_deadline_stops_a_request_before_it_can_outrun_the_leg() -> None:
+    import time as _time
+    c = eg.Client(lambda _u: (200, b'{"response": {}}'), SENTINEL, sleep=lambda _s: None,
+                  deadline=_time.monotonic() + eg.TIMEOUT + eg.MIN_INTERVAL_S + 60)
+    c.json("electricity/rto")                               # inside the budget: runs
+    c.deadline = _time.monotonic() + eg.TIMEOUT             # one timeout from the end
+    with pytest.raises(eg.Refused, match="BUDGET:wall-clock"):
+        c.json("electricity/rto")
+
+
+def test_a_spent_wall_clock_keeps_the_pages_and_retries_from_the_same_start(
+        tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    doc = eg.run(paths, get=FakeEIA(T0), now=T0, environ=ENV, sleep=lambda _s: None,
+                 donate=lambda *_a: {"donated": 0}, budget_s=0.0)
+    assert doc["status"] == "BUDGET"                       # refused before any request
+    state = json.loads(paths.state.read_text("utf-8"))
+    assert not state.get("last_success")                   # the next pass backfills again
+
+
+def test_after_an_outage_the_pass_reaches_back_past_it(tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    _run(paths, FakeEIA(T0), T0)
+    later = T0 + timedelta(days=5)                         # a five-day outage, then a pass
+    fake = FakeEIA(later)
+    _run(paths, fake, later)
+    starts = [eg.parse_period(urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)["start"][0])
+              for u in fake.keyed() if "/region-data/data" in u]
+    assert starts and min(s for s in starts if s) <= T0 - timedelta(hours=eg.REPULL_H)
+
+
+def test_z_reads_only_hours_already_available_when_the_row_was() -> None:
+    store: dict[str, dict[str, Any]] = {}
+    base = datetime(2026, 1, 1, tzinfo=UTC)
+    n = eg.Z_MIN_H + 1
+    late = eg._iso(base + timedelta(hours=n + 100))        # a backfill seen long after
+    for i in range(n):
+        p = eg._iso(base + timedelta(hours=i))
+        d = 1010.0 if i % 2 else 990.0
+        if i == n - 1:
+            d = 1500.0
+        avail = late if i == 0 else p                      # hour 0 arrived late
+        for typ, v in (("D", d), ("DF", 1000.0)):
+            store[eg.obs_key("TEX", typ, p)] = {
+                "respondent": "TEX", "type": typ, "period": p, "value": v,
+                "first_seen_at": avail, "available_time": avail, "pit_quality": "live"}
+    pts = eg.surprise_series(store)["TEX"]
+    # the last row may not use hour 0 (not yet available): Z_MIN_H - 1 priors -> no z
+    assert pts[-1]["event_time"] == eg._iso(base + timedelta(hours=n - 1))
+    assert pts[-1]["z"] is None
