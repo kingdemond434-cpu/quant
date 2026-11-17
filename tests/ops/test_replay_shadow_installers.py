@@ -161,12 +161,36 @@ def test_measured_frees_only_the_installer_field(tmp_path: Path) -> None:
 
 # --------------------------------- the self-healer as a conditional target (Governance 18:45Z)
 
-HEAL = """
+HEAL = r"""
 import importlib.util
+import ntpath
 import subprocess
+import sys
 
 ENDABLE_TASKS: frozenset[str] = frozenset({"MT5-IndependenceIntake", "Quant-WorkflowGate"})
 RUNNABLE_TASKS: frozenset[str] = frozenset({"Quant-WorkflowGate"})
+
+
+def _on_windows():
+    return sys.platform == "win32"
+
+
+def _system32() -> str:
+    'The System32 folder.'
+    if _on_windows():
+        try:
+            import ctypes
+
+            buf = ctypes.create_unicode_buffer(260)
+            n = ctypes.windll.kernel32.GetSystemDirectoryW(buf, 260)
+            if 0 < n < 260 and ntpath.isabs(buf.value):
+                return str(buf.value)
+        except Exception:
+            pass
+    return r"C:\Windows\System32"
+
+
+SCHTASKS_EXE = ntpath.join(_system32(), "schtasks.exe")
 
 
 def _dep(name, rel):
@@ -178,18 +202,20 @@ def _load(modname, path):
     return spec
 
 
-def _schtasks(verb, task):
+def _schtasks(verb, task, xml=False):
     # the only subprocess
     allowed = {"/Query": ENDABLE_TASKS | RUNNABLE_TASKS, "/End": ENDABLE_TASKS,
                "/Run": RUNNABLE_TASKS}
     if verb not in allowed or task not in allowed[verb]:
         raise ValueError(task)
-    r = subprocess.run(["schtasks.exe", verb, "/TN", task], check=False)
+    tail = (["/XML"] if xml else ["/FO", "CSV", "/NH"]) if verb == "/Query" else []
+    argv = [SCHTASKS_EXE, verb, "/TN", task, *tail]
+    r = subprocess.run(argv, check=False)
     return {"rc": r.returncode, "argv": verb}
 
 
 def main():
-    _load("ph", _dep("process_health.py", "ops/process_health.py"))
+    _load("_box_self_heal_ph", _dep("process_health.py", "ops/process_health.py"))
     _schtasks("/End", "MT5-IndependenceIntake")
 """
 
@@ -298,6 +324,25 @@ HEAL_ESCAPES = [
     HEAL + "\ndef g():\n    global ENDABLE_TASKS\n    ENDABLE_TASKS = frozenset({'MT5-Gateway'})\n",
     # a native launch through ctypes
     HEAL + "\nimport ctypes\nctypes.windll.kernel32.CreateProcessW(None)\n",
+    # HOLD 3: the executable _schtasks launches rebound
+    HEAL + '\nSCHTASKS_EXE = r"C:\\opt\\desks\\mt5\\research\\run_gateway.cmd"\n',
+    HEAL.replace("argv = [SCHTASKS_EXE,", "argv = ['run_gateway.cmd',"),
+    HEAL.replace("subprocess.run(argv,", "subprocess.run(argv, executable='cmd.exe',"),
+    HEAL.replace('    return r"C:\\Windows\\System32"', '    return r"C:\\opt\\gw"'),
+    # HOLD 3: launchers outside the import allowlist
+    HEAL + "\nimport asyncio\n\nasync def _x():\n"
+    "    await asyncio.create_subprocess_exec(\n"
+    "        'python', 'desks/mt5/research/run_gateway_loop.py')\n",
+    HEAL + "\nimport webbrowser\nwebbrowser.open('file:///C:/opt/x.bat')\n",
+    HEAL + "\nimport multiprocessing\nmultiprocessing.Process(target=print).start()\n",
+    # HOLD 3 follow-ons the allowlist also closes
+    HEAL + "\nimport ctypes\n\ndef _y():\n    k = ctypes.WinDLL('kernel32')\n"
+    "    return getattr(k, 'Create' + 'ProcessW')\n",
+    HEAL + "\ndef _z():\n"
+    "    return _load('subprocess', _dep('process_health.py', 'ops/process_health.py')).Popen\n",
+    HEAL + "\nm = sys.modules['subprocess']\n",
+    HEAL + "\nimport psutil\npsutil.Popen(['x'])\n",
+    HEAL + "\nimport os\nos.system('x')\n",
 ]
 
 

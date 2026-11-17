@@ -499,6 +499,238 @@ _SCHTASKS_GUARD = ast.dump(
 )
 
 
+#: #1249 audit HOLD 3: the self-healer is judged against an ALLOWLIST, never a banlist. The only
+#: modules it may import (`import X`), the only `from` imports, and for each imported module the
+#: only attributes it may reach (None: any, for modules with no way to start a process).
+_HEAL_IMPORTS = frozenset({
+    "argparse", "contextlib", "csv", "ctypes", "importlib.util", "io", "json", "ntpath", "os",
+    "psutil", "re", "shlex", "socket", "stat", "subprocess", "sys", "tempfile", "time",
+})  # fmt: skip
+_HEAL_FROM: dict[str, frozenset[str] | None] = {
+    "__future__": None, "collections.abc": None, "dataclasses": None, "datetime": None,
+    "pathlib": None, "typing": None, "ctypes": frozenset({"wintypes"}),
+}  # fmt: skip
+_HEAL_ATTRS: dict[str, frozenset[str] | None] = {
+    "argparse": None, "contextlib": None, "csv": None, "io": None, "json": None, "ntpath": None,
+    "re": None, "shlex": None, "stat": None, "time": None, "wintypes": None,
+    "os": frozenset({"path", "environ", "getenv", "getpid", "replace", "makedirs", "stat",
+                     "lstat", "fdopen"}),
+    "subprocess": frozenset({"run", "TimeoutExpired"}),
+    "psutil": frozenset({"Process", "process_iter", "wait_procs", "NoSuchProcess",
+                         "AccessDenied"}),
+    "socket": frozenset({"gethostname"}),
+    "sys": frozenset({"exit", "platform", "argv", "stdout", "stderr", "modules"}),
+    "tempfile": frozenset({"mkstemp"}),
+    "importlib": frozenset({"util"}),
+    "ctypes": frozenset({"POINTER", "Structure", "WinDLL", "byref", "c_int", "c_ubyte",
+                         "c_void_p", "c_wchar_p", "cast", "create_string_buffer",
+                         "create_unicode_buffer", "get_last_error", "sizeof", "windll"}),
+}  # fmt: skip
+#: Full chains pinned below a module's first attribute.
+_HEAL_CHAINS = {
+    "importlib.util": frozenset({"spec_from_file_location", "module_from_spec"}),
+    "ctypes.windll": frozenset({"kernel32.GetSystemDirectoryW"}),
+    "sys.modules": frozenset({"get", "pop"}),
+}
+#: The DLLs it may open with ctypes.WinDLL(<literal>) and the only functions it may reach on them.
+_HEAL_DLLS = frozenset({"advapi32", "kernel32"})
+_HEAL_DLL_FUNCS = frozenset({
+    "LookupAccountNameW", "ConvertSidToStringSidW", "LocalFree", "GetNamedSecurityInfoW", "GetAce",
+})  # fmt: skip
+_HEAL_BUILTINS_BANNED = frozenset({
+    "compile", "breakpoint", "__builtins__", "__loader__", "__spec__", "__import__", "eval",
+    "exec", "setattr", "delattr", "vars", "globals", "locals",
+})  # fmt: skip
+#: SCHTASKS_EXE's one binding and _system32's body, compared as ASTs (docstrings dropped).
+_SCHTASKS_EXE_VALUE = ast.dump(
+    ast.parse('ntpath.join(_system32(), "schtasks.exe")', mode="eval").body
+)
+_SYSTEM32_SRC = """
+def _system32() -> str:
+    if _on_windows():
+        try:
+            import ctypes
+
+            buf = ctypes.create_unicode_buffer(260)
+            n = ctypes.windll.kernel32.GetSystemDirectoryW(buf, 260)
+            if 0 < n < 260 and ntpath.isabs(buf.value):
+                return str(buf.value)
+        except Exception:
+            pass
+    return r"C:\\Windows\\System32"
+"""
+_ARGV_VALUE = ast.dump(ast.parse('[SCHTASKS_EXE, verb, "/TN", task, *tail]', mode="eval").body)
+
+
+def _undoc(fn: ast.FunctionDef) -> str:
+    """ast.dump of a function without its docstring."""
+    body = list(fn.body)
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
+        body = body[1:]
+    clone = ast.FunctionDef(
+        name=fn.name, args=fn.args, body=body, decorator_list=fn.decorator_list,
+        returns=fn.returns, type_comment=None, type_params=getattr(fn, "type_params", []),
+    )  # fmt: skip
+    return ast.dump(clone, annotate_fields=False, include_attributes=False)
+
+
+def _heal_allowlist(tree: ast.Module, owner: dict[int, str]) -> list[str]:
+    """The allowlist half of self_heal_problems (#1249 audit HOLD 3)."""
+    why: list[str] = []
+    parent: dict[int, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parent[id(child)] = node
+    roots: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for al in node.names:
+                if al.name not in _HEAL_IMPORTS or al.asname:
+                    why.append(f"imports {al.name} (not on the self-heal import allowlist)")
+                roots.add(al.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            mod = "." * node.level + (node.module or "")
+            names = {a.name for a in node.names}
+            if mod not in _HEAL_FROM or any(a.asname for a in node.names):
+                why.append(f"from-imports {mod} (not on the self-heal import allowlist)")
+            else:
+                allowed = _HEAL_FROM[mod]
+                if allowed is not None and not names <= allowed:
+                    why.append(f"from-imports {sorted(names - allowed)} from {mod}")
+                if mod == "ctypes":
+                    roots |= names
+    dlls: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and _dotted(node.func) == "ctypes.WinDLL":
+            up = parent.get(id(node))
+            lit = node.args[0] if node.args else None
+            if not (
+                isinstance(up, ast.Assign)
+                and len(up.targets) == 1
+                and isinstance(up.targets[0], ast.Name)
+                and isinstance(lit, ast.Constant)
+                and lit.value in _HEAL_DLLS
+            ):
+                why.append("opens a DLL that is not a literal advapi32/kernel32 bound to a name")
+            else:
+                dlls.add(up.targets[0].id)
+    for node in ast.walk(tree):
+        up = parent.get(id(node))
+        if isinstance(node, ast.Name) and node.id in _HEAL_BUILTINS_BANNED:
+            why.append(f"names {node.id}")
+        elif isinstance(node, ast.Name) and node.id in roots:
+            if not isinstance(node.ctx, ast.Load):
+                why.append(f"rebinds the module name {node.id}")
+            elif not (isinstance(up, ast.Attribute) and up.value is node):
+                why.append(f"uses the module {node.id} as a value")
+        elif isinstance(node, ast.Name) and node.id in dlls and isinstance(node.ctx, ast.Load):
+            if not (
+                isinstance(up, ast.Attribute) and up.value is node and up.attr in _HEAL_DLL_FUNCS
+            ):
+                why.append(f"reaches {node.id} other than through an allowlisted function")
+        elif isinstance(node, ast.Attribute) and not (
+            isinstance(up, ast.Attribute) and up.value is node
+        ):
+            chain = _dotted(node)
+            head, _, rest = chain.partition(".")
+            if head not in roots or head not in _HEAL_ATTRS:
+                continue
+            allowed = _HEAL_ATTRS[head]
+            first, _, tail = rest.partition(".")
+            if allowed is not None and first not in allowed:
+                why.append(f"reaches {head}.{first} (not on the allowlist)")
+                continue
+            pinned = _HEAL_CHAINS.get(f"{head}.{first}")
+            if (
+                pinned is not None
+                and tail
+                and not any(tail == p or tail.startswith(p + ".") for p in pinned)
+            ):
+                why.append(f"reaches {chain} (not on the allowlist)")
+            if f"{head}.{first}" == "ctypes.windll" and tail not in pinned:  # type: ignore[operator]
+                why.append(f"reaches {chain} (not on the allowlist)")
+            if f"{head}.{first}" == "sys.modules":
+                if owner.get(id(node)) not in {"_load", "_running_states"}:
+                    why.append("touches sys.modules outside _load")
+                elif not tail and not (
+                    isinstance(up, ast.Subscript) and isinstance(up.ctx, ast.Store)
+                ):
+                    why.append("reads sys.modules by subscript")
+        elif isinstance(node, ast.Call) and _dotted(node.func) == "getattr":
+            name_arg = node.args[1] if len(node.args) > 1 else None
+            obj = node.args[0] if node.args else None
+            if not (
+                (isinstance(name_arg, ast.Constant) and isinstance(name_arg.value, str))
+                or (isinstance(obj, ast.Name) and obj.id == "self")
+            ):
+                why.append("calls getattr with a computed name")
+        elif isinstance(node, ast.Call) and _dotted(node.func) == "_load":
+            arg = node.args[0] if node.args else None
+            fn_owner = owner.get(id(node), "")
+            lits = []
+            if isinstance(arg, ast.Constant):
+                lits = [arg.value]
+            elif isinstance(arg, ast.Name):
+                fns = [
+                    f for f in ast.walk(tree)
+                    if isinstance(f, ast.FunctionDef) and f.name == fn_owner
+                ]  # fmt: skip
+                lits = [
+                    a.value.value
+                    for f in fns
+                    for a in ast.walk(f)
+                    if isinstance(a, ast.Assign)
+                    and any(isinstance(t, ast.Name) and t.id == arg.id for t in a.targets)
+                    and isinstance(a.value, ast.Constant)
+                ] + [
+                    None
+                    for f in fns
+                    for a in ast.walk(f)
+                    if isinstance(a, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.For))
+                    and not (isinstance(a, ast.Assign) and isinstance(a.value, ast.Constant))
+                    and any(
+                        isinstance(t, ast.Name) and t.id == arg.id
+                        for t in (a.targets if isinstance(a, ast.Assign) else [a.target])
+                    )
+                ]
+            if len(lits) != 1 or not (
+                isinstance(lits[0], str) and lits[0].startswith("_box_self_heal_")
+            ):
+                why.append("loads under a module name that is not a literal _box_self_heal_*")
+    # SCHTASKS_EXE: bound once, at module level, to the pinned expression; _system32 pinned.
+    exe_binds = [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Name) and n.id in {"SCHTASKS_EXE", "_system32", "_schtasks"}
+        and not isinstance(n.ctx, ast.Load)
+    ]  # fmt: skip
+    top = [
+        n for n in tree.body
+        if isinstance(n, ast.Assign) and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name) and n.targets[0].id == "SCHTASKS_EXE"
+    ]  # fmt: skip
+    if (
+        len(top) != 1
+        or len(exe_binds) != 1
+        or ast.dump(top[0].value) != _SCHTASKS_EXE_VALUE
+        or any(isinstance(n, ast.Global) for n in ast.walk(tree))
+    ):
+        why.append("SCHTASKS_EXE is not bound exactly once to ntpath.join(_system32(), ...)")
+    s32 = [
+        n for n in ast.walk(tree)
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        and n.name == "_system32"
+    ]  # fmt: skip
+    canon = ast.parse(_SYSTEM32_SRC).body[0]
+    if (
+        len(s32) != 1
+        or s32[0] not in tree.body
+        or not isinstance(s32[0], ast.FunctionDef)
+        or _undoc(s32[0]) != _undoc(canon)  # type: ignore[arg-type]
+    ):
+        why.append("_system32 is not the pinned System32 lookup")
+    return why
+
+
 def _owner_map(tree: ast.AST) -> dict[int, str]:
     """id(node) -> the name of the innermost function holding it."""
     owner: dict[int, str] = {}
@@ -562,6 +794,7 @@ def self_heal_problems(head: Path) -> list[str]:
             why.append("names a native process launch")
             break
     owner = _owner_map(tree)
+    why.extend(_heal_allowlist(tree, owner))
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for al in node.names:
@@ -695,6 +928,54 @@ def self_heal_problems(head: Path) -> list[str]:
                 isinstance(t, ast.Name) and t.id in {"verb", "task", "allowed"} for t in tgts
             ):
                 why.append("_schtasks rebinds verb, task or allowed")
+        # argv[0] is SCHTASKS_EXE: argv bound once to the pinned list, tail only from literals,
+        # and every subprocess call is subprocess.run(argv, ...) with no executable/shell.
+        binds: dict[str, list[ast.AST]] = {}
+        for node in ast.walk(sch):
+            tgts = (
+                node.targets
+                if isinstance(node, ast.Assign)
+                else [node.target]
+                if isinstance(node, (ast.AugAssign, ast.AnnAssign, ast.For, ast.NamedExpr))
+                else []
+            )
+            for t in tgts:
+                for x in ast.walk(t):
+                    if isinstance(x, ast.Name):
+                        binds.setdefault(x.id, []).append(node)
+        argv_b = binds.get("argv", [])
+        tail_b = binds.get("tail", [])
+        if not (
+            len(argv_b) == 1
+            and isinstance(argv_b[0], ast.Assign)
+            and ast.dump(argv_b[0].value) == _ARGV_VALUE
+        ):
+            why.append("_schtasks does not build argv as [SCHTASKS_EXE, verb, '/TN', task, *tail]")
+        if not (
+            len(tail_b) == 1
+            and isinstance(tail_b[0], ast.Assign)
+            and {x.id for x in ast.walk(tail_b[0].value) if isinstance(x, ast.Name)}
+            <= {"xml", "verb"}
+            and all(
+                (isinstance(x.value, str) and x.value.startswith("/")) or x.value == "CSV"
+                for x in ast.walk(tail_b[0].value)
+                if isinstance(x, ast.Constant)
+            )
+            and not any(isinstance(x, ast.Call) for x in ast.walk(tail_b[0].value))
+        ):
+            why.append("_schtasks's tail is not built from literal switches")
+        for node in ast.walk(sch):
+            if isinstance(node, ast.Call) and _dotted(node.func).startswith("subprocess."):
+                first = node.args[0] if node.args else None
+                if not (
+                    _dotted(node.func) == "subprocess.run"
+                    and isinstance(first, ast.Name)
+                    and first.id == "argv"
+                    and len(node.args) == 1
+                    and not any(k.arg in {"executable", "shell", "args"} for k in node.keywords)
+                    and all(k.arg is not None for k in node.keywords)
+                ):
+                    why.append("_schtasks launches something other than subprocess.run(argv)")
     return list(dict.fromkeys(why))
 
 
