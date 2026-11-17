@@ -564,7 +564,10 @@ def test_source_frontier_publishes_yield_by_discovery_method() -> None:
     c.executemany("INSERT INTO sources VALUES (?,?)", [("a", "seed"), ("b", "seed"),
                                                       ("catalog:x", "catalog_route:ckan")])
     c.execute("INSERT INTO source_yield VALUES ('a', 4, 7200)")
-    rows = {r["method"]: r for r in SF.by_discovery_method(c)}
+    try:
+        rows = {r["method"]: r for r in SF.by_discovery_method(c)}
+    finally:
+        c.close()                     # an unclosed connection is a ResourceWarning on 3.13
     assert rows["seed"] == {"method": "seed", "sources": 2, "sources_with_yield": 1,
                             "testable": 4, "compute_h": 2.0}
     assert rows["catalog_route:ckan"]["testable"] == SF.UNMEASURED      # no yield row yet
