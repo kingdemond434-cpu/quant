@@ -243,6 +243,10 @@ TASK name="MT5-IntelShip" trigger="every 1 hour, at :01" runs="desks/mt5/scripts
 TASK name="MT5-LocalConvert" trigger="every 1 hour, at :12" runs="ops/run_local_convert.cmd" installer="NONE" lane="research"
 TASK name="MT5-NeverStale" trigger="every 15 minutes" runs="ops/run_never_stale.cmd" installer="NONE" lane="ops"
 TASK name="MT5-NewsDesk" trigger="at system start-up (resident)" runs="desks/mt5/research/news_desk.py" installer="NONE" lane="research"
+# MT5-LiveWire (2026-11-17): first-party official feeds (data/live_wire_feeds.json, terms OK only,
+# robots-gated, conditional GET) into data/news_captures.jsonl; --trigger runs news_event_stream's
+# fast lane in-process when anything new landed. Writes desks/mt5/reports/LIVE_WIRE.json.
+TASK name="MT5-LiveWire"           trigger="every 2 minutes"  runs="desks/mt5/research/live_wire.py" installer="desks/mt5/scripts/install_live_wire_task.ps1" lane="research"
 TASK name="MT5-NoLog" trigger="daily 06:40" runs="desks/mt5/research/no_log.py" installer="NONE" lane="ops"
 TASK name="MT5-RegimeMonitor" trigger="every 15 minutes" runs="desks/mt5/research/regime_monitor.py" installer="NONE" lane="research"
 TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="NONE" lane="data"

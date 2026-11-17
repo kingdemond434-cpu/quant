@@ -1435,7 +1435,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
-                     "world_lab", "macro_department", "news_event_stream",
+                     "world_lab", "macro_department", "live_wire",
+                     "news_event_stream",
                      "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
@@ -2294,6 +2295,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
     "event_surprise": 400,
+    # THE LIVE WIRE polls ~47 first-party official feeds conditionally and stops itself at
+    # --budget-s (0.9 of QUANT_LEG_BUDGET_S); robots is cached per host for six hours.
+    "live_wire": 300,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
@@ -4597,6 +4601,12 @@ def main() -> None:
     # REQUEST the allocator may read; the deep lane interprets what clears novelty x surprise.
     # Nothing here sizes. `--once` is the hourly pass; the 60 s `--resident` loop is a box task
     # that does not exist yet and is a NAMED gap on the ledger row, not a silent absence.
+    # THE LIVE WIRE, immediately BEFORE the stream: first-party official feeds (central banks,
+    # statistics agencies, treasuries, energy, hazards; data/live_wire_feeds.json, terms verdict
+    # OK only, robots-gated) polled conditionally into news_captures.jsonl, which the stream
+    # reads. Its sub-hour clock is the box task MT5-LiveWire (`--once --trigger`, every 2 min).
+    lwr = _costed("live_wire", lambda: _producer(
+        "live_wire", "research/live_wire.py", "--once"))
     nes = _costed("news_event_stream", lambda: _producer(
         "news_event_stream", "research/news_event_stream.py", "--once"))
     # THE EVENT-CONDITIONED SLEEVES: eight family cards validated BEFORE an event, so a headline
@@ -6552,7 +6562,7 @@ def main() -> None:
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
-                    "news_event_stream": nes, "event_sleeves": evs,
+                    "live_wire": lwr, "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
                     "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,
                     "representation_forge": rfg,
