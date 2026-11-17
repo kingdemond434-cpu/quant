@@ -9,10 +9,11 @@ evidence, it is following a fossil.
 
 `deep_forest_miner.schedule()` is called for real here, not imitated, because the claim is about
 the scheduler the desk actually runs. The expansion tests plant a registry whose share ROSE and
-assert the neighbours land in the REGISTERED grounds file -- and that a source carrying a terms,
-robots or "snippets only" note is MINED WITH THAT NOTE ATTACHED (LAWS 5e, 2026-09-23) rather than
-dropped. These assertions were the opposite until 2026-09-23: they pinned a brake, so when the
-brake was deleted the test had to say the new rule, not vanish.
+assert the neighbours land in the REGISTERED grounds file. Since LAWS 5e as amended 2026-11-17
+(act 6), a source whose registry row declares `machine_use_allowed=false`, "snippets only" /
+"NOT FETCHABLE" or a robots Disallow is REFUSED from every fetch list (catalogued, never fetched),
+while `route=unreachable` stays a label. These assertions flipped twice; each time the test says
+the rule in force, it does not vanish.
 """
 from __future__ import annotations
 
@@ -135,11 +136,10 @@ def test_an_unknown_host_keeps_its_place_among_its_equals(tmp_path: Path) -> Non
     assert meta["n_unknown"] == 2 and len(out) == 3
 
 
-def test_a_labelled_source_is_crawled_and_its_label_is_carried(tmp_path: Path) -> None:
-    """MINED, NOT DROPPED (LAWS 5e, 2026-09-23). `machine_use_allowed=false`, `unreachable` and
-    `snippets_only` used to remove a source from the pass; all three were discovery brakes the
-    desk imposed on itself. Every one of these four is crawled now, and the three that carry a
-    note carry it as a LABEL the crawler records on each row it produces."""
+def test_fetch_refused_sources_leave_the_crawl_and_labels_stay(tmp_path: Path) -> None:
+    """LAWS 5e act 6 (2026-11-17): `machine_use_allowed=false` and `snippets_only` refuse the
+    automated fetch, so those sources leave the crawl order (catalogued, never fetched).
+    `route=unreachable` is not a terms refusal and is crawled with its label."""
     rows = _rows(("s:ok", "https://ok.cn/", {}),
                  ("s:no", "https://no.cn/", {"machine_use_allowed": False}),
                  ("s:dead", "https://dead.cn/", {"route": "unreachable"}),
@@ -148,13 +148,15 @@ def test_a_labelled_source_is_crawled_and_its_label_is_carried(tmp_path: Path) -
     state = ss.load(report=rpt, registry=reg)
     picked = [_Src(f"https://{h}.cn/p") for h in ("ok", "no", "dead", "snip")]
     out, meta = ss.order_picked(picked, state)
-    assert sorted(s.host for s in out) == ["dead.cn", "no.cn", "ok.cn", "snip.cn"]
-    assert meta["n_refused"] == 0 and not meta.get("refused")
-    assert meta["n_labelled"] == 3
+    assert sorted(s.host for s in out) == ["dead.cn", "ok.cn"]
+    assert meta["n_refused"] == 2
+    refused = {r["url"]: r["why"] for r in meta["refused"]}
+    assert "machine_use_allowed=false" in refused["https://no.cn/p"]
+    assert "snippets only" in refused["https://snip.cn/p"]
+    assert all(v.startswith(ss.FETCH_REFUSED) for v in refused.values())
+    assert meta["n_labelled"] == 1
     labels = {r["url"]: r["terms_note"] for r in meta["labelled"]}
-    assert "machine_use_allowed=false" in labels["https://no.cn/p"]
     assert "route=unreachable" in labels["https://dead.cn/p"]
-    assert "snippets only" in labels["https://snip.cn/p"]
     assert all("redistribution withheld" in v for v in labels.values())
 
 
@@ -226,20 +228,19 @@ def test_deep_forest_grounds_are_untouched_when_the_artifact_is_absent(tmp_path:
     assert meta["status"] == "absent" and meta["n_reweighted"] == 0
 
 
-def test_a_labelled_ground_is_worked_and_carries_its_label(tmp_path: Path) -> None:
-    """`machine_use_allowed=false` used to delete this ground from the pass. It is worked now,
-    keeps its share factor, and carries the registry's note on the ground copy (LAWS 5e)."""
+def test_a_fetch_refused_ground_is_not_worked(tmp_path: Path) -> None:
+    """LAWS 5e act 6 (2026-11-17): `machine_use_allowed=false` removes the ground from the fetch
+    pass again; it stays catalogued in the registry with its reason."""
     grounds = [{"name": "ok", "region": "cn", "weight": 1.0, "url": "https://ok.cn/"},
                {"name": "labelled", "region": "cn", "weight": 9.0, "url": "https://no.cn/"}]
     rows = _rows(("g:ok", "https://ok.cn/", {}),
                  ("g:no", "https://no.cn/", {"machine_use_allowed": False}))
     state = ss.load(*_artifact(tmp_path, {"g:ok": 0.5, "g:no": 0.5}, rows))
     out, meta = ss.weight_grounds(grounds, state)
-    assert sorted(g["name"] for g in out) == ["labelled", "ok"]
-    assert meta["n_refused"] == 0 and meta["n_labelled"] == 1
-    hit = next(g for g in out if g["name"] == "labelled")
-    assert "machine_use_allowed=false" in hit["_terms_note"]
-    assert "redistribution withheld" in hit["_terms_note"]
+    assert [g["name"] for g in out] == ["ok"]
+    assert meta["n_refused"] == 1 and meta["n_labelled"] == 0
+    assert "machine_use_allowed=false" in meta["refused"][0]["why"]
+    assert meta["refused"][0]["why"].startswith(ss.FETCH_REFUSED)
 
 
 def test_a_hard_boundary_ground_is_still_never_worked(tmp_path: Path) -> None:
@@ -303,19 +304,31 @@ def test_a_share_that_did_not_rise_expands_nothing(tmp_path: Path) -> None:
     assert len(json.loads(gpath.read_text("utf-8"))["grounds"]) == 1
 
 
-def test_expansion_mints_a_labelled_source_s_neighbour_with_the_label_copied(
-        tmp_path: Path) -> None:
-    """A parent carrying `machine_use_allowed=false` used to mint NO neighbours. It mints them
-    now, and each candidate ground carries the parent's terms note (LAWS 5e, 2026-09-23)."""
+def test_expansion_mints_no_neighbour_of_a_fetch_refused_source(tmp_path: Path) -> None:
+    """LAWS 5e act 6 (2026-11-17): a parent whose terms refuse the fetch was never lawfully
+    fetched, so it mints no neighbours."""
     rows = _rows(("g:no", "https://no.cn/", {"machine_use_allowed": False}))
     state = ss.load(*_artifact(tmp_path, {"g:no": 0.9}, rows))
     gpath = _grounds_file(tmp_path, [])
     meta = ss.expand({"https://no.cn/": [("https://forum.no.cn/thread/1", "套利")]}, state,
                      grounds_path=gpath, state_path=tmp_path / "st.json")
+    assert meta["n_appended"] == 0 and meta["n_refused"] == 1
+    assert json.loads(gpath.read_text("utf-8"))["grounds"] == []
+
+
+def test_expansion_mints_a_labelled_source_s_neighbour_with_the_label_copied(
+        tmp_path: Path) -> None:
+    """A parent carrying a label that does not refuse the fetch (`route=unreachable`) mints
+    neighbours, each carrying the parent's terms note (LAWS 5e)."""
+    rows = _rows(("g:dead", "https://dead.cn/", {"route": "unreachable"}))
+    state = ss.load(*_artifact(tmp_path, {"g:dead": 0.9}, rows))
+    gpath = _grounds_file(tmp_path, [])
+    meta = ss.expand({"https://dead.cn/": [("https://forum.dead.cn/thread/1", "套利")]}, state,
+                     grounds_path=gpath, state_path=tmp_path / "st.json")
     assert meta["n_appended"] == 1 and meta["n_refused"] == 0 and meta["n_labelled"] == 1
     minted = json.loads(gpath.read_text("utf-8"))["grounds"]
     assert len(minted) == 1
-    assert "machine_use_allowed=false" in minted[0]["terms_note"]
+    assert "route=unreachable" in minted[0]["terms_note"]
 
 
 def test_expansion_never_mints_a_neighbour_of_a_hard_boundary_source(tmp_path: Path) -> None:
@@ -384,20 +397,22 @@ def test_expansion_is_bounded_per_pass_and_per_source(tmp_path: Path) -> None:
     assert meta["n_appended"] == ss.MAX_NEW_PER_SOURCE
 
 
-@pytest.mark.parametrize("row,labelled", [
-    ({}, False),
-    ({"licence_note": "NOT FETCHABLE -- recorded so the gap is visible"}, True),
-    ({"licence_note": "SEARCH-INDEX SNIPPETS ONLY (OP-041)"}, True),
-    ({"licence_note": "WEB-PUBLIC; concept reimplemented independently"}, False),
+@pytest.mark.parametrize("row,fetchable", [
+    ({}, True),
+    ({"licence_note": "NOT FETCHABLE -- recorded so the gap is visible"}, False),
+    ({"licence_note": "SEARCH-INDEX SNIPPETS ONLY (OP-041)"}, False),
+    ({"licence_note": "WEB-PUBLIC; concept reimplemented independently"}, True),
+    ({"robots": "disallow"}, False),
+    ({"machine_use_allowed": False}, False),
 ])
-def test_licence_notes_are_read_as_labels_not_refusals(row: dict[str, Any],
-                                                       labelled: bool) -> None:
-    """LAWS 5e (2026-09-23): every one of these is MINED. The two restrictive notes used to
-    return False here; they return True with the note folded into the reason, so the caller can
-    record it as provenance and route redistribution off it."""
+def test_licence_notes_that_refuse_the_fetch_are_refusals(row: dict[str, Any],
+                                                          fetchable: bool) -> None:
+    """LAWS 5e act 6 (2026-11-17): "NOT FETCHABLE", snippets-only, a robots Disallow and
+    `machine_use_allowed=false` refuse the automated fetch (catalogued, never fetched)."""
     ok, why = ss.machine_use_allowed(row)
-    assert ok is True, why
-    assert ("redistribution withheld" in why) is labelled, why
+    assert ok is fetchable, why
+    if not fetchable:
+        assert why.startswith(ss.FETCH_REFUSED) and "never fetched" in why
 
 
 @pytest.mark.parametrize("row", [
