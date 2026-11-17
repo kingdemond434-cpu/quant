@@ -50,6 +50,12 @@ LIVE: dict[str, str] = {
     "a68c1283127ae8dd4a1217933fdbf027e4a48b19b63bfacae9bf05c9e8d1b872":
         "LIVE trading box (Contabo) public IP",
 }
+#: Each LIVE key's SHAPE, which the tree scan pre-filters on: the whole tree holds ~71M digit
+#: tokens (4.6 GB of git-grep output), these two shapes ~150k. A shape names a length, not a value.
+LIVE_SHAPE: dict[str, str] = {
+    "c3d502f254a17abd00844878fd202c2b9778e037029caab8d0a0a4c5bf521d6d": r"\d{6}",
+    "a68c1283127ae8dd4a1217933fdbf027e4a48b19b63bfacae9bf05c9e8d1b872": r"\d{1,3}(?:\.\d{1,3}){3}",
+}
 
 #: RETIRED identifiers: a DOWNWARD RATCHET, not a hard bar. These are already published, and in
 #: git history besides -- deleting them from working files does not unpublish them, so failing the
@@ -160,11 +166,16 @@ def _hits(needle: str) -> list[str]:
     if needle in LIVE:
         # Every tracked text file holding a token whose digest is the key; the token never
         # appears in this file, so the scan cannot be inverted into a plain search.
-        out = subprocess.run(["git", "grep", "-o", "-I", "-P", _TOKEN], cwd=ROOT,
-                             capture_output=True, text=True)
-        files = sorted({ln.rsplit(":", 1)[0] for ln in out.stdout.splitlines()
-                        if ":" in ln and _digest(ln.rsplit(":", 1)[1]) == needle})
-        out = subprocess.CompletedProcess(out.args, out.returncode, "\n".join(files), "")
+        shape = r"(?<![\d.])" + LIVE_SHAPE[needle] + r"(?![\d.])"
+        found: set[str] = set()
+        with subprocess.Popen(["git", "grep", "-o", "-I", "-P", shape], cwd=ROOT,
+                              stdout=subprocess.PIPE, text=True, errors="replace") as proc:
+            assert proc.stdout is not None
+            for ln in proc.stdout:
+                path, _, token = ln.rstrip("\n").rpartition(":")
+                if path and _digest(token) == needle:
+                    found.add(path)
+        out = subprocess.CompletedProcess([], 0, "\n".join(sorted(found)), "")
     else:
         out = subprocess.run(["git", "grep", "-l", "-F", needle], cwd=ROOT,
                              capture_output=True, text=True)
@@ -289,3 +300,11 @@ def test_a_hashed_needle_finds_what_the_plain_one_did() -> None:
         assert _matches("10.20.30.40.", key) == _contains_identifier("10.20.30.40.", "10.20.30.40")
     finally:
         del LIVE[key]
+
+
+def test_every_live_key_has_a_shape_that_its_scan_can_use() -> None:
+    assert set(LIVE_SHAPE) == set(LIVE)
+    for shape in LIVE_SHAPE.values():
+        # a shape must describe whole tokens, or the pre-filter could hide a real one
+        samples = [x for x in ("123456", "1.2.3.4", "12.34.56.78") if re.fullmatch(shape, x)]
+        assert samples and all(re.fullmatch(_TOKEN, x) for x in samples)
