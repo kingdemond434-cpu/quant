@@ -288,7 +288,7 @@ def scouted_admissible(rows: list[dict[str, Any]], public_url: Callable[[str], s
         else:
             allowed, why = check(url)
             if not allowed or "unreadable" in why:
-                held[sid] = f"robots.txt: {why if allowed else 'disallows this URL'}"
+                held[sid] = f"robots.txt: {why or 'disallows this URL'}"
             else:
                 ok.append(s)
     return ok, held
