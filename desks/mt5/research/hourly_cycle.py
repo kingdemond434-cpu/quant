@@ -254,8 +254,22 @@ def mine() -> dict:
 
             from libs.data import terms_fence as _tf
             _tf.check_url(u)
+            # ROBOTS FAILS CLOSED (Governance ruling 2026-11-10, #819): a Disallow or an
+            # unreadable robots.txt stops the request, counted, never read as permission.
+            try:
+                from research.index_discovery import robots_refusal as _robots
+                refused = _robots(u, agent="quant-research-desk/1.0")
+            except Exception as exc:  # noqa: BLE001 - a gate that cannot load refuses
+                refused = f"robots gate unavailable ({type(exc).__name__})"
+            if refused:
+                hits.append({"src": u, "status": "BLOCKED_BY_ROBOTS", "why": refused,
+                             "missed_growth": {"mechanism": "robots_refusal",
+                                               "what_is_lost": "GDELT news seeds for the inbox",
+                                               "size": "UNMEASURED"}})
+                continue
             req = urllib.request.Request(u, headers={"User-Agent": "quant-research-desk/1.0"})
-            with urllib.request.urlopen(req, timeout=20) as r:
+            # The guarded opener re-checks the terms fence on every redirect hop.
+            with _tf.guarded_urlopen(req, timeout=20) as r:
                 data = json.loads(r.read().decode("utf-8", "ignore") or "{}")
             for a in (data.get("articles") or [])[:25]:
                 if _tf.platform_of_url(str(a.get("url") or "")):

@@ -453,8 +453,13 @@ class Session:
                 lines = [ln.strip() for ln in resp.body.decode("utf-8", "replace").splitlines()
                          if ln.strip().lower().startswith(("user-agent", "allow", "disallow"))]
                 ent = {"at": _iso(self.now), "status": "OK", "lines": lines[:600]}
-            elif 400 <= resp.status < 500:
+            elif resp.status in (404, 410):
+                # Only an ABSENT robots.txt is permission (Governance ruling 2026-11-10, #819).
                 ent = {"at": _iso(self.now), "status": f"ABSENT_{resp.status}", "lines": []}
+            elif resp.status in (401, 403):
+                # A robots.txt the host refuses to show us is a refusal of the whole host.
+                ent = {"at": _iso(self.now), "status": f"DENIED_{resp.status}",
+                       "lines": ["User-agent: *", "Disallow: /"]}
             elif resp.status <= 0:
                 return None, "UNREACHABLE"
             else:

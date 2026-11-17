@@ -432,3 +432,30 @@ def test_the_stocktwits_asia_source_is_never_requested_and_mints_no_pack_cell(
     assert not [h for h in wire.hosts if "stocktwits" in h]
     assert pk._fenced_pack(row) == "stocktwits"
     assert pk._fenced_pack({"id": "cftc_cot", "url": "https://www.cftc.gov/x.csv"}) is None
+
+
+def test_hourly_mine_gdelt_seeds_obey_robots_and_never_bare_urlopen(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The GDELT seed fetch in hourly_cycle.mine() goes through the fail-closed robots gate and
+    the terms-guarded opener: an unreadable robots.txt means no request, counted with its
+    missed_growth, and urllib.request.urlopen is never called bare."""
+    import urllib.request as _ur
+
+    import hourly_cycle as hc
+    from research import index_discovery as idx
+
+    monkeypatch.setattr(hc, "BASE", tmp_path)
+    (tmp_path / "data").mkdir(exist_ok=True)
+    monkeypatch.setattr(idx, "robots_refusal",
+                        lambda url, agent=None: "robots.txt unreadable (HTTP 503)")
+
+    def _bare(*a: Any, **k: Any) -> None:
+        raise AssertionError("bare urlopen")
+
+    def _guarded(*a: Any, **k: Any) -> None:
+        raise AssertionError("a request followed a robots refusal")
+
+    monkeypatch.setattr(_ur, "urlopen", _bare)
+    monkeypatch.setattr(tf, "guarded_urlopen", _guarded)
+    out = hc.mine()
+    assert out["new_seeds"] == 0

@@ -683,3 +683,35 @@ def test_a_terms_refused_portal_and_endpoint_are_never_touched_and_cost_is_named
 def test_the_real_roster_names_no_terms_refused_portal_as_permitted() -> None:
     allowed = cr.permitted_hosts(cr.load_terms_evidence())
     assert not [h for h in allowed if cr.terms_refused(h)]
+
+
+class _RobotsStatusNet(Net):
+    """robots.txt answers a fixed HTTP status with no body."""
+
+    def __init__(self, status: int, handlers: dict[str, Handler] | None = None) -> None:
+        super().__init__(handlers)
+        self.robots_status = status
+
+    def __call__(self, url: str, headers: Mapping[str, str], timeout: float) -> cr.Response:
+        if urllib.parse.urlsplit(url).path == "/robots.txt":
+            self.calls.append((url, dict(headers)))
+            return cr.Response(self.robots_status)
+        return super().__call__(url, headers, timeout)
+
+
+@pytest.mark.parametrize("status", [401, 403, 429, 451, 400])
+def test_a_robots_4xx_other_than_404_410_is_never_permission(box: Path, status: int) -> None:
+    """#819: only an ABSENT robots.txt (404/410) allows; 401/403 deny the host and any other
+    unreadable answer refuses. No API request may follow."""
+    net = _RobotsStatusNet(status, {"portal.example.org/api/3/action/package_search":
+                                    ckan_handler(3)})
+    _run(box, _roster(box, [CKAN]), net)
+    assert net.api_calls() == [], f"robots {status} was read as permission"
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_an_absent_robots_txt_allows(box: Path, status: int) -> None:
+    net = _RobotsStatusNet(status, {"portal.example.org/api/3/action/package_search":
+                                    ckan_handler(3)})
+    _run(box, _roster(box, [CKAN]), net)
+    assert net.api_calls(), f"robots {status} (absent) should allow"
