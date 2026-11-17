@@ -7,6 +7,7 @@ is one the replay vouches for; anything else stays UNMEASURED.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 from pathlib import Path
 
@@ -220,6 +221,15 @@ def main():
 """
 
 
+# HOLD 4: the kill path as the harness pins it, and the one way the pass reaches it.
+HEAL += (
+    "\n\n"
+    + rs.SELF_HEAL_PINS.read_text("utf-8")
+    + "\n\ndef real_box():\n    return Box(procs=list, kill=_kill_tree)\n"
+    + "\n\nclass Pass:\n    def stop(self, p):\n        return self.box.kill(p, [], None, None)\n"
+)
+
+
 def _heal(tmp: Path, text: str) -> Path:
     (tmp / "ops").mkdir(parents=True, exist_ok=True)
     (tmp / rs.SELF_HEAL).write_text(text, "utf-8")
@@ -343,7 +353,55 @@ HEAL_ESCAPES = [
     HEAL + "\nm = sys.modules['subprocess']\n",
     HEAL + "\nimport psutil\npsutil.Popen(['x'])\n",
     HEAL + "\nimport os\nos.system('x')\n",
+    # HOLD 4: ending a process outside the pinned _kill_tree
+    HEAL + "\nimport psutil\n\ndef _q():\n    for p in psutil.process_iter():\n"
+    "        if p.name() == 'termi' + 'nal64.exe':\n            p.kill()\n",
+    HEAL + "\nimport psutil\n\ndef _r(pid):\n    psutil.Process(pid).terminate()\n",
+    HEAL + "\ndef _s(p):\n    getattr(p, 'kill')()\n",
+    HEAL + "\ndef _v(p):\n    return p.__class__\n",
+    HEAL + "\nDENY = ()\n",
+    HEAL + "\ndef denied(p):\n    return None\n",
+    HEAL.replace('            return f"{needle!r}: {why}"', "            return None"),
+    HEAL.replace('("terminal64", "the MT5 terminal"),', ""),
+    HEAL + "\ndef _t():\n    return Box(procs=list, kill=lambda *a: a[0])\n",
+    HEAL + "\ndef _u(self):\n    self.box.kill = print\n",
 ]
+
+
+def test_the_pinned_kill_guard_denies_every_forbidden_and_money_word() -> None:
+    """HOLD 4, on the base: the deny list the harness pins refuses any process whose image or
+    command line carries a word from SELF_HEAL_FORBIDDEN or MONEY_WORDS."""
+    ns: dict[str, object] = {}
+    exec(
+        compile(
+            "from __future__ import annotations\n"
+            "import contextlib, ntpath, re, shlex, time\n"
+            "from dataclasses import dataclass\n"
+            "from typing import Any\n" + rs.SELF_HEAL_PINS.read_text("utf-8"),
+            str(rs.SELF_HEAL_PINS),
+            "exec",
+        ),
+        ns,
+    )
+    proc, denied = ns["Proc"], ns["denied"]
+    words = [w.replace(".?", "_") for w in rs.SELF_HEAL_FORBIDDEN.pattern.split("|")]
+    words += ["window guard", "window-guard", "windowguard", "terminal64", "metatrader",
+              "autotrading", "mt5_gateway", "mt5-gateway", "ftmo", "fusion", "e8",
+              "order_send", "order_check", "positions_get"]  # fmt: skip
+    for w in words:
+        assert rs.SELF_HEAL_FORBIDDEN.search(w) or rs.MONEY_WORDS.search(w), w
+        for p in (
+            proc(9, 1, "python.exe", f"python.exe C:\\opt\\quant\\x\\{w}.py", 0.0, 0.0),  # type: ignore[operator]
+            proc(9, 1, f"{w}.exe", f"{w}.exe --once", 0.0, 0.0),  # type: ignore[operator]
+            proc(9, 1, "python.exe", f"python.exe run.py --role {w.upper()}", 0.0, 0.0),  # type: ignore[operator]
+        ):
+            assert denied(p), (w, p)  # type: ignore[operator]
+
+
+def test_the_harness_pins_the_kill_path() -> None:
+    names = {rs._top_name(n) for n in ast.parse(rs.SELF_HEAL_PINS.read_text("utf-8")).body}
+    assert {"DENY", "denied", "unreadable", "_deny_haystack", "_kill_tree", "_live_proc",
+            "Proc"} <= names  # fmt: skip
 
 
 @pytest.mark.parametrize("text", HEAL_ESCAPES)

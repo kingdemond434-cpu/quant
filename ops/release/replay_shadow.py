@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 import json
 import os
 import re
@@ -562,6 +563,93 @@ def _system32() -> str:
 _ARGV_VALUE = ast.dump(ast.parse('[SCHTASKS_EXE, verb, "/TN", task, *tail]', mode="eval").body)
 
 
+#: #1249 audit HOLD 4: the kill path. The healer's deny list, identity reads and _kill_tree are
+#: pinned to this file (read from the BASE harness) by AST; the process-ending methods may be
+#: reached only inside _kill_tree, and the pass reaches _kill_tree only as `self.box.kill(...)`.
+SELF_HEAL_PINS = HERE / "self_heal_pinned.txt"
+_KILL_METHODS = frozenset({"kill", "terminate", "suspend", "resume", "send_signal", "wait_procs"})
+_DUNDER_BANNED = frozenset({
+    "__getattribute__", "__getattr__", "__dict__", "__class__", "__globals__", "__builtins__",
+    "__subclasses__", "__mro__", "__bases__", "__code__", "__closure__", "__self__", "__func__",
+    "__call__", "__reduce__", "__reduce_ex__",
+})  # fmt: skip
+
+
+def _strip_docs(node: ast.AST) -> ast.AST:
+    """A copy of `node` with every function and class docstring removed."""
+    node = copy.deepcopy(node)
+    for x in ast.walk(node):
+        if (
+            isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and x.body
+            and isinstance(x.body[0], ast.Expr)
+            and isinstance(x.body[0].value, ast.Constant)
+            and isinstance(x.body[0].value.value, str)
+        ):
+            x.body = x.body[1:] or [ast.Pass()]
+    return node
+
+
+def _top_name(node: ast.AST) -> str | None:
+    """The name a module-level def, class or single-target assignment binds."""
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return node.name
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        return node.target.id
+    if (
+        isinstance(node, ast.Assign)
+        and len(node.targets) == 1
+        and isinstance(node.targets[0], ast.Name)
+    ):
+        return node.targets[0].id
+    return None
+
+
+def _bindings(tree: ast.AST, name: str) -> int:
+    """How many places bind `name` anywhere: assignments, defs, classes, args, imports, except."""
+    n = 0
+    for x in ast.walk(tree):
+        if (
+            (isinstance(x, ast.Name) and x.id == name and not isinstance(x.ctx, ast.Load))
+            or (
+                isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                and x.name == name
+            )
+            or (isinstance(x, ast.arg) and x.arg == name)
+            or (isinstance(x, ast.alias) and (x.asname or x.name.split(".")[0]) == name)
+            or (isinstance(x, ast.ExceptHandler) and x.name == name)
+        ):
+            n += 1
+        elif isinstance(x, (ast.Global, ast.Nonlocal)) and name in x.names:
+            n += 2
+    return n
+
+
+def _pin_problems(tree: ast.Module) -> list[str]:
+    """Each definition in SELF_HEAL_PINS is defined once, at module level, AST-equal, and its
+    name is bound nowhere else."""
+    try:
+        pinned = ast.parse(SELF_HEAL_PINS.read_text("utf-8"))
+    except (OSError, SyntaxError, UnicodeDecodeError):
+        return ["the harness's self-heal pins are unreadable"]
+    why: list[str] = []
+    top: dict[str, list[ast.stmt]] = {}
+    for st in tree.body:
+        nm = _top_name(st)
+        if nm is not None:
+            top.setdefault(nm, []).append(st)
+    for want in pinned.body:
+        nm = _top_name(want)
+        if nm is None:
+            continue
+        got = top.get(nm, [])
+        if len(got) != 1 or ast.dump(_strip_docs(got[0])) != ast.dump(_strip_docs(want)):
+            why.append(f"{nm} is not the pinned definition")
+        elif _bindings(tree, nm) != 1:
+            why.append(f"{nm} is bound more than once")
+    return why
+
+
 def _undoc(fn: ast.FunctionDef) -> str:
     """ast.dump of a function without its docstring."""
     body = list(fn.body)
@@ -697,6 +785,36 @@ def _heal_allowlist(tree: ast.Module, owner: dict[int, str]) -> list[str]:
                 isinstance(lits[0], str) and lits[0].startswith("_box_self_heal_")
             ):
                 why.append("loads under a module name that is not a literal _box_self_heal_*")
+    # The kill path (HOLD 4): pinned definitions; process-ending methods only in _kill_tree.
+    why.extend(_pin_problems(tree))
+    for node in ast.walk(tree):
+        up = parent.get(id(node))
+        if isinstance(node, ast.Attribute) and node.attr in _DUNDER_BANNED:
+            why.append(f"reaches {node.attr}")
+        elif isinstance(node, ast.Attribute) and node.attr in _KILL_METHODS:
+            via_box = (
+                _dotted(node) == "self.box.kill"
+                and isinstance(node.ctx, ast.Load)
+                and isinstance(up, ast.Call)
+                and up.func is node
+            )
+            if owner.get(id(node)) != "_kill_tree" and not via_box:
+                why.append(f"reaches .{node.attr} outside _kill_tree")
+        elif isinstance(node, ast.Call) and _dotted(node.func) in {"getattr", "hasattr"}:
+            lit = node.args[1] if len(node.args) > 1 else None
+            if isinstance(lit, ast.Constant) and (
+                lit.value in _KILL_METHODS or str(lit.value).startswith("__")
+            ):
+                why.append(f"reaches {lit.value!r} by name")
+        elif isinstance(node, ast.Call) and _dotted(node.func) == "Box":
+            kill = [k for k in node.keywords if k.arg == "kill"]
+            if (
+                node.args
+                or any(k.arg is None for k in node.keywords)
+                or len(kill) != 1
+                or not (isinstance(kill[0].value, ast.Name) and kill[0].value.id == "_kill_tree")
+            ):
+                why.append("builds a Box whose kill is not _kill_tree")
     # SCHTASKS_EXE: bound once, at module level, to the pinned expression; _system32 pinned.
     exe_binds = [
         n for n in ast.walk(tree)
