@@ -165,3 +165,95 @@ def test_off_the_box_or_without_a_registry_it_does_nothing(monkeypatch):
     assert mg.main(["--box"]) == 0
     monkeypatch.setenv(mg.MEMECOIN_REGISTRY_ENV, "x")
     assert mg.main([]) == 0
+
+
+def test_paper_only_paths_pass_only_while_they_stay_paper_only():
+    """Governance 2026-11-17: a name-caught file that cannot reach a key, the box's state or a
+    remote endpoint is not on the fence; the moment a changed line reaches one, it is again."""
+    health = "deploy/windows/memecoin-health.ps1"
+    scoring = "src/strategies/wallet_intelligence.py"
+    # read-only reporting of the switch, a loopback GET, a stderr drop: paper-only
+    for line in (
+        "+ $h=[ordered]@{ok=$true;dry_run=$j.dry_run;live_locked=$j.live_submission_locked}",
+        "+ $raw=& curl.exe -s --noproxy '*' -m 10 (\"http://127.0.0.1:$port/health\") 2>$null",
+        "+ $t=Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue",
+    ):
+        assert _decide(files=_files((health, line)))[0] == "merge", line
+    assert (
+        _decide(files=_files((scoring, "+        rate = prior.shrink(hits, trials)")))[0] == "merge"
+    )
+    # ...and fenced the moment it writes, starts, sets, signs, reads a key or leaves loopback
+    for line in (
+        "+[IO.File]::WriteAllText($p,$json)",
+        "+$json > C:\\opt\\memecoin\\config.json",
+        "+Set-Content -Path x -Value y",
+        "+Start-ScheduledTask -TaskName MemecoinShadowCodex",
+        "+Stop-Process -Id 1",
+        "+$env:ALLOW_LIVE_TRADING='1'",
+        "+setx /M ALLOW_LIVE_TRADING 1",
+        "+iex $payload",
+        "+curl.exe https://api.mainnet-beta.solana.com",
+        "+$k = Get-Content id.json",
+    ):
+        assert _decide(files=_files((health, line)))[0] == "zuck", line
+    for line in (
+        "+    dry_run = False",  # LIVE_WORDS still binds a .py on the list
+        "+    kp = Keypair.from_base58_string(raw)",
+        "+    key = load_private_key()",
+        "+    sig = signer.sign(msg)",
+        "+    r = requests.post(url)",
+        "+    os.environ['X'] = '1'",
+        "+    RPC_URL = 'https://x'",
+    ):
+        assert _decide(files=_files((scoring, line)))[0] == "zuck", line
+
+
+def test_the_exception_is_by_exact_name_and_in_place_only():
+    # a real wallet or keypair file, a sibling deploy script, a near-miss name: still fenced
+    for path in (
+        "src/wallet.py",
+        "data/wallet.json",
+        "src/strategies/wallet_signer.py",
+        "deploy/windows/start-cpu-bounded.ps1",
+        "deploy/windows/memecoin-health2.ps1",
+    ):
+        assert _decide(files=_files((path, "+x = 1")))[0] == "zuck", path
+    # renaming a fenced file ONTO an exempt name, or away from it, is fenced
+    onto = [
+        {
+            "filename": "src/strategies/wallet_intelligence.py",
+            "previous_filename": "src/execution/signer.py",
+            "patch": "",
+            "changes": 0,
+            "status": "renamed",
+        }
+    ]
+    away = [
+        {
+            "filename": "src/x.py",
+            "previous_filename": "deploy/windows/memecoin-health.ps1",
+            "patch": "",
+            "changes": 0,
+            "status": "renamed",
+        }
+    ]
+    assert _decide(files=onto)[0] == "zuck"
+    assert _decide(files=away)[0] == "zuck"
+    # a removed exempt file is read as the path it is
+    gone = [
+        {
+            "filename": "deploy/windows/memecoin-health.ps1",
+            "patch": "-x",
+            "changes": 1,
+            "status": "removed",
+        }
+    ]
+    assert _decide(files=gone)[0] == "zuck"
+
+
+def test_docs_may_name_the_switch_but_code_and_fenced_docs_may_not():
+    line = "+| 1 | promotion bar | PRESENT | `src/research/promotion_gate.py` |"
+    assert _decide(files=_files(("docs/QUANT_PORT_LEDGER.md", line)))[0] == "merge"
+    assert _decide(files=_files(("README.md", line)))[0] == "zuck"
+    assert _decide(files=_files(("docs/tool.py", line)))[0] == "zuck"
+    assert _decide(files=_files(("src/notes.md", "+dry_run = False")))[0] == "zuck"
