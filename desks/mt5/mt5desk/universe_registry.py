@@ -353,7 +353,13 @@ def _degenerate(field: str, value: Any) -> bool:
 #: A writer not listed here ranks below every writer that is: an unnamed producer cannot claim
 #: to beat a named one.
 MEDIAN_SPREAD_PRODUCERS: tuple[str, ...] = (
-    "realized_fills", "fusion_zero_m1_tape", "h1_spread_median", "download_all_symbols")
+    "realized_fills", "fusion_zero_m1_tape", "cost_surface_symbol_p50", "h1_spread_median",
+    "download_all_symbols")
+#:   cost_surface_symbol_p50  (added 2026-10-13) `cost_surface`'s symbol-level p50: priced bars
+#:                         only, full-session days, the pre-2021 fixed-spread era CUT. Written by
+#:                         the hourly collector only where its own median lands on ZERO, so a
+#:                         zero central value is replaced by the measured priced-book level
+#:                         rather than kept. Ranks above the H1 median it corrects.
 
 
 def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, str]:

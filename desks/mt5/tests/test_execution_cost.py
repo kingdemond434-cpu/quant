@@ -52,10 +52,18 @@ from libs.portfolio.execution_cost import (  # noqa: E402
     MEASURED,
     REGISTRY_DEFECT,
     UNMEASURED,
+    CHARGED_AT_SOURCE,
     cost_ratio,
-    costs_for,
     fill_hour,
 )
+from libs.portfolio.execution_cost import costs_for as _costs_for  # noqa: E402
+
+
+def costs_for(*a, **k):
+    """The FLAT-evidence correction these tests pin (`charged_at_source=False`, also the default:
+    only a sleeve whose own evidence names the table basis is exempt, see the two tests below)."""
+    k.setdefault("charged_at_source", False)
+    return _costs_for(*a, **k)
 
 #: A symbol whose spread the registry CAN attribute, priced 3x higher at its own fill hour than
 #: the pooled number the replay charged.
@@ -268,3 +276,27 @@ def test_a_cost_bias_lowers_the_posterior_mean_and_can_unfund_a_sleeve() -> None
     # sleeve "a" must be strictly worse once its true cost is charged; "b" is untouched
     assert w_dear.r[:, :, 0].mean() < w_cheap.r[:, :, 0].mean()
     assert w_dear.r[:, :, 1].mean() == pytest.approx(w_cheap.r[:, :, 1].mean(), abs=1e-6)
+
+
+def test_flat_evidence_keeps_its_correction_by_default():
+    """Auditor HOLD on #389: backtest and certified series are priced flat, so a sleeve that names
+    no table basis keeps the under-charge correction; the allocator never sizes up on a zeroed
+    bias."""
+    row = _costs_for(_sleeve(), GOOD_SURFACE, registry=GOOD_REGISTRY)["sleeves"][
+        "EURZAR_overnight_gap_decay_asia"]
+    assert row["source"] == MEASURED
+    assert row["cost_bias_r"] > 0.0 and row["ratio_raw"] > 1.0
+
+
+def test_only_a_sleeve_priced_on_the_table_is_charged_at_source():
+    """The fill hour is charged once: at source for a table-priced sleeve, by the bias otherwise."""
+    rows = [dict(_sleeve()[0], spread_basis="fill_hour_surface_table"),
+            dict(_sleeve("EURZAR_overnight_gap_decay_asia_b")[0],
+                 spread_basis="REGISTRY_FALLBACK:pooled_median_spread")]
+    out = _costs_for(rows, GOOD_SURFACE, registry=GOOD_REGISTRY)["sleeves"]
+    at = out["EURZAR_overnight_gap_decay_asia"]
+    flat = out["EURZAR_overnight_gap_decay_asia_b"]
+    assert at["source"] == CHARGED_AT_SOURCE and at["cost_bias_r"] == 0.0
+    assert at["ratio_raw"] > 1.0, "the ratio is still measured and published"
+    assert flat["source"] == MEASURED and flat["cost_bias_r"] > 0.0
+
