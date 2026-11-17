@@ -602,6 +602,79 @@ def test_anything_but_the_line_is_still_no_approval(hub: Any, body: str) -> None
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
+# ---------------------- an approval names a change: a re-CLEAR of it keeps his approval (#1196)
+
+
+def _v(verdict: str, sha: str, at: str) -> dict[str, str]:
+    return {"verdict": verdict, "sha": sha, "at": at, "by": "x", "method": "merge"}
+
+
+def test_an_approved_clear_of_the_same_change_covers_a_later_re_clear() -> None:
+    """#1196, 2026-11-17: the Auditor re-CLEARed a clean LIVE merge-in at 15:50Z of a head zuck
+    approved at 15:11Z; on a NEVER-STANDING PR that voided his approval. It no longer does."""
+    same = {A: "p1", B: "p1"}.get
+    found = [_v("CLEAR", B, "2026-11-17T10:00:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")]
+
+    def sc(sha: str) -> bool:
+        return same(sha) == same(A)
+
+    ok, why = ag.approval_covers(found, A, sc, "2026-11-17T15:11:00Z")
+    assert ok and f"CLEAR {B[:9]}" in why
+    # the latest CLEAR alone, as before, still waits for the next approval
+    assert not ag.approved(found[-1], "2026-11-17T15:11:00Z")[0]
+
+
+@pytest.mark.parametrize(
+    "found",
+    [
+        # the earlier CLEAR is of another change
+        [_v("CLEAR", C, "2026-11-17T10:00:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")],
+        # a HOLD came after the earlier CLEAR: his approval no longer speaks for it
+        [
+            _v("CLEAR", A, "2026-11-17T10:00:00Z"),
+            _v("HOLD", A, "2026-11-17T10:30:00Z"),
+            _v("CLEAR", A, "2026-11-17T15:50:00Z"),
+        ],
+        # every CLEAR of this change came after his approval
+        [_v("CLEAR", A, "2026-11-17T15:20:00Z"), _v("CLEAR", A, "2026-11-17T15:50:00Z")],
+        # only one CLEAR, after the approval: unchanged
+        [_v("CLEAR", A, "2026-11-17T15:50:00Z")],
+    ],
+)
+def test_nothing_else_carries_an_approval(found: list[dict[str, str]]) -> None:
+    def sc(sha: str) -> bool:
+        return sha in (A, B)
+
+    assert not ag.approval_covers(found, A, sc, "2026-11-17T15:11:00Z")[0]
+    assert not ag.approval_covers(found, A, sc, None)[0]  # no approval at all
+
+
+def test_a_re_clear_of_an_approved_change_merges_on_his_path(hub: Any) -> None:
+    for box in (False, True):
+        h = hub(
+            comments=[
+                _c(f"AUDIT CLEAR {B}", "2026-10-28T10:00:00Z"),
+                _c(f"AUDIT CLEAR {A}", "2026-10-28T13:00:00Z"),
+            ],
+            approvals=[_ok("2026-10-28T12:00:00Z")],
+        )
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box) == 0
+        (merge,) = _merges(h)
+        assert f"sha={A}" in merge
+
+
+def test_a_re_clear_after_a_hold_still_waits_for_his_next_approval(hub: Any) -> None:
+    h = hub(
+        comments=[
+            _c(f"AUDIT CLEAR {B}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {B}", "2026-10-28T11:00:00Z"),
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T13:00:00Z"),
+        ],
+        approvals=[_ok("2026-10-28T12:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
+
+
 def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     h = hub(
         comments=[
