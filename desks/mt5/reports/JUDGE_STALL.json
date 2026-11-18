@@ -1,21 +1,21 @@
 {
- "at": "2026-11-18T21:31:02+00:00",
+ "at": "2026-11-18T21:46:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 14.44,
-   "why": "no new verdict for 14.4h (last 2026-11-18T07:04:28+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.01,
+   "why": "no new verdict for 0.0h (last 2026-11-18T21:45:37+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": true,
    "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.1,
-   "busy_other_cores": 16.23,
-   "why": "judge tree at 0.10 cores (others 16.23) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 8.1h (limit 1h)",
+   "busy_judge_cores": 0.09,
+   "busy_other_cores": 15.18,
+   "why": "judge tree at 0.09 cores (others 15.18) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 8.3h (limit 1h)",
    "low_since": "2026-11-18T13:26:10+00:00",
-   "hours": 8.08
+   "hours": 8.34
   },
   "resident_dead": {
    "open": false,
@@ -25,16 +25,14 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 14.24,
+   "hours": 14.49,
    "limit_h": 25.59,
-   "why": "14.2h since the last sweep ended (2026-11-18T07:16:52+00:00), status SWEEPING; limit 25.59h"
+   "why": "14.5h since the last sweep ended (2026-11-18T07:16:52+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": false,
-   "cells": 132153,
-   "basis": "n_judged",
+   "open": null,
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-11-18T07:16:52+00:00 judged 132153 cell(s) (n_judged)"
+   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-11-18T00:04:59+00:00 .. 2026-11-18T07:16:52+00:00) -- an rc-0 sweep that wrote no result reads this way"
   },
   "sweep_dead": {
    "open": false,
@@ -44,9 +42,9 @@
   "phase_overrun": {
    "open": true,
    "phase": "merge_and_publish",
-   "hours": 7.59,
+   "hours": 7.84,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 7.6h since 2026-11-18T13:55:25+00:00 (limit 3h)"
+   "why": "sweep phase merge_and_publish has run 7.8h since 2026-11-18T13:55:25+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -85,13 +83,13 @@
   "cores_gap_max_min": 15.0
  },
  "last_verdict": {
-  "at": "2026-11-18T07:04:28+00:00",
+  "at": "2026-11-18T21:45:37+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 10496,
-  "heartbeat_utc": "2026-11-18T21:30:37+00:00",
+  "heartbeat_utc": "2026-11-18T21:45:38+00:00",
   "last_sweep_ended_utc": "2026-11-18T07:16:52+00:00",
   "last_rc": 0
  },
