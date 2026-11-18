@@ -263,7 +263,14 @@ def prune_sidecars(paths: Paths) -> list[dict[str, str]]:
         return out
     held = held_organs(paths)
     for f in sorted(paths.sidecars.glob("*.json")):
-        doc = _read_json(f)
+        try:
+            raw = f.read_bytes()
+        except OSError:
+            continue  # a read that failed is no evidence about the file: it stays (audit, #1329)
+        try:
+            doc = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            doc = None
         organ = doc.get("organ") if isinstance(doc, dict) else None
         if not isinstance(doc, dict) or not isinstance(organ, str) or not organ:
             why = "unreadable or names no organ"

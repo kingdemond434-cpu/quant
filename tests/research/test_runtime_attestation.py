@@ -719,3 +719,20 @@ def test_every_pass_prunes_a_copied_misnamed_or_held_sidecar_and_keeps_a_minted_
 def test_the_committed_hold_list_holds_the_ftmo_allocator_row() -> None:
     held = ra.held_organs(ra.Paths.at(ROOT))
     assert "task:MT5-FTMO-Allocator" in held
+
+
+def test_a_sidecar_that_cannot_be_read_is_kept(tmp_path: Path, monkeypatch) -> None:
+    """Audit soft fix on #1329: a transient read error is no evidence, so nothing is removed."""
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    f = p.sidecars / ra.sidecar_name("copied")
+    f.write_text(json.dumps(_row("copied")), encoding="utf-8")  # unstamped: pruned if read
+    real = Path.read_bytes
+
+    def flaky(self: Path) -> bytes:
+        if self == f:
+            raise PermissionError("locked")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", flaky)
+    assert ra.prune_sidecars(p) == [] and f.exists()
