@@ -246,7 +246,7 @@ def test_the_seeder_writes_each_record_to_its_group_and_drops_stale_files(
         tmp_path: Path, monkeypatch) -> None:
     d = tmp_path / "terms_records"
     _write(d, _doc(_rec("zeta.org")))
-    monkeypatch.setattr(seed, "build", lambda: {"counts": {"records": 2},
+    monkeypatch.setattr(seed, "build", lambda: {"counts": {"records": 2}, "not_seeded": [],
                                                 **_doc(_rec("alpha.org"), _rec("beta.org"))})
     monkeypatch.setattr(tr, "REGISTRY", d)
     assert seed.main([]) == 0
