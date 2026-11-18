@@ -1,5 +1,14 @@
-"""THE RESEARCH-INTEGRITY DOOR: a new certificate reaches a forward clock only when the certifier
-is known to discriminate and the certificate has been independently replicated.
+"""THE RESEARCH-INTEGRITY DOOR: a certificate's forward clock may be PROMOTED only when the
+certifier is known to discriminate and the certificate has been independently replicated.
+
+MOVED FROM ENROLMENT TO PROMOTION (principal 2026-11-13, "All certs passed go on forward clocks
+immediately"). Measured 2026-11-06: 1,308 of 2,324 runnable certificates held with NO clock,
+860 of them because the replication spec book has no rule for their family -- a hold that could
+never clear, on evidence that costs no capital to gather. Every certificate now enrols at once;
+the door's verdict rides on the clock as `integrity_hold`, and the lane engine will not write
+PROMOTION CANDIDATE while it stands (the prop executors' per-order door is untouched). The text
+below describes the facts the door reads, which
+are unchanged.
 
 Principal's audit, 2026-09-30: the research organs must DECIDE something, not only report.
 Two organs already measured the two facts this door needs, and nothing read either of them:
@@ -199,10 +208,71 @@ class IntegrityGate:
             counts[v] = counts.get(v, 0) + 1
         return {"placebo_alarm": self.alarm, "replication_source": self.replication_source,
                 "replication_verdicts": counts,
-                "rule": ("a NEW certificate starts a forward clock only when the latest placebo "
-                         "audit shows the certifier admitted no planted trap AND an independent "
-                         "rebuild under the same spec fingerprint is REPLICATED; running clocks "
-                         "are never touched; no quota, no count, no ranking")}
+                "rule": ("EVERY certificate starts a PAPER forward clock on the pass it is "
+                         "minted (principal 2026-11-13). A clock whose certificate lacks a clean "
+                         "placebo audit or a REPLICATED rebuild under the same spec fingerprint "
+                         f"carries `{PROMOTION_HOLD_FIELD}` and cannot be PROMOTED until both "
+                         "clear; clocks that predate the door are never touched; no quota, no "
+                         "count, no ranking")}
+
+
+#: THE FIELD A HELD CLOCK CARRIES (principal 2026-11-13: "All certs passed go on forward clocks
+#: immediately"). The door no longer decides whether a certificate STARTS a clock -- every
+#: certificate does, on the pass it is minted. It decides whether that clock's evidence may ever
+#: be PROMOTED: a clock enrolled while the door would have held it is stamped with the reason
+#: here, re-asked on every pass, and the lane engine (`shadow_forward`, `qquant_shadow`) will not
+#: write PROMOTION CANDIDATE while the stamp stands: a matured held clock stays ACTIVE, keeps
+#: accruing, and carries `matured_promotion_held`, and is a candidate the pass the stamp lifts.
+#: Nothing reaches a live account with less evidence than before: a
+#: certificate the door held used to have no clock and so could never promote; now it has a
+#: clock that accrues and still cannot promote until the same two facts clear.
+PROMOTION_HOLD_FIELD = "integrity_hold"
+
+DEFAULT_LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
+                 "external_shadow_state.json")
+
+
+def _lane_rows(shadow_dir: Path | None, lanes: tuple[str, ...]):
+    d = Path(shadow_dir or (BASE / "reports" / "shadow"))
+    for name in lanes:
+        doc = _read(d / name)
+        if not isinstance(doc, dict):
+            continue
+        for k, v in doc.items():
+            if isinstance(v, dict) and k != "sleeves":
+                yield name, str(k), v
+        sleeves = doc.get("sleeves")
+        if isinstance(sleeves, dict):
+            for k, v in sleeves.items():
+                if isinstance(v, dict):
+                    yield name, str(k), v
+
+
+def lane_hold_keys(shadow_dir: Path | None = None,
+                   lanes: tuple[str, ...] = DEFAULT_LANES) -> set[str]:
+    """Every clock enrolled under a promotion hold. These are RE-ASKED each pass (never
+    grandfathered the way a clock that predates the door is), so a hold lifts the pass after
+    replication lands and stands for as long as it does not."""
+    return {k for _lane, k, v in _lane_rows(shadow_dir, lanes) if v.get(PROMOTION_HOLD_FIELD)}
+
+
+def promotion_hold(name: str, shadow_dir: Path | None = None,
+                   lanes: tuple[str, ...] = DEFAULT_LANES) -> str | None:
+    """The hold stamped on the clock `name` in any lane, or None (for reports and fences)."""
+    for _lane, k, v in _lane_rows(shadow_dir, lanes):
+        if k == name and v.get(PROMOTION_HOLD_FIELD):
+            return str(v[PROMOTION_HOLD_FIELD])
+    return None
+
+
+def stamp_hold(row: dict, reason: str | None) -> None:
+    """Write (or lift) the promotion hold on one clock row. A held row also carries
+    `promotion_authority: False`, the flag every lane's promoter already refuses on."""
+    if reason:
+        row[PROMOTION_HOLD_FIELD] = reason
+        row["promotion_authority"] = False
+    else:
+        row.pop(PROMOTION_HOLD_FIELD, None)
 
 
 def lane_clock_keys(shadow_dir: Path | None = None,

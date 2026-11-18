@@ -87,7 +87,7 @@ def test_data_hubs_are_recognised_across_languages() -> None:
                 "https://akshare.akfamily.xyz/data/index.html",
                 "https://www.cftc.gov/MarketReports/CommitmentsofTraders/"
                 "HistoricalCompressed/index.htm",
-                "https://fred.stlouisfed.org/categories"):
+                "https://www.newyorkfed.org/markets/data-hub"):
         assert wc.is_data_source(url), url
 
 
@@ -105,7 +105,9 @@ def test_the_seeds_now_include_free_data_ground() -> None:
     assert n_data >= 10, f"only {n_data} of {len(wc.SEEDS)} seeds are data hubs"
     joined = " ".join(wc.SEEDS)
     assert "tushare" in joined and "akshare" in joined, "Chinese open data is missing"
-    assert "cftc.gov" in joined and "stlouisfed" in joined
+    assert "cftc.gov" in joined and "newyorkfed" in joined
+    # FRED is refused on terms for every automated fetch, so it is never a seed.
+    assert "stlouisfed" not in joined
 
 
 def test_a_dataset_page_is_carried_even_with_no_mechanism_prose() -> None:

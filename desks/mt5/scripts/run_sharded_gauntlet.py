@@ -813,8 +813,8 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
                "idle_s") if k in hb},
            "counts_toward_widening": counts, "lost_s": lost_s,
            "kill": kill, "restored_from_merge_snapshot": restored or []}
-    history = [*(prev.get("history") or []), row][-STALL_HISTORY:]
-    mg = [*(prev.get("missed_growth") or []),
+    history = [*_list_field(prev, "history"), row][-STALL_HISTORY:]
+    mg = [*_list_field(prev, "missed_growth"),
           _missed_growth_line(reason, lost_s, f"sweep pid {row['pid']} {reason}: {detail[:200]}")
           ][-MISSED_GROWTH_HISTORY:]
     # WHAT A STALL RECORD MUST NOT DROP (audit HOLD of 9c0976b76): this doc is rebuilt from `row`,
@@ -837,6 +837,14 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     with contextlib.suppress(Exception):
         print(f"{datetime.now(UTC).isoformat()} GAUNTLET STALL: {reason} -- {detail}", flush=True)
     return doc
+
+
+def _list_field(prev: dict[str, Any], key: str) -> list[Any]:
+    """`prev[key]` when it is a list, else [] (v2.2.1 nit): an int there (a corrupt stall record)
+    used to raise TypeError inside record_stall and record_resume_delay, losing the very record
+    being written. A malformed value is dropped, never carried forward."""
+    raw = prev.get(key)
+    return list(raw) if isinstance(raw, list) else []
 
 
 def _billed_keys(prev: dict[str, Any]) -> list[str]:
@@ -934,7 +942,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
     # the missed-growth history, and the last resume line. Reading only the last one double-billed
     # whenever a stall record was written between two end paths.
     billed = set(_billed_keys(prev))
-    billed |= {str(m.get("resume_key")) for m in (prev.get("missed_growth") or [])
+    billed |= {str(m.get("resume_key")) for m in _list_field(prev, "missed_growth")
                if isinstance(m, dict) and m.get("resume_key")}
     last = prev.get("plan_resume")
     if isinstance(last, dict) and last.get("resume_key"):
@@ -945,7 +953,7 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
         sweep_s = (time.time() - t0) if isinstance(t0, float) else None
     line = {**_resume_delay_line(doc, sweep_s, plan_kept=rc != 0),
             "resume_key": key, "ended": ended, "rc": rc}
-    mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
+    mg = [*_list_field(prev, "missed_growth"), line][-MISSED_GROWTH_HISTORY:]
     keys = [*_billed_keys(prev), key][-BILLED_RESUME_HISTORY:]
     _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
                                "plan_resume": line, "billed_resume_keys": keys})
@@ -975,7 +983,7 @@ def record_slow(reason: str, *, detail: str = "", shard: dict[str, Any] | None =
                         if k in hb}}
     status = "STALLED" if prev.get("status") == "STALLED" else "SLOW"
     doc = {**prev, **_lock_stamp(prev), "status": status, "slow": row,
-           "history": [*(prev.get("history") or []), row][-STALL_HISTORY:],
+           "history": [*_list_field(prev, "history"), row][-STALL_HISTORY:],
            "consecutive": int(prev.get("consecutive") or 0)}
     _write_json_atomic(STALL, doc)
     with contextlib.suppress(Exception):
@@ -2433,17 +2441,24 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
             root.wait(timeout=10)
     # A SURVIVOR IS KILLED AGAIN BEFORE IT IS NAMED: anything seen and still alive gets one
     # more SIGKILL and a bounded settle, so a slow reap under load is not reported as an orphan.
-    survivors = [p for p in seen.values() if not gone(p)]
-    for p in survivors:
+    # THE LAST SCAN GETS THE SAME TREATMENT (CI 2026-11-14, twice in one hour: orphans [5686]
+    # with killed 4 and wall_s 0.17, and [4884] for a grandchild the same test then saw gone).
+    # A descendant the final scan still lists was named straight away, with no kill and no
+    # settle, so a child caught mid-exit under xdist load read as an orphan. Now every
+    # candidate, seen or newly listed, is killed and settled first; only one that outlives the
+    # settle is named. A newly listed one counts as a kill; a re-kill of a seen one does not.
+    survivors = {p.pid: p for p in seen.values() if not gone(p)}
+    with contextlib.suppress(psutil.Error):
+        for k in live_kids():
+            survivors.setdefault(k.pid, k)
+    for pid_, p in survivors.items():
         with contextlib.suppress(psutil.Error):
             p.kill()
-    settle(survivors, KILL_RESETTLE_S)
-    orphans: set[int] = set()
-    for p in seen.values():
-        if not gone(p):
-            orphans.add(p.pid)
-    with contextlib.suppress(psutil.Error):
-        orphans.update(k.pid for k in live_kids())
+            if pid_ not in seen:
+                killed += 1
+                seen[pid_] = p
+    settle(list(survivors.values()), KILL_RESETTLE_S)
+    orphans = {p.pid for p in survivors.values() if not gone(p)}
     out.update(killed=killed, orphans=sorted(orphans), wall_s=round(time.monotonic() - t0, 2))
     return out
 
@@ -3648,11 +3663,11 @@ def _publish_priority(key: str, value: Any) -> str:
     f54ac4dd007: two processes merging at once could each drop the other's block, and with it an
     `unspilled` line), and the temporary name is unique per writer. Returns WRITTEN or FAILED:
     ... and never raises; a FAILED publish is printed to stderr, never silent."""
-    from libs.research.artifact_chain import _locked
-    from scripts import judge_priority as jp
-
     status = "WRITTEN"
     try:
+        from libs.research.artifact_chain import _locked
+        from scripts import judge_priority as jp
+
         JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
         with _locked(JUDGE_PRIORITY_DECISION, PUBLISH_PRIORITY_LOCK_S) as held:
             if not held:
@@ -3681,6 +3696,18 @@ def _publish_priority(key: str, value: Any) -> str:
     return status
 
 
+def _plan_tracker() -> Any:
+    """The sweep's PlanTracker, on the launcher's own lock and writer (judge plan v2.2.1).
+
+    PLAN_PROGRESS_HOOK calls arrive on the sealed judge's pool threads; `_phase` and
+    `_shard_progress` write the same `_PHASE_DOC`. One lock, `_PHASE_LOCK`, now covers all three,
+    and every flush goes through `_flush_phase_doc` (one atomic writer, one "_" filter). The
+    tracker never holds the lock across `on_phase`: `_phase` takes it, and it is not reentrant."""
+    from scripts.judge_plan_progress import PlanTracker
+    return PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase, lock=_PHASE_LOCK,
+                       write=_flush_phase_doc)
+
+
 def _sweep_logged() -> int:
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3688,8 +3715,7 @@ def _sweep_logged() -> int:
         old_out, old_err = sys.stdout, sys.stderr
         # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
         # the sealed image's progress hook, where it has one, its counts. Reports only.
-        from scripts.judge_plan_progress import PlanTracker
-        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)
+        plan = _plan_tracker()
         plan.step("lane_and_docket")
         sys.stdout = sys.stderr = plan.tee(log)
         try:
