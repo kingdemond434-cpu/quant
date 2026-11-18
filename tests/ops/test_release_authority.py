@@ -28,11 +28,37 @@ H1, H2 = sb_mod.H1, sb_mod.H2
 
 @pytest.fixture
 def sb(tmp_path: Path) -> Any:
-    # The window mechanics (notice, veto, expiry) are pinned at 24 h so every veto path stays
-    # tested whatever REGISTRY_HOLD_H LIVE carries.
+    # The window mechanics (notice, veto, expiry) are pinned at 24 h here so every veto path
+    # stays tested; LIVE runs with no wait (REGISTRY_HOLD_H = 0, zuck 2026-11-13), which
+    # test_with_no_wait_a_signed_clear_merges_on_the_first_sweep covers.
     s = sb_mod.Sandbox(tmp_path)
     s.ag.REGISTRY_HOLD_H = 24.0
     return s
+
+
+def test_with_no_wait_a_signed_clear_merges_on_the_first_sweep(tmp_path: Path) -> None:
+    s = sb_mod.Sandbox(tmp_path)
+    assert s.ag.REGISTRY_HOLD_H == 0.0
+    assert s.authority()[0] == "CLEAR"
+    s.gate()
+    (m,) = s.gh.merges()
+    assert m["sha"] == H1 and "registry CLEAR" in m["commit_title"] and len(s.notices) == 1
+
+
+def test_with_no_wait_a_hold_or_a_new_push_still_stops_the_merge(tmp_path: Path) -> None:
+    s = sb_mod.Sandbox(tmp_path)
+    assert s.authority()[0] == "CLEAR"
+    s.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": "2026-11-05T00:00:00Z",
+                          "updated_at": "2026-11-05T00:00:00Z",
+                          "author_association": "OWNER"})  # fmt: skip
+    s.gate()
+    assert s.gh.merges() == []
+    (tmp_path / "b").mkdir()
+    s2 = sb_mod.Sandbox(tmp_path / "b")
+    assert s2.authority()[0] == "CLEAR"
+    s2.gh.pr["head"]["sha"] = H2
+    s2.gate()
+    assert s2.gh.merges() == []
 
 
 def _through_window(sb: Any) -> None:
@@ -246,11 +272,19 @@ def test_a_firm_rule_is_never_raised(env: Any) -> None:
     assert any("firm rule" in b for b in bad)
 
 
-def test_a_lowered_ceiling_is_not_delegated_either(env: Any) -> None:
-    """#637 audit MF2: NEVER REDUCE AGGRESSIVENESS -- a cap lowered by fiat is zuck's call."""
-    bad = env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.06), env["env"])
-    assert any("lowered" in b for b in bad)
-    assert env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
+def test_a_delegated_knob_moves_both_ways_one_step_at_a_time(env: Any) -> None:
+    """zuck 2026-11-14 03:30Z (risk autonomy): a raisable knob may be lowered too, one step per PR,
+    never to zero; a firm rule may be tightened, never raised; any other lowering is still ROOT."""
+    check = env["pol"].envelope_check
+    assert check(_ceil(m=0.08), _ceil(m=0.06), env["env"]) == []
+    assert any("one step" in b for b in check(_ceil(m=0.08), _ceil(m=0.05), env["env"]))
+    assert any("positive" in b for b in check(_ceil(m=0.08), _ceil(m=0.0), env["env"]))
+    assert check(_ceil(d=0.05), _ceil(d=0.04), env["env"]) == []  # a firm rule tightened
+    base, head = _ceil(), _ceil()
+    base["max"]["x.py"] = {"K": 2.0}
+    head["max"]["x.py"] = {"K": 1.0}
+    assert any("not delegated" in b for b in check(base, head, env["env"]))
+    assert check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
 
 
 def test_pins_and_rail_lists_cannot_move_through_the_envelope(env: Any) -> None:
@@ -403,6 +437,7 @@ def test_status_controller_waits_out_the_veto() -> None:
     now = datetime(2026, 11, 4, tzinfo=UTC)
     f = {"cls": "CONTROLLER"}
     assert a.status_for(f, "CLEAR", [], since=None, veto_h=24, now=now)[0] == "pending"
+    assert a.status_for(f, "CLEAR", [], since=None, veto_h=0, now=now)[0] == "success"
     early = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=23), veto_h=24, now=now)
     assert early[0] == "pending" and "1.0 h left" in early[1]
     late = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=24), veto_h=24, now=now)
