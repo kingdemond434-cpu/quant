@@ -91,6 +91,10 @@ ops/memory/*
 data/secrets/*
 */data/secrets/*
 
+# the research-data fence and its pinned dynamic sites (Governance, route A, 2026-11-18)
+scripts/check_research_data_fence.py
+scripts/check_research_data_fence_sites.json
+
 # ---- generated from libs/research/immutable_rails.py (do not edit below) ----
 desks/mt5/data/IMMUTABLE_MANIFEST.json
 desks/mt5/data/blind_review_ledger.jsonl

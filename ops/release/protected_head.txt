@@ -90,3 +90,7 @@ ops/memory/*
 # secrets
 data/secrets/*
 */data/secrets/*
+
+# the research-data fence and its pinned dynamic sites (Governance, route A, 2026-11-18)
+scripts/check_research_data_fence.py
+scripts/check_research_data_fence_sites.json
