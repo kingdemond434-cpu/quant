@@ -1212,12 +1212,6 @@
     "bankofengland.co.uk",
     "bis.org"
    ],
-   "zh": [
-    "pbc.gov.cn"
-   ],
-   "ja": [
-    "boj.or.jp"
-   ],
    "ko": [
     "ecos.bok.or.kr"
    ],
@@ -1242,9 +1236,6 @@
    ],
    "ar": [
     "sama.gov.sa"
-   ],
-   "hi": [
-    "rbi.org.in"
    ]
   },
   "exchange": {

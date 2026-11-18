@@ -1576,8 +1576,9 @@
    },
    {
     "name": "Reserve Bank of India",
-    "status": "walled",
-    "grade": "UNVERIFIED",
+    "status": "refused",
+    "grade": "TERMS_BLOCKED",
+    "terms_ruling": "2026-11-18: the RBI Disclaimer says 'Except as set forth below, caching and links to, and the framing of this Web Site or any of the contents are prohibited' and '© Reserve Bank of India. All Rights Reserved.' REFUSED, never fetched (libs/data/refused_hosts.py, libs/data/off_limits.py).",
     "url": "https://rbi.org.in/robots.txt",
     "finding": "WAF returns a 626-byte 'Unauthorised Access' page with a support ID for robots.txt itself — a ROUTE wall, not a §13 licence verdict. Only 1 in-universe pair (USDINR); lowest priority of the frontier.",
     "in_universe_pairs": [
@@ -1826,6 +1827,8 @@
   },
   "boj_host": {
    "name": "boj_host",
+   "terms_ruling": "SUPERSEDES the grade below, 2026-11-18: the BoJ copyright page says 'copying or reproduction of the content for commercial purposes requires the Bank's prior permission' (Public Relations Department; read 2026-11-17, #1254). A trading desk's collection is commercial use. The 2026-08-28 grading read robots.txt only, never the terms. Every boj.or.jp host is REFUSED and never fetched (libs/data/refused_hosts.py, libs/data/off_limits.py). The record below stays as history.",
+   "refused": "TERMS_BLOCKED 2026-11-18 (BoJ copyright); see terms_ruling",
    "grade": "re-graded NO-ROBOTS-FILE (was: walled)",
    "verified_2026_08_28g": "www.boj.or.jp/robots.txt serves the site's Japanese 404 page (not_found.htm), i.e. no robots.txt exists. No robots restriction is expressed for this host. Grade per-path on publication route instead.",
    "correction": "2026-08-28g PATH-GRANULARITY RE-PROBE of institutions this seat had graded 'walled' on their statistics-DB path. Confirms the 2026-08-28f lesson: GRADE THE PATH, NEVER THE HOST."
@@ -1986,6 +1989,8 @@
   },
   "boj_stat_search": {
    "name": "boj_stat_search",
+   "terms_ruling": "SUPERSEDES the grade below, 2026-11-18: the BoJ copyright page says 'copying or reproduction of the content for commercial purposes requires the Bank's prior permission' (Public Relations Department; read 2026-11-17, #1254). A trading desk's collection is commercial use. The 2026-08-28 grading read robots.txt only, never the terms. Every boj.or.jp host is REFUSED and never fetched (libs/data/refused_hosts.py, libs/data/off_limits.py). The record below stays as history.",
+   "refused": "TERMS_BLOCKED 2026-11-18 (BoJ copyright); see terms_ruling",
    "category": "5-alternative/macro -- central-bank cube (JPY leg)",
    "grade": "§13 PERMITTED and reachable -- data route UNMINED (next ground)",
    "url": "https://www.stat-search.boj.or.jp/ (BoJ Time-Series Data Search)",
@@ -2055,6 +2060,8 @@
   },
   "boj_flatfile_archive": {
    "name": "boj_flatfile_archive",
+   "terms_ruling": "SUPERSEDES the grade below, 2026-11-18: the BoJ copyright page says 'copying or reproduction of the content for commercial purposes requires the Bank's prior permission' (Public Relations Department; read 2026-11-17, #1254). A trading desk's collection is commercial use. The 2026-08-28 grading read robots.txt only, never the terms. Every boj.or.jp host is REFUSED and never fetched (libs/data/refused_hosts.py, libs/data/off_limits.py). The record below stays as history.",
+   "refused": "TERMS_BLOCKED 2026-11-18 (BoJ copyright); see terms_ruling",
    "category": "5 -- macro / central-bank cube (JPY leg) -- ADOPTED",
    "grade": "EXHAUSTED 2026-08-28l -- all 16 archives enumerated, rate/flow-relevant ones parsed",
    "url": "https://www.stat-search.boj.or.jp/info/dload_en.html",
@@ -2129,6 +2136,8 @@
   },
   "boj_release_calendar_tkohyos": {
    "name": "boj_release_calendar_tkohyos",
+   "terms_ruling": "SUPERSEDES the grade below, 2026-11-18: the BoJ copyright page says 'copying or reproduction of the content for commercial purposes requires the Bank's prior permission' (Public Relations Department; read 2026-11-17, #1254). A trading desk's collection is commercial use. The 2026-08-28 grading read robots.txt only, never the terms. Every boj.or.jp host is REFUSED and never fetched (libs/data/refused_hosts.py, libs/data/off_limits.py). The record below stays as history.",
+   "refused": "TERMS_BLOCKED 2026-11-18 (BoJ copyright); see terms_ruling",
    "category": "5-macro/event-timing (JPY legs)",
    "grade": "verified-clean (cross-verified against an independent lineage)",
    "replaces": "a paid economic-calendar feed's JP release timestamps",

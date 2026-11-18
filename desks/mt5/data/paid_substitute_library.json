@@ -1757,33 +1757,6 @@
    "licence": "BOK open API"
   },
   {
-   "id": "rbi_dbie",
-   "name": "RBI Database on Indian Economy",
-   "publisher_type": "central_bank",
-   "url": "https://data.rbi.org.in/",
-   "endpoint": null,
-   "classes": [
-    "macro",
-    "rates_curves",
-    "card_consumer"
-   ],
-   "region": "IN",
-   "frequency": "weekly",
-   "history_start": 1990,
-   "latency_days": 7,
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "en",
-    "hi"
-   ],
-   "instruments": [
-    "USDINR"
-   ],
-   "participant_structure": "policy_driven",
-   "licence": "RBI open data"
-  },
-  {
    "id": "cbr_statistics",
    "name": "Bank of Russia statistics",
    "publisher_type": "central_bank",
@@ -1836,34 +1809,6 @@
    ],
    "participant_structure": "policy_driven",
    "licence": "PBoC public statistics"
-  },
-  {
-   "id": "boj_timeseries",
-   "name": "Bank of Japan time-series data search",
-   "publisher_type": "central_bank",
-   "url": "https://www.stat-search.boj.or.jp/",
-   "endpoint": null,
-   "classes": [
-    "macro",
-    "expert_surveys",
-    "flows"
-   ],
-   "region": "JP",
-   "frequency": "daily",
-   "history_start": 1970,
-   "latency_days": 1,
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "ja",
-    "en"
-   ],
-   "instruments": [
-    "USDJPY",
-    "JPN225"
-   ],
-   "participant_structure": "policy_driven",
-   "licence": "BoJ statistics"
   },
   {
    "id": "finra_trace_aggregates",
@@ -2670,32 +2615,6 @@
    "licence": "ECB terms"
   },
   {
-   "id": "boj_calendar",
-   "name": "BoJ monetary policy meeting schedule",
-   "publisher_type": "central_bank",
-   "url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/index.htm",
-   "endpoint": null,
-   "classes": [
-    "calendars"
-   ],
-   "region": "JP",
-   "frequency": "event",
-   "history_start": 1998,
-   "latency_days": 0,
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "ja",
-    "en"
-   ],
-   "instruments": [
-    "USDJPY",
-    "JPN225"
-   ],
-   "participant_structure": "policy_driven",
-   "licence": "BoJ terms"
-  },
-  {
    "id": "bls_schedule",
    "name": "BLS release calendar (iCal)",
    "publisher_type": "statistics_office",
@@ -2821,32 +2740,6 @@
    ],
    "participant_structure": "policy_driven",
    "licence": "US federal public record"
-  },
-  {
-   "id": "boj_tankan",
-   "name": "BoJ Tankan short-term economic survey",
-   "publisher_type": "central_bank",
-   "url": "https://www.boj.or.jp/en/statistics/tk/index.htm",
-   "endpoint": null,
-   "classes": [
-    "expert_surveys"
-   ],
-   "region": "JP",
-   "frequency": "quarterly",
-   "history_start": 1974,
-   "latency_days": 5,
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "ja",
-    "en"
-   ],
-   "instruments": [
-    "USDJPY",
-    "JPN225"
-   ],
-   "participant_structure": "institutional",
-   "licence": "BoJ statistics"
   },
   {
    "id": "ifo_headline",
