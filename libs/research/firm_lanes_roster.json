@@ -170,6 +170,25 @@
    ]
   },
   {
+   "id": "paperclip_company",
+   "role": "AI research company: paper, repo and dataset converters, dead-producer reviver, red team, triage",
+   "firms": [
+    "Two Sigma",
+    "RenTech"
+   ],
+   "practice": "propose-only research staff converting every public source into judged cells",
+   "status": "PR_ONLY",
+   "prs": [
+    1301
+   ],
+   "modules": [
+    "libs/research/paperclip_lab/lab.py"
+   ],
+   "artifacts": [
+    "data/paperclip/scorecard.json"
+   ]
+  },
+  {
    "id": "asian_retail_forest",
    "role": "Asian retail and small quant communities",
    "firms": [

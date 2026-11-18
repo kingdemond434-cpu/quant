@@ -25,6 +25,7 @@ the artifacts.
 | relative_value | Stat arb, relative value | RenTech, D. E. Shaw | alpha_recombination, causal_lab |
 | event_text | Events, earnings, text | D. E. Shaw, Two Sigma | earnings_miner |
 | llm_research_lab | LLM assistants (propose only) | Two Sigma, Man | **open PRs only** (#332, #501-504) |
+| paperclip_company | AI research company (converters, reviver, red team, triage) | Two Sigma, RenTech | **open PR only** (#1301) |
 | asian_retail_forest | Asian retail and small quant communities | JoinQuant, RiceQuant, vn.py, JP/KR/TW/HK/IN/SEA forums | deep_forest_miner (580 grounds) |
 | careers_scout | Competitor intel from job ads | all target firms | **NEW** |
 | execution_cost | Execution and cost models | RenTech, Citadel | execution_science, cost_surfaces |
