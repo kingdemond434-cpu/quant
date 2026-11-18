@@ -472,7 +472,7 @@ def engine_roster() -> tuple[set[str] | None, str]:
             keys.add(sf.sleeve_key(row[0], row[1], row[2], fam, side))
         return keys, f"shadow_forward.certified_sleeves() -> {len(keys)} key(s)"
     except Exception as exc:
-        return None, f"UNMEASURED: shadow_forward roster unreadable ({type(exc).__name__}: {exc})"
+        return None, f"UNMEASURED: shadow_forward roster unreadable ({type(exc).__name__})"
     finally:
         os.chdir(cwd)
 
@@ -643,7 +643,7 @@ def scheduled_tasks() -> dict[str, dict[str, Any]]:
         _TASKS_STATUS = "TIMEOUT after 90s: the scheduler query did not return in time"
         return {}
     except (OSError, subprocess.SubprocessError) as exc:
-        _TASKS_STATUS = f"READ_FAILED: {type(exc).__name__}: {exc}"
+        _TASKS_STATUS = f"READ_FAILED: {type(exc).__name__}"
         return {}
     rows = list(csv.reader(io.StringIO(raw)))
     if not rows:
@@ -1263,6 +1263,11 @@ def render(doc: Mapping[str, Any]) -> str:
 def publish(doc: Mapping[str, Any], *, report: Path | None = None,
             markdown: Path | None = None) -> tuple[Path, Path]:
     r, m = report or REPORT, markdown or DOC
+    # THE REPO IS PUBLIC (Auditor, 2026-11-14): every string in the published report -- lane
+    # roots, roster and scheduler text, error reasons -- has its absolute box paths reduced to a
+    # repo-relative path or a basename before it is written, keys included.
+    from libs.research.forward_ledger import public_doc
+    doc = public_doc(doc)
     r.parent.mkdir(parents=True, exist_ok=True)
     r.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     m.parent.mkdir(parents=True, exist_ok=True)

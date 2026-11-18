@@ -19,6 +19,15 @@ need the box (the replication store, Tier S, promotion authority, the order door
 code) are stubbed identically on both trees; the one sleeve's signal side follows the scenario's
 price shape, its other accounts' books follow its positions, and its equity is the scenario's,
 so what differs between the trees can only be the lane's own sizing, rails and fence.
+
+THE FUSION-ROSTER LEG (2026-11-14): `live_sleeve_policy.json` and `CERT_BOOK_LIVE.json` are data,
+so no import ever covered them and every roster change read UNMEASURED. When the scenario carries
+`fusion_roster` (rows the harness derived from BOTH trees and the frozen base grid, identical for
+both), `fusion_roster_leg` runs the tree's own roster doors on them -- `decision_core.
+load_sleeves_verbose` (live_policy.admit), `cert_zero_row` per venue, `kelly_sizing.load_cert_book`
+per venue and `e8_book.live_admissible` -- after the book's steps, and reports per-row outcomes.
+It refuses (an `error`) when a door's data file resolves outside the tree. Its imports are NOT
+added to `imported`: the leg measures the two data files, never the modules it called.
 """
 
 from __future__ import annotations
@@ -394,6 +403,81 @@ def ftmo_step(
     return out
 
 
+#: The live policy's keys the roster leg resolves and the harness probes (live_policy.policy).
+POLICY_MEASURED = (
+    "live_symbols", "banned_timeframes", "banned_families", "banned_execs", "live_sleeves",
+)  # fmt: skip
+
+
+def _inside(tree: Path, path: Any) -> bool:
+    try:
+        Path(path).resolve().relative_to(tree.resolve())
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[str, Any]:
+    """Each row's fate under the tree's own roster doors. Pure outcomes, no prose: booleans and
+    numbers keyed by the row's `id`, so the harness can diff them without reading free text."""
+    from mt5desk import decision_core, kelly_sizing, live_policy
+    from prop import e8_book
+
+    files = {
+        "policy": live_policy.POLICY_FILE,
+        "cert_book": kelly_sizing.CERT_BOOK_FILE,
+        "e8_cert_book": e8_book.CERT_BOOK,
+    }
+    outside = sorted(k for k, f in files.items() if not _inside(tree, f))
+    if outside:
+        return {"error": f"roster data resolves outside the tree: {', '.join(outside)}"}
+    rows = [dict(r) for r in roster.get("rows") or [] if isinstance(r, dict)]
+    venues = [str(v) for v in roster.get("venues") or []]
+    sleeves = work / "roster_sleeves.json"
+    sleeves.write_text(json.dumps({"sleeves": [{**r, "status": "LIVE"} for r in rows]}), "utf-8")
+    kept, _notes = decision_core.load_sleeves_verbose(sleeves)
+    admitted = {str(r.get("id")) for r in kept}
+    out: dict[str, Any] = {
+        "rows": {
+            str(r["id"]): {
+                "admitted": str(r["id"]) in admitted,
+                "zero": {v: bool(decision_core.cert_zero_row(r, v)) for v in venues},
+            }
+            for r in rows
+        },
+        "books": {},
+    }
+    for v in venues:
+        book = kelly_sizing.load_cert_book(Path(kelly_sizing.CERT_BOOK_FILE), v)
+        out["books"][v] = (
+            None if book is None else {str(k): round(float(x), 9) for k, x in sorted(book.items())}
+        )
+    # the policy as the tree RESOLVES it (code defaults included), for the harness's MF6 check
+    pol = live_policy.policy().as_dict()
+    out["policy"] = {k: pol.get(k) for k in POLICY_MEASURED}
+    e8_rows = [r for r in rows if r.get("selector")]
+    try:
+        acc, blocked = e8_book.live_admissible(
+            [
+                {
+                    "key": r["name"],
+                    "symbol": r["symbol"],
+                    "family": r["family"],
+                    "selector": r["selector"],
+                    "fingerprint": "",
+                }
+                for r in e8_rows
+            ]
+        )
+        out["e8"] = {
+            "accepted": sorted(str(r["key"]) for r in acc),
+            "blocked": sorted(str(b.get("certificate")) for b in blocked),
+        }
+    except Exception as exc:  # compared: the door's failure is its verdict on this tree
+        out["e8"] = {"error": type(exc).__name__}
+    return out
+
+
 def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     stub = types.ModuleType("MetaTrader5")
     stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
@@ -520,7 +604,15 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             if getattr(m, "__file__", None)
         }
     )
-    out_path.write_text(json.dumps({"steps": steps, "imported": imported}, default=str), "utf-8")
+    result: dict[str, Any] = {"steps": steps, "imported": imported}
+    if scenario.get("fusion_roster") is not None:  # after `imported`: it measures data only
+        try:
+            result["fusion_roster"] = fusion_roster_leg(tree, scenario["fusion_roster"], work)
+        except Exception as exc:
+            # type only: CI logs are public and the message may carry runner paths (audit SF)
+            result["fusion_roster"] = {"error": type(exc).__name__}
+            print(f"fusion roster leg raised {type(exc).__name__}", file=sys.stderr)
+    out_path.write_text(json.dumps(result, default=str), "utf-8")
     return 0
 
 
