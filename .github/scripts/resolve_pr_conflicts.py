@@ -6,9 +6,13 @@ What each file gets (3-way: the merge base, the PR's side, LIVE's side):
   - line files (context/decision_journal.jsonl, ops/money_closure.txt, .gitignore): LIVE's
     lines, minus any the PR removed, plus the PR's added lines that LIVE lacks, in the PR's order.
   - docs/research/runtime_state.json and RUNTIME_STATE.md: LIVE's copies, byte for byte (the
-    attesting host owns the monolith), and every organ row the PR's monolith adds that LIVE
-    (monolith or sidecars) lacks is written as its own sidecar under runtime_state.d/ -- the
-    one-file-per-organ form runtime_attestation.attest_only_missing writes since 2026-11-14.
+    attesting host owns the monolith). Each organ row the PR's monolith adds is MINTED, never
+    copied: `runtime_attestation.py --only-missing` runs on a full checkout of the merged tree
+    and writes its stamped sidecar under runtime_state.d/ (copying the PR's row left it
+    unstamped and failed check_runtime_attestation, 2026-11-18, #1142/#1147). An organ the
+    merge base named and LIVE no longer does was dropped on LIVE on purpose (the FTMO-Allocator
+    row under audit HOLD) and is never re-added; if --only-missing cannot mint a wanted row the
+    PR is left alone.
   - docs/research/experiment_contracts.json: a 3-way merge by key, recursively; a key both sides
     changed differently is a real conflict and the PR is left alone.
 Any other conflicted path, or any step that fails, aborts the merge and leaves the branch as it
@@ -109,20 +113,63 @@ def sidecar_name(organ: str) -> str:
     return f"{slug}-{hashlib.sha256(organ.encode('utf-8')).hexdigest()[:8]}.json"
 
 
-def state_sidecars(ours: str, theirs: str, live_sidecars: set[str]) -> dict[str, str]:
-    """{sidecar path: content} for each organ row the PR's monolith adds that LIVE lacks."""
+def organs_in(text: str) -> set[str]:
+    """The organ names a runtime_state.json monolith carries ('' or unreadable -> none)."""
     try:
-        mine, live = json.loads(ours), json.loads(theirs)
+        doc = json.loads(text) if text.strip() else {}
     except ValueError as exc:
         raise Conflict(f"{STATE_JSON}: unreadable ({exc})") from exc
-    have = {str(r.get("organ")) for r in live.get("organs") or [] if isinstance(r, dict)}
+    rows = doc.get("organs") if isinstance(doc, dict) else None
+    return {str(r["organ"]) for r in rows or [] if isinstance(r, dict) and r.get("organ")}
+
+
+def wanted_organs(base: set[str], ours: set[str], live: set[str]) -> set[str]:
+    """The organs whose rows the PR adds: on the PR's side, not on LIVE's, and not on the merge
+    base's either -- an organ the base named and LIVE dropped was dropped on purpose."""
+    return ours - live - base
+
+
+def with_sidecars(cwd: Path, rev: str, organs: set[str], candidates: set[str]) -> set[str]:
+    """`organs` plus each candidate that already has its sidecar at `rev`."""
+    have = set(git(cwd, "ls-tree", "-r", "--name-only", rev, "--", SIDECARS).split())
+    return organs | {o for o in candidates if f"{SIDECARS}/{sidecar_name(o)}" in have}
+
+
+#: Where minting checks the merged tree out: one reusable full worktree, so a run over many PRs
+#: pays the checkout once and then only each tree's diff.
+MINT_WT = "resolve-mint-wt"
+_GIT_VARS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+             "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES")  # fmt: skip
+
+
+def mint_only_missing(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+    """{sidecar path: text} for `organs`, each written by `runtime_attestation.py --only-missing`
+    on a full checkout of `tree` -- stamped with where it was measured, as the check requires.
+    Raises Conflict when it mints no row for a wanted organ."""
+    commit = git(cwd, "commit-tree", tree, "-m", "resolve_pr_conflicts: mint").strip()
+    common = Path(git(cwd, "rev-parse", "--git-common-dir").strip())
+    wt = (common if common.is_absolute() else cwd / common).resolve() / MINT_WT
+    if (wt / ".git").exists():
+        git(wt, "checkout", "-q", "--detach", "-f", commit)
+        git(wt, "clean", "-fdq", "--", SIDECARS)
+    else:
+        git(cwd, "worktree", "add", "-q", "--detach", "-f", str(wt), commit)
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_VARS}
+    p = subprocess.run([sys.executable, "desks/mt5/research/runtime_attestation.py",
+                        "--only-missing", "--root", str(wt)], cwd=wt, env=env,
+                       capture_output=True, text=True, check=False)  # fmt: skip
+    if p.returncode != 0:
+        raise Conflict(f"runtime_attestation --only-missing failed: {(p.stdout + p.stderr)[-300:]}")
     out: dict[str, str] = {}
-    for r in mine.get("organs") or []:
-        if not isinstance(r, dict) or not r.get("organ") or str(r["organ"]) in have:
-            continue
-        path = f"{SIDECARS}/{sidecar_name(str(r['organ']))}"
-        if path not in live_sidecars:
-            out[path] = json.dumps(r, indent=1, default=str, sort_keys=False) + "\n"
+    for organ in sorted(organs):
+        rel = f"{SIDECARS}/{sidecar_name(organ)}"
+        if (wt / rel).is_file():
+            out[rel] = (wt / rel).read_text("utf-8")
+    missing = sorted(o for o in organs if f"{SIDECARS}/{sidecar_name(o)}" not in out)
+    if missing:
+        names = ", ".join(missing)
+        raise Conflict(f"--only-missing minted no row for {names} (not a registry organ on the "
+                       "merged tree); the PR's own session must add it")  # fmt: skip
     return out
 
 
@@ -147,8 +194,10 @@ def show(cwd: Path, rev: str, path: str) -> str:
     return git(cwd, "show", f"{rev}:{path}", check=False)
 
 
-def resolve(cwd: Path, base: str, head: str, live: str, unmerged: list[str]) -> dict[str, str]:
-    """{path: resolved text} for every conflicted path. Raises Conflict on anything else."""
+def resolve(cwd: Path, base: str, head: str, live: str,
+            unmerged: list[str]) -> tuple[dict[str, str], set[str]]:  # fmt: skip
+    """({path: resolved text} for every conflicted path, the organs whose rows must be minted
+    on the merged tree). Raises Conflict on anything else."""
     other = [p for p in unmerged if p not in HANDLED]
     if other:
         raise Conflict("real conflicts: " + ", ".join(other))
@@ -165,13 +214,20 @@ def resolve(cwd: Path, base: str, head: str, live: str, unmerged: list[str]) -> 
             except ValueError as exc:
                 raise Conflict(f"{path}: unreadable ({exc})") from exc
             out[path] = dump_like(merge_json(*docs), t)
+    mint: set[str] = set()
     if STATE_JSON in unmerged:
-        have = set(git(cwd, "ls-tree", "-r", "--name-only", live, "--", SIDECARS).split())
-        out.update(state_sidecars(show(cwd, head, STATE_JSON), show(cwd, live, STATE_JSON), have))
-    return out
+        ours = organs_in(show(cwd, head, STATE_JSON))
+        live_has = with_sidecars(cwd, live, organs_in(show(cwd, live, STATE_JSON)), ours)
+        base_has = with_sidecars(cwd, base, organs_in(show(cwd, base, STATE_JSON)), ours)
+        mint = wanted_organs(base_has, ours, live_has)
+    return out, mint
 
 
-def merge_commit(cwd: Path, head: str, live: str, branch: str) -> tuple[str, list[str]]:
+Mint = Callable[[Path, str, set[str]], dict[str, str]]
+
+
+def merge_commit(cwd: Path, head: str, live: str, branch: str,
+                 mint: Mint | None = None) -> tuple[str, list[str]]:  # fmt: skip
     """(the merge commit of `live` into `head`, the paths it resolved). Raises Conflict."""
     p = subprocess.run(["git", "-C", str(cwd), "merge-tree", "--write-tree", "--name-only",
                         "--no-messages", head, live], capture_output=True, text=True,
@@ -183,20 +239,29 @@ def merge_commit(cwd: Path, head: str, live: str, branch: str) -> tuple[str, lis
     resolved: dict[str, str] = {}
     if unmerged:
         base = git(cwd, "merge-base", head, live).strip()
-        resolved = resolve(cwd, base, head, live, unmerged)
-        with tempfile.TemporaryDirectory(prefix="resolve-idx-") as tmp:
-            env = {"GIT_INDEX_FILE": str(Path(tmp) / "index")}
-            git(cwd, "read-tree", tree, env=env)
-            for path, text in resolved.items():
-                blob = git(cwd, "hash-object", "-w", "--stdin", data=text.encode("utf-8")).strip()
-                git(cwd, "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}", env=env)
-            tree = git(cwd, "write-tree", env=env).strip()
+        resolved, organs = resolve(cwd, base, head, live, unmerged)
+        tree = write_tree(cwd, tree, resolved)
+        if organs:
+            minted = (mint or mint_only_missing)(cwd, tree, organs)
+            tree = write_tree(cwd, tree, minted)
+            resolved.update(minted)
     msg = (f"Merge LIVE into {branch}; generated and append-only files resolved by "
            f".github/scripts/resolve_pr_conflicts.py "
            f"({', '.join(sorted(resolved)) or 'no conflicts'})"
            + TRAILER)  # fmt: skip
     sha = git(cwd, "commit-tree", tree, "-p", head, "-p", live, "-m", msg).strip()
     return sha, sorted(resolved)
+
+
+def write_tree(cwd: Path, tree: str, files: dict[str, str]) -> str:
+    """`tree` with `files` written over it, built in a private index (nothing on disk moves)."""
+    with tempfile.TemporaryDirectory(prefix="resolve-idx-") as tmp:
+        env = {"GIT_INDEX_FILE": str(Path(tmp) / "index")}
+        git(cwd, "read-tree", tree, env=env)
+        for path, text in files.items():
+            blob = git(cwd, "hash-object", "-w", "--stdin", data=text.encode("utf-8")).strip()
+            git(cwd, "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}", env=env)
+        return git(cwd, "write-tree", env=env).strip()
 
 
 def gh(*args: str) -> Any:

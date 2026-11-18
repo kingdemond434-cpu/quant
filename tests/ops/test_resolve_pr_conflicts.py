@@ -50,14 +50,21 @@ def test_a_key_one_side_deleted_stays_deleted() -> None:
     assert rc.merge_json({"a": 1, "b": 2}, {"a": 1}, {"a": 1, "b": 2}) == {"a": 1}
 
 
-def test_the_pr_s_new_organ_rows_become_sidecars_and_live_s_rows_are_untouched() -> None:
-    live = json.dumps({"organs": [{"organ": "leg:a", "state": "LIVE"}]})
-    mine = json.dumps({"organs": [{"organ": "leg:a", "state": "STALE"},
-                                  {"organ": "leg:new", "state": "NEVER"}]})  # fmt: skip
-    out = rc.state_sidecars(mine, live, set())
-    assert list(out) == [f"{rc.SIDECARS}/{rc.sidecar_name('leg:new')}"]
-    assert json.loads(next(iter(out.values())))["organ"] == "leg:new"
-    assert rc.state_sidecars(mine, live, set(out)) == {}  # LIVE already has that sidecar
+def test_only_the_pr_s_own_new_organs_are_wanted_and_a_row_live_dropped_stays_dropped() -> None:
+    """2026-11-18 (#1142, #1147): the FTMO-Allocator row LIVE dropped under audit HOLD came back
+    on every PR whose monolith still had it."""
+    base = {"leg:a", "task:MT5-FTMO-Allocator"}
+    ours = {"leg:a", "task:MT5-FTMO-Allocator", "leg:new"}
+    live = {"leg:a", "leg:live_only"}
+    assert rc.wanted_organs(base, ours, live) == {"leg:new"}
+    assert rc.wanted_organs(base, ours, live | {"leg:new"}) == set()  # LIVE has it already
+
+
+def test_organs_in_reads_a_monolith_and_refuses_an_unreadable_one() -> None:
+    assert rc.organs_in(json.dumps({"organs": [{"organ": "leg:a"}, {"x": 1}]})) == {"leg:a"}
+    assert rc.organs_in("") == set()
+    with pytest.raises(rc.Conflict):
+        rc.organs_in("{not json")
 
 
 def test_the_sidecar_name_matches_runtime_attestation() -> None:
@@ -111,6 +118,12 @@ def _sides(repo: Path, live: dict[str, str], pr: dict[str, str]) -> tuple[str, s
     return pr_sha, live_sha
 
 
+def _stamped(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+    """A stand-in for runtime_attestation --only-missing: a stamped row per wanted organ."""
+    return {f"{rc.SIDECARS}/{rc.sidecar_name(o)}":
+            json.dumps({"organ": o, "only_missing": {"host": "t"}}) for o in organs}  # fmt: skip
+
+
 def test_generated_and_append_only_conflicts_resolve_into_one_merge_commit(repo: Path) -> None:
     pr, live = _sides(
         repo,
@@ -119,15 +132,74 @@ def test_generated_and_append_only_conflicts_resolve_into_one_merge_commit(repo:
         {rc.LINE_FILES[0]: "j1\nmine\n", rc.STATE_MD: "# mine\n",
          rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:p"}]})},
     )  # fmt: skip
-    sha, files = rc.merge_commit(repo, pr, live, "b")
+    asked: list[set[str]] = []
+
+    def mint(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+        asked.append(set(organs))
+        return _stamped(cwd, tree, organs)
+
+    sha, files = rc.merge_commit(repo, pr, live, "b", mint=mint)
     assert _git(repo, "rev-list", "--parents", "-n1", sha).split()[1:] == [pr, live]
     assert _git(repo, "show", f"{sha}:{rc.LINE_FILES[0]}") == "j1\nlive\nmine"
     assert _git(repo, "show", f"{sha}:{rc.STATE_MD}") == "# live"  # LIVE's, byte for byte
     live_json = _git(repo, "show", f"{live}:{rc.STATE_JSON}")
     assert _git(repo, "show", f"{sha}:{rc.STATE_JSON}") == live_json
     side = f"{rc.SIDECARS}/{rc.sidecar_name('leg:p')}"
-    assert side in files and json.loads(_git(repo, "show", f"{sha}:{side}"))["organ"] == "leg:p"
+    assert asked == [{"leg:p"}]
+    row = json.loads(_git(repo, "show", f"{sha}:{side}"))
+    assert side in files and row["organ"] == "leg:p" and row["only_missing"]  # minted, stamped
     assert _git(repo, "status", "--porcelain") == ""  # nothing on disk was touched
+
+
+def test_a_row_live_dropped_is_never_minted_back(repo: Path) -> None:
+    """The merge base named task:MT5-FTMO-Allocator, LIVE dropped it, the PR still has it."""
+    held = {"organs": [{"organ": "leg:a"}, {"organ": "task:MT5-FTMO-Allocator"}]}
+    _commit(repo, {rc.STATE_JSON: json.dumps(held)}, "base has the row")
+    pr, live = _sides(
+        repo,
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:l"}]})},
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:p"},
+                                               {"organ": "task:MT5-FTMO-Allocator"}]})},
+    )  # fmt: skip
+    asked: list[set[str]] = []
+
+    def mint(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+        asked.append(set(organs))
+        return _stamped(cwd, tree, organs)
+
+    sha, files = rc.merge_commit(repo, pr, live, "b", mint=mint)
+    assert asked == [{"leg:p"}]
+    ftmo = f"{rc.SIDECARS}/{rc.sidecar_name('task:MT5-FTMO-Allocator')}"
+    assert ftmo not in files
+    assert ftmo not in _git(repo, "ls-tree", "-r", "--name-only", sha)
+
+
+def test_a_row_the_minter_cannot_write_leaves_the_pr_alone(repo: Path) -> None:
+    pr, live = _sides(
+        repo,
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:l"}]})},
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:p"}]})},
+    )  # fmt: skip
+
+    def mint(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+        raise rc.Conflict("--only-missing minted no row for leg:p")
+
+    with pytest.raises(rc.Conflict, match="leg:p"):
+        rc.merge_commit(repo, pr, live, "b", mint=mint)
+
+
+def test_no_new_organ_mints_nothing(repo: Path) -> None:
+    pr, live = _sides(
+        repo,
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}, {"organ": "leg:l"}]})},
+        {rc.STATE_JSON: json.dumps({"organs": [{"organ": "leg:a"}], "x": 1})},
+    )  # fmt: skip
+
+    def mint(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
+        raise AssertionError("nothing to mint")
+
+    _sha, files = rc.merge_commit(repo, pr, live, "b", mint=mint)
+    assert files == [rc.STATE_JSON]
 
 
 def test_a_real_conflict_is_left_alone(repo: Path) -> None:
