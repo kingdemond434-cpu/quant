@@ -129,6 +129,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(br, "SURVIVORS", paths["survivors"])
     monkeypatch.setattr(br, "LEDGER", paths["ledger"])
     monkeypatch.setattr(br, "OUT", paths["out"])
+    monkeypatch.setattr(br, "CLOCK_LAW", tmp_path / "no_clock_law.json")
     return paths
 
 
@@ -280,6 +281,25 @@ def test_least_recently_reviewed_first(desk):
     assert br.order_cells(["a", "b", "c"], desk["ledger"]) == ["c", "a", "b"]
 
 
+def test_a_never_reviewed_promotion_candidate_leads_then_rejoins_the_rotation(desk):
+    br.append_ledger([{"at": "2026-09-05T00:00:00+00:00", "cell": "b", "verdict": br.PASS},
+                      {"at": "2026-09-01T00:00:00+00:00", "cell": "a", "verdict": br.PASS}],
+                     desk["ledger"])
+    assert br.order_cells(["a", "b", "c", "d"], desk["ledger"], first={"d"}) == \
+        ["d", "c", "a", "b"]
+    # a candidate already reviewed is ordinary rotation: no starvation of everything else
+    assert br.order_cells(["a", "b", "c"], desk["ledger"], first={"b"}) == ["c", "a", "b"]
+
+
+def test_promotion_candidates_read_from_the_clock_law(tmp_path):
+    law = tmp_path / "law.json"
+    law.write_text(json.dumps({"certificates": [
+        {"certificate": "x.A", "status": "PROMOTION CANDIDATE"},
+        {"certificate": "x.B", "status": "ACTIVE"}, {"status": "PROMOTION CANDIDATE"}]}))
+    assert br.promotion_candidates(law) == {"x.A"}
+    assert br.promotion_candidates(tmp_path / "absent.json") == set()
+
+
 def test_build_writes_coverage_and_bounds_the_run(desk):
     doc, rows = br.build(max_cells=1, survivors=desk["survivors"], ledger=desk["ledger"],
                          universe=desk["universe"], budget_s=0.0)
@@ -289,6 +309,23 @@ def test_build_writes_coverage_and_bounds_the_run(desk):
     doc, rows = br.build(max_cells=0, survivors=desk["survivors"], ledger=desk["ledger"],
                          universe=desk["universe"])
     assert rows == [] and doc["n_reviewed"] == 0
+
+
+def test_build_counts_how_many_candidates_name_a_certificate(desk, tmp_path, monkeypatch):
+    doc, _ = br.build(max_cells=0, survivors=desk["survivors"], ledger=desk["ledger"],
+                      universe=desk["universe"])
+    assert doc["promotion_candidates"]["status"] == br.UNMEASURED   # the law is absent
+    law = tmp_path / "law.json"
+    law.write_text(json.dumps({"certificates": [
+        {"certificate": KEY, "status": "PROMOTION CANDIDATE"},
+        {"certificate": "drifted.key", "status": "PROMOTION CANDIDATE"}]}))
+    monkeypatch.setattr(br, "CLOCK_LAW", law)
+    doc, _ = br.build(max_cells=0, survivors=desk["survivors"], ledger=desk["ledger"],
+                      universe=desk["universe"])
+    pc = doc["promotion_candidates"]
+    assert (pc["status"], pc["on_clock_law"], pc["matched"], pc["unmatched"]) == \
+        ("MEASURED", 2, 1, 1)
+    assert pc["unmatched_sample"] == ["drifted.key"]
 
 
 def test_an_unknown_cell_key_is_unmeasured(desk):

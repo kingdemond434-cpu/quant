@@ -100,6 +100,13 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parents[1]
 REPO = BASE.parents[1]
@@ -801,8 +808,8 @@ def units_sleeve_ledgers(cursor: dict[str, Any], gaps: list[dict[str, str]]
     """One unit per SLEEVE: the shadow replay ledgers, plus the live ledger's own sleeve tags."""
     items: list[Unit] = []
     if SHADOW_DIR.exists():
-        for path in sorted(SHADOW_DIR.glob("ledger_*.json")):
-            stem = path.stem[len("ledger_"):]
+        for path in _fl.iter_ledgers(SHADOW_DIR):
+            stem = _fl.label_of(path)
             sym, _, window = stem.partition("_")
             items.append(Unit("sleeve_ledger", stem, str(path),
                               (stem.lower(), f"{sym}|{window}".lower(), sym.lower()),
