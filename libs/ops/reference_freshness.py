@@ -667,6 +667,23 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="runtime_attestation.prune_sidecars",
+        module="desks/mt5/research/runtime_attestation.py",
+        function="prune_sidecars",
+        removes="a sidecar row under docs/research/runtime_state.d/ that can only fail "
+                "check_runtime_attestation or re-add a held organ",
+        reference="the sidecar file itself, read in the same pass, and "
+                  "docs/research/runtime_state_held.json",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (2026-11-18, #1329): a file is removed only when it is "
+             "PRESENT "
+             "and its own bytes fail: unparseable or naming no organ, a file name that is not "
+             "sidecar_name(organ), no measured_on / only_missing stamp, or an organ the committed "
+             "held list names. An absent held list holds nothing, and an absent sidecar directory "
+             "removes nothing. The removed row's organ is re-minted, stamped, by the next "
+             "--only-missing pass when the registry still declares it.",
+    ),
+    DestructivePath(
         path_id="loss_learner.act",
         module="desks/mt5/research/loss_learner.py",
         function="act",
