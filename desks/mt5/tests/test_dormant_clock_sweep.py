@@ -161,7 +161,7 @@ def test_never_queued_cells_are_queued_whatever_the_seen_stamp(
 
 def test_apply_refuses_an_unreadable_docket(tmp_path: Path) -> None:
     doc = _build([], {})
-    res = dcs.apply(doc, NOW, docket=tmp_path, prior={})            # a directory cannot be read as bytes
+    res = dcs.apply(doc, NOW, docket=tmp_path, prior={})   # a directory: unreadable
     assert res["queued"] == 0 and "refused" in res
 
 
