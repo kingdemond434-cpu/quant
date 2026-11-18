@@ -725,13 +725,56 @@ def migrate(state: dict[str, Any]) -> int:
     return len(bad)
 
 
+def prior_identities(source: str, intel: Path | None = None) -> set[str]:
+    """Cells `source` already donated: the donation contract IS the record, so a proposer that
+    re-reads the same evidence every hour donates each identity once, never hourly.
+
+    Reads every `discoveries_*.json` contract in the seat and every `rollup_<day>.jsonl.gz` that
+    `scripts/disk_guard.py rollup` compacted aged contracts into (one contract per line): a cell
+    rolled up there was still donated. An unreadable file is skipped, never read as "nothing
+    donated" for the files that were readable."""
+    import gzip
+
+    from research import proposer_common as pc
+    seat = (intel or pc.INTEL) / source
+    seen: set[str] = set()
+
+    def _take(doc: Any) -> None:
+        rows = (doc.get("discoveries") if isinstance(doc, dict) and "discoveries" in doc
+                else doc if isinstance(doc, list) else [doc])
+        for c in rows or []:
+            if isinstance(c, dict) and c.get("family"):
+                raw = c.get("params")
+                params: dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+                seen.add(pc.identity(str(c.get("symbol")), str(c.get("family")), params))
+
+    if not seat.is_dir():
+        return seen
+    for f in sorted(seat.glob("discoveries_*.json")):
+        try:
+            _take(json.loads(f.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    for f in sorted(seat.glob("rollup_*.jsonl.gz")):
+        try:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        _take(json.loads(line))
+                    except ValueError:
+                        continue
+        except (OSError, EOFError):
+            continue
+    return seen
+
+
 def donate_new(donatable: list[dict[str, Any]], *, intel: Path | None = None,
                donate_fn: Any = None) -> dict[str, Any]:
     """Donate each cell identity ONCE. The same cells are DONATABLE every hour once their kind
     holds MIN_EVENTS; the seat's own contracts (and their gz rollups) are the record of what
     already left, so an hourly re-donation of the same 48 cells never happens."""
     from research import proposer_common as pc
-    seen = pc.prior_identities(SOURCE, intel)
+    seen = prior_identities(SOURCE, intel)
     fresh = [c for c in donatable
              if pc.identity(str(c["symbol"]), str(c["family"]), dict(c["params"])) not in seen]
     out: dict[str, Any] = {"donated": 0, "already_donated": len(donatable) - len(fresh)}
