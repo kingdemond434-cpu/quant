@@ -178,3 +178,69 @@ def test_a_declaration_cannot_hide_convertible_rows_that_produced_no_cell(desk: 
     assert any("convertible source rows" in failure for failure in doc["failures"])
     row = next(r for r in doc["producers"] if r["producer"] == "barren")
     assert row["convertible_rows_owed"] == 7
+
+
+def test_census_aliases_of_one_producer_collapse_into_one_row(desk: Path) -> None:
+    """P116: the census lists a producer under `leg:<name>`, `executable:<path>` and `<name>`;
+    only the bare key carried hours and cells, so every alias read 0.0h / 0 cells. They are ONE
+    producer: one row, the max hours over its aliases, credited with the bare key's cells."""
+    _census(desk, [
+        {"producer": "leg:mass_screen", "key": "leg:mass_screen",
+         "clock": "hourly_cycle:mass_screen", "compute_hours": 0.0,
+         "compute_hours_ledger": 0.0, "compute_hours_registry": 0.0},
+        {"producer": "executable:desks/mt5/research/mass_screen.py",
+         "key": "executable:desks/mt5/research/mass_screen.py", "clock": "invoked:x",
+         "compute_hours": 0.0},
+        {"producer": "mass_screen", "key": "mass_screen", "clock": None,
+         "compute_hours": 2.79, "compute_hours_ledger": 2.79, "compute_hours_registry": 0.0},
+    ])
+    _registry(desk / "reg.sqlite", [{"created_at": "2999-01-01T00:00:00+00:00",
+                                     "generator": "mass_screen", "grid_cell": "g1",
+                                     "status": "judged"}])
+    doc = fence.yield_audit(window_hours=24.0)
+    rows = [r for r in doc["producers"] if "mass_screen" in str(r["key"])]
+    assert [r["key"] for r in rows] == ["mass_screen"]
+    assert rows[0]["compute_hours_window7d"] == 2.79
+    assert rows[0]["clock"] == "hourly_cycle:mass_screen"
+    assert doc["n_owing"] == 0
+
+
+def test_stem_maps_leg_and_executable_aliases() -> None:
+    assert fence._stem("leg:alpha_capture") == "alpha_capture"
+    assert fence._stem("executable:desks/mt5/research/learned_miners.py") == "learned_miners"
+    assert fence._stem("Mass_Screen") == "mass_screen"
+
+
+def test_child_generators_count_toward_their_parent() -> None:
+    per = {
+        "graveyard_resurrection:repair": {
+            "cells_to_judge": 30, "unique_cells": 25, "cells_emitted": 30},
+        "graveyard_resurrection:transfer": {
+            "cells_to_judge": 0, "unique_cells": 0, "cells_emitted": 0},
+        "graveyard": {"cells_to_judge": 9, "unique_cells": 9, "cells_emitted": 9},
+    }
+    kids = fence._child_cells(per, "graveyard_resurrection")
+    assert kids["n"] == 2
+    assert kids["unique_cells"] == 25 and kids["cells_to_judge"] == 30
+    # a prefix that is not a parent:child boundary is not a child
+    assert fence._child_cells(per, "grave")["n"] == 0
+    # a child key never rolls up further
+    assert fence._child_cells(per, "graveyard_resurrection:repair")["n"] == 0
+
+
+def test_seat_generator_cells_credit_the_bare_producer() -> None:
+    per = {
+        "seat:paradigm_router": {"cells_to_judge": 60, "unique_cells": 50, "cells_emitted": 60},
+        "paradigm_router": {"cells_to_judge": 4, "unique_cells": 4, "cells_emitted": 4},
+    }
+    m = fence._own_cells(per, "paradigm_router")
+    assert m["unique_cells"] == 54 and m["cells_to_judge"] == 64
+    # the seat key itself, as a census row, maps to the same producer and is not double counted
+    assert fence._stem("seat:paradigm_router") == "paradigm_router"
+    assert fence._own_cells(per, "seat:paradigm_router")["unique_cells"] == 54
+
+
+def test_seat_label_is_canonical_bare_stem() -> None:
+    rows = fence._merge_aliases([{"producer": "seat:research_tree", "key": "seat:research_tree"},
+                                 {"producer": "research_tree", "key": "research_tree"}])
+    assert [r["key"] for r in rows] == ["research_tree"]
