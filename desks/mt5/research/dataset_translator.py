@@ -314,6 +314,259 @@ def _key_feeds(path: Path, registry: dict[str, str]) -> list[dict[str, Any]]:
     return out
 
 
+# ------------------------------------------------------------- cloud deep-forest claims ---
+#: THE CLOUD DEEP-FOREST CLAIMS AS A DATASET FAMILY (hourly pass idea 25, 2026-11-18). The cloud
+#: crawl's claim ledger lives on a mount the trading box cannot read, so a COMPACT DERIVED file
+#: is committed instead, rebuilt by `--build-cloud-claims <ledger.jsonl>`. THE REPO IS PUBLIC: the
+#: file holds identities and vocabulary buckets only -- never a claim's words, a title, a page
+#: body or a URL path -- and `CLAIM_FIELDS` / `TELLING_FIELDS` are the whole of it (a test pins it).
+#: Each mechanism_key is ONE record however many times it was told: ten tellings are one trial.
+CLOUD_CLAIMS = DESK / "data" / "deep_forest_cloud_claims.json"
+CLAIM_KIND = "deep_forest_claim"
+CLAIM_FIELDS: frozenset[str] = frozenset({
+    "mechanism_key", "mechanism_class", "analogues", "direction", "horizon", "quantity_kind",
+    "lang", "event_time", "claim_hash", "host", "ingested_time", "tellings"})
+TELLING_FIELDS: frozenset[str] = frozenset({"claim_hash", "host", "ingested_time", "event_time"})
+#: H1 bars a claim's horizon bucket (`mechanism_claims._HOR_BUCKET_TERMS`) holds for. A horizon
+#: the claim does not state uses the family's own declared `ttl_bars` default, read from its
+#: signature, so the spec is still fixed before the judge sees it. A TICK horizon has no H1
+#: builder: it is QUEUED, never stretched to an hour.
+HOLD_BARS: dict[str, int] = {"intraday": 6, "daily": 24, "weekly": 120, "monthly": 480}
+#: Why a class the deepener's own map (`rule_deepening.CLASS_FALLBACK`, then its
+#: QUANTITY_FALLBACK) gives no price-only family is QUEUED: the builder it would need.
+MISSING_BUILDER: dict[str, str] = {
+    "carry": ("carry: the registered `carry` family takes its side from the broker swap, not "
+              "from a claim; a claim-sided carry builder does not exist"),
+    "policy": ("policy: needs `event_reaction` with a point-in-time policy-event calendar for the "
+               "analogue; no such event feed is wired to a claim"),
+    "calendar": ("calendar: `calendar_month` / `turn_of_month` need the month or day the claim "
+                 "names, which the compact file does not carry"),
+    "positioning": ("positioning: needs a positioning series (COT / retail ratio) conditioner on "
+                    "the analogue; none is joined to a claim"),
+    "inventory": ("inventory: needs an inventory-release series conditioner on the analogue; "
+                  "none is joined to a claim"),
+    "flow": "flow: needs a flow series conditioner on the analogue; none is joined to a claim",
+    "cross_asset": ("cross_asset: needs a lead_lag / relative_value builder with the peer the "
+                    "claim implies; the claim names no peer series"),
+    "microstructure": ("microstructure: only a REVERT claim maps (range_reversion); other "
+                       "microstructure claims need tick/order-book builders the desk lacks"),
+    "momentum": "momentum: direction word in no bucket the deepener maps",
+    "reversion": "reversion: direction word in no bucket the deepener maps",
+    "other": ("other: the claim names no mechanism class and no breakout / reversion / momentum "
+              "quantity, so no family is implied"),
+}
+_CLAIM_DIRECTION_SIDES: dict[str, int] = {"long": 1, "short": -1}
+
+
+def _quantity_kind(quantities: Iterable[Any]) -> str:
+    """The deepener's quantity bucket (`rule_deepening.QUANTITY_FALLBACK`), or ''."""
+    from libs.research import rule_deepening as rd
+    qlow = " ".join(str(q) for q in quantities or []).lower()
+    for kind, terms in rd.QUANTITY_FALLBACK:
+        if rd._first(terms, qlow):
+            return kind
+    return ""
+
+
+def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") -> dict[str, Any]:
+    """The public, compact claim file from the cloud ledger's rows. Verbatim text never leaves:
+    only the fields in CLAIM_FIELDS / TELLING_FIELDS are written. A row naming a crypto exchange
+    is dropped (standing order), counted by reason."""
+    from libs.research import mechanism_claims as mc
+    by_key: dict[str, dict[str, Any]] = {}
+    excluded: Counter[str] = Counter()
+    n = 0
+    for r in rows:
+        n += 1
+        mkey = str(r.get("mechanism_key") or "")
+        if not mkey:
+            excluded["no mechanism_key"] += 1
+            continue
+        if mc.forbidden_venue(str(r.get("claim") or "") + " " + str(r.get("title") or "")):
+            excluded["crypto-exchange venue named (standing order)"] += 1
+            continue
+        ingested = str(r.get("ingested_time") or r.get("available_time")
+                       or r.get("fetched_utc") or "")
+        if not ingested:
+            excluded["no ingestion time"] += 1
+            continue
+        inst = r.get("instruments") or {}
+        tell = {"claim_hash": str(r.get("claim_hash") or ""), "host": host_of(r.get("url")),
+                "ingested_time": ingested, "event_time": str(r.get("event_time") or "")}
+        rec = by_key.get(mkey)
+        if rec is None:
+            by_key[mkey] = {
+                "mechanism_key": mkey,
+                "mechanism_class": str(r.get("mechanism_class") or "other"),
+                "analogues": [str(a) for a in inst.get("analogues") or []],
+                "direction": [str(w) for w in r.get("direction") or []],
+                "horizon": [str(w) for w in r.get("horizon") or []],
+                "quantity_kind": _quantity_kind(r.get("quantities") or []),
+                "lang": str(r.get("lang") or r.get("language") or ""),
+                "tellings": [tell]}
+            continue
+        rec["tellings"].append(tell)
+        for k, vals in (("analogues", inst.get("analogues")), ("direction", r.get("direction")),
+                        ("horizon", r.get("horizon"))):
+            for v in vals or []:
+                if str(v) not in rec[k]:
+                    rec[k].append(str(v))
+        rec["quantity_kind"] = rec["quantity_kind"] or _quantity_kind(r.get("quantities") or [])
+    claims = []
+    for rec in by_key.values():
+        rec["tellings"].sort(key=lambda t: t["ingested_time"])
+        first = rec["tellings"][0]
+        # THE KNOWABLE TIME IS THE EARLIEST INGESTION, never the claim's own event_time.
+        rec.update(claim_hash=first["claim_hash"], host=first["host"],
+                   ingested_time=first["ingested_time"], event_time=first["event_time"])
+        claims.append(rec)
+    claims.sort(key=lambda c: (c["ingested_time"], c["mechanism_key"]))
+    return {"writer": "research/dataset_translator.py --build-cloud-claims",
+            "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "source": source, "ledger_rows": n, "claims": len(claims),
+            "excluded": dict(excluded),
+            "note": ("derived identities and vocabulary buckets only; no claim text, title, page "
+                     "body or URL path. knowable time = earliest ingested_time of the key"),
+            "rows": claims}
+
+
+def build_cloud_claims(ledger: Path, out: Path = CLOUD_CLAIMS) -> dict[str, Any]:
+    doc = compact_cloud_claims(_jsonl(ledger), source=ledger.name)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", "utf-8")
+    return doc
+
+
+def _cloud_claims(path: Path) -> list[dict[str, Any]]:
+    """One dataset row per mechanism_key in the compact file. A telling from a refused host is
+    dropped before the knowable time is taken; a key with no usable telling is refused."""
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for rec in (_read(path, {}) or {}).get("rows") or []:
+        mkey = str((rec or {}).get("mechanism_key") or "")
+        if not mkey or mkey in seen:
+            continue
+        seen.add(mkey)
+        tells = [t for t in rec.get("tellings") or [] if isinstance(t, dict)]
+        ok = [t for t in tells if not refusal_of("", str(t.get("host") or ""))]
+        refused = None
+        if tells and not ok:
+            refused = refusal_of("", str(tells[0].get("host") or ""))
+        use = sorted(ok or tells, key=lambda t: str(t.get("ingested_time") or ""))
+        knowable = str((use[0] if use else rec).get("ingested_time") or "")
+        cls = str(rec.get("mechanism_class") or "other")
+        out.append(_ds(f"dfc:{mkey}", CLAIM_KIND, title=f"deep-forest claim {mkey} ({cls})",
+                       host=str((use[0] if use else rec).get("host") or ""),
+                       lang=str(rec.get("lang") or ""),
+                       declared=[str(a) for a in rec.get("analogues") or []],
+                       available_time=knowable, refused=refused,
+                       claim={**rec, "knowable_at": knowable, "n_tellings": len(ok or tells)}))
+    return out
+
+
+def claim_tradables(analogues: Iterable[str], registry: dict[str, str], onto: dict[str, Any]
+                    ) -> tuple[list[str], list[str], list[str]]:
+    """(tradables, rolled-up shares, dropped). A share CFD analogue is ROLLED UP to the US index
+    set, never minted; a symbol the registry lacks is dropped and counted."""
+    trad: list[str] = []
+    rolled: list[str] = []
+    dropped: list[str] = []
+    for a in analogues:
+        cls = registry.get(a)
+        if cls is None:
+            dropped.append(a)
+        elif cls == "Equities":
+            rolled.append(a)
+        elif a not in trad:
+            trad.append(a)
+    if rolled:
+        for s in ((onto.get("countries") or {}).get("US") or {}).get("index") or []:
+            if s in registry and registry[s] != "Equities" and s not in trad:
+                trad.append(s)
+    return trad, rolled, dropped
+
+
+def _family_default_hold(fam: str) -> int | None:
+    import inspect
+
+    from mt5desk.executables import resolve_family
+    fn = resolve_family(fam)
+    try:
+        p = inspect.signature(fn).parameters.get("ttl_bars") if fn else None
+    except (TypeError, ValueError):
+        return None
+    return int(p.default) if p is not None and isinstance(p.default, int) else None
+
+
+def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+    """({family, hold, sides, buckets}, None) -- or (None, the QUEUED reason). The family comes
+    ONLY from the deepener's own class map and quantity fallback, and only when registered."""
+    from mt5desk.executables import resolve_family
+
+    from libs.research import mechanism_claims as mc
+    from libs.research import rule_deepening as rd
+    cls = str(claim.get("mechanism_class") or "other")
+    words = [str(w) for w in claim.get("direction") or []]
+    dbucket = mc._bucket(mc._DIR_BUCKET_TERMS, words)
+    hbucket = mc._bucket(mc._HOR_BUCKET_TERMS, [str(w) for w in claim.get("horizon") or []])
+    fam = rd.CLASS_FALLBACK.get((cls, dbucket))
+    basis = "class_map"
+    qk = str(claim.get("quantity_kind") or "")
+    if fam is None and dbucket != "other" and qk:
+        basis = f"quantity_fallback:{qk}"
+        # The deepener's quantity map; with no session in the compact file a breakout is a level
+        # breakout (rule_deepening.deepen picks session_range_breakout only on a named session).
+        fam = {"breakout": "level_breakout", "reversion": "range_reversion",
+               "momentum": "momentum_volgate"}.get(qk)
+    base = {"class": cls, "direction_bucket": dbucket, "horizon_bucket": hbucket,
+            "family_basis": basis}
+    if fam is None:
+        return None, f"NO_BUILDER: {MISSING_BUILDER.get(cls, cls + ': no registered builder')}"
+    if resolve_family(fam) is None:
+        return None, f"NO_BUILDER: {fam} has no registered builder on this tree"
+    if hbucket == "tick":
+        return None, "NO_BUILDER: a tick-horizon claim has no sub-bar builder on H1"
+    hold = HOLD_BARS.get(hbucket) or _family_default_hold(fam)
+    if hold is None:
+        return None, f"NO_BUILDER: {fam} declares no ttl_bars default and the claim states none"
+    buckets = {mc._bucket(mc._DIR_BUCKET_TERMS, [w]) for w in words} & set(_CLAIM_DIRECTION_SIDES)
+    sides = ((_CLAIM_DIRECTION_SIDES[next(iter(buckets))],) if len(buckets) == 1 else SIDES)
+    return {**base, "family": fam, "hold": int(hold), "sides": sides}, None
+
+
+def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
+                trad: list[str]) -> dict[str, Any]:
+    from proposer_common import candidate
+    cl = ds["claim"]
+    fam = spec["family"]
+    params = {"ttl_bars": spec["hold"], "side_mode": "long" if side > 0 else "short"}
+    mech = (f"deep-forest claim {cl['mechanism_key']} (class {spec['class']}, direction "
+            f"{spec['direction_bucket']}, horizon {spec['horizon_bucket']}, "
+            f"{cl.get('n_tellings', 1)} telling(s), lang {ds['lang'] or '?'}) on analogue "
+            f"{sym}: {fam} {params['side_mode']}, held {spec['hold']} {CHART} bars")
+    c = candidate(SEAT, sym, fam, params, mech,
+                  f"{fam} {params['side_mode']} ttl{spec['hold']} -> {sym} {CHART} "
+                  "[deep-forest claim]",
+                  {"dataset_id": ds["id"], "dataset_kind": CLAIM_KIND,
+                   "mechanism_key": cl["mechanism_key"], "claim_hash": cl.get("claim_hash"),
+                   "mapped_tradables": trad[:24], "knowable_at": cl["knowable_at"],
+                   "forward_evidence_from": cl["knowable_at"],
+                   "preregistered_from": "claim: horizon -> ttl_bars, direction -> side_mode"})
+    c["chart"] = CHART
+    c["dataset_id"] = ds["id"]
+    c["mechanism_key"] = cl["mechanism_key"]
+    # POINT IN TIME: the claim was knowable when the desk INGESTED it. `pit.stamp` keeps a field
+    # the producer set, so the donated row carries this, not the claim's (earlier) event_time;
+    # bars before it are in-sample history to the judge, and no forward clock can start earlier.
+    c["available_time"] = cl["knowable_at"]
+    c["knowable_at"] = cl["knowable_at"]
+    if cl.get("event_time"):
+        c["event_time"] = str(cl["event_time"])
+    c["falsifier"] = (f"{fam} {params['side_mode']} on {sym} held {spec['hold']} {CHART} bars "
+                      f"shows no edge net of cost in bars after {cl['knowable_at']}")
+    return c
+
+
 def lake_stems(lake: Path) -> dict[str, Path]:
     out: dict[str, Path] = {}
     if lake.is_dir():
@@ -325,12 +578,14 @@ def lake_stems(lake: Path) -> dict[str, Path]:
 
 def enumerate_datasets(*, registry: dict[str, str], stems: dict[str, Path],
                        free_stack: Path = FREE_STACK, deep_forest: Path = DEEP_FOREST,
-                       axes: Path = AXES, keyed: Path = KEYED, env_keys: Path = ENV_KEYS
-                       ) -> list[dict[str, Any]]:
+                       axes: Path = AXES, keyed: Path = KEYED, env_keys: Path = ENV_KEYS,
+                       cloud_claims: Path = CLOUD_CLAIMS) -> list[dict[str, Any]]:
     """Every dataset the desk holds, from every ground. A lake series no roster row claims is a
-    dataset in its own right, so a series that lands from any producer is translated too."""
+    dataset in its own right, so a series that lands from any producer is translated too. The
+    cloud deep-forest claims are a dataset family of their own (one row per mechanism_key)."""
     rows = (_free_stack(free_stack) + _deep_forest(deep_forest) + _axes(axes) + _keyed(keyed)
             + _key_feeds(env_keys, registry))
+    claims = _cloud_claims(cloud_claims)
     claimed = {s for r in rows for s in stems if any(s.startswith(p) for p in r["prefixes"])}
     for stem in sorted(set(stems) - claimed):
         cc = stem.split("_", 1)[0]
@@ -338,7 +593,7 @@ def enumerate_datasets(*, registry: dict[str, str], stems: dict[str, Path],
                   region=cc if len(cc) == 2 else "", prefixes=[stem])
         out["exact_series"] = True
         rows.append(out)
-    return rows
+    return rows + claims
 
 
 # ---------------------------------------------------------------------------- inference ---
@@ -664,7 +919,14 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
     state = dict(cursor.get("datasets") or {})
     rows: list[dict[str, Any]] = []
     ready: list[tuple[dict[str, Any], list[str], list[str], str, str, str]] = []
+    claim_ready: list[tuple[dict[str, Any], list[str], dict[str, Any]]] = []
     for ds in datasets:
+        if ds["kind"] == CLAIM_KIND:
+            got = _claim_row(ds, onto, registry)
+            rows.append(got[0])
+            if got[1] is not None:
+                claim_ready.append((ds, got[0]["tradables"], got[1]))
+            continue
         trad, ents, why = infer(ds, onto, registry)
         row: dict[str, Any] = {"id": ds["id"], "kind": ds["kind"], "title": ds["title"][:120],
                                "host": ds["host"], "available_time": ds["available_time"],
@@ -711,11 +973,12 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
         why = ("research.universe_policy unimportable" if gate is None else
                "the registry's dedupe identity is unreadable, so a cell could be a second trial")
         for row in rows:
-            if row.get("series"):
+            if row.get("series") or row.get("claim_spec"):
                 row.update(status=CELL_QUEUED, reason=f"BLOCKED_DEPENDENCY: {why}",
                            missed_growth=("the series waits for the dependency; no cell is "
                                           "lost, it is judged the first pass both are readable"))
-        return rows, cells, {"datasets": state, "offset": cursor.get("offset", 0)}
+        return rows, cells, {"datasets": state, "offset": cursor.get("offset", 0),
+                             "claims_offset": cursor.get("claims_offset", 0)}
     ready.sort(key=lambda t: str(t[0]["available_time"]), reverse=True)
     off = int(cursor.get("offset") or 0) % max(1, len(ready))
     order = ready[off:] + ready[:off]
@@ -765,7 +1028,133 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
         row.update(status=CELL_EMITTED,
                    cell={"symbol": cell["symbol"], "side": side, "family": fam})
     new_off = (off + len(cells)) % max(1, len(ready))
-    return rows, cells, {"datasets": state, "offset": new_off}
+    coff = _mint_claims(claim_ready, by_id, state, cells, minted, cursor, gate=gate,
+                        coverage=coverage, per_pass=per_pass)
+    return rows, cells, {"datasets": state, "offset": new_off, "claims_offset": coff}
+
+
+def _claim_row(ds: dict[str, Any], onto: dict[str, Any], registry: dict[str, str]
+               ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """(report row, spec or None) for one cloud claim, before any gate or dedupe."""
+    cl = ds["claim"]
+    trad, rolled, dropped = claim_tradables(ds.get("declared") or [], registry, onto)
+    row: dict[str, Any] = {"id": ds["id"], "kind": CLAIM_KIND, "title": ds["title"],
+                           "host": ds["host"], "available_time": ds["available_time"],
+                           "knowable_at": cl.get("knowable_at"),
+                           "event_time": cl.get("event_time") or None,
+                           "mechanism_key": cl.get("mechanism_key"),
+                           "mechanism_class": cl.get("mechanism_class") or "other",
+                           "tradables": trad, "entities": [f"claim:{cl.get('mechanism_class')}"]
+                           + (["rollup:US_equities"] if rolled else []),
+                           "rolled_up": rolled, "dropped_not_in_registry": dropped,
+                           "n_tellings": cl.get("n_tellings"),
+                           "declared_tradables": [s for s in ds.get("declared") or []
+                                                  if s in registry
+                                                  and registry[s] != "Equities"]}
+    if ds.get("refused"):
+        row.update(status=UNMAPPABLE, reason=f"BLOCKED_ON_TERMS: {ds['refused']}",
+                   would_map=trad, tradables=[],
+                   missed_growth=(f"{ds['id']} is never used ({ds['refused']}); the "
+                                  f"{len(trad)} tradables it maps to get no cell from it"))
+        return row, None
+    if not trad:
+        row.update(status=UNMAPPABLE, reason="no analogue the broker registry prices")
+        return row, None
+    spec, why = claim_spec(cl)
+    if spec is None:
+        row.update(status=CELL_QUEUED, reason=why,
+                   missed_growth=(f"claim {cl.get('mechanism_key')} on {', '.join(trad[:4])} "
+                                  "is never judged until the named builder exists"))
+        return row, None
+    row.update(claim_spec={k: (list(v) if isinstance(v, tuple) else v)
+                           for k, v in spec.items()}, family=spec["family"])
+    return row, spec
+
+
+def _mint_claims(ready: list[tuple[dict[str, Any], list[str], dict[str, Any]]],
+                 by_id: dict[str, dict[str, Any]], state: dict[str, Any],
+                 cells: list[dict[str, Any]], minted: set[tuple[str, str, int, str]],
+                 cursor: dict[str, Any], *, gate: Callable[[str, str], bool],
+                 coverage: Coverage, per_pass: int) -> int:
+    """One cell per claim per pass, on the claim's own (tradable, side) ring, through the same
+    dedupe layers as the series cells. Returns the next claims offset."""
+    ready = sorted(ready, key=lambda t: str(t[0]["available_time"]), reverse=True)
+    off = int(cursor.get("claims_offset") or 0) % max(1, len(ready))
+    before = len(cells)
+    for ds, trad, spec in ready[off:] + ready[:off]:
+        row = by_id[ds["id"]]
+        st = state.setdefault(ds["id"], {"next": 0, "emitted": 0})
+        fam = spec["family"]
+        stem = f"dfc_{ds['claim']['mechanism_key']}"
+        owner = coverage.owner(stem)
+        if owner:
+            row.update(status=COVERED, covered_by=owner,
+                       reason=f"{owner} already mints this claim; a cell would be a second trial")
+            continue
+        lane = [s for s in trad if gate(s, fam)]
+        if not lane:
+            row.update(status=UNMAPPABLE, reason="no mapped tradable is in the hypothesis lane")
+            continue
+        grid = [(s, side) for s in lane if not coverage.covered(stem, s)
+                for side in spec["sides"]]
+        if not grid:
+            row.update(status=COVERED, covered_by="registry",
+                       reason=f"every mapped tradable already has a registry cell on {stem}")
+            continue
+        if len(cells) >= per_pass:
+            row.update(status=CELL_EMITTED if st["emitted"] else CELL_QUEUED,
+                       reason=None if st["emitted"] else "per-pass cap reached",
+                       missed_growth=None if st["emitted"] else MISSED_GROWTH_CAP)
+            continue
+        cell = None
+        side = 0
+        for k in range(len(grid)):
+            sym, side = grid[(int(st["next"]) + k) % len(grid)]
+            # The spec IS the trial: two claims (or two keys) resolving to the same family, hold,
+            # tradable and side are one cell, whatever the claims' words.
+            key = (f"claim:ttl{spec['hold']}", sym, int(side), fam)
+            if key in minted:
+                continue
+            cand = _claim_cell(ds, sym, side, spec, trad)
+            if not coverage.exists(cand):
+                minted.add(key)
+                cell = cand
+                st["next"] = (int(st["next"]) + k + 1) % len(grid)
+                break
+        if cell is None:
+            row.update(status=COVERED, covered_by="registry",
+                       reason="every (tradable, side) is already a registry trial or was "
+                              "minted earlier this pass")
+            continue
+        cells.append(cell)
+        st["emitted"] = int(st["emitted"]) + 1
+        row.update(status=CELL_EMITTED,
+                   cell={"symbol": cell["symbol"], "side": side, "family": fam,
+                         "ttl_bars": spec["hold"]})
+    return (off + len(cells) - before) % max(1, len(ready))
+
+
+def claims_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Cloud-claim counts by class and status, and the classes with no builder."""
+    by_class: dict[str, Counter[str]] = {}
+    nob: Counter[str] = Counter()
+    for r in rows:
+        if r.get("kind") != CLAIM_KIND:
+            continue
+        cls = str(r.get("mechanism_class") or "other")
+        by_class.setdefault(cls, Counter())[str(r.get("status"))] += 1
+        if str(r.get("reason") or "").startswith("NO_BUILDER"):
+            nob[cls] += 1
+    from libs.research import rule_deepening as rd
+    mapped = {c for c, _ in rd.CLASS_FALLBACK}
+    return {"claims": sum(sum(c.values()) for c in by_class.values()),
+            # Classes the deepener's class map gives no family: they reach a cell only through
+            # the quantity fallback, otherwise they are queued with the builder they lack.
+            "classes_without_class_builder": sorted(k for k in by_class if k not in mapped),
+            "by_class": {k: dict(v) for k, v in sorted(by_class.items())},
+            "queued_no_builder_by_class": dict(nob),
+            "classes_without_any_cell": sorted(k for k, v in by_class.items()
+                                               if not v.get(CELL_EMITTED))}
 
 
 def summarise(rows: list[dict[str, Any]], dropped: Counter[str]) -> dict[str, Any]:
@@ -809,14 +1198,21 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--build-cloud-claims", metavar="LEDGER", type=Path,
+                    help="rebuild data/deep_forest_cloud_claims.json from the cloud claim ledger")
     a = ap.parse_args(argv)
+    if a.build_cloud_claims:
+        built = build_cloud_claims(a.build_cloud_claims)
+        print(f"dataset_translator: {built['claims']} mechanism keys from "
+              f"{built['ledger_rows']} ledger rows -> {CLOUD_CLAIMS.name}")
+        return 0
     t0 = time.monotonic()
     registry = tradable_registry()
     onto, dropped = load_ontology(registry)
     stems = lake_stems(LAKE)
     datasets = enumerate_datasets(registry=registry, stems=stems, free_stack=FREE_STACK,
                                   deep_forest=DEEP_FOREST, axes=AXES, keyed=KEYED,
-                                  env_keys=ENV_KEYS)
+                                  env_keys=ENV_KEYS, cloud_claims=CLOUD_CLAIMS)
     cursor = _read(CURSOR, {}) or {}
     rc = registry_coverage()
     coverage = None if rc is None else Coverage(proposer_owners(stems), rc.pairs, rc.exists)
@@ -859,6 +1255,8 @@ def main(argv: list[str] | None = None) -> int:
         "trials_charged": len(cells) if path else 0,
         "contract": str(path) if path else None,
         "families": list(EMITTED_FAMILIES),
+        "cloud_claims": {"file": str(CLOUD_CLAIMS.relative_to(ROOT).as_posix()),
+                         **claims_summary(rows)},
         "seconds": round(time.monotonic() - t0, 2),
         "rows": sorted(rows, key=lambda r: str(r.get("available_time") or ""), reverse=True),
     }

@@ -42,7 +42,8 @@ def _datasets(tmp: Path, *, free_stack: list[dict[str, Any]] | None = None,
     return dt.enumerate_datasets(
         registry=REG, stems=stems or {},
         free_stack=_roster(tmp / "fs.json", free_stack or []), deep_forest=df,
-        axes=tmp / "no_axes", keyed=tmp / "no_keyed.json", env_keys=tmp / "no_keys.json")
+        axes=tmp / "no_axes", keyed=tmp / "no_keyed.json", env_keys=tmp / "no_keys.json",
+        cloud_claims=tmp / "no_claims.json")
 
 
 def _lake(tmp: Path, stem: str, cols: str = "available_time,value") -> dict[str, Path]:
@@ -406,3 +407,124 @@ def test_two_datasets_on_one_stem_never_mint_the_same_cell_twice(tmp_path: Path)
     keys = [(c["params"]["source"], c["symbol"], c["params"].get("side_when_high"), c["family"])
             for c in cells]
     assert len(keys) == len(set(keys))
+
+
+# ------------------------------------------------------------- cloud deep-forest claims ---
+_CLAIM_TEXT = "VERBATIM-CLAIM-TEXT gold always rallies after the London fix, says trader Zhang"
+
+
+def _ledger_row(**kw: Any) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "claim": _CLAIM_TEXT, "title": "A forum page title nobody may republish",
+        "lang": "en", "quantities": ["trend"], "direction": ["long"], "horizon": ["day"],
+        "instruments": {"analogues": ["XAUUSD"], "mentioned": ["gold"]},
+        "mechanism_class": "momentum", "mechanism_key": "k_momentum_gold",
+        "event_time": "2019-10-01", "claim_hash": "aaaaaaaaaaaa",
+        "url": "https://forum.example.com/users/zhang/post/123?session=abc",
+        "ingested_time": "2026-11-18T02:00:00+00:00",
+        "available_time": "2026-11-18T02:00:00+00:00", "source_hash": "f" * 64}
+    row.update(kw)
+    return row
+
+
+def _claims(tmp: Path, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    path = tmp / "claims.json"
+    path.write_text(json.dumps(dt.compact_cloud_claims(rows)), "utf-8")
+    return dt._cloud_claims(path)
+
+
+def _claim_pass(tmp: Path, rows: list[dict[str, Any]]
+                ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    got, cells, _ = dt.translate(_claims(tmp, rows), ONTO, REG, {}, {}, gate=_gate,
+                                 coverage=EMPTY)
+    return got, cells
+
+
+def test_the_committed_claim_file_holds_no_verbatim_text(tmp_path: Path) -> None:
+    doc = dt.compact_cloud_claims([_ledger_row()])
+    blob = json.dumps(doc, ensure_ascii=False)
+    assert "VERBATIM" not in blob and "Zhang" not in blob and "forum page" not in blob
+    assert "/users/" not in blob and "session=abc" not in blob      # host only, never the path
+    for rec in doc["rows"]:
+        assert set(rec) <= dt.CLAIM_FIELDS
+        for t in rec["tellings"]:
+            assert set(t) <= dt.TELLING_FIELDS
+    # The file in the repository obeys the same contract.
+    real = json.loads(dt.CLOUD_CLAIMS.read_text("utf-8"))
+    assert real["rows"], "the committed claim file is empty"
+    for rec in real["rows"]:
+        assert set(rec) <= dt.CLAIM_FIELDS
+        assert all(set(t) <= dt.TELLING_FIELDS for t in rec["tellings"])
+        assert all(isinstance(w, str) and len(w) <= 40 for k in ("direction", "horizon")
+                   for w in rec[k]), "a direction/horizon entry is a sentence, not a word"
+
+
+def test_an_unregistered_class_is_queued_never_emitted(tmp_path: Path) -> None:
+    rows, cells = _claim_pass(tmp_path, [_ledger_row(
+        mechanism_class="policy", quantities=["rate"], mechanism_key="k_policy")])
+    assert not cells
+    (row,) = rows
+    assert row["status"] == dt.CELL_QUEUED
+    assert row["reason"].startswith("NO_BUILDER: policy") and "event_reaction" in row["reason"]
+    assert row["missed_growth"]
+
+
+def test_every_claim_cell_is_a_registered_family_on_a_lane_symbol(tmp_path: Path) -> None:
+    from research.miner_candidate_compiler import _registered_family
+    _, cells = _claim_pass(tmp_path, [
+        _ledger_row(),
+        _ledger_row(mechanism_class="reversion", direction=["revert"], mechanism_key="k_rev",
+                    instruments={"analogues": ["EURUSD"]}, horizon=["week"])])
+    assert len(cells) == 2
+    for c in cells:
+        assert _registered_family(c["family"]) and _gate(c["symbol"], c["family"])
+    by = {c["symbol"]: c for c in cells}
+    # Preregistered from the claim: direction gives the side, horizon gives the hold.
+    assert by["XAUUSD"]["params"] == {"ttl_bars": 24, "side_mode": "long"}
+    assert by["EURUSD"]["params"]["ttl_bars"] == 120
+
+
+def test_an_equity_analogue_rolls_up_and_is_never_minted(tmp_path: Path) -> None:
+    share = next(s for s, c in REG.items() if c == "Equities")
+    rows, cells = _claim_pass(tmp_path, [_ledger_row(
+        instruments={"analogues": [share]}, mechanism_key="k_share")])
+    (row,) = rows
+    assert row["rolled_up"] == [share] and share not in row["tradables"]
+    assert set(row["tradables"]) <= set(ONTO["countries"]["US"]["index"])
+    assert cells and all(c["symbol"] != share and REG[c["symbol"]] != "Equities" for c in cells)
+
+
+def test_a_duplicate_mechanism_key_is_one_cell(tmp_path: Path) -> None:
+    told = [_ledger_row(claim_hash=f"{i:012d}", ingested_time=f"2026-11-1{i}T00:00:00+00:00")
+            for i in range(1, 6)]
+    doc = dt.compact_cloud_claims(told)
+    assert doc["claims"] == 1 and len(doc["rows"][0]["tellings"]) == 5
+    rows, cells = _claim_pass(tmp_path, told)
+    assert len(rows) == 1 and len(cells) == 1
+    # Two DIFFERENT keys resolving to the same spec are one trial too (the in-pass set).
+    _, cells2 = _claim_pass(tmp_path, [_ledger_row(), _ledger_row(mechanism_key="k_twin")])
+    assert len(cells2) == 1
+    # And a cell the registry already holds is not minted again (content_hash identity).
+    cov = dt.Coverage({}, set(), lambda c: True)
+    _, cells3, _ = dt.translate(_claims(tmp_path, [_ledger_row()]), ONTO, REG, {}, {},
+                                gate=_gate, coverage=cov)
+    assert not cells3
+
+
+def test_the_knowable_time_is_the_ingestion_time_never_the_event_time(tmp_path: Path) -> None:
+    told = [_ledger_row(claim_hash="b" * 12, ingested_time="2026-11-18T05:00:00+00:00"),
+            _ledger_row(claim_hash="c" * 12, ingested_time="2026-09-06T10:00:00+00:00")]
+    rows, cells = _claim_pass(tmp_path, told)
+    (cell,) = cells
+    assert cell["available_time"] == "2026-09-06T10:00:00+00:00"       # earliest ingestion
+    assert cell["knowable_at"] == cell["available_time"]
+    assert cell["event_time"] == "2019-10-01"                           # kept, never used as PIT
+    assert cell["evidence"]["forward_evidence_from"] == cell["available_time"]
+    assert rows[0]["knowable_at"] == cell["available_time"]
+    from libs.data.pit import stamp
+    assert stamp(cell, dt.SEAT)["available_time"] == "2026-09-06T10:00:00+00:00"
+
+
+def test_a_crypto_exchange_claim_never_enters_the_file() -> None:
+    doc = dt.compact_cloud_claims([_ledger_row(claim="binance perp funding flips")])
+    assert doc["claims"] == 0 and doc["excluded"]
