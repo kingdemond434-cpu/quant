@@ -41,8 +41,14 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
-#: Module attributes the book reads and writes its own files through.
-SANDBOXED = ("OUT", "INTENTS", "LOG", "STATE", "GUARD", "ARMED_MARKER")
+#: Module attributes the book reads and writes its own files through. BRACKET_SLIP_FILE
+#: (2026-11-18): the replay rewrote the tracked desks/mt5/data/E8_GOLD_SLIP.json on every run,
+#: and the second tree then read the first tree's measurement.
+SANDBOXED = ("OUT", "INTENTS", "LOG", "STATE", "GUARD", "ARMED_MARKER", "BRACKET_SLIP_FILE")
+#: State files OTHER prop modules keep, sandboxed per scenario when the tree has the module.
+#: account_breakers.STATE is the daily-loss latch (#890): unsandboxed, a latch one scenario
+#: tripped stood every later scenario down, because they all share the wall-clock day.
+SANDBOXED_ELSEWHERE: dict[str, tuple[str, ...]] = {"prop.account_breakers": ("STATE",)}
 SYMBOL_ID = 6102
 CONTRACT = 100.0
 SPREAD = 0.4
@@ -478,6 +484,35 @@ def fusion_roster_leg(tree: Path, roster: dict[str, Any], work: Path) -> dict[st
     return out
 
 
+def scenario_clock(clock: dict[str, Any]) -> type:
+    """A `datetime` whose now()/utcnow() read the scenario's clock, so the book judges a tick
+    against the time the scenario is at -- not the runner's wall clock, which put every quote
+    ~36 days stale and tripped the disconnect breaker (2026-11-18). Everything else, isinstance
+    included, behaves exactly as `datetime.datetime`; what now() returns is a plain datetime."""
+    import datetime as dtm
+
+    real: Any = dtm.datetime
+
+    class _Meta(type):
+        def __instancecheck__(cls, obj: object) -> bool:
+            return isinstance(obj, real)
+
+        def __subclasscheck__(cls, sub: type) -> bool:
+            return issubclass(sub, real)
+
+    class ScenarioDatetime(real, metaclass=_Meta):  # type: ignore[misc]
+        @classmethod
+        def now(cls, tz: Any = None) -> Any:
+            at = clock["now"].to_pydatetime().astimezone(dtm.UTC)
+            return at.astimezone(tz) if tz is not None else at.replace(tzinfo=None)
+
+        @classmethod
+        def utcnow(cls) -> Any:
+            return clock["now"].to_pydatetime().astimezone(dtm.UTC).replace(tzinfo=None)
+
+    return ScenarioDatetime
+
+
 def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     stub = types.ModuleType("MetaTrader5")
     stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
@@ -486,13 +521,31 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     import os
 
     os.environ.pop("QUANT_PROP_ACCOUNT", None)  # the FTMO leg replays the FTMO account
+    # e8_evidence's heartbeat and decision ledger (2026-11-18: written into the tree's data/)
+    os.environ["E8_EVIDENCE_DIR"] = str(Path.cwd() / "e8_evidence")
     import pandas as pd
 
     work = Path.cwd()
+    day = pd.Timestamp(scenario["day"], tz="UTC")
+    clock = {"now": day}
+    # Before the tree's first import, so every `from datetime import datetime` in it reads the
+    # scenario's clock (pandas and the stdlib are already loaded and keep the real one).
+    import datetime as dtm
+
+    dtm.datetime = scenario_clock(clock)  # type: ignore[assignment,misc]
     from prop import e8_gold as g
 
     for name in SANDBOXED:
         setattr(g, name, work / f"{name.lower()}.json")
+    import importlib
+    import importlib.util
+
+    for modname, names in SANDBOXED_ELSEWHERE.items():
+        if importlib.util.find_spec(modname) is None:
+            continue  # the tree has no such module: nothing of it can leak
+        mod = importlib.import_module(modname)
+        for name in names:
+            setattr(mod, name, work / f"{modname.rsplit('.', 1)[-1]}_{name.lower()}.json")
     if scenario.get("own"):  # today's asia bracket filled into the scenario's position
         (work / "state.json").write_text(
             json.dumps(
@@ -500,13 +553,11 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             ),
             "utf-8",
         )
-    if scenario.get("guard"):  # the guard keys its anchor by the wall clock's server day
+    if scenario.get("guard"):  # the guard keys its anchor by the (scenario) clock's server day
         from prop import e8_guard
 
         guard = {**scenario["guard"], "day": e8_guard.server_day()}
         (work / "guard.json").write_text(json.dumps(guard), "utf-8")
-    day = pd.Timestamp(scenario["day"], tz="UTC")
-    clock = {"now": day}
 
     class _Tick:
         @property
