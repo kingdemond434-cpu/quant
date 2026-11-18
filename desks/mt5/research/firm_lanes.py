@@ -86,11 +86,19 @@ def _drain(lanes: list[str], library: fl.SignalLibrary, at: str) -> dict[str, An
         rows = [fl.to_intake_row(r) for r in batch]
         path = pc.donate("firm_lanes", rows, tests_run=len(rows), suffix=lane)
         counts = pc.donation_counts()
-        q.mark_sent(batch, at)
+        # ONLY WHAT THE DOOR TOOK IS SENT. A refused row (unstamped, wrong lane) stays QUEUED and
+        # is retried next pass; marking it SENT would put a rule in the library the judge never
+        # saw, and the grid would then never propose it again.
+        refused = {str(x.get("title")) for x in (counts.get("refusals") or [])}
+        refused |= {str(x.get("title")) for x in (counts.get("lane_refusals") or [])}
+        sent = [] if not counts.get("donated") else [
+            r for r, row in zip(batch, rows, strict=True) if row["title"] not in refused]
+        q.mark_sent(sent, at)
         library.add([{"id": r["id"], "family": r["family"], "symbol": r["symbol"],
                       "params": r.get("params", {}), "lane": lane, "state": "SENT", "at": at}
-                     for r in batch])
-        out[lane] = {"drained": len(batch), "pending": len(q.pending()),
+                     for r in sent])
+        out[lane] = {"offered": len(batch), "drained": len(sent),
+                     "pending": len(q.pending()),
                      "intake": str(path) if path else None,
                      "donated": counts.get("donated"),
                      "refused_unstamped": counts.get("refused_unstamped"),

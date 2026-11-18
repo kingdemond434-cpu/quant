@@ -128,3 +128,22 @@ def test_leg_is_wired_and_never_touches_the_money_path() -> None:
         text = (ROOT / p).read_text("utf-8")
         for banned in ("gateway", "order_send", "sleeves.json", "pf_allocator"):
             assert f"import {banned}" not in text and f"from research.{banned}" not in text
+
+
+def test_drain_keeps_refused_rows_queued(tmp_path: Path, monkeypatch) -> None:
+    import sys
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import firm_lanes as leg
+    from research import proposer_common as pc
+    monkeypatch.setattr(leg, "QUEUES", tmp_path / "q")
+    lib = fl.SignalLibrary(tmp_path / "lib.jsonl")
+    q = fl.LaneQueue(tmp_path / "q" / "grid.jsonl")
+    q.push([{"id": "a", "family": "monday_gap", "symbol": "EURUSD", "lane": "grid"}], lib)
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: None)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {
+        "donated": 0, "refusals": [{"title": "monday gap on EURUSD (grid)"}]})
+    out = leg._drain(["grid"], lib, "t")
+    assert out["grid"]["drained"] == 0 and len(q.pending()) == 1 and not lib.has("a")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1, "refusals": []})
+    out = leg._drain(["grid"], lib, "t")
+    assert out["grid"]["drained"] == 1 and q.pending() == [] and lib.has("a")
