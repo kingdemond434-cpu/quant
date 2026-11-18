@@ -1,10 +1,10 @@
 {
- "at": "2026-11-14T03:38:30+00:00",
+ "at": "2026-11-17T23:36:56+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
-  "certificates": 8600,
+  "certificates": 11054,
   "forward_rows": 1879,
   "spec_book": [
    "carry",
@@ -27,9 +27,65 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=88b287c34da66ded",
-   "certificate": "external.USDSGD.formula.p=88b287c34da66ded",
-   "fp": "6cdaeaa20995f322",
+   "key": "SGDJPY.formula.p=6ebb48552cf7ee75",
+   "certificate": "external.SGDJPY.formula.p=6ebb48552cf7ee75",
+   "fp": "a85f95c72a56e661",
+   "symbol": "SGDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "SGDJPY.formula.p=912945cd47164133",
+   "certificate": "external.SGDJPY.formula.p=912945cd47164133",
+   "fp": "8d8fc9e18b3a59cb",
+   "symbol": "SGDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "SGDJPY.formula.p=5f89a8b2f2f81138",
+   "certificate": "external.SGDJPY.formula.p=5f89a8b2f2f81138",
+   "fp": "935ec472314e64dd",
+   "symbol": "SGDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "SGDJPY.formula.p=771778724c43bf35",
+   "certificate": "external.SGDJPY.formula.p=771778724c43bf35",
+   "fp": "a8f4279c05a70526",
+   "symbol": "SGDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "USDSGD.formula.p=9220c3367e3e0070",
+   "certificate": "external.USDSGD.formula.p=9220c3367e3e0070",
+   "fp": "6ce3e655280d2c43",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,9 +97,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=304b1750d837d7f0",
-   "certificate": "external.USDSGD.formula.p=304b1750d837d7f0",
-   "fp": "b96eb4f9705d54ca",
+   "key": "USDSGD.formula.p=492d84976ff87292",
+   "certificate": "external.USDSGD.formula.p=492d84976ff87292",
+   "fp": "6932724c9ced4945",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -55,9 +111,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=ecd62bc613164dcd",
-   "certificate": "external.USDSGD.formula.p=ecd62bc613164dcd",
-   "fp": "eb288a1c531b0042",
+   "key": "USDSGD.formula.p=e740508cfb7512c5",
+   "certificate": "external.USDSGD.formula.p=e740508cfb7512c5",
+   "fp": "c2e0ef6a44e4b552",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -69,65 +125,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD.formula.p=cfe4101eb4c827ea",
-   "certificate": "external.USDSGD.formula.p=cfe4101eb4c827ea",
-   "fp": "ed6e17f4d1cd8ea5",
-   "symbol": "USDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "USDSGD.formula.p=b8d3042bae5abefb",
-   "certificate": "external.USDSGD.formula.p=b8d3042bae5abefb",
-   "fp": "3a06c510fe625ac2",
-   "symbol": "USDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "USDSGD.formula.p=cf67a1951ce3e24f",
-   "certificate": "external.USDSGD.formula.p=cf67a1951ce3e24f",
-   "fp": "f32f86f267f21fc7",
-   "symbol": "USDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "USDSGD.formula.p=a6da6886f382d31f",
-   "certificate": "external.USDSGD.formula.p=a6da6886f382d31f",
-   "fp": "cd38aa333c1be3ad",
-   "symbol": "USDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "USDSGD.formula.p=09dc4bd54168f62a",
-   "certificate": "external.USDSGD.formula.p=09dc4bd54168f62a",
-   "fp": "ec3f0182aa3be724",
+   "key": "USDSGD.formula.p=d61f0be1d0c10f09",
+   "certificate": "external.USDSGD.formula.p=d61f0be1d0c10f09",
+   "fp": "80a174559898947c",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -139,12 +139,12 @@
   },
   {
    "lane": "forward",
-   "key": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
-   "symbol": "AUDUSD",
-   "family": "discovered",
+   "key": "XBRUSD.turn_of_month.continuous",
+   "symbol": "XBRUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -152,12 +152,12 @@
   },
   {
    "lane": "forward",
-   "key": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
-   "symbol": "AUDUSD",
-   "family": "discovered",
+   "key": "XBRUSD.vol_transition.continuous",
+   "symbol": "XBRUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -165,12 +165,12 @@
   },
   {
    "lane": "forward",
-   "key": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
-   "symbol": "AUDUSD",
-   "family": "discovered",
+   "key": "XCUUSD.carry.continuous",
+   "symbol": "XCUUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -178,12 +178,12 @@
   },
   {
    "lane": "forward",
-   "key": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=ext_resid_EURNZD_z_horizon=1_side=-1",
-   "symbol": "AUDUSD",
-   "family": "discovered",
+   "key": "XCUUSD.range_reversion.continuous",
+   "symbol": "XCUUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -191,12 +191,12 @@
   },
   {
    "lane": "forward",
-   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=dd_24_horizon=3_side=1",
-   "symbol": "BTCUSD",
-   "family": "discovered",
+   "key": "XTIUSD.carry.continuous",
+   "symbol": "XTIUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -204,12 +204,12 @@
   },
   {
    "lane": "forward",
-   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_Coca-Cola_z_horizon=12_side=1",
-   "symbol": "BTCUSD",
-   "family": "discovered",
+   "key": "XTIUSD.pullback_entry.continuous",
+   "symbol": "XTIUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -217,12 +217,12 @@
   },
   {
    "lane": "forward",
-   "key": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_UnitedHealth_horizon=6_side=1",
-   "symbol": "BTCUSD",
-   "family": "discovered",
+   "key": "XTIUSD.range_reversion.continuous",
+   "symbol": "XTIUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'discovered'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -230,12 +230,12 @@
   },
   {
    "lane": "forward",
-   "key": "CHFDKK.cross_asset_residual.continuous#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
-   "symbol": "CHFDKK",
-   "family": "cross_asset_residual",
+   "key": "XTIUSD.trend_ma_cross.continuous",
+   "symbol": "XTIUSD",
+   "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
+    "no forward ledger on this box for this row"
    ],
    "ours": {},
    "theirs": {},
@@ -245,68 +245,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "USDSGD.formula.p=88b287c34da66ded",
+   "what": "SGDJPY.formula.p=6ebb48552cf7ee75",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=304b1750d837d7f0",
+   "what": "SGDJPY.formula.p=912945cd47164133",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=ecd62bc613164dcd",
+   "what": "SGDJPY.formula.p=5f89a8b2f2f81138",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=cfe4101eb4c827ea",
+   "what": "SGDJPY.formula.p=771778724c43bf35",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=b8d3042bae5abefb",
+   "what": "USDSGD.formula.p=9220c3367e3e0070",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=cf67a1951ce3e24f",
+   "what": "USDSGD.formula.p=492d84976ff87292",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=a6da6886f382d31f",
+   "what": "USDSGD.formula.p=e740508cfb7512c5",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD.formula.p=09dc4bd54168f62a",
+   "what": "USDSGD.formula.p=d61f0be1d0c10f09",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XBRUSD.turn_of_month.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDUSD.discovered.continuous#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XBRUSD.vol_transition.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XCUUSD.carry.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDUSD.discovered.continuous#band=[0.9, 1.0]_feature=ext_resid_EURNZD_z_horizon=1_side=-1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XCUUSD.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=dd_24_horizon=3_side=1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XTIUSD.carry.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_Coca-Cola_z_horizon=12_side=1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XTIUSD.pullback_entry.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "BTCUSD.discovered.continuous#band=[0.0, 0.1]_feature=ext_residz_UnitedHealth_horizon=6_side=1",
-   "why": "no written specification in the spec book for family 'discovered'"
+   "what": "XTIUSD.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "CHFDKK.cross_asset_residual.continuous#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+   "what": "XTIUSD.trend_ma_cross.continuous",
+   "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 118,
-  "at": "2026-11-14T02:39:04+00:00",
+  "forward": 814,
+  "at": "2026-11-17T22:36:46+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -334,24 +334,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XBRUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XBRUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XCUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XCUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 5.66
+ "seconds": 4.09
 }

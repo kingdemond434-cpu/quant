@@ -1,0 +1,38 @@
+{
+ "organ": "executable:scripts/run_cn_ensemble.py",
+ "kind": "executable",
+ "code": [
+  "scripts/run_cn_ensemble.py",
+  "libs/ops/cn_ensemble.py"
+ ],
+ "clock": "invoked:ops/run_deepseek_windows.ps1",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/data/",
+ "artifact_declared": "desks/mt5/reports/CN_MODEL_ENSEMBLE.json",
+ "artifact_resolved_by": "relocated (declared data/intelligence/cn_ensemble/)",
+ "artifact_declared_n": 2,
+ "artifact_age_s": 0,
+ "artifact_bytes": 12288,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {
+  "_": "UNMEASURED (not a readable JSON object)"
+ },
+ "progress_metric": "distinct_ideas",
+ "consumer": "desks/mt5/research/miner_candidate_compiler.py",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-17T18:18:30+00:00",
+ "only_missing": {
+  "at": "2026-11-17T18:18:30+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

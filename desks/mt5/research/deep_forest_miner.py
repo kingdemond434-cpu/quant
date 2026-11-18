@@ -120,6 +120,10 @@ WORLD = _DESK / "data" / "intelligence" / "world"
 PROVENANCE = _DESK / "data" / "mined_sources.jsonl"
 MAX_TASKS = 400
 PAGE_FETCH_PER_QUERY = 3
+#: The sitemap fallback: how many sitemap files to open and how many of the newest listed pages
+#: to read per ground per pass. Bounded, so a large news site costs a handful of requests.
+SITEMAP_MAX_INDEXES = 3
+SITEMAP_PAGES = 6
 DEEP_LINKS_PER_GROUND = 6
 MIN_PAGE_TEXT = 1500
 #: A ground's time share is its weight's share of the run budget, spread over SPREAD runs so a
@@ -145,10 +149,130 @@ LOCKS = _DESK / "data" / ".job_locks"
 COMPETITION_LEDGER = _DESK / "data" / "trader_genome_competition.jsonl"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
-_UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+#: Days of per-day attempt counts each vector keeps in its stats row.
+DAILY_KEEP = 14
+#: AN HONEST USER AGENT (2026-11-13). This used to impersonate desktop Chrome, which the desk's
+#: fetch rules forbid: a site may only be read under a name that says what is reading it, so its
+#: robots.txt can address us. ROBOTS_AGENT is the token robots rules are matched against.
+ROBOTS_AGENT = "quant-desk-research"
+_UA = {"User-Agent": f"{ROBOTS_AGENT}/1.0 (deep_forest_miner; research; honours robots.txt)",
        "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
                   "*/*;q=0.8")}
+
+#: Governance, governance/wayback-youtube-ruling-2026-11-14.md. Both fetchers stay registered,
+#: make no request, and carry their missed-growth line. Held rows stay, labelled; a PR that
+#: re-enables either is held by the Auditor.
+WAYBACK_TERMS = ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research "
+                 "purposes only (source=wayback, terms=scholarship_research_only)")
+WAYBACK_MISSED_GROWTH = ("missed_growth: dead grounds (the Quantopian forum and other retired "
+                         "boards) are no longer read through captures; their held claims stay, "
+                         "labelled source=wayback. A gap, not a zero.")
+YOUTUBE_TERMS = ("BLOCKED_ON_TERMS: YouTube transcripts through keyless mirrors are YouTube "
+                 "content "
+                 "reached around YouTube's terms and the no-YouTube rule")
+YOUTUBE_MISSED_GROWTH = ("missed_growth: video transcripts are not read; video METADATA from the "
+                         "search index still is, and video ideas come only from sources whose own "
+                         "terms allow automated use. A gap, not a zero.")
+
+#: HOSTS WHOSE OWN TERMS FORBID AUTOMATED READING, read 2026-11-13 (report:
+#: /mnt/project-files/reports/terms_reads/). Never fetched, on any route, until the site grants
+#: written consent. A host here is a refusal, not a label.
+TERMS_REFUSED: dict[str, str] = {
+    "bigquant.com": ("用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的"
+                     "自动数据收集或提取工具' without BigQuant's prior written consent"),
+    "genport.newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+    "newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+    # Governance, wayback-youtube-ruling-2026-11-14 item 1: the Archive's terms limit use to
+    # "scholarship and research purposes only"; a snapshot is also a mirror of someone else's page.
+    "archive.org": WAYBACK_TERMS,
+    # Item 2 and zuck's standing rule: the box never contacts YouTube, on any route.
+    "youtube.com": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+    "youtu.be": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+}
+#: A page that is a region wall, not content: the site serves it to every address outside
+#: mainland China. It is recorded as REGION_BLOCKED and never parsed (no proxy, no VPN: that
+#: would be routing around the publisher's own access control).
+REGION_WALL_MARKERS: tuple[str, ...] = ("当前地区暂不支持访问",
+                                        "does not support access from IP addresses outside")
+
+
+class RobotsRefused(OSError):
+    """robots.txt (or a host's own terms) says no; the fetch never happens."""
+
+
+_ROBOTS: dict[str, Any] = {}
+_ROBOTS_LOCK = threading.Lock()
+
+
+_LOC = re.compile(r"<(?:url|sitemap)>(.*?)</(?:url|sitemap)>", re.S | re.I)
+_LOC_URL = re.compile(r"<loc>\s*(.*?)\s*</loc>", re.S | re.I)
+_LOC_MOD = re.compile(r"<lastmod>\s*(.*?)\s*</lastmod>", re.S | re.I)
+
+
+def sitemap_entries(xml: str) -> list[tuple[str, str]]:
+    """(loc, lastmod) pairs from a sitemap or a sitemap index; lastmod '' when absent."""
+    out: list[tuple[str, str]] = []
+    for block in _LOC.findall(xml):
+        m = _LOC_URL.search(block)
+        if not m:
+            continue
+        loc = _html.unescape(m.group(1).strip())
+        if loc.startswith(("http://", "https://")):
+            mod = _LOC_MOD.search(block)
+            out.append((loc, mod.group(1).strip() if mod else ""))
+    return out
+
+
+def _host_of(url: str) -> str:
+    return (urlparse(url).hostname or "").lower()
+
+
+def access_refusal(url: str) -> str | None:
+    """None when this URL may be fetched, else why not. FAIL CLOSED (Governance ruling
+    2026-11-10, PR #819; principal's fetch rules): a host whose terms forbid automated reading
+    refuses; robots.txt is read once per host per process; 404/410 means no rules;
+    401/403/429/451 is a hard stop; a 5xx, a transport failure or an HTML page in place of rules
+    refuses; a Disallow covering this path for our agent refuses."""
+    host = _host_of(url)
+    if not host:
+        return "no host"
+    for h, why in TERMS_REFUSED.items():
+        if host == h or host.endswith("." + h):
+            return f"TERMS_REFUSED: {why}"
+    parts = urlparse(url)
+    if parts.path == "/robots.txt":
+        return None
+    key = f"{parts.scheme}://{parts.netloc}"
+    with _ROBOTS_LOCK:
+        rules = _ROBOTS.get(key)
+    if rules is None:
+        import urllib.robotparser
+        r = pf.get(f"{key}/robots.txt", headers=dict(_UA), timeout=15.0, retries=1, leg=LEG,
+                   max_bytes=500_000)
+        rp = urllib.robotparser.RobotFileParser()
+        if r.ok:
+            body = r.text or ""
+            if body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                rules = "robots.txt answered HTML"
+            else:
+                rp.parse(body.splitlines())
+                rules = rp
+        elif r.status in (404, 410):
+            rp.parse([])
+            rules = rp
+        elif r.status is not None:
+            rules = f"robots.txt HTTP {r.status}"
+        else:
+            rules = "robots.txt unreadable"
+        with _ROBOTS_LOCK:
+            _ROBOTS[key] = rules
+    if isinstance(rules, str):
+        return f"ROBOTS_REFUSED: {rules}"
+    if not rules.can_fetch(ROBOTS_AGENT, url):
+        return "ROBOTS_REFUSED: robots.txt disallows this path"
+    return None
+
+
 GRADE = {"competition": "COMPETITION_RECORD", "interview": "INTERVIEW",
          "community": "COMMUNITY_POST", "forum": "COMMUNITY_POST", "qa": "COMMUNITY_POST",
          "social": "COMMUNITY_POST", "blog": "COMMUNITY_POST", "column": "COMMUNITY_POST",
@@ -285,6 +409,9 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
     on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
+    refused = access_refusal(url)
+    if refused:
+        raise RobotsRefused(refused)
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
@@ -492,19 +619,11 @@ def bilibili_transcript(bvid: str) -> tuple[str, str | None]:
 
 
 def youtube_transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
-    """A YouTube transcript through the desk's keyless mirror rotation (Piped, Invidious),
-    which `scripts/fetch_video_transcript.py` owns. MEASURED DEAD on every route 2026-08-27;
-    youtube.com's own caption endpoints are barred by its robots.txt and are never tried. The
-    reason is recorded per video, never an empty transcript."""
-    try:
-        sp = str(_ROOT / "scripts")
-        if sp not in sys.path:
-            sys.path.insert(0, sp)
-        import fetch_video_transcript as fvt  # type: ignore[import-not-found]
-        text, route = fvt.youtube(video_id, lang=lang.split("-")[0])
-        return str(text), None if text else f"{route}: empty transcript"
-    except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
+    """REFUSED ON TERMS (Governance 2026-11-14 item 2): no transcript is fetched on any route.
+    The keyless-mirror rotation is removed from the fetch path; the name stays so the refusal is
+    recorded per video rather than silently skipped."""
+    del video_id, lang
+    return "", YOUTUBE_TERMS
 
 
 _FEED_ITEM = re.compile(r"(?is)<(item|entry)\b[^>]*>(.*?)</\1>")
@@ -544,18 +663,10 @@ def parse_feed(xml: str) -> list[dict[str, str]]:
 
 
 def wayback_snapshot(url: str, timestamp: str = "") -> tuple[str, str | None]:
-    """Nearest Wayback Machine capture of `url`, via the public availability API."""
-    api = f"https://archive.org/wayback/available?url={quote(url, safe='')}"
-    if timestamp:
-        api += f"&timestamp={timestamp}"
-    try:
-        doc = json.loads(_http(api))
-    except Exception as exc:
-        return "", f"{type(exc).__name__}: {str(exc)[:120]}"
-    snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
-    if not snap.get("url"):
-        return "", "no capture in the Wayback Machine"
-    return str(snap["url"]), None
+    """REFUSED ON TERMS (Governance 2026-11-14 item 1): the Wayback Machine is never asked for a
+    capture. Registered so the route's refusal is named, never a silent skip."""
+    del url, timestamp
+    return "", WAYBACK_TERMS
 
 
 def parse_nitter(page: str) -> list[dict[str, str]]:
@@ -794,17 +905,57 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # holding cells, then least-recently-attempted as before. It never crosses a frontier bucket
     # and never removes a ground: a reorder, so an absent gap list changes nothing. `run()`
     # passes `culture_gaps()`; a direct call with no `gaps` keeps the historic order exactly.
+    # BREADTH-GAP WEIGHT FIRST AMONG THE NEVER-ATTEMPTED (2026-11-13, overlay 28u). Bucket 0
+    # (NAMED_ONLY) held 3,329 vectors that were worked in file order. They are now worked by
+    # `gap_weight` -- gold, index, USD/JPY/EUR-cross and 02-09 UTC session grounds first --
+    # then culture gap, then least-recently-attempted. A ground naming none of them weighs 0
+    # and keeps its place; nothing is dropped, and the other buckets are untouched.
     gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
-    for bucket in buckets:
+    for i, bucket in enumerate(buckets):
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
-            out.extend(sorted(rotated, key=lambda g: (
+            out.extend(sorted(rotated, key=lambda g, first=(i == 0): (
+                -gap_weight(g) if first else 0.0,
                 str(g.get("region") or "").lower() not in gap,
                 _last_attempt(g, frontier_state))))
     return out
+
+
+#: The breadth gaps overlay 28u names, as the words a ground's own text uses for them. Each
+#: family counts once per ground. Bare 金 / 금 are left out: they also spell finance.
+GAP_TERMS: dict[str, tuple[float, tuple[str, ...]]] = {
+    "gold": (3.0, ("gold", "xau", "bullion", "黄金", "金价", "沪金", "ゴールド", "금값", "금시세",
+                   "золот", "alt\u0131n", "lingote")),
+    "index": (2.0, ("index", "indices", "指数", "股指", "nikkei", "日経", "dax", "s&p", "nasdaq",
+                    "kospi", "코스피", "hang seng", "恒生", "asx", "ftse", "índice", "индекс",
+                    "endeks", "indeks")),
+    "major_fx": (2.0, ("usd", "jpy", "eur", "dollar", "yen", "euro", "forex", "外汇", "美元",
+                       "日元", "欧元", "ドル", "円", "為替", "fx", "달러", "외환", "доллар",
+                       "dólar", "döviz")),
+    "session_02_09": (1.0, ("asian session", "asia session", "tokyo", "東京", "亚盘", "早盘",
+                            "london open", "伦敦", "아시아", "sydney")),
+}
+#: Regions trading in the 02-09 UTC window; a bonus only for a ground already naming a gap.
+SESSION_REGIONS = frozenset({"cn", "jp", "kr", "au", "nz", "hk", "sg", "tw"})
+
+
+def gap_weight(g: dict[str, Any]) -> float:
+    """How strongly a ground's own text points at a breadth gap (0 = none). Read from its name,
+    why, site, queries, market and dataset class -- never its url, whose `index.html` is not an
+    index -- and never from a lookup the ground lacks."""
+    parts: list[str] = [str(g.get(k) or "") for k in ("name", "why", "site", "market",
+                                                      "dataset_class")]
+    q = g.get("queries")
+    if isinstance(q, list):
+        parts.extend(str(x) for x in q)
+    text = " ".join(parts).lower()
+    score = sum(w for w, terms in GAP_TERMS.values() if any(t in text for t in terms))
+    if score and str(g.get("region") or "").lower() in SESSION_REGIONS:
+        score += GAP_TERMS["session_02_09"][0]
+    return score
 
 
 def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
@@ -904,8 +1055,16 @@ class _Run:
         try:
             body = _http(url, referer=referer, lang=self.lang)
             self._note_net(True)
+            if any(m in body for m in REGION_WALL_MARKERS):
+                self.counts["region_walled"] = self.counts.get("region_walled", 0) + 1
+                self.status.append({"url": url, "blocked": "REGION_BLOCKED"})
+                return ""
             self.counts["pages"] += 1
             return body
+        except RobotsRefused as exc:
+            self.counts["access_refused"] = self.counts.get("access_refused", 0) + 1
+            self.status.append({"url": url, "refused": str(exc)[:160]})
+            return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)
             self.status.append({"url": url, "http": exc.code})
@@ -916,13 +1075,23 @@ class _Run:
             return ""
 
     def rendered(self, url: str) -> str:
+        refused = access_refusal(url)
+        if refused:
+            self.counts["access_refused"] = self.counts.get("access_refused", 0) + 1
+            self.status.append({"url": url, "refused": refused[:160]})
+            return ""
         try:
             from libs.data.render_fetch import render
-            page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
+            page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0],
+                               user_agent=_UA["User-Agent"])
         except Exception as exc:
             page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
         if err:
             self.status.append({"url": url, "render": err[:120]})
+            return ""
+        if any(m in page for m in REGION_WALL_MARKERS):
+            self.counts["region_walled"] = self.counts.get("region_walled", 0) + 1
+            self.status.append({"url": url, "blocked": "REGION_BLOCKED"})
             return ""
         self.counts["rendered"] += 1
         return page
@@ -934,6 +1103,14 @@ class _Run:
         if page and str(ground.get("kind")) == "competition":
             self._competition(page, ground=ground, url=url)
         r = mc.extract(text, universe=self.universe or None)
+        with self._lock:
+            gf = getattr(self, "ground_funnel", None)
+            if isinstance(gf, dict):
+                for k, v in (r.get("funnel") or {}).items():
+                    gf[k] = gf.get(k, 0) + int(v)
+                gf["pages"] = gf.get("pages", 0) + 1
+                for k in ("dropped_unmappable", "dropped_impossible_metric"):
+                    gf[k] = gf.get(k, 0) + int(r.get(k) or 0)
         self.counts["dropped_venue"] += int(r["dropped_venue"])
         self.counts["dropped_unmappable"] += int(r["dropped_unmappable"])
         self.counts["duplicate_mechanisms"] += int(r["duplicate_mechanisms"])
@@ -1125,8 +1302,62 @@ class _Run:
                                                   f"search:{engine}:page")
                     time.sleep(1.0)
             time.sleep(1.5)
-        return {"queries": len(g.get("queries") or []), "engines": engines, "pages": pages,
-                "claims": claims, "errors": errors[:4]}
+        out: dict[str, Any] = {"queries": len(g.get("queries") or []), "engines": engines,
+                               "pages": pages, "claims": claims, "errors": errors[:4]}
+        # THE SITE'S OWN INDEX WHEN THE ENGINES ANSWER NOTHING (2026-11-13). On the box's
+        # ALT_DATA_YIELD of 19:29Z, 1,938 of 6,582 vectors last failed here on a bing "anti-bot
+        # shell" or a duckduckgo timeout, and an engine's results page is robots-disallowed for
+        # an honest agent anyway.
+        # The site itself publishes what it wants read: robots.txt Sitemap lines, or
+        # /sitemap.xml. Its newest pages are read through the same robots gate.
+        if not claims and site and not self.over() and self._net_ok():
+            sm = self.ground_sitemap(g)
+            out = {**out, "sitemap": sm, "fetched": sm.get("fetched", 0),
+                   "claims": claims + int(sm.get("claims") or 0)}
+        return out
+
+    def ground_sitemap(self, g: dict[str, Any]) -> dict[str, Any]:
+        """Read the newest pages a site lists in its own sitemap(s)."""
+        site = str(g.get("site") or g.get("url") or "")
+        host = urlparse(site if "//" in site else f"https://{site}").netloc
+        if not host:
+            return {"sitemaps": 0, "fetched": 0, "claims": 0, "why": "no host"}
+        base = f"https://{host}"
+        robots = self.page(f"{base}/robots.txt")
+        maps = [ln.split(":", 1)[1].strip() for ln in robots.splitlines()
+                if ln.lower().startswith("sitemap:")][:SITEMAP_MAX_INDEXES] or [
+                    f"{base}/sitemap.xml"]
+        locs: list[tuple[str, str]] = []
+        seen_maps = 0
+        queue = list(maps)
+        while queue and seen_maps < SITEMAP_MAX_INDEXES * 2 and not self.over():
+            sm_url = queue.pop(0)
+            if sm_url.endswith(".gz"):
+                continue
+            xml = self.page(sm_url)
+            seen_maps += 1
+            if not xml:
+                continue
+            entries = sitemap_entries(xml)
+            if "<sitemapindex" in xml[:2000].lower():
+                newest = sorted(entries, key=lambda e: e[1], reverse=True)
+                queue.extend(u for u, _ in newest[:SITEMAP_MAX_INDEXES])
+                continue
+            locs.extend(entries)
+        terms = [t.lower() for q in (g.get("queries") or []) for t in str(q).split()
+                 if t.isascii() and len(t) >= 4]
+        locs.sort(key=lambda e: (any(t in e[0].lower() for t in terms), e[1]), reverse=True)
+        fetched = claims = 0
+        for url, _mod in locs[:SITEMAP_PAGES]:
+            if self.over():
+                break
+            body = self.page(url, referer=base)
+            if len(html_text(body)) >= MIN_PAGE_TEXT:
+                fetched += 1
+                claims += self._read_page(g, body, url, "", "sitemap:page")
+            time.sleep(1.0)
+        return {"sitemaps": seen_maps, "listed": len(locs), "fetched": fetched,
+                "claims": claims}
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import cn_sources
@@ -1246,9 +1477,9 @@ class _Run:
         nearest capture of the seed, then the capture's own links on the same original host."""
         original = str(g.get("url") or "")
         snap, err = wayback_snapshot(original, str(g.get("timestamp") or ""))
-        self._note_net(err is None or "HTTP" in str(err))
         if err:
-            return {"fetched": 0, "claims": 0, "errors": [err]}
+            return {"fetched": 0, "claims": 0, "errors": [err], "status": "BLOCKED_ON_TERMS",
+                    "missed_growth": WAYBACK_MISSED_GROWTH}
         page = self.page(snap)
         if not html_text(page):
             return {"fetched": 0, "claims": 0, "errors": [f"empty capture {snap}"]}
@@ -1300,8 +1531,9 @@ class _Run:
 
     def ground_youtube(self, g: dict[str, Any]) -> dict[str, Any]:
         """The Bilibili route generalised: video METADATA through the search index (titles and
-        descriptions state mechanisms too), then transcripts for the best few through the
-        keyless mirror rotation -- currently dead from this box, and said so per video."""
+        descriptions state mechanisms too). Transcripts are refused on terms (Governance
+        2026-11-14) and YouTube itself is a terms-refused host, so a result link is never
+        followed onto it."""
         claims = 0
         videos: list[tuple[str, str, str]] = []
         errors: list[str] = []
@@ -1325,24 +1557,15 @@ class _Run:
                 claims += self.take(f"{r.get('title', '')}. {r.get('snippet', '')}", ground=g,
                                     url=url, title=r.get("title", ""), route="youtube:metadata",
                                     grade="VIDEO_METADATA")
-                self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
+                # never queued for a crawler: YouTube is a terms-refused host
             time.sleep(1.5)
-        n_tr = 0
-        seen_ids: set[str] = set()
-        for vid, url, title in videos:
-            if vid in seen_ids or n_tr >= int(g.get("transcripts") or 0) or self.over():
-                continue
-            seen_ids.add(vid)
-            text, err = youtube_transcript(vid, self.lang)
-            if err:
-                errors.append(f"{vid}: {err}"[:100])
-                continue
-            n_tr += 1
-            self.counts["transcripts"] += 1
-            claims += self.take(text, ground=g, url=url, title=title, route="youtube:transcript",
-                                grade="VIDEO_TRANSCRIPT")
+        # Transcripts are REFUSED ON TERMS (Governance 2026-11-14): none is requested, on any
+        # route. The refusal is recorded once per pass with its missed-growth line.
+        if videos and int(g.get("transcripts") or 0):
+            errors.append(YOUTUBE_TERMS[:100])
         return {"queries": len(g.get("queries") or []), "engines": engines, "videos": len(videos),
-                "transcripts": n_tr, "claims": claims, "errors": errors[:4]}
+                "transcripts": 0, "transcripts_status": "BLOCKED_ON_TERMS",
+                "missed_growth": YOUTUBE_MISSED_GROWTH, "claims": claims, "errors": errors[:4]}
 
     def ground_telegram(self, g: dict[str, Any]) -> dict[str, Any]:
         """Public channel previews at t.me/s/<channel>: server-rendered, no account, the last
@@ -1465,10 +1688,12 @@ class _Run:
                                 "why": "three straight transport failures on this box"})
             return
         self.ground, self.ground_claims = g, []
+        self.ground_funnel: dict[str, int] = {}
         seen_before = self.counts["claims_seen_before"]
         urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
+        st0 = len(self.status)
         try:
             if route == "http":
                 out = self.ground_http(g)
@@ -1510,6 +1735,15 @@ class _Run:
                                             "items", "tweets", "channels", "feeds", "articles")
                       ) or self.counts["claims_seen_before"] > seen_before
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
+        # WHY A GROUND RETURNED NOTHING, NAMED (2026-11-13): 450 attempts a ground with "no
+        # blocker" was a robots refusal, a terms refusal or a region wall nobody could see.
+        walls = [str(x.get("refused") or x.get("blocked")) for x in self.status[st0:]
+                 if isinstance(x, dict) and (x.get("refused") or x.get("blocked"))]
+        if status == "BLOCKED" and walls and not out.get("error"):
+            out = {**out, "why": walls[0],
+                   "missed_growth": ("this ground's claims stay unread until its robots.txt, "
+                                     "terms or region wall admits the desk; no route around it "
+                                     "is taken")}
         classes: dict[str, int] = {}
         for c in self.ground_claims:
             k = str(c.get("mechanism_class"))
@@ -1518,6 +1752,8 @@ class _Run:
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
+                            # WHERE THE READ TEXT WAS LOST, summed over the ground's pages
+                            "extract_funnel": dict(getattr(self, "ground_funnel", {}) or {}),
                             "datasets": sum(1 for d in self.datasets if d.get("ground") == name),
                             # the per-ground DELTA against the durable seen-sets
                             "delta": {"urls_new": self.counts.get("urls_new", 0) - urls_before,
@@ -2203,6 +2439,13 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                                                             "REACHED_NO_CLAIMS") else "")
             if rows or dsets:
                 e["last_success"] = now
+            # PER-DAY COUNTS, the 7-day window ALT_DATA_YIELD reads (2026-11-13). Bounded to
+            # DAILY_KEEP days so the file never grows with the life of the ground.
+            day = now[:10]
+            daily = e.get("daily") if isinstance(e.get("daily"), dict) else {}
+            a, ok, r = [*list(daily.get(day) or []), 0, 0, 0][:3]
+            daily[day] = [int(a) + 1, int(ok) + (1 if rows or dsets else 0), int(r) + rows]
+            e["daily"] = {d: daily[d] for d in sorted(daily)[-DAILY_KEEP:]}
             if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
                 e["last_error"] = str(err or s.get("status"))[:200]
             # THE STANDING failure reason: this attempt's, or none when the route answered.
@@ -2214,6 +2457,8 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             # THE DURABLE DELTA CURSOR. The seen-sets (deep_forest_seen.json) are the scan's
             # memory; this is its per-ground reading: what the last attempt added, when the
             # ground last showed anything new, and how many attempts running it showed nothing.
+            if isinstance(s.get("extract_funnel"), dict) and s["extract_funnel"]:
+                e["last_extract_funnel"] = s["extract_funnel"]
             delta = s.get("delta") if isinstance(s.get("delta"), dict) else None
             if delta is not None:
                 e["last_delta"] = delta
