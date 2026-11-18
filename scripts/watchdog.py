@@ -23,18 +23,24 @@ _IS_WIN = os.name == "nt"
 # raises ValueError, so _spawn() crashed on its FIRST call -- killing the watchdog
 # on 07-11 and leaving the daily research cycle unscheduled (forward clocks frozen)
 # and run_alerts un-ticked (pager silent) for 11.5 days.
-_PYW = (_ROOT / ".venv" / "Scripts" / "pythonw.exe") if _IS_WIN \
+_PYW = (
+    (_ROOT / ".venv" / "Scripts" / "pythonw.exe")
+    if _IS_WIN
     else (_ROOT / ".venv" / "bin" / "python")
-_PY = (_ROOT / ".venv" / "Scripts" / "python.exe") if _IS_WIN \
+)
+_PY = (
+    (_ROOT / ".venv" / "Scripts" / "python.exe")
+    if _IS_WIN
     else (_ROOT / ".venv" / "bin" / "python")
+)
 _HB = _ROOT / "data" / "executor_heartbeat"
 _CC_HB = _ROOT / "data" / "cashcarry_exec_heartbeat"
 _LIQ_HB = _ROOT / "data" / "liquidation_heartbeat"
 _TUN_HB = _ROOT / "data" / "tunnel_heartbeat"
 _DM_HB = _ROOT / "data" / "deadman_heartbeat"
 _WD_LOG = _ROOT / "data" / "watchdog.log"
-_WD_LOG_CAP = 8_000_000                      # bytes; nothing else rotates this file
-_DETACHED = 0x00000008 | 0x08000000          # DETACHED_PROCESS | CREATE_NO_WINDOW
+_WD_LOG_CAP = 8_000_000  # bytes; nothing else rotates this file
+_DETACHED = 0x00000008 | 0x08000000  # DETACHED_PROCESS | CREATE_NO_WINDOW
 
 
 #: BANNED-UNIVERSE ARMS (GAP REGISTER #150, LAWS §1). The MT5/Fusion mandate of 2026-08-18
@@ -86,7 +92,7 @@ def _fresh(p: Path, max_sec: float) -> bool:
         return False
 
 
-_UNITS = {                                   # script -> the systemd unit that owns it on the VPS
+_UNITS = {  # script -> the systemd unit that owns it on the VPS
     # run_cashcarry_executor.py and liquidation_listener.py were removed 2026-09-05 (universe
     # mandate) along with their scripts. Their units may still exist on the box; that is an OPS
     # cleanup, and leaving the mapping here would not help -- `_systemd_owns` is only consulted
@@ -113,24 +119,36 @@ def _systemd_owns(script: str) -> bool:
     """
     unit = _UNITS.get(script)
     if not unit:
-        return False                          # no unit (laptop / new script) -> watchdog owns it
+        return False  # no unit (laptop / new script) -> watchdog owns it
     try:
-        pid = subprocess.run(["systemctl", "show", "-p", "MainPID", "--value", unit],
-                             capture_output=True, text=True, timeout=10, check=False).stdout.strip()
+        pid = subprocess.run(
+            ["systemctl", "show", "-p", "MainPID", "--value", unit],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        ).stdout.strip()
     except (OSError, subprocess.SubprocessError):
-        return False                          # cannot tell -> fall through to the backstop
+        return False  # cannot tell -> fall through to the backstop
     return bool(pid) and pid != "0" and Path(f"/proc/{pid}").exists()
 
 
 def _spawn(args: list[str], label: str) -> None:
     if args and _systemd_owns(args[0]):
-        print(f"watchdog: {label} is systemd-owned and live -- NOT spawning a duplicate "
-              f"(a second instance would orphan the book; the unit's Restart= owns recovery)")
+        print(
+            f"watchdog: {label} is systemd-owned and live -- NOT spawning a duplicate "
+            f"(a second instance would orphan the book; the unit's Restart= owns recovery)"
+        )
         return
     _kw = {"creationflags": _DETACHED} if _IS_WIN else {"start_new_session": True}
-    subprocess.Popen([str(_PYW), *args], cwd=str(_ROOT),
-                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, **_kw)
+    subprocess.Popen(
+        [str(_PYW), *args],
+        cwd=str(_ROOT),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        **_kw,
+    )
     print(f"watchdog: (re)started {label}")
 
 
@@ -155,13 +173,20 @@ def _run_logged(args: list[str], label: str, timeout: float, *, keep_stdout: boo
     error, anything on stderr) are unconditional.
     """
     try:
-        r = subprocess.run([str(_PY), *args], cwd=str(_ROOT), timeout=timeout,
-                           capture_output=True, text=True, check=False)
+        r = subprocess.run(
+            [str(_PY), *args],
+            cwd=str(_ROOT),
+            timeout=timeout,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         rc, out, err = r.returncode, (r.stdout or "").strip(), (r.stderr or "").strip()
     except subprocess.TimeoutExpired as e:
         # e.stdout/.stderr are bytes-or-None here, unlike the text=True success path.
         def _dec(v: object) -> str:
             return v.decode("utf-8", "replace").strip() if isinstance(v, bytes) else str(v or "")
+
         rc, out, err = None, _dec(e.stdout), f"TIMEOUT after {timeout:.0f}s: {_dec(e.stderr)}"
     except (OSError, subprocess.SubprocessError) as e:
         rc, out, err = None, "", f"{type(e).__name__}: {e}"
@@ -190,11 +215,11 @@ def _append_log(lines: list[str]) -> None:
             with _WD_LOG.open("rb") as fh:
                 fh.seek(-(_WD_LOG_CAP // 2), 2)
                 tail = fh.read()
-            _WD_LOG.write_bytes(tail.split(b"\n", 1)[-1])   # drop the partial leading line
+            _WD_LOG.write_bytes(tail.split(b"\n", 1)[-1])  # drop the partial leading line
         with _WD_LOG.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(lines) + "\n")
     except OSError:
-        pass                                  # logging must never break the tick it is logging
+        pass  # logging must never break the tick it is logging
 
 
 def _reap_deadman() -> None:
@@ -210,6 +235,7 @@ def _reap_deadman() -> None:
         import os
 
         import psutil
+
         mode = marker.read_text("utf-8").strip()
         keep = {os.getpid()}
         with contextlib.suppress(Exception):
@@ -250,6 +276,7 @@ def main() -> None:
         import os
 
         import psutil
+
         keep = {os.getpid()}
         with contextlib.suppress(Exception):
             keep |= {p.pid for p in psutil.Process(os.getpid()).parents()}
@@ -259,7 +286,7 @@ def main() -> None:
                 if p.info["pid"] in keep or not (p.info["name"] or "").lower().startswith("python"):
                     continue
                 cmd = " ".join(p.info["cmdline"] or [])
-                if "watchdog" in cmd:                       # never reap a watchdog sibling
+                if "watchdog" in cmd:  # never reap a watchdog sibling
                     continue
                 p.kill()
                 n += 1
@@ -269,15 +296,11 @@ def main() -> None:
         return
     _reap_deadman()
     if not _port_up(8080):
-        # --require-token IS NOT OPTIONAL HERE (measured 2026-09-24). A cloudflared quick tunnel
-        # reaches this origin over 127.0.0.1, so without the flag the loopback exemption in
-        # serve_dashboard._authorised() trusts every request arriving from the public internet and
-        # the page publishes live equity, open positions and P&L to anyone holding the hostname.
-        # The scheduled task MT5-DeskDashboard passes it; this respawn did not, so any crash of the
-        # dashboard silently swapped the gated server for an ungated one behind a live tunnel --
-        # the supervisor re-opening exactly the hole the server it supervises exists to close.
-        # (--host is left at serve_dashboard's own 0.0.0.0 default rather than repeated here.)
-        _spawn(["scripts/serve_dashboard.py", "--port", "8080", "--require-token"], "dashboard")
+        # NO TOKEN (principal, 2026-11-18, after being warned): the dashboard is served ungated on
+        # the box's own fixed address, the same flags as the scheduled task MT5-DeskDashboard, so a
+        # respawn here never swaps in a different server. It is read-only, serves web/ only, and a
+        # request runs nothing. A public tunnel in front of it is retired (see below).
+        _spawn(["scripts/serve_dashboard.py", "--port", "8080", "--no-auth"], "dashboard")
         acted.append("dashboard")
     # `_banned_universe_block()` is still called: it is the fence that REFUSES to start anything
     # trading the retired universe, and tests/scripts/test_watchdog_banned_universe.py pins it.
@@ -304,12 +327,8 @@ def main() -> None:
         # the crypto dashboard this tunnel published is retired and the cloudflared ingress was
         # emptied; opening a public tunnel to it is an outward-facing act with nothing behind it.
         refused.append(f"public-tunnel ({blocked})")
-    elif not _fresh(_TUN_HB, 120):
-        # ngrok if configured (permanent-ish), else cloudflared quick-tunnel
-        tun = "scripts/run_ngrok.py" if (_ROOT / "data" / "secrets" / "ngrok.json").exists() \
-            else "scripts/run_tunnel.py"
-        _spawn([tun], "public-tunnel")
-        acted.append("tunnel")
+    # THE RANDOM QUICK TUNNEL IS RETIRED (principal, 2026-11-18): its hostname changed on every
+    # restart, so it is never respawned here; the dashboard's permanent address is the box's own.
     # recompute dynamic leverage (cheap) so executor + dashboard use fresh growth-optimal sizing,
     # then refresh the molded headline feed (reads JSON + one futures call).
     _run_logged(["scripts/run_leverage_opt.py"], "leverage-opt", 60)
