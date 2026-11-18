@@ -242,8 +242,23 @@ def _markout() -> None:
         "n_deals": m.n_deals, "attributed_deals": m.attributed_deals,
         "attributed_share": m.attributed_share,
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
+        "median_slip_r": m.median_slip_r,
         "edge_share": m.edge_share, "why": m.why,
+        # PER SLEEVE AND PER SYMBOL (2026-11-11). A book mean cannot say which sleeve's fills
+        # cost it, nor tell a sleeve that loses money from one whose fills lose it.
+        "sign": "positive slip = filled worse than asked",
+        "by_sleeve": m.by_sleeve, "by_symbol": m.by_symbol,
+        "risk_basis": {b: sum(1 for r in m.rows if r.get("risk_basis") == b)
+                       for b in sorted({str(r.get("risk_basis")) for r in m.rows})},
     }, indent=2), encoding="utf-8")
+    # PER ACCOUNT (idea pass p11, rebuilt 2026-11-14). markout.json is MIXED whenever the ledger
+    # holds more than one account; MARKOUT_V2.json measures each account on its own. Fail-soft:
+    # a broken v2 never costs the legacy report or the chain below.
+    try:
+        from research import markout_v2
+        markout_v2.main([])
+    except Exception as exc:  # noqa: BLE001 -- a report leg, never fatal
+        dlog(f"  markout_v2 skipped: {type(exc).__name__}")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
     # the share of all deals that have one. The programme's "no semantic breaks" property is
@@ -418,6 +433,10 @@ def _proposers() -> None:
                  # control-room regime at a time, purged walk-forward as the kill, survivors
                  # donated as family `regime_split` to the same gauntlet.
                  "regime_split_miner",
+                 # REGIME DISAGREEMENT (ROMAN-0806, 2026-11-11): our own regime systems (EWMA,
+                 # GARCH, HMM, Kalman, BOCPD, control room) vote; where they agree or split
+                 # gates every price-only family, donated as `regime_disagreement`.
+                 "regime_disagreement_miner",
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
@@ -562,7 +581,7 @@ def _research_memory() -> None:
 
 
 def _futures_curves() -> None:
-    """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
+    """Write the curve collector's record. Yahoo is REFUSED on terms, so it opens no socket."""
     import fetch_futures_curves
 
     rc = fetch_futures_curves.main([])
@@ -1414,6 +1433,7 @@ class ChainLock:
         self.error = ""
         self.waited_s = 0.0
         self.unlocked_steps: list[str] = []
+        self.reclaimed_from: dict[str, object] | None = None
         self._started: float | None = None
         self._at = ""
 
@@ -1437,10 +1457,40 @@ class ChainLock:
                 self.state = "contended"
             return False
         self.handle, self.state, self.error = fh, "held", ""
+        self._note_reclaim()
         self._started = _process_start(os.getpid())
         self._at = datetime.now(UTC).isoformat(timespec="seconds")
         self._write_owner()
         return True
+
+    def _note_reclaim(self) -> None:
+        """Name the holder this chain took the lock over from, when that holder died holding it.
+
+        A chain that exits cleanly removes its owner sidecar (`close`). One killed -- MT5-Daily
+        at its PT10H ExecutionTimeLimit, 2026-11-11 07:50Z, pid 21524 -- leaves the sidecar
+        and its stamp's `chain_lock: held` behind, and two readers in one day took that for a
+        live lock. The OS lock itself died with the process (we just acquired it), so nothing
+        is reclaimed by force here: this only says, in the log and in the stamp, WHO held it,
+        since when and when it last made progress, so a dead holder is never read as alive."""
+        try:
+            doc = json.loads(_owner_path().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if not isinstance(doc, dict):
+            return
+        try:
+            pid = int(doc.get("pid") or 0)
+        except (TypeError, ValueError):
+            pid = 0
+        if pid <= 0 or pid == os.getpid():
+            return
+        self.reclaimed_from = {"pid": pid, "at": doc.get("at"),
+                               "last_progress": doc.get("last_progress"),
+                               "create_time": doc.get("create_time"),
+                               "reclaimed_at": datetime.now(UTC).isoformat(timespec="seconds")}
+        dlog(f"chain lock RECLAIMED from dead holder pid {pid} (held since {doc.get('at')}, "
+             f"last progress {doc.get('last_progress') or 'never recorded'}); the OS released "
+             f"it when that process ended without closing it")
 
     def _write_owner(self, last_progress: str | None = None) -> None:
         doc: dict[str, object] = {"pid": os.getpid(), "create_time": self._started,
@@ -1486,6 +1536,12 @@ class ChainLock:
             rec["error"] = self.error[:300]
         if self.unlocked_steps:
             rec["unlocked_steps"] = list(self.unlocked_steps)
+        if self.state == "held" and self._at:
+            # WHEN, so a reader can age a `held` record against the owner's heartbeat instead
+            # of taking a killed chain's last write for a live lock (2026-11-11).
+            rec["since"] = self._at
+        if self.reclaimed_from:
+            rec["reclaimed_from"] = dict(self.reclaimed_from)
         return rec
 
     def close(self) -> None:
