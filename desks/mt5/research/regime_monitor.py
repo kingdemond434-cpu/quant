@@ -27,6 +27,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -106,8 +113,8 @@ def _read_live(path: Path) -> tuple[dict[str, list[float]], dict[str, list[float
 def _read_shadow_ledgers(shadow_dir: Path) -> dict[str, list[float]]:
     """reports/shadow/ledger_<SYM>_<window>.json -> 'SYM|window' -> r_multiples (time order)."""
     out: dict[str, list[float]] = {}
-    for p in sorted(shadow_dir.glob("ledger_*.json")):
-        stem = p.stem[len("ledger_"):]
+    for p in _fl.iter_ledgers(shadow_dir):
+        stem = _fl.label_of(p)
         sym, _, window = stem.partition("_")
         if not window:
             continue

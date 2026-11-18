@@ -138,6 +138,19 @@ def desk(tmp_path, monkeypatch):
                         ("PROPOSALS", tmp_path / "axis_proposals.jsonl"),
                         ("EXTENSIONS", tmp_path / "axis_registry_extensions.json")):
         monkeypatch.setattr(ap, name, value)
+    # THE CELL DOOR AND THE LAKE, KEPT IN tmp_path. A real run now converts measured axes into
+    # cells (`cells_from_results`), so the donation door, its ledger, the canonical registry and
+    # the lake frame the conditioner family reads must all be pointed away from the desk's own.
+    from research import axis_ingest as ai
+    from research import family_donation as fdn
+    from research import proposer_common as pc
+    monkeypatch.setattr(ai, "LAKE_DIR", tmp_path / "lake")
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(fdn, "DONATION_LEDGERS", tmp_path / "ledgers")
+    monkeypatch.setattr(pc, "_record_in_registry", lambda *a, **k: None)
+    monkeypatch.setattr(pc, "_preregister",
+                        lambda source, cands: {"preregistered": 0, "failed": 0, "already": 0,
+                                               "reasons": {}, "failures": []})
     ap._BARS.clear()
     ap._CACHE.clear()
     return tmp_path
@@ -373,6 +386,13 @@ def test_cli_dry_run_writes_nothing_and_a_real_run_writes_all_three(desk, capsys
 
     assert ap.main(["--symbols", "5", "--budget-s", "120"]) == 0
     report = json.loads((desk / "AXIS_PROPOSER.json").read_text("utf-8"))
+    # THE MEASURED AXES BECAME CELLS: the Q3 correlate on the ECB axis is minted as
+    # exogenous_conditioner cells on the lake frame, donated one contract per trial family.
+    donation = report["cells"]["donation"]
+    assert report["cells"]["offered"] > 0
+    assert donation["tests_run_by_family"].get("exogenous_conditioner", 0) > 0
+    assert (desk / "lake" / "axis_ecb.csv").exists()
+    assert list((desk / "intel" / ap.SEAT).glob("discoveries_*_exogenous_conditioner.json"))
     assert report["rule"] == ap.RULE
     assert set(report) >= {"at", "n_candidates", "tested", "registered", "pending_second_pass",
                            "unmeasured", "rule"}

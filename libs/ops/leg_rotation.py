@@ -163,6 +163,15 @@ ALWAYS_RUN: frozenset[str] = frozenset({
 DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
     "tier_s": (2.5, 4.0),
     "replication_civilization": (2.5, 4.0),
+    # THE CERTIFICATE -> CLOCK CHAIN (principal 2026-11-13: "All certs passed go on forward clocks
+    # immediately and hrly pass monitors if it's staleness"). All three were ordinary rotation
+    # members, and the box's last published FORWARD_ENROLMENT.json was 165.8 h old,
+    # CERTIFICATE_CLOCK_LAW.json 145 h: the repair sweep that gives a clockless certificate its
+    # clock, and the two fences that make a stalled clock loud, waited days for a rotation slot.
+    # Forced from 1 h, hard at 2 h: the census is never older than the 2 h SLA plus one runtime.
+    "forward_enrolment": (1.0, 2.0),
+    "certificate_clock_law": (1.0, 2.0),
+    "clock_accrual": (1.0, 2.0),
 }
 
 #: THE CLOCK IS THE ARTIFACT, NOT THE RUN (Auditor MF1, 2026-11-05). Attendance stamps a leg when
@@ -176,6 +185,9 @@ DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
     "tier_s": (("reports/tier_s/ONLINE_FDR_ROWS.json", "generated_utc"),
                ("data/tier_s/PROMOTION_FREEZE.json", "at")),
     "replication_civilization": (("reports/REPLICATION.json", "at"),),
+    "forward_enrolment": (("reports/FORWARD_ENROLMENT.json", "at"),),
+    "certificate_clock_law": (("reports/CERTIFICATE_CLOCK_LAW.json", "at"),),
+    "clock_accrual": (("reports/CLOCK_ACCRUAL.json", "at"),),
 }
 
 #: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and
@@ -538,15 +550,33 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "why": dec.why,
         "attendance": att.to_json(),
     }
-    out = path or RECORD
-    try:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = out.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-        tmp.replace(out)
-    except OSError as exc:
-        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    # ONE FILE PER PLAN (box read HP3, 2026-11-11). The department residents run this same
+    # cycle under HOURLY_PLAN="dept:<name>" and wrote RECORD too, so the last writer won: a
+    # one-leg "dept:asean" pass at 01:27Z replaced the 162-leg hourly plan of 00:30Z and the
+    # hourly admitted/deferred rows were unauditable. A department plan now writes only its own
+    # LEG_ROTATION.<plan>.json; the hourly plans keep RECORD (the fence's file) and a copy.
+    outs = [path] if path is not None else (
+        [plan_record(dec.plan)] if is_department_plan(dec.plan)
+        else [RECORD, plan_record(dec.plan)])
+    for out in outs:
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            tmp = out.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+            tmp.replace(out)
+        except OSError as exc:
+            doc["write_error"] = f"{type(exc).__name__}: {exc}"
     return doc
+
+
+def is_department_plan(plan: str) -> bool:
+    return str(plan).startswith("dept:")
+
+
+def plan_record(plan: str) -> Path:
+    """reports/LEG_ROTATION.<plan>.json, with the plan name made filename-safe."""
+    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(plan or "unknown"))
+    return RECORD.with_name(f"LEG_ROTATION.{safe}.json")
 
 
 def load_record(path: Path | None = None) -> dict[str, Any]:
