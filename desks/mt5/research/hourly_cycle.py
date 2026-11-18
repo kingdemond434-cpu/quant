@@ -1267,6 +1267,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "research_api_status", "artifact_chain", "residual_queue", "vocabulary_proposer",
     "unseen_frontier", "contradiction_miner",
     "source_registry", "queue_census",
+    # THE TERMS-RECORD GAP (LAWS 5e act 6, Governance 2026-11-17): fetches to hosts with no
+    # reviewed-terms record, measured every pass. Six artifact reads, no network.
+    "terms_record_gap",
     # THE BOOK'S RESIDUAL AND THE GATES' COUNTERFACTUALS (2026-09-30): ledger reads plus a
     # bounded build of the few conditioned cells a BH-corrected finding names; before
     # `residual_queue`, which queues its findings.
@@ -1348,6 +1351,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "tape_deepen", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # the terms-record gap: which fetched hosts have unread terms (act 6)
+                     "terms_record_gap",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
@@ -2310,6 +2315,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # six artifact reads (the world frontier is the largest, ~11 MB) and two report writes
+    "terms_record_gap": 120,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -4589,6 +4596,11 @@ def main() -> None:
     # intel ROI share each source earns (the crawlers read it as their crawl budget).
     srg = _costed("source_registry", lambda: _producer("source_registry",
                                                         "research/source_registry.py"))
+    # THE TERMS-RECORD GAP (LAWS 5e act 6, Governance ruling 2026-11-17 23:50Z): how many of the
+    # desk's fetches went to hosts whose terms it has not read, and the ranked backfill queue of
+    # those hosts. A measurement of a defect, never a permission; it changes no fetch path.
+    trg = _costed("terms_record_gap", lambda: _producer(
+        "terms_record_gap", "research/terms_record_gap.py", "--once"))
     # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
@@ -6577,7 +6589,8 @@ def main() -> None:
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
-                    "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
+                    "source_registry": srg, "terms_record_gap": trg,
+                    "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
                     "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,

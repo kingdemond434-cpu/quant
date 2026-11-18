@@ -1,0 +1,1719 @@
+{
+ "_doc": "Reviewed terms per host (LAWS 5e act 6). A host with no record has terms the desk has not read: under the Governance ruling of 2026-11-17 that host is refused, and the gap is measured each pass in reports/TERMS_RECORD_GAP.json. Seeded ONLY from evidence the repository held; each evidence row cites the object it was copied from. Add a record when a session reads a host's terms (URL, date, verbatim clause); never infer one.",
+ "schema": {
+  "verdicts": [
+   "permits",
+   "forbids",
+   "unreadable"
+  ],
+  "quote_kinds": [
+   "verbatim_terms",
+   "recorded_reading",
+   "not_readable_note"
+  ],
+  "precedence": "forbids > unreadable > permits (fail closed)"
+ },
+ "seeded_by": "scripts/seed_terms_records.py",
+ "counts": {
+  "records": 61,
+  "permits": 24,
+  "forbids": 25,
+  "unreadable": 12
+ },
+ "records": {
+  "antad.net": {
+   "host": "antad.net",
+   "verdict": "forbids",
+   "terms_url": "https://antad.net/admin/wp-content/uploads/2024/10/terminos-y-condiciones-de-uso.pdf",
+   "date_read": "2026-09-30",
+   "quote": "El usuario sólo podrá imprimir y/o copiar cualquier información contenida o publicada en el sitio web www.antad.net exclusivamente para uso personal",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://antad.net/admin/wp-content/uploads/2024/10/terminos-y-condiciones-de-uso.pdf",
+     "date_read": "2026-09-30",
+     "quote": "El usuario sólo podrá imprimir y/o copiar cualquier información contenida o publicada en el sitio web www.antad.net exclusivamente para uso personal",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_antad_sss",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "archive.org": {
+   "host": "archive.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-14",
+   "quote": "archive.org: terms refuse automated collection (ruling 2026-11-14)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-14",
+     "quote": "archive.org: terms refuse automated collection (ruling 2026-11-14)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "archive.org"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research purposes only",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "archive.org"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and research purposes only (source=wayback, terms=scholarship_research_only)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "archive.org"
+     }
+    }
+   ]
+  },
+  "baidu.com": {
+   "host": "baidu.com",
+   "verdict": "unreadable",
+   "terms_url": "https://www.baidu.com/duty/",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: baidu.com/duty is robots.txt-disallowed; huiyan footer links only '使用百度前必读')",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.baidu.com/duty/",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: baidu.com/duty is robots.txt-disallowed; huiyan footer links only '使用百度前必读')",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_baidu_migration",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "banxico.org.mx": {
+   "host": "banxico.org.mx",
+   "verdict": "permits",
+   "terms_url": "https://www.banxico.org.mx/footer-es/salvedad-politicas-uso-banco-.html",
+   "date_read": "2026-11-11",
+   "quote": "otorga su autorización de manera general para que la información que en ejercicio de sus atribuciones dé a conocer en ella pueda reproducirse o utilizarse. Las personas que reproduzcan esta información deberán mencionar la fuente de la cual se obtuvo, así como la dirección de Internet del Banco de México",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.banxico.org.mx/footer-es/salvedad-politicas-uso-banco-.html",
+     "date_read": "2026-11-11",
+     "quote": "otorga su autorización de manera general para que la información que en ejercicio de sus atribuciones dé a conocer en ella pueda reproducirse o utilizarse. Las personas que reproduzcan esta información deberán mencionar la fuente de la cual se obtuvo, así como la dirección de Internet del Banco de México",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_banxico_sie",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "bigquant.com": {
+   "host": "bigquant.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的自动数据收集或提取工具' without BigQuant's prior written consent",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的自动数据收集或提取工具' without BigQuant's prior written consent",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "bigquant.com"
+     }
+    }
+   ]
+  },
+  "bkm.com.tr": {
+   "host": "bkm.com.tr",
+   "verdict": "forbids",
+   "terms_url": "https://bkm.com.tr/bkm/yasal-uyari/",
+   "date_read": "2026-09-30",
+   "quote": "Burada mevcut olan bilgiler BKM'nin önceden yazılı izni alınmaksızın kısmen veya tamamen kopya edilemez, dağıtılamaz, kiralanamaz, çoğaltılamaz",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://bkm.com.tr/bkm/yasal-uyari/",
+     "date_read": "2026-09-30",
+     "quote": "Burada mevcut olan bilgiler BKM'nin önceden yazılı izni alınmaksızın kısmen veya tamamen kopya edilemez, dağıtılamaz, kiralanamaz, çoğaltılamaz",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "tr_bkm_card",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "busanpa.com": {
+   "host": "busanpa.com",
+   "verdict": "unreadable",
+   "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
+   "date_read": "2026-09-30",
+   "quote": "(not found: no 저작권정책 or 공공누리 mark in the served HTML of the home page or of the current statistics page; old board URL 404)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
+     "date_read": "2026-09-30",
+     "quote": "(not found: no 저작권정책 or 공공누리 mark in the served HTML of the home page or of the current statistics page; old board URL 404)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_busan_port",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "cboe.com": {
+   "host": "cboe.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Cboe: terms refuse automated collection of its data",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Cboe: terms refuse automated collection of its data",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "cboe.com"
+     }
+    }
+   ]
+  },
+  "census.gov": {
+   "host": "census.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+   "date_read": "2026-09-30",
+   "quote": "You may use the Census Bureau API to develop a service or service to search, display, analyze, retrieve, view and otherwise 'get' information from Census Bureau data.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+     "date_read": "2026-09-30",
+     "quote": "You may use the Census Bureau API to develop a service or service to search, display, analyze, retrieve, view and otherwise 'get' information from Census Bureau data.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "us_census_marts_ex_autos",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "cffex.com.cn": {
+   "host": "cffex.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.cffex.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: robots.txt could not be fetched or parsed from the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.cffex.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: robots.txt could not be fetched or parsed from the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 22,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_cffex"
+     }
+    }
+   ]
+  },
+  "cftc.gov": {
+   "host": "cftc.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+   "date_read": "2026-10-06",
+   "quote": "Government information at the CFTC website is in the public domain. Public domain information may be freely distributed and copied, but it is requested that in any subsequent use the CFTC be given appropriate acknowledgement.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+     "date_read": "2026-10-06",
+     "quote": "Government information at the CFTC website is in the public domain. Public domain information may be freely distributed and copied, but it is requested that in any subsequent use the CFTC be given appropriate acknowledgement.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 3,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "cielo.com.br": {
+   "host": "cielo.com.br",
+   "verdict": "forbids",
+   "terms_url": "https://www.cielo.com.br/termos-condicoes-de-uso/",
+   "date_read": "2026-09-30",
+   "quote": "todo o Conteúdo é de propriedade exclusiva da CIELO [...] sendo vedada sua cópia, reprodução, ou qualquer outro tipo de utilização",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.cielo.com.br/termos-condicoes-de-uso/",
+     "date_read": "2026-09-30",
+     "quote": "todo o Conteúdo é de propriedade exclusiva da CIELO [...] sendo vedada sua cópia, reprodução, ou qualquer outro tipo de utilização",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "br_cielo_icva",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "comtrade.un.org": {
+   "host": "comtrade.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtrade.un.org"
+     }
+    }
+   ]
+  },
+  "comtradeapi.un.org": {
+   "host": "comtradeapi.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtradeapi.un.org"
+     }
+    }
+   ]
+  },
+  "comtradeplus.un.org": {
+   "host": "comtradeplus.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtradeplus.un.org"
+     }
+    }
+   ]
+  },
+  "czce.com.cn": {
+   "host": "czce.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.czce.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: the legal-statement link returned HTTP 412 to the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.czce.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: the legal-statement link returned HTTP 412 to the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 20,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_czce"
+     }
+    }
+   ]
+  },
+  "dadosabertos.bcb.gov.br": {
+   "host": "dadosabertos.bcb.gov.br",
+   "verdict": "permits",
+   "terms_url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+   "date_read": "2026-09-30",
+   "quote": "Open Data Commons Open Database License (ODbL)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+     "date_read": "2026-09-30",
+     "quote": "Open Data Commons Open Database License (ODbL)",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "br_bcb_payments",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data-api.ecb.europa.eu": {
+   "host": "data-api.ecb.europa.eu",
+   "verdict": "permits",
+   "terms_url": "https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html",
+   "date_read": "2026-10-06",
+   "quote": "The ESCB subscribes to a policy of free access and free reuse regarding its publicly released statistics, subject to the conditions described below. [...] All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. \"Source: ECB statistics.\") and that the statistics (including metadata) are not modified.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html",
+     "date_read": "2026-10-06",
+     "quote": "The ESCB subscribes to a policy of free access and free reuse regarding its publicly released statistics, subject to the conditions described below. [...] All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. \"Source: ECB statistics.\") and that the statistics (including metadata) are not modified.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 1,
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+     "date_read": "2026-10-06",
+     "quote": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. All statistical data, metadata, content of web pages or other dissemination tools, official publications and other documents published on its website, with the exceptions listed below, can be reused without any payment or written licence provided that: - the source is indicated as Eurostat;",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 2,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.bis.org": {
+   "host": "data.bis.org",
+   "verdict": "permits",
+   "terms_url": "https://data.bis.org/help/legal",
+   "date_read": "2026-10-06",
+   "quote": "The use of the statistics is unrestricted, provided that: [...] if the statistics are reproduced, the BIS must be cited in your publication or product as the source of the statistics [...] if the statistics will be used in a commercial publication or product, their inclusion in the publication or product will not result in any additional charge to subscribers or other users",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.bis.org/help/legal",
+     "date_read": "2026-10-06",
+     "quote": "The use of the statistics is unrestricted, provided that: [...] if the statistics are reproduced, the BIS must be cited in your publication or product as the source of the statistics [...] if the statistics will be used in a commercial publication or product, their inclusion in the publication or product will not result in any additional charge to subscribers or other users",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 0,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.go.kr": {
+   "host": "data.go.kr",
+   "verdict": "permits",
+   "terms_url": "https://www.data.go.kr/data/15059131/openapi.do",
+   "date_read": "2026-09-30",
+   "quote": "이용허락범위 제한 없음",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15059131/openapi.do",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_mof_container_teu",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15157901/openapi.do",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_exports_early",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15059638/openapi.do?recommendDataYn=Y",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위: 이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_bok_card_spend",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/3070263/openapi.do?recommendDataYn=Y",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_kobis_box_office",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.gov.hk": {
+   "host": "data.gov.hk",
+   "verdict": "permits",
+   "terms_url": "https://data.gov.hk/en/terms-and-conditions",
+   "date_read": "2026-09-30",
+   "quote": "You are allowed to browse, download, distribute, reproduce, hyperlink to, and print the Data for both commercial and non-commercial purposes on a free-of-charge basis",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.gov.hk/en/terms-and-conditions",
+     "date_read": "2026-09-30",
+     "quote": "You are allowed to browse, download, distribute, reproduce, hyperlink to, and print the Data for both commercial and non-commercial purposes on a free-of-charge basis",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "hk_immd_passenger",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.seoul.go.kr": {
+   "host": "data.seoul.go.kr",
+   "verdict": "permits",
+   "terms_url": "https://data.seoul.go.kr/dataList/OA-12914/S/1/datasetView.do",
+   "date_read": "2026-09-30",
+   "quote": "공공누리 1유형 : 출처표시 (상업적 이용 및 변경 가능)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.seoul.go.kr/dataList/OA-12914/S/1/datasetView.do",
+     "date_read": "2026-09-30",
+     "quote": "공공누리 1유형 : 출처표시 (상업적 이용 및 변경 가능)",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_seoul_subway",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "dataspace.copernicus.eu": {
+   "host": "dataspace.copernicus.eu",
+   "verdict": "permits",
+   "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+   "date_read": "2026-10-06",
+   "quote": "The access and use of Copernicus Sentinel data is available on a free, full and open basis through the Copernicus Data Space Ecosystem and shall be governed by the Legal Notice on the use of Copernicus Sentinel Data and Service",
+   "recorded_by": "libs/ops/token_refresh.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+     "date_read": "2026-10-06",
+     "quote": "The access and use of Copernicus Sentinel data is available on a free, full and open basis through the Copernicus Data Space Ecosystem and shall be governed by the Legal Notice on the use of Copernicus Sentinel Data and Service",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "libs/ops/token_refresh.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cdse",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "dce.com.cn": {
+   "host": "dce.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.dce.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: robots.txt fetch timed out from the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.dce.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: robots.txt fetch timed out from the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 19,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_dce"
+     }
+    }
+   ]
+  },
+  "dukascopy.com": {
+   "host": "dukascopy.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Dukascopy terms of use refuse bots and commercial use of its data (data_universe_map.json dukascopy_bi5_datafeed_VERDICT)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Dukascopy terms of use refuse bots and commercial use of its data (data_universe_map.json dukascopy_bi5_datafeed_VERDICT)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "dukascopy.com"
+     }
+    }
+   ]
+  },
+  "dumps.wikimedia.org": {
+   "host": "dumps.wikimedia.org",
+   "verdict": "permits",
+   "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+   "date_read": "2026-09-30",
+   "quote": "All Analytics datasets are available under the Creative Commons CC0 dedication.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+     "date_read": "2026-09-30",
+     "quote": "All Analytics datasets are available under the Creative Commons CC0 dedication.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "wiki_asia_attention",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "e-stat.go.jp": {
+   "host": "e-stat.go.jp",
+   "verdict": "permits",
+   "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+   "date_read": "2026-09-30",
+   "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+     "date_read": "2026-09-30",
+     "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_estat_immigration",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+     "date_read": "2026-09-30",
+     "quote": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / 本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際...と互換性があり",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_tokyo_cpi",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "earthdata.nasa.gov": {
+   "host": "earthdata.nasa.gov",
+   "verdict": "permits",
+   "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+   "date_read": "2026-09-30",
+   "quote": "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-use-fully-and-without-restrictions",
+     "date_read": "2026-09-30",
+     "quote": "NASA's data policy ensures that all NASA data are available fully, openly, and without restrictions.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_firms_industrial",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "eia.gov": {
+   "host": "eia.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+   "date_read": "2026-10-06",
+   "quote": "U.S. government publications are in the public domain and are not subject to copyright protection. [...] You may use and/or distribute any of our data, files, databases, reports, graphs, charts, and other information products that are on our website or that you receive through our email distribution service.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+     "date_read": "2026-10-06",
+     "quote": "U.S. government publications are in the public domain and are not subject to copyright protection. [...] You may use and/or distribute any of our data, files, databases, reports, graphs, charts, and other information products that are on our website or that you receive through our email distribution service.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 4,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "gdeltproject.org": {
+   "host": "gdeltproject.org",
+   "verdict": "permits",
+   "terms_url": "https://gdeltproject.org/about.html",
+   "date_read": "2026-09-30",
+   "quote": "all datasets released by the GDELT Project are available for unlimited and unrestricted use for any academic, commercial, or governmental use of any kind without fee.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://gdeltproject.org/about.html",
+     "date_read": "2026-09-30",
+     "quote": "all datasets released by the GDELT Project are available for unlimited and unrestricted use for any academic, commercial, or governmental use of any kind without fee.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "gdelt_events_country",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "genport.newsystock.com": {
+   "host": "genport.newsystock.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "genport.newsystock.com"
+     }
+    }
+   ]
+  },
+  "gfex.com.cn": {
+   "host": "gfex.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.gfex.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: TLS hostname mismatch on the sandbox's robots.txt fetch)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.gfex.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: TLS hostname mismatch on the sandbox's robots.txt fetch)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 21,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_gfex"
+     }
+    }
+   ]
+  },
+  "googlevideo.com": {
+   "host": "googlevideo.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+   "recorded_by": "libs/research/public_strategy_hunter.py TERMS_REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "googlevideo.com"
+     }
+    }
+   ]
+  },
+  "home.treasury.gov": {
+   "host": "home.treasury.gov",
+   "verdict": "unreadable",
+   "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+   "date_read": "2026-10-06",
+   "quote": "(none found: the site-policies page and the linked privacy policy carry no copyright, public-domain or reuse sentence, and /subfooter/site-policies-and-notices/copyright-and-use-information returns 404)",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+     "date_read": "2026-10-06",
+     "quote": "(none found: the site-policies page and the linked privacy policy carry no copyright, public-domain or reuse sentence, and /subfooter/site-policies-and-notices/copyright-and-use-information returns 404)",
+     "quote_kind": "not_readable_note",
+     "source_label": "HELD",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 5,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "imf.org": {
+   "host": "imf.org",
+   "verdict": "permits",
+   "terms_url": "https://www.imf.org/external/terms.htm",
+   "date_read": "2026-09-30",
+   "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "date_read": "2026-09-30",
+     "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "imf_portwatch_ports",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.imf.org/external/terms.htm",
+     "date_read": "2026-09-30",
+     "quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "imf_portwatch_chokepoints",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "ine.cn": {
+   "host": "ine.cn",
+   "verdict": "unreadable",
+   "terms_url": "https://www.ine.cn/disclaimer/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: the host serves a slider-captcha WAF page to the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.ine.cn/disclaimer/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: the host serves a slider-captcha WAF page to the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 18,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_ine"
+     }
+    }
+   ]
+  },
+  "inegi.org.mx": {
+   "host": "inegi.org.mx",
+   "verdict": "permits",
+   "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+   "date_read": "2026-09-30",
+   "quote": "Puede explotar comercialmente la información, utilizándola como insumo para generar otros productos o servicios. / Debe otorgar los créditos correspondientes al INEGI como autor",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+     "date_read": "2026-09-30",
+     "quote": "Puede explotar comercialmente la información, utilizándola como insumo para generar otros productos o servicios. / Debe otorgar los créditos correspondientes al INEGI como autor",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_inegi_emec",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "jnto.go.jp": {
+   "host": "jnto.go.jp",
+   "verdict": "forbids",
+   "terms_url": "https://www.jnto.go.jp/site-info/site-policy.html",
+   "date_read": "2026-09-30",
+   "quote": "掲載著作物をJNTOをはじめとする権利者に無断で転⽤、複製、送信、放送、配布、貸与、翻訳、変造する事は著作権侵害となり、法的に罰せられることがあります。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.jnto.go.jp/site-info/site-policy.html",
+     "date_read": "2026-09-30",
+     "quote": "掲載著作物をJNTOをはじめとする権利者に無断で転⽤、複製、送信、放送、配布、貸与、翻訳、変造する事は著作権侵害となり、法的に罰せられることがあります。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_jnto_arrivals",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "jpx-jquants.com": {
+   "host": "jpx-jquants.com",
+   "verdict": "permits",
+   "terms_url": "https://jpx-jquants.com/termsofservice",
+   "date_read": "2026-10-06",
+   "quote": "第8条(利用目的) 本サービス及び本データの利用目的(以下「本利用目的」といいます。)は、登録ユーザーのみによる私的使用の目的に限ります。",
+   "recorded_by": "libs/ops/token_refresh.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://jpx-jquants.com/termsofservice",
+     "date_read": "2026-10-06",
+     "quote": "第8条(利用目的) 本サービス及び本データの利用目的(以下「本利用目的」といいます。)は、登録ユーザーのみによる私的使用の目的に限ります。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed_private_use",
+     "source": {
+      "file": "libs/ops/token_refresh.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jquants",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "mct.gov.cn": {
+   "host": "mct.gov.cn",
+   "verdict": "forbids",
+   "terms_url": "https://www.mct.gov.cn/dbdh/mzsm/201902/t20190202_837199.html",
+   "date_read": "2026-09-30",
+   "quote": "任何单位和个人未经文化和旅游部信息中心书面授权不得转载、链接、转贴或以其他方式复制发表。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.mct.gov.cn/dbdh/mzsm/201902/t20190202_837199.html",
+     "date_read": "2026-09-30",
+     "quote": "任何单位和个人未经文化和旅游部信息中心书面授权不得转载、链接、转贴或以其他方式复制发表。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_holiday_spend",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "meti.go.jp": {
+   "host": "meti.go.jp",
+   "verdict": "permits",
+   "terms_url": "https://www.meti.go.jp/main/rules.html",
+   "date_read": "2026-09-30",
+   "quote": "経済産業省ウェブサイトで掲載・発信している情報の著作権は、特記されていない限り経済産業省に帰属し、権利表記の記載がない限り『公共データ利用規約（第1.0版）』（PDL1.0）に準拠した利用条件の下で、利用することができます。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.meti.go.jp/main/rules.html",
+     "date_read": "2026-09-30",
+     "quote": "経済産業省ウェブサイトで掲載・発信している情報の著作権は、特記されていない限り経済産業省に帰属し、権利表記の記載がない限り『公共データ利用規約（第1.0版）』（PDL1.0）に準拠した利用条件の下で、利用することができます。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_meti_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "newsystock.com": {
+   "host": "newsystock.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "newsystock.com"
+     }
+    }
+   ]
+  },
+  "npci.org.in": {
+   "host": "npci.org.in",
+   "verdict": "unreadable",
+   "terms_url": "https://www.npci.org.in/disclaimer",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: the disclaimer page is robots.txt-disallowed)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.npci.org.in/disclaimer",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: the disclaimer page is robots.txt-disallowed)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_npci_upi",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "payinc.co.za": {
+   "host": "payinc.co.za",
+   "verdict": "unreadable",
+   "terms_url": "https://www.payinc.co.za/",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: JS-only site, no terms link in served HTML)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.payinc.co.za/",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: JS-only site, no terms link in served HTML)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "za_beti",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "piaofang.maoyan.com": {
+   "host": "piaofang.maoyan.com",
+   "verdict": "unreadable",
+   "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_maoyan_box_office",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "pib.gov.in": {
+   "host": "pib.gov.in",
+   "verdict": "permits",
+   "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+   "date_read": "2026-09-30",
+   "quote": "Material featured on this website may be reproduced free of charge and there is no need for any prior approval for using the content. [...] Wherever the material is being published or issued to others, the source must be prominently acknowledged.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+     "date_read": "2026-09-30",
+     "quote": "Material featured on this website may be reproduced free of charge and there is no need for any prior approval for using the content. [...] Wherever the material is being published or issued to others, the source must be prominently acknowledged.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_gold_imports",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "reddit.com": {
+   "host": "reddit.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+   "recorded_by": "desks/mt5/data/credential_registry.json vars (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+     "quote_kind": "recorded_reading",
+     "source_label": "machine_use_allowed=false",
+     "source": {
+      "file": "desks/mt5/data/credential_registry.json",
+      "object": "vars",
+      "index": 1,
+      "field": "terms",
+      "row_id": "REDDIT_CLIENT_ID"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation",
+     "quote_kind": "recorded_reading",
+     "source_label": "machine_use_allowed=false",
+     "source": {
+      "file": "desks/mt5/data/credential_registry.json",
+      "object": "vars",
+      "index": 2,
+      "field": "terms",
+      "row_id": "REDDIT_SECRET"
+     }
+    }
+   ]
+  },
+  "sge.com.cn": {
+   "host": "sge.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "https://www.sge.com.cn/",
+   "date_read": "2026-09-30",
+   "quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.sge.com.cn/",
+     "date_read": "2026-09-30",
+     "quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_sge_premium",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "shfe.com.cn": {
+   "host": "shfe.com.cn",
+   "verdict": "forbids",
+   "terms_url": "https://www.shfe.com.cn/disclaimer/",
+   "date_read": "2026-10-06",
+   "quote": "在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、下载本网站的内容。 / 未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.shfe.com.cn/disclaimer/",
+     "date_read": "2026-10-06",
+     "quote": "在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、下载本网站的内容。 / 未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 17,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_shfe"
+     }
+    }
+   ]
+  },
+  "singstat.gov.sg": {
+   "host": "singstat.gov.sg",
+   "verdict": "permits",
+   "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+   "date_read": "2026-09-30",
+   "quote": "Use of Datasets provided in this application is subject to the terms of the Singapore Open Data Licence on the use of statistical data from this Website (\"ODL\").",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+     "date_read": "2026-09-30",
+     "quote": "Use of Datasets provided in this application is subject to the terms of the Singapore Open Data Licence on the use of statistical data from this Website (\"ODL\").",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "sg_port_throughput",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "smartcities.data.gov.in": {
+   "host": "smartcities.data.gov.in",
+   "verdict": "permits",
+   "terms_url": "https://smartcities.data.gov.in/government-open-data-license-india",
+   "date_read": "2026-09-30",
+   "quote": "all users are provided a worldwide, royalty-free, non-exclusive license to use, adapt, publish (either in original, or in adapted and/or derivative forms), translate, display, add value, and create derivative works (including products and services), for all lawful commercial and non-commercial purposes",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://smartcities.data.gov.in/government-open-data-license-india",
+     "date_read": "2026-09-30",
+     "quote": "all users are provided a worldwide, royalty-free, non-exclusive license to use, adapt, publish (either in original, or in adapted and/or derivative forms), translate, display, add value, and create derivative works (including products and services), for all lawful commercial and non-commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_dgi_iip_consumer",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "stats.gov.cn": {
+   "host": "stats.gov.cn",
+   "verdict": "permits",
+   "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "date_read": "2026-09-30",
+   "quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / 欢迎转载或引用本网所载内容，但以下内容除外：a.本网所指向的非本网内容的相关链接内容；b.已作出不得转载或未经许可不得转载声明的内容；c.未由本网署名或本网引用、转载的他人作品等非本网版权内容；d.本网中特有的图形、标志、页面风格、编排方式、程序等；e.本网中必须具有特别授权或具有注册用户资格方可知晓的内容；f.其他法律不允许或本网认为不适合转载的内容。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+     "date_read": "2026-09-30",
+     "quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / 欢迎转载或引用本网所载内容，但以下内容除外：a.本网所指向的非本网内容的相关链接内容；b.已作出不得转载或未经许可不得转载声明的内容；c.未由本网署名或本网引用、转载的他人作品等非本网版权内容；d.本网中特有的图形、标志、页面风格、编排方式、程序等；e.本网中必须具有特别授权或具有注册用户资格方可知晓的内容；f.其他法律不允许或本网认为不适合转载的内容。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_nbs_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "stlouisfed.org": {
+   "host": "stlouisfed.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "stlouisfed.org"
+     }
+    }
+   ]
+  },
+  "theice.com": {
+   "host": "theice.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "ICE: terms refuse automated collection of its data",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "ICE: terms refuse automated collection of its data",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "theice.com"
+     }
+    }
+   ]
+  },
+  "tuik.gov.tr": {
+   "host": "tuik.gov.tr",
+   "verdict": "permits",
+   "terms_url": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+   "date_read": "2026-09-30",
+   "quote": "İnternet sitemizden, yayınlarımızdan veya veri tabanlarımızdan elde edilen verilerin, kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+     "date_read": "2026-09-30",
+     "quote": "İnternet sitemizden, yayınlarımızdan veya veri tabanlarımızdan elde edilen verilerin, kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "tr_tuik_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "yahoo.com": {
+   "host": "yahoo.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Yahoo terms s2(d)(9) refuse automated collection without express prior permission",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Yahoo terms s2(d)(9) refuse automated collection without express prior permission",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "yahoo.com"
+     }
+    }
+   ]
+  },
+  "yahooapis.com": {
+   "host": "yahooapis.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Yahoo: the same terms cover its API host",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Yahoo: the same terms cover its API host",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "yahooapis.com"
+     }
+    }
+   ]
+  },
+  "youtu.be": {
+   "host": "youtu.be",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtu.be"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "youtu.be"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "youtu.be"
+     }
+    }
+   ]
+  },
+  "youtube-nocookie.com": {
+   "host": "youtube-nocookie.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtube-nocookie.com"
+     }
+    }
+   ]
+  },
+  "youtube.com": {
+   "host": "youtube.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access; the trading box never contacts it",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "youtube.com"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/research/public_strategy_hunter.py",
+      "object": "TERMS_REFUSED_HOSTS",
+      "key": "youtube.com"
+     }
+    },
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "no-YouTube standing rule (2026-11-13) and YouTube's own terms",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "youtube.com"
+     }
+    }
+   ]
+  },
+  "ytimg.com": {
+   "host": "ytimg.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "YouTube: terms refuse automated access",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "YouTube: terms refuse automated access",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "ytimg.com"
+     }
+    }
+   ]
+  }
+ },
+ "not_seeded": [
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "cn_mot_port_weekly",
+    "field": "terms_quote"
+   },
+   "host": "www.mot.gov.cn",
+   "source_label": "to_confirm",
+   "why": "terms were read but the desk's own reading is 'to_confirm' (not settled): neither permits, forbids nor unreadable, so no verdict is invented"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "za_statssa_retail",
+    "field": "terms_quote"
+   },
+   "host": "nationalgovernment.co.za",
+   "why": "a third-party MIRROR of the publisher's notice; a mirror cannot confirm the publisher's own terms"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_tsa_throughput",
+    "field": "terms_quote"
+   },
+   "host": "catalog.data.gov",
+   "why": "a dataset licence shown on a catalogue page; not the terms of the host the data is fetched from"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_oi_card_spend",
+    "field": "terms_quote"
+   },
+   "host": "github.com",
+   "why": "a repository README licenses that repository's data; it is not github.com's own terms for automated access"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_oi_google_mobility",
+    "field": "terms_quote"
+   },
+   "host": "github.com",
+   "why": "a repository README licenses that repository's data; it is not github.com's own terms for automated access"
+  },
+  {
+   "source": {
+    "file": "libs/ops/token_refresh.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "myfxbook",
+    "field": "terms_quote"
+   },
+   "host": "www.myfxbook.com",
+   "source_label": "to_confirm",
+   "why": "terms were read but the desk's own reading is 'to_confirm' (not settled): neither permits, forbids nor unreadable, so no verdict is invented"
+  }
+ ]
+}
