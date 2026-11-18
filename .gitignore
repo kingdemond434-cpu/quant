@@ -636,3 +636,6 @@ desks/mt5/data/donation_ledgers/
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# Box self-repair reports (2026-11-18), published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/DEEP_FOREST_REGIONS.json
+!desks/mt5/reports/FAULT_QUEUE.json
