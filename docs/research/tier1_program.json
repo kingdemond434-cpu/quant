@@ -9286,6 +9286,22 @@
    "landed": [
     "cluster judge wired 2026-10-14"
    ]
+  },
+  {
+   "id": "FIRM1",
+   "item": "Firm lanes: every research role of a top quant shop (RenTech, Two Sigma, D. E. Shaw, WorldQuant, High-Flyer, Citadel pods, Asian retail communities) as an always-on lane, with a shared signal library, per-lane queues, an asset x horizon grid, online-FDR replay of certificates, shadow pod stops and a weekly careers scout",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:firm_lanes",
+   "artifact": "desks/mt5/reports/FIRM_LANES.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/firm_lanes/; the Hourly pass reads FIRM_LANES.json",
+   "evidence": [
+    "desks/mt5/research/firm_lanes.py:1-25 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
