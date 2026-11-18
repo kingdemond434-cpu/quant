@@ -103,6 +103,12 @@ def _write_axis(path: Path, doc: dict[str, Any], n: int) -> dict[str, Any]:
         return {"written": False, "write_state": "EMPTY_REFUSED_OVERWRITE", "preserved_n": prev,
                 "why": (f"this pass returned 0 and the file on disk holds {prev}; an empty fetch "
                         "never overwrites a populated axis")}
+    if doc.get("never_fewer_series") and 0 < n < prev:
+        # An axis whose series are one joint state (usd_liquidity: reserves = assets - TGA - RRP)
+        # declares it: a partial pass would replace a whole state with half of one.
+        return {"written": False, "write_state": "FEWER_REFUSED_OVERWRITE", "preserved_n": prev,
+                "why": (f"this pass landed {n} series and the file on disk holds {prev}; the axis "
+                        "declares never_fewer_series")}
     # ATOMIC. A direct `write_text` that dies mid-stream truncates the axis, which is the same
     # loss by a slower route. `os.replace` is atomic on NTFS and POSIX alike.
     tmp = path.with_suffix(path.suffix + ".tmp")

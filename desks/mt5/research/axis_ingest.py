@@ -647,7 +647,7 @@ def main(argv: list[str] | None = None) -> int:
         for k, v in (doc.get("series") or {}).items():
             print(f"    {k:<14} {v['n']:>6} pts  {v['first']} -> {v['last']}  {v['what'][:42]}")
         for k, v in (doc.get("failed") or {}).items():
-            print(f"    {k:<14} FAILED {v[:58]}")
+            print(f"    {k:<14} FAILED {str(v)[:58]}")
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0

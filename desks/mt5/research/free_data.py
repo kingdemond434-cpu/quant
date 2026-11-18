@@ -122,8 +122,11 @@ def fred_series(series_id: str, start: str = "2010-01-01",
     FRED_REFUSALS[series_id] = {"series": series_id, "status": FRED_STATUS, "why": why,
                                 "vintage": vintage, "missed_growth": FRED_MISSED_GROWTH}
     print(f"free_data: {series_id} {FRED_STATUS} ({why}); FRED not contacted", flush=True)
+    # DBnomics is a refused host only if `refused_hosts` says so (and its import failing refuses
+    # everything). Its terms were read 2026-11-18 (`data_alternates.DBNOMICS_TERMS`), and the
+    # route reads the API host's robots.txt before its first request.
     if _refusal("https://api.db.nomics.world/v22/"):
-        return None             # the mirror's own terms cannot be read here: fail closed
+        return None
     return _fred_alternate(series_id, vintage, f"fred_{series_id}_{vintage or 'cur'}_alt")
 
 

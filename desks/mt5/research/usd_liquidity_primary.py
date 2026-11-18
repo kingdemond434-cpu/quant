@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import functools
 import io
 import json
 import os
@@ -62,7 +63,9 @@ from libs.data.refused_hosts import refusal  # noqa: E402 -- no list, no module:
 
 AXIS = "usd_liquidity"
 OUT = DESK / "data" / "axes" / f"{AXIS}.json"
-UA = "quant-usd-liquidity/1 (+https://github.com/kingdemond434-cpu/quant)"
+#: The desk's one honest User-Agent (libs/data/honest_ua.HONEST_UA on #1320): it names what the
+#: client is and that it honours robots.txt, and carries no person, repository or contact.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 TIMEOUT = 40
 START = "2018-04-02"            # SOFR's first publication; every series is read from here
 HARD_STOP = frozenset({401, 403, 429, 451})
@@ -124,6 +127,35 @@ def _stamp(d: date, at: time) -> str:
     return datetime.combine(d, at, tzinfo=UTC).isoformat(timespec="seconds")
 
 
+#: SIFMA's recommended full closes that are not federal holidays and have no rule: national days
+#: of mourning. Good Friday is added by rule below. A SIFMA EARLY close still publishes SOFR, and
+#: Good Friday is sometimes only an early close (when payrolls fall on it): treating it as a
+#: non-publication day then stamps the print one business day LATE, which costs a day of
+#: freshness and never looks ahead.
+SIFMA_EXTRA_CLOSES: frozenset[date] = frozenset({date(2018, 12, 5)})
+
+
+@functools.lru_cache(maxsize=1)
+def _sifma_offset() -> Any:
+    import pandas as pd
+    from pandas.tseries.holiday import GoodFriday, USFederalHolidayCalendar
+    from pandas.tseries.offsets import CustomBusinessDay
+
+    lo, hi = pd.Timestamp("2000-01-01"), pd.Timestamp("2100-12-31")
+    hol = list(USFederalHolidayCalendar().holidays(start=lo, end=hi))
+    hol += list(GoodFriday.dates(lo, hi))
+    hol += [pd.Timestamp(x) for x in SIFMA_EXTRA_CLOSES]
+    return CustomBusinessDay(holidays=hol)
+
+
+def _next_sifma_day(d: date) -> date:
+    """The next SIFMA business day after `d`: federal holidays, Good Friday and the listed
+    mourning closes skipped. SOFR is published on SIFMA business days, not federal ones."""
+    import pandas as pd
+    out: date = (pd.Timestamp(d) + _sifma_offset()).date()
+    return out
+
+
 def available_h41(d: date) -> str:
     return _stamp(_next_business_day(d), time(21, 30))
 
@@ -133,7 +165,7 @@ def available_rrp(d: date) -> str:
 
 
 def available_sofr(d: date) -> str:
-    return _stamp(_next_business_day(d), time(13, 30))
+    return _stamp(_next_sifma_day(d), time(13, 30))
 
 
 def available_dts(d: date) -> str:
@@ -434,6 +466,9 @@ def ingest(door: Door | None = None, start: str = START) -> dict[str, Any]:
             "source": "primary publishers (Fed Board H.4.1, NY Fed, Treasury FiscalData)",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            # Every writer (this module's `write` and axis_ingest_all's `_write_axis`) refuses a
+            # pass that landed fewer series than the file holds.
+            "never_fewer_series": True,
             "replaces": "data/axes/fred.json for WRESBAL, WTREGEN, RRPONTSYD, SOFR (BACKLOG 609)",
             "clock": ("event_time = the date the value describes; available_time = knowable_at "
                       "= the publisher's release time, on the conservative side"),

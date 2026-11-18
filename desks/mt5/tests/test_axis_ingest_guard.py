@@ -157,3 +157,17 @@ def test_the_fred_axis_is_refused_on_terms_and_opens_no_socket(monkeypatch, tmp_
     assert ai.main(["--axis", "fred", "--apply"]) == 0
     assert held.read_text(encoding="utf-8") == '{"n_series": 7}'
 
+
+
+def test_an_axis_declaring_never_fewer_series_refuses_a_partial_pass(tmp_path: Path) -> None:
+    target = tmp_path / "usd_liquidity.json"
+    full = {"axis": "usd_liquidity", "n_series": 4, "never_fewer_series": True}
+    half = {"axis": "usd_liquidity", "n_series": 2, "never_fewer_series": True}
+    target.write_text(json.dumps(full), encoding="utf-8")
+    out = A._write_axis(target, half, 2)
+    assert out["written"] is False and out["write_state"] == "FEWER_REFUSED_OVERWRITE"
+    assert json.loads(target.read_text(encoding="utf-8"))["n_series"] == 4
+    # An axis that does not declare it keeps the old rule: only an empty pass is refused.
+    plain = tmp_path / "macro_state.json"
+    plain.write_text(json.dumps(POPULATED), encoding="utf-8")
+    assert A._write_axis(plain, {**POPULATED, "n_series": 3}, 3)["written"] is True

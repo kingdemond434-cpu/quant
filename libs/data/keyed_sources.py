@@ -247,6 +247,11 @@ class SameHostAuthRedirect(urllib.request.HTTPRedirectHandler):
 
     def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
                          newurl: str) -> Any:
+        # A 30x INTO A HOST WHOSE TERMS REFUSE US IS NOT FOLLOWED (audit of the FRED refusal):
+        # the guard runs on the first URL only, so without this a redirect walks past it. An
+        # import failure raises here too, which refuses the hop: fail closed.
+        from libs.data.refused_hosts import guard
+        guard(newurl)
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is None:
             return None

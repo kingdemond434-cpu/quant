@@ -40,6 +40,60 @@ def _get(url: str) -> bytes:
         return r.read()
 
 
+#: DBNOMICS TERMS READING (2026-11-18, read from db.nomics.world/about and
+#: docs.db.nomics.world/legal-terms, web-api and faq). Quoted: "Data distributed by DBnomics is
+#: subject to the same license and terms of use as its original source provider."; "The DBnomics
+#: aggregated datasets are distributed under the Open Database License (ODbL)."; the Web API
+#: "can be used by any programming language able to make HTTP requests" and "allows to automate
+#: the process"; it is "designed to query focused data ... not to download large datasets", with
+#: a cache recommended. No key, no account, no prohibition on automated access was found.
+#: Every mapped series below is a BLS or Federal Reserve Board (FED) original, US federal works,
+#: never a FRED-provider copy, so FRED's refusal does not travel through the mirror. The API
+#: host's robots.txt was NOT read from the cloud (its proxy refused the host), so it is read on
+#: every pass before the first request: unread robots are not permission.
+DBNOMICS_TERMS = {
+    "status": "READ",
+    "read_on": "2026-11-18",
+    "sources": ["https://db.nomics.world/about", "https://docs.db.nomics.world/legal-terms/",
+                "https://docs.db.nomics.world/web-api/", "https://docs.db.nomics.world/faq/"],
+    "providers_mapped": ["BLS", "FED"],
+    "conditions": ("per-provider licence (BLS/FRB: US federal works); ODbL on aggregates; "
+                   "focused queries only, cached"),
+}
+_ROBOTS: dict[str, object] = {}
+
+
+def _robots_allows(url: str) -> None:
+    """robots.txt for the URL's host, read once per process. 404/410 is an empty file; any other
+    non-2xx, an unreadable file or a disallow raises: unread robots are not permission."""
+    import urllib.error
+    import urllib.parse
+    import urllib.robotparser
+    parts = urllib.parse.urlsplit(url)
+    key = f"{parts.scheme}://{parts.netloc.lower()}"
+    if key not in _ROBOTS:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            req = urllib.request.Request(f"{key}/robots.txt", headers=UA)
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                rp.parse(r.read().decode("utf-8", "replace").splitlines())
+            _ROBOTS[key] = rp
+        except urllib.error.HTTPError as e:
+            if e.code in (404, 410):
+                rp.parse([])
+                _ROBOTS[key] = rp
+            else:
+                _ROBOTS[key] = f"robots.txt answered HTTP {e.code}"
+        except Exception as e:  # any failure to read is a refusal
+            _ROBOTS[key] = f"robots.txt unreadable ({type(e).__name__})"
+    rules = _ROBOTS[key]
+    if isinstance(rules, str):
+        raise PermissionError(f"{rules}; unread robots are not permission")
+    assert isinstance(rules, urllib.robotparser.RobotFileParser)
+    if not rules.can_fetch(UA["User-Agent"], url):
+        raise PermissionError("robots.txt disallows this path for our agent")
+
+
 # --------------------------------------------------------------------------- macro series
 #: FRED id -> DBnomics (provider, dataset, series) mirror. The ids differ per provider, so the
 #: map is explicit -- a wrong guess would splice a DIFFERENT series under a familiar name.
@@ -76,6 +130,7 @@ def dbnomics_route(series_id: str) -> dict[str, float]:
     if triple is None:
         raise LookupError(f"no DBnomics mirror mapped for {series_id}")
     prov, dataset, sid = triple
+    _robots_allows("https://api.db.nomics.world/v22/series")
     raw = _get(f"https://api.db.nomics.world/v22/series/{prov}/{dataset}/{sid}"
                f"?observations=1&format=json")
     doc = json.loads(raw)

@@ -56,14 +56,24 @@ def curl(url: str, timeout: int = 90) -> bytes:
     """Some hosts (FRED, Treasury) serve curl but hang urllib -- TLS fingerprint blocking.
     Verified 2026-07-21: curl instant, urllib timed out twice on the same URL."""
     import subprocess
-    guard(url)
-    r = subprocess.run(
-        ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
-         "-A", "Mozilla/5.0 (research; solo quant desk)", url],
-        capture_output=True, timeout=timeout + 15)
-    if r.returncode != 0 or not r.stdout:
-        raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
-    return r.stdout
+    # REDIRECTS ARE FOLLOWED HERE, ONE HOP AT A TIME, so every hop passes the refused-hosts
+    # guard: `curl -L` would walk a 30x into a refused host unseen (audit of the FRED refusal).
+    marker = b"\n@@redirect@@"
+    for _ in range(6):
+        guard(url)
+        r = subprocess.run(
+            ["curl", "-sS", "--compressed", "--max-time", str(timeout),
+             "-A", "Mozilla/5.0 (research; solo quant desk)",
+             "-w", "\n@@redirect@@%{redirect_url}", url],
+            capture_output=True, timeout=timeout + 15)
+        body, _, nxt = r.stdout.rpartition(marker)
+        if r.returncode == 0 and nxt.strip():
+            url = nxt.decode("utf-8", "replace").strip()
+            continue
+        if r.returncode != 0 or not body:
+            raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
+        return body
+    raise RuntimeError("curl: more than 5 redirects")
 
 
 def fetch(url: str, timeout: int = 60) -> bytes:
