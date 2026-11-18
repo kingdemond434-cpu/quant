@@ -182,3 +182,23 @@ def test_every_bare_script_fallback_sends_the_same_name() -> None:
                 drift[p.relative_to(ROOT).as_posix()] = lit
     assert count > 0
     assert not drift, f"fallback literals that differ from libs.data.honest_ua.HONEST_UA: {drift}"
+
+
+def test_the_youtube_data_api_is_refused_by_path_not_the_whole_google_host():
+    """Governance 2026-11-18: the box never contacts YouTube, API included; the rest of
+    googleapis.com stays reachable."""
+    from libs.data.refused_hosts import refusal
+    assert refusal("https://www.googleapis.com/youtube/v3/search?q=x")
+    assert refusal("https://youtube.googleapis.com/youtube/v3/search")
+    assert refusal("https://www.googleapis.com/books/v1/volumes") is None
+
+
+def test_youtube_miner_opens_no_connection_even_with_a_key(monkeypatch):
+    import sys
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from side_channels import youtube_miner as ym
+    calls = []
+    monkeypatch.setattr(ym, "API_KEY", "present-but-unused")
+    monkeypatch.setattr(ym.requests, "get", lambda *a, **k: calls.append(a))
+    assert ym._search_api("gold breakout") == []
+    assert calls == []

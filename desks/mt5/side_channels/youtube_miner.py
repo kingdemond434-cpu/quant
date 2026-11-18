@@ -95,7 +95,16 @@ def _extract_patterns(text: str) -> list[str]:
 
 
 def _search_api(query: str, max_results: int = 10) -> list[dict]:
-    """Search YouTube via Data API v3."""
+    """REFUSED: the YouTube Data API is never called, key or no key.
+
+    Governance ruling 2026-11-18: the box never contacts YouTube, and that covers its API as well
+    as the site (libs/data/refused_hosts.REFUSED_PATHS). The ground is REFUSED, not idle.
+    missed_growth: YouTube trader-strategy discoveries are forgone until a lawful route exists;
+    the other side-channel miners cover the same strategy vocabulary.
+    """
+    from libs.data.refused_hosts import refusal
+    if refusal(SEARCH_URL):
+        return []
     if not API_KEY:
         return []
     params = {

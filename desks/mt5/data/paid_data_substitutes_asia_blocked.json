@@ -69,7 +69,7 @@
    "blocked_because": "MOT disclaimer bars commercial verbatim reprint but grants no reuse licence; no robots.txt",
    "unsubstituted_because": "candidate(s) imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
-   "evidence": "imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "evidence": ""
   },
   {
    "class": "gold premium",
@@ -125,7 +125,7 @@
    "blocked_because": "BPA copyright policy / KOGL mark not found; robots.txt only names Yeti and Googlebot",
    "unsubstituted_because": "candidate(s) kr_mof_container_teu, imf_portwatch_ports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "kr_mof_container_teu: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED); imf_portwatch_ports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
-   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do; imf_portwatch_ports: https://www.imf.org/external/terms.htm"
+   "evidence": "kr_mof_container_teu: https://www.data.go.kr/data/15059131/openapi.do"
   },
   {
    "class": "card",
@@ -266,37 +266,6 @@
     "cn_baidu_migration",
     "cn_holiday_spend",
     "cn_maoyan_box_office"
-   ]
-  },
-  {
-   "id": "asia_imf_portwatch_ports",
-   "name": "IMF PortWatch daily port calls",
-   "publisher_type": "statistics_office_or_central_bank",
-   "url": "https://www.imf.org/external/terms.htm",
-   "endpoint": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Ports_Data/FeatureServer/0/query",
-   "classes": [
-    "macro"
-   ],
-   "region": "GLOBAL",
-   "frequency": "daily",
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "en"
-   ],
-   "instruments": [
-    "AUDUSD"
-   ],
-   "participant_structure": "physical_flow",
-   "licence": "IMF PortWatch open data (free, attribution required)",
-   "terms": "confirmed",
-   "terms_quote": "Users may download, extract, copy, create derivative works, publish, distribute, and sell Data obtained from IMF Sites, including for commercial purposes",
-   "credit": "Source: International Monetary Fund (IMF PortWatch).",
-   "consumer": "desks/mt5/research/alt_proxies.py",
-   "owner": "asia_gap_thread",
-   "substitutes_for_blocked": [
-    "cn_mot_port_weekly",
-    "kr_busan_port"
    ]
   },
   {

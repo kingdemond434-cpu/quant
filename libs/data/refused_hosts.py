@@ -36,6 +36,13 @@ REFUSED_HOSTS: dict[str, str] = {
     "theice.com": "ICE: terms refuse automated collection of its data",
 }
 
+#: (domain, path prefix) -> why. A refusal of one service on a shared host, so the rest of the
+#: host is not caught: googleapis.com serves many Google APIs and only /youtube/ is refused.
+
+REFUSED_PATHS: dict[tuple[str, str], str] = {
+    ("googleapis.com", "/youtube/"): ("YouTube Data API: refused with the site -- the box never "
+                                      "contacts YouTube (Governance ruling 2026-11-18)"),
+}
 
 def host_of(url: str) -> str | None:
     """The lowercased hostname, or None when the URL does not parse to one."""
@@ -53,6 +60,13 @@ def refusal(url: str) -> str | None:
         return "the URL does not parse to a host, so its terms cannot be read"
     for domain, why in REFUSED_HOSTS.items():
         if host == domain or host.endswith("." + domain):
+            return why
+    try:
+        path = urlsplit(str(url or "")).path or "/"
+    except ValueError:
+        return "the URL does not parse to a path, so its terms cannot be read"
+    for (domain, prefix), why in REFUSED_PATHS.items():
+        if (host == domain or host.endswith("." + domain)) and path.startswith(prefix):
             return why
     return None
 

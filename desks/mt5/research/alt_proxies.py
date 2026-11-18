@@ -2718,9 +2718,14 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
-    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
-    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
-                                  "ArcGIS API"),
+    # PENDING RECONCILIATION (Governance 2026-11-18): the law reads these terms as unreconciled
+    # and LAWS 5e act 6 treats that as unread; excluded from the 11-17 owner attestation.
+    # Refused until the quoted clause is recorded. missed_growth: port-call and chokepoint
+    # transit boards go dark until then; queued near the top of the terms backfill.
+    "imf_portwatch_ports": ("to_confirm", "IMF PortWatch: terms pending reconciliation; "
+                            "unread until the quoted clause is recorded"),
+    "imf_portwatch_chokepoints": ("to_confirm", "IMF PortWatch: terms pending reconciliation; "
+                                  "unread until the quoted clause is recorded"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
