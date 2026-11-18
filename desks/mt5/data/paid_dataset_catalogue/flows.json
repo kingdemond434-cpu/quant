@@ -135,7 +135,8 @@
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
    "public_sample": {
-    "status": "TERMS_BLOCKED",
+    "status": "HEADLINE_ONLY",
+    "terms_status": "TERMS_BLOCKED",
     "kind": "public_origin",
     "url": "https://www.hkex.com.hk/Market-Data/Statistics/Consolidated-Reports/HKEX-Monthly-Market-Highlights?sc_lang=en",
     "endpoints": [],

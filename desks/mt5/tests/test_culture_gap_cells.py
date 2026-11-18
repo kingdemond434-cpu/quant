@@ -208,7 +208,12 @@ def test_the_roster_is_keyless_and_every_row_is_a_forest_ground() -> None:
         assert row["auth"] == "none" and row["url"].startswith("https://"), sid
         assert row["fetcher"] == "owned" and row["consumer"].endswith("culture_gap_cells.py")
         assert mc.forbidden_venue(row["url"]) is None, sid
-        assert row["url"] in grounds, sid
+        # A row whose publisher's terms refuse automated access stays as the fact's citation
+        # and is never a forest ground (libs/data/refused_hosts.py).
+        if row.get("terms_status") == "TERMS_BLOCKED":
+            assert row["url"] not in grounds, sid
+        else:
+            assert row["url"] in grounds, sid
         assert row["verified"] in ("page", "secondary", "url_only", CC.UNMEASURED), sid
 
 
