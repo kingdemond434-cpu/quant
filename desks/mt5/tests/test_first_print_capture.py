@@ -27,6 +27,7 @@ def _grounds(tmp: Path) -> Path:
     real = json.loads(fpc.GROUNDS.read_text("utf-8"))
     keep = {"bls_payrolls", "bls_unemployment_rate", "census_retail_sales"}
     real["series"] = [r for r in real["series"] if r["id"] in keep]
+    tmp.mkdir(parents=True, exist_ok=True)
     p = tmp / "grounds.json"
     p.write_text(json.dumps(real), "utf-8")
     return p
@@ -156,7 +157,7 @@ def test_first_print_rows_carry_release_and_availability(tmp_path: Path) -> None
 def test_key_goes_to_v2_body_only_and_keyless_falls_back_to_v1(tmp_path: Path) -> None:
     fake = Fake()
     doc = _run(tmp_path, fake, T1)
-    bls = [(u, d) for u, d in fake.calls if "timeseries" in u]
+    bls = [(u, d) for u, d in fake.calls if "publicAPI" in u]
     assert bls[0][0] == fpc.BLS_V2 and json.loads(bls[0][1] or b"{}")["registrationkey"] == KEY
     assert doc["publishers"]["bls"]["key_found_under"] == "BLS_API_KEY"
     assert KEY not in (tmp_path / "report.json").read_text("utf-8")
@@ -164,7 +165,7 @@ def test_key_goes_to_v2_body_only_and_keyless_falls_back_to_v1(tmp_path: Path) -
 
     fake2 = Fake()
     doc2 = _run(tmp_path / "k", fake2, T1, key="")
-    bls2 = [(u, d) for u, d in fake2.calls if "timeseries" in u]
+    bls2 = [(u, d) for u, d in fake2.calls if "publicAPI" in u]
     assert bls2[0][0] == fpc.BLS_V1 and "registrationkey" not in json.loads(bls2[0][1] or b"{}")
     assert doc2["publishers"]["bls"]["api"] == "v1_keyless"
     # keyless: the next pass inside 110 minutes does not spend another of v1's 25 a day
@@ -188,7 +189,7 @@ def test_429_holds_the_publisher_for_a_day(tmp_path: Path) -> None:
     fake = Fake()
     doc = _run(tmp_path, fake, T1 + timedelta(hours=2))
     assert doc["publishers"]["bls"]["status"] == "HELD"
-    assert not any("timeseries" in u for u, _ in fake.calls)
+    assert not any("publicAPI" in u for u, _ in fake.calls)
 
 
 def test_api_error_is_recorded_not_stored(tmp_path: Path) -> None:
