@@ -446,6 +446,12 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     if refused:                       # an off-limits ground: no request, no key, ever
         rec.update({"status": OFF_STATUS, "why": refused})
         return rec
+    # A ROW WHOSE TERMS OR ROBOTS REFUSE, OR WERE NEVER READ, IS NOT FETCHED (2026-11-18): the
+    # roster names the reading on the row; unread is not permission.
+    terms = str(src.get("terms") or "")
+    if terms in ("TERMS_BLOCKED", "TERMS_UNREAD", "ROBOTS_BLOCKED"):
+        rec.update({"status": OFF_STATUS, "why": f"{terms}: {src.get('terms_note') or ''}"})
+        return rec
 
     # PAID DATA IS REFUSED BY RULE, NOT BY THE ACCIDENT OF A MISSING KEY (audit of #201,
     # 2026-10-06): private or paid data stays blocked whatever is set on the box.

@@ -402,14 +402,18 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
     {"name": "MAS weekly S$NEER index level",
      "root": "https://www.mas.gov.sg/statistics/exchange-rates",
      "fields": ("S$NEER index level",),
-     "frequency": "weekly", "publish_utc": "09:00", "lag_days": 7, "licence": "free, public",
+     "frequency": "weekly", "publish_utc": "09:00", "lag_days": 7, "licence":
+         ("TERMS_BLOCKED: MAS Terms of Use refuse reproduction without written "
+          "permission (refused_hosts); never fetched"),
      "why": "the only official read on where the basket sits. It does NOT give the band, so the "
             "position within the band is still an inference -- which is the whole research "
             "problem and is stated here rather than hidden"},
     {"name": "MAS official foreign reserves and net forward position",
      "root": "https://www.mas.gov.sg/statistics/reserve-statistics",
      "fields": ("official foreign reserves", "net forward position", "SDR and IMF positions"),
-     "frequency": "monthly", "publish_utc": "09:00", "lag_days": 30, "licence": "free, public",
+     "frequency": "monthly", "publish_utc": "09:00", "lag_days": 30, "licence":
+         ("TERMS_BLOCKED: MAS Terms of Use refuse reproduction without written "
+          "permission (refused_hosts); never fetched"),
      "why": "an intervention observable, and one of the very few in this region that includes "
             "the FORWARD book rather than spot alone"},
     {"name": "SGX monthly market statistics report",
@@ -429,7 +433,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "root": "https://www.mas.gov.sg/news/monetary-policy-statements",
      "fields": ("the policy sentence", "slope, width and centre language",
                 "the core inflation forecast range"),
-     "frequency": "quarterly", "publish_utc": "00:00", "lag_days": 0, "licence": "free, public",
+     "frequency": "quarterly", "publish_utc": "00:00", "lag_days": 0, "licence":
+         ("TERMS_BLOCKED: MAS Terms of Use refuse reproduction without written "
+          "permission (refused_hosts); never fetched"),
      "why": "the statement's LANGUAGE is the policy variable, because the parameters are not "
             "published; a text feature set is the only way to read the band state at the event"},
     {"name": "Singapore Department of Statistics trade and NODX",
@@ -525,9 +531,9 @@ ABSENT_SOURCE_LAYERS: dict[str, str] = {}
 
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("SG-S1", "MAS and the official statistical system", layer="official",
-         roots=("https://www.mas.gov.sg/news/monetary-policy-statements",
-                "https://www.mas.gov.sg/publications/macroeconomic-review",
-                "https://www.mas.gov.sg/statistics", "https://www.singstat.gov.sg/",
+         # www.mas.gov.sg left the roots 2026-11-18: MAS's Terms of Use refuse reproduction
+         # without written permission (libs/data/refused_hosts.py).
+         roots=("https://www.singstat.gov.sg/",
                 "https://www.mti.gov.sg/", "https://www.mof.gov.sg/singaporebudget"),
          languages=("en",), licence="free, public", access_label="PUBLIC",
          credibility="AUTHORITATIVE", predictive_state="UNTESTED",
@@ -549,8 +555,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "staff reports routinely carry an ESTIMATE of the band parameters MAS itself will "
                "not publish"),
     _src("SG-S3", "academic work on band regimes", layer="academic",
-         roots=("https://www.mas.gov.sg/publications/staff-papers",
-                "https://fass.nus.edu.sg/ecs/research/",
+         roots=("https://fass.nus.edu.sg/ecs/research/",
                 "https://economics.smu.edu.sg/research", "https://www.nber.org/papers"),
          languages=("en",), licence="free, public", access_label="PUBLIC",
          credibility="RELIABLE", predictive_state="UNTESTED",
@@ -613,9 +618,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "the Malaysian and Indonesian story where several SG edges terminate"),
     _src("SG-S8", "the national archive, Hansard and the web archive", layer="archive",
          roots=("https://eresources.nlb.gov.sg/newspapers/",
-                "https://sprs.parl.gov.sg/search/home",
-                "https://www.mas.gov.sg/news?content_type=Monetary%20Policy%20Statements",
-                "https://web.archive.org/web/*/mas.gov.sg*"),
+                "https://sprs.parl.gov.sg/search/home"),
          languages=("en", "zh", "ms"), licence="free, public", access_label="PUBLIC_ARCHIVE",
          credibility="AUTHORITATIVE", predictive_state="NOT_PREDICTIVE",
          queries=("MAS statement archive 2001 slope", "parliamentary question exchange rate policy",

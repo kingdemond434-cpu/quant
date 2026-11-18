@@ -186,7 +186,9 @@
     "XAUUSD"
    ],
    "mechanism": "corporate FX demand imbalance is RMB pressure before it is a price; the offshore rate and Asia-risk FX carry it",
-   "why": "SAFE publishes settlement/sales, cross-border receipts and payments, reserves and BOP -- the positioning and liquidity backdrop behind the fixing"
+   "why": "SAFE publishes settlement/sales, cross-border receipts and payments, reserves and BOP -- the positioning and liquidity backdrop behind the fixing",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "SAFE 法律声明 refuses commercial reproduction (libs/data/refused_hosts.py safe.gov.cn); refused by off_limits before any request"
   },
   {
    "id": "safe_cross_border",
@@ -206,7 +208,9 @@
     "AUDUSD",
     "XAUUSD"
    ],
-   "mechanism": "the payment imbalance leads the flow that moves the offshore rate"
+   "mechanism": "the payment imbalance leads the flow that moves the offshore rate",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "SAFE 法律声明 refuses commercial reproduction (libs/data/refused_hosts.py safe.gov.cn); refused by off_limits before any request"
   },
   {
    "id": "safe_reserves",
@@ -225,7 +229,9 @@
     "XAUUSD",
     "USDCNH"
    ],
-   "mechanism": "official gold accumulation is a persistent, price-insensitive bid; the reserve line is the only public read on it"
+   "mechanism": "official gold accumulation is a persistent, price-insensitive bid; the reserve line is the only public read on it",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "SAFE 法律声明 refuses commercial reproduction (libs/data/refused_hosts.py safe.gov.cn); refused by off_limits before any request"
   },
   {
    "id": "pboc_open_market",
@@ -245,7 +251,9 @@
     "AUDUSD",
     "HK50"
    ],
-   "mechanism": "a liquidity injection or drain sets the funding state that CNH and Asia risk trade off"
+   "mechanism": "a liquidity injection or drain sets the funding state that CNH and Asia risk trade off",
+   "terms": "ROBOTS_BLOCKED",
+   "terms_note": "PBOC robots refuses the root and robots.txt itself (read 2026-11-18); robots fails closed"
   },
   {
    "id": "pboc_survey_stats",
@@ -266,7 +274,9 @@
     "Copper",
     "XAUUSD"
    ],
-   "mechanism": "Chinese credit creation leads the industrial demand that prices the metals complex and the commodity currencies"
+   "mechanism": "Chinese credit creation leads the industrial demand that prices the metals complex and the commodity currencies",
+   "terms": "ROBOTS_BLOCKED",
+   "terms_note": "PBOC robots refuses the root and robots.txt itself (read 2026-11-18); robots fails closed"
   },
   {
    "id": "cfets_fixing",
@@ -689,7 +699,9 @@
     "XAUUSD"
    ],
    "mechanism": "policy rate, JGB operations and the liquidity stance are the level JPY carry prices off; an operation SURPRISE is the event",
-   "why": "roughly 200,000 statistical items, and an official JSON/CSV interface since 2026-02"
+   "why": "roughly 200,000 statistical items, and an official JSON/CSV interface since 2026-02",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "BoJ copyright: commercial copying needs the Bank's prior permission (refused_hosts boj.or.jp); refused by off_limits before any request"
   },
   {
    "id": "mof_japan_flows",
@@ -1661,7 +1673,9 @@
     "USDZAR",
     "EURZAR"
    ],
-   "mechanism": "ZAR is a gold-linked currency and the book holds ZAR sleeves; SARB reserves and the policy rate are the two public series that move it"
+   "mechanism": "ZAR is a gold-linked currency and the book holds ZAR sleeves; SARB reserves and the policy rate are the two public series that move it",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "SARB Disclaimer: no copying in any form without prior written consent (refused_hosts resbank.co.za); refused by off_limits before any request"
   },
   {
    "id": "mql5_ru_community",
@@ -2013,7 +2027,9 @@
     "USDINR",
     "XAUUSD"
    ],
-   "mechanism": "the RBI's weekly reserve line and forward book are the two public series that show whether the central bank is absorbing or supplying dollars; the gold tranche inside reserves is a price-insensitive official bid on the same page"
+   "mechanism": "the RBI's weekly reserve line and forward book are the two public series that show whether the central bank is absorbing or supplying dollars; the gold tranche inside reserves is a price-insensitive official bid on the same page",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "RBI Disclaimer: caching of the contents prohibited, all rights reserved (refused_hosts rbi.org.in); refused by off_limits before any request"
   },
   {
    "id": "rbi_database",
@@ -2032,7 +2048,9 @@
     "USDINR",
     "XAUUSD"
    ],
-   "mechanism": "policy rate, OIS, forward premia and the money market series behind the INR carry that is the whole reason a USDINR position is held or not held"
+   "mechanism": "policy rate, OIS, forward premia and the money market series behind the INR carry that is the whole reason a USDINR position is held or not held",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "RBI Disclaimer: caching of the contents prohibited, all rights reserved (refused_hosts rbi.org.in); refused by off_limits before any request"
   },
   {
    "id": "nsdl_fpi_flows",
@@ -3119,7 +3137,9 @@
     "USDSGD",
     "EURUSD"
    ],
-   "mechanism": "Singapore runs monetary policy THROUGH the exchange rate band, so the MAS statement is a direct, scheduled FX policy event rather than a rate decision that transmits to FX"
+   "mechanism": "Singapore runs monetary policy THROUGH the exchange rate band, so the MAS statement is a direct, scheduled FX policy event rather than a rate decision that transmits to FX",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "MAS Terms of Use: no reproduction without written permission, caching prohibited (refused_hosts www.mas.gov.sg); refused by off_limits before any request"
   },
   {
    "id": "sgx_commodity_oi",
@@ -4005,7 +4025,9 @@
     "USDKRW",
     "KS11"
    ],
-   "mechanism": "the decision and the dissent count in the minutes are a scheduled rate event in an economy whose currency is the Asian risk proxy"
+   "mechanism": "the decision and the dissent count in the minutes are a scheduled rate event in an economy whose currency is the Asian risk proxy",
+   "terms": "TERMS_UNREAD",
+   "terms_note": "BOK: 'All rights reserved'; the copyright policy could be read only to its first sentence (2026-11-18); unread terms are not permission"
   },
   {
    "id": "kr_fss_foreign_flow",
@@ -4141,7 +4163,9 @@
     "EURJPY",
     "JP225"
    ],
-   "mechanism": "the yield-curve and rate decision is the single largest scheduled repricing of the desk's most-traded cross, on a published calendar"
+   "mechanism": "the yield-curve and rate decision is the single largest scheduled repricing of the desk's most-traded cross, on a published calendar",
+   "terms": "TERMS_BLOCKED",
+   "terms_note": "BoJ copyright: commercial copying needs the Bank's prior permission (refused_hosts boj.or.jp); refused by off_limits before any request"
   },
   {
    "id": "jp_estat_cpi",

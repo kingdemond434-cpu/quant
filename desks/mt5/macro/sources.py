@@ -200,8 +200,8 @@ _OFFICIAL_FEEDS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("BLS", "https://www.bls.gov/feed/news_release_all.xml", ("statistics_us",)),
     ("ECB", "https://www.ecb.europa.eu/rss/press.html",
      ("central_bank_decisions", "central_bank_speech_minutes")),
-    ("BOJ", "https://www.boj.or.jp/en/announcements/rss.rdf",
-     ("central_bank_decisions", "central_bank_speech_minutes", "fx_intervention_pegs")),
+    # BOJ removed 2026-11-18: its terms require prior permission for commercial copying
+    # (libs/data/refused_hosts.py boj.or.jp), so the JPY decision feed is a named blind spot.
     ("BOE", "https://www.bankofengland.co.uk/rss/news",
      ("central_bank_decisions", "central_bank_speech_minutes")),
     ("SNB", "https://www.snb.ch/en/node/10532/rss",
@@ -298,7 +298,7 @@ PRICE_DERIVED_DOMAINS: tuple[str, ...] = (
 def default_sources() -> list[RssSource]:
     """The sources this desk can lawfully reach today, with no key and no licence purchase.
 
-    Six first-party central-bank and statistics feeds. That is a narrow slice of `DOMAINS`, and
+    First-party central-bank and statistics feeds. That is a narrow slice of `DOMAINS`, and
     `coverage()` says exactly how narrow rather than letting the ledger imply the world is quiet.
     """
     return [RssSource(source_id=sid, url=url, domains=doms)

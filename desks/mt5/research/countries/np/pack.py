@@ -1042,7 +1042,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                            "of India, Indian customs and the Indian power exchange -- the "
                            "upstream side of every Nepali series",
         layer="official",
-        roots=("https://www.rbi.org.in/", "https://tradestat.commerce.gov.in/",
+        roots=("https://tradestat.commerce.gov.in/",
                "https://www.iexindia.com/"),
         queries=("RBI weekly statistical supplement reserves", "India Nepal trade statistics",
                  "Indian Energy Exchange day ahead price", "भारत नेपाल व्यापार",

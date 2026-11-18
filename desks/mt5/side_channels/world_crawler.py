@@ -452,10 +452,13 @@ _DATA_HOSTS = (
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
     "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
     # zh
-    "tushare.pro", "akfamily.xyz", "shfe.com.cn", "sge.com.cn", "pbc.gov.cn",
-    "stats.gov.cn", "chinabond.com.cn", "eastmoney.com", "csrc.gov.cn",
+    # pbc.gov.cn, csrc.gov.cn, boj.or.jp and bok.or.kr left 2026-11-18: BoJ's terms refuse
+    # commercial copying (libs/data/refused_hosts.py); PBOC's robots refuse, and CSRC's and
+    # BOK's terms could not be read, and unread terms are not permission.
+    "tushare.pro", "akfamily.xyz", "shfe.com.cn", "sge.com.cn",
+    "stats.gov.cn", "chinabond.com.cn", "eastmoney.com",
     # ja / ko
-    "boj.or.jp", "jpx.co.jp", "bok.or.kr", "estat.go.jp",
+    "jpx.co.jp", "estat.go.jp",
     # ---- MT5-INSTRUMENT TICK AND BAR ARCHIVES (2026-09-03) -----------------------------------
     # Free historical tick/M1 for exactly the instrument classes Fusion quotes -- FX majors and
     # crosses, metals, indices, energy. This is the raw material the ten gates measure on, and
@@ -710,14 +713,14 @@ SEEDS = (
     "https://akshare.akfamily.xyz/data/index.html",
     "https://www.shfe.com.cn/statements/dataview.html",
     "https://www.sge.com.cn/sjzx/mrhq",
-    "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+    # pbc.gov.cn, boj.or.jp, ecos.bok.or.kr and resbank.co.za left the seeds 2026-11-18: BoJ's
+    # and SARB's terms refuse (libs/data/refused_hosts.py), PBOC's robots refuse, and BOK's
+    # terms could not be read.
     "https://www.stats.gov.cn/sj/",
     "https://data.eastmoney.com/cjsj/",
     "https://www.chinabond.com.cn/cb/cn/yjfx/zzsj/index.shtml",
     # ja / ko / other
-    "https://www.boj.or.jp/en/statistics/index.htm",
     "https://www.jpx.co.jp/markets/statistics-equities/index.html",
-    "https://ecos.bok.or.kr/",
     # ---- TICK AND BAR ARCHIVES FOR THE INSTRUMENTS THIS DESK ACTUALLY TRADES (2026-09-03) -----
     #
     # Principal direction: hunt edge-strategy candidates and free tick-class datasets, and only
@@ -795,7 +798,6 @@ SEEDS = (
     # ko
     "https://www.paxnet.co.kr/",
     "https://velog.io/tags/퀀트",
-    "https://ecos.bok.or.kr/",
     # zh-Hant (TW / HK)
     "https://www.ptt.cc/bbs/Stock/index.html",
     "https://www.ptt.cc/bbs/Option/index.html",
@@ -834,7 +836,6 @@ SEEDS = (
     "https://www.boi.org.il/en/",
     # africa
     "https://www.moneyweb.co.za/",
-    "https://www.resbank.co.za/en/home/what-we-do/statistics",
     "https://nairametrics.com/",
     "https://www.businessdailyafrica.com/",
     "https://www.cbe.org.eg/en/",

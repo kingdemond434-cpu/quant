@@ -416,7 +416,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
     {"name": "RBI net outstanding forward book",
      "root": "https://rbi.org.in/Scripts/BS_ViewBulletin.aspx",
      "fields": ("net forward purchase or sale", "maturity bucket"),
-     "frequency": "monthly", "publish_utc": "11:00", "lag_days": 60, "licence": "free, public",
+     "frequency": "monthly", "publish_utc": "11:00", "lag_days": 60,
+     "licence": ("TERMS_BLOCKED: RBI Disclaimer prohibits caching of the contents "
+                 "(refused_hosts); never fetched"),
      "why": "spot intervention without the forward book is half the position; the book is where "
             "sterilisation hides, and the 60-day lag is what makes it PIT-hostile"},
     {"name": "CFTC Commitments of Traders (dollar index, gold, crude, sugar, cotton)",
@@ -519,9 +521,9 @@ ABSENT_SOURCE_LAYERS: dict[str, str] = {}
 
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("IN-S1", "RBI, the ministries and the statistical system", layer="official",
-         roots=("https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx",
-                "https://rbi.org.in/Scripts/WSSView.aspx", "https://dbie.rbi.org.in/",
-                "https://mospi.gov.in/web/mospi/download-tables-data",
+         # rbi.org.in left the roots 2026-11-18: the RBI Disclaimer prohibits caching of the
+         # contents (libs/data/refused_hosts.py).
+         roots=("https://mospi.gov.in/web/mospi/download-tables-data",
                 "https://tradestat.commerce.gov.in/", "https://www.indiabudget.gov.in/"),
          languages=("en", "hi"), licence="free, public", access_label="PUBLIC",
          credibility="AUTHORITATIVE", predictive_state="UNTESTED",
@@ -549,8 +551,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "nowhere else"),
     _src("IN-S3", "Indian academic and policy research", layer="academic",
          roots=("https://www.nipfp.org.in/publications/working-papers/",
-                "https://www.icrier.org/Publications/", "https://www.igidr.ac.in/working-papers/",
-                "https://rbi.org.in/Scripts/PublicationsView.aspx?id=0"),
+                "https://www.icrier.org/Publications/", "https://www.igidr.ac.in/working-papers/"),
          languages=("en",), licence="free, public", access_label="PUBLIC",
          credibility="RELIABLE", predictive_state="UNTESTED",
          queries=("RBI intervention reaction function working paper",
@@ -615,7 +616,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "English press and move retail flow; a DGFT notification is reported in Hindi "
                "first in the agricultural belt"),
     _src("IN-S8", "the gazette and the historical archives", layer="archive",
-         roots=("https://egazette.gov.in/", "https://dbie.rbi.org.in/",
+         roots=("https://egazette.gov.in/",
                 "https://web.archive.org/web/*/nseindia.com*",
                 "https://eparlib.nic.in/"),
          languages=("en", "hi"), licence="free, public", access_label="PUBLIC_ARCHIVE",

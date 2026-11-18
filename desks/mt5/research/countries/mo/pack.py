@@ -918,8 +918,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                            "the HKMA's convertibility undertakings and Aggregate Balance, and "
                            "China's customs and SAFE data on Guangdong and the Greater Bay Area",
         layer="official",
-        roots=("https://www.hkma.gov.hk/eng/", "http://www.customs.gov.cn/",
-               "https://www.safe.gov.cn/"),
+        roots=("https://www.hkma.gov.hk/eng/", "http://www.customs.gov.cn/"),
         queries=("兌換保證", "總結餘", "香港金融管理局", "海關總署進出口", "國家外匯管理局",
                  "跨境資金流動", "Aggregate Balance convertibility undertaking",
                  "粵港澳大灣區貿易數據"),

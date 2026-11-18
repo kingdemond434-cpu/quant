@@ -656,12 +656,13 @@ def _src(sid: str, label: str, *, layer: str, roots: Any, languages: Any, licenc
 SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("za_official_cb", "The South African Reserve Bank and its machine-readable API",
          layer="official",
-         roots=("resbank.co.za",
-                "custom.resbank.co.za/SarbWebApi",
-                "custom.resbank.co.za/SarbWebApi/swagger/index.html",
-                "resbank.co.za/en/home/publications/quarterly-bulletin"),
+         # Every resbank.co.za root left 2026-11-18: the SARB Disclaimer refuses copying "in any
+         # form whatsoever without the prior written consent" (libs/data/refused_hosts.py),
+         # and the Web API is on the same domain under the same notice.
+         roots=(),
          languages=("en",),
-         licence="free, public; the Web API is open and needs no key",
+         licence=("TERMS_BLOCKED: SARB Disclaimer refuses copying without prior written "
+                  "consent; never fetched"),
          access_label="OPEN_DATA", credibility="AUTHORITATIVE", predictive_state="UNTESTED",
          queries=("repokoers besluit", "SARB MPC statement vote split", "reporate aankondiging",
                   "izinga lenzalo elisha", "rand wisselkoers SARB", "gold and forex reserves "
@@ -719,7 +720,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     _src("za_academic", "South African academic and policy literature",
          layer="academic",
          roots=("scholar.sun.ac.za", "wiredspace.wits.ac.za", "repository.up.ac.za",
-                "econrsa.org", "resbank.co.za working papers",
+                "econrsa.org",
                 "papers.ssrn.com (South African FX and commodity microstructure)"),
          languages=("en", "af"),
          licence="mixed: institutional repositories are open, journals often licensed; never "
@@ -829,8 +830,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "breach the terms."),
     _src("za_archive", "Historical archives, superseded editions and moved pages",
          layer="archive",
-         roots=("resbank.co.za Quarterly Bulletin archive (back editions)",
-                "statssa.gov.za publication archive by PPN",
+         roots=("statssa.gov.za publication archive by PPN",
                 "web.archive.org captures of SARB, Stats SA, Eskom and JSE pages",
                 "nationalgovernment.co.za gazette archive",
                 "historicalpapers.wits.ac.za"),
@@ -910,7 +910,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
             revisions="the published mid-rate for a past date is not revised; the ENDPOINT can "
                       "change shape, which is a different failure and is detected by the plane's "
                       "shape check rather than by a silently empty series",
-            licence="free, public, no key",
+            licence=("TERMS_BLOCKED: SARB Disclaimer refuses copying without prior written "
+                     "consent (refused_hosts resbank.co.za); never fetched"),
             history_from="varies by series; the API exposes its own earliest date per code",
             pit_feasible=True,
             assets=("USDZAR", "EURZAR", "GBPZAR", "ZARJPY"),
