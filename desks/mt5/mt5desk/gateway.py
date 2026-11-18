@@ -4072,7 +4072,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # entry it WOULD defer and this pass sends exactly what it sent before. LIVE (set by
         # research/spread_regime.py on forward evidence, never by hand) it DEFERS before the mark,
         # so the bar stays unmarked as `quote_spread` leaves it and a later pass sends the same
-        # order at the same lot. It never cancels or resizes. Any failure means no deferral.
+        # signal, sized by that pass as usual. It never cancels or shrinks. Failure: no deferral.
         if plan.get("ok"):
             try:
                 from mt5desk import spread_gate as _sgate

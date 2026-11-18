@@ -34,8 +34,10 @@ THREE JOBS, ONE HOURLY LEG (`hourly_cycle:spread_regime`):
            because both are the side the order pays. A LIVE `release` row carries its realised
            improvement already. Improvement is in R (price units over the stop distance).
 3. PROMOTE reports/SPREAD_GATE.json, and data/SPREAD_GATE_MODE.json written LIVE when the mean
-           minus one standard error of the improvement is above zero over at least N_MIN scored
-           deferrals (the newest WINDOW), SHADOW when it is not. No human step either way; a
+           minus TWO standard errors of the improvement is above zero over at least N_MIN scored
+           deferrals (the newest WINDOW), SHADOW when the mean plus one SE is below
+           zero, and HOLDS in between (a dead band, so noise cannot thrash it). Shadow rows are
+           scored at the gateway's pass cadence, not per tick. No human step either way; a
            switch file carrying `"pinned": true` is left alone (the human revert path).
 
 THE GATE'S MISSED-GROWTH LINE (Rule 1). A veto has to prove it raises robust forward E[log W],
@@ -275,48 +277,83 @@ def _ledger(path: Path) -> list[dict[str, Any]]:
 
 
 def score_would_defer(row: dict[str, Any], ticks: pd.DataFrame | None,
-                      point: float | None) -> dict[str, Any] | None:
-    """The counterfactual for one SHADOW row: the side quote at the gate's release tick against
-    the side quote taken. None when the tape does not cover the deferral window."""
+                      point: float | None, pass_s: float = gate.PASS_S) -> dict[str, Any] | None:
+    """The counterfactual for one SHADOW row, AT THE GATEWAY'S CADENCE.
+
+    A LIVE deferral is re-checked once per gateway pass, not on every tick, so the scorer does
+    the same: at each `pass_s` step after the decision (plus the row's measured pass latency,
+    `pass_latency_s`, when the gateway recorded one -- it does not today, so the step is the
+    loop's nominal 60 s) it reads the first tick AT OR AFTER that instant, and releases there if
+    the gate would (spread_z under Z_RELEASE, the quote DRIFT_RELEASE_FRAC of the stop against
+    the entry, or the horizon reached). The improvement is that tick's side quote against the
+    side quote taken, both net of spread. None when the tape does not yet cover the last check.
+    """
     t0, side = row.get("broker_ms"), int(row.get("side") or 0)
     q0, dist = row.get("quote"), row.get("dist")
     med, sc = row.get("median"), row.get("scale")
-    horizon_ms = float(row.get("max_defer_s") or 0.0) * 1000.0
+    horizon_s = float(row.get("max_defer_s") or 0.0)
     if ticks is None or ticks.empty or not point or side not in (1, -1) or not all(
-            isinstance(v, (int, float)) for v in (t0, q0, dist, med, sc)) or not dist or not sc:
+            isinstance(v, (int, float)) for v in (t0, q0, dist, med, sc)) or not dist or not sc \
+            or horizon_s <= 0:
         return None
+    lat = row.get("pass_latency_s")
+    lat_s = float(lat) if isinstance(lat, (int, float)) and lat >= 0 else 0.0
     t0f = float(t0)  # type: ignore[arg-type]
-    win = ticks[(ticks["time_msc"] > t0f) & (ticks["time_msc"] <= t0f + horizon_ms)]
-    if win.empty or float(ticks["time_msc"].max()) < t0f + horizon_ms:
-        return None                     # the tape has not reached the end of the window yet
-    quote = (win["ask"] if side == 1 else win["bid"]).astype(float).to_numpy()
-    z = (((win["ask"] - win["bid"]).astype(float) / point).to_numpy() - float(med)) / float(sc)
-    adverse = side * (quote - float(q0)) / float(dist)  # type: ignore[arg-type]
-    hit = np.flatnonzero((z < gate.Z_RELEASE) | (adverse >= gate.DRIFT_RELEASE_FRAC))
-    i, reason = (int(hit[0]), "spread_normal" if z[int(hit[0])] < gate.Z_RELEASE
-                 else "drift") if hit.size else (len(quote) - 1, "horizon")
-    return {"key": row.get("key"), "symbol": row.get("symbol"), "at": row.get("at"),
-            "mode": "SHADOW", "reason": reason, "risk_frac": row.get("risk_frac"),
-            "elapsed_s": round((float(win["time_msc"].iloc[i]) - t0f) / 1000.0, 1),
-            "improvement_r": round(float(-adverse[i]), 6)}
+    times = ticks["time_msc"].astype("int64").to_numpy()
+    bid = ticks["bid"].astype(float).to_numpy()
+    ask = ticks["ask"].astype(float).to_numpy()
+    k = 1
+    while True:
+        step_s = k * pass_s
+        at_ms = t0f + (step_s + lat_s) * 1000.0
+        j = int(np.searchsorted(times, at_ms, side="left"))
+        if j >= times.size:
+            return None                 # the tape has not reached this check yet
+        quote = ask[j] if side == 1 else bid[j]
+        z = ((ask[j] - bid[j]) / point - float(med)) / float(sc)
+        adverse = side * (quote - float(q0)) / float(dist)  # type: ignore[arg-type]
+        reason = ("spread_normal" if z < gate.Z_RELEASE
+                  else "horizon" if step_s >= horizon_s
+                  else "drift" if adverse >= gate.DRIFT_RELEASE_FRAC else None)
+        if reason is not None:
+            return {"key": row.get("key"), "symbol": row.get("symbol"), "at": row.get("at"),
+                    "mode": "SHADOW", "reason": reason, "risk_frac": row.get("risk_frac"),
+                    "checks": k, "elapsed_s": round((float(times[j]) - t0f) / 1000.0, 1),
+                    "improvement_r": round(float(-adverse), 6)}
+        k += 1
 
 
 def _tape_window(symbol: str, t0_ms: float, root: Path | None) -> pd.DataFrame | None:
+    """The ticks around one decision, from the day files on EITHER side of its broker date.
+
+    HOW THE FILES ARE DATED, measured in mt5desk/tape.py: the desk's own writer names a file by
+    `pd.to_datetime(time_msc, unit="ms", utc=True).date`, i.e. the broker-clock date read as
+    if it were UTC -- the same mapping this uses -- but `moat/moat_silver.py`'s YYYYMMDD files
+    take the date of the recorder's bronze file name, whose clock this module cannot prove. So
+    it does not trust either convention: it reads the files for the date before, the date of and
+    the date after the decision, and the caller selects the ticks by `time_msc` alone. A day
+    boundary on any clock offset under 24 h therefore cannot drop the deferral's window.
+    """
     from mt5desk.tape import day_files
     day = datetime.fromtimestamp(t0_ms / 1000.0, tz=UTC).date()
-    want = {day.isoformat(), (day + timedelta(days=1)).isoformat()}
-    want |= {d.replace("-", "") for d in want}
+    want = {(day + timedelta(days=d)).isoformat() for d in (-1, 0, 1)}
     frames = []
     for d, f in day_files(symbol, root):
-        if d in want or d.replace("-", "") in want:
+        if d in want:
             try:
                 frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
             except (OSError, ValueError, KeyError, ImportError):
                 continue
     if not frames:
         return None
-    t = pd.concat(frames, ignore_index=True)
-    return t[(t["bid"] > 0) & (t["ask"] >= t["bid"])].sort_values("time_msc")
+    t = pd.concat(frames, ignore_index=True).drop_duplicates()
+    t = t[(t["bid"] > 0) & (t["ask"] >= t["bid"])]
+    return t[t["time_msc"] >= t0_ms].sort_values("time_msc", kind="stable")
+
+
+def lost_keys(ledger: list[dict[str, Any]]) -> list[str]:
+    """Deferrals the gate expired (no release ever came): out of the proof, so counted apart."""
+    return sorted({str(r.get("key")) for r in ledger if r.get("kind") == "expired"})
 
 
 def score(ledger: list[dict[str, Any]], state: dict[str, Any],
@@ -330,6 +367,7 @@ def score(ledger: list[dict[str, Any]], state: dict[str, Any],
                 scored.append({"key": r.get("key"), "symbol": r.get("symbol"), "at": r.get("at"),
                                "mode": "LIVE", "reason": r.get("reason"),
                                "risk_frac": r.get("risk_frac"), "elapsed_s": r.get("elapsed_s"),
+                               "lot0": r.get("lot0"), "lot_sent": r.get("lot_sent"),
                                "improvement_r": float(r["improvement_r"])})
             else:
                 unscored += 1
@@ -340,7 +378,7 @@ def score(ledger: list[dict[str, Any]], state: dict[str, Any],
         point = (state.get("symbols", {}).get(sym) or {}).get("point")
         got = None
         if isinstance(t0, (int, float)):
-            ck = (sym, datetime.fromtimestamp(float(t0) / 1000.0, tz=UTC).date().isoformat())
+            ck = (sym, str(int(float(t0))))
             if ck not in cache:
                 try:
                     cache[ck] = _tape_window(sym, float(t0), tape_root)
@@ -354,37 +392,83 @@ def score(ledger: list[dict[str, Any]], state: dict[str, Any],
     return scored, unscored
 
 
-def verdict(scored: list[dict[str, Any]]) -> dict[str, Any]:
+#: THE DEAD BAND (audit MF1). One bar for both directions made every pass that did not promote
+#: write SHADOW, so the mode thrashed on noise. Promote only past a strict bar, demote only past
+#: a looser one in the other direction, and hold in between. One-sided normal levels published.
+PROMOTE_SE = 2.0
+DEMOTE_SE = 1.0
+
+
+def _one_sided_level(k: float) -> float:
+    return round(0.5 * (1.0 + math.erf(k / math.sqrt(2.0))), 4)
+
+
+def stats(scored: list[dict[str, Any]]) -> dict[str, Any]:
+    """Mean, SE and both bars of the newest WINDOW scored deferrals."""
     recent = scored[-WINDOW:]
     imp = np.array([float(x["improvement_r"]) for x in recent], dtype=float)
     n = int(imp.size)
     out: dict[str, Any] = {"n_scored": len(scored), "n_window": n, "n_min": gate.N_MIN}
     if n == 0:
-        return {**out, "verdict": UNMEASURED, "promote": False,
-                "why": "no scored deferral yet"}
+        return out
     mean = float(imp.mean())
     se = float(imp.std(ddof=1) / math.sqrt(n)) if n > 1 else math.inf
     risk = [float(x["risk_frac"]) * float(x["improvement_r"]) for x in recent
             if isinstance(x.get("risk_frac"), (int, float)) and x["risk_frac"] > 0]
-    out.update(mean_improvement_r=round(mean, 6),
-               se_r=None if math.isinf(se) else round(se, 6),
-               lcb_r=None if math.isinf(se) else round(mean - se, 6),
+    fin = not math.isinf(se)
+    out.update(mean_improvement_r=round(mean, 6), se_r=round(se, 6) if fin else None,
+               lcb_r=round(mean - se, 6) if fin else None,
+               promote_bar_r=round(mean - PROMOTE_SE * se, 6) if fin else None,
+               demote_bar_r=round(mean + DEMOTE_SE * se, 6) if fin else None,
                logw_per_deferral=(round(float(np.mean([math.log1p(v) for v in risk])), 8)
                                   if risk else None),
                n_with_risk_frac=len(risk))
-    if n < gate.N_MIN:
-        return {**out, "verdict": UNMEASURED, "promote": False,
-                "why": f"{n} scored deferrals, under the {gate.N_MIN} promotion needs"}
-    if mean - se > 0:
-        return {**out, "verdict": EARNS, "promote": True,
-                "why": "mean - 1 SE of the realised improvement is above zero: deferring "
-                       "raised the entry's value"}
-    return {**out, "verdict": COSTS if mean + se < 0 else UNMEASURED, "promote": False,
-            "why": "mean - 1 SE of the improvement is not above zero: the gate stays SHADOW"}
+    out["_mean"], out["_se"] = mean, se
+    return out
+
+
+def verdict(scored: list[dict[str, Any]]) -> dict[str, Any]:
+    """PROMOTE when mean - 2 SE > 0, DEMOTE when mean + 1 SE < 0, HOLD otherwise (and below
+    N_MIN). The LIVE-only rows are judged on their own as well, so a LIVE gate can be demoted on
+    what it actually did, not on a shadow history that may flatter it."""
+    out = stats(scored)
+    live = stats([x for x in scored if x.get("mode") == "LIVE"])
+    mean, se = out.pop("_mean", None), out.pop("_se", None)
+    lmean, lse = live.pop("_mean", None), live.pop("_se", None)
+    out["bars"] = {"promote": f"mean - {PROMOTE_SE:g} SE > 0",
+                   "promote_one_sided_level": _one_sided_level(PROMOTE_SE),
+                   "demote": f"mean + {DEMOTE_SE:g} SE < 0",
+                   "demote_one_sided_level": _one_sided_level(DEMOTE_SE),
+                   "between": "hold the current mode"}
+    out["live_only"] = live
+    n = int(out["n_window"])
+    if mean is None or n < gate.N_MIN:
+        return {**out, "verdict": UNMEASURED, "action": "HOLD", "promote": False,
+                "demote": False, "why": f"{n} scored deferrals, under the {gate.N_MIN} needed"}
+    up = mean - PROMOTE_SE * se > 0
+    down = mean + DEMOTE_SE * se < 0 or (
+        lmean is not None and live["n_window"] >= gate.N_MIN and lmean + DEMOTE_SE * lse < 0)
+    if down:
+        return {**out, "verdict": COSTS, "action": "DEMOTE", "promote": False, "demote": True,
+                "why": "mean + 1 SE of the improvement (all rows, or LIVE rows alone) is below "
+                       "zero: deferring cost the entry"}
+    if up:
+        return {**out, "verdict": EARNS, "action": "PROMOTE", "promote": True, "demote": False,
+                "why": "mean - 2 SE of the improvement is above zero: deferring raised the "
+                       "entry's value"}
+    return {**out, "verdict": UNMEASURED, "action": "HOLD", "promote": False, "demote": False,
+            "why": "inside the dead band (mean - 2 SE <= 0 <= mean + 1 SE): mode held"}
+
+
+MODE_RULE = ("SHADOW records only. research/spread_regime.py writes LIVE when mean - 2 SE of the "
+             "scored improvement (R) > 0 over >= 30 scored deferrals (newest 200), SHADOW when "
+             "mean + 1 SE < 0 (all rows, or LIVE rows alone), and leaves the mode alone in "
+             "between. pinned=true freezes the mode; OFF stops the shadow record too.")
 
 
 def promote(v: dict[str, Any], *, write: bool = True) -> dict[str, Any]:
-    """Write the switch from the evidence. Pinned is left alone; OFF is a pin by another name."""
+    """Move the switch only across a bar; hold inside the dead band. Pinned and OFF are left
+    alone."""
     p = gate.paths(BASE)["mode"]
     try:
         cur_doc = json.loads(p.read_text("utf-8"))
@@ -394,41 +478,52 @@ def promote(v: dict[str, Any], *, write: bool = True) -> dict[str, Any]:
     cur = gate.read_mode(BASE)
     if cur_doc.get("pinned") or cur == "OFF":
         return {"mode": cur, "changed": False, "why": "pinned by the switch file; left alone"}
-    want = "LIVE" if v.get("promote") else "SHADOW"
+    want = ("LIVE" if v.get("promote") and cur != "LIVE"
+            else "SHADOW" if v.get("demote") and cur == "LIVE" else cur)
     if want == cur:
-        return {"mode": cur, "changed": False}
+        return {"mode": cur, "changed": False, "action": v.get("action", "HOLD")}
     if write:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps({
             "mode": want, "set_by": "research/spread_regime.py",
-            "at": datetime.now(tz=UTC).isoformat(),
+            "at": datetime.now(tz=UTC).isoformat(), "rule": MODE_RULE,
             "evidence": {k: v.get(k) for k in ("n_window", "mean_improvement_r", "se_r",
-                                               "lcb_r", "verdict")}}, indent=1), "utf-8")
-    return {"mode": want, "changed": True, "from": cur}
+                                               "promote_bar_r", "demote_bar_r", "verdict",
+                                               "action")}}, indent=1), "utf-8")
+    return {"mode": want, "changed": True, "from": cur, "action": v.get("action")}
 
 
 def run(write: bool = True, budget_s: float = 600.0,
         tape_root: Path | None = None) -> dict[str, Any]:
     state = build_state(budget_s, tape_root)
+    n_swept = gate.sweep_expired(BASE) if write else 0
     ledger = _ledger(gate.paths(BASE)["ledger"])
+    lost = lost_keys(ledger)
     scored, unscored = score(ledger, state, tape_root)
     v = verdict(scored)
     mode = promote(v, write=write)
     now = datetime.now(tz=UTC).isoformat()
     line = {"gate": "spread_regime_entry_gate", "at": now, "mode": mode["mode"],
-            "binding": mode["mode"] == "LIVE", "n_unscored": unscored,
-            **{k: v.get(k) for k in ("verdict", "n_window", "mean_improvement_r", "se_r",
-                                     "lcb_r", "logw_per_deferral")},
+            "binding": mode["mode"] == "LIVE", "n_unscored": unscored, "n_lost": len(lost),
+            **{k: v.get(k) for k in ("verdict", "action", "n_window", "mean_improvement_r",
+                                     "se_r", "promote_bar_r", "demote_bar_r",
+                                     "logw_per_deferral")},
+            "live_only": {k: v["live_only"].get(k) for k in ("n_window", "mean_improvement_r",
+                                                             "se_r", "demote_bar_r")},
             "why": ("improvement per deferral, in R, of the side quote at release over the side "
                     "quote taken (both net of spread); positive means deferring paid. In SHADOW "
-                    "it is what the gate WOULD have earned or cost; nothing was deferred.")}
+                    "it is what the gate WOULD have earned or cost; nothing was deferred. "
+                    "n_lost deferrals expired with no release and are UNMEASURED, outside "
+                    "the mean.")}
     gate_doc = {"schema": "spread-gate-1", "generated_at": now, "mode": mode, "verdict": v,
                 "n_ledger_rows": len(ledger), "n_scored": len(scored), "n_unscored": unscored,
+                "n_lost": len(lost), "lost_recent": lost[-50:], "n_swept_this_pass": n_swept,
                 "scored_recent": scored[-50:], "missed_growth": [line],
                 "rule": {"z_defer": gate.Z_DEFER, "z_release": gate.Z_RELEASE,
                          "max_defer_min": gate.MAX_DEFER_MIN,
                          "drift_release_frac": gate.DRIFT_RELEASE_FRAC, "n_min": gate.N_MIN,
-                         "window": WINDOW, "promote_when": "mean - 1 SE > 0 over >= n_min"}}
+                         "window": WINDOW, "pass_s": gate.PASS_S, "bars": v["bars"],
+                         "mode_rule": MODE_RULE}}
     if write:
         OUT_STATE.parent.mkdir(parents=True, exist_ok=True)
         OUT_STATE.write_text(json.dumps(state, indent=1, default=str), "utf-8")

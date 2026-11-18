@@ -1,5 +1,5 @@
 {
  "mode": "SHADOW",
  "set_by": "default",
- "rule": "SHADOW records only; research/spread_regime.py writes LIVE when mean - 1 SE of the scored improvement (R) > 0 over >= 30 scored deferrals, and SHADOW when not. pinned=true freezes the mode; OFF stops the shadow record too."
+ "rule": "SHADOW records only. research/spread_regime.py writes LIVE when mean - 2 SE of the scored improvement (R) > 0 over >= 30 scored deferrals (newest 200), SHADOW when mean + 1 SE < 0 (all rows, or LIVE rows alone), and leaves the mode alone in between. pinned=true freezes the mode; OFF stops the shadow record too."
 }

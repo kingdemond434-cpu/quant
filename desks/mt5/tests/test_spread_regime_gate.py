@@ -23,6 +23,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
         sys.path.insert(0, p)
 
 from mt5desk import spread_gate as gate  # noqa: E402
+
 from research import spread_regime as sr  # noqa: E402
 
 
@@ -89,7 +90,7 @@ def test_shadow_sends_byte_identical_requests_and_only_records(tmp_path, monkeyp
         assert row["quote"] == 1.1102 and row["side"] == 1 and row["median"] == 10.0
 
 
-def test_live_defers_by_leaving_the_bar_unmarked_then_sends_the_same_order(tmp_path,
+def test_live_defers_by_leaving_the_bar_unmarked_then_sends_the_same_signal(tmp_path,
                                                                            monkeypatch) -> None:
     tga = _adapter()
     base = _desk(tmp_path / "desk", "LIVE")
@@ -103,13 +104,15 @@ def test_live_defers_by_leaving_the_bar_unmarked_then_sends_the_same_order(tmp_p
     assert any("FAMILY-EXEC DEFERRED" in x for x in ns["_logs"])
     quote.ask = 1.11010                                   # 10 pts: back at the hour's norm
     tga._run_family(ns, st, [tga._sleeve()], 10_000.0)
-    assert len(mt5.sent) == 1 and mt5.sent[0]["volume"] == 0.12, "same order, same lot"
+    assert len(mt5.sent) == 1, "the same signal is sent on the release pass"
     tga._run_family(ns, st, [tga._sleeve()], 10_000.0)
     assert len(mt5.sent) == 1, "the released signal must never send twice"
     kinds = [r["kind"] for r in _ledger(base)]
     assert kinds == ["defer", "release"]
     rel = _ledger(base)[-1]
     assert rel["reason"] == "spread_normal" and rel["improvement_r"] > 0
+    # The lot is re-sized on the release pass, not frozen: both are ledgered (audit SF2).
+    assert rel["lot0"] == 0.12 and rel["lot_sent"] == mt5.sent[0]["volume"]
 
 
 def _plan(ask: float, last_bar: str = "2026-11-18 09:00:00+00:00") -> dict:
@@ -160,35 +163,115 @@ def test_norm_is_robust_on_a_flat_administered_spread() -> None:
     assert sr.regime_of(None) == "UNMEASURED"
 
 
-def test_a_shadow_row_is_scored_on_the_tape_at_the_release_tick() -> None:
+def _row(t0: int) -> dict:
+    return {"kind": "would_defer", "broker_ms": t0, "side": 1, "quote": 1.10020, "dist": 0.0050,
+            "median": 10.0, "scale": 1.0, "max_defer_s": 1200.0, "key": "k", "symbol": "EURUSD"}
+
+
+def test_a_shadow_row_is_scored_at_the_gateways_pass_cadence() -> None:
     t0 = 1_789_000_000_000
-    row = {"kind": "would_defer", "broker_ms": t0, "side": 1, "quote": 1.10020, "dist": 0.0050,
-           "median": 10.0, "scale": 1.0, "max_defer_s": 1200.0, "key": "k", "symbol": "EURUSD"}
-    ticks = pd.DataFrame({"time_msc": [t0 + 60_000, t0 + 120_000, t0 + 1_300_000],
-                          "bid": [1.10000, 1.09990, 1.1],
-                          "ask": [1.10020, 1.10001, 1.10011]})
-    got = sr.score_would_defer(row, ticks, 0.00001)
-    assert got is not None and got["reason"] == "spread_normal"
+    # A narrow tick at +30 s falls BETWEEN passes: the LIVE gate would not see it, so the scorer
+    # must not release there. The first pass (+60 s) sees 20 pts (z +10); the second (+120 s)
+    # sees 11 pts (z +1) and releases at that tick's ask (audit SF1).
+    ticks = pd.DataFrame({"time_msc": [t0 + 30_000, t0 + 60_000, t0 + 120_000],
+                          "bid": [1.09900, 1.10000, 1.09990],
+                          "ask": [1.09901, 1.10020, 1.10001]})
+    got = sr.score_would_defer(_row(t0), ticks, 0.00001)
+    assert got is not None and got["reason"] == "spread_normal" and got["checks"] == 2
     assert abs(got["improvement_r"] - (1.10020 - 1.10001) / 0.0050) < 1e-9
-    assert sr.score_would_defer(row, ticks.iloc[:2], 0.00001) is None, (
-        "a tape that has not reached the end of the window cannot score the row")
+    assert sr.score_would_defer(_row(t0), ticks.iloc[:2], 0.00001) is None, (
+        "a tape that has not reached the next pass's check cannot score the row")
+    # A measured pass latency moves every check later by that much.
+    late = {**_row(t0), "pass_latency_s": 70.0}
+    assert sr.score_would_defer(late, ticks, 0.00001) is None
 
 
-def test_promotion_and_reversion_are_automatic_and_a_pin_holds(tmp_path, monkeypatch) -> None:
+def test_the_tape_window_reads_both_neighbouring_day_files(tmp_path) -> None:
+    from mt5desk import tape
+    t0 = int(datetime(2026, 11, 18, 23, 58, tzinfo=UTC).timestamp() * 1000)
+    d = tmp_path / "EURUSD"
+    d.mkdir()
+    # One file per convention, dated a day APART from the decision's broker date on purpose.
+    pd.DataFrame({"time_msc": [t0 - 1000, t0 + 60_000], "bid": [1.1, 1.1],
+                  "ask": [1.1002, 1.1002]}).to_parquet(d / "2026-11-19.parquet")
+    pd.DataFrame({"time_msc": [t0 + 120_000], "bid": [1.1], "ask": [1.10001]}).to_parquet(
+        d / "20261117.parquet")
+    assert [x for x, _ in tape.day_files("EURUSD", tmp_path)] == ["2026-11-17", "2026-11-19"]
+    w = sr._tape_window("EURUSD", t0, tmp_path)
+    assert w is not None and list(w["time_msc"]) == [t0 + 60_000, t0 + 120_000]
+
+
+def _w(vals: list[float]) -> list[dict]:
+    return [{"improvement_r": v} for v in vals]
+
+
+def test_the_dead_band_promotes_past_two_se_demotes_past_one_and_holds_between(
+        tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(sr, "BASE", tmp_path)
     (tmp_path / "data").mkdir()
-    good = [{"improvement_r": 0.05 + 0.01 * (i % 3)} for i in range(gate.N_MIN)]
-    assert sr.verdict(good[:-1])["promote"] is False, "under N_MIN never promotes"
+    mode = tmp_path / "data" / "SPREAD_GATE_MODE.json"
+    good = _w([0.05 + 0.01 * (i % 3) for i in range(gate.N_MIN)])
+    assert sr.verdict(good[:-1])["action"] == "HOLD", "under N_MIN never moves"
     v = sr.verdict(good)
-    assert v["promote"] is True and v["verdict"] == sr.EARNS
+    assert v["action"] == "PROMOTE" and v["verdict"] == sr.EARNS
+    assert v["bars"]["promote_one_sided_level"] == 0.9772
+    assert v["bars"]["demote_one_sided_level"] == 0.8413
     assert sr.promote(v)["mode"] == "LIVE" and gate.read_mode(tmp_path) == "LIVE"
-    bad = [{"improvement_r": -0.05 - 0.01 * (i % 3)} for i in range(gate.N_MIN)]
-    vb = sr.verdict(good + bad * 6)                     # the newest WINDOW is all losses
-    assert vb["promote"] is False and vb["verdict"] == sr.COSTS
+    assert json.loads(mode.read_text("utf-8"))["rule"] == sr.MODE_RULE
+    bad = _w([-0.05 - 0.01 * (i % 3) for i in range(gate.N_MIN)])
+    vb = sr.verdict(bad)
+    assert vb["action"] == "DEMOTE" and vb["verdict"] == sr.COSTS
     assert sr.promote(vb)["mode"] == "SHADOW" and gate.read_mode(tmp_path) == "SHADOW"
-    (tmp_path / "data" / "SPREAD_GATE_MODE.json").write_text(
-        '{"mode": "SHADOW", "pinned": true}', "utf-8")
+    mode.write_text('{"mode": "SHADOW", "pinned": true}', "utf-8")
     assert sr.promote(v)["changed"] is False and gate.read_mode(tmp_path) == "SHADOW"
+
+
+def test_a_window_clearing_only_one_se_neither_promotes_nor_demotes(tmp_path,
+                                                                     monkeypatch) -> None:
+    """The audit's MF1 case: mean - 1 SE > 0 but mean - 2 SE <= 0. The old single bar promoted
+    on it, and wrote SHADOW on the next pass that missed it; the dead band holds either mode."""
+    monkeypatch.setattr(sr, "BASE", tmp_path)
+    (tmp_path / "data").mkdir()
+    vals = [1.0 if i % 2 else -0.6 for i in range(40)]   # mean 0.2, SE ~0.13
+    v = sr.verdict(_w(vals))
+    assert v["mean_improvement_r"] - v["se_r"] > 0 and v["promote_bar_r"] <= 0
+    assert v["action"] == "HOLD" and not v["promote"] and not v["demote"]
+    for held in ("SHADOW", "LIVE"):
+        (tmp_path / "data" / "SPREAD_GATE_MODE.json").write_text(
+            json.dumps({"mode": held}), "utf-8")
+        got = sr.promote(v)
+        assert got["changed"] is False and gate.read_mode(tmp_path) == held
+
+
+def test_live_only_evidence_can_demote_alone(tmp_path, monkeypatch) -> None:
+    rows = [{"improvement_r": 0.08 + 0.01 * (i % 3), "mode": "SHADOW"} for i in range(100)]
+    rows += [{"improvement_r": -0.05 - 0.01 * (i % 3), "mode": "LIVE"} for i in range(40)]
+    v = sr.verdict(rows)
+    assert v["mean_improvement_r"] > 0 and v["live_only"]["n_window"] == 40
+    assert v["action"] == "DEMOTE"
+
+
+def test_a_pending_deferral_that_is_never_released_expires_and_is_counted_lost(
+        tmp_path, monkeypatch) -> None:
+    base = _desk(tmp_path, "LIVE")
+    t0 = datetime.now(tz=UTC)
+    s = {"name": "x", "symbol": "EURUSD"}
+    assert gate.entry_gate(s, _plan(1.1002), base=base, now=t0)
+    # Every later pass refuses upstream: the gate only ever sees not-ok plans for OTHER calls.
+    later = t0 + timedelta(seconds=1200 + gate.PASS_S + 1)
+    assert gate.entry_gate({"name": "other", "symbol": "EURUSD"}, {"ok": False}, base=base,
+                           now=later) is None
+    st = json.loads((base / "data" / "spread_gate_state.json").read_text("utf-8"))
+    assert st["pending"] == {} and "x|2026-11-18 09:00:00+00:00" in st["expired"]
+    (row,) = [r for r in _ledger(base) if r["kind"] == "expired"]
+    assert row["improvement_r"] == "UNMEASURED" and row["reason"]
+    # The key is never deferred again from scratch: an ok plan now SENDS.
+    assert gate.entry_gate(s, _plan(1.1002), base=base, now=later) is None
+    # The hourly leg sweeps too (a gateway that stopped calling the gate), and counts n_lost.
+    assert gate.entry_gate({"name": "y", "symbol": "EURUSD"}, _plan(1.1002), base=base, now=t0)
+    assert gate.sweep_expired(base, later) == 1
+    assert sr.lost_keys(_ledger(base)) == sorted(["x|2026-11-18 09:00:00+00:00",
+                                                  "y|2026-11-18 09:00:00+00:00"])
 
 
 def test_the_missed_growth_ledger_carries_the_gates_line(tmp_path, monkeypatch) -> None:

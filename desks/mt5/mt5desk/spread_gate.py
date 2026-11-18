@@ -12,7 +12,10 @@ under `Z_RELEASE`.
 
 IT DEFERS. IT NEVER CANCELS AND NEVER SHRINKS. A deferral leaves the signal bar unmarked -- the
 same retention `quote_spread` already uses in `resolve_family_order` -- so a later pass sends the
-SAME order at the SAME lot. Three releases bound it so a deferral can never become a lost trade:
+SAME SIGNAL. The lot is NOT frozen: the release pass re-sizes it through the gateway's usual
+sizing at its own quote and equity, exactly as any pass would, so it is the same order up to that
+re-sizing. The deferral's lot (`lot0`) and the release pass's lot (`lot_sent`) are both ledgered
+on the release row so the difference is measured, never assumed. Three releases bound it:
 
     the spread is back under Z_RELEASE                       send
     MAX_DEFER_MIN, or a third of the chart's bar, has passed send (a bar roll would lose it)
@@ -25,9 +28,11 @@ switch `data/SPREAD_GATE_MODE.json` defaults to SHADOW: the gate returns None (s
 call and only records, in `data/spread_gate_ledger.jsonl`, each entry it WOULD have deferred with
 the quote and the norm it used. `research/spread_regime.py` scores each one hourly against the
 tick tape -- the side quote at the release time against the side quote actually taken, both net
-of spread because both are the side the order pays -- and writes the mode LIVE when the mean minus
-one standard error of the improvement (in R) is above zero over at least N_MIN scored deferrals,
-and back to SHADOW when it is not. No human step either way. `"pinned": true` in the switch file
+of spread because both are the side the order pays, checked at the gateway's pass cadence --
+and writes the mode LIVE when the mean minus TWO standard errors of the improvement (in R) is
+above zero over at least N_MIN scored deferrals, back to SHADOW when the mean plus ONE standard
+error is below zero, and leaves it alone in between (a dead band, so noise cannot thrash it).
+No human step either way. `"pinned": true` in the switch file
 freezes it (a human's revert path); `"mode": "OFF"` stops even the shadow record.
 
 NEVER RAISES INTO THE GATEWAY and imports nothing outside the standard library: it sits in the
@@ -59,6 +64,10 @@ DRIFT_RELEASE_FRAC = 0.10
 NORMS_MAX_AGE_H = 6.0
 #: Promotion needs at least this many scored deferrals (research/spread_regime.py reads it).
 N_MIN = 30
+#: The gateway loop's cadence: a LIVE deferral is re-checked once per pass, not per tick.
+PASS_S = 60.0
+#: Expired keys remembered so a key that timed out is never deferred again from scratch.
+EXPIRED_KEEP = 500
 
 _NORMS_CACHE: dict[str, Any] = {"path": None, "mtime": None, "doc": None}
 
@@ -198,6 +207,56 @@ def evaluate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minutes
             "max_defer_s": max_defer_s(bar_minutes), **norm}
 
 
+def _sweep(st: dict[str, Any], ledger: Path, now: datetime) -> int:
+    """Expire every pending deferral older than its horizon plus one pass.
+
+    A pending key is released only by a later pass that hands the gate an ok plan for the SAME
+    name|last_bar. If every later pass refuses upstream (desk stale, stale signal, dedupe, the
+    gateway down), nothing would ever release it: no ledger row, a state that only grows, and a
+    gate whose own proof counts only the deferrals that survived. So each one is ledgered as
+    `expired` with an UNMEASURED improvement and counted as lost, and its key is remembered so
+    it is never deferred again from scratch."""
+    pending = st.setdefault("pending", {})
+    expired: list[str] = st.setdefault("expired", [])
+    n = 0
+    for key, held in list(pending.items()):
+        try:
+            age = (now - datetime.fromisoformat(str(held["first_at"]))).total_seconds()
+        except (KeyError, TypeError, ValueError):
+            age = math.inf
+        if age <= float(held.get("max_defer_s") or 0.0) + PASS_S:
+            continue
+        pending.pop(key, None)
+        _append(ledger, {"kind": "expired", "at": now.isoformat(), "key": key,
+                         "symbol": held.get("symbol"), "side": held.get("side"),
+                         "first_at": held.get("first_at"),
+                         "age_s": None if math.isinf(age) else round(age, 1),
+                         "lot0": held.get("lot0"), "improvement_r": "UNMEASURED",
+                         "reason": "no pass handed the gate an ok plan for this key within "
+                                   "max_defer_s + one pass (refused upstream, or the gateway "
+                                   "was down): lost, or sent later unscored -- either way it "
+                                   "is out of the gate's proof and counted as n_lost"})
+        expired.append(key)
+        n += 1
+    st["expired"] = expired[-EXPIRED_KEEP:]
+    return n
+
+
+def sweep_expired(base: Path, now: datetime | None = None) -> int:
+    """The hourly leg's sweep, for a gateway that has stopped calling the gate. Never raises."""
+    try:
+        p = paths(Path(base))
+        st = _read_json(p["state"])
+        if not isinstance(st, dict) or not st.get("pending"):
+            return 0
+        n = _sweep(st, p["ledger"], now or datetime.now(tz=UTC))
+        if n:
+            _write_state(p["state"], st)
+        return n
+    except Exception:
+        return 0
+
+
 def entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minutes: int = 60,
                now: datetime | None = None) -> str | None:
     """The gateway's one call. Returns a reason when THIS PASS must not send (LIVE deferral
@@ -211,23 +270,33 @@ def entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minut
 def _entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minutes: int,
                 now: datetime | None) -> str | None:
     mode = read_mode(base)
-    if mode == "OFF" or not plan.get("ok"):
-        return None
     now = now or datetime.now(tz=UTC)
     p = paths(base)
     st = _read_json(p["state"])
     st = st if isinstance(st, dict) else {}
     pending: dict[str, Any] = st.setdefault("pending", {})
     seen: list[str] = st.setdefault("seen", [])
+    swept = _sweep(st, p["ledger"], now) if pending else 0
+    if mode == "OFF" or not plan.get("ok"):
+        if swept:
+            _write_state(p["state"], st)
+        return None
     ev = evaluate(s, plan, base=base, bar_minutes=bar_minutes, now=now)
     key = f"{s.get('name')}|{plan.get('last_bar')}"
     stamp = now.isoformat()
     if mode != "LIVE":
         # SHADOW: record the entry once, send now. The order is not touched. A deferral left
         # pending by a LIVE spell that has since been demoted is let go.
-        dropped = pending.pop(key, None) is not None
+        dropped = pending.pop(key, None)
+        if dropped is not None:
+            _append(p["ledger"], {"kind": "expired", "at": stamp, "key": key,
+                                  "symbol": dropped.get("symbol"), "side": dropped.get("side"),
+                                  "first_at": dropped.get("first_at"),
+                                  "lot0": dropped.get("lot0"), "improvement_r": "UNMEASURED",
+                                  "reason": "demoted to SHADOW mid-deferral: sent now, the "
+                                            "deferral's improvement is not scored"})
         if ev is None or ev["z"] < Z_DEFER or key in seen:
-            if dropped:
+            if dropped is not None or swept:
                 _write_state(p["state"], st)
             return None
         _append(p["ledger"], {"kind": "would_defer", "mode": mode, "at": stamp, **(ev or {})})
@@ -238,16 +307,20 @@ def _entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minu
     # LIVE.
     held = pending.get(key)
     if held is None:
-        if ev is None or ev["z"] < Z_DEFER or ev["max_defer_s"] < MIN_DEFER_S:
+        if ev is None or ev["z"] < Z_DEFER or ev["max_defer_s"] < MIN_DEFER_S \
+                or key in st.get("expired", []):
+            if swept:
+                _write_state(p["state"], st)
             return None
         pending[key] = {"first_at": stamp, "quote0": ev["quote"], "z0": ev["z"],
                         "side": ev["side"], "dist": ev["dist"], "symbol": ev["symbol"],
-                        "max_defer_s": ev["max_defer_s"], "risk_frac": ev["risk_frac"]}
+                        "max_defer_s": ev["max_defer_s"], "risk_frac": ev["risk_frac"],
+                        "lot0": ev["lot"]}
         _append(p["ledger"], {"kind": "defer", "mode": mode, "at": stamp, **ev})
         _write_state(p["state"], st)
         return (f"spread_z {ev['z']:+.2f} >= {Z_DEFER:g} at broker hour {ev['broker_hour']} "
                 f"({ev['spread_pts']:.1f} pts vs median {ev['median']:.1f}); deferred up to "
-                f"{ev['max_defer_s'] / 60.0:.0f} min, same order, same lot")
+                f"{ev['max_defer_s'] / 60.0:.0f} min; the same signal, re-sized on release")
     try:
         elapsed = (now - datetime.fromisoformat(str(held["first_at"]))).total_seconds()
     except (KeyError, TypeError, ValueError):
@@ -259,6 +332,8 @@ def _entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minu
               else "horizon" if elapsed >= float(held.get("max_defer_s") or 0.0)
               else "drift" if adverse is not None and adverse >= DRIFT_RELEASE_FRAC else None)
     if reason is None and ev is not None:
+        if swept:
+            _write_state(p["state"], st)
         return (f"spread_z {ev['z']:+.2f} still >= {Z_RELEASE:g}; deferred "
                 f"{elapsed:.0f}s of {float(held.get('max_defer_s') or 0):.0f}s")
     pending.pop(key, None)
@@ -267,6 +342,7 @@ def _entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minu
                           "side": side, "reason": reason, "elapsed_s": round(elapsed, 1),
                           "quote0": q0, "quote": quote, "dist": dist,
                           "risk_frac": held.get("risk_frac"),
+                          "lot0": held.get("lot0"), "lot_sent": _num(plan.get("lot")),
                           "z": None if ev is None else ev["z"],
                           "improvement_r": (None if adverse is None else round(-adverse, 6))})
     _write_state(p["state"], st)
