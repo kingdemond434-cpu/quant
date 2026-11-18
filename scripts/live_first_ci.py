@@ -62,6 +62,12 @@ MAX_CALLS = 6
 #: The ledger: re-runs owed and what the last call did (box-local: reports/ is gitignored).
 REPORT = ROOT / "desks" / "mt5" / "reports" / "LIVE_FIRST_CI.json"
 LIVE_EVENTS = ("push", "workflow_dispatch")
+#: A RUN IS MOVED BEHIND AT MOST TWICE (2026-11-18). "Before the NEWEST waiting run" keeps moving:
+#: while any CLEARed run has waited 5 min there is always a newer one, so an uncleared run was
+#: cancelled and re-run every sweep and never reached a runner. #1298 (the fix for the quality
+#: red on every PR) went attempt 1 to 6 between 10:08Z and 15:16Z, losing its place each time,
+#: and each cancel also queued an audit-gate re-check. From this attempt on a run keeps its place.
+MOVE_ATTEMPT_CAP = 3
 #: THE WHOLE CALL'S WALL-CLOCK BUDGET (2026-11-03 23:31Z, box at 100% CPU). This runs inside
 #: Quant-WorkflowGate BEFORE the audit gate, under the task's 30-minute limit. Unbounded, it made
 #: one `gh api` call per cleared-check comment page and two per cancel; at 13-120 s per call
@@ -131,7 +137,9 @@ def plan(
     ahead = [
         int(r["id"])
         for r in current
-        if str(r.get("head_branch")) not in cleared and _queued_at(r) < newest
+        if str(r.get("head_branch")) not in cleared
+        and _queued_at(r) < newest
+        and int(r.get("run_attempt") or 1) < MOVE_ATTEMPT_CAP
     ]
     return waste, ahead
 

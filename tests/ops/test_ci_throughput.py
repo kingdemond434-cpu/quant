@@ -550,6 +550,25 @@ def test_a_cleared_pr_waits_like_live_and_uncleared_runs_ahead_of_it_go_behind()
     assert lf.plan(NOW, [stale_clr, old], heads, cleared=frozenset({"c"})) == ([1], [])
 
 
+def test_a_run_moved_behind_twice_keeps_its_place() -> None:
+    """2026-11-18: with CLEARed runs always newer, "before the newest waiter" moved the same
+    uncleared run every sweep (#1298: attempt 1 to 6 in five hours), so it never ran."""
+    lf = _lf()
+    clr = {"id": 1, "event": "pull_request", "head_branch": "c", "head_sha": "hc",
+           "created_at": _iso(30)}  # fmt: skip
+    old = {"id": 2, "event": "pull_request", "head_branch": "u", "head_sha": "hu",
+           "created_at": _iso(60)}  # fmt: skip
+    heads = {"c": "hc", "u": "hu"}
+    once = dict(old, run_attempt=2)  # moved once: may move again
+    assert lf.plan(NOW, [clr, once], heads, cleared=frozenset({"c"})) == ([], [2])
+    twice = dict(old, run_attempt=lf.MOVE_ATTEMPT_CAP)  # moved twice: keeps its place
+    assert lf.plan(NOW, [clr, twice], heads, cleared=frozenset({"c"})) == ([], [])
+    live = {"id": 9, "event": "push", "head_branch": lf.LIVE, "created_at": _iso(30)}
+    assert lf.plan(NOW, [live, twice], heads) == ([], [])  # behind LIVE too
+    stale = dict(twice, head_sha="gone")  # a superseded head is still waste
+    assert lf.plan(NOW, [live, stale], heads) == ([2], [])
+
+
 def test_cleared_reads_a_trusted_unedited_clear_of_the_current_head(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
