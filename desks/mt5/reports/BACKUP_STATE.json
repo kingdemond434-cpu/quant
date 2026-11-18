@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-11-17T15:30:24+00:00",
+ "at": "2026-11-18T21:45:21+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -16,7 +16,7 @@
   "job": "MT5-OffsiteBackup",
   "state": "NOT_ARMED",
   "verdict": "NOT_ARMED",
-  "at": "2026-11-17T11:43:02+00:00",
+  "at": "2026-11-18T17:43:01+00:00",
   "last_success_at": null,
   "last_check_at": null,
   "last_check_ok": null,
@@ -32,7 +32,7 @@
  },
  "reboot_drill": {
   "state": "PASS",
-  "at": "2026-11-17T04:30:16+00:00",
+  "at": "2026-11-18T04:30:09+00:00",
   "n_failures": 0
  },
  "moat": {

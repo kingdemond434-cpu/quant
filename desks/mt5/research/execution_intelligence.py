@@ -35,6 +35,13 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -126,12 +133,12 @@ def bracket_expectancy(ledger_dir: Path | None = None) -> dict[str, dict[str, An
     ledger_dir = SHADOW_LEDGERS if ledger_dir is None else ledger_dir
     out: dict[str, dict[str, Any]] = {}
     try:
-        ledgers = sorted(ledger_dir.glob("ledger_*.json"))
+        ledgers = list(_fl.iter_ledgers(ledger_dir))
     except OSError:
         return out
     for ledger in ledgers:
         rows = _json_list(ledger)
-        stem = ledger.stem[len("ledger_"):]
+        stem = _fl.label_of(ledger)
         parts = stem.split("_")
         key = f"{parts[0]}.{'_'.join(parts[1:]) or 'unknown'}"
         rs, risks = [], []
