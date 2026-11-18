@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-11-14T02:20:20.470283+00:00",
+ "signed_utc": "2026-11-18T09:33:00.646585+00:00",
  "signed_by": "auditor-clear",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
@@ -14,8 +14,8 @@
   "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",
   "libs/ops/live_ledger_view.py": "5cc676fb56625f2a",
   "libs/portfolio/allocator_proof.py": "03132b884fdd3c78",
-  "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
-  "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
+  "libs/portfolio/rails.py": "16d871855d52042a",
+  "libs/portfolio/capital_modifiers.py": "d15525250cc8a943",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "a002827611ea8079",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
@@ -2479,8 +2479,6 @@
   "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
   "desks/mt5/research/heat_policy.py": "Codex, principal-authorized repair",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
-  "libs/portfolio/rails.py": "Codex, principal-authorized repair",
-  "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
   "libs/validation/redteam.py": "Codex, principal-authorized repair",
   "libs/validation/calibration.py": "Codex, principal-authorized repair",
   "libs/regime/state_admission.py": "Codex, principal-authorized repair",
@@ -2493,6 +2491,7 @@
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
   "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
-  "libs/portfolio/allocator_proof.py": "principal"
+  "libs/portfolio/allocator_proof.py": "principal",
+  "desks/mt5/research/promoter.py": "auditor-clear"
  }
 }
