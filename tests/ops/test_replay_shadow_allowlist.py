@@ -228,3 +228,49 @@ def test_compare_keeps_an_unmeasured_allowlist_change_failing(
     assert rep["verdict"] == "FAIL" and rep["allowlist_measured"] is False
     assert any(SYNC in p and "never imported" in p for p in rep["problems"])
     assert rep["allowlist_unmeasured"]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "    #Requires -Modules SomeModule",
+        "    #Requires -Version 99",
+        "    #Requires -RunAsAdministrator",
+        "    #requires -Modules SomeModule",
+        "    # Requires -Version 99",
+        "    #region publish",
+        "    #endregion",
+        "    #no space after the hash",
+    ],
+)
+def test_a_directive_never_passes_as_a_comment(tmp_path: Path, line: str) -> None:
+    """#1359 audit MF: #Requires is honoured on any line, so a directive is not a comment."""
+    entries = [*_added(NEW)[:-1], line, _added(NEW)[-1]]
+    assert any("not a plain path" in p for p in _judge(tmp_path, entries))
+
+
+@pytest.mark.parametrize("ch", ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\x00", "\r"])
+def test_a_control_character_in_the_block_fails_closed(tmp_path: Path, ch: str) -> None:
+    """#1359 audit SF1: lines split on \\n only; any other control character is refused."""
+    entries = [*_added(NEW)[:-1], f"    # a{ch}Remove-Item x", _added(NEW)[-1]]
+    assert _judge(tmp_path, entries) != []
+
+
+def test_a_crlf_script_still_reads_line_for_line(tmp_path: Path) -> None:
+    assert _judge(tmp_path, _added(NEW)) == []  # _script() writes CRLF, as the real file is
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [["!desks/mt5/data/secrets/keys.json"], ["!*.pkl"], ["desks/mt5/reports/X.json"]],
+)
+def test_the_gitignore_gains_only_the_added_paths(tmp_path: Path, extra: list[str]) -> None:
+    """#1359 audit SF2: a measured PR may not also un-ignore (or ignore) anything else."""
+    probs = _judge(tmp_path, _added(NEW), [f"!{NEW}", "# the daily fills", *extra])
+    assert any("not an added path's own" in p for p in probs)
+
+
+def test_a_gitignore_line_removed_is_unmeasured(tmp_path: Path) -> None:
+    base = _tree(tmp_path / "base", BASE_ENTRIES, ["*.json", "secrets/"])
+    head = _tree(tmp_path / "head", _added(NEW), ["*.json", f"!{NEW}"])
+    assert any("was removed" in p for p in rs.allowlist_problems(base, head))

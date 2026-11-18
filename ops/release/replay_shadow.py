@@ -437,9 +437,13 @@ GITIGNORE = ".gitignore"
 RELEASE_PY = "libs/ops/release.py"
 _ALLOW_OPEN = "$reportPaths = @("
 _ALLOW_PATH = re.compile(r'^\s*"([A-Za-z0-9_][A-Za-z0-9_./-]*)"(,?)\s*$')
-_ALLOW_COMMENT = re.compile(r"^\s*#")
-#: A comment line may never open or close a block comment.
-_ALLOW_COMMENT_BAD = re.compile(r"<#|#>")
+#: A comment is `#` then whitespace (or nothing): `#Requires`, `#region` and every other directive
+#: have no space after the `#`, and `#Requires` works on any line (#1359 audit MF).
+_ALLOW_COMMENT = re.compile(r"^[ \t]*#(?:[ \t]|$)")
+#: A comment line may never open or close a block comment, nor be a directive however spaced.
+_ALLOW_COMMENT_BAD = re.compile(r"<#|#>|^[ \t]*#[ \t]*requires\b", re.IGNORECASE)
+#: Any control character but a tab (#1359 audit SF1: the static view and the parser must agree).
+_CONTROL = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")
 _ALLOW_EXTS = (".json", ".jsonl")
 _SECRET_NAME = re.compile(
     r"secret|credential|passw|token|api.?key|private|login|account|cookie|session|auth|"
@@ -472,7 +476,8 @@ def _leaks(line: str) -> bool:
 
 def _raw_lines(tree: Path, path: str) -> list[str] | None:
     """The file's lines exactly as committed: strict UTF-8, no normalising (so a look-alike
-    character can never pass for the ASCII it resembles); None when absent or not UTF-8."""
+    character can never pass for the ASCII it resembles), split on "\n" only with one trailing
+    "\r" dropped, as PowerShell splits them (#1359 audit SF1); None when absent or not UTF-8."""
     if _is_git(tree):
         p = subprocess.run(
             ["git", "-C", str(tree), "show", f"HEAD:{path}"], capture_output=True, check=False
@@ -484,9 +489,11 @@ def _raw_lines(tree: Path, path: str) -> list[str] | None:
     if raw is None:
         return None
     try:
-        return raw.decode("utf-8").splitlines()
+        text = raw.decode("utf-8")
     except UnicodeDecodeError:
         return None
+    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in text.split("\n")]
+    return lines[:-1] if lines and lines[-1] == "" else lines
 
 
 def _release_rules(tree: Path) -> tuple[tuple[str, ...], set[str], tuple[str, ...]] | None:
@@ -555,7 +562,7 @@ def _allow_entries(block: list[str]) -> tuple[list[str], list[str]] | None:
     paths: list[str] = []
     commas: list[str] = []
     for ln in block:
-        if not ln.isascii():
+        if not ln.isascii() or _CONTROL.search(ln):
             return None
         if not ln.strip() or (_ALLOW_COMMENT.match(ln) and not _ALLOW_COMMENT_BAD.search(ln)):
             continue
@@ -619,7 +626,14 @@ def allowlist_problems(base: Path, head: Path) -> list[str]:
         if f"!{p}" not in gi:
             out.append(f"{p}: no exact !{p} line in {GITIGNORE}")
     new_lines = list((Counter(h_in) - Counter(b_in)).elements())
-    new_lines += list((Counter(gi) - gi_base).elements())
+    gi_added = list((Counter(gi) - gi_base).elements())
+    new_lines += gi_added
+    # #1359 audit SF2: the .gitignore may only gain the added paths' own `!p` lines and comments
+    if gi_base - Counter(gi):
+        out.append(f"a {GITIGNORE} line was removed")
+    wanted = {f"!{p}" for p in added}
+    if any(ln not in wanted and ln.strip() and not ln.lstrip().startswith("#") for ln in gi_added):
+        out.append(f"a {GITIGNORE} line was added that is not an added path's own !path line")
     if any(_leaks(ln) for ln in new_lines):
         out.append("an added line carries a host, path, address, number, amount or key")
     return out
