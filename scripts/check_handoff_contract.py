@@ -39,7 +39,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from libs.ops.fence_exit import fence_exit  # noqa: E402
 from libs.research import handoff_contract as HC  # noqa: E402
+
+#: Verdicts that exit 0. UNMEASURED stays non-blocking, as in the sibling chain fences
+#: (check_allocator_join, check_allocator_liveness); every other verdict, an unspelled one
+#: included, exits 1.
+_PASSING = frozenset({"PASS", "UNMEASURED"})
 
 #: How long after its producer's source changed an artifact may still predate the stamp. One
 #: daily producer cadence plus the hourly adoption slot.
@@ -222,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  FAIL {p}")
         for u in doc["unmeasured"]:
             print(f"  UNMEASURED {u}")
-    return 1 if doc["verdict"] == "FAIL" else 0
+    return fence_exit(doc["verdict"], _PASSING, fail=1)
 
 
 if __name__ == "__main__":
