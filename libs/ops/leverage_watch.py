@@ -21,10 +21,12 @@ implies; `observe` keeps the last per symbol and names a move of `CHANGE_RATIO` 
 
 MULTI-VENUE (ported from #1145, 2026-11-18). One file, one row per venue: `fusion` from
 `research/financing_lab.py`, `ftmo` from `prop/ftmo_venue_reader.py` on the connection it already
-holds (`observe_mt5`), and `e8` from `prop/e8_book.py` on the TradeLocker session that hourly pass
-already opens (`observe_tradelocker`): no new login. TradeLocker's leverage and margin fields are
-recorded BY KEY NAME (a value only when the key names a leverage, which is a ratio), and the read
-runs under the caller's `--budget-s`.
+holds (`observe_mt5`). `e8` is NOT WIRED YET (Governance 2026-11-18 18:52Z): its read belongs
+on the TradeLocker session `prop/e8_book.py` opens (`observe_tradelocker`, no new login), but
+e8_book's main() moves money and the replay cannot reach it, so the call waits for a replay
+scenario that runs it; until then the e8 row reads UNMEASURED. TradeLocker's leverage and
+margin fields are recorded BY KEY NAME (a value only when the key names a leverage, which is a
+ratio), and the read runs under the caller's `--budget-s`.
 
 FEASIBILITY (ported from #1145). Every order sized in the last `INTENT_DAYS` for the venue
 (`order_intents.jsonl` for Fusion, `ftmo_exec_intents.jsonl`, `e8_intents.jsonl`) -- the largest
@@ -385,7 +387,7 @@ def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
                          "feasibility": unmeasured("no pass has recorded this venue yet", now)}
     out = {"generated_utc": now.isoformat(timespec="seconds"),
            "producer": "libs/ops/leverage_watch.py (via research/financing_lab.py, "
-                       "prop/ftmo_venue_reader.py, prop/e8_book.py)",
+                       "prop/ftmo_venue_reader.py)",
            "stale_after_h": STALE_AFTER_H, "venues": venues,
            "feasibility_by_venue": {v: (r.get("feasibility") or {}).get("verdict", "UNMEASURED")
                                     for v, r in sorted(venues.items()) if isinstance(r, dict)},

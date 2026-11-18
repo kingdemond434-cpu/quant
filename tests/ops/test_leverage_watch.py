@@ -255,10 +255,11 @@ def test_e8_reads_keys_by_name_on_the_held_session_within_its_budget(tmp_path: P
     assert _t.monotonic() - t0 < 2.0 and "budget" in line
 
 
-def test_the_ftmo_reader_and_e8_book_wire_it() -> None:
+def test_the_ftmo_reader_wires_it_and_e8_book_does_not_yet() -> None:
+    """Governance 2026-11-18 18:52Z: e8_book's main() is money path the replay cannot reach, so
+    the E8 read waits for a replay scenario that runs it."""
     prop = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "prop"
     ftmo = (prop / "ftmo_venue_reader.py").read_text(encoding="utf-8")
     assert "observe_mt5(mt5, 'ftmo')" in ftmo
     book = (prop / "e8_book.py").read_text(encoding="utf-8")
-    assert "observe_tradelocker(venue, budget_s=float(args.budget_s))" in book
-    assert book.count("TradeLockerVenue().connect()") == 1      # no login of its own
+    assert "leverage_watch" not in book

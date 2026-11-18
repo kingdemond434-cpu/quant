@@ -547,9 +547,6 @@ def main(argv: list[str] | None = None) -> int:
                     help="do NOT ask the venue what it lists. The book is then written only if a "
                          "previously measured catalogue is on disk; with neither, nothing is "
                          "written, because an unfiltered book is not a safer book.")
-    ap.add_argument("--budget-s", type=float, default=60.0,
-                    help="seconds the K3 leverage read may take on the session this pass "
-                         "already holds (libs/ops/leverage_watch.observe_tradelocker)")
     args = ap.parse_args(argv)
 
     # RULE 1 OF THIS FILE WAS OPTIONAL, AND OFF BY DEFAULT (fixed 2026-09-14).
@@ -578,17 +575,9 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_live_venue:
         try:
             from prop.tradelocker_venue import TradeLockerVenue
-            venue = TradeLockerVenue().connect()
-            tradeable = set(venue._by_key)
+            tradeable = set(TradeLockerVenue().connect()._by_key)
             source = f"live venue ({len(tradeable)} instruments)"
             _cache_catalogue(tradeable)
-            # K3 (ported from #1145): E8's leverage and margin fields, by key name, on THIS
-            # session -- no login of its own -- bounded by --budget-s. Read-only, never raises.
-            try:
-                from libs.ops.leverage_watch import observe_tradelocker
-                print(f"leverage: {observe_tradelocker(venue, budget_s=float(args.budget_s))}")
-            except Exception as lexc:           # a report: never a reason to lose the book
-                print(f"leverage watch unavailable ({type(lexc).__name__})")
         except Exception as exc:
             print(f"live venue UNREACHABLE ({type(exc).__name__}: {exc}); falling back to the "
                   f"last measured catalogue")
