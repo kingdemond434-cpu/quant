@@ -352,8 +352,11 @@ def _tape_window(symbol: str, t0_ms: float, root: Path | None) -> pd.DataFrame |
 
 
 def lost_keys(ledger: list[dict[str, Any]]) -> list[str]:
-    """Deferrals the gate expired (no release ever came): out of the proof, so counted apart."""
-    return sorted({str(r.get("key")) for r in ledger if r.get("kind") == "expired"})
+    """Deferrals expired with no release: out of the proof, so counted apart. Once per key (the
+    hourly leg and the gateway may both ledger one), and never a key that WAS released after the
+    leg's ledger-only sweep: that one is scored as a release instead."""
+    released = {str(r.get("key")) for r in ledger if r.get("kind") == "release"}
+    return sorted({str(r.get("key")) for r in ledger if r.get("kind") == "expired"} - released)
 
 
 def score(ledger: list[dict[str, Any]], state: dict[str, Any],

@@ -207,7 +207,8 @@ def evaluate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minutes
             "max_defer_s": max_defer_s(bar_minutes), **norm}
 
 
-def _sweep(st: dict[str, Any], ledger: Path, now: datetime) -> int:
+def _sweep(st: dict[str, Any], ledger: Path, now: datetime, *, skip: str | None = None,
+           ledger_only: bool = False) -> int:
     """Expire every pending deferral older than its horizon plus one pass.
 
     A pending key is released only by a later pass that hands the gate an ok plan for the SAME
@@ -215,7 +216,19 @@ def _sweep(st: dict[str, Any], ledger: Path, now: datetime) -> int:
     gateway down), nothing would ever release it: no ledger row, a state that only grows, and a
     gate whose own proof counts only the deferrals that survived. So each one is ledgered as
     `expired` with an UNMEASURED improvement and counted as lost, and its key is remembered so
-    it is never deferred again from scratch."""
+    it is never deferred again from scratch.
+
+    `skip` is the key THIS call carries an ok plan for. Passes run 1 to 7 minutes apart, so a
+    deferral that reached its horizon is often first seen after max_defer_s + one pass; sweeping
+    it would ledger it `expired` while the order still goes out, unscored -- and horizon releases
+    are the likely negative ones, so the proof would be biased upward. It goes through the release
+    branch instead, which labels it `horizon` with its measured improvement.
+
+    `ledger_only` is the hourly leg's form: it appends the `expired` rows and leaves the state
+    alone, because the gateway writes that file without a lock and a read-modify-write here could
+    drop a deferral the gateway wrote after this read. The gateway's own next call removes the key
+    (and may ledger it again; `lost_keys` counts a key once, and not at all once it is released).
+    """
     pending = st.setdefault("pending", {})
     expired: list[str] = st.setdefault("expired", [])
     n = 0
@@ -224,9 +237,10 @@ def _sweep(st: dict[str, Any], ledger: Path, now: datetime) -> int:
             age = (now - datetime.fromisoformat(str(held["first_at"]))).total_seconds()
         except (KeyError, TypeError, ValueError):
             age = math.inf
-        if age <= float(held.get("max_defer_s") or 0.0) + PASS_S:
+        if key == skip or age <= float(held.get("max_defer_s") or 0.0) + PASS_S:
             continue
-        pending.pop(key, None)
+        if not ledger_only:
+            pending.pop(key, None)
         _append(ledger, {"kind": "expired", "at": now.isoformat(), "key": key,
                          "symbol": held.get("symbol"), "side": held.get("side"),
                          "first_at": held.get("first_at"),
@@ -243,16 +257,14 @@ def _sweep(st: dict[str, Any], ledger: Path, now: datetime) -> int:
 
 
 def sweep_expired(base: Path, now: datetime | None = None) -> int:
-    """The hourly leg's sweep, for a gateway that has stopped calling the gate. Never raises."""
+    """The hourly leg's sweep, for a gateway that has stopped calling the gate. LEDGER ONLY: it
+    never writes the state file the gateway owns (see `_sweep`). Never raises."""
     try:
         p = paths(Path(base))
         st = _read_json(p["state"])
         if not isinstance(st, dict) or not st.get("pending"):
             return 0
-        n = _sweep(st, p["ledger"], now or datetime.now(tz=UTC))
-        if n:
-            _write_state(p["state"], st)
-        return n
+        return _sweep(st, p["ledger"], now or datetime.now(tz=UTC), ledger_only=True)
     except Exception:
         return 0
 
@@ -276,13 +288,13 @@ def _entry_gate(s: dict[str, Any], plan: dict[str, Any], *, base: Path, bar_minu
     st = st if isinstance(st, dict) else {}
     pending: dict[str, Any] = st.setdefault("pending", {})
     seen: list[str] = st.setdefault("seen", [])
-    swept = _sweep(st, p["ledger"], now) if pending else 0
+    key = f"{s.get('name')}|{plan.get('last_bar')}"
+    swept = _sweep(st, p["ledger"], now, skip=key if plan.get("ok") else None) if pending else 0
     if mode == "OFF" or not plan.get("ok"):
         if swept:
             _write_state(p["state"], st)
         return None
     ev = evaluate(s, plan, base=base, bar_minutes=bar_minutes, now=now)
-    key = f"{s.get('name')}|{plan.get('last_bar')}"
     stamp = now.isoformat()
     if mode != "LIVE":
         # SHADOW: record the entry once, send now. The order is not touched. A deferral left

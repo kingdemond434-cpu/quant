@@ -274,6 +274,52 @@ def test_a_pending_deferral_that_is_never_released_expires_and_is_counted_lost(
                                                   "y|2026-11-18 09:00:00+00:00"])
 
 
+def test_a_deferral_first_seen_past_horizon_plus_a_pass_is_released_not_expired(
+        tmp_path) -> None:
+    """Passes run 1 to 7 minutes apart: a horizon release first seen at horizon + 5 min must be
+    a scored `release` (reason horizon), never an unscored `expired` (audit MF1, round 2)."""
+    base = _desk(tmp_path, "LIVE")
+    t0 = datetime.now(tz=UTC)
+    s = {"name": "x", "symbol": "EURUSD"}
+    assert gate.entry_gate(s, _plan(1.1002), base=base, now=t0)
+    late = t0 + timedelta(seconds=gate.max_defer_s(60) + 300)
+    assert gate.entry_gate(s, _plan(1.10021), base=base, now=late) is None
+    kinds = [r["kind"] for r in _ledger(base)]
+    assert kinds == ["defer", "release"], kinds
+    rel = _ledger(base)[-1]
+    assert rel["reason"] == "horizon" and isinstance(rel["improvement_r"], float)
+    assert sr.lost_keys(_ledger(base)) == []
+
+
+def test_the_hourly_sweep_never_drops_a_pending_entry_written_after_its_read(
+        tmp_path, monkeypatch) -> None:
+    """The gateway writes the state file without a lock, so the leg's sweep is ledger-only: a
+    deferral the gateway writes WHILE the leg is sweeping survives it (audit SF4)."""
+    base = _desk(tmp_path, "LIVE")
+    t0 = datetime.now(tz=UTC)
+    assert gate.entry_gate({"name": "old", "symbol": "EURUSD"}, _plan(1.1002), base=base, now=t0)
+    later = t0 + timedelta(seconds=gate.max_defer_s(60) + gate.PASS_S + 1)
+    state = base / "data" / "spread_gate_state.json"
+    real_append = gate._append
+
+    def gateway_writes_mid_sweep(path, row):          # the gateway's pass lands mid-sweep
+        doc = json.loads(state.read_text("utf-8"))
+        doc["pending"]["new|bar"] = {"first_at": later.isoformat(), "max_defer_s": 1200.0}
+        state.write_text(json.dumps(doc), "utf-8")
+        real_append(path, row)
+    monkeypatch.setattr(gate, "_append", gateway_writes_mid_sweep)
+    assert gate.sweep_expired(base, later) == 1
+    doc = json.loads(state.read_text("utf-8"))
+    assert "new|bar" in doc["pending"], "the leg's sweep dropped a deferral written after its read"
+    assert "old|2026-11-18 09:00:00+00:00" in doc["pending"], "the leg must not write state"
+    assert [r["kind"] for r in _ledger(base)] == ["defer", "expired"]
+    # If the gateway then releases the key the leg ledgered, it is a release, not a loss.
+    monkeypatch.setattr(gate, "_append", real_append)
+    assert gate.entry_gate({"name": "old", "symbol": "EURUSD"}, _plan(1.1002), base=base,
+                           now=later) is None
+    assert _ledger(base)[-1]["kind"] == "release" and sr.lost_keys(_ledger(base)) == []
+
+
 def test_the_missed_growth_ledger_carries_the_gates_line(tmp_path, monkeypatch) -> None:
     import research.missed_growth as mg
     monkeypatch.setattr(mg, "SPREAD_GATE", tmp_path / "SPREAD_GATE.json")
