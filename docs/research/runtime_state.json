@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 829,
-  "UNMEASURED": 43
+  "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1053,
+  "attested": 1054,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -698,6 +698,16 @@
      "leg:halt_rail",
      "leg:index_discovery",
      "task:MT5-FTMO-Allocator"
+    ]
+   },
+   {
+    "at": "2026-11-18T02:14:33+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:basket_mismatch"
     ]
    }
   ]
@@ -27739,6 +27749,34 @@
    "measured_on": "vmi3571445",
    "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
    "measured_at": "2026-11-11T14:50:08+00:00"
+  },
+  {
+   "organ": "leg:basket_mismatch",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/basket_mismatch.py"
+   ],
+   "clock": "hourly_cycle:basket_mismatch",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BASKET_MISMATCH.json",
+   "artifact_declared": "desks/mt5/reports/BASKET_MISMATCH.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 5,
+   "artifact_bytes": 46736,
+   "artifact_sha256": "b58cf3ca9c040a0a15a588b94049aacad7724d9459ee6c56e82e58e912e99f71",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-18T02:14:33+00:00"
   }
  ],
  "ratchet": {
