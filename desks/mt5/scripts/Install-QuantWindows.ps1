@@ -258,21 +258,27 @@ $tasks = @(
        Desc = "Give every hourly producer its own clock, independent of the long cycle." },
     @{ Name = "MT5-MoatSilver"
        Script = "moat\\moat_silver.py"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+       # :23 PAST THE HOUR, as the box has registered it since 2026-09-10 (read off the box
+       # 2026-11-18: StartBoundary ...T23:23, PT1H) and as box_tasks.manifest says. A rebuild that
+       # fired at :00 would land on the hour with every other hourly task.
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(23) `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "Bronze tick tape -> the parquet the tape-input families actually read." },
     @{ Name = "MT5-MoatRecorder"
        Script = "moat\\moat_recorder.py"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 10) `
+       # :10 AND :40, as the box has registered it since 2026-09-10 (read off the box 2026-11-18:
+       # StartBoundary ...T23:10, PT30M) and as box_tasks.manifest says. This line said ten
+       # minutes, so a rebuilt box would have run a trigger nobody had measured.
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(10) `
+                     -RepetitionInterval (New-TimeSpan -Minutes 30) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
-       # A RESIDENT LOOP ON A TEN-MINUTE TRIGGER, which is not a contradiction: the recorder
+       # A RESIDENT LOOP ON A THIRTY-MINUTE TRIGGER, which is not a contradiction: the recorder
        # holds a single-instance lock, so a trigger that fires while it is running exits
        # immediately and a trigger that fires after a crash restarts it. That is the cheapest
        # correct watchdog for a process whose failure mode is "died quietly at 02:00".
        TimeLimit = (New-TimeSpan -Days 3650)
-       Desc = "The permanent Fusion tick tape -- restarts itself within 10 minutes of any death." },
+       Desc = "The permanent Fusion tick tape -- restarts itself within 30 minutes of any death." },
     # ---- THE MT5 DEADMAN, DRY-RUN ONLY ---------------------------------------------------------
     # MEASURED 2026-09-08: the only deadman on this desk (scripts/run_deadman_switch.py, Tier-3,
     # untouched) polls pinned Binance testnet endpoints and protects no live MT5 risk, and the
