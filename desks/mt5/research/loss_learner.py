@@ -89,8 +89,8 @@ BOOK_CONSUMERS = {
 }
 BOOK_RAILS = {
     "fusion": "max E[log W] within survival; heat floor 20%",
-    "e8": ("E8 Pro: 2.5% daily loss incl. floating, 2%/day profit cap, floor $90k, no "
-           "cross-account opposite trades, no Scandi pairs"),
+    "e8": ("E8 Pro: 2.5% daily loss incl. floating, 2%/day profit cap, floor 90% of the starting "
+           "balance (10% max loss), no cross-account opposite trades, no Scandi pairs"),
     "ftmo": "FTMO 2-Step: 5% daily loss, 10% max loss; never on a symbol E8 trades",
 }
 REPORT = _DESK / "reports" / "LOSS_LEARNER.json"
@@ -651,7 +651,7 @@ def variant_clock_keys(ids: set[str]) -> tuple[dict[str, str], str]:
                 out[nid] = sf.sleeve_key(sym, win, params, fam, side)
         return out, "MEASURED"
     except Exception as exc:
-        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__}: {exc})"
+        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__})"
 
 
 def replacement_verdict(parent_rows: list[tuple[datetime, float]],
@@ -728,7 +728,7 @@ def _graph_state() -> tuple[set[str], dict[str, dict[str, list[float]]], str]:
         return set(sd._current(rows)), sd.grid_values(rows), (
             "; ".join(f"{k}: {v}" for k, v in skipped.items()) or f"{len(rows)} graph rows")
     except Exception as exc:
-        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__}: {exc})"
+        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__})"
 
 
 def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
@@ -1001,7 +1001,7 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                          if d["action"] == "RETIRED_PARENT"],
                         path=sp.parent / "RETIRED_CLOSE_QUEUE.json")
         except Exception as exc:
-            done.append({"action": "CLOSE_QUEUE_FAILED", "why": f"{type(exc).__name__}: {exc}"})
+            done.append({"action": "CLOSE_QUEUE_FAILED", "why": f"{type(exc).__name__}"})
     for d in done:
         d.pop("_door", None)
     if done:
@@ -1036,7 +1036,7 @@ def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
     try:
         tmp.write_text(body, "utf-8")
     except OSError as exc:
-        return False, f"temp write failed: {type(exc).__name__}: {exc}"
+        return False, f"temp write failed: {type(exc).__name__}"
     last: Exception | None = None
     try:
         for _ in range(REPLACE_TRIES):
@@ -1050,7 +1050,8 @@ def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
             sp.write_text(body, "utf-8")
             return True, f"in-place write after {REPLACE_TRIES} refused replaces ({last})"
         except OSError as exc:
-            return False, f"replace refused ({last}) and in-place write failed: {exc}"
+            return False, (f"replace refused ({last}) and in-place write failed: "
+                           f"{type(exc).__name__}")
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()
@@ -1075,7 +1076,7 @@ def _note_retirement_door(name: str, from_status: str, reason: str,
         promoter.flush_door_events()
     except Exception as exc:                            # pragma: no cover - note-taking only
         print(f"{SOURCE}: RETIRED door not recorded for {name} "
-              f"({type(exc).__name__}: {exc})", flush=True)
+              f"({type(exc).__name__})", flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:

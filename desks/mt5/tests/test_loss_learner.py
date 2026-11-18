@@ -417,3 +417,17 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     rep = LL.run(dry_run=True)
     assert rep["books"]["e8"].startswith("UNMEASURED")
     assert list(tmp_path.iterdir()) == []
+
+
+_MONEY = r"[$£€¥]\s?\d|\d\s?(?:k|K)\b|\b(?:USD|GBP|EUR)\s?\d"
+
+
+def test_published_firm_rails_carry_no_money_figure() -> None:
+    """BOOK_ROLLOUTS.json is synced to a public repo: a firm rail is stated as a share of the
+    account, never as a currency amount (Auditor HOLD on #1048, "floor $90k")."""
+    import re
+
+    for book, text in LL.BOOK_RAILS.items():
+        assert not re.search(_MONEY, text), (book, text)
+    src = Path(LL.__file__).read_text("utf-8")
+    assert not re.search(r"[$£€¥]\s?\d", src), "a currency figure in loss_learner source"
