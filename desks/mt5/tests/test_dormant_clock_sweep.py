@@ -103,6 +103,7 @@ def test_unreadable_inputs_are_unmeasured_not_clean() -> None:
 
 def test_apply_appends_once_and_never_rewrites(tmp_path: Path,
                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(dcs, "SEEN_CELLS", tmp_path / "seen.json")
     docket = tmp_path / "docket.json"
     docket.write_text(json.dumps([{"symbol": "EURUSD", "family": "f"}]), encoding="utf-8")
     monkeypatch.setattr(dcs, "docket_row", lambda t, now: {
@@ -121,6 +122,21 @@ def test_apply_appends_once_and_never_rewrites(tmp_path: Path,
     assert len(json.loads(docket.read_text(encoding="utf-8"))) == 3
 
 
+def test_a_cell_already_judged_is_never_reappended(tmp_path: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = tmp_path / "seen.json"
+    seen.write_text(json.dumps({"XAUUSD.session_range_breakout.rs=10": "2026-11-18"}),
+                    encoding="utf-8")
+    monkeypatch.setattr(dcs, "SEEN_CELLS", seen)
+    docket = tmp_path / "docket.json"
+    docket.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(dcs, "docket_row", lambda t, now: {dcs.TAG_FIELD: t["cell_id"]})
+    res = dcs.apply(_build([], {}), NOW, docket=docket)
+    assert res["queued"] == 1
+    assert [r[dcs.TAG_FIELD] for r in json.loads(docket.read_text(encoding="utf-8"))] == [
+        "XAUUSD.session_range_breakout.rs=14"]
+
+
 def test_apply_refuses_an_unreadable_docket(tmp_path: Path) -> None:
     doc = _build([], {})
     res = dcs.apply(doc, NOW, docket=tmp_path)            # a directory cannot be read as bytes
@@ -133,6 +149,7 @@ def test_docket_row_carries_the_gate1_mechanism_and_tag() -> None:
     row = dcs.docket_row(target, NOW)
     assert row[dcs.TAG_FIELD] == "cid"
     assert row["mechanism_status"] == "NAMED"
+    assert row["judgement"] == "SECOND_LOOK" and "0.5961" in row["prior_judgement"]
     assert row["params"] == WINDOWS["london_am"]
     assert row["source"] == dcs.SOURCE
 

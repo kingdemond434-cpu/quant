@@ -44,6 +44,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 SLEEVES = DESK / "data" / "sleeves.json"
 SHADOW_STATE = DESK / "reports" / "shadow" / "shadow_state.json"
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
+SEEN_CELLS = DESK / "data" / "hypotheses" / "gauntlet_seen_cells.json"
+#: The judgement these windows already had, carried onto every re-judge row so the reader (and
+#: the trial census) knows this is a SECOND look at the mechanism, not a first (audit of #1322).
+PRIOR_JUDGEMENT = ("hunt6 session_range_breakout cells for this window failed PBO 0.5961 on "
+                   "2026-08-26 (the reason decision_core.GOLD_ASIA_ONLY_ZERO zeroes it)")
 OUT = DESK / "reports" / "DORMANT_CLOCKS.json"
 SOURCE = "dormant_clock_sweep"
 TAG_FIELD = "dormant_tag"
@@ -130,6 +135,8 @@ def docket_row(target: dict[str, Any], now: datetime) -> dict[str, Any]:
         "dormant_names": list(target["names"]),
         # Gate 1 reads this: the mechanism is the one the gateway already trades on the window.
         "mechanism_status": "NAMED",
+        "judgement": "SECOND_LOOK",
+        "prior_judgement": PRIOR_JUDGEMENT,
         "mechanism_note": (f"re-judge of the dormant {target['symbol']} {target['window']} "
                            f"{target['family']} window the live book zeroes "
                            f"({', '.join(target['names'])}), at the gateway's exact params, under "
@@ -256,13 +263,19 @@ def apply(doc: dict[str, Any], now: datetime | None = None,
     present = docket_tags(path)
     if present is None:
         return {"queued": 0, "refused": "docket unreadable; UNMEASURED, retried next pass"}
-    missing = [x for x in targets if x["cell_id"] not in present]
+    # A cell the gauntlet has already judged at this identity is never re-appended, even if a
+    # docket compaction dropped its tagged row (audit of #1322, SF2): one re-judge, ever.
+    seen = _read(SEEN_CELLS)
+    judged = set(seen) if isinstance(seen, dict) else set()
+    missing = [x for x in targets if x["cell_id"] not in present and x["cell_id"] not in judged]
     from attestation_remint import append_to_docket
     res = append_to_docket(path, [docket_row(x, t) for x in missing])
     queued_ok = not res.get("refused")
     missing_ids = {x["cell_id"] for x in missing}
     for x in targets:
         x["on_docket"] = x["cell_id"] in present or (x["cell_id"] in missing_ids and queued_ok)
+        if x["cell_id"] in judged:
+            x["already_judged"] = True
     return {"queued": int(res.get("appended") or 0),
             "already_on_docket": len(targets) - len(missing),
             **({"refused": res["refused"]} if res.get("refused") else {})}
