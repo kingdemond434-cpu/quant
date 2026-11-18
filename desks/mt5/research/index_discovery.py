@@ -98,7 +98,7 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
     key = f"{scheme}://{host}"
     if key in _ROBOTS:
         return _ROBOTS[key]
-    from libs.data.robots_body import robots_rules_or_refusal
+    from libs.data.robots_body import deny_all, is_hard_stop, robots_rules_or_refusal
     req = urllib.request.Request(f"{key}/robots.txt", headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=15.0, context=_TLS) as r:
@@ -106,8 +106,10 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
             out: urllib.robotparser.RobotFileParser | str = robots_rules_or_refusal(
                 getattr(r, "status", 200), r.headers.get("Content-Type"), r.read(500_000))
     except urllib.error.HTTPError as e:
-        # 404/410 = no rules; 401/403/429/451 = hard stop; anything else = unread.
+        # 404/410 = no rules; 401/403/429/451 = hard stop (disallow everything); else unread.
         out = robots_rules_or_refusal(getattr(e, "code", 0), None, "")
+        if is_hard_stop(out):
+            out = deny_all()
     except Exception as e:
         out = f"robots.txt unreadable ({type(e).__name__})"
     _ROBOTS[key] = out
