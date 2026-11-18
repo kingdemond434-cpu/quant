@@ -97,7 +97,21 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.refused_hosts import refusal  # noqa: E402 -- fail closed: no list, no recorder
 from recorders.tape_store import _append_line  # noqa: E402
+
+#: THE FOUR CBOE INDICES ARE BLOCKED ON TERMS (BACKLOG 609, 2026-11-18). ^VIX, ^GVZ, ^OVX and ^VXN
+#: are Cboe's: Cboe's own terms refuse automated collection (refused_hosts "cboe.com"), and the
+#: only keyless routes this recorder had are refused too -- Yahoo (terms s2(d)(9)) and FRED
+#: (ruling 2026-11-13), which redistribute the same Cboe series. A mirror cannot grant a licence
+#: its upstream withheld, so no lawful non-Cboe, non-FRED source of these levels exists. Each
+#: ground is recorded BLOCKED_ON_TERMS with this line, and the join half still runs: the desk's
+#: OWN realised vol on the mapped MT5 bars (`realised_vol`, close-to-close and Parkinson) is
+#: recorded beside the refusal. It is realised, not implied -- a stand-in for the level, never
+#: the index, and the variance risk premium stays UNMEASURED.
+VOL_MISSED_GROWTH = ("missed_growth: the implied-vol level, term curve and VRP of the Cboe "
+                     "indices are lost until Cboe's own terms allow automated use; the desk's "
+                     "own realised vol on the mapped MT5 bars stands in. A gap, not a zero.")
 
 SCHEMA = "vol-archive-1"
 ARCHIVE = _DESK / "data" / "vol_archive" / "observations.jsonl"
@@ -196,8 +210,16 @@ class YahooVolSource:
         self.range = range_
         self.fresh_range = fresh_range
         self._fred_ok = True
+        #: ticker -> why every route to it is refused on terms. Read by `observe`, which records
+        #: BLOCKED_ON_TERMS instead of an outage.
+        self.refused: dict[str, str] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
+        why = refusal(self._chart_url(ticker, self.range))
+        if why:
+            # BOTH ROUTES ARE REFUSED (Yahoo here, FRED in `fred_series`): no request is built.
+            self.refused[ticker] = f"BLOCKED_ON_TERMS: {why}; FRED refused too (2026-11-13)"
+            return None
         history = self._chart(ticker, self.range)
         if history is None:
             try:
@@ -216,9 +238,15 @@ class YahooVolSource:
         merged.update(fresh or {})
         return merged or None
 
+    @staticmethod
+    def _chart_url(ticker: str, range_: str) -> str:
+        return ("https://query1.finance.yahoo.com/v8/finance/chart/"
+                + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
+
     def _chart(self, ticker: str, range_: str) -> dict[str, float] | None:
-        url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
-               + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
+        url = self._chart_url(ticker, range_)
+        if refusal(url):
+            return None             # refused on terms: never the wire
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
@@ -404,6 +432,17 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
         base = {"schema": SCHEMA, "observed_at": at, "vol_ticker": g.vol_ticker,
                 "mt5_symbol": sym, "tradeable": sym is not None, "what": g.what}
         s = source.series(g.vol_ticker)
+        blocked = (getattr(source, "refused", None) or {}).get(g.vol_ticker)
+        if not s and blocked:
+            obs = Observation(**base, value_date="", status="BLOCKED_ON_TERMS",
+                              reason=f"{blocked}. {VOL_MISSED_GROWTH}")
+            if sym:
+                cc, park, last = realised_vol(sym, universe_dir)
+                obs.realised_vol_cc = round(cc, 4) if cc is not None else None
+                obs.realised_vol_parkinson = round(park, 4) if park is not None else None
+                obs.realised_last_bar = last
+            out.append(obs)
+            continue
         if not s:
             out.append(Observation(**base, value_date="", status="UNAVAILABLE",
                                    reason=(f"{g.vol_ticker} returned no series -- recorded as an "
@@ -535,6 +574,7 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation]) -> dict[str, An
         },
         "cycle": [asdict(o) for o in cycle],
         "unavailable": [o.vol_ticker for o in cycle if o.status == "UNAVAILABLE"],
+        "blocked_on_terms": [o.vol_ticker for o in cycle if o.status == "BLOCKED_ON_TERMS"],
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 

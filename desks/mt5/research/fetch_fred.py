@@ -16,11 +16,15 @@ data_registry.json. Daily refresh recommended.
 """
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from libs.data.refused_hosts import guard  # fail closed: no list, no module
 
 OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -62,6 +66,9 @@ SERIES = {
 
 def fetch(sid: str) -> pd.DataFrame:
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    # FRED is refused for every automated fetch (terms ruling 2026-11-13; BACKLOG 609): this
+    # raises RefusedSource before the wire, and main() records the series as failed.
+    guard(url)
     df = pd.read_csv(url, skiprows=1, index_col=0, parse_dates=True)
     df.index = pd.to_datetime(df.index, utc=True)
     df = df.rename(columns={df.columns[0]: sid})

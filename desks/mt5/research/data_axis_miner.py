@@ -85,6 +85,9 @@ AXES: tuple[dict, ...] = (
     {"axis": "macro_state", "id": "fred_series",
      "what": "FRED: rates, spreads, DXY, real yields, breakevens -- daily, dated",
      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
+     "terms": "REFUSED",
+     "terms_why": ("FRED: refused for all automated fetches (terms ruling 2026-11-13); the "
+                   "public-domain series come from their primary publishers instead"),
      "binds_to": ["XAUUSD", "USDJPY", "EURUSD", "UST10Y", "US500", "NAS100"],
      "unblocks": ["macro_conditional"],
      "revision_safe": "VINTAGES EXIST (ALFRED) but the plain CSV is the CURRENT vintage only -- "
@@ -168,7 +171,14 @@ AXES: tuple[dict, ...] = (
 
 
 def probe(url: str) -> dict:
-    """Reach it, or say exactly why not. A source is never marked usable from documentation."""
+    """Reach it, or say exactly why not. A source is never marked usable from documentation.
+
+    A probe is automated contact: a host whose own terms refuse it (libs.data.refused_hosts) is
+    never probed, whatever its catalogue row says (BACKLOG 609)."""
+    from libs.data.refused_hosts import refusal
+    why = refusal(url)
+    if why:
+        return {"reachable": None, "status": None, "why": f"BLOCKED_ON_TERMS: {why}"}
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     t0 = datetime.now(tz=UTC)
     try:

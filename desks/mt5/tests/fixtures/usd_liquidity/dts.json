@@ -1,0 +1,5 @@
+{"data": [
+ {"record_date": "2026-11-17", "account_type": "Treasury General Account (TGA) Opening Balance", "open_today_bal": "800000", "close_today_bal": "null"},
+ {"record_date": "2026-11-17", "account_type": "Treasury General Account (TGA) Closing Balance", "open_today_bal": "812345", "close_today_bal": "null"},
+ {"record_date": "2021-03-01", "account_type": "Federal Reserve Account", "open_today_bal": "1000", "close_today_bal": "1500"}
+], "links": {"next": null}}
