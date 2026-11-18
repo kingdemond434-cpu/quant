@@ -39,6 +39,12 @@ def _report(tmp: Path, at: datetime, written: datetime) -> Path:
     p = tmp / "JUDGE_COVERAGE.json"
     p.write_text(json.dumps(doc), "utf-8")
     os.utime(p, (written.timestamp(), written.timestamp()))
+    # The ETA fence reads JUDGING_RATE.json beside the report and, on the box, FAILS without one
+    # (as in test_judge_coverage_stale_fails.py): give it a healthy rate, so only the restamp and
+    # intake-fault checks decide here.
+    (tmp / "JUDGING_RATE.json").write_text(json.dumps(
+        {"at": at.isoformat(timespec="seconds"),
+         "eta_to_drain": {"status": "DRAINING", "hours": 10.0}}), "utf-8")
     return p
 
 
