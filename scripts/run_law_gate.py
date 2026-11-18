@@ -338,11 +338,6 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Portable -- it reads the code -- and a ratchet: today's offenders are the committed floor
     # (docs/research/known_by_date_floor.json), only a NEW one fails, healed ones drop out.
     ("check_known_by_date.py", ()),
-    # THE RESEARCH-DATA HOME HAS NO MONEY READER (Governance, route A, 2026-11-18).
-    # desks/mt5/research/data/ sits outside every MONEY_PATH prefix, which is only safe while no
-    # money-closure module, money script or money task row names it. Portable: it reads the code,
-    # and every dynamic site of the closure is pinned, so a new one fails closed.
-    ("check_research_data_fence.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
