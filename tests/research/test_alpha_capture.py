@@ -289,6 +289,10 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     donated: list[Any] = []
     monkeypatch.setattr(ac, "_donate", lambda c, n: donated.append((c, n)) or tmp_path / "d")
     monkeypatch.setenv("QUANT_EDGAR_UA", "quant-desk research test@example.invalid")
+    # The pipeline tests below exercise every parser end to end, so every source is treated as
+    # terms-confirmed here; the real roster's refusals are pinned by the access tests at the end.
+    monkeypatch.setattr(ac, "TERMS", {sid: {"terms": "confirmed"} for sid in ac.SOURCES})
+    monkeypatch.setattr(ac, "_ROBOTS", {})
     return {"tmp": tmp_path, "donated": donated}
 
 
@@ -341,14 +345,15 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
                for s in rep2["sources"].values())
 
 
-def test_sec_without_a_user_agent_is_unconfigured_not_fetched(
+def test_sec_without_a_contact_ua_is_blocked_on_contact_not_fetched(
         desk: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("QUANT_EDGAR_UA")
+    for name in ac.EDGAR_UA_ENV:
+        monkeypatch.delenv(name, raising=False)
     calls: list[str] = []
     rep = ac.run(budget_s=30, now=datetime(2024, 9, 27, tzinfo=UTC), get=_fake_get(calls),
                  loader=_loader, clock=av.identity_clock, universe_doc=UNIVERSE_DOC,
                  only=["sec_8k_guidance"], n_placebo=10)
-    assert rep["sources"]["sec_8k_guidance"]["status"] == "UNCONFIGURED"
+    assert rep["sources"]["sec_8k_guidance"]["status"] == "BLOCKED_ON_CONTACT"
     assert not calls
 
 
@@ -360,6 +365,76 @@ def test_a_failing_source_never_takes_the_others_down(desk: dict[str, Any]) -> N
     rep = ac.run(budget_s=60, now=datetime(2024, 9, 27, tzinfo=UTC), get=get, loader=_loader,
                  clock=av.identity_clock, universe_doc=UNIVERSE_DOC, n_placebo=10,
                  yahoo_opener=object())
-    assert rep["sources"]["naver_research"]["status"] == "FAILED"
+    # the raise lands on Naver's robots.txt read first, and an unreadable robots refuses
+    assert rep["sources"]["naver_research"]["status"] == "ROBOTS_REFUSED"
     assert rep["sources"]["tdnet_revisions"]["status"] == "FETCHED"
     assert rep["sources"]["naver_research"]["live_yield"]["status"] == ac.UNMEASURED_LIVE_YIELD
+
+
+# ------------------------------------------------------------------------------ access gate
+def test_the_real_roster_fetches_only_terms_confirmed_sources() -> None:
+    assert ac.TERMS["yahoo_upgrades"]["terms"] == "refused"
+    assert ac.TERMS["sec_8k_guidance"]["terms"] == "confirmed"
+    assert set(ac.TERMS) == set(ac.SOURCES)
+    for sid in ("eastmoney_reports", "naver_research", "tdnet_revisions"):
+        assert ac.TERMS[sid]["terms"] == "to_confirm"
+
+
+def test_refused_and_unconfirmed_sources_are_never_requested(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ac, "_ROBOTS", {})
+    monkeypatch.setenv("QUANT_EDGAR_UA", "quant-desk research test@example.invalid")
+    calls: list[str] = []
+    _views, rep, _state = ac.collect(now=datetime(2024, 9, 27, tzinfo=UTC), budget_s=60,
+                                     get=_fake_get(calls), state={})
+    hosts = {urlparse(c).netloc for c in calls}
+    assert hosts <= {"efts.sec.gov"}
+    assert rep["yahoo_upgrades"]["status"] == "TERMS_REFUSED"
+    assert rep["naver_research"]["status"] == "TERMS_UNCONFIRMED"
+    assert rep["eastmoney_reports"]["missed_growth"]
+    assert rep["sec_8k_guidance"]["status"] == "FETCHED"
+
+
+@pytest.mark.parametrize("status,body,refused", [
+    (404, "", False), (410, "", False), (503, "", True), (403, "", True),
+    (200, "<!DOCTYPE html><html>", True), (200, "User-agent: *\nDisallow: /LATEST/\n", True),
+    (200, "User-agent: *\nDisallow: /cgi-bin\n", False)])
+def test_robots_fail_closed(monkeypatch: pytest.MonkeyPatch, status: int, body: str,
+                            refused: bool) -> None:
+    monkeypatch.setattr(ac, "_ROBOTS", {})
+    seen: list[dict[str, Any]] = []
+
+    def get(url: str, **kw: Any) -> _Resp:
+        seen.append(kw.get("headers") or {})
+        return _Resp(url, status, body, error="" if status < 400 else f"HTTP {status}")
+    assert (ac.access_refusal(get, "sec_8k_guidance") is not None) is refused
+    assert seen[0]["User-Agent"].startswith(ac.ROBOTS_AGENT)
+
+
+def test_every_request_declares_what_it_is() -> None:
+    seen: list[dict[str, Any]] = []
+    g = ac._honest(lambda url, **kw: seen.append(kw["headers"]))
+    g("https://x.test/a")
+    g("https://x.test/b", headers={"User-Agent": "declared-by-caller"})
+    assert seen[0]["User-Agent"] == ac.HONEST_UA and "Mozilla" not in ac.HONEST_UA
+    assert seen[1]["User-Agent"] == "declared-by-caller"
+
+
+def test_the_box_key_name_configures_sec(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ac.EDGAR_UA_ENV:
+        monkeypatch.delenv(name, raising=False)
+    assert ac.edgar_ua() == ""
+    monkeypatch.setenv("EDGAR_UA", "desk research contact")
+    assert ac.edgar_ua() == "desk research contact"
+
+
+def test_sec_robots_is_read_under_the_fair_access_ua(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ac, "_ROBOTS", {})
+    monkeypatch.setenv("QUANT_EDGAR_UA", "desk research ops@example.invalid")
+    seen: list[str] = []
+
+    def get(url: str, **kw: Any) -> _Resp:
+        seen.append((kw.get("headers") or {}).get("User-Agent", ""))
+        return _Resp(url, 404, error="HTTP 404")
+    assert ac.access_refusal(get, "sec_8k_guidance") is None
+    assert seen == ["desk research ops@example.invalid"]
