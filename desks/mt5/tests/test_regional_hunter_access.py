@@ -80,11 +80,65 @@ def test_a_403_stops_the_source_with_no_alternate_and_no_site_root_walk(monkeypa
     assert rh.gate().stops["a.example"]["code"] == 403
 
 
-def test_a_stop_expires_into_one_reprobe_after_the_cooldown() -> None:
-    old = (datetime.now(tz=UTC) - timedelta(hours=rh.HARD_STOP_COOLDOWN_H + 1)).isoformat()
-    g = rh.AccessGate({"a.example": {"code": 403, "at": old},
-                       "b.example": {"code": 429, "at": datetime.now(tz=UTC).isoformat()}})
-    assert not g.stopped("a.example") and g.stopped("b.example")
+def test_a_refusal_never_reprobes_on_a_timer_and_a_429_holds_24h() -> None:
+    """Auditor MF2 on #839: 401/403/451 hold until released, however old; a 429 holds 24h."""
+    now = datetime.now(tz=UTC)
+    year_ago = (now - timedelta(days=365)).isoformat()
+    g = rh.AccessGate({"a.example": {"code": 403, "at": year_ago},
+                       "c.example": {"code": 451, "at": year_ago}})
+    assert g.stopped("a.example") and g.stopped("c.example")
+    g.refuse("b.example", 429, "https://b.example/x")
+    e = g.stops["b.example"]
+    assert datetime.fromisoformat(e["until"]) - now >= timedelta(hours=rh.HOLD_429_H - 0.01)
+    assert g.stopped("b.example")
+    assert not g.stopped("b.example", now=now + timedelta(hours=rh.HOLD_429_H + 1))
+    g.refuse("d.example", 403, "https://d.example/x")
+    assert "until" not in g.stops["d.example"]
+    assert g.stopped("d.example", now=now + timedelta(days=3650))
+    assert g.stopped("e.example") is False
+    bad = rh.AccessGate({"f.example": {"code": 429, "until": "not-a-date"}})
+    assert bad.stopped("f.example")                       # unreadable hold fails closed
+
+
+def test_release_is_the_only_way_a_refusal_ends(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(rh, "STATE", tmp_path / "state.json")
+    (tmp_path / "state.json").write_text(
+        '{"_hard_stops": {"a.example": {"code": 403, "at": "2026-01-01T00:00:00+00:00"}}}')
+    assert rh.release("a.example") and not rh.release("a.example")
+    assert rh.AccessGate(rh._read(rh.STATE, {}).get("_hard_stops")).stopped("a.example") is False
+
+
+@pytest.mark.parametrize("code", [401, 403, 429, 451])
+def test_a_refused_robots_txt_holds_the_host(monkeypatch, code) -> None:
+    """Auditor MF3 on #839: a robots.txt answered 401/403/429/451 is a refusal of the host,
+    recorded under the same hold rule as a refused page, so the next pass does not re-ask."""
+    calls = _wire(monkeypatch, {"https://a.example/robots.txt": (code, "")})
+    with pytest.raises(rh.FetchError, match="HARD_STOPPED"):
+        rh.fetch("https://a.example/list")
+    e = rh.gate().stops["a.example"]
+    assert e["code"] == code and ("until" in e) == (code == 429)
+    with pytest.raises(rh.FetchError, match="HARD_STOPPED"):
+        rh.fetch("https://a.example/other")
+    assert calls == ["https://a.example/robots.txt"]                  # page never fetched
+    # a fresh gate built from the saved stops still holds it
+    assert rh.AccessGate(rh.gate().stops).stopped("a.example")
+
+
+def test_the_salt_lives_in_a_gitignored_box_only_file(monkeypatch, tmp_path) -> None:
+    """Auditor MF1 on #839: the salt is never in the tracked STATE, and its path is ignored."""
+    import subprocess
+    repo = Path(__file__).resolve().parents[3]
+    rel = rh.SALT.resolve().relative_to(repo)
+    assert rh.SALT.resolve() != rh.STATE.resolve()
+    r = subprocess.run(["git", "check-ignore", "-q", "--no-index", str(rel)], cwd=repo,
+                       capture_output=True, check=False)
+    assert r.returncode == 0, f"{rel} is not gitignored"
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(rel)], cwd=repo,
+                             capture_output=True, check=False)
+    assert tracked.returncode != 0, f"{rel} is tracked"
+    salt_p = tmp_path / "private" / "salt.json"
+    a = rh.load_salt(salt_p)
+    assert len(a) == 32 and rh.load_salt(salt_p) == a              # made once, then stable
 
 
 def test_robots_disallow_and_unreadable_robots_are_not_fetched(monkeypatch) -> None:
@@ -124,6 +178,12 @@ def test_the_committed_rows_cover_every_ground_and_bar_the_login_only_one() -> N
     rows = rh.access_rows()
     assert set(rh.SOURCES) | {"fbs_tape"} <= set(rows)
     assert rh.access_bar("octa_masters", rows)[0] == "blocked_auth"
+    # the 2026-11-18 box read: barred grounds stay barred, and nothing is fetchable yet
+    for g in ("litefinance", "trading_latam", "mylivefx_br"):
+        assert rh.access_bar(g, rows)[0] == "terms_forbid"
+    assert rh.access_bar("readitrades_africa", rows)[0] == "terms_restricts"
+    assert all(rh.access_bar(g, rows)[0] for g in rows if g != "_doc")
+    assert rh.access_bar("r", {"r": {"terms": "RESTRICTS_REDISTRIBUTION"}})[0] == "terms_restricts"
 
 
 def test_requests_say_who_we_are_and_never_retry() -> None:

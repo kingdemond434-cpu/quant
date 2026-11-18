@@ -170,7 +170,7 @@ def test_tables_and_repeated_cards_are_read_in_any_language() -> None:
 
 def test_a_moved_listing_is_resolved_through_an_alternate_and_remembered(monkeypatch,
                                                                           tmp_path) -> None:
-    for name in ("STATE", "COVERAGE", "BLOCKED", "RUNS", "INTEL", "YIELD_OUT"):
+    for name in ("STATE", "COVERAGE", "BLOCKED", "RUNS", "INTEL", "YIELD_OUT", "SALT"):
         target = tmp_path / ("intel" if name == "INTEL" else f"{name.lower()}.json")
         monkeypatch.setattr(rsh, name, target)
     (tmp_path / "intel").mkdir()

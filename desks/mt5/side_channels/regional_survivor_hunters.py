@@ -50,7 +50,7 @@ import re
 import sys
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -66,6 +66,11 @@ from libs.data.robots_gate import ALLOWED, HARD_STOP, RobotsGate  # noqa: E402
 
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "regional_hunters_state.json"
+#: The hashing salt for trader names (Auditor MF1 on #839, 2026-11-18). STATE is a TRACKED file
+#: on a public repository, so a salt kept there is public and the hash is reversible by anyone
+#: holding a candidate list of names. The salt lives here instead: gitignored, box-only, never
+#: committed (`.gitignore` pins the path; test_regional_hunter_access proves it is ignored).
+SALT = BASE / "data" / "private" / "regional_hunters_salt.json"
 COVERAGE = INTEL / "coverage_registry.json"
 #: One line per run: the leg's fetches, successes, rows and seconds -- the fetches/second series
 #: `research/alt_data_yield.py` publishes. Append-only and tiny. OUTSIDE data/intelligence/ on
@@ -79,8 +84,10 @@ ACCESS_ROWS = Path(__file__).resolve().parent / "regional_hunter_access.json"
 #: We say who we are. A venue that refuses this client has refused the desk.
 #: The desk's honest UA (Auditor MF1, 2026-11-18): it names no person, owner, repo or address.
 UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
-#: A refusal stands this long before ONE polite re-probe is allowed; a second refusal re-arms it.
-HARD_STOP_COOLDOWN_H = 168.0
+#: Refusal holds (Auditor MF2 on #839, the same rule as copytrade_crowd on #671): a 429 is a rate
+#: answer and is held this long; 401/403/451 are refusals of THIS client and are held until a
+#: human releases them (`--release HOST`). Nothing re-probes a refusal on its own.
+HOLD_429_H = 24.0
 LOGIN_WALL = re.compile(
     r"(log\s*in to your (profile|account)|sign in to your [^<]{0,40}(profile|account)"
     r"|please\s+log\s*in|log\s*in\s+or\s+register|login required|members only"
@@ -136,12 +143,13 @@ def _raw_get(url: str, timeout: float = REQUEST_TIMEOUT_S,
 class AccessGate:
     """THE ACCESS RULES, IN ONE PLACE (Governance ruling 2026-11-10; Auditor MF1 on #773).
 
-    * robots.txt per libs/data/robots_gate.py (Governance desk-wide ruling 2026-11-10 20:08Z):
-      a Disallow on the exact path stops that fetch; 404/410/other 4xx means no rules (fetch,
-      ROBOTS_ABSENT); 401/403/429/451 or 5xx/timeout stops it, retried next pass.
-    * 401/403/429/451 is a refusal by the HOST: nothing more is fetched from it this run, and the
-      stop is kept in the state file for HARD_STOP_COOLDOWN_H before one re-probe is allowed.
-      No retry, no changed headers, no sibling host.
+    * robots.txt per libs/data/robots_gate.py (fetch law 2026-11-18): a Disallow on the exact
+      path stops that fetch; only 404/410 means there is no file (ROBOTS_ABSENT); an HTML body,
+      any other status or a transport failure is UNREAD and nothing is fetched.
+    * 401/403/429/451 is a refusal by the HOST, whether it answers a page or robots.txt itself
+      (Auditor MF3): nothing more is fetched from it. A 429 is held HOLD_429_H hours; 401/403/451
+      are held until `--release HOST`. No re-probe on a timer, no retry, no changed headers, no
+      sibling host.
     Counts are kept per reason so a dark seat reads as its cause, never as a zero.
     """
 
@@ -149,29 +157,41 @@ class AccessGate:
         self.stops: dict[str, Any] = dict(stops or {})
         self.counts: dict[str, int] = {}
         self._lock = threading.Lock()
-        self.robots = RobotsGate(lambda u: _raw_get(u, 15.0)[:2], agent="quant-desk-research")
+        self.robots = RobotsGate(self._robots_get, agent="quant-desk-research")
+
+    def _robots_get(self, url: str) -> tuple[int | None, str]:
+        status, body = _raw_get(url, 15.0)[:2]
+        if status in HARD_STOP:                 # robots.txt itself refused us (Auditor MF3)
+            self.refuse(urlparse(url).netloc.lower(), int(status), url)
+        return status, body
 
     def _count(self, key: str) -> None:
         with self._lock:
             self.counts[key] = self.counts.get(key, 0) + 1
 
     def stopped(self, host: str, now: datetime | None = None) -> bool:
+        """Held? Only a 429 carries `until`; every other hold stands until released. An
+        unreadable `until` holds (fail closed)."""
         e = self.stops.get(host)
         if not e:
             return False
+        if "until" not in e:
+            return True
         try:
-            age_h = ((now or datetime.now(tz=UTC))
-                     - datetime.fromisoformat(str(e.get("at")))).total_seconds() / 3600.0
+            return (now or datetime.now(tz=UTC)) < datetime.fromisoformat(str(e["until"]))
         except (TypeError, ValueError):
             return True
-        return age_h < HARD_STOP_COOLDOWN_H
 
     def refuse(self, host: str, status: int, url: str) -> None:
+        now = datetime.now(tz=UTC)
         with self._lock:
             prev = self.stops.get(host) or {}
-            self.stops[host] = {"code": status, "url": url,
-                                "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                                "refusals": int(prev.get("refusals") or 0) + 1}
+            e: dict[str, Any] = {"code": status, "url": url,
+                                 "at": now.isoformat(timespec="seconds"),
+                                 "refusals": int(prev.get("refusals") or 0) + 1}
+            if status == 429:
+                e["until"] = (now + timedelta(hours=HOLD_429_H)).isoformat(timespec="seconds")
+            self.stops[host] = e
 
     def get(self, url: str, timeout: float, accept_json: bool) -> str:
         host = urlparse(url).netloc.lower()
@@ -180,7 +200,7 @@ class AccessGate:
             raise FetchError(url, None, f"HARD_STOPPED: {host} refused this client "
                                         f"(HTTP {self.stops[host].get('code')})")
         verdict = self.robots.check(url)
-        if host in self.stops and self.stopped(host):     # robots.txt itself was refused
+        if self.stopped(host):                  # robots.txt itself was refused (MF3)
             self._count("hard_stopped")
             raise FetchError(url, None, f"HARD_STOPPED: {host} refused robots.txt")
         if verdict != ALLOWED:
@@ -226,6 +246,7 @@ def access_bar(name: str, rows: dict[str, Any] | None = None) -> tuple[str, str]
     """(state, why) when a ground must NOT be fetched at all, else ("", "").
 
     TERMS_FORBID: its published terms forbid machine or commercial use (fail-closed).
+    TERMS_RESTRICTS: read, and they bar reproduction; this leg publishes, so it does not fetch.
     TERMS_UNREAD: its terms were not read yet. Robots alone never permits a fetch (Auditor MF3,
     2026-11-18), so the ground is not fetched until a read is recorded as NO_BAR.
     BLOCKED_AUTH: its listing is behind a login; the desk does not log in."""
@@ -235,6 +256,10 @@ def access_bar(name: str, rows: dict[str, Any] | None = None) -> tuple[str, str]
         return "terms_forbid", str(r.get("terms_evidence") or "published terms forbid this use")
     if str(r.get("auth") or "").upper() == "LOGIN_REQUIRED":
         return "blocked_auth", str(r.get("auth_evidence") or "the listing is behind a login")
+    if terms == "RESTRICTS_REDISTRIBUTION":
+        # The terms bar reproduction and this leg's output is committed to a PUBLIC repository,
+        # so the read does not clear it (box read 2026-11-18). Unfetched until output is box-only.
+        return "terms_restricts", str(r.get("terms_evidence") or "terms bar redistribution")
     if terms != "NO_BAR":
         return "terms_unread", str(r.get("terms_evidence") or "site terms not read yet")
     return "", ""
@@ -266,8 +291,8 @@ def _atomic_write(path: Path, text: str) -> None:
 
 def anonymise(rows: list[dict], salt: str) -> list[dict]:
     """No trader's name, handle or profile URL leaves this module (Auditor MF4, 2026-11-18): a
-    track record is keyed by a salted hash of `source:name` (the salt stays in the box's state
-    file) and carries only its numbers, tags and the listing it came from."""
+    track record is keyed by a salted hash of `source:name` (the salt stays in the box-only,
+    gitignored SALT file, never in STATE) and carries only its numbers, tags and the listing it came from."""
     import hashlib
     out = []
     for r in rows:
@@ -883,8 +908,8 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
                 # THE VENUE SAID NO. No alternate, no sibling host, no site-root walk.
                 return {"rows": [], "url": u, "via": "", "tried": tried, "state": "hard_stop",
                         "error": exc.error, "diagnosis": "HARD_STOP",
-                        "fix_hint": "the host refused this client; nothing is retried until "
-                                    f"the {HARD_STOP_COOLDOWN_H:g}h cooldown allows one re-probe"}
+                        "fix_hint": "the host refused this client; a 429 is held "
+                                    f"{HOLD_429_H:g}h, anything else until --release HOST"}
             continue
         rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
         tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how})
@@ -1052,9 +1077,9 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
     _DEADLINE["at"] = t0 + budget_s
     pf.reset_stats(LEG)
     st = _read(STATE, {})
-    if not st.get("_salt"):
-        import secrets
-        st["_salt"] = secrets.token_hex(16)
+    # The salt that once sat in the tracked STATE is public: drop it, never reuse it (MF1).
+    st.pop("_salt", None)
+    salt = load_salt()
     g = _GATE["gate"] = AccessGate(st.get("_hard_stops"))
     rows_doc = access_rows()
     results: dict[str, Any] = {}
@@ -1071,7 +1096,7 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
                 r_.setdefault("lang", lang)
                 r_.setdefault("region", region)
             rows_.extend(res["rows"])
-        rows_ = anonymise(rows_, str(st["_salt"]))
+        rows_ = anonymise(rows_, salt)
         if work:
             st[name] = work["cursor"]
             if work.get("resolved"):
@@ -1112,7 +1137,7 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
         bar, why = access_bar("fbs_tape", rows_doc)
         if bar:
             raise FetchError("https://fbs.com/top-trades", None, f"{bar}: {why}")
-        tape = anonymise(mine_fbs_tape(), str(st["_salt"]))
+        tape = anonymise(mine_fbs_tape(), salt)
         d = INTEL / "fbs_tape"
         d.mkdir(parents=True, exist_ok=True)
         try:
@@ -1152,5 +1177,32 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
     return results
 
 
+def load_salt(path: Path | None = None) -> str:
+    """The box-only salt (SALT), made on first use. Never read from or written to STATE."""
+    p = path or SALT
+    got = str((_read(p, {}) or {}).get("salt") or "")
+    if len(got) >= 32:
+        return got
+    import secrets
+    got = secrets.token_hex(16)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    _atomic_write(p, json.dumps({"salt": got}))
+    return got
+
+
+def release(host: str) -> bool:
+    """Lift a held host by hand (the only way a 401/403/451 hold ends). True if one was held."""
+    st = _read(STATE, {}) or {}
+    stops = st.get("_hard_stops") or {}
+    hit = stops.pop(host.lower(), None) is not None
+    if hit:
+        st["_hard_stops"] = stops
+        _atomic_write(STATE, json.dumps(st, indent=0, ensure_ascii=False))
+    return hit
+
+
 if __name__ == "__main__":
-    run_and_save()
+    if len(sys.argv) == 3 and sys.argv[1] == "--release":
+        print(f"released {sys.argv[2]}: {release(sys.argv[2])}")
+    else:
+        run_and_save()

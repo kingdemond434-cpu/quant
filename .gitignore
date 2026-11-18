@@ -607,3 +607,6 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# Box-only hashing salts (Auditor MF1 on #839, 2026-11-18): a salt on the public repo makes every
+# hashed trader name reversible. Never commit anything under data/private/.
+desks/mt5/data/private/
