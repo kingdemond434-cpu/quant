@@ -2,26 +2,30 @@
 
     intraday_momentum       U1  the session's first window predicts its last window
     overnight_day_tug       U2  night leg and day leg disagree; trade one side of the tug
-    implied_realised_gap    U3  CBOE GVZ / OVX (FRED) against the instrument's own realised vol
+    implied_realised_gap    U3  CBOE GVZ / OVX against the instrument's own realised vol
     weekend_crypto_gap      U4  Fusion crypto CFDs trade Sat-Sun; their weekend move vs Monday
     equity_gap_breadth      U5  share-CFD opening gaps across the US class, traded on the index
     holiday_drift           N1  the session before an exchange holiday, and the one after it
 
-U6 (Kim-Wright term premium, FRED THREEFYTP10) needs no new family: it is a `world_macro_state`
-cell on that series, minted by `research/tier1_idea_proposer.py` with the rest. N2 (degree-day
-surprise) and N3 (Fed net liquidity) are World sensor's, in #903 and #904; they are not repeated.
+U6 (Kim-Wright term premium) needs no new family: it would be a `world_macro_state` cell on that
+series. N2 (degree-day surprise) and N3 (Fed net liquidity) are World sensor's, in #903 and #904;
+they are not repeated.
+
+U3 AND U6 HAVE NO SOURCE. The principal refused the only one they had for every automated fetch,
+so nothing here fetches an implied-vol or term-premium series: `implied_realised_gap` fires only
+on an `implied` series handed to it, and `research/tier1_idea_proposer.py` sets U3 and U6 aside by
+name as BLOCKED_SOURCE_REFUSED until a terms-clean source exists.
 
 WHAT EACH ONE READS, AND NOTHING ELSE. Desk bars, the instrument's own session clock
-(`local_clock`, DST-exact), the free FRED series the world dataset hunter stores point-in-time,
-the rule-generated holiday calendars under `data/calendars/holidays_<venue>.json`, and the
-desk's own Fusion crypto and share-CFD bars. Crypto is read only as a sensor of an MT5
-instrument; share CFDs only as a breadth input to an index (the class-book rule is kept: no
-single name is a target here).
+(`local_clock`, DST-exact), an implied series handed in by the caller (U3), the rule-generated
+holiday calendars under `data/calendars/holidays_<venue>.json`, and the desk's own Fusion crypto
+and share-CFD bars. Crypto is read only as a sensor of an MT5 instrument; share CFDs only as a
+breadth input to an index (the class-book rule is kept: no single name is a target here).
 
 POINT IN TIME. A signal is stamped on a bar whose CLOSE is the latest information it used and is
-filled at the next bar's open, as the engine fills every family. A FRED value is visible only
-from the instant the hunter says it was knowable. A clock exit is a bar count fixed by the
-session's declared hours, never read off where later bars happen to fall.
+filled at the next bar's open, as the engine fills every family. An implied value is visible
+only from the instant its own index says it was knowable. A clock exit is a bar count fixed by
+the session's declared hours, never read off where later bars happen to fall.
 
 REFUSES (returns []) on a malformed window, missing input or too little history, never guesses.
 `side` is accepted and unused, as in `family_world_macro`: the recipe's `direction` is the side,
@@ -232,18 +236,8 @@ def family_overnight_day_tug(
 # ------------------------------------------------------------------------------- U3 ----------
 #: The implied-vol series each target may be judged against. A pairing outside this table is
 #: refused: GVZ against oil would be a different claim with no payer behind it.
-IMPLIED_FOR = {"GVZCLS": ("XAUUSD", "XAGUSD", "XAUEUR", "XAUAUD"),
-               "OVXCLS": ("XTIUSD", "XBRUSD")}
-
-
-def fred_series(series_id: str) -> pd.Series | None:
-    """A FRED series as the world dataset hunter stored it, on its knowable-at clock, or None."""
-    try:
-        from research.world_dataset_hunter import raw_world_series, series_key
-    except ImportError:                                                    # desk-root callers
-        from world_dataset_hunter import raw_world_series, series_key  # type: ignore[no-redef]
-    s = raw_world_series(series_key("FRED", str(series_id), str(series_id)))
-    return s if s is not None and len(s) else None
+IMPLIED_FOR = {"GVZ": ("XAUUSD", "XAGUSD", "XAUEUR", "XAUAUD"),
+               "OVX": ("XTIUSD", "XBRUSD")}
 
 
 def _align(series: pd.Series, index: pd.DatetimeIndex) -> np.ndarray:
@@ -264,7 +258,7 @@ def family_implied_realised_gap(
     df: pd.DataFrame,
     *,
     side: int | None = None,
-    implied_series: str = "GVZCLS",
+    implied_series: str = "GVZ",
     rv_days: int = 20,
     z_obs: int = 250,
     z_lo: float = 1.0,
@@ -284,13 +278,14 @@ def family_implied_realised_gap(
     underlying then drifts in `direction` while the premium is in [z_lo, z_hi). Realised vol is
     the annualised standard deviation of the last `rv_days` daily close-to-close log returns, in
     the same percentage points CBOE quotes. Decided at each day's last bar on values knowable by
-    then; `implied` may be handed in (tests), otherwise the FRED series is read from the store.
+    then. The series is never fetched here: with no `implied` handed in the family refuses (no
+    terms-clean source exists, see the module docstring), so it is defined and never fires.
     """
     del side
     flip = SIDES.get(str(direction))
     if flip is None or str(implied_series) not in IMPLIED_FOR or float(z_hi) <= float(z_lo):
         return []
-    iv = implied if implied is not None else fred_series(str(implied_series))
+    iv = implied
     if iv is None or len(iv) < int(z_obs) // 2 or df.empty:
         return []
     idx = pd.DatetimeIndex(df.index)

@@ -1552,7 +1552,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
     # breadth-first page per dataset per visit -- a global layer, like the forests above.
     "world_dataset_hunt": "regions", "world_macro_proposer": "regions",
-    # the Tier-1 idea rows (U1-U6, N1): one declared grid per idea, screened and donated
+    # the Tier-1 idea rows (U1, U2, U4, U5, N1; U3 and U6 blocked): one declared grid per idea
     "tier1_idea_proposer": "discovery",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
@@ -5234,10 +5234,11 @@ def main() -> None:
     # reports/WORLD_MACRO_PROPOSER.json.
     wmp = _costed("world_macro_proposer", lambda: _producer(
         "world_macro_proposer", "research/world_macro_proposer.py", "--once", "--budget-s", "900"))
-    # THE TIER-1 IDEA ROWS (U1 intraday momentum, U2 overnight/day tug, U3 GVZ/OVX premium, U4
-    # weekend crypto -> Monday, U5 share-gap breadth, U6 term premium, N1 holiday drift): each
-    # idea's declared grid on its targets, screened net of cost, deflated by every cell tried,
-    # survivors donated to data/intelligence/tier1_ideas/. Writes reports/TIER1_IDEA_PROPOSER.json.
+    # THE TIER-1 IDEA ROWS (U1 intraday momentum, U2 overnight/day tug, U4 weekend crypto ->
+    # Monday, U5 share-gap breadth, N1 holiday drift): each idea's declared grid on its targets,
+    # screened net of cost, deflated by every cell tried, survivors donated to
+    # data/intelligence/tier1_ideas/. U3 (implied-vol premium) and U6 (term premium) are set
+    # aside by name as BLOCKED_SOURCE_REFUSED. Writes reports/TIER1_IDEA_PROPOSER.json.
     t1p = _costed("tier1_idea_proposer", lambda: _producer(
         "tier1_idea_proposer", "research/tier1_idea_proposer.py", "--once", "--budget-s", "600"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:

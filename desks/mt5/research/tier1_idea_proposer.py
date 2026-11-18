@@ -7,11 +7,12 @@ THE IDEAS (zuck, 2026-11-11, backlog rows U1-U6 and N1):
 
     U1 intraday_momentum      first window -> last window, US/EU/JP indices, gold, silver, oil
     U2 overnight_day_tug      night leg vs day leg disagree, index CFDs
-    U3 implied_realised_gap   GVZ / OVX (FRED) against realised vol, gold and oil
+    U3 implied_realised_gap   GVZ / OVX against realised vol, gold and oil
+                              -- BLOCKED_SOURCE_REFUSED: no terms-clean source (see BLOCKED)
     U4 weekend_crypto_gap     BTC/ETH CFD weekend move -> Monday session, JPY, AUD, gold, indices
     U5 equity_gap_breadth     US share-CFD opening-gap breadth -> US indices
-    U6 world_macro_state      Kim-Wright 10y term premium (FRED THREEFYTP10): gold, JPY, bonds
-                              -- PARKED until a first-release vintage exists (see U6_PARK)
+    U6 world_macro_state      Kim-Wright 10y term premium: gold, JPY, bonds
+                              -- BLOCKED_SOURCE_REFUSED: no terms-clean source (see BLOCKED)
     N1 holiday_drift          pre- and post-holiday sessions, by each index's own venue calendar
 
 N2 (degree days) and N3 (net liquidity) are World sensor's (#903, #904) and are not minted here.
@@ -25,9 +26,14 @@ the gauntlet judges it under the program-wide trial charge. The screen certifies
 CADENCE IS MULTIPLICITY. The grid is fixed, so re-running it every hour against the same bars
 would re-donate the same survivors and re-roll nothing new. A full pass runs at most once per
 REFRESH_H; the hourly leg in between writes the report with `status: FRESH` and the age, so the
-leg is visibly alive without spending a new sweep. An idea whose input is absent (a FRED series
-the world dataset hunter has not stored yet, a symbol with no bars on this box) is PARKED by
-name with the reason, never counted as zero.
+leg is visibly alive without spending a new sweep. A symbol whose input is absent (no bars on
+this box, no contract terms) is PARKED by name with the reason, never counted as zero.
+
+U3 AND U6 ARE SET ASIDE BY NAME. Their only source was refused by the principal for every
+automated fetch, so this leg fetches nothing for them and mints no cell: each is written to the
+report as BLOCKED_SOURCE_REFUSED with its reason. Their families stay defined (U3's
+`implied_realised_gap` refuses without a series handed in; U6 would be a `world_macro_state`
+cell) and never fire, until a terms-clean source exists.
 """
 from __future__ import annotations
 
@@ -58,14 +64,16 @@ DEFAULT_BUDGET_S = 600.0
 
 US_INDICES = ("US500", "US30", "NAS100", "US2000")
 
-#: U6 IS PARKED ON A POINT-IN-TIME DEFECT, NOT ON DATA. The world dataset hunter stamps a
-#: series' backfilled history at period end + publication lag (`world_dataset_hunter.pit_series`),
-#: and fredgraph.csv serves the CURRENT vintage. GVZ and OVX are market closes that are never
-#: revised, so U3 is unaffected; THREEFYTP10 is a model estimate the Fed re-fits, so its history
-#: carries revisions the desk could not have known. It is minted when a first-release vintage
-#: source exists (ALFRED, Global data's FRED axis #761). Set to "" to mint it.
-U6_PARK = ("THREEFYTP10 history is the current vintage stamped at its observation date "
-           "(revised model output): waits for first-release vintages")
+BLOCKED_SOURCE_REFUSED = "BLOCKED_SOURCE_REFUSED"
+SOURCE_REFUSED_WHY = "FRED refused; needs a terms-clean source"
+
+#: The ideas set aside because their only source is refused. Nothing in this leg reads one.
+BLOCKED: dict[str, dict[str, Any]] = {
+    "U3": {"family": "implied_realised_gap",
+           "targets": ["XAUUSD", "XAGUSD", "XAUEUR", "XAUAUD", "XTIUSD", "XBRUSD"]},
+    "U6": {"family": "world_macro_state",
+           "targets": ["XAUUSD", "USDJPY", "EURUSD", "UST10Y", "UST05Y"]},
+}
 
 
 def _session(sym: str) -> dict[str, str]:
@@ -82,13 +90,6 @@ def ideas() -> list[dict[str, Any]]:
                                      "min_move_atr": [0.0, 0.5], "direction": ["follow"]}},
         {"id": "U2", "family": "overnight_day_tug", "targets": sorted(eq_sessions),
          "fixed": _session, "grid": {"follow": ["night", "day"], "min_day_atr": [0.5, 1.0]}},
-        {"id": "U3", "family": "implied_realised_gap",
-         "targets": sorted(s for v in t1.IMPLIED_FOR.values() for s in v),
-         "fixed": lambda s: {"implied_series": next(k for k, v in t1.IMPLIED_FOR.items()
-                                                    if s in v)},
-         "inputs": lambda s: [next(k for k, v in t1.IMPLIED_FOR.items() if s in v)],
-         "grid": {"band": [(1.0, 99.0), (-99.0, -1.0)], "direction": ["long", "short"],
-                  "hold_bars": [24, 120]}},
         {"id": "U4", "family": "weekend_crypto_gap",
          "targets": ["USDJPY", "AUDUSD", "AUDJPY", "XAUUSD", "NAS100", "US500"],
          "fixed": lambda s: {}, "grid": {"driver_symbol": list(t1.DRIVERS),
@@ -97,23 +98,11 @@ def ideas() -> list[dict[str, Any]]:
         {"id": "U5", "family": "equity_gap_breadth", "targets": list(US_INDICES),
          "fixed": _session, "grid": {"direction": ["follow", "fade"],
                                      "breadth_lo": [0.1, 0.25]}},
-        {"id": "U6", "family": "world_macro_state",
-         "targets": ["XAUUSD", "USDJPY", "EURUSD", "UST10Y", "UST05Y"],
-         "fixed": lambda s: {"series_key": _fred_key("THREEFYTP10"), "z_obs": 250},
-         "inputs": lambda s: ["THREEFYTP10"],
-         "park": U6_PARK,
-         "grid": {"band": [(1.0, 99.0), (-99.0, -1.0)], "direction": ["long", "short"],
-                  "hold_bars": [120, 480]}},
         {"id": "N1", "family": "holiday_drift",
          "targets": sorted(s for s, v in t1.SESSIONS.items() if v[3]),
          "fixed": lambda s: {**_session(s), "calendar": t1.SESSIONS[s][3]},
          "grid": {"leg": ["pre", "post"], "direction": ["long", "short"]}},
     ]
-
-
-def _fred_key(sid: str) -> str:
-    from research.world_dataset_hunter import series_key
-    return series_key("FRED", sid, sid)
 
 
 def variants(idea: dict[str, Any], sym: str) -> list[dict[str, Any]]:
@@ -133,22 +122,18 @@ def variants(idea: dict[str, Any], sym: str) -> list[dict[str, Any]]:
 
 
 def _family(name: str):
-    if name == "world_macro_state":
-        from mt5desk.family_world_macro import family_world_macro_state
-        return family_world_macro_state
     return t1.TIER1_IDEA_FAMILIES[name]
 
 
-def _missing_inputs(idea: dict[str, Any], sym: str) -> list[str]:
-    need = idea.get("inputs")
-    if need is None:
-        return []
-    return [f"FRED {sid} not yet in the world dataset store" for sid in need(sym)
-            if t1.fred_series(sid) is None]
+def blocked(only: list[str] | None = None) -> dict[str, dict[str, Any]]:
+    """The report rows for the ideas set aside by name: nothing tested, nothing fetched."""
+    return {k: {"family": v["family"], "targets": len(v["targets"]), "tested": 0, "fired": 0,
+                "parked": {}, "status": BLOCKED_SOURCE_REFUSED, "why": SOURCE_REFUSED_WHY}
+            for k, v in BLOCKED.items() if not only or k in only}
 
 
 def _variant_tag(params: dict[str, Any]) -> str:
-    skip = {"tz", "open_at", "close_at", "series_key", "z_obs", "calendar", "implied_series"}
+    skip = {"tz", "open_at", "close_at", "calendar"}
     return ",".join(f"{k}={params[k]}" for k in sorted(params) if k not in skip)
 
 
@@ -211,15 +196,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
         per_idea[idea["id"]] = rec
         fn = _family(idea["family"])
         for sym in idea["targets"]:
-            if idea.get("park"):
-                rec["parked"][sym] = str(idea["park"])
-                continue
             if time.monotonic() - started > budget_s:
                 rec["parked"][sym] = "sweep budget exhausted this pass"
-                continue
-            missing = _missing_inputs(idea, sym)
-            if missing:
-                rec["parked"][sym] = "; ".join(missing)
                 continue
             d = pc.bars(sym)
             if d is None:
@@ -262,11 +240,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
     for rec in per_idea.values():
         rec["status"] = ("PARKED" if rec["targets"] and len(rec["parked"]) == rec["targets"]
                          else "RAN")
+    per_idea.update(blocked(only))
     doc = {"generated_at": now.isoformat(), "swept_at": now.isoformat(), "status": "SWEPT",
            "calendars": calendars,
            "leg": LEG, "tests_run": len(rows), "cells_proposed": len(proposals),
            "elapsed_s": round(time.monotonic() - started, 1), "ideas": per_idea,
            "proposals": proposals,
+           "blocked": {k: {"status": BLOCKED_SOURCE_REFUSED, "why": SOURCE_REFUSED_WHY,
+                           "family": v["family"]} for k, v in BLOCKED.items()},
            "not_here": {"N2": "degree-day surprise: World sensor, #903 (noaa_forecasts)",
                         "N3": "Fed net liquidity: World sensor, #904 (macro_fair_value)"}}
     if cands and not dry_run:

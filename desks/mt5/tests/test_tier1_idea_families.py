@@ -102,7 +102,8 @@ def test_implied_realised_gap_reads_only_what_was_knowable() -> None:
     later.index = later.index + pd.Timedelta(days=200)       # the same values, knowable later
     first_late = t1.family_implied_realised_gap(d, implied=later, z_obs=120, z_lo=0.5)
     assert not first_late or first_late[0].time >= later.index[120]
-    assert t1.family_implied_realised_gap(d, implied=iv, implied_series="VIXCLS") == []
+    assert t1.family_implied_realised_gap(d, implied=iv, implied_series="VIX") == []
+    assert t1.family_implied_realised_gap(d) == [], "no series handed in: nothing is fetched"
     assert t1.family_implied_realised_gap(d, implied=iv, direction="up") == []
 
 
@@ -177,34 +178,27 @@ def test_holiday_calendars_match_published_2024_dates_and_are_current() -> None:
         "regenerate with research.exchange_holidays.write(); the tier1_idea_proposer sweep runs it")
 
 
-def test_proposer_grid_is_declared_and_parks_absent_inputs_by_name(monkeypatch, tmp_path) -> None:
+def test_proposer_grid_is_declared_and_sets_the_refused_source_ideas_aside(monkeypatch,
+                                                                            tmp_path) -> None:
     monkeypatch.setattr(tp, "REPORT", tmp_path / "TIER1_IDEA_PROPOSER.json")
-    monkeypatch.setattr(t1, "fred_series", lambda sid: None)
     by_id = {i["id"]: i for i in tp.ideas()}
-    assert set(by_id) == {"U1", "U2", "U3", "U4", "U5", "U6", "N1"}
+    assert set(by_id) == {"U1", "U2", "U4", "U5", "N1"}, "U3 and U6 are never minted"
+    assert set(tp.BLOCKED) == {"U3", "U6"}
+    assert tp.BLOCKED["U3"]["family"] in t1.TIER1_IDEA_FAMILIES, "the family stays defined"
     assert len(tp.variants(by_id["U1"], "US500")) == 8
     assert tp.variants(by_id["N1"], "GER40")[0]["calendar"] == "xetra"
-    u3 = tp.variants(by_id["U3"], "XTIUSD")
-    assert len(u3) == 8 and all(v["implied_series"] == "OVXCLS" for v in u3)
     now = datetime(2026, 11, 11, 12, tzinfo=UTC)
     doc = tp.run(only=["U3", "U6"], now=now)
-    assert doc["ideas"]["U3"]["status"] == "PARKED"
-    assert all("not yet in the world dataset store" in v
-               for v in doc["ideas"]["U3"]["parked"].values())
-    assert doc["ideas"]["U6"]["status"] == "PARKED", "U6 waits for first-release vintages"
-    assert all(v == tp.U6_PARK for v in doc["ideas"]["U6"]["parked"].values())
+    assert doc["tests_run"] == 0
+    for k in ("U3", "U6"):
+        assert doc["ideas"][k]["status"] == tp.BLOCKED_SOURCE_REFUSED
+        assert doc["ideas"][k]["why"] == "FRED refused; needs a terms-clean source"
+        assert doc["ideas"][k]["tested"] == 0
+        assert doc["blocked"][k]["status"] == tp.BLOCKED_SOURCE_REFUSED
     fresh = tp.run(now=now + timedelta(hours=2))
     assert fresh["status"] == "FRESH" and fresh["age_h"] == pytest.approx(2.0)
+    assert fresh["ideas"]["U3"]["status"] == tp.BLOCKED_SOURCE_REFUSED
     assert tp.run(now=now + timedelta(hours=21), only=["U6"])["status"] == "SWEPT"
-
-
-def test_the_cboe_reprints_stay_off_the_public_repo() -> None:
-    """GVZCLS/OVXCLS are CBOE indices FRED reprints with permission: never committed."""
-    import subprocess
-
-    probe = "desks/mt5/data/world_datasets/obs/FRED/GVZCLS.parquet"
-    out = subprocess.run(["git", "check-ignore", "-q", probe], cwd=ROOT, check=False)
-    assert out.returncode == 0, f"{probe} must be gitignored"
 
 
 def test_breadth_decision_is_never_before_the_last_share_open_it_used() -> None:
