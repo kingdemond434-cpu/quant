@@ -586,7 +586,20 @@ def families_leg(tree: Path, scenario: dict[str, Any]) -> dict[str, Any]:
             mock.patch.object(socket.socket, "connect", _refuse),
             mock.patch.object(socket, "create_connection", _refuse),
         ):
-            for name in families.live_family_names():
+            # the populations' modules load here, in one clean call of their own, so a family
+            # that raises later cannot take the import of every other family's module with it
+            sys.setprofile(_prof)
+            try:
+                names = families.live_family_names()
+                for name in names:
+                    families.get_family_func(name)
+                _clean(True)
+            except Exception:
+                _clean(False)
+                raise
+            finally:
+                sys.setprofile(None)
+            for name in names:
                 random.seed(name)
                 np.random.seed(len(name))
                 signal.setitimer(signal.ITIMER_REAL, FAMILY_TIMEOUT_S)
