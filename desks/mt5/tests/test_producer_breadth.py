@@ -428,3 +428,63 @@ def test_never_mined_families_go_first_then_by_yield_posterior(
     # an absent report leaves the order exactly what it was
     monkeypatch.setattr(bs, "JUDGE_COVERAGE", tmp_path / "absent.json")
     assert bs.family_yield_rank() == {}
+
+
+def test_a_failed_hunt16_import_is_recorded_by_type_name_never_text(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A bare `except Exception: pass` on the hunt16 import hid a whole population. The failure
+    is recorded in the sweep report's `blocked` list and in the buildability block, by
+    exception TYPE only -- the text (paths, values) never reaches an artifact."""
+    import mt5desk.executables as ex
+
+    from research import breadth_sweep as bs
+
+    def boom() -> dict[str, Any]:
+        raise RuntimeError("secret C:/private/path detail")
+
+    monkeypatch.setattr(ex, "hunt16_families", boom)
+    gb._family_table.cache_clear()
+    try:
+        bs.default_families()
+        assert bs.IMPORT_BLOCKED == {"hunt16_families": "RuntimeError"}
+        gb._family_table()
+        assert gb.TABLE_BLOCKED == {"hunt16_families": "RuntimeError"}
+        monkeypatch.setattr(bs, "REPORT", tmp_path / "BREADTH_SWEEP.json")
+        monkeypatch.setattr(bs, "JUDGE_COVERAGE", tmp_path / "absent.json")
+        doc = bs.write_report([], [], None, None)
+        rows = [r for r in doc["blocked"] if r.get("source") == "hunt16_families"]
+        assert {r["where"] for r in rows} == {"breadth_sweep.default_families",
+                                              "gauntlet_buildability._family_table"}
+        assert all(r["error_type"] == "RuntimeError" for r in rows)
+        text = (tmp_path / "BREADTH_SWEEP.json").read_text("utf-8")
+        assert "secret" not in text and "private" not in text
+    finally:
+        monkeypatch.undo()
+        gb._family_table.cache_clear()
+    bs.default_families()
+    gb._family_table()
+    assert bs.IMPORT_BLOCKED == {} and gb.TABLE_BLOCKED == {}
+
+
+def test_the_sweep_report_stamps_the_judge_coverage_age(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`family_yield_rank` orders by JUDGE_COVERAGE.json whatever its age, so the report names
+    the reading it acted on and how old it was; an absent or unstamped one is UNMEASURED."""
+    from research import breadth_sweep as bs
+    now = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)
+    cov = tmp_path / "JUDGE_COVERAGE.json"
+    cov.write_text(json.dumps({"at": (now - timedelta(hours=5)).isoformat()}), "utf-8")
+    age = bs.judge_coverage_age(cov, now=now)
+    assert age["status"] == "MEASURED" and age["age_hours"] == 5.0
+    cov.write_text(json.dumps({"generated_at": "2026-11-17T12:00:00Z"}), "utf-8")
+    assert bs.judge_coverage_age(cov, now=now)["age_hours"] == 24.0
+    cov.write_text(json.dumps({"families": {}}), "utf-8")
+    assert bs.judge_coverage_age(cov, now=now)["status"] == "UNMEASURED"
+    assert bs.judge_coverage_age(tmp_path / "absent.json")["status"] == "UNMEASURED"
+    cov.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    monkeypatch.setattr(bs, "JUDGE_COVERAGE", cov)
+    monkeypatch.setattr(bs, "REPORT", tmp_path / "BREADTH_SWEEP.json")
+    doc = bs.write_report([], [], None, None)
+    jc = json.loads((tmp_path / "BREADTH_SWEEP.json").read_text("utf-8"))["judge_coverage"]
+    assert jc == doc["judge_coverage"]
+    assert jc["status"] == "MEASURED" and 0.0 <= jc["age_hours"] < 1.0

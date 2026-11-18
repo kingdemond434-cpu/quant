@@ -78,11 +78,16 @@ EXOGENOUS = "exogenous"
 SEALED_INPUT_DEFECTS: dict[str, str] = {}
 
 
+#: populations `_family_table` could not import: {source: exception type name}
+TABLE_BLOCKED: dict[str, str] = {}
+
+
 @lru_cache(maxsize=1)
 def _family_table() -> dict[str, Any]:
     """name -> constructor, by the gauntlet's own two lookups (families first, then orthogonal)."""
     from mt5desk import families
     from mt5desk import families_orthogonal as fo
+    TABLE_BLOCKED.pop("hunt16_families", None)
     out: dict[str, Any] = {}
     for name in dir(families):
         if name.startswith("family_") and callable(getattr(families, name)):
@@ -99,8 +104,10 @@ def _family_table() -> dict[str, Any]:
             fn = getattr(families, f"family_{name}", None)
             if callable(fn):
                 out.setdefault(str(name), fn)
-    except Exception:
-        pass
+    except Exception as exc:
+        # BY TYPE NAME ONLY, never the text; read by `breadth_sweep`'s `blocked` list and by the
+        # buildability block of PRODUCER_BREADTH.json, so a failed population is named.
+        TABLE_BLOCKED["hunt16_families"] = type(exc).__name__
     for name, fn in fo.ORTHOGONAL_FAMILIES.items():
         out.setdefault(str(name), fn)
     return out

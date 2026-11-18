@@ -269,13 +269,17 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
     # they had was a keyword match in donated prose. All fourteen take (bars, side) alone, so they
     # are swept at defaults exactly like every other price-only family. An import failure adds
     # nothing and removes nothing.
+    IMPORT_BLOCKED.pop("hunt16_families", None)
     try:
         from mt5desk.executables import hunt16_families
         for name, fn in hunt16_families().items():
             if callable(fn):
                 names.setdefault(str(name), fn)
-    except Exception:
-        pass
+    except Exception as exc:
+        # Recorded BY TYPE NAME ONLY (never the text, which can carry paths or values) and
+        # published in the report's `blocked` list: a population that silently failed to import
+        # is a breadth the sweep cannot claim (L1.28a), not a quiet zero.
+        IMPORT_BLOCKED["hunt16_families"] = type(exc).__name__
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
@@ -327,6 +331,8 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
 #: What the last `cells()` call set aside as UNTESTABLE, by `family|chart|verdict`, and why. A
 #: count the report publishes -- a refusal only the sweep knows about is one nobody acts on.
 LAST_SET_ASIDE: dict[str, dict[str, Any]] = {}
+#: populations whose import failed on the last `default_families()` call: {source: type name}
+IMPORT_BLOCKED: dict[str, str] = {}
 REPORT = DESK / "reports" / "BREADTH_SWEEP.json"
 
 
@@ -376,6 +382,58 @@ def _certified_family_counts() -> dict[str, int]:
         if fam:
             counts[fam] = counts.get(fam, 0) + 1
     return counts
+
+
+def judge_coverage_age(path: Path | None = None,
+                       now: datetime | None = None) -> dict[str, Any]:
+    """How old the JUDGE_COVERAGE.json that `family_yield_rank` orders by is, stamped into the
+    sweep report. The ranking reads the file whatever its age, so the report must say which
+    reading it acted on: `generated_at` (or the report's own `at`) and its age in hours. An
+    absent, unreadable or unstamped report is UNMEASURED by name, never a fresh one."""
+    p = path or JUDGE_COVERAGE
+    out: dict[str, Any] = {"path": p.name, "generated_at": None, "age_hours": None,
+                           "status": "UNMEASURED"}
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        out["why"] = f"unreadable ({type(exc).__name__})"
+        return out
+    stamp = (doc.get("generated_at") or doc.get("at")) if isinstance(doc, dict) else None
+    if not stamp:
+        out["why"] = "no generated_at / at stamp"
+        return out
+    out["generated_at"] = str(stamp)
+    try:
+        ts = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+    except ValueError:
+        out["why"] = "stamp unparseable"
+        return out
+    out["age_hours"] = round(((now or datetime.now(tz=UTC)) - ts).total_seconds() / 3600.0, 2)
+    out["status"] = "MEASURED"
+    return out
+
+
+def blocked_rows() -> list[dict[str, str]]:
+    """The report's `blocked` list: every family still BLOCKED with its reason, then every
+    population whose import failed (this sweep's own and the buildability table's), named by
+    exception TYPE only."""
+    rows = [{"family": f, "why": w} for f, w in sorted(BLOCKED.items())]
+    for src, err in sorted(IMPORT_BLOCKED.items()):
+        rows.append({"source": src, "where": "breadth_sweep.default_families",
+                     "why": f"import failed ({err})", "error_type": err})
+    try:
+        from research.gauntlet_buildability import TABLE_BLOCKED
+    except Exception as exc:
+        rows.append({"source": "research.gauntlet_buildability", "where": "breadth_sweep",
+                     "why": f"import failed ({type(exc).__name__})",
+                     "error_type": type(exc).__name__})
+    else:
+        for src, err in sorted(TABLE_BLOCKED.items()):
+            rows.append({"source": src, "where": "gauntlet_buildability._family_table",
+                         "why": f"import failed ({err})", "error_type": err})
+    return rows
 
 
 def family_yield_rank(path: Path | None = None) -> dict[str, tuple[int, float]]:
@@ -509,6 +567,8 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "blocked": blocked_rows(),
+        "judge_coverage": judge_coverage_age(),
         "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
                  "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
@@ -663,6 +723,8 @@ def main(argv: list[str] | None = None) -> int:
           f"{', '.join(sorted(sweepable))}")
     for fam, why in sorted(blocked_default.items()):
         print(f"  SET ASIDE {fam:<20} {why[:90]}")
+    for src, err in sorted(IMPORT_BLOCKED.items()):
+        print(f"  BLOCKED {src:<22} import failed ({err})")
     from collections import Counter
     by_tf = Counter(str((r.get('params') or {}).get('timeframe') or 'H1') for r in new)
     by_sess = Counter(str((r.get('params') or {}).get('session') or 'all') for r in new)
