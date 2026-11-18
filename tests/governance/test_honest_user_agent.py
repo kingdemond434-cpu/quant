@@ -19,6 +19,7 @@ licence for whatever lands there next.
 from __future__ import annotations
 
 import ast
+import itertools
 import re
 import sys
 from pathlib import Path
@@ -90,6 +91,71 @@ def test_no_module_impersonates_a_browser() -> None:
     stale = sorted(set(BROWSER_TOKEN_ALLOWLIST) - set(hits))
     assert not stale, f"allowlist entries that no longer match anything: {stale}"
     assert all(why.strip() for why in BROWSER_TOKEN_ALLOWLIST.values())
+
+
+#: What a User-Agent must never carry: a repository or code-host URL, the repository owner's
+#: handle, or an e-mail address. A UA names the client; a person or contact in it is personal
+#: data sent to every host (four audit HOLDs of this class on 2026-11-18: #1330, #1335, #1339,
+#: #1341). SEC EDGAR's required contact is the owner's own EDGAR_UA key, read at run time, never
+#: a literal, so it never appears here.
+UA_FORBIDDEN = re.compile(r"github\.com|gitlab\.com|kingdemond|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\."
+                          r"[A-Za-z]{2,}")
+_UA_NAME = re.compile(r"(^|_)(UA|USER_AGENT|AGENT|HEADERS?)$|user_?agent", re.I)
+
+
+def _ua_literals(path: Path) -> list[tuple[int, str]]:
+    """String constants a module uses as a User-Agent: assigned to a UA-like name, the value of a
+    'User-Agent' dict key, or the argument after curl's -A."""
+    try:
+        tree = ast.parse(path.read_text("utf-8", errors="replace"), filename=str(path))
+    except SyntaxError:
+        return []
+    out: list[tuple[int, str]] = []
+
+    def strings(node: ast.AST) -> list[ast.Constant]:
+        return [n for n in ast.walk(node) if isinstance(n, ast.Constant)
+                and isinstance(n.value, str)]
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names = [t.id for t in targets if isinstance(t, ast.Name)]
+            if node.value is not None and any(_UA_NAME.search(n) for n in names):
+                out += [(c.lineno, c.value) for c in strings(node.value)]
+        elif isinstance(node, ast.Dict):
+            for k, v in zip(node.keys, node.values, strict=True):
+                if isinstance(k, ast.Constant) and str(k.value).lower() == "user-agent":
+                    out += [(c.lineno, c.value) for c in strings(v)]
+        elif isinstance(node, ast.List):
+            for a, b in itertools.pairwise(node.elts):
+                if isinstance(a, ast.Constant) and a.value in ("-A", "--user-agent"):
+                    out += [(c.lineno, c.value) for c in strings(b)]
+    return out
+
+
+def test_no_user_agent_names_a_person_repository_or_contact() -> None:
+    hits: dict[str, list[str]] = {}
+    for p in _non_test_py_files():
+        for line, value in _ua_literals(p):
+            if UA_FORBIDDEN.search(value):
+                hits.setdefault(p.relative_to(ROOT).as_posix(), []).append(f"{line}: {value!r}")
+    assert not hits, (
+        "a User-Agent literal names a repository, its owner or an e-mail address; use "
+        "libs.data.honest_ua.HONEST_UA:\n"
+        + "\n".join(f"  {k}\n    " + "\n    ".join(v[:3]) for k, v in sorted(hits.items())))
+
+
+def test_the_ua_scan_sees_each_shape() -> None:
+    import tempfile
+    src = ('UA = "x/1 (+https://github.com/someone/repo)"\n'
+           'H = {"User-Agent": "bot me@example.org"}\n'
+           'cmd = ["curl", "-A", "kingdemond-bot", "u"]\n'
+           'OK_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"\n')
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "m.py"
+        f.write_text(src, encoding="utf-8")
+        bad = [v for _, v in _ua_literals(f) if UA_FORBIDDEN.search(v)]
+    assert len(bad) == 3
 
 
 def _url_literals(path: Path) -> list[str]:
