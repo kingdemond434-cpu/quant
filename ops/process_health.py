@@ -68,6 +68,24 @@ RESULT_MEANING: dict[int, str] = {
     3221225794: "STATUS_DLL_INIT_FAILED -- usually desktop heap exhaustion in session 0",
 }
 
+#: WHAT A SMALL CODE MEANS FOR ONE ORGAN, keyed (task, code) -- the same idea as never_stale's
+#: TASK_DIAGNOSIS. A bare 2 from python.exe is a missing script, but an organ may also return 2
+#: ON PURPOSE. MT5-TickIntegrity does: 2 is its alarm (FAIL or newly-failed tick days, or no tape
+#: at all). Measured 2026-11-17 22:45Z: the box row read FAILING "file not found" every hour and
+#: was taken for a broken registration. The verdict stays FAILING -- an alarm is not health --
+#: but the words now say which alarm. A contracted organ only reaches FAILING with its artifact
+#: fresh (STALE is judged first), so a fresh TICK_INTEGRITY.json plus code 2 IS the alarm.
+TASK_RESULT_MEANING: dict[tuple[str, int], str] = {
+    ("MT5-TickIntegrity", 2): (
+        "ALARM, not a crash: the integrity audit found FAIL (or newly-failed) tick days, or no "
+        "tape -- read verdicts and paging in desks/mt5/reports/TICK_INTEGRITY.json"),
+}
+
+
+def result_meaning(name: str, code: int) -> str:
+    """The per-organ meaning of `code` when one is written down, else the generic one."""
+    return TASK_RESULT_MEANING.get((name, code)) or RESULT_MEANING.get(code, f"exit code {code}")
+
 
 #: One budget for each scheduler read. The verbose query has been measured hanging past two
 #: minutes on the trading box under load, and the PowerShell cmdlets this used to call first
@@ -689,7 +707,7 @@ def build() -> dict[str, Any]:
                                                     "succeeded is UNMEASURED")
         elif (code is not None and code not in (0, 267009, 267011) and not _running
               and not (code == REFUSED and flight)):
-            verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+            verdict, why = "FAILING", result_meaning(name, code)
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
@@ -719,6 +737,7 @@ def build() -> dict[str, Any]:
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
                             else IGNORE_NEW_MEANING if code == REFUSED and ignores_new(trigger)
+                            else result_meaning(name, code) if verdict == "FAILING"
                             else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
