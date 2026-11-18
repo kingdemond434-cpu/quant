@@ -22,6 +22,12 @@ THE CATALOGUE (`SPECIALISTS`):
   indices  overnight_gap, open_drive (the cash open of each index's own venue),
            month_end_rebalance (fixed-weight allocator flow), month_end_forced_flow
   softs    weather_window (per-commodity crop-cycle windows), wasde (USDA WASDE)
+  tier-1   the 2026-11-11 ideas the build check of 2026-11-18 found unproduced (`TIER1_IDEAS`):
+           intraday_momentum (U1, indices/gold/oil), overnight_day_tug (U2), weekend_crypto_lead
+           (U4, JPY/AUD/gold/Nasdaq), earnings_gap_breadth (U5), pre_holiday_drift (N1). U2, U4,
+           U5 and N1 need the families of `mt5desk/families_tier1.py`; until those are
+           registered their cells are SET ASIDE BY NAME, and the report's `tier1_ideas` block
+           says, per idea, which stage holds it back.
 
 BUILDABLE BY THE SEALED GAUNTLET, OR NOT MINTED. Every cell is asked twice. First
 `gauntlet_buildability.cell_verdict` (the family resolves, its data inputs are ones
@@ -151,9 +157,94 @@ WEATHER_WINDOWS: dict[str, list[tuple[int, int, int, str]]] = {
 }
 GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
 
+# ------------------------------------------- the Tier-1 ideas of 2026-11-11 (build check) ---
+#: U1 INTRADAY MOMENTUM (Gao, Han, Li & Zhou 2018; Elaut, Frommel & Lampaert 2018 on FX): the
+#: first half-hour's return predicts the last half-hour's, same sign, on index, gold and oil
+#: futures. On desk H1 bars it is `session_handoff` with both windows on the venue's OWN clock
+#: (DST-exact, `mt5desk/local_clock.py`): the source is the bar containing the cash open (its
+#: open-to-close move), the trade window is the bar that STARTS one hour before the close, so the
+#: signal is decided at that bar's close and the position rides the closing hour. symbol ->
+#: (zone, source "HH:MM" contains, trade "HH:MM" start). The H1 source bar includes the half-hour
+#: before the open on US venues; that is the chart's resolution, named here rather than hidden.
+INTRADAY_WINDOWS: dict[str, tuple[str, str, str]] = {
+    **dict.fromkeys(("US500", "US30", "NAS100", "US2000"), ("America/New_York", "09:30",
+                                                             "14:00")),
+    **dict.fromkeys(("GER40", "EUSTX50", "FRA40", "NETH25", "E35"), ("Europe/Berlin", "09:00",
+                                                                     "16:00")),
+    "UK100": ("Europe/London", "08:00", "15:00"),
+    "JPN225": ("Asia/Tokyo", "09:00", "14:00"),
+    "AUS200": ("Australia/Sydney", "10:00", "15:00"),
+    # COMEX gold opens 08:20 and settles 13:30 New York; NYMEX crude 09:00 and 14:30.
+    **dict.fromkeys(("XAUUSD", "XAGUSD"), ("America/New_York", "08:20", "12:00")),
+    **dict.fromkeys(("XTIUSD", "XBRUSD"), ("America/New_York", "09:00", "13:00")),
+}
+#: U2 OVERNIGHT-VS-DAY TUG OF WAR (Lou, Polk & Skouras 2019): each index's cash session in its
+#: own zone, and the bars from the open bar to the close. symbol -> (zone, open, close, hold).
+CASH_SESSIONS: dict[str, tuple[str, str, str, int]] = {
+    **dict.fromkeys(("US500", "US30", "NAS100", "US2000"), ("America/New_York", "09:30",
+                                                             "16:00", 6)),
+    **dict.fromkeys(("GER40", "EUSTX50", "FRA40", "NETH25", "E35"), ("Europe/Berlin", "09:00",
+                                                                     "17:30", 8)),
+    "UK100": ("Europe/London", "08:00", "16:30", 8),
+    "JPN225": ("Asia/Tokyo", "09:00", "15:30", 6),
+    "AUS200": ("Australia/Sydney", "10:00", "16:00", 6),
+    **dict.fromkeys(("HK50", "CHINAH"), ("Asia/Hong_Kong", "09:30", "16:00", 6)),
+}
+#: U4 WEEKEND CRYPTO AS A MONDAY-OPEN SIGNAL: Fusion's crypto CFDs trade through the weekend;
+#: the instruments the idea names are shut. The driver is an MT5 instrument informing another
+#: MT5 instrument (the mandate's one permitted use of crypto data), never a hunted universe.
+WEEKEND_TARGETS = frozenset({"USDJPY", "AUDUSD", "AUDJPY", "XAUUSD", "NAS100"})
+WEEKEND_DRIVERS = ("BTCUSD", "ETHUSD")
+#: U5 EARNINGS-GAP BREADTH: the USD share-CFD class's opening gaps, read on the US indices.
+GAP_BREADTH_TARGETS = frozenset({"US500", "NAS100", "US30", "US2000"})
+#: N1 PRE-HOLIDAY DRIFT: the venue whose holiday calendar each index trades on. JPN225 is named
+#: by the idea and absent here on purpose: the family does not generate the JPX calendar, so a
+#: cell would fire nothing (`TIER1_IDEAS["N1"]["not_covered"]` says so in the report).
+HOLIDAY_VENUE: dict[str, str] = {
+    **dict.fromkeys(("US500", "US30", "NAS100", "US2000"), "NYSE"),
+    **dict.fromkeys(("GER40", "EUSTX50"), "XETRA"), "UK100": "LSE",
+}
+#: The ideas, by the build check's id, and the (class, mechanism) units that carry them; the
+#: report reads each unit's counts back so "what stops it producing" is a measurement.
+TIER1_IDEAS: dict[str, dict[str, Any]] = {
+    "U1": {"idea": "intraday momentum: first half-hour predicts last half-hour",
+           "units": [("indices", "intraday_momentum"), ("metals", "intraday_momentum"),
+                     ("energy", "intraday_momentum")], "family": "session_handoff"},
+    "U2": {"idea": "overnight-vs-day tug of war on index CFDs",
+           "units": [("indices", "overnight_day_tug")], "family": "overnight_intraday_tug"},
+    "U4": {"idea": "weekend crypto as the Monday-open signal for JPY, AUD, gold, Nasdaq",
+           "units": [("fx", "weekend_crypto_lead"), ("metals", "weekend_crypto_lead"),
+                     ("indices", "weekend_crypto_lead")], "family": "weekend_driver_gap"},
+    "U5": {"idea": "share-CFD earnings-gap breadth as a next-day index signal",
+           "units": [("indices", "earnings_gap_breadth")], "family": "equity_gap_breadth"},
+    "N1": {"idea": "Western pre-holiday drift on index CFDs",
+           "units": [("indices", "pre_holiday_drift")], "family": "pre_holiday_drift",
+           "not_covered": {"JPN225": "the JPX holiday calendar is not generated by the family"}},
+}
+
+
+def _intraday(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    w = INTRADAY_WINDOWS.get(sym.upper())
+    if not w:
+        return []
+    tz, src, trd = w
+    return [("intraday_momentum", "session_handoff",
+             _grid({"source_tz": [tz], "source_at": [src], "source_align": ["contains"],
+                    "trade_tz": [tz], "trade_at": [trd], "trade_align": ["start"],
+                    "source_bars": [1], "hold_bars": [1], "direction": [1],
+                    "min_info_atr": [0.0, 0.3]}))]
+
+
+def _weekend(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    if sym.upper() not in WEEKEND_TARGETS:
+        return []
+    return [("weekend_crypto_lead", "weekend_driver_gap",
+             _grid({"driver_symbol": list(WEEKEND_DRIVERS), "entry_z": [0.5, 1.0],
+                    "direction": [1, -1], "hold_bars": [6, 24]}))]
+
 
 def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
-    return [
+    return _weekend(sym) + [
         ("wmr_fix_reversal", "fx_fixing_reversal",
          _grid({"fix_hour": [18, 19], "pre_window_bars": [2, 3],
                 "min_displacement_atr": [0.6, 1.0], "hold_bars": [3, 6]})),
@@ -185,13 +276,14 @@ def _metals(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     out.append(("metals_fix", "forced_flow",
                 _grid({"event_kind": ["fixing"], "clock": ["utc"], "symbol": [sym],
                        "mode": ["pre_flow", "post_flow_fade"]})))
-    return out
+    return out + _intraday(sym) + _weekend(sym)
 
 
 def _energy(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     return [("eia_inventory", "forced_flow",
              _grid({"event_kind": ["inventory"], "clock": ["utc"], "symbol": [sym],
-                    "mode": ["pre_flow", "post_flow_fade"], "window_after_min": [45, 120]}))]
+                    "mode": ["pre_flow", "post_flow_fade"], "window_after_min": [45, 120]}))
+            ] + _intraday(sym)
 
 
 def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
@@ -210,6 +302,23 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         out.append(("open_drive", "opening_range",
                     _grid({"open_hour": hours, "range_bars": [1], "window_bars": [6],
                            "rr": [1.5, 2.0]})))
+    s = sym.upper()
+    out += _intraday(sym) + _weekend(sym)
+    if s in CASH_SESSIONS:
+        tz, op, cl, hold = CASH_SESSIONS[s]
+        out.append(("overnight_day_tug", "overnight_intraday_tug",
+                    _grid({"venue_tz": [tz], "open_at": [op], "close_at": [cl],
+                           "min_leg_atr": [0.2, 0.5], "direction": [-1, 1],
+                           "hold_bars": [hold]})))
+    if s in GAP_BREADTH_TARGETS:
+        out.append(("earnings_gap_breadth", "equity_gap_breadth",
+                    _grid({"peer_currency": ["USD"], "gap_min": [0.03, 0.05],
+                           "entry_breadth": [0.05, 0.1], "direction": [1, -1],
+                           "hold_bars": [22]})))
+    if s in HOLIDAY_VENUE:
+        out.append(("pre_holiday_drift", "pre_holiday_drift",
+                    [{"venue": HOLIDAY_VENUE[s], "days_before": k, "side": 1,
+                      "hold_bars": 23 * k} for k in (1, 2)]))
     return out
 
 
@@ -231,6 +340,8 @@ def _softs(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
 SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str, Any]]]]],
                              dict[str, str]]] = {
     "fx": (_fx, {
+        "weekend_crypto_lead": "a weekend risk shock priced only by Fusion crypto CFDs reaches "
+                               "JPY and AUD at the Monday open, which may under-react",
         "wmr_fix_reversal": "benchmark trackers must transact AT the WMR 4pm London fix; the "
                             "pre-fix displacement is impact and reverses once they are done",
         "fix_forced_flow": "WMR and Tokyo TTM fixings: the forced participant is the benchmarked "
@@ -241,6 +352,10 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                             "central-bank decision (Lucca & Moench 2015 pre-announcement drift)",
     }),
     "metals": (_metals, {
+        "intraday_momentum": "late-day hedgers and informed traders who waited for the open's "
+                             "information trade the close in its direction (Gao et al. 2018)",
+        "weekend_crypto_lead": "a risk shock priced by Fusion crypto CFDs over the weekend reaches "
+                               "gold only at the Monday open, which may under-react",
         "gold_real_yield": "gold is priced off the real rate and the dollar; a gap between gold "
                            "and the bond proxy plus USDX closes as the arbitrage is worked",
         "gold_silver_ratio": "the gold/silver ratio mean-reverts as relative-value holders "
@@ -249,10 +364,24 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                       "transact at it",
     }),
     "energy": (_energy, {
+        "intraday_momentum": "late-day hedgers and informed traders who waited for the open's "
+                             "information trade the close in its direction (Gao et al. 2018)",
         "eia_inventory": "refiners and index hedgers must resize on the statutory Wednesday EIA "
                          "print (and position into it on the Tuesday API number)",
     }),
     "indices": (_indices, {
+        "intraday_momentum": "short-gamma dealers and late informed traders push the close in "
+                             "the direction the open set (Gao, Han, Li & Zhou 2018)",
+        "overnight_day_tug": "overnight and intraday clienteles disagree; when the night leg "
+                             "contradicts yesterday's day leg the day session reverses it (Lou, "
+                             "Polk & Skouras 2019)",
+        "weekend_crypto_lead": "a weekend risk shock priced only by Fusion crypto CFDs reaches "
+                               "the index at the Monday open, which may under-react",
+        "earnings_gap_breadth": "a broad share of single names gapping on earnings is news the "
+                                "index has only partly absorbed; the next session continues it",
+        "pre_holiday_drift": "short sellers cover and buyers front-run the holiday close; index "
+                             "returns before exchange holidays are abnormally positive (Ariel "
+                             "1990; Lakonishok & Smidt 1988)",
         "overnight_gap": "the cash open prices the overnight gap and the liquidity provider who "
                          "absorbed it is paid as it decays",
         "open_drive": "the cash open concentrates the venue's own order flow; the first range "
@@ -300,13 +429,18 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "eia_inventory": ("US", "physical_flow"),
     "month_end_forced_flow": ("GLOBAL", "institutional"),
     "wasde": ("US", "policy_driven"),
+    "intraday_momentum": ("US", "institutional"),
+    "weekend_crypto_lead": ("GLOBAL", "retail_heavy"),
 }
 
 
 def culture(mechanism: str, symbol: str) -> dict[str, str]:
     """`source_culture`, `participant_structure`, `failure_mode_hypothesis` for one cell."""
     sym = symbol.upper()
-    if mechanism in ("overnight_gap", "open_drive", "month_end_rebalance"):
+    if mechanism in ("overnight_gap", "open_drive", "month_end_rebalance") or (
+            mechanism in ("intraday_momentum", "overnight_day_tug", "earnings_gap_breadth",
+                          "pre_holiday_drift")
+            and sym in VENUE_CULTURE):
         tag = VENUE_CULTURE.get(sym, "UNMEASURED")
         part = "mixed" if mechanism == "overnight_gap" else "institutional"
         why = (WESTERN_STANDARD if tag in _WESTERN else
@@ -621,6 +755,48 @@ def _culture_census() -> dict[str, Any]:
             "participant_structure": dict(Counter(c["participant_structure"] for c in cells))}
 
 
+def tier1_ideas(seeded: dict[str, Any]) -> dict[str, Any]:
+    """Per Tier-1 idea: its family's verdict and its units' counts, and the FIRST stage that
+    holds it back -- the family not yet buildable, an input gap, cells built but silent, cells
+    under the trade-day floor, or none (it seeds)."""
+    try:
+        from research.gauntlet_buildability import family_verdict
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    rows = {(r.get("asset_class"), r.get("mechanism")): r
+            for r in seeded.get("by_mechanism") or []}
+    out: dict[str, Any] = {}
+    for key, spec in TIER1_IDEAS.items():
+        verdict, why = family_verdict(spec["family"])
+        units = {f"{k}/{m}": {c: v for c, v in (rows.get((k, m)) or {}).items()
+                              if c not in ("asset_class", "mechanism")}
+                 for k, m in spec["units"]}
+        tot: Counter = Counter()
+        for u in units.values():
+            tot.update({k: int(v) for k, v in u.items() if isinstance(v, int)})
+        if not tot.get("grid"):
+            stage = f"{UNMEASURED}: no cell of this idea was planned on this host"
+        elif tot.get("set_aside_unbuildable", 0) >= tot["grid"]:
+            stage = f"family {spec['family']} not buildable: {verdict}"
+        elif tot.get("seeded_total"):
+            stage = "SEEDING"
+        elif tot.get("clears_floor"):
+            stage = "clears the floor; donation pending"
+        elif tot.get("held_back_under_floor"):
+            stage = f"built but under the {SEED_FLOOR}-trade-day floor"
+        elif tot.get("built_but_zero_signals"):
+            stage = "built and silent: an input the family reads is absent here"
+        elif tot.get("input_gap"):
+            stage = "input gap: the sealed build_cell could not build it"
+        else:
+            stage = "not reached this pass (time budget)"
+        out[key] = {"idea": spec["idea"], "family": spec["family"], "family_verdict": verdict,
+                    "family_why": why, "units": units, "totals": dict(tot),
+                    "holding_it_back": stage, **({"not_covered": spec["not_covered"]}
+                                                 if spec.get("not_covered") else {})}
+    return out
+
+
 def report(seeded: dict[str, Any]) -> dict[str, Any]:
     new_families = {}
     try:
@@ -644,6 +820,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "catalogue": {k: sorted(v[1]) for k, v in SPECIALISTS.items()},
         "culture_of_catalogue": _culture_census(),
         "new_families": new_families,
+        "tier1_ideas": tier1_ideas(seeded),
         "seeding": seeded,
         "certificates": _certificates(),
         "consumer": ("data/intelligence/specialist_cell/ -> research/miner_candidate_compiler.py "

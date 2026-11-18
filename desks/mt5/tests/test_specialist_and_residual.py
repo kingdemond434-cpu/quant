@@ -274,7 +274,11 @@ def test_catalogue_is_lane_filtered_and_buildable():
                  ("indices", "overnight_gap"), ("indices", "open_drive"),
                  ("indices", "month_end_rebalance"), ("softs", "weather_window")]:
         assert want in mechs, want
-    verdicts = {cell_verdict(c["family"], c["params"])[0] for c in cells}
+    # The Tier-1 idea families may not be registered yet (their signal functions are a separate
+    # money-path change); their cells are then set aside by name. Everything else is buildable.
+    pending = {s["family"] for s in sc.TIER1_IDEAS.values()} - {"session_handoff"}
+    verdicts = {cell_verdict(c["family"], c["params"])[0] for c in cells
+                if c["family"] not in pending}
     assert verdicts == {BUILDABLE}
     assert all(c["prior"] for c in cells)
     assert not sc.plan({"fx": ["APPLE"]})               # single names never hunted here
@@ -300,7 +304,9 @@ def test_seed_donates_over_the_floor_once_and_charges_every_measured_cell(tmp_pa
     doc = sc.run(budget_s=60, out=tmp_path / "SPECIALIST_CELLS.json",
                  symbols_by_class={"indices": ["US500"]})
     s = doc["seeding"]
-    assert s["measured_this_pass"] == s["cells_in_catalogue"] > 0
+    # cells of a not-yet-registered Tier-1 idea family are set aside by name, never measured
+    aside = sum(r.get("set_aside_unbuildable", 0) for r in s["by_mechanism"])
+    assert s["measured_this_pass"] == s["cells_in_catalogue"] - aside > 0
     assert s["trial_charge_this_pass"]["n_raw"] == s["measured_this_pass"]
     assert len(donated) == 1 and len(donated[0]) == (s["measured_this_pass"] + 1) // 2
     assert all(r["source"] == "specialist_cell" for r in donated[0])
