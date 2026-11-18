@@ -43,7 +43,8 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+import traceback
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1059,12 +1060,19 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
     for i, panel in enumerate(panels):
-        if deadline is not None and clock() >= deadline:
+        # THE SCIENCE DEADLINE REACHES THE SCIENTIST (audit SF5): the panels it cannot start in
+        # time are named (and resume first next pass), and one it starts gets no more than the
+        # time left, so a thread the pass stops waiting for is already winding down.
+        left = float("inf") if deadline is None else deadline - clock()
+        if left <= 0:
             result["panels_not_reached"] = [p.target for p in panels[i:]]
+            result["unmeasured"].append(f"{len(panels) - i} panel(s) not started before the "
+                                        f"science deadline")
             break
+        per_panel_now = min(per_panel, left)
         view = _copy_panel(panel)
         try:
-            objects = scientist.propose(view, per_panel, np.random.default_rng(
+            objects = scientist.propose(view, per_panel_now, np.random.default_rng(
                 SEED + abs(hash((tradition, panel.target))) % 10_000))
         except Exception as exc:
             result["status"] = "FAILED"
@@ -1109,6 +1117,179 @@ def _entry_exit(params: dict[str, Any]) -> dict[str, str]:
                       f"{params['hold_bars']} bars, whichever comes first"),
         "executor": "mt5desk.family_formula (family `formula`), exactly as written",
     }
+
+
+DONATED_LEDGER_VERSION = 2
+
+#: THE SCIENTISTS GET THIS SHARE OF THE WALL CLOCK, MEASURED FROM THE START OF THE PASS.
+#: MEASURED ON THE BOX 2026-10-29 (Desk health): with every core saturated, math_lab and
+#: physics_lab hit their 720 s / 700 s leg caps on every pass since 10-10 -- LEG_TIMEOUT, 0 of
+#: 3 artifacts moved, no donation since 10-10 08:26Z. Each tradition's budget is advisory to a
+#: scientist under CPU contention, and `future.result()` waited on it without limit, so one
+#: slow scientist held the whole pass past the kill. The pass now stops WAITING at this share;
+#: a scientist still running is recorded TIMED_OUT (its objects UNMEASURED, never invented) and
+#: the judge, the donation and the report run on what came back.
+SCIENCE_WALL_SHARE = 0.45
+#: Scientist threads a pass stopped waiting for. Non-daemon pool threads would hold the process
+#: open at exit -- the same kill by another name -- so `main` exits hard once the report is out.
+ABANDONED_THREADS = 0
+
+
+def collect(futures: dict[Any, Future[Any]], deadline: float,
+            failed: Any) -> tuple[dict[Any, Any], list[Any]]:
+    """Each future's result, waiting no later than `deadline` (monotonic) in total.
+
+    `failed(key, status, why)` builds the row for a future that raised or did not finish.
+    Returns (results, timed_out_keys). Never raises.
+    """
+    global ABANDONED_THREADS
+    # ONE clock reading for the whole wait, not one per future.
+    wait(list(futures.values()),
+         timeout=None if deadline == float("inf") else max(0.0, deadline - time.monotonic()))
+    out: dict[Any, Any] = {}
+    late: list[Any] = []
+    for key, fut in futures.items():
+        if not fut.done():
+            fut.cancel()
+            late.append(key)
+            out[key] = failed(key, "TIMED_OUT", "still running at the pass's science deadline; "
+                                                "its objects are UNMEASURED this pass")
+            continue
+        try:
+            out[key] = fut.result()
+        except Exception as exc:
+            out[key] = failed(key, "FAILED", _exc_name(exc, f"pool {key}"))
+    ABANDONED_THREADS += sum(1 for k in late if not futures[k].done())
+    return out, late
+
+
+def unfinished_row(started: float, status: str, why: str, **ids: Any) -> dict[str, Any]:
+    """The row for a scientist that raised or was still running at the science deadline.
+
+    ITS YIELD IS UNMEASURED, NOT ZERO (audit of 1ce440654, MF2). The row used to say evaluated 0,
+    compute_s 0.0 and nothing unmeasured, so the report read a clean empty pass and
+    `record_registry` wrote generated=0 at no cost into `generator_yield` -- a measured-looking
+    zero that moves the tradition's ROI. The reason now lands in `unmeasured` (and from there in
+    the report's own list), `compute_s` is the wall clock the scientist held a thread since the
+    pass began (an upper bound, named as such), and `yield_measured` False tells
+    `record_registry` to leave the tradition's yield row untouched this pass.
+    """
+    return {**ids, "status": status, "why": why, "objects": [], "panels": [], "evaluated": 0,
+            "distinct": set(), "unmeasured": [f"{status}: {why}"],
+            "compute_s": round(time.monotonic() - started, 3),
+            "compute_basis": "wall clock since the pass began (upper bound)",
+            "yield_measured": False}
+
+
+def hard_exit_if_abandoned(code: int) -> int:
+    """Exit now when scientist threads are still running, so they cannot hold the leg open."""
+    if ABANDONED_THREADS:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
+    return code
+
+
+def run_then_exit(body: Any) -> int:
+    """Run `body`, then exit hard if scientist threads are still running -- ALSO when `body`
+    raised (audit SF6): an exception after the pool was abandoned would otherwise leave the
+    non-daemon threads holding the leg open to its cap, the very kill `collect` exists to stop.
+    The traceback is printed first, so the failure is still read as a failure (exit 1)."""
+    try:
+        body()
+    except BaseException:
+        if ABANDONED_THREADS:
+            traceback.print_exc()
+            hard_exit_if_abandoned(1)
+        raise
+    return hard_exit_if_abandoned(0)
+
+
+def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
+               admitted: int, dry_run: bool) -> None:
+    """A partial report the moment the donation has landed, so a kill afterwards still leaves
+    the pass's one load-bearing fact -- what it donated -- on disk. The full report replaces it."""
+    if dry_run:
+        return
+    with contextlib.suppress(OSError):
+        _atomic(path, {"at": now_iso(), "partial": True, "phase": phase, "dry_run": False,
+                       "elapsed_s": round(time.monotonic() - started, 2),
+                       "objects": {"admitted": admitted}, "donation": donation})
+
+
+def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
+    """Object ids already WRITTEN to the intake, and how that was established.
+
+    THE LEDGER USED TO RECORD WHAT WAS OFFERED, NOT WHAT WAS WRITTEN (root cause of the 10-13
+    silence, hourly pass item 26). Every row `proposer_common.donate` refused -- wrong lane,
+    no PIT stamp, blinded -- was still marked donated, so one pass where a door refused rows
+    burned those objects for good, and a deterministic lab that rediscovers the same objects
+    then donates nothing, every pass, with exit 0. A v1 ledger is therefore rebuilt ONCE from
+    the discovery files the source actually wrote; an object found in none is offered again
+    (audit SF8: what is VERIFIED is that the compiler's intake folds a row whose payload equals
+    one it already read in its window -- `libs.data.pit.payload_hash`, miner_candidate_compiler
+    `recent_rows` -- so a re-offer in the same window is one row, not two. Whether a re-offer
+    outside that window charges a trial downstream is the registry's identity rule and is
+    UNMEASURED here; the v1 rebuild happens once, so the exposure is one pass, bounded.)
+    """
+    if not path.exists():
+        return set(), {"ledger": "new"}
+    doc = _read_json(path) or {}
+    if int(doc.get("version") or 1) >= DONATED_LEDGER_VERSION:
+        return set(doc.get("object_ids") or []), {"ledger": "v2"}
+    from research import proposer_common as PC
+    written: set[str] = set()
+    files = 0
+    for f in sorted((PC.INTEL / source).glob("discoveries_*.json")):
+        try:
+            rows = json.loads(f.read_text("utf-8", errors="replace")).get("discoveries") or []
+        except (OSError, ValueError, AttributeError):
+            continue
+        files += 1
+        written |= {str(r["mathlab_object_id"]) for r in rows
+                    if isinstance(r, dict) and r.get("mathlab_object_id")}
+    offered = set(doc.get("object_ids") or [])
+    return written, {"ledger": "v1 rebuilt from writes", "files_read": files,
+                     "offered_v1": len(offered), "written": len(written),
+                     "reoffered": len(offered - written)}
+
+
+def written_rows(donated_path: Path | str | None) -> list[dict[str, Any]]:
+    """The rows `proposer_common.donate` actually WROTE, read back from the file it returned.
+
+    Read from the intake file itself rather than from state inside proposer_common, which is on
+    the money path's import closure: what reached the intake is exactly what that file holds,
+    after every door (blinding, lane, PIT). None or an unreadable file is [] -- nothing marked.
+    """
+    if not donated_path:
+        return []
+    try:
+        doc = json.loads(Path(donated_path).read_text("utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("discoveries") if isinstance(doc, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict)]
+
+
+def mark_donated(path: Path, already: set[str], written: list[dict[str, Any]]) -> None:
+    """Record the ids `donate` WROTE (never the ones it was offered) as a v2 ledger."""
+    ids = already | {str(r["mathlab_object_id"]) for r in written
+                     if r.get("mathlab_object_id")}
+    _atomic(path, {"at": now_iso(), "version": DONATED_LEDGER_VERSION,
+                   "object_ids": sorted(ids),
+                   "rule": "an object WRITTEN to the intake once is never donated again; a row "
+                           "a door refused is not written and is offered again next pass"})
+
+
+def donation_status(rows: int, donated: int, already: int, refused: int) -> str:
+    """Why a pass gave what it gave, in one word the yield report can go RED on."""
+    if donated:
+        return "DONATED"
+    if rows:
+        return "REFUSED_AT_THE_DOOR"
+    if already:
+        return "NOTHING_NEW"
+    return "NOTHING_TRADEABLE" if refused else "NO_SURVIVORS"
 
 
 def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[dict[str, Any]],
@@ -1269,6 +1450,12 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
         for tradition, row in per_tradition.items():
             if row.get("status") == NOT_REACHED:
                 continue                 # it evaluated nothing this pass, so nothing to charge
+            if row.get("yield_measured") is False:
+                # A scientist that never returned has no measured yield: writing its 0 would
+                # read as a tried-and-empty tradition (MF2). The chronic-timeout RED owns it.
+                out.setdefault("generator_yield_skipped", []).append(
+                    {"generator": f"math:{tradition}", "status": row.get("status")})
+                continue
             try:
                 reg.generator_yield_update(
                     f"math:{tradition}", generated=int(row.get("proposed", 0)),
@@ -1355,22 +1542,19 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
         "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
     panels_for = route_panels(chosen, panels, routing)
-    results: dict[str, dict[str, Any]] = {}
     # The pool starts traditions in submission order, so the ones the last pass did not reach
-    # are submitted first.
-    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen)))) as pool:
-        futures = {pool.submit(_run_tradition, t, panels_for[t], budgets[t], roi, census,
-                               science_deadline, clock): t
-                   for t in resume_order(chosen, cursor)}
-        for future, tradition in futures.items():
-            try:
-                results[tradition] = future.result()
-            except Exception as exc:
-                results[tradition] = {"tradition": tradition, "status": "FAILED",
-                                      "why": _exc_name(exc, f"pool {tradition}"),
-                                      "objects": [],
-                                      "panels": [], "evaluated": 0, "distinct": set(),
-                                      "unmeasured": [], "minted": [], "compute_s": 0.0}
+    # are submitted first. The pass stops WAITING at the science deadline (math_lab.collect,
+    # 2026-10-29); `collect` keeps time.monotonic, so the deadline is handed over as the time
+    # left on the pass's own clock.
+    pool = ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen))))
+    futures = {t: pool.submit(_run_tradition, t, panels_for[t], budgets[t], roi, census,
+                              science_deadline, clock)
+               for t in resume_order(chosen, cursor)}
+    wall_started = time.monotonic() - (clock() - started)  # the pass's start on collect's clock
+    results, timed_out = collect(
+        futures, time.monotonic() + max(0.0, science_deadline - clock()),
+        lambda t, status, why: unfinished_row(wall_started, status, why, tradition=t, minted=[]))
+    pool.shutdown(wait=not timed_out, cancel_futures=True)
 
     rng = np.random.default_rng(SEED)
     # THE WALL CLOCK GOVERNS THE JUDGE TOO (2026-09-23). `budgets` above bounds the SCIENTISTS;
@@ -1442,6 +1626,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             "routed_panels": list((routing.get("by_tradition") or {}).get(tradition) or []),
             "hypotheses_routed": int(float((routing.get("demand") or {}).get(tradition, 0.0))),
             "unmeasured": result.get("unmeasured") or [],
+            "yield_measured": result.get("yield_measured", True),
         }
 
     admitted, dedup_status = dedup(judged)
@@ -1480,7 +1665,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     # first under MAX_DONATIONS, and a disliked one goes when there is room instead of never.
     survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
-    already = set((_read_json(DONATED) or {}).get("object_ids") or [])
+    already, ledger = load_donated(DONATED, SOURCE)
     # THE BATCH BUDGET IS GONE (MAX_DONATIONS = -1). It was 40 against 132 admitted objects, and
     # a budget that binds every pass on a producer whose screen may not gate is the screen wearing
     # a different hat. The `sa.take` call stays so the stage keeps writing its ledger line --
@@ -1500,7 +1685,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
-                                    len([o for o in survivors if o.object_id in already])}
+                                    len([o for o in survivors if o.object_id in already]),
+                                "ledger": ledger}
     donated_by_tradition: dict[str, int] = {}
     if rows and not dry_run:
         try:
@@ -1508,22 +1694,23 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             path = PC.donate(SOURCE, rows, tests_run=sum(
                 int(v.get("evaluated", 0)) for v in per_tradition.values()))
             donation.update({"path": _published_path(path), **PC.donation_counts()})
-            for row in rows:
+            written = written_rows(path)
+            for row in written:
                 tradition = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[tradition] = donated_by_tradition.get(tradition, 0) + 1
             donation["by_tradition"] = dict(donated_by_tradition)
-            _atomic(DONATED, {"at": now_iso(),
-                              "object_ids": sorted(already | {r["mathlab_object_id"]
-                                                              for r in rows}),
-                              "rule": "an object donated once is never donated again; the "
-                                      "compiler's intake is idempotent by object id"})
+            mark_donated(DONATED, already, written)
         except Exception as exc:
             donation["status"] = (f"{UNMEASURED}: donate raised "
                                   f"{_exc_name(exc, 'donate')}")
     elif rows:
         donation["donated"] = 0
         donation["status"] = "SKIPPED_DRY_RUN"
+    donation.setdefault("status", donation_status(
+        len(rows), int(donation.get("donated") or 0),
+        int(donation["already_donated_in_a_previous_pass"]), len(refused)))
 
+    checkpoint(OUT, started, "donated", donation, len(admitted), dry_run)
     representations = representation_manifest(minted, dry_run)
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run
                 else record_registry(admitted, per_tradition, donated_by_tradition))
@@ -1684,15 +1871,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-targets", type=int, default=MAX_TARGETS)
     a = ap.parse_args(argv)
     chosen = [t.strip() for t in a.traditions.split(",") if t.strip()] or None
-    report = run(budget_s=leg_budget_s(a.budget_s), dry_run=a.dry_run, traditions=chosen,
-                 max_targets=a.max_targets)
-    print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
-                      "traditions": len(report["traditions_run"]),
-                      "objects": report["objects"]["admitted"],
-                      "passed": report["objects"]["passed_burden"],
-                      "donated": report["donation"].get("donated"),
-                      "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return 0
+
+    def body() -> None:
+        report = run(budget_s=leg_budget_s(a.budget_s), dry_run=a.dry_run, traditions=chosen,
+                     max_targets=a.max_targets)
+        print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
+                          "traditions": len(report["traditions_run"]),
+                          "objects": report["objects"]["admitted"],
+                          "passed": report["objects"]["passed_burden"],
+                          "donated": report["donation"].get("donated"),
+                          "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
+
+    return run_then_exit(body)
 
 
 if __name__ == "__main__":                                                # pragma: no cover
