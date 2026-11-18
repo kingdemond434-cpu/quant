@@ -850,19 +850,16 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
     """robots.txt for the URL's host, read with our own UA. A missing file (404) allows, as the
     standard says; any other failure to read it does NOT allow, so an unread policy is never
     treated as a yes."""
-    import urllib.robotparser
-
-    from libs.data.robots_body import is_html_body
+    from libs.data.robots_body import robots_rules_or_refusal
     p = urllib.parse.urlsplit(url)
-    rp = urllib.robotparser.RobotFileParser()
     try:
         body = get_text(f"{p.scheme}://{p.netloc}/robots.txt")
     except (urllib.error.HTTPError, FetchError) as exc:
-        return getattr(exc, "code", None) == 404
-    if is_html_body(body):          # an HTML page in place of rules is unread, never a yes
-        return False
-    rp.parse(body.splitlines())
-    return rp.can_fetch(UA, url)
+        got = robots_rules_or_refusal(getattr(exc, "code", None), None, "")
+    else:
+        # An HTML page in place of rules is unread, never a yes (libs.data.robots_body).
+        got = robots_rules_or_refusal(200, None, body)
+    return not isinstance(got, str) and got.can_fetch(UA, url)
 
 
 def mof_sign(pair: str) -> float:
