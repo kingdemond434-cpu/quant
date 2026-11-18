@@ -8,7 +8,7 @@
  "cadence_s": 3600,
  "max_silence_s": 7200,
  "state": "NEVER",
- "why": "added with the leg (rebuild of #376 on LIVE, 2026-11-13): no artifact and no run record yet; the attesting host has never attested it",
+ "why": "added with the leg (#1125): the registry declares no artifact for it, so --only-missing cannot append it; stamped off the attesting host -- no artifact and no run record here",
  "last_run_at": "UNMEASURED",
  "last_run_outcome": "UNMEASURED",
  "last_run_source": "UNMEASURED",
@@ -22,6 +22,14 @@
  "summary": {},
  "progress_metric": "leg_completions",
  "consumer": "UNMEASURED",
- "measured_on": "UNMEASURED",
- "measured_at": "2026-11-13T21:16:24+00:00"
+ "measured_on": "vm",
+ "measured_at": "2026-11-18T04:23:12+00:00",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "only_missing": {
+  "at": "2026-11-18T04:23:12+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
