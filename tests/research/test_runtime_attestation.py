@@ -423,10 +423,13 @@ def test_only_missing_never_appends_a_deferred_organ(tmp_path: Path, monkeypatch
     path = _committed(tmp_path)
     fresh = [_row("old_a"), _row("new_c"), {**_row("x"), "organ": "task:MT5-FTMO-Allocator"}]
     monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    raw = path.read_bytes()
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
-    after = json.loads(path.read_text(encoding="utf-8"))
-    assert [r["organ"] for r in after["organs"]] == ["old_a", "old_b", "new_c"]
-    assert "MT5-FTMO-Allocator" not in ra.Paths.at(tmp_path).out_md.read_text(encoding="utf-8")
+    # --only-missing writes one sidecar per new organ (2026-11-14) and leaves the monolith alone.
+    assert path.read_bytes() == raw
+    side = ra.Paths.at(tmp_path).sidecars
+    organs = sorted(json.loads(f.read_text(encoding="utf-8"))["organ"] for f in side.iterdir())
+    assert organs == ["new_c"]
 
 
 def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
