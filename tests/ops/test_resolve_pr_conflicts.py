@@ -1,5 +1,5 @@
-"""scripts/resolve_pr_conflicts.py: generated and append-only conflicts resolve mechanically, real
-ones are never touched. Every git test runs in a throwaway repository."""
+""".github/scripts/resolve_pr_conflicts.py: generated and append-only conflicts resolve
+mechanically, real ones are never touched. Every git test runs in a throwaway repository."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
-    "resolve_t", ROOT / "scripts/resolve_pr_conflicts.py"
+    "resolve_t", ROOT / ".github/scripts/resolve_pr_conflicts.py"
 )
 assert _spec and _spec.loader
 rc: Any = importlib.util.module_from_spec(_spec)

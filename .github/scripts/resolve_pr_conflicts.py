@@ -18,7 +18,11 @@ fast-forward and GitHub refuses it if the branch moved meanwhile.
 A merge-in changes the PR's diff bytes, so an Auditor CLEAR does not carry (audit_gate.patch_id):
 a fast-lane PR needs none; any other PR needs a new CLEAR of the new head.
 
-    python scripts/resolve_pr_conflicts.py --pr 1191 --pr 1187 [--push] [--quiet-min 60]
+    python .github/scripts/resolve_pr_conflicts.py --pr 1191 --pr 1187 [--push] [--quiet-min 60]
+
+It lives beside audit_gate.py and land.py because it is PR plumbing run on demand against
+GitHub, not a desk organ: nothing in the desk calls it and no clock may push into other
+sessions' branches unattended (the component registry walks scripts/, never .github/).
 """
 
 from __future__ import annotations
@@ -188,7 +192,8 @@ def merge_commit(cwd: Path, head: str, live: str, branch: str) -> tuple[str, lis
                 git(cwd, "update-index", "--add", "--cacheinfo", f"100644,{blob},{path}", env=env)
             tree = git(cwd, "write-tree", env=env).strip()
     msg = (f"Merge LIVE into {branch}; generated and append-only files resolved by "
-           f"scripts/resolve_pr_conflicts.py ({', '.join(sorted(resolved)) or 'no conflicts'})"
+           f".github/scripts/resolve_pr_conflicts.py "
+           f"({', '.join(sorted(resolved)) or 'no conflicts'})"
            + TRAILER)  # fmt: skip
     sha = git(cwd, "commit-tree", tree, "-p", head, "-p", live, "-m", msg).strip()
     return sha, sorted(resolved)
@@ -230,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--push", action="store_true", help="push the merge (default: dry run)")
     ap.add_argument("--quiet-min", type=float, default=60.0,
                     help="leave a PR that moved this recently (its session may be pushing)")
-    ap.add_argument("--repo-dir", type=Path, default=Path(__file__).resolve().parents[1])
+    ap.add_argument("--repo-dir", type=Path, default=Path(__file__).resolve().parents[2])
     a = ap.parse_args(argv)
     for pr in a.pr:
         print(one(a.repo_dir, pr, push=a.push, quiet_min=a.quiet_min), flush=True)
