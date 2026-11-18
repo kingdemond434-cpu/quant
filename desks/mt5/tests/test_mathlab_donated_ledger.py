@@ -1,0 +1,113 @@
+"""A row the donation door refused is never marked donated (the 10-13 math/physics lab silence).
+
+The labs kept a "donated once, never again" ledger of what they OFFERED to
+`proposer_common.donate`. Every row a door turned away (wrong lane, no PIT stamp) was marked
+too, so one refusing pass burned those objects for good and a deterministic lab that finds the
+same objects again donated nothing, every pass, with exit 0. These pin: only written rows are
+marked, a v1 ledger is rebuilt from the files actually written, and a zero pass names its cause.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+_DESK = str(Path(__file__).resolve().parents[1])
+if _DESK not in sys.path:
+    sys.path.insert(0, _DESK)
+
+from research import math_lab as ML  # noqa: E402
+from research import proposer_common as PC  # noqa: E402
+
+
+def test_only_rows_the_door_wrote_are_marked(tmp_path: Path,
+                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    ledger = tmp_path / "donated.json"
+    ML.mark_donated(ledger, {"old"}, [{"mathlab_object_id": "kept"}])
+    doc = json.loads(ledger.read_text("utf-8"))
+    assert doc["version"] == ML.DONATED_LEDGER_VERSION
+    assert doc["object_ids"] == ["kept", "old"]
+    ids, how = ML.load_donated(ledger, "mathlab")
+    assert ids == {"kept", "old"} and how == {"ledger": "v2"}
+
+
+def test_donate_that_refuses_everything_writes_nothing_to_mark(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(PC, "_blinded", lambda s, c: (c, {}))
+    monkeypatch.setattr(PC, "_lane_filtered", lambda c: ([], c))
+    path = PC.donate("mathlab", [{"mathlab_object_id": "x"}], tests_run=1)
+    assert path is None and ML.written_rows(path) == []
+
+
+def test_written_rows_are_read_back_from_the_file_donate_returned(tmp_path: Path) -> None:
+    f = tmp_path / "discoveries_x.json"
+    f.write_text(json.dumps({"discoveries": [{"mathlab_object_id": "a"}, "junk"]}), "utf-8")
+    assert ML.written_rows(f) == [{"mathlab_object_id": "a"}]
+    assert ML.written_rows(tmp_path / "absent.json") == []
+
+
+def test_a_v1_ledger_is_rebuilt_from_the_files_written(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(PC, "INTEL", tmp_path / "intel")
+    seat = tmp_path / "intel" / "mathlab"
+    seat.mkdir(parents=True)
+    (seat / "discoveries_20261010_1800.json").write_text(json.dumps(
+        {"discoveries": [{"mathlab_object_id": "written"}]}), "utf-8")
+    ledger = tmp_path / "donated.json"
+    ledger.write_text(json.dumps({"object_ids": ["written", "refused_1", "refused_2"]}), "utf-8")
+    ids, how = ML.load_donated(ledger, "mathlab")
+    assert ids == {"written"}
+    assert how["reoffered"] == 2 and how["files_read"] == 1
+
+
+def test_no_ledger_yet_is_empty_and_reads_no_files(tmp_path: Path) -> None:
+    assert ML.load_donated(tmp_path / "absent.json", "mathlab") == (set(), {"ledger": "new"})
+
+
+@pytest.mark.parametrize(("rows", "donated", "already", "refused", "want"), [
+    (5, 5, 0, 0, "DONATED"),
+    (5, 0, 0, 0, "REFUSED_AT_THE_DOOR"),
+    (0, 0, 132, 0, "NOTHING_NEW"),
+    (0, 0, 0, 3, "NOTHING_TRADEABLE"),
+    (0, 0, 0, 0, "NO_SURVIVORS"),
+])
+def test_a_pass_names_why_it_gave_what_it_gave(rows: int, donated: int, already: int,
+                                               refused: int, want: str) -> None:
+    assert ML.donation_status(rows, donated, already, refused) == want
+
+
+def test_the_pass_stops_waiting_on_a_scientist_at_the_deadline(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """A scientist that ignores its budget held both labs past their leg caps every pass from
+    10-10 to 10-29 (LEG_TIMEOUT, nothing written). `collect` stops waiting at the deadline."""
+    import threading
+    import time as _t
+    from concurrent.futures import ThreadPoolExecutor
+    release = threading.Event()
+    monkeypatch.setattr(ML, "ABANDONED_THREADS", 0)
+    pool = ThreadPoolExecutor(max_workers=2)
+    futures = {"fast": pool.submit(lambda: {"ok": 1}),
+               "slow": pool.submit(lambda: release.wait(30) and {"ok": 2}),
+               "boom": pool.submit(lambda: 1 / 0)}
+    t0 = _t.monotonic()
+    got, late = ML.collect(futures, _t.monotonic() + 0.5,
+                           lambda k, status, why: {"status": status, "why": why})
+    assert _t.monotonic() - t0 < 5
+    assert got["fast"] == {"ok": 1}
+    assert late == ["slow"] and got["slow"]["status"] == "TIMED_OUT"
+    assert got["boom"]["status"] == "FAILED" and "ZeroDivisionError" in got["boom"]["why"]
+    assert ML.ABANDONED_THREADS == 1
+    release.set()
+    pool.shutdown(wait=True)
+
+
+def test_a_checkpoint_lands_the_donation_before_the_slow_phases(tmp_path: Path) -> None:
+    out = tmp_path / "MATH_LAB.json"
+    ML.checkpoint(out, 0.0, "donated", {"donated": 4, "status": "DONATED"}, 9, dry_run=False)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["partial"] is True and doc["donation"]["donated"] == 4
+    assert doc["dry_run"] is False and "at" in doc
+    ML.checkpoint(tmp_path / "dry.json", 0.0, "donated", {}, 0, dry_run=True)
+    assert not (tmp_path / "dry.json").exists()

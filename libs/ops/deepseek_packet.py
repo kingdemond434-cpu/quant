@@ -117,7 +117,10 @@ def _universe(base: Path) -> dict[str, Any]:
     doc = _json(base / "desks/mt5/data/universe/universe.json") or {}
     rows = {k: v for k, v in doc.items() if not str(k).startswith("_") and isinstance(v, dict)}
     tradeable = [k for k, v in rows.items() if v.get("tradeable")]
-    cats = Counter(str(v.get("category") or "unknown") for v in rows.values())
+    # The registry spells it `asset_class`; `category` is the older name. Reading only the old one
+    # put 248 of 251 symbols in "unknown" (measured 2026-10-20, still so 2026-11-17).
+    cats = Counter(str(v.get("asset_class") or v.get("category") or "unknown")
+                   for v in rows.values())
     tfs = Counter(tf for v in rows.values() for tf in (v.get("bars_by_timeframe") or {}))
     lasts = [str(v.get("last") or "") for v in rows.values() if v.get("last")]
     if not rows:
@@ -179,9 +182,14 @@ def _frontier(base: Path) -> dict[str, Any]:
     sfams: Counter[str] = Counter()
     if isinstance(surv, dict):
         for cell in list(surv)[:200_000]:
+            # Keys are `external.<SYM>.<family>[...]` or `qquant.<hunt>.json.<SYM> <family> ...`;
+            # parts[1] is the SYMBOL (or the hunt), so counting it labelled symbols as families.
+            words = str(cell).split()
             parts = str(cell).split(".")
-            if len(parts) > 1:
-                sfams[parts[1]] += 1
+            if len(words) > 1:
+                sfams[words[1]] += 1
+            elif len(parts) > 2:
+                sfams[parts[2]] += 1
     known = set(fams) | set(sfams)
     if not cells and not surv_n:
         return {"status": "UNMEASURED", "why": "no admissible docket and no survivors report"}

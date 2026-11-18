@@ -140,6 +140,7 @@ NON_CODE: frozenset[str] = frozenset({
     # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
     # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
     "desks/mt5/reports/markout.json",
+    "desks/mt5/reports/MARKOUT_V2.json",
     # The Tier S box attestation the same sync publishes (2026-09-30). Listed in $relPaths
     # without being declared here, which test_release_seal names as refusing new risk.
     # The Tier S measurement reports the same sync publishes (2026-09-30): null lab, the lag
@@ -177,6 +178,7 @@ NON_CODE: frozenset[str] = frozenset({
     # The box merge sweep's pipeline report (workflow_gate.ps1), so the hourly pass sees a stall.
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/PR_BLOCKERS.json",
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
