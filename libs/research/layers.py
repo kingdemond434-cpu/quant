@@ -151,6 +151,10 @@ LEG_LAYER: dict[str, str] = {
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
     # whether any input exists at all, before any signal is derived from it.
     "source_routes": "information",
+    # row 47: official statements become dated tone states -- what the desk may know
+    "policy_doc_nlp": "information",
+    # row 103: who holds each market (small-trader share of COT) -- what the desk may know
+    "participant_structure": "information",
     # Per-sleeve return paths are what a PORTFOLIO view is computed from -- n_eff, covariance,
     # joint drawdown. Not a signal and not an execution fact.
     "strategy_paths": "portfolio",

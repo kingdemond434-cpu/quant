@@ -1267,6 +1267,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
     "breadth_ladder",
+    # ROW 103: the retail-heavy participant cluster and its own exploration floor, read by
+    # breadth_ladder right after it. Two parquet/JSON reads, no network.
+    "participant_structure",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "vocabulary_proposer",
@@ -1355,6 +1358,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # row 47: central-bank and regulator statements as dated tone states,
+                     # behind the terms/robots/hold fences; row 103: the retail-heavy cluster
+                     "policy_doc_nlp", "participant_structure",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -2315,6 +2321,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # policy_doc_nlp stops itself at --budget-s 240 and writes; cap above it.
+    "policy_doc_nlp": 300,
+    # a dozen small parquet reads and one JSON write
+    "participant_structure": 60,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -4437,6 +4447,11 @@ def main() -> None:
     # instrument's direction or regime donate the follow / fade pair that settles it.
     ctm = _costed("contradiction_miner", lambda: _producer("contradiction_miner",
                                                             "research/contradiction_miner.py"))
+    # ROW 103 (C_DEDUPE 2026-11-18): tag symbols by participant structure (small-trader share
+    # of COT positions) and publish the retail-heavy cluster's own exploration floor, BEFORE the
+    # ladder that publishes it and the sweep that honours it.
+    pst = _costed("participant_structure", lambda: _producer(
+        "participant_structure", "research/participant_structure.py"))
     bld = _costed("breadth_ladder", lambda: _producer("breadth_ladder",
                                                        "research/breadth_ladder.py"))
     ffc = _costed("forced_flow_calendar", lambda: _producer("forced_flow_calendar",
@@ -5960,6 +5975,11 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # ROW 47 (C_DEDUPE 2026-11-18): PBOC/CSRC/SAFE/BOK/MAS/BOJ/RBI/SARB statements scored by
+    # cb_tone_lab in their own language into dated event states. Terms, holds and robots fence
+    # every source first; on 2026-11-18 all eight are fenced and the report says why.
+    pdn = _costed("policy_doc_nlp", lambda: _producer(
+        "policy_doc_nlp", "research/policy_doc_nlp.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6568,7 +6588,8 @@ def main() -> None:
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,
                     "evig_acquisition": eva,
-                    "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
+                    "axis_registry": axr, "breadth_ladder": bld, "participant_structure": pst,
+                    "forced_flow_calendar": ffc,
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
@@ -6685,7 +6706,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
-                    "alt_proxies": alp,
+                    "alt_proxies": alp, "policy_doc_nlp": pdn,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

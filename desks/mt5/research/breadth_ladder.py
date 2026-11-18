@@ -34,6 +34,8 @@ HISTORY = DESK / "data" / "effective_breadth.jsonl"
 LATEST = DESK / "reports" / "EFFECTIVE_BREADTH.json"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 AXIS = DESK / "reports" / "AXIS_REGISTRY.json"
+#: Row 103: the participant-structure clusters (retail-heavy), each with its own floor.
+PARTICIPANTS = DESK / "reports" / "PARTICIPANT_STRUCTURE.json"
 OUT = DESK / "reports" / "BREADTH_LADDER.json"
 RUNGS: tuple[int, ...] = (6, 10, 15, 25, 40)
 FLOOR_BOUNDS = (0.2, 0.6)
@@ -163,6 +165,21 @@ def exploration_floor(axis: dict[str, Any], latest: dict[str, Any],
             "basis": "UNMEASURED: no axis registry and no cluster counts; the lower bound applies"}
 
 
+def cluster_floors(participants: dict[str, Any]) -> dict[str, Any]:
+    """Each participant cluster's own exploration floor (row 103), as `participant_structure`
+    measured it: the cluster's share of the measured symbols, never below its population share.
+    An unmeasured cluster publishes no floor rather than a default."""
+    name = str(participants.get("cluster") or "retail_heavy")
+    fl = (participants.get("exploration_floor") or {})
+    members = list(participants.get("members") or [])
+    if participants.get("status") != "MEASURED" or not members or fl.get("floor") is None:
+        return {name: {"floor": None, "members": [],
+                       "basis": "UNMEASURED: " + str(fl.get("basis") or "no participant report")}}
+    return {name: {"floor": fl.get("floor"), "members": members, "basis": fl.get("basis"),
+                   "at": participants.get("at"),
+                   "enforced_by": "breadth_sweep: cluster rows pulled inside the per-run cap"}}
+
+
 def factors(sl: dict[str, Any]) -> dict[str, Any]:
     """Per-leg budget factors from the slope. UNMEASURED -> 1.0 everywhere."""
     if sl.get("status") != "MEASURED":
@@ -195,6 +212,7 @@ def build() -> dict[str, Any]:
         "rungs": list(RUNGS), "rung_reached": reached, "next_target": nxt,
         "gap_to_next": (None if n_eff is None or nxt is None else round(nxt - n_eff, 3)),
         "slope": sl, "factors": fac, "exploration_floor": floor,
+        "cluster_floors": cluster_floors(_read(PARTICIPANTS)),
         "exploration_legs": sorted(EXPLORATION_LEGS),
         "exploitation_legs": sorted(EXPLOITATION_LEGS),
         "status": "UNMEASURED" if n_eff is None else "MEASURED",
