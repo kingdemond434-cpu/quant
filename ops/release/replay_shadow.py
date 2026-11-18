@@ -629,7 +629,7 @@ def allowlist_problems(base: Path, head: Path) -> list[str]:
     gi_added = list((Counter(gi) - gi_base).elements())
     new_lines += gi_added
     # #1359 audit SF2: the .gitignore may only gain the added paths' own `!p` lines and comments
-    if gi_base - Counter(gi):
+    if any(ln.strip() for ln in (gi_base - Counter(gi)).elements()):  # a blank line is inert
         out.append(f"a {GITIGNORE} line was removed")
     wanted = {f"!{p}" for p in added}
     if any(ln not in wanted and ln.strip() and not ln.lstrip().startswith("#") for ln in gi_added):
