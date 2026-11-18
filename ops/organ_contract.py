@@ -427,6 +427,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # Hourly pass gap audit (2026-11-18): the box pager had no row at all, so nobody could see
+    # whether it ran. scripts/run_alerts.py --box writes this report on every 15-min pass,
+    # armed or not; 45 min = three passes.
+    "MT5-PlumbingPager":  ("desks/mt5/reports/PLUMBING_PAGER.json", 45,
+                           "the box pager's last pass: pages due, sent and active"),
+    # The CRO noon lane fires hourly in its window but starts a FRESH pass once a day (12:xx
+    # Dublin) and writes its checkpoint then; 1560 min = a day plus the slot's own window.
+    "MT5-CycleNoon":      ("desks/mt5/data/cycle_state_noon.json", 1560,
+                           "the noon CRO pass's checkpoint, written when the day's pass starts"),
 }
 
 

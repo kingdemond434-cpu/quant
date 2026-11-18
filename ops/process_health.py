@@ -679,6 +679,10 @@ def build() -> dict[str, Any]:
         # A pass running NOW (its heartbeat, see IN_FLIGHT_HEARTBEATS) excuses an artifact past
         # its contract and a trigger IgnoreNew refused; it never excuses DISABLED or absence.
         flight = pass_in_flight(name, age, now) if name in IN_FLIGHT_HEARTBEATS else None
+        # A REFUSED TRIGGER WITH A FRESH ARTIFACT IS NOT A FAILURE (Hourly pass 2026-11-18,
+        # MT5-CycleNoon): the run that held the slot is the one producing, and the artifact proves
+        # it. A hung holder cannot hide here: its artifact goes STALE, which is judged first.
+        fresh = bool(artifact and age is not None and (not max_age or age <= max_age))
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -710,7 +714,7 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
         elif (code is not None and code not in (0, 267009, 267011) and not _running
-              and not (code == REFUSED and flight)):
+              and not (code == REFUSED and (flight or fresh))):
             verdict, why = "FAILING", result_meaning(name, code)
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
@@ -797,6 +801,26 @@ def build() -> dict[str, Any]:
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age, "purpose": purpose,
         })
+
+    # A MANIFEST TASK THE SCHEDULER HAS NEVER HEARD OF HAD NO ROW AT ALL (F4, Hourly pass
+    # 2026-11-18: MT5-PlumbingPager and six more). box_tasks.manifest is what the box is meant to
+    # run, so a declared task missing from the inventory is NOT_SCHEDULED -- named, not absent.
+    # Only on a read inventory: an unread scheduler never manufactures this claim.
+    if scheduler_status.startswith("OK "):
+        owners = {c.split(" (", 1)[0] for c in contracts}
+        for name, attrs in sorted(manifest.items()):
+            if name in seen or name in owners:
+                continue
+            rows.append({
+                "name": name, "verdict": "NOT_SCHEDULED",
+                "why": ("declared in box_tasks.manifest but not registered on this box: "
+                        "its installer has not run here"),
+                "state": "ABSENT", "last_run": "", "next_run": "",
+                "last_result_code": None, "last_result": "never run on this box",
+                "artifact": None, "artifact_age_min": None, "contract_max_age_min": None,
+                "purpose": None, "installer": attrs.get("installer") or None,
+                "lane": attrs.get("lane") or None,
+            })
 
     order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
