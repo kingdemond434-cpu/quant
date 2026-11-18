@@ -63,7 +63,9 @@ def test_symbol_home_is_the_weakest_rule_and_always_named() -> None:
 @pytest.mark.parametrize(("row", "culture", "rule"), [
     ({"source_id": "pack:ru:official:ru_cbr"}, "RU/ru", "inferred:ground_position"),
     ({"source": "miner:asia:safe_fx_settlement"}, "CN/zh", "inferred:asia_sources"),
-    ({"source_url": "https://www.boj.or.jp/statistics/index.htm"}, "JP/ja",
+    # a forest ground on a non-.jp host, so the forest rule (not the TLD) is what fires; the BoJ
+    # ground left the forest 2026-11-18 (its terms refuse commercial copying)
+    ({"source_url": "https://media.rakuten-sec.net/"}, "JP/ja",
      "inferred:deep_forest_host"),
     ({"source_url": "https://unregistered-example.co.jp/stat"}, "JP/ja", "inferred:url_tld"),
     ({"claim": "Банк России держит ставку"}, "RU/ru", "inferred:script_cyrillic"),
