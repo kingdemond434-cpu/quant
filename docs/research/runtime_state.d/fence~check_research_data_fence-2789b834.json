@@ -1,0 +1,37 @@
+{
+ "organ": "fence:check_research_data_fence",
+ "kind": "task",
+ "code": [
+  "scripts/check_research_data_fence.py"
+ ],
+ "clock": "run_law_gate.py",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "data/law_gate.json",
+ "artifact_declared": "data/law_gate.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 37,
+ "artifact_bytes": 9780,
+ "artifact_sha256": "c35b8fe410dfacfbb24a22befdf8f9f4fb21e6a298aa41870105081e7db7a6a0",
+ "summary": {
+  "ok": false
+ },
+ "progress_metric": "gate_runs",
+ "consumer": "desks/mt5/research/plumbing_watchdog.py",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-18T14:58:07+00:00",
+ "only_missing": {
+  "at": "2026-11-18T14:58:07+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
