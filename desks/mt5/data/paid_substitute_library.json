@@ -4641,7 +4641,7 @@
    ],
    "instruments": null,
    "participant_structure": "physical_flow",
-   "licence": "UN Comtrade terms (free tier)"
+   "licence": "BLOCKED_ON_TERMS: UN Comtrade licence s.5 forbids automated browsing or downloading without prior written UN permission; no free-tier carve-out (verdict 2026-11-14)"
   },
   {
    "id": "entsoe_transparency",

@@ -80,6 +80,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -545,7 +552,7 @@ def collect(notes: list[str], counts: dict[str, Any]) -> list[Sleeve]:
             continue
         sleeve = Sleeve(str(key), "forward", str(key).split(".")[0],
                         status=str(row.get("status") or ""))
-        trades = _read_json(SHADOW_DIR / f"ledger_{str(key).replace('.', '_')}.json", [])
+        trades = _fl.read_rows(str(key), [SHADOW_DIR])[0] or []  # its own file, never a frozen one
         for trade in trades if isinstance(trades, list) else []:
             if not isinstance(trade, dict) or str(trade.get("phase") or "") != "forward":
                 continue
