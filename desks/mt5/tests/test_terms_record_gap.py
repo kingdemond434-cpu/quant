@@ -17,6 +17,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 import terms_record_gap as gap  # noqa: E402
 
+from libs.data import terms_records as tr  # noqa: E402
+
 NOW = datetime(2026, 11, 17, 23, 59, tzinfo=UTC)
 
 
@@ -29,11 +31,14 @@ def _rec(host: str, verdict: str) -> dict[str, Any]:
 
 
 def _registry(tmp: Path) -> Path:
-    p = tmp / "terms_records.json"
-    p.write_text(json.dumps({"records": {"ok.org": _rec("ok.org", "permits"),
-                                         "bad.org": _rec("bad.org", "forbids")}}),
-                 encoding="utf-8")
-    return p
+    d = tmp / "terms_records"
+    d.mkdir()
+    files = tr.split({"counts": {"records": 2},
+                      "records": {"ok.org": _rec("ok.org", "permits"),
+                                  "bad.org": _rec("bad.org", "forbids")}})
+    for name, text in files.items():
+        (d / name).write_text(text, encoding="utf-8")
+    return d
 
 
 def _desk(tmp: Path, *, frontier: bool = True, news: bool = True) -> Path:
@@ -106,8 +111,8 @@ def test_no_input_at_all_is_unmeasured(tmp_path: Path) -> None:
 
 
 def test_unreadable_registry_makes_the_split_unmeasured(tmp_path: Path) -> None:
-    bad = tmp_path / "broken.json"
-    bad.write_text("{", encoding="utf-8")
+    bad = _registry(tmp_path)
+    (bad / "o.json").write_text("{", encoding="utf-8")   # one broken group file
     report, queue = gap.build(_desk(tmp_path), bad, now=NOW)
     assert report["registry"]["status"] == gap.UNMEASURED
     assert report["totals"]["to_unrecorded_hosts"] == gap.UNMEASURED

@@ -1,0 +1,51 @@
+{
+ "records": {
+  "newsystock.com": {
+   "host": "newsystock.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "newsystock.com"
+     }
+    }
+   ]
+  },
+  "npci.org.in": {
+   "host": "npci.org.in",
+   "verdict": "unreadable",
+   "terms_url": "https://www.npci.org.in/disclaimer",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: the disclaimer page is robots.txt-disallowed)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.npci.org.in/disclaimer",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: the disclaimer page is robots.txt-disallowed)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_npci_upi",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

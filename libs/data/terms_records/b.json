@@ -1,0 +1,123 @@
+{
+ "records": {
+  "baidu.com": {
+   "host": "baidu.com",
+   "verdict": "unreadable",
+   "terms_url": "https://www.baidu.com/duty/",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: baidu.com/duty is robots.txt-disallowed; huiyan footer links only '使用百度前必读')",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.baidu.com/duty/",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: baidu.com/duty is robots.txt-disallowed; huiyan footer links only '使用百度前必读')",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_baidu_migration",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "banxico.org.mx": {
+   "host": "banxico.org.mx",
+   "verdict": "permits",
+   "terms_url": "https://www.banxico.org.mx/footer-es/salvedad-politicas-uso-banco-.html",
+   "date_read": "2026-11-11",
+   "quote": "otorga su autorización de manera general para que la información que en ejercicio de sus atribuciones dé a conocer en ella pueda reproducirse o utilizarse. Las personas que reproduzcan esta información deberán mencionar la fuente de la cual se obtuvo, así como la dirección de Internet del Banco de México",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.banxico.org.mx/footer-es/salvedad-politicas-uso-banco-.html",
+     "date_read": "2026-11-11",
+     "quote": "otorga su autorización de manera general para que la información que en ejercicio de sus atribuciones dé a conocer en ella pueda reproducirse o utilizarse. Las personas que reproduzcan esta información deberán mencionar la fuente de la cual se obtuvo, así como la dirección de Internet del Banco de México",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "mx_banxico_sie",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "bigquant.com": {
+   "host": "bigquant.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的自动数据收集或提取工具' without BigQuant's prior written consent",
+   "recorded_by": "desks/mt5/research/deep_forest_miner.py TERMS_REFUSED (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的自动数据收集或提取工具' without BigQuant's prior written consent",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/deep_forest_miner.py",
+      "object": "TERMS_REFUSED",
+      "key": "bigquant.com"
+     }
+    }
+   ]
+  },
+  "bkm.com.tr": {
+   "host": "bkm.com.tr",
+   "verdict": "forbids",
+   "terms_url": "https://bkm.com.tr/bkm/yasal-uyari/",
+   "date_read": "2026-09-30",
+   "quote": "Burada mevcut olan bilgiler BKM'nin önceden yazılı izni alınmaksızın kısmen veya tamamen kopya edilemez, dağıtılamaz, kiralanamaz, çoğaltılamaz",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://bkm.com.tr/bkm/yasal-uyari/",
+     "date_read": "2026-09-30",
+     "quote": "Burada mevcut olan bilgiler BKM'nin önceden yazılı izni alınmaksızın kısmen veya tamamen kopya edilemez, dağıtılamaz, kiralanamaz, çoğaltılamaz",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "tr_bkm_card",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "busanpa.com": {
+   "host": "busanpa.com",
+   "verdict": "unreadable",
+   "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
+   "date_read": "2026-09-30",
+   "quote": "(not found: no 저작권정책 or 공공누리 mark in the served HTML of the home page or of the current statistics page; old board URL 404)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
+     "date_read": "2026-09-30",
+     "quote": "(not found: no 저작권정책 or 공공누리 mark in the served HTML of the home page or of the current statistics page; old board URL 404)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_busan_port",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

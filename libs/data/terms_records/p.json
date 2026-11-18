@@ -1,0 +1,76 @@
+{
+ "records": {
+  "payinc.co.za": {
+   "host": "payinc.co.za",
+   "verdict": "unreadable",
+   "terms_url": "https://www.payinc.co.za/",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: JS-only site, no terms link in served HTML)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.payinc.co.za/",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: JS-only site, no terms link in served HTML)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "za_beti",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "piaofang.maoyan.com": {
+   "host": "piaofang.maoyan.com",
+   "verdict": "unreadable",
+   "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
+   "date_read": "2026-09-30",
+   "quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
+     "date_read": "2026-09-30",
+     "quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
+     "quote_kind": "not_readable_note",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_maoyan_box_office",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "pib.gov.in": {
+   "host": "pib.gov.in",
+   "verdict": "permits",
+   "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+   "date_read": "2026-09-30",
+   "quote": "Material featured on this website may be reproduced free of charge and there is no need for any prior approval for using the content. [...] Wherever the material is being published or issued to others, the source must be prominently acknowledged.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+     "date_read": "2026-09-30",
+     "quote": "Material featured on this website may be reproduced free of charge and there is no need for any prior approval for using the content. [...] Wherever the material is being published or issued to others, the source must be prominently acknowledged.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_gold_imports",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

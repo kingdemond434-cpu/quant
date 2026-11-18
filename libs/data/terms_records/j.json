@@ -1,0 +1,52 @@
+{
+ "records": {
+  "jnto.go.jp": {
+   "host": "jnto.go.jp",
+   "verdict": "forbids",
+   "terms_url": "https://www.jnto.go.jp/site-info/site-policy.html",
+   "date_read": "2026-09-30",
+   "quote": "掲載著作物をJNTOをはじめとする権利者に無断で転⽤、複製、送信、放送、配布、貸与、翻訳、変造する事は著作権侵害となり、法的に罰せられることがあります。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.jnto.go.jp/site-info/site-policy.html",
+     "date_read": "2026-09-30",
+     "quote": "掲載著作物をJNTOをはじめとする権利者に無断で転⽤、複製、送信、放送、配布、貸与、翻訳、変造する事は著作権侵害となり、法的に罰せられることがあります。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jp_jnto_arrivals",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "jpx-jquants.com": {
+   "host": "jpx-jquants.com",
+   "verdict": "permits",
+   "terms_url": "https://jpx-jquants.com/termsofservice",
+   "date_read": "2026-10-06",
+   "quote": "第8条(利用目的) 本サービス及び本データの利用目的(以下「本利用目的」といいます。)は、登録ユーザーのみによる私的使用の目的に限ります。",
+   "recorded_by": "libs/ops/token_refresh.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://jpx-jquants.com/termsofservice",
+     "date_read": "2026-10-06",
+     "quote": "第8条(利用目的) 本サービス及び本データの利用目的(以下「本利用目的」といいます。)は、登録ユーザーのみによる私的使用の目的に限ります。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed_private_use",
+     "source": {
+      "file": "libs/ops/token_refresh.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "jquants",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

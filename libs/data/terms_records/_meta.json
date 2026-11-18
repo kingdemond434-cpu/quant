@@ -1,0 +1,105 @@
+{
+ "_doc": "Reviewed terms per host (LAWS 5e act 6). A host with no record has terms the desk has not read: under the Governance ruling of 2026-11-17 that host is refused, and the gap is measured each pass in reports/TERMS_RECORD_GAP.json. Seeded ONLY from evidence the repository held; each evidence row cites the object it was copied from. Add a record when a session reads a host's terms (URL, date, verbatim clause); never infer one.",
+ "schema": {
+  "verdicts": [
+   "permits",
+   "forbids",
+   "unreadable"
+  ],
+  "quote_kinds": [
+   "verbatim_terms",
+   "recorded_reading",
+   "not_readable_note"
+  ],
+  "precedence": "forbids > unreadable > permits (fail closed)"
+ },
+ "seeded_by": "scripts/seed_terms_records.py",
+ "counts": {
+  "records": 61,
+  "permits": 24,
+  "forbids": 25,
+  "unreadable": 12
+ },
+ "not_seeded": [
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "cn_mot_port_weekly",
+    "field": "terms_quote"
+   },
+   "host": "www.mot.gov.cn",
+   "source_label": "to_confirm",
+   "why": "terms were read but the desk's own reading is 'to_confirm' (not settled): neither permits, forbids nor unreadable, so no verdict is invented"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "za_statssa_retail",
+    "field": "terms_quote"
+   },
+   "host": "nationalgovernment.co.za",
+   "why": "a third-party MIRROR of the publisher's notice; a mirror cannot confirm the publisher's own terms"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_tsa_throughput",
+    "field": "terms_quote"
+   },
+   "host": "catalog.data.gov",
+   "why": "a dataset licence shown on a catalogue page; not the terms of the host the data is fetched from"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_oi_card_spend",
+    "field": "terms_quote"
+   },
+   "host": "github.com",
+   "why": "a repository README licenses that repository's data; it is not github.com's own terms for automated access"
+  },
+  {
+   "source": {
+    "file": "desks/mt5/research/alt_proxies.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "us_oi_google_mobility",
+    "field": "terms_quote"
+   },
+   "host": "github.com",
+   "why": "a repository README licenses that repository's data; it is not github.com's own terms for automated access"
+  },
+  {
+   "source": {
+    "file": "libs/ops/token_refresh.py",
+    "object": "TERMS_EVIDENCE",
+    "key": "myfxbook",
+    "field": "terms_quote"
+   },
+   "host": "www.myfxbook.com",
+   "source_label": "to_confirm",
+   "why": "terms were read but the desk's own reading is 'to_confirm' (not settled): neither permits, forbids nor unreadable, so no verdict is invented"
+  }
+ ],
+ "files": {
+  "a.json": 2,
+  "b.json": 5,
+  "c.json": 9,
+  "d.json": 10,
+  "e.json": 3,
+  "g.json": 4,
+  "h.json": 1,
+  "i.json": 3,
+  "j.json": 2,
+  "m.json": 2,
+  "n.json": 2,
+  "p.json": 3,
+  "r.json": 1,
+  "s.json": 6,
+  "t.json": 2,
+  "y.json": 6
+ }
+}

@@ -886,7 +886,7 @@ def explicit_specs() -> list[ComponentSpec]:
             kind="executable", host="box",
             code_paths=("desks/mt5/research/terms_record_gap.py",
                         "libs/data/terms_records.py", "scripts/seed_terms_records.py"),
-            inputs=("libs/data/terms_records.json",
+            inputs=("libs/data/terms_records/",
                     "desks/mt5/data/intelligence/world/frontier.json",
                     "desks/mt5/data/intelligence/blocked_sources.json",
                     "desks/mt5/data/deep_forest_claims.jsonl",
@@ -896,7 +896,7 @@ def explicit_specs() -> list[ComponentSpec]:
             outputs=("desks/mt5/reports/TERMS_RECORD_GAP.json",
                      "desks/mt5/reports/TERMS_BACKFILL_QUEUE.json"),
             consumers=("session:terms_backfill (reads TERMS_BACKFILL_QUEUE.json host by host "
-                       "and adds each record to libs/data/terms_records.json)",),
+                       "and adds each record to libs/data/terms_records/)",),
             cadence_s=3600, timeout_s=120, progress_metric="totals.to_unrecorded_hosts",
             expected_artifact_schema="desks/mt5/reports/TERMS_RECORD_GAP.json",
             owner="department:data", restart_action="restart:resident:dept_data",

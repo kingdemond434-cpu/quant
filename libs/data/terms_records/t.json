@@ -1,0 +1,51 @@
+{
+ "records": {
+  "theice.com": {
+   "host": "theice.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "ICE: terms refuse automated collection of its data",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "ICE: terms refuse automated collection of its data",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "theice.com"
+     }
+    }
+   ]
+  },
+  "tuik.gov.tr": {
+   "host": "tuik.gov.tr",
+   "verdict": "permits",
+   "terms_url": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+   "date_read": "2026-09-30",
+   "quote": "İnternet sitemizden, yayınlarımızdan veya veri tabanlarımızdan elde edilen verilerin, kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari",
+     "date_read": "2026-09-30",
+     "quote": "İnternet sitemizden, yayınlarımızdan veya veri tabanlarımızdan elde edilen verilerin, kaynak gösterilmek suretiyle herhangi bir izine gerek duymaksızın yeniden kullanımı mümkündür.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "tr_tuik_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

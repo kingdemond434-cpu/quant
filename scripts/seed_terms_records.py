@@ -1,4 +1,4 @@
-"""Seed libs/data/terms_records.json from terms evidence the repository ALREADY holds.
+"""Seed libs/data/terms_records/ from terms evidence the repository ALREADY holds.
 
 Nothing is fetched and nothing is invented. Every record is copied from a named object in the
 repository, and every evidence row cites that object (`source`: file, object, key, field) so
@@ -18,7 +18,12 @@ Held evidence read (LIVE branch, 2026-11-17):
 * `desks/mt5/data/free_stack_sources.json` rows carrying `terms_evidence`.
 * `desks/mt5/data/credential_registry.json` rows with machine_use_allowed=false and a terms text.
 
-Usage:  python scripts/seed_terms_records.py [--check]   (--check: exit 1 if the file differs)
+The registry is a directory (`libs/data/terms_records.py` says why): each record is written to
+its group file (`tr.group_file`, the host's first character) and the description to `_meta.json`.
+A write that would make any file a diff hunk past `tr.MAX_FILE_CHARS` (the independent review's
+PART_CHARS) is REFUSED, exit 2, and nothing is written: split the group finer first.
+
+Usage:  python scripts/seed_terms_records.py [--check]   (--check: exit 1 if any file differs)
 """
 from __future__ import annotations
 
@@ -266,6 +271,21 @@ def build() -> dict[str, Any]:
     }
 
 
+def oversize(files: dict[str, str]) -> list[str]:
+    """Every file that would be a diff hunk past the review's limit, with its size."""
+    return [f"{name}: {tr.hunk_chars(text)} > {tr.MAX_FILE_CHARS}"
+            for name, text in sorted(files.items()) if tr.hunk_chars(text) > tr.MAX_FILE_CHARS]
+
+
+def write(files: dict[str, str], directory: Path) -> None:
+    """Write the registry's files and remove any group file the new set does not hold."""
+    directory.mkdir(parents=True, exist_ok=True)
+    for stale in sorted({p.name for p in directory.iterdir()} - set(files)):
+        (directory / stale).unlink()
+    for name, text in files.items():
+        (directory / name).write_text(text, encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true")
@@ -275,13 +295,21 @@ def main(argv: list[str] | None = None) -> int:
     if problems:
         print("\n".join(problems), file=sys.stderr)
         return 1
-    text = json.dumps(doc, ensure_ascii=False, indent=1) + "\n"
+    files = tr.split(doc)
+    big = oversize(files)
+    if big:
+        print("REFUSED: a registry file would be too large for the independent review to read "
+              "whole; split its group finer (tr.group_file) before seeding:\n  "
+              + "\n  ".join(big), file=sys.stderr)
+        return 2
+    d = tr.REGISTRY
     if args.check:
-        same = tr.REGISTRY.exists() and tr.REGISTRY.read_text(encoding="utf-8") == text
-        print("terms_records.json is current" if same else "terms_records.json is STALE")
+        held = {p.name: p.read_text(encoding="utf-8") for p in d.iterdir()} if d.is_dir() else {}
+        same = held == files
+        print("terms_records/ is current" if same else "terms_records/ is STALE")
         return 0 if same else 1
-    tr.REGISTRY.write_text(text, encoding="utf-8")
-    print(f"wrote {tr.REGISTRY.relative_to(ROOT)}: {doc['counts']}; "
+    write(files, d)
+    print(f"wrote {d.relative_to(ROOT)}/ ({len(files)} files): {doc['counts']}; "
           f"not seeded: {len(doc['not_seeded'])}")
     return 0
 

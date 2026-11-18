@@ -1,0 +1,218 @@
+{
+ "records": {
+  "cboe.com": {
+   "host": "cboe.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Cboe: terms refuse automated collection of its data",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Cboe: terms refuse automated collection of its data",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "cboe.com"
+     }
+    }
+   ]
+  },
+  "census.gov": {
+   "host": "census.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+   "date_read": "2026-09-30",
+   "quote": "You may use the Census Bureau API to develop a service or service to search, display, analyze, retrieve, view and otherwise 'get' information from Census Bureau data.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+     "date_read": "2026-09-30",
+     "quote": "You may use the Census Bureau API to develop a service or service to search, display, analyze, retrieve, view and otherwise 'get' information from Census Bureau data.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "us_census_marts_ex_autos",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "cffex.com.cn": {
+   "host": "cffex.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.cffex.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: robots.txt could not be fetched or parsed from the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.cffex.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: robots.txt could not be fetched or parsed from the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 22,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_cffex"
+     }
+    }
+   ]
+  },
+  "cftc.gov": {
+   "host": "cftc.gov",
+   "verdict": "permits",
+   "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+   "date_read": "2026-10-06",
+   "quote": "Government information at the CFTC website is in the public domain. Public domain information may be freely distributed and copied, but it is requested that in any subsequent use the CFTC be given appropriate acknowledgement.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.cftc.gov/webpolicy/index.htm",
+     "date_read": "2026-10-06",
+     "quote": "Government information at the CFTC website is in the public domain. Public domain information may be freely distributed and copied, but it is requested that in any subsequent use the CFTC be given appropriate acknowledgement.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 3,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "cielo.com.br": {
+   "host": "cielo.com.br",
+   "verdict": "forbids",
+   "terms_url": "https://www.cielo.com.br/termos-condicoes-de-uso/",
+   "date_read": "2026-09-30",
+   "quote": "todo o Conteúdo é de propriedade exclusiva da CIELO [...] sendo vedada sua cópia, reprodução, ou qualquer outro tipo de utilização",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.cielo.com.br/termos-condicoes-de-uso/",
+     "date_read": "2026-09-30",
+     "quote": "todo o Conteúdo é de propriedade exclusiva da CIELO [...] sendo vedada sua cópia, reprodução, ou qualquer outro tipo de utilização",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "br_cielo_icva",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "comtrade.un.org": {
+   "host": "comtrade.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtrade.un.org"
+     }
+    }
+   ]
+  },
+  "comtradeapi.un.org": {
+   "host": "comtradeapi.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtradeapi.un.org"
+     }
+    }
+   ]
+  },
+  "comtradeplus.un.org": {
+   "host": "comtradeplus.un.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "comtradeplus.un.org"
+     }
+    }
+   ]
+  },
+  "czce.com.cn": {
+   "host": "czce.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.czce.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: the legal-statement link returned HTTP 412 to the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.czce.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: the legal-statement link returned HTTP 412 to the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 20,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_czce"
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,300 @@
+{
+ "records": {
+  "dadosabertos.bcb.gov.br": {
+   "host": "dadosabertos.bcb.gov.br",
+   "verdict": "permits",
+   "terms_url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+   "date_read": "2026-09-30",
+   "quote": "Open Data Commons Open Database License (ODbL)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dadosabertos.bcb.gov.br/dataset/estatisticas-meios-pagamentos",
+     "date_read": "2026-09-30",
+     "quote": "Open Data Commons Open Database License (ODbL)",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "br_bcb_payments",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data-api.ecb.europa.eu": {
+   "host": "data-api.ecb.europa.eu",
+   "verdict": "permits",
+   "terms_url": "https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html",
+   "date_read": "2026-10-06",
+   "quote": "The ESCB subscribes to a policy of free access and free reuse regarding its publicly released statistics, subject to the conditions described below. [...] All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. \"Source: ECB statistics.\") and that the statistics (including metadata) are not modified.",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/html/usage_policy.en.html",
+     "date_read": "2026-10-06",
+     "quote": "The ESCB subscribes to a policy of free access and free reuse regarding its publicly released statistics, subject to the conditions described below. [...] All publicly available ESCB statistics may be reused free of charge on the condition that the source is quoted (e.g. \"Source: ECB statistics.\") and that the statistics (including metadata) are not modified.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 1,
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+     "date_read": "2026-10-06",
+     "quote": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. All statistical data, metadata, content of web pages or other dissemination tools, official publications and other documents published on its website, with the exceptions listed below, can be reused without any payment or written licence provided that: - the source is indicated as Eurostat;",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 2,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.bis.org": {
+   "host": "data.bis.org",
+   "verdict": "permits",
+   "terms_url": "https://data.bis.org/help/legal",
+   "date_read": "2026-10-06",
+   "quote": "The use of the statistics is unrestricted, provided that: [...] if the statistics are reproduced, the BIS must be cited in your publication or product as the source of the statistics [...] if the statistics will be used in a commercial publication or product, their inclusion in the publication or product will not result in any additional charge to subscribers or other users",
+   "recorded_by": "libs/research/equivalence_ontology.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.bis.org/help/legal",
+     "date_read": "2026-10-06",
+     "quote": "The use of the statistics is unrestricted, provided that: [...] if the statistics are reproduced, the BIS must be cited in your publication or product as the source of the statistics [...] if the statistics will be used in a commercial publication or product, their inclusion in the publication or product will not result in any additional charge to subscribers or other users",
+     "quote_kind": "verbatim_terms",
+     "source_label": "PERMITTED",
+     "source": {
+      "file": "libs/research/equivalence_ontology.py",
+      "object": "TERMS_EVIDENCE",
+      "key": 0,
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.go.kr": {
+   "host": "data.go.kr",
+   "verdict": "permits",
+   "terms_url": "https://www.data.go.kr/data/15059131/openapi.do",
+   "date_read": "2026-09-30",
+   "quote": "이용허락범위 제한 없음",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15059131/openapi.do",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_mof_container_teu",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15157901/openapi.do",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_exports_early",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/15059638/openapi.do?recommendDataYn=Y",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위: 이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_bok_card_spend",
+      "field": "terms_quote"
+     }
+    },
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.data.go.kr/data/3070263/openapi.do?recommendDataYn=Y",
+     "date_read": "2026-09-30",
+     "quote": "이용허락범위 제한 없음",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_kobis_box_office",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.gov.hk": {
+   "host": "data.gov.hk",
+   "verdict": "permits",
+   "terms_url": "https://data.gov.hk/en/terms-and-conditions",
+   "date_read": "2026-09-30",
+   "quote": "You are allowed to browse, download, distribute, reproduce, hyperlink to, and print the Data for both commercial and non-commercial purposes on a free-of-charge basis",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.gov.hk/en/terms-and-conditions",
+     "date_read": "2026-09-30",
+     "quote": "You are allowed to browse, download, distribute, reproduce, hyperlink to, and print the Data for both commercial and non-commercial purposes on a free-of-charge basis",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "hk_immd_passenger",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "data.seoul.go.kr": {
+   "host": "data.seoul.go.kr",
+   "verdict": "permits",
+   "terms_url": "https://data.seoul.go.kr/dataList/OA-12914/S/1/datasetView.do",
+   "date_read": "2026-09-30",
+   "quote": "공공누리 1유형 : 출처표시 (상업적 이용 및 변경 가능)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://data.seoul.go.kr/dataList/OA-12914/S/1/datasetView.do",
+     "date_read": "2026-09-30",
+     "quote": "공공누리 1유형 : 출처표시 (상업적 이용 및 변경 가능)",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "kr_seoul_subway",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "dataspace.copernicus.eu": {
+   "host": "dataspace.copernicus.eu",
+   "verdict": "permits",
+   "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+   "date_read": "2026-10-06",
+   "quote": "The access and use of Copernicus Sentinel data is available on a free, full and open basis through the Copernicus Data Space Ecosystem and shall be governed by the Legal Notice on the use of Copernicus Sentinel Data and Service",
+   "recorded_by": "libs/ops/token_refresh.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dataspace.copernicus.eu/terms-and-conditions",
+     "date_read": "2026-10-06",
+     "quote": "The access and use of Copernicus Sentinel data is available on a free, full and open basis through the Copernicus Data Space Ecosystem and shall be governed by the Legal Notice on the use of Copernicus Sentinel Data and Service",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "libs/ops/token_refresh.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cdse",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "dce.com.cn": {
+   "host": "dce.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "http://www.dce.com.cn/",
+   "date_read": "2026-10-06",
+   "quote": "(not readable from the build sandbox: robots.txt fetch timed out from the sandbox)",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "http://www.dce.com.cn/",
+     "date_read": "2026-10-06",
+     "quote": "(not readable from the build sandbox: robots.txt fetch timed out from the sandbox)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 19,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_dce"
+     }
+    }
+   ]
+  },
+  "dukascopy.com": {
+   "host": "dukascopy.com",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": null,
+   "quote": "Dukascopy terms of use refuse bots and commercial use of its data (data_universe_map.json dukascopy_bi5_datafeed_VERDICT)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": null,
+     "quote": "Dukascopy terms of use refuse bots and commercial use of its data (data_universe_map.json dukascopy_bi5_datafeed_VERDICT)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "dukascopy.com"
+     }
+    }
+   ]
+  },
+  "dumps.wikimedia.org": {
+   "host": "dumps.wikimedia.org",
+   "verdict": "permits",
+   "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+   "date_read": "2026-09-30",
+   "quote": "All Analytics datasets are available under the Creative Commons CC0 dedication.",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+     "date_read": "2026-09-30",
+     "quote": "All Analytics datasets are available under the Creative Commons CC0 dedication.",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "wiki_asia_attention",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  }
+ }
+}

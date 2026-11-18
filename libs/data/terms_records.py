@@ -30,9 +30,24 @@ same suffix rule ``refused_hosts`` uses (``api.e-stat.go.jp`` is covered by ``e-
 and the most specific record wins. There is no public-suffix list on this branch, so a record is
 never inferred for a sibling host: ``a.example.org`` does not cover ``b.example.org``.
 
+THE REGISTRY IS A DIRECTORY (Governance ruling 2026-11-18): ``libs/data/terms_records/`` holds
+one group file per first character of the host (``a.json`` ... ``z.json``, ``0.json`` ...),
+each ``{"records": {host: record}}`` in the record shape above, plus ``_meta.json`` (the
+registry's own description, schema, counts, the ``not_seeded`` list, and ``files``: every group
+file and how many records it holds). It is split so that no file is a diff hunk too large for
+the independent review to read whole (``ops/release/independent_review.py`` PART_CHARS,
+mirrored here as ``MAX_FILE_CHARS``); ``scripts/seed_terms_records.py`` refuses a write past it.
+
 FAIL CLOSED. An absent, unparseable or invalid registry raises ``TermsRecordsUnreadable``; a
 caller never reads a broken registry as "no records" (which would look like a clean gap) or as
-"every host recorded".
+"every host recorded". That is the module's one refusal state, and the split keeps it whole
+rather than per file: an unreadable or invalid group file, a record with no host, a host filed in
+the wrong group or in two files, a group file missing from or not named in ``_meta.json``, or a
+count that disagrees with ``_meta.json`` makes the WHOLE registry unreadable. No file is ever
+skipped, so the registry never silently shrinks: every host, including the ones the broken file
+held, is then a host with no readable record -- under act 6, refused. The exception names the
+hosts it can (``.hosts``); a file that does not parse names none, and that is why the rest are
+refused with it.
 """
 from __future__ import annotations
 
@@ -44,7 +59,11 @@ from typing import Any
 
 from libs.data.refused_hosts import host_of
 
-REGISTRY = Path(__file__).with_name("terms_records.json")
+REGISTRY = Path(__file__).with_name("terms_records")
+META = "_meta.json"
+#: Mirrors ops/release/independent_review.py PART_CHARS (a test pins the two equal): a diff hunk
+#: larger than this is never read whole by the independent review, so no group file may be.
+MAX_FILE_CHARS = 24_000
 VERDICTS: tuple[str, ...] = ("permits", "forbids", "unreadable")
 #: Fail-closed precedence when readings of one host disagree: the most refusing wins.
 SEVERITY: dict[str, int] = {"permits": 0, "unreadable": 1, "forbids": 2}
@@ -54,7 +73,41 @@ _HOST = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9
 
 
 class TermsRecordsUnreadable(RuntimeError):
-    """The registry could not be read or did not validate. Never read as "no records"."""
+    """The registry could not be read or did not validate. Never read as "no records".
+    ``hosts``: the hosts the failure could name (empty when a file did not even parse)."""
+
+    def __init__(self, message: str, hosts: tuple[str, ...] = ()) -> None:
+        super().__init__(message)
+        self.hosts = hosts
+
+
+def group_file(host: str) -> str:
+    """The group file a normalised host's record lives in: its first character."""
+    return f"{host[:1]}.json"
+
+
+def hunk_chars(text: str) -> int:
+    """How large ``text`` is as one added-file diff hunk: every line gains a leading ``+``, plus
+    a generous allowance for the file and hunk headers."""
+    return len(text) + text.count("\n") + 400
+
+
+def dump(doc: Any) -> str:
+    """The one serialisation every registry file is written in."""
+    return json.dumps(doc, ensure_ascii=False, indent=1) + "\n"
+
+
+def split(doc: Mapping[str, Any]) -> dict[str, str]:
+    """A whole registry document (``records`` plus its description) as the directory's files,
+    name -> text. Pure; the caller validates and enforces the size limit."""
+    groups: dict[str, dict[str, Any]] = {}
+    for host in sorted(doc["records"]):
+        groups.setdefault(group_file(host), {})[host] = doc["records"][host]
+    meta = {k: v for k, v in doc.items() if k != "records"}
+    meta["files"] = {name: len(recs) for name, recs in sorted(groups.items())}
+    out = {META: dump(meta)}
+    out.update({name: dump({"records": recs}) for name, recs in sorted(groups.items())})
+    return out
 
 
 def record_key(host_or_url: str) -> str | None:
@@ -123,17 +176,75 @@ def validate(doc: Any) -> list[str]:
     return out
 
 
-def load(path: Path | str | None = None) -> dict[str, dict[str, Any]]:
-    """The records, keyed by host. FAIL CLOSED: raises ``TermsRecordsUnreadable`` on an absent,
-    unparseable or invalid file."""
-    p = Path(path) if path is not None else REGISTRY
+def _read(p: Path) -> Any:
     try:
-        doc = json.loads(p.read_text(encoding="utf-8"))
+        return json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise TermsRecordsUnreadable(f"{p}: {type(exc).__name__}: {exc}") from exc
-    problems = validate(doc)
+
+
+def load_document(path: Path | str | None = None) -> dict[str, Any]:
+    """The whole registry document reassembled from the directory: ``_meta.json``'s fields with
+    ``records`` the union of every group file, read in sorted order. FAIL CLOSED (see the module
+    docstring): any problem raises ``TermsRecordsUnreadable``; nothing is skipped."""
+    d = Path(path) if path is not None else REGISTRY
+    if not d.is_dir():
+        raise TermsRecordsUnreadable(f"{d}: the registry directory is absent")
+    meta = _read(d / META)
+    if not isinstance(meta, Mapping) or not isinstance(meta.get("files"), Mapping) \
+            or "records" in meta:
+        raise TermsRecordsUnreadable(f"{d / META}: not an object with a `files` map and no "
+                                     "records")
+    declared = {str(k): v for k, v in meta["files"].items()}
+    present = sorted(p.name for p in d.iterdir() if p.name != META)
+    problems: list[str] = []
+    named: set[str] = set()
+    for name in sorted(set(declared) - set(present)):
+        problems.append(f"{name} is named in {META} but absent")
+    for name in sorted(set(present) - set(declared)):
+        problems.append(f"{name} is in the directory but not named in {META}")
+    records: dict[str, Any] = {}
+    home: dict[str, str] = {}
+    for name in present:
+        if name not in declared:
+            continue
+        try:
+            doc = _read(d / name)
+        except TermsRecordsUnreadable as exc:
+            problems.append(str(exc))
+            continue
+        recs = doc.get("records") if isinstance(doc, Mapping) else None
+        if not isinstance(recs, Mapping) or set(doc) != {"records"}:
+            problems.append(f"{name}: not an object holding only `records`")
+            continue
+        if len(recs) != declared[name]:
+            problems.append(f"{name}: holds {len(recs)} records, {META} says {declared[name]}")
+        for key, rec in recs.items():
+            key = str(key)
+            named.add(key)
+            if group_file(key) != name:
+                problems.append(f"{name}: {key!r} belongs in {group_file(key)}")
+            if key in home:
+                problems.append(f"{key!r} is in both {home[key]} and {name}")
+                continue
+            home[key] = name
+            records[key] = rec
+    whole = {**{k: v for k, v in meta.items() if k != "files"}, "records": records}
+    problems.extend(validate(whole))
+    counts = meta.get("counts")
+    if isinstance(counts, Mapping) and counts.get("records") != len(records):
+        problems.append(f"{len(records)} records read, {META} counts {counts.get('records')}")
     if problems:
-        raise TermsRecordsUnreadable(f"{p}: {len(problems)} problem(s): {problems[:5]}")
+        bad = tuple(sorted(h for h in named if any(repr(h) in x for x in problems)))
+        raise TermsRecordsUnreadable(f"{d}: {len(problems)} problem(s): {problems[:5]}",
+                                     hosts=bad)
+    return whole
+
+
+def load(path: Path | str | None = None) -> dict[str, dict[str, Any]]:
+    """The records, keyed by host. FAIL CLOSED: raises ``TermsRecordsUnreadable`` on an absent,
+    unparseable or invalid registry directory or any file in it."""
+    doc = load_document(path)
     return {str(k): dict(v) for k, v in doc["records"].items()}
 
 

@@ -1,0 +1,148 @@
+{
+ "records": {
+  "sge.com.cn": {
+   "host": "sge.com.cn",
+   "verdict": "unreadable",
+   "terms_url": "https://www.sge.com.cn/",
+   "date_read": "2026-09-30",
+   "quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "unreadable",
+     "terms_url": "https://www.sge.com.cn/",
+     "date_read": "2026-09-30",
+     "quote": "Copyright 2016 上海黄金交易所 All Right Reserved (no terms page found)",
+     "quote_kind": "not_readable_note",
+     "source_label": "to_confirm",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_sge_premium",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "shfe.com.cn": {
+   "host": "shfe.com.cn",
+   "verdict": "forbids",
+   "terms_url": "https://www.shfe.com.cn/disclaimer/",
+   "date_read": "2026-10-06",
+   "quote": "在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、下载本网站的内容。 / 未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。",
+   "recorded_by": "desks/mt5/data/free_stack_sources.json sources (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": "https://www.shfe.com.cn/disclaimer/",
+     "date_read": "2026-10-06",
+     "quote": "在遵守中国有关法律与本声明的前提下，任何机构或者个人可基于非商业目的浏览、下载本网站的内容。 / 未经上海期货交易所书面许可，任何机构或者个人不得以向他人出售牟利为目的，使用本网站的任何内容，此种使用包括但不限于拷贝、下载、存贮、通过硬拷贝或电子抓取系统、发送、转换、出租、演示、转载、复制、修改、销售、传播、出版或任何其它形式的散发。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "refused",
+     "source": {
+      "file": "desks/mt5/data/free_stack_sources.json",
+      "object": "sources",
+      "index": 17,
+      "field": "terms_evidence.terms_quote",
+      "row_id": "cnx_shfe"
+     }
+    }
+   ]
+  },
+  "singstat.gov.sg": {
+   "host": "singstat.gov.sg",
+   "verdict": "permits",
+   "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+   "date_read": "2026-09-30",
+   "quote": "Use of Datasets provided in this application is subject to the terms of the Singapore Open Data Licence on the use of statistical data from this Website (\"ODL\").",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+     "date_read": "2026-09-30",
+     "quote": "Use of Datasets provided in this application is subject to the terms of the Singapore Open Data Licence on the use of statistical data from this Website (\"ODL\").",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "sg_port_throughput",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "smartcities.data.gov.in": {
+   "host": "smartcities.data.gov.in",
+   "verdict": "permits",
+   "terms_url": "https://smartcities.data.gov.in/government-open-data-license-india",
+   "date_read": "2026-09-30",
+   "quote": "all users are provided a worldwide, royalty-free, non-exclusive license to use, adapt, publish (either in original, or in adapted and/or derivative forms), translate, display, add value, and create derivative works (including products and services), for all lawful commercial and non-commercial purposes",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://smartcities.data.gov.in/government-open-data-license-india",
+     "date_read": "2026-09-30",
+     "quote": "all users are provided a worldwide, royalty-free, non-exclusive license to use, adapt, publish (either in original, or in adapted and/or derivative forms), translate, display, add value, and create derivative works (including products and services), for all lawful commercial and non-commercial purposes",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "in_dgi_iip_consumer",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "stats.gov.cn": {
+   "host": "stats.gov.cn",
+   "verdict": "permits",
+   "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+   "date_read": "2026-09-30",
+   "quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / 欢迎转载或引用本网所载内容，但以下内容除外：a.本网所指向的非本网内容的相关链接内容；b.已作出不得转载或未经许可不得转载声明的内容；c.未由本网署名或本网引用、转载的他人作品等非本网版权内容；d.本网中特有的图形、标志、页面风格、编排方式、程序等；e.本网中必须具有特别授权或具有注册用户资格方可知晓的内容；f.其他法律不允许或本网认为不适合转载的内容。",
+   "recorded_by": "desks/mt5/research/alt_proxies.py TERMS_EVIDENCE (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "permits",
+     "terms_url": "https://www.stats.gov.cn/wzgl/202302/t20230217_1912857.html",
+     "date_read": "2026-09-30",
+     "quote": "用户可以在本网站下载和使用国家统计局发布的统计数据 / 欢迎转载或引用本网所载内容，但以下内容除外：a.本网所指向的非本网内容的相关链接内容；b.已作出不得转载或未经许可不得转载声明的内容；c.未由本网署名或本网引用、转载的他人作品等非本网版权内容；d.本网中特有的图形、标志、页面风格、编排方式、程序等；e.本网中必须具有特别授权或具有注册用户资格方可知晓的内容；f.其他法律不允许或本网认为不适合转载的内容。",
+     "quote_kind": "verbatim_terms",
+     "source_label": "confirmed",
+     "source": {
+      "file": "desks/mt5/research/alt_proxies.py",
+      "object": "TERMS_EVIDENCE",
+      "key": "cn_nbs_retail",
+      "field": "terms_quote"
+     }
+    }
+   ]
+  },
+  "stlouisfed.org": {
+   "host": "stlouisfed.org",
+   "verdict": "forbids",
+   "terms_url": null,
+   "date_read": "2026-11-13",
+   "quote": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+   "recorded_by": "libs/data/refused_hosts.py REFUSED_HOSTS (copied by scripts/seed_terms_records.py; no fetch)",
+   "evidence": [
+    {
+     "verdict": "forbids",
+     "terms_url": null,
+     "date_read": "2026-11-13",
+     "quote": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
+     "quote_kind": "recorded_reading",
+     "source_label": "refused",
+     "source": {
+      "file": "libs/data/refused_hosts.py",
+      "object": "REFUSED_HOSTS",
+      "key": "stlouisfed.org"
+     }
+    }
+   ]
+  }
+ }
+}

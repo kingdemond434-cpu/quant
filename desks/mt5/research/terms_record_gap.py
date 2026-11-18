@@ -3,7 +3,7 @@
 THE DEFECT THIS MEASURES. LAWS 5e act 6 (amended 2026-11-17) refuses an automated fetch that a
 host's robots.txt or terms refuse, and Governance ruled (2026-11-17 23:50Z) that act 6 is read
 STRICTLY: terms the desk has not read refuse too. The desk's fetch paths do not yet consult a
-reviewed-terms record, so every fetch to a host with no record in `libs/data/terms_records.json`
+reviewed-terms record, so every fetch to a host with no record in `libs/data/terms_records/`
 is a fetch the law refuses. The refusal is reached in steps, and this organ is the measuring one:
 it publishes the size of the gap each pass so it can be closed host by host, highest volume first.
 It changes no fetch path; step 4 (refusing unrecorded hosts at the fetch) is NOT taken here.
@@ -205,7 +205,7 @@ def build(desk: Path = DESK, registry: Path | None = None,
     at = (now or datetime.now(UTC)).isoformat(timespec="seconds")
     inputs = measure_inputs(desk)
     measured = [i for i in inputs if i["status"] == "MEASURED"]
-    reg: dict[str, Any] = {"path": "libs/data/terms_records.json"}
+    reg: dict[str, Any] = {"path": "libs/data/terms_records/"}
     records: dict[str, dict[str, Any]] | None
     try:
         records = tr.load(registry)
@@ -295,8 +295,8 @@ def build(desk: Path = DESK, registry: Path | None = None,
              "doc": ("Hosts the desk fetched or captured from with no reviewed-terms record, "
                      "ranked by observations (desc), then number of inputs (desc), then host. A "
                      "later session reads each host's terms and adds its record to "
-                     "libs/data/terms_records.json (URL, date, verbatim clause). NOT a "
-                     "permission."),
+                     "its group file in libs/data/terms_records/ (URL, date, verbatim "
+                     "clause). NOT a permission."),
              "ranking": "observations desc, n_inputs desc, host asc",
              "sources": base["inputs"], "coverage_gap": UNCOUNTED,
              "n_hosts": len(ranked), "queue": ranked}
