@@ -687,6 +687,20 @@ def test_a_queued_live_push_run_is_red() -> None:
     )
 
 
+def test_a_pending_or_dispatched_live_run_is_red_too() -> None:
+    """#1265 audit SF: one group per branch holds the newest LIVE run as `pending`, and the gate's
+    merges are workflow_dispatch runs; either waiting 30 min is LIVE_CI_QUEUED."""
+    live = [_commit("fix", 1)]
+    for run in (
+        {"event": "workflow_dispatch", "head_branch": mp.LIVE, "created_at": _iso(45)},
+        {"event": "push", "status": "pending", "head_branch": mp.LIVE, "created_at": _iso(45)},
+    ):
+        rep = mp.assess(NOW, [], {}, {}, [run], 20, live)
+        assert [r.split(":")[0] for r in rep["red"]] == ["LIVE_CI_QUEUED"], run
+    src = (ROOT / "scripts/merge_pipeline_watch.py").read_text(encoding="utf-8")
+    assert '_runs(repo, "pending", pages=1)' in src and "queued + pending_live" in src
+
+
 def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> None:
     """#541 audit MF3: a failing or wedged sign train is never silent."""
     live = [_commit("fix", 1)]

@@ -16,7 +16,7 @@
  "last_sweep_s": 24978.3,
  "uptime_s": 107339.0,
  "last_sweep_ended_utc": "2026-11-18T00:09:59+00:00",
- "heartbeat_utc": "2026-11-18T00:49:45+00:00",
+ "heartbeat_utc": "2026-11-18T05:34:45+00:00",
  "sweep_phase": {
   "pid": 18996,
   "sweep_started_utc": "2026-11-18T00:10:10+00:00",
@@ -87,37 +87,42 @@
      }
     },
     "prewarm": {
-     "samples": 97,
+     "samples": 1571,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 93,
-       "share": 0.959
+       "n": 1533,
+       "share": 0.976
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 2,
-       "share": 0.021
-      },
-      {
-       "stack": "<frozen importlib._bootstrap_external>:_path_stat:152 < <frozen importlib._bootstrap_external>:find_spec:1368 < <frozen importlib._bootstrap_external>:_get_spec:1269 < <frozen importlib._bootstrap_external>:find_spec:1295 < <frozen importlib._bootstrap>:_find_spec:1267 < <frozen importlib._bootstrap",
-       "n": 1,
+       "n": 16,
        "share": 0.01
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 1,
-       "share": 0.01
+       "n": 6,
+       "share": 0.004
+      },
+      {
+       "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
+       "n": 5,
+       "share": 0.003
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2093",
+       "n": 3,
+       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 80.2,
-      "page_faults": 4682084.0,
-      "read_bytes": 2438252.0,
-      "write_bytes": 5547946479.0,
-      "sampled_s": 960.0,
+      "cpu_s": 1317.6,
+      "page_faults": 78419947.0,
+      "read_bytes": 34636508.0,
+      "write_bytes": 87847916034.0,
+      "sampled_s": 15700.0,
       "rss_mb_max": 3430.1,
-      "cpu_share_of_wall": 0.083
+      "cpu_share_of_wall": 0.084
      }
     }
    }
