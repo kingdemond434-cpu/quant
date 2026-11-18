@@ -9318,6 +9318,22 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "REDTEAM1",
+   "item": "Red-team the never-run organs: every NO_CLOCK organ in the dead-architecture census started once, rotating a few per pass, under a hard time cap, a memory guard derived from free memory and a repository write guard; outcome ran_ok / crashed (type only) / no_output / timeout / skipped_denylisted",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:organ_redteam",
+   "artifact": "desks/mt5/reports/ORGAN_REDTEAM.json",
+   "consumer": "scripts/check_dead_architecture.py stamps each NO_CLOCK organ with its last red-team outcome",
+   "evidence": [
+    "desks/mt5/research/organ_redteam.py:1-40 why it exists and what it never starts (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
