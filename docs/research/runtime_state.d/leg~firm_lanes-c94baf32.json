@@ -1,0 +1,35 @@
+{
+ "organ": "leg:firm_lanes",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/firm_lanes.py"
+ ],
+ "clock": "hourly_cycle:firm_lanes",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/FIRM_LANES.json",
+ "artifact_declared": "desks/mt5/reports/FIRM_LANES.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/firm_lane",
+ "measured_on": "vm",
+ "measured_on_machine_id": "02c0ff32d11f4f6ea20de4b2a2924cdc",
+ "measured_at": "2026-11-18T01:41:58+00:00",
+ "only_missing": {
+  "at": "2026-11-18T01:41:58+00:00",
+  "host": "vm",
+  "machine_id": "02c0ff32d11f4f6ea20de4b2a2924cdc",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
