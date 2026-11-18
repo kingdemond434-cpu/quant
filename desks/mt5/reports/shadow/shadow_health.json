@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18T11:45:25+00:00",
+  "updated_at": "2026-11-18T12:40:22+00:00",
   "configured_sleeves": 673,
   "represented_sleeves": 673,
   "certified_sleeves_total": 11328,
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 49,
-    "median_age_days": 41.988,
+    "median_age_days": 42.026,
     "mature_14d_without_trade": 48,
     "fresh_attempts": 40,
     "naturally_inactive": 40,
@@ -40,23 +40,23 @@
     "10311 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 3020.122,
+  "seconds": 2717.751,
   "stage_seconds": {
     "scalp_bar_refresh": 0.0,
-    "external_state_reconcile": 1.0,
-    "legacy_shadow": 2923.2,
-    "scalp_shadow": 21.8,
-    "qquant_shadow": 4.4,
-    "promoter": 66.7
+    "external_state_reconcile": 0.7,
+    "legacy_shadow": 2649.1,
+    "scalp_shadow": 13.2,
+    "qquant_shadow": 1.2,
+    "promoter": 52.0
   },
   "engine_profile": {
-    "seconds": 2922.5,
+    "seconds": 2648.3,
     "rows_timed": 1016,
     "phase_seconds": {
-      "backtest": 286.8,
-      "fetch": 58.8,
-      "resolve": 29.7,
-      "signals": 1309.7
+      "backtest": 294.8,
+      "fetch": 84.1,
+      "resolve": 48.3,
+      "signals": 1161.3
     },
     "phase_calls": {
       "backtest": 944,
@@ -69,84 +69,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "cross_asset_residual": 1014.8,
-      "macro_conditional": 799.9,
-      "carry": 451.7,
-      "overnight_gap_decay": 252.2,
-      "pca_residual": 132.2,
-      "formula": 121.5,
-      "clock_transition": 79.0,
-      "spread_state": 29.8,
-      "session_range_breakout": 13.1,
-      "range_reversion": 7.8,
-      "overnight_drift": 2.0
+      "macro_conditional": 842.2,
+      "cross_asset_residual": 804.2,
+      "carry": 444.7,
+      "overnight_gap_decay": 206.2,
+      "formula": 137.2,
+      "pca_residual": 108.3,
+      "clock_transition": 49.8,
+      "session_range_breakout": 20.1,
+      "spread_state": 15.7,
+      "range_reversion": 8.2,
+      "overnight_drift": 3.6
     },
     "chart_seconds": {
-      "M5": 1482.6,
-      "M15": 566.4,
-      "H1": 528.2,
-      "M30": 326.8
+      "M5": 1499.4,
+      "M15": 500.8,
+      "H1": 434.8,
+      "M30": 205.4
     },
     "slowest_rows": [
       {
+        "key": "USDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+        "seconds": 23.99
+      },
+      {
         "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-        "seconds": 40.54
+        "seconds": 22.71
       },
       {
-        "key": "EURNOK.carry.asia@M15#input_symbol=EURNOK_require_quiet=False_session=ny",
-        "seconds": 30.99
+        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+        "seconds": 22.03
       },
       {
-        "key": "CHFNOK.macro_conditional.asia@M5",
-        "seconds": 27.81
+        "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
+        "seconds": 21.98
       },
       {
-        "key": "USDSEK.macro_conditional.asia@M5",
-        "seconds": 24.95
+        "key": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False",
+        "seconds": 19.46
       },
       {
-        "key": "SGDJPY.macro_conditional.asia@M5",
-        "seconds": 23.4
+        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
+        "seconds": 18.93
       },
       {
-        "key": "GBPNOK.macro_conditional.asia@M5",
-        "seconds": 18.22
+        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=asia",
+        "seconds": 18.86
       },
       {
-        "key": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
-        "seconds": 16.91
+        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
+        "seconds": 18.27
       },
       {
-        "key": "EURSEK.macro_conditional.asia@M5#session=ny",
-        "seconds": 16.03
+        "key": "USDZAR.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
+        "seconds": 18.14
       },
       {
-        "key": "CHFNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192",
-        "seconds": 15.62
+        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+        "seconds": 17.52
       },
       {
-        "key": "AUDSGD.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=asia",
-        "seconds": 15.36
+        "key": "GBPSGD.macro_conditional.asia@M5",
+        "seconds": 17.27
       },
       {
-        "key": "NZDJPY.macro_conditional.asia@M5",
-        "seconds": 14.84
+        "key": "USDZAR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
+        "seconds": 16.37
       },
       {
-        "key": "CHFSGD.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=london",
-        "seconds": 14.75
+        "key": "AUDNZD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192",
+        "seconds": 16.37
       },
       {
-        "key": "CHFSGD.pca_residual.asia@M15#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
-        "seconds": 14.63
+        "key": "AUDNZD.macro_conditional.asia@M5#session=ny",
+        "seconds": 15.98
       },
       {
-        "key": "CHFNOK.carry.asia@M5#require_quiet=False_symbol=CHFNOK",
-        "seconds": 14.49
-      },
-      {
-        "key": "USDTHB.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
-        "seconds": 14.13
+        "key": "USDZAR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+        "seconds": 15.18
       }
     ]
   },
