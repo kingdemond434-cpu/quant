@@ -75,7 +75,8 @@ def miner_outcome(name, status, payload):
     if refused is not None:
         return {"count": 0, "status": refused["status"], "error": str(payload),
                 "refusal": refused, "missed_growth": refused["missed_growth"],
-                "retry": "never", "bypass": "refused", "discoveries": []}
+                "retry": "same_ua_only", "under_other_ua": "never", "bypass": "refused",
+                "discoveries": []}
     return {"count": 0, "error": payload}
 
 # --- Tier 1: Social/Web miners ---

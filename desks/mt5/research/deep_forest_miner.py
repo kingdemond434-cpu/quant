@@ -1755,8 +1755,8 @@ class _Run:
             status = str(first["status"])
             out = {**out, "why": first["why"], "host": first["host"],
                    "http_status": first["http_status"], "user_agent": first["user_agent"],
-                   "missed_growth": first["missed_growth"], "retry": "never",
-                   "bypass": "refused"}
+                   "missed_growth": first["missed_growth"], "retry": "same_ua_only",
+                   "under_other_ua": "never", "bypass": "refused"}
         walls = [str(x.get("refused") or x.get("blocked")) for x in self.status[st0:]
                  if isinstance(x, dict) and (x.get("refused") or x.get("blocked"))]
         if status == "BLOCKED" and walls and not out.get("error"):
