@@ -469,6 +469,40 @@ def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
                     f"yet. No candidate was refused: the rail can only cost queue position.")}
 
 
+CONVICTION = BASE / "reports" / "CONVICTION_SHADOW.json"
+
+
+def measure_conviction(r: Any, _alloc: dict[str, Any],
+                       _fv: dict[str, Any]) -> dict[str, Any]:
+    """Conviction scaling's DOWNWARD half, from its shadow leg's latest matured forward day.
+
+    value = sum over the sleeves it cut of (h_conv - h_base) x realised R: positive when the cut
+    sleeves lost (the cut earned), negative when they paid (the cut cost growth). A sample only
+    while the switch is LIVE -- in SHADOW the account carries none of it, so the line is
+    NOT_BINDING and the shadow number rides along for the reader."""
+    doc = _json(CONVICTION)
+    if not doc:
+        return {"verdict": UNMEASURED, "why": "reports/CONVICTION_SHADOW.json absent"}
+    dh = doc.get("down_half") or {}
+    v = dh.get("value_logw_per_day")
+    if doc.get("mode") != "LIVE":
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "mode": "SHADOW",
+                "shadow_down_half_logw_per_day": v, "n": dh.get("n", 0)}
+    if not isinstance(v, (int, float)):
+        return {"verdict": UNMEASURED, "mode": "LIVE", "why": "no matured forward day yet"}
+    rd = str(dh.get("realised_day") or "")
+    try:
+        age = (datetime.now(tz=UTC).date() - datetime.fromisoformat(rd[:10]).date()).days
+    except ValueError:
+        age = 999
+    if age > 4:
+        # The same matured day must not be sampled again on every later day.
+        return {"verdict": UNMEASURED, "mode": "LIVE",
+                "why": f"latest matured day {rd or '?'} is {age} day(s) old"}
+    return {"sample": True, "value_logw_per_day": float(v), "mode": "LIVE",
+            "day": dh.get("day"), "realised_day": dh.get("realised_day")}
+
+
 def measure_tier_s_block(r: Any, alloc: dict[str, Any],
                          _fv: dict[str, Any]) -> dict[str, Any]:
     """What the Tier S promotion door withheld, priced by the forward expectancy it carried.

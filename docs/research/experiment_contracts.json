@@ -340,6 +340,25 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "conviction_shadow": {
+   "hypothesis": "Tilting each sleeve's posterior mean by its evidence strength (deflated Sharpe probability shrunk by n) and by the count of agreeing independent signals on its instrument, relative to the book's median, produces a book whose forward realised log growth exceeds the unmodified book's at the same total heat.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "forward.promotion.mean_delta_logw",
+    "better": "up",
+    "organ": "report:CONVICTION_SHADOW.json"
+   },
+   "falsifier": {
+    "metric": "forward.promotion.mean_delta_logw",
+    "op": "<",
+    "threshold": 0,
+    "after": "20 matured forward days on the trading box with mean minus one standard error below zero: the conviction book earns less than the base book and the switch stays (or returns to) SHADOW"
+   },
+   "budget": {
+    "seconds": 300
+   },
+   "owner": "Combiner thread (Build C row 143)"
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

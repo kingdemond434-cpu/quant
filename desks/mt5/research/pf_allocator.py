@@ -2575,6 +2575,78 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
     }
 
 
+#: What `research/conviction_shadow.py` reads: the pre-conviction evidence of every sleeve this
+#: pass priced, plus the published book. Under the repo-root `data/` (gitignored, box-local) so an
+#: hourly binary never lands in a state commit.
+CONVICTION_INPUTS = ROOT / "data" / "pf_allocator_cache" / "conviction_inputs.npz"
+
+
+def apply_conviction_scaling(ev: list[SleeveEvidence]
+                             ) -> tuple[dict[str, Any], list[SleeveEvidence]]:
+    """Conviction scaling behind its switch. Returns (meta, the pre-tilt evidence list).
+
+    SHADOW: `ev` is not touched and no factor is computed -- the solve reads the very same
+    objects it read before this function existed, which is what makes SHADOW byte-identical.
+    LIVE: `ev` is replaced in place by `capital_modifiers.apply_conviction` (a mean tilt, bounded
+    two-sided [0.5, 2.0]); a failure leaves the original evidence and says so.
+
+    GROWTH GOVERNANCE. Rule 2: a deflated-Sharpe-strong, independently corroborated sleeve is
+    RAISED up to 2x. Rule 1: its downward half is billed by the missed-growth rail
+    `conviction_scaling` and the switch itself goes LIVE only on robustly positive forward
+    dE[log W]. Nothing here touches the heat floor, the daily-loss or lot parameters: the total
+    is still the heat law's.
+    """
+    from libs.portfolio.capital_modifiers import (
+        apply_conviction,
+        conviction_factors,
+        conviction_mode,
+    )
+    base = list(ev)
+    mode = conviction_mode()
+    if mode != "LIVE":
+        return {"mode": "SHADOW", "status": "evidence untouched; research/conviction_shadow.py "
+                                            "measures the forward dE[log W]"}, base
+    try:
+        factors = conviction_factors(ev)
+        ev[:] = apply_conviction(ev, factors)
+    except Exception as exc:
+        ev[:] = base
+        return {"mode": "LIVE", "status": f"NEUTRAL ({type(exc).__name__}: {exc})"}, base
+    moved = {k: v for k, v in factors.items() if abs(float(v["factor"]) - 1.0) > 1e-9}
+    top = sorted(moved.items(), key=lambda kv: -abs(float(kv[1]["factor"]) - 1.0))[:25]
+    return {"mode": "LIVE", "status": "APPLIED",
+            "n_up": sum(1 for v in moved.values() if float(v["factor"]) > 1.0),
+            "n_down": sum(1 for v in moved.values() if float(v["factor"]) < 1.0),
+            "n_sleeves": len(ev), "largest": dict(top),
+            "modifier": "capital_modifiers.REGISTRY conviction (two_sided, 0.5..2.0)"}, base
+
+
+def write_conviction_inputs(ev: Sequence[SleeveEvidence], book: Mapping[str, float],
+                            art: Mapping[str, Any]) -> str:
+    """Snapshot the pre-conviction evidence for the shadow leg. Never raises."""
+    try:
+        names = [e.name for e in ev]
+        lens = np.array([int(np.asarray(e.daily_r).size) for e in ev], dtype=np.int64)
+        flat = (np.concatenate([np.asarray(e.daily_r, dtype=np.float32) for e in ev])
+                if ev else np.array([], dtype=np.float32))
+        CONVICTION_INPUTS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = CONVICTION_INPUTS.with_suffix(".tmp.npz")
+        np.savez_compressed(
+            tmp, names=np.array(names), lens=lens, flat=flat,
+            family=np.array([e.family for e in ev]), symbol=np.array([e.symbol for e in ev]),
+            n_trials=np.array([int(e.n_trials) for e in ev], dtype=np.int64),
+            forward_days=np.array([int(e.forward_days) for e in ev], dtype=np.int64),
+            live_days=np.array([int(e.live_days) for e in ev], dtype=np.int64),
+            cost_r=np.array([float(e.cost_r) for e in ev]),
+            book_names=np.array(list(book)), book_heat=np.array([float(v) for v in
+                                                                 book.values()]),
+            generated_utc=np.array(str(art.get("generated_utc", ""))))
+        os.replace(tmp, CONVICTION_INPUTS)
+        return f"{len(names)} sleeve(s), {len(book)} funded -> {CONVICTION_INPUTS.name}"
+    except Exception as exc:
+        return f"NOT written ({type(exc).__name__}: {exc})"
+
+
 #: The structural-duplicate map `research/alpha_genome.py` writes. Its own docstring (:23-25)
 #: says it is consumed "by the allocator artifact, where `n_clusters` is reported beside
 #: `k_eff`" -- and a repo-wide grep for ALPHA_GENOME found no allocator reader at all, so the
@@ -4017,6 +4089,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _log(f"  research evidence: {evidence_meta['n_posterior_tilted']} forward-posterior, "
          f"{evidence_meta['n_breadth_tilted']} marginal-breadth, "
          f"{evidence_meta['n_tier_tilted']} factor-tier ({_res_why})")
+    # CONVICTION SCALING (Build C row 143): evidence strength (deflated Sharpe, n) x agreement of
+    # independent signals, as a two-sided tilt of the posterior mean, after the V2 evidence and
+    # before the solve. SHADOW (the default, switch file absent) touches NOTHING -- the evidence
+    # the solve reads is the same objects, so live fractions are byte-identical; the pre-tilt
+    # evidence is snapshotted below for `research/conviction_shadow.py`, which measures the
+    # forward dE[log W] and flips the switch LIVE (or back) by `conviction_promotion`.
+    conviction_meta, conv_base_ev = apply_conviction_scaling(ev)
+    _log(f"conviction: {conviction_meta['mode']} -- {conviction_meta['status']}")
     # AN EXCHANGE ZERO IS A ZERO FRACTION, NOT ONLY A ZERO MEAN. Every solve below is bounded at
     # 0.0 for these names (`_psb`), and the published book, the certificate's baseline books and
     # the fallback are passed through `exchange_zero` at the end, so no path funds them again;
@@ -5238,6 +5318,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # lineage x ROI, which were shifted by measured financing, and why the rest were
         # neutral. `financing_lab` and `research_roi` are its producers.
         "allocator_evidence": evidence_meta,
+        # CONVICTION SCALING (row 143): SHADOW or LIVE, and what LIVE moved.
+        "conviction": conviction_meta,
         "culture_labels": culture_meta,
         "no_trade": nt,
         "opportunity": opp,
@@ -5356,6 +5438,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             }, default=str) + "\n")
     except OSError as exc:
         _log(f"forecast log NOT written ({exc}) -- this pass cannot be scored later")
+    _log(f"conviction inputs: {write_conviction_inputs(conv_base_ev, funded, art)}")
     _log(f"-> {OUT.relative_to(ROOT)}  [{nt['verdict']}]  {art['elapsed_s']}s")
     return art
 

@@ -580,6 +580,7 @@ LEG_LAYER: dict[str, str] = {
     "state_admission": "portfolio",
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
+    "conviction_shadow": "portfolio",
     "allocator_trigger": "portfolio",
     # `input_ablation` re-solves the allocator with each input switched off and judges it against
     # the plain solve out of sample: evidence about how the book is composed, so it bills to the
