@@ -9318,6 +9318,55 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "H2ORIG1",
+   "item": "H2 NOVEL MECHANISM CREATION vs copying: every docket row and certificate classed ORIGINAL / VARIANT / COPIED by hypmax mechanism fingerprints, the ORIGINAL share published per producer with hypmax generator-collapse readings, and an ORIGINAL quota in the judge's docket order",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:docket_priority",
+   "artifact": "desks/mt5/reports/ORIGINALITY.json",
+   "consumer": "desks/mt5/research/judge_docket_order.py:505 priority_tilt reads data/docket_priority.json and reorders the warm order (desks/mt5/scripts/warm_gauntlet_cache.py run_round)",
+   "evidence": [
+    "desks/mt5/research/originality_share.py:1-35 the declared classification (MEASURED)",
+    "desks/mt5/research/judge_docket_order.py:505-560 the bounded tilt and ORIGINAL quota (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "H4XSRC1",
+   "item": "H4 CROSS-SOURCE SYNTHESIS: independent sources agreeing on each docket row, by declared independence roots (external host via source_provenance, else generator namespace), published, and rows with 2+ favoured in the judge's docket order",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:docket_priority",
+   "artifact": "desks/mt5/reports/CROSS_SOURCE.json",
+   "consumer": "desks/mt5/research/judge_docket_order.py:505 priority_tilt reads data/docket_priority.json and reorders the warm order (desks/mt5/scripts/warm_gauntlet_cache.py run_round)",
+   "evidence": [
+    "desks/mt5/research/cross_source_synthesis.py:1-30 independence roots and the agreement unit (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "H5INFO1",
+   "item": "H5 INFORMATION-GAIN TEST PRIORITISATION: every docket cell scored by the expected posterior-variance reduction of its (family, chart) pass-rate estimate, published report-first and blended into the judge's docket order inside a bounded tilt",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:docket_priority",
+   "artifact": "desks/mt5/reports/INFO_GAIN.json",
+   "consumer": "desks/mt5/research/judge_docket_order.py:505 priority_tilt reads data/docket_priority.json and reorders the warm order (desks/mt5/scripts/warm_gauntlet_cache.py run_round)",
+   "evidence": [
+    "desks/mt5/research/information_gain.py:1-30 the score and why it is report-first (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
