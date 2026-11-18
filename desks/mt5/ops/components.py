@@ -892,7 +892,8 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="optional", resource_budget={"budget_s": 180},
             schedule="hourly_cycle:first_print_capture", artifact_class="hourly",
             notes=("terms and robots record in first_print_sources.json; robots read live and "
-                   "fail closed; 401/403/429/451 hold a publisher 24 h; no FRED, no ALFRED")),
+                   "fail closed; 401/403/451/wall held until released, 429 held 24 h; "
+                   "no FRED, no ALFRED")),
         # THE CHINESE-MODEL RESEARCH ENSEMBLE (2026-11-17, #1242). Run by the MT5-DeepSeek task
         # right after the DeepSeek cycle (ops/run_deepseek_windows.ps1). Its discoveries enter the
         # same compiler every seat feeds; the report is its per-model, per-provider record.

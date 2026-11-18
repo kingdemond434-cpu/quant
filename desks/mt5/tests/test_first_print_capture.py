@@ -37,8 +37,9 @@ class Fake:
     """url -> bytes. Records every call so a test can see what was (not) requested."""
 
     def __init__(self, bls: str = "bls_v2_oct.json", robots: str = "User-agent: *\nAllow: /\n",
-                 bls_error: int | None = None) -> None:
+                 bls_error: int | None = None, bls_body: bytes | None = None) -> None:
         self.bls, self.robots, self.bls_error = bls, robots, bls_error
+        self.bls_body = bls_body
         self.calls: list[tuple[str, bytes | None]] = []
 
     def __call__(self, url: str, data: bytes | None, headers: Any) -> bytes:
@@ -48,7 +49,7 @@ class Fake:
         if "api.bls.gov" in url:
             if self.bls_error:
                 raise urllib.error.HTTPError(url, self.bls_error, "x", {}, io.BytesIO())  # type: ignore[arg-type]
-            return (FIX / self.bls).read_bytes()
+            return self.bls_body if self.bls_body is not None else (FIX / self.bls).read_bytes()
         if "api.census.gov" in url:
             return (FIX / "census_marts.json").read_bytes()
         raise AssertionError(f"unexpected url {url}")
@@ -228,3 +229,88 @@ def test_futures_state_reads_the_lake_when_alfred_is_not_fetched(tmp_path: Path)
     lake_ids = set(re.findall(r'"first_print_lake":\s*"([^"]+)"', text))
     grounds = {r["id"] for r in json.loads(fpc.GROUNDS.read_text("utf-8"))["series"]}
     assert lake_ids and lake_ids <= grounds
+
+
+def _state(tmp: Path) -> dict[str, Any]:
+    doc: dict[str, Any] = json.loads((tmp / "lake" / fpc.FETCH_STATE).read_text("utf-8"))
+    return doc
+
+
+@pytest.mark.parametrize("code", [401, 403, 451])
+def test_refusal_of_who_we_are_is_held_until_a_person_releases_it(tmp_path: Path,
+                                                                  code: int) -> None:
+    doc = _run(tmp_path, Fake(bls_error=code), T1)
+    assert doc["publishers"]["bls"]["status"] == fpc.HELD_UNTIL_RELEASED
+    st = _state(tmp_path)["bls"]
+    assert st["held_until_released"] is True and st["hold_reason"] == f"HTTP_{code}"
+    assert "hold_until" not in st                     # no timer: it never expires by itself
+    # thirty days later, still held, and no data request is made
+    fake = Fake()
+    doc = _run(tmp_path, fake, T1 + timedelta(days=30))
+    assert doc["publishers"]["bls"]["status"] == fpc.HELD_UNTIL_RELEASED
+    assert not any("publicAPI" in u for u, _ in fake.calls)
+    # a person sets the release field: the next pass fetches and the hold is cleared on record
+    raw = _state(tmp_path)
+    raw["bls"]["release"] = "principal 2026-11-20: UA re-registered"
+    (tmp_path / "lake" / fpc.FETCH_STATE).write_text(json.dumps(raw), "utf-8")
+    fake = Fake()
+    doc = _run(tmp_path, fake, T1 + timedelta(days=31))
+    assert doc["publishers"]["bls"]["status"] == "OK"
+    assert doc["publishers"]["bls"]["hold_lifted"]["hold_reason"] == f"HTTP_{code}"
+    assert any("publicAPI" in u for u, _ in fake.calls)
+    st = _state(tmp_path)["bls"]
+    assert "held_until_released" not in st and st["last_release"]["release"].startswith("principal")
+
+
+def test_429_alone_is_a_timed_hold_that_expires(tmp_path: Path) -> None:
+    _run(tmp_path, Fake(bls_error=429), T1)
+    st = _state(tmp_path)["bls"]
+    assert "held_until_released" not in st and st["hold_reason"] == "HTTP_429"
+    doc = _run(tmp_path, Fake(), T1 + timedelta(hours=25))
+    assert doc["publishers"]["bls"]["status"] == "OK"
+
+
+def test_a_waf_wall_is_held_until_released(tmp_path: Path) -> None:
+    wall = b"<html><head><title>Request Rejected</title></head><body>support ID</body></html>"
+    doc = _run(tmp_path, Fake(bls_body=wall), T1)
+    assert doc["publishers"]["bls"]["status"] == fpc.HELD_UNTIL_RELEASED
+    assert _state(tmp_path)["bls"]["hold_reason"] == "WALL"
+    # an HTML page that is not a wall is a shape error for the pass, not a hold
+    doc = _run(tmp_path / "x", Fake(bls_body=b"<!DOCTYPE html><p>maintenance</p>"), T1)
+    assert doc["publishers"]["bls"]["status"] == "SHAPE"
+    assert "held_until_released" not in (_state(tmp_path / "x").get("bls") or {})
+
+
+@pytest.mark.parametrize("body", ["<html><body>Request Rejected</body></html>",
+                                  "  <!DOCTYPE html><title>x</title>",
+                                  "User-agent: *\n<HTML>reject</HTML>"])
+def test_a_200_html_robots_body_is_unread_and_refuses(tmp_path: Path, body: str) -> None:
+    fake = Fake(robots=body)
+    doc = _run(tmp_path, fake, T1)
+    assert doc["publishers"]["bls"]["status"] == "BLOCKED_ROBOTS"
+    assert "HTML" in doc["publishers"]["bls"]["errors"][0]
+    assert all(u.endswith("/robots.txt") for u, _ in fake.calls)
+
+
+def test_a_first_sight_stamp_never_becomes_an_earlier_0830(tmp_path: Path) -> None:
+    lake = tmp_path / "lake"
+    d = lake / "bls_payrolls"
+    d.mkdir(parents=True)
+    rows = [
+        # seen Friday 14:00 New York; the slot fell before period end, so stamped at first sight
+        {"period": "2026-10", "value": 1.0, "release_at": "2026-10-30T18:00:00+00:00",
+         "release_basis": "seen_at", "seen_at": "2026-10-30T18:00:00+00:00"},
+        {"period": "2026-11", "value": 2.0, "release_at": "2026-12-04T13:30:00+00:00",
+         "release_basis": "scheduled_slot_at_or_before_first_sight",
+         "seen_at": "2026-12-04T14:00:00+00:00"},
+    ]
+    (d / "first_prints.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    out = {r["period"]: r["released"] for r in fpc.first_print_frame_rows("bls_payrolls", lake)}
+    assert out == {"2026-10-01": "2026-11-02", "2026-11-01": "2026-12-04"}  # Fri -> next Mon
+    pytest.importorskip("pandas")
+    from research import futures_state as fs
+    prints = fs.lake_first_prints("bls_payrolls", lake)
+    avail = fs.release_available(prints["released"])
+    for a, r in zip(avail, rows, strict=True):
+        floor = fpc._t(r["seen_at"] if r["release_basis"] == "seen_at" else r["release_at"])
+        assert floor is not None and a.to_pydatetime() >= floor

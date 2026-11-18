@@ -37,8 +37,9 @@ SOURCES (`desks/mt5/data/first_print_sources.json` holds the robots and terms re
   * Census EITS (keyless). DOL and BEA are recorded NOT_BUILT with the reason (no keyless
     machine route that carries the headline).
   No FRED, no ALFRED. robots.txt is read live with this leg's own agent before any data request;
-  an unreadable robots file refuses the publisher for the pass. 401/403/429/451 hold the
-  publisher for 24 hours.
+  an unreadable robots file (an HTML page included) refuses the publisher for the pass.
+  401, 403, 451 or a WAF wall hold the publisher HELD_UNTIL_RELEASED (a person sets `release`
+  in data/lake/first_prints/_fetch_state.json); a 429 holds it for 24 hours.
 
 Artifact: `desks/mt5/reports/FIRST_PRINT_CAPTURE.json`. Not money path: nothing here sizes or
 places an order.
@@ -78,11 +79,18 @@ REPORT = DESK / "reports" / "FIRST_PRINT_CAPTURE.json"
 FETCH_STATE = "_fetch_state.json"
 
 ROBOTS_AGENT = "quant-desk-research"
-UA = f"{ROBOTS_AGENT}/1.0 (first_print_capture; research; honours robots.txt)"
+HONEST_UA = f"{ROBOTS_AGENT}/1.0 (first_print_capture; research; honours robots.txt)"
 TIMEOUT = 30.0
 MAX_BYTES = 4 * 1024 * 1024
-HARD_STOP_CODES = frozenset({401, 403, 429, 451})
+#: The fetch law (#1300, #1327): a refusal of who we are -- 401, 403, 451 or a WAF wall -- is
+#: HELD_UNTIL_RELEASED, persisted in _fetch_state.json and lifted only when a person sets the
+#: publisher's `release` field there. A 429 asks us to slow down and alone gets a timed hold.
+HELD_CODES = frozenset({401, 403, 451})
+TIMED_CODES = frozenset({429})
 HOLD = timedelta(hours=24)
+HELD_UNTIL_RELEASED = "HELD_UNTIL_RELEASED"
+_WALL = re.compile(r"(?i)incapsula|captcha|cf-chl|challenge-platform|access denied|"
+                   r"are you a robot|request rejected|_Incapsula_Resource")
 #: BLS v1 (keyless) allows 25 queries a day; one request per 110 minutes is at most 14.
 BLS_V1_MIN_GAP = timedelta(minutes=110)
 #: The registered key's 500/day is shared with the keyed_sources leg; hourly is 24.
@@ -95,6 +103,27 @@ BLS_KEY_VAR = "BLS_API_KEY"
 
 class Refused(Exception):
     """'<STATUS>:<why>' -- a publisher this pass may not or could not read."""
+
+
+class Wall(Exception):
+    """A WAF / challenge page where the API's JSON should be: held until released."""
+    code = "WALL"
+
+
+def _looks_like_html(body: bytes) -> bool:
+    """The same test as #1335: a body starting with '<', or holding <html / <!doctype."""
+    head = body[:4096].lstrip().lower()
+    return head.startswith(b"<") or b"<html" in head or b"<!doctype" in head
+
+
+def _check_api_body(body: bytes, who: str) -> bytes:
+    """A JSON API answering HTML is a wall (held until released) or a shape error."""
+    if _looks_like_html(body):
+        text = body[:8192].decode("utf-8", "replace")
+        if _WALL.search(text):
+            raise Wall(f"{who} answered a challenge/WAF page")
+        raise Refused(f"SHAPE:{who} answered HTML where JSON was expected")
+    return body
 
 
 @dataclass(frozen=True)
@@ -223,7 +252,7 @@ def http(url: str, data: bytes | None = None, headers: Mapping[str, str] | None 
     if why:
         raise Refused(f"BLOCKED_ON_TERMS:{why}")
     req = urllib.request.Request(url, data=data, method="POST" if data else "GET",
-                                 headers={"User-Agent": UA, "Accept": "application/json",
+                                 headers={"User-Agent": HONEST_UA, "Accept": "application/json",
                                           **(headers or {})})
     with ks.keyed_opener(_tls()).open(req, timeout=TIMEOUT) as resp:
         return bytes(resp.read(MAX_BYTES))
@@ -241,9 +270,13 @@ def robots_refusal(url: str, fetch: Fetch) -> str | None:
     if rules is None:
         rp = urllib.robotparser.RobotFileParser()
         try:
-            rp.parse(fetch(f"{key}/robots.txt", None, {}).decode("utf-8", "replace")
-                     .splitlines())
-            rules = rp
+            body = fetch(f"{key}/robots.txt", None, {})
+            if _looks_like_html(body):
+                # an HTML reject page parses as "no rules": that is unread, never a yes
+                rules = "robots.txt unreadable (HTML body)"
+            else:
+                rp.parse(body.decode("utf-8", "replace").splitlines())
+                rules = rp
         except urllib.error.HTTPError as e:
             if e.code in (404, 410):
                 rp.parse([])
@@ -406,20 +439,33 @@ def release_vintages(sid: str, lake: Path = LAKE) -> dict[str, list[dict[str, An
 
 def first_print_frame_rows(sid: str, lake: Path = LAKE) -> list[dict[str, Any]]:
     """[{period, released, value}] in the shape futures_state's ALFRED path produces: `released`
-    is the New York calendar date of `release_at`, `period` the period's first day."""
+    is the New York calendar date of `release_at`, `period` the period's first day.
+
+    futures_state re-adds the 08:30 slot to `released` (release_available). That is right only
+    for a scheduled-slot stamp. A row stamped at first sight (`release_basis` "seen_at") may have
+    been seen after 08:30, so its date moves to the NEXT weekday, whose 08:30 is after first
+    sight: late, never early."""
     out: list[dict[str, Any]] = []
     for r in release_vintages(sid, lake)["first_prints"]:
         rel = _t(r.get("release_at"))
         if rel is None or r.get("value") is None:
             continue
+        day = rel.astimezone(NY).date()
+        if r.get("release_basis") != "scheduled_slot_at_or_before_first_sight":
+            day += timedelta(days=1)
+            while day.weekday() >= 5:
+                day += timedelta(days=1)
         out.append({"period": f"{r['period']}-01", "value": float(r["value"]),
-                    "released": rel.astimezone(NY).date().isoformat()})
+                    "released": day.isoformat()})
     return out
 
 
 # -------------------------------------------------------------------------------------- run
 def _due(state: Mapping[str, Any], pub: str, gap: timedelta, now: datetime) -> str | None:
     s = state.get(pub) or {}
+    if s.get("held_until_released") and not s.get("release"):
+        return (f"{HELD_UNTIL_RELEASED}:{s.get('hold_reason')} since {s.get('held_at')}; "
+                f"set \"release\" on {pub} in {FETCH_STATE} to lift it")
     hold = _t(s.get("hold_until"))
     if hold and hold > now:
         return f"HELD:{s.get('hold_reason')} until {_iso(hold)}"
@@ -432,14 +478,34 @@ def _due(state: Mapping[str, Any], pub: str, gap: timedelta, now: datetime) -> s
 def _fail(state: dict[str, Any], pub: str, exc: BaseException, now: datetime,
           secrets: tuple[str, ...] = ()) -> str:
     code = getattr(exc, "code", None)
-    msg = f"HTTP_{code}" if code else f"{type(exc).__name__}:{exc}"
+    if isinstance(exc, Wall):
+        msg = f"WALL:{exc}"
+    else:
+        msg = f"HTTP_{code}" if code else f"{type(exc).__name__}:{exc}"
     with contextlib.suppress(Exception):
         from libs.data.keyed_sources import redact
         msg = redact(msg, secrets)
-    if code in HARD_STOP_CODES:
-        state[pub] = {**(state.get(pub) or {}), "hold_until": _iso(now + HOLD),
-                      "hold_reason": f"HTTP_{code}"}
+    prior = {k: v for k, v in (state.get(pub) or {}).items()
+             if k not in ("hold_until", "release", "released_by")}
+    if isinstance(exc, Wall) or code in HELD_CODES:
+        state[pub] = {**prior, "held_until_released": True, "held_at": _iso(now),
+                      "hold_reason": "WALL" if isinstance(exc, Wall) else f"HTTP_{code}"}
+    elif code in TIMED_CODES:
+        state[pub] = {**prior, "hold_until": _iso(now + HOLD), "hold_reason": f"HTTP_{code}"}
     return msg[:300]
+
+
+def _lift_release(state: dict[str, Any], pub: str, now: datetime) -> dict[str, Any] | None:
+    """A person set `release` on a held publisher: clear the hold, keep the record."""
+    s = state.get(pub) or {}
+    if not (s.get("held_until_released") and s.get("release")):
+        return None
+    lifted = {"hold_reason": s.get("hold_reason"), "held_at": s.get("held_at"),
+              "release": s.get("release"), "lifted_at": _iso(now)}
+    state[pub] = {**{k: v for k, v in s.items()
+                     if k not in ("held_until_released", "held_at", "hold_reason", "release")},
+                  "last_release": lifted}
+    return lifted
 
 
 def run(*, grounds_path: Path = GROUNDS, lake: Path = LAKE, report: Path | None = REPORT,
@@ -465,7 +531,10 @@ def run(*, grounds_path: Path = GROUNDS, lake: Path = LAKE, report: Path | None 
         key, key_name = key_reader() if pub == "bls" else ("", "")
         gap = BLS_V1_MIN_GAP if (pub == "bls" and not key) else DEFAULT_MIN_GAP
         wait = _due(state, pub, gap, now)
+        lifted = None if wait else _lift_release(state, pub, now)
         info: dict[str, Any] = {"series": len(mine)}
+        if lifted:
+            info["hold_lifted"] = lifted
         if pub == "bls":
             info["api"] = "v2_registered" if key else "v1_keyless"
             info["key_found_under"] = key_name or None    # a NAME, never the value
@@ -481,8 +550,8 @@ def run(*, grounds_path: Path = GROUNDS, lake: Path = LAKE, report: Path | None 
                 why = robots_refusal(url, fetch)
                 if why:
                     raise Refused(f"BLOCKED_ROBOTS:{why}")
-                obs = parse_bls(fetch(url, body, {"Content-Type": "application/json"}),
-                                code_to_id)
+                obs = parse_bls(_check_api_body(
+                    fetch(url, body, {"Content-Type": "application/json"}), "BLS"), code_to_id)
             elif pub == "census":
                 for r in mine:
                     url = census_url(r, now.year)
@@ -490,7 +559,8 @@ def run(*, grounds_path: Path = GROUNDS, lake: Path = LAKE, report: Path | None 
                     if why:
                         raise Refused(f"BLOCKED_ROBOTS:{why}")
                     try:
-                        obs += parse_census(fetch(url, None, {}), str(r["id"]))
+                        obs += parse_census(_check_api_body(fetch(url, None, {}), "Census"),
+                                            str(r["id"]))
                     except Refused as e:
                         errors.append(f"{r['id']}:{e}")
             else:
@@ -502,7 +572,10 @@ def run(*, grounds_path: Path = GROUNDS, lake: Path = LAKE, report: Path | None 
         except Exception as e:
             status = "ERROR"
             errors.append(_fail(state, pub, e, now, (key,) if key else ()))
-            if (state.get(pub) or {}).get("hold_until") == _iso(now + HOLD):
+            s_now = state.get(pub) or {}
+            if s_now.get("held_until_released") and s_now.get("held_at") == _iso(now):
+                status = HELD_UNTIL_RELEASED
+            elif s_now.get("hold_until") == _iso(now + HOLD):
                 status = "HARD_STOP"
         for r in mine:
             got = [o for o in obs if o.series == r["id"]]
