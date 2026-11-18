@@ -280,6 +280,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     try:
         doc = run(mt5)
+        # K3 (2026-11-13, ported from #1145): leverage, margin per lot and sized-order
+        # feasibility on this same connection, every pass, so a pre-event or weekend cut at FTMO
+        # is on record within five minutes. Read-only, never raises; the venue doc above is
+        # already written.
+        try:
+            from libs.ops.leverage_watch import observe_mt5
+            log(f"leverage: {observe_mt5(mt5, 'ftmo')}")
+        except Exception as exc:
+            log(f"leverage watch unavailable ({type(exc).__name__})")
     finally:
         mt5.shutdown()
     log(f"ftmo venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
