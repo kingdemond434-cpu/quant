@@ -92,6 +92,17 @@ class Markout:
     #: One row per attributed deal: intent -> release/state -> entry order/deal -> close deal ->
     #: realised R. The chain, materialised, so "which research made this euro" is a lookup.
     chain: list[dict[str, Any]] = field(default_factory=list)
+    #: The median slip in R. One fill near its stop can move a mean of a few hundred rows by a
+    #: whole tenth of an R; the median is what a typical fill costs.
+    median_slip_r: float | None = None
+
+    @property
+    def by_sleeve(self) -> dict[str, dict[str, Any]]:
+        return breakdown(self.rows, "sleeve")
+
+    @property
+    def by_symbol(self) -> dict[str, dict[str, Any]]:
+        return breakdown(self.rows, "symbol")
 
     @property
     def usable(self) -> bool:
@@ -262,6 +273,59 @@ def load_jsonl(path: Path) -> list[dict]:
     return out
 
 
+def stop_distance(want: Any, intent: dict, deal: dict) -> tuple[float | None, str]:
+    """(the PRICE distance the order was sized on, which source gave it).
+
+    THE DENOMINATOR THAT MADE THE BOOK LOOK RED (measured 2026-11-11, 229 fills on the live
+    account). `risk_quote` on a ledger row is the money at risk in the ACCOUNT currency for the
+    position's own volume, measured from the FILL to the stop (`decision_core.closed_trade_r`).
+    Dividing a slip in quote PRICE units by it is wrong twice: on an FX cross at 0.01 lots the
+    money figure is ~1000x the price distance, so every FX slip read as ~0.000R; and a fill that
+    lands near its stop shrinks the denominator to almost nothing, so one XAUUSD short filled
+    $3.84 from its trigger and $0.10 from its stop read as -44.3R and alone turned the book mean
+    from -0.009R into -0.20R. A slip in R is the slip over the distance the trade was SIZED on:
+    the intended entry to the stop the intent sent (the position's stop when the intent has
+    none). A row that carries neither stop has no slip in R at all; it keeps its quote slip and
+    is counted by `risk_basis`, outside every R mean, median and breakdown.
+    """
+    w = _num(want)
+    for src, row in (("intent_sl", intent), ("position_sl", deal)):
+        sl = _num(row.get("sl"))
+        if w and sl and sl > 0 and sl != w:
+            return abs(w - sl), src
+    # `risk_quote` is money, never a price distance: a row with no stop gets NO R figure and is
+    # counted under its basis, so one stopless row cannot repeat the -44R distortion.
+    return None, ("risk_quote_only" if _num(deal.get("risk_quote")) else "none")
+
+
+def _median(xs: list[float]) -> float | None:
+    if not xs:
+        return None
+    s = sorted(xs)
+    n = len(s)
+    return s[n // 2] if n % 2 else 0.5 * (s[n // 2 - 1] + s[n // 2])
+
+
+def breakdown(rows: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
+    """Slippage per `key` (sleeve or symbol): n, mean and median slip in R, how many fills were
+    worse / better / at the price asked, and the realised R of the same trades -- so a sleeve
+    that loses money can be told apart from a sleeve whose fills cost it the money."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        groups.setdefault(str(r.get(key) or "?"), []).append(r)
+    out: dict[str, dict[str, Any]] = {}
+    for k, g in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        rs = [float(r["slip_r"]) for r in g if r.get("slip_r") is not None]
+        rr = [float(r["realized_r"]) for r in g if r.get("realized_r") is not None]
+        out[k] = {"n": len(g),
+                  "mean_slip_r": (sum(rs) / len(rs)) if rs else None,
+                  "median_slip_r": _median(rs),
+                  "worse": sum(1 for x in rs if x > 0), "better": sum(1 for x in rs if x < 0),
+                  "at_price": sum(1 for x in rs if x == 0),
+                  "mean_realized_r": (sum(rr) / len(rr)) if rr else None}
+    return out
+
+
 def compute(intents: list[dict], deals: list[dict],
             book_edge_r: float = 0.159) -> Markout:
     """Join intents to deals by order ticket and measure the gap.
@@ -293,7 +357,9 @@ def compute(intents: list[dict], deals: list[dict],
         if t is not None:
             by_ticket[t] = i
 
-    rows, chain, unmatched = [], [], 0
+    rows: list[dict[str, Any]] = []
+    chain: list[dict[str, Any]] = []
+    unmatched = 0
     matched_tickets = set()
     # THE LEGACY ROWS, JOINED ON THE STOP/TARGET ECHO (2026-09-30). A deal with no entry-order key
     # can never reach an intent by ticket; `echo_join` pairs it with the one intent whose stop and
@@ -341,12 +407,14 @@ def compute(intents: list[dict], deals: list[dict],
             continue
         slip_quote = (float(got) - float(want)) * dirn
         link["slip_quote"] = slip_quote
-        risk = float(d.get("risk_quote") or 0.0)
+        risk, basis = stop_distance(want, intent, d)
         rows.append({
-            "sleeve": d.get("sleeve"), "symbol": d.get("symbol"),
+            "sleeve": d.get("sleeve") or intent.get("sleeve"),
+            "symbol": d.get("symbol") or intent.get("symbol"),
             "intended": float(want), "fill": float(got),
             "slip_quote": slip_quote,
-            "slip_r": (slip_quote / risk) if risk > 0 else None,
+            "slip_r": (slip_quote / risk) if risk else None, "risk_basis": basis,
+            "realized_r": _num(d.get("r_multiple")),
             "deal": d.get("deal"), "order": t,
         })
 
@@ -372,11 +440,12 @@ def compute(intents: list[dict], deals: list[dict],
         worst_slip_quote=sq[-1],
         mean_slip_r=mean_r,
         edge_share=(mean_r / book_edge_r) if book_edge_r else None,
-        rows=rows,
+        rows=rows, median_slip_r=_median(srs),
         why=("matched on the position id (entry order == intent ticket), and legacy key-less "
              "deals on the exact stop/target echo; slip against the ENTRY fill, signed by the "
              "intent's side (the ledger's `side` is the closing deal's) so a bad buy and a bad "
-             "sell do not cancel"),
+             "sell do not cancel; positive = worse than asked; R = slip over the intended "
+             "entry-to-stop distance"),
         account_kind=kind, attributed_deals=len(chain), chain=chain)
 
 
@@ -400,8 +469,19 @@ def render(m: Markout) -> str:
           f"{'<- RECONCILE: orders this desk cannot account for' if m.n_unmatched_deals else ''}",
           "",
           f"  mean slip            {m.mean_slip_quote:+.5f} quote  ({m.mean_slip_r:+.4f} R)",
-          f"  median slip          {m.median_slip_quote:+.5f} quote",
+          f"  median slip          {m.median_slip_quote:+.5f} quote"
+          + (f"  ({m.median_slip_r:+.4f} R)" if m.median_slip_r is not None else ""),
           f"  worst slip           {m.worst_slip_quote:+.5f} quote", ""]
+    sleeves = m.by_sleeve
+    if sleeves:
+        L.append("  by sleeve (R = slip over the intended stop distance; + is worse than asked)")
+        for name, b in list(sleeves.items())[:12]:
+            mean = "n/a" if b["mean_slip_r"] is None else f"{b['mean_slip_r']:+.4f}"
+            med = "n/a" if b["median_slip_r"] is None else f"{b['median_slip_r']:+.4f}"
+            real = "n/a" if b["mean_realized_r"] is None else f"{b['mean_realized_r']:+.3f}"
+            L.append(f"    {name[:30]:30} n={b['n']:<4} mean {mean}R  median {med}R  "
+                     f"worse/better {b['worse']}/{b['better']}  realised {real}R")
+        L.append("")
     if m.account_kind == DEMO:
         L += ["  MEASURED ON A DEMO ACCOUNT -- not evidence of live execution.",
               "  A demo server has no liquidity behind it and fills stop orders at the trigger",
