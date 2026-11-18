@@ -221,6 +221,8 @@ def one(repo_dir: Path, pr: int, *, push: bool, quiet_min: float,
             f"+refs/heads/{LIVE}:refs/remotes/origin/live", head)  # fmt: skip
         live = git(repo_dir, "rev-parse", "origin/live").strip()
         sha, files = merge_commit(repo_dir, head, live, branch)
+        if not files:  # it merges cleanly: a merge-in would only queue a full CI set for nothing
+            return f"#{pr}: skipped (merges cleanly with LIVE; nothing to resolve)"
         if push:  # a fast-forward of the branch: refused if it moved meanwhile
             git(repo_dir, "push", "-q", "origin", f"{sha}:refs/heads/{branch}")
         verb = "pushed" if push else "resolved (dry run)"

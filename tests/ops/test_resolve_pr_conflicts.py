@@ -146,3 +146,27 @@ def test_gitattributes_unions_the_append_only_files() -> None:
     text = (ROOT / ".gitattributes").read_text("utf-8")
     for rel in rc.LINE_FILES:
         assert f"{rel} merge=union" in text
+
+
+def test_a_pr_that_merges_cleanly_is_never_pushed(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only a conflicting PR gets a merge-in: each push queues a full set of CI runs."""
+    pr, live = _sides(repo, {"live.txt": "l\n"}, {"pr.txt": "p\n"})
+    p = {"state": "open", "base": {"ref": rc.LIVE}, "head": {"repo": {"full_name": rc.REPO},
+         "ref": "b", "sha": pr}, "updated_at": "2000-01-01T00:00:00Z"}  # fmt: skip
+    monkeypatch.setattr(rc, "gh", lambda *a: p)
+    calls: list[tuple[str, ...]] = []
+    real = rc.git
+
+    def git(cwd: Path, *args: str, **kw: Any) -> str:
+        calls.append(args)
+        if args[0] == "fetch":
+            return ""
+        if args[:2] == ("rev-parse", "origin/live"):
+            return live
+        return str(real(cwd, *args, **kw))
+
+    monkeypatch.setattr(rc, "git", git)
+    out = rc.one(repo, 5, push=True, quiet_min=0)
+    assert "merges cleanly" in out and not any(c[0] == "push" for c in calls)
