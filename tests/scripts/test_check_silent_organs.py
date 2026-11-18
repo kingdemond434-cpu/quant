@@ -317,3 +317,12 @@ def test_the_fence_exit_is_not_a_declared_verdict_in_the_cycle() -> None:
     src = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     block = src.split("VERDICT_EXITS: dict[str, tuple[int, ...]] = {", 1)[1].split("}", 1)[0]
     assert '"silent_organs"' not in block
+
+
+def test_a_hung_task_is_a_silent_organ_and_a_resident_running_one_is_not() -> None:
+    """process_health HUNG (re-cut of #510): Running past its own limit with no fresh output."""
+    doc = {"processes": [
+        {"name": "MT5-Hung", "verdict": "HUNG", "why": "past its limit"},
+        {"name": "MT5-Gateway", "verdict": "RESIDENT_RUNNING", "why": "fresh"},
+    ]}
+    assert [r["organ"] for r in so.task_silences(doc)] == ["MT5-Hung"]
