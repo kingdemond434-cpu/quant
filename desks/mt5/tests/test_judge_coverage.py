@@ -600,3 +600,82 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+# ------------------------------------------------- re-cut of #334: writers stamp each attempt
+def _attempt(tmp_path: Path) -> dict:
+    return json.loads((tmp_path / "JUDGE_COVERAGE_ATTEMPT.json").read_text("utf-8"))
+
+
+def test_note_attempt_writes_a_sidecar_beside_the_table_and_leaves_the_table(
+        tmp_path: Path) -> None:
+    table = tmp_path / "JUDGE_COVERAGE.json"
+    table.write_text(json.dumps({"at": "2026-10-07T20:54:00+00:00", "families": {}}), "utf-8")
+    before = table.read_text("utf-8")
+    jc.note_attempt("STARTED", "hourly leg building the table", via="judge_coverage leg")
+    got = _attempt(tmp_path)
+    assert got["status"] == "STARTED" and got["via"] == "judge_coverage leg"
+    assert table.read_text("utf-8") == before, "the table and its `at` are never restamped"
+    assert not list(tmp_path.glob("*.tmp")), "no debris"
+
+
+def test_note_attempt_never_raises_on_an_unwritable_target(tmp_path: Path) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("x", "utf-8")
+    jc.note_attempt("FAILED", "x", via="t", path=blocker / "sub" / "a.json")   # parent is a file
+
+
+def test_order_docket_stamps_its_outcome_when_it_publishes(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+    real = jc.note_attempt
+    monkeypatch.setattr(jc, "note_attempt",
+                        lambda status, why, **kw: (seen.append(status), real(status, why, **kw)))
+    monkeypatch.setattr(jc, "_order_docket",
+                        lambda rows, **kw: (rows, {"verdict": "UNMEASURED", "why": "Boom"}))
+    rows = _rows({"alpha": 2})
+    ordered, _ = jc.order_docket(list(rows), publish=True, now=NOW)
+    assert len(ordered) == len(rows)
+    assert seen == ["STARTED", "FAILED"] and _attempt(tmp_path)["why"] == "Boom"
+    seen.clear()
+    monkeypatch.setattr(jc, "_order_docket", lambda rows, **kw: (rows, {"families": {}}))
+    jc.order_docket(list(rows), publish=True, now=NOW)
+    assert seen == ["STARTED", "EMPTY"]
+    seen.clear()
+    monkeypatch.setattr(jc, "_order_docket",
+                        lambda rows, **kw: (rows, {"families": {"alpha": {}}}))
+    jc.order_docket(list(rows), publish=True, now=NOW)
+    assert seen == ["STARTED", "WROTE"]
+    seen.clear()
+    jc.order_docket(list(rows), publish=False, now=NOW)
+    assert seen == [], "a measure-only call stamps nothing"
+
+
+def test_the_hourly_leg_stamps_a_failed_build_and_reraises(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(**_kw):
+        raise RuntimeError("bars unreadable")
+    monkeypatch.setattr(jc, "build", boom)
+    monkeypatch.setattr(jc, "stop_after_s", lambda budget: (60.0, None))
+    with pytest.raises(RuntimeError):
+        jc.main(["--once"])
+    got = _attempt(tmp_path)
+    assert got["status"] == "FAILED" and "bars unreadable" in got["why"]
+    assert got["via"] == "judge_coverage leg"
+
+
+def test_a_stale_table_quotes_the_writers_last_attempt(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": (NOW - timedelta(hours=30)).isoformat(),
+        "families": {"alpha": {"unjudged": 10, "queued": 3, "judged_window": 4}}}), "utf-8")
+    (tmp_path / "JUDGE_COVERAGE_ATTEMPT.json").write_text(json.dumps({
+        "at": (NOW - timedelta(hours=2)).isoformat(), "status": "STARTED",
+        "via": "merge_hypotheses", "why": "ordering 9 docket row(s)"}), "utf-8")
+    doc = fence.judge(report, now=NOW, liveness=False)
+    row = next(c for c in doc["checks"] if c["metric"] == "freshness")
+    assert "last attempt was STARTED" in row["why"] and "killed mid-build" in row["why"]
+    (tmp_path / "JUDGE_COVERAGE_ATTEMPT.json").unlink()
+    doc = fence.judge(report, now=NOW, liveness=False)
+    row = next(c for c in doc["checks"] if c["metric"] == "freshness")
+    assert "holds no attempt stamp" in row["why"]

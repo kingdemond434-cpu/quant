@@ -110,6 +110,10 @@ HEARTBEAT_STALE_S = 600.0
 #: `research/judging_throughput.py` publishes verdicts/hour against the backlog here, with
 #: `eta_to_drain` and, while that is UNMEASURED, how many consecutive readings it has been.
 RATE = DESK / "reports" / "JUDGING_RATE.json"
+#: The coverage writers' last attempt (`judge_coverage.note_attempt`): quoted when the table is
+#: stale or undated, so the verdict says whether a writer was not reached, was killed mid-build
+#: (STARTED and nothing after), timed out, failed or found nothing to write.
+ATTEMPT = DESK / "reports" / "JUDGE_COVERAGE_ATTEMPT.json"
 #: One UNMEASURED reading is a pass that came up short; this many in a row is a stopped clock.
 ETA_UNMEASURED_MAX_READINGS = 1
 
@@ -315,6 +319,19 @@ def _legacy_missing(rate: Mapping[str, Any]) -> list[str]:
     return out or ["UNKNOWN"]
 
 
+def last_attempt(path: Path) -> str:
+    """'; <the writers' last attempt>' for a freshness row, or why there is none to quote."""
+    doc = _read(path)
+    if not isinstance(doc, dict) or not doc.get("at"):
+        return (f"; {path.name} holds no attempt stamp, so no writer reached a build on this "
+                "tree (or it predates the stamp)")
+    tail = ("; STARTED with no outcome after it: the writer is still building or was killed "
+            "mid-build"
+            if str(doc.get("status")) == "STARTED" else "")
+    return (f"; the writers' last attempt was {doc.get('status')} at {doc.get('at')} via "
+            f"{doc.get('via')}: {str(doc.get('why') or '')[:200]}{tail}")
+
+
 def eta_check(rate_path: Path, *, require_state: bool = False,
               now: datetime | None = None) -> dict[str, Any]:
     """8. THE DRAIN ETA IS MEASURED. An UNMEASURED `eta_to_drain` for more than one reading FAILS.
@@ -456,9 +473,11 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
     if require_state and future:
         age = None
     failures: list[str] = []
+    attempt_path = path.parent / ATTEMPT.name if report is not None else ATTEMPT
     if age is not None and age > STALE_H:
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
-                              "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
+                              "why": (f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"
+                                      + last_attempt(attempt_path))})
         if not require_state:
             out["verdict"] = "UNMEASURED"
             out["why"] = "stale exported coverage cannot establish current desk state"
@@ -472,7 +491,7 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                                       f"report `at` is missing or unparseable "
                                       f"({str(doc.get('at'))[:40]!r})")
                                      + f": its age against the {STALE_H:.0f}h lease cannot be "
-                                       "shown"})
+                                       "shown" + last_attempt(attempt_path)})
         failures.append("report_undated")
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
@@ -1014,11 +1033,11 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["BOX_STATE_ELSEWHERE", "ETA_UNMEASURED_MAX_READINGS", "FUTURE_SKEW_S",
+__all__ = ["ATTEMPT", "BOX_STATE_ELSEWHERE", "ETA_UNMEASURED_MAX_READINGS", "FUTURE_SKEW_S",
            "GAUNTLET_HEARTBEAT", "GAUNTLET_STALL", "INCIDENTS", "PAGE_STATE_REL", "RATCHET",
            "RATE", "REPAGE_H", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK",
-           "eta_check", "incidents", "judge", "judge_liveness", "liveness_fence", "main",
-           "page_coverage", "render"]
+           "eta_check", "incidents", "judge", "judge_liveness", "last_attempt", "liveness_fence",
+           "main", "page_coverage", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
