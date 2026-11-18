@@ -206,6 +206,8 @@ def scenarios() -> list[dict[str, Any]]:
                                          "tp": 4390.0, "lot": 0.15},
                             "sell_stop": {"id": 8002, "price": 4290.0, "sl": 4330.0,
                                           "tp": 4210.0, "lot": 0.15}}}  # fmt: skip
+                if acct == "flat":  # the families leg: every live family on this day's bars
+                    sc["families"] = True
                 if acct == "venue_refuses":
                     sc["venue_ok"] = False
                 if acct == "no_stop":  # a position the venue holds with no protective stop
@@ -1077,6 +1079,108 @@ def roster_grid() -> dict[str, Any]:
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
 
 
+def families_diff(
+    b: Any, h: Any, sid: str, base_root: str, head_root: str
+) -> tuple[list[str], dict[str, set[str]], dict[str, set[str]]]:
+    """The families leg (replay_child.families_leg) on one scenario, base against head.
+
+    Returns (problems, ran on the base, ran on the head): per repository file, the functions a
+    family, its input door or the bandit entered during a call that returned cleanly
+    (`families_measured` turns those into coverage). A family that raised or timed out added
+    nothing to either, so code only it reached stays UNMEASURED and is never a match. A base leg
+    that did not run measures nothing and fails nothing; a head leg that did not run where the
+    base did, a family that raises on the head and not the base, a removed family, a family
+    whose signals or input refusal differ, and a family whose alpha cluster moves are problems."""
+
+    def ran(leg: dict[str, Any], root: str) -> dict[str, set[str]]:
+        out: dict[str, set[str]] = {}
+        for f, qs in (leg.get("ran") or {}).items():
+            if str(f).startswith(root + "/"):
+                rel = Path(f).relative_to(root).as_posix()
+                out[rel] = {str(q).split(".<locals>")[0] for q in qs}
+        return out
+
+    def safe(x: Any) -> str:
+        return str(x) if SAFE_NAME.match(str(x)) else "<name>"
+
+    if not isinstance(b, dict) or "error" in b or not isinstance(b.get("out"), dict):
+        return [], {}, {}
+    if not isinstance(h, dict) or "error" in h or not isinstance(h.get("out"), dict):
+        kind = safe(h.get("error")) if isinstance(h, dict) else "missing"
+        return [f"{sid}: the PR's families leg did not run ({kind})"], {}, {}
+    problems: list[str] = []
+    bo, ho = b["out"], h["out"]
+    for name in sorted(set(bo) | set(ho)):
+        x, y = bo.get(name), ho.get(name)
+        if x is None:
+            continue  # a family only the head has: new code, judged as a new file is
+        if y is None:
+            problems.append(f"{sid}: families leg: the PR removes family {safe(name)}")
+        elif "error" in x or "timeout" in x or "timeout" in y:
+            continue  # the base cannot measure it, or a bound ran out: UNMEASURED, not a match
+        elif "error" in y:
+            problems.append(
+                f"{sid}: families leg: {safe(name)} raises on the PR ({safe(y['error'])})"
+            )
+        elif canon(x) != canon(y):
+            problems.append(f"{sid}: families leg: {safe(name)} decides differently")
+    bc, hc = b.get("clusters") or {}, h.get("clusters") or {}
+    for name in sorted(set(bc) & set(hc)):
+        if bc[name] != hc[name]:
+            problems.append(
+                f"{sid}: alpha cluster of {safe(name)} moves: "
+                f"base {safe(bc[name])} PR {safe(hc[name])}"
+            )
+    return problems, ran(b, base_root), ran(h, head_root)
+
+
+def _units(src: str) -> dict[str, str]:
+    """A module as the units a profiler can see run: each top-level function, each method
+    (`Class.method`), each class body (`Class`) and the rest of the module (`<module>`)."""
+    out: dict[str, str] = {}
+    rest: list[str] = []
+    for node in ast.parse(src).body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out[node.name] = ast.dump(node)
+        elif isinstance(node, ast.ClassDef):
+            body = []
+            for n in node.body:
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    out[f"{node.name}.{n.name}"] = ast.dump(n)
+                else:
+                    body.append(ast.dump(n))
+            head = [ast.dump(x) for x in (*node.bases, *node.keywords, *node.decorator_list)]
+            out[node.name] = "\n".join(head + body)
+        else:
+            rest.append(ast.dump(node))
+    out["<module>"] = "\n".join(rest)
+    return out
+
+
+def families_measured(
+    base: Path, head: Path, f: str, ran_b: dict[str, set[str]], ran_h: dict[str, set[str]]
+) -> bool:
+    """True when the families leg ran every unit of `f` that the PR changes, on each tree that
+    has it, inside calls that returned cleanly. A file the base lacks is new: it counts as
+    reached when its module body ran cleanly on the head (then `new_and_bounded` judges it)."""
+    if not f.endswith(".py"):
+        return False
+    bs, hs = read(base, f), read(head, f)
+    if hs is None:
+        return False
+    if bs is None:
+        return "<module>" in ran_h.get(f, set())
+    try:
+        ub, uh = _units(bs), _units(hs)
+    except SyntaxError:
+        return False
+    changed = {u for u in set(ub) | set(uh) if ub.get(u) != uh.get(u)}
+    return all(
+        (u not in ub or u in ran_b.get(f, set())) and (u not in uh or u in ran_h.get(f, set()))
+        for u in changed
+    )
+
+
 def compare(
     base: Path,
     head: Path,
@@ -1112,6 +1216,9 @@ def compare(
     roster_legs: dict[str, Any] = {}
     imported: set[str] = set()
     head_imported: set[str] = set()
+    # the families leg: per file, the functions clean family calls ran on each tree
+    fam_ran_b: dict[str, set[str]] = {}
+    fam_ran_h: dict[str, set[str]] = {}
     placed = 0
     ftmo_rows = 0
     # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
@@ -1128,6 +1235,14 @@ def compare(
         if "fusion_roster" in sc:
             roster_legs = {"base": b.get("fusion_roster"), "head": h.get("fusion_roster")}
         base_root, head_root = str(base.resolve()), str(head.resolve())
+        if sc.get("families"):
+            fp, rb, rh = families_diff(
+                b.get("families"), h.get("families"), sc["id"], base_root, head_root
+            )
+            problems += fp
+            for into, got in ((fam_ran_b, rb), (fam_ran_h, rh)):
+                for f, qs in got.items():
+                    into.setdefault(f, set()).update(qs)
         imported.update(
             Path(f).relative_to(base_root).as_posix()
             for f in b["imported"]
@@ -1185,7 +1300,9 @@ def compare(
         for f in touched
     ]
     closure = import_closure(base)
-    covered = imported | new_and_bounded(base, head, head_imported)
+    fam = {f for f in changed if families_measured(base, head, f, fam_ran_b, fam_ran_h)}
+    head_imported |= {f for f in fam if read(base, f) is None}
+    covered = imported | (fam - head_imported) | new_and_bounded(base, head, head_imported)
     roster_gaps: dict[str, list[str]] = {}
     if roster_ok and roster is not None:
         roster_gaps = roster_unmeasured(
