@@ -8,7 +8,7 @@
  "cadence_s": 3600,
  "max_silence_s": 7200,
  "state": "UNMEASURED",
- "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
  "last_run_at": "UNMEASURED",
  "last_run_outcome": "UNMEASURED",
  "last_run_source": "UNMEASURED",
@@ -16,15 +16,22 @@
  "artifact_declared": "desks/mt5/reports/JUDGE_FLOOR_ATTESTATION.json",
  "artifact_resolved_by": "declared",
  "artifact_declared_n": 1,
- "artifact_age_s": 82,
+ "artifact_age_s": 362563,
  "artifact_bytes": 3184,
  "artifact_sha256": "4456c72525ecb8107936c501e441883ff450e75d6f48183926e50d8211060fc8",
  "summary": {
-  "_": "UNMEASURED (trimmed to hold the file under 800 KB)"
+  "status": "RED"
  },
  "progress_metric": "leg_completions",
  "consumer": "UNMEASURED",
  "measured_on": "vm",
  "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
- "measured_at": "2026-11-13T23:20:09+00:00"
+ "measured_at": "2026-11-18T04:01:30+00:00",
+ "only_missing": {
+  "at": "2026-11-18T04:01:30+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
