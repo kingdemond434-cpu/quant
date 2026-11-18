@@ -51,9 +51,10 @@ ACCESS, EACH FAILING CLOSED BY NAME: the grounds file must hold CONFIRMED+built 
 the route serves; `libs.data.refused_hosts` must not list the host; the host's robots.txt must
 allow the path for our agent (only 404/410 means "no rules"; unreadable or HTML refuses).
 401/403/429/451 -- and a challenge page or wall where data was expected -- is a HARD STOP for the
-route: no further request this pass and none for HARD_STOP_H hours (451 and a wall stay stopped
-until a person clears them). Honest UA, MIN_INTERVAL_S between requests, MAX_REQUESTS per pass,
-and a wall-clock budget no request may outrun. A route is fetched only when due.
+route: no further request this pass. 401, 403, 451 and a wall stay stopped until a person
+releases them, as `source_fixer` holds them site-wide; only a 429 lapses after HARD_STOP_H
+hours. Honest UA, MIN_INTERVAL_S between requests, MAX_REQUESTS per pass, and a wall-clock
+budget no request may outrun. A route is fetched only when due.
 
     python desks/mt5/research/release_calendar_states.py --once [--budget-s 240] [--no-fetch]
 """
@@ -97,6 +98,8 @@ MIN_INTERVAL_S = 2.0
 MAX_REQUESTS = 12
 HARD_STOP_CODES = frozenset({401, 403, 429, 451})
 HARD_STOP_H = 24
+#: Refusals held until a person releases them (the fetch law, as source_fixer reads it).
+HELD_UNTIL_RELEASED = frozenset({"401", "403", "451", "WALL"})
 TIMEOUT = 30.0
 MAX_BYTES = 8 * 1024 * 1024
 ROBOTS_AGENT = "quant-desk-research"
@@ -900,7 +903,7 @@ def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
                     st.pop("last_attempt", None)
                 if status == "HARD_STOP":
                     code = str(r).split(":", 1)[1].split()[0]
-                    permanent = code in ("451", "WALL")
+                    permanent = code in HELD_UNTIL_RELEASED
                     st["hard_stop"] = {"code": code, "at": _iso(now),
                                        "until": None if permanent
                                        else _iso(now + timedelta(hours=HARD_STOP_H))}

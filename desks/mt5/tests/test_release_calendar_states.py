@@ -237,7 +237,7 @@ def test_stop_codes_hard_stop_the_route(tmp_path: Path, monkeypatch: pytest.Monk
     assert doc["routes"]["eurostat_hicp"]["status"] == "HARD_STOP"
     assert len(fake.calls) == before                                # nothing requested
     held = json.loads(paths.state.read_text())["routes"]["eurostat_hicp"]["hard_stop"]
-    assert (held["until"] is None) == (code == 451)
+    assert (held["until"] is None) == (code != 429)      # only a 429 lapses
 
 
 def test_a_wall_is_a_permanent_hard_stop(tmp_path: Path,
