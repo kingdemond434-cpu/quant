@@ -23,6 +23,13 @@
  "progress_metric": "leg_completions",
  "consumer": "UNMEASURED",
  "measured_on": "vm",
- "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
- "measured_at": "2026-11-11T10:50:38+00:00"
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-18T04:30:43+00:00",
+ "only_missing": {
+  "at": "2026-11-18T04:30:43+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
