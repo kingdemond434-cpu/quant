@@ -8,7 +8,7 @@
  "cadence_s": 3600,
  "max_silence_s": 7200,
  "state": "NEVER",
- "why": "no artifact and no run record on this host",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
  "last_run_at": "UNMEASURED",
  "last_run_outcome": "UNMEASURED",
  "last_run_source": "UNMEASURED",
@@ -21,5 +21,15 @@
  "artifact_sha256": "UNMEASURED",
  "summary": {},
  "progress_metric": "leg_completions",
- "consumer": "UNMEASURED"
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-18T04:31:33+00:00",
+ "only_missing": {
+  "at": "2026-11-18T04:31:33+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
