@@ -224,9 +224,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # legitimately quiet organ is the cry-wolf failure, and these three are quiet by design.
     "MT5-ResearchReports": ("desks/mt5/reports/RESEARCH_REPORT_CLOCK.json", 1560,
                             "the research report clock"),
-    "MT5-NewsDesk":       ("desks/mt5/logs/MT5-NewsDesk.log", 1440,
-                           "the news daemon; its log moves when news moves, so a quiet window "
-                           "is not a defect and only a silent DAY is"),
+    # JUDGED ON WHAT IT CAPTURED, NOT ON ITS LOG (2026-11-18). The daemon logs every poll error
+    # too, so a fresh log proved only that the loop was alive. The capture file grows only when a
+    # first-party headline is stored; two days covers a weekend with no central-bank release.
+    "MT5-NewsDesk":       ("desks/mt5/data/news_captures.jsonl", 2880,
+                           "first-party central-bank and statistics headlines the news daemon "
+                           "actually stored; a weekend can be quiet, two silent days cannot"),
+    # The 24/7 allocator trigger watcher (money lane: never restarted by never_stale). Its report
+    # is rewritten on every poll that completes, so a stale file means the watcher stopped.
+    "MT5-AllocatorPulse": ("desks/mt5/reports/ALLOCATOR_REACTION.json", 30,
+                           "the event-driven allocator watcher's per-poll reading: what changed, "
+                           "what fired the solver and how fast it answered"),
     # A clean pass writes the state stamp but no log line. Watching the log called the guard
     # STALE for five days while its checked_at advanced every scheduled pass.
     "MT5-FusionDeadman":  ("desks/mt5/data/fusion_deadman_state.json", 90,
@@ -419,6 +427,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # Hourly pass gap audit (2026-11-18): the box pager had no row at all, so nobody could see
+    # whether it ran. scripts/run_alerts.py --box writes this report on every 15-min pass,
+    # armed or not; 45 min = three passes.
+    "MT5-PlumbingPager":  ("desks/mt5/reports/PLUMBING_PAGER.json", 45,
+                           "the box pager's last pass: pages due, sent and active"),
+    # The CRO noon lane fires hourly in its window but starts a FRESH pass once a day (12:xx
+    # Dublin) and writes its checkpoint then; 1560 min = a day plus the slot's own window.
+    "MT5-CycleNoon":      ("desks/mt5/data/cycle_state_noon.json", 1560,
+                           "the noon CRO pass's checkpoint, written when the day's pass starts"),
 }
 
 
