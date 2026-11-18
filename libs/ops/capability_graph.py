@@ -132,7 +132,10 @@ NODES: tuple[Node, ...] = (
     # market, peer-class and family-exposure factors; recurring patterns donated to the compiler.
     Node("residual_anomaly_scan", "desks/mt5/research/residual_anomaly_scan.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/UNEXPLAINED_RESIDUALS.json"),
-         reads=("desks/mt5/data/universe/",)),
+         reads=("desks/mt5/data/universe/",),
+         # Its patterns reach a decision only as intelligence rows the compiler turns into
+         # candidates, so it is priced through the compiler, as the other seats are.
+         billed_as=("miner_candidate_compiler",)),
     Node("fund_playbook", "desks/mt5/research/fund_playbook.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/FUND_PLAYBOOK.json",
                  "desks/mt5/data/hypothesis_graph.jsonl")),
