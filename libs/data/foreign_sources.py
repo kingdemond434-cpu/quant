@@ -1035,8 +1035,9 @@ def probe_all() -> list[dict[str, Any]]:
 
       OK      -- rows came back.
       WALLED  -- the source refused or answered with something unusable. The ground is UNKNOWN,
-                 and the next move is a UA matrix against a real content path (OP-052), never a
-                 verdict about the ground.
+                 never a verdict about the ground. A refusal of the desk's honest name
+                 (401/403/429/451 or a wall page) is final: HARD_STOP / BLOCKED_ON_TERMS in
+                 libs/research/source_health, never retried under another UA (2026-11-18).
       EMPTY   -- the source answered cleanly and genuinely has nothing for this probe keyword.
                  Only THIS one is evidence about the ground, and even then only about the keyword.
 

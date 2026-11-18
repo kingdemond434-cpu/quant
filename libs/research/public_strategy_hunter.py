@@ -222,9 +222,9 @@ def scrub_keys(item: dict[str, Any]) -> dict[str, Any]:
 def _refused(exc: BaseException, what: str) -> dict[str, object]:
     """The transcript record for a fetch the network REFUSED, as distinct from one that was empty.
 
-    ``http_status`` is carried when the venue named one, because 403 (a curated denylist -- run the
-    OP-052 UA matrix) and 429 (a pace problem -- come back later) demand different next moves, and
-    a reader that only sees "blocked" cannot pick between them.
+    ``http_status`` is carried when the venue named one, because 403 (the host refused the desk's
+    honest name -- final, never retried under another UA) and 429 (a pace problem -- come back
+    later) demand different next moves, and a reader that only sees "blocked" cannot pick.
     """
     status = getattr(exc, "code", None)
     reason = (f"{what} refused: HTTP {status}" if status is not None

@@ -36,7 +36,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from libs.data.honest_ua import HONEST_UA
+from libs.data.honest_ua import HONEST_UA, REFUSAL_STATUS, refusal_row
 
 #: THE DESK'S HONEST User-Agent (2026-11-18). This was a desktop-Chrome string; the desk's fetch
 #: law forbids impersonating a browser, so every request now names what is reading
@@ -48,6 +48,18 @@ from libs.data.honest_ua import HONEST_UA
 BROWSER_UA = HONEST_UA
 
 DEFAULT_HEADERS = {"User-Agent": BROWSER_UA, "Accept": "application/json"}
+
+
+class HostRefused(RuntimeError):
+    """The host answered the honest name with 401/403/429/451: a HARD_STOP, final.
+
+    ``row`` is the refused row (libs/data/honest_ua.refusal_row): host, status, the UA sent, the
+    missed_growth line, ``retry: never`` and ``bypass: refused``. A RuntimeError so every existing
+    ``except RuntimeError`` still catches it; a caller that records outcomes reads ``row``."""
+
+    def __init__(self, row: dict[str, object]) -> None:
+        super().__init__(f"{row['why']} ({row['url']}); {row['missed_growth']}")
+        self.row = row
 
 
 def get_json(
@@ -75,11 +87,15 @@ def get_json(
             with urllib.request.urlopen(req, timeout=timeout) as fh:
                 return json.loads(fh.read().decode())
         except urllib.error.HTTPError as exc:
-            if 400 <= exc.code < 500 and exc.code != 429:
+            exc.close()
+            refused = refusal_row(url, status=exc.code, user_agent=hdr.get("User-Agent", ""))
+            # 401/403/451 are final at once; a 429 is paced under the same name and is final
+            # when it is still the answer on the last try. Never another User-Agent.
+            if refused is not None and (exc.code != 429 or attempt == tries - 1):
+                raise HostRefused(refused) from exc
+            if 400 <= exc.code < 500 and exc.code not in REFUSAL_STATUS:
                 raise RuntimeError(
-                    f"HTTP {exc.code} from {url} -- a deterministic refusal, not flakiness. If "
-                    f"this is 403, check the User-Agent before recording the venue as blocked "
-                    f"(libs/data/venue_http)."
+                    f"HTTP {exc.code} from {url} -- a deterministic answer, not flakiness."
                 ) from exc
             last = exc
         except Exception as exc:

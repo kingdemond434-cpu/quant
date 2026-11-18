@@ -56,6 +56,7 @@ from libs.data.foreign_sources import (
 from libs.data.foreign_sources import (
     POSTURE_WALLED as _POSTURE_WALLED,
 )
+from libs.data.honest_ua import refusal_row
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 LEDGER_PATH: Final[Path] = _ROOT / "data" / "source_health.jsonl"
@@ -115,6 +116,10 @@ VERDICT_HEALTHY: Final[str] = "HEALTHY"
 VERDICT_DEGRADED: Final[str] = "DEGRADED"
 VERDICT_DEAD: Final[str] = "DEAD"
 VERDICT_REPLACED: Final[str] = "REPLACED"
+#: A failure whose reason is the host REFUSING the honest name (401/403/429/451, or a challenge or
+#: wall page) takes the refusal's own status, HARD_STOP or BLOCKED_ON_TERMS (libs/data/honest_ua),
+#: never DEGRADED or DEAD: a ground that refused the desk is not a ground that died, and it does
+#: not enter ``dead_sources()`` or advance the failure counter toward DEAD. Final, never bypassed.
 
 #: What the verdict is a claim ABOUT. See honesty rule (2) in the module docstring.
 SCOPE_UNKNOWN: Final[str] = "unknown"
@@ -178,6 +183,8 @@ class SourceState:
     failing_vantages: tuple[str, ...] = ()
     ok_vantages: tuple[str, ...] = ()
     replaced_by: str | None = None
+    #: The refused row (host, status, UA, missed_growth, retry: never, bypass: refused).
+    refusal: dict[str, Any] | None = None
 
     def age_hours(self, *, now: datetime | None = None) -> float | None:
         """Hours since this source was last probed, or None if that cannot be established.
@@ -210,6 +217,9 @@ class SourceState:
             return f"{self.source}: never probed -- UNKNOWN, which is not dead and not healthy"
         if self.verdict == VERDICT_REPLACED:
             return f"{self.source}: superseded by {self.replaced_by} -- no longer relied on"
+        if self.refusal is not None and self.verdict == self.refusal.get("status"):
+            return (f"{self.source}: {self.verdict} -- {self.refusal.get('why')}; "
+                    f"{self.refusal.get('missed_growth')} (retry: never, bypass: refused)")
         if self.verdict == VERDICT_HEALTHY:
             where = ("from every vantage tried" if self.scope == SCOPE_GLOBAL
                      else f"from {', '.join(self.ok_vantages) or 'one vantage'} only")
@@ -268,6 +278,7 @@ def _row_to_state(row: Mapping[str, Any]) -> SourceState:
         failing_vantages=tuple(str(v) for v in fail_raw) if isinstance(fail_raw, list) else (),
         ok_vantages=tuple(str(v) for v in ok_raw) if isinstance(ok_raw, list) else (),
         replaced_by=None if replaced is None else str(replaced),
+        refusal=dict(row["refusal"]) if isinstance(row.get("refusal"), Mapping) else None,
     )
 
 
@@ -284,6 +295,7 @@ def _state_to_row(state: SourceState, *, day: str) -> dict[str, Any]:
         "failing_vantages": list(state.failing_vantages),
         "ok_vantages": list(state.ok_vantages),
         "replaced_by": state.replaced_by,
+        **({"refusal": state.refusal} if state.refusal is not None else {}),
     }
 
 
@@ -447,6 +459,9 @@ def record_run(observations: Sequence[Observation], *, path: Path | None = None,
         name = canonical(obs.source)
         before = prior.get(name, SourceState(source=name))
         vantage = obs.vantage if obs.vantage is not None else current_vantage()
+        refused = None if obs.ok else refusal_row("", error=obs.error)
+        if refused is not None:
+            refused["host"] = refused["host"] or name
         if obs.ok:
             failing: tuple[str, ...] = ()
             ok_vantages = _add(before.ok_vantages, vantage)
@@ -456,18 +471,21 @@ def record_run(observations: Sequence[Observation], *, path: Path | None = None,
         else:
             failing = _add(before.failing_vantages, vantage)
             ok_vantages = before.ok_vantages
-            consecutive = before.consecutive_failed_runs + 1
+            # a refusal is not a failed run: it never marches the source toward DEAD
+            consecutive = before.consecutive_failed_runs + (0 if refused is not None else 1)
             last_ok = before.last_ok_utc
             last_error = obs.error
         verdict, scope = verdict_for(
             consecutive_failed_runs=consecutive, last_checked_utc=iso,
             failing_vantages=failing, ok_vantages=ok_vantages,
             replaced_by=before.replaced_by, dead_after=dead_after)
+        if refused is not None and verdict != VERDICT_REPLACED:
+            verdict = str(refused["status"])
         state = SourceState(
             source=name, verdict=verdict, scope=scope,
             consecutive_failed_runs=consecutive, last_ok_utc=last_ok, last_error=last_error,
             last_checked_utc=iso, failing_vantages=failing, ok_vantages=ok_vantages,
-            replaced_by=before.replaced_by)
+            replaced_by=before.replaced_by, refusal=refused)
         touched[name] = state
         kept.append(json.dumps(_state_to_row(state, day=day), ensure_ascii=False))
         prior[name] = state           # a source observed twice in one run must not re-enter twice
@@ -668,8 +686,8 @@ def _probe_ok(row: Mapping[str, Any]) -> tuple[bool, str | None]:
         # that ANSWERED CLEANLY, reading as a broken lane.
         if posture == _POSTURE_WALLED:
             return False, ("WALLED -- the source refused or served something unusable, so the "
-                           "ground is UNKNOWN and this is NOT evidence it is thin; next move is "
-                           "an OP-052 UA matrix against a real content path"
+                           "ground is UNKNOWN and this is NOT evidence it is thin; a refusal of "
+                           "the honest name is final (never retried under another UA)"
                            + (f" ({reason})" if reason is not None else ""))
         if posture == _POSTURE_EMPTY:
             return False, ("EMPTY -- the source answered cleanly and genuinely had nothing for "

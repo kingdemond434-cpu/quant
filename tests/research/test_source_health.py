@@ -33,7 +33,8 @@ _READ = _T0 + timedelta(hours=1)
 
 
 def _fail(source: str = "zhihu", *, vantage: str = sh.VANTAGE_PROXIED) -> sh.Observation:
-    return sh.Observation(source=source, ok=False, error="HTTP 403", vantage=vantage)
+    return sh.Observation(source=source, ok=False, error="ReadTimeout: read timed out",
+                          vantage=vantage)
 
 
 def _ok(source: str = "zhihu", *, vantage: str = sh.VANTAGE_PROXIED) -> sh.Observation:
