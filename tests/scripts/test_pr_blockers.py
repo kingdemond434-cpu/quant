@@ -33,6 +33,9 @@ def test_the_gate_constants_match_the_gate() -> None:
     spec.loader.exec_module(ag)
     assert tuple(ag.GATING_JOBS) == pb.GATING_JOBS
     assert ag.REGISTRY_HOLD_H == pb.VETO_H
+    assert ag.ROOT_REGISTRY_HOLD_H == pb.ROOT_VETO_H
+    assert ag.registry_hold_h(False) == pb.VETO_H
+    assert ag.registry_hold_h(True) == max(pb.VETO_H, pb.ROOT_VETO_H)
 
 
 def test_each_blocker_in_merge_path_order() -> None:
@@ -43,7 +46,10 @@ def test_each_blocker_in_merge_path_order() -> None:
     assert c(NOW, _pr(), _clear(sha="b" * 40), _green(), None)["blocker"] == "AUDIT_STALE"
     assert c(NOW, _pr(), _clear(), ("failed", ["quality"]), None)["blocker"] == "CI_FAILED"
     assert c(NOW, _pr(), _clear(), ("pending", ["quality"]), None)["blocker"] == "CI_PENDING"
-    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None)["blocker"] == "VETO_WINDOW"
+    # No veto wait for an ordinary PR; a ROOT PR keeps the gate's 24 h window.
+    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None)["blocker"] == "READY"
+    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None, root=True)["blocker"] == "VETO_WINDOW"
+    assert c(NOW, _pr(), _clear(hours_ago=25), _green(), None, root=True)["blocker"] == "READY"
     off = {
         "description": "registry: authority: LIVE's root digest is not the pinned one, "
         "so the path is off"
