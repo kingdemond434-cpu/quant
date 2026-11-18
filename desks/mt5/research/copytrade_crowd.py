@@ -26,16 +26,21 @@ aggregates observations captured in the last FRESH_H hours, and each per-symbol 
 Raw observations are appended to `data/crowd/copytrade/raw/<day>.jsonl.gz`: this history cannot
 be bought later, so every pass that does not run is history lost.
 
-HONEST ACCESS. Logged-out pages only. robots.txt is read per host before any page (desk-wide
-ruling 2026-11-10 20:08Z): allowed, or 404/410/other 4xx (no rules), = PUBLIC and is fetched;
-a Disallow on the exact path (PUBLIC_WITH_TERMS) stops that fetch; 401/403/429/451 or
-5xx/timeout on robots.txt (ACCESS_UNCLEAR) stops it too and is asked again next pass. Stops are
-counted `robots_stopped`, and each host's case (ROBOTS_READ/ABSENT/REFUSED/UNREACHABLE) is
-counted per source. The label still rides on every observation and series row.
-The access controls stay: a login wall is recorded as BLOCKED_AUTH
-and that route stops for the pass; 401/403/429/451 is a HARD STOP written to state and the source
-is not fetched again until `--release <source>`. No login, cookie, proxy, CAPTCHA or paywall
-step exists here.
+HONEST ACCESS (Auditor HOLD of 2026-11-18, MF1-MF4). Logged-out pages only, with the desk's
+honest UA, which names no person, owner, repository or address.
+  TERMS   a source is fetched only when its site terms were READ (clause, URL, read date on its
+          row) and do not forbid automated access by a commercial user: `terms` READ_PERMITS or
+          RESTRICTS_REDISTRIBUTION (held internally, never redistributed). FORBIDS and UNREAD
+          rows are named gaps and are never fetched; robots alone never permits a fetch.
+  ROBOTS  read per host before any page. Only 404/410 means there is no file. A 2xx body that is
+          markup (soft 404, bot challenge), any other status, or a transport failure is UNREAD,
+          and unread refuses. A Disallow on the exact path stops that fetch.
+  REFUSAL 401/403/451 (robots.txt or page) holds the source until `--release`; 429 holds it
+          for HOLD_429_H hours. No retry, no changed headers, no sibling host. A login wall is
+          BLOCKED_AUTH. No login, cookie, proxy, CAPTCHA or paywall step exists here.
+  PEOPLE  no trader's handle is stored. Accounts are read from the listing pages each pass and
+          held in memory only; observations, the raw archive and the flow baselines carry a
+          salted hash of `source:account` whose salt never leaves the box's state file.
 
 CELLS. Once a symbol's series holds 30 rows, its columns become `exogenous_conditioner` cells
 through `futures_state.mint` (the same door, each cell minted once in its life).
@@ -47,9 +52,11 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import math
 import re
+import secrets
 import sys
 import time
 import urllib.parse
@@ -73,7 +80,16 @@ SERIES = DESK / "data" / "lake" / "series"
 OUT = DESK / "reports" / "COPYTRADE_CROWD.json"
 
 LEG = "copytrade_crowd"
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; copytrade_crowd)"
+#: The desk's honest UA: it names no person, owner, repository or address (Auditor MF1,
+#: 2026-11-18). The robots agent is its product token.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+ROBOTS_AGENT = "quant-desk-research"
+#: Fetch only rows whose site terms were READ and do not forbid automated access by a
+#: commercial user (Auditor MF3). Anything else is a named gap and is never fetched.
+TERMS_FETCHABLE = frozenset({"READ_PERMITS", "RESTRICTS_REDISTRIBUTION"})
+#: A 429 on robots.txt or a page holds the source for this long; 401/403/451 hold until
+#: `--release`.
+HOLD_429_H = 24.0
 HARD_STOP = frozenset({401, 403, 429, 451})
 FRESH_H = 6.0
 SMART_MIN_WEEKS = 26
@@ -150,8 +166,14 @@ def _first(patterns: Iterable[str], text: str) -> float | None:
 
 # ----------------------------------------------------------------------------- robots
 
-def robots_rules(txt: str, agent: str = "quant-research") -> list[tuple[str, bool]]:
-    """(path pattern, allow) for the group that applies to `agent`, else the '*' group."""
+def _token(agent: str) -> str:
+    m = re.match(r"[A-Za-z_-]+", (agent or "").strip())
+    return m.group(0).lower() if m else ""
+
+
+def robots_rules(txt: str, agent: str = ROBOTS_AGENT) -> list[tuple[str, bool]]:
+    """(path pattern, allow) of every group naming `agent` by its WHOLE product token, else of
+    every '*' group (RFC 9309 s2.2.1: matching groups are combined, never just the first)."""
     groups: list[tuple[list[str], list[tuple[str, bool]]]] = []
     cur_agents: list[str] = []
     cur_rules: list[tuple[str, bool]] = []
@@ -176,14 +198,20 @@ def robots_rules(txt: str, agent: str = "quant-research") -> list[tuple[str, boo
             last_was_agent = False
     if cur_agents or cur_rules:
         groups.append((cur_agents, cur_rules))
-    a = agent.lower()
-    for agents, rules in groups:
-        if any(x != "*" and x in a for x in agents):
-            return rules
-    for agents, rules in groups:
-        if "*" in agents:
-            return rules
-    return []
+    a = _token(agent)
+    named = [r for agents, rules in groups if a and any(_token(x) == a for x in agents)
+             for r in rules]
+    if a and any(_token(x) == a for agents, _ in groups for x in agents):
+        return named
+    return [r for agents, rules in groups if "*" in agents for r in rules]
+
+
+def robots_body_is_html(body: str | None) -> bool:
+    """A 2xx robots.txt that is markup (soft 404, bot challenge, homepage) is UNREAD, never
+    "no rules" (the #1343 robots_body rule)."""
+    head = (body or "").lstrip("\ufeff \t\r\n\f\v")[:512]
+    low = (body or "")[:512].lower()
+    return head.startswith("<") or "<html" in low or "<!doctype" in low
 
 
 def robots_allows(rules: list[tuple[str, bool]], url: str) -> bool:
@@ -233,31 +261,56 @@ class Fetcher:
         self.stats[source][key] += 1
 
     def access_label(self, url: str) -> str:
-        """PUBLIC (allowed or no robots.txt), PUBLIC_WITH_TERMS (Disallow), ACCESS_UNCLEAR
-        (robots.txt unreadable). `fetch` only proceeds on PUBLIC."""
+        """PUBLIC (rules read and the path allowed, or no robots file: 404/410),
+        PUBLIC_WITH_TERMS (Disallow on the path), ACCESS_UNCLEAR (anything else: an HTML body,
+        any other status, a transport failure, a refusal). `fetch` only proceeds on PUBLIC."""
         host = urllib.parse.urlsplit(url).netloc.lower()
         if host not in self._robots:
             code, body = self._get(f"https://{host}/robots.txt")
-            if code is not None and 200 <= code < 300:
-                self._robots[host] = robots_rules(body)
-            elif code is not None and 400 <= code < 500 and code not in HARD_STOP:
-                self._robots[host] = []                # 404/410/other 4xx: no rules
-            else:
-                self._robots[host] = None              # refused or unreachable: stop
-            self._robots_case[host] = (
-                "ROBOTS_READ" if code is not None and 200 <= code < 300
-                else "ROBOTS_ABSENT" if self._robots[host] == []
-                else "ROBOTS_REFUSED" if code in HARD_STOP else "ROBOTS_UNREACHABLE")
+            case = "ROBOTS_UNREACHABLE"
+            rules: list[tuple[str, bool]] | None = None
+            if code in (404, 410):
+                rules, case = [], "ROBOTS_ABSENT"
+            elif code in HARD_STOP:
+                case = "ROBOTS_REFUSED"
+                self.refuse(host, int(code), f"https://{host}/robots.txt")
+            elif code is not None and 200 <= code < 300:
+                if robots_body_is_html(body):
+                    case = "ROBOTS_HTML"
+                else:
+                    rules, case = robots_rules(body), "ROBOTS_READ"
+            elif code is not None:
+                case = f"ROBOTS_HTTP_{code}"
+            self._robots[host] = rules
+            self._robots_case[host] = case
         rules = self._robots[host]
         if rules is None:
             return "ACCESS_UNCLEAR"
         return "PUBLIC" if robots_allows(rules, url) else "PUBLIC_WITH_TERMS"
 
+    def refuse(self, key: str, code: int, url: str) -> None:
+        """Record a refusal: 429 holds for HOLD_429_H, 401/403/451 until `--release`."""
+        e: dict[str, Any] = {"code": code, "url": url, "at": _iso(_now())}
+        if code == 429:
+            e["until"] = _iso(_now() + timedelta(hours=HOLD_429_H))
+        self.state.setdefault("hard_stops", {})[key] = e
+
+    def held(self, key: str) -> bool:
+        e = (self.state.get("hard_stops") or {}).get(key)
+        if not e:
+            return False
+        until = e.get("until")
+        if until and datetime.fromisoformat(str(until)) <= _now():
+            self.state["hard_stops"].pop(key, None)
+            return False
+        return True
+
     def fetch(self, source: str, url: str) -> str | None:
         if time.monotonic() >= self.deadline:
             self._stat(source, "deadline")
             return None
-        if source in (self.state.get("hard_stops") or {}):
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        if self.held(source) or self.held(host):
             self._stat(source, "hard_stopped")
             return None
         label = self.access_label(url)
@@ -271,8 +324,7 @@ class Fetcher:
         code, body = self._get(url)
         self._stat(source, "fetched")
         if code in HARD_STOP:
-            self.state.setdefault("hard_stops", {})[source] = {
-                "code": code, "url": url, "at": _iso(_now())}
+            self.refuse(source, int(code), url)
             self._stat(source, f"http_{code}")
             return None
         if code is None or not 200 <= code < 300:
@@ -413,9 +465,9 @@ def myfxbook_ids(html: str) -> list[str]:
 
 def population(name: str, src: Mapping[str, Any], f: Fetcher, state: dict[str, Any]
                ) -> list[str]:
-    """Known accounts for a source: the held list, refreshed from the listing pages once a day."""
-    pop_state = state.setdefault("population", {}).setdefault(name, {"ids": [], "at": ""})
-    known = list(pop_state.get("ids") or [])
+    """This pass's accounts for a source, read from its public listing pages (or, for FX Blue,
+    the box's donor file) and held IN MEMORY ONLY: no account handle is written to state, the
+    archive or a report (Auditor MF4). The state keeps only the count."""
     if src.get("adapter") == "fxblue":
         p = ROOT / str(src.get("population_file") or "")
         try:
@@ -423,27 +475,23 @@ def population(name: str, src: Mapping[str, Any], f: Fetcher, state: dict[str, A
                        for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
         except OSError:
             handles = []
-        return list(dict.fromkeys(known + handles))
-    last = pop_state.get("at") or ""
-    fresh = bool(last) and (_now() - datetime.fromisoformat(last)) < timedelta(hours=24)
-    if fresh and known:
-        return known
-    found: list[str] = []
-    extract = mql5_ids if src.get("adapter") == "mql5" else myfxbook_ids
-    for tmpl in src.get("population_pages") or []:
-        pages = range(2, int(src.get("population_max_pages") or 1) + 1) if "{n}" in tmpl else [0]
-        for n in pages:
-            html = f.fetch(name, tmpl.format(n=n))
-            if html is None:
-                break
-            ids = extract(html)
-            new = [i for i in ids if i not in found]
-            if not new:
-                break
-            found.extend(new)
-    ids = list(dict.fromkeys(known + found))[-20000:]
-    pop_state["ids"] = ids
-    pop_state["at"] = _iso(_now())
+        ids = list(dict.fromkeys(handles))
+    else:
+        found: list[str] = []
+        extract = mql5_ids if src.get("adapter") == "mql5" else myfxbook_ids
+        for tmpl in src.get("population_pages") or []:
+            pages = range(2, int(src.get("population_max_pages") or 1) + 1) \
+                if "{n}" in tmpl else [0]
+            for n in pages:
+                html = f.fetch(name, tmpl.format(n=n))
+                if html is None:
+                    break
+                new = [i for i in extract(html) if i not in found]
+                if not new:
+                    break
+                found.extend(new)
+        ids = found[:20000]
+    state.setdefault("population", {})[name] = {"n": len(ids), "at": _iso(_now())}
     return ids
 
 
@@ -492,6 +540,16 @@ def flow_delta(prev: Mapping[str, Any] | None, cur: Mapping[str, Any]) -> dict[s
     return new
 
 
+def account_key(state: dict[str, Any], source: str, acct: str) -> str:
+    """A stable, salted hash for `source:account` (Auditor MF4: no trader's handle is ever
+    stored). The salt is made once on the box, kept in its state file and never published, so
+    the key cannot be reversed from the archive or the reports."""
+    salt = state.get("salt")
+    if not salt:
+        salt = state["salt"] = secrets.token_hex(16)
+    return hashlib.sha256(f"{salt}|{source}:{acct}".encode()).hexdigest()[:16]
+
+
 def observe(name: str, src: Mapping[str, Any], acct: str, f: Fetcher, state: dict[str, Any],
             now: datetime) -> dict[str, Any] | None:
     adapter = src.get("adapter")
@@ -500,13 +558,14 @@ def observe(name: str, src: Mapping[str, Any], acct: str, f: Fetcher, state: dic
     if html is None:
         return None
     text = page_text(html)
-    obs: dict[str, Any] = {"source": name, "account": acct, "captured_at": _iso(now),
+    akey = account_key(state, name, acct)
+    obs: dict[str, Any] = {"source": name, "account": akey, "captured_at": _iso(now),
                            "access_label": f.access_label(url), **parse_quality(text)}
     if adapter == "mql5":
         cur = parse_mql5_flow(text)
         if not cur["symbols"]:
             f._stat(name, "markup_no_distribution")
-        key = f"{name}:{acct}"
+        key = f"{name}:{akey}"
         prev = (state.setdefault("flow_base", {})).get(key)
         delta = flow_delta(prev, cur)
         if cur["symbols"]:
@@ -712,7 +771,8 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
     state = _read(sp, {}) or {}
     f = Fetcher(state, deadline=t0 + budget_s, get=get)
     sources = (reg.get("sources") or {})
-    live = {n: s for n, s in sources.items() if s.get("adapter") not in (None, "none")}
+    live = {n: s for n, s in sources.items() if s.get("adapter") not in (None, "none")
+            and str(s.get("terms") or "UNREAD").upper() in TERMS_FETCHABLE}
     fresh: list[dict[str, Any]] = []
     for name, src in live.items():
         ids = population(name, src, f, state)
@@ -756,8 +816,9 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
         "sources": {n: {"adapter": s.get("adapter"), "positions": s.get("positions"),
                         "stats": f.stats.get(n, {}),
                         "access_labels": sorted(f.labels.get(n, set())),
-                        "population": len((state.get("population") or {}).get(n, {}).get(
-                            "ids") or [])} for n, s in live.items()},
+                        "terms": s.get("terms") or "UNREAD",
+                        "population": int((state.get("population") or {}).get(n, {}).get(
+                            "n") or 0)} for n, s in live.items()},
         "gaps": {n: {"blocked_by": s.get("blocked_by"), "next": s.get("next")}
                  for n, s in sources.items() if n not in live},
         "hard_stops": state.get("hard_stops", {}),

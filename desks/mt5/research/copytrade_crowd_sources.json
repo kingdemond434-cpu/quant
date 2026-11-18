@@ -1,8 +1,10 @@
 {
-  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall or 401/403/429/451 is recorded and never routed around; robots.txt is an access label on every row (LAWS 5e): no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
+  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall or 401/403/429/451 is recorded and never routed around; a robots.txt Disallow on the path, or a robots.txt that is unread (markup, any status but 404/410, an outage), stops the fetch; and a source is fetched only when its site terms were READ and permit it: 'terms' READ_PERMITS or RESTRICTS_REDISTRIBUTION (Auditor MF2/MF3, 2026-11-18). FORBIDS and UNREAD are never fetched: no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
   "sources": {
     "mql5_signals": {
       "adapter": "mql5",
+      "terms": "FORBIDS",
+      "terms_evidence": "Read 2026-11-18, https://www.mql5.com/en/about/terms clause 3.7: 'You specifically agree not to access the website www.mql5.com through any automated means' ... 'including use of scripts, crawlers, or similar technologies.' Never fetched.",
       "host": "www.mql5.com",
       "population_pages": [
         "https://www.mql5.com/en/signals/mt5",
@@ -19,6 +21,8 @@
     },
     "fxblue": {
       "adapter": "fxblue",
+      "terms": "UNREAD",
+      "terms_evidence": "2026-11-18: https://www.fxblue.com/terms did not load from the cloud. Not fetched until the terms are read (from the box) and quoted here.",
       "host": "api.fxblue.com",
       "population_file": "desks/mt5/data/intelligence/fxblue/population.txt",
       "account_url": "https://api.fxblue.com/wl/view.aspx?id={id}&mode=overview&isinline=1",
@@ -30,6 +34,8 @@
     },
     "myfxbook": {
       "adapter": "myfxbook",
+      "terms": "UNREAD",
+      "terms_evidence": "2026-11-18: https://www.myfxbook.com/terms did not load from the cloud. Not fetched until the terms are read (from the box) and quoted here.",
       "host": "www.myfxbook.com",
       "population_pages": ["https://www.myfxbook.com/systems"],
       "population_max_pages": 1,

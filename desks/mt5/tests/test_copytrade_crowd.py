@@ -68,8 +68,8 @@ def test_robots_wildcards_longest_match_and_agent_groups() -> None:
     assert cc.robots_allows([("/x$", False)], "https://h/xy")
 
 
-def test_robots_4xx_is_no_rules_and_refusal_stops() -> None:
-    codes = {"gone": 410, "auth": 403, "slow": 429}
+def test_robots_only_404_410_mean_no_file_and_refusal_stops() -> None:
+    codes = {"gone": 410, "auth": 403, "slow": 429, "odd": 400, "tea": 418}
 
     def get(url: str) -> tuple[int | None, str]:
         host = url.split("//")[1].split("/")[0]
@@ -80,6 +80,27 @@ def test_robots_4xx_is_no_rules_and_refusal_stops() -> None:
     assert f.stats["g"]["ROBOTS_ABSENT"] == 1
     assert f.fetch("a", "https://auth/a") is None and f.stats["a"]["ROBOTS_REFUSED"] == 1
     assert f.fetch("s", "https://slow/a") is None and f.stats["s"]["robots_stopped"] == 1
+    for h in ("odd", "tea"):                     # any other 4xx is UNREAD, never "no rules"
+        assert f.fetch(h, f"https://{h}/a") is None and f.stats[h]["robots_stopped"] == 1
+    assert f.state["hard_stops"]["slow"]["until"]               # 429: timed hold
+    assert "until" not in f.state["hard_stops"]["auth"]          # 403: held until released
+
+
+def test_robots_html_body_is_unread_and_agent_matches_whole_token() -> None:
+    def get(url: str) -> tuple[int | None, str]:
+        if url.endswith("robots.txt"):
+            return 200, "<!DOCTYPE html><html><title>Just a moment...</title></html>"
+        return 200, "ok"
+
+    f = cc.Fetcher({}, deadline=1e18, get=get)
+    assert f.fetch("c", "https://challenge/a") is None
+    assert f.stats["c"]["ROBOTS_HTML"] == 1
+    rules = cc.robots_rules("User-agent: research\nDisallow: /\n\nUser-agent: *\nDisallow: /x\n"
+                            "\nUser-agent: Quant-Desk-Research/2\nDisallow: /a\n"
+                            "\nUser-agent: quant-desk-research\nDisallow: /b\n")
+    assert not cc.robots_allows(rules, "https://h/a") and not cc.robots_allows(rules, "https://h/b")
+    assert cc.robots_allows(rules, "https://h/x")      # '*' does not bind when we are named
+    assert "github" not in cc.UA.lower() and "kingdemond" not in cc.UA.lower()
 
 
 def test_robots_stops_the_fetch_and_hard_stop_is_recorded_and_not_retried() -> None:
@@ -101,7 +122,7 @@ def test_robots_stops_the_fetch_and_hard_stop_is_recorded_and_not_retried() -> N
     assert f.fetch("w", "https://terms.example/a") is None        # Disallow on the path: no fetch
     assert f.labels["w"] == {"PUBLIC_WITH_TERMS"}
     assert f.fetch("w", "https://terms.example/b") == "ok"        # same host, path not disallowed
-    assert f.stats["w"]["ROBOTS_READ"] == 2 and f.stats["s"]["ROBOTS_UNREACHABLE"] == 1
+    assert f.stats["w"]["ROBOTS_READ"] == 2 and f.stats["s"]["ROBOTS_HTTP_500"] == 1
     assert [u for u in calls if not u.endswith("robots.txt")] == ["https://terms.example/b"]
     assert f.fetch("t", "https://ok.example/a") is None
     assert state["hard_stops"]["t"]["code"] == 403
@@ -196,7 +217,10 @@ def test_build_two_passes_writes_pit_series(tmp_path: Path,
         "adapter": "mql5", "population_pages": ["https://www.mql5.com/en/signals/mt5",
                                                 "https://www.mql5.com/en/signals/mt5/page{n}"],
         "population_max_pages": 3, "account_url": "https://www.mql5.com/en/signals/{id}",
-        "per_pass_accounts": 10}, "darwinex": {"adapter": "none", "blocked_by": "x"}}}
+        "per_pass_accounts": 10, "terms": "READ_PERMITS"},
+        "darwinex": {"adapter": "none", "blocked_by": "x"},
+        "unread": {"adapter": "mql5", "terms": "UNREAD",
+                   "population_pages": ["https://unread.example/list"]}}}
     t1 = datetime(2026, 11, 3, 12, tzinfo=UTC)
     st = tmp_path / "state.json"
     d1 = cc.build(get=get, registry=reg, state_path=st, series_root=tmp_path / "s", now=t1)
@@ -214,6 +238,15 @@ def test_build_two_passes_writes_pit_series(tmp_path: Path,
     assert set(df["access_label"]) == {"PUBLIC"} and bool(df["redistribute"].iloc[0])
     assert (tmp_path / "s" / "ctc_XAUUSD.pit.json").exists()
     assert d2["cells"] == {"stub": 1}
+    assert "unread" in d2["gaps"] and "unread" not in d2["sources"]   # terms unread: no fetch
+    # MF4: no account handle anywhere in state, the archive or the report
+    import gzip
+    import json as _json
+    blob = st.read_text() + _json.dumps(d2, default=str)
+    for gz in (tmp_path / "raw").glob("*.gz"):
+        with gzip.open(gz, "rt") as fh:
+            blob += fh.read()
+    assert "1111111" not in blob and "2222222" not in blob
 
 
 def test_login_wall_is_recorded_not_parsed(monkeypatch: pytest.MonkeyPatch) -> None:
