@@ -512,9 +512,13 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
     for r in brief:
         v = verbose.get(r["TaskName"])
         if v is not None and not cached:
-            rows.append({**v, **{k: r[k] for k in (*BRIEF_FIELDS, "Scheduled Task State",
-                                                  "TaskInfoError", "InventoryCachedAt")
-                                 if r.get(k)}})
+            # A CACHED INVENTORY (up to 6 h old) NEVER OVERLAYS A LIVE ROW'S STATE (auditor MF1
+            # on #1296): a stale "Running" over a live Ready with Last Result 1 skipped FAILING.
+            # The live verbose row keeps its own Status, Next Run Time and Scheduled Task State.
+            keep = (("TaskName", "TaskInfoError", "InventoryCachedAt") if inv.source == "cache"
+                    else (*BRIEF_FIELDS, "Scheduled Task State", "TaskInfoError",
+                          "InventoryCachedAt"))
+            rows.append({**v, **{k: r[k] for k in keep if r.get(k)}})
         elif v is not None:
             rows.append({**r, **{k: str(v.get(k) or "") for k in CACHED_HISTORY_FIELDS},
                          "RunHistoryCachedAt": str(hist.at),
@@ -837,7 +841,7 @@ def build() -> dict[str, Any]:
     status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
-              else "OK" if not bad else "ATTENTION")
+              else ("CACHED" if history_cached else "OK") if not bad else "ATTENTION")
     settings = claude_settings()
     settings_fault = settings.get("status") == "BROKEN"
     if key_fault or backup_fault or settings_fault:
@@ -864,6 +868,8 @@ def build() -> dict[str, Any]:
         # all-OK board there would be OK about results nobody read.
         # A SHORT OR UNREADABLE ACCOUNT KEY (v5d) is ATTENTION too: every ledger stamp then
         # fails closed (account_key None), and fail-closed must never be silent.
+        # A CACHED RUN HISTORY (up to 2 h old) caps a clean board at CACHED, never OK (auditor
+        # SF1 on #1296): an all-OK reading there is OK about result codes not read this pass.
         "status": status,
         "run_history": ("CACHED" if history_cached and run_history_read else
                         "MEASURED" if run_history_read else "UNMEASURED"),

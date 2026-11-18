@@ -292,6 +292,81 @@ def test_an_unreadable_inventory_serves_the_cached_inventory(
     assert "inventory from the cached read" in _by(doc)["MT5-Hourly"]["why"]
 
 
+def test_a_cached_inventory_never_masks_a_live_failing_result_with_a_stale_running(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # auditor MF1 on #1296: the brief inventory cached "Running" for MT5-Gateway; this pass the
+    # inventory read fails (served from cache) while the verbose read is live and says Ready with
+    # Last Result 1. The live row's own state must stand, so the task reads FAILING.
+    monkeypatch.setattr(ph, "TASKS_DIR", box / "absent")
+    brief = ('"HostName","TaskName","Next Run Time","Status"\r\n'
+             '"BOX","\\MT5-Hourly","29/10/2026 15:05:00","Ready"\r\n'
+             '"BOX","\\MT5-Gateway","N/A","Running"\r\n')
+    _sched(monkeypatch, brief=brief, verbose=VERBOSE)
+    ph.build()
+    _sched(monkeypatch, brief=None, verbose=VERBOSE)       # inventory from cache, history live
+    doc = ph.build()
+    assert doc["scheduler_reads"]["inventory"]["source"] == "cache"
+    assert doc["scheduler_reads"]["run_history"]["source"] == "live"
+    gw = _by(doc)["MT5-Gateway"]
+    assert gw["verdict"] == "FAILING" and gw["last_result_code"] == 1
+    assert gw["state"] == "Enabled"
+    assert doc["status"] == "ATTENTION"
+
+
+def test_a_clean_board_on_a_cached_run_history_reads_cached_never_ok(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # auditor SF1 on #1296: result codes up to 2 h old must not headline OK
+    clean = VERBOSE.replace('"N/A","Ready","29/10/2026 14:00:00","1"',
+                            '"N/A","Ready","29/10/2026 14:00:00","0"')
+    _sched(monkeypatch, verbose=clean)
+    assert ph.build()["status"] == "OK"                    # live and clean: OK
+    _sched(monkeypatch, verbose=None)
+    doc = ph.build()
+    assert doc["run_history"] == "CACHED" and doc["status"] == "CACHED"
+    assert all(r["verdict"] == "OK" for r in doc["processes"])
+
+
+def test_a_state_file_that_refuses_writes_still_escalates_to_red(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    # auditor SF2 on #1296: os.replace onto a read-only file raises PermissionError (WinError 5)
+    path = tmp_path / "c.json"
+    path.write_text("{}", "utf-8")
+    real = lg.os.replace
+
+    def replace(src: Any, dst: Any) -> None:
+        if Path(dst) == path:
+            raise PermissionError(13, "Access is denied", str(dst))
+        real(src, dst)
+
+    monkeypatch.setattr(lg.os, "replace", replace)
+
+    def boom() -> Any:
+        raise lg.ReadFailed("slow")
+
+    outs = [lg.read_through(path, "k", boom, 3600) for _ in range(3)]
+    assert [(o.unmeasured_runs, o.red) for o in outs] == [(1, False), (2, False), (3, True)]
+    assert any("cache not written (PermissionError)" in n for n in outs[0].notes)
+    # a live read that also cannot write the state file still resets the counter
+    assert lg.read_through(path, "k", lambda: 1, 3600).source == "live"
+    assert lg.read_through(path, "k", boom, 3600).unmeasured_runs == 1
+
+
+def test_a_counter_no_file_will_take_is_red_at_once(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    def replace(src: Any, dst: Any) -> None:
+        raise PermissionError(13, "Access is denied", str(dst))
+
+    monkeypatch.setattr(lg.os, "replace", replace)
+    out = lg.read_through(tmp_path / "c.json", "k",
+                          lambda: (_ for _ in ()).throw(lg.ReadFailed("slow")), 3600)
+    assert out.source == "unmeasured" and out.red
+    assert any("could not be persisted" in n for n in out.notes)
+
+
 def test_a_failed_read_never_overwrites_the_last_good_value(tmp_path: Path) -> None:
     path = tmp_path / "c.json"
     assert lg.read_through(path, "k", lambda: {"v": 1}, 3600).source == "live"
