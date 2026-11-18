@@ -23,12 +23,13 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from typing import BinaryIO
+from urllib.parse import parse_qs, unquote, urlsplit
 
 _WEB = Path(__file__).resolve().parent.parent / "web"
-#: The dashboard shows live equity, P&L and open positions. The moment this server is reachable
-#: from anything but loopback that is a financial disclosure surface, so a token is REQUIRED on
-#: every non-loopback request. Generated once, 0600, never printed by any tool (CLAUDE.md:
+#: The dashboard shows live equity, P&L and open positions. By the principal's 2026-11-18 decision
+#: the box serves it with --no-auth on its fixed address (read-only, allowlisted files only); the
+#: token below applies only when the server is started without --no-auth. Generated once, 0600, never printed by any tool (CLAUDE.md:
 #: data/secrets/** never leaves the box) -- read it on the box when you need to enrol a device.
 _TOKEN_FILE = Path(__file__).resolve().parent.parent / "data" / "secrets" / "dashboard_token.txt"
 
@@ -80,8 +81,44 @@ def _lan_ip() -> str:
         return "127.0.0.1"
 
 
+# ONLY THESE FILES ARE SERVED (Audit HOLD 2026-11-18). web/ on the box holds organ files that have
+# never been published; with no token, "everything under web/" is a leak, so the surface is an
+# allowlist: the pages and the two data files they fetch. Anything else, and every directory
+# listing, is a 404.
+PUBLIC_FILES = frozenset(
+    {
+        "index.html",
+        "desk.html",
+        "desk_pro.html",
+        "research.html",
+        "dashboard.html",
+        "desk_state.json",
+        "equity_history.jsonl",
+    }
+)
+
+
+def _public_name(raw_path: str) -> str | None:
+    """The allowlisted file name a request path maps to, or None. Never touches the disk."""
+    path = unquote(urlsplit(raw_path).path)
+    name = path.lstrip("/")
+    return name if name in PUBLIC_FILES else None
+
+
 class _Handler(SimpleHTTPRequestHandler):
     token = ""
+
+    def send_head(self) -> BinaryIO | None:
+        name = _public_name(self.path)
+        if name is None:
+            self.send_error(404, "Not found")
+            return None
+        self.path = "/" + name
+        return super().send_head()
+
+    def list_directory(self, path: str | os.PathLike[str]) -> BinaryIO | None:  # type: ignore[override]
+        self.send_error(404, "Not found")
+        return None
 
     require_token = False
 

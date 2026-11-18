@@ -144,3 +144,39 @@ def test_installer_retires_the_quick_tunnel() -> None:
 def test_desk_page_reads_the_live_issues_shape() -> None:
     html = (ROOT / "web/desk.html").read_text()
     assert "S.issues.issues" in html and "Array.isArray(S.issues)" in html
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/",
+        "",
+        "/zentech_state.json",
+        "/%7a%65ntech_state.json",
+        "/sub/",
+        "/desk.html/",
+        "/desk.html/../zentech_state.json",
+        "/..%2fzentech_state.json",
+        "/DESK.HTML",
+    ],
+)
+def test_only_the_allowlisted_files_are_served(server: int, method: str, path: str) -> None:
+    assert _call(server, method, path) == 404
+
+
+def test_the_allowlist_is_the_pages_and_the_two_data_files() -> None:
+    assert sd.PUBLIC_FILES == {
+        "index.html",
+        "desk.html",
+        "desk_pro.html",
+        "research.html",
+        "dashboard.html",
+        "desk_state.json",
+        "equity_history.jsonl",
+    }
+    assert _call_public_name("/desk.html?t=1") == "desk.html"
+
+
+def _call_public_name(path: str) -> str | None:
+    return sd._public_name(path)
