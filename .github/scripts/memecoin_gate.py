@@ -11,6 +11,10 @@ THE RULE. The box (zuck's own gh login, `--box`) merges an open, non-draft memec
      names a LIVE_WORDS token (the paper/live switch, the earned-stage ladder, the signer's
      acknowledgement, the execution venue). A fenced PR is zuck's: it is never merged here.
      A file list or patch the API truncates or omits reads as fenced (fail closed).
+     Two narrow exceptions (Governance 2026-11-17), neither a content deny-list: NAME_ONLY_EXEMPT
+     lifts ONE path pattern from ONE exact file that the pattern catches by name only (the file
+     keeps every other pattern and the full LIVE_WORDS scan, i.e. exactly the scrutiny of any
+     other src/ file); and docs/*.md may NAME the switch in prose (path patterns still apply).
   2. AUDITOR CLEAR: the latest row for this PR in the box-local memecoin registry
      (MEMECOIN_REGISTRY_ENV, rows {"pr","sha","verdict","at"}, a file no PR can write) is CLEAR
      for the EXACT head. A HOLD row is a veto. The registry is separate from quant's, so PR
@@ -75,6 +79,16 @@ LIVE_WORDS = re.compile(
     r"|\.sign\(|SigningKey|Signature::new",
     re.IGNORECASE,
 )
+#: file -> the ONE LIVE_PATHS pattern that catches it by name only. Exact names, edited in place
+#: (no rename onto or off the name). Every other pattern and the LIVE_WORDS scan still apply, so
+#: such a file gets the same scrutiny as any unfenced src/ module, never less.
+NAME_ONLY_EXEMPT = {
+    # scores OTHER people's public wallets (hit rates); holds, reads and signs with no key
+    "src/strategies/wallet_intelligence.py": "*wallet*",
+}
+#: Prose cannot execute: a Markdown file under docs/ that NAMES the switch is not the switch.
+#: Path patterns still apply to it; only the LIVE_WORDS line scan is skipped.
+DOC_PATHS = ("docs/*.md",)
 OK = ("success", "skipped", "neutral")
 #: Only GitHub Actions' own check runs count for REQUIRED_JOBS; any installed App can post a name.
 ACTIONS_APP = "github-actions"
@@ -88,15 +102,19 @@ def fenced(files: Iterable[Mapping[str, Any]]) -> str | None:
         n += 1
         name = str(f.get("filename") or "")
         prev = str(f.get("previous_filename") or "")
+        lifted = NAME_ONLY_EXEMPT.get(name) if not prev else None
         for path in filter(None, (name, prev)):
-            if any(fnmatch.fnmatch(path, p) for p in LIVE_PATHS):
+            if any(fnmatch.fnmatch(path, p) for p in LIVE_PATHS if p != lifted):
                 return f"{path} is on the live fence"
         patch = f.get("patch")
         pure_rename = f.get("status") == "renamed" and int(f.get("changes") or 0) == 0
         if patch is None and not pure_rename:
             # a binary file or an oversized diff has no patch: fail closed
             return f"{name}: the API returned no patch to read, so the fence cannot clear it"
+        doc = not prev and any(fnmatch.fnmatch(name, p) for p in DOC_PATHS)
         for line in str(patch or "").splitlines():
+            if doc:
+                break
             if line[:1] in "+-" and not line.startswith(("+++", "---")) and LIVE_WORDS.search(line):
                 return f"{name}: a changed line names the live switch ({line[:80].strip()!r})"
     if n == 0:

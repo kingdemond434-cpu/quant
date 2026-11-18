@@ -608,3 +608,55 @@ def test_the_budget_clock_starts_at_the_callers_entry(organ, monkeypatch):
     doc = gb.build(now=NOW, budget_s=50.0, started=_t.monotonic() - 100.0)
     assert any(str(v).startswith("TRUNCATED_BUDGET") for v in doc["unmeasured"].values())
     assert doc["elapsed_s"] >= 100.0
+
+
+# --------------------------------------- the vintage of the carried window, as a number
+
+def test_the_core_publishes_how_old_the_carried_window_is(organ, monkeypatch):
+    """A core republish states the carried window's AGE, not just a stamp to subtract from.
+
+    MEASURED ON THE BOX 2026-11-14: `at` 2026-11-14T12:52:39Z, `mode` core, `full_at`
+    2026-11-09T15:34:33Z. So `windows["24h"]` -- where CRO duty D34's judged-against-created
+    metrics come from -- was a correct 24-hour rate measured 117.3 HOURS (four days and 21 hours)
+    earlier, republished under a timestamp an hour old, and its intake of 1236.583/h was read as
+    current while JUDGING_BURNDOWN.json measured the docket's true 24h inflow at 0.0/h. The note has
+    always told readers to check `full_at` and never `at`, and it is right; it left them the
+    subtraction, and nothing in the report said how big the answer was.
+    """
+    monkeypatch.setattr(gb, "_core_testing", lambda at: {"status": "MEASURED", "per_hour": 1.0})
+    monkeypatch.setattr(gb, "capacity", lambda note, at: {"status": "MEASURED"})
+    prev = {"at": "2026-11-09T15:34:33+00:00", "mode": "full",
+            "windows": {"24h": {"hours": 24.0, "intake": {"per_hour": 1236.583}}}}
+    doc = gb.build_core(now=datetime(2026, 11, 14, 12, 52, 39, tzinfo=UTC), prev=prev)
+
+    assert doc["mode"] == "core"
+    assert doc["full_at"] == "2026-11-09T15:34:33+00:00"
+    assert doc["full_age_h"] == 117.3
+    assert doc["core"]["carried_age_h"] == 117.3
+    # One vintage per block: the carried window itself is untouched.
+    assert doc["windows"]["24h"]["intake"]["per_hour"] == 1236.583
+
+
+def test_a_vintage_that_cannot_be_read_is_unmeasured_and_never_fresh(organ, monkeypatch):
+    monkeypatch.setattr(gb, "_core_testing", lambda at: {"status": "MEASURED"})
+    monkeypatch.setattr(gb, "capacity", lambda note, at: {"status": "MEASURED"})
+    for prev in ({}, {"at": "not a time", "mode": "full"}):
+        doc = gb.build_core(now=NOW, prev=prev)
+        assert doc["full_age_h"] is None, prev
+        assert doc["core"]["carried_age_h"] is None, prev
+
+
+def test_a_full_build_is_its_own_vintage(organ):
+    _plant(organ, _baseline_born(), _baseline_verdicts())
+    assert gb.main([]) == 0
+    doc = json.loads(organ["OUT"].read_text(encoding="utf-8"))
+    assert doc["mode"] == "full" and doc["full_at"] == doc["at"] and doc["full_age_h"] == 0.0
+
+
+def test_the_age_helper_measures_hours_and_refuses_an_unparseable_stamp():
+    now = datetime(2026, 11, 14, 12, 0, tzinfo=UTC)
+    assert gb._age_h("2026-11-14T06:00:00+00:00", now) == 6.0
+    assert gb._age_h("2026-11-14T06:00:00Z", now) == 6.0        # Z is a timezone, not a typo
+    assert gb._age_h("2026-11-14T06:00:00", now) == 6.0         # a naive stamp reads as UTC
+    assert gb._age_h(None, now) is None
+    assert gb._age_h("whenever", now) is None
