@@ -67,5 +67,31 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     return A.packet(SYSTEM, bundle, trials=trials, representations=reps, candidates=cands)
 
 
+def diagrams(cloud: Any, maxdim: int = 1) -> tuple[list[Any], str]:
+    """Vietoris-Rips persistence diagrams of a point cloud, and which engine produced them.
+
+    `ripser` when importable (H0..H`maxdim`). Without it, H0 is still EXACT: the Rips H0 deaths
+    are the edge lengths of the Euclidean minimum spanning tree (every point is born at 0), so
+    `scipy` answers H0 and every higher dimension is returned EMPTY with the engine named
+    `scipy_mst_h0` -- absent, never approximated. Used by `desks/mt5/research/tda_state.py`.
+    """
+    import numpy as np
+    x = np.asarray(cloud, dtype=float)
+    rp = A.library("ripser")
+    if rp is not None:
+        dg = rp.ripser(x, maxdim=maxdim)["dgms"]
+        return [np.asarray(d, dtype=float).reshape(-1, 2) for d in dg], "ripser"
+    from scipy.sparse.csgraph import minimum_spanning_tree
+    from scipy.spatial.distance import pdist, squareform
+    if x.shape[0] < 2:
+        h0 = np.asarray([[0.0, np.inf]])
+    else:
+        mst = minimum_spanning_tree(squareform(pdist(x))).toarray()
+        deaths = np.sort(mst[mst > 0])
+        h0 = np.vstack([np.column_stack([np.zeros(deaths.size), deaths]),
+                        [[0.0, np.inf]]])
+    return [h0, *[np.zeros((0, 2)) for _ in range(maxdim)]], "scipy_mst_h0"
+
+
 if __name__ == "__main__":
     raise SystemExit(A.cli(run, SYSTEM))

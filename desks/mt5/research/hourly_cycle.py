@@ -1359,6 +1359,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
                      "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     # market STATES computed from the desk's own tape and bars, published as
+                     # PIT lake series and registered as exogenous_conditioner cells
+                     "hawkes_state", "tda_state",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -2341,6 +2344,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
     # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
     "culture_gap_cells": 300,
+    # The two state organs stop themselves at their --budget-s (240 s / 180 s) and resume from a
+    # cursor; a cold Hawkes backfill measured ~10 ms a symbol-hour, TDA ~1.2 ms a window.
+    "hawkes_state": 330,
+    "tda_state": 270,
     # Seconds on a pass with no careers read due; the weekly read is eleven pages at most.
     "firm_lanes": 300,
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
@@ -6250,6 +6257,17 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # TICK-ARRIVAL SELF-EXCITATION (build check row 73): a per-symbol exponential-kernel Hawkes
+    # fit on every complete broker hour of the tick tape -> reports/HAWKES_STATE.json (branching
+    # ratio, intensity z) and data/lake/series/hawkes_<SYM>.csv, offered to the judge as
+    # exogenous_conditioner cells minted once in their life.
+    hks = _costed("hawkes_state", lambda: _producer(
+        "hawkes_state", "research/hawkes_state.py", "--once", "--budget-s", "240"))
+    # TOPOLOGICAL FRAGILITY (build check row 119): persistence-landscape norms of the cross-asset
+    # hourly return cloud via the ripser adapter -> reports/TDA_STATE.json and
+    # data/lake/series/tda_fragility.csv, registered the same way.
+    tds = _costed("tda_state", lambda: _producer(
+        "tda_state", "research/tda_state.py", "--once", "--budget-s", "180"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6726,7 +6744,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "firm_lanes": flanes, "asia_github": agh,
-                    "futures_state": fst,
+                    "futures_state": fst, "hawkes_state": hks, "tda_state": tds,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,

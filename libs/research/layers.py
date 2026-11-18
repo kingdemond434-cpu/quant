@@ -628,6 +628,9 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # Tick-arrival self-excitation and return-cloud topology: descriptions of the market's
+    # condition, published as stamped series and conditioner cells -- information.
+    "hawkes_state": "information", "tda_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     "asia_github": "information",
