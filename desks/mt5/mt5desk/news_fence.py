@@ -39,7 +39,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from mt5desk.calendar_us import TIER1, Release, blackout, releases
+from mt5desk.calendar_us import TIER1, UNDATED, Release, blackout, releases
 
 DESK = Path(__file__).resolve().parents[1]
 FLAG = DESK / "data" / "E8_NEWS_FENCE.json"
@@ -117,7 +117,8 @@ def read_flag(path: Path | None = None) -> tuple[bool, int, int, str]:
 def uncovered_families(start: date, end: date) -> tuple[str, ...]:
     """MONTHLY families with no release in the table for some month touched by [start, end]
     (each WHOLE month, never month-to-date), as 'FAMILY:YYYY-MM'; 'ALL:YYYY' for a year the
-    table refuses. A gap is a blind spot of the fence, never a quiet month."""
+    table refuses, plus every calendar_us.UNDATED release in those months. A gap is a blind
+    spot of the fence, never a quiet month."""
     lo = start.replace(day=1)
     hi = end.replace(day=calendar.monthrange(end.year, end.month)[1])
     out: list[str] = []
@@ -132,6 +133,9 @@ def uncovered_families(start: date, end: date) -> tuple[str, ...]:
         have = {(r.family, r.when.month) for r in rel}
         for m in range(a.month, b.month + 1):
             out.extend(f"{f}:{y:04d}-{m:02d}" for f in MONTHLY if (f, m) not in have)
+            # a tier-1 release known to be coming with no official date yet (Auditor, #808)
+            out.extend(f"{f}:{y:04d}-{m:02d}" for f, uy, um, _why in UNDATED
+                       if (uy, um) == (y, m) and (f, m) not in have)
     return tuple(out)
 
 

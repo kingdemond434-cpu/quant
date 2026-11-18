@@ -30,7 +30,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
-__all__ = ["Release", "us_eastern_offset", "releases", "blackout", "TIER1"]
+__all__ = ["Release", "us_eastern_offset", "releases", "blackout", "TIER1",
+           "FIXED_SOURCES", "UNDATED"]
 
 #: Event families the desk treats as capable of repricing gold outright.
 TIER1 = ("FOMC", "FOMC_MINUTES", "CPI", "NFP", "PPI", "GDP", "PCE")
@@ -87,7 +88,48 @@ FIXED: dict[int, tuple[tuple[str, int, int, int, int], ...]] = {
         ("FOMC_MINUTES", 8, 19, 14, 0),     # July 28-29 minutes, 14:00 ET
         ("GDP", 8, 26, 8, 30),              # Q2 second estimate
         ("PCE", 8, 26, 8, 30),              # July personal income & outlays
+        # 2026 REMAINDER, read from the official pages on 2026-11-10 (the box fetched them;
+        # page hashes in FIXED_SOURCES). Dates are the pages'. Times: BEA prints 8:30 AM on
+        # its schedule; FRED's release calendar gives BLS dates with no time, so CPI and PPI
+        # carry BLS's standing 08:30 ET; the Fed page gives no statement time, so FOMC
+        # carries the standing 14:00 ET. September and October are NOT back-filled: nothing
+        # official for them was read, and a past month stays a published gap.
+        ("CPI", 11, 10, 8, 30),             # FRED release 10
+        ("PPI", 11, 13, 8, 30),             # FRED release 46
+        ("GDP", 11, 25, 8, 30),             # BEA: Q3 second estimate
+        ("PCE", 11, 25, 8, 30),             # BEA: October personal income & outlays
+        ("FOMC", 12, 9, 14, 0),             # Fed: December 8-9 meeting, statement day two
+        ("CPI", 12, 10, 8, 30),             # FRED release 10
+        ("PPI", 12, 15, 8, 30),             # FRED release 46
+        ("GDP", 12, 23, 8, 30),             # BEA: Q3 third estimate
+        ("PCE", 12, 23, 8, 30),             # BEA: November personal income & outlays
     ),
+    # NO 2027 ROW ON PURPOSE. The Fed has published tentative 2027 meeting dates, but no
+    # CPI, PPI, PCE, GDP or minutes date for 2027 exists on any official page yet. A 2027
+    # entry holding FOMC alone would stop `releases` refusing the year while the fence saw
+    # one family in seven. The year stays a refusal until the monthly families are dated.
+}
+
+#: Tier-1 releases known to be coming whose date no official page gives yet: (family, year,
+#: month, why). The fence publishes each as a named gap for that month (never a quiet month)
+#: until a FIXED row for that family lands in that month, which clears it by itself.
+UNDATED: tuple[tuple[str, int, int, str], ...] = (
+    ("FOMC_MINUTES", 2026, 11,
+     "minutes of the October 27-28 meeting: the Fed page had no release link on 2026-11-10 "
+     "(usually three weeks after the meeting)"),
+)
+
+#: Where each batch of FIXED rows was read, so the table can be re-checked against the page.
+FIXED_SOURCES: dict[str, dict[str, str]] = {
+    "2026-11..12": {
+        "read_utc": "2026-11-10T16:01Z",
+        "fed": "federalreserve.gov/monetarypolicy/fomccalendars.htm sha256 "
+               "7d268c691661ac7bc1ae2c89f72e207a689f09d31852b95f8ab499bc2604257a",
+        "bea": "bea.gov/news/schedule sha256 "
+               "df1e8ef61e53e7e3ecca101b9895a63b0a71c57e1a824c8ffb95acc0124100cd",
+        "bls": "FRED release/dates ids 10 (CPI), 46 (PPI), 50 (Employment Situation); the "
+               "BLS schedule pages refused the fetch and were not retried",
+    },
 }
 
 
