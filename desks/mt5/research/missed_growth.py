@@ -24,6 +24,7 @@ minus growth forgone), curve gaps (growth at one heat minus another) and proof f
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -1076,25 +1077,34 @@ def _unspilled_lines(records: tuple[Path, ...]) -> list[dict[str, Any]]:
     return uniq
 
 
-def _unspilled_dropped(records: tuple[Path, ...]) -> int:
+def _unspilled_dropped(records: tuple[Path, ...]) -> tuple[int, int]:
     """How many failed-spill lines the organ's records had to drop past their cap (`n_dropped`
-    under any `unspilled` block): each is a cost nobody can see any more."""
+    under any `unspilled` block): each is a cost nobody can see any more. Also how many counts
+    were MALFORMED (not a finite non-negative whole number: a string, NaN, an infinity) -- those
+    read UNMEASURED and never abort the build (audit of d3b07717db1). Never raises."""
     total = 0
+    malformed = 0
 
     def walk(x: Any) -> None:
-        nonlocal total
+        nonlocal total, malformed
         if isinstance(x, dict):
             u = x.get("unspilled")
-            if isinstance(u, dict) and isinstance(u.get("n_dropped"), (int, float)):
-                total += int(u["n_dropped"])
+            if isinstance(u, dict) and "n_dropped" in u:
+                v = u["n_dropped"]
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) \
+                        or v < 0 or v != int(v):
+                    malformed += 1
+                else:
+                    total += int(v)
             for v in x.values():
                 walk(v)
         elif isinstance(x, list):
             for v in x:
                 walk(v)
     for path in records:
-        walk(_json(path))
-    return total
+        with contextlib.suppress(Exception):
+            walk(_json(path))
+    return total, malformed
 
 
 def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = None,
@@ -1105,9 +1115,9 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
     NOT_BINDING (the rail never cost); any sidecar line that could not be read -> UNMEASURED."""
     doc = _json(path)
     extra, torn = _spill_lines(spill)
-    dropped = _unspilled_dropped(unspilled)
+    dropped, malformed = _unspilled_dropped(unspilled)
     extra = [*extra, *_unspilled_lines(unspilled)]
-    if not doc and not extra and not torn and not dropped:
+    if not doc and not extra and not torn and not dropped and not malformed:
         return {"verdict": UNMEASURED, "lines": [],
                 "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
     doc = doc or {}
@@ -1115,12 +1125,14 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
     if extra:                                 # interleave the sidecar by time
         lines = sorted(lines, key=lambda x: str(x.get("at") or ""))
     lines = lines[-recent:]
-    if dropped:
+    if dropped or malformed:
         return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
                 "n_lines": len(lines), "unspilled_dropped": dropped, "lost_s": None,
+                **({"unspilled_dropped_malformed": malformed} if malformed else {}),
                 **({"torn_spill_lines": torn} if torn else {}),
-                "why": f"{dropped} unspilled line(s) were dropped past the record's cap: "
-                       f"their cost is unseen"}
+                "why": (f"{dropped} unspilled line(s) were dropped past the record's cap"
+                        + (f", and {malformed} drop count(s) are malformed" if malformed else "")
+                        + ": their cost is unseen")}
     if torn:
         return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
                 "n_lines": len(lines), "torn_spill_lines": torn, "lost_s": None,
@@ -1182,6 +1194,64 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "extra_delay_h": ADMISSION_CADENCE_EXTRA_DELAY_H,
             "wait_h": ADMISSION_CADENCE_WAIT_H,
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
+
+
+#: E8 gold's own rails journal their binds on E8_INTENTS under rails named with this prefix.
+E8_GOLD_RAIL_PREFIX = "e8_gold_"
+#: The statuses a bind is journalled with: a window not sent, and a window sent smaller.
+E8_GOLD_RAIL_STATUSES = ("RAIL_BLOCKED", "RAIL_SHRUNK")
+
+
+def published_e8_gold_lines() -> dict[str, Any]:
+    """E8 gold's unregistered rails (lot ceiling and kin), billed TWO-SIDED from the journal.
+
+    `prop/e8_gold.py` journals every bind of its own rails (`rail` starting E8_GOLD_RAIL_PREFIX,
+    status RAIL_BLOCKED or RAIL_SHRUNK, `missed_growth_risk_usd` = the certified risk withheld).
+    The rails are not in the sealed register (libs/portfolio/rails.py), so, as the stop-geometry
+    gate does, their lines are PUBLISHED here rather than appended to LEDGER. Each line carries
+    both sides: the cost (risk withheld, a number) and the saving (what the smaller or absent leg
+    spared in a fill-through tail), which the journal cannot observe and so is UNMEASURED --
+    never a clean zero. A missing journal is UNMEASURED; one with no bind is NOT_BINDING."""
+    try:
+        text = E8_INTENTS.read_text("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "the E8 intents journal is missing or unreadable"}
+    lines: dict[str, dict[str, Any]] = {}
+    for raw in text.splitlines():
+        try:
+            row = json.loads(raw) if raw.strip() else None
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or row.get("status") not in E8_GOLD_RAIL_STATUSES:
+            continue
+        rail = str(row.get("rail") or "")
+        if not rail.startswith(E8_GOLD_RAIL_PREFIX):
+            continue
+        ln = lines.setdefault(rail, {"rail": rail, "n": 0, "n_blocked": 0, "n_shrunk": 0,
+                                     "risk_withheld_usd": 0.0, "first_at": row.get("at"),
+                                     "last_at": None})
+        ln["n"] += 1
+        ln["n_shrunk" if row["status"] == "RAIL_SHRUNK" else "n_blocked"] += 1
+        risk = row.get("missed_growth_risk_usd")
+        if isinstance(risk, (int, float)) and not isinstance(risk, bool):
+            ln["risk_withheld_usd"] += float(risk)
+        ln["last_at"] = row.get("at")
+    out = []
+    for ln in lines.values():
+        ln["risk_withheld_usd"] = round(ln["risk_withheld_usd"], 2)
+        ln["cost"] = {"risk_withheld_usd": ln["risk_withheld_usd"],
+                      "note": "risk, not forgone profit, which can be R:R times larger"}
+        ln["saving"] = {"verdict": UNMEASURED,
+                        "why": "the fill-through loss the rail spared is not observable from "
+                               "the journal; published as unmeasured, never priced as zero"}
+        ln["verdict"] = UNMEASURED
+        out.append(ln)
+    if not out:
+        return {"verdict": NOT_BINDING, "lines": [], "n": 0,
+                "why": "no E8 gold rail has bound on this host"}
+    return {"verdict": UNMEASURED, "source": "data/e8_gold_intents.jsonl",
+            "n": sum(x["n"] for x in out), "lines": sorted(out, key=lambda x: -x["n"])}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
@@ -1340,7 +1410,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "e8_gold_rails": published_e8_gold_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
