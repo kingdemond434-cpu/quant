@@ -110,4 +110,15 @@ def test_a_cot_row_counts_only_once_published(tmp_path: Path) -> None:
     _cot(p, 0.3, last="2026-11-17")
     row = ps.gross_small_share(p, NOW)
     assert row["last_report"] == "2026-11-10"
-    assert row["age_days"] == (NOW - datetime(2026, 11, 13, tzinfo=UTC)).days
+    assert row["age_days"] == (NOW - datetime(2026, 11, 13, 21, tzinfo=UTC)).days
+
+
+def test_a_friday_reading_before_the_release_does_not_see_that_week(tmp_path: Path) -> None:
+    """The CFTC releases at 15:30 ET (20:30 UTC in winter). A Friday-noon reading must still be
+    on the previous week's report; one taken after 21:00 UTC sees the new one."""
+    p = tmp_path / "friday.parquet"
+    _cot(p, 0.3, last="2026-11-17")
+    before = ps.gross_small_share(p, datetime(2026, 11, 20, 12, tzinfo=UTC))
+    after = ps.gross_small_share(p, datetime(2026, 11, 20, 21, tzinfo=UTC))
+    assert before["last_report"] == "2026-11-10"
+    assert after["last_report"] == "2026-11-17"

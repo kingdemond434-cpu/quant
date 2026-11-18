@@ -55,8 +55,11 @@ UNMEASURED = "UNMEASURED"
 #: A legacy COT report carries Tuesday's positions and is published the following Friday, so a
 #: row is knowable only COT_RELEASE_LAG_DAYS after its report_date (the same lag
 #: orthogonal_sweep applies). Rows not yet published at `now` are dropped, and freshness is aged
-#: from publication, not from the positions date.
+#: from publication, not from the positions date. The CFTC releases at 15:30 ET, which is 20:30
+#: UTC in winter and 19:30 UTC in summer, so a row is knowable from Friday 21:00 UTC (the later
+#: of the two); a Friday reading taken before the release must not see that week's report.
 COT_RELEASE_LAG_DAYS = 3
+COT_RELEASE_HOUR_UTC = 21
 
 #: Held legacy COT file -> MT5 symbol. SEED, not a boundary: a file not named here is reported
 #: as unmapped, never silently dropped.
@@ -85,7 +88,8 @@ def gross_small_share(path: Path, now: datetime) -> dict[str, Any]:
             "noncomm_positions_short_all", "comm_positions_long_all", "comm_positions_short_all")
     if any(c not in df.columns for c in need) or df.empty:
         return {"status": UNMEASURED, "why": "missing legacy columns"}
-    known_at = pd.to_datetime(df["report_date"], utc=True) + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+    lag = pd.Timedelta(days=COT_RELEASE_LAG_DAYS, hours=COT_RELEASE_HOUR_UTC)
+    known_at = pd.to_datetime(df["report_date"], utc=True) + lag
     df = df[known_at <= pd.Timestamp(now)].sort_values("report_date").tail(WINDOW)
     if df.empty:
         return {"status": UNMEASURED, "why": "no report published by now"}
@@ -95,7 +99,7 @@ def gross_small_share(path: Path, now: datetime) -> dict[str, Any]:
     share = (1.0 - held / (2.0 * oi)).where(oi > 0).dropna()
     last = pd.Timestamp(df["report_date"].iloc[-1])
     last = last.tz_localize("UTC") if last.tzinfo is None else last
-    age = (now - (last + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)).to_pydatetime()).days
+    age = (now - (last + lag).to_pydatetime()).days
     if share.empty:
         return {"status": UNMEASURED, "why": "no open interest"}
     row = {"gross_small_share": round(float(share.mean()), 4), "n_reports": len(share),
