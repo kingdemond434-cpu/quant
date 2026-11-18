@@ -43,6 +43,7 @@ lane-filters and pre-registers every row, and `tests_run` charges each cell to t
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sys
@@ -549,17 +550,45 @@ def proposer_owners(stems: Iterable[str], fs_columns: Path | None = None,
     return out
 
 
-def registry_coverage(db: Path | None = None
-                      ) -> tuple[set[tuple[str, str]], Callable[[dict[str, Any]], bool]] | None:
-    """(registry (source, symbol) pairs, content-hash lookup), or None when the registry cannot
-    be read -- and then the translator mints NOTHING: an unread dedupe is not a clean one."""
+class RegistryIndex:
+    """A read-only handle on the canonical registry: its (params.source, symbol) pairs and its
+    content-hash identity. Close it (or use it as a context manager) when the pass is done."""
+
+    def __init__(self, conn: Any, pairs: set[tuple[str, str]]) -> None:
+        self.conn = conn
+        self.pairs = pairs
+
+    def exists(self, cell: dict[str, Any]) -> bool:
+        from libs.moat import registry as reg
+        h = reg.content_hash(str(cell.get("family") or ""), str(cell.get("symbol") or ""),
+                             cell.get("params") or {}, str(cell.get("chart") or ""))
+        try:
+            return self.conn.execute("SELECT 1 FROM research_candidates WHERE content_hash=? "
+                                     "LIMIT 1", (h,)).fetchone() is not None
+        except Exception:
+            return True                  # an unreadable identity is treated as a duplicate
+
+    def close(self) -> None:
+        with contextlib.suppress(Exception):
+            self.conn.close()
+
+    def __enter__(self) -> RegistryIndex:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
+
+
+def registry_coverage(db: Path | None = None) -> RegistryIndex | None:
+    """The registry's pairs and identity, or None when it cannot be read -- and then the
+    translator mints NOTHING: an unread dedupe is not a clean one."""
     import sqlite3
     try:
         from libs.moat import registry as reg
-        path = db or reg.path()
-        if not Path(path).exists():
+        path = Path(db or reg.path())
+        if not path.exists():
             return None
-        conn = sqlite3.connect(f"file:{Path(path).as_posix()}?mode=ro", uri=True, timeout=30)
+        conn = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=30)
     except Exception:
         return None
     pairs: set[tuple[str, str]] = set()
@@ -575,16 +604,7 @@ def registry_coverage(db: Path | None = None
     except Exception:
         conn.close()
         return None
-
-    def exists(cell: dict[str, Any]) -> bool:
-        h = reg.content_hash(str(cell.get("family") or ""), str(cell.get("symbol") or ""),
-                             cell.get("params") or {}, str(cell.get("chart") or ""))
-        try:
-            return conn.execute("SELECT 1 FROM research_candidates WHERE content_hash=? LIMIT 1",
-                                (h,)).fetchone() is not None
-        except Exception:
-            return True                  # an unreadable identity is treated as a duplicate
-    return pairs, exists
+    return RegistryIndex(conn, pairs)
 
 
 # -------------------------------------------------------------------------------- cells ---
@@ -772,9 +792,13 @@ def main(argv: list[str] | None = None) -> int:
                                   env_keys=ENV_KEYS)
     cursor = _read(CURSOR, {}) or {}
     rc = registry_coverage()
-    coverage = None if rc is None else Coverage(proposer_owners(stems), rc[0], rc[1])
-    rows, cells, nxt = translate(datasets, onto, registry, stems, cursor, gate=universe_gate(),
-                                 coverage=coverage)
+    coverage = None if rc is None else Coverage(proposer_owners(stems), rc.pairs, rc.exists)
+    try:
+        rows, cells, nxt = translate(datasets, onto, registry, stems, cursor,
+                                     gate=universe_gate(), coverage=coverage)
+    finally:
+        if rc is not None:
+            rc.close()
     path = None
     counts: dict[str, Any] = {}
     if cells and not a.dry_run:

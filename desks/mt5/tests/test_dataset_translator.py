@@ -323,9 +323,11 @@ def test_a_registry_pair_on_the_same_series_is_skipped_whatever_its_params(
     db = _registry_db(tmp_path, [(dt.EXO, first, {"source": "fs_cnx_dce", "signal": "x",
                                                   "lag_hours": 72, "threshold": 2.0}, "H4")])
     rc = dt.registry_coverage(db)
-    assert rc is not None and ("fs_cnx_dce", first) in rc[0]
-    cov = dt.Coverage({}, rc[0], rc[1])
-    _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
+    assert rc is not None
+    with rc:
+        assert ("fs_cnx_dce", first) in rc.pairs
+        cov = dt.Coverage({}, rc.pairs, rc.exists)
+        _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
     assert len(cells) == 1 and cells[0]["symbol"] != first
 
 
@@ -339,9 +341,11 @@ def test_the_registry_content_hash_is_the_dedupe_key(tmp_path: Path) -> None:
     # (source, symbol) pair check alone would not see it): the ring moves past it.
     db = _registry_db(tmp_path, [(c["family"], c["symbol"], c["params"], c["chart"])])
     rc = dt.registry_coverage(db)
-    assert rc is not None and rc[1](c)
-    cov = dt.Coverage({}, set(), rc[1])
-    _, again, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
+    assert rc is not None
+    with rc:
+        assert rc.exists(c)
+        cov = dt.Coverage({}, set(), rc.exists)
+        _, again, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
     assert again and (again[0]["symbol"], again[0]["params"]["side_when_high"]) != (
         c["symbol"], c["params"]["side_when_high"])
 
