@@ -144,10 +144,12 @@ def test_tilt_keeps_every_cell_and_moves_none_further_than_its_bound(
 def test_the_original_quota_raises_the_head_share(monkeypatch: pytest.MonkeyPatch) -> None:
     keep = _keep(400)
     monkeypatch.setattr(O, "TILT_MAX", 0.0)
-    monkeypatch.setattr(O, "ORIGINAL_QUOTA", 0.3)
+    monkeypatch.setattr(O, "ORIGINAL_QUOTA", 0.2)
     new, c = O.priority_tilt(keep, _prio(keep))
     head = new[:100]
-    assert sum(1 for sp in head if sp["family"] == "own_fam") >= 30
+    # 10% of the sealed order is ORIGINAL; the quota holds 20% of the head (within its reach)
+    assert sum(1 for sp in keep[:100] if sp["family"] == "own_fam") == 10
+    assert sum(1 for sp in head if sp["family"] == "own_fam") >= 20
     assert c["quota_pulls"] > 0 and sorted(map(id, new)) == sorted(map(id, keep))
 
 
