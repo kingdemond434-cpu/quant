@@ -77,7 +77,8 @@ LEG = "regional_survivor_hunters"
 #: ground's published terms say and whether its listing sits behind a login.
 ACCESS_ROWS = Path(__file__).resolve().parent / "regional_hunter_access.json"
 #: We say who we are. A venue that refuses this client has refused the desk.
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; regional_survivor_hunters)"
+#: The desk's honest UA (Auditor MF1, 2026-11-18): it names no person, owner, repo or address.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 #: A refusal stands this long before ONE polite re-probe is allowed; a second refusal re-arms it.
 HARD_STOP_COOLDOWN_H = 168.0
 LOGIN_WALL = re.compile(
@@ -148,7 +149,7 @@ class AccessGate:
         self.stops: dict[str, Any] = dict(stops or {})
         self.counts: dict[str, int] = {}
         self._lock = threading.Lock()
-        self.robots = RobotsGate(lambda u: _raw_get(u, 15.0)[:2])
+        self.robots = RobotsGate(lambda u: _raw_get(u, 15.0)[:2], agent="quant-desk-research")
 
     def _count(self, key: str) -> None:
         with self._lock:
@@ -225,15 +226,17 @@ def access_bar(name: str, rows: dict[str, Any] | None = None) -> tuple[str, str]
     """(state, why) when a ground must NOT be fetched at all, else ("", "").
 
     TERMS_FORBID: its published terms forbid machine or commercial use (fail-closed).
-    BLOCKED_AUTH: its listing is behind a login; the desk does not log in.
-    Unread terms do not bar a ground -- they are named in the row and in the coverage registry so
-    the read is owed work -- but robots.txt and a refusal still stop every fetch."""
+    TERMS_UNREAD: its terms were not read yet. Robots alone never permits a fetch (Auditor MF3,
+    2026-11-18), so the ground is not fetched until a read is recorded as NO_BAR.
+    BLOCKED_AUTH: its listing is behind a login; the desk does not log in."""
     r = (access_rows() if rows is None else rows).get(name) or {}
     terms = str(r.get("terms") or "UNREAD").upper()
     if terms == "FORBIDS":
         return "terms_forbid", str(r.get("terms_evidence") or "published terms forbid this use")
     if str(r.get("auth") or "").upper() == "LOGIN_REQUIRED":
         return "blocked_auth", str(r.get("auth_evidence") or "the listing is behind a login")
+    if terms != "NO_BAR":
+        return "terms_unread", str(r.get("terms_evidence") or "site terms not read yet")
     return "", ""
 
 
@@ -259,6 +262,20 @@ def _atomic_write(path: Path, text: str) -> None:
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()
+
+
+def anonymise(rows: list[dict], salt: str) -> list[dict]:
+    """No trader's name, handle or profile URL leaves this module (Auditor MF4, 2026-11-18): a
+    track record is keyed by a salted hash of `source:name` (the salt stays in the box's state
+    file) and carries only its numbers, tags and the listing it came from."""
+    import hashlib
+    out = []
+    for r in rows:
+        if r.get("kind") == "track_record":
+            h = hashlib.sha256(f"{salt}|{r.get('source')}:{r.get('title')}".encode()).hexdigest()
+            r = {**r, "title": f"{r.get('source')} record {h[:12]}", "url": "", "text": ""}
+        out.append(r)
+    return out
 
 
 def row(source: str, kind: str, title: str, url: str = "", text: str = "",
@@ -1035,6 +1052,9 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
     _DEADLINE["at"] = t0 + budget_s
     pf.reset_stats(LEG)
     st = _read(STATE, {})
+    if not st.get("_salt"):
+        import secrets
+        st["_salt"] = secrets.token_hex(16)
     g = _GATE["gate"] = AccessGate(st.get("_hard_stops"))
     rows_doc = access_rows()
     results: dict[str, Any] = {}
@@ -1051,6 +1071,7 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
                 r_.setdefault("lang", lang)
                 r_.setdefault("region", region)
             rows_.extend(res["rows"])
+        rows_ = anonymise(rows_, str(st["_salt"]))
         if work:
             st[name] = work["cursor"]
             if work.get("resolved"):
@@ -1091,7 +1112,7 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
         bar, why = access_bar("fbs_tape", rows_doc)
         if bar:
             raise FetchError("https://fbs.com/top-trades", None, f"{bar}: {why}")
-        tape = mine_fbs_tape()
+        tape = anonymise(mine_fbs_tape(), str(st["_salt"]))
         d = INTEL / "fbs_tape"
         d.mkdir(parents=True, exist_ok=True)
         try:

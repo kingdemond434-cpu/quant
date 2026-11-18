@@ -1,19 +1,22 @@
 """ONE robots.txt reader for the desk's fetchers: a Disallow on the exact path stops the fetch.
 
-Governance desk-wide robots ruling 2026-11-10 20:08Z (this module is the chosen single reader):
+Governance desk-wide robots ruling 2026-11-10, tightened by the Auditor 2026-11-18 (the #1343
+`robots_body` rule): only 404/410 means there is no file, and an unread robots.txt refuses.
 
     robots.txt answer            verdict      reason                fetch?
-    2xx, path allowed            ALLOWED      ROBOTS_ALLOWED        yes
-    2xx, Disallow on the path    DISALLOWED   ROBOTS_DISALLOWED     no
-    404/410/other 4xx            ALLOWED      ROBOTS_ABSENT         yes (no rules, as RFC 9309 says)
+    2xx text, path allowed       ALLOWED      ROBOTS_ALLOWED        yes
+    2xx text, Disallow on path   DISALLOWED   ROBOTS_DISALLOWED     no
+    2xx markup (soft 404, WAF)   UNREAD       ROBOTS_HTML           no  (not rules)
+    404/410                      ALLOWED      ROBOTS_ABSENT         yes (no file, RFC 9309)
     401/403/429/451              UNREAD       ROBOTS_REFUSED        no  (the host said no)
-    5xx/timeout/unreachable      UNREAD       ROBOTS_UNREACHABLE    no  (retry next pass)
+    any other 4xx                UNREAD       ROBOTS_UNREAD_STATUS  no
+    5xx/timeout/unreachable      UNREAD       ROBOTS_UNREACHABLE    no  (asked again next pass)
 
 429 and 451 are held with 401/403 because HARD_STOP already names them a refusal for pages; a
 host that refuses or rate-limits its own robots.txt is not read as "no rules". Every check is
 counted by reason in `gate.counts`, so a fetcher publishes how many routes fell in each case.
 
-    gate = RobotsGate(get, agent="quant-research")      # get(url) -> (status | None, body)
+    gate = RobotsGate(get, agent="quant-desk-research")      # get(url) -> (status | None, body)
     verdict = gate.check("https://host/path?page=2")    # "ALLOWED" | "DISALLOWED" | "UNREAD"
     gate.reason("https://host/path")                     # "ROBOTS_ABSENT", ...
 
@@ -37,13 +40,15 @@ ALLOWED, DISALLOWED, UNREAD = "ALLOWED", "DISALLOWED", "UNREAD"
 
 R_ALLOWED, R_DISALLOWED, R_ABSENT = "ROBOTS_ALLOWED", "ROBOTS_DISALLOWED", "ROBOTS_ABSENT"
 R_REFUSED, R_UNREACHABLE = "ROBOTS_REFUSED", "ROBOTS_UNREACHABLE"
+R_HTML, R_UNREAD_STATUS = "ROBOTS_HTML", "ROBOTS_UNREAD_STATUS"
+NO_FILE: frozenset[int] = frozenset({404, 410})
 
 #: Statuses that are a refusal by the server. A fetcher that sees one stops; it does not retry,
 #: change headers, or try a sibling host.
 HARD_STOP: frozenset[int] = frozenset({401, 403, 429, 451})
 
 
-def robots_rules(txt: str, agent: str = "quant-research") -> Rules:
+def robots_rules(txt: str, agent: str = "quant-desk-research") -> Rules:
     """(path pattern, allow) of every group that names `agent`, else of every '*' group."""
     groups: list[tuple[list[str], Rules]] = []
     cur_agents: list[str] = []
@@ -114,16 +119,25 @@ def classify_robots_status(code: int | None) -> str:
         return R_ALLOWED
     if code in HARD_STOP:
         return R_REFUSED
-    if code is not None and 400 <= code < 500:
+    if code in NO_FILE:
         return R_ABSENT
+    if code is not None and 400 <= code < 500:
+        return R_UNREAD_STATUS
     return R_UNREACHABLE
+
+
+def body_is_markup(body: str | None) -> bool:
+    """A robots.txt body that is HTML/XML (soft 404, bot challenge, homepage), not rules."""
+    head = (body or "").lstrip("\ufeff \t\r\n\f\v")[:512]
+    low = (body or "")[:512].lower()
+    return head.startswith("<") or "<html" in low or "<!doctype" in low
 
 
 class RobotsGate:
     """Per-host robots.txt, read once per gate and cached. Thread-safe."""
 
     def __init__(self, get: Callable[[str], tuple[int | None, str]],
-                 agent: str = "quant-research") -> None:
+                 agent: str = "quant-desk-research") -> None:
         self._get = get
         self._agent = agent
         self._rules: dict[str, tuple[Rules | None, str]] = {}
@@ -140,7 +154,9 @@ class RobotsGate:
             code, body = None, ""
         kind = classify_robots_status(code)
         rules: Rules | None
-        if kind == R_ALLOWED:
+        if kind == R_ALLOWED and body_is_markup(body):
+            kind, rules = R_HTML, None
+        elif kind == R_ALLOWED:
             rules = robots_rules(body, self._agent)
         elif kind == R_ABSENT:
             rules = []

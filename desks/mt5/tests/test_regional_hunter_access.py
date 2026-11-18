@@ -52,15 +52,18 @@ def test_robots_rules_wildcards_and_longest_match() -> None:
 def test_robots_ruling_cases_are_classified_and_counted() -> None:
     answers = {"ok": (200, "User-agent: *\nDisallow: /no"), "gone": (410, ""), "teapot": (418, ""),
                "auth": (401, ""), "deny": (403, ""), "slow": (429, ""), "down": (503, ""),
-               "dead": (None, "")}
+               "dead": (None, ""), "waf": (200, "<!DOCTYPE html><title>Just a moment</title>"),
+               "nofile": (404, "")}
     g = RobotsGate(lambda u: answers[u.split("//")[1].split("/")[0]])
     got = {h: g.check(f"https://{h}/yes") for h in answers}
-    assert got == {"ok": "ALLOWED", "gone": "ALLOWED", "teapot": "ALLOWED", "auth": "UNREAD",
-                   "deny": "UNREAD", "slow": "UNREAD", "down": "UNREAD", "dead": "UNREAD"}
+    assert got == {"ok": "ALLOWED", "gone": "ALLOWED", "teapot": "UNREAD", "auth": "UNREAD",
+                   "deny": "UNREAD", "slow": "UNREAD", "down": "UNREAD", "dead": "UNREAD",
+                   "waf": "UNREAD", "nofile": "ALLOWED"}
     assert g.check("https://ok/no") == "DISALLOWED"
     assert g.reason("https://gone/x") == "ROBOTS_ABSENT"
     assert g.counts == {"ROBOTS_ALLOWED": 1, "ROBOTS_DISALLOWED": 1, "ROBOTS_ABSENT": 2,
-                        "ROBOTS_REFUSED": 3, "ROBOTS_UNREACHABLE": 2}
+                        "ROBOTS_REFUSED": 3, "ROBOTS_UNREACHABLE": 2, "ROBOTS_HTML": 1,
+                        "ROBOTS_UNREAD_STATUS": 1}
 
 
 def test_a_403_stops_the_source_with_no_alternate_and_no_site_root_walk(monkeypatch) -> None:
@@ -111,7 +114,8 @@ def test_terms_and_login_rows_bar_a_ground_before_any_fetch(monkeypatch) -> None
     monkeypatch.setattr(rh, "access_rows", lambda: rows)
     assert rh.access_bar("f")[0] == "terms_forbid"
     assert rh.access_bar("l")[0] == "blocked_auth"
-    assert rh.access_bar("u") == ("", "") and rh.access_bar("absent") == ("", "")
+    assert rh.access_bar("u")[0] == "terms_unread" and rh.access_bar("absent")[0] == "terms_unread"
+    assert rh.access_bar("ok", {"ok": {"terms": "NO_BAR"}}) == ("", "")
     work = rh._work_source("f", SPEC, {})
     assert work["pages"][0]["state"] == "terms_forbid" and calls == []
 
@@ -123,7 +127,7 @@ def test_the_committed_rows_cover_every_ground_and_bar_the_login_only_one() -> N
 
 
 def test_requests_say_who_we_are_and_never_retry() -> None:
-    assert rh.HEADERS["User-Agent"].startswith("quant-research/")
+    assert rh.HEADERS["User-Agent"].startswith("quant-desk-research/")
     import inspect
     src = inspect.getsource(rh._raw_get)
     assert "retries=0" in src and "Referer" not in inspect.getsource(rh.fetch)
@@ -135,8 +139,8 @@ def test_the_suite_runs_the_hunters_inside_its_own_timeout() -> None:
 
 
 def test_every_matching_user_agent_group_is_combined() -> None:
-    txt = ("User-agent: quant-research\nDisallow: /a\n\nUser-agent: *\nDisallow: /\n\n"
-           "User-agent: quant-research\nDisallow: /b\n")
+    txt = ("User-agent: quant-desk-research\nDisallow: /a\n\nUser-agent: *\nDisallow: /\n\n"
+           "User-agent: quant-desk-research\nDisallow: /b\n")
     rules = robots_rules(txt)
     assert not robots_allows(rules, "https://h/a") and not robots_allows(rules, "https://h/b")
     assert robots_allows(rules, "https://h/c")          # '*' does not apply when we are named
@@ -148,5 +152,17 @@ def test_agent_group_matches_the_whole_product_token_only() -> None:
     txt = "User-agent: research\nDisallow: /\n\nUser-agent: *\nDisallow: /x\n"
     rules = robots_rules(txt)
     assert robots_allows(rules, "https://h/a") and not robots_allows(rules, "https://h/x")
-    named = robots_rules("User-agent: Quant-Research/2.0\nDisallow: /a\n")
+    named = robots_rules("User-agent: Quant-Desk-Research/2.0\nDisallow: /a\n")
     assert not robots_allows(named, "https://h/a")
+
+
+def test_track_records_carry_no_trader_name_or_profile_url() -> None:
+    rows = [rh.row("x", "track_record", "TraderJoe99", "https://x.example/u/TraderJoe99",
+                   "TraderJoe99 profile", stats={"return_pct": 12.0}),
+            rh.row("x", "walled", "listing", "https://x.example/list")]
+    out = rh.anonymise(rows, "salt")
+    blob = repr(out)
+    assert "TraderJoe99" not in blob and out[0]["stats"] == {"return_pct": 12.0}
+    assert out[0]["title"] == rh.anonymise(rows, "salt")[0]["title"]      # stable key
+    assert out[1]["url"] == "https://x.example/list"                        # listings stay
+    assert "github" not in rh.UA.lower() and "kingdemond" not in rh.UA.lower()

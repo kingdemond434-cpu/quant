@@ -188,6 +188,9 @@ def test_a_moved_listing_is_resolved_through_an_alternate_and_remembered(monkeyp
 
     monkeypatch.setattr(rsh, "fetch", fake)
     monkeypatch.setattr(rsh, "SOURCES", {k: rsh.SOURCES[k] for k in ("share4you", "hfm_pamm")})
+    # Terms read as NO_BAR for this fixture: an unread ground is never fetched (Auditor MF3).
+    monkeypatch.setattr(rsh, "access_rows", lambda: {
+        k: {"terms": "NO_BAR"} for k in ("share4you", "hfm_pamm", "fbs_tape")})
     import research.alt_data_yield as ady_mod
     monkeypatch.setattr(ady_mod, "COMPUTE_LEDGER", tmp_path / "none.jsonl")
     res = rsh.run_and_save(budget_s=60, workers=2)
