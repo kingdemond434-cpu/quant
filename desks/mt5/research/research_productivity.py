@@ -30,6 +30,13 @@ import statistics
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -196,8 +203,8 @@ def stages() -> dict[str, Any]:
                             if isinstance(v, dict) and v.get("gated_at"))
     except (OSError, ValueError):
         certified, cert_dates = 0, []
-    ledgers = [Path(p) for p in glob.glob(str(ROOT / "backups" / "moat" / "shadow_ledgers"
-                                             / "ledger_*.json"))]
+    ledgers = list(_fl.iter_ledgers(ROOT / "backups" / "moat" / "shadow_ledgers",
+                                    also_frozen=_fl.frozen_names(SHADOW_DIR)))
     canon_rows = list((canon.get("survivors") or {}).values()) if isinstance(canon, dict) else []
     try:
         rec = json.loads((ROOT / "docs" / "research" / "recommendation_ledger.json")

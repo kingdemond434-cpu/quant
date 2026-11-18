@@ -1,0 +1,500 @@
+{
+ "note": "Every role a top systematic shop staffs, mapped to the always-on AI lane that does it here. Firms are named for the PRACTICE we borrow, from public papers, interviews and careers pages only. status: LIVE_CODE = the lane's code is on the live branch; PR_ONLY = it exists only in an open PR (named), so it does nothing on the box yet; NEW = built by firm_lanes in this change. Liveness is measured on the box each pass from the lane's artifacts, never asserted here.",
+ "template": "RenTech Medallion: many weak, independent signals combined into one book, compounded on own capital. Citadel/Millennium pod discipline: every strategy carries its own hard drawdown stop and fast cut, inside prop-firm limits.",
+ "lanes": [
+  {
+   "id": "data_acquisition",
+   "role": "Data acquisition and sourcing",
+   "firms": [
+    "RenTech",
+    "Two Sigma",
+    "Citadel"
+   ],
+   "practice": "buy or build every dataset first, ask questions later; data is the moat",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/acquire_datasets.py",
+    "desks/mt5/research/axis_ingest.py",
+    "desks/mt5/research/alt_data_yield.py"
+   ],
+   "artifacts": [
+    "reports/dataset_acquisition.json",
+    "reports/ALT_DATA_YIELD.json"
+   ]
+  },
+  {
+   "id": "data_cleaning_pit",
+   "role": "Data cleaning and point-in-time integrity",
+   "firms": [
+    "RenTech",
+    "D. E. Shaw"
+   ],
+   "practice": "every value stamped with when the desk could have known it; bad ticks never reach research",
+   "status": "LIVE_CODE",
+   "modules": [
+    "libs/tiers/bitemporal.py",
+    "desks/mt5/research/pit_audit.py"
+   ],
+   "artifacts": [
+    "reports/PIT_AUDIT.json"
+   ]
+  },
+  {
+   "id": "global_alt_data",
+   "role": "Alternative and global data researchers",
+   "firms": [
+    "Two Sigma",
+    "Citadel",
+    "Point72"
+   ],
+   "practice": "public statistical releases, shipping, weather, filings, central-bank text",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/world_macro_proposer.py",
+    "desks/mt5/research/cb_tone_screen.py"
+   ],
+   "artifacts": [
+    "reports/WORLD_MACRO_PROPOSER.json"
+   ]
+  },
+  {
+   "id": "asset_horizon_grid",
+   "role": "Signal researchers split by asset class and holding period",
+   "firms": [
+    "RenTech",
+    "High-Flyer",
+    "Ubiquant",
+    "Two Sigma"
+   ],
+   "practice": "a researcher owns each (asset class x horizon) square; an empty square is a hiring gap",
+   "status": "NEW",
+   "modules": [
+    "libs/research/firm_lanes.py",
+    "desks/mt5/research/firm_lanes.py"
+   ],
+   "artifacts": [
+    "reports/FIRM_LANES.json"
+   ]
+  },
+  {
+   "id": "factor_mining",
+   "role": "Formulaic factor miners (alpha factories)",
+   "firms": [
+    "WorldQuant",
+    "High-Flyer",
+    "Ubiquant",
+    "Minghong",
+    "Lingjun"
+   ],
+   "practice": "operator grammars (Alpha101, Guotai Junan Alpha191) mined at scale, novelty against the existing book",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/expression_factory.py",
+    "desks/mt5/research/alpha_evolution.py",
+    "libs/research/alpha_dsl.py"
+   ],
+   "artifacts": [
+    "reports/EXPRESSION_FACTORY.json"
+   ]
+  },
+  {
+   "id": "trend_carry",
+   "role": "Trend, carry and macro factor researchers",
+   "firms": [
+    "Man AHL",
+    "Winton",
+    "AQR",
+    "Bridgewater"
+   ],
+   "practice": "time-series momentum, carry and value across every liquid asset class",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/trend_core.py",
+    "desks/mt5/research/carry_state.py"
+   ],
+   "artifacts": []
+  },
+  {
+   "id": "relative_value",
+   "role": "Statistical arbitrage and relative value",
+   "firms": [
+    "RenTech",
+    "D. E. Shaw",
+    "Two Sigma"
+   ],
+   "practice": "pairs, baskets and residual convergence between linked instruments",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/alpha_recombination.py",
+    "desks/mt5/research/causal_lab.py"
+   ],
+   "artifacts": []
+  },
+  {
+   "id": "event_text",
+   "role": "Event, earnings and text researchers",
+   "firms": [
+    "D. E. Shaw",
+    "Two Sigma",
+    "Point72"
+   ],
+   "practice": "react to scheduled disclosures and parsed text faster and more consistently than people",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/side_channels/earnings_miner.py"
+   ],
+   "artifacts": []
+  },
+  {
+   "id": "llm_research_lab",
+   "role": "LLM research assistants (propose only)",
+   "firms": [
+    "Two Sigma",
+    "Man Group",
+    "High-Flyer"
+   ],
+   "practice": "language models read and propose; they never judge and never size",
+   "status": "PR_ONLY",
+   "prs": [
+    332,
+    501,
+    502,
+    503,
+    504
+   ],
+   "modules": [
+    "desks/mt5/research/llm_lab.py"
+   ],
+   "artifacts": [
+    "reports/LLM_LAB.json"
+   ]
+  },
+  {
+   "id": "paperclip_company",
+   "role": "AI research company: paper, repo and dataset converters, dead-producer reviver, red team, triage",
+   "firms": [
+    "Two Sigma",
+    "RenTech"
+   ],
+   "practice": "propose-only research staff converting every public source into judged cells",
+   "status": "PR_ONLY",
+   "prs": [
+    1301
+   ],
+   "modules": [
+    "libs/research/paperclip_lab/lab.py"
+   ],
+   "artifacts": [
+    "data/paperclip/scorecard.json"
+   ]
+  },
+  {
+   "id": "asian_retail_forest",
+   "role": "Asian retail and small quant communities",
+   "firms": [
+    "JoinQuant",
+    "RiceQuant",
+    "BigQuant",
+    "Uqer",
+    "vn.py",
+    "Japan, Korea, Taiwan, HK, India, SE Asia forums"
+   ],
+   "practice": "mine shared strategies and trader interviews for testable mechanisms, yield counted per country",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/deep_forest_miner.py"
+   ],
+   "artifacts": [
+    "reports/DEEP_FOREST.json"
+   ]
+  },
+  {
+   "id": "careers_scout",
+   "role": "Competitor intelligence from public job listings",
+   "firms": [
+    "all target firms"
+   ],
+   "practice": "new job ads reveal data bought, markets entered and horizons staffed a year early",
+   "status": "NEW",
+   "modules": [
+    "libs/research/firm_lanes.py",
+    "desks/mt5/research/firm_lanes.py"
+   ],
+   "artifacts": [
+    "reports/FIRM_CAREERS.json"
+   ]
+  },
+  {
+   "id": "execution_cost",
+   "role": "Execution and transaction-cost modelling",
+   "firms": [
+    "RenTech",
+    "Citadel",
+    "Jane Street"
+   ],
+   "practice": "signal alpha is separated from execution drag; costs measured from own fills",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/execution_science.py",
+    "desks/mt5/research/cost_surfaces.py"
+   ],
+   "artifacts": [
+    "reports/EXECUTION_SCIENCE.json"
+   ]
+  },
+  {
+   "id": "signal_combiner",
+   "role": "Signal combination into one book",
+   "firms": [
+    "RenTech"
+   ],
+   "practice": "Medallion: thousands of weak signals combined into one portfolio, not separate strategies",
+   "status": "PR_ONLY",
+   "prs": [
+    618,
+    644,
+    1072
+   ],
+   "modules": [
+    "desks/mt5/research/combiner.py"
+   ],
+   "artifacts": [
+    "reports/COMBINER_COVERAGE.json"
+   ]
+  },
+  {
+   "id": "portfolio_risk",
+   "role": "Risk and portfolio construction",
+   "firms": [
+    "RenTech",
+    "AQR",
+    "Two Sigma"
+   ],
+   "practice": "size by expected log growth inside survival, correlations and heat",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/constrained_elog.py",
+    "desks/mt5/research/prop_challenge_allocator.py"
+   ],
+   "artifacts": [
+    "reports/pf_allocation.json"
+   ]
+  },
+  {
+   "id": "pod_stops",
+   "role": "Per-strategy drawdown stops (pod discipline)",
+   "firms": [
+    "Citadel",
+    "Millennium",
+    "Balyasny"
+   ],
+   "practice": "each strategy has its own hard loss stop and a fast cut, sized inside the prop firm's limits",
+   "status": "NEW",
+   "modules": [
+    "libs/research/firm_lanes.py",
+    "desks/mt5/research/firm_lanes.py"
+   ],
+   "artifacts": [
+    "reports/FIRM_POD_STOPS.json"
+   ]
+  },
+  {
+   "id": "adversarial_review",
+   "role": "Adversarial reviewer who kills overfit",
+   "firms": [
+    "RenTech",
+    "D. E. Shaw",
+    "AQR"
+   ],
+   "practice": "planted traps, red team attackers and a null lab try to break every claim",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/adversary.py",
+    "libs/tiers/red_queen.py",
+    "libs/tiers/traps.py",
+    "desks/mt5/research/null_lab.py"
+   ],
+   "artifacts": [
+    "reports/ADVERSARY.json",
+    "reports/NULL_LAB.json"
+   ]
+  },
+  {
+   "id": "multiple_testing",
+   "role": "Multiple-testing control across every lane",
+   "firms": [
+    "RenTech",
+    "AQR",
+    "Two Sigma"
+   ],
+   "practice": "every hypothesis tried anywhere is charged; one lifetime false-discovery budget",
+   "status": "LIVE_CODE",
+   "modules": [
+    "libs/tiers/online_fdr.py"
+   ],
+   "artifacts": [
+    "reports/FIRM_LANES.json"
+   ]
+  },
+  {
+   "id": "decay_monitor",
+   "role": "Live decay and post-trade monitoring",
+   "firms": [
+    "RenTech",
+    "Two Sigma"
+   ],
+   "practice": "edges die; detect it fast and retire them automatically",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/decay_monitor.py"
+   ],
+   "artifacts": [
+    "data/decay_live.json"
+   ]
+  },
+  {
+   "id": "research_allocation",
+   "role": "Research management and compute allocation",
+   "firms": [
+    "RenTech",
+    "Two Sigma"
+   ],
+   "practice": "one shared P&L; compute goes to the lanes that produce independent survivors",
+   "status": "LIVE_CODE",
+   "modules": [
+    "libs/tiers/researcher_market.py",
+    "libs/research/cro_role.py"
+   ],
+   "artifacts": []
+  },
+  {
+   "id": "infrastructure",
+   "role": "Infrastructure and scheduling",
+   "firms": [
+    "RenTech",
+    "Citadel"
+   ],
+   "practice": "everything runs on a clock and leaves an artifact",
+   "status": "LIVE_CODE",
+   "modules": [
+    "desks/mt5/research/hourly_cycle.py",
+    "libs/ops/leg_rotation.py"
+   ],
+   "artifacts": []
+  }
+ ],
+ "careers_pages": [
+  {
+   "firm": "Two Sigma",
+   "url": "https://www.twosigma.com/careers/",
+   "terms": {
+    "status": "refused",
+    "url": "https://www.twosigma.com/legal-disclosures/",
+    "reading": "bans data mining, robots or similar extraction without written approval; non-commercial use only",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "D. E. Shaw",
+   "url": "https://www.deshaw.com/careers",
+   "terms": {
+    "status": "refused",
+    "url": "https://www.deshaw.com/assets/important-disclosure/Terms_and_Conditions_of_Use.pdf",
+    "reading": "bans any commercial use without written permission and gathering intelligence for a competitive offering",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Citadel",
+   "url": "https://www.citadel.com/careers/",
+   "terms": {
+    "status": "unread",
+    "url": "https://www.citadel.com/terms-of-use/",
+    "reading": "terms page could not be fetched 2026-11-18",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "AQR",
+   "url": "https://careers.aqr.com/",
+   "terms": {
+    "status": "unread",
+    "url": "https://www.aqr.com/Terms-of-Use",
+    "reading": "aqr.com terms are silent on automated access but bar reproduction; careers.aqr.com is a different host whose terms were not read",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Man Group",
+   "url": "https://www.man.com/careers",
+   "terms": {
+    "status": "refused",
+    "url": "https://www.man.com/terms-and-conditions",
+    "reading": "bans robotic mechanisms, crawlers, spiders and scraping of content",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Jane Street",
+   "url": "https://www.janestreet.com/join-jane-street/open-roles/",
+   "terms": {
+    "status": "unread",
+    "url": "",
+    "reading": "no terms of use found on the disclosures page",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Hudson River Trading",
+   "url": "https://www.hudsonrivertrading.com/careers/",
+   "terms": {
+    "status": "unread",
+    "url": "",
+    "reading": "no terms of use found on the disclosures page",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Jump Trading",
+   "url": "https://www.jumptrading.com/careers/",
+   "terms": {
+    "status": "refused",
+    "url": "https://www.jumptrading.com/policies/terms-of-use",
+    "reading": "licence is for private, non-commercial informational use only",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Winton",
+   "url": "https://www.winton.com/careers",
+   "terms": {
+    "status": "refused",
+    "url": "https://www.winton.com/terms-of-use",
+    "reading": "bans data mining, robots or similar extraction programs",
+    "checked": "2026-11-18"
+   }
+  },
+  {
+   "firm": "Ubiquant",
+   "url": "https://www.ubiquant.com/",
+   "terms": {
+    "status": "unread",
+    "url": "",
+    "reading": "",
+    "checked": ""
+   }
+  },
+  {
+   "firm": "High-Flyer",
+   "url": "https://www.high-flyer.cn/",
+   "terms": {
+    "status": "unread",
+    "url": "",
+    "reading": "",
+    "checked": ""
+   }
+  }
+ ],
+ "careers_terms_rule": "A page is fetched only when terms.status is 'confirmed' with the terms URL, the automated-access reading and the checked date filled in. Until then the scout reports BLOCKED_ON_TERMS for it (Audit MF1, 2026-11-18)."
+}

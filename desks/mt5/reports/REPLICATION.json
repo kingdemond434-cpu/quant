@@ -1,10 +1,10 @@
 {
- "at": "2026-11-17T16:38:58+00:00",
+ "at": "2026-11-18T04:36:52+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
-  "certificates": 11054,
+  "certificates": 11294,
   "forward_rows": 1879,
   "spec_book": [
    "carry",
@@ -27,10 +27,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "NZDJPY.formula.p=ac771f530264bc63",
-   "certificate": "external.NZDJPY.formula.p=ac771f530264bc63",
-   "fp": "da34e8d7198d64b0",
-   "symbol": "NZDJPY",
+   "key": "USDSGD.formula.p=c2b3dccd672b6cce",
+   "certificate": "external.USDSGD.formula.p=c2b3dccd672b6cce",
+   "fp": "da9802c5e425eb2b",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -41,10 +41,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDJPY.formula.p=0ed6ccf88db30e63",
-   "certificate": "external.NZDJPY.formula.p=0ed6ccf88db30e63",
-   "fp": "e62bb113e7603564",
-   "symbol": "NZDJPY",
+   "key": "USDSGD.formula.p=d474c6c5244e845b",
+   "certificate": "external.USDSGD.formula.p=d474c6c5244e845b",
+   "fp": "04b4752694d15bb8",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -55,10 +55,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=33c5d654e978f425",
-   "certificate": "external.NZDSGD.formula.p=33c5d654e978f425",
-   "fp": "e45ba1b87f83bd58",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=49084fe784b308c9",
+   "certificate": "external.USDSGD.formula.p=49084fe784b308c9",
+   "fp": "b036f3c66b5ca123",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -69,10 +69,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=304b1750d837d7f0",
-   "certificate": "external.NZDSGD.formula.p=304b1750d837d7f0",
-   "fp": "b078a418d3dac0a7",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=aa6551114800be09",
+   "certificate": "external.USDSGD.formula.p=aa6551114800be09",
+   "fp": "81773478ee26c6eb",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -83,10 +83,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=be86ad163591a0ec",
-   "certificate": "external.NZDSGD.formula.p=be86ad163591a0ec",
-   "fp": "24d4c4ba4f2addbf",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=e77c0671b0f3d95c",
+   "certificate": "external.USDSGD.formula.p=e77c0671b0f3d95c",
+   "fp": "1e1357cbc48c4a11",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -97,10 +97,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=514f8500e43ccf0e",
-   "certificate": "external.NZDSGD.formula.p=514f8500e43ccf0e",
-   "fp": "4179d85123d2cf63",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=5fd91f90d48f2bde",
+   "certificate": "external.USDSGD.formula.p=5fd91f90d48f2bde",
+   "fp": "642a86de83c39044",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -111,10 +111,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=ffe6e28ded06cd4e",
-   "certificate": "external.NZDSGD.formula.p=ffe6e28ded06cd4e",
-   "fp": "ef3480756ef8bc49",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=d36b7d17b4ed9d20",
+   "certificate": "external.USDSGD.formula.p=d36b7d17b4ed9d20",
+   "fp": "cd0576ffa0f59b69",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -125,10 +125,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=d0f1821a206666d2",
-   "certificate": "external.NZDSGD.formula.p=d0f1821a206666d2",
-   "fp": "b55a4a36b5f3a413",
-   "symbol": "NZDSGD",
+   "key": "USDSGD.formula.p=73a58d4f95517e04",
+   "certificate": "external.USDSGD.formula.p=73a58d4f95517e04",
+   "fp": "c39e3181a6a15723",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -139,59 +139,7 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.style_premia.continuous@H4#session=ny",
-   "symbol": "XAUUSD",
-   "family": "style_premia",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'style_premia'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.turn_of_month.continuous@H4",
-   "symbol": "XAUUSD",
-   "family": "turn_of_month",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.vol_mean_reversion.continuous@M5#session=ny",
-   "symbol": "XAUAUD",
-   "family": "vol_mean_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUEUR.jump.continuous@H4",
-   "symbol": "XAUEUR",
-   "family": "jump",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'jump'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_ttl_bars=48",
+   "key": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XAUUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -204,12 +152,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.vol_mean_reversion.continuous#session=asia",
+   "key": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XAUUSD",
-   "family": "vol_mean_reversion",
+   "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
    "theirs": {},
@@ -217,12 +165,12 @@
   },
   {
    "lane": "forward",
-   "key": "AUDCAD.range_reversion.continuous",
-   "symbol": "AUDCAD",
-   "family": "session_range_breakout",
+   "key": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
+   "symbol": "XAUUSD",
+   "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
    "theirs": {},
@@ -230,12 +178,64 @@
   },
   {
    "lane": "forward",
-   "key": "AUDCAD.vol_mean_reversion.continuous",
-   "symbol": "AUDCAD",
-   "family": "session_range_breakout",
+   "key": "XAUUSD.range_reversion.continuous@M30#session=asia",
+   "symbol": "XAUUSD",
+   "family": "range_reversion",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUUSD.range_reversion.continuous@M30",
+   "symbol": "XAUUSD",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUUSD.turn_of_month.continuous@M30#session=ny",
+   "symbol": "XAUUSD",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUUSD.turn_of_month.continuous@M30",
+   "symbol": "XAUUSD",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "FRA40.range_reversion.continuous@M5#session=london",
+   "symbol": "FRA40",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
    ],
    "ours": {},
    "theirs": {},
@@ -245,68 +245,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "NZDJPY.formula.p=ac771f530264bc63",
+   "what": "USDSGD.formula.p=c2b3dccd672b6cce",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDJPY.formula.p=0ed6ccf88db30e63",
+   "what": "USDSGD.formula.p=d474c6c5244e845b",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=33c5d654e978f425",
+   "what": "USDSGD.formula.p=49084fe784b308c9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=304b1750d837d7f0",
+   "what": "USDSGD.formula.p=aa6551114800be09",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=be86ad163591a0ec",
+   "what": "USDSGD.formula.p=e77c0671b0f3d95c",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=514f8500e43ccf0e",
+   "what": "USDSGD.formula.p=5fd91f90d48f2bde",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=ffe6e28ded06cd4e",
+   "what": "USDSGD.formula.p=d36b7d17b4ed9d20",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=d0f1821a206666d2",
+   "what": "USDSGD.formula.p=73a58d4f95517e04",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUUSD.style_premia.continuous@H4#session=ny",
-   "why": "no written specification in the spec book for family 'style_premia'"
-  },
-  {
-   "what": "XAUUSD.turn_of_month.continuous@H4",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
-  },
-  {
-   "what": "XAUAUD.vol_mean_reversion.continuous@M5#session=ny",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
-  },
-  {
-   "what": "XAUEUR.jump.continuous@H4",
-   "why": "no written specification in the spec book for family 'jump'"
-  },
-  {
-   "what": "XAUUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_ttl_bars=48",
+   "what": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAUUSD.vol_mean_reversion.continuous#session=asia",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
+   "what": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "AUDCAD.range_reversion.continuous",
-   "why": "no forward ledger on this box for this row"
+   "what": "XAUUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "AUDCAD.vol_mean_reversion.continuous",
-   "why": "no forward ledger on this box for this row"
+   "what": "XAUUSD.range_reversion.continuous@M30#session=asia",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "XAUUSD.range_reversion.continuous@M30",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "XAUUSD.turn_of_month.continuous@M30#session=ny",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
+  },
+  {
+   "what": "XAUUSD.turn_of_month.continuous@M30",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
+  },
+  {
+   "what": "FRA40.range_reversion.continuous@M5#session=london",
+   "why": "no written specification in the spec book for family 'range_reversion'"
   }
  ],
  "recorded": {
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 758,
-  "at": "2026-11-17T15:38:10+00:00",
+  "forward": 854,
+  "at": "2026-11-18T03:37:44+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -334,24 +334,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H4.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H4.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H4.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\FRA40_M5.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 5.48
+ "seconds": 3.79
 }
