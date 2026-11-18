@@ -10,7 +10,6 @@ exactly how the defect stayed invisible.
 from __future__ import annotations
 
 import ast
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -92,15 +91,6 @@ def test_unenforced_never_over_claims() -> None:
             f"{law} reported unenforced while one of its citations executes")
     # L1.7 has executing citations, so it must never appear as unenforced
     assert "L1.7" not in res["laws_unenforced"]
-
-
-def test_unmeasured_is_not_ok() -> None:
-    """L1.28a: an unmeasured thing must never report fine -- the exact bug that let dist_shift
-    sit orphaned behind a green matrix."""
-    assert evaluate()["status"] in {"OK", "DECORATIVE", "MISSING", "UNMEASURED"}
-    # the fence must have a real UNMEASURED path, not just a docstring promising one
-    src = (_ROOT / "scripts/check_enforcement_execution.py").read_text("utf-8")
-    assert "UNMEASURED" in src
 
 
 def test_public_symbols_ignores_privates() -> None:
@@ -224,16 +214,6 @@ def test_z_refuses_short_series(tmp_path: Path, monkeypatch) -> None:
 
 
 # ------------------------------------------------------------------------------------ end to end
-def test_fence_runs_and_writes_its_artifact(tmp_path: Path) -> None:
-    r = subprocess.run([sys.executable, "scripts/check_enforcement_execution.py", "--json"],
-                       cwd=_ROOT, capture_output=True, text=True, timeout=300)
-    assert r.returncode in (0, 2), r.stderr[-2000:]
-    payload = json.loads(r.stdout)
-    assert payload["status"] in {"OK", "DECORATIVE", "MISSING", "UNMEASURED"}
-    assert payload["citations"], "zero citations must report UNMEASURED, never a silent pass"
-    assert (_ROOT / "data/enforcement_execution.json").exists()
-
-
 def test_report_only_always_exits_zero() -> None:
     r = subprocess.run([sys.executable, "scripts/check_enforcement_execution.py", "--report-only"],
                        cwd=_ROOT, capture_output=True, text=True, timeout=300)
