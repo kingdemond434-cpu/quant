@@ -1,6 +1,6 @@
 ---
 id: L0261
-cost: a research ceiling nobody chose
+cost: blind
 tags: ["timeframes", "breadth", "data", "edge-discovery"]
 ---
 
@@ -10,7 +10,7 @@ Mechanisms live on charts, so a desk that researches one timeframe cannot discov
 
 ## Evidence
 
-lake = 101 H1, 4 M15, 1 M5, 1 M1; check_timeframe_coverage exits 1
+lake = 101 H1, 4 M15, 1 M5, 1 M1; check_timeframe_coverage exits 1 [cost as recorded: a research ceiling nobody chose]
 
 ## Tags
 
@@ -19,10 +19,10 @@ lake = 101 H1, 4 M15, 1 M5, 1 M1; check_timeframe_coverage exits 1
 ## Related
 
 - [[l0009-campaign-width-buys-nothing-and-length-buys-everything]]
+- [[l0012-no-economic-mechanism-means-overfit-a-hard-kill-not-a-]]
 - [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
+- [[l0031-the-backtest-gauntlet-is-a-screen-with-zero-promotion-]]
 - [[l0035-volatility-is-predictable-direction-is-not-difficulty-]]
+- [[l0036-a-0-guard-does-not-survive-floating-point-dust-use-a-m]]
 - [[l0046-split-gates-by-what-forward-data-can-repair-structural]]
-- [[l0048-rank-when-the-source-is-noisy-z-score-when-it-is-expen]]
-- [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
-- [[l0062-never-git-stash-pop-in-this-shared-working-tree-git-st]]
-- [[l0063-run-a-leak-detector-on-data-you-know-is-clean-before-y]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]

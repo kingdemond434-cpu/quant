@@ -1,6 +1,6 @@
 ---
 id: L0246
-cost: twenty silent vocabulary misses
+cost: blind
 tags: ["regex", "frontier", "extraction"]
 ---
 
@@ -10,7 +10,7 @@ A regex alternation ending in a word boundary matches the singular and silently 
 
 ## Evidence
 
-18 of 20 patterns failed at least one real plural before _v() was introduced
+18 of 20 patterns failed at least one real plural before _v() was introduced [cost as recorded: twenty silent vocabulary misses]
 
 ## Tags
 
@@ -22,7 +22,7 @@ A regex alternation ending in a word boundary matches the singular and silently 
 - [[l0004-a-committed-fix-is-inert-until-the-process-actually-re]]
 - [[l0006-an-exit-code-proves-a-process-ended-never-that-it-prod]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
 - [[l0036-a-0-guard-does-not-survive-floating-point-dust-use-a-m]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
 - [[l0049-a-checklist-that-fires-on-recall-is-not-a-control-if-a]]
-- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
-- [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]

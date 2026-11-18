@@ -66,6 +66,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
@@ -107,7 +112,16 @@ OUT_REL = "desks/mt5/reports/FUTURES_LEAD_LAG.json"
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
 
 _CHART = "https://query2.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval={iv}"
-_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+_UA = HONEST_UA
+
+
+def _refusal(url: str) -> str | None:
+    """Why ``url`` may not be contacted. Fails CLOSED: an unimportable list refuses."""
+    try:
+        from libs.data.refused_hosts import refusal
+    except ImportError:
+        return "refused_hosts unavailable, so the host's terms cannot be checked"
+    return refusal(url)
 
 
 def _clean_returns(close: pd.Series) -> pd.Series:
@@ -282,6 +296,12 @@ def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
     is a different measurement wearing the same name.
     """
     url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
+    # TERMS BEFORE THE WIRE. Yahoo's terms refuse automated collection, so the refused-host list
+    # stops this request before it is made; the leg measures on the cached reference bars and
+    # reports UNMEASURED where none exist. missed_growth: the broker-clock offset is no longer
+    # re-measured from fresh futures bars until a lawful hourly futures source is wired.
+    if _refusal(url):
+        return None
     req = urllib.request.Request(url, headers={"User-Agent": _UA})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

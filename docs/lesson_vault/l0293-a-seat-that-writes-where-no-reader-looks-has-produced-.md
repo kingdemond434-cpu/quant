@@ -2,7 +2,7 @@
 id: L0293
 cost: blind
 tags: ["research-loop", "llm"]
-enforced_by: desks/mt5/tests/test_compiler_reads_the_seats.py
+enforced_by: desks/mt5/tests/test_compiler_reads_the_seats.py::TestTheDeepSeekSeatFeedsTheDocket::test_a_donation_is_read_by_the_compiler_and_compiles_to_the_family_it_names
 ---
 
 # L0293
@@ -15,7 +15,7 @@ A seat that writes where no reader looks has produced nothing, however good its 
 
 ## Enforced by
 
-`desks/mt5/tests/test_compiler_reads_the_seats.py`
+`desks/mt5/tests/test_compiler_reads_the_seats.py::TestTheDeepSeekSeatFeedsTheDocket::test_a_donation_is_read_by_the_compiler_and_compiles_to_the_family_it_names`
 
 ## Tags
 

@@ -28,6 +28,11 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 CFTC_URL = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 OUT = Path("data/cot")
 
@@ -50,7 +55,7 @@ def fetch_all(market_filter: str) -> list[dict]:
             "noncomm_positions_long_all,noncomm_positions_short_all,"
             "comm_positions_long_all,comm_positions_short_all,open_interest_all"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": HONEST_UA})
         with urllib.request.urlopen(req, timeout=60) as resp:
             batch = json.loads(resp.read())
         if not batch:

@@ -10,7 +10,9 @@ transient failure was booked as a verdict about the source:
 * `share4you`, `hfm_pamm`, `followme_cn`, `minfx_jp` were booked `HTTPError` on the first answer.
   A 429 or a 5xx is a request to come back later; `get()` does, with exponential backoff and the
   server's own `Retry-After` (capped), inside a hard deadline. A 403/404 is deterministic and is
-  NOT retried here -- the caller resolves it with another URL, never by hammering.
+  NOT retried here -- the caller resolves it with another URL, never by hammering. A 401/403/451,
+  a 429 that outlasts its retries, or a challenge page is the host REFUSING the desk's honest
+  name: `Response.refusal` carries the HARD_STOP / BLOCKED_ON_TERMS row, and it is final.
 * Chinese and Japanese grounds serve GBK / Shift_JIS. Decoding every body as UTF-8 with
   `errors="replace"` turned their text into U+FFFD soup that no claim extractor can read.
   `decode_body()` honours the header charset, then the page's own `<meta charset>`.
@@ -43,8 +45,12 @@ from email.message import Message
 from typing import Any, TypeVar
 from urllib.parse import urlparse
 
-BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+from libs.data.honest_ua import HONEST_UA, REFUSAL_STATUS, refusal_row
+
+#: The desk's honest User-Agent (libs/data/honest_ua.py). It was desktop Chrome until 2026-11-18;
+#: the BROWSER_* names are kept only so existing importers resolve, and they no longer impersonate
+#: anything. A 401/403/429/451 to this name is the host refusing the desk: a hard stop.
+BROWSER_UA = HONEST_UA
 BROWSER_HEADERS: dict[str, str] = {
     "User-Agent": BROWSER_UA,
     "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
@@ -220,6 +226,10 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
+    #: The refused row (libs/data/honest_ua.refusal_row) when the host answered the honest name
+    #: with 401/403/429/451 or a challenge/wall page: HARD_STOP or BLOCKED_ON_TERMS, final. A
+    #: caller records it as a refusal with its missed_growth line, never as a dead or empty source.
+    refusal: dict[str, object] | None = None
 
     @property
     def ok(self) -> bool:
@@ -283,6 +293,13 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.content_type = ctype
                 resp.text = decode_body(raw, ctype, cenc)
                 resp.error = ""
+                resp.refusal = None
+                wall = refusal_row(url, body=resp.text, user_agent=hdr.get("User-Agent", ""))
+                if wall is not None:      # a 200 carrying a challenge page is a refusal, not data
+                    resp.refusal = wall
+                    resp.error = str(wall["why"])
+                    _stat(leg, http_errors=1, error=str(wall["status"]))
+                    break
                 _stat(leg, ok=1, bytes=len(raw))
                 break
         except urllib.error.HTTPError as exc:
@@ -291,11 +308,24 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             _stat(leg, http_errors=1, error=f"HTTP {exc.code}")
             # HTTPError also owns the response stream. Release it on both a terminal
             # rejection and a retry, rather than leaving the socket to garbage collection.
+            body = b""
             try:
                 wait = _retry_after(getattr(exc, "headers", None))
+                if exc.code not in REFUSAL_STATUS:
+                    try:                  # a 503 interstitial is a wall, not a hiccup
+                        body = exc.read(20_000) or b""
+                    except Exception:
+                        body = b""
             finally:
                 exc.close()
-            if exc.code not in RETRY_STATUS:
+            resp.refusal = refusal_row(url, status=exc.code, body=body,
+                                       user_agent=hdr.get("User-Agent", ""))
+            if resp.refusal is not None:
+                resp.error = str(resp.refusal["why"])
+            # A refusal is FINAL under the one honest name: 401/403/451 and a wall stop here. A
+            # 429 alone is paced (Retry-After honoured, same name, same headers) and becomes
+            # HARD_STOP if it is still the answer when the retries run out.
+            if exc.code not in RETRY_STATUS or (resp.refusal is not None and exc.code != 429):
                 break
             if gate is not None and host:
                 gate.penalise(host, wait or backoff_s * (2 ** attempt))
@@ -305,6 +335,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             if reason is not None:
                 name = f"{name}:{type(reason).__name__}"
             resp.error = f"{name}: {str(exc)[:160]}"
+            resp.refusal = None           # the last answer was the transport, not the host
             _stat(leg, transport_errors=1, error=name)
             # A certificate the trust stores reject is deterministic; retrying cannot fix it.
             if isinstance(reason, ssl.SSLCertVerificationError) or isinstance(

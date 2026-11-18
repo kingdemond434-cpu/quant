@@ -28,3 +28,6 @@ reversal and leadlag both had positive Spearman IC and NEGATIVE gross Sharpe. in
 - [[l0082-a-positive-control-is-not-enough-add-a-no-treatment-co]]
 - [[l0161-when-mining-any-foreign-venue-asset-class-or-instituti]]
 - [[l0232-never-measure-a-pipeline-stage-with-a-key-that-the-sta]]
+- [[l0265-a-prop-evaluation-is-a-barrier-problem-not-a-growth-pr]]
+- [[l0268-before-believing-a-ratio-of-two-measurements-prove-the]]
+- [[l0337-when-a-detector-reports-zero-occurrences-of-the-thing-]]

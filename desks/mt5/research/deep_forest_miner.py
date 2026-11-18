@@ -97,6 +97,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data.honest_ua import is_refused, refusal_row  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -418,9 +419,11 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
     r = pf.get(url, headers=hdr, timeout=timeout, retries=1, leg=LEG, max_bytes=2_000_000)
     if r.ok:
         return r.text
-    if r.status is not None and r.status >= 400:
-        raise urllib.error.HTTPError(url, r.status, r.error or f"HTTP {r.status}",
+    if r.refusal is not None or (r.status is not None and r.status >= 400):
+        err = urllib.error.HTTPError(url, r.status or 0, r.error or f"HTTP {r.status}",
                                      None, None)  # type: ignore[arg-type]
+        err.refusal = r.refusal  # type: ignore[attr-defined]  # the HARD_STOP/BLOCKED row
+        raise err
     raise OSError(r.error or "fetch failed")
 
 
@@ -1067,6 +1070,14 @@ class _Run:
             return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)
+            # THE HOST REFUSED THE HONEST NAME (401/403/429/451 or a wall page): a HARD_STOP /
+            # BLOCKED_ON_TERMS row with its missed_growth line, final -- never "no data".
+            refused_row = getattr(exc, "refusal", None) or refusal_row(url, status=exc.code)
+            if refused_row is not None:
+                self.counts["host_refused"] = self.counts.get("host_refused", 0) + 1
+                self.status.append({**refused_row, "url": url, "http": exc.code,
+                                    "refused": refused_row["why"]})
+                return ""
             self.status.append({"url": url, "http": exc.code})
             return ""
         except Exception as exc:
@@ -1737,6 +1748,15 @@ class _Run:
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
         # WHY A GROUND RETURNED NOTHING, NAMED (2026-11-13): 450 attempts a ground with "no
         # blocker" was a robots refusal, a terms refusal or a region wall nobody could see.
+        refusals = [x for x in self.status[st0:] if isinstance(x, dict) and is_refused(x)
+                    and "user_agent" in x]
+        if status == "BLOCKED" and refusals and not out.get("error"):
+            first = refusals[0]           # the host refused the honest name: say so, by status
+            status = str(first["status"])
+            out = {**out, "why": first["why"], "host": first["host"],
+                   "http_status": first["http_status"], "user_agent": first["user_agent"],
+                   "missed_growth": first["missed_growth"], "retry": "same_ua_only",
+                   "under_other_ua": "never", "bypass": "refused"}
         walls = [str(x.get("refused") or x.get("blocked")) for x in self.status[st0:]
                  if isinstance(x, dict) and (x.get("refused") or x.get("blocked"))]
         if status == "BLOCKED" and walls and not out.get("error"):
@@ -1932,6 +1952,7 @@ FRONTIER_NAME = "deep_forest_frontier.json"
 _FRONTIER_OUTCOME: dict[str, str] = {
     "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
     "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED",
+    "HARD_STOP": "BLOCKED", "BLOCKED_ON_TERMS": "BLOCKED",
 }
 
 
@@ -2288,7 +2309,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             b["worked"] += 1
         if s.get("status") == "PRODUCTIVE":
             b["productive"] += 1
-        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE"):
+        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE", "HARD_STOP",
+                               "BLOCKED_ON_TERMS"):
             b["blocked"] += 1
         b["claims"] += int(s.get("claims") or 0)
         b["datasets"] += int(s.get("datasets") or 0)
@@ -2316,7 +2338,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "grounds": grounds_status,
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
-                       if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
+                       if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE",
+                                              "HARD_STOP", "BLOCKED_ON_TERMS")],
+           # grounds that REFUSED the honest name: final, with their missed_growth line
+           "refused": [{k: s.get(k) for k in ("ground", "status", "host", "http_status",
+                                              "user_agent", "missed_growth", "retry", "bypass")}
+                       for s in grounds_status if is_refused(s) and s.get("user_agent")],
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,
@@ -2446,7 +2473,8 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             a, ok, r = [*list(daily.get(day) or []), 0, 0, 0][:3]
             daily[day] = [int(a) + 1, int(ok) + (1 if rows or dsets else 0), int(r) + rows]
             e["daily"] = {d: daily[d] for d in sorted(daily)[-DAILY_KEEP:]}
-            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
+            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE", "HARD_STOP",
+                                          "BLOCKED_ON_TERMS"):
                 e["last_error"] = str(err or s.get("status"))[:200]
             # THE STANDING failure reason: this attempt's, or none when the route answered.
             # `last_error` stays sticky -- it is history; this is the current state.

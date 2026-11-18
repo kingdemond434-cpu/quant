@@ -640,12 +640,9 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
         recorded_reason=("HTTP 403 Forbidden to urllib with a browser UA -- an edge WAF. "
                          "foreign_sources.probe_all(), 2026-08-05"),
         candidates=(
-            _c("coinpan_via_chromium", KO_PRACTITIONER_FORUM, "https://coinpan.com/",
-               "render with Chromium; XpressEngine serves results server-side once the WAF "
-               "challenge is cleared by a real browser",
-               needs_js=True,
-               note="the kimchi-premium and Upbit listing-mechanics forest, discussed in a "
-                    "detail that never reaches English"),
+            # coinpan_via_chromium REMOVED 2026-11-18: clearing a WAF challenge with a real
+            # browser is a block bypass (fetch law), and the forest is crypto-exchange ground
+            # the MT5 mandate never hunts. missed_growth: none recoverable lawfully.
             _c("clien_bitcoin", KO_PRACTITIONER_FORUM,
                "https://www.clien.net/service/board/cm_bitcoin",
                "parse the Clien bitcoin board listing; plain server-rendered HTML, no WAF seen",

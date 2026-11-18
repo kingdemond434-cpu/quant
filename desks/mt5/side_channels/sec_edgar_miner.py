@@ -38,7 +38,9 @@ def edgar_ua() -> str:
         return next((os.environ[n] for n in EDGAR_UA_NAMES if os.environ.get(n)), "")
 
 
-HEADERS = {"User-Agent": edgar_ua() or "QuantResearch quant@example.com"}
+#: SEC's fair-access policy asks for a real contact in the User-Agent. That contact is the
+#: owner's EDGAR_UA key, read on the box; without it nothing is sent, never a made-up address.
+HEADERS = {"User-Agent": edgar_ua()}
 
 # Top hedge funds to track
 FUND_CIKS = {
@@ -60,6 +62,9 @@ SEC_SEARCH = "https://efts.sec.gov/LATEST/search-index?q=%2213F%22&dateRange=cus
 def mine_13f() -> list[dict]:
     """Fetch recent 13F filings from top hedge funds."""
     discoveries = []
+    if not HEADERS["User-Agent"]:
+        print("sec_edgar: no EDGAR_UA contact set; SEC asks for a real one, nothing fetched")
+        return discoveries
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=30)
 

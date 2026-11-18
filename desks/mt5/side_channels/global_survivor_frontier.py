@@ -28,6 +28,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 _dir = str(Path(__file__).resolve().parent)
 if _dir not in sys.path:
@@ -40,8 +44,7 @@ OUT = INTEL / "frontier"
 POPULATIONS = INTEL / "source_populations.json"
 FRONTIER = INTEL / "frontier_coverage.json"
 STATE = INTEL / "frontier_state.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+HEADERS = {"User-Agent": HONEST_UA}
 
 #: Every locale is a permanent cell. "open_frontier" cells are the ones no strong native
 #: survivor pool has been found for YET -- they get canary priority, never a "done" flag.

@@ -1,8 +1,12 @@
 import json
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
-UA = {"User-Agent": "Mozilla/5.0 (research; desk)"}
+UA = {"User-Agent": HONEST_UA}
 
 
 def get(url, timeout=40):

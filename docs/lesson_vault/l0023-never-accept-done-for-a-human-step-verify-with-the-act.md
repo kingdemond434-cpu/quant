@@ -25,3 +25,4 @@ the principal twice believed VPS auth was complete when it was not; ~/.claude_to
 - [[l0241-when-you-correct-a-check-s-text-because-you-learned-it]]
 - [[l0249-a-signature-that-takes-trailing-arguments-as-one-tuple]]
 - [[l0325-refusing-an-over-sized-book-is-not-the-conservative-ou]]
+- [[l0339-every-mined-row-must-reach-a-terminal-disposition-a-ce]]

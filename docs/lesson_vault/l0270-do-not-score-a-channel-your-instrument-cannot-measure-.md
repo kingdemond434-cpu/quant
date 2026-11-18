@@ -1,6 +1,6 @@
 ---
 id: L0270
-cost: execution research cut from 12.2% to 3.6% of compute by an instrument that cannot see it
+cost: wasted
 tags: ["breadth", "research-allocation", "unmeasured", "execution"]
 ---
 
@@ -10,7 +10,7 @@ Do not score a channel your instrument cannot measure. E[log W] ~ (1/2) s_bar^2 
 
 ## Evidence
 
-first pass: execution_improvement 12.16% -> 3.56%; after the two-channel correction 12.16% -> 8.06% with credit exactly 1.000
+first pass: execution_improvement 12.16% -> 3.56%; after the two-channel correction 12.16% -> 8.06% with credit exactly 1.000 [cost as recorded: execution research cut from 12.2% to 3.6% of compute by an instrument that cannot see it]
 
 ## Tags
 

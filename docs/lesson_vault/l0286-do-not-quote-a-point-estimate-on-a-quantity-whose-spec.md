@@ -24,3 +24,5 @@ docs/BOOK_E8_MEASURED.md: three successive pass probabilities (92%, 67%, 73.6%) 
 - [[l0230-a-dataset-s-own-label-for-its-statistic-can-be-wrong-a]]
 - [[l0268-before-believing-a-ratio-of-two-measurements-prove-the]]
 - [[l0316-always-pass-encoding-utf-8-errors-replace-when-capturi]]
+- [[l0343-a-missing-scheduled-task-is-invisible-to-every-artifac]]
+- [[l0345-a-timeout-is-not-a-liveness-check-lock-by-owner-pid-ne]]

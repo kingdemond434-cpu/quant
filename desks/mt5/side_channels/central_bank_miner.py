@@ -35,6 +35,10 @@ from pathlib import Path
 from typing import Any
 
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
@@ -177,8 +181,7 @@ def mine_central_banks() -> list[dict[str, Any]]:
     seen = _seen_keys()
     for bank, info in FEEDS.items():
         try:
-            resp = requests.get(info["url"], headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=20)
+            resp = requests.get(info["url"], headers={"User-Agent": HONEST_UA}, timeout=20)
             resp.raise_for_status()
         except requests.RequestException as exc:
             # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).

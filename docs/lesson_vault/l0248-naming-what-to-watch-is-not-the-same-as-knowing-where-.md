@@ -1,6 +1,6 @@
 ---
 id: L0248
-cost: an hourly organ reading its own subject only by accident
+cost: blind
 tags: ["frontier", "crawler", "coverage", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ Naming what to watch is not the same as knowing where to look. frontier_intel.re
 
 ## Evidence
 
-22 firms registered, 0 firm pages in world_crawler SEEDS; after wiring, 21 seeds and 2 honestly-unseeded (Citadel Securities answers 403 to a non-browser client)
+22 firms registered, 0 firm pages in world_crawler SEEDS; after wiring, 21 seeds and 2 honestly-unseeded (Citadel Securities answers 403 to a non-browser client) [cost as recorded: an hourly organ reading its own subject only by accident]
 
 ## Tags
 
@@ -18,11 +18,11 @@ Naming what to watch is not the same as knowing where to look. frontier_intel.re
 
 ## Related
 
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
+- [[l0034-never-slide-a-signal-parameter-to-clear-an-observation]]
+- [[l0048-rank-when-the-source-is-noisy-z-score-when-it-is-expen]]
+- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
 - [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
 - [[l0085-in-any-counterfactual-estimator-a-period-where-the-eve]]
 - [[l0101-assert-the-discriminating-property-in-a-fixture-contro]]
 - [[l0109-do-not-trust-clock-provenance-sort-key-to-linearise-a-]]
-- [[l0130-when-a-primary-source-is-login-walled-hunt-its-reimple]]
-- [[l0135-when-a-proposal-pre-registers-a-falsifier-run-it-befor]]
-- [[l0138-when-hardening-a-producer-that-runs-fences-never-gate-]]
-- [[l0139-when-a-fence-claims-it-cannot-be-gamed-list-the-verbs-]]

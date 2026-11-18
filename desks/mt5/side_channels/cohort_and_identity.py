@@ -30,6 +30,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
@@ -38,7 +42,7 @@ REGISTRY = COHORTS / "cohort_registry.json"
 OBS = COHORTS / "observations.jsonl"
 GRAPH = INTEL / "identity_graph.json"
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+HEADERS = {"User-Agent": HONEST_UA}
 TRACKED_KINDS = {"track_record", "strategy_source", "strategy_thread", "leaderboard", "repo"}
 SCHEDULE_D = (30, 90, 180, 365, 730)
 MAX_CHECKS_PER_RUN = 25

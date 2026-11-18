@@ -25,12 +25,16 @@ from pathlib import Path
 
 import requests
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
 OUT = INTEL / "mql5_survivors"
 SHORTLIST = INTEL / "survivor_shortlist.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+HEADERS = {"User-Agent": HONEST_UA,
            "Accept-Language": "en-US,en;q=0.9"}
 
 LIST_PAGES = [("mt5", 1), ("mt5", 2), ("mt5", 3), ("mt4", 1)]

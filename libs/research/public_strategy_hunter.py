@@ -26,8 +26,9 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.coerce import integer
+from libs.data.honest_ua import HONEST_UA
 
-_UA = "Mozilla/5.0 (compatible; QuantResearchPublicSourceMonitor/1.0)"
+_UA = HONEST_UA
 _CTX = ssl.create_default_context()
 _EXTREME = re.compile(
     r"(?:\b(?:100|200|300|500|1000)%|triple[- ]digit|world cup|champion|record return|10x|100x)",
@@ -221,9 +222,9 @@ def scrub_keys(item: dict[str, Any]) -> dict[str, Any]:
 def _refused(exc: BaseException, what: str) -> dict[str, object]:
     """The transcript record for a fetch the network REFUSED, as distinct from one that was empty.
 
-    ``http_status`` is carried when the venue named one, because 403 (a curated denylist -- run the
-    OP-052 UA matrix) and 429 (a pace problem -- come back later) demand different next moves, and
-    a reader that only sees "blocked" cannot pick between them.
+    ``http_status`` is carried when the venue named one, because 403 (the host refused the desk's
+    honest name -- final, never retried under another UA) and 429 (a pace problem -- come back
+    later) demand different next moves, and a reader that only sees "blocked" cannot pick.
     """
     status = getattr(exc, "code", None)
     reason = (f"{what} refused: HTTP {status}" if status is not None

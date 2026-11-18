@@ -33,7 +33,8 @@ _READ = _T0 + timedelta(hours=1)
 
 
 def _fail(source: str = "zhihu", *, vantage: str = sh.VANTAGE_PROXIED) -> sh.Observation:
-    return sh.Observation(source=source, ok=False, error="HTTP 403", vantage=vantage)
+    return sh.Observation(source=source, ok=False, error="ReadTimeout: read timed out",
+                          vantage=vantage)
 
 
 def _ok(source: str = "zhihu", *, vantage: str = sh.VANTAGE_PROXIED) -> sh.Observation:
@@ -344,7 +345,8 @@ class TestObservationsFromMinerReport:
                "cn_article_discovered": {"juejin:量化": 20}}
         touched = sh.record_from_report(doc, path=p, now=_T0)
         assert set(touched) == {"zhihu", "juejin"}
-        assert sh.state_of("zhihu", p, now=_READ).verdict == sh.VERDICT_DEGRADED
+        # a 403 to the honest name is the host refusing the desk: HARD_STOP, never DEGRADED/DEAD
+        assert sh.state_of("zhihu", p, now=_READ).verdict == "HARD_STOP"
         assert sh.state_of("juejin", p, now=_READ).verdict == sh.VERDICT_HEALTHY
 
 
@@ -508,7 +510,8 @@ class TestR0466ForeignLanesAndWallVsEmpty:
         assert not obs["zenn"].ok
         assert obs["zenn"].error is not None
         assert "WALLED" in obs["zenn"].error
-        assert "OP-052" in obs["zenn"].error, "the reader must name the next move, not just fail"
+        # the next move is named: a refusal of the honest name is final, never another UA
+        assert "never retried under another UA" in obs["zenn"].error
         assert "403" in obs["zenn"].error
 
     def test_an_empty_probe_says_the_source_answered_not_that_it_broke(self) -> None:

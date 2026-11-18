@@ -176,26 +176,16 @@ def test_a_failed_fetch_never_touches_the_cache(monkeypatch, tmp_path):
     assert not (tmp_path / "ref").exists()
 
 
-def test_epoch_seconds_are_parsed_as_utc(monkeypatch):
-    """This feed can measure a clock precisely because it carries no convention to be wrong
-    about: epoch seconds are UTC by definition."""
-    import io
-    import json as _json
-    doc = {"chart": {"result": [{"timestamp": [0, 3600],
-                                 "indicators": {"quote": [{"close": [1.0, 2.0]}]}}]}}
-
-    class _R(io.BytesIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    monkeypatch.setattr(fll.urllib.request, "urlopen",
-                        lambda *a, **k: _R(_json.dumps(doc).encode()))
-    frame = fll.fetch_bars("GC=F")
-    assert str(frame.index[0]) == "1970-01-01 00:00:00+00:00"
-    assert str(frame.index.tz) == "UTC"
+def test_the_yahoo_chart_host_is_refused_before_any_request(monkeypatch, tmp_path):
+    """Yahoo's terms refuse automated collection: the fetch stops on the refused-host list and
+    the wire is never touched, the cache never written."""
+    calls = []
+    monkeypatch.setattr(fll, "CACHE", tmp_path / "ref")
+    monkeypatch.setattr(fll.urllib.request, "urlopen", lambda *a, **k: calls.append(a))
+    assert fll._refusal(fll._CHART.format(sym="GC%3DF", rng="2y", iv="1h"))
+    assert fll.fetch_bars("GC=F") is None
+    assert calls == []
+    assert not (tmp_path / "ref").exists()
 
 
 def test_the_clock_verdict_names_the_stored_scalar_it_contradicts():

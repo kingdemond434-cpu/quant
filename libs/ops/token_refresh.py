@@ -469,7 +469,8 @@ class TokenResult:
 # ---------------------------------------------------------------------------------------------
 
 #: An honest client name (honest-UA rule); urllib's default "Python-urllib" names no one.
-USER_AGENT = "quant-token-refresh/1 (+https://github.com/kingdemond434-cpu/quant)"
+#: It names the client, never a person, repository or contact (honest-UA law test).
+USER_AGENT = "quant-token-refresh/1 (automated research desk)"
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):

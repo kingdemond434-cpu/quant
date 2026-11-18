@@ -1,6 +1,6 @@
 ---
 id: L0252
-cost: three stale tests reading as three defects
+cost: hygiene
 tags: ["testing", "brittleness", "maintenance"]
 ---
 
@@ -10,7 +10,7 @@ A test that pins a LITERAL rather than a PROPERTY fails when the code gets bette
 
 ## Evidence
 
-3 desk-suite failures, 0 of them actual defects; each fix strengthened rather than relaxed the assertion
+3 desk-suite failures, 0 of them actual defects; each fix strengthened rather than relaxed the assertion [cost as recorded: three stale tests reading as three defects]
 
 ## Tags
 
@@ -21,8 +21,8 @@ A test that pins a LITERAL rather than a PROPERTY fails when the code gets bette
 - [[l0006-an-exit-code-proves-a-process-ended-never-that-it-prod]]
 - [[l0015-walk-the-import-graph-a-one-hop-grep-proves-a-name-exi]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
+- [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
 - [[l0039-a-module-with-passing-tests-and-no-production-importer]]
 - [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
 - [[l0050-before-trusting-any-imported-statistical-construction-]]
-- [[l0051-an-inert-gate-s-constants-are-never-calibrated-so-wiri]]
-- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]

@@ -1,6 +1,6 @@
 ---
 id: L0263
-cost: would have reported a policy as a gap
+cost: hygiene
 tags: ["mandate", "asset-class", "routing", "coverage"]
 ---
 
@@ -10,7 +10,7 @@ A coverage requirement must be routed by lane. Single-name equities are traded o
 
 ## Evidence
 
-32 hunted vs 69 event-lane symbols in the same store
+32 hunted vs 69 event-lane symbols in the same store [cost as recorded: would have reported a policy as a gap]
 
 ## Tags
 
@@ -20,9 +20,9 @@ A coverage requirement must be routed by lane. Single-name equities are traded o
 
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
+- [[l0034-never-slide-a-signal-parameter-to-clear-an-observation]]
+- [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
 - [[l0056-a-drawdown-rail-measures-a-ratio-so-an-accounting-chan]]
 - [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
 - [[l0060-rank-a-mined-comment-tree-by-mechanism-keyword-density]]
 - [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]
-- [[l0071-a-negative-exit-code-is-a-verdict-about-the-box-never-]]
-- [[l0073-a-rail-s-reference-point-and-a-performance-number-may-]]

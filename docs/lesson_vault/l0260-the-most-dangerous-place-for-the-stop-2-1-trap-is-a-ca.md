@@ -1,6 +1,6 @@
 ---
 id: L0260
-cost: the publisher's conflict path died when it worked
+cost: slow
 tags: ["powershell", "sync", "publisher", "error-handling"]
 ---
 
@@ -10,7 +10,7 @@ The most dangerous place for the Stop+2>&1 trap is a call whose stderr IS the re
 
 ## Evidence
 
-sync_shadow_to_git.ps1:130, unguarded, while Git-In-Repo at line 62 carried the fix and its explanation
+sync_shadow_to_git.ps1:130, unguarded, while Git-In-Repo at line 62 carried the fix and its explanation [cost as recorded: the publisher's conflict path died when it worked]
 
 ## Tags
 
@@ -23,6 +23,6 @@ sync_shadow_to_git.ps1:130, unguarded, while Git-In-Repo at line 62 carried the 
 - [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
 - [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
 - [[l0060-rank-a-mined-comment-tree-by-mechanism-keyword-density]]
+- [[l0062-never-git-stash-pop-in-this-shared-working-tree-git-st]]
 - [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
 - [[l0071-a-negative-exit-code-is-a-verdict-about-the-box-never-]]
-- [[l0080-libs-ops-input-provenance-inputs-read-json-records-a-s]]

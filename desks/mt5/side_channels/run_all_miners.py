@@ -56,6 +56,28 @@ def _run_miner(name, fn):
 _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
+_root = os.path.dirname(os.path.dirname(os.path.dirname(_dir)))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
+from libs.data.honest_ua import is_refused, refusal_row  # noqa: E402
+
+
+def miner_outcome(name, status, payload):
+    """One channel's result row. A miner that failed because a host REFUSED the honest name
+    (401/403/429/451, or a challenge/wall page) is a HARD_STOP / BLOCKED_ON_TERMS row with its
+    missed_growth line -- never a FAILED or dead channel -- and is never re-run under another UA."""
+    if status == "ok":
+        return {"count": len(payload), "discoveries": payload}
+    if status == "timeout":
+        return {"count": 0, "error": "timeout_killed", "discoveries": []}
+    refused = refusal_row(error=str(payload))
+    if refused is not None:
+        return {"count": 0, "status": refused["status"], "error": str(payload),
+                "refusal": refused, "missed_growth": refused["missed_growth"],
+                "retry": "same_ua_only", "under_other_ua": "never", "bypass": "refused",
+                "discoveries": []}
+    return {"count": 0, "error": payload}
 
 # --- Tier 1: Social/Web miners ---
 from youtube_miner import run_and_save as youtube_mine
@@ -176,15 +198,13 @@ def run_all_miners() -> dict:
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         status, payload = _run_miner(name, fn)
+        results[name] = miner_outcome(name, status, payload)
         if status == "ok":
-            disc = payload
-            results[name] = {"count": len(disc), "discoveries": disc}
-            total += len(disc)
-            print(f"  {name}: {len(disc)} discoveries")
-        elif status == "timeout":
-            results[name] = {"count": 0, "error": "timeout_killed", "discoveries": []}
-        else:
-            results[name] = {"count": 0, "error": payload}
+            total += len(payload)
+            print(f"  {name}: {len(payload)} discoveries")
+        elif is_refused(results[name]):
+            print(f"  {name}: {results[name]['status']} ({payload})")
+        elif status != "timeout":
             print(f"  {name}: FAILED ({payload})")
     for name, why in set_aside.items():
         print(f"  {name}: SET_ASIDE ({why})")
@@ -194,6 +214,8 @@ def run_all_miners() -> dict:
         "total_miners": len(ALL_MINERS),
         "ran": len(ALL_MINERS) - len(set_aside),
         "set_aside": sorted(set_aside),
+        # channels whose host refused the honest name: final, each with its missed_growth line
+        "refused": sorted(n for n, r in results.items() if is_refused(r)),
         "total_discoveries": total,
         "successful_miners": ok,
         "timestamp": datetime.now(timezone.utc).isoformat(),

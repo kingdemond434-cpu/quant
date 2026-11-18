@@ -90,7 +90,7 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 OUT = DESK / "reports" / "FUTURES_STATE.json"
 LAB_INPUTS = DESK / "data" / "intelligence" / "futures_state" / "lab_inputs.json"
 
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; futures_state)"
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt; futures_state)"
 HARD_STOP = frozenset({401, 403, 429, 451})
 TRANSFORMS: tuple[str, ...] = ("level_z", "delta", "delta_z")
 CHARTS: tuple[str, ...] = ("H1", "H4", "D1")

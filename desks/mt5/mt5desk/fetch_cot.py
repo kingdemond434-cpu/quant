@@ -18,6 +18,10 @@ import urllib.request
 from pathlib import Path
 
 import pandas as pd
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 # WRITE WHERE THE READERS LOOK. This wrote to the retired laptop's checkout
@@ -80,7 +84,7 @@ def fetch_contract(commodity: str) -> pd.DataFrame | None:
             "$offset": str(offset),
         }
         url = f"{BASE}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": HONEST_UA})
         with urllib.request.urlopen(req, timeout=90) as resp:
             batch = json.load(resp)
         rows.extend(batch)

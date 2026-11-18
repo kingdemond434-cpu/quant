@@ -1,6 +1,6 @@
 ---
 id: L0274
-cost: an ensemble that could have loosened the proof by arithmetic
+cost: blind
 tags: ["allocator", "ensemble", "certification", "authority"]
 ---
 
@@ -10,7 +10,7 @@ When you replace a winner-take-all choice with a blend, the losers do NOT get a 
 
 ## Evidence
 
-allocator_proof.select returned one name and discarded a score for every other contested book; MARGIN_FRAC supplied the softmax temperature so no new knob was introduced
+allocator_proof.select returned one name and discarded a score for every other contested book; MARGIN_FRAC supplied the softmax temperature so no new knob was introduced [cost as recorded: an ensemble that could have loosened the proof by arithmetic]
 
 ## Tags
 
@@ -20,9 +20,9 @@ allocator_proof.select returned one name and discarded a score for every other c
 
 - [[l0003-on-a-two-venue-hedge-measure-both-legs-the-same-way-ac]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
 - [[l0036-a-0-guard-does-not-survive-floating-point-dust-use-a-m]]
 - [[l0051-an-inert-gate-s-constants-are-never-calibrated-so-wiri]]
 - [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0058-check-the-as-of-date-of-a-ratio-s-denominator-separate]]
 - [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]
-- [[l0068-to-prove-a-failing-test-is-environment-rather-than-you]]

@@ -30,9 +30,10 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
+from libs.data.honest_ua import HONEST_UA
+
 _UA = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "User-Agent": HONEST_UA,
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }

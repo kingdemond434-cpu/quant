@@ -28,3 +28,6 @@ Textbook mechanisms on daily bars are picked clean. Spend the multiplicity budge
 - [[l0152-when-a-kill-s-cause-is-mechanical-leak-clock-alignment]]
 - [[l0258-one-error-string-for-five-different-causes-is-one-diag]]
 - [[l0269-a-fallback-chain-whose-only-writer-never-fires-is-a-ch]]
+- [[l0340-every-producer-produces-or-it-is-replaced-by-a-named-a]]
+- [[l0358-building-faster-than-wiring-produces-a-tree-full-of-or]]
+- [[l0369-keep-one-certificate-lane-and-audit-every-derived-stor]]

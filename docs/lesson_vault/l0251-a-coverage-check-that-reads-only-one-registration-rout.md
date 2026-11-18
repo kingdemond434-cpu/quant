@@ -1,6 +1,6 @@
 ---
 id: L0251
-cost: a coin toss over which settings a live task runs
+cost: hygiene
 tags: ["windows", "scheduling", "installer", "duplication"]
 ---
 
@@ -10,7 +10,7 @@ A coverage check that reads only one registration route invites a duplicate via 
 
 ## Evidence
 
-box output showed both routes registering; the dedicated block sets -MultipleInstances IgnoreNew and a +5min offset
+box output showed both routes registering; the dedicated block sets -MultipleInstances IgnoreNew and a +5min offset [cost as recorded: a coin toss over which settings a live task runs]
 
 ## Tags
 
@@ -19,10 +19,10 @@ box output showed both routes registering; the dedicated block sets -MultipleIns
 ## Related
 
 - [[l0022-mark-based-books-are-blind-to-fill-damage-mark-positio]]
+- [[l0039-a-module-with-passing-tests-and-no-production-importer]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
+- [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
 - [[l0069-a-sibling-can-claim-your-l1-x-number-mid-build-check-t]]
 - [[l0071-a-negative-exit-code-is-a-verdict-about-the-box-never-]]
 - [[l0073-a-rail-s-reference-point-and-a-performance-number-may-]]
-- [[l0082-a-positive-control-is-not-enough-add-a-no-treatment-co]]
-- [[l0085-in-any-counterfactual-estimator-a-period-where-the-eve]]
-- [[l0093-when-two-lineages-fix-the-same-bug-in-different-places]]
-- [[l0097-when-a-check-grades-a-timestamp-read-what-writes-it-a-]]
+- [[l0075-a-function-that-takes-a-root-path-argument-must-honour]]

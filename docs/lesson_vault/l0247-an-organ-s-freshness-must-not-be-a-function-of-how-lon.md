@@ -1,6 +1,6 @@
 ---
 id: L0247
-cost: a permanent red board nobody would read
+cost: hygiene
 tags: ["scheduling", "staleness", "issue-board", "thresholds"]
 ---
 
@@ -10,7 +10,7 @@ An organ's freshness must not be a function of how long some other pipeline take
 
 ## Evidence
 
-issue_board last wrote 12:37 and had not run again by 13:49 (72 min); four reports reported 6.6-6.7h against a 1.0h cadence
+issue_board last wrote 12:37 and had not run again by 13:49 (72 min); four reports reported 6.6-6.7h against a 1.0h cadence [cost as recorded: a permanent red board nobody would read]
 
 ## Tags
 
@@ -22,7 +22,7 @@ issue_board last wrote 12:37 and had not run again by 13:49 (72 min); four repor
 - [[l0003-on-a-two-venue-hedge-measure-both-legs-the-same-way-ac]]
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0012-no-economic-mechanism-means-overfit-a-hard-kill-not-a-]]
+- [[l0015-walk-the-import-graph-a-one-hop-grep-proves-a-name-exi]]
 - [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
 - [[l0021-hysteresis-must-key-on-the-economic-condition-never-on]]
 - [[l0028-price-a-filter-in-both-errors-before-shipping-it-a-luc]]
-- [[l0030-knowledge-that-is-not-injected-at-runtime-does-not-exi]]

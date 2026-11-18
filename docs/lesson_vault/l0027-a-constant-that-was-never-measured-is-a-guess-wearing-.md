@@ -28,4 +28,6 @@ MAX_STRATA was guessed at 8; the measured optimum was 26 and sat pinned at the c
 - [[l0161-when-mining-any-foreign-venue-asset-class-or-instituti]]
 - [[l0163-ask-of-any-verdict-whether-its-quietest-outcome-can-oc]]
 - [[l0186-when-a-finding-is-measured-on-a-few-symbols-census-the]]
+- [[l0264-a-correct-subtraction-over-two-different-populations-i]]
+- [[l0266-a-constant-removed-at-the-policy-layer-keeps-binding-w]]
 - [[l0278-a-memory-floor-pinned-to-the-budget-is-a-self-tighteni]]

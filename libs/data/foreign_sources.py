@@ -52,6 +52,8 @@ from dataclasses import dataclass
 from typing import Any, Final
 from urllib.parse import quote
 
+from libs.data.honest_ua import HONEST_UA
+
 #: The three postures `probe_all` publishes, NAMED HERE because the reader must not re-type them.
 #: libs/research/source_health imports these rather than matching string literals, so renaming a
 #: posture cannot silently stop the reader matching -- the failure this desk calls actuatorless:
@@ -85,8 +87,7 @@ _MIN_INTERVAL_S: Final[dict[str, float]] = {
 _BACKED_OFF: set[str] = set()
 
 _UA: Final[dict[str, str]] = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "User-Agent": HONEST_UA,
     "Accept": "application/json, text/html, application/rss+xml, */*",
 }
 
@@ -1034,8 +1035,9 @@ def probe_all() -> list[dict[str, Any]]:
 
       OK      -- rows came back.
       WALLED  -- the source refused or answered with something unusable. The ground is UNKNOWN,
-                 and the next move is a UA matrix against a real content path (OP-052), never a
-                 verdict about the ground.
+                 never a verdict about the ground. A refusal of the desk's honest name
+                 (401/403/429/451 or a wall page) is final: HARD_STOP / BLOCKED_ON_TERMS in
+                 libs/research/source_health, never retried under another UA (2026-11-18).
       EMPTY   -- the source answered cleanly and genuinely has nothing for this probe keyword.
                  Only THIS one is evidence about the ground, and even then only about the keyword.
 

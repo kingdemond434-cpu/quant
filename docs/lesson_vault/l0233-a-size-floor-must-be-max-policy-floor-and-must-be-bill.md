@@ -1,6 +1,6 @@
 ---
 id: L0233
-cost: near-miss
+cost: blind
 tags: ["sizing", "risk"]
 ---
 
@@ -10,7 +10,7 @@ A size FLOOR must be max(policy, floor) and must be billed to the heat ledger at
 
 ## Evidence
 
-Principal asked for 0.02 lots per gold leg, then immediately: 'dont reduce their risk or size from before'. `lot = 0.02` satisfies the first sentence and violates the second wherever auto_lot already returns more. Separately, gateway's pre-cap loop set q_charge only for auto_ramp and allocator-book sleeves, so a gold row fell through to cap_by_heat's own realised_q(equity, None, XAUUSD) -- the POLICY lot. At EUR 1683.89 policy sizing is 0.01 and the floor sends 0.02, so the cap would have reserved half the risk the book was about to run, in the one direction a heat budget exists to prevent.
+Principal asked for 0.02 lots per gold leg, then immediately: 'dont reduce their risk or size from before'. `lot = 0.02` satisfies the first sentence and violates the second wherever auto_lot already returns more. Separately, gateway's pre-cap loop set q_charge only for auto_ramp and allocator-book sleeves, so a gold row fell through to cap_by_heat's own realised_q(equity, None, XAUUSD) -- the POLICY lot. At EUR 1683.89 policy sizing is 0.01 and the floor sends 0.02, so the cap would have reserved half the risk the book was about to run, in the one direction a heat budget exists to prevent. [cost as recorded: near-miss]
 
 ## Tags
 
@@ -22,7 +22,7 @@ Principal asked for 0.02 lots per gold leg, then immediately: 'dont reduce their
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0009-campaign-width-buys-nothing-and-length-buys-everything]]
 - [[l0015-walk-the-import-graph-a-one-hop-grep-proves-a-name-exi]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
+- [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
 - [[l0020-know-an-estimator-s-floor-before-reading-it-as-a-findi]]
 - [[l0021-hysteresis-must-key-on-the-economic-condition-never-on]]
-- [[l0023-never-accept-done-for-a-human-step-verify-with-the-act]]
-- [[l0039-a-module-with-passing-tests-and-no-production-importer]]

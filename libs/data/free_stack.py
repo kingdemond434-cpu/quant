@@ -64,11 +64,11 @@ from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
 from typing import Any
 
+from libs.data.honest_ua import HONEST_UA
 from libs.ops.env_keys import read_key
 
 UNMEASURED = "UNMEASURED"
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-      "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
+UA = HONEST_UA
 HTTP_TIMEOUT_S = 25.0
 MAX_BYTES = 40 * 1024 * 1024
 

@@ -8,6 +8,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "quantconnect"
@@ -30,8 +34,7 @@ def _extract_patterns(text: str) -> list[str]:
 def mine_quantconnect() -> list[dict]:
     discoveries = []
     try:
-        resp = requests.get(QC_URL, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=15)
+        resp = requests.get(QC_URL, headers={"User-Agent": HONEST_UA}, timeout=15)
         resp.raise_for_status()
         text = resp.text
         strategies = re.findall(r'<h3[^>]*><a[^>]*href="([^"]+)"[^>]*>([^<]+)</a></h3>', text)

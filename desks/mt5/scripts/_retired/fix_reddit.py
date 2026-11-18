@@ -1,4 +1,8 @@
 import subprocess
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 # Fix Reddit: increase delay from 3s to 8s, add exponential backoff on 429
 fix_reddit = """
@@ -14,7 +18,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": HONEST_UA}
 SYMBOLS = [
     "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
     "NZDUSD", "EURJPY", "GBPJPY", "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY",

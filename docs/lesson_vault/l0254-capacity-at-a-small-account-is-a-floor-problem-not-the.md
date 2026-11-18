@@ -1,6 +1,6 @@
 ---
 id: L0254
-cost: every admission decision made as if size did not matter
+cost: blind
 tags: ["capacity", "sizing", "small-capital", "unmeasured"]
 ---
 
@@ -10,7 +10,7 @@ CAPACITY at a small account is a FLOOR problem, not the institutional ceiling on
 
 ## Evidence
 
-realised_over_policy(742, 0.005, XAUUSD) = 4.44; floor_binding_equity = 3293.13
+realised_over_policy(742, 0.005, XAUUSD) = 4.44; floor_binding_equity = 3293.13 [cost as recorded: every admission decision made as if size did not matter]
 
 ## Tags
 
@@ -22,7 +22,7 @@ realised_over_policy(742, 0.005, XAUUSD) = 4.44; floor_binding_equity = 3293.13
 - [[l0035-volatility-is-predictable-direction-is-not-difficulty-]]
 - [[l0046-split-gates-by-what-forward-data-can-repair-structural]]
 - [[l0048-rank-when-the-source-is-noisy-z-score-when-it-is-expen]]
+- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
+- [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
 - [[l0070-a-detector-that-has-never-fired-is-not-evidence-of-hea]]
-- [[l0077-a-single-tokenized-commodity-chart-cannot-tell-a-real-]]
-- [[l0078-a-fence-with-an-ordered-status-ladder-can-have-a-fabri]]

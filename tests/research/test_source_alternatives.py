@@ -181,7 +181,7 @@ class TestProbeClassification:
 class TestHuntReport:
     def _write_dead(self, path: Path, source: str = "zhihu") -> None:
         for i in range(sh.DEAD_AFTER_CONSECUTIVE_FAILURES):
-            sh.record_run([sh.Observation(source=source, ok=False, error="HTTP 403",
+            sh.record_run([sh.Observation(source=source, ok=False, error="ReadTimeout",
                                           vantage=sh.VANTAGE_PROXIED)],
                           path=path, now=_T0.replace(day=1 + i))
 

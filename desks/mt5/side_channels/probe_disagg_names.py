@@ -1,9 +1,12 @@
 import json
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+UA = {"User-Agent": HONEST_UA}
 for pat in ["YEN", "FX", "POUND", "DOLLAR", "S&P", "NASDAQ"]:
     params = {"$select": "distinct commodity_name",
               "$where": "commodity_name like '{}%'".format(pat)}

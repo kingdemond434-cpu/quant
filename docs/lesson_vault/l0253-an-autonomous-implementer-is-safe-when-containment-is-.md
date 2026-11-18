@@ -1,6 +1,6 @@
 ---
 id: L0253
-cost: the courier step the mandate objects to
+cost: slow
 tags: ["frontier", "implementer", "safety", "autonomy"]
 ---
 
@@ -10,7 +10,7 @@ An autonomous implementer is safe when containment is structural rather than pro
 
 ## Evidence
 
-frontier_intel/implementer.py; 14 tests, 6 of them containment escapes
+frontier_intel/implementer.py; 14 tests, 6 of them containment escapes [cost as recorded: the courier step the mandate objects to]
 
 ## Tags
 

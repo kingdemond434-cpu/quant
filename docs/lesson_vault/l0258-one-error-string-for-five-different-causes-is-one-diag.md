@@ -1,6 +1,6 @@
 ---
 id: L0258
-cost: 910 rejected tasks reported as a research-quality problem
+cost: blind
 tags: ["llm-seat", "diagnostics", "windows", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ One error string for five different causes is one diagnostic for none of them. '
 
 ## Evidence
 
-world_crawler worked 910 tasks and rejected 910; llm_seat reads <repo>/data/secrets/llm_panel.json, and putting it under desks/mt5/data/secrets/ is the obvious miss
+world_crawler worked 910 tasks and rejected 910; llm_seat reads <repo>/data/secrets/llm_panel.json, and putting it under desks/mt5/data/secrets/ is the obvious miss [cost as recorded: 910 rejected tasks reported as a research-quality problem]
 
 ## Tags
 
@@ -25,4 +25,4 @@ world_crawler worked 910 tasks and rejected 910; llm_seat reads <repo>/data/secr
 - [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
 - [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]
-- [[l0068-to-prove-a-failing-test-is-environment-rather-than-you]]
+- [[l0064-when-two-organs-read-the-same-source-share-the-filter-]]

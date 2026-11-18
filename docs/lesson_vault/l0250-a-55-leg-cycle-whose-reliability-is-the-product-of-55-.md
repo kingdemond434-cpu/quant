@@ -1,6 +1,6 @@
 ---
 id: L0250
-cost: the entire tail of every affected pass
+cost: wasted
 tags: ["resilience", "hourly-cycle", "error-handling"]
 ---
 
@@ -10,7 +10,7 @@ A 55-leg cycle whose reliability is the product of 55 things going right is a fu
 
 ## Evidence
 
-one TypeError at leg 48 of 55 cost publish_state, issue_board and four report producers
+one TypeError at leg 48 of 55 cost publish_state, issue_board and four report producers [cost as recorded: the entire tail of every affected pass]
 
 ## Tags
 
@@ -19,10 +19,10 @@ one TypeError at leg 48 of 55 cost publish_state, issue_board and four report pr
 ## Related
 
 - [[l0039-a-module-with-passing-tests-and-no-production-importer]]
+- [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
+- [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
 - [[l0063-run-a-leak-detector-on-data-you-know-is-clean-before-y]]
 - [[l0064-when-two-organs-read-the-same-source-share-the-filter-]]
 - [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
 - [[l0070-a-detector-that-has-never-fired-is-not-evidence-of-hea]]
-- [[l0081-persist-accumulated-state-in-a-finally-never-only-at-t]]
-- [[l0084-when-a-detector-fires-correctly-and-its-class-still-re]]

@@ -1,6 +1,6 @@
 ---
 id: L0249
-cost: 7 legs per hour, and an issue board that reported its own symptom
+cost: wasted
 tags: ["python", "api-design", "hourly-cycle", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ A signature that takes trailing arguments as ONE tuple will be called the obviou
 
 ## Evidence
 
-TypeError: _producer() takes from 2 to 3 positional arguments but 4 were given, hourly_cycle.py:961 on the live box
+TypeError: _producer() takes from 2 to 3 positional arguments but 4 were given, hourly_cycle.py:961 on the live box [cost as recorded: 7 legs per hour, and an issue board that reported its own symptom]
 
 ## Tags
 

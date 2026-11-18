@@ -24,10 +24,15 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "cot_zcache.parquet"
 API = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
-UA = {"User-Agent": "Mozilla/5.0 (quant-desk cot refresh)"}
+UA = {"User-Agent": HONEST_UA}
 ZWIN = 52
 
 #: MT5 symbol -> CFTC market-name needles. Explicit, because a substring guess would splice a

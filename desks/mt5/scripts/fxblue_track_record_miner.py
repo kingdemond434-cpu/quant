@@ -31,6 +31,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "data" / "intelligence" / "fxblue"
@@ -39,7 +43,7 @@ CDX = (
     "http://web.archive.org/cdx/search/cdx?url=fxblue.com/users/*"
     "&output=text&fl=original&collapse=urlkey&limit=40000&filter=statuscode:200"
 )
-UA = "Mozilla/5.0 (compatible; quant-desk research; contact zararsyedv8@gmail.com)"
+UA = HONEST_UA
 
 # The mechanism-bearing subset. Kept SMALL and named: each entry is here because it
 # reconstructs one axis of a black box (§4), not because the site offers it.

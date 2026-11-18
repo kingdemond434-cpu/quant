@@ -46,6 +46,8 @@ import contextlib
 import os
 from typing import Any
 
+from libs.data.honest_ua import HONEST_UA
+
 __all__ = ["RENDER_BUDGET_PER_RUN", "budget_left", "render", "render_available", "reset_budget"]
 
 #: Hard stop on browser pages per process. Rendering is ~3-6s and ~300MB each, against ~50ms for a
@@ -161,7 +163,8 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
     fetching a Korean forum with an English header is how a parser written against the real page
     stops matching.
 
-    `user_agent` replaces the browser string. A caller that read robots.txt under its own
+    `user_agent` replaces the desk's honest default (libs/data/honest_ua.py; the renderer
+    never sends a browser's name, since 2026-11-18). A caller that read robots.txt under its own
     agent name passes that name here, so the page is fetched as the agent robots admitted.
     """
     global _used
@@ -177,8 +180,7 @@ def render(url: str, *, wait_selector: str = "", timeout_s: float = 25.0,
 
     _used += 1
     ctx_kw: dict[str, Any] = {
-        "user_agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/124.0.0.0 Safari/537.36"),
+        "user_agent": HONEST_UA,
         "viewport": {"width": 1366, "height": 900},
     }
     if user_agent:

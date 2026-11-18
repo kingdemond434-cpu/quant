@@ -51,6 +51,10 @@ import urllib.request
 from pathlib import Path
 
 import pandas as pd
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 _DESK = Path(__file__).resolve().parents[1]
 OUT_DIR = _DESK / "data" / "gcflow"
@@ -61,7 +65,7 @@ SYMBOL = "GC=F"
 # which would look like a gap in the market rather than a limit of the source.
 MAX_RANGE = {"15m": "60d", "30m": "60d", "1h": "730d", "1d": "10y"}
 DEFAULT_INTERVALS = ("1h", "15m")
-UA = "Mozilla/5.0 (X11; Linux x86_64) research-bar-fetch/1.0"
+UA = HONEST_UA
 
 
 def fetch(interval: str, rng: str, retries: int = 4) -> pd.DataFrame:
