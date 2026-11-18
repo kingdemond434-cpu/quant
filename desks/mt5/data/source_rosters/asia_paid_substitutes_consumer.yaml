@@ -7,6 +7,91 @@
 # BLOCKED+SUBSTITUTE:<ids> only when a named confirmed row's correlation with it was
 # MEASURED >= 0.5 with n reported; else BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>.
 sources:
+- id: jobs_indeed_postings
+  name: Indeed Hiring Lab job postings index (SA, total postings, 7 countries)
+  url: https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/US/aggregate_job_postings_US.csv
+  region: GLOBAL
+  language: en
+  cadence: daily
+  auth: none
+  licence: 'Indeed Hiring Lab job_postings_tracker README ''Licence'': Creative Commons Attribution 4.0
+    International; ''freely available for public use, as long as Indeed Hiring Lab is cited as a source'''
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
+  mechanism: 'labour DEMAND, counted daily from the postings on the largest job site, seasonally adjusted
+    by its owner: it turns weeks before payrolls, JOLTS, the LFS or the ABS labour survey, and those prints
+    move the policy path that prices the currency and the index'
+  payer: rates and FX holders positioned on the last official labour print and the consensus built from
+    it
+  constraint: official labour data is monthly with a lag of weeks; a book that must justify a position
+    cites the official print, not a vendor index
+  source_culture: GLOBAL/en
+  participant_structure:
+  - institutional
+  - policy_driven
+  failure_mode_hypothesis: fails when Indeed's share of the posting market moves (a product or pricing
+    change) or when the seasonal model is re-estimated, which re-writes the history (vintage=current);
+    neither coincides with a payrolls surprise regime
+  crowding_prior: medium
+  credit: 'Source: Indeed Hiring Lab'
+  vintage: current
+  substitutes_for: job-postings panels (LinkUp, Revelio Labs, Thinknum job listings)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: sat_s2_crop_green
+  name: Sentinel-2 L2A crop greenness by region (scene classification, AWS Open Data)
+  url: https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/
+  region: GLOBAL
+  language: en
+  cadence: 10-daily
+  auth: none
+  licence: 'Copernicus Sentinel data via the AWS Registry of Open Data (sentinel-cogs, RequesterPays False):
+    ''Access to Sentinel data is free, full and open''; the STAC item''s own license link is the Sentinel
+    Data Legal Notice'
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
+  mechanism: a cropland tile greener than in every prior year at the same dekad is a crop ahead of schedule
+    or unstressed; browner is late planting, drought or early senescence. Satellites see it within days;
+    USDA crop condition, WASDE and CONAB print it weekly to monthly, after
+  payer: grain futures holders who price the crop off the weekly USDA condition rating and the monthly
+    WASDE
+  constraint: crop analytics desks pay for imagery pipelines; a CTA or index book trades the official
+    reports, not raw scenes
+  source_culture: GLOBAL/en
+  participant_structure:
+  - institutional
+  - physical_flow
+  failure_mode_hypothesis: fails when cloud persists over a tile through a dekad (no value, never a zero),
+    when a crop-mix change moves the tile's baseline, or when ESA re-baselines the scene classifier (processing
+    baseline 04.00 in 2022); a dry spell that is already in the weather forecasts is priced before the
+    scene
+  crowding_prior: low
+  credit: Contains modified Copernicus Sentinel data [year]
+  vintage: current
+  substitutes_for: satellite crop-condition analytics (Gro Intelligence, Descartes Labs, Planet crop monitoring,
+    EOS)
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 14400
+  kind: mechanics
 - id: gdelt_events_country
   name: 'GDELT 2.0 Events: country x day x theme tone panel'
   url: http://data.gdeltproject.org/gdeltv2/{slot}.export.CSV.zip

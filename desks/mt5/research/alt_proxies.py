@@ -4814,6 +4814,8 @@ def collect_s2(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, 
         caught_up = date(*(int(x) for x in cursor.split("-")), 1) >= live_from
         if caught_up:
             months = _months(f"{live_from:%Y-%m}", now.date())
+        else:                                   # the walk stops at the live window's edge
+            months = [(y, m) for y, m in months if date(y, m, 1) < live_from]
         budget = S2_ITEMS_PER_PASS
         for y, m in months if fetch else []:
             month_ok = True

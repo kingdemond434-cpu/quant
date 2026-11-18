@@ -133,7 +133,9 @@ def test_s2_backfill_walks_forward_and_stops_on_a_refusal(tmp_path: Path) -> Non
     sst2: dict = {"s2_month": "2019-01"}
     rec2 = A.collect_s2(paths, src, sst2, {}, NOW, fetch=True, fixtures=None,
                         deadline=time.monotonic() + 30, getter=ok)
-    assert rec2["listed"] >= 1 and sst2["s2_month"] > "2019-01" and rec2["walk"] != "live"
+    # one pass walks every month up to the live window's edge (the same scene is fetched once)
+    assert rec2["listed"] >= 1 and rec2["parsed"] == 1 and rec2["errors"] == []
+    assert sst2["s2_month"] == "2026-10" and rec2["walk"] == "live"
 
 
 def test_robots_gate_fails_closed() -> None:
