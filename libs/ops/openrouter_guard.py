@@ -167,8 +167,9 @@ def key_info(*, refresh: bool = False, timeout: float = 15.0, fetch: Any = None,
         if fetch is not None:
             body = fetch(KEY_URL)
         else:
+            from libs.data.keyed_sources import keyed_urlopen
             req = urllib.request.Request(KEY_URL, headers={"Authorization": f"Bearer {key}"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            with keyed_urlopen(req, timeout=timeout, secrets=(key,)) as r:
                 body = json.loads(r.read() or b"{}")
     except Exception:                                  # never raises
         return cached if isinstance(cached, dict) else {}

@@ -46,6 +46,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -1068,8 +1075,11 @@ def ledger_for(key: str, identity: Mapping[str, Any], shadow_dir: Path = SHADOW_
     """`ledger_<SYM>_<family>_<selector>.json` (breakout clocks: `ledger_<SYM>_<selector>`)."""
     sym, fam = str(identity.get("symbol") or ""), str(identity.get("family") or "")
     sel = str(identity.get("selector") or "")
-    names = [f"ledger_{sym}_{fam}_{sel}.json", f"ledger_{sym}_{sel}.json",
-             f"ledger_{key.replace('.', '_').replace('#', '_')}.json"]
+    own, _status, _why = _fl.resolve(str(key), [shadow_dir])  # the clock's own file first
+    frozen = _fl.frozen_names(shadow_dir)  # a legacy file several keys wrote is no clock's series
+    names = ([own.name] if own is not None else []) + [
+        n for n in (f"ledger_{sym}_{fam}_{sel}.json", f"ledger_{sym}_{sel}.json",
+                    f"ledger_{key.replace('.', '_').replace('#', '_')}.json") if n not in frozen]
     for name in names:
         rows = _read_json(shadow_dir / name, None)
         if isinstance(rows, list):

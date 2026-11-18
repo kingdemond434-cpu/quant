@@ -58,8 +58,8 @@ SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter
 PROMOTER_SEAL_ROTATION = {
     "path": "desks/mt5/research/promoter.py",
     "from": "86abbd9aba36586022c6cfaf4bb3dd685df6f7e8d73feaa2a401504fa32510e8",
-    "to": "bb9c0e744bad615ff8546006b10edce4e4556e77928d734a0ea11273b53d4b17",
-    "signed_by": "Codex, principal-authorized audited ledger reader repair",
+    "to": "6fb3f15cec4d141027f3a45f0a85cfcc24ab7f94636b47cd27295beff057b72d",
+    "signed_by": "auditor-clear",
 }
 
 # The owner-approved 2026-10-08 allocator proof change reuses the same frozen evidence

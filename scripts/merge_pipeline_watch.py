@@ -35,6 +35,14 @@ RED when any of these holds:
                     failed past two runs in a row, found its mutex held past two (#541 MF3), or
                     has waited on one open sign PR over 2 h
 
+BOUNDED (2026-11-13). The watcher read every open PR one by one, two gh calls each, with no clock
+on any call. At 652 open PRs that is about 1,300 calls, over the box sweep's 30-min task limit, so
+Task Scheduler killed the sweep mid-watch every run and the report went stale (zuck: "the status
+reporter's underlying hang"). Now every gh call has a timeout, the CLEARs come from one repo-wide
+comment listing (about 10 calls), and per-PR check reads run most-important first (ready PRs,
+CLEARed heads, heads with queued runs) inside a time budget. What the budget left unread is
+counted in "coverage"; a priority PR left unread is WATCH_PARTIAL (RED), the rest is not.
+
 Read-only on GitHub: it never cancels, re-runs, comments or merges. What to do about a RED is
 the owner's call (Autonomy thread), and the report names the stage so the call is quick.
 """
@@ -47,8 +55,9 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +87,13 @@ TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
 CLEAR_RE = re.compile(r"AUDITCLEAR([0-9a-f]{7,40})", re.I)
 #: Commits on LIVE that carry no code: the box's state publishes and CI's own seal commits.
 NOT_CODE_RE = re.compile(r"^(mt5 box state|seal release)\b", re.I)
+#: One gh call never waits longer than this (the hang that held the gate's mutex, 11-13).
+GH_TIMEOUT_S = 45.0
+#: The whole read stays inside this, far under the sweep task's 30-min limit.
+BUDGET_S = 300.0
+#: CLEARs older than this name heads that have long since moved (the listing's `since`).
+CLEAR_LOOKBACK_D = 30
+CLEAR_PAGES = 40
 
 
 def _streak(v: Any) -> int:
@@ -295,16 +311,20 @@ def assess(
     }
 
 
-def _gh(path: str) -> Any:
+def _gh(path: str, timeout: float = GH_TIMEOUT_S) -> Any:
     gh = os.environ.get("GH_BIN") or "gh"
-    p = subprocess.run(
-        [gh, "api", path],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    try:
+        p = subprocess.run(
+            [gh, "api", path],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+            timeout=timeout,  # subprocess.run kills the gh child when it expires
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"gh api {path}: timed out after {exc.timeout}s") from exc
     if p.returncode != 0:
         raise RuntimeError(f"gh api {path}: {p.stderr.strip()[:300]}")
     return json.loads(p.stdout or "null")
@@ -331,25 +351,94 @@ def _beat(path: Path | None) -> dict[str, Any] | None:
     return doc if isinstance(doc, dict) else None
 
 
+def _issue_no(c: Mapping[str, Any]) -> int | None:
+    m = re.search(r"/issues/(\d+)$", str(c.get("issue_url") or ""))
+    return int(m.group(1)) if m else None
+
+
+def _clears(
+    repo: str, prs: list[Mapping[str, Any]], now: datetime, deadline: float
+) -> tuple[dict[int, str | None], bool]:
+    """Each open PR's CLEAR time for its current head, from ONE repo-wide comment listing
+    (about 10 pages) instead of one call per PR. True when the listing was read to its end."""
+    since = (now - timedelta(days=CLEAR_LOOKBACK_D)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    by_pr: dict[int, list[Mapping[str, Any]]] = {}
+    complete = False
+    for page in range(1, CLEAR_PAGES + 1):
+        if time.monotonic() > deadline:
+            break
+        batch = _gh(f"repos/{repo}/issues/comments?since={since}&per_page=100&page={page}")
+        for c in batch or []:
+            n = _issue_no(c)
+            if n is not None:
+                by_pr.setdefault(n, []).append(c)
+        if len(batch or []) < 100:
+            complete = True
+            break
+    return {
+        int(p["number"]): clear_at(by_pr.get(int(p["number"]), []), str(p["head"]["sha"]))
+        for p in prs
+    }, complete
+
+
+def read_order(
+    prs: list[Mapping[str, Any]],
+    clears: Mapping[int, str | None],
+    queued_runs: list[Mapping[str, Any]],
+) -> tuple[list[Mapping[str, Any]], set[int]]:
+    """Per-PR check reads, most important first, and the PRs that must not be left unread:
+    ready (non-draft) PRs, CLEARed heads and heads with a queued run. The rest follow, newest
+    push first, as far as the budget goes."""
+    queued_heads = {str(r.get("head_sha")) for r in queued_runs}
+    must = {
+        int(p["number"])
+        for p in prs
+        if not p.get("draft")
+        or clears.get(int(p["number"]))
+        or str(p["head"]["sha"]) in queued_heads
+    }
+    rest = sorted(
+        (p for p in prs if int(p["number"]) not in must),
+        key=lambda p: str(p.get("updated_at") or ""),
+        reverse=True,
+    )
+    first = [p for p in prs if int(p["number"]) in must]
+    return first + rest, must
+
+
 def collect(
-    repo: str, base: str = LIVE, heartbeat: Path | None = None, sign_beat: Path | None = None
+    repo: str,
+    base: str = LIVE,
+    heartbeat: Path | None = None,
+    sign_beat: Path | None = None,
+    budget_s: float = BUDGET_S,
 ) -> dict[str, Any]:
     now = datetime.now(UTC)
+    deadline = time.monotonic() + budget_s
     prs: list[dict[str, Any]] = []
     for page in range(1, 11):  # 231 PRs were open on 2026-10-29: one page of 100 is not all
         batch = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100&page={page}")
         prs += batch
         if len(batch) < 100:
             break
+    queued = _runs(repo, "queued")
+    running = len(_runs(repo, "in_progress", pages=1))
+    live = _gh(f"repos/{repo}/commits?sha={base}&per_page=100")
+    merged = _gh(
+        f"repos/{repo}/pulls?state=closed&base={base}&sort=updated&direction=desc&per_page=100"
+    )
+    clears, clears_complete = _clears(repo, prs, now, deadline)
+    order, must = read_order(prs, clears, queued)
     checks: dict[str, list[Mapping[str, Any]]] = {}
-    clears: dict[int, str | None] = {}
     ready: dict[int, str] = {}
-    for p in prs:
-        head = str(p["head"]["sha"])
+    unread: list[int] = []
+    for p in order:
+        n, head = int(p["number"]), str(p["head"]["sha"])
+        if time.monotonic() > deadline:
+            unread.append(n)
+            continue
         got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
         checks[head] = list(got.get("check_runs") or [])
-        comments = _gh(f"repos/{repo}/issues/{p['number']}/comments?per_page=100")
-        clears[int(p["number"])] = clear_at(comments, head)
         done = {c.get("name"): c for c in checks[head] if c.get("status") == "completed"}
         if all(done.get(k, {}).get("conclusion") == "success" for k in ALL_CHECKS):
             st = _gh(f"repos/{repo}/commits/{head}/status")
@@ -357,17 +446,40 @@ def collect(
                 x.get("context") == GATE_STATUS and x.get("state") == "success"
                 for x in st.get("statuses") or []
             ):
-                ready[int(p["number"])] = max(str(done[k].get("completed_at")) for k in ALL_CHECKS)
-    queued = _runs(repo, "queued")
-    running = len(_runs(repo, "in_progress", pages=1))
-    live = _gh(f"repos/{repo}/commits?sha={base}&per_page=100")
-    merged = _gh(
-        f"repos/{repo}/pulls?state=closed&base={base}&sort=updated&direction=desc&per_page=100"
-    )
-    return assess(
+                ready[n] = max(str(done[k].get("completed_at")) for k in ALL_CHECKS)
+    rep = assess(
         now, prs, checks, clears, queued, running, live, ready, _beat(heartbeat),
         heartbeat is not None, _beat(sign_beat), sign_beat is not None, base, merged,
     )  # fmt: skip
+    return with_coverage(rep, len(prs), len(prs) - len(unread), unread, must, clears_complete)
+
+
+def with_coverage(
+    rep: dict[str, Any],
+    total: int,
+    read: int,
+    unread: list[int],
+    must: set[int],
+    clears_complete: bool,
+) -> dict[str, Any]:
+    """Says what the budget left unread; a priority PR unread, or a cut CLEAR listing, is RED."""
+    missed = sorted(n for n in unread if n in must)
+    rep["coverage"] = {
+        "open_prs": total,
+        "checks_read": read,
+        "unread": len(unread),
+        "priority_unread": missed[:50],
+        "clears_complete": clears_complete,
+    }
+    if missed:
+        rep["red"].append(
+            f"WATCH_PARTIAL: {len(missed)} ready, CLEARed or queued PR(s) unread inside the "
+            f"budget ({', '.join(f'#{n}' for n in missed[:8])})"
+        )
+    if not clears_complete:
+        rep["red"].append("WATCH_PARTIAL: the CLEAR listing was cut by the budget")
+    rep["status"] = "RED" if rep["red"] else "GREEN"
+    return rep
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -381,6 +493,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--min-interval-min", type=float, default=25.0,
         help="skip when --out is younger (the sweep calls this every 10 min; ~2 calls per open PR)",
+    )  # fmt: skip
+    ap.add_argument(
+        "--budget-s", type=float, default=BUDGET_S,
+        help="stop the per-PR reads after this many seconds (the rest is counted, not read)",
     )  # fmt: skip
     a = ap.parse_args(argv)
     if not a.print and a.min_interval_min > 0:
@@ -401,7 +517,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"fresh ({age:.0f} min old): not re-read")
             return 0
     try:
-        rep = collect(a.repo, a.base, a.heartbeat, a.sign_heartbeat)
+        rep = collect(a.repo, a.base, a.heartbeat, a.sign_heartbeat, a.budget_s)
     except (RuntimeError, ValueError) as exc:
         # no data is not GREEN: the report says the watcher itself could not see
         rep = {

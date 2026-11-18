@@ -70,6 +70,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -382,7 +389,11 @@ def _series_for(m: Member) -> tuple[str, dict[str, float] | list[float]] | None:
                                       f"ledger_{sym}_{sess}.json")]
     if fam:
         with contextlib.suppress(OSError):
-            paths.extend(sorted(SHADOW_DIR.glob(f"ledger_{sym}_{fam}_*.json")))
+            paths.extend(_fl.iter_ledgers(SHADOW_DIR, f"ledger_{sym}_{fam}_*.json"))
+    # A legacy file several clock keys wrote is frozen (libs.research.forward_ledger): never a
+    # mechanism's series, so never the basis of a novelty comparison.
+    _frozen = _fl.frozen_names(SHADOW_DIR)
+    paths = [p for p in paths if p.name not in _frozen]
     out: tuple[str, dict[str, float]] | None = None
     for path in paths:
         rows = _json(path)
