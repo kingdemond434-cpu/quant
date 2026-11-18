@@ -1918,9 +1918,11 @@ def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> 
 
 
 def is_registry_merge(msg: str) -> bool:
-    """A merge no human approved: the registry path, or the fast lane (a fast merge that turns
-    LIVE red is reverted the same way)."""
+    """A merge no human approved: the registry path, the fast lane, or a direct landing
+    (.github/scripts/land.py) -- any of them that turns LIVE red is reverted the same way."""
     first = msg.split("\n", 1)[0]
+    if first.startswith(f"Land ({FAST_TITLE}, direct"):
+        return True
     return msg.startswith("Merge #") and (REGISTRY_TITLE in first or f"({FAST_TITLE}," in first)
 
 
