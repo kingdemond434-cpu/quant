@@ -1304,6 +1304,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
+    # THE SPREAD-REGIME STATE AND ITS ENTRY GATE'S SCORER (C row 121): the gateway's gate reads
+    # reports/SPREAD_REGIME.json with a six-hour expiry, so the norms are refreshed hourly, and
+    # the same pass scores the gate's deferrals and writes its SHADOW/LIVE switch.
+    "spread_regime",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
@@ -1468,7 +1472,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     "spread_regime"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2346,6 +2351,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
     # one README read per new repository; stops itself at its 900 s budget.
     "asia_github": 1_000,
+    # Five tape day files per symbol, one in memory at a time, stopping at --budget-s 600 (the
+    # rest fall back to the H1 bars' spread column, ~1 s for the whole universe).
+    "spread_regime": 900,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -6446,6 +6454,11 @@ def main() -> None:
     # carries every held move's published missed-growth line into MISSED_GROWTH.json.
     sgd = _costed("stop_geometry_derivation", lambda: _producer(
         "stop_geometry_derivation", "research/stop_geometry_derivation.py"))
+    # THE SPREAD-REGIME STATE (C row 121): per-symbol, per-broker-hour spread norms and the
+    # latest spread_z; then the entry gate's deferrals scored on the tape and its switch written
+    # LIVE or SHADOW from the forward evidence (mean - 1 SE of the improvement > 0 over N).
+    srg = _costed("spread_regime", lambda: _producer(
+        "spread_regime", "research/spread_regime.py", "--budget-s", "600"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -6738,7 +6751,7 @@ def main() -> None:
                     "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
-                    "stop_geometry_derivation": sgd,
+                    "stop_geometry_derivation": sgd, "spread_regime": srg,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,

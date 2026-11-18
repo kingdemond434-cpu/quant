@@ -4068,6 +4068,21 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # signal hour decided nothing and must leave no trace at all.
         if plan.get("considered"):
             gstate.setdefault(name, {})
+        # THE SPREAD-REGIME ENTRY GATE (mt5desk.spread_gate). SHADOW by default: it records the
+        # entry it WOULD defer and this pass sends exactly what it sent before. LIVE (set by
+        # research/spread_regime.py on forward evidence, never by hand) it DEFERS before the mark,
+        # so the bar stays unmarked as `quote_spread` leaves it and a later pass sends the same
+        # order at the same lot. It never cancels or resizes. Any failure means no deferral.
+        if plan.get("ok"):
+            try:
+                from mt5desk import spread_gate as _sgate
+                _sg_why = _sgate.entry_gate(s, plan, base=BASE,
+                                            bar_minutes=_BAR_MINUTES.get(str(plan.get("tf")), 60))
+            except Exception:
+                _sg_why = None
+            if _sg_why:
+                log(f"[{name}] FAMILY-EXEC DEFERRED: {_sg_why}")
+                continue
         # A BAR MUST NOT BE CONSUMED BY A PASS THAT WAS FORBIDDEN TO PLACE.
         #
         # MEASURED 2026-09-15, and it is why no forex sleeve traded all session. The mark is

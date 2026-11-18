@@ -1139,6 +1139,39 @@ def published_e8_gold_lines() -> dict[str, Any]:
             "n": sum(x["n"] for x in out), "lines": sorted(out, key=lambda x: -x["n"])}
 
 
+#: THE SPREAD-REGIME ENTRY GATE (mt5desk/spread_gate.py). It registers no rail (the register is
+#: sealed), so research/spread_regime.py publishes its line hourly on its own report: the
+#: improvement per deferral in R (and log-wealth where the risk fraction is known), scored on the
+#: forward ledger. SHADOW is what it WOULD have earned or cost; LIVE is what it did.
+SPREAD_GATE = BASE / "reports" / "SPREAD_GATE.json"
+SPREAD_GATE_MAX_AGE_H = 6.0
+
+
+def published_spread_gate_lines() -> dict[str, Any]:
+    """The spread gate's own two-sided line. Absent or stale is UNMEASURED, never a zero; the
+    verdict is the report's (EARNS_ITS_PLACE / COSTS_GROWTH / UNMEASURED on the forward ledger),
+    because only that report has scored the deferrals."""
+    doc = _json(SPREAD_GATE)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/SPREAD_GATE.json on this host: the hourly spread_regime leg "
+                       "has not written one"}
+    try:
+        age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(
+            str(doc.get("generated_at")))).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    if not age_h <= SPREAD_GATE_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": lines,
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the spread gate report is older than {SPREAD_GATE_MAX_AGE_H:g}h"}
+    v = str((lines[-1] if lines else {}).get("verdict") or UNMEASURED)
+    return {"verdict": v if v in (EARNS, COSTS, UNMEASURED) else UNMEASURED,
+            "source": "reports/SPREAD_GATE.json", "age_h": round(age_h, 2),
+            "mode": (doc.get("mode") or {}).get("mode"), "lines": lines}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1272,7 +1305,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
-                                    "e8_gold_rails": published_e8_gold_lines()},
+                                    "e8_gold_rails": published_e8_gold_lines(),
+                                    "spread_regime_entry_gate": published_spread_gate_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

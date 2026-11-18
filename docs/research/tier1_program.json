@@ -9318,6 +9318,23 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "SPRG1",
+   "item": "Spread-regime liquidity-stress state (per-symbol time-of-day-normed spread_z, hourly) plus a shadow-first entry-timing gate that DEFERS family-market entries while spread_z is extreme, promoted LIVE automatically when mean - 1 SE of the scored improvement > 0",
+   "domain": "E",
+   "phase": 1,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:spread_regime",
+   "artifact": "desks/mt5/reports/SPREAD_REGIME.json",
+   "consumer": "desks/mt5/mt5desk/spread_gate.py reads reports/SPREAD_REGIME.json on every family-market entry; research/missed_growth.py reads reports/SPREAD_GATE.json",
+   "evidence": [
+    "desks/mt5/research/spread_regime.py:1-40 the state, the scorer and the promoter",
+    "desks/mt5/mt5desk/spread_gate.py:1-35 the gate: shadow-first, defers, never cancels"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
