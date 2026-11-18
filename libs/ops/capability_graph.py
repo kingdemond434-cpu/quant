@@ -1190,6 +1190,9 @@ EXTERNAL_READERS = {
     "desks/mt5/reports/FALSIFIER_VERDICTS.json": "destroyer_pool and meta_rnd",
     "desks/mt5/reports/ASIA_COLLECTOR.json": ("source_fixer (every source the collector could not "
                                               "read gets a named repair attempt)"),
+    "desks/mt5/reports/ORGAN_REDTEAM.json": ("scripts/check_dead_architecture._redteam_outcomes "
+                                             "(each organ's last red-team outcome joins its "
+                                             "row in the dead-architecture census)"),
     "desks/mt5/reports/dead_architecture.json": ("desks/mt5/research/module_rent "
                                                  "(output_reaches_nobody), frontier_ceo, "
                                                  "self_repair_registry"),
