@@ -31644,7 +31644,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-18T08:28:18.107135+00:00",
