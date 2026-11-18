@@ -106,6 +106,16 @@ def test_the_actions_gate_looks_once() -> None:
     assert int(re.search(r"timeout-minutes:\s*(\d+)", text).group(1)) <= 15  # type: ignore[union-attr]
 
 
+def test_the_gate_keeps_one_waiting_run_per_pr() -> None:
+    text = (WF / "audit-gate.yml").read_text(encoding="utf-8")
+    top = text.split("\njobs:", 1)[0]
+    assert "audit-gate-run-${{ github.event.pull_request.number" in top
+    assert "|| github.event.workflow_run.head_sha" in top
+    # an unrelated label waits in its own group, so it never replaces a waiting gate run
+    assert "github.event.label.name != 'audit-clear')" in top and "'noise' || 'gate'" in top
+    assert "cancel-in-progress: false" in top  # never cut off a gate that is merging
+
+
 def test_release_gates_supersede_an_old_head() -> None:
     text = (WF / "release-gates.yml").read_text(encoding="utf-8")
     top = text.split("\njobs:", 1)[0]
@@ -675,6 +685,20 @@ def test_a_queued_live_push_run_is_red() -> None:
         mp.assess(NOW, [], {}, {}, [pr_run, dict(run, created_at=_iso(5))], 20, live)["status"]
         == "GREEN"
     )
+
+
+def test_a_pending_or_dispatched_live_run_is_red_too() -> None:
+    """#1265 audit SF: one group per branch holds the newest LIVE run as `pending`, and the gate's
+    merges are workflow_dispatch runs; either waiting 30 min is LIVE_CI_QUEUED."""
+    live = [_commit("fix", 1)]
+    for run in (
+        {"event": "workflow_dispatch", "head_branch": mp.LIVE, "created_at": _iso(45)},
+        {"event": "push", "status": "pending", "head_branch": mp.LIVE, "created_at": _iso(45)},
+    ):
+        rep = mp.assess(NOW, [], {}, {}, [run], 20, live)
+        assert [r.split(":")[0] for r in rep["red"]] == ["LIVE_CI_QUEUED"], run
+    src = (ROOT / "scripts/merge_pipeline_watch.py").read_text(encoding="utf-8")
+    assert '_runs(repo, "pending", pages=1)' in src and "queued + pending_live" in src
 
 
 def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> None:

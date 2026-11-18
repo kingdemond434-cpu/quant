@@ -59,6 +59,10 @@ WEB = ROOT / "web" / "desk_state.json"
 #: BEFORE any number when the document is older -- an old number presented as current is the one
 #: failure mode a dashboard must not have.
 CADENCE_S = 3600.0
+#: ORDER-SENSITIVE DECAY VERDICTS (hourly leg `decay_verdicts`, R0312): the one statistic on a
+#: sleeve's record that moves when the trades are reordered. Shown per LIVE sleeve; a demote or
+#: shrink INPUT only, and the page says so -- nothing here sizes anything.
+DECAY_FILE = "DECAY_VERDICTS.json"
 
 MEASURED, STALE, MISSING, UNMEASURED, UNREADABLE = (
     "MEASURED", "STALE", "MISSING", "UNMEASURED", "UNREADABLE")
@@ -603,6 +607,7 @@ def _live(deadline: float) -> dict[str, Any]:
                         "age": _human_age(age), "age_s": age})
     sleeves.sort(key=lambda s: -(s["pnl"] or 0.0))
     book = _stats([float(v) for b in per.values() for v in b["r"]])
+    decay = _decay_block()
 
     return {
         "status": gw.status,
@@ -634,6 +639,7 @@ def _live(deadline: float) -> dict[str, Any]:
         "book_sharpe": {**led_cite, "value": book["sharpe"], "why": book["why"],
                         "basis": "per-trade Sharpe = mean(R) / sd(R) over reconstructible deals"},
         "sleeves": sleeves,
+        "decay": decay,
         "e8": {
             "equity": e8g.field(_dig(e8g.doc, "equity")),
             "armed": e8g.field(_dig(e8g.doc, "armed")),
@@ -648,6 +654,33 @@ def _live(deadline: float) -> dict[str, Any]:
             "may_open": e8x.field(_dig(e8x.doc, "guard", "may_open")),
             "n_sent": e8x.field(_dig(e8x.doc, "n_sent")),
         },
+    }
+
+
+def _decay_block() -> dict[str, Any]:
+    """Each LIVE sleeve's order-sensitive decay verdict, with the artifact's age. A sleeve with
+    no row, or a verdict the leg could not measure, says so by name; nothing becomes STABLE."""
+    src = Src(f"desks/mt5/reports/{DECAY_FILE}", 7200, "desks/mt5/research/decay_verdicts.py")
+    rows = _dig(src.doc, "sleeves", default={})
+    live: list[dict[str, Any]] = []
+    if isinstance(rows, dict):
+        for key, row in sorted(rows.items()):
+            if not str(key).startswith("live:") or not isinstance(row, dict):
+                continue
+            live.append({"sleeve": row.get("sleeve"), "verdict": row.get("verdict"),
+                         "n": row.get("n"), "block_mean_r": row.get("block_mean_r"),
+                         "why": row.get("why")})
+    decaying = [r["sleeve"] for r in live if r["verdict"] == "DECAYING"]
+    return {
+        **src.cite(),
+        "role": "demote/shrink INPUT only; the sizing hook is "
+                + str(_dig(src.doc, "sizing_hook", "status", default="UNMEASURED")),
+        "counts": src.field(_dig(src.doc, "counts")),
+        "live_sleeves": src.empty(live, "the leg ran and the roster holds no LIVE sleeve")
+        if isinstance(rows, dict) else src.field(None, f"{DECAY_FILE} carries no sleeves table"),
+        "live_decaying": (src.empty(decaying, "no LIVE sleeve is DECAYING on its own record")
+                          if isinstance(rows, dict) else
+                          src.field(None, f"{DECAY_FILE} carries no sleeves table")),
     }
 
 
