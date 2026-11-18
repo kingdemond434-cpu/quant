@@ -31,7 +31,9 @@ def test_login_cookie_source_reads_unconfigured_even_when_set(
     monkeypatch.setenv("BAIDU_INDEX_COOKIE", "cookie")
     rec = ac.collect_one({"id": "baidu_index", "access": "key",
                           "key_env": "BAIDU_INDEX_COOKIE", "url": "https://index.baidu.com/"})
-    assert rec["status"] == "UNCONFIGURED"
+    # Baidu is an off-limits ground (libs/data/off_limits.py), refused before the key is read:
+    # the cookie is never used either way, and BLOCKED_TERMS is the stronger of the two answers.
+    assert rec["status"] == "BLOCKED_TERMS"
 
 
 @pytest.mark.parametrize(("place", "check"), [

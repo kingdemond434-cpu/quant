@@ -1,0 +1,27 @@
+{
+ "organ": "leg:execution_timing",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/execution_timing.py"
+ ],
+ "clock": "hourly_cycle:execution_timing",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "added with the leg (rebuild of #376 on LIVE, 2026-11-13): no artifact and no run record yet; the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/EXECUTION_TIMING.json",
+ "artifact_declared": "desks/mt5/reports/EXECUTION_TIMING.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "UNMEASURED",
+ "measured_at": "2026-11-13T21:16:24+00:00"
+}
