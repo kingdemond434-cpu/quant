@@ -75,7 +75,7 @@ def test_a_request_runs_nothing(server: int, monkeypatch: pytest.MonkeyPatch) ->
         raise AssertionError("a request spawned a process")
 
     monkeypatch.setattr(sd.subprocess, "run", boom)
-    assert _call(server, "GET", "/zentech_state.json") == 200
+    assert _call(server, "GET", "/desk.html") == 200
     assert (
         "subprocess"
         not in _code_lines("scripts/serve_dashboard.py")
@@ -166,7 +166,7 @@ def test_only_the_allowlisted_files_are_served(server: int, method: str, path: s
 
 
 def test_the_allowlist_is_the_pages_and_the_two_data_files() -> None:
-    assert sd.PUBLIC_FILES == {
+    assert {
         "index.html",
         "desk.html",
         "desk_pro.html",
@@ -174,9 +174,10 @@ def test_the_allowlist_is_the_pages_and_the_two_data_files() -> None:
         "dashboard.html",
         "desk_state.json",
         "equity_history.jsonl",
-    }
+    } == sd.PUBLIC_FILES
     assert _call_public_name("/desk.html?t=1") == "desk.html"
 
 
 def _call_public_name(path: str) -> str | None:
-    return sd._public_name(path)
+    name: str | None = sd._public_name(path)
+    return name
