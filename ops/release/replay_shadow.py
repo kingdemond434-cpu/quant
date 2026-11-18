@@ -1117,6 +1117,7 @@ def compare(
     # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
     # the lane existed, has nothing to measure; a head that adds it is a new money file).
     ftmo_owed = (base / FTMO_EXECUTOR).is_file()
+    leaked: list[str] = []
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
         if "crash" in b:
@@ -1125,6 +1126,17 @@ def compare(
         if "crash" in h:
             problems.append(f"{sc['id']}: the PR's tree crashed ({h['crash']})")
             continue
+        # A FILE THE REPLAY WROTE INTO A TREE (the child's `tree_writes`, #1353): the next
+        # scenario, or the other tree, may have read it, so this scenario's agreement is not
+        # evidence. Counted and reported, never dropped; its steps are still compared below.
+        for side, res in (("base", b), ("head", h)):
+            writes = [str(w) for w in res.get("tree_writes") or []]
+            if writes:
+                leaked.append(f"{sc['id']}:{side}")
+                problems.append(
+                    f"UNMEASURED {sc['id']}: the {side} replay wrote into its tree "
+                    f"({len(writes)} file(s): {', '.join(writes[:3])})"
+                )
         if "fusion_roster" in sc:
             roster_legs = {"base": b.get("fusion_roster"), "head": h.get("fusion_roster")}
         base_root, head_root = str(base.resolve()), str(head.resolve())
@@ -1236,6 +1248,8 @@ def compare(
         "scenarios": len(grid),
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
+        # scenario:side pairs whose replay wrote into its tree (each also an UNMEASURED problem)
+        "tree_writes": leaked,
         "problems": problems + flips,
         # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,
