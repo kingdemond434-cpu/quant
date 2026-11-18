@@ -910,21 +910,6 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
             notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
                    "quant-cro.timer 08:01), run with cwd at the repo root")),
-        # THE FINAL TERMINAL'S AGENTS TAB (C row 14). ops/refresh_desk_state.sh runs this every
-        # tick of quant-desk-refresh.timer, right before build_zentech_state.py, and writes
-        # web/threads.json for web/terminal.html. Absent input writes UNMEASURED, never empty.
-        ComponentSpec(
-            component_id="executable:scripts/publish_thread_status.py",
-            kind="executable", host="vps",
-            code_paths=("scripts/publish_thread_status.py",),
-            inputs=("docs/thread_briefs/INDEX.json",),
-            outputs=("web/threads.json",),
-            consumers=("web/terminal.html",),
-            cadence_s=180, timeout_s=60, progress_metric=UNMEASURED,
-            owner="vps", restart_action="systemctl --user restart quant-desk-refresh.timer",
-            criticality="optional", resource_budget={"budget_s": 60},
-            schedule="invoked:ops/refresh_desk_state.sh", artifact_class="minute",
-            notes="thread status for the terminal's Agents tab; titles, states and counts only"),
         # THE PUBLIC TRADER GENOME'S CLOCK AND ARTIFACT (2026-10-06, audit row 35). The genome is
         # built by book_forensics.run(), which daily_cycle's `_proposers` step imports by name
         # (`__import__`), so the reach walk never sees the edge and credits book_forensics.py to
@@ -999,6 +984,21 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="optional", resource_budget={"budget_s": 60},
             schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
             notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
+        # THE FINAL TERMINAL'S AGENTS TAB (C row 14). ops/refresh_desk_state.sh runs this every
+        # tick of quant-desk-refresh.timer, right before build_zentech_state.py, and writes
+        # web/threads.json for web/terminal.html. Absent input writes UNMEASURED, never empty.
+        ComponentSpec(
+            component_id="executable:scripts/publish_thread_status.py",
+            kind="executable", host="vps",
+            code_paths=("scripts/publish_thread_status.py",),
+            inputs=("docs/thread_briefs/INDEX.json",),
+            outputs=("web/threads.json",),
+            consumers=("web/terminal.html",),
+            cadence_s=180, timeout_s=60, progress_metric="UNMEASURED",
+            owner="vps", restart_action="systemctl --user restart quant-desk-refresh.timer",
+            criticality="optional", resource_budget={"budget_s": 60},
+            schedule="invoked:ops/refresh_desk_state.sh", artifact_class="minute",
+            notes="thread status for the terminal's Agents tab; titles, states and counts only"),
     ]
 
 
