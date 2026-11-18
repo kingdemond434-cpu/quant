@@ -1,0 +1,35 @@
+{
+ "organ": "leg:spread_regime",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/spread_regime.py"
+ ],
+ "clock": "hourly_cycle:spread_regime",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/SPREAD_REGIME.json",
+ "artifact_declared": "desks/mt5/reports/SPREAD_REGIME.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 293,
+ "artifact_bytes": 239615,
+ "artifact_sha256": "c23410ea3b97aa72d4def65d9baa9002a6fc17a44c030b9081f58aa68557e314",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "desks/mt5/mt5desk/spread_gate.py reads reports/SPREAD_REGIME.json on every famil",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-18T06:59:08+00:00",
+ "only_missing": {
+  "at": "2026-11-18T06:59:08+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
