@@ -19,7 +19,7 @@ deleted.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
-`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+`asia_collector._robots_allows` is OBEYED, failing closed (2026-11-13); never a new scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -566,9 +566,11 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
     allowed, robots_note = _robots_allows(url)
-    terms_note = (verdict.terms_note or "") + ("" if allowed else
-                                               f" | robots: {robots_note} -- recorded as a "
-                                               f"routing label, never a skip (LAWS 5e)")
+    if not allowed:                    # robots is obeyed, failing closed (Governance, 2026-11-13)
+        return {"dataset": cand["dataset"], "status": "ROBOTS_REFUSED", "url": url,
+                "robots": robots_note, "why": robots_note,
+                "missed_growth": "the sample is UNMEASURED this pass; retried next pass"}
+    terms_note = verdict.terms_note or ""
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
