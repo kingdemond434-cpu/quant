@@ -476,7 +476,8 @@ def _manifest() -> dict[str, dict[str, str]]:
     """Task name -> its manifest attributes (trigger, runs, lane). {} when unreadable."""
     out: dict[str, dict[str, str]] = {}
     try:
-        text = MANIFEST.read_text(encoding="utf-8")
+        # read under ROOT at call time, so a tree under test never sees this checkout's manifest
+        text = (ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest").read_text(encoding="utf-8")
     except OSError:
         return out
     for line in text.splitlines():
