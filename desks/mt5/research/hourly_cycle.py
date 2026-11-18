@@ -1232,6 +1232,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # Hurst/DFA regime flips (C row 120): a read of held H1 bars, ~6 s for ~30 symbols.
+    "dfa_flip_state",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1358,7 +1360,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "asia_plane", "futures_state", "dfa_flip_state", "archive_tape",
+                     "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -2346,6 +2349,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
     # one README read per new repository; stops itself at its 900 s budget.
     "asia_github": 1_000,
+    # Rolling DFA over held bars: ~6 s measured for 31 symbols; self-stops at --budget-s 240.
+    "dfa_flip_state": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -6250,6 +6255,11 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # HURST/DFA REGIME FLIPS (C row 120): a rolling DFA exponent per symbol from the held H1
+    # bars, dated flips across 0.5 with hysteresis, closed bars only. Report-only; the family's
+    # `dfa_gate` recomputes the same events from its own frame.
+    dfs = _costed("dfa_flip_state", lambda: _producer(
+        "dfa_flip_state", "research/dfa_flip_state.py", "--budget-s", "240"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6726,7 +6736,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "firm_lanes": flanes, "asia_github": agh,
-                    "futures_state": fst,
+                    "futures_state": fst, "dfa_flip_state": dfs,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
