@@ -34,6 +34,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[str, 
     monkeypatch.setattr(mc, "MOAT", tmp_path / "moat")
     monkeypatch.setattr(mc, "SLEEP_S", 0.0)
     monkeypatch.setattr(mc, "ROBOTS_BARRED", ())
+    monkeypatch.setattr(snap, "_ROBOTS_CACHE", {})
     monkeypatch.setattr(snap, "POPULATION", tmp_path / "archaeology" / "population.jsonl")
     monkeypatch.setattr(civ, "REPORT", tmp_path / "reports" / "TRADING_ARCHAEOLOGY.json")
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
@@ -88,3 +89,44 @@ def test_a_real_allow_still_fetches(desk: dict[str, Any]) -> None:
     assert got["robots_refused"] == []
     roots = {p.root for p in snap.PLATFORMS if snap.may_fetch(p)[0]}
     assert roots and roots <= set(_pages(desk["calls"]))
+
+
+# --------------------------------------------------------------------------- snapshot's own door
+def test_snapshot_stops_a_disallowed_sub_path_and_fetches_an_allowed_page(
+        desk: dict[str, Any]) -> None:
+    """The stop lives where the page is fetched: `snapshots.snapshot`, called directly."""
+    signals, code = snap.BY_NAME["mql5_signals"], snap.BY_NAME["mql5_codebase"]
+    assert signals.host == code.host
+    desk["robots"] = ("User-agent: *\nDisallow: /en/signals\n", 200, "")
+    got = snap.snapshot(signals, 30.0, fetch=True, at="2026-11-18", write=False)
+    assert got["fetched"] == 0 and got["robots_refused"].startswith("refused by robots")
+    assert got["refused"] == got["robots_refused"]
+    assert signals.root not in desk["calls"]
+    got2 = snap.snapshot(code, 30.0, fetch=True, at="2026-11-18", write=False)
+    assert got2["fetched"] == 1 and code.root in desk["calls"]
+    robots_reads = [u for u in desk["calls"] if u.endswith("/robots.txt")]
+    assert robots_reads == [f"https://{signals.host}/robots.txt"], "robots read once per host"
+
+
+@pytest.mark.parametrize("robots", [
+    ("<html><body>challenge</body></html>", 200, ""), ("", 403, "HTTPError 403"),
+    ("", 429, "HTTPError 429"), ("", 503, "HTTPError 503")], ids=["html", "403", "429", "503"])
+def test_snapshot_stops_on_an_unread_or_hard_stopped_robots(
+        desk: dict[str, Any], robots: tuple[str, int, str]) -> None:
+    desk["robots"] = robots
+    p = snap.BY_NAME["mql5_signals"]
+    got = snap.snapshot(p, 30.0, fetch=True, at="2026-11-18", write=False)
+    assert got["fetched"] == 0 and got["robots_refused"]
+    assert _pages(desk["calls"]) == []
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_a_missing_robots_file_is_no_rules_so_allowed(desk: dict[str, Any], status: int) -> None:
+    """RFC 9309: 404/410 means there is no robots file, so nothing is disallowed."""
+    desk["robots"] = ("", status, f"HTTPError {status}")
+    verdict, why = civ._machine_use_from_robots("https://h.example/x", fetch=True)
+    assert verdict == snap.ALLOWED and str(status) in why
+    assert civ._robots_stop("https://h.example/x") == ""
+    p = snap.BY_NAME["mql5_signals"]
+    got = snap.snapshot(p, 30.0, fetch=True, at="2026-11-18", write=False)
+    assert got["fetched"] == 1 and p.root in desk["calls"]

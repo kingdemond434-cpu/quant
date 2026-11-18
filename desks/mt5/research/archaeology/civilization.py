@@ -223,6 +223,8 @@ def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
         return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so the label is "
                               "unknown; the ground is mined all the same")
     body, status, err = mc.fetch_text(f"https://{host}/robots.txt")
+    if not body and status in (404, 410):  # RFC 9309: no file means no rules, so allowed
+        return snap.ALLOWED, f"robots.txt on {host} answered {status}: no file, no rules"
     if not body:
         return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
                               ": UNMEASURED policy, recorded as a label and mined")
@@ -628,6 +630,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, fetch: bool = True
     fam_status: dict[str, dict[str, Any]] = {
         f.name: {"name": f.name, "stage": f.stage, "what": f.what, "ran": False,
                  "produced": {}, "why": ""} for f in FAMILIES}
+    snap.clear_robots_cache()  # robots is read once per host per pass, never carried over
     try:
         report["platforms"] = snap.as_rows()
         budgets = platform_budgets(list(snap.PLATFORMS), budget_s * 0.55, c)
