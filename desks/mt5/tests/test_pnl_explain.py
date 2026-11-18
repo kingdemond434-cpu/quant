@@ -127,7 +127,8 @@ def test_the_per_account_file_is_gitignored_and_never_published() -> None:
     repo = Path(pe.__file__).resolve().parents[3]
     rel = pe.LOCAL_OUT.relative_to(repo).as_posix()
     sync = (repo / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8")
-    assert "PNL_EXPLAIN_ACCOUNTS" not in sync
+    # Named in a comment (why it is absent), never as a quoted path in any list.
+    assert not re.search(r"[\"'][^\"'\n]*PNL_EXPLAIN_ACCOUNTS", sync)
     assert "desks/mt5/reports/PNL_EXPLAIN.json" in sync
     try:
         r = subprocess.run(["git", "check-ignore", "-q", "--no-index", rel], cwd=repo,
