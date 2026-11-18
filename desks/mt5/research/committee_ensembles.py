@@ -129,6 +129,30 @@ def _now() -> str:
     return ce.now()
 
 
+_RA: Any = None
+
+
+def _runtime_doc(path: Path) -> Any:
+    """The runtime attestation at `path` merged with the PR sidecars beside it
+    (`runtime_attestation.load_attestation_file`); the bare file when that cannot be loaded."""
+    global _RA
+    try:
+        if _RA is None:
+            import importlib.util as _ilu
+
+            spec = _ilu.spec_from_file_location(
+                "_runtime_attestation", Path(__file__).with_name("runtime_attestation.py"))
+            assert spec is not None and spec.loader is not None
+            mod = _ilu.module_from_spec(spec)
+            sys.modules[spec.name] = mod      # a dataclass resolves its module by this name
+            spec.loader.exec_module(mod)
+            _RA = mod
+        doc = _RA.load_attestation_file(Path(path))
+    except Exception:  # the reader falls back to what it always read
+        doc = None
+    return doc
+
+
 def _json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -1659,7 +1683,7 @@ def _bank_census(bank: Path | None = None, universe: Mapping[str, Any] | None = 
 
 
 def _program() -> dict[str, Any]:
-    rs = _json(RUNTIME_STATE, {})
+    rs = _runtime_doc(RUNTIME_STATE) or _json(RUNTIME_STATE, {})
     legs: dict[str, dict[str, float]] = {}
     for r in _jsonl(COMPUTE_LEDGER, limit=20000):
         leg = str(r.get("run") or "?")
