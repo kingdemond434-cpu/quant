@@ -403,14 +403,14 @@ def _one_sided_level(k: float) -> float:
     return round(0.5 * (1.0 + math.erf(k / math.sqrt(2.0))), 4)
 
 
-def stats(scored: list[dict[str, Any]]) -> dict[str, Any]:
-    """Mean, SE and both bars of the newest WINDOW scored deferrals."""
+def stats(scored: list[dict[str, Any]]) -> tuple[dict[str, Any], float | None, float | None]:
+    """The published block, the mean and the SE of the newest WINDOW scored deferrals."""
     recent = scored[-WINDOW:]
     imp = np.array([float(x["improvement_r"]) for x in recent], dtype=float)
     n = int(imp.size)
     out: dict[str, Any] = {"n_scored": len(scored), "n_window": n, "n_min": gate.N_MIN}
     if n == 0:
-        return out
+        return out, None, None
     mean = float(imp.mean())
     se = float(imp.std(ddof=1) / math.sqrt(n)) if n > 1 else math.inf
     risk = [float(x["risk_frac"]) * float(x["improvement_r"]) for x in recent
@@ -423,18 +423,15 @@ def stats(scored: list[dict[str, Any]]) -> dict[str, Any]:
                logw_per_deferral=(round(float(np.mean([math.log1p(v) for v in risk])), 8)
                                   if risk else None),
                n_with_risk_frac=len(risk))
-    out["_mean"], out["_se"] = mean, se
-    return out
+    return out, mean, se
 
 
 def verdict(scored: list[dict[str, Any]]) -> dict[str, Any]:
     """PROMOTE when mean - 2 SE > 0, DEMOTE when mean + 1 SE < 0, HOLD otherwise (and below
     N_MIN). The LIVE-only rows are judged on their own as well, so a LIVE gate can be demoted on
     what it actually did, not on a shadow history that may flatter it."""
-    out = stats(scored)
-    live = stats([x for x in scored if x.get("mode") == "LIVE"])
-    mean, se = out.pop("_mean", None), out.pop("_se", None)
-    lmean, lse = live.pop("_mean", None), live.pop("_se", None)
+    out, mean, se = stats(scored)
+    live, lmean, lse = stats([x for x in scored if x.get("mode") == "LIVE"])
     out["bars"] = {"promote": f"mean - {PROMOTE_SE:g} SE > 0",
                    "promote_one_sided_level": _one_sided_level(PROMOTE_SE),
                    "demote": f"mean + {DEMOTE_SE:g} SE < 0",
@@ -442,12 +439,13 @@ def verdict(scored: list[dict[str, Any]]) -> dict[str, Any]:
                    "between": "hold the current mode"}
     out["live_only"] = live
     n = int(out["n_window"])
-    if mean is None or n < gate.N_MIN:
+    if mean is None or se is None or n < gate.N_MIN:
         return {**out, "verdict": UNMEASURED, "action": "HOLD", "promote": False,
                 "demote": False, "why": f"{n} scored deferrals, under the {gate.N_MIN} needed"}
     up = mean - PROMOTE_SE * se > 0
     down = mean + DEMOTE_SE * se < 0 or (
-        lmean is not None and live["n_window"] >= gate.N_MIN and lmean + DEMOTE_SE * lse < 0)
+        lmean is not None and lse is not None and live["n_window"] >= gate.N_MIN
+        and lmean + DEMOTE_SE * lse < 0)
     if down:
         return {**out, "verdict": COSTS, "action": "DEMOTE", "promote": False, "demote": True,
                 "why": "mean + 1 SE of the improvement (all rows, or LIVE rows alone) is below "
