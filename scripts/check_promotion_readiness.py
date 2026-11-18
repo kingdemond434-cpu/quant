@@ -37,6 +37,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[1]))
+    from libs.research import forward_ledger as _fl
+
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 SHADOW = DESK / "reports" / "shadow"
@@ -52,7 +60,7 @@ _FORWARD_PHASES = ("forward", None)
 def _forward_series() -> dict[str, list[float]]:
     """Per-sleeve forward R series, keyed by ledger stem."""
     out: dict[str, list[float]] = {}
-    for path in sorted(SHADOW.glob("ledger_*.json")):
+    for path in _fl.iter_ledgers(SHADOW):
         try:
             rows = json.loads(path.read_text("utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -63,7 +71,7 @@ def _forward_series() -> dict[str, list[float]]:
               if isinstance(r, dict) and r.get("phase") in _FORWARD_PHASES
               and r.get("r_multiple") is not None]
         if rs:
-            out[path.stem.removeprefix("ledger_")] = rs
+            out[_fl.label_of(path)] = rs
     return out
 
 

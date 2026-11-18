@@ -166,10 +166,34 @@ def test_an_unreadable_artifact_is_a_breach(tmp_path) -> None:
     assert fails and "unreadable" in fails[0]
 
 
-def test_a_stale_census_is_named(tmp_path) -> None:
+def test_a_stale_census_is_a_breach_past_its_two_hour_sla(tmp_path) -> None:
+    """Principal 2026-11-13: the hourly pass must see a stale census. 165.8 h went unflagged."""
     old = (NOW - timedelta(hours=9)).isoformat()
-    _, notes = fence.check_state(_report(tmp_path, at=old), NOW)
-    assert any("has not run" in n for n in notes)
+    fails, _ = fence.check_state(_report(tmp_path, at=old), NOW)
+    assert any("STALE CENSUS" in f for f in fails)
+    fresh = (NOW - timedelta(hours=1.5)).isoformat()
+    fails, _ = fence.check_state(_report(tmp_path, at=fresh), NOW)
+    assert not any("STALE CENSUS" in f for f in fails)
+
+
+def test_a_certificate_held_off_its_clock_is_a_breach(tmp_path) -> None:
+    fails, _ = fence.check_state(_report(tmp_path, n_held=3), NOW)
+    assert any("HELD OFF A CLOCK" in f for f in fails)
+
+
+def test_an_account_trading_a_sleeve_with_no_clock_is_a_breach(tmp_path) -> None:
+    acc = {"lanes": {"e8": {"no_clock": ["NZDJPY_clock_transition_asia"]},
+                     "ftmo": {"no_clock": []}}}
+    fails, _ = fence.check_state(_report(tmp_path, accounts=acc), NOW)
+    assert [f for f in fails if f.startswith("ACCOUNT-SLEEVE-WITHOUT-CLOCK")] == [
+        f for f in fails if "e8:NZDJPY_clock_transition_asia" in f]
+    assert len([f for f in fails if f.startswith("ACCOUNT-SLEEVE")]) == 1
+
+
+def test_the_door_pins_hold_the_move_from_clock_to_promotion() -> None:
+    fails, _ = fence.check_sources()
+    assert fails == []
+    assert "desks/mt5/research/shadow_forward.py" in fence.DOOR_PINS
 
 
 def test_the_cli_runs_both_halves_and_exits_zero_today() -> None:
