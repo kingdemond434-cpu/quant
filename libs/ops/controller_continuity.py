@@ -29,9 +29,30 @@ __all__ = [
     "transfer",
 ]
 
-DEFAULT_STATE = Path("data/controller_lease.json")
-DEFAULT_CHECKPOINT = Path("data/controller_checkpoint.json")
-DEFAULT_HISTORY = Path("data/controller_checkpoint_history.jsonl")
+#: ANCHORED TO THE REPOSITORY, NOT TO THE CALLER'S WORKING DIRECTORY (measured 2026-11-14).
+#: These were bare relative paths, so they resolved against whatever directory the caller happened
+#: to be in. From anywhere but the repository root, `_read` found no file, `_validate` saw no
+#: active lease, and the control plane refused the mutation with
+#:
+#:     {"status": "REFUSED", "reason": "stale or foreign fencing token"}
+#:
+#: -- a message about the TOKEN for a fault that was entirely about the PATH. Measured in the
+#: 2026-11-14 noon CRO pass: the documented command `python scripts/controller_checkpoint.py
+#: checkpoint --note "..."` refused from a git worktree while `data/controller_lease.json` in the
+#: repository read status LEASED, controller claude-noon, epoch 161, expiring 23:02:04Z -- a live
+#: lease held by the very caller being told its token was foreign. The CRO cycle instructs a lane
+#: to do its code work in a worktree and to checkpoint after each material closure, so the two
+#: instructions could not both be followed.
+#:
+#: Anchoring changes nothing for the canonical callers, which run from the repository root (there
+#: ROOT-relative and cwd-relative are the same file), and it ends the silent second lease for
+#: everyone else. A lease is the one piece of state that must never have two copies: two
+#: controllers each holding "the" lease in a different directory is exactly the split the fencing
+#: token exists to prevent.
+_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_STATE = _ROOT / "data" / "controller_lease.json"
+DEFAULT_CHECKPOINT = _ROOT / "data" / "controller_checkpoint.json"
+DEFAULT_HISTORY = _ROOT / "data" / "controller_checkpoint_history.jsonl"
 
 
 class ControllerLeaseError(RuntimeError):
