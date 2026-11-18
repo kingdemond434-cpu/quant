@@ -637,20 +637,48 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
 def test_a_dataset_ground_yields_discovery_rows_the_acquirer_reads(monkeypatch, tmp_path) -> None:
     _offline(monkeypatch, tmp_path)
     doc = _run_grounds(monkeypatch, tmp_path, [
-        {"name": "SARB statistics", "region": "za", "language": "en", "route": "http", "kind": "dataset",
-         "url": "https://www.resbank.co.za/en/home/what-we-do/statistics", "dataset_class": "central_bank_data"}])
+        # A central bank whose own terms allow reuse (Federal Reserve Board: public domain). The
+        # fixture was SARB until 2026-11-18, when SARB's terms were read and refuse copying; a
+        # refused publisher is tested below as refused, never as the example of a lawful ground.
+        {"name": "Federal Reserve statistics", "region": "us", "language": "en", "route": "http",
+         "kind": "dataset", "url": "https://www.federalreserve.gov/data.htm",
+         "dataset_class": "central_bank_data"}])
     assert doc["datasets_new"] == 1 and doc["counts"]["dataset_pages"] == 1
     assert doc["counts"]["dataset_endpoints"] >= 2
     files = list((tmp_path / "world").glob("discoveries_deepforest_*.json"))
     assert len(files) == 1
     row = json.loads(files[0].read_text("utf-8"))[0]
     # EXACTLY the row shape acquire_datasets._endpoints reads: endpoints + host, kind dataset.
-    assert row["kind"] == "dataset" and row["host"] == "www.resbank.co.za"
+    assert row["kind"] == "dataset" and row["host"] == "www.federalreserve.gov"
     assert any(u.endswith("reserves.csv") for u in row["endpoints"]) and row["n_endpoints"] >= 2
-    assert row["dataset_class"] == "central_bank_data" and row["region"] == "za"
+    assert row["dataset_class"] == "central_bank_data" and row["region"] == "us"
     assert (tmp_path / "datasets.jsonl").exists()
     st = doc["grounds"][0]
     assert st["datasets"] == 1
+
+
+def test_a_terms_refused_central_bank_ground_is_refused_before_any_request(monkeypatch,
+                                                                         tmp_path) -> None:
+    """SARB's Disclaimer refuses copying without prior written consent (refused_hosts). With the
+    real access check in front of the fixture transport, its dataset ground yields nothing and
+    the transport is never called."""
+    _offline(monkeypatch, tmp_path)
+    called: list[str] = []
+
+    def guarded(url: str, **kw) -> str:
+        refused = dfm.access_refusal(url)
+        if refused:
+            raise dfm.RobotsRefused(refused)
+        called.append(url)
+        return _dispatch(url, **kw)
+
+    monkeypatch.setattr(dfm, "_http", guarded)
+    doc = _run_grounds(monkeypatch, tmp_path, [
+        {"name": "SARB statistics", "region": "za", "language": "en", "route": "http",
+         "kind": "dataset", "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
+         "dataset_class": "central_bank_data"}])
+    assert doc["datasets_new"] == 0 and called == []
+    assert doc["counts"].get("access_refused", 0) >= 1
 
 
 def test_claims_carry_pit_provenance_channel_class_and_fold_on_the_mechanism_key(monkeypatch,
