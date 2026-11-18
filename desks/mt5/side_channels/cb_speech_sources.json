@@ -1,0 +1,56 @@
+{
+ "_doc": "Central bank speeches read from the banks' OWN sites, for tone the desk may trade on. Adding a bank is adding a row. `terms` is the reuse clause as read on `terms_read`; `terms` is 'permitted' only where a clause on the bank's own page allowing reuse was read; any other value is carried on every row so a consumer can drop it. The BIS speeches.zip corpus is NOT here: its page says 'Use of the content is allowed for noncommercial purposes', so it stays research-only (side_channels/bis_speech_tone.py).",
+ "user_agent": "quant-desk-research/1.0 (public central bank speeches; polite, low rate)",
+ "banks": [
+  {
+   "bank": "Fed",
+   "currency": "USD",
+   "terms": "permitted",
+   "terms_clause": "information on Board's website is in the public domain and may be copied and distributed without permission",
+   "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+   "terms_read": "2026-11-10",
+   "attribution": "Board of Governors of the Federal Reserve System",
+   "feeds": [
+    "https://www.federalreserve.gov/feeds/speeches.xml"
+   ],
+   "index": "https://www.federalreserve.gov/newsevents/speech/{year}-speeches.htm",
+   "index_from_year": 2011,
+   "link_regex": "(?:https://www\\.federalreserve\\.gov)?/newsevents/speech/[a-z]+(\\d{4})(\\d{2})(\\d{2})[a-z]\\.htm",
+   "base": "https://www.federalreserve.gov",
+   "source": "fed_board"
+  },
+  {
+   "bank": "BoC",
+   "currency": "CAD",
+   "terms": "permitted",
+   "terms_clause": "the Bank permits you to freely use, copy, distribute and transmit its website content under the following terms",
+   "terms_url": "https://www.bankofcanada.ca/terms/",
+   "terms_read": "2026-11-10",
+   "attribution": "Bank of Canada",
+   "feeds": [
+    "https://www.bankofcanada.ca/content_type/speeches/feed/"
+   ],
+   "link_regex": "https://www\\.bankofcanada\\.ca/(\\d{4})/(\\d{2})/[a-z0-9-]+/",
+   "base": "https://www.bankofcanada.ca",
+   "source": "boc"
+  },
+  {
+   "bank": "RBA",
+   "currency": "AUD",
+   "terms": "unverified",
+   "terms_clause": "most other material published on this website is provided under a Creative Commons Attribution 4.0 International License",
+   "terms_url": "https://www.rba.gov.au/copyright/",
+   "terms_read": "2026-11-10",
+   "terms_note": "the CC BY 4.0 clause says 'most other material'; speeches are not named, so rows stay unverified until a clause covering speeches is read",
+   "attribution": "Reserve Bank of Australia",
+   "feeds": [
+    "https://www.rba.gov.au/rss/rss-cb-speeches.xml"
+   ],
+   "index": "https://www.rba.gov.au/speeches/{year}/",
+   "index_from_year": 2011,
+   "link_regex": "(?:https://www\\.rba\\.gov\\.au)?/speeches/\\d{4}/[a-z-]+-(\\d{4})-(\\d{2})-(\\d{2})(?:-\\d+)?\\.html",
+   "base": "https://www.rba.gov.au",
+   "source": "rba"
+  }
+ ]
+}
