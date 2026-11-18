@@ -337,8 +337,6 @@ HOLD_BARS: dict[str, int] = {"intraday": 6, "daily": 24, "weekly": 120, "monthly
 MISSING_BUILDER: dict[str, str] = {
     "calendar": ("calendar: `calendar_month` / `turn_of_month` need the month or day the claim "
                  "names, which the compact file does not carry"),
-    "inventory": ("inventory: needs an inventory-release series conditioner on the analogue; "
-                  "none is joined to a claim"),
     "flow": "flow: needs a flow series conditioner on the analogue; none is joined to a claim",
     "cross_asset": ("cross_asset: needs a lead_lag / relative_value builder with the peer the "
                     "claim implies; the claim names no peer series"),
@@ -359,11 +357,18 @@ _CLAIM_DIRECTION_SIDES: dict[str, int] = {"long": 1, "short": -1}
 #: time ("no COT frame for X"), never judged on an empty input. Applied ONLY where neither the
 #: class map nor the quantity fallback named a family, so no cell minted today changes.
 #: The value is the family's hold argument: `carry` and `event_reaction` call it `hold_bars`.
+#: INVENTORY IS THE EIA WINDOW: `forced_flow` kind `inventory` is the rule-generated EIA crude
+#: (Wednesday 10:30 New York) and API (Tuesday) calendar in `research/forced_flow_calendar`, with
+#: no network and no key; the claim's side and hold ride on it. Conditioning on the print's
+#: SURPRISE is a `conditioner` modifier on the same cell once that series is in the lake.
 CLASS_SERIES_FAMILY: dict[str, tuple[str, str]] = {
     "carry": ("carry", "hold_bars"),
     "positioning": ("cot_positioning", "ttl_bars"),
     "policy": ("event_reaction", "hold_bars"),
+    "inventory": ("forced_flow", "ttl_bars"),
 }
+#: Fixed arguments a class-series family needs to be the mechanism the class names.
+CLASS_SERIES_PARAMS: dict[str, dict[str, Any]] = {"inventory": {"event_kind": "inventory"}}
 
 
 def _quantity_kind(quantities: Iterable[Any]) -> str:
@@ -551,6 +556,7 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
     buckets = {mc._bucket(mc._DIR_BUCKET_TERMS, [w]) for w in words} & set(_CLAIM_DIRECTION_SIDES)
     sides = ((_CLAIM_DIRECTION_SIDES[next(iter(buckets))],) if len(buckets) == 1 else SIDES)
     return {**base, "family": fam, "hold": int(hold), "hold_param": hold_param,
+            "fixed": dict(CLASS_SERIES_PARAMS.get(cls, {})) if basis == "class_series" else {},
             "sides": sides}, None
 
 
@@ -559,7 +565,8 @@ def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
     from proposer_common import candidate
     cl = ds["claim"]
     fam = spec["family"]
-    params = {str(spec.get("hold_param") or "ttl_bars"): spec["hold"],
+    params = {**dict(spec.get("fixed") or {}),
+              str(spec.get("hold_param") or "ttl_bars"): spec["hold"],
               "side_mode": "long" if side > 0 else "short"}
     mech = (f"deep-forest claim {cl['mechanism_key']} (class {spec['class']}, direction "
             f"{spec['direction_bucket']}, horizon {spec['horizon_bucket']}, "

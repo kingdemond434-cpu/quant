@@ -462,11 +462,12 @@ def test_the_committed_claim_file_holds_no_verbatim_text(tmp_path: Path) -> None
 
 def test_an_unregistered_class_is_queued_never_emitted(tmp_path: Path) -> None:
     rows, cells = _claim_pass(tmp_path, [_ledger_row(
-        mechanism_class="inventory", quantities=["stocks"], mechanism_key="k_inventory")])
+        mechanism_class="other", quantities=["stocks"], direction=["up"],
+        mechanism_key="k_other")])
     assert not cells
     (row,) = rows
     assert row["status"] == dt.CELL_QUEUED
-    assert row["reason"].startswith("NO_BUILDER: inventory")
+    assert row["reason"].startswith("NO_BUILDER: other")
     assert row["missed_growth"]
 
 
@@ -488,6 +489,16 @@ def test_a_class_whose_builder_reads_its_own_series_is_emitted(
         assert c["family"] == family and _registered_family(family)
         assert c["params"] == {hold_param: 24, "side_mode": "long"}
     assert rows[0]["status"] != dt.CELL_QUEUED
+
+
+def test_an_inventory_claim_is_the_eia_window(tmp_path: Path) -> None:
+    _, cells = _claim_pass(tmp_path, [_ledger_row(
+        mechanism_class="inventory", quantities=["stocks"], mechanism_key="k_inv",
+        instruments={"analogues": ["XTIUSD"]})])
+    assert cells
+    for c in cells:
+        assert c["family"] == "forced_flow"
+        assert c["params"] == {"event_kind": "inventory", "ttl_bars": 24, "side_mode": "long"}
 
 
 def test_the_class_series_map_never_overrides_a_mapped_claim(tmp_path: Path) -> None:
