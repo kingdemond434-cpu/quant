@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 838,
+  "NEVER": 840,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1062,
+  "attested": 1064,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -724,16 +724,35 @@
     ]
    },
    {
-    "at": "2026-11-14T04:37:22+00:00",
+    "at": "2026-11-14T06:43:43+00:00",
     "host": "vm",
     "machine_id": "d165c2d88d894a4787be219662b439ad",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:conversion_debt",
-     "leg:flow_seeder",
-     "leg:hunt16_seeder",
-     "leg:learned_miners"
+     "executable:desks/mt5/research/dukascopy_backfill.py",
+     "leg:tape_deepen"
+    ]
+   },
+   {
+    "at": "2026-11-14T10:29:27+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:contradiction_miner",
+     "leg:vocabulary_proposer"
+    ]
+   },
+   {
+    "at": "2026-11-14T11:40:59+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:pr_blockers"
     ]
    }
   ]
@@ -27917,40 +27936,40 @@
    "measured_at": "2026-11-14T02:41:03+00:00"
   },
   {
-   "organ": "leg:conversion_debt",
-   "kind": "leg",
+   "organ": "executable:desks/mt5/research/dukascopy_backfill.py",
+   "kind": "executable",
    "code": [
-    "desks/mt5/research/conversion_debt.py"
+    "desks/mt5/research/dukascopy_backfill.py"
    ],
-   "clock": "hourly_cycle:conversion_debt",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
+   "clock": "invoked:desks/mt5/research/fund_playbook.py",
+   "cadence_s": null,
+   "max_silence_s": null,
    "state": "NEVER",
    "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/CONVERSION_DEBT.json",
-   "artifact_declared": "desks/mt5/reports/CONVERSION_DEBT.json",
+   "artifact": "desks/mt5/reports/DUKASCOPY_BACKFILL.json",
+   "artifact_declared": "desks/mt5/reports/DUKASCOPY_BACKFILL.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
    "artifact_bytes": 0,
    "artifact_sha256": "UNMEASURED",
    "summary": {},
-   "progress_metric": "leg_completions",
+   "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T04:37:22+00:00"
+   "measured_at": "2026-11-14T06:43:43+00:00"
   },
   {
-   "organ": "leg:flow_seeder",
+   "organ": "leg:tape_deepen",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/flow_seeder.py"
+    "desks/mt5/recorders/tape_deepen.py"
    ],
-   "clock": "hourly_cycle:flow_seeder",
+   "clock": "hourly_cycle:tape_deepen",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -27958,8 +27977,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/FLOW_SEEDER.json",
-   "artifact_declared": "desks/mt5/reports/FLOW_SEEDER.json",
+   "artifact": "desks/mt5/reports/TAPE_DEEPEN.json",
+   "artifact_declared": "desks/mt5/reports/TAPE_DEEPEN.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -27970,15 +27989,15 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T04:37:22+00:00"
+   "measured_at": "2026-11-14T06:43:43+00:00"
   },
   {
-   "organ": "leg:hunt16_seeder",
+   "organ": "leg:contradiction_miner",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/hunt16_seeder.py"
+    "desks/mt5/research/contradiction_miner.py"
    ],
-   "clock": "hourly_cycle:hunt16_seeder",
+   "clock": "hourly_cycle:contradiction_miner",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -27986,8 +28005,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/HUNT16_SEEDER.json",
-   "artifact_declared": "desks/mt5/reports/HUNT16_SEEDER.json",
+   "artifact": "desks/mt5/reports/CONTRADICTIONS.json",
+   "artifact_declared": "desks/mt5/reports/CONTRADICTIONS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -27997,16 +28016,16 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T04:37:22+00:00"
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-14T10:29:27+00:00"
   },
   {
-   "organ": "leg:learned_miners",
+   "organ": "leg:vocabulary_proposer",
    "kind": "leg",
    "code": [
-    "desks/mt5/research/learned_miners.py"
+    "desks/mt5/research/vocabulary_proposer.py"
    ],
-   "clock": "hourly_cycle:learned_miners",
+   "clock": "hourly_cycle:vocabulary_proposer",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -28014,8 +28033,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/learned_miners.json",
-   "artifact_declared": "desks/mt5/reports/learned_miners.json",
+   "artifact": "desks/mt5/reports/VOCABULARY_PROPOSALS.json",
+   "artifact_declared": "desks/mt5/reports/VOCABULARY_PROPOSALS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -28025,8 +28044,61 @@
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED",
    "measured_on": "vm",
-   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-14T04:37:22+00:00"
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-14T10:29:27+00:00"
+  },
+  {
+   "organ": "leg:pr_blockers",
+   "kind": "leg",
+   "code": [
+    "scripts/pr_blockers.py"
+   ],
+   "clock": "hourly_cycle:pr_blockers",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/PR_BLOCKERS.json",
+   "artifact_declared": "desks/mt5/reports/PR_BLOCKERS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-14T11:40:59+00:00"
+  },
+  {
+   "organ": "leg:policy_lift_reopen",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/policy_lift_reopen.py"
+   ],
+   "clock": "hourly_cycle:policy_lift_reopen",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REOPEN_VERIFICATION.json",
+   "artifact_declared": "desks/mt5/reports/REOPEN_VERIFICATION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "promoter (re-judges the reopened clocks)"
   }
  ],
  "ratchet": {
