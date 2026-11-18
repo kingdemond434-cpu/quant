@@ -284,7 +284,9 @@ def test_the_ingester_is_on_the_axis_table_and_the_battery() -> None:
 
 # ------------------------------------------------------------------------------------ fence
 #: A FRED data endpoint written as a URL: fredgraph.csv, the FRED/ALFRED API, an ALFRED graph.
-_FRED_ENDPOINT = re.compile(r"(?:api|fred|alfred)\.stlouisfed\.org/(?:graph|fred/)")
+#: A bare root ("https://api.stlouisfed.org/fred/") in a declarative source catalogue is not an
+#: endpoint; the crawlers that read those catalogues (acquire_datasets) refuse the host themselves.
+_FRED_ENDPOINT = re.compile(r"stlouisfed\.org/(?:graph/fredgraph|fred/(?:series|release))")
 #: Tokens that put a refusal check in front of the wire: the list itself, or a transport that
 #: consults it (polite_fetch.get -> off_limits; keyed_urlopen -> guard).
 _GATES = ("refused_hosts", "polite_fetch", "keyed_urlopen")
@@ -312,5 +314,6 @@ def test_fence_no_module_carries_a_fred_endpoint_without_a_refusal_gate() -> Non
 
 
 def test_fence_catches_an_ungated_fred_fetch() -> None:
-    src = 'import urllib.request\nurllib.request.urlopen("https://fred.stlouisfed.org/graph/x")\n'
+    src = ('import urllib.request\n'
+           'urllib.request.urlopen("https://fred.stlouisfed.org/graph/fredgraph.csv?id=X")\n')
     assert _FRED_ENDPOINT.search(src) and not any(g in src for g in _GATES)
