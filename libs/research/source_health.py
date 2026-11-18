@@ -183,7 +183,7 @@ class SourceState:
     failing_vantages: tuple[str, ...] = ()
     ok_vantages: tuple[str, ...] = ()
     replaced_by: str | None = None
-    #: The refused row (host, status, UA, missed_growth, retry: never, bypass: refused).
+    #: The refused row (host, status, UA, missed_growth, retry: same_ua_only, bypass: refused).
     refusal: dict[str, Any] | None = None
 
     def age_hours(self, *, now: datetime | None = None) -> float | None:
@@ -219,7 +219,7 @@ class SourceState:
             return f"{self.source}: superseded by {self.replaced_by} -- no longer relied on"
         if self.refusal is not None and self.verdict == self.refusal.get("status"):
             return (f"{self.source}: {self.verdict} -- {self.refusal.get('why')}; "
-                    f"{self.refusal.get('missed_growth')} (retry: never, bypass: refused)")
+                    f"{self.refusal.get('missed_growth')} (retry: same_ua_only, bypass: refused)")
         if self.verdict == VERDICT_HEALTHY:
             where = ("from every vantage tried" if self.scope == SCOPE_GLOBAL
                      else f"from {', '.join(self.ok_vantages) or 'one vantage'} only")

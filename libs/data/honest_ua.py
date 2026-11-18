@@ -52,7 +52,7 @@ REFUSAL_MISSED_GROWTH = ("missed_growth: ground refused the honest name; its dis
 #: is CONTENT and must not be booked as a wall.
 CHALLENGE_MARKERS: tuple[str, ...] = (
     "<title>just a moment", "<title>attention required", "_cf_chl_opt", "cf-chl-",
-    "checking your browser before accessing", "verify you are human", "px-captcha",
+    "checking your browser before accessing", "<title>verify you are human", "px-captcha",
     "captcha-delivery.com", "_incapsula_resource", "<title>access denied</title>",
 )
 _SCAN_CHARS = 20_000
@@ -98,7 +98,8 @@ def refusal_row(url: str = "", *, status: int | None = None, body: str | bytes |
            else f"challenge/wall page ({marker!r}) served to {ROBOTS_AGENT}")
     return {"status": state, "host": host, "url": url, "http_status": code if code else status,
             "user_agent": user_agent, "why": f"{state}: {why} -- the host refused the desk",
-            "missed_growth": REFUSAL_MISSED_GROWTH, "retry": "never", "bypass": "refused"}
+            "missed_growth": REFUSAL_MISSED_GROWTH, "retry": "same_ua_only",
+            "under_other_ua": "never", "bypass": "refused"}
 
 
 def is_refused(row: object) -> bool:

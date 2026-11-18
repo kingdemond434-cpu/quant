@@ -54,8 +54,8 @@ class HostRefused(RuntimeError):
     """The host answered the honest name with 401/403/429/451: a HARD_STOP, final.
 
     ``row`` is the refused row (libs/data/honest_ua.refusal_row): host, status, the UA sent, the
-    missed_growth line, ``retry: never`` and ``bypass: refused``. A RuntimeError so every existing
-    ``except RuntimeError`` still catches it; a caller that records outcomes reads ``row``."""
+    missed_growth line, ``retry: same_ua_only`` and ``bypass: refused``. A RuntimeError so every
+    existing ``except RuntimeError`` still catches it; a recording caller reads ``row``."""
 
     def __init__(self, row: dict[str, object]) -> None:
         super().__init__(f"{row['why']} ({row['url']}); {row['missed_growth']}")

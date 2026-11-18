@@ -3,7 +3,8 @@
 The auditor's finding on PR #1320 (2026-11-18): once every fetcher sends
 ``libs/data/honest_ua.HONEST_UA``, some hosts answer 401/403/429/451 or serve a challenge page.
 Each must come out as a HARD_STOP (a refusing status) or BLOCKED_ON_TERMS (a wall) row carrying
-the host, the status, the UA sent, a missed_growth line, ``retry: never`` and ``bypass: refused``
+the host, the status, the UA sent, a missed_growth line, ``retry: same_ua_only`` and
+``bypass: refused``
 -- and no fetcher may answer it by trying another User-Agent.
 """
 
@@ -48,7 +49,8 @@ def _assert_refused_row(row: dict[str, Any] | None, status: str, host: str) -> N
     assert row["user_agent"] == HONEST_UA
     assert row["missed_growth"] == REFUSAL_MISSED_GROWTH
     assert "lawful route" in str(row["missed_growth"])
-    assert row["retry"] == "never" and row["bypass"] == "refused"
+    assert row["retry"] == "same_ua_only" and row["under_other_ua"] == "never"
+    assert row["bypass"] == "refused"
 
 
 class _Recorder:
@@ -189,7 +191,8 @@ def test_a_miner_failing_on_a_refusal_is_a_hard_stop_not_failed() -> None:
                             "(https://ground.example/a)")
     assert row["status"] == HARD_STOP and row["count"] == 0
     _assert_refused_row(row["refusal"], HARD_STOP, "ground.example")
-    assert row["retry"] == "never" and row["bypass"] == "refused"
+    assert row["retry"] == "same_ua_only" and row["under_other_ua"] == "never"
+    assert row["bypass"] == "refused"
     wall = ram.miner_outcome("ground", "err", "RuntimeError: <title>Just a moment...</title>")
     assert wall["status"] == BLOCKED_ON_TERMS
     plain = ram.miner_outcome("ground", "err", "ValueError: bad json")
@@ -200,3 +203,10 @@ def test_the_classifier_ignores_non_refusals() -> None:
     assert refusal_row("https://a.example", status=404) is None
     assert refusal_row("https://a.example", status=500, body="<html>oops</html>") is None
     assert refusal_row(error="ConnectionResetError") is None
+
+
+def test_verify_you_are_human_in_body_text_is_content_not_a_wall() -> None:
+    """Auditor SF2: the phrase in an ordinary article is content; only a wall's title counts."""
+    from libs.data.honest_ua import challenge_marker
+    assert challenge_marker("<p>Forum post: the site asked me to verify you are human.</p>") is None
+    assert challenge_marker("<html><title>Verify you are human</title>") is not None
