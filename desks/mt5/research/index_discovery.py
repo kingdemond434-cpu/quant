@@ -98,12 +98,14 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
     key = f"{scheme}://{host}"
     if key in _ROBOTS:
         return _ROBOTS[key]
+    from libs.data.robots_body import robots_rules_or_refusal
     rp = urllib.robotparser.RobotFileParser()
     req = urllib.request.Request(f"{key}/robots.txt", headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=15.0, context=_TLS) as r:
-            rp.parse(r.read(500_000).decode("utf-8", errors="replace").splitlines())
-        out: urllib.robotparser.RobotFileParser | str = rp
+            # An HTML page (soft 404, challenge, homepage) served 200 is UNREAD, never allow-all.
+            out: urllib.robotparser.RobotFileParser | str = robots_rules_or_refusal(
+                getattr(r, "status", 200), r.headers.get("Content-Type"), r.read(500_000))
     except urllib.error.HTTPError as e:
         code = getattr(e, "code", 0)
         if code in (404, 410):

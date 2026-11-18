@@ -839,12 +839,17 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
     standard says; any other failure to read it does NOT allow, so an unread policy is never
     treated as a yes."""
     import urllib.robotparser
+
+    from libs.data.robots_body import is_html_body
     p = urllib.parse.urlsplit(url)
     rp = urllib.robotparser.RobotFileParser()
     try:
-        rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+        body = get_text(f"{p.scheme}://{p.netloc}/robots.txt")
     except (urllib.error.HTTPError, FetchError) as exc:
         return getattr(exc, "code", None) == 404
+    if is_html_body(body):          # an HTML page in place of rules is unread, never a yes
+        return False
+    rp.parse(body.splitlines())
     return rp.can_fetch(UA, url)
 
 
