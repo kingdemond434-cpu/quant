@@ -613,7 +613,9 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    # Reddit is refused on its own terms (refused_hosts, 2026-11-18): no feed is asked for.
+    assert st["reddit"]["status"] == "BLOCKED_ON_TERMS" and st["reddit"]["subs"] == 1
+    assert st["reddit"]["fetched"] == 0 and "BLOCKED_ON_TERMS" in st["reddit"]["errors"][0]
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     # Wayback is refused on terms (Governance 2026-11-14): no capture is asked for.

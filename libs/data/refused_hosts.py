@@ -34,6 +34,14 @@ REFUSED_HOSTS: dict[str, str] = {
     "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "theice.com": "ICE: terms refuse automated collection of its data",
+    # Read 2026-11-18 from the Open Terms Archive copies (pga-versions, Reddit/) because
+    # redditinc.com and reddit.com answer the build container's proxy with 403.
+    "reddit.com": ("Reddit Developer Terms s4.1 (eff. 2024-09-24, rev. 2026-03-24, read "
+                   "2026-11-18): \"you will not ... access or use any of the Reddit Services and "
+                   "Data by or on behalf of a business or as part of a service or product that is "
+                   "monetized\"; User Agreement (eff. 2026-07-01): \"scraping the Services "
+                   "without Reddit's prior written consent is prohibited\""),
+    "redd.it": "Reddit: the same terms cover its short-link and media hosts",
 }
 
 

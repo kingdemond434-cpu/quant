@@ -44,7 +44,9 @@ BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
+#: The honest User-Agent: says what is asking and claims to be no browser. One literal for every
+#: request in this file; no call overrides it.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 
 class BlockedOnTerms(urllib.error.URLError):
@@ -81,7 +83,7 @@ def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
     if why:
         _record_refusal(url, why)
         raise BlockedOnTerms(f"BLOCKED_ON_TERMS: {why}")
-    req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
+    req = urllib.request.Request(url, headers={**(headers or {}), "User-Agent": UA})
     with _refusing_opener().open(req, timeout=timeout) as r:
         return r.read()
 
@@ -295,9 +297,15 @@ def github_search(query: str) -> dict:
 
 
 def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
+    """Hot posts of a subreddit. Reddit's terms refuse a commercial desk's automated use, so on
+    the shared list this returns `Unmeasured` with the reason and sends nothing."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
+    why = _refusal(url)
+    if why:
+        _record_refusal(url, why)
+        return Unmeasured(f"BLOCKED_ON_TERMS: {why}")
     try:
-        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
+        data = json.loads(_get(url))
         posts = []
         for c in data.get("data", {}).get("children", []):
             p = c.get("data", {})

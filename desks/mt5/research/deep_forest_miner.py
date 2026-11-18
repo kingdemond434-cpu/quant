@@ -1464,6 +1464,14 @@ class _Run:
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
         """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
         the feeds do not -- measured by side_channels/reddit_miner)."""
+        from libs.data.refused_hosts import refusal as _host_refusal
+        why = _host_refusal("https://www.reddit.com/")
+        if why:
+            # Reddit's terms refuse a commercial desk's automated use: nothing is requested.
+            return {"fetched": 0, "claims": 0, "status": "BLOCKED_ON_TERMS",
+                    "subs": len(g.get("subs") or []), "errors": [f"BLOCKED_ON_TERMS: {why}"],
+                    "missed_growth": ("this ground's claims are UNMEASURED, not zero, until "
+                                      "Reddit grants a commercial agreement")}
         feeds = []
         for sub in g.get("subs") or []:
             feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")

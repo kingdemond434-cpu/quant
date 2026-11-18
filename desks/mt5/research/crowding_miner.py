@@ -19,6 +19,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import free_data as fd
 
@@ -67,6 +68,16 @@ def news_topic_counts() -> dict[str, int]:
     return topics
 
 
+def reddit_activity_of(reddit: list[dict[str, Any]]) -> dict[str, Any]:
+    """Reddit activity, or UNMEASURED with its reason when the feed was refused on terms: a
+    refused feed is not zero posts."""
+    if getattr(reddit, "status", None) == "UNMEASURED":
+        return {"status": "UNMEASURED", "reason": getattr(reddit, "reason", "")}
+    return {"posts": len(reddit),
+            "avg_score": round(sum(r["score"] for r in reddit) / max(1, len(reddit)), 1),
+            "comments": sum(r["num_comments"] for r in reddit)}
+
+
 def main() -> None:
     log("crowding miner started (GitHub search + Reddit, no keys)")
     hist = []
@@ -83,10 +94,7 @@ def main() -> None:
             i += 1
             gh = fd.github_search(query)
             reddit = fd.reddit_hot("algotrading")
-            reddit_activity = {"posts": len(reddit),
-                               "avg_score": round(sum(r["score"] for r in reddit) /
-                                                  max(1, len(reddit)), 1),
-                               "comments": sum(r["num_comments"] for r in reddit)}
+            reddit_activity = reddit_activity_of(reddit)
             topics = news_topic_counts()
             prev = None
             if hist:
