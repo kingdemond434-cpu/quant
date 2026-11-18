@@ -105,13 +105,13 @@ def test_pass_rotates_records_and_skips(tmp_path: Path) -> None:
         return {"outcome": rt.RAN_OK, "rc": 0}
 
     doc = rt.run_pass(per_pass=2, cap_s=1, budget_s=100, source=src, out=out, root=tmp_path,
-                      runner=runner)
+                      runner=runner, hold=lambda _mb: None)
     assert calls == ["libs/a.py", "libs/b.py"]  # the scripts-dir organ sorts first, never runs
     assert doc["organs"]["desks/mt5/scripts/s.py"]["outcome"] == rt.SKIPPED
     assert doc["cursor"] == "libs/c.py"
     out.write_text(json.dumps(doc), "utf-8")
     doc2 = rt.run_pass(per_pass=2, cap_s=1, budget_s=100, source=src, out=out, root=tmp_path,
-                       runner=runner)
+                       runner=runner, hold=lambda _mb: None)
     assert calls[2:] == ["libs/c.py", "libs/a.py"]  # money + scripts skipped, then wraps
     assert doc2["organs"]["libs/money.py"]["reason"] == "money_path"
     assert set(doc2["counts"]) <= set(rt.OUTCOMES)
@@ -123,38 +123,182 @@ def test_absent_census_is_unmeasured(tmp_path: Path) -> None:
     assert doc["status"] == "UNMEASURED"
 
 
-def test_run_one_outcomes_and_the_write_guard(tmp_path: Path) -> None:
-    (tmp_path / "reports").mkdir()
-    (tmp_path / "data").mkdir()
-    organs = {
+def _organs(tmp_path: Path, organs: dict[str, str]) -> Path:
+    repo = tmp_path / "repo"
+    (repo / "reports").mkdir(parents=True)
+    (repo / "data").mkdir()
+    for n, src in organs.items():
+        (repo / n).write_text(src, "utf-8")
+    return repo
+
+
+def _go(repo: Path, n: str, cap: float = 20.0,
+        tracked: tuple[str, ...] = ()) -> dict[str, object]:
+    # `systemp` is pinned to a directory the organs never write, so "outside the repository"
+    # below really is outside every allowed place (pytest's tmp_path lives in the real temp dir).
+    return rt.run_one(n, [], [], cap_s=cap, mem_mb=1024, root=repo, tracked_reports=tracked,
+                      systemp=str(repo.parent / "systemp"))
+
+
+def test_run_one_outcomes(tmp_path: Path) -> None:
+    repo = _organs(tmp_path, {
         "ok.py": "print('hello')",
         "boom.py": "raise ValueError('a message that must not be recorded')",
         "slow.py": "import time\ntime.sleep(30)",
         "quiet.py": "x = 1",
+        "temp_ok.py": ("import tempfile, os\n"
+                       "open(os.path.join(tempfile.gettempdir(), 'x'), 'w').write('1')"),
+    })
+    assert _go(repo, "ok.py")["outcome"] == rt.RAN_OK
+    boom = _go(repo, "boom.py")
+    assert boom["outcome"] == rt.CRASHED and boom["exception"] == "ValueError"
+    assert "message" not in json.dumps(boom)
+    assert _go(repo, "slow.py", cap=1.0)["outcome"] == rt.TIMEOUT
+    assert _go(repo, "quiet.py")["outcome"] == rt.NO_OUTPUT
+    # the organ's own temp dir is the sandbox, which is writable
+    assert _go(repo, "temp_ok.py")["outcome"] == rt.RAN_OK
+
+
+def test_mf3_writes_inside_the_repo_are_refused_except_untracked_reports(tmp_path: Path) -> None:
+    repo = _organs(tmp_path, {
         "writer.py": ("from pathlib import Path\nr = Path(__file__).parent\n"
                       "(r / 'reports' / 'r.json').write_text('{}')\n"
                       "(r / 'data' / 'state.json').write_text('{}')\n"),
         "tracked_report.py": ("from pathlib import Path\n"
                               "(Path(__file__).parent / 'reports' / 't.json').write_text('{}')"),
-    }
-    for n, s in organs.items():
-        (tmp_path / n).write_text(s, "utf-8")
+    })
+    w = _go(repo, "writer.py")
+    assert w["outcome"] == rt.CRASHED and w["exception"] == "WriteRefused"
+    assert (repo / "reports" / "r.json").exists()
+    assert not (repo / "data" / "state.json").exists()
+    assert w["refused"] == [f"write: {os.path.join('data', 'state.json')}"]
+    t = _go(repo, "tracked_report.py", tracked=("reports/t.json",))
+    assert t["exception"] == "WriteRefused"
+    assert not (repo / "reports" / "t.json").exists()
 
-    def go(n: str, cap: float = 20.0, tracked: tuple[str, ...] = ()) -> dict[str, object]:
-        return rt.run_one(n, [], [], cap_s=cap, mem_mb=1024, root=tmp_path,
-                          tracked_reports=tracked)
 
-    assert go("ok.py")["outcome"] == rt.RAN_OK
-    boom = go("boom.py")
-    assert boom["outcome"] == rt.CRASHED and boom["exception"] == "ValueError"
-    assert "message" not in json.dumps(boom)
-    assert go("slow.py", cap=1.0)["outcome"] == rt.TIMEOUT
-    assert go("quiet.py")["outcome"] == rt.NO_OUTPUT
-    w = go("writer.py")
-    assert w["outcome"] == rt.CRASHED and w["exception"] == "TrackedStateWriteRefused"
-    assert (tmp_path / "reports" / "r.json").exists()
-    assert not (tmp_path / "data" / "state.json").exists()
-    assert w["refused_writes"] == [os.path.join("data", "state.json")]
-    t = go("tracked_report.py", tracked=("reports/t.json",))
-    assert t["exception"] == "TrackedStateWriteRefused"
-    assert not (tmp_path / "reports" / "t.json").exists()
+def test_mf3_a_write_outside_the_repository_is_refused(tmp_path: Path) -> None:
+    tape = tmp_path / "tick_tape"
+    tape.mkdir()
+    repo = _organs(tmp_path, {
+        # swallows the refusal and exits 0: it is still classified from the refusal record
+        "outside.py": (f"try:\n    open({str(tape / 'XAUUSD.bin')!r}, 'wb').write(b'x')\n"
+                       "except PermissionError:\n    pass\nprint('done')"),
+        "rename.py": (f"import os\nos.replace({str(tape / 'a')!r}, {str(tape / 'b')!r})"),
+        "mkdir.py": f"import os\nos.mkdir({str(tape / 'new')!r})",
+    })
+    o = _go(repo, "outside.py")
+    assert o["outcome"] == rt.CRASHED and o["exception"] == "WriteRefused", o
+    assert not (tape / "XAUUSD.bin").exists()
+    for n in ("rename.py", "mkdir.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.CRASHED and r["exception"] == "WriteRefused", (n, r)
+    assert not (tape / "new").exists()
+
+
+def test_mf1_network_is_refused_loopback_included(tmp_path: Path) -> None:
+    repo = _organs(tmp_path, {
+        "connect.py": ("import socket\ns = socket.socket()\n"
+                       "s.connect(('127.0.0.1', 1))"),
+        "resolve.py": "import socket\nsocket.getaddrinfo('localhost', 80)",
+        "byname.py": ("import socket\ntry:\n    socket.gethostbyname('example.com')\n"
+                      "except OSError:\n    pass"),
+    })
+    for n in ("connect.py", "resolve.py", "byname.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.NETWORK_REFUSED, (n, r)
+        assert any(str(x).startswith("network: socket.") for x in r["refused"])  # type: ignore[attr-defined]
+
+
+def test_mf2_child_processes_are_refused(tmp_path: Path) -> None:
+    marker = tmp_path / "child_ran"
+    child = f"open({str(marker)!r}, 'w').write('1')"
+    repo = _organs(tmp_path, {
+        "popen.py": f"import subprocess, sys\nsubprocess.run([sys.executable, '-c', {child!r}])",
+        "system.py": "import os\nos.system('echo hi')",
+        "execv.py": "import os, sys\nos.execv(sys.executable, [sys.executable, '-c', 'pass'])",
+    })
+    for n in ("popen.py", "system.py", "execv.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.CRASHED and r["exception"] == "SpawnRefused", (n, r)
+    assert not marker.exists()
+
+
+def test_sf1_the_environment_is_an_allowlist(tmp_path: Path) -> None:
+    env = rt.organ_env(str(tmp_path), tmp_path, base={
+        "PATH": "/bin", "SystemRoot": "C:\\Windows", "PYTHONHASHSEED": "0",
+        "QUANT_REDTEAM_X": "1", "OPENAI_API_KEY": "k", "AWS_SECRET_ACCESS_KEY": "k",
+        "HOME": "/root", "GITHUB_TOKEN": "k", "QUANT_ALLOW_SSH_PY": "1"})
+    assert {"PATH", "SystemRoot", "PYTHONHASHSEED", "QUANT_REDTEAM_X"} <= set(env)
+    for k in ("OPENAI_API_KEY", "AWS_SECRET_ACCESS_KEY", "HOME", "GITHUB_TOKEN",
+              "QUANT_ALLOW_SSH_PY"):
+        assert k not in env
+    assert env["TEMP"] == env["TMP"] == str(tmp_path)
+
+
+def test_sf2_placing_windows_are_read_and_honoured() -> None:
+    from datetime import UTC, datetime
+    gold = rt.gold_signal_hours()
+    assert gold and ("asia", 7) in gold  # read from decision_core, not typed here
+    assert rt.scalp_windows() is not None
+    off = lambda _now: 2  # noqa: E731  -- winter broker clock
+
+    def at(h: int, m: int) -> datetime:
+        return datetime(2026, 11, 18, h, m, tzinfo=UTC)
+
+    # 05:00Z = 07:00 broker in winter: the asia placement
+    assert "gold asia" in str(rt.placing_window(at(5, 0), lead_min=4, offset_h=off, gold=gold,
+                                                scalp=[]))
+    # well clear of every window
+    assert rt.placing_window(at(1, 0), lead_min=4, offset_h=off, gold=gold, scalp=[]) is None
+    # a pass that would still be running when the window opens is refused too
+    assert rt.placing_window(at(4, 25), lead_min=10, offset_h=off, gold=gold, scalp=[])
+    # a LIVE scalp row trading 15-17 broker, and one whose session is unresolvable
+    assert "scalp" in str(rt.placing_window(at(13, 30), lead_min=4, offset_h=off, gold=[],
+                                            scalp=[("s", 15, 17)]))
+    assert rt.placing_window(at(1, 0), lead_min=4, offset_h=off, gold=[],
+                             scalp=[("s", 0, 24)])
+    # unreadable windows and an unreadable clock fail closed
+    assert rt.placing_window(at(1, 0), lead_min=4, offset_h=off, gold=None, scalp=[],
+                             read=False)
+    assert rt.placing_window(at(1, 0), lead_min=4, offset_h=lambda _n: 1 / 0, gold=gold,
+                             scalp=[])
+
+
+def test_sf2_scalp_rows_resolve_their_session_hours(tmp_path: Path) -> None:
+    sl = tmp_path / "sleeves.json"
+    sl.write_text(json.dumps({"sleeves": [
+        {"name": "a", "status": "LIVE", "session": "overlap"},
+        {"name": "b", "status": "LIVE", "session": "all"},
+        {"name": "c", "status": "RETIRED", "session": "overlap"}]}), "utf-8")
+    assert rt.scalp_windows(sl) == [("a", 15, 17), ("b", 0, 24)]
+
+
+def test_sf2_stall_watch_pressure(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+    now = datetime(2026, 11, 18, 5, 0, tzinfo=UTC)
+    p = tmp_path / "stall_watch.json"
+    p.write_text(json.dumps({"checked_at": "2026-11-18T04:55:00+00:00",
+                             "memory": {"free_phys_mb": 600, "total_phys_mb": 8186}}), "utf-8")
+    assert rt.stall_pressure(512, now=now, paths=[p])
+    p.write_text(json.dumps({"checked_at": "2026-11-18T04:55:00+00:00",
+                             "memory": {"free_phys_mb": 6000, "total_phys_mb": 8186}}), "utf-8")
+    assert rt.stall_pressure(512, now=now, paths=[p]) is None
+    p.write_text(json.dumps({"checked_at": "2026-11-17T00:00:00+00:00",
+                             "memory": {"free_phys_mb": 10, "total_phys_mb": 8186}}), "utf-8")
+    assert rt.stall_pressure(512, now=now, paths=[p]) is None  # stale: psutil stands alone
+
+
+def test_a_hold_stands_the_pass_down(tmp_path: Path) -> None:
+    src = _fixture(tmp_path, ["libs/a.py"])
+    calls: list[str] = []
+
+    def runner(name: str, *_a: object, **_k: object) -> dict[str, object]:
+        calls.append(name)
+        return {"outcome": rt.RAN_OK}
+
+    doc = rt.run_pass(source=src, out=tmp_path / "o.json", root=tmp_path, runner=runner,
+                      hold=lambda _mb: "gold asia placing window")
+    assert not calls and doc["status"] == "STOOD_DOWN"
+    assert doc["stood_down_because"] == "gold asia placing window"
+    assert doc["cursor"] == "libs/a.py"

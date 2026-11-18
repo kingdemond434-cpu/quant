@@ -20,6 +20,11 @@ ONE PASS, BOUNDED ON EVERY AXIS:
     machine's free memory (never a hard-coded figure: the two boxes differ twelve-fold), and the
     pass stands down entirely when free memory cannot cover the cap twice.
   * a DRY or READ-ONLY flag whenever the organ's own argparse declares one.
+  * a GUARD in the organ's own process (an audit hook): no network at all, loopback included;
+    no child process; no write anywhere but the sandbox, the system temp dir and untracked
+    reports/ -- see BOOTSTRAP. The organ inherits an ALLOWLISTED environment, never the parent's.
+  * no pass at all inside a gold or scalp PLACING WINDOW (read from decision_core.GOLD_WINDOWS
+    and the LIVE scalp rows of data/sleeves.json), or while stall_watch shows memory pressure.
 
 WHAT IS NEVER STARTED (the denylist, each reason pinned by a test):
   * anything under desks/mt5/scripts/ (the box's own launchers);
@@ -34,7 +39,8 @@ WHAT IS NEVER STARTED (the denylist, each reason pinned by a test):
     left for a person -- reverting here could destroy another writer's work).
 
 OUTCOMES (exactly these): ran_ok / crashed (exception TYPE only, never the message: a message can
-carry a path, a key fragment or an account number) / no_output / timeout / skipped_denylisted.
+carry a path, a key fragment or an account number; SpawnRefused and WriteRefused when the guard
+stopped it) / no_output / timeout / skipped_denylisted / network_refused.
 Report only. Nothing is retired, scheduled or repaired by this file; it is the evidence a person
 or the clock-enrolment organ acts on.
 
@@ -53,7 +59,7 @@ import tempfile
 import time
 from collections import Counter
 from collections.abc import Iterable, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -68,9 +74,14 @@ OUT = DESK / "reports" / "ORGAN_REDTEAM.json"
 MONEY_CLOSURE = ROOT / "ops" / "money_closure.txt"
 SELF = "desks/mt5/research/organ_redteam.py"
 
-RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED = (
-    "ran_ok", "crashed", "no_output", "timeout", "skipped_denylisted")
-OUTCOMES = (RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED)
+RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED = (
+    "ran_ok", "crashed", "no_output", "timeout", "skipped_denylisted", "network_refused")
+OUTCOMES = (RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED)
+#: The environment an organ inherits: these names, and anything starting PYTHON or QUANT_REDTEAM_
+#: (audit HOLD on #1334, SF1). Never dict(os.environ): a credential in the parent's environment
+#: has no business in an organ started blind. The temp names are pointed at the sandbox.
+ENV_ALLOW = ("PATH", "SYSTEMROOT", "TEMP", "TMP", "TMPDIR")
+ENV_PREFIXES = ("PYTHON", "QUANT_REDTEAM_")
 
 PER_PASS = 3
 CAP_S = 45.0
@@ -120,59 +131,101 @@ _EXC = re.compile(r"^([A-Za-z_][\w.]*"
 ARTIFACT_DIRS = ("desks/mt5/reports", "desks/mt5/data", "reports", "data", "docs/research")
 
 
-#: THE WRITE GUARD, the prevention half (the git-status drift check is the detection half). The
-#: organ is started through this bootstrap, which installs a `sys.addaudithook` before running the
-#: organ as __main__: every write-mode open, rename, replace, remove or truncate of a path INSIDE
-#: the repository is refused with TrackedStateWriteRefused unless it lands under a `reports/`
-#: directory (gitignored as `**/reports/*`) on a path git does not track. Writes outside the
-#: repository (temp, caches) pass. Each refusal is appended to `_refused` in the sandbox, so an
-#: organ that swallows the PermissionError is still seen to have tried. Measured 2026-11-18 on
-#: the first real pass: alpha_genome.py appended to the TRACKED data/preregistrations.jsonl
-#: through an imported donation helper -- no filename literal the static gate could see.
+#: THE GUARD, the prevention half (the git-status drift check is the detection half). The organ
+#: is started through this bootstrap, which installs a `sys.addaudithook` and then runs the organ
+#: as __main__. Audit hooks are per process and a child never inherits one, so the guard refuses
+#: everything that would leave its reach, and everything that would touch the box:
+#:
+#:   WRITES   (audit HOLD on #1334, MF3: the rule is INVERTED) the only writable places are the
+#:            sandbox, the system temp dir, os.devnull and an UNTRACKED path under a `reports/`
+#:            directory inside the repository. Every other path is refused, outside the
+#:            repository too: the tick tape, the terminal's directories, any other box state.
+#:            Covers open-for-write, rename/replace, remove, rmdir, mkdir, truncate, chmod,
+#:            utime, link, symlink, rmtree and sqlite3.connect.
+#:   NETWORK  (MF1) socket.connect, socket.getaddrinfo, socket.gethostbyname(_ex/addr) and
+#:            sendto, with NO loopback exception: the gateway and the terminal are local.
+#:   SPAWN    (MF2) subprocess.Popen, os.system, os.exec*, os.spawn*, os.posix_spawn and
+#:            os.startfile: a child would run without the hook.
+#:
+#: Each refusal is appended to `_refused` in the sandbox as `kind<TAB>detail`, so an organ that
+#: swallows the PermissionError is still seen to have tried, and the outcome is classified from
+#: that file, not from the exit code. Measured 2026-11-18 on the first real pass: alpha_genome.py
+#: appended to the TRACKED data/preregistrations.jsonl through an imported donation helper -- no
+#: filename literal the static gate could see.
 BOOTSTRAP = r"""
 import os, sys, runpy
-_ROOT = os.path.normcase(os.path.abspath(os.environ["QUANT_REDTEAM_ROOT"]))
+def _real(p):
+    return os.path.normcase(os.path.realpath(os.path.abspath(p)))
+_ROOT = _real(os.environ["QUANT_REDTEAM_ROOT"])
 _SANDBOX = os.environ["QUANT_REDTEAM_SANDBOX"]
+_REFUSED = os.path.join(_SANDBOX, "_refused")
+_ALLOWED = tuple(_real(p) for p in (_SANDBOX, os.environ["QUANT_REDTEAM_SYSTEMP"]) if p)
+_DEVNULL = _real(os.devnull)
 with open(os.environ["QUANT_REDTEAM_TRACKED"], encoding="utf-8") as _f:
     _TRACKED = frozenset(ln.strip() for ln in _f if ln.strip())
 _W = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
 _busy = [False]
-class TrackedStateWriteRefused(PermissionError):
+class WriteRefused(PermissionError):
+    pass
+class NetworkRefused(PermissionError):
+    pass
+class SpawnRefused(PermissionError):
     pass
 def _norm(p):
     if isinstance(p, bytes):
         p = os.fsdecode(p)
     if not isinstance(p, (str, os.PathLike)):
         return None
-    return os.path.normcase(os.path.abspath(os.fspath(p)))
-def _refuse(p):
+    return _real(os.fspath(p))
+def _inside(n, base):
+    return n == base or n.startswith(base.rstrip(os.sep) + os.sep)
+def _write_ok(p):
     n = _norm(p)
-    if n is None or not (n == _ROOT or n.startswith(_ROOT + os.sep)):
-        return False
-    parts = n[len(_ROOT):].split(os.sep)
-    return not ("reports" in parts and n not in _TRACKED)
+    if n is None:
+        return True  # an int fd: the open that produced it was already judged
+    if _inside(n, _ROOT):  # judged first: a repository under the temp dir is still the repo
+        parts = n[len(_ROOT):].split(os.sep)
+        return "reports" in parts and n not in _TRACKED
+    return n == _DEVNULL or any(_inside(n, a) for a in _ALLOWED)
+def _record(kind, detail, exc):
+    _busy[0] = True
+    try:
+        with open(_REFUSED, "a", encoding="utf-8") as f:
+            f.write(kind + "\t" + str(detail)[:200].replace("\n", " ") + "\n")
+    finally:
+        _busy[0] = False
+    raise exc("organ_redteam: " + kind + " refused")
+_NET = {"socket.connect", "socket.getaddrinfo", "socket.gethostbyname",
+        "socket.gethostbyaddr", "socket.sendto", "socket.sendmsg"}
+_SPAWN = ("subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn",
+          "os.startfile")
+_WRITE2 = {"os.rename", "os.link", "os.symlink"}
+_WRITE1 = {"os.remove", "os.rmdir", "os.mkdir", "os.truncate", "os.chmod", "os.chown",
+           "os.utime", "shutil.rmtree", "sqlite3.connect"}
 def _hook(event, args):
     if _busy[0]:
         return
+    if event in _NET:
+        tgt = args[1] if event in ("socket.connect", "socket.sendto") and len(args) > 1 else (
+            args[0] if args else "")
+        _record("network", event + " " + repr(tgt), NetworkRefused)
+    if event.startswith(_SPAWN):
+        _record("spawn", event, SpawnRefused)
     paths = ()
     if event == "open":
         mode, flags = args[1], args[2]
         w = (isinstance(mode, str) and any(c in mode for c in "wax+")) or (
             mode is None and isinstance(flags, int) and bool(flags & _W))
         paths = (args[0],) if w else ()
-    elif event in ("os.rename", "os.link", "os.symlink"):
+    elif event in _WRITE2:
         paths = (args[0], args[1])
-    elif event in ("os.remove", "os.rmdir", "os.truncate", "shutil.rmtree", "sqlite3.connect"):
+    elif event in _WRITE1:
         paths = (args[0],)
     for p in paths:
-        if _refuse(p):
-            _busy[0] = True
-            try:
-                with open(os.path.join(_SANDBOX, "_refused"), "a", encoding="utf-8") as f:
-                    f.write(os.path.relpath(_norm(p), _ROOT) + "\n")
-            finally:
-                _busy[0] = False
-            raise TrackedStateWriteRefused(f"organ_redteam: repository write refused: {event}")
+        if not _write_ok(p):
+            n = _norm(p) or "?"
+            shown = os.path.relpath(n, _ROOT) if _inside(n, _ROOT) else n
+            _record("write", shown, WriteRefused)
 _organ = sys.argv[1]
 sys.argv = sys.argv[1:]
 sys.path[0] = os.path.dirname(os.path.abspath(_organ))
@@ -332,29 +385,57 @@ def _artifact_touched(artifacts: Sequence[str], since: float, root: Path) -> boo
     return False
 
 
-def run_one(organ: str, args: Sequence[str], artifacts: Sequence[str], *, cap_s: float,
-            mem_mb: int, root: Path = ROOT,
-            tracked_reports: Sequence[str] = ()) -> dict[str, Any]:
-    """Start one organ in a scratch cwd under a time cap and a memory guard; classify the end."""
-    started = time.time()
-    env = dict(os.environ)
+def organ_env(sandbox: str, root: Path, base: dict[str, str] | None = None) -> dict[str, str]:
+    """The ALLOWLISTED environment an organ is started with (SF1)."""
+    src = dict(os.environ if base is None else base)
+    env = {k: v for k, v in src.items()
+           if k.upper() in ENV_ALLOW or k.upper().startswith(ENV_PREFIXES)}
     env.update({"PYTHONPATH": os.pathsep.join([str(root), str(root / "desks" / "mt5")]),
                 "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8",
-                "MPLBACKEND": "Agg", "QUANT_ORGAN_REDTEAM": "1"})
+                "TEMP": sandbox, "TMP": sandbox, "TMPDIR": sandbox,
+                "QUANT_REDTEAM_ACTIVE": "1"})
+    return env
+
+
+def _refusals(path: Path) -> list[tuple[str, str]]:
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for ln in lines:
+        kind, _, detail = ln.partition("\t")
+        out.append((kind, detail))
+    return sorted(set(out))
+
+
+def run_one(organ: str, args: Sequence[str], artifacts: Sequence[str], *, cap_s: float,
+            mem_mb: int, root: Path = ROOT,
+            tracked_reports: Sequence[str] = (),
+            systemp: str | None = None) -> dict[str, Any]:
+    """Start one organ in a scratch cwd under a time cap, a memory guard and the bootstrap guard.
+
+    Classification, in order: timeout; memory; NETWORK refused (network_refused); a SPAWN or a
+    WRITE refused (crashed / SpawnRefused or WriteRefused, whatever the exit code -- an organ that
+    swallowed the refusal did not run as itself); exit code; output.
+    """
+    started = time.time()
+    systemp = tempfile.gettempdir() if systemp is None else systemp
     with tempfile.TemporaryDirectory(prefix="organ_redteam_") as sandbox:
         out_p, err_p = Path(sandbox) / "_stdout", Path(sandbox) / "_stderr"
         tracked_p = Path(sandbox) / "_tracked"
-        tracked_p.write_text("\n".join(os.path.normcase(os.path.abspath(root / t))
+        tracked_p.write_text("\n".join(os.path.normcase(os.path.realpath(root / t))
                                        for t in tracked_reports), "utf-8")
+        env = organ_env(sandbox, root)
         env.update({"QUANT_REDTEAM_ROOT": str(root), "QUANT_REDTEAM_SANDBOX": sandbox,
-                    "QUANT_REDTEAM_TRACKED": str(tracked_p)})
+                    "QUANT_REDTEAM_SYSTEMP": systemp, "QUANT_REDTEAM_TRACKED": str(tracked_p)})
         killed = None
         peak = 0.0
         with out_p.open("wb") as fo, err_p.open("wb") as fe:
             try:
-                proc = subprocess.Popen([sys.executable, "-c", BOOTSTRAP, str(root / organ), *args],
-                                        cwd=sandbox,
-                                        env=env, stdin=subprocess.DEVNULL, stdout=fo, stderr=fe)
+                proc = subprocess.Popen([sys.executable, "-c", BOOTSTRAP, str(root / organ),
+                                         *args], cwd=sandbox, env=env,
+                                        stdin=subprocess.DEVNULL, stdout=fo, stderr=fe)
             except OSError as exc:
                 return {"outcome": CRASHED, "exception": type(exc).__name__, "rc": None,
                         "elapsed_s": 0.0}
@@ -376,23 +457,156 @@ def run_one(organ: str, args: Sequence[str], artifacts: Sequence[str], *, cap_s:
         elapsed = round(time.time() - started, 2)
         stdout_n = out_p.stat().st_size if out_p.exists() else 0
         stderr = err_p.read_bytes()[-8192:].decode("utf-8", "replace") if err_p.exists() else ""
-        refused_p = Path(sandbox) / "_refused"
-        refused = (sorted(set(refused_p.read_text("utf-8").splitlines()))
-                   if refused_p.exists() else [])
+        refused = _refusals(Path(sandbox) / "_refused")
         wrote_sandbox = any(p.name not in ("_stdout", "_stderr", "_tracked", "_refused")
                             for p in Path(sandbox).iterdir())
     base: dict[str, Any] = {"rc": rc, "elapsed_s": elapsed, "peak_rss_mb": round(peak, 1)}
+    kinds = {k for k, _ in refused}
     if refused:
-        base["refused_writes"] = refused[:20]
+        base["refused"] = [f"{k}: {d}" for k, d in refused][:20]
     if killed == TIMEOUT:
         return {"outcome": TIMEOUT, **base}
     if killed == "memory":
         return {"outcome": CRASHED, "exception": "MemoryGuard", **base}
+    if "network" in kinds:
+        return {"outcome": NETWORK_REFUSED, "exception": "NetworkRefused", **base}
+    if "spawn" in kinds:
+        return {"outcome": CRASHED, "exception": "SpawnRefused", **base}
+    if "write" in kinds:
+        return {"outcome": CRASHED, "exception": "WriteRefused", **base}
     if rc != 0:
         return {"outcome": CRASHED, "exception": exception_type(stderr) or f"exit_{rc}", **base}
     if stdout_n or wrote_sandbox or _artifact_touched(artifacts, started, root):
         return {"outcome": RAN_OK, **base}
     return {"outcome": NO_OUTPUT, **base}
+
+
+#: WHERE THE PLACING WINDOWS ARE READ FROM (audit HOLD on #1334, SF2), never typed here: the gold
+#: windows are `decision_core.GOLD_WINDOWS` (signal hours on the BROKER clock), read from source
+#: so this file imports nothing on the money path; the scalp lane is every LIVE row of
+#: data/sleeves.json that names a session, its hours read from `family_generic._CONTEXTS` (broker
+#: hours, the masks the scalp families trade in). The broker clock is
+#: `libs.regime.session_clock.utc_offset_h` (3 in US summer, 2 otherwise).
+DECISION_CORE = DESK / "mt5desk" / "decision_core.py"
+FAMILY_GENERIC = DESK / "mt5desk" / "family_generic.py"
+SLEEVES = DESK / "data" / "sleeves.json"
+STALL_WATCH = (DESK / "data" / "stall_watch.json", ROOT / "data" / "stall_watch.json")
+#: Minutes each side of a gold placement that the followers trail inside (libs/ops/adopt_guard's
+#: blackout uses the same thirty).
+WINDOW_MARGIN_MIN = 30
+#: Free physical memory under this share of total is a binding limit (limits_census's floor).
+STALL_FREE_SHARE = 0.10
+STALL_MAX_AGE_S = 2 * 3600
+_CONTEXT_HOURS = re.compile(r"""["'](\w+)["']\s*:\s*lambda\s+d\s*:\s*"""
+                            r"""\(d\.index\.hour\s*>=\s*(\d+)\)"""
+                            r"""\s*&\s*\(d\.index\.hour\s*<\s*(\d+)\)""")
+
+
+def gold_signal_hours(path: Path = DECISION_CORE) -> list[tuple[str, int]] | None:
+    """[(label, broker signal hour)] from decision_core.GOLD_WINDOWS; None when unreadable."""
+    import ast
+    try:
+        tree = ast.parse(path.read_text("utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "GOLD_WINDOWS"
+                                                 for t in node.targets)):
+            try:
+                rows = ast.literal_eval(node.value)
+                return [(str(r[0]), int(r[1])) for r in rows]
+            except (ValueError, TypeError, IndexError):
+                return None
+    return None
+
+
+def scalp_windows(sleeves: Path = SLEEVES,
+                  generic: Path = FAMILY_GENERIC) -> list[tuple[str, int, int]] | None:
+    """[(sleeve, start, end)] broker hours of every LIVE scalp-lane row; None when unreadable.
+
+    A LIVE row whose session cannot be resolved to hours (`all`, missing, unknown) counts as
+    placing all day (0, 24): fail closed."""
+    doc = _read_json(sleeves)
+    if doc is None:
+        return None
+    try:
+        hours = {m.group(1): (int(m.group(2)), int(m.group(3)))
+                 for m in _CONTEXT_HOURS.finditer(generic.read_text("utf-8"))}
+    except OSError:
+        hours = {}
+    out = []
+    for row in doc.get("sleeves") or []:
+        if not isinstance(row, dict) or str(row.get("status")) != "LIVE" or not row.get("session"):
+            continue
+        a, b = hours.get(str(row["session"]), (0, 24))
+        out.append((str(row.get("name")), a, b))
+    return out
+
+
+def placing_window(now: datetime, *, lead_min: int, offset_h: Any = None,
+                   gold: list[tuple[str, int]] | None = None,
+                   scalp: list[tuple[str, int, int]] | None = None,
+                   read: bool = True) -> str | None:
+    """Why `now` (or the next `lead_min` minutes) is inside a gold or scalp placing window; else
+    None. Unreadable windows or broker clock are a reason too: never run blind."""
+    if read:
+        gold = gold_signal_hours() if gold is None else gold
+        scalp = scalp_windows() if scalp is None else scalp
+    if gold is None:
+        return "gold windows unreadable (decision_core.GOLD_WINDOWS)"
+    if scalp is None:
+        return "scalp lane unreadable (data/sleeves.json)"
+    try:
+        if offset_h is None:
+            from libs.regime.session_clock import utc_offset_h
+            offset_h = utc_offset_h
+        off = int(offset_h(now))
+    except Exception as exc:
+        return f"broker clock unreadable ({type(exc).__name__})"
+    b = now.astimezone(UTC) + timedelta(hours=off)
+    m = b.hour * 60 + b.minute
+
+    def inside(start: int, end: int) -> bool:
+        span = (end - start) % 1440 or 1440
+        return (m - start) % 1440 < span
+
+    for label, hour in gold:
+        if inside(hour * 60 - WINDOW_MARGIN_MIN - lead_min, hour * 60 + WINDOW_MARGIN_MIN):
+            return f"gold {label} placing window (signal {hour:02d}:00 broker, now {b:%H:%M})"
+    for name, a, e in scalp:
+        if e - a >= 24 or inside(a * 60 - lead_min, e * 60):
+            return f"scalp {name} placing window ({a:02d}-{e:02d} broker, now {b:%H:%M})"
+    return None
+
+
+def stall_pressure(mem_mb: int, *, now: datetime | None = None,
+                   paths: Sequence[Path] = STALL_WATCH) -> str | None:
+    """Why the box's own stall_watch says it is under memory pressure; None when it does not, or
+    when no fresh stall_watch exists (psutil's reading then stands alone)."""
+    now = now or datetime.now(tz=UTC)
+    best: tuple[datetime, dict[str, Any]] | None = None
+    for p in paths:
+        doc = _read_json(p)
+        if not doc:
+            continue
+        try:
+            at = datetime.fromisoformat(str(doc.get("checked_at")).replace("Z", "+00:00"))
+            at = at if at.tzinfo else at.replace(tzinfo=UTC)
+        except ValueError:
+            continue
+        if best is None or at > best[0]:
+            best = (at, doc)
+    if best is None or (now - best[0]).total_seconds() > STALL_MAX_AGE_S:
+        return None
+    mem = best[1].get("memory") or {}
+    try:
+        free, total = float(mem["free_phys_mb"]), float(mem.get("total_phys_mb") or 0)
+    except (KeyError, TypeError, ValueError):
+        return None
+    floor = max(2.0 * mem_mb, STALL_FREE_SHARE * total)
+    if free < floor:
+        return f"stall_watch free_phys_mb {free:.0f} < {floor:.0f}"
+    return None
 
 
 def next_names(names: Sequence[str], cursor: str | None) -> list[str]:
@@ -408,7 +622,8 @@ def next_names(names: Sequence[str], cursor: str | None) -> list[str]:
 
 def run_pass(*, per_pass: int = PER_PASS, cap_s: float = CAP_S, budget_s: float = BUDGET_S,
              plan_only: bool = False, source: Path = SOURCE, out: Path = OUT,
-             root: Path = ROOT, runner: Any = None) -> dict[str, Any]:
+             root: Path = ROOT, runner: Any = None,
+             hold: Any = None) -> dict[str, Any]:
     runner = runner or run_one
     prev = _read_json(out) or {}
     census = _read_json(source)
@@ -434,7 +649,17 @@ def run_pass(*, per_pass: int = PER_PASS, cap_s: float = CAP_S, budget_s: float 
     mem_mb, avail = memory_cap_mb()
     doc["memory_cap_mb"], doc["memory_available_mb"] = mem_mb, (
         round(avail) if avail is not None else None)
-    stand_down = avail is not None and avail < 2 * mem_mb
+    if hold is None:
+        now = datetime.now(tz=UTC)
+        why = (placing_window(now, lead_min=int(budget_s // 60) + 1)
+               or stall_pressure(mem_mb, now=now))
+    else:
+        why = hold(mem_mb)
+    if why is None and avail is not None and avail < 2 * mem_mb:
+        why = f"psutil available {avail:.0f} MB < twice the {mem_mb} MB cap"
+    stand_down = why is not None
+    if why:
+        doc["stood_down_because"] = why
     t0 = time.time()
     ran = 0
     rotation = next_names(no_clock, doc["cursor"])
@@ -453,7 +678,7 @@ def run_pass(*, per_pass: int = PER_PASS, cap_s: float = CAP_S, budget_s: float 
         if not c["run"]:
             row.update(outcome=SKIPPED, reason=c["reason"])
         elif plan_only or stand_down:
-            row.update(outcome=None, reason="plan_only" if plan_only else "memory_stand_down")
+            row.update(outcome=None, reason="plan_only" if plan_only else "stand_down")
             doc["this_pass"].append(row)
             if stand_down:
                 cursor = name
