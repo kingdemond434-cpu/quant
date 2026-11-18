@@ -157,6 +157,32 @@ def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iter
 
 
 @pytest.fixture(autouse=True)
+def _experiment_ledger_in_tmp(tmp_path_factory, monkeypatch):
+    """THE LIFETIME TRIAL LEDGER NEVER LANDS IN THE CHECKOUT FROM A TEST (2026-11-11).
+    `experiment_ledger.family_trials` falls back to `lifetime(write=True)` when OUT is absent,
+    and OUT is gitignored, so on CI the first test that reached any trial charge wrote
+    `desks/mt5/reports/EXPERIMENT_LEDGER.json` into the tree. Under `-n auto` that write landed
+    inside another worker's tree snapshot and failed
+    `test_hypothesis_families::test_the_docket_writer_runs_the_census_and_reaims_every_hour`
+    ("the end-to-end merge test wrote a desk file") on unrelated PRs (#721, twice). A test's own
+    redirect of OUT is applied after this one and wins."""
+    try:
+        from libs.research import experiment_ledger as el
+    except Exception:
+        yield
+        return
+    checkout = Path(__file__).resolve().parents[3]
+    try:
+        in_checkout = Path(el.OUT).resolve().is_relative_to(checkout)
+    except (OSError, ValueError):
+        in_checkout = True
+    if in_checkout:     # a module-scoped redirect (test_placebo_audit's owned ledger) is kept
+        monkeypatch.setattr(el, "OUT", tmp_path_factory.mktemp("experiment_ledger") /
+                            "EXPERIMENT_LEDGER.json")
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     """THE ORDER DOOR'S LEDGER NEVER LANDS IN THE REPO FROM A TEST. `mt5desk.order_door` appends
     one row per money action to `desks/mt5/data/order_door_ledger.jsonl` -- the box's real
@@ -421,3 +447,22 @@ def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None
                                                                          f"conftest-{lane}")
         gold_oco.publish_lane(lane, key, positions=[], orders=[], date="2026-01-01")
     return _cross_account_books_in_tmp
+
+
+@pytest.fixture(autouse=True)
+def _control_plane_acks_and_lineage_in_tmp(tmp_path_factory, monkeypatch):
+    """THE CONTROL PLANE'S ACK LOG AND LINEAGE DB NEVER LAND IN THE CHECKOUT FROM A TEST
+    (2026-11-14). `lease.ack_artifact` appends to desks/mt5/data/artifact_acks.jsonl and
+    `edges.connect` opens desks/mt5/data/lineage.sqlite; both read the module constant at call
+    time. Under `-n auto` one worker's write landed inside another's tree snapshot and failed
+    `test_hypothesis_families`' "wrote a desk file" check on unrelated PRs (#1168), the same race
+    as #721. A test's own redirect (or an explicit `path=`) is applied after this one and wins."""
+    try:
+        from libs.ops.control_plane import edges, lease
+    except Exception:
+        yield
+        return
+    root = tmp_path_factory.mktemp("control_plane")
+    monkeypatch.setattr(lease, "ACK_LOG", root / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", root / "lineage.sqlite")
+    yield

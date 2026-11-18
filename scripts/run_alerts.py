@@ -17,14 +17,18 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
+import re
 import secrets
 import subprocess
 import sys
 import time
 import urllib.request
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from libs.ops.fresh import stamp_age_h
@@ -45,6 +49,35 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
                        "research_chain_failed": 24 * 3600}
+
+# PLUMBING + JUDGE STALL (2026-10-20). The plumbing watchdog escalated into three places a human
+# meets only by LOOKING (desk state, the events log, docs/research/PLUMBING_ALERTS.md), and the
+# judge's rate meter (JUDGING_RATE.json) recorded a judge with zero verdicts for days -- and
+# this pager read neither, so a stalled judge paged no one. Both are read here now.
+#: The watchdog's full report (box-local: gitignored, so absent on the VPS) and its published
+#: escalation page (tracked, so it reaches the VPS). Whichever is newer and readable is used.
+_PLUMBING_JSON = Path("desks/mt5/reports/PLUMBING_WATCHDOG.json")
+_PLUMBING_MD = Path("docs/research/PLUMBING_ALERTS.md")
+#: verdicts/hour from the judge's own ledger (desks/mt5/research/judging_throughput.py).
+_JUDGING_RATE = Path("desks/mt5/reports/JUDGING_RATE.json")
+#: No new verdict for this long is a STALLED judge. The judge runs on a minutes cadence, so six
+#: hours of silence is a stop, not a slow hour.
+JUDGE_STALL_H = 6.0
+#: The watchdog runs every 15 min; a report older than this means the watchdog itself stopped
+#: (or stopped being published), which is UNMEASURED plumbing -- never a quiet pass.
+PLUMBING_MAX_AGE_H = 3.0
+#: Re-page every REPAGE_H while still failing (box_heartbeat's convention): these are stops,
+#: and a stop should nag until someone repairs it.
+REPAGE_H = 2.0
+#: A stamp up to this far in the future is clock skew between writer and reader, not a defect
+#: (the same allowance the judge_throughput producer uses).
+CLOCK_SKEW_H = 0.25
+#: The severities the watchdog emits. Anything else -- a mangled cell, a new word -- is
+#: UNMEASURED and pages as such; an unknown severity may never be read as "not CRITICAL".
+KNOWN_SEVERITIES = frozenset({"CRITICAL", "MAJOR"})
+_PLUMBING_KEYS = ("plumbing_critical", "plumbing_unmeasured", "judge_throughput_critical",
+                  "judge_throughput_unmeasured", "judge_stalled", "judge_rate_unmeasured")
+_DEDUPE_OVERRIDES_S.update(dict.fromkeys(_PLUMBING_KEYS, int(REPAGE_H * 3600)))
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -57,8 +90,33 @@ def _topic() -> str:
     topic = f"quant-desk-{secrets.token_hex(6)}"
     _SECRETS.parent.mkdir(parents=True, exist_ok=True)
     _SECRETS.write_text(json.dumps({"topic": topic}), "utf-8")
-    print(f"NEW pager topic created -> subscribe at: https://ntfy.sh/{topic}")
+    # The topic IS the credential: never echo it into a log. Read it from the file to subscribe.
+    print(f"NEW pager topic created -> stored in {_SECRETS} (read it there to subscribe)")
     return topic
+
+
+def _decode_secret(raw: bytes) -> str:
+    """Sniff the encoding: a hand-copied file from PS 5.1 (`Out-File`) is UTF-16, with or
+    without a BOM, and must not read as NOT ARMED. UnicodeDecodeError is a ValueError."""
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16")
+    if raw[1:2] == b"\x00":
+        return raw.decode("utf-16-le")
+    if raw[:1] == b"\x00":
+        return raw.decode("utf-16-be")
+    return raw.decode("utf-8-sig")
+
+
+def _read_topic(paths: tuple[Path, ...]) -> str | None:
+    """The EXISTING topic, or None. Never mints one and never prints one (box path)."""
+    for p in paths:
+        try:
+            topic = json.loads(_decode_secret(p.read_bytes())).get("topic")
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(topic, str) and topic.strip():
+            return topic.strip()
+    return None
 
 
 def _push(topic: str, title: str, body: str) -> None:
@@ -132,7 +190,7 @@ _REPLY_STATE = Path("data/.reply_poll_state.json")
 def _poll_replies(topic: str) -> None:
     """Fail-quiet by design: paging must never break because reply-polling did."""
     try:
-        st: dict = {}
+        st: dict[str, Any] = {}
         with contextlib.suppress(Exception):
             st = json.loads(_REPLY_STATE.read_text("utf-8"))
         since = str(st.get("last_id") or "24h")
@@ -255,6 +313,217 @@ def _second_channel(text: str) -> None:
                                          data=text.encode("utf-8", "ignore")[:900])
             with urllib.request.urlopen(req, timeout=10):
                 pass
+
+
+def _parse_at(raw: object) -> datetime | None:
+    """A timezone-aware ISO stamp, or None. A naive stamp is not a time (it cannot be aged)."""
+    try:
+        t = datetime.fromisoformat(str(raw).strip().replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo is not None else None
+
+
+def _age_h(now: datetime, at: datetime) -> float:
+    """Hours since `at`. Within CLOCK_SKEW_H of the future reads as 0; beyond it, negative."""
+    age = (now - at).total_seconds() / 3600
+    return 0.0 if -CLOCK_SKEW_H <= age < 0 else age
+
+
+_MD_GENERATED = re.compile(r"^Generated\s+(\S+)\s+from", re.MULTILINE)
+_MD_CELL_SPLIT = re.compile(r"(?<!\\)\|")
+
+
+def _parse_plumbing_md(text: str) -> dict[str, Any]:
+    """PLUMBING_ALERTS.md -> {at, rows}. Only escalated rows are rendered there, so every row
+    read is escalated. A page without a `severity` column (older producer) yields rows whose
+    severity is UNMEASURED -- reported as such, never assumed MAJOR."""
+    m = _MD_GENERATED.search(text)
+    rows: list[dict[str, Any]] = []
+    header: list[str] | None = None
+    for ln in text.splitlines():
+        s = ln.strip()
+        if not (s.startswith("|") and s.endswith("|")):
+            header = None if not s else header
+            continue
+        cells = [c.strip().strip("`").replace("\\|", "|")
+                 for c in _MD_CELL_SPLIT.split(s)[1:-1]]
+        if header is None:
+            header = [c.lower() for c in cells]
+            continue
+        if all(set(c) <= {"-", ":"} for c in cells):
+            continue
+        row = dict(zip(header, cells, strict=False))
+        sev = (row.get("severity") or "UNMEASURED").upper()
+        evidence = row.get("evidence", "")
+        if len(cells) != len(header):
+            # an unescaped `|` shifts every cell after it: nothing in the row can be trusted
+            sev, evidence = "UNMEASURED", (f"malformed row ({len(cells)} cells, header "
+                                           f"{len(header)}): {s[:80]}")
+        rows.append({"check": row.get("check", ""), "organ": row.get("organ", ""),
+                     "severity": sev, "escalated": True, "evidence": evidence})
+    return {"at": _parse_at(m.group(1)) if m else None, "rows": rows}
+
+
+def _read_plumbing(json_path: Path, md_path: Path) -> dict[str, Any]:
+    """The newest READABLE plumbing source: {source, at, rows} or {source: None, why}."""
+    cands: list[dict[str, Any]] = []
+    whys: list[str] = []
+    try:
+        doc = json.loads(json_path.read_text("utf-8-sig"))
+        if not isinstance(doc, dict) or not isinstance(doc.get("defects"), list):
+            raise ValueError("no defects list")
+        raw_facts = doc.get("facts")
+        facts: dict[str, Any] = raw_facts if isinstance(raw_facts, dict) else {}
+        skipped = doc.get("checks_skipped_for_budget")
+        ran = doc.get("checks_run")
+        cands.append({"source": json_path.name, "at": _parse_at(doc.get("at")),
+                      "rows": [r for r in doc["defects"] if isinstance(r, dict)],
+                      "has_facts": "judge_throughput" in facts,
+                      "judge_facts": facts.get("judge_throughput"),
+                      "checks_run": [str(x) for x in ran] if isinstance(ran, list) else [],
+                      "skipped": skipped if isinstance(skipped, list) else []})
+    except (OSError, ValueError) as exc:
+        whys.append(f"{json_path.name} {type(exc).__name__}")
+    try:
+        md = _parse_plumbing_md(md_path.read_text("utf-8-sig"))
+        cands.append({"source": md_path.name, **md})
+    except (OSError, ValueError) as exc:
+        whys.append(f"{md_path.name} {type(exc).__name__}")
+    if not cands:
+        return {"source": None, "why": "; ".join(whys)}
+    floor = datetime.min.replace(tzinfo=UTC)
+    best = max(cands, key=lambda c: c["at"] or floor)
+    js = cands[0] if cands[0]["source"] == json_path.name else None
+    if js is not None and best is not js:
+        # the md carries rows only: the JSON's facts and budget skips must not vanish just
+        # because the published page is newer (they are the last measured ones)
+        best = {**best, **{k: js[k] for k in ("has_facts", "judge_facts", "checks_run",
+                                              "skipped")}}
+    return best
+
+
+def _row_line(r: dict[str, Any]) -> str:
+    return f"{str(r.get('organ'))[:40]} ({r.get('check')}): {str(r.get('evidence'))[:70]}"
+
+
+def _plumbing_checks(now: datetime | None = None, *, json_path: Path = _PLUMBING_JSON,
+                     md_path: Path = _PLUMBING_MD) -> list[tuple[str, str]]:
+    """CRITICAL escalated plumbing rows, a CRITICAL judge_throughput row on its own key, and an
+    UNMEASURED page when the watchdog's output is missing, unreadable, unstamped or stale."""
+    t = now or datetime.now(tz=UTC)
+    src = _read_plumbing(json_path, md_path)
+    if src.get("source") is None:
+        return [("plumbing_unmeasured",
+                 f"plumbing watchdog output missing/unreadable ({src.get('why')}) -- the desk's "
+                 "plumbing is UNMEASURED, not fine; run desks/mt5/research/plumbing_watchdog.py "
+                 "--once on the box")]
+    out: list[tuple[str, str]] = []
+    at = src.get("at")
+    age_h = _age_h(t, at) if at else None
+    if age_h is None or age_h < 0 or age_h > PLUMBING_MAX_AGE_H:
+        seen = "carries no parseable stamp" if age_h is None else (
+            "carries a future stamp" if age_h < 0
+            else f"is {age_h:.1f}h old (> {PLUMBING_MAX_AGE_H:g}h)")
+        out.append(("plumbing_unmeasured",
+                     f"plumbing watchdog report {src['source']} {seen} -- the watchdog "
+                     "(MT5-PlumbingWatchdog) or its publication stopped; plumbing is UNMEASURED"))
+    rows = [r for r in src.get("rows") or []
+            if r.get("escalated", True) is not False]
+    crit = [r for r in rows if str(r.get("severity")).upper() == "CRITICAL"]
+    judge = [r for r in crit if r.get("check") == "judge_throughput"]
+    other = [r for r in crit if r.get("check") != "judge_throughput"]
+    asof = f" (as of {at.isoformat(timespec='minutes') if at else '?'}, {src['source']})"
+    if judge:
+        out.append(("judge_throughput_critical",
+                    "CRITICAL judge_throughput defect: " + _row_line(judge[0]) + asof))
+    if other:
+        more = f" +{len(other) - 3} more" if len(other) > 3 else ""
+        out.append(("plumbing_critical",
+                    f"{len(other)} CRITICAL plumbing defect(s): "
+                    + "; ".join(_row_line(r) for r in other[:3]) + more + asof))
+    unsev = [r for r in rows if str(r.get("severity")).upper() not in KNOWN_SEVERITIES]
+    if unsev:
+        out.append(("plumbing_unmeasured",
+                    f"{len(unsev)} escalated plumbing defect(s) in {src['source']} carry no "
+                    "known severity -- whether any is CRITICAL is UNMEASURED: "
+                    + "; ".join(_row_line(r) for r in unsev[:2])))
+    skipped = [str(x) for x in src.get("skipped") or []]
+    if skipped:
+        out.append(("plumbing_unmeasured",
+                    f"{len(skipped)} plumbing check(s) skipped for budget, so UNMEASURED this "
+                    f"pass: {', '.join(skipped[:5])}"))
+    jf = src.get("judge_facts")
+    if src.get("has_facts") or "judge_throughput" in (src.get("checks_run") or []):
+        # the producer ran the check (18ad03416+): anything but a measured status is a page.
+        # A raising check leaves {"error": ...} with no status; a missing key is no reading.
+        status = str(jf.get("status") or "").upper() if isinstance(jf, dict) else ""
+        if status in ("", "UNMEASURED"):
+            why = (str(jf.get("why") or jf.get("error") or "") if isinstance(jf, dict)
+                   else "no facts.judge_throughput published")
+            out.append(("judge_throughput_unmeasured",
+                        f"the watchdog's judge_throughput check is UNMEASURED "
+                        f"({status or 'no status'}): {why[:120]}{asof}"))
+    # one key may only page once per tick: merge duplicate keys' messages
+    merged: dict[str, str] = {}
+    for k, msg in out:
+        merged[k] = f"{merged[k]} | {msg}" if k in merged else msg
+    return list(merged.items())
+
+
+def _judge_checks(now: datetime | None = None, *,
+                  rate_path: Path = _JUDGING_RATE) -> list[tuple[str, str]]:
+    """A STALLED judge (no new verdict in JUDGE_STALL_H), read straight from JUDGING_RATE.json's
+    own last_verdict_at and stamp. A rate meter that cannot be read is UNMEASURED, never 'fine'."""
+    t = now or datetime.now(tz=UTC)
+    try:
+        doc = json.loads(rate_path.read_text("utf-8-sig"))
+        if not isinstance(doc, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} missing/unreadable ({type(exc).__name__}) -- whether the "
+                 "judge is producing verdicts is UNMEASURED")]
+    at = _parse_at(doc.get("at"))
+    meter_age = _age_h(t, at) if at else None
+    meter = (f"rate meter {meter_age:.1f}h old" if meter_age is not None
+             else "rate meter unstamped")
+    raw_ver = doc.get("verdicts")
+    ver: dict[str, Any] = raw_ver if isinstance(raw_ver, dict) else {}
+    if ver.get("status") != "MEASURED":
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} verdicts {ver.get('status') or 'absent'}: "
+                 f"{str(ver.get('why') or '')[:100]} -- judge liveness is UNMEASURED ({meter})")]
+    last = _parse_at(ver.get("last_verdict_at"))
+    if last is None:
+        if ver.get("last_verdict_at") is None and not ver.get("rows_total"):
+            return [("judge_stalled", f"the judge's ledger holds NO verdict at all ({meter})")]
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} last_verdict_at unparseable -- judge liveness is "
+                 f"UNMEASURED ({meter})")]
+    age_h = _age_h(t, last)
+    if age_h < 0:
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} last_verdict_at is in the future -- UNMEASURED ({meter})")]
+    if age_h > JUDGE_STALL_H:
+        return [("judge_stalled",
+                 f"judge STALLED: no new verdict in {age_h:.1f}h (> {JUDGE_STALL_H:g}h); last "
+                 f"{last.isoformat(timespec='minutes')}, verdicts/h(24h)="
+                 f"{doc.get('verdicts_per_hour')}; {meter}. Check MT5-Gauntlet on the box")]
+    if meter_age is None:
+        return [("judge_rate_unmeasured", f"{rate_path.name} carries no parseable stamp")]
+    if meter_age < 0:
+        return [("judge_rate_unmeasured",
+                 f"{rate_path.name} is stamped {-meter_age:.1f}h in the future -- UNMEASURED")]
+    return []
+
+
+def _guarded(key: str, fn: Callable[[], list[tuple[str, str]]]) -> list[tuple[str, str]]:
+    """A check that raises pages as UNMEASURED: it may never silence the pager or itself."""
+    try:
+        return fn()
+    except Exception as exc:
+        return [(key, f"{key} check raised {type(exc).__name__} -- UNMEASURED, not fine")]
 
 
 def _checks() -> list[tuple[str, str]]:
@@ -442,7 +711,15 @@ def _checks() -> list[tuple[str, str]]:
                     "diggers are dead on arrival. Fix on the VPS: "
                     "sudo -u quant -i ; claude setup-token"))
     out.extend(_digger_health())
+    # The plumbing / judge checks are NOT run here: their inputs are written on the box and the
+    # VPS (orphan desk-sync-clean) never receives them, so here they could only page UNMEASURED
+    # forever. They run on the box, from the box's own files: `run_alerts.py --box`.
     return out
+
+
+def _box_checks() -> list[tuple[str, str]]:
+    return (_guarded("plumbing_unmeasured", _plumbing_checks)
+            + _guarded("judge_rate_unmeasured", _judge_checks))
 
 
 def _brain_running() -> bool:
@@ -453,7 +730,7 @@ def _brain_running() -> bool:
         return False
 
 
-def _brain_should_trigger(state: dict, active: set, *, healthy_today: bool, hour: int,
+def _brain_should_trigger(state: dict[str, Any], active: set[str], *, healthy_today: bool, hour: int,
                           now: float) -> str | None:
     """PURE decision (drill-testable): should the brain be auto-triggered? Rate-limited to one
     trigger per 3h. AUTO-RETRY when today's cycle failed/near-empty and it is past ~11:00 UTC
@@ -468,7 +745,7 @@ def _brain_should_trigger(state: dict, active: set, *, healthy_today: bool, hour
     return None
 
 
-def _brain_watchdog(state: dict, active: set) -> str | None:
+def _brain_watchdog(state: dict[str, Any], active: set[str]) -> str | None:
     """Self-heal the AI brain WITHOUT the operator (2026-07-18): auto-retry a failed daily cycle
     (e.g. the 07-18 session-limit lost-day) + event-trigger on a remediable alert. Never two
     brains; the brain's own CI + escalation keep it safe; risk/money still page the operator."""
@@ -499,14 +776,174 @@ def _brain_watchdog(state: dict, active: set) -> str | None:
         return None
 
 
+_KEY_RE = re.compile(r"[a-z0-9_]{1,80}")
+
+
+def _load_state(path: Path) -> dict[str, Any]:
+    """The dedupe state, sanitised. A corrupt file (not JSON, not an object, non-UTF8, a
+    non-numeric stamp, `_paged` not a list) may neither crash the tick nor storm: bad entries
+    are dropped, so each live key pages once and is then stamped afresh."""
+    try:
+        raw = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, Any] = {k: float(v) for k, v in raw.items()
+                           if isinstance(v, int | float) and not isinstance(v, bool)
+                           and k != "_paged"}
+    paged = raw.get("_paged")
+    # only well-formed key names: a junk entry ([1], {"a": 2}) would send a bogus RESOLVED page
+    out["_paged"] = ([x for x in paged if isinstance(x, str) and _KEY_RE.fullmatch(x)]
+                     if isinstance(paged, list) else [])
+    return out
+
+
+def _recent(now: float, stamp: object, window: float) -> bool:
+    """True while `stamp` is inside `window` seconds. A FUTURE stamp (clock step-back, hand
+    edit) is never recent: it may not be what keeps the pager quiet."""
+    if not isinstance(stamp, int | float) or isinstance(stamp, bool):
+        return False
+    return 0 <= now - float(stamp) < window
+
+
+def _dispatch(topic: str, checks: list[tuple[str, str]], state: dict[str, Any],
+              now: float, *, push: Callable[[str, str, str], None] | None = None,
+              ) -> tuple[int, set[str], int]:
+    """Page each check (deduped, backed off) and RESOLVE what cleared. Mutates `state`.
+    Returns (sent, active keys, due): `due` counts WARNING pages owed this tick (outside their
+    dedupe window), whether or not the push went out or was held by the failure backoff."""
+    send = push or _push          # resolved at call time, so a patched _push is honoured
+    sent = 0
+    due = 0
+    active = {k for k, _ in checks}
+    paged = set(state.get("_paged") or [])
+    for key, msg in checks:
+        # a FUTURE stamp (clock step, hand edit) is overdue, never what keeps the pager quiet
+        if _recent(now, state.get(key), _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S)):
+            paged.add(key)                                 # still-alerting, still track for resolve
+            continue
+        due += 1
+        # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
+        # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
+        # page (including the 07-13 dead-man fire) was silently dropped. One attempt per key per
+        # 30min keeps total volume far under quota and lets it refill.
+        if _recent(now, state.get(f"_try_{key}"), 1800):
+            continue
+        state[f"_try_{key}"] = now
+        try:
+            send(topic, f"WARNING Quant desk: {key}", msg)
+            state[key] = now
+            paged.add(key)
+            sent += 1
+        except Exception as e:  # pager failing must never break the tick
+            print(f"pager push failed: {e!r}"[:120])
+    # RESOLUTION / "FIXED" PAGES (2026-07-18 principal idea): pair every alert with a "cleared"
+    # notification, so the operator only has to LOOK when a warning arrives with NO fix behind
+    # it. A previously-paged condition that is no longer active -> one "resolved" page.
+    for key in list(paged):
+        if key not in active:
+            with contextlib.suppress(Exception):
+                send(topic, f"RESOLVED Quant desk: {key}",
+                      "auto-fixed / cleared -- no action needed")
+            paged.discard(key)
+            state.pop(key, None)
+    state["_paged"] = sorted(paged)
+    return sent, active, due
+
+
+def _write_state(path: Path, state: dict[str, Any]) -> None:
+    """LOUD, never raising: a state file that cannot be written must not undo sent pages."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state), "utf-8")
+    except OSError as exc:
+        print(f"alerts: dedupe state NOT written ({type(exc).__name__})", flush=True)
+
+
+#: THE BOX PATH (audit HOLD 2026-10-20). The VPS runs orphan desk-sync-clean and never receives
+#: the plumbing or judge inputs, so the box pages them itself, from its own files, as task
+#: MT5-PlumbingPager (desks/mt5/scripts/install_plumbing_pager_task.ps1).
+_ROOT = Path(__file__).resolve().parents[1]
+_BOX_SECRETS = (Path("data/secrets/ntfy.json"), Path("desks/mt5/data/secrets/ntfy.json"))
+_BOX_STATE = Path("desks/mt5/logs/plumbing_pager_state.json")
+#: The NOT ARMED fallback keeps its OWN dedupe state: a key delivered only by the fallback must
+#: not hold back the first ntfy page for REPAGE_H once the topic is armed.
+_BOX_FALLBACK_STATE = Path("desks/mt5/logs/plumbing_pager_fallback_state.json")
+#: Every box pass's own outcome, for desks/mt5/scripts/box_heartbeat.py's `pager` check (which
+#: lands after the pager is armed): a pager that is NOT ARMED, cannot deliver or stops firing then
+#: reaches healthchecks.io.
+_BOX_REPORT = Path("desks/mt5/reports/PLUMBING_PAGER.json")
+
+
+def _fallback_push(_topic: str, title: str, body: str) -> None:
+    """NOT ARMED: no ntfy topic, but the independent channels may still deliver. Raises when
+    none did, so the page stays owed (and the pass still fails)."""
+    _second_channel(f"{title}: {body}")
+    from libs.ops.alert_channels import send_all
+    res = send_all(title, body)
+    if not int(res.get("delivered") or 0):
+        raise RuntimeError("NOT ARMED and no registry channel delivered")
+
+
+def _write_box_report(rc: int, due: int, sent: int, active: set[str]) -> None:
+    doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "rc": rc, "due": due,
+           "sent": sent, "active": sorted(active)}
+    try:
+        _BOX_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _BOX_REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc), "utf-8")
+        os.replace(tmp, _BOX_REPORT)
+    except OSError as exc:
+        print(f"alerts --box: pager report NOT written ({type(exc).__name__})", flush=True)
+
+
+def box_main() -> int:
+    """One box pass: plumbing + judge checks only, through the existing sender.
+
+    A missing ntfy secret is a LOGGED FAILURE (exit 2) with no page: the box never mints a
+    topic (a minted topic has no subscriber, so a page to it reaches no one) and never prints
+    one; it still tries the independent channels first. Exit 3 when a page was due and did not go out (push failed, or held by the failure
+    backoff): a pager that cannot deliver must fail its task, so MT5-PlumbingWatchdog's
+    last-result check sees it. Exit 0 otherwise."""
+    os.chdir(_ROOT)
+    topic = _read_topic(_BOX_SECRETS)
+    checks = _box_checks()
+    if topic is None:
+        # still try the independent channels (healthchecks /fail, alert_channels registry)
+        # before giving up: they need no topic. The pass fails (2) either way.
+        fb_state = _load_state(_BOX_FALLBACK_STATE)
+        sent, active, due = _dispatch("", checks, fb_state, time.time(), push=_fallback_push)
+        _write_state(_BOX_FALLBACK_STATE, fb_state)
+        _write_box_report(2, due, sent, active)
+        print("alerts --box: NOT ARMED -- no readable ntfy topic in "
+              + " or ".join(str(p) for p in _BOX_SECRETS)
+              + f"; no topic created; fallback channels delivered {sent}/{due} due page(s)",
+              flush=True)
+        return 2
+    state = _load_state(_BOX_STATE)
+    sent, active, due = _dispatch(topic, checks, state, time.time())
+    _write_state(_BOX_STATE, state)
+    rc = 3 if due > sent else 0
+    _write_box_report(rc, due, sent, active)
+    print(f"alerts --box: {sent}/{due} due page(s) sent, {len(active)} active "
+          f"({', '.join(sorted(active)) or 'none'}) ({datetime.now(tz=UTC).isoformat()[:16]}Z)",
+          flush=True)
+    if rc:
+        print(f"alerts --box: FAILED -- {due - sent} due page(s) NOT delivered", flush=True)
+    return rc
+
+
 def main() -> None:
+    if "--box" in sys.argv:
+        raise SystemExit(box_main())
     topic = _topic()
     if "--status" in sys.argv:
         # gap #38: which channels are ARMED, when each last DELIVERED, and whether everything has
         # been silent -- the three facts nobody could read before 2026-07-29.
         from libs.ops.alert_channels import status as _chan_status
         st = _chan_status()
-        print(f"pager topic: https://ntfy.sh/{topic}")
+        print(f"pager topic: configured in {_SECRETS} (not printed)")
         print(f"registry channels armed: {st['armed']} {st['armed_kinds']}")
         if st["arming_owed"]:
             print("  NOT-ARMED (human step): data/secrets/alert_channels.json -- ntfy alone is "
@@ -521,54 +958,17 @@ def main() -> None:
     if "--test" in sys.argv:
         _push(topic, "Quant desk pager: TEST", "pager wired -- you will only hear from me "
               "when something is genuinely wrong")
-        print(f"test page sent -> https://ntfy.sh/{topic}")
+        print(f"test page sent (topic in {_SECRETS})")
         return
     _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
-    try:                          # ACK/REARM must suppress this very tick's escalation
-        state = json.loads(_STATE.read_text("utf-8"))
-    except (OSError, json.JSONDecodeError):
-        state = {}
-    now = time.time()
-    sent = 0
-    checks = _checks()
-    active = {k for k, _ in checks}
-    paged = set(state.get("_paged", []))
-    for key, msg in checks:
-        if now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
-            paged.add(key)                                 # still-alerting, still track for resolve
-            continue
-        # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
-        # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
-        # page (including the 07-13 dead-man fire) was silently dropped. One attempt per key per
-        # 30min keeps total volume far under quota and lets it refill.
-        if now - float(state.get(f"_try_{key}", 0)) < 1800:
-            continue
-        state[f"_try_{key}"] = now
-        try:
-            _push(topic, f"WARNING Quant desk: {key}", msg)
-            state[key] = now
-            paged.add(key)
-            sent += 1
-        except Exception as e:  # pager failing must never break the tick
-            print(f"pager push failed: {e!r}"[:120])
-    # RESOLUTION / "FIXED" PAGES (2026-07-18 principal idea): pair every alert with a "cleared"
-    # notification, so the operator only has to LOOK when a warning arrives with NO fix behind
-    # it. A previously-paged condition that is no longer active -> one "resolved" page.
-    import contextlib
-    for key in list(paged):
-        if key not in active:
-            with contextlib.suppress(Exception):
-                _push(topic, f"RESOLVED Quant desk: {key}",
-                      "auto-fixed / cleared -- no action needed")
-            paged.discard(key)
-            state.pop(key, None)
-    state["_paged"] = sorted(paged)
+    state = _load_state(_STATE)   # ACK/REARM must suppress this very tick's escalation
+    sent, active, _due = _dispatch(topic, _checks(), state, time.time())
     # SELF-HEAL: auto-retry a failed daily brain cycle + event-trigger the brain on a remediable
     # alert -- so the desk fixes itself without waiting for the operator (2026-07-18).
     trig = _brain_watchdog(state, active)
     if trig:
         print(f"brain-watchdog: triggered brain cycle ({trig})")
-    _STATE.write_text(json.dumps(state), "utf-8")
+    _write_state(_STATE, state)
     # EXTERNAL HEARTBEAT (2026-07-16, v8-blueprint triage 8.13): an off-box dead-man for the
     # box itself. Everything above -- deadman, pager, watchdog -- dies WITH the host; a 3-min
     # ping to an external healthchecks-class URL makes the outside world notice silence and
