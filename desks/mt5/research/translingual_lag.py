@@ -17,8 +17,10 @@ covered events the local press led, and the median realised lag of the ones Engl
 
 POINT-IN-TIME, BY CONSTRUCTION. A snapshot at slot T reads only files named T or earlier, and a
 file named T holds what GDELT processed in the quarter hour BEFORE T. "No English mention yet" is
-a fact as of T; a later pickup changes a later snapshot, never this one. The walk is forward-only
-and chronological: nothing is backfilled out of order.
+a fact as of T; a later pickup changes a later snapshot, never this one. Every snapshot row
+carries its own `available_time`: the slot time plus the desk's declared GDELT publication lag
+(`data_os.declared_lag("gdelt")`, one hour), so a consumer never has to assume when it was known.
+The walk is forward-only and chronological: nothing is backfilled out of order.
 
 HONEST LIMITS, STATED UP FRONT.
   * 15-minute resolution: a lead shorter than one slot reads as zero.
@@ -40,11 +42,19 @@ from __future__ import annotations
 import io
 import math
 import statistics
+import sys
 import time
 import zipfile
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
+
+_ROOT = Path(__file__).resolve().parents[3]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from libs.tiers import data_os  # noqa: E402
 
 BASE = "http://data.gdeltproject.org/gdeltv2/"
 #: file key -> name suffix after the 14-digit slot id.
@@ -62,6 +72,15 @@ SLOTS_PER_PASS = 12
 MAX_MISSING_SLOTS = 8              # of the 96 before a snapshot; more and it is not emitted
 MIN_LOCAL_MENTIONS = 2             # an open event counts once two local articles carry it
 MIN_COVERED = 20                   # below this many covered events the share is not a number
+
+
+def publication_lag() -> timedelta:
+    """The desk's declared GDELT lag. An undeclared source has no knowledge time at all, so a
+    missing declaration is an error here, never a silent zero."""
+    lag = data_os.declared_lag("gdelt")
+    if not lag or lag.get("lag_s") is None:
+        raise LookupError("data_os declares no publication lag for gdelt")
+    return timedelta(seconds=float(lag["lag_s"]))
 
 
 def slot_id(t: datetime) -> str:
@@ -200,7 +219,8 @@ def advance(st: dict[str, Any], fetch: Callable[[str], bytes | None], now: datet
             buckets: Sequence[tuple[int, int]] = BUCKETS, per_pass: int = SLOTS_PER_PASS,
             deadline: float | None = None) -> dict[str, Any]:
     """Read the next slots in order and append any snapshot they close to `st["snaps"]`
-    (dicts: region, at (ISO, the slot time), then the columns). Returns what the pass did.
+    (dicts: region, at (ISO, the slot time), available_time, then the columns).
+    Returns what the pass did.
 
     A slot all four of whose files are absent is MISSING and counted against the snapshot's
     gap allowance; a slot with some files absent is read with those parts empty and counted in
@@ -241,7 +261,9 @@ def advance(st: dict[str, Any], fetch: Callable[[str], bytes | None], now: datet
                 info["skipped_for_gaps"] = t.isoformat()
             else:
                 for region, row in snapshot(st, cur, regions, buckets).items():
-                    snaps.append({"region": region, "at": t.isoformat(), **row})
+                    snaps.append({"region": region, "at": t.isoformat(),
+                                  "available_time": (t + publication_lag()).isoformat(),
+                                  **row})
                     info["snapshots"] += 1
         cur += 15
         st["cursor"] = cur

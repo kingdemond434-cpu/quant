@@ -172,6 +172,9 @@ def test_snapshots_wait_for_a_full_day_and_respect_the_gap_allowance():
     later = tl.advance(st, fetch, now + timedelta(hours=4), REGIONS, per_pass=10_000)
     assert later["snapshots"] == len(REGIONS)                  # the 06:00 snapshot
     assert {s["at"] for s in st["snaps"]} == {(T0 + timedelta(hours=6)).isoformat()}
+    assert {s["available_time"] for s in st["snaps"]} == {
+        (T0 + timedelta(hours=6) + tl.publication_lag()).isoformat()}
+    assert tl.publication_lag() >= timedelta(minutes=tl.PUBLISH_LAG_MIN)
     st2: dict = {}
     _, gappy = _feed(present=lambda url: False)
     tl.advance(st2, gappy, now, REGIONS, per_pass=10_000)
