@@ -78,7 +78,8 @@ def test_built_citations_are_live_file_and_line() -> None:
         path, _, line = cite.rpartition(":")
         assert path == "desks/mt5/research/alt_proxies.py"
         assert f'id="{sid}"' in lines[int(line) - 1]
-    assert set(jobs) == {"jobs_indeed_postings"} and set(crop) == {"sat_s2_crop_green"}
+    # sat_s2_crop_green is to_confirm (its Sentinel notice is unread), so it is not BUILT coverage
+    assert set(jobs) == {"jobs_indeed_postings"} and "sat_s2_crop_green" not in crop
 
 
 def test_a_dead_or_unconfirmed_source_is_not_built() -> None:

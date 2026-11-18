@@ -66,8 +66,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
-  terms: confirmed
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   mechanism: a cropland tile greener than in every prior year at the same dekad is a crop ahead of schedule
     or unstressed; browner is late planting, drought or early senescence. Satellites see it within days;
     USDA crop condition, WASDE and CONAB print it weekly to monthly, after
