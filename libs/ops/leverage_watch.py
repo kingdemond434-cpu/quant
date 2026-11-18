@@ -12,6 +12,13 @@ with no readable leverage writes nothing new and the verdict ages to STALE after
 `STALE_AFTER_H`; an absent reading is never recorded as a change. The file carries the venue
 label only -- no login, server or account number (the repository is public).
 
+PER SYMBOL (folded in from #1145, 2026-11-18). A broker cuts leverage per symbol too -- gold and
+the indices first -- and the account figure does not move when it does. `symbol_margins` reads,
+for the core symbols and every symbol held, the venue's own margin for one lot
+(`order_calc_margin`, which folds in symbol-specific leverage) and the effective leverage it
+implies; `observe` keeps the last per symbol and names a move of `CHANGE_RATIO` or more as a CUT
+(margin per lot up) or a RAISE (down), with its own event row.
+
 This is a REPORT. It sets no cap, no size and no veto (GROWTH_GOVERNANCE): the allocator already
 reads the live leverage through `financing_lab.load_terms` on every pass.
 """
@@ -25,6 +32,60 @@ from typing import Any
 
 STALE_AFTER_H = 36.0
 MAX_CHANGES_KEPT = 200
+#: The symbols always read, so one the desk has not traded this month is still watched.
+CORE_SYMBOLS = ("XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
+                "NZDUSD", "EURJPY", "GBPJPY", "AUDJPY", "US500", "US30", "US100", "GER40",
+                "UK100", "JP225", "XTIUSD", "XBRUSD")
+#: A margin-per-lot move at or beyond this ratio is a CUT (up) or RAISE (down) of leverage.
+CHANGE_RATIO = 1.15
+
+
+def _num(v: Any) -> float | None:
+    return float(v) if isinstance(v, (int, float)) and v == v and v > 0 else None
+
+
+def symbol_margins(mt5: Any, symbols: Any) -> dict[str, dict[str, Any]]:
+    """{symbol: margin per lot buy/sell, contract size, effective leverage}, read-only from an
+    attached MetaTrader5 module. Sends nothing; a symbol it cannot read is left out."""
+    out: dict[str, dict[str, Any]] = {}
+    for sym in dict.fromkeys(str(s).upper() for s in symbols if s):
+        try:
+            info = mt5.symbol_info(sym)
+            if info is None:
+                continue
+            tick = mt5.symbol_info_tick(sym)
+            ask = _num(getattr(tick, "ask", None)) if tick is not None else None
+            bid = _num(getattr(tick, "bid", None)) if tick is not None else None
+            row: dict[str, Any] = {"contract_size": _num(getattr(info, "trade_contract_size",
+                                                                 None))}
+            for side, otype, px in (("buy", getattr(mt5, "ORDER_TYPE_BUY", 0), ask),
+                                    ("sell", getattr(mt5, "ORDER_TYPE_SELL", 1), bid)):
+                row[f"margin_per_lot_{side}"] = (_num(mt5.order_calc_margin(otype, sym, 1.0, px))
+                                                 if px else None)
+            m, cs = row["margin_per_lot_buy"], row["contract_size"]
+            row["effective_leverage"] = round(cs * ask / m, 2) if m and cs and ask else None
+        except Exception:
+            continue
+        if row.get("margin_per_lot_buy"):
+            out[sym] = row
+    return out
+
+
+def _symbol_changes(prev: dict[str, Any], now_rows: dict[str, dict[str, Any]],
+                    at: str) -> list[dict[str, Any]]:
+    """A CUT or RAISE per symbol whose margin per lot moved by CHANGE_RATIO or more."""
+    out = []
+    for sym, row in now_rows.items():
+        old = _num((prev.get(sym) or {}).get("margin_per_lot_buy"))
+        new = _num(row.get("margin_per_lot_buy"))
+        if old is None or new is None:
+            continue
+        ratio = new / old
+        if ratio >= CHANGE_RATIO or ratio <= 1.0 / CHANGE_RATIO:
+            out.append({"at": at, "symbol": sym, "from": old, "to": new,
+                        "ratio": round(ratio, 3), "direction": "CUT" if ratio > 1 else "RAISED",
+                        "effective_leverage": row.get("effective_leverage")})
+    return out
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -44,7 +105,8 @@ def _parse(ts: Any) -> datetime | None:
 
 
 def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
-            now: datetime | None = None, emit: Any = None) -> dict[str, Any]:
+            now: datetime | None = None, emit: Any = None,
+            symbols: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """Record one reading; return the document written (or that would stand, when unreadable)."""
     now = now or datetime.now(tz=UTC)
     doc = _read(path)
@@ -64,13 +126,25 @@ def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
             changes = [*changes, changed][-MAX_CHANGES_KEPT:]
         row = {"leverage": lev, "read_at": now.isoformat(timespec="seconds"),
                "changes": changes}
+    raw_syms = row.get("symbols")
+    prev_syms: dict[str, Any] = raw_syms if isinstance(raw_syms, dict) else {}
+    sym_changes: list[dict[str, Any]] = []
+    if symbols:
+        sym_changes = _symbol_changes(prev_syms, symbols, now.isoformat(timespec="seconds"))
+        raw_sc = row.get("symbol_changes")
+        kept: list[Any] = raw_sc if isinstance(raw_sc, list) else []
+        row = {**row, "symbols": {**prev_syms, **symbols},
+               "symbols_read_at": now.isoformat(timespec="seconds"),
+               "symbol_changes": [*kept, *sym_changes][-MAX_CHANGES_KEPT:]}
+    elif prev_syms:
+        row = {**row, "symbols": prev_syms}
     read_at = _parse(row.get("read_at"))
     age_h = None if read_at is None else round((now - read_at).total_seconds() / 3600.0, 2)
     if read_at is None:
         verdict = "UNMEASURED"
     elif age_h is not None and age_h > STALE_AFTER_H:
         verdict = "STALE"
-    elif changed is not None:
+    elif changed is not None or sym_changes:
         verdict = "CHANGED"
     else:
         verdict = "MEASURED"
@@ -88,16 +162,22 @@ def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
         tmp.replace(path)
     except OSError:
         pass
-    if changed is not None:
+    if changed is not None or sym_changes:
         try:
             if emit is None:
                 from libs.ops.events import emit as emit_fn
             else:
                 emit_fn = emit
-            fields: dict[str, Any] = {"producer": "research/financing_lab.py", "priority": 2,
-                                      "venue": venue, "from": changed["from"],
-                                      "to": changed["to"], "direction": changed["direction"]}
-            emit_fn("ACCOUNT_LEVERAGE_CHANGED", **fields)
+            if changed is not None:
+                fields: dict[str, Any] = {"producer": "research/financing_lab.py",
+                                          "priority": 2, "venue": venue,
+                                          "from": changed["from"], "to": changed["to"],
+                                          "direction": changed["direction"]}
+                emit_fn("ACCOUNT_LEVERAGE_CHANGED", **fields)
+            for c in sym_changes:
+                emit_fn("SYMBOL_MARGIN_CHANGED", producer="research/financing_lab.py",
+                        priority=2, venue=venue, symbol=c["symbol"], ratio=c["ratio"],
+                        direction=c["direction"])
         except Exception:
             pass
     return out

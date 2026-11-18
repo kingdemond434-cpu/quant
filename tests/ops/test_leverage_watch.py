@@ -56,4 +56,37 @@ def test_the_lab_wires_it() -> None:
     src = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "research"
            / "financing_lab.py").read_text(encoding="utf-8")
     assert "from libs.ops.leverage_watch import observe" in src
-    assert 'if acct.get("source") == "live terminal" else None' in src
+    assert 'live = acct.get("source") == "live terminal"' in src
+    assert "symbol_margins(" in src
+
+
+class _MT5:
+    ORDER_TYPE_BUY, ORDER_TYPE_SELL = 0, 1
+
+    def __init__(self, margin: float) -> None:
+        self.margin = margin
+
+    def symbol_info(self, sym: str) -> object | None:
+        return None if sym == "NOPE" else type("I", (), {"trade_contract_size": 100.0})()
+
+    def symbol_info_tick(self, sym: str) -> object:
+        return type("T", (), {"ask": 4000.0, "bid": 3999.0})()
+
+    def order_calc_margin(self, otype: int, sym: str, vol: float, px: float) -> float:
+        return self.margin
+
+
+def test_a_per_symbol_cut_is_named_without_an_account_change(tmp_path: Path) -> None:
+    p, sent = tmp_path / "ACCOUNT_LEVERAGE.json", []
+    rows = lw.symbol_margins(_MT5(2000.0), ["xauusd", "NOPE", "XAUUSD"])
+    assert list(rows) == ["XAUUSD"] and rows["XAUUSD"]["effective_leverage"] == 200.0
+    lw.observe(p, 500, now=T0, emit=lambda k, **f: sent.append(k), symbols=rows)
+    small = lw.symbol_margins(_MT5(2200.0), ["XAUUSD"])         # +10%: not a change
+    assert lw.observe(p, 500, now=T0 + timedelta(hours=1), emit=lambda k, **f: sent.append(k),
+                      symbols=small)["venues"]["fusion"]["verdict"] == "MEASURED"
+    cut = lw.symbol_margins(_MT5(4000.0), ["XAUUSD"])           # margin doubled: a CUT
+    row = lw.observe(p, 500, now=T0 + timedelta(hours=2), emit=lambda k, **f: sent.append(k),
+                     symbols=cut)["venues"]["fusion"]
+    assert row["verdict"] == "CHANGED" and row["symbol_changes"][-1]["direction"] == "CUT"
+    assert row["symbols"]["XAUUSD"]["effective_leverage"] == 100.0
+    assert sent == ["SYMBOL_MARGIN_CHANGED"]

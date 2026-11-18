@@ -185,6 +185,14 @@ def read_account() -> dict[str, Any]:
                                  "profit": p.profit, "swap": p.swap,
                                  "sleeve": str(getattr(p, "comment", "") or "")})
                 out["positions"] = rows
+                # K3 per symbol (folded in from #1145): the venue's own margin for one lot of
+                # every core and held symbol, read while the terminal is attached. Read-only.
+                try:
+                    from libs.ops.leverage_watch import CORE_SYMBOLS, symbol_margins
+                    out["symbol_margin"] = symbol_margins(
+                        mt5, [*CORE_SYMBOLS, *(r["symbol"] for r in rows)])
+                except Exception as exc:
+                    out["unmeasured"].append(f"symbol margin: {type(exc).__name__}")
                 return out
         except Exception as exc:  # the terminal is not a reason to lose the pass
             out["unmeasured"].append(f"terminal: {type(exc).__name__}: {exc}")
@@ -656,8 +664,9 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False) -> dict[str, Any]:
         # change; a reading only counts when it came from the live terminal.
         try:
             from libs.ops.leverage_watch import observe
-            observe(OUT_LEVERAGE, _f(acct["leverage"])
-                    if acct.get("source") == "live terminal" else None)
+            live = acct.get("source") == "live terminal"
+            observe(OUT_LEVERAGE, _f(acct["leverage"]) if live else None,
+                    symbols=(acct.get("symbol_margin") or None) if live else None)
         except Exception as exc:  # a report; never a reason to lose the pass
             unmeasured.append(f"leverage watch: {type(exc).__name__}")
     return {"evidence": evidence_doc, "report": report}
