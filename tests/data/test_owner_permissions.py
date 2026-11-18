@@ -90,6 +90,7 @@ def test_the_real_file_names_the_seven_sources_with_their_basis_and_revert() -> 
         assert r["enabled"] is True and r["basis"] == "owner_attestation_2026-11-17"
         assert len(r["cited_messages"]) == 4 and r["governance"].endswith(
             "owner-permission-attestation-2026-11-17.md")
+        assert not r["governance"].startswith("/"), "the public wire carries no host paths"
         assert "enabled" in r["revert"] and r["missed_growth"].startswith("missed_growth")
         assert r["hosts"] and all(op.hard_refusal(f"https://{h}/") is None for h in r["hosts"])
     assert rows["chicagofed_nfci"]["hosts"] == ["www.chicagofed.org"]       # never FRED
@@ -240,6 +241,11 @@ def test_the_terms_refused_list_wins_except_for_the_attested_cboe_scope(
 
     fake.refusal = refusal  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "libs.data.refused_hosts", fake)
+    # `from libs.data import refused_hosts` reads the PACKAGE attribute first, which an earlier
+    # test's import of the real module has already bound: patch that too, or this test depends
+    # on the order the file runs in
+    import libs.data
+    monkeypatch.setattr(libs.data, "refused_hosts", fake, raising=False)
     p = _perm(tmp_path)
     assert op.is_permitted("exchange_options_gamma", p) is True
     doc = json.loads(p.read_text(encoding="utf-8"))

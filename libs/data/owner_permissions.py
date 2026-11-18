@@ -48,7 +48,7 @@ REPO = Path(__file__).resolve().parents[2]
 PERMISSIONS = REPO / "desks" / "mt5" / "data" / "owner_permissions.json"
 BASIS = "owner_attestation_2026-11-17"
 PROVENANCE = f"permission={BASIS}"
-GOVERNANCE = "/mnt/project-files/governance/owner-permission-attestation-2026-11-17.md"
+GOVERNANCE = "docs/policy/owner-permission-attestation-2026-11-17.md"
 UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; owner_permitted_sources)"
 HARD_STOP: frozenset[int] = frozenset({401, 403, 429, 451})
 MAX_BYTES = 8_000_000
