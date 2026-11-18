@@ -1,0 +1,246 @@
+{
+ "_doc": "Rows for research/official_surprises.py. Rows, never code: a new release is a row. terms != OPEN is never fetched and is a named gap. key_env lists env var NAMES only; no value ever lives here. Ids marked catalogue_checked are verified against the source's own catalogue on every live pass before use.",
+ "rows": [
+  {
+   "id": "net_liquidity",
+   "idea": "GAP_MAP 68",
+   "adapter": "us_net_liquidity",
+   "terms": "OPEN",
+   "terms_note": "Treasury FiscalData (public domain), NY Fed Markets API (terms allow automated business use with attribution), Federal Reserve Board DDP (public domain). FRED is not used (terms-refused 2026-11-13).",
+   "at": "16:30",
+   "tz": "America/New_York",
+   "title": "Fed H.4.1 net liquidity",
+   "targets": [
+    "US500",
+    "XAUUSD",
+    "USDJPY",
+    "EURUSD"
+   ],
+   "why": "Reserves added by the Fed balance sheet net of the Treasury cash account and reverse repo are the dollars actually free to bid risk; the weekly change is the H.4.1 event, Thursday 16:30 ET.",
+   "tga_pattern": "Treasury General Account \\(TGA\\) Closing Balance|^Federal Reserve Account$",
+   "tga_first_date": "2014-01-01",
+   "rrp_first_date": "2014-01-01",
+   "walcl": {
+    "url": null,
+    "verified": false,
+    "note": "H.4.1 total assets DDP CSV URL: needs a box read of federalreserve.gov/datadownload Choose.aspx?rel=H41"
+   }
+  },
+  {
+   "id": "usd_funding",
+   "idea": "GAP_MAP 64",
+   "adapter": "us_funding",
+   "terms": "OPEN",
+   "terms_note": "NY Fed Markets API reference rates; FRED not used (terms-refused 2026-11-13).",
+   "targets": [
+    "US500",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "why": "SOFR above EFFR means secured money costs more than unsecured: collateral or reserve scarcity. A fat SOFR p99 tail means some borrowers pay up. Both lead dollar squeezes and risk-off.",
+   "first_date": "2018-04-02"
+  },
+  {
+   "id": "cip",
+   "idea": "GAP_MAP 64",
+   "adapter": "cip_basis",
+   "terms": "OPEN",
+   "terms_note": "own broker swap panel + NY Fed SOFR + ECB EUR STR (ECB Data Portal, reuse with attribution)",
+   "pairs": [
+    {
+     "symbol": "EURUSD",
+     "base": {
+      "provider": "ecb",
+      "key": "B.EU000A2X2A25.WT",
+      "name": "estr",
+      "first_date": "2019-10-01"
+     },
+     "quote": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     }
+    },
+    {
+     "symbol": "GBPUSD",
+     "base": null,
+     "quote": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "why": "SONIA from the BoE database: terms read pending"
+    },
+    {
+     "symbol": "USDJPY",
+     "base": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "quote": null,
+     "why": "TONA from the BoJ: route pending"
+    },
+    {
+     "symbol": "USDCHF",
+     "base": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "quote": null,
+     "why": "SARON from SIX: terms read pending"
+    }
+   ],
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "USDCHF"
+   ],
+   "why": "The overnight forward the broker finances at, minus the cash-rate differential, is a covered-interest-parity basis: when dollars are scarce it widens. Distinct from GAP_MAP 52 (swap drift is the swap's own change; this is its gap to cash)."
+  },
+  {
+   "id": "eia_storage",
+   "idea": "N8",
+   "adapter": "eia_storage",
+   "terms": "OPEN",
+   "terms_note": "EIA, US public domain",
+   "key_env": [
+    "EIA_API_KEY",
+    "EIA_KEY"
+   ],
+   "route": "natural-gas/stor/wkly",
+   "series": "NW2_EPG0_SWO_R48_BCF",
+   "catalogue_checked": true,
+   "at": "10:30",
+   "tz": "America/New_York",
+   "title": "EIA weekly natural gas storage",
+   "targets": [
+    "XNGUSD"
+   ],
+   "why": "Storage is the realised supply-demand balance; a build below the 5-year same-week average is a tighter market than weather alone said (distinct from N2 degree-days)."
+  },
+  {
+   "id": "usda_esr",
+   "idea": "N7",
+   "adapter": "usda_esr",
+   "terms": "OPEN",
+   "terms_note": "USDA FAS, US public domain; API needs a free api.data.gov key",
+   "key_env": [
+    "USDA_FAS_API_KEY",
+    "DATA_GOV_API_KEY"
+   ],
+   "api_base": "https://apps.fas.usda.gov/OpenData/api",
+   "field": "currentMYNetSales",
+   "first_market_year": 2010,
+   "baseline_weeks": 4,
+   "at": "08:30",
+   "tz": "America/New_York",
+   "commodities": [
+    {
+     "id": "corn",
+     "name_pattern": "^\\s*corn\\s*$",
+     "targets": [
+      "CORN"
+     ]
+    },
+    {
+     "id": "wheat",
+     "name_pattern": "^\\s*all wheat\\s*$",
+     "targets": [
+      "WHEAT"
+     ]
+    },
+    {
+     "id": "soybeans",
+     "name_pattern": "^\\s*soybeans\\s*$",
+     "targets": [
+      "SOYBEAN"
+     ]
+    }
+   ],
+   "why": "Weekly net export sales against their own 4-week mean is the foreign-demand surprise for US grains, released Thursday 08:30 ET.",
+   "calendar": {
+    "exclude": [
+     {
+      "from": "2013-10-01",
+      "to": "2013-12-15",
+      "why": "2013 shutdown and FAS/TIC catch-up"
+     },
+     {
+      "from": "2018-12-22",
+      "to": "2019-03-31",
+      "why": "2018-19 shutdown and catch-up"
+     },
+     {
+      "from": "2025-10-01",
+      "to": "2026-01-15",
+      "why": "2025 shutdown and catch-up"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tic",
+   "idea": "N6",
+   "adapter": "tic",
+   "terms": "OPEN",
+   "terms_note": "US Treasury TIC, public domain; robots allows (box read 2026-11-13)",
+   "baseline_months": 12,
+   "lag_days": 52,
+   "state_days": 7,
+   "at": "16:00",
+   "tz": "America/New_York",
+   "title": "TIC net foreign purchases of US long-term securities",
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "US500"
+   ],
+   "why": "Foreign appetite for US long-term assets against its 12-month median is a slow dollar and duration flow; the state holds release day + 1 week.",
+   "file_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/s1_globl.txt",
+   "country_pattern": "^\\s*Grand Total",
+   "calendar": {
+    "exclude": [
+     {
+      "from": "2013-10-01",
+      "to": "2013-12-15",
+      "why": "2013 shutdown and FAS/TIC catch-up"
+     },
+     {
+      "from": "2018-12-22",
+      "to": "2019-03-31",
+      "why": "2018-19 shutdown and catch-up"
+     },
+     {
+      "from": "2025-10-01",
+      "to": "2026-01-15",
+      "why": "2025 shutdown and catch-up"
+     }
+    ]
+   },
+   "file_note": "box read 2026-11-13: s1_globl.txt is FROZEN at 2023-01 (41,519 rows, Grand Total code 99996). It seeds the revised-history baseline only; first-seen rows need the live SLT table file, whose URL is pending a box read. Until then the row is ACCRUING by design."
+  },
+  {
+   "id": "boj_rinban",
+   "idea": "N4",
+   "adapter": "boj_rinban",
+   "terms": "OPEN",
+   "terms_note": "BoJ data free to reuse with attribution. Route pending: www3.boj.or.jp market pages ended Oct 2025 (box read 2026-11-13, all baYYMMDD 404) and the daily ope xlsx on www.boj.or.jp carries no JGB purchase rows. Held rows only until the current results page is located.",
+   "at": "12:10",
+   "tz": "Asia/Tokyo",
+   "baseline_ops": 20,
+   "title": "BoJ JGB outright purchase result",
+   "country": "JPY",
+   "currency": "JPY",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "JPN225"
+   ],
+   "why": "An operation offered below its pre-announced bucket plan, or heavily over-covered, says the BoJ is stepping back or the market is dumping duration on it: a same-day yen and Nikkei state."
+  }
+ ]
+}
