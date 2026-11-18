@@ -298,7 +298,7 @@ def novelty_family_values() -> tuple[dict[str, float], str]:
         return measured, (
             f"{len(measured)} measured families from {sn.REPORT.name}; genealogy for the rest")
     except Exception as exc:
-        return {}, f"style_novelty unavailable: {type(exc).__name__}: {exc}"
+        return {}, f"style_novelty unavailable: {type(exc).__name__}"
 
 
 def _novelty_of(fam: str, measured: dict[str, float]) -> float:
@@ -624,7 +624,7 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
             _sys.path.insert(0, str(BASE))
         from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane, may_hypothesise
     except Exception as exc:
-        return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
+        return None, (f"universe_policy unavailable ({type(exc).__name__}): NOTHING was "
                       f"routed by lane this run (UNMEASURED, not clean)")
     placed = sum(1 for canon in tradeable.values() if lane(canon) != UNCLASSIFIED)
     if not placed:
@@ -896,7 +896,7 @@ def main() -> int:
               f"{registry_census.get('fed', 0)} stamped, {kept} new to the docket "
               f"({registry_census.get('refused_unstamped', 0)} refused unstamped)")
     except Exception as exc:                       # a feed that fails is named, never silent
-        registry_census = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        registry_census = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         per_source["alpha_registry.sqlite"] = -1
         source_state["alpha_registry.sqlite"] = registry_census["status"]
         print(f"   registry feed UNAVAILABLE ({type(exc).__name__}: {exc}); the seven JSON "
@@ -1010,7 +1010,7 @@ def main() -> int:
                   f"{triangle_legs['legless_before']} legless row(s) filled, "
                   f"{triangle_legs['unfilled']} unfilled {triangle_legs['unfilled_by_reason']}")
     except Exception as exc:
-        triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        triangle_legs = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
     # Historical peer/factor claims missing a second instrument are not executable. Keep each
@@ -1029,7 +1029,7 @@ def main() -> int:
                   f"descendant(s), {input_descendants['already_present']} already present, "
                   f"{input_descendants['unresolved']} unresolved; originals retained")
     except Exception as exc:
-        input_descendants = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        input_descendants = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   peer/factor input completion unavailable ({type(exc).__name__}: {exc}); "
               "rows unchanged")
 
@@ -1166,7 +1166,7 @@ def main() -> int:
             print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
                   f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
     except Exception as exc:
-        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        prejudge = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
     # Every docket row -- fresh, carried over or already judged -- whose own words say its result
@@ -1202,7 +1202,7 @@ def main() -> int:
                   f"{len(after['claim_families'])} claim famil(ies); breadth units "
                   f"{before['breadth_units']} -> {after['breadth_units']}")
     except Exception as exc:
-        claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        claim_selection = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
@@ -1254,7 +1254,7 @@ def main() -> int:
               f"batch {_d['batch_hash']}, {_d['retrospective']} judged before any card; "
               f"verdicts -> graph: {prereg['verdicts'].get('recorded', 0)} recorded")
     except Exception as exc:
-        prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        prereg = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
@@ -1388,7 +1388,7 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
                                          "steered_by_axis", "fence", "ledger_lines",
                                          "map_written", "map_after")}
     except Exception as exc:
-        return {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+        return {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
 
 
 def run_cli() -> int:
