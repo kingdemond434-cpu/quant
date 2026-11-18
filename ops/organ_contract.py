@@ -118,6 +118,9 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
                            "hourly venue-listed, positive-risk certified sleeve selection"),
+    "MT5-HourlyCore (pr blockers)": (
+        "desks/mt5/reports/PR_BLOCKERS.json", 180,
+        "one named blocker for every open PR into LIVE, so no PR waits unexplained"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
@@ -158,6 +161,25 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # recorder that beats but records nothing reads STALE, and never_stale starts it.
     "MT5-TickRecorder":   ("desks/mt5/reports/TAPE_RECORDER.json", 120,
                            "the bronze tick tape; age is its newest tick, true UTC"),
+    # TWO MONEY-PATH ORGANS WITH NO CONTRACT (hourly pass 91 + Desk health box read HP91,
+    # 2026-11-11 01:15Z). Both paths were read ON THE BOX with their real age before landing here:
+    # FTMO_FOLLOWER.json moved 01:09:33Z (task every minute, rc 0); TICK_INTEGRITY.json moved
+    # 2026-11-10 22:17:56Z (task hourly at :20, but a pass outlives its hour -- 0x800710E0, the next
+    # start refused while the last still runs), so its contract is six hours, not one: a slow
+    # integrity pass is not a defect, a silent quarter-day is.
+    "MT5-FTMO-Follower":  ("desks/mt5/reports/FTMO_FOLLOWER.json", 15,
+                           "the FTMO follower's per-minute state: what it mirrored from the "
+                           "gold book and what it refused"),
+    "MT5-TickIntegrity":  ("desks/mt5/reports/TICK_INTEGRITY.json", 360,
+                           "the tick tape's integrity audit (gaps, duplicates, clock drift)"),
+    # UNCONTRACTED UNTIL 2026-11-11, and that is why a day of scheduler kills read as nothing
+    # worse than FAILING: no run since 2026-11-10 16:45Z had exited 0, so the report was never
+    # written and no one could say whether the watermarks moved. The pass now ends inside its own
+    # budget and always writes this report (with the backlog it left), so a missing or old report
+    # means the organ is not finishing, which is the defect, and it now reads STALE.
+    "MT5-TapeFeatures":   ("desks/mt5/reports/TAPE_FEATURES.json", 150,
+                           "tape -> silver, intrabar bars and the tick cost and slippage "
+                           "surfaces; backlog_symbol_days says what the pass left unbuilt"),
     # THE FOURTEEN UNCONTRACTED ORGANS (2026-09-12). Every one appeared on the board as
     # "no artifact contract: this process could stop and nothing would notice" -- which is
     # exactly the gap that lets a new organ die quietly, and the principal asked for it closed.

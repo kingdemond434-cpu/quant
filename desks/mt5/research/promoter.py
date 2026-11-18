@@ -79,6 +79,7 @@ import math
 import re
 import sys
 import time
+from collections.abc import Iterable
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -284,6 +285,91 @@ def _apply_live_policy(rows: list[dict]) -> int:
                     "retired_at": stamp, "retire_reason": why,
                     "retired_by": "live_policy"})
         plog(f"LIVE POLICY retired {row.get('name')} (was {was}): {why}")
+        n += 1
+    return n
+
+
+#: Retirements that were a POLICY about which instruments may hold capital, never a verdict on
+#: the sleeve's evidence. `live_policy` is `_apply_live_policy` above; the gold-only stamp is the
+#: principal's 2026-09-16 order, lifted by the principal on 2026-09-24 and again on 2026-10-05
+#: ("make sure gold only rule is removed ... 0 hardcoding anywhere just all sleeves provided and
+#: it [the allocator] bes the boss").
+POLICY_RETIREMENTS: frozenset[str] = frozenset({"live_policy", "principal_gold_only_2026-09-16"})
+
+
+def restore_lifted_policy_retirements(sleeves: list[dict], *,
+                                      certified: Iterable[str] | None = None,
+                                      now: datetime | None = None) -> int:
+    """Return to STANDBY every row a since-lifted live policy retired. Returns rows restored.
+
+    A POLICY RETIREMENT WAS NEVER A VERDICT, SO IT MUST NOT BE ONE-WAY (principal 2026-10-13:
+    "make sure all promotion eligible sleeves r promoted to live fr allocator to choose from n
+    always are"). `_apply_live_policy` retires a row the moment the policy refuses it, and nothing
+    reversed that when the policy widened: measured on the box's 2026-10-13 roster, 731 certified
+    rows sat RETIRED by `live_policy` or the gold-only order with the policy no longer refusing
+    them, and the allocator could never fund one, because a RETIRED row never reaches
+    `reconcile_capital`.
+
+    NO GATE IS LOOSENED. The row goes to STANDBY at 0% risk with its admission streak reset, so
+    capital still takes PROMOTE_ADMIT_STREAK consecutive admitting allocator scans, the cost
+    basis, the ten-gate certificate (exact policy, all ten passed, read now), the live policy,
+    the family ban, Tier S, the blind reviewer, the cost regrade and the executor registry. The
+    retirement doors that run after this in `main` (unrunnable, banned, Tier S live, forward
+    record) judge STANDBY rows too. Skipped: a row another standing row already carries (a
+    principal identity, or the same certificate), so one certificate is never two sleeves.
+    """
+    try:
+        from mt5desk.executables import executor_gap
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return 0
+    try:
+        certs = set(load_cert_specs() if certified is None else certified)
+    except Exception as exc:
+        plog(f"policy-retirement restore SKIPPED: certificates unreadable "
+             f"({type(exc).__name__}: {exc})")
+        return 0
+    if not certs:
+        return 0
+    pol = policy()
+    fails = regrade_failures()
+    stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    standing = [s for s in sleeves if str(s.get("status") or "").upper() in ("LIVE", "STANDBY")]
+    held_names = {str(s.get("principal_source") or "") for s in standing} - {""}
+    held_certs = {_certificate_key(s) for s in standing} | {
+        str(s.get("principal_certificate") or "") for s in standing}
+    held_certs.discard("")
+    n = 0
+    for row in sorted(sleeves, key=lambda r: str(r.get("name") or "")):
+        if str(row.get("status") or "").upper() != "RETIRED":
+            continue
+        if str(row.get("retired_by") or "") not in POLICY_RETIREMENTS:
+            continue
+        name, cert = str(row.get("name") or ""), _certificate_key(row)
+        if not cert or cert not in certs or name in held_names or cert in held_certs:
+            continue
+        if refuse(row, pol):
+            continue
+        if regrade_block(cert, fails) or blind_review_veto(cert) or tier_s_block(cert):
+            continue
+        tf = _sleeve_timeframe(row.get("params") or {})
+        gap = executor_gap(str(row.get("family") or "")) if tf == "H1" else \
+            executor_gap(str(row.get("family") or ""), tf)
+        if row.get("exec") == "family_market" and gap:
+            continue
+        history = {k: row.pop(k) for k in ("retired_at", "retire_reason", "retired_by")
+                   if k in row}
+        row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                    "admit_streak": 0, "restored_at": stamp,
+                    "restored_by": "policy_lifted", "policy_retirement": history,
+                    "restore_reason": "the live policy that retired this row no longer refuses "
+                                      "it; capital is the allocator's decision on the streak"})
+        row.pop("admit_scan", None)
+        held_certs.add(cert)
+        plog(f"POLICY LIFTED: {name} RETIRED -> STANDBY (0% risk; was "
+             f"{history.get('retired_by')}: {str(history.get('retire_reason'))[:120]})")
+        note_door(name, door="RESTORED", from_status="RETIRED", to_status="STANDBY",
+                  reason="policy lifted", evidence={"certificate": cert, **history})
         n += 1
     return n
 
@@ -2198,6 +2284,9 @@ def main() -> None:
     regrade_fails = regrade_failures()
     identities = clock_identities()
     changed = False
+    # A since-lifted policy retirement returns to STANDBY FIRST, so every retirement door below
+    # judges the row it restores (principal 2026-10-13).
+    changed = restore_lifted_policy_retirements(sleeves) > 0 or changed
     # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
     # or restored on them (2026-09-16).
     changed = retire_unrunnable(sleeves) or changed
