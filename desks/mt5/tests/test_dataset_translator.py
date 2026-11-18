@@ -529,3 +529,17 @@ def test_the_knowable_time_is_the_ingestion_time_never_the_event_time(tmp_path: 
 def test_a_crypto_exchange_claim_never_enters_the_file() -> None:
     doc = dt.compact_cloud_claims([_ledger_row(claim="binance perp funding flips")])
     assert doc["claims"] == 0 and doc["excluded"]
+
+
+def test_a_refused_host_telling_never_reaches_the_public_claim_file() -> None:
+    """Auditor SF1: refused tellings are dropped at build time and counted under excluded."""
+    rows = [{"mechanism_key": "k1", "mechanism_class": "momentum", "url": "https://www.reddit.com/r/x",
+             "ingested_time": "2026-11-18T00:00:00+00:00", "direction": ["up"],
+             "instruments": {"analogues": ["EURUSD"]}},
+            {"mechanism_key": "k1", "mechanism_class": "momentum", "url": "https://example.org/a",
+             "ingested_time": "2026-11-18T01:00:00+00:00", "direction": ["down"],
+             "instruments": {"analogues": ["EURUSD"]}}]
+    doc = dt.compact_cloud_claims(rows)
+    assert doc["excluded"].get("refused host (terms)") == 1
+    (rec,) = doc["rows"]
+    assert rec["direction"] == ["down"] and rec["host"] == "example.org"

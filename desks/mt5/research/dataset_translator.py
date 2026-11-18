@@ -390,8 +390,14 @@ def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") ->
         if not ingested:
             excluded["no ingestion time"] += 1
             continue
+        host = host_of(r.get("url"))
+        # A TELLING FROM A REFUSED HOST NEVER REACHES THE PUBLIC FILE (Auditor SF1): its derived
+        # words would otherwise merge into an allowed key's record.
+        if refusal_of(str(r.get("url") or ""), host or ""):
+            excluded["refused host (terms)"] += 1
+            continue
         inst = r.get("instruments") or {}
-        tell = {"claim_hash": str(r.get("claim_hash") or ""), "host": host_of(r.get("url")),
+        tell = {"claim_hash": str(r.get("claim_hash") or ""), "host": host,
                 "ingested_time": ingested, "event_time": str(r.get("event_time") or "")}
         rec = by_key.get(mkey)
         if rec is None:

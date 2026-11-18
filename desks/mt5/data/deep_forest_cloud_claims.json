@@ -1,10 +1,12 @@
 {
  "writer": "research/dataset_translator.py --build-cloud-claims",
- "built_at": "2026-11-18T03:27:05Z",
+ "built_at": "2026-11-18T03:37:42Z",
  "source": "ALL_CLAIMS_cloud_ledger.jsonl",
  "ledger_rows": 465,
- "claims": 375,
- "excluded": {},
+ "claims": 373,
+ "excluded": {
+  "refused host (terms)": 2
+ },
  "note": "derived identities and vocabulary buckets only; no claim text, title, page body or URL path. knowable time = earliest ingested_time of the key",
  "rows": [
   {
@@ -1819,35 +1821,6 @@
    "claim_hash": "40b0e94072cf",
    "host": "www.paxnet.co.kr",
    "ingested_time": "2026-09-06T17:33:54+00:00",
-   "event_time": ""
-  },
-  {
-   "mechanism_key": "0e38907eb143dc66",
-   "mechanism_class": "microstructure",
-   "analogues": [
-    "USDTRY"
-   ],
-   "direction": [
-    "drops",
-    "reverts"
-   ],
-   "horizon": [
-    "month",
-    "overnight"
-   ],
-   "quantity_kind": "",
-   "lang": "en",
-   "tellings": [
-    {
-     "claim_hash": "c863fe6daa6c",
-     "host": "www.reddit.com",
-     "ingested_time": "2026-09-06T19:34:19+00:00",
-     "event_time": ""
-    }
-   ],
-   "claim_hash": "c863fe6daa6c",
-   "host": "www.reddit.com",
-   "ingested_time": "2026-09-06T19:34:19+00:00",
    "event_time": ""
   },
   {
@@ -5912,35 +5885,6 @@
    "host": "xueqiu.com",
    "ingested_time": "2026-09-12T07:16:55+00:00",
    "event_time": "2024-06-07"
-  },
-  {
-   "mechanism_key": "6f7010cce86da934",
-   "mechanism_class": "reversion",
-   "analogues": [
-    "JPN225"
-   ],
-   "direction": [
-    "上昇",
-    "下落"
-   ],
-   "horizon": [
-    "週",
-    "月"
-   ],
-   "quantity_kind": "",
-   "lang": "ja",
-   "tellings": [
-    {
-     "claim_hash": "e83a8d638be2",
-     "host": "www.youtube.com",
-     "ingested_time": "2026-09-12T09:00:45+00:00",
-     "event_time": ""
-    }
-   ],
-   "claim_hash": "e83a8d638be2",
-   "host": "www.youtube.com",
-   "ingested_time": "2026-09-12T09:00:45+00:00",
-   "event_time": ""
   },
   {
    "mechanism_key": "3f626400c1d75671",
