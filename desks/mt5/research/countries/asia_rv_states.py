@@ -48,7 +48,10 @@ STATE = STORE / "state.json"
 SERIES = DESK / "data" / "lake" / "series"
 BARS = DESK / "data" / "universe"
 OUT = DESK / "reports" / "ASIA_RV_STATES.json"
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; asia_rv_states)"
+#: The desk's honest research User-Agent, verbatim from #1320's HONEST_UA: it says what we are and
+#: names no person, handle or address. Switch to `from libs.data.honest_ua import HONEST_UA` once
+#: #1320 lands.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 HARD_STOP = frozenset({401, 403, 429, 451})
 #: Daily sources: one read every 20 hours is ample and polite.
 REFETCH_S = 20 * 3600
@@ -115,17 +118,30 @@ def get_text(url: str, timeout: float = 20.0, deadline: float | None = None) -> 
     return r.text
 
 
+#: A robots.txt that does not exist (404 or 410) allows everything, as RFC 9309 says.
+ROBOTS_ABSENT = frozenset({404, 410})
+
+
+def _looks_like_html(body: str) -> bool:
+    head = body.lstrip()[:512].lower()
+    return head.startswith("<") or "<html" in head or "<!doctype" in head
+
+
 def robots_allow(url: str, fetch: Callable[[str], str]) -> bool:
-    """robots.txt for the host, read with our UA. 404 allows (the standard); any other failure
-    to read it does not."""
+    """robots.txt for the host, read with our UA. 404 or 410 allows (the file does not exist);
+    any other failure to read it does not. An HTML body is a soft-404 or a block page, not a
+    robots file: it is treated as UNREAD, and an unread policy is never a yes."""
     p = urllib.parse.urlsplit(url)
     rp = urllib.robotparser.RobotFileParser()
     try:
-        rp.parse(fetch(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+        body = fetch(f"{p.scheme}://{p.netloc}/robots.txt")
     except FetchError as exc:
-        return exc.code == 404
+        return exc.code in ROBOTS_ABSENT
     except HardStop:
         return False
+    if _looks_like_html(body):
+        return False
+    rp.parse(body.splitlines())
     return rp.can_fetch(UA, url)
 
 

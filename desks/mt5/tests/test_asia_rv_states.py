@@ -310,3 +310,62 @@ def test_the_recipes_read_what_this_organ_writes(tmp_path: Path,
     from mt5desk import family_exogenous_conditioner as X
     s = X.conditioner(HK.SERIES_ID, "hibor_on_sofr", "level_z", root=tmp_path / "series")
     assert s is not None and len(s) > 0
+
+
+# ------------------------------------------------------------------------------ audit fixes
+
+def test_the_user_agent_names_no_owner_repo_or_address() -> None:
+    ua = A.UA
+    assert ua == "quant-desk-research/1.0 (automated research; honours robots.txt)"
+    assert "github.com/" not in ua and "@" not in ua
+    assert "kingdemond" not in ua.lower()
+
+
+def test_sofr_is_stamped_on_sifma_days_so_good_friday_is_skipped() -> None:
+    # Thursday 2026-04-02: Good Friday 04-03 is a SIFMA close but not a federal holiday
+    assert HK.sofr_available("2026-04-02") == pd.Timestamp("2026-04-06 13:00", tz="UTC")
+    # a SIFMA mourning close (2025-01-09) is skipped too
+    assert HK.sofr_available("2025-01-08") == pd.Timestamp("2025-01-10 14:00", tz="UTC")
+
+
+def test_hkma_is_stamped_on_the_next_hong_kong_business_day() -> None:
+    # Thursday 2026-04-02: Good Friday, Easter Monday and Ching Ming (observed 04-07) are closed
+    assert HK.hkma_available("2026-04-02") == pd.Timestamp("2026-04-08 01:00", tz="UTC")
+    # Monday 2026-02-16: Lunar New Year days 1-3 are 02-17..02-19
+    assert HK.hkma_available("2026-02-16") == pd.Timestamp("2026-02-20 01:00", tz="UTC")
+
+
+def test_an_undeclared_hong_kong_year_waits_past_any_holiday_run() -> None:
+    if HK.hk_holidays(2019) is not None:
+        pytest.skip("a holiday calendar covers 2019 on this host")
+    assert HK.hkma_available("2019-02-01") == pd.Timestamp("2019-02-08 01:00", tz="UTC")
+
+
+def test_a_live_hkma_value_is_never_stamped_before_its_rule() -> None:
+    store: dict = {}
+    seen = datetime(2026, 4, 3, 2, tzinfo=UTC)           # read on Good Friday morning HKT
+    HK.merge_first(store, {"2026-04-02": {"hibor_on": 3.1}}, "hkma", seen)
+    assert pd.Timestamp(store["2026-04-02"]["available_time"]) == \
+        pd.Timestamp("2026-04-08 01:00", tz="UTC")
+
+
+class _Robots:
+    def __init__(self, body: str | None = None, code: int | None = None) -> None:
+        self.body, self.code = body, code
+
+    def __call__(self, url: str) -> str:
+        if self.code is not None:
+            raise A.FetchError(self.code, f"HTTP {self.code}")
+        assert self.body is not None
+        return self.body
+
+
+@pytest.mark.parametrize(("code", "ok"), [(404, True), (410, True), (500, False)])
+def test_robots_absent_allows_and_unreadable_refuses(code: int, ok: bool) -> None:
+    assert A.robots_allow("https://example.org/x", _Robots(code=code)) is ok
+
+
+def test_an_html_robots_body_is_unread_and_refuses() -> None:
+    page = "<!DOCTYPE html><html><body>Access denied</body></html>"
+    assert A.robots_allow("https://example.org/x", _Robots(body=page)) is False
+    assert A.robots_allow("https://example.org/x", _Robots(body="User-agent: *\nAllow: /\n"))

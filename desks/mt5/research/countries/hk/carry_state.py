@@ -21,16 +21,24 @@ SOURCES AND THEIR TERMS (read 2026-11-18; `countries/asia_rv_sources.json` carri
     business purposes", including automated access that does not interfere with the site.
 
 NO LOOKAHEAD. Each value is stamped by a rule that is LATE by construction, and a value first seen
-live is stamped at max(rule, first seen):
-  * SOFR for business day D is published at 08:00 New York time on the next Federal Reserve
-    business day; it is stamped 09:00 New York on that day (federal holidays skipped).
-  * HKMA's figures for D are stamped 09:00 Hong Kong time on the next weekday. On a Hong Kong
-    holiday the true release is earlier than that, never later, so the error is on the safe side.
+live is stamped at max(rule, first fetch that held it) (`merge_first`):
+  * SOFR for business day D is published at 08:00 New York time on the next SIFMA business day;
+    it is stamped 09:00 New York on that day. SIFMA, not the Federal Reserve, sets the calendar:
+    federal holidays, Good Friday and SIFMA's listed mourning closes are all skipped (mirrors
+    `usd_liquidity_primary._next_sifma_day`, #1330). Good Friday is sometimes only an early close,
+    when SOFR is published; treating it as closed then stamps a day late, never early.
+  * HKMA's figures for D are stamped 09:00 Hong Kong time on the next Hong Kong BUSINESS day:
+    weekends and Hong Kong general holidays skipped, from the `holidays` package when it is
+    installed and otherwise from the pack's declared table (`pack._HK_HOLIDAYS`). For a year the
+    table does not cover the rule takes the fifth weekday after D instead, which is later than any
+    Hong Kong holiday run, so an unknown calendar costs freshness and never looks ahead.
 A row's `available_time` is the later of its two legs. The FIRST value seen for a date is kept;
-a later revision is counted and never back-dated.
+a later revision is counted and never back-dated. History read on a backfill pass (rule instant
+more than `BACKFILL_AGE` old) is stamped by its rule, which the two calendars above make late.
 """
 from __future__ import annotations
 
+import functools
 from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
@@ -103,23 +111,69 @@ def parse_sofr(doc: Any) -> dict[str, dict[str, float]]:
 
 # ------------------------------------------------------------------------------ stamping rules
 
-def _fed_bday() -> pd.offsets.CustomBusinessDay:
-    from pandas.tseries.holiday import USFederalHolidayCalendar
-    return pd.offsets.CustomBusinessDay(calendar=USFederalHolidayCalendar())
+#: SIFMA's recommended full closes that are not federal holidays and have no rule (national days
+#: of mourning). Good Friday is added by rule. Mirrors #1330's `SIFMA_EXTRA_CLOSES`.
+SIFMA_EXTRA_CLOSES: frozenset[str] = frozenset({"2018-12-05", "2025-01-09"})
+
+
+@functools.lru_cache(maxsize=1)
+def _sifma_offset() -> pd.offsets.CustomBusinessDay:
+    from pandas.tseries.holiday import GoodFriday, USFederalHolidayCalendar
+    lo, hi = pd.Timestamp("2000-01-01"), pd.Timestamp("2100-12-31")
+    hol = list(USFederalHolidayCalendar().holidays(start=lo, end=hi))
+    hol += list(GoodFriday.dates(lo, hi))
+    hol += [pd.Timestamp(x) for x in SIFMA_EXTRA_CLOSES]
+    return pd.offsets.CustomBusinessDay(holidays=hol)
+
+
+def next_sifma_day(day: str) -> pd.Timestamp:
+    """The next SIFMA business day after `day` (SOFR is published on SIFMA business days)."""
+    return (pd.Timestamp(day) + _sifma_offset()).normalize()
 
 
 def sofr_available(day: str) -> pd.Timestamp:
-    """09:00 New York on the next Federal Reserve business day after `day`."""
-    nxt = pd.Timestamp(day) + _fed_bday()
-    return (nxt.normalize() + pd.Timedelta(hours=9)).tz_localize(
+    """09:00 New York on the next SIFMA business day after `day`."""
+    return (next_sifma_day(day) + pd.Timedelta(hours=9)).tz_localize(
         "America/New_York", nonexistent="shift_forward", ambiguous=False).tz_convert("UTC")
 
 
+#: Weekdays the rule waits when the year's Hong Kong holidays are not known: longer than any
+#: Hong Kong general-holiday run (Lunar New Year or Easter plus a substituted day).
+HK_UNKNOWN_YEAR_WEEKDAYS = 5
+
+
+@functools.lru_cache(maxsize=64)
+def hk_holidays(year: int) -> frozenset[str] | None:
+    """Hong Kong general holidays for `year` (ISO dates), or None when no calendar covers it."""
+    try:
+        import holidays as _hol  # optional dependency
+        return frozenset(d.isoformat() for d in _hol.country_holidays("HK", years=year))
+    except Exception:
+        pass
+    from research.countries.hk import pack as HKP
+    table = HKP._HK_HOLIDAYS.get(int(year))
+    return frozenset(table) if table else None
+
+
+def next_hk_business_day(day: str) -> pd.Timestamp:
+    """The next Hong Kong business day after `day`; for a year with no known holiday calendar,
+    the fifth weekday after it (later than any holiday run, so never early)."""
+    d = pd.Timestamp(day).normalize()
+    cand = d + pd.offsets.BDay(1)
+    for _ in range(40):
+        hol = hk_holidays(cand.year)
+        if hol is None:
+            return d + pd.offsets.BDay(HK_UNKNOWN_YEAR_WEEKDAYS)
+        if cand.date().isoformat() not in hol:
+            return cand
+        cand = cand + pd.offsets.BDay(1)
+    return d + pd.offsets.BDay(HK_UNKNOWN_YEAR_WEEKDAYS)
+
+
 def hkma_available(day: str) -> pd.Timestamp:
-    """09:00 Hong Kong time on the next weekday after `day`."""
-    nxt = pd.Timestamp(day) + pd.offsets.BDay(1)
-    return (nxt.normalize() + pd.Timedelta(hours=9)).tz_localize("Asia/Hong_Kong"
-                                                                 ).tz_convert("UTC")
+    """09:00 Hong Kong time on the next Hong Kong business day after `day`."""
+    return (next_hk_business_day(day) + pd.Timedelta(hours=9)).tz_localize(
+        "Asia/Hong_Kong").tz_convert("UTC")
 
 
 RULES = {"hkma": hkma_available, "sofr": sofr_available}

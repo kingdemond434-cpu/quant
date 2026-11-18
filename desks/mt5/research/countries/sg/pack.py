@@ -1271,7 +1271,15 @@ CUSTOM_MINERS: tuple[dict[str, Any], ...] = (
           entry="research.countries.sg.miners:mps_event_study", cadence_s=86400.0,
           steerable=False,
           notes="SPEC, NOT YET WIRED. Splits scheduled from off-cycle and slope changes from "
-                "re-centrings; refuses to pool them"),
+                "re-centrings; refuses to pool them. PREREGISTRATION AMENDMENT 2026-11-18 (PR "
+                "#1335), recorded before any run of this miner: BAND_STATE now marks "
+                "2020-03-30 OFF-CYCLE, as MAS's past-decisions table and domain SG-A ('the "
+                "three off-cycle statements of 2020 and 2022') always did. The off_cycle arm "
+                "therefore holds 2020-03-30, 2022-01-25 and 2022-07-14 (three events, was two); "
+                "recentre is unchanged (2020-03-30 stays in it). The same PR appended the "
+                "2026-04-14 and 2026-07-27 slope increases, so slope_only holds six events "
+                "(was four). The arms are defined by MAS's own classification, not chosen after "
+                "results"),
     miner("sg_band_edge", domain_ids=("SG-C",), kind="microstructure",
           entry="research.countries.sg.miners:band_edge", cadence_s=3600.0,
           notes="SPEC, NOT YET WIRED. Tests behaviour conditional on the estimated position "
