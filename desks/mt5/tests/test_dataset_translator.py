@@ -241,6 +241,7 @@ def test_a_dataset_added_to_a_roster_is_mapped_on_the_next_pass(
     df.write_text("", "utf-8")
     for name, val in {"FREE_STACK": fs, "DEEP_FOREST": df, "AXES": tmp_path / "axes",
                       "KEYED": tmp_path / "k.json", "ENV_KEYS": tmp_path / "e.json",
+                      "CLOUD_CLAIMS": tmp_path / "claims.json",
                       "LAKE": tmp_path / "lake", "CURSOR": tmp_path / "cursor.json",
                       "REPORT": tmp_path / "DATASET_TRANSLATION.json"}.items():
         monkeypatch.setattr(dt, name, val)

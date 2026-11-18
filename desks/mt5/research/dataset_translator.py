@@ -1158,6 +1158,9 @@ def claims_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def summarise(rows: list[dict[str, Any]], dropped: Counter[str]) -> dict[str, Any]:
+    """The wired share is a fact about DATASETS: cloud claims are counted in `cloud_claims`
+    (`claims_summary`), never in the share, so 375 claim rows cannot inflate it."""
+    rows = [r for r in rows if r.get("kind") != CLAIM_KIND]
     n = len(rows)
     mapped = [r for r in rows if r.get("tradables")]
     declared = [r for r in rows if r.get("declared_tradables")]
@@ -1255,7 +1258,7 @@ def main(argv: list[str] | None = None) -> int:
         "trials_charged": len(cells) if path else 0,
         "contract": str(path) if path else None,
         "families": list(EMITTED_FAMILIES),
-        "cloud_claims": {"file": str(CLOUD_CLAIMS.relative_to(ROOT).as_posix()),
+        "cloud_claims": {"file": CLOUD_CLAIMS.name,
                          **claims_summary(rows)},
         "seconds": round(time.monotonic() - t0, 2),
         "rows": sorted(rows, key=lambda r: str(r.get("available_time") or ""), reverse=True),
@@ -1264,7 +1267,8 @@ def main(argv: list[str] | None = None) -> int:
     REPORT.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), "utf-8")
     print(f"dataset_translator: {doc['mapped']}/{doc['datasets']} mapped "
           f"(wired share {doc['wired_share']}; declared-only {doc['wired_share_declared_only']}),"
-          f" {len(cells)} cells, by status {doc['by_status']}")
+          f" {len(cells)} cells, by status {doc['by_status']}; cloud claims "
+          f"{doc['cloud_claims']['claims']} ({doc['cloud_claims']['by_class']})")
     return 0
 
 
