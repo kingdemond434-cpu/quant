@@ -58,7 +58,10 @@ TARGETS: list[tuple[str, tuple[str, ...]]] = [
     ("nasdaq100", ("NASDAQ-100 STOCK INDEX (MINI)" + _CME, "NASDAQ MINI" + _CME)),
 ]
 
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; fetch_tff)"
+# The desk's honest client name (fetch law, PR #1320, libs/data/honest_ua.py): it names what is
+# reading and no person, account or repository owner. Literal copy of #1320's HONEST_UA until
+# that PR lands; then replace this line with `from libs.data.honest_ua import HONEST_UA as UA`.
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 ctx = ssl.create_default_context()
 
 

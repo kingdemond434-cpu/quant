@@ -31,3 +31,14 @@ def test_exact_names_never_swallow_a_cross_contract() -> None:
     got = fetch_tff.pick(df, eur)
     assert list(got["market"]) == ["EURO FX" + cme]
     assert list(fetch_tff.pick(df, dict(fetch_tff.TARGETS)["eurjpy"])["oi"]) == [21455]
+
+
+def test_user_agent_names_no_repository_or_owner() -> None:
+    """The fetch law: the client name names what reads, never who runs it (#1320)."""
+    import fetch_tff
+
+    ua = fetch_tff.UA
+    assert "github.com/" not in ua
+    assert "kingdemond" not in ua.lower()
+    assert "@" not in ua
+    assert ua == "quant-desk-research/1.0 (automated research; honours robots.txt)"
