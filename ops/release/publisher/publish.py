@@ -7,10 +7,18 @@ minutes, so this service is the ONLY box identity on that list. It runs as its o
 (`quant-publisher`), the only account that can read the state App's key. It can push nothing but
 state BY CONSTRUCTION:
 
-  1. It fetches the box checkout's HEAD (read-only access to its .git, never its worktree, so it
-     never sees data/secrets/**) and origin/LIVE into its own clone.
-  2. It takes the paths the BOX changed since the two diverged (merge-base..box HEAD, which is
-     today's Adopt-Release rule: the box's state is the box's, origin's edits elsewhere stand).
+  1. It fetches `refs/publish/pending` from the box checkout (read-only access to its .git, never
+     its worktree, so it never sees data/secrets/**) and origin/LIVE into its own clone. That ref
+     is the one-parent commit MT5-ShadowSync (sync_shadow_to_git.ps1, Publish-StateOnto) builds
+     every pass: allowlisted state blobs, after the login fence and the sleeves sanitiser, laid
+     over origin's tip in a private index. The box's HEAD is NEVER the source: the box does not
+     commit its state on HEAD, so HEAD lags LIVE by tens of thousands of state paths and an
+     overlay of it would put old box copies over newer LIVE state (measured on the box
+     2026-11-05: a dry run of the HEAD overlay wanted 98,001 paths; ShadowSync's commits touch
+     about 20).
+  2. It takes the paths that commit changed against its own parent (pending^..pending), and only
+     once per pending commit (the last one published is remembered in the clone's .git), so an
+     old pending commit can never be re-laid over newer LIVE state.
   3. It keeps only publishable paths (`publishable()`): a fixed subset of release.py's state,
      minus docs/ and minus the behaviour switches (*_ENABLED*, *_DISABLED*,
      the governed-state files), which change what code does and so travel by PR.
@@ -37,6 +45,8 @@ import sys
 from pathlib import Path
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
+# The box-side builder (sync_shadow_to_git.ps1) points this at its fenced state commit each pass.
+PENDING_REF = "refs/publish/pending"
 
 # WHAT MAY BE PUBLISHED, FIXED HERE (root, pinned) rather than imported from libs/ops/release.py,
 # which is not root: a PR widening STATE_PREFIXES must never widen what this key can push. A
@@ -114,9 +124,27 @@ def main(argv: list[str] | None = None) -> int:
         git(work, "fetch", "-q", "--no-tags", "origin", f"+refs/heads/{br}:refs/remotes/{live}")
         git(work, "checkout", "-q", "-f", "--detach", live)
         git(work, "clean", "-q", "-fdx")
-        git(work, "fetch", "-q", "--no-tags", str(Path(a.src)), "+HEAD:refs/box/head")
-        box = "refs/box/head"
-        base = git(work, "merge-base", box, live).strip()
+        got = subprocess.run(["git", "-c", "safe.directory=*", "-C", str(work), "fetch", "-q",
+                              "--no-tags", str(Path(a.src)), f"+{PENDING_REF}:refs/box/pending"],
+                             capture_output=True, text=True, encoding="utf-8", errors="replace",
+                             check=False)  # fmt: skip
+        if got.returncode != 0:
+            if "couldn't find remote ref" in got.stderr.lower():
+                print(f"nothing to publish: the box has no {PENDING_REF} yet")
+                return 0
+            raise RuntimeError(f"git fetch pending: {got.stderr.strip()[:300]}")
+        box = "refs/box/pending"
+        pending = git(work, "rev-parse", box).strip()
+        marker = Path(git(work, "rev-parse", "--git-dir").strip())
+        marker = (marker if marker.is_absolute() else work / marker) / "publisher_last_pending"
+        if marker.exists() and marker.read_text(encoding="utf-8").strip() == pending:
+            print(f"nothing to publish: pending {pending[:12]} was already published")
+            return 0
+        parents = git(work, "rev-list", "--parents", "-n", "1", box).split()[1:]
+        if len(parents) != 1:
+            print(f"REFUSED: pending {pending[:12]} has {len(parents)} parents, not one")
+            return 2
+        base = parents[0]
 
         def names(*rev: str) -> set[str]:
             out = git(work, "diff", "--name-only", "--no-renames", "-z", *rev)
@@ -138,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
         present = set(modes)
         if not todo:
             print("nothing to publish")
+            if not a.dry_run:
+                marker.write_text(pending + "\n", encoding="utf-8")
             return 0
         there = [p for p in todo if p in present]
         gone = [p for p in todo if p not in present]
@@ -155,6 +185,8 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         if not staged:
             print("nothing to publish")
+            if not a.dry_run:
+                marker.write_text(pending + "\n", encoding="utf-8")
             return 0
         if a.dry_run:
             print(f"would publish {len(staged)} state path(s)")
@@ -168,7 +200,8 @@ def main(argv: list[str] | None = None) -> int:
         if out.returncode != 0:
             print(f"push lost a race or was refused; next pass retries: {out.stderr.strip()[:200]}")
             return 1
-        print(f"published {len(staged)} state path(s)")
+        marker.write_text(pending + "\n", encoding="utf-8")
+        print(f"published {len(staged)} state path(s) from pending {pending[:12]}")
         return 0
     except RuntimeError as exc:
         print(f"failed: {exc}")

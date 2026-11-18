@@ -454,3 +454,65 @@ def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> N
     pca.mark_defect(ok, {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "defect_since": "t0"})
     assert "red" not in ok and "defect_since" not in ok
     assert not out.exists()
+
+
+def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
+                  screen: list[dict], door: str | None = None) -> dict:
+    """build_universe over one certified EURUSD column, every venue read stubbed."""
+    import kelly_survival as ks
+    col = "EURUSD_x_asia"
+    worlds = tmp_path / "worlds.npz"
+    np.savez(worlds, names=np.asarray([col]), r=np.full((2, 5, 1), 0.1))
+    monkeypatch.setattr(ks, "WORLDS", worlds)
+    monkeypatch.setattr(ks, "LEDGER", tmp_path / "no_ledger.jsonl")
+    monkeypatch.setattr(ks, "certified_roster", lambda names: ([col], screen))
+    monkeypatch.setattr(ks, "_extend_worlds", lambda r, c, s, seed: (r, c, ""))
+    monkeypatch.setattr(pca, "tier_s_columns", lambda s, d: dict(tier_s))
+    monkeypatch.setattr(pca, "venue_listing", lambda: ({"EURUSD": {}}, "test listing"))
+    monkeypatch.setattr(pca, "e8_symbols", lambda: set())
+    monkeypatch.setattr(pca, "quarantined_symbols", lambda: set())
+    monkeypatch.setattr(pca, "ftmo_commissions", lambda: {})
+    monkeypatch.setattr(pca, "copy_switch", lambda: {})
+    monkeypatch.setattr(pca, "venue_cost_bias",
+                        lambda *a, **k: {"status": "PRICED", "bias_r_per_trade": 0.0})
+    monkeypatch.setattr(pca, "sleeve_spec",
+                        lambda key: ({"symbol": "EURUSD", "family": "x", "key": key}, "ok"))
+    import mt5desk.decision_core as dc
+    monkeypatch.setattr(dc, "principal_zero", lambda c, lane: False)
+    monkeypatch.setattr(pca, "door_block", lambda key: door)
+    return pca.build_universe()
+
+
+def test_ftmo_admits_the_same_certified_roster_fusion_and_e8_trade(tmp_path, monkeypatch) -> None:
+    """Principal 2026-11-03: every account runs the same mechanisms. A certified sleeve that is not
+    Tier S was refused on FTMO alone (E8 and Fusion trade it), leaving FTMO on the gold copy only;
+    it is now admitted and sized by the same survival solve, Tier S kept as an annotation."""
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen)
+    assert uni["status"] == "OK" and uni["cols"] == ["EURUSD_x_asia"]
+    c = uni["columns"]["EURUSD_x_asia"]
+    assert c["admitted"] and c["tier_s"] is False and "certified via" in c["why"]
+    assert uni["specs"]["EURUSD_x_asia"]["key"] == "external.EURUSD.x.p=1"
+    assert pca.executable_columns(uni["cols"], uni) == {"EURUSD_x_asia"}
+
+
+def test_a_column_no_certificate_vouches_for_is_still_refused(tmp_path, monkeypatch) -> None:
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD", "excluded": "banned family"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen)
+    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE"
+    assert uni["columns"]["EURUSD_x_asia"]["admitted"] is False
+
+
+def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkeypatch) -> None:
+    """Auditor SF1 on #769: a column ftmo_executor would refuse as TIER_S_BLOCKED is refused
+    before the solve, named, and counted -- never sized heat that cannot trade."""
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen,
+                        door="replication MISMATCH")
+    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE" and uni["door_blocked"] == ["EURUSD_x_asia"]
+    row = uni["columns"]["EURUSD_x_asia"]
+    assert row["admitted"] is False and "TIER_S_BLOCKED" in row["why"]
+    assert "replication MISMATCH" in row["why"]

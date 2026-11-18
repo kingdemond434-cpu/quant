@@ -9,6 +9,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from research import judging_throughput as jt
 
 
+@pytest.fixture(autouse=True)
+def _no_armed_apply_deadline():
+    """Another test in the same worker may have run `measure`; start and end disarmed."""
+    jt._APPLY_DEADLINE[:] = []
+    yield
+    jt._APPLY_DEADLINE[:] = []
+
+
 def test_zero_task_limit_is_a_measurement(monkeypatch):
     monkeypatch.setattr(jt.sys, 'platform', 'win32')
     monkeypatch.setattr(jt.subprocess, 'run', lambda *a, **k:
@@ -158,3 +166,21 @@ def test_the_regime_bounds_are_counted_in_the_same_ledger_pass(tmp_path):
           "sweep_ends": [(T0 + 6 * H).isoformat()]}
     got = jt._verdict_counts(T0 + 10 * H, led, extra_cuts=jt.regime_cuts(st))["counts"]
     assert got["build_step_lo"] - got["build_step_hi"] == 4     # hours 3,4,5,6: (start, end]
+
+
+def test_a_dry_run_leaves_the_apply_deadline_disarmed(monkeypatch) -> None:
+    # MEASURED 2026-11-05: the task_limit phase armed the deadline and only the `apply` block
+    # disarmed it, so after a dry run every later `_sub_timeout` raised once 90 s had passed.
+    monkeypatch.setattr(jt, "measure_box", lambda now=None: {"source": "test", "cores": 4,
+                                                             "is_judging_box": True})
+    monkeypatch.setattr(jt, "declared_costs", lambda: {})
+    monkeypatch.setattr(jt, "measure_queue", lambda: {"depth": 0})
+    monkeypatch.setattr(jt, "plan", lambda box, queue, costs: {
+        "limiting_resource": "cores", "workers": 1, "cadence_minutes": 5})
+    monkeypatch.setattr(jt, "measure_rate", lambda *a, **k: {"status": "UNMEASURED"})
+    seen = []
+    monkeypatch.setattr(jt, "task_time_limit_s", lambda: seen.append(list(jt._APPLY_DEADLINE)))
+    jt.run(write=False, apply=False)
+    assert seen and seen[0], "the limit query must run under the apply deadline"
+    assert jt._APPLY_DEADLINE == []
+    assert jt._sub_timeout(5.0) == 5.0

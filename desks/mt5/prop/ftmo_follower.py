@@ -291,6 +291,37 @@ def entry_order_kind(side: str, level: float, bid: float, ask: float) -> str:
     return "sell_stop" if bid > level else "sell_limit"
 
 
+#: A LATE FOLLOW ENTERS AT MARKET, NOT AT A LIMIT IT WILL NEVER SEE (2026-11-04, measured): E8's
+#: gold_asia buy stop filled at 05:36:25Z and ran to its target (+1,166.49 on E8); FTMO's copy
+#: reached the venue at 05:41:34Z, the price already through the level, so it rested a BUY LIMIT
+#: at 3964.85 that never filled and was cancelled at 11:00Z -- the whole day's edge missed for
+#: the sake of the level. A breakout that filled does not come back to its trigger often enough
+#: to wait for it. So while the market is through E8's level by at most this share of E8's own
+#: stop distance, the follow is a MARKET order with E8's own stop and target, sized on the
+#: distance from the actual entry (so the risk in money is the same). DERIVATION: entering x R
+#: late with the same stop and target turns a payoff of RR into (RR - x) / (1 + x); at x = 0.10
+#: and RR 2 that is 1.73, a 14% cut of the win against the 100% cut of not trading -- positive
+#: E[log W] at any win rate that made the certificate. Past the bound the old limit at the level
+#: stands (a pullback can still fill it), so the bound only ever adds trades the limit would miss.
+LATE_ENTRY_MAX_R = 0.10
+
+
+def entry_plan(side: str, level: float, sl: float, bid: float, ask: float,
+               max_late_r: float = LATE_ENTRY_MAX_R) -> tuple[str, float]:
+    """(order kind, entry price for sizing). A stop while the price is short of E8's level; a
+    MARKET order at the touch while it is through the level by at most `max_late_r` of E8's stop
+    distance; a limit at the level beyond that (a pullback may still fill it)."""
+    kind = entry_order_kind(side, level, bid, ask)
+    if not kind.endswith("_limit"):
+        return kind, level
+    dist = abs(level - sl)
+    touch = ask if side == "long" else bid
+    late = (touch - level) if side == "long" else (level - touch)
+    if dist > 0 and 0 <= late <= max_late_r * dist:
+        return ("buy_market" if side == "long" else "sell_market"), touch
+    return kind, level
+
+
 def lot_for(frac: float, equity: float, dist: float, contract: float, *, vmin: float,
             vstep: float, vmax: float) -> float:
     """`frac` of equity at risk to the stop, floored to the volume step; 0 below the minimum."""
@@ -1252,7 +1283,9 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         _skip(doc, st, "account_unreadable", "equity, balance or the contract is unreadable",
               today=today, now=now)
         return
-    dist = abs(float(sig["price"]) - float(sig["sl"]))
+    kind, entry = entry_plan(side, float(sig["price"]), float(sig["sl"]), float(tick.bid),
+                             float(tick.ask))
+    dist = abs(entry - float(sig["sl"]))
     want_usd = float(frac) * equity
     lot = lot_for(float(frac), equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
     if not lot > 0:
@@ -1291,9 +1324,9 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     if not ok:
         _skip(doc, st, "loss_guard", gwhy, today=today, now=now, missed_usd=want_usd)
         return
-    kind = entry_order_kind(side, float(sig["price"]), float(tick.bid), float(tick.ask))
     row = {"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
            "side": side, "kind": kind, "price": sig["price"], "sl": sig["sl"], "tp": sig["tp"],
+           "entry": entry,
            "lot": lot, "risk_frac": frac, "risk_usd_with_slip": round(risk, 2),
            "e8_position_id": sig["e8_position_id"], "armed": bool(armed)}
     if not armed:
@@ -1305,10 +1338,23 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         return
     types = {"buy_stop": mt5.ORDER_TYPE_BUY_STOP, "sell_stop": mt5.ORDER_TYPE_SELL_STOP,
              "buy_limit": mt5.ORDER_TYPE_BUY_LIMIT, "sell_limit": mt5.ORDER_TYPE_SELL_LIMIT}
-    req = {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
-           "type": types[kind], "price": float(sig["price"]), "sl": float(sig["sl"]),
-           "tp": float(sig["tp"]), "deviation": 20, "magic": MAGIC, "comment": COMMENT,
-           "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
+    if kind.endswith("_market"):
+        # At the touch read under the lock; the deviation bounds the fill to the same late-entry
+        # rule (never more than LATE_ENTRY_MAX_R of the stop distance past E8's level).
+        room = LATE_ENTRY_MAX_R * abs(float(sig["price"]) - float(sig["sl"]))
+        point = float(getattr(mt5.symbol_info(SYMBOL), "point", 0.0) or 0.0)
+        late = abs(entry - float(sig["price"]))
+        dev = int(max((room - late) / point, 0)) if point > 0 else 20
+        req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": SYMBOL, "volume": lot,
+               "type": mt5.ORDER_TYPE_BUY if side == "long" else mt5.ORDER_TYPE_SELL,
+               "price": entry, "sl": float(sig["sl"]), "tp": float(sig["tp"]),
+               "deviation": dev, "magic": MAGIC, "comment": COMMENT,
+               "type_filling": mt5.ORDER_FILLING_IOC}
+    else:
+        req = {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
+               "type": types[kind], "price": float(sig["price"]), "sl": float(sig["sl"]),
+               "tp": float(sig["tp"]), "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+               "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
     # WRITE-AHEAD: the follow is marked spent, and the state written atomically, BEFORE the send,
     # so a crash or a lost reply can never send a second order for this E8 fill.
     st["followed"][str(sig["e8_position_id"])] = row["at"]
@@ -1328,13 +1374,41 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     try:
         res = _send(mt5, st, req, cet=cet)
     except Exception as exc:
-        row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-        _record(row)
-        log(f"[{WINDOW}] REJECTED: {row['why']}")
-        return
+        res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
     code = getattr(res, "retcode", None)
-    row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED", "retcode": code,
-                "order_id": getattr(res, "order", None)})
+    if kind.endswith("_market") and code == 10010:
+        # DONE_PARTIAL (10010) IS A FILL, NEVER A REJECTION (Auditor HOLD on a506aaeda): a
+        # full-lot fallback beside a partly filled IOC deal would hold up to twice the intended
+        # risk, uncounted by the fallback's loss guard. The filled part stands alone.
+        row.update({"partial": True, "venue_retcode": 10010,
+                    "filled_volume": getattr(res, "volume", None)})
+        code = 10009
+    if kind.endswith("_market") and code not in (10008, 10009):
+        # A REJECTED MARKET FOLLOW NEVER LOSES THE TRADE THE OLD LIMIT WOULD HAVE KEPT (Auditor
+        # HOLD on #746): a requote, a changed price or off-quotes (10004/10020/10021) or a
+        # filling refusal (10030) on a moving breakout falls back, in this same locked pass and
+        # under the same write-ahead, to the pending order the old path placed: entry_order_kind
+        # at E8's level, sized on E8's own distance and re-checked against the loss guard.
+        fb = _fallback_pending(mt5, side, sig, tick, frac=float(frac), equity=equity,
+                               contract=contract, vmin=vmin, vstep=vstep, vmax=vmax, cap=cap,
+                               decl=decl, start=start, types=types)
+        row["market_attempt"] = {"kind": kind, "entry": entry, "lot": lot, "retcode": code,
+                                 "why": row.pop("why", None)}
+        if fb.get("req") is None:
+            row.update({"status": "REJECTED", "retcode": code, "order_id": None,
+                        "why": f"market follow rejected ({code}); no fallback: {fb['why']}"})
+        else:
+            kind, lot, req = fb["kind"], fb["req"]["volume"], fb["req"]
+            row.update({"kind": kind, "entry": float(sig["price"]), "lot": lot,
+                        "risk_usd_with_slip": fb["risk"], "fallback": True})
+            try:
+                res = _send(mt5, st, req, cet=cet)
+            except Exception as exc:
+                res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
+            code = getattr(res, "retcode", None)
+    if row.get("status") != "REJECTED":
+        row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED",
+                    "retcode": code, "order_id": getattr(res, "order", None)})
     _record(row)
     # ONE ORDER A DAY: the window is spent once a send was attempted, whatever the venue said.
     st["windows"][WINDOW] = {"placed_at": row["at"], "placed_hour": hour, "side": side,
@@ -1346,6 +1420,32 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
                            holder="ftmo_follower:sent")
     doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
+
+
+def _fallback_pending(mt5: Any, side: str, sig: dict[str, Any], tick: Any, *, frac: float,
+                      equity: float, contract: float, vmin: float, vstep: float, vmax: float,
+                      cap: float, decl: dict[str, Any], start: float,
+                      types: dict[str, Any]) -> dict[str, Any]:
+    """The old path's pending order at E8's level, for a market follow the venue refused:
+    {"req", "kind", "risk"} or {"req": None, "why"}. Same sizing, cap and loss guard."""
+    level, sl = float(sig["price"]), float(sig["sl"])
+    kind = entry_order_kind(side, level, float(tick.bid), float(tick.ask))
+    dist = abs(level - sl)
+    lot = lot_for(frac, equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
+    if lot > cap:
+        lot = cap if cap >= vmin else 0.0
+    if not lot > 0:
+        return {"req": None, "why": "the level's lot is below the minimum or the cap"}
+    risk = trade_risk(lot, dist, contract)
+    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity, risk,
+                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
+    if not ok:
+        return {"req": None, "why": gwhy}
+    return {"kind": kind, "risk": round(risk, 2),
+            "req": {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
+                    "type": types[kind], "price": level, "sl": sl, "tp": float(sig["tp"]),
+                    "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+                    "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}}
 
 
 def _atomic_write(path: Path, text: str) -> None:

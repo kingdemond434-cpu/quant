@@ -12,16 +12,27 @@
     marker exists it SENDS real orders to the FTMO account.
 
         powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_ftmo_executor_task.ps1
+        powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_ftmo_executor_task.ps1 -IfMissing
+
+    -IfMissing (2026-11-05, Governance ruling): does nothing when the task already exists. That is
+    the form Adopt-And-Seal.ps1's ensure list calls on every adoption, so a box that lacks the task
+    gains it on the next adoption and a registered task is never touched. Registering it arms
+    nothing: the executor stays STANDBY until data\FTMO_EXECUTOR_ARMED exists.
 #>
 [CmdletBinding()]
 param(
     [string] $RepoRoot = "C:\opt\quant",
     [string] $Python   = "C:\Program Files\Python314\python.exe",
-    [string] $InteractiveUser = "Administrator"
+    [string] $InteractiveUser = "Administrator",
+    [switch] $IfMissing
 )
 $ErrorActionPreference = "Stop"
 
 $TaskName = "MT5-FTMO-Executor"
+if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+    Write-Host "  $TaskName already registered; nothing to do"
+    exit 0
+}
 $desk   = Join-Path $RepoRoot "desks\mt5"
 $script = Join-Path $desk "prop\ftmo_executor.py"
 if (-not (Test-Path $script)) { throw "ftmo_executor.py missing at $script" }

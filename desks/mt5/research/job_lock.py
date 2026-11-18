@@ -12,6 +12,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
@@ -387,9 +388,115 @@ def free_mb() -> int | None:
     return None
 
 
+#: Locks this process holds, name -> (path, token), so `heartbeat` can find its own lock.
+_HELD: dict[str, tuple[Path, str]] = {}
+_LAST_BEAT: dict[str, float] = {}
+#: `heartbeat` rewrites the lock at most this often; every stage may call it freely.
+HEARTBEAT_EVERY_S = 15.0
+#: The last refusal's holder, for the caller's named REFUSED artifact.
+LAST_REFUSAL: dict[str, dict[str, Any]] = {}
+
+
+def _own_create_time() -> float | None:
+    try:
+        import psutil
+        return float(psutil.Process().create_time())
+    except Exception:
+        return None
+
+
+def heartbeat(name: str) -> bool:
+    """Stamp `heartbeat_at` on the `name` lock this process holds (rate-limited). True when a
+    stamp was written. A process that holds no lock, or whose lock now carries another token,
+    writes nothing."""
+    held = _HELD.get(name)
+    now = time.time()
+    if held is None or now - _LAST_BEAT.get(name, 0.0) < HEARTBEAT_EVERY_S:
+        return False
+    path, token = held
+    try:
+        row = json.loads(path.read_text("utf-8"))
+        if row.get("token") != token:
+            return False
+        row["heartbeat_at"] = now
+        tmp = path.with_name(f".{path.name}.{os.getpid()}.hb")
+        tmp.write_text(json.dumps(row), "utf-8")
+        os.replace(tmp, path)
+    except (OSError, ValueError, AttributeError):
+        return False
+    _LAST_BEAT[name] = now
+    return True
+
+
+def _orphan_reason(row: dict[str, Any]) -> str | None:
+    """Why the living process named in a lock is NOT the job that took it, or None.
+
+    Two proofs, each by create_time (the rule #745 uses, because Windows reuses pids): the pid now
+    belongs to a process created after the lock was taken (pid reuse: the holder is gone), or the
+    holder's parent is gone -- no parent, or a parent created after the holder (a reused ppid)."""
+    try:
+        import psutil
+        proc = psutil.Process(int(row["pid"]))
+        ctime = float(proc.create_time())
+    except Exception:
+        return None
+    want = row.get("create_time")
+    if isinstance(want, (int, float)) and abs(ctime - float(want)) > 2.0:
+        return f"pid {row['pid']} was reused (created {ctime:.0f}, the holder {float(want):.0f})"
+    try:
+        started = datetime.fromisoformat(str(row.get("started_at"))).timestamp()
+        if want is None and ctime > started + 2.0:
+            return f"pid {row['pid']} was created after the lock was taken: reused"
+    except ValueError:
+        pass
+    ppid = -1
+    try:
+        ppid = int(proc.ppid())
+        if ppid <= 0:
+            return f"pid {row['pid']} has no parent"
+        parent = psutil.Process(ppid)
+        if not parent.is_running():
+            return f"pid {row['pid']}'s parent {ppid} is gone"
+        if float(parent.create_time()) > ctime + 2.0:
+            return f"pid {row['pid']}'s parent {ppid} was reused after it exited"
+    except psutil.NoSuchProcess:
+        return f"pid {row['pid']}'s parent {ppid} is gone"
+    except Exception:
+        return None
+    return None
+
+
+def _heartbeat_age_s(row: dict[str, Any]) -> float | None:
+    hb = row.get("heartbeat_at")
+    if isinstance(hb, (int, float)):
+        return time.time() - float(hb)
+    try:
+        return time.time() - datetime.fromisoformat(str(row.get("started_at"))).timestamp()
+    except ValueError:
+        return None
+
+
+def orphan_stale(path: Path, heartbeat_stale_s: float) -> str | None:
+    """The reason a living holder's lock may be reclaimed, or None. BOTH must hold (Auditor CLEAR
+    criteria, 2026-11-05): the holder is orphaned (`_orphan_reason`) AND its heartbeat is older
+    than `heartbeat_stale_s`. A holder still heartbeating is never robbed, orphan or not."""
+    try:
+        row = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(row, dict) or str(row.get("host") or "") != socket.gethostname():
+        return None
+    age = _heartbeat_age_s(row)
+    if age is None or age <= float(heartbeat_stale_s):
+        return None
+    why = _orphan_reason(row)
+    return None if why is None else f"{why}, and its heartbeat is {age / 60:.0f} min old"
+
+
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
-                  deadline_s: float | None = None, evsi: float | None = None) -> Iterator[bool]:
+                  deadline_s: float | None = None, evsi: float | None = None,
+                  heartbeat_stale_s: float | None = None) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -408,6 +515,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     The refusal is LOUD and names the number, because a silent stand-down is indistinguishable
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
     """
+    LAST_REFUSAL.pop(name, None)
     # THE DECLARATION IS RECORDED BEFORE THE DECISION, not after it. I3: a spec that is only
     # written on success describes the jobs that got in, which is the population a ranker must
     # not be fitted on. Recording it here means a job that STANDS DOWN still leaves its four
@@ -465,6 +573,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             else:
                 avail = _median_free()
         if avail is not None and avail < need_mb:
+            LAST_REFUSAL[name] = {"reason": "NO_ROOM", "need_mb": int(need_mb),
+                                  "free_mb": avail}
             print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available "
                   f"after waiting {admit_patience_s() / 60:.1f}min. "
                   f"Not started (a job that does not fit thrashes the box and the live "
@@ -477,6 +587,9 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     payload = json.dumps({
         "token": token, "pid": os.getpid(), "host": socket.gethostname(),
         "started_at": datetime.now(UTC).isoformat(),
+        # create_time proves the pid is still THIS process (Windows reuses pids); heartbeat_at
+        # is refreshed by `heartbeat` at every stage of a job that opts in.
+        "create_time": _own_create_time(), "heartbeat_at": time.time(),
     })
     owned = False
     for _attempt in range(2):
@@ -491,6 +604,14 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             if state == "DEAD":
                 print(f"{name}: reclaiming lock from dead owner (pid gone) -- {path}")
                 stale = True
+            elif state == "ALIVE" and heartbeat_stale_s is not None and (
+                    orphan_why := orphan_stale(path, heartbeat_stale_s)):
+                # AN ORPHAN THAT STOPPED BEATING HOLDS NOTHING (2026-11-05): pid 30100, its
+                # parent gone and 0 CPU, held pf_allocator for 4.5 h while every fast pass stood
+                # down. Alive is not working: a job that opts into heartbeats is reclaimed when it
+                # is orphaned AND silent past its bound -- never while it still beats.
+                print(f"{name}: reclaiming lock from an orphaned, silent holder -- {orphan_why}")
+                stale = True
             elif state == "ALIVE" and stale:
                 # LIVENESS VETOES AGE. The holder is running; the lock is not abandoned, it is
                 # merely old. Reclaiming here is what produced two concurrent sweeps.
@@ -502,12 +623,23 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                     path.unlink()
                 continue
             print(f"{name}: REFUSED duplicate writer; active lock {path}")
+            try:
+                held_row = json.loads(path.read_text("utf-8"))
+                hb_age = _heartbeat_age_s(held_row)
+                LAST_REFUSAL[name] = {"pid": held_row.get("pid"),
+                                      "started_at": held_row.get("started_at"),
+                                      "heartbeat_age_s": (None if hb_age is None
+                                                          else round(hb_age, 1)),
+                                      "owner": state}
+            except (OSError, ValueError, AttributeError):
+                LAST_REFUSAL[name] = {"owner": state, "lock": "unreadable"}
             yield False
             return
         else:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(payload)
             owned = True
+            _HELD[name] = (path, token)
             break
     if not owned:
         print(f"{name}: REFUSED writer; stale lock could not be recovered")
@@ -529,6 +661,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         # unreadable. Recording them only alongside a peak would leave every job on a platform
         # without `getrusage` permanently unrankable.
         record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
+        _HELD.pop(name, None)
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))
