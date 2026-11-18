@@ -183,3 +183,12 @@ def test_the_gate_status_is_a_fixed_code_never_its_free_text() -> None:
     row = pb.classify(NOW, _pr(number=7), None, ("green", []), free)
     assert row["gate"] == "GATE_FAILURE" and "script" not in json.dumps(row)
     assert "gate_says" not in row
+
+
+def test_root_is_read_with_the_gates_own_rule_and_fails_closed() -> None:
+    def boom(_url: str) -> Any:
+        raise RuntimeError("503")
+
+    assert pb._touches_root(boom, "o/r", 7) is True  # unreadable files: the longer window
+    assert pb._touches_root(lambda _u: [{"filename": "README.md"}], "o/r", 7) is False
+    assert pb._touches_root(lambda _u: [], "o/r", 7) is True  # empty list counts as ROOT

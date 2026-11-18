@@ -299,7 +299,7 @@ def _touches_root(fetch: Fetch, repo: str, n: int) -> bool:
         spec.loader.exec_module(ag)
         files = fetch(f"repos/{repo}/pulls/{n}/files?per_page=100") or []
         return bool(ag.touches_root(list(files)))
-    except Exception:  # noqa: BLE001 -- fail closed, and no text reaches the published file
+    except Exception:  # fail closed, and no text reaches the published file
         return True
 
 
