@@ -483,7 +483,7 @@ def test_month_factor_and_token_extraction_never_stores_raw_text() -> None:
     words = ("SECRET-WORDS 6월 선물 옵션 동시 만기 night session 夜盘 ギャップ 高开 "
              "turn-of-the-month in May October 十二月 Nigerian sector momentum")
     doc = dt.compact_cloud_claims([_ledger_row(
-        claim=words, quantities=["만기", "SECRET-QTY"], horizon=["SECRET-HOR"],
+        claim=words, quantities=["만기", "SECRET-QTY"],
         mechanism_class="microstructure",
         instruments={"analogues": ["XAUUSD"], "mentioned": ["SECRET-MENTION"],
                      "indirect": ["USDCAD", "not a symbol, a sentence"],
@@ -508,7 +508,8 @@ def test_a_page_date_is_not_a_month_the_claim_names() -> None:
 
 
 def _one_cell_family(tmp: Path, **kw: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    return _claim_pass(tmp, [_ledger_row(quantities=["stocks"], direction=["up"], **kw)])
+    kw = {"quantities": ["stocks"], "direction": ["up"], **kw}
+    return _claim_pass(tmp, [_ledger_row(**kw)])
 
 
 @pytest.mark.parametrize(("claim", "family", "fixed", "side_arg"), [
