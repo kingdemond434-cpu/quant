@@ -1,32 +1,32 @@
 {
   "schema": "box_state_flow/1",
-  "measured_at": "2026-11-14T13:00:14+00:00",
+  "measured_at": "2026-11-18T06:31:22+00:00",
   "stall_h": 3.0,
   "flow_rel": "desks/mt5/reports/BOX_STATE_FLOW.json",
   "published_paths": 81,
   "branch": "claude/llm-auto-upgrade-verify-gcjac3",
   "origin_ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
-  "publisher_identity": "Codex",
-  "last_published_commit": "8f800ba61d",
-  "last_published_at": "2026-11-14T12:59:38+00:00",
-  "newest_local_state_at": "2026-11-14T13:00:24+00:00",
+  "publisher_identity": "quant-box",
+  "last_published_commit": "bf6495d44f",
+  "last_published_at": "2026-11-18T06:31:02+00:00",
+  "newest_local_state_at": "2026-11-18T06:31:12+00:00",
   "local_commits_not_on_origin": 1652,
   "hooks_path": "C:\\opt\\quant\\ops\\githooks",
   "sync_log": {
     "readable": true,
-    "last_success_line": "2026-11-14T14:00:12.9993288+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 75 path(s)",
-    "last_refusal_line": "2026-11-14T13:55:41.8106363+01:00 DEFER: origin/claude/llm-auto-upgrade-verify-gcjac3 requires canonical adoption (814 inbound commit(s)); publisher will not merge code or hold the git-writer lock through adoption",
-    "last_line": "2026-11-14T14:00:12.9993288+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 75 path(s)"
+    "last_success_line": "2026-11-18T07:31:22.2930876+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 75 path(s)",
+    "last_refusal_line": "2026-11-18T07:27:35.9197116+01:00 DEFER: origin/claude/llm-auto-upgrade-verify-gcjac3 requires canonical adoption (1323 inbound commit(s)); publisher will not merge code or hold the git-writer lock through adoption",
+    "last_line": "2026-11-18T07:31:22.2930876+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 75 path(s)"
   },
   "published_age_h": 0.01,
-  "local_state_age_h": -0.0,
+  "local_state_age_h": 0.0,
   "verdict": "FLOWING",
   "why": "origin carries box state 0.0h old",
   "page": {
     "sent": true,
     "reason": "recovered from METER_SILENT",
     "title": "BOX STATE FLOWING again",
-    "armed": 1,
+    "armed": null,
     "delivered": 1
   },
   "alerts": {

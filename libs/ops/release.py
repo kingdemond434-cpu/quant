@@ -174,6 +174,7 @@ NON_CODE: frozenset[str] = frozenset({
     # The box merge sweep's pipeline report (workflow_gate.ps1), so the hourly pass sees a stall.
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/PR_BLOCKERS.json",
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
@@ -750,25 +751,6 @@ STATE_PREFIXES: tuple[str, ...] = (
     # wherever it lives; the seal must never wait on it.
     "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
     "data/", "reports/", "logs/", "web/", "docs/",
-    # THE MOAT SNAPSHOT TREE, AND THE ATTESTATION IT HELD FALSE FOR WEEKS (measured 2026-11-14).
-    # `backups/` was named by no prefix and no exact path, so the five registries the moat organ
-    # rewrites -- backups/moat/{forward_registry,graveyard,manifest.json,shadow_state,
-    # universal_canon} -- were classified CODE on a box that rewrites them continuously.
-    # `data/gate_attestation.json` read `tree_clean: false, dirty_paths: 6` on EVERY run (those
-    # five plus context/decision_journal.jsonl), so the one field a consumer needing a hard
-    # guarantee must require was permanently unusable, and the gate reuse that blocks is why a
-    # day of tested fixes sat unpushed.
-    #
-    # A PREFIX IS RIGHT HERE WHERE EXACT PATHS ARE RIGHT ABOVE, and the difference is the reason:
-    # the paragraph above names `desks/mt5/` files individually because that directory IS the
-    # code -- gateway.py and decision_core.py live in it, so a prefix would disarm the fence.
-    # `backups/` is a dedicated tree an organ generates INTO: `git ls-files backups` returns 122
-    # paths, every one a ledger, registry or snapshot, and NOT ONE `.py` -- nothing under it can
-    # be imported, so no classification of it can change what the interpreter executes. It is
-    # read at runtime (libs/moat/registry.py:66 and fifteen capability_graph organs read
-    # backups/moat/shadow_ledgers/), which makes it evidence the desk consumes, exactly like
-    # `desks/mt5/data/` above -- not an input that can be mistaken for code.
-    "backups/",
 )
 
 #: STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/, AND THE STALL THEY CAUSED.
