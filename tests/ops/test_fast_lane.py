@@ -329,6 +329,20 @@ def test_the_lane_runs_the_base_s_classifier_on_the_base(wf: str) -> None:
     assert "python -I .github/scripts/fast_lane.py" in run and 'no "$EVENT run"' in run
 
 
+@pytest.mark.parametrize("wf", ["ci.yml", "release-gates.yml", "trusted-eval.yml"])
+def test_a_draft_runs_smoke_only_and_ready_reruns_the_full_checks(wf: str) -> None:
+    lane = _jobs(wf)["lane"]
+    step = lane["steps"][-1]
+    assert step["env"]["DRAFT"] == "${{ github.event.pull_request.draft }}"
+    run = step["run"]
+    draft = run.index('if [ "$DRAFT" = true ]')
+    assert run.index('no "a fork"') < draft < run.index("fast_lane.py")  # a fork never skips
+    doc = yaml.safe_load((WF / wf).read_text("utf-8"))
+    on = doc.get("on", doc.get(True))
+    key = "pull_request_target" if wf == "trusted-eval.yml" else "pull_request"
+    assert "ready_for_review" in on[key]["types"] and "synchronize" in on[key]["types"]
+
+
 def test_smoke_runs_on_fast_prs_only_and_audit_gate_turns_the_lane_on() -> None:
     smoke = _jobs("ci.yml")["smoke"]
     assert smoke["if"] == "needs.lane.outputs.fast == 'true'"

@@ -70,10 +70,19 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+          DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           no() { echo "fast=false" >> "$GITHUB_OUTPUT"; echo "not fast: $1"; exit 0; }
           case "$EVENT" in pull_request|pull_request_target) ;; *) no "$EVENT run" ;; esac
           [ "$SAME_REPO" = true ] || no "a fork"
+          # A DRAFT runs the smoke check only. 500+ open drafts each ran the ~40 min suite,
+          # the release gates and trusted-eval on every push, and that queue (301 runs,
+          # 2026-11-17) is what starved the PRs that were ready. Marking it ready fires
+          # ready_for_review, which re-runs this lane and the full checks on the same head;
+          # nothing merges a draft, and a skipped check carries the "(... not run)" name.
+          if [ "$DRAFT" = true ]; then
+            echo "fast=true" >> "$GITHUB_OUTPUT"; echo "a draft: full checks wait for ready"; exit 0
+          fi
           [ -f .github/scripts/fast_lane.py ] || no "the base has no classifier"
           git fetch -q --no-tags origin "$HEAD" || no "the head could not be fetched"
           python -I .github/scripts/fast_lane.py --base "$BASE" --head "$HEAD" \
