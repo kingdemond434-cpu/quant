@@ -1,21 +1,19 @@
 {
- "at": "2026-11-18T03:16:01+00:00",
+ "at": "2026-11-18T03:31:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 3.26,
-   "why": "no new verdict for 3.3h (last 2026-11-18T00:00:08+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 3.51,
+   "why": "no new verdict for 3.5h (last 2026-11-18T00:00:08+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
-   "low": true,
+   "low": false,
    "floor": 4.0,
    "docket_depth": 1572124,
-   "busy_judge_cores": 2.34,
-   "busy_other_cores": 13.59,
-   "why": "judge tree at 2.34 cores (others 13.59) with a docket pending (resident SWEEPING, queue depth 1572124); floor 4; under the floor on every reading for 0.3h (limit 1h)",
-   "low_since": "2026-11-18T02:56:10+00:00",
-   "hours": 0.33
+   "busy_judge_cores": 6.15,
+   "busy_other_cores": 10.01,
+   "why": "judge tree at 6.15 cores (others 10.01) with a docket pending (resident SWEEPING, queue depth 1572124); floor 4"
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +23,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.1,
+   "hours": 3.35,
    "limit_h": 25.59,
-   "why": "3.1h since the last sweep ended (2026-11-18T00:09:59+00:00), status SWEEPING; limit 25.59h"
+   "why": "3.4h since the last sweep ended (2026-11-18T00:09:59+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -44,9 +42,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "prewarm",
-   "hours": 2.73,
+   "hours": 2.98,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 2.7h since 2026-11-18T00:32:16+00:00 (limit 8.56h)"
+   "why": "sweep phase prewarm has run 3.0h since 2026-11-18T00:32:16+00:00 (limit 8.56h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,7 +89,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 10496,
-  "heartbeat_utc": "2026-11-18T03:15:59+00:00",
+  "heartbeat_utc": "2026-11-18T03:31:01+00:00",
   "last_sweep_ended_utc": "2026-11-18T00:09:59+00:00",
   "last_rc": 0
  },
