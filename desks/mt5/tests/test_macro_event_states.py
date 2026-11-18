@@ -324,6 +324,12 @@ def test_stamp_never_earlier_than_evidence() -> None:
     # previous read before the rule, this one after: the rule is bracketed
     assert me.stamp(rule, rule + timedelta(minutes=40), rule - timedelta(minutes=20)) == \
         (rule, "live_rule")
+    # bracketed but read long after the rule: the release may have slipped -> seen
+    late = rule + me.RULE_SLACK + timedelta(minutes=1)
+    assert me.stamp(rule, late, rule - timedelta(days=1)) == (late, "live_seen")
+    # a rule not trusted to the minute (holiday week) -> seen
+    near = rule + timedelta(minutes=40)
+    assert me.stamp(rule, near, rule - timedelta(minutes=20), firm=False) == (near, "live_seen")
     # previous read was after the rule and did not hold it: a delayed release -> seen
     seen = rule + timedelta(hours=5)
     assert me.stamp(rule, seen, rule + timedelta(hours=1)) == (seen, "live_seen")
@@ -460,34 +466,100 @@ def test_weekly_change_skips_missing_weeks() -> None:
 
 
 # ------------------------------------------------------------------------- the whole pass
+def _seed(paths: me.Paths, sid: str, rows: list[tuple[str, str, float, datetime]],
+          quality: str, first_seen: datetime | None = None) -> None:
+    """Write store records directly: (series, period, value, available_time)."""
+    paths.store.mkdir(parents=True, exist_ok=True)
+    with (paths.store / f"{sid}.jsonl").open("a", encoding="utf-8") as fh:
+        for series, period, value, avail in rows:
+            fh.write(json.dumps({
+                "series": series, "period": period, "value": value,
+                "rule_time": me._iso(avail), "available_time": me._iso(avail),
+                "first_seen_at": me._iso(first_seen or avail), "pit_quality": quality,
+                "revision": False}) + "\n")
+
+
+def _seed_live(paths: me.Paths) -> None:
+    """Every EIA week and TIC month as a LIVE first print stamped at its release rule."""
+    _seed(paths, "eia_gas_storage",
+          [("eia_ngs_level", d.isoformat(), v, me.eia_release_time(d))
+           for d, v in eia_weeks(320, date(2026, 11, 13))], "live_rule")
+    _seed(paths, "tic_foreign_flows",
+          [("tic_net_lt", per, 1000.0 + 10 * i + 50.0 * ((i * 7) % 11),
+            me.tic_release_bound(per)) for i, per in enumerate(months_back(60, "2026-08"))],
+          "live_seen")
+
+
+NOW_LIVE = datetime(2026, 11, 20, 12, tzinfo=UTC)
+
+
 def test_full_pass_cells_only_on_admitted_symbols(tmp_path: Path) -> None:
     paths = _paths(tmp_path)
+    _seed_live(paths)
     minted: list[dict[str, Any]] = []
-    # read after the last synthetic week's release, as on the box
-    doc = _run(paths, Fake(_pages()), minted=minted, now=datetime(2026, 11, 20, 12, tzinfo=UTC))
-    assert doc["sources"]["eia_gas_storage"]["status"] == "OK"
-    assert doc["sources"]["tic_foreign_flows"]["status"] == "OK"
-    assert doc["sources"]["usda_export_sales"]["status"] == "OK"
+    doc = _run(paths, Fake({}), minted=minted, now=NOW_LIVE, fetch=False)
     syms = {c["symbol"] for c in minted}
     # XNGUSD (EIA) and the TIC symbols the registry holds; US30/NAS100/US2000 are not in this
-    # registry, the USDA series are too short, and nothing lands on a share CFD
+    # registry, USDA has no prints, and nothing lands on a share CFD
     assert syms == {"XNGUSD", "USDJPY", "EURUSD", "US500"}
     assert all(c["family"] == "exogenous_conditioner" for c in minted)
     assert all(c["params"]["source"].startswith("mes_") for c in minted)
     assert doc["cells"]["minted"] == len(minted) == doc["cells"]["grid"]
     usda = doc["sources"]["usda_export_sales"]["states"]["usda_esr_corn_surprise_4w"]
     assert usda["status"] == me.UNMEASURED
-    # lake series carry the PIT stamp
     lake = (paths.series / "mes_eia_ngs_surprise_5y.csv").read_text("utf-8").splitlines()
     assert lake[0].startswith("event_time,available_time,value")
-    # event rows: readable by the atlas, at = available_time, never before the release rule
+    assert not any("backfill_latest" in ln for ln in lake)
     clock = json.loads(paths.clock.read_text("utf-8"))
     assert clock["n_events"] > 0
     for e in clock["events"]:
         assert set(e["instruments"]) <= {"XNGUSD", "USDJPY", "EURUSD", "US500"}
+        assert e["pit_quality"] != me.BACKFILL
         if e["source"] == "eia_gas_storage":
             rule = me.eia_release_time(date.fromisoformat(e["period"]))
             assert me._t(e["at"]) >= rule
+
+
+def test_backfill_is_never_judged(tmp_path: Path) -> None:
+    """MF1: a first pull is the publisher's CURRENT vintage. It produces no clock event, no row
+    in any judged lake series and no cell -- only labelled expectation history."""
+    paths = _paths(tmp_path)
+    minted: list[dict[str, Any]] = []
+    doc = _run(paths, Fake(_pages()), minted=minted, now=NOW_LIVE)
+    assert doc["sources"]["eia_gas_storage"]["status"] == "OK"
+    assert doc["sources"]["tic_foreign_flows"]["status"] == "OK"
+    store = me.load_store(paths, "eia_gas_storage")
+    assert store and all(r["pit_quality"] == me.BACKFILL for r in store.values())
+    assert json.loads(paths.clock.read_text("utf-8"))["n_events"] == 0
+    assert minted == [] and doc["cells"]["grid"] == 0
+    assert not list(paths.series.glob("mes_*.csv")) if paths.series.exists() else True
+    hist = doc["sources"]["eia_gas_storage"]["states"]["eia_ngs_surprise_5y"]
+    assert hist["status"] == me.UNMEASURED
+    # a backfilled point handed to the lake writer carries the distinct vintage id
+    me.write_lake(paths, "probe", [{"period": "2026-01-02", "available_time": "x",
+                                    "value": 1.0, "pit_quality": me.BACKFILL}])
+    assert "macro_event_states:backfill_latest" in \
+        (paths.series / "mes_probe.csv").read_text("utf-8")
+
+
+def test_backfill_feeds_expectations_only_labelled_and_never_the_z(tmp_path: Path) -> None:
+    """Five backfilled years then live weeks: the live prints are judged against a seasonal
+    expectation built on the backfill (labelled), and surprise_z scales by live surprises only."""
+    weeks = eia_weeks(6 * 52 + 20, date(2026, 11, 13))
+    split = len(weeks) - 30
+    read_at = datetime.combine(weeks[split][0], datetime.min.time(), tzinfo=UTC)
+    pts = [{"period": d.isoformat(), "value": v,
+            "available_time": me._iso(me.eia_release_time(d)),
+            "pit_quality": me.BACKFILL if i < split else "live_rule",
+            "known_at": me._iso(read_at) if i < split
+            else me._iso(me.eia_release_time(d))} for i, (d, v) in enumerate(weeks)]
+    out = me.surprises(pts, "change", ("seasonal_5y", "ar1"), "seasonal_5y")
+    assert out and all(o["pit_quality"] != me.BACKFILL for o in out)
+    assert {o["period"] for o in out} <= {d.isoformat() for d, _ in weeks[split + 1:]}
+    assert all(o["expectation_inputs"]["backfill_latest_vintage"] > 0 for o in out)
+    # the z denominator is live surprises only: the first SCALE_MIN live rows are unscaled
+    assert all(o["surprise_z"] is None for o in out[:me.SCALE_MIN])
+    assert any(o["surprise_z"] is not None for o in out[me.SCALE_MIN:])
 
 
 def test_policy_failing_closed_mints_nothing(tmp_path: Path,
@@ -508,11 +580,12 @@ def test_policy_failing_closed_mints_nothing(tmp_path: Path,
 def test_atlas_reads_the_clock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from research import event_response_atlas as A
     paths = _paths(tmp_path)
-    _run(paths, Fake(_pages()))
+    _seed_live(paths)
+    _run(paths, Fake({}), now=NOW_LIVE, fetch=False)
     for name in ("CALENDAR", "MACRO_LEDGER", "ROOT_EVENTS"):
         monkeypatch.setattr(A, name, tmp_path / f"absent_{name}.json")
     monkeypatch.setattr(A, "MACRO_STATES_CLOCK", paths.clock)
-    events, acc = A.load_events(3650, T0)
+    events, acc = A.load_events(3650, NOW_LIVE)
     assert acc["macro_event_states"]["status"] == "READ"
     assert acc["macro_event_states"]["unusable_rows"] == 0
     assert events and all(e["source"] == "macro_event_states" for e in events)
@@ -531,22 +604,37 @@ def test_not_due_makes_no_request(tmp_path: Path) -> None:
     assert doc["store_rows"] > 0
 
 
-def test_live_pass_stamps_new_print_at_bracketed_rule(tmp_path: Path) -> None:
+def _live_pass(tmp_path: Path, week: date, before: datetime, seen: datetime
+               ) -> dict[str, Any]:
     paths = _paths(tmp_path)
-    weeks = eia_weeks(320, date(2026, 11, 13))
+    weeks = eia_weeks(320, week - timedelta(days=7))
     pages = _pages()
-    _run(paths, Fake(pages))                                    # backfill on Wednesday
-    nxt = (date(2026, 11, 20), weeks[-1][1] + 12.0)
-    pages["eia_gas_storage"] = eia_page([*weeks, nxt])
-    # Thursday 2026-11-26 is Thanksgiving: stamp rule is Friday 11-27 10:30 ET; read at 11:00 ET
-    seen = datetime(2026, 11, 27, 16, 0, tzinfo=UTC)
-    # an earlier read at Friday 09:00 ET did not hold it
-    _run(paths, Fake({**pages, "eia_gas_storage": eia_page(weeks)}),
-         now=datetime(2026, 11, 27, 14, 0, tzinfo=UTC))
+    pages["eia_gas_storage"] = eia_page(weeks)
+    _run(paths, Fake(pages), now=before - timedelta(days=1))          # backfill
+    _run(paths, Fake(pages), now=before)                               # read without the print
+    pages["eia_gas_storage"] = eia_page([*weeks, (week, weeks[-1][1] + 12.0)])
     _run(paths, Fake(pages), now=seen)
-    rec = me.load_store(paths, "eia_gas_storage")[("eia_ngs_level", "2026-11-20")]
+    return me.load_store(paths, "eia_gas_storage")[("eia_ngs_level", week.isoformat())]
+
+
+def test_live_pass_stamps_new_print_at_bracketed_rule(tmp_path: Path) -> None:
+    week = date(2026, 8, 14)                    # release Thu 08-20 10:30 EDT, no holiday near
+    assert not me.near_federal_holiday(week)
+    rec = _live_pass(tmp_path, week, datetime(2026, 8, 20, 14, 0, tzinfo=UTC),
+                     datetime(2026, 8, 20, 15, 0, tzinfo=UTC))
     assert rec["pit_quality"] == "live_rule"
-    assert rec["available_time"] == me._iso(me.eia_release_time(date(2026, 11, 20)))
+    assert rec["available_time"] == me._iso(me.eia_release_time(week))
+
+
+def test_holiday_weeks_are_stamped_when_seen(tmp_path: Path) -> None:
+    """SF1: around a federal holiday EIA's release moves by announcement, so a live print is
+    stamped at the read, never at the rule."""
+    week = date(2026, 11, 20)                   # Thanksgiving week
+    assert me.near_federal_holiday(week)
+    seen = datetime(2026, 11, 27, 16, 0, tzinfo=UTC)
+    rec = _live_pass(tmp_path, week, datetime(2026, 11, 27, 14, 0, tzinfo=UTC), seen)
+    assert rec["pit_quality"] == "live_seen"
+    assert rec["available_time"] == me._iso(seen)
 
 
 def test_every_emitted_family_has_a_registered_builder(tmp_path: Path) -> None:
@@ -555,8 +643,9 @@ def test_every_emitted_family_has_a_registered_builder(tmp_path: Path) -> None:
     from research.axis_registry import registered_families
     from research.family_policy import family_banned
     minted: list[dict[str, Any]] = []
-    _run(_paths(tmp_path), Fake(_pages()), minted=minted,
-         now=datetime(2026, 11, 20, 12, tzinfo=UTC))
+    paths = _paths(tmp_path)
+    _seed_live(paths)
+    _run(paths, Fake({}), minted=minted, now=NOW_LIVE, fetch=False)
     assert minted
     families = {c["family"] for c in minted}
     registry = registered_families()

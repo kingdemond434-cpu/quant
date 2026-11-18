@@ -52,15 +52,20 @@ Fed Staff Nowcast, Philadelphia Fed SPF) are listed as optional inputs, NOT buil
 
 POINT-IN-TIME RULE. `available_time` is never earlier than the moment the publisher released the
 number:
-  * FIRST PULL (backfill): the publisher's release rule, as a LATE bound (or the moment of the
-    read, when that is earlier: the number was public then) -- EIA Thursday 10:30 ET
+  * FIRST PULL (backfill) is the publisher's CURRENT VINTAGE of every old period (TIC
+    benchmark revisions, EIA reclassifications included), so it is labelled `backfill_rule`
+    and NEVER judged: no lake row, no cell, no clock event. It feeds expectation history only,
+    usable from the moment it was read. Its stamp is the release rule, as a LATE bound (or
+    the moment of the read, when that is earlier) -- EIA Thursday 10:30 ET
     after the Friday week end (Friday 10:30 when a federal holiday falls Monday..Thursday of the
     release week); TIC 16:00 ET on the LAST day of the second month after the data month (TIC
     releases mid-month; the bound is deliberately late); USDA the page's own release date at
     08:30 ET; SNB the first Zurich business day after the Friday, 10:00.
   * LATER PULLS: the rule time only when the evidence brackets it -- the previous successful
-    read did NOT hold the period and the rule time lies between that read and this one;
-    otherwise (a delayed release) the moment it was first seen.
+    read did NOT hold the period, the rule time lies between that read and this one, and this
+    read is within `RULE_SLACK` of the rule; otherwise (a delayed release) the moment it was
+    first seen. An EIA week whose rule release lies within `HOLIDAY_GUARD_D` days of a federal
+    holiday is always stamped when seen (its release moves by announcement, not by rule).
   * A REVISION is stamped when seen. Surprise maths reads first-seen values only.
 
 ACCESS, IN THIS ORDER, EACH FAILING CLOSED BY NAME: the source's terms row must read
@@ -243,8 +248,12 @@ MISSED_GROWTH: dict[str, str] = {
                           "on the monthly foreign-demand print"),
     "boj_rinban": ("BoJ rinban surprise not built: no USDJPY / EURJPY / JPN225 same-day state on "
                    "JGB purchase size against plan until the Bank permits commercial reuse"),
-    "history": ("series {name} stands down until it holds {need} surprise points (has {have}): "
-                "a z on fewer would trade the warm-up"),
+    "history": ("series {name} stands down until it holds {need} scaled LIVE surprise points "
+                "(has {have}): a z on fewer would trade the warm-up, and backfilled history is "
+                "the publisher's revised current vintage, so it feeds expectations only and "
+                "never counts here -- EIA and TIC therefore wait for live Thursdays / months "
+                "(follow-up, not built: an EIA per-week report archive would restore first "
+                "prints)"),
 }
 
 
@@ -343,6 +352,20 @@ def eia_release_time(week_end: date) -> datetime:
     return _ny(thursday, 10, 30)
 
 
+#: Days either side of a federal holiday within which EIA's release time is not trusted (SF1):
+#: EIA has moved the storage report to Wednesday noon, Friday or later around holidays, and
+#: the moves are announced, not ruled. A live first print for such a week is stamped SEEN.
+HOLIDAY_GUARD_D = 14
+
+
+def near_federal_holiday(week_end: date, guard_days: int = HOLIDAY_GUARD_D) -> bool:
+    """True when a US federal holiday falls within `guard_days` of the week's rule release."""
+    rel = eia_release_time(week_end).astimezone(NY).date()
+    hol = us_federal_holidays(rel.year - 1) | us_federal_holidays(rel.year) | \
+        us_federal_holidays(rel.year + 1)
+    return any(abs((h - rel).days) <= guard_days for h in hol)
+
+
 def tic_release_bound(period: str) -> datetime:
     """16:00 ET on the last day of the second month after the data month: a LATE bound on the
     TIC release (published mid-month), so a backfilled month is never stamped early."""
@@ -390,6 +413,9 @@ class Obs:
     period: str              # ISO date (weekly) or YYYY-MM (monthly)
     value: float
     rule_time: datetime      # the publisher's release rule, as a late bound
+    #: False when the rule is not trusted to the minute (an EIA week near a federal holiday):
+    #: a live first print is then stamped when SEEN, never at the rule.
+    rule_firm: bool = True
 
 
 _TAG = re.compile(r"<[^>]+>")
@@ -463,7 +489,8 @@ def parse_eia_history(body: bytes) -> list[Obs]:
                 wk = date(y, mm, dd)
             except ValueError:
                 continue
-            out.append(Obs("eia_ngs_level", wk.isoformat(), v, eia_release_time(wk)))
+            out.append(Obs("eia_ngs_level", wk.isoformat(), v, eia_release_time(wk),
+                           not near_federal_holiday(wk)))
     if not out:
         raise Refused("METADATA_MISMATCH:eia history page holds no Year-Mon week rows")
     return out
@@ -486,7 +513,8 @@ def parse_eia_api(body: bytes) -> list[Obs]:
         wk = _day(r.get("period")) if isinstance(r, dict) else None
         v = _num(str(r.get("value"))) if isinstance(r, dict) else None
         if wk is not None and v is not None:
-            out.append(Obs("eia_ngs_level", wk.isoformat(), v, eia_release_time(wk)))
+            out.append(Obs("eia_ngs_level", wk.isoformat(), v, eia_release_time(wk),
+                           not near_federal_holiday(wk)))
     if not out:
         raise Refused("METADATA_MISMATCH:eia api rows carry no period/value")
     return out
@@ -782,13 +810,20 @@ def load_store(paths: Paths, sid: str) -> dict[tuple[str, str], dict[str, Any]]:
     return out
 
 
-def stamp(rule: datetime, seen: datetime, prev_ok: datetime | None) -> tuple[datetime, str]:
-    """The available_time of a period first seen at `seen` (see the module docstring)."""
+#: A live first print takes its rule time only when it was read within this long after it.
+RULE_SLACK = timedelta(hours=2)
+
+
+def stamp(rule: datetime, seen: datetime, prev_ok: datetime | None,
+          firm: bool = True) -> tuple[datetime, str]:
+    """The available_time of a period first seen at `seen` (see the module docstring).
+
+    BACKFILL (`prev_ok` None) is the publisher's CURRENT vintage of an old period, not its first
+    print: it is labelled `backfill_rule` and never judged (no lake row, no cell, no clock
+    event); it only feeds expectation history, known from the moment it was read."""
     if prev_ok is None:
-        # The rule is a late bound and `seen` is a hard one (it was public when read): the
-        # earlier of the two is still never earlier than the release.
         return min(rule, seen), "backfill_rule"
-    if prev_ok < rule <= seen:
+    if firm and prev_ok < rule <= seen <= rule + RULE_SLACK:
         return rule, "live_rule"
     return seen, "live_seen"
 
@@ -803,7 +838,7 @@ def merge(paths: Paths, sid: str, store: dict[tuple[str, str], dict[str, Any]],
         k = (o.series, o.period)
         cur = store.get(k)
         if cur is None:
-            avail, quality = stamp(o.rule_time, seen, prev_ok)
+            avail, quality = stamp(o.rule_time, seen, prev_ok, o.rule_firm)
             rec = {"series": o.series, "period": o.period, "value": o.value,
                    "rule_time": _iso(o.rule_time), "first_seen_at": _iso(seen),
                    "available_time": _iso(avail), "pit_quality": quality, "revision": False}
@@ -832,9 +867,17 @@ def _points(store: Mapping[tuple[str, str], Mapping[str, Any]], series: str
             ) -> list[dict[str, Any]]:
     """First-seen (point-in-time) points of one series, in period order."""
     pts = [{"period": k[1], "value": float(r["value"]), "available_time": r["available_time"],
-            "pit_quality": r.get("pit_quality")}
+            "pit_quality": r.get("pit_quality"),
+            # what the desk could use as HISTORY from when: a backfilled (latest-vintage) row
+            # only from the moment it was read, a live first print from its release
+            "known_at": (r.get("first_seen_at") or r["available_time"])
+            if r.get("pit_quality") == BACKFILL else r["available_time"]}
            for k, r in store.items() if k[0] == series and isinstance(r.get("value"), int | float)]
     return sorted(pts, key=lambda p: p["period"])
+
+
+BACKFILL = "backfill_rule"
+BACKFILL_VINTAGE = f"{SOURCE_ID}:backfill_latest"
 
 
 def _later(a: str, b: str) -> str:
@@ -850,9 +893,14 @@ def weekly_changes(pts: list[dict[str, Any]]) -> list[dict[str, Any]]:
         da, db = _day(a["period"]), _day(b["period"])
         if da is None or db is None or (db - da).days != 7:
             continue
+        # a change is a first print only when BOTH levels are; one backfilled leg makes it
+        # backfill (history, never judged)
+        q = BACKFILL if BACKFILL in (a["pit_quality"], b["pit_quality"]) else b["pit_quality"]
         out.append({"period": b["period"], "value": b["value"] - a["value"],
                     "available_time": _later(a["available_time"], b["available_time"]),
-                    "pit_quality": b["pit_quality"]})
+                    "known_at": _later(a.get("known_at", a["available_time"]),
+                                       b.get("known_at", b["available_time"])),
+                    "pit_quality": q})
     return out
 
 
@@ -938,7 +986,7 @@ def expectation(series: list[dict[str, Any]], release_time: datetime | str, meth
     if rt is None:
         return None
     prior = [p for p in series if p["period"] < period
-             and (t := _t(p["available_time"])) is not None and t < rt]
+             and (t := _t(p.get("known_at") or p["available_time"])) is not None and t < rt]
     if method == "zero":
         return 0.0
     if method in ("trailing_mean4", "trailing_median12"):
@@ -969,11 +1017,24 @@ def surprises(pts: list[dict[str, Any]], kind: str, methods: tuple[str, ...],
     Per method: `expectation`, `surprise` = actual - expectation, and `surprise_z` = the
     surprise scaled by the std of that method's STRICTLY EARLIER surprises (>= SCALE_MIN of
     them, else None). Rows without a primary expectation are dropped, never padded; the row's
-    `value` is the primary surprise_z (None until it is scalable)."""
+    `value` is the primary surprise_z (None until it is scalable).
+
+    BACKFILL IS HISTORY, NEVER A PRINT (MF1). A `backfill_rule` point (the publisher's current
+    vintage of an old period, revisions included) feeds the expectations of later live prints,
+    labelled in `expectation_inputs`, but is never emitted as a row and never enters the
+    surprise_z denominator: that std is built from live surprises only."""
     target = weekly_changes(pts) if kind == "change" else pts
     hist: dict[str, list[float]] = {m: [] for m in methods}
     out: list[dict[str, Any]] = []
     for p in target:
+        if p.get("pit_quality") == BACKFILL:
+            continue
+        rt = _t(p["available_time"])
+        known = [q for q in target if q["period"] < p["period"] and rt is not None
+                 and (t := _t(q.get("known_at") or q["available_time"])) is not None and t < rt]
+        inputs = {"backfill_latest_vintage": sum(1 for q in known
+                                                 if q.get("pit_quality") == BACKFILL),
+                  "live": sum(1 for q in known if q.get("pit_quality") != BACKFILL)}
         exps: dict[str, dict[str, Any]] = {}
         for m in methods:
             e = expectation(target, p["available_time"], m, p["period"])
@@ -996,7 +1057,8 @@ def surprises(pts: list[dict[str, Any]], kind: str, methods: tuple[str, ...],
                     "pit_quality": p.get("pit_quality"), "actual": float(p["value"]),
                     "method": primary, "baseline": prim["expectation"],
                     "surprise": prim["surprise"], "surprise_z": prim["surprise_z"],
-                    "value": prim["surprise_z"], "expectations": exps})
+                    "value": prim["surprise_z"], "expectations": exps,
+                    "expectation_inputs": inputs})
     return out
 
 
@@ -1046,7 +1108,9 @@ def write_lake(paths: Paths, name: str, pts: list[dict[str, Any]]) -> str | None
     df = pd.DataFrame([{"event_time": _event_time(p["period"]),
                         "available_time": p["available_time"], "value": p["value"],
                         "source_id": SOURCE_ID,
-                        "vintage_id": f"{SOURCE_ID}:{p['available_time']}"} for p in pts])
+                        "vintage_id": (BACKFILL_VINTAGE if p.get("pit_quality") == BACKFILL
+                                       else f"{SOURCE_ID}:{p['available_time']}")}
+                       for p in pts])
     target = paths.series / f"{lake_name(name)}.csv"
     tmp = target.with_suffix(f".tmp{os.getpid()}")
     df.to_csv(tmp, index=False)
