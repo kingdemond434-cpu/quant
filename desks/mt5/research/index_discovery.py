@@ -93,13 +93,12 @@ _ROBOTS: dict[str, urllib.robotparser.RobotFileParser | str] = {}
 
 
 def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | str:
-    """The host's robots rules. 404/410 = no rules (allow); 401/403 = disallow everything;
+    """The host's robots rules. 404/410 = no rules (allow); 401/403/429/451 = a hard stop;
     anything else unreadable = a refusal string, never an assumed allow."""
     key = f"{scheme}://{host}"
     if key in _ROBOTS:
         return _ROBOTS[key]
     from libs.data.robots_body import robots_rules_or_refusal
-    rp = urllib.robotparser.RobotFileParser()
     req = urllib.request.Request(f"{key}/robots.txt", headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=15.0, context=_TLS) as r:
@@ -107,15 +106,8 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
             out: urllib.robotparser.RobotFileParser | str = robots_rules_or_refusal(
                 getattr(r, "status", 200), r.headers.get("Content-Type"), r.read(500_000))
     except urllib.error.HTTPError as e:
-        code = getattr(e, "code", 0)
-        if code in (404, 410):
-            rp.parse([])
-            out = rp
-        elif code in (401, 403):
-            rp.parse(["User-agent: *", "Disallow: /"])
-            out = rp
-        else:
-            out = f"robots.txt unreadable (HTTP {code})"
+        # 404/410 = no rules; 401/403/429/451 = hard stop; anything else = unread.
+        out = robots_rules_or_refusal(getattr(e, "code", 0), None, "")
     except Exception as e:
         out = f"robots.txt unreadable ({type(e).__name__})"
     _ROBOTS[key] = out
