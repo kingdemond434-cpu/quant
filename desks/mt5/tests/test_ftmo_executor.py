@@ -216,12 +216,42 @@ def test_no_fresh_deployable_book_trades_nothing(world, change: str) -> None:
     assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
 
 
-def test_gold_is_never_this_lanes(world) -> None:
+def _gold_book(key: str) -> list:
     spec = dict(SPEC, symbol="XAUUSD")
     sleeves, _ = fx.book_sleeves({"generated_at": NOW.isoformat(), "deployable": True,
-                                  "specs": {"XAUUSD_x_asia": spec}},
-                                 {"XAUUSD_x_asia": 0.003}, NOW)
-    assert sleeves == []
+                                  "specs": {key: spec}, "executable": {key: 0.003}},
+                                 {key: 0.003}, NOW)
+    return sleeves
+
+
+def test_a_certified_gold_sleeve_is_this_lanes_and_the_followers_copy_never(world) -> None:
+    """2026-11-18 (every account fills every market day): a certified XAUUSD sleeve the allocator
+    funds trades here; the follower's gold_asia copy stays the follower's."""
+    assert [k for k, _, _ in _gold_book("XAUUSD_x_asia")] == ["XAUUSD_x_asia"]
+    assert _gold_book("gold_asia") == []
+
+
+def test_the_gold_revert_switch_makes_gold_the_followers_alone(world, monkeypatch) -> None:
+    monkeypatch.setattr(fx, "GOLD_SLEEVES", False)
+    assert _gold_book("XAUUSD_x_asia") == []
+
+
+def test_the_two_gold_switches_move_together() -> None:
+    import prop_challenge_allocator as pca
+    assert fx.GOLD_SLEEVES == ("XAUUSD" not in pca.EXECUTOR_SKIP_SYMBOLS)
+    assert pca.FTMO_EXECUTABLE <= fx._FOLLOWER_KEYS
+
+
+def test_a_gold_sleeve_never_opens_on_top_of_the_followers_gold(world) -> None:
+    """One position per symbol, whatever its magic: a follower (or hand) XAUUSD position blocks
+    the sleeve (`ALREADY_OPEN`), so the two lanes never stack or face each other."""
+    from prop import ftmo_follower
+    world.mt5.positions.append(SimpleNamespace(
+        ticket=9, symbol="AUDNZD", type=0, magic=ftmo_follower.MAGIC, volume=0.5,
+        price_open=1.1, sl=1.09, tp=1.12, comment="follower"))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    assert [r["status"] for r in doc["sleeves"]] == ["ALREADY_OPEN"], doc["sleeves"]
 
 
 def test_a_server_off_the_broker_clock_reads_no_signal(world) -> None:
@@ -271,12 +301,13 @@ def test_the_allocator_lays_non_gold_sleeves_into_the_ftmo_block_and_zeroes_drop
                                                     "OLD_x_asia": 0.0}
 
 
-def test_the_allocator_marks_a_non_gold_spec_executable_and_gold_windows_not() -> None:
+def test_the_allocator_marks_every_spec_executable_and_a_specless_key_not() -> None:
     import prop_challenge_allocator as pca
     specs = {KEY: SPEC, "XAUUSD_x_london": dict(SPEC, symbol="XAUUSD")}
     assert pca.executor_runs(KEY, specs)
     assert pca.executor_runs("gold_asia", specs)
-    assert not pca.executor_runs("XAUUSD_x_london", specs)
+    assert pca.executor_runs("XAUUSD_x_london", specs)          # a certified gold sleeve
+    assert not pca.executor_runs("gold_london_am", specs)        # a gateway window, no spec
     assert not pca.executor_runs("EURUSD_y_asia", specs)
 
 
