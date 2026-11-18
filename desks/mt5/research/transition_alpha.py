@@ -19,14 +19,20 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _DESK = Path(__file__).resolve().parents[1]
 for p in (str(_DESK), str(_DESK / "research")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from mt5desk.family_regime_transition import DEFAULT_REFIT, DEFAULT_WINDOW, family_regime_transition  # noqa: E402
-from research import proposer_common as pc                                                          # noqa: E402
+from mt5desk.family_regime_transition import (  # noqa: E402
+    DEFAULT_REFIT,
+    DEFAULT_WINDOW,
+    family_regime_transition,
+)
+
+from research import proposer_common as pc  # noqa: E402
 
 SOURCE = "transition_alpha"
 REPORT = _DESK / "reports" / "transition_alpha.json"
@@ -34,14 +40,28 @@ ENTRY_P = (0.15, 0.25, 0.35)
 MIN_AGE = (3, 10)
 HORIZON_DAYS = (1,)
 SIDES = ("exhaustion", "expansion")
+#: The Hurst/DFA flip conditioner (C row 120). "off" sends NO dfa keys, so its params are exactly
+#: the pre-conditioner cell's; each gated value is one more test, counted in `tests_run` and so
+#: in the deflation and the donation's trial charge. Freshness is held at one value.
+DFA_GATES = ("off", "to_trending", "to_reverting", "any")
+DFA_FRESH_DAYS = 5
 
 
 def _book_symbols() -> list[str]:
     try:
         from research.state_vector_build import book_symbols
         return book_symbols()
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         return []
+
+
+def _variants(window: int, refit_days: int, horizon: int, thr: float, age: int,
+              side_mode: str) -> list[dict[str, Any]]:
+    """The cell's params under every DFA gate; "off" carries no dfa keys at all."""
+    base = {"window": int(window), "refit_days": int(refit_days), "horizon_days": int(horizon),
+            "entry_p_leave": float(thr), "min_age": int(age), "side_mode": side_mode}
+    return [dict(base) if g == "off" else
+            {**base, "dfa_gate": g, "dfa_fresh_days": int(DFA_FRESH_DAYS)} for g in DFA_GATES]
 
 
 def run(symbols: list[str] | None = None, budget_s: float = 2400.0,
@@ -69,15 +89,15 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0,
             for thr in ENTRY_P:
                 for age in MIN_AGE:
                     for side_mode in SIDES:
-                        params = {"window": int(window), "refit_days": int(refit_days),
-                                  "horizon_days": int(h), "entry_p_leave": float(thr),
-                                  "min_age": int(age), "side_mode": side_mode}
-                        sig = family_regime_transition(d, **params)
-                        sc = pc.screen(d, sig, cost, unfillable)
-                        if sc is None:
-                            continue
-                        rows.append({"cell": f"{sym}.regime_transition.{side_mode}",
-                                     "symbol": sym, "params": params, **sc})
+                        for params in _variants(window, refit_days, h, thr, age, side_mode):
+                            sig = family_regime_transition(d, **params)
+                            sc = pc.screen(d, sig, cost, unfillable)
+                            if sc is None:
+                                continue
+                            gate = params.get("dfa_gate")
+                            cell = f"{sym}.regime_transition.{side_mode}" + (
+                                f".dfa_{gate}" if gate else "")
+                            rows.append({"cell": cell, "symbol": sym, "params": params, **sc})
     rows = pc.deflate(rows)
     proposals = pc.best_per_cell(rows)
     cands = [pc.candidate(

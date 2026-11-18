@@ -242,3 +242,79 @@ def test_the_leg_is_wired_hourly_and_layered():
     src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"research/dfa_flip_state.py"' in src and '"dfa_flip_state": dfs' in src
     assert LEG_LAYER["dfa_flip_state"] == "information"
+
+
+# ------------------------------------------------------------------------------------------
+# The grids: the gated variants are enumerated and charged as trials (audit of #1345, MF1)
+# ------------------------------------------------------------------------------------------
+
+GATED = {"to_trending", "to_reverting", "any"}
+
+
+def test_the_breadth_grid_carries_off_plus_the_three_gated_variants_at_one_freshness():
+    from research import breadth_sweep as bs
+
+    grid = bs.READY["regime_transition"]["grid"]
+    assert grid[0] == {}, "off must be the bare cell so it dedupes against the cells held"
+    gated = grid[1:]
+    assert {g["dfa_gate"] for g in gated} == GATED == set(frt.DFA_GATES)
+    assert {g["dfa_fresh_days"] for g in gated} == {5}
+    assert len(grid) == 4
+    # Listed in READY, so default_families no longer mints a second, identical bare cell.
+    ok, _ = bs.default_families()
+    assert "regime_transition" not in ok
+
+
+def test_breadth_cells_include_the_gated_variants_and_the_census_counts_each(monkeypatch):
+    from libs.research.trial_ledger import census, trial_from_record
+    from research import breadth_sweep as bs
+
+    monkeypatch.setattr(bs, "_with_bars", lambda: ["EURUSD", "XAUUSD"])
+    monkeypatch.setattr(bs, "_charts_for", lambda sym: ["H1"])
+    monkeypatch.setattr(bs, "_session_slots",
+                        lambda fam, base, tf, sym: [(dict(base), None)])
+    monkeypatch.setattr(bs, "_testable", lambda fam, p: True)
+    monkeypatch.setattr(bs, "order_by_failure_memory", lambda rows: (rows, {}))
+    monkeypatch.setattr(bs, "_orthogonal_key", lambda: (lambda r: (r["symbol"], str(r["params"]))))
+    rows = bs.cells(only="regime_transition")
+    assert len(rows) == 2 * 4
+    for sym in ("EURUSD", "XAUUSD"):
+        gates = {r["params"].get("dfa_gate", "off") for r in rows if r["symbol"] == sym}
+        assert gates == GATED | {"off"}
+    assert sum(1 for r in rows if "dfa_gate" in r["params"]) == 2 * 3
+    doc = census(trial_from_record(r, index=i) for i, r in enumerate(rows)).to_dict()
+    assert doc["n_raw"] == len(rows) == 8      # every gated cell is a charged trial
+
+
+def test_the_gauntlet_proposer_tests_and_charges_every_gated_variant(tmp_path, monkeypatch):
+    from research import transition_alpha as ta
+
+    variants = ta._variants(60, 30, 1, 0.15, 3, "exhaustion")
+    assert len(variants) == 4
+    assert "dfa_gate" not in variants[0] and "dfa_fresh_days" not in variants[0]
+    assert {v["dfa_gate"] for v in variants[1:]} == GATED
+    assert {v["dfa_fresh_days"] for v in variants[1:]} == {5}
+
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    (uni / "XAUUSD_H1.parquet").write_bytes(b"")
+    pc = ta.pc
+    monkeypatch.setattr(pc, "UNI", uni)
+    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    monkeypatch.setattr(pc, "bars", lambda sym: _bars(260))
+    monkeypatch.setattr(pc, "cost_frac", lambda sym, meta, close: 1e-4)
+    monkeypatch.setattr(pc, "artifact_hours", lambda d: {})
+    monkeypatch.setattr(pc, "screen", lambda d, sig, cost, unf: {"n_signals": len(sig)})
+    monkeypatch.setattr(pc, "deflate", lambda rows: rows)
+    monkeypatch.setattr(pc, "best_per_cell", lambda rows: [])
+    charged: list[int] = []
+    monkeypatch.setattr(pc, "donate", lambda src, cands, n: charged.append(n))
+    monkeypatch.setattr(ta, "REPORT", tmp_path / "transition_alpha.json")
+    rep = ta.run(symbols=["XAUUSD"], window=WINDOW, refit_days=REFIT)
+    per_side_cell = len(ta.HORIZON_DAYS) * len(ta.ENTRY_P) * len(ta.MIN_AGE)
+    assert rep["tests_run"] == per_side_cell * len(ta.SIDES) * 4
+    cells = {r["cell"] for r in rep["all"]}
+    for side in ta.SIDES:
+        assert f"XAUUSD.regime_transition.{side}" in cells
+        for g in GATED:
+            assert f"XAUUSD.regime_transition.{side}.dfa_{g}" in cells
