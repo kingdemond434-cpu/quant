@@ -82,6 +82,21 @@ COMPONENT = "leg:plumbing_watchdog"
 #: The adoption clock and this organ's own clock, by the names the scheduler must return.
 ADOPT_TASK = "MT5-AdoptRelease"
 WATCHDOG_TASK = "MT5-PlumbingWatchdog"
+#: The box's pager for plumbing defects and a stalled judge (`scripts/run_alerts.py --box`). Its
+#: LAST RESULT is read here because a pager that is NOT ARMED (exit 2) or whose pushes all fail
+#: (exit 3) cannot page about itself: this organ is what makes that failure seen.
+PAGER_TASK = "MT5-PlumbingPager"
+#: The pager runs every 15 min with a 5-min limit: a LAST RUN older than two intervals plus the
+#: limit means it is not firing (an Interactive principal with nobody logged on keeps last result 0
+#: for ever). "Has not yet run" (267011) is tolerated only this long after registration.
+PAGER_MAX_LAST_AGE_S = 45 * 60
+PAGER_FIRST_RUN_GRACE_S = 45 * 60
+#: A LAST RUN stamped further than this in the future is clock trouble, not a fresh run.
+TASK_CLOCK_SKEW_S = 15 * 60
+#: Written by install_plumbing_pager_task.ps1 just before its first Start-ScheduledTask. The
+#: scheduler's RegistrationInfo date is often empty for Register-ScheduledTask tasks, and without
+#: a registration time 267011 could never be excused on the first pass.
+PAGER_INSTALL_STAMP = DESK / "logs" / "plumbing_pager_installed.json"
 
 #: The mutex the four git writers share. `GitWriterMutex.ps1` is the only place the names live;
 #: they are repeated here as the FALLBACK for a box where that helper has not landed, and the
@@ -101,6 +116,7 @@ ESCALATION_S: dict[str, int] = {
     "orphan_workers": 2 * 3600,
     "commit_headroom": 2 * 3600,
     "scheduled_task": 3 * 3600,
+    "pager_task": 2 * 3600,
     "path_pair": 24 * 3600,
     "orphan_artifact_path": 24 * 3600,
     "fence_ran": 24 * 3600,
@@ -205,7 +221,10 @@ def _task_facts(name: str) -> dict[str, Any]:
         ".ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'NONE' });"
         "'LAST=' + $(if ($i.LastRunTime) { $i.LastRunTime.ToUniversalTime()"
         ".ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'NONE' });"
-        "'RESULT=' + $i.LastTaskResult;", timeout=75)
+        "'RESULT=' + $i.LastTaskResult;"
+        "'REGISTERED=' + $(if ($t.Date) { try { ([datetime]$t.Date).ToUniversalTime()"
+        ".ToString('yyyy-MM-ddTHH:mm:ssZ') } catch { 'NONE' } } else { 'NONE' });",
+        timeout=75)
     if rc not in (0,) and not out.strip():
         return {"measured": False, "why": f"Get-ScheduledTask failed (rc={rc})"}
     text = out.strip()
@@ -216,7 +235,7 @@ def _task_facts(name: str) -> dict[str, Any]:
     facts: dict[str, Any] = {"measured": True, "present": True}
     for ln in text.splitlines():
         k, _, v = ln.strip().partition("=")
-        if k in ("STATE", "PRINCIPAL", "NEXT", "LAST", "RESULT"):
+        if k in ("STATE", "PRINCIPAL", "NEXT", "LAST", "RESULT", "REGISTERED"):
             facts[k.lower()] = v.strip()
     return facts
 
@@ -231,11 +250,29 @@ def _parse_iso(text: str | None) -> datetime | None:
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
+def pager_facts(stamp: Path | None = None) -> dict[str, Any]:
+    """The scheduler's facts for the pager, with the installer's stamp standing in for an empty
+    RegistrationInfo date. The stamp only ever EXCUSES 267011 inside the grace window."""
+    f = _task_facts(PAGER_TASK)
+    if f.get("measured") and _parse_iso(str(f.get("registered") or "")) is None:
+        doc = _read_json(stamp or PAGER_INSTALL_STAMP)
+        if isinstance(doc, dict) and _parse_iso(str(doc.get("at") or "")) is not None:
+            f["registered"] = str(doc["at"])
+            f["registered_source"] = "install stamp"
+    return f
+
+
 def check_task(name: str, *, max_next_run_s: int, check: str,
                now: datetime | None = None, facts: Mapping[str, Any] | None = None,
+               max_last_age_s: int | None = None, first_run_grace_s: int = 0,
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """PROVE a clock by observation: present, Enabled, next run inside its window, last result
-    not an error. Four separate facts because the outage arrived through each of them in turn."""
+    not an error. Four separate facts because the outage arrived through each of them in turn.
+
+    With `max_last_age_s`, also prove it FIRED: a last run that is absent or older than that is a
+    defect whatever the last result says (a task that never launches keeps its old result for
+    ever). "Has not yet run" (267011) is excused only within `first_run_grace_s` of a parseable
+    registration time; an unknown registration time excuses nothing."""
     t = now or _now()
     f = dict(facts) if facts is not None else _task_facts(name)
     rows: list[dict[str, Any]] = []
@@ -279,6 +316,35 @@ def check_task(name: str, *, max_next_run_s: int, check: str,
                                "is stopped, not slow",
                                severity="CRITICAL", key=f"{check}:{name}:next_run"))
     result = str(f.get("result") or UNMEASURED)
+    if max_last_age_s is not None:
+        last = _parse_iso(str(f.get("last") or ""))
+        reg = _parse_iso(str(f.get("registered") or ""))
+        fresh_install = (result == "267011" and reg is not None
+                         and 0 <= (t - reg).total_seconds() <= first_run_grace_s)
+        age = (t - last).total_seconds() if last is not None else None
+        if age is not None and age < -TASK_CLOCK_SKEW_S:
+            rows.append(defect(check, name,
+                               f"{name} last run {f.get('last')} is {-age / 3600:.1f}h in the "
+                               f"FUTURE -- whether it fired is UNMEASURED, never a pass",
+                               "fix the box clock / time zone, then Start-ScheduledTask "
+                               f"-TaskName {name}", severity="MAJOR",
+                               key=f"{check}:{name}:last_run"))
+        elif not fresh_install and (age is None or age > max_last_age_s):
+            seen = ("has NO last run" if age is None
+                    else f"last ran {f.get('last')} ({age / 3600:.1f}h ago)")
+            rows.append(defect(check, name,
+                               f"{name} {seen} -- not fired inside {max_last_age_s // 60} min "
+                               f"(last result {result}); a task that never launches keeps its "
+                               f"old result for ever",
+                               f"check its principal can run with nobody logged on (S4U), then "
+                               f"Start-ScheduledTask -TaskName {name}",
+                               severity="MAJOR", key=f"{check}:{name}:last_run"))
+        if result == UNMEASURED:
+            # a run that fired but whose result cannot be read is not a clean run
+            rows.append(defect(check, name,
+                               f"{name} last result is unreadable (empty) -- UNMEASURED, "
+                               f"never a pass", f"Get-ScheduledTaskInfo -TaskName {name}",
+                               severity="MAJOR", key=f"{check}:{name}:last_result"))
     # 267009 is "task is currently running"; 267011 is "has not yet run". Neither is an error.
     if result not in ("0", "267009", "267011", UNMEASURED):
         rows.append(defect(check, name,
@@ -1116,14 +1182,22 @@ def render_alerts(doc: Mapping[str, Any], path: Path | None = None) -> str:
                   "process table, the declared task set, the pipeline's path pairs and the law "
                   "battery were all observed, not assumed.", ""]
     else:
-        lines += ["| organ | check | age | passes | evidence | repair |",
-                  "|---|---|---|---|---|---|"]
+        # `severity` is read by scripts/run_alerts.py, the pager: on the VPS this page is the
+        # only plumbing source (the JSON report is box-local), so it must say which rows are
+        # CRITICAL or the pager cannot tell a stop from a nag.
+        lines += ["| organ | check | severity | age | passes | evidence | repair |",
+                  "|---|---|---|---|---|---|---|"]
+        def _cell(v: Any, n: int = 300) -> str:
+            # EVERY cell is escaped: an unescaped `|` in any one of them shifts the cells after
+            # it, and the pager (scripts/run_alerts.py) then reads a CRITICAL row's severity
+            # from the wrong column. Truncate BEFORE escaping so no cut lands inside a `\|`.
+            return str(v if v is not None else "")[:n].replace("\n", " ").replace("|", "\\|")
+
         for r in sorted(rows, key=lambda x: (-int(x.get("age_s") or 0), str(x.get("organ")))):
-            ev = str(r.get("evidence") or "").replace("|", "\\|").replace("\n", " ")
-            rp = str(r.get("repair") or "").replace("|", "\\|").replace("\n", " ")
-            lines.append(f"| `{r.get('organ')}` | {r.get('check')} | "
-                         f"{int(r.get('age_s') or 0) // 3600}h | {r.get('passes')} | "
-                         f"{ev[:300]} | {rp[:220]} |")
+            lines.append(f"| `{_cell(r.get('organ'), 120)}` | {_cell(r.get('check'), 60)} | "
+                         f"{_cell(r.get('severity') or 'UNMEASURED', 20)} | "
+                         f"{int(r.get('age_s') or 0) // 3600}h | {_cell(r.get('passes'), 12)} | "
+                         f"{_cell(r.get('evidence'))} | {_cell(r.get('repair'), 220)} |")
         lines.append("")
     lines += [
         "## Why this page exists",
@@ -1198,6 +1272,10 @@ def run(*, budget_s: float = 180.0, apply: bool = False, root: Path | None = Non
                                              check="adoption_task", now=t)),
         ("watchdog_task", lambda: check_task(WATCHDOG_TASK, max_next_run_s=1800,
                                              check="scheduled_task", now=t)),
+        ("pager_task", lambda: check_task(PAGER_TASK, max_next_run_s=1800,
+                                          check="pager_task", now=t, facts=pager_facts(),
+                                          max_last_age_s=PAGER_MAX_LAST_AGE_S,
+                                          first_run_grace_s=PAGER_FIRST_RUN_GRACE_S)),
         ("adoption_lag", lambda: check_adoption_lag(base)),
         ("adoption_partial", lambda: check_adoption_partial(base, t)),
         ("git_writer_lock", lambda: check_git_writer_lock(base)),
