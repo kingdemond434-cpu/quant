@@ -479,3 +479,15 @@ def test_parity_targets_get_a_share_of_the_never_fetched_tier(tmp_path, monkeypa
     assert sorted(order) == sorted(plain) and order[-1] == "P/old"
     assert order.index("Q/cpi") == W.PARITY_EVERY - 1
     assert [k for k in order if k.startswith("P/d")] == [f"P/d{i}" for i in range(8)]
+
+
+def test_a_sentinel_year_is_dropped_and_never_kills_the_hunt() -> None:
+    """DBnomics served period "2999" live (2026-11); 2999-12-31 + lag overflowed pandas' ns
+    range and killed every world-dataset hunt from 10-19 on."""
+    assert W.period_end("2999")[0] is None and W.period_end("2999-12")[0] is None
+    assert W.period_end("1066")[0] is None
+    assert W.period_end("2024")[0] is not None and W.period_end("2024-Q1")[0] is not None
+    frame, n = W.merge_observations(None, [{"code": "X", "freq": "A",
+                                             "points": [("2999", 1.0), ("2024", 2.0)]}],
+                                    now=datetime(2026, 11, 5, tzinfo=UTC))
+    assert n == 1 and list(frame["period"]) == ["2024"]
