@@ -450,6 +450,10 @@ desks/mt5/data/free_data_cache/
 # keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
 # the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
 desks/mt5/data/keyed_sources/
+# fedreg_pressure store: Federal Register rule / proposed-rule documents (monthly jsonl partitions),
+# the daily table and cursors are box-local raw pulled data; reports/FEDREG_PRESSURE.json and
+# reports/FEDREG_EFFECTIVE_CLOCK.json are its record.
+desks/mt5/data/fedreg/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/

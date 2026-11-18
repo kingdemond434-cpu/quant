@@ -135,6 +135,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(A, "CALENDAR", calendar)
     monkeypatch.setattr(A, "MACRO_LEDGER", tmp_path / "absent_ledger.jsonl")
     monkeypatch.setattr(A, "ROOT_EVENTS", tmp_path / "absent_events.jsonl")
+    monkeypatch.setattr(A, "FEDREG_CLOCK", tmp_path / "absent_fedreg_clock.json")
     monkeypatch.setattr(A, "COT", tmp_path / "cot.json")
     monkeypatch.setattr(A, "REGIME_STATE", tmp_path / "regime.json")
     monkeypatch.setattr(A, "COST_SURFACE", tmp_path / "costs.json")

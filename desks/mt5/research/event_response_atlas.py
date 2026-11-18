@@ -12,7 +12,8 @@ its count rides on the row so a cell of fourteen cannot be read as one of four h
 
 WHERE THE DATES COME FROM, AND WHAT IS MISSING (L1.28a). `data/forced_flow_calendar.json` is
 rule-derived and dense; `data/macro/event_ledger.jsonl` is the macro desk's own record; a
-repository-root `data/events.jsonl` joins them when it exists. All three are read TOLERANTLY: a
+repository-root `data/events.jsonl` joins them when it exists, and so does the Federal Register
+effective-date clock `reports/FEDREG_EFFECTIVE_CLOCK.json`. All three are read TOLERANTLY: a
 row with no usable stamp or no instrument contributes nothing and is COUNTED, and an absent
 source is reported as absent rather than as a clean zero.
 
@@ -85,6 +86,9 @@ UNIVERSE = BASE / "data" / "universe"
 CALENDAR = BASE / "data" / "forced_flow_calendar.json"
 MACRO_LEDGER = BASE / "data" / "macro" / "event_ledger.jsonl"
 ROOT_EVENTS = ROOT / "data" / "events.jsonl"
+#: Effective dates of significant final rules (research/fedreg_pressure.py's event clock): a
+#: calendar of `events[]` rows with `at`, `kind` and `instruments`, read like the others.
+FEDREG_CLOCK = BASE / "reports" / "FEDREG_EFFECTIVE_CLOCK.json"
 COT = BASE / "data" / "axes" / "cot.json"
 REGIME_STATE = BASE / "data" / "regime_state.json"
 COST_SURFACE = BASE / "data" / "cost_surface.json"
@@ -263,12 +267,13 @@ def _rows_from(path: Path, source: str) -> tuple[list[dict], str]:
 
 
 def load_events(days: int, now: datetime) -> tuple[list[dict], dict[str, Any]]:
-    """Every dated event in the window, from all three grounds, with the accounting."""
+    """Every dated event in the window, from every ground, with the accounting."""
     cutoff = now - timedelta(days=int(days))
     events: list[dict] = []
     accounting: dict[str, Any] = {}
     for path, source in ((CALENDAR, "forced_flow_calendar"), (MACRO_LEDGER, "macro_event_ledger"),
-                         (ROOT_EVENTS, "root_events_jsonl")):
+                         (ROOT_EVENTS, "root_events_jsonl"),
+                         (FEDREG_CLOCK, "fedreg_effective")):
         raw, status = _rows_from(path, source)
         kept, unusable = 0, 0
         for row in raw:
