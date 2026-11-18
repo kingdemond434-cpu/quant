@@ -376,3 +376,19 @@ def test_refusals_are_read_from_refused_hosts_and_alt_proxies_terms() -> None:
     # The local list only carries what neither source has yet.
     assert not set(dt.LOCAL_REFUSED_HOSTS) & set(REFUSED_HOSTS)
     assert dt.refusal_of("https://www.reddit.com/r/x", "www.reddit.com", "free_stack:reddit")
+
+
+def test_every_self_minting_writer_owns_its_lake_prefix(tmp_path):
+    """Auditor SF1: a series another organ writes AND mints from is never minted here first."""
+    stems = ["alt_kr_exports_early__value", "mes_usda_export_sales_corn", "axis_us_claims",
+             "latent_cn_credit", "nlp_events_US", "blog_social_XAUUSD", "wb_unrelated"]
+    owners = dt.proposer_owners(stems, fs_columns=tmp_path / "none.json",
+                                keyed=tmp_path / "none.json")
+    assert set(owners) == set(stems) - {"wb_unrelated"}
+    assert owners["mes_usda_export_sales_corn"] == "macro_event_states"
+
+
+def test_arcgis_is_not_refused_wholesale():
+    """Auditor SF2: PortWatch is refused by name; other ArcGIS-hosted datasets are not."""
+    assert "arcgis.com" not in dt.LOCAL_REFUSED_HOSTS
+    assert "portwatch" in dt.LOCAL_REFUSED_NAMES

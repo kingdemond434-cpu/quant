@@ -103,11 +103,12 @@ COVERED = "COVERED_ELSEWHERE"
 #: THIS LOCAL LIST HOLDS ONLY WHAT NEITHER CARRIES YET (2026-11-18), each by the worker-rule
 #: ruling that names it, and an entry leaves the day `refused_hosts.py` carries it:
 #:   * Reddit -- refused by the data and fetching law; absent from refused_hosts.py today.
-#:   * IMF PortWatch -- the law says "pending reconciliation"; alt_proxies.TERMS still reads
-#:     `confirmed` for imf_portwatch_*, so the stricter reading holds until the two reconcile.
+#:   * IMF PortWatch -- the law says "pending reconciliation"; it is refused BY NAME below, never
+#:     by its host: arcgis.com serves many unrelated public datasets, and refusing the host would
+#:     black out every one of them. missed_growth: PortWatch's port-call and chokepoint boards
+#:     stay unmapped until the quoted terms clause is recorded (Governance 2026-11-18).
 LOCAL_REFUSED_HOSTS: dict[str, str] = {
     "reddit.com": "Reddit: Data API terms bar commercial use without an agreement",
-    "arcgis.com": "IMF PortWatch via ArcGIS: terms pending reconciliation",
 }
 LOCAL_REFUSED_NAMES: dict[str, str] = {
     "reddit": "Reddit: Data API terms bar commercial use without an agreement",
@@ -532,9 +533,24 @@ class Coverage:
         return self._exists(cell)
 
 
+#: LAKE PREFIXES WHOSE WRITER MINTS ITS OWN CELLS on the series it publishes (Auditor SF1,
+#: 2026-11-18). A newly landed series under one of these is its writer's trial, never the
+#: translator's: minting first would make the owner's own cell a second, differently-
+#: parameterised trial that neither the pair index nor content_hash can see.
+SELF_MINTING_PREFIXES: dict[str, str] = {
+    "alt_": "alt_proxies",
+    "mes_": "macro_event_states",
+    "axis_": "axis_proposer",
+    "latent_": "macro_state_engine",
+    "nlp_events_": "nlp_event_factors / nlp_social_cells",
+    "blog_social_": "nlp_social_cells",
+}
+
+
 def proposer_owners(stems: Iterable[str], fs_columns: Path | None = None,
                     keyed: Path | None = None) -> dict[str, str]:
-    """{stem: proposer} for every lake series the free-stack or keyed proposer mints from."""
+    """{stem: proposer} for every lake series another proposer mints from: the free-stack and
+    keyed proposers by their manifests, and every self-minting writer by its lake prefix."""
     cols = _read(fs_columns or FS_COLUMNS, {}) or {}
     ks: dict[str, str] = {}
     for r in (_read(keyed or KEYED, {}) or {}).get("sources") or []:
@@ -543,7 +559,10 @@ def proposer_owners(stems: Iterable[str], fs_columns: Path | None = None,
                 ks[f"ks_{r.get('id')}__{name}"] = "keyed_sources"
     out: dict[str, str] = {}
     for stem in stems:
-        if stem.startswith("fs_") and cols.get(stem[3:]):
+        own = next((o for p, o in SELF_MINTING_PREFIXES.items() if stem.startswith(p)), None)
+        if own:
+            out[stem] = own
+        elif stem.startswith("fs_") and cols.get(stem[3:]):
             out[stem] = "free_stack_proposer"
         elif stem in ks:
             out[stem] = ks[stem]
