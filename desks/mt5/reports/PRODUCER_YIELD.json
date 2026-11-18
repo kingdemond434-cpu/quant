@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-18T14:32:22+00:00",
+ "generated_utc": "2026-11-18T14:53:56+00:00",
  "law": "EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output is DEAD and carries a replacement; low output is STARVED and carries a budget question; no artifact is UNMEASURED and carries neither.",
  "window_days": 3.0,
  "median_rows": 640,
@@ -711,13 +711,13 @@
   },
   {
    "producer": "descendants",
-   "rows_in_window": 51204305,
+   "rows_in_window": 51087871,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "card_explosion",
-   "rows_in_window": 19832326,
+   "rows_in_window": 20043301,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -812,14 +812,14 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "fund_playbook",
-   "rows_in_window": 32955,
+   "producer": "weak_signal_ensemble",
+   "rows_in_window": 30964,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "weak_signal_ensemble",
-   "rows_in_window": 30964,
+   "producer": "fund_playbook",
+   "rows_in_window": 30420,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1306,7 +1306,7 @@
   "row_conversion": {
    "path": "desks\\mt5\\reports\\ROW_CONVERSION.json",
    "available": true,
-   "generated_utc": "2026-11-17T16:14:02+00:00",
+   "generated_utc": "2026-11-18T14:36:06+00:00",
    "producers_with_convertible_debt": 0,
    "rule": "every convertible input row emits at least one valid AlphaCell; a named non-alpha refusal remains honest and is not manufactured into a strategy"
   },
@@ -1329,7 +1329,7 @@
   "set_aside": {
    "available": true,
    "path": "desks\\mt5\\reports\\SET_ASIDE_LEDGER.json",
-   "at": "2026-11-18T14:25:31+00:00",
+   "at": "2026-11-18T14:45:42+00:00",
    "organs": [
     "alpha_lineage_search",
     "alpha_rl_run",
@@ -1340,13 +1340,13 @@
     "sares"
    ],
    "stages": 17,
-   "set_aside_total": 4164666,
+   "set_aside_total": 4165974,
    "worst": [
     {
      "stage": "alpha_lineage_search/shared_ancestors",
-     "set_aside": 1862919,
-     "kept": 117720,
-     "considered": 1980639,
+     "set_aside": 1864185,
+     "kept": 117800,
+     "considered": 1981985,
      "ordering": "-len(families), -n_descendants"
     },
     {
@@ -1365,9 +1365,9 @@
     },
     {
      "stage": "alpha_lineage_search/untried_mutations",
-     "set_aside": 62013,
-     "kept": 118120,
-     "considered": 180133,
+     "set_aside": 62055,
+     "kept": 118200,
+     "considered": 180255,
      "ordering": "-len(untried), -n_nodes"
     },
     {
@@ -2602,8 +2602,8 @@
     "key": "futures_state",
     "clock": null,
     "compute_hours_window7d": "UNMEASURED",
-    "cells_emitted_per_hour": 33.0833,
-    "unique_cells_per_hour": 3.25,
+    "cells_emitted_per_hour": 57.0833,
+    "unique_cells_per_hour": 27.25,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    }
