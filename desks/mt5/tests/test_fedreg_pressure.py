@@ -264,9 +264,11 @@ def test_comment_deadline_clustering(tmp_path: Path) -> None:
     assert c["per_week"]["2026-W47"] == 2 and c["per_week"]["2026-W48"] == 1
     assert c["busiest_weeks"][0] == {"week": "2026-W47", "closing": 2}
     assert c["n_closing"] == 4 and c["busiest_agencies"]["epa"] == 3
-    nxt = fr.comment_close_next(store, ["2026-11-01", "2026-11-16", "2026-11-19"])
+    nxt = fr.comment_close_next(store, ["2026-11-01", "2026-11-13", "2026-11-16", "2026-11-20"])
     assert nxt["2026-11-01"] == 0                    # nothing published yet: point-in-time
-    assert nxt["2026-11-16"] == 2 and nxt["2026-11-19"] == 2   # 20th x2; 23rd is 7d from 16th
+    assert nxt["2026-11-13"] == 2                    # (13th, 20th]: the two on the 20th
+    assert nxt["2026-11-16"] == 3                    # (16th, 23rd]: the 23rd is inclusive
+    assert nxt["2026-11-20"] == 1                    # (20th, 27th]: the 20th itself is closed
 
 
 # ---------------------------------------------------------------------------- the clock
