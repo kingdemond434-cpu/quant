@@ -450,7 +450,7 @@ _API_RE = re.compile(
 _DATA_HOSTS = (
     "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
-    "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
+    "lbma.org.uk", "datahub.io", "data.gov",
     # zh
     "tushare.pro", "akfamily.xyz", "shfe.com.cn", "sge.com.cn", "pbc.gov.cn",
     "stats.gov.cn", "chinabond.com.cn", "eastmoney.com", "csrc.gov.cn",
@@ -700,7 +700,8 @@ SEEDS = (
     "https://www.bis.org/statistics/index.htm",
     "https://www.ecb.europa.eu/stats/html/index.en.html",
     "https://www.lbma.org.uk/prices-and-data",
-    "https://www.cmegroup.com/market-data/delayed-quotes/metals.html",
+    # cmegroup.com left the seeds 2026-11-18: CME's data terms refuse robots and systematic
+    # retrieval (libs/data/refused_hosts.py), so neither CME page is crawled.
     "https://data.worldbank.org/indicator",
     "https://www.eia.gov/opendata/",
     "https://datahub.io/collections/finance",
@@ -849,7 +850,6 @@ SEEDS = (
     "https://quantpedia.com/blog/",
     "https://alphaarchitect.com/blog/",
     "https://macrosynergy.com/research/",
-    "https://www.cmegroup.com/insights/economic-research.html",
     "https://www.trade2win.com/",
     "https://www.bankofengland.co.uk/working-paper/working-papers",
     "https://www.bankofcanada.ca/research/staff-working-papers/",

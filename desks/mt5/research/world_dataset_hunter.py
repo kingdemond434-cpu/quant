@@ -336,7 +336,12 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429."""
+    """Default transport: urllib, a named UA, one polite retry on 429. A host whose own terms
+    refuse automated contact (libs/data/refused_hosts.py) is never requested."""
+    from libs.data.refused_hosts import refusal
+    why = refusal(url)
+    if why:
+        raise FetchError("blocked_on_terms", f"{url} ({why})")
     for attempt in (0, 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "application/json, text/csv, */*"})
