@@ -39,6 +39,14 @@ import json
 import math
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW = BASE / "reports" / "shadow"
@@ -60,14 +68,56 @@ def _read(p: Path):
         return None
 
 
+#: ALLOCATOR COLUMNS WHOSE FORWARD CLOCK HAS ANOTHER NAME (Auditor, 2026-11-11). The gateway prices
+#: gold's asia window as column `gold_asia`; `decision_core` names its clock `XAUUSD.asia`. The
+#: ledger name never equalled the column, so the allocator never saw gold_asia's forward evidence.
+#: Joined by the EXACT clock key through `forward_ledger.resolve` -- its own file or nothing, never
+#: a params variant and never the frozen shared file. ONLY gold_asia: the other gold columns'
+#: clocks are inferred from window defaults, not named, so they are reported UNMEASURED.
+COLUMN_CLOCKS: dict[str, str] = {
+    "gold_asia": "XAUUSD.asia",
+}
+
+#: Columns whose forward clock is NOT named anywhere the allocator can cite. Never joined.
+UNMAPPED_COLUMNS: dict[str, str] = {
+    "gold_london_am": "no clock is named for this column (XAUUSD.london_am would be inferred from "
+                      "window defaults, not cited); forward evidence UNMEASURED, not joined",
+    "gold_afternoon": "no clock is named for this column (XAUUSD.afternoon would be inferred from "
+                      "window defaults, not cited); forward evidence UNMEASURED, not joined",
+}
+
+#: {column: status row} from the last `daily_series()` call.
+_COLUMN_STATUS: dict[str, dict[str, Any]] = {}
+
+
+def column_clock_status() -> dict[str, dict[str, Any]]:
+    """Per named column: JOINED (its clock's own ledger), UNMEASURED_SHARED_LEDGER, NO_LEDGER, or
+    UNMEASURED (no named clock)."""
+    return {k: dict(v) for k, v in _COLUMN_STATUS.items()}
+
+
 def daily_series() -> dict[str, dict[str, float]]:
-    """Per-sleeve daily R, FORWARD PHASE ONLY -- historical rows may not inform allocation."""
+    """Per-sleeve daily R, FORWARD PHASE ONLY -- historical rows may not inform allocation.
+
+    Every ledger comes through `forward_ledger.iter_ledgers`: one file per clock key, and a legacy
+    file several keys wrote is frozen and skipped, so no column joins a neighbour's trades.
+    """
     out: dict[str, dict[str, float]] = {}
-    for ledger in sorted(SHADOW.glob("ledger_*.json")):
+    _COLUMN_STATUS.clear()
+    own: dict[str, str] = {}
+    for col, clock in COLUMN_CLOCKS.items():
+        path, status, why = _fl.resolve(clock, [SHADOW])
+        _COLUMN_STATUS[col] = {"clock": clock, "status": status, "ledger": path.name if path else None,
+                               "why": _fl.public_text(why), "forward_days": 0}
+        if path is not None:
+            own[path.name] = col
+    for col, why in UNMAPPED_COLUMNS.items():
+        _COLUMN_STATUS[col] = {"clock": None, "status": "UNMEASURED", "why": why}
+    for ledger in _fl.iter_ledgers(SHADOW):
         rows = _read(ledger)
         if not isinstance(rows, list) or not rows:
             continue
-        name = ledger.stem[len("ledger_"):]
+        name = _fl.label_of(ledger)
         by_day: dict[str, float] = {}
         for row in rows:
             if not isinstance(row, dict):
@@ -81,6 +131,10 @@ def daily_series() -> dict[str, dict[str, float]]:
                 continue
         if by_day:
             out[name] = by_day
+            col = own.get(ledger.name)
+            if col is not None:
+                out[col] = by_day
+                _COLUMN_STATUS[col].update(status="JOINED", forward_days=len(by_day))
     return out
 
 

@@ -40,7 +40,7 @@ import hashlib
 import json
 import os
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -227,6 +227,56 @@ def read_rows(key: str, dirs: Iterable[Path], shared: Mapping[str, Any] | None =
     if not isinstance(doc, list):
         return None, NO_LEDGER, f"{path} is not a list of trades"
     return [r for r in doc if isinstance(r, dict)], OWN, str(path)
+
+
+def frozen_names(dirs: Iterable[Path | str] | Path | str) -> frozenset[str]:
+    """Every legacy file name frozen as shared in the registry of ANY of `dirs`.
+
+    A mirror (`backups/moat/shadow_ledgers`) may hold a stale copy of a shared file without its
+    own registry, so a reader of several directories refuses a name any one of them froze.
+    """
+    if isinstance(dirs, (str, Path)):
+        dirs = [dirs]
+    out: set[str] = set()
+    for d in dirs:
+        out |= set(load_shared(Path(d)))
+    return frozenset(out)
+
+
+def iter_ledgers(dirs: Iterable[Path | str] | Path | str, pattern: str = "ledger_*.json",
+                 *, also_frozen: Iterable[str] = ()) -> Iterator[Path]:
+    """Every per-clock ledger under `dirs`, each file name once (the first directory wins).
+
+    THE ONE WAY A READER WALKS THE SHADOW LEDGERS. A frozen legacy file (one several clock keys
+    wrote) is skipped: its rows carry no key, so it is no clock's series, and a glob that read it
+    published one clock's trades under another's name -- or a mirror's stale copy beside the
+    clock's own file. `also_frozen` lets a caller holding every key pass `collisions(keys)` so a
+    box that has not yet written its registry still refuses a shared file.
+
+    The label of a yielded file (`label_of`) is unique per clock key, because every non-frozen
+    name is `per_key_name` / `own_name` of exactly one key.
+    """
+    if isinstance(dirs, (str, Path)):
+        dirs = [dirs]
+    ds = [Path(d) for d in dirs]
+    frozen = frozen_names(ds) | frozenset(also_frozen)
+    seen: set[str] = set()
+    for d in ds:
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob(pattern)):
+            if f.name in seen or f.name in frozen or not f.is_file():
+                continue
+            seen.add(f.name)
+            yield f
+
+
+def label_of(path: Path | str) -> str:
+    """A ledger's sleeve label: its name without `ledger_` / `.json`. Unique per clock key for any
+    file `iter_ledgers` yields, and it still splits on `_` into symbol, family and window."""
+    name = Path(path).name
+    stem = name[:-len(".json")] if name.endswith(".json") else Path(path).stem
+    return stem[len("ledger_"):] if stem.startswith("ledger_") else stem
 
 
 _REPO = Path(__file__).resolve().parents[2]
