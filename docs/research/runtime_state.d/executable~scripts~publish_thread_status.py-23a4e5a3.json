@@ -1,0 +1,35 @@
+{
+ "organ": "executable:scripts/publish_thread_status.py",
+ "kind": "executable",
+ "code": [
+  "scripts/publish_thread_status.py"
+ ],
+ "clock": "invoked:ops/refresh_desk_state.sh",
+ "cadence_s": 180,
+ "max_silence_s": 360,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "web/threads.json",
+ "artifact_declared": "web/threads.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "UNMEASURED",
+ "consumer": "web/terminal.html",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-18T08:32:48+00:00",
+ "only_missing": {
+  "at": "2026-11-18T08:32:48+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
