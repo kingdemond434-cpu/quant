@@ -642,6 +642,7 @@ def build() -> dict[str, Any]:
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
             "resident": resident,
+            "lane": (manifest.get(name) or {}).get("lane") or None,
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
