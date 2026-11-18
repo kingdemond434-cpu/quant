@@ -194,6 +194,20 @@ def ap5(desk: Path) -> dict[str, Any]:
 # ------------------------------------------------- versioned specification completion
 #: The acceptance audit's own freshness bound (global_research_acceptance.MAX_RUNTIME_AGE_H).
 SPEC_MAX_AGE_H = 26.0
+#: A report stamped slightly in the future is clock skew between hosts, not staleness.
+SPEC_FUTURE_SKEW_H = 5.0 / 60.0
+
+
+def _partial_count(entry: Any) -> int | None:
+    """The PARTIAL count of one by_specification entry, or None when it cannot be read."""
+    if not isinstance(entry, dict):
+        return None
+    v = entry.get("PARTIAL")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v or v < 0:
+        return None
+    if isinstance(v, float) and not v.is_integer():
+        return None
+    return int(v)
 
 
 def specification_completion(desk: Path, now: datetime) -> dict[str, Any]:
@@ -212,15 +226,25 @@ def specification_completion(desk: Path, now: datetime) -> dict[str, Any]:
     age_h = None if at is None else round((now - at).total_seconds() / 3600.0, 3)
     raw_spec = doc.get("by_specification")
     by_spec: dict[str, Any] = raw_spec if isinstance(raw_spec, dict) else {}
-    partial = sorted(k for k, v in by_spec.items()
-                     if isinstance(v, dict) and int(v.get("PARTIAL") or 0) > 0)
+    counts = {str(k): _partial_count(v) for k, v in by_spec.items()}
+    partial = sorted(k for k, n in counts.items() if n is not None and n > 0)
+    raw_claimed = doc.get("complete_against") or []
+    claimed = [str(k) for k in raw_claimed] if isinstance(raw_claimed, list) else []
+    # A version whose PARTIAL count cannot be read, or a claimed version with no entry at all,
+    # is UNMEASURED -- never a silent zero that would let an absence resolve clean.
+    unmeasurable = sorted({k for k, n in counts.items() if n is None}
+                          | {k for k in claimed if k not in counts})
     base = {"by_specification": by_spec, "partial_against": partial, "age_h": age_h,
+            "unmeasurable_against": unmeasurable,
             "release": doc.get("release"), "open_blockers": doc.get("open_blockers"),
             "ownerless_blockers": list(doc.get("ownerless_blockers") or [])}
-    if age_h is None or age_h > SPEC_MAX_AGE_H or age_h < 0:
+    if age_h is None or age_h > SPEC_MAX_AGE_H or age_h < -SPEC_FUTURE_SKEW_H:
         return {**base, "measured": False, "complete_against": [],
                 "why": f"acceptance report stamp unusable or stale (age_h={age_h})"}
-    claimed = [str(k) for k in doc.get("complete_against") or []]
+    if not isinstance(raw_spec, dict) or not isinstance(raw_claimed, list) or unmeasurable:
+        return {**base, "measured": False, "complete_against": [],
+                "why": "by_specification / complete_against malformed or missing for "
+                       f"{unmeasurable or 'the report'}"}
     # Re-derive rather than trust: a version named complete must have nothing PARTIAL in it.
     complete = sorted(k for k in claimed if k in by_spec and k not in partial)
     return {**base, "measured": True, "complete_against": complete,

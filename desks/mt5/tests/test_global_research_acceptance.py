@@ -21,7 +21,7 @@ INSTITUTION = ROOT / "docs" / "research" / "miniature_institution_acceptance_v1.
 NOW = datetime(2026, 10, 7, tzinfo=UTC)
 OWNER = "thread:Growth allocator overhaul"
 REGISTRY = ["Growth allocator overhaul", "Institutional flow in country packs"]
-METRIC = {"metric": "gap_count", "before": 3, "after": 0}
+METRIC = {"metric": "gap_count", "before": 3, "after": 0, "direction": "decrease"}
 
 
 def _git_commit(root: Path) -> str:
@@ -238,7 +238,8 @@ def test_deleting_a_tracked_gap_blocker_does_not_turn_the_requirement_green(
         "id": "v5", "gap": "function_map:V5", "owner": OWNER, "why": "w",
         "status": "CLOSED", "proof": {"commit": sha, "artifact": "impl.py",
                                       "after_metric": {"metric": "drift_blocked",
-                                                       "before": 0, "after": 1}}}]}, **tracked)
+                                                       "before": 0, "after": 1,
+                                                       "direction": "increase"}}}]}, **tracked)
     # Only the (deliberately undeclared) runtime remains: the gap is closed WITH proof.
     assert proven["rows"][0]["missing_evidence"] == ["runtime:UNDECLARED"]
     assert proven["rows"][0]["closed_blockers"][0]["effective_status"] == "CLOSED"
@@ -337,6 +338,21 @@ GOOD = "HEAD"  # replaced with the fixture root's real commit inside the test
       "after_metric": {"metric": "m", "before": "3", "after": "0"}}, "proof_after_metric"),
     ({"commit": GOOD, "artifact": "impl.py",
       "after_metric": {"metric": "", "before": 3, "after": 0}}, "proof_after_metric"),
+    # The metric must IMPROVE in its declared direction: worse, flat or undeclared is no proof.
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 0, "after": 3, "direction": "decrease"}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 3, "after": 0, "direction": "increase"}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 3, "after": 3, "direction": "decrease"}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 3, "after": 0}}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 3, "after": 0, "direction": "down"}},
+     "proof_after_metric"),
 ])
 def test_closed_without_proof_scores_as_still_open(tmp_path: Path, proof, defect) -> None:
     root = _fixture_root(tmp_path)
@@ -427,3 +443,25 @@ def test_no_acceptance_organ_writes_the_deadman_rail(tmp_path: Path) -> None:
     uses = [ln.strip() for ln in source.splitlines()
             if "TIER3_NEVER_EDIT" in ln and not ln.startswith("TIER3_NEVER_EDIT =")]
     assert uses and all("in TIER3_NEVER_EDIT" in u for u in uses), uses
+
+
+def test_a_cross_cutting_blocker_counts_once_in_open_blockers(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    reqs = [{"id": f"MI0{i}", "title": "x", "priority": "P0", "lane": "production",
+             "implementation": ["impl.py"], "tests": ["test_impl.py"],
+             "consumers": ["consumer.py"], "runtime": [], "blockers": []} for i in (1, 2, 3)]
+    reqs[0]["blockers"] = [{"id": "own", "owner": OWNER, "why": "w"}]
+    (root / "add.json").write_text(json.dumps({
+        "specification": "ADD_V1", "owner_registry": REGISTRY, "requirements": reqs,
+        "cross_cutting_blockers": [{"id": "shared", "owner": OWNER, "why": "w"}]}), "utf-8")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "BASE", "completion_rule": "strict",
+                                    "frontier_rule": "open", "addenda": ["add.json"],
+                                    "requirements": []}), "utf-8")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json", now=NOW)
+    # Every requirement is still held PARTIAL by the shared defect...
+    for row in got["rows"]:
+        assert "blocker:shared" in row["missing_evidence"], row["id"]
+        assert row["status"] == "PARTIAL"
+    # ...but it is one defect: 1 shared + 1 own, not 3 shared + 1 own.
+    assert got["open_blockers"] == 2

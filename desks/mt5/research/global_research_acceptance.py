@@ -170,11 +170,26 @@ def _finite_number(value: Any) -> bool:
             and math.isfinite(value))
 
 
+#: The declared direction in which an ``after_metric`` must move for a close to count.
+METRIC_DIRECTIONS = frozenset({"increase", "decrease"})
+
+
 def _after_metric_ok(metric: Any) -> bool:
-    """``{"metric": <name>, "before": <number>, "after": <number>}``, both finite numbers."""
-    return (isinstance(metric, dict) and isinstance(metric.get("metric"), str)
+    """``{"metric", "before", "after", "direction"}``: finite numbers that IMPROVED.
+
+    ``direction`` is ``"increase"`` or ``"decrease"``; the after value must be strictly better
+    than the before value in that direction.  A close whose metric stood still or got worse is
+    not proof that the gap shut, and an undeclared direction cannot be judged at all.
+    """
+    if not (isinstance(metric, dict) and isinstance(metric.get("metric"), str)
             and bool(metric["metric"].strip())
-            and _finite_number(metric.get("before")) and _finite_number(metric.get("after")))
+            and _finite_number(metric.get("before")) and _finite_number(metric.get("after"))):
+        return False
+    direction = metric.get("direction")
+    if direction not in METRIC_DIRECTIONS:
+        return False
+    before, after = float(metric["before"]), float(metric["after"])
+    return after > before if direction == "increase" else after < before
 
 
 def blocker_state(blocker: dict[str, Any], root: Path,
@@ -184,7 +199,8 @@ def blocker_state(blocker: dict[str, Any], root: Path,
     A declared CLOSED counts only with proof that is checked, not merely well-formed: a commit
     that resolves in this repo (``git cat-file -e <sha>^{commit}``; git unavailable fails
     closed), a repo-relative regular file inside the root, and a structured numeric
-    ``after_metric`` ``{"metric", "before", "after"}``.  Anything less is INVALID_CLOSE, which
+    ``after_metric`` ``{"metric", "before", "after", "direction"}`` whose after value improved
+    on the before value in the declared direction.  Anything less is INVALID_CLOSE, which
     the scorer treats exactly like OPEN: saying a gap is shut is not evidence that it is.
     An owner that is not ``thread:<name>`` with a registered name is ``owner_missing``.
     """
@@ -245,6 +261,9 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
                     required_gaps.setdefault(str(rid), []).append(str(gap["gap"]))
     ownerless: list[str] = []
     open_blockers = 0
+    # A cross-cutting blocker is ONE defect that blocks every requirement of its addendum: it
+    # marks each of them PARTIAL, but is counted once in open_blockers.
+    counted_shared: set[int] = set()
     rows: list[dict[str, Any]] = []
     for req in requirements:
         checks: dict[str, Any] = {}
@@ -283,6 +302,7 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
         blockers: list[dict[str, Any]] = []
         closed: list[dict[str, Any]] = []
         rid = str(req.get("id"))
+        shared_here = {id(b) for b in cross_cutting.get(rid, [])}
         for b in [*(req.get("blockers") or []), *cross_cutting.get(rid, [])]:
             if not isinstance(b, dict):
                 continue
@@ -295,7 +315,11 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
                 closed.append(row_b)
                 continue
             blockers.append(row_b)
-            open_blockers += 1
+            if id(b) not in shared_here:
+                open_blockers += 1
+            elif id(b) not in counted_shared:
+                counted_shared.add(id(b))
+                open_blockers += 1
             if state == "INVALID_CLOSE":
                 why = ",".join(p for p in problems if p.startswith("proof_"))
                 missing.append(f"blocker:{b.get('id')}:closed_without_proof:{why}")

@@ -121,3 +121,37 @@ def test_absent_or_stale_acceptance_completes_against_nothing(tmp_path: Path) ->
                 complete_against=["A_V1"])
     spec = cap.specification_completion(desk, NOW)
     assert spec["measured"] is False and spec["complete_against"] == []
+
+
+def test_an_unreadable_partial_count_is_unmeasured_not_clean(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    for bad in ({"PARTIAL": "two"}, {"CURRENT_VERIFIED": 3}, "complete", None,
+                {"PARTIAL": True}, {"PARTIAL": 1.5}):
+        _acceptance(desk, NOW - timedelta(hours=1),
+                    by_specification={"A_V1": {"PARTIAL": 0}, "B_V1": bad},
+                    complete_against=["A_V1", "B_V1"])
+        spec = cap.specification_completion(desk, NOW)
+        assert spec["measured"] is False and spec["complete_against"] == [], bad
+        assert spec["unmeasurable_against"] == ["B_V1"], bad
+
+
+def test_a_claimed_version_with_no_entry_is_unmeasured(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    _acceptance(desk, NOW - timedelta(hours=1),
+                by_specification={"A_V1": {"PARTIAL": 0}}, complete_against=["A_V1", "C_V1"])
+    spec = cap.specification_completion(desk, NOW)
+    assert spec["measured"] is False and spec["unmeasurable_against"] == ["C_V1"]
+    _acceptance(desk, NOW - timedelta(hours=1), complete_against=["A_V1"])
+    assert cap.specification_completion(desk, NOW)["measured"] is False
+
+
+def test_a_small_future_skew_is_fresh_but_a_large_one_is_not(tmp_path: Path) -> None:
+    desk = _desk(tmp_path)
+    good = {"A_V1": {"PARTIAL": 0}}
+    _acceptance(desk, NOW + timedelta(minutes=2), by_specification=good,
+                complete_against=["A_V1"])
+    spec = cap.specification_completion(desk, NOW)
+    assert spec["measured"] is True and spec["complete_against"] == ["A_V1"]
+    _acceptance(desk, NOW + timedelta(hours=2), by_specification=good,
+                complete_against=["A_V1"])
+    assert cap.specification_completion(desk, NOW)["measured"] is False
