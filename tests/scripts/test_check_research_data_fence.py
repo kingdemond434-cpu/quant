@@ -195,6 +195,8 @@ def test_an_unreadable_pin_file_or_module_fails_closed(tmp_path: Path) -> None:
 def test_a_tree_without_the_entry_points_fails_closed(tmp_path: Path) -> None:
     (tmp_path / fence.PINS).parent.mkdir(parents=True)
     (tmp_path / fence.PINS).write_text(_pins(), "utf-8")
+    (tmp_path / RS_FILE).parent.mkdir(parents=True)
+    (tmp_path / RS_FILE).write_text(RS_SRC, "utf-8")
     rep = fence.check(tmp_path)
     assert rep["ok"] is False and any("entry point" in v for v in rep["violations"])  # type: ignore[attr-defined]
 
