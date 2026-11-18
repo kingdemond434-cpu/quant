@@ -51,8 +51,11 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from mt5desk.config import DATA, REPORTS  # noqa: E402
+
+from libs.data.refused_hosts import guard, refusal  # fail closed on import
 
 OUT = DATA / "lake" / "alfred"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -111,6 +114,7 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
     # 1947 to today -- the distance from the oldest observation to the only vintage present.
     # A number that absurd is the file saying it has one vintage without knowing how to say so.
+    guard(API)          # FRED/ALFRED is refused on terms (2026-11-13): raises before the wire
     r = requests.get(API, params={"series_id": series_id, "api_key": key,
                                   "file_type": "json", "output_type": 2,
                                   "realtime_start": "1776-07-04",   # FRED's minimum
@@ -217,9 +221,23 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     wanted = {s.upper() for s in argv} or set(SERIES)
 
-    key = api_key()
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
               "requested": sorted(wanted)}
+    why = refusal(API)
+    if why:
+        # REFUSED ON TERMS (BACKLOG 609): FRED's terms refuse automated access on every route, so
+        # a key changes nothing. The vintage lake on disk stays as it is, labelled; nothing new.
+        report.update({"status": "BLOCKED_ON_TERMS", "reason": why, "written": 0,
+                       "missed_growth": {
+                           "mechanism": "alfred_terms_refusal",
+                           "lost": "new ALFRED first-release vintages for the macro state",
+                           "stand_in": "the vintage lake already on disk; no new vintages",
+                           "verdict": "a gap, not a zero"}})
+        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
+                                                      encoding="utf-8")
+        print(f"ALFRED BLOCKED_ON_TERMS -- {why}; nothing fetched.")
+        return 2
+    key = api_key()
 
     if not key:
         # FAILS CLOSED. The tempting fallback -- reuse fetch_fred's revised series and label it

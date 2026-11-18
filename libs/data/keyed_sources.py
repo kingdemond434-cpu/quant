@@ -302,7 +302,13 @@ def keyed_urlopen(req: urllib.request.Request | str, *, timeout: float, context:
     in the query or path): same TLS context, but every redirect goes through
     `SameHostAuthRedirect`, so the credential never follows a 30x to another host or down to
     http. Plain `urlopen` copies every header to whatever host a redirect names (audit of the
-    keyed fetches, 2026-10-07)."""
+    keyed fetches, 2026-10-07).
+
+    A host whose own terms refuse automated contact (`libs.data.refused_hosts`, e.g. FRED's
+    api.stlouisfed.org) raises `RefusedSource` here, before the wire: a key does not override
+    the owner's terms (BACKLOG 609)."""
+    from libs.data.refused_hosts import guard
+    guard(req.full_url if isinstance(req, urllib.request.Request) else str(req))
     return keyed_opener(context, secrets=secrets).open(req, timeout=timeout)
 
 

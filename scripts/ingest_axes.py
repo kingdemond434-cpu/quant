@@ -38,6 +38,13 @@ from pathlib import Path
 
 import certifi
 
+_REPO = Path(__file__).resolve().parent.parent
+if str(_REPO) not in __import__("sys").path:
+    __import__("sys").path.insert(0, str(_REPO))
+# Hosts whose own terms refuse automated contact (FRED, Cboe, Yahoo, ...): both transports below
+# refuse them before the wire (BACKLOG 609). No list, no ingester: unclear terms fail closed.
+from libs.data.refused_hosts import guard  # noqa: E402
+
 ROOT = Path("/home/quant/quant-platform")
 BRONZE = ROOT / "data/lake/bronze"
 CTX = ssl.create_default_context(cafile=certifi.where())
@@ -49,6 +56,7 @@ def curl(url: str, timeout: int = 90) -> bytes:
     """Some hosts (FRED, Treasury) serve curl but hang urllib -- TLS fingerprint blocking.
     Verified 2026-07-21: curl instant, urllib timed out twice on the same URL."""
     import subprocess
+    guard(url)
     r = subprocess.run(
         ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
          "-A", "Mozilla/5.0 (research; solo quant desk)", url],
@@ -59,6 +67,7 @@ def curl(url: str, timeout: int = 90) -> bytes:
 
 
 def fetch(url: str, timeout: int = 60) -> bytes:
+    guard(url)
     last: Exception | None = None
     for attempt in (1, 2):                       # one retry -- transient read timeouts
         try:

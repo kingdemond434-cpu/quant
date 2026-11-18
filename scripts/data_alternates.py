@@ -28,9 +28,13 @@ ROOT = Path(__file__).resolve().parent.parent
 PROVENANCE = ROOT / "data" / "data_route_provenance.json"
 TIMEOUT = 30
 UA = {"User-Agent": "Mozilla/5.0 (quant-desk data fixer)"}
+if str(ROOT) not in __import__("sys").path:
+    __import__("sys").path.insert(0, str(ROOT))
+from libs.data.refused_hosts import guard  # noqa: E402 -- fail closed: no list, no module
 
 
 def _get(url: str) -> bytes:
+    guard(url)                      # a host whose terms refuse automated contact: never the wire
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return r.read()
@@ -58,17 +62,12 @@ DBNOMICS_MIRROR: dict[str, tuple[str, str, str]] = {
 
 
 def fred_route(series_id: str) -> dict[str, float]:
-    """Primary: keyless fredgraph CSV."""
-    raw = _get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
-    out: dict[str, float] = {}
-    for row in csv.DictReader(io.StringIO(raw.decode("utf-8", "replace"))):
-        val = row.get(series_id) or row.get("VALUE") or ""
-        date = row.get("DATE") or row.get("observation_date") or ""
-        if date and val not in ("", "."):
-            out[date] = float(val)
-    if not out:
-        raise ValueError(f"fredgraph returned no rows for {series_id}")
-    return out
+    """FRED is REFUSED for every automated fetch (terms ruling 2026-11-13; BACKLOG 609). The route
+    stays named so provenance can say so, and raises before any request is built."""
+    from libs.data.refused_hosts import RefusedSource, refusal
+    why = refusal("https://fred.stlouisfed.org/graph/fredgraph.csv") or \
+        "FRED: refused for all automated fetches (terms ruling 2026-11-13)"
+    raise RefusedSource(f"BLOCKED_ON_TERMS: {why} ({series_id} not fetched)")
 
 
 def dbnomics_route(series_id: str) -> dict[str, float]:
@@ -116,8 +115,9 @@ def stooq_route(symbol: str) -> dict[str, float]:
 
 
 #: feed -> ordered (route_name, callable) pairs. First success wins; provenance is recorded.
+#: FRED left the route list on 2026-11-18 (terms refusal, BACKLOG 609): the primary publishers'
+#: own series, mirrored by DBnomics, are the only macro route.
 MACRO_ROUTES: list[tuple[str, Callable[[str], dict[str, float]]]] = [
-    ("fred", fred_route),
     ("dbnomics", dbnomics_route),
 ]
 

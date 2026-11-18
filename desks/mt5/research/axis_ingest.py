@@ -589,8 +589,17 @@ def lake_cells(axis: str, signals: list[str], universe: set[str],
     return out
 
 
+def ingest_usd_liquidity():
+    """WRESBAL, WTREGEN, RRPONTSYD and SOFR from their PRIMARY publishers (Fed Board H.4.1, NY
+    Fed, Treasury FiscalData), each point stamped with its event and publication time -- the
+    lawful replacement for those four FRED series (BACKLOG 609). See usd_liquidity_primary."""
+    import usd_liquidity_primary
+    return usd_liquidity_primary.ingest()
+
+
 INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
               "fred": ingest_fred, "ecb": ingest_ecb,
+              "usd_liquidity": ingest_usd_liquidity,
               "gnn_forecast": ingest_gnn_forecast,
               "attention_forecast": ingest_attention_forecast}
 
