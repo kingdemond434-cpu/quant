@@ -159,7 +159,7 @@
     "new_source_deployed": false,
     "account_identity": {
       "Fusion": "FusionMarkets-Live/ACCOUNT_REDACTED",
-      "E8": "E8TradeLockerPro/2478877 (previous authenticated snapshot)"
+      "E8": "E8TradeLockerPro/<redacted login> (previous authenticated snapshot)"
     },
     "live_book_or_arm_modified_by_assistant": false
   },
