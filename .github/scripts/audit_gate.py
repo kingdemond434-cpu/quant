@@ -679,22 +679,51 @@ def newest_run_id(
 
 #: Seconds any one gh call may take before the gate gives up on it.
 GH_TIMEOUT_S = 120
+#: GitHub's own outage answers (independent_review.TRANSIENT, mirrored: that job runs `python -I`
+#: from ops/release and imports nothing from here). GitHub answers its rate limits with HTTP 403
+#: ("API rate limit exceeded", "secondary rate limit"), so `rate limit` is matched by text; any
+#: other 403 is a real refusal. Only a READ is retried: a merge, a label or a status write that
+#: got a 5xx may have happened, and doing it twice is not this function's call.
+_TRANSIENT = re.compile(
+    r"HTTP (?:429|5\d\d)\b|rate limit|timed? ?out|connection (?:reset|refused)|\bEOF\b",
+    re.IGNORECASE,
+)
+_GH_TRIES = 4
+#: Flags that make `gh api` write: -f/-F fields turn the call into a POST by themselves.
+_GH_WRITE_FLAGS = frozenset({"-X", "--method", "-f", "-F", "--field", "--raw-field", "--input"})
 
 
-def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
+def _gh(
+    *args: str,
+    data: Mapping[str, Any] | None = None,
+    timeout: float | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Any:
+    """One gh api call. A READ that gets GitHub's own outage answer (5xx, 429, a rate limit,
+    a reset connection) is retried up to _GH_TRIES times with backoff (2026-10-29: a 503 on
+    pulls/492 failed a review and would have quarantined the PR for GitHub's fault). A write is
+    never retried, and neither is a TIMEOUT: a call that already ran GH_TIMEOUT_S is not asked
+    again inside the sweep, which holds the box's mutex while it waits (2026-11-03)."""
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    try:
-        p = _gh_run(cmd, data) if timeout is None else _gh_run(cmd, data, timeout)
-    except subprocess.TimeoutExpired as exc:
-        # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
-        # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
-        # As a RuntimeError every caller's per-PR handling logs it and the sweep goes on.
-        raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
+    read = data is None and not _GH_WRITE_FLAGS & set(args)
+    for attempt in range(_GH_TRIES if read else 1):
+        try:
+            p = _gh_run(cmd, data) if timeout is None else _gh_run(cmd, data, timeout)
+        except subprocess.TimeoutExpired as exc:
+            # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow
+            # check-runs read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no
+            # merge in between. As a RuntimeError every caller's per-PR handling logs it and the
+            # sweep goes on.
+            raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
+        if p.returncode == 0:
+            return json.loads(p.stdout) if p.stdout.strip() else None
+        err = p.stderr.strip()[:300]
+        if not (read and _TRANSIENT.search(err)) or attempt == _GH_TRIES - 1:
+            raise RuntimeError(f"gh api {' '.join(args)}: {err}")
+        sleep(2.0 * 2**attempt)
+    raise AssertionError("unreachable")
 
 
 def _gh_run(
