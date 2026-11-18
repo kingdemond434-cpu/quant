@@ -501,35 +501,64 @@ class _FamilyTimeout(BaseException):
     """Raised by the alarm; a BaseException so a family's own `except Exception` cannot eat it."""
 
 
+class _Unplain(TypeError):
+    """A family returned a value `_plain` has no exact form for: the family reads `error`
+    (UNMEASURED), never a placeholder that two different values could share (Auditor MF3)."""
+
+
 def _plain(x: Any) -> Any:
-    """A family's output as plain JSON: signals are dataclasses, namespaces, dicts or frames.
-    Anything else is reduced to its type name (never its repr: an address is not a decision)."""
+    """A family's output as plain JSON, exactly: signals are dataclasses, namespaces, dicts or
+    frames. A type with no exact form here raises `_Unplain`; nothing is ever reduced to a name."""
     import dataclasses
+    import datetime as dt
+    import decimal
+    import enum
 
     import numpy as np
     import pandas as pd
 
+    if x is None or isinstance(x, (bool, str)):
+        return x
+    if x is pd.NaT:
+        return None
+    if isinstance(x, enum.Enum):
+        return _plain(x.value)
+    if isinstance(x, (int, float, np.generic)) and not isinstance(x, (np.datetime64,)):
+        v = x.item() if isinstance(x, np.generic) else x
+        if isinstance(v, float):
+            return None if v != v else round(v, 9)
+        if isinstance(v, (bool, int, str)) or v is None:
+            return v
+        raise _Unplain(type(x).__name__)
+    if isinstance(x, decimal.Decimal):
+        return str(x)
+    if isinstance(x, (dt.datetime, dt.date, dt.time)):  # pd.Timestamp is a datetime
+        return x.isoformat()
+    if isinstance(x, dt.timedelta):  # pd.Timedelta is a timedelta
+        return x.total_seconds()
+    if isinstance(x, np.datetime64):
+        return _plain(pd.Timestamp(x))
     if isinstance(x, dict):
         return {str(k): _plain(v) for k, v in sorted(x.items(), key=lambda kv: str(kv[0]))}
     if isinstance(x, (list, tuple)):
         return [_plain(v) for v in x]
+    if isinstance(x, (set, frozenset)):
+        return sorted((_plain(v) for v in x), key=lambda v: json.dumps(v, sort_keys=True))
+    if isinstance(x, np.ndarray):
+        return _plain(x.tolist())
     if isinstance(x, pd.DataFrame):
         return _plain(x.reset_index().to_dict("records"))
-    if isinstance(x, pd.Series):
-        return _plain(x.reset_index().to_dict("records"))
+    if isinstance(x, (pd.Series, pd.Index)):
+        return _plain(
+            x.to_frame().reset_index().to_dict("records")
+            if isinstance(x, pd.Series)
+            else x.tolist()
+        )
     if dataclasses.is_dataclass(x) and not isinstance(x, type):
         return _plain(dataclasses.asdict(x))
     if isinstance(x, types.SimpleNamespace):
         return _plain(vars(x))
-    if isinstance(x, (pd.Timestamp,)):
-        return x.isoformat()
-    if isinstance(x, np.generic):
-        x = x.item()
-    if isinstance(x, float):
-        return None if x != x else round(x, 9)
-    if x is None or isinstance(x, (bool, int, str)):
-        return x
-    return f"<{type(x).__name__}>"
+    raise _Unplain(type(x).__name__)
 
 
 def families_leg(tree: Path, scenario: dict[str, Any]) -> dict[str, Any]:
@@ -566,14 +595,15 @@ def families_leg(tree: Path, scenario: dict[str, Any]) -> dict[str, Any]:
     # family (or its door, or the bandit) ran and returned. A call that raised or timed out adds
     # nothing, so code only it reached stays UNMEASURED.
     root = str(tree.resolve()) + "/"
-    ran: set[tuple[str, str]] = set()
-    call: set[tuple[str, str]] = set()
+    ran: set[tuple[str, str, int]] = set()
+    call: set[tuple[str, str, int]] = set()
+    reach: dict[str, list[str]] = {}
 
     def _prof(frame: Any, event: str, arg: Any) -> None:
         if event == "call":
             co = frame.f_code
             if co.co_filename.startswith(root):
-                call.add((co.co_filename, co.co_qualname))
+                call.add((co.co_filename, co.co_qualname, co.co_firstlineno))
 
     def _clean(ok: bool) -> None:
         if ok:
@@ -602,46 +632,65 @@ def families_leg(tree: Path, scenario: dict[str, Any]) -> dict[str, Any]:
             for name in names:
                 random.seed(name)
                 np.random.seed(len(name))
-                signal.setitimer(signal.ITIMER_REAL, FAMILY_TIMEOUT_S)
                 fn = None
                 ok = False
-                sys.setprofile(_prof)
-                try:
-                    fn = families.get_family_func(name)
-                    extra, why = (
-                        (None, "no constructor")
-                        if fn is None
-                        else family_inputs.resolve(FAMILY_SYMBOL, name, {}, frame.copy())
-                    )
-                    if fn is None or extra is None:
-                        out[name] = {"unresolved": str(why).replace(str(tree), "<tree>")[:200]}
-                    else:
-                        sig = _plain(fn(frame.copy(), **extra))
-                        blob = json.dumps(sig, sort_keys=True, default=str).encode()
-                        n = len(sig) if isinstance(sig, list) else 1
-                        out[name] = {"n": n, "sha": hashlib.sha256(blob).hexdigest()}
-                    ok = True
+                try:  # SF1: an alarm landing after the body, before the disarm, is caught here
+                    try:
+                        signal.setitimer(signal.ITIMER_REAL, FAMILY_TIMEOUT_S)
+                        sys.setprofile(_prof)
+                        fn = families.get_family_func(name)
+                        extra, why = (
+                            (None, "no constructor")
+                            if fn is None
+                            else family_inputs.resolve(FAMILY_SYMBOL, name, {}, frame.copy())
+                        )
+                        if fn is None or extra is None:
+                            why = str(why).replace(str(tree), "<tree>")[:200]
+                            out[name] = {"unresolved": why}
+                        else:
+                            sig = _plain(fn(frame.copy(), **extra))
+                            blob = json.dumps(sig, sort_keys=True).encode()
+                            n = len(sig) if isinstance(sig, list) else 1
+                            out[name] = {"n": n, "sha": hashlib.sha256(blob).hexdigest()}
+                        ok = True
+                    except _FamilyTimeout:
+                        out[name] = {"timeout": FAMILY_TIMEOUT_S}
+                    except Exception as exc:  # the verdict IS the exception TYPE: UNMEASURED
+                        out[name] = {"error": type(exc).__name__}
+                    finally:
+                        signal.setitimer(signal.ITIMER_REAL, 0)
+                        sys.setprofile(None)
                 except _FamilyTimeout:
-                    out[name] = {"timeout": FAMILY_TIMEOUT_S}
-                except Exception as exc:  # the verdict IS the exception TYPE: UNMEASURED
-                    out[name] = {"error": type(exc).__name__}
-                finally:
-                    sys.setprofile(None)
                     signal.setitimer(signal.ITIMER_REAL, 0)
-                    _clean(ok)
+                    sys.setprofile(None)
+                    out[name] = {"timeout": FAMILY_TIMEOUT_S}
+                    ok = False
+                reach[name] = sorted({f for f, _q, _l in call})
+                _clean(ok)
                 src = None
                 with contextlib.suppress(Exception):
                     src = inspect.getsourcefile(inspect.unwrap(fn)) if fn is not None else None
                 files[name] = str(Path(src).resolve()) if src else None
-                sys.setprofile(_prof)
-                try:
-                    clusters[name] = bandit._cluster_of({"family": name})
-                    _clean(True)
-                except Exception as exc:
-                    clusters[name] = f"error:{type(exc).__name__}"
-                    _clean(False)
-                finally:
+                ok = False
+                try:  # SF2: the bandit's call is bounded too; a timeout reads error:timeout
+                    try:
+                        signal.setitimer(signal.ITIMER_REAL, FAMILY_TIMEOUT_S)
+                        sys.setprofile(_prof)
+                        clusters[name] = bandit._cluster_of({"family": name})
+                        ok = True
+                    except _FamilyTimeout:
+                        clusters[name] = "error:timeout"
+                    except Exception as exc:
+                        clusters[name] = f"error:{type(exc).__name__}"
+                    finally:
+                        signal.setitimer(signal.ITIMER_REAL, 0)
+                        sys.setprofile(None)
+                except _FamilyTimeout:
+                    signal.setitimer(signal.ITIMER_REAL, 0)
                     sys.setprofile(None)
+                    clusters[name] = "error:timeout"
+                    ok = False
+                _clean(ok)
     finally:
         sys.setprofile(None)
         signal.setitimer(signal.ITIMER_REAL, 0)
@@ -654,10 +703,11 @@ def families_leg(tree: Path, scenario: dict[str, Any]) -> dict[str, Any]:
         }
     )
     by_file: dict[str, list[str]] = {}
-    for f, q in sorted(ran):
-        by_file.setdefault(f, []).append(q)
+    for f, q, line in sorted(ran):
+        by_file.setdefault(f, []).append(f"{q}@{line}")
     return {
         "out": out, "files": files, "clusters": clusters, "reached": reached, "ran": by_file,
+        "reach": reach,
     }  # fmt: skip
 
 
@@ -791,7 +841,7 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     if scenario.get("families"):  # after `imported`: its reach counts only where it agreed
         try:
             result["families"] = families_leg(tree, scenario)
-        except Exception as exc:
+        except (Exception, _FamilyTimeout) as exc:  # SF1: the alarm is a BaseException
             result["families"] = {"error": type(exc).__name__}
             print(f"families leg raised {type(exc).__name__}", file=sys.stderr)
     if scenario.get("fusion_roster") is not None:  # after `imported`: it measures data only

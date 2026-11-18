@@ -1079,49 +1079,77 @@ def roster_grid() -> dict[str, Any]:
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
 
 
+def _kind(o: Any) -> str:
+    """A family's outcome kind: ok (signals), unresolved (the door refused), error, timeout."""
+    if not isinstance(o, dict):
+        return "missing"
+    return next((k for k in ("error", "timeout", "unresolved") if k in o), "ok")
+
+
 def families_diff(
     b: Any, h: Any, sid: str, base_root: str, head_root: str
-) -> tuple[list[str], dict[str, set[str]], dict[str, set[str]]]:
+) -> tuple[list[str], dict[str, set[str]], dict[str, set[str]], set[str]]:
     """The families leg (replay_child.families_leg) on one scenario, base against head.
 
-    Returns (problems, ran on the base, ran on the head): per repository file, the functions a
-    family, its input door or the bandit entered during a call that returned cleanly
-    (`families_measured` turns those into coverage). A family that raised or timed out added
-    nothing to either, so code only it reached stays UNMEASURED and is never a match. A base leg
-    that did not run measures nothing and fails nothing; a head leg that did not run where the
-    base did, a family that raises on the head and not the base, a removed family, a family
-    whose signals or input refusal differ, and a family whose alpha cluster moves are problems."""
+    Returns (problems, ran on the base, ran on the head, excluded): per repository file, the
+    code units (`qualname@first line`, as the profiler spells them) a family, its input door or
+    the bandit entered during a call that returned cleanly, which `families_measured` turns into
+    coverage. A family that raised or timed out added nothing to either, so code only it reached
+    stays UNMEASURED and is never a match.
+
+    THE OUTCOME KINDS MUST AGREE (Auditor MF2 on #1363). Only error/error and timeout/timeout
+    are skipped (UNMEASURED). A head that raises where the base ran FAILS; every other
+    difference in kind (ok against timeout either way, an error the head no longer raises)
+    EXCLUDES from coverage every file the family's call reached on either tree, so a shared
+    helper that hangs one family cannot read as measured through another. A base leg that did
+    not run measures nothing and fails nothing; a head leg that did not run where the base did,
+    a removed family, differing signals or input refusals, and a moved alpha cluster FAIL."""
+
+    def rel(f: Any, root: str) -> str | None:
+        f = str(f)
+        return Path(f).relative_to(root).as_posix() if f.startswith(root + "/") else None
 
     def ran(leg: dict[str, Any], root: str) -> dict[str, set[str]]:
         out: dict[str, set[str]] = {}
         for f, qs in (leg.get("ran") or {}).items():
-            if str(f).startswith(root + "/"):
-                rel = Path(f).relative_to(root).as_posix()
-                out[rel] = {str(q).split(".<locals>")[0] for q in qs}
+            r = rel(f, root)
+            if r:
+                out[r] = {str(q) for q in qs}
         return out
+
+    def reach(leg: dict[str, Any], root: str, name: str) -> set[str]:
+        got = {rel(f, root) for f in (leg.get("reach") or {}).get(name) or []}
+        own = rel((leg.get("files") or {}).get(name) or "", root)
+        return {f for f in (*got, own) if f}
 
     def safe(x: Any) -> str:
         return str(x) if SAFE_NAME.match(str(x)) else "<name>"
 
     if not isinstance(b, dict) or "error" in b or not isinstance(b.get("out"), dict):
-        return [], {}, {}
+        return [], {}, {}, set()
     if not isinstance(h, dict) or "error" in h or not isinstance(h.get("out"), dict):
         kind = safe(h.get("error")) if isinstance(h, dict) else "missing"
-        return [f"{sid}: the PR's families leg did not run ({kind})"], {}, {}
+        return [f"{sid}: the PR's families leg did not run ({kind})"], {}, {}, set()
     problems: list[str] = []
+    excluded: set[str] = set()
     bo, ho = b["out"], h["out"]
     for name in sorted(set(bo) | set(ho)):
         x, y = bo.get(name), ho.get(name)
-        if x is None:
+        kx, ky = _kind(x), _kind(y)
+        if kx == "missing":
+            if ky in ("error", "timeout"):
+                excluded |= reach(h, head_root, name)
             continue  # a family only the head has: new code, judged as a new file is
-        if y is None:
+        if ky == "missing":
             problems.append(f"{sid}: families leg: the PR removes family {safe(name)}")
-        elif "error" in x or "timeout" in x or "timeout" in y:
-            continue  # the base cannot measure it, or a bound ran out: UNMEASURED, not a match
-        elif "error" in y:
+        elif kx == ky and kx in ("error", "timeout"):
+            continue  # symmetric: neither tree measured it, UNMEASURED, never a match
+        elif ky == "error":
             problems.append(
                 f"{sid}: families leg: {safe(name)} raises on the PR ({safe(y['error'])})"
             )
+        elif (kx != ky and "timeout" in (kx, ky)) or kx == "error":
+            excluded |= reach(b, base_root, name) | reach(h, head_root, name)
         elif canon(x) != canon(y):
             problems.append(f"{sid}: families leg: {safe(name)} decides differently")
     bc, hc = b.get("clusters") or {}, h.get("clusters") or {}
@@ -1131,29 +1159,92 @@ def families_diff(
                 f"{sid}: alpha cluster of {safe(name)} moves: "
                 f"base {safe(bc[name])} PR {safe(hc[name])}"
             )
-    return problems, ran(b, base_root), ran(h, head_root)
+    return problems, ran(b, base_root), ran(h, head_root), excluded
 
 
-def _units(src: str) -> dict[str, str]:
-    """A module as the units a profiler can see run: each top-level function, each method
-    (`Class.method`), each class body (`Class`) and the rest of the module (`<module>`)."""
-    out: dict[str, str] = {}
-    rest: list[str] = []
-    for node in ast.parse(src).body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            out[node.name] = ast.dump(node)
-        elif isinstance(node, ast.ClassDef):
-            body = []
-            for n in node.body:
-                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    out[f"{node.name}.{n.name}"] = ast.dump(n)
-                else:
-                    body.append(ast.dump(n))
-            head = [ast.dump(x) for x in (*node.bases, *node.keywords, *node.decorator_list)]
-            out[node.name] = "\n".join(head + body)
-        else:
-            rest.append(ast.dump(node))
-    out["<module>"] = "\n".join(rest)
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
+
+
+def _first_line(node: ast.AST) -> int:
+    """The line a code object's `co_firstlineno` names: a decorated def or class starts at its
+    first decorator."""
+    decos = getattr(node, "decorator_list", None) or []
+    return min([node.lineno, *(d.lineno for d in decos)])  # type: ignore[attr-defined]
+
+
+def _elided(node: ast.AST) -> str:
+    """`node` dumped with every NESTED scope's body cut out: a nested def, class or lambda is its
+    own unit, so only what the enclosing code evaluates (its name, decorators, bases, defaults)
+    stays in the enclosing unit (Auditor MF1)."""
+    import copy
+
+    def cut(n: ast.AST) -> None:
+        for child in ast.iter_child_nodes(n):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                child.body = [ast.Pass()]
+            elif isinstance(child, ast.Lambda):
+                child.body = ast.Constant(value="<elided>")
+            cut(child)
+
+    mine = copy.deepcopy(node)
+    cut(mine)
+    return ast.dump(mine)
+
+
+def _units(src: str) -> dict[tuple[str, int], tuple[str, int]]:
+    """A module as the units a profiler can see run, keyed (co_qualname, occurrence) and valued
+    (dump, first line). EVERY def, async def, class and lambda, at any depth (inside if, try,
+    with, another def or class), is its own unit, named as Python's co_qualname spells it; the
+    module body and each class body are units with their nested scopes elided. A unit whose
+    name the profiler would spell differently (a scope inside a comprehension) can never match
+    a run, so it fails closed."""
+    tree = ast.parse(src)
+    out: dict[tuple[str, int], tuple[str, int]] = {}
+    seen: dict[str, int] = {}
+
+    def add(q: str, node: ast.AST, line: int) -> None:
+        k = seen.get(q, 0)
+        seen[q] = k + 1
+        out[(q, k)] = (_elided(node), line)
+
+    def walk(node: ast.AST, prefix: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for part in (
+                    *child.decorator_list,
+                    child.args,
+                    *([child.returns] if child.returns else []),
+                ):
+                    walk_one(part, prefix)
+                q = prefix + child.name
+                add(q, child, _first_line(child))
+                for stmt in child.body:
+                    walk_one(stmt, q + ".<locals>.")
+            elif isinstance(child, ast.ClassDef):
+                for part in (*child.decorator_list, *child.bases, *child.keywords):
+                    walk_one(part, prefix)
+                q = prefix + child.name
+                body = ast.Module(body=child.body, type_ignores=[])
+                add(q, body, _first_line(child))
+                for stmt in child.body:
+                    walk_one(stmt, q + ".")
+            elif isinstance(child, ast.Lambda):
+                walk_one(child.args, prefix)
+                q = prefix + "<lambda>"
+                add(q, child.body, child.lineno)
+                walk_one(child.body, q + ".<locals>.")
+            elif isinstance(child, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                walk(child, prefix + "<comprehension>.")  # never a real qualname: fails closed
+            else:
+                walk(child, prefix)
+
+    def walk_one(node: ast.AST, prefix: str) -> None:
+        holder = ast.Module(body=[], type_ignores=[])
+        holder.body = [node]  # type: ignore[list-item]
+        walk(holder, prefix)
+
+    add("<module>", tree, 1)
+    walk(tree, "")
     return out
 
 
@@ -1161,24 +1252,30 @@ def families_measured(
     base: Path, head: Path, f: str, ran_b: dict[str, set[str]], ran_h: dict[str, set[str]]
 ) -> bool:
     """True when the families leg ran every unit of `f` that the PR changes, on each tree that
-    has it, inside calls that returned cleanly. A file the base lacks is new: it counts as
-    reached when its module body ran cleanly on the head (then `new_and_bounded` judges it)."""
+    has it, inside calls that returned cleanly: the unit's `qualname@first line` is in that
+    tree's run set. A file the base lacks is new: it counts as reached when its module body ran
+    cleanly on the head (then `new_and_bounded` judges it)."""
     if not f.endswith(".py"):
         return False
     bs, hs = read(base, f), read(head, f)
     if hs is None:
         return False
     if bs is None:
-        return "<module>" in ran_h.get(f, set())
+        return any(q.startswith("<module>@") for q in ran_h.get(f, set()))
     try:
         ub, uh = _units(bs), _units(hs)
     except SyntaxError:
         return False
-    changed = {u for u in set(ub) | set(uh) if ub.get(u) != uh.get(u)}
-    return all(
-        (u not in ub or u in ran_b.get(f, set())) and (u not in uh or u in ran_h.get(f, set()))
-        for u in changed
-    )
+    rb, rh = ran_b.get(f, set()), ran_h.get(f, set())
+    for u in set(ub) | set(uh):
+        x, y = ub.get(u), uh.get(u)
+        if x is not None and y is not None and x[0] == y[0]:
+            continue
+        if x is not None and f"{u[0]}@{x[1]}" not in rb:
+            return False
+        if y is not None and f"{u[0]}@{y[1]}" not in rh:
+            return False
+    return True
 
 
 def compare(
@@ -1219,6 +1316,7 @@ def compare(
     # the families leg: per file, the functions clean family calls ran on each tree
     fam_ran_b: dict[str, set[str]] = {}
     fam_ran_h: dict[str, set[str]] = {}
+    fam_excluded: set[str] = set()
     placed = 0
     ftmo_rows = 0
     # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
@@ -1236,10 +1334,11 @@ def compare(
             roster_legs = {"base": b.get("fusion_roster"), "head": h.get("fusion_roster")}
         base_root, head_root = str(base.resolve()), str(head.resolve())
         if sc.get("families"):
-            fp, rb, rh = families_diff(
+            fp, rb, rh, fx = families_diff(
                 b.get("families"), h.get("families"), sc["id"], base_root, head_root
             )
             problems += fp
+            fam_excluded |= fx
             for into, got in ((fam_ran_b, rb), (fam_ran_h, rh)):
                 for f, qs in got.items():
                     into.setdefault(f, set()).update(qs)
@@ -1300,7 +1399,11 @@ def compare(
         for f in touched
     ]
     closure = import_closure(base)
-    fam = {f for f in changed if families_measured(base, head, f, fam_ran_b, fam_ran_h)}
+    fam = {
+        f
+        for f in changed
+        if f not in fam_excluded and families_measured(base, head, f, fam_ran_b, fam_ran_h)
+    }
     head_imported |= {f for f in fam if read(base, f) is None}
     covered = imported | (fam - head_imported) | new_and_bounded(base, head, head_imported)
     roster_gaps: dict[str, list[str]] = {}
