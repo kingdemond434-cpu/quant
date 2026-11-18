@@ -59,6 +59,17 @@ try {
   Write-Output ("firewall: UNMEASURED -- " + $_.Exception.Message)
 }
 
+# RETIRE THE RANDOM QUICK TUNNEL (principal 2026-11-18): the fixed address replaces it. MT5-DeskTunnel ran
+# scripts\run_tunnel.py, which is deleted; its cloudflared children (one is an orphan) are stopped here.
+try {
+  Stop-ScheduledTask -TaskName 'MT5-DeskTunnel' -ErrorAction SilentlyContinue
+  Unregister-ScheduledTask -TaskName 'MT5-DeskTunnel' -Confirm:$false -ErrorAction SilentlyContinue
+  Get-Process -Name cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Write-Output 'tunnel: MT5-DeskTunnel unregistered, cloudflared stopped'
+} catch {
+  Write-Output ("tunnel: UNMEASURED -- " + $_.Exception.Message)
+}
+
 Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 4
 $state = (Get-ScheduledTask -TaskName $TaskName).State

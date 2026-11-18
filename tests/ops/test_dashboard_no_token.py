@@ -133,3 +133,14 @@ def test_no_address_is_written_into_the_repo_files() -> None:
             m for m in ip.findall(_code_lines(rel)) if not m.startswith(("127.", "0.0.0.", "8.8."))
         ]
         assert hits == [], (rel, hits)
+
+
+def test_installer_retires_the_quick_tunnel() -> None:
+    ps = (ROOT / "desks/mt5/scripts/install_desk_dashboard_task.ps1").read_text()
+    assert "Unregister-ScheduledTask -TaskName 'MT5-DeskTunnel'" in ps
+    assert "cloudflared" in ps
+
+
+def test_desk_page_reads_the_live_issues_shape() -> None:
+    html = (ROOT / "web/desk.html").read_text()
+    assert "S.issues.issues" in html and "Array.isArray(S.issues)" in html

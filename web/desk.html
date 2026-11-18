@@ -223,7 +223,7 @@ function pageExec(){
       )
     + panel('Issues', S.generated_at, table(
         [{h:'issue'},{h:'detail'}],
-        (S.issues||[]).slice(0,14).map(i=>typeof i==='string'?{issue:esc(i),detail:''}:{issue:esc(i.title||i.id||''),detail:esc(i.why||i.detail||'')}),
+        (Array.isArray(S.issues)?S.issues:((S.issues&&S.issues.issues)||[])).slice(0,14).map(i=>typeof i==='string'?{issue:esc(i),detail:''}:{issue:esc(i.title||i.what||i.id||i.key||''),detail:esc(i.why||i.detail||'')}),
         'no open issues reported'));
 }
 
