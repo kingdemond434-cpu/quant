@@ -1,7 +1,7 @@
 # MAKE THE BOX NEED NOBODY AFTER A REBOOT, AND MERGE WORKFLOW-FILE PRs ITSELF (2026-10-28).
 #
 # zuck: "I wish we could make it so even these become automated not needing me". Registers four
-# tasks for THIS user (interactive, elevated, the way the bridge watchdog and the FTMO follower
+# tasks for the desk user (interactive, elevated, the way the bridge watchdog and the FTMO follower
 # already run), all from admin-only copies under C:\ProgramData\QuantBox\bin:
 #
 #   Quant-BootSession   at logon:        ops\box\unattended_boot.ps1 -Mode Logon
@@ -9,29 +9,23 @@
 #   Quant-WorkflowGate  logon + 10 min:  ops\box\workflow_gate.ps1
 #   Quant-SignTrain     logon + 10 min:  ops\box\sign_train_leg.ps1  (the audit signs, D-20261027-003)
 #
-# and REPORTS (reads only) the two things only zuck can give, once:
+# THE DESK USER. Run by hand, the tasks are this user's. Run by the SYSTEM adopter
+# (ops\box\apply_installers.py, a `desk_user` row), -User names the account: SYSTEM's own
+# USERNAME is the machine account, so without -User a SYSTEM run refuses rather than register
+# interactive tasks nobody logs on as. -User is DOMAIN\name or name, nothing else.
 #
-#   AUTO-LOGON. The MT5 terminals need a logged-on desktop (see unattended_boot.ps1), so a reboot
-#   needs a logon. Windows auto-logon gives one without a person. This installer never sets it and
-#   never sees the password: with -StageAutologon it downloads Microsoft's Sysinternals Autologon
-#   (checked: Authenticode signature valid and signed by Microsoft) to C:\ProgramData\QuantBox\tools,
-#   and zuck runs it ONCE in RDP, typing the Administrator password into its dialog. It stores the
-#   password as an LSA secret, not as plain text in the registry. A plain-text DefaultPassword
-#   value, an AutoLogonCount (which turns auto-logon off after N logons) or a logon banner (which
-#   halts auto-logon at the banner) are reported as problems.
-#
-#   THE `workflow` SCOPE on zuck's gh login, which merging workflow-file PRs needs. If missing, zuck runs
-#   once:  gh auth refresh -h github.com -s workflow
+# The two things only zuck can give (the desktop logon after a reboot, and the gh `workflow`
+# scope) are reported and staged by ops\box\owner_steps.ps1, never by this installer, so this
+# one carries no credential step and the SYSTEM adopter may run it (zuck 2026-11-17 19:56Z).
 #
 # Idempotent; touches only these four tasks and C:\ProgramData\QuantBox.
 #
-#   powershell -NoProfile -ExecutionPolicy Bypass -File ops\box\install_unattended.ps1 [-StageAutologon]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File ops\box\install_unattended.ps1 [-User DOMAIN\name]
 
 [CmdletBinding()]
 param(
     [string] $Root = "C:\ProgramData\QuantBox",
-    [string] $Gh = "C:\Users\Administrator\tools\gh\bin\gh.exe",
-    [switch] $StageAutologon
+    [string] $User = ""
 )
 $ErrorActionPreference = 'Stop'
 $BinDir = Join-Path $Root "bin"
@@ -77,7 +71,15 @@ foreach ($name in @('unattended_boot.ps1', 'workflow_gate.ps1', 'sign_train_leg.
     "copied {0} (sha256 {1})" -f $dst, (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower().Substring(0, 12)
 }
 
-$user = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
+if ($User) {
+    if ($User -notmatch '^([A-Za-z0-9._-]{1,64}\\)?[A-Za-z0-9._-]{1,64}$') { throw "-User '$User' is not DOMAIN\name" }
+    $user = $User
+} else {
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    if ($me -eq 'S-1-5-18') { throw "run as SYSTEM without -User: refusing to register interactive tasks for the machine account" }
+    $user = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
+}
+"tasks are for $user"
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Highest
 function Every10 {
     # A DAILY trigger repeating for one day, never a long -Once (one expired on this box, 2026-09-21).
@@ -107,40 +109,3 @@ Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1' '' @($atLogon, (Every10)) 2
     'Sign moved sealed files whose CLEAR row is committed in SEAL_CLEARS.jsonl, and open the sign-train PR into LIVE, from a clean checkout of LIVE.'
 Start-ScheduledTask -TaskName 'Quant-BootRecord'
 
-if ($StageAutologon) {
-    $zip = Join-Path $ToolDir 'AutoLogon.zip'
-    $out = Join-Path $ToolDir 'AutoLogon'
-    Invoke-WebRequest -UseBasicParsing -Uri 'https://download.sysinternals.com/files/AutoLogon.zip' -OutFile $zip
-    Remove-Item -LiteralPath $out -Recurse -Force -ErrorAction SilentlyContinue
-    Expand-Archive -LiteralPath $zip -DestinationPath $out
-    $exe = Join-Path $out 'Autologon64.exe'
-    $sig = Get-AuthenticodeSignature -LiteralPath $exe
-    if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
-        Remove-Item -LiteralPath $out, $zip -Recurse -Force
-        throw "Autologon64.exe signature is $($sig.Status) / $($sig.SignerCertificate.Subject): deleted, not staged"
-    }
-    "staged $exe (Microsoft-signed)"
-}
-
-# ---------------------------------------------------------------- what zuck still has to give
-# Value NAMES only for the password: its presence is the finding; its content is never read.
-$wlKey = Get-Item -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-$wlNames = @($wlKey.GetValueNames())
-$wl = @{ AutoAdminLogon = $wlKey.GetValue('AutoAdminLogon'); DefaultUserName = $wlKey.GetValue('DefaultUserName');
-         AutoLogonCount = $wlKey.GetValue('AutoLogonCount') }
-$pol = Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -ErrorAction SilentlyContinue
-$problems = @()
-if ("$($wl.AutoAdminLogon)" -ne '1') { $problems += 'auto-logon is OFF' }
-elseif ("$($wl.DefaultUserName)" -ine $env:USERNAME) { $problems += "auto-logon is for '$($wl.DefaultUserName)', not $env:USERNAME" }
-if ($wlNames -contains 'DefaultPassword') { $problems += 'a PLAIN-TEXT DefaultPassword is in the registry: re-run Autologon64.exe (it moves it to an LSA secret)' }
-if ($null -ne $wl.AutoLogonCount) { $problems += "AutoLogonCount=$($wl.AutoLogonCount) will switch auto-logon off" }
-if ($pol -and ("$($pol.legalnoticecaption)$($pol.legalnoticetext)").Trim()) { $problems += 'a logon banner (legalnotice) halts auto-logon at the banner' }
-if ($problems.Count -eq 0) { "AUTO-LOGON: ON for $($wl.DefaultUserName)" }
-else {
-    "AUTO-LOGON NOT READY: " + ($problems -join '; ')
-    "  zuck, once, in RDP: run $(Join-Path $ToolDir 'AutoLogon\Autologon64.exe'), type the Administrator password, click Enable."
-}
-$ErrorActionPreference = 'Continue'
-$scopes = (& $Gh auth status -h github.com 2>&1 | Out-String) -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1
-if ($scopes -match "'workflow'") { "GH WORKFLOW SCOPE: present" }
-else { "GH WORKFLOW SCOPE: MISSING ($($scopes.Trim())). zuck, once:  $Gh auth refresh -h github.com -s workflow" }

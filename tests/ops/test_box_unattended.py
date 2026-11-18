@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BOX = ROOT / "ops" / "box"
 RAW = {
     name: (BOX / f"{name}.ps1").read_text(encoding="utf-8")
-    for name in ("unattended_boot", "workflow_gate", "install_unattended")
+    for name in ("unattended_boot", "workflow_gate", "install_unattended", "owner_steps")
 }
 
 
@@ -55,7 +55,7 @@ def test_the_tasks_run_interactive_as_this_user_from_admin_only_copies() -> None
 
 
 def test_autologon_is_only_reported_and_staged_signed_never_set() -> None:
-    inst = CODE["install_unattended"]
+    inst = CODE["owner_steps"]
     assert "GetValueNames()" in inst and "DefaultPassword" in inst  # presence only
     assert "Get-AuthenticodeSignature" in inst and "O=Microsoft Corporation" in inst
     assert "download.sysinternals.com/files/AutoLogon.zip" in inst
@@ -111,3 +111,23 @@ def test_the_workflow_gate_runs_the_trusted_gate_in_box_mode_with_zucks_login_on
 def test_the_gate_script_the_box_runs_has_the_box_mode() -> None:
     gate = (ROOT / ".github" / "scripts" / "audit_gate.py").read_text(encoding="utf-8")
     assert '"--sweep"' in gate and '"--box"' in gate
+
+
+def test_the_installer_carries_no_owner_step_so_the_system_adopter_may_run_it() -> None:
+    """2026-11-17: the auto-logon and gh-scope steps moved to owner_steps.ps1, so the SYSTEM
+    adopter's credential scan passes install_unattended.ps1 (zuck 19:56Z: no admin installs)."""
+    raw = RAW["install_unattended"]
+    assert not re.search(
+        r"autologon|gh\s+auth|get-credential|convertto-securestring|-password\b|cmdkey",
+        raw,
+        flags=re.I,
+    )
+    assert "ops\\box\\owner_steps.ps1" in raw
+
+
+def test_the_desk_user_is_named_never_the_machine_account() -> None:
+    inst = CODE["install_unattended"]
+    assert re.search(r"\[string\] \$User = \"\"", inst)
+    assert "if ($me -eq 'S-1-5-18') { throw" in inst  # SYSTEM without -User refuses
+    assert "is not DOMAIN\\name" in inst
+    assert inst.index("if ($User) {") < inst.index("New-ScheduledTaskPrincipal -UserId $user")
