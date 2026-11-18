@@ -35,6 +35,10 @@ if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 from research.mt5_session import attach_or_initialize, venue_refusal  # noqa: E402
 
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import moat_clock  # noqa: E402  (skew -> zone offset + clock drift + quote staleness)
+
 #: The desk's execution terminal (mt5desk/config.py TERMINAL_FILE; broker_switch writes it).
 TERMINAL_FILE = _DESK / "data" / "terminal_path.txt"
 BRONZE = Path(os.environ.get("MOAT_BRONZE", r"C:\moat\bronze"))
@@ -300,6 +304,10 @@ class Recorder:
             "disk_free_gb": round(disk_free_gb(), 2),
             "skew_ms_p50": skews[len(skews) // 2] if skews else None,
             "skew_ms_p95": skews[int(len(skews) * 0.95)] if skews else None,
+            # The two skew keys above SUM the broker's zone, the clock drift and how stale the
+            # newest quote was. Split them here (moat_clock.py) so a lead-lag or quote-lag reader
+            # subtracts the clock, not a quiet symbol's silence.
+            **moat_clock.split_skew(skews),
             **self.counters, **extra,
         }
         append_gz(BRONZE / "terminal_health" / f"{now:%Y%m%d}.jsonl.gz", [row])
