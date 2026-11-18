@@ -69,6 +69,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parents[1]
@@ -595,7 +602,7 @@ def load_series(shadow_dir: Path | None = None, live_ledger: Path | None = None
                 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]]]:
     """(forward {name: {day: R}}, live {name: {day: R}}) -- FORWARD PHASE and REAL FILLS only."""
     fwd: dict[str, dict[str, float]] = {}
-    for path in sorted((shadow_dir or SHADOW).glob("ledger_*.json")):
+    for path in _fl.iter_ledgers((shadow_dir or SHADOW)):
         rows = _read(path)
         if not isinstance(rows, list):
             continue
@@ -609,7 +616,7 @@ def load_series(shadow_dir: Path | None = None, live_ledger: Path | None = None
             if d and v is not None:
                 by[d] = by.get(d, 0.0) + v
         if by:
-            fwd[norm(path.stem[len("ledger_"):])] = by
+            fwd[norm(_fl.label_of(path))] = by
     live: dict[str, dict[str, float]] = {}
     for r in _read_jsonl(live_ledger or LIVE_LEDGER):
         name = str(r.get("sleeve") or "")

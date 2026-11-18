@@ -93,6 +93,9 @@ SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 UNIVERSE = DESK / "data" / "universe"
 LEDGER = DESK / "data" / "blind_review_ledger.jsonl"
 OUT = DESK / "reports" / "BLIND_REVIEW.json"
+#: The clock law's per-certificate status (shadow clock status copied per certificate). A
+#: certificate whose clock reads PROMOTION CANDIDATE is the next one the promoter may fund.
+CLOCK_LAW = DESK / "reports" / "CERTIFICATE_CLOCK_LAW.json"
 
 PASS, VETO, UNMEASURED = "PASS", "VETO", "UNMEASURED"
 
@@ -336,7 +339,8 @@ def _replay2_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
 
 def minimal_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
     """The contract hand-rolled, for a tree where neither engine imports: next-open entry,
-    intrabar stop and target with the STOP assumed first, TTL exit at the next open, one position
+    intrabar stop and target with the STOP assumed first, a bar opening through the stop exiting at
+    that open, TTL exit at the next open, one position
     at a time, R against the distance to the stop. Labelled `minimal_replay` wherever it is used,
     because it models no trigger, no banking and no trail -- a breakout cell replayed here is a
     different trade from the one the certificate was earned on."""
@@ -356,6 +360,9 @@ def minimal_replay(frame: Any, sigs: list[Any], costs: Any) -> list[float]:
             continue
         exit_i, exit_px = None, None
         for j in range(j0, min(j0 + max(1, int(s.ttl_bars)), len(o))):
+            if j > j0 and (o[j] - stop) * side <= 0:      # opened through the stop: the open
+                exit_i, exit_px = j, o[j]
+                break
             hit_stop = lo[j] <= stop if side > 0 else hi[j] >= stop
             hit_tgt = hi[j] >= target if side > 0 else lo[j] <= target
             if hit_stop or hit_tgt:
@@ -585,12 +592,36 @@ def append_ledger(rows: Sequence[dict[str, Any]], path: Path | None = None) -> i
     return len(rows)
 
 
-def order_cells(keys: Sequence[str], ledger_path: Path | None = None) -> list[str]:
-    """Least-recently-reviewed first; never reviewed leads, ties broken by name for determinism."""
+def promotion_candidates(path: Path | None = None) -> set[str]:
+    """Certificates whose forward clock reads PROMOTION CANDIDATE on the clock law -- the ones
+    the promoter can write LIVE next. Unreadable law: the empty set (ordering only, never a
+    verdict)."""
+    try:
+        doc = json.loads((path or CLOCK_LAW).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    rows = doc.get("certificates") if isinstance(doc, dict) else None
+    return {str(r["certificate"]) for r in (rows or [])
+            if isinstance(r, dict) and r.get("certificate")
+            and str(r.get("status") or "") == "PROMOTION CANDIDATE"}
+
+
+def order_cells(keys: Sequence[str], ledger_path: Path | None = None,
+                first: set[str] | None = None) -> list[str]:
+    """Least-recently-reviewed first; never reviewed leads, ties broken by name for determinism.
+
+    NEVER-REVIEWED PROMOTION CANDIDATES LEAD (2026-11-11). The rotation reviews 12 cells a pass
+    across ~7.4k certificates, so a certificate could mature to PROMOTION CANDIDATE and be
+    written LIVE long before its first review -- TG3 found 17 such macro_conditional certificates
+    that no longer reproduce. `first` (the clock law's candidates) puts every candidate with no
+    review yet at the front; once reviewed it rejoins the ordinary rotation, so nothing starves.
+    """
     last: dict[str, str] = {}
     for row in ledger_rows(ledger_path):
         last[str(row["cell"])] = str(row.get("at") or "")
-    return sorted(keys, key=lambda k: (k in last, last.get(k, ""), k))
+    lead = first or set()
+    return sorted(keys, key=lambda k: (not (k in lead and k not in last), k in last,
+                                       last.get(k, ""), k))
 
 
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
@@ -623,8 +654,9 @@ def build(*, max_cells: int = MAX_CELLS, cell: str | None = None, survivors: Pat
           replay: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Review this run's cells and return (artifact, ledger rows). Writes nothing."""
     certs = load_certificates(survivors)
+    cand = promotion_candidates()
     keys = ([cell] if cell is not None
-            else order_cells(list(certs), ledger)[:max(0, int(max_cells))])
+            else order_cells(list(certs), ledger, first=cand)[:max(0, int(max_cells))])
     rows: list[dict[str, Any]] = []
     for key in keys:
         entry = certs.get(key)
@@ -647,9 +679,24 @@ def build(*, max_cells: int = MAX_CELLS, cell: str | None = None, survivors: Pat
         "reviewed": rows,
         "coverage": {"certified": len(certs), "reviewed_ever": reviewed_ever,
                      "never_reviewed": len(certs) - reviewed_ever},
+        # The lead is only as good as the key match: a clock-law key that names no survivor
+        # certificate is never reviewed, so a format drift would make the lead vacuous. These
+        # counts are what prove it isn't (UNMEASURED when the clock law could not be read).
+        "promotion_candidates": _candidate_coverage(cand, certs, seen),
         "rule": RULE,
     }
     return doc, rows
+
+
+def _candidate_coverage(cand: set[str], certs: dict[str, Any],
+                        seen: set[str]) -> dict[str, Any]:
+    if not cand and not CLOCK_LAW.exists():
+        return {"status": UNMEASURED, "why": f"{CLOCK_LAW.name} absent"}
+    matched = cand & set(certs)
+    return {"status": "MEASURED", "on_clock_law": len(cand), "matched": len(matched),
+            "unmatched": len(cand) - len(matched),
+            "unreviewed": len(matched - seen),
+            "unmatched_sample": sorted(cand - set(certs))[:5]}
 
 
 def main(argv: list[str] | None = None) -> int:
