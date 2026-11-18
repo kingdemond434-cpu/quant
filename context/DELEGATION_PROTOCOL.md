@@ -38,6 +38,8 @@ Written to the repo, because a later agent will need it:
   (`python scripts/context.py decide ...`) with evidence pointers (paths, `sha:`, `pr:`, `url:`).
   Standing orders, sizing rules, admission verdicts, a lane handover and a refused item all
   count. A row that is later wrong is superseded by a new row (`--supersedes`), never edited.
+  A row whose evidence was missing gets an evidence amendment row (`"amends"` plus
+  `"amend": "evidence"`, see `context/README.md`), never an edit.
 - **Why a live sleeve exists**: `context/sleeves/<name>.md`, one per LIVE or STANDBY sleeve,
   created by `python scripts/context.py rationale --sync`. The generated block is refreshed from
   `desks/mt5/data/sleeves.json`. The thesis, who is on the other side, the kill criterion and

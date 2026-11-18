@@ -68,6 +68,23 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
+# OWNERSHIP AND CREDENTIAL, BEFORE THE FIRST GIT CALL (2026-10-06). See GitBoxEnv.ps1: the box
+# refused every git call for "dubious ownership" and had no credential a scheduled task could use,
+# and the log said only "git add failed rc=128" and "push failed". Both are now set for this
+# process (safe.directory = this repo; GITHUB_TOKEN as a header when the machine has one) and a
+# missing credential is named BLOCKED_AUTH instead of a bare exit code.
+. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")
+$script:GitEnv = Initialize-BoxGitEnv -RepoRoot $RepoRoot
+$script:BlockedAuth = $false
+Write-SyncLog ("git env: safe.directory={0} auth={1} git={2}" -f $script:GitEnv.SafeDirectory,
+               $script:GitEnv.Auth, $script:GitEnv.GitVersion)
+if ($script:GitEnv.GitTooOldForEnvSafeDirectory) {
+    Write-SyncLog (("WARN: '{0}' is older than {1}: it may ignore safe.directory from the environment, " +
+                    "and the ownership refusal (rc=128) would come straight back. Upgrade Git for " +
+                    "Windows or run install_adopt_release_task.ps1 (system safe.directory).") -f
+                   $script:GitEnv.GitVersion, $script:MinGitForEnvSafeDirectory)
+}
+
 # YIELD TO AN ADOPTION IN PROGRESS (2026-09-08). MT5-AdoptRelease rewrites the tree in place and
 # commits by name; this pass would `git checkout -- <path>` its dirty incoming paths (undoing the
 # adoption's writes), race it for `.git/index.lock`, and sweep its chunk-staged code into a
@@ -414,6 +431,7 @@ function Push-Logged {
         foreach ($l in @($out | Where-Object { $_ -match '\S' } | Select-Object -Last 12)) {
             Write-SyncLog ("  push said: " + $l.Trim())
         }
+        if (Test-GitAuthFailure -Lines $out) { $script:BlockedAuth = $true }
     }
     return $rc
 }
@@ -617,6 +635,13 @@ function Publish-StateOnto {
         $msg = "mt5 box state $stampNow (published onto origin; inbound code left to MT5-AdoptRelease)"
         $commit = "$(Git-Lines @("commit-tree", $tree, "-p", $base, "-m", $msg) | Select-Object -First 1)".Trim()
         if (-not $commit) { Write-SyncLog "publish: commit-tree failed"; return $false }
+        # THE STATE PUBLISHER'S SOURCE (Level 2, ops/release/publisher/publish.py). Once the LIVE
+        # ruleset is on, only quant-state-publisher may push LIVE; it reads exactly this fenced
+        # one-parent commit from the box's .git and pushes the same paths onto LIVE. Never HEAD:
+        # the box commits no state there, so HEAD lags LIVE by tens of thousands of paths
+        # (measured 2026-11-05). Until the ruleset is on, this pass also pushes it itself.
+        $refRc = Git-In-Repo @("update-ref", "refs/publish/pending", $commit)
+        if ($refRc -ne 0) { Write-SyncLog "publish: update-ref refs/publish/pending failed rc=$refRc (the state publisher keeps the previous one)" }
         $remote = "origin"
         $rc = Push-Logged @("push", "--no-verify", $remote,
                              ("{0}:refs/heads/{1}" -f $commit, $Branch))
@@ -624,6 +649,13 @@ function Publish-StateOnto {
             Write-SyncLog ("published box state onto origin/{0} as {1} ({2} path(s)) without merging code" -f
                            $Branch, $commit.Substring(0, 12), $n)
             return $true
+        }
+        if ($script:BlockedAuth) {
+            # Re-fetching cannot mint a credential, so the other two attempts would only repeat it.
+            Write-SyncLog (("BLOCKED_AUTH: the push needs a credential this unattended task cannot get " +
+                            "(auth={0}). Set GITHUB_TOKEN as a MACHINE variable on the box (setx /M); " +
+                            "the next slot publishes the state.") -f $script:GitEnv.Auth)
+            return $false
         }
         Write-SyncLog "publish: push of $($commit.Substring(0, 12)) failed rc=$rc (attempt $try); re-fetching and re-basing onto origin's tip"
     }
@@ -655,7 +687,9 @@ $relPaths = @(
     # CRO D17 reads box_state_age_hours from the first, and the second is check_desk_health.py's
     # plain-English answer to "is the desk running", which until now only a person at the box saw.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/PR_BLOCKERS.json",
     # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
     # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
@@ -700,6 +734,9 @@ $relPaths = @(
     # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
     # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
     "desks/mt5/reports/markout.json",
+    # PER-ACCOUNT MARKOUT (2026-11-14): markout.json is MIXED on a multi-account ledger; the
+    # daily markout leg writes MARKOUT_V2.json beside it with one figure per account.
+    "desks/mt5/reports/MARKOUT_V2.json",
     # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
     # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
     # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
@@ -748,7 +785,11 @@ $relPaths = @(
     # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
     # PR #126; absent until it lands, and an absent path is simply not staged).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
-    "desks/mt5/reports/REMINT_STATUS.json"
+    "desks/mt5/reports/REMINT_STATUS.json",
+    # WHETHER THE TICK TAPE IS STILL MOVING (2026-10-14). MT5-TickRecorder sat dead for two days
+    # and origin's tape_state.json (never on this list) read 2026-09-04 whatever the box held.
+    # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
+    "desks/mt5/reports/TAPE_FRESHNESS.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
@@ -805,17 +846,31 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the math lab's per-tradition yield per compute-hour and its hypothesis -> tradition
+    # routing log (2026-11-13): the evidence the lab's compute shares are earned on
+    "desks/mt5/reports/MATH_LAB.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
+    # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
+    # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read
+    "desks/mt5/reports/DECAY_VERDICTS.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE E8 GOLD LANE'S PLACEMENT EVIDENCE (2026-10-20). prop/e8_evidence.py writes both on every
+    # five-minute E8-Gold pass; scripts/check_placement_interlock.py judges the lane from them.
+    # Until now they existed only on the box, so no reader off it could say whether the E8 book
+    # was placing or which host had sent its orders. The account is written as a keyed pseudonym
+    # (`account_ref`), never the id; the ledger is bounded at 1 MB by its writer.
+    "desks/mt5/data/e8_gold_heartbeat.json",
+    "desks/mt5/data/e8_decision_ledger.jsonl",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
     # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
-    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
-    #                           the cap); no account field at all
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars AND from the
+    #                           tick tape (zeros included), plus ATR(20) on H1 with its as-of
+    #                           stamp (~1-2 MB, under the cap); no account field at all
     #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
     #                           (research/cost_truth.py) WITHHOLDS the login, and
     #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
@@ -826,9 +881,28 @@ $reportPaths = @(
     # the login fence's own verdict (2026-10-20): which state paths it refused, by key name
     # only, so a false positive that stops a file publishing is visible off the box
     "desks/mt5/reports/LOGIN_FENCE.json",
+    # the box backlog drain's census (2026-10-06, libs/ops/box_backlog.py, classify-only on the
+    # box): counts, code PATH NAMES and withheld names only -- never file contents, never a value
+    "desks/mt5/reports/BOX_BACKLOG.json",
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # THE LOSS BRAIN (2026-11-11, zuck: "did we finish the loss intelligence"). decay_monitor
+    # runs hourly and loss_learner hourly + daily on the box, but none of their outputs crossed
+    # the wire: origin's decay_live.json still read NO_ROSTER from 2026-09-04, and the loss
+    # learner's report, replacements and per-book rollout requests had never been committed --
+    # so the hourly pass scored all five loss-brain lines RED off the box whatever the box held.
+    # (decay_live.json follows in its own PR: its writer is a money-closure file whose status
+    # strings must first stop carrying exception text, and that change has its own veto clock.)
+    "desks/mt5/reports/LOSS_LEARNER.json",
+    "desks/mt5/data/loss_learning/replacements.jsonl",
+    "desks/mt5/data/loss_learning/BOOK_ROLLOUTS.json",
+    # the too-good-to-be-true forensics (libs/validation/plausibility): every flagged cell's
+    # evidence, and the fast-track list forward shadow reads first
+    "desks/mt5/data/plausibility/forensics.jsonl",
+    "desks/mt5/data/plausibility/FAST_TRACK.json",
+    "desks/mt5/data/plausibility/LEAK_PROVEN.json",
+    "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
@@ -906,8 +980,46 @@ if ($script:InboundAdoptionRequired) {
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 $ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing
 if (-not $ok) {
+    if ($script:BlockedAuth) {
+        # A NAMED STATE, NOT rc=1: Task Scheduler's LastTaskResult reads 3, and the log says why.
+        Write-SyncLog "ABORT: BLOCKED_AUTH -- box state did not reach origin/$branch (no usable git credential)"
+        exit 3
+    }
     Write-SyncLog "ABORT: box state did not reach origin/$branch this pass; the next slot retries"
     exit 1
 }
 Write-SyncLog ("shadow state synced to origin/{0} (state blobs onto origin's tip): {1} path(s)" -f $branch, $existing.Count)
+
+# DRAIN THE BACKLOG, ONCE A DAY, ONLY ONCE THE CREDENTIAL HAS JUST WORKED (2026-10-06). The box's
+# branch was 823 commits ahead of origin and is never pushed whole (HTTP 408, #181). State-only
+# commits are superseded by the publish above; libs/ops/box_backlog.py classifies any box-only
+# CODE (it can lift it to a review branch box/backlog-<stamp> with --push, never the live branch,
+# but the box runs it classify-only until the audit clears that) and reports the counts in
+# BOX_BACKLOG.json, which the next publish carries ($reportPaths, so the login fence
+# and the allowlist judge it like every other report). It inherits this process's git environment.
+$script:BacklogRel = "desks/mt5/reports/BOX_BACKLOG.json"
+$backlogFull = Join-Path $RepoRoot ($script:BacklogRel -replace "/", "\")
+$due = -not (Test-Path -LiteralPath $backlogFull) -or
+       (((Get-Date) - (Get-Item -LiteralPath $backlogFull).LastWriteTime).TotalHours -ge 24)
+if ($due) {
+    $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    # CLASSIFY-ONLY (audit HOLD on #210, 2026-10-06): the repository is public, so the first box
+    # runs only measure and report the backlog. Adding --push here waits on the audit's clearance.
+    $pyArgs = @("-m", "libs.ops.box_backlog")
+    if (-not (Test-Path -LiteralPath $py)) { $py = "py"; $pyArgs = @("-3") + $pyArgs }
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        Push-Location $RepoRoot
+        $summary = @(& $py @pyArgs 2>&1 | ForEach-Object { "$_" })
+        $drainRc = $LASTEXITCODE
+    } catch {
+        $summary = @("could not start: " + $_.Exception.Message); $drainRc = 127
+    } finally {
+        Pop-Location
+        $ErrorActionPreference = $prev
+    }
+    foreach ($l in @($summary | Where-Object { $_ -match '\S' } | Select-Object -Last 3)) { Write-SyncLog ("backlog drain: " + $l.Trim()) }
+    if ($drainRc -ne 0) { Write-SyncLog "backlog drain exited rc=$drainRc (state publish above is unaffected)" }
+}
 exit 0

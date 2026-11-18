@@ -61,11 +61,21 @@ fades, resizes or delays anything.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+try:
+    from research import decay_regime
+except ImportError:  # run as a script from desks/mt5/research
+    import decay_regime  # type: ignore[no-redef]
+try:
+    from research import decay_backtest
+except ImportError:  # run as a script from research/
+    import decay_backtest  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -293,6 +303,122 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
     return out
 
 
+#: Append-only ledger of every regime step that changed a verdict, and what it was worth. Kept
+#: BESIDE the roster this run judges (as queue_close does), so a test that redirects
+#: SLEEVES_FILE never writes into the desk's real data directory.
+REGIME_STEPS_NAME = "decay_regime_steps.jsonl"
+
+
+def _steps_path() -> Path:
+    return SLEEVES_FILE.parent / REGIME_STEPS_NAME
+
+
+def _regime_step_rows() -> list[dict]:
+    rows = []
+    try:
+        for line in _steps_path().read_text("utf-8").splitlines():
+            with contextlib.suppress(ValueError):
+                rows.append(json.loads(line))
+    except OSError:
+        return []
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def _episodes() -> list[dict]:
+    """Episodes from the append-only ledger: a START row (`step`) opens one, an END row
+    (`end`: true, `at`) closes the sleeve's open episode. Rows are never edited."""
+    eps: list[dict] = []
+    open_by: dict[str, dict] = {}
+    for r in _regime_step_rows():
+        name = str(r.get("sleeve") or "")
+        if r.get("end"):
+            ep = open_by.pop(name, None)
+            if ep is not None:
+                ep["ended_at"] = r.get("at")
+        elif r.get("step"):
+            prev = open_by.pop(name, None)
+            if prev is not None:                       # a new step closes the previous one
+                prev["ended_at"] = r.get("at")
+            ep = {**r}
+            eps.append(ep)
+            open_by[name] = ep
+    return eps
+
+
+def _open_episode(name: str) -> dict | None:
+    return next((e for e in reversed(_episodes())
+                 if e.get("sleeve") == name and not e.get("ended_at")), None)
+
+
+def _append_step_row(row: dict) -> None:
+    with contextlib.suppress(OSError), _steps_path().open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+
+
+def _log_regime_step(name: str, step: str, ladder: str, verdict_now: str, now: str,
+                     s: dict) -> dict:
+    """Open an episode when a sleeve's step starts or changes; a step that holds across passes
+    stays one episode. Returns the episode this pass stands on."""
+    cur = _open_episode(name)
+    if cur and cur.get("step") == step:
+        return cur
+    row = {"at": now, "sleeve": name, "step": step, "ladder": ladder, "verdict": verdict_now,
+           "n_at_step": s.get("n"), "cum_r_at_step": s.get("cum_r")}
+    _append_step_row(row)            # a different open step is closed by this START row
+    return row
+
+
+def _close_cleared_steps(stepped: dict[str, str], now: str) -> None:
+    """END every open episode whose sleeve did not take the same step this pass (it cleared, the
+    ladder moved, or the sleeve left the roster), so its value stops at `now`."""
+    for ep in _episodes():
+        name = str(ep.get("sleeve") or "")
+        if not ep.get("ended_at") and stepped.get(name) != ep.get("step"):
+            _append_step_row({"at": now, "sleeve": name, "end": True})
+
+
+def regime_step_values() -> dict:
+    """Realised value of every episode from the sleeve's trades closed INSIDE it, [at, ended_at)
+    (R at full risk), summed per step kind: the missed-growth / avoided-loss line the governance
+    asks of every risk modifier."""
+    per: dict[str, dict] = {}
+    for ep in _episodes():
+        try:
+            start = datetime.fromisoformat(str(ep.get("at")))
+            end = (datetime.fromisoformat(str(ep["ended_at"])) if ep.get("ended_at")
+                   else None)
+        except ValueError:
+            continue
+        inside = [float(t["r_multiple"]) for t in sleeve_trades(str(ep.get("sleeve")))
+                  if (ts := _row_time(t)) is not None and ts > start
+                  and (end is None or ts < end)]
+        v = decay_regime.step_value(str(ep.get("step")), inside, FADE_FACTOR)
+        agg = per.setdefault(str(ep.get("step")), {"episodes": 0, "open": 0, "measured": 0,
+                                                   "value_r": 0.0})
+        agg["episodes"] += 1
+        agg["open"] += end is None
+        if v["status"] == "MEASURED":
+            agg["measured"] += 1
+            agg["value_r"] = round(agg["value_r"] + v["value_r"], 4)
+    return per
+
+
+def _safe_step_values() -> dict:
+    try:
+        return regime_step_values()
+    except Exception as exc:  # noqa: BLE001 -- a report field, never a reason to fail the pass
+        return {"status": f"UNMEASURED: {type(exc).__name__}"}
+
+
+def _regime(name: str, rs: list[float]) -> tuple[dict | None, str | None]:
+    """decay_regime.classify for one sleeve, or (None, why) when it cannot run. A detector that
+    fails leaves the ladder's verdict exactly as it was: it adds evidence, never removes a rail."""
+    try:
+        return decay_regime.classify(rs), None
+    except Exception as exc:  # noqa: BLE001 -- the ladder stands; the failure is reported
+        return None, f"UNMEASURED: regime detectors failed ({type(exc).__name__})"
+
+
 def queue_close(names: list[str], path: Path | None = None) -> None:
     """Add retired sleeve names to the gateway's close queue (merged, never duplicated)."""
     # Beside whatever roster this run judges: a test that redirects SLEEVES_FILE to tmp_path
@@ -330,7 +456,7 @@ def source_state() -> tuple[str, str]:
         json.loads(SLEEVES_FILE.read_text("utf-8"))
     except (OSError, ValueError) as exc:
         return "UNMEASURED", (f"{SLEEVES_FILE.name} exists but could not be read "
-                              f"({type(exc).__name__}: {exc}) -- the live roster is UNKNOWN, not "
+                              f"({type(exc).__name__}) -- the live roster is UNKNOWN, not "
                               f"empty. Every verdict below is absent, not healthy.")
     return "READ", f"{SLEEVES_FILE.name} read cleanly"
 
@@ -380,14 +506,11 @@ def _row_r(row: dict) -> float | None:
 def _shadow_ledger_rows(name: str) -> list[dict]:
     """The sleeve's forward-clock ledger rows, from the first directory that holds the file.
     Ledgers are named by the clock key with dots as underscores (`ledger_CADJPY_asia.json`)."""
-    stem = str(name).replace(".", "_")
-    for d in SHADOW_LEDGER_DIRS:
-        f = d / f"ledger_{stem}.json"
-        if not f.exists():
-            continue
-        rows = _read_json(f, None)
-        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
-    return []
+    # The clock's OWN ledger (libs.research.forward_ledger). A legacy file several clock keys
+    # shared is no clock's series and reads as no rows -- never as this sleeve's history.
+    from libs.research import forward_ledger as fl
+    rows, _status, _why = fl.read_rows(str(name), SHADOW_LEDGER_DIRS)
+    return rows or []
 
 
 def sleeve_series(name: str, now: datetime | None = None
@@ -557,7 +680,7 @@ def _write_queue(tasks: list[dict]) -> tuple[bool, str]:
         _merge_into_queue(tasks, source="decay_monitor")
         return True, f"{len(tasks)} successor_hunt task(s) written under source decay_monitor"
     except Exception as exc:
-        return False, f"queue write failed: {type(exc).__name__}: {exc}"
+        return False, f"queue write failed: {type(exc).__name__}"
 
 
 def decay_models(doc, now: datetime | None = None) -> dict[str, dict]:
@@ -575,6 +698,62 @@ def decay_models(doc, now: datetime | None = None) -> dict[str, dict]:
     return models
 
 
+def _reviews() -> tuple[dict[str, dict], str | None]:
+    """cell -> the blind reviewer's latest row, or ({}, why) when its ledger cannot be read. An
+    unreadable ledger moves nothing: every comparison then reads UNMEASURED."""
+    try:
+        return decay_backtest.read_reviews(), None
+    except OSError as exc:
+        return {}, f"UNMEASURED: blind-review ledger unreadable ({type(exc).__name__})"
+
+
+def traded_names(days: int = TRAIL_DAYS) -> dict[str, int]:
+    """Every sleeve name with a closed deal in the trailing window, and its row count -- the
+    names that actually traded, whether or not the roster holds them."""
+    out: dict[str, int] = {}
+    if not LEDGER.exists():
+        return out
+    cutoff = datetime.now(tz=UTC) - timedelta(days=days)
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or not r.get("sleeve"):
+            continue
+        ts = _row_time(r)
+        if ts is not None and ts < cutoff:
+            continue
+        out[str(r["sleeve"])] = out.get(str(r["sleeve"]), 0) + 1
+    return out
+
+
+def r_coverage(days: int = TRAIL_DAYS) -> dict:
+    """How much of the trailing tape the ladder can judge: rows, rows with a measured R, and rows
+    whose R was never reconstructed (skipped, never read as zero)."""
+    out = {"rows": 0, "with_r": 0, "unreconstructible": 0, "days": days}
+    if not LEDGER.exists():
+        return {**out, "status": "UNMEASURED", "why": f"{LEDGER.name} absent"}
+    cutoff = datetime.now(tz=UTC) - timedelta(days=days)
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        ts = _row_time(r)
+        if ts is not None and ts < cutoff:
+            continue
+        out["rows"] += 1
+        rq = r.get("risk_quote")
+        bad = (r.get("r_unreconstructible") is True or not isinstance(r.get("r_multiple"),
+                                                                       (int, float))
+               or (isinstance(rq, (int, float)) and rq <= 0))
+        out["unreconstructible" if bad else "with_r"] += 1
+    return {**out, "status": "MEASURED"}
+
+
 def main(write_queue: bool = True) -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     source, source_why = source_state()
@@ -590,13 +769,38 @@ def main(write_queue: bool = True) -> int:
     # removes the row from whichever container holds it.
     sleeves = roster_rows(doc)
     report, actions, changed = {}, [], False
+    regime_steps: list[dict] = []
 
     live = {k: v for k, v in sleeves.items()
             if isinstance(v, dict) and str(v.get("status") or "LIVE").upper() == "LIVE"}
+    reviews, reviews_why = _reviews()
     for name, row in live.items():
-        s = stats([float(t["r_multiple"]) for t in sleeve_trades(name)])
+        rs = [float(t["r_multiple"]) for t in sleeve_trades(name)]
+        s = stats(rs)
         v, why = verdict(s)
-        report[name] = {**s, "verdict": v, "why": why,
+        ladder = v
+        # REGIME-AWARE (principal 2026-10-29; decay_regime.py): a change-point and a switching
+        # model move the ladder ONE step, two-sided -- a bad stretch is not a dead edge (a t-rule
+        # RETIRE becomes FADE), a break is caught before n=20 (HEALTHY becomes FADE). The DD
+        # rail and the pooled verdicts are never moved; gold_asia is exempt.
+        regime, step = _regime(name, rs)
+        if regime is not None:
+            v, why, step = decay_regime.adjust(name, v, why, s, regime, dd_hard_r=DD_HARD_R)
+            if step:
+                regime_steps.append(_log_regime_step(name, step, ladder, v, now, s))
+        # LIVE AGAINST ITS OWN BACKTEST (decay_backtest, 2026-11-13): a VETOED certificate or a
+        # live record that contradicts a reproducing backtest moves HEALTHY -> FADE, one step,
+        # lifted by the ordinary UNFADE when the condition clears. Never a RETIRE.
+        ref = decay_backtest.reference(row, reviews)
+        v, why, bstep, gap_cls = decay_backtest.adjust(name, v, why, s, ref)
+        if bstep:
+            step = bstep
+            regime_steps.append(_log_regime_step(name, bstep, ladder, v, now, s))
+        report[name] = {**s, "verdict": v, "why": why, "ladder_verdict": ladder,
+                        "regime_class": (regime or {}).get("class", "UNMEASURED"),
+                        "regime_why": (regime or {}).get("why", step),
+                        "regime_step": step if (regime is not None or bstep) else None,
+                        "backtest": {**ref, "gap": gap_cls},
                         "risk_frac": row.get("risk_frac")}
         # THE FLAG IS THE FADE (gap-fixer 2026-08-29). This block used to HALVE `risk_frac`
         # in the row as well. `mt5desk.sizing.clamp_risk_frac` floors at BASE_RISK_FRAC=0.03,
@@ -634,6 +838,10 @@ def main(write_queue: bool = True) -> int:
             sleeves.pop(name, None)
             queue_close([name])
             changed = True
+
+    with contextlib.suppress(Exception):  # a report ledger, never a reason to fail the pass
+        _close_cleared_steps({n: r["regime_step"] for n, r in report.items()
+                              if r.get("regime_step")}, now)
 
     # THE POOLED VERDICT, AFTER THE PER-SLEEVE ONE: a pool that is losing fades every live sleeve
     # in it; a pool past the retirement bar retires every live sleeve in it; a pool that has
@@ -712,19 +920,56 @@ def main(write_queue: bool = True) -> int:
     elif hunts:
         queue["why"] = "queue write disabled for this pass (--no-queue)"
     rows_seen = roster_rows(doc)
-    shape_note = None
-    if rows_seen and not live:
-        shape_note = (f"the roster holds {len(rows_seen)} row(s) in the LIST shape "
-                      f"promoter.save_sleeves writes; the verdict loop reads a DICT-shaped roster "
-                      f"and judged none of them (a standing defect, reported here and NOT "
-                      f"changed by the model half -- fixing it arms a demotion path)")
+    # THE OLD NOTE BLAMED THE ROSTER'S SHAPE FOR AN EMPTY BOOK. `roster_rows` has read both shapes
+    # since 2026-09-16; "0 live" with rows present means every row is RETIRED or STANDBY, and
+    # the honest note is the status census.
+    status_counts: dict[str, int] = {}
+    for r in rows_seen.values():
+        k = str(r.get("status") or "LIVE").upper()
+        status_counts[k] = status_counts.get(k, 0) + 1
+    shape_note = (f"no LIVE row: the roster's {len(rows_seen)} row(s) are "
+                  + ", ".join(f"{n} {k}" for k, n in sorted(status_counts.items()))
+                  ) if rows_seen and not live else None
+    # EVERYTHING THAT TRADED, NOT ONLY WHAT THE ROSTER HOLDS. Gateway windows (gold_london_am,
+    # gold_afternoon) and unattributed tickets close deals with no sleeves.json row, so the loop
+    # above never saw them. Their verdicts are PUBLISHED here (the kill switch's reading of
+    # every live P&L stream); nothing is acted on, because there is no roster row to act on --
+    # a window retires through its own door (GOLD_RETIRED).
+    unrostered: dict[str, dict] = {}
+    for tname, n_rows in sorted(traded_names().items()):
+        if tname in live or any(tname == k[:LEDGER_NAME_MAX] for k in live):
+            continue
+        rs_u = [float(t["r_multiple"]) for t in sleeve_trades(tname)]
+        s_u = stats(rs_u)
+        v_u, why_u = verdict(s_u)
+        unrostered[tname] = {**s_u, "verdict": v_u, "why": why_u, "rows": n_rows,
+                             "acted": False,
+                             "exempt": tname.lower() in decay_backtest.EXEMPT}
 
     OUT.write_text(json.dumps({
         "checked_at": now,
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
         "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
+        "roster_status_counts": status_counts,
+        "unrostered_verdicts": unrostered,
+        "r_coverage": r_coverage(),
+        "backtest_reference": {"reviews_read": len(reviews), "why": reviews_why,
+                               "gaps": {c: sum(1 for r in report.values()
+                                               if (r.get("backtest") or {}).get("gap") == c)
+                                        for c in ("VETO", "CONTRADICTS", "AGREES",
+                                                  "UNMEASURED")}},
         "verdicts": report, "actions_taken": actions,
+        # REGIME-AWARE STEPS this pass (count per kind, so a threshold drift shows) and their
+        # realised value to date from decay_regime_steps.jsonl (Rules 1 and 2).
+        "regime_steps": {
+            "this_pass": {k: sum(1 for r in report.values() if r.get("regime_step") == k)
+                          for k in ("RETIRE->FADE", "HEALTHY->FADE", "HEALTHY->FADE:veto",
+                                    "HEALTHY->FADE:contradicts")},
+            "classes": {c: sum(1 for r in report.values() if r.get("regime_class") == c)
+                        for c in ("STRUCTURAL_BREAK", "PERSISTENT_BAD_REGIME",
+                                  "TRANSIENT_REGIME", "STABLE", "UNMEASURED")},
+            "value_to_date": _safe_step_values()},
         "decay_model": models, "successor_hunts": hunts, "queue": queue,
         "model_rule": (
             f"half_life_days = ln 2 / lambda from a log-linear fit of the rolling expectancy "

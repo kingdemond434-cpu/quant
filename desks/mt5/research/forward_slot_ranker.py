@@ -236,7 +236,10 @@ def lane_states() -> dict[str, dict[str, dict]]:
 def forward_days(key: str) -> dict[str, float]:
     """A clock's FORWARD-phase daily R. Historical rows predate pre-registration and are excluded
     from every threshold on this desk, so they are excluded from the correlation too."""
-    ledger = _read_json(Path(SHADOW_DIR) / f"ledger_{str(key).replace('.', '_')}.json", [])
+    # The clock's OWN ledger; a shared legacy file is no clock's series (forward_ledger).
+    from libs.research import forward_ledger as fl
+    rows, _status, _why = fl.read_rows(str(key), (Path(SHADOW_DIR),))
+    ledger = rows or []
     days: dict[str, float] = {}
     for trade in ledger if isinstance(ledger, list) else []:
         if not isinstance(trade, dict) or str(trade.get("phase") or "") != "forward":

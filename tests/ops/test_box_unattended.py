@@ -46,8 +46,8 @@ def test_none_of_them_does_what_is_banned(name: str, what: str) -> None:
 def test_the_tasks_run_interactive_as_this_user_from_admin_only_copies() -> None:
     inst = CODE["install_unattended"]
     assert "-LogonType Interactive -RunLevel Highest" in inst
-    assert inst.count("Add-QuantTask '") == 3
-    for task in ("Quant-BootSession", "Quant-BootRecord", "Quant-WorkflowGate"):
+    assert inst.count("Add-QuantTask '") == 4
+    for task in ("Quant-BootSession", "Quant-BootRecord", "Quant-WorkflowGate", "Quant-SignTrain"):
         assert f"'{task}'" in inst
     assert "C:\\ProgramData\\QuantBox" in inst and "SetAccessRuleProtection($true, $false)" in inst
     assert "is a junction or symlink; not installing" in inst

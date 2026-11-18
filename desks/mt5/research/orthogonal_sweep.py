@@ -494,6 +494,9 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "regime_disagreement": "the base family and the state are named by "
+                           "regime_disagreement_miner, which charges every family x state cell "
+                           "to its own lifetime union and kills with purged walk-forward",
     "regime_split": "the base family and the regime are named by regime_split_miner, which "
                     "deflates over every family x regime cell it tried and kills with purged "
                     "walk-forward; a sweep that enumerated the split here would be a second "
@@ -561,6 +564,10 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    "alt_release_drift": "its lake series and prior sign are named by the alt_proxies equity "
+                         "hand-off (research/alt_equity_handoff.py), which mints and charges "
+                         "each (series, share) cell; called blind it has no series and returns "
+                         "[] on every symbol",
     # The free-stack alt families (mt5desk/family_alt_series.py). Their series and column are
     # named by research/free_stack_proposer from what the hunter published and the instruments it
     # mapped, and that proposer charges its own grid through `tests_run`.
@@ -576,10 +583,22 @@ NOT_SOURCED_HERE = {
     # same trials twice.
     **dict.fromkeys(("cross_sectional_class_momentum", "cross_sectional_class_reversal",
                      "cross_sectional_class_value", "cross_sectional_class_low_vol",
-                     "crisis_only_class_defensive", "lead_lag_class_catchup"),
+                     "crisis_only_class_defensive", "lead_lag_class_catchup",
+                     "cross_sectional_class_carry"),
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
+    # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
+    # entry filter's conditions are named by research/residual_search from the book's residual.
+    **dict.fromkeys(("carry_risk_off", "month_end_rebalance", "seasonal_window"),
+                    "research/specialist_cell enumerates each asset-class desk's catalogue, "
+                    "builds every cell through the sealed build_cell and charges its own trials; "
+                    "sweeping it here would charge them twice"),
+    "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
+                         "regime or cross-asset filter are named by research/residual_search "
+                         "from a BH-corrected residual finding, which charges its own tests. "
+                         "Called blind it has no base cell and returns [] on every symbol",
 }
 
 

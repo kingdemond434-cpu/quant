@@ -74,6 +74,21 @@ _DESK = Path(__file__).resolve().parent.parent
 #: Where both accounts' books and the placement lock live (state paths, box-only).
 XACCT_DIR = _DESK / "data" / "xacct"
 ACCOUNTS = ("fusion", "e8")
+#: Every account that publishes a book here. FTMO is a third, one-way peer (2026-10-29, zuck: no
+#: account may go opposite another): it publishes its book and reads the other two, and the
+#: Fusion and E8 lanes read it through `ftmo_block`. It is not in ACCOUNTS, whose pairing
+#: (`other`) and gold direction lock stay as they were.
+PEERS = ("fusion", "e8", "ftmo")
+#: The FTMO account this box trades, declared by the principal (gitignored; login, server, ...),
+#: and the FTMO sleeve executor's arm file: while it exists the FTMO book is a fence that fails
+#: closed (absent or stale -> refused); without it, the last published book still fences. Both
+#: live in data/, beside XACCT_DIR, and are resolved from it at call time, so a test that moves
+#: XACCT_DIR (the conftest does, for every test) never reads the box's real declaration.
+FTMO_ACCOUNT_NAME = "FTMO_LIVE_ACCOUNT.json"
+FTMO_EXECUTOR_ARMED_NAME = "FTMO_EXECUTOR_ARMED"
+#: Gold is fenced across every account by the gold direction lock (`gold_oco`), FTMO included
+#: once declared in its lanes, so `ftmo_block` leaves it to that lock.
+FTMO_FENCE_SKIPS = ("XAUUSD",)
 #: A book older than this is not the other account's book now. E8-Gold publishes every five
 #: minutes and the gateway every pass, so three missed E8 cycles is the limit.
 MAX_AGE_S = 900.0
@@ -400,6 +415,19 @@ def expected_key(account: str) -> str | None:
             return "invalid:unreadable E8 declaration"
         key = doc.get("account_key") if isinstance(doc, dict) else None
         return key if valid_key(key) else "invalid:E8 declaration carries no valid account_key"
+    if account == "ftmo":
+        try:
+            doc = json.loads((XACCT_DIR.parent / FTMO_ACCOUNT_NAME).read_text(
+                encoding="utf-8-sig"))
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError):
+            return "invalid:unreadable FTMO declaration"
+        if not isinstance(doc, dict) or doc.get("login") in (None, "") \
+                or doc.get("server") in (None, ""):
+            return "invalid:the FTMO declaration carries no login and server"
+        return account_key(doc["login"], doc["server"]) or \
+            "invalid:the declared FTMO login's key is unresolvable (libs.ops.provenance or box key)"
     if account != "fusion":
         return None
     try:
@@ -416,7 +444,7 @@ def expected_key(account: str) -> str | None:
 
 
 def book_path(account: str) -> Path:
-    if account not in ACCOUNTS:
+    if account not in PEERS:
         raise ValueError(f"unknown account {account!r}")
     return XACCT_DIR / f"{account}_book.json"
 
@@ -545,7 +573,7 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
     if threading.get_ident() in _ABANDONED:
         raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
                            "may not write")
-    want = expected_key(account) if account in ACCOUNTS else None
+    want = expected_key(account) if account in PEERS else None
     if not key_joins(account, key, want, source="publish"):
         if not valid_key(key):
             raise ValueError("a book must carry a valid account key (an unresolvable key "
@@ -689,6 +717,24 @@ def opposite_block(book: Exposure | None, symbol: object, side: object, *,
             return (f"cross-account fence: {account} holds or rests a {opposite} on {bsym}; "
                     f"a {want} on {sym} here would hedge the other account")
     return None
+
+
+def ftmo_block(symbol: object, side: object, *, now: datetime | None = None) -> str | None:
+    """Why an order of `side` on `symbol` on Fusion or E8 may NOT be sent against the FTMO book,
+    or None (2026-10-29: no account goes opposite another; FTMO's executor fences the other way).
+
+    Gold is the gold direction lock's (`FTMO_FENCE_SKIPS`). While the FTMO executor is ARMED its
+    book must be fresh, or this fails closed exactly as the E8 book does. Unarmed, it trades
+    nothing new, so its LAST published book (whatever its age) still fences what it may hold;
+    no book at all, or a book of another account, then blocks nothing: the lane never ran."""
+    sym = norm(symbol)
+    if sym and any(same_instrument(sym, g) for g in FTMO_FENCE_SKIPS):
+        return None
+    if (XACCT_DIR.parent / FTMO_EXECUTOR_ARMED_NAME).exists():
+        book, why = read_book("ftmo", now=now)
+        return opposite_block(book, symbol, side, account="ftmo", why_absent=why)
+    book, _ = read_book("ftmo", now=now, max_age_s=float("inf"))
+    return None if book is None else opposite_block(book, symbol, side, account="ftmo")
 
 
 #: Tokens this process holds now (re-entry) and tokens it released but could not unlink.
@@ -844,7 +890,7 @@ _ABANDONED: set[int] = set()
 
 
 def inflight_path(account: str) -> Path:
-    if account not in ACCOUNTS:
+    if account not in PEERS:
         raise ValueError(f"unknown account {account!r}")
     return XACCT_DIR / f"{account}_inflight.json"
 

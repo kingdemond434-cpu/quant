@@ -5,7 +5,9 @@
 #
 # FOUR TASKS, AND THE CADENCE OF EACH IS AN ARGUMENT ABOUT WHAT IS LOST BY WAITING.
 #
-#   MT5-TickRecorder    CONTINUOUS, restarted on failure, started at boot and at logon.
+#   MT5-TickRecorder    CONTINUOUS: started at logon and re-started every 10 minutes if it is not
+#                       running (IgnoreNew while it is), Interactive, via ops\run_tick_recorder.cmd.
+#                       See section 1 below for why boot + logon alone left it dead for two days.
 #                       This is the only one whose cadence is not a preference. Every second the
 #                       recorder is not running is a second of quotes that no vendor sells and
 #                       this desk can never buy. It runs as a resident loop with its own 60s
@@ -99,11 +101,37 @@ function Install-DeskTask {
 $env:MT5_TAPE_ROOT = $TapeRoot
 [Environment]::SetEnvironmentVariable("MT5_TAPE_ROOT", $TapeRoot, "Machine")
 
-# --- 1. THE RECORDER. Boot + logon, resident, restarted forever.
-$bootTrigger  = New-ScheduledTaskTrigger -AtStartup
-$logonTrigger = New-ScheduledTaskTrigger -AtLogOn
-Install-DeskTask -Name "MT5-TickRecorder" -Module "recorders.tick_recorder" `
-    -Trigger @($bootTrigger, $logonTrigger) -Continuous
+# --- 1. THE RECORDER. Logon + every 10 minutes, resident, Interactive, logged.
+#
+# WHAT WENT WRONG WITH BOOT + LOGON ONLY (2026-10-14). The recorder returned 1 at 2026-10-12
+# 19:56 box time and was never started again: `RestartCount` re-launches a task that FAILS TO
+# START, not one whose program exits non-zero, and with no time trigger NextRunTime was empty.
+# Two days of quotes went unrecorded while process_health said FAILING. Now:
+#   * a 10-minute repetition trigger relaunches a dead recorder (MultipleInstances IgnoreNew makes
+#     it a no-op while one is running), and never_stale starts it on a stale tape;
+#   * the principal is the logged-on user, LogonType Interactive: MT5's Python bridge is
+#     session-local and a Session-0 recorder can never reach the terminal (it exits 4);
+#   * it runs through ops\run_tick_recorder.cmd, which logs to logs\MT5-TickRecorder.log and
+#     returns the recorder's own exit.
+$logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $RunAsUser
+$everyTen     = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+    -RepetitionInterval (New-TimeSpan -Minutes 10)
+$recAction   = New-ScheduledTaskAction -Execute "cmd.exe" `
+    -Argument ('/c "' + (Join-Path $RepoRoot "ops\run_tick_recorder.cmd") + '"') `
+    -WorkingDirectory $desk
+$recSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) `
+    -RestartCount 9999 -RestartInterval (New-TimeSpan -Minutes 1)
+$recPrincipal = New-ScheduledTaskPrincipal -UserId $RunAsUser -LogonType Interactive -RunLevel Highest
+if ($PSCmdlet.ShouldProcess("MT5-TickRecorder", "register scheduled task")) {
+    Unregister-ScheduledTask -TaskName "MT5-TickRecorder" -Confirm:$false -ErrorAction SilentlyContinue
+    Register-ScheduledTask -TaskName "MT5-TickRecorder" -Action $recAction `
+        -Trigger @($logonTrigger, $everyTen) -Settings $recSettings -Principal $recPrincipal | Out-Null
+    Start-ScheduledTask -TaskName "MT5-TickRecorder"
+    Write-Host "installed + started MT5-TickRecorder -> ops\run_tick_recorder.cmd (Interactive, every 10 min)"
+} else {
+    Write-Host "WHATIF MT5-TickRecorder -> ops\run_tick_recorder.cmd (Interactive, logon + every 10 min)"
+}
 
 # --- 2. THE PROOF. Hourly on the hour; nonzero exit on FAIL is the alarm.
 Install-DeskTask -Name "MT5-TickIntegrity" -Module "recorders.tick_integrity" `

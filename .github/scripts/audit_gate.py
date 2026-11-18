@@ -61,6 +61,26 @@ the next one. Only zuck's own typing counts -- author_association OWNER, not pos
 GitHub App (a Claude session's comment carries `performed_via_github_app`), never edited. Claude
 never posts it or any substitute.
 
+STANDING APPROVAL (2026-11-10 16:07Z, zuck: "No change the design n do them for me im boss").
+His daily comment is retired for everything but the gate itself. An `APPROVE MERGES` he types at
+or after STANDING_FROM (the minute of that order) is STANDING: it also covers every CLEAR that
+comes AFTER it, so an Auditor CLEAR of the exact head is then enough to merge, with no further
+comment from him. Since 2026-11-14 (zuck 00:50Z: "pls make everything unprotected forever nth goes
+in protection") it covers PROTECTED PRs too, still on the manual path with every GATING job. Three
+things it never does. It never covers a PR that touches a NEVER-STANDING file: the ROOT policy's
+root, enforced-root and grow-only files (read from ops/release/authority/ROOT_POLICY.json, this
+controller among them), every workflow, all of ops/release/ (ceilings, replay-shadow and its
+exemption list, the risk invariants, the independent review, the LIVE ruleset), and the approving
+machinery (ops/release_authority.py, ops/signing/, libs/ops/release.py); and a PROTECTED PR
+off that list (test configuration, ops/gates.sh) stands only once the base-run trusted-eval has
+passed on its exact head. A change to what approves merges still needs his own comment newer than
+its CLEAR, so the approving machinery never approves a change to itself, and an unreadable policy
+covers nothing. It never outlives a
+`DEACTIVATE RELEASE CONTROLLER`, which anyone trusted may post: after one, only an approval newer
+than the CLEAR counts, until he types `ACTIVATE RELEASE CONTROLLER` again. And it removes nothing
+else: the CLEAR must still name the head (or the same diff), an AUDIT HOLD still stops the PR,
+the gating jobs must still be green, and the merge is still pinned to the head sha.
+
 TWO TIERS (2026-10-28, zuck: "eliminate recurring manual merge approvals"). A PR is LOW tier
 only when EVERY file it touches (both sides of a rename) is prose no program reads: a .md or image
 under docs/, context/, desks/mt5/docs/ or reports/, whose path and file name appear in no code
@@ -88,6 +108,16 @@ ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, 
 independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
 labelled `quarantined`, left open, never merged until a new head passes.
 
+NO PROTECTED PATHS BUT THE SELF-JUDGED (2026-10-29, zuck: "remove all protected ... always ... so i
+never have to approve"). The rails, ceilings, kill switches, sealed manifest, box and bridge, agent
+instructions and governing prose (the old floor, now FORMERLY_PROTECTED, plus every pattern in
+ops/release/protected_paths.txt, which is read as that floor now) take the AUTO path: no comment,
+but every AUTO job, never LOW. A HOLD or any DEACTIVATE still stops them. What stays PROTECTED is
+only what defines or runs a check that judges the PR itself (.github/, ops/release/, test
+configuration): a `pull_request` run executes the PR's own copy of those, so the AUTO jobs would be
+self-attested; until a base-run lane judges such PRs, keeping them on the manual path is what keeps
+every gate above automatic and real. A secrets path never merges at all (REFUSED).
+
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
 The AUTO jobs come from .github/workflows/release-gates.yml. A gating job counts only from GitHub
@@ -107,6 +137,7 @@ refused or gave up, with the reason in the job summary and on the `audit/clear` 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fnmatch
 import hashlib
 import json
@@ -116,7 +147,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -129,6 +160,9 @@ STATUS_CONTEXT = "audit/clear"
 #: The issue zuck approves merges on, and his approval line (the whole comment, nothing else).
 APPROVALS_ISSUE = 453
 APPROVE = "APPROVE MERGES"
+#: zuck's order of this minute made his approval standing (see STANDING APPROVAL above). Only an
+#: approval typed at or after it is standing; every earlier one keeps its old, one-shot meaning.
+STANDING_FROM = "2026-11-10T16:07:38Z"
 ACTIVATE = "ACTIVATE RELEASE CONTROLLER"
 DEACTIVATE = "DEACTIVATE RELEASE CONTROLLER"
 #: LOW tier: where, what kind of file, and what it may never be named.
@@ -144,9 +178,32 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
-#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/"). This tuple is the
-#: floor; ops/release/protected_paths.txt (itself protected) adds every LAWS 5m rail and more.
+#: PROTECTED: what defines or runs a check that judges the PR itself (#532 audit MF2). A PR
+#: run by `pull_request` executes ITS OWN copy of these, so it could turn a gate into a no-op and
+#: read green; until a base-run lane judges such PRs, they take the manual path. Everything else
+#: zuck unprotected on 2026-10-29 18:44Z ("remove all protected", "make all unprotected",
+#: "always", "so i never have to approve"); ops/release/protected_paths.txt is now the AUTO floor.
 PROTECTED = (
+    ".github/*", "ops/release/*",
+    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
+    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
+    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # the box runner of this gate: it sets the authority's key, folder and pin paths, so an AUTO
+    # merge of it could point the gate at another key (ops/release/authority/ROOT_POLICY.json)
+    "ops/box/workflow_gate.ps1",
+)  # fmt: skip
+#: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
+SECRETS = ("data/secrets/*", "*/data/secrets/*")
+#: Seal carriers are never merged (Sign train, 2026-11-14: #1193 and #1081 reached LIVE on a CLEAR
+#: of the carrier head). A carrier exists only to be sealed; replay-shadow and independent-review
+#: are red on it by design and the manual path does not run them. A PR from a carrier branch, or
+#: one that adds or changes a file under the carrier folder, is REFUSED whatever its verdict.
+#: Removing carrier files (#941) still merges.
+SEAL_CARRIER_BRANCH = "claude/seal-carrier-"
+SEAL_CARRIERS = ("desks/mt5/data/seal_carriers/*",)
+#: The PROTECTED floor before 2026-10-29. These now merge with no comment, but always on the AUTO
+#: path (every AUTO job), never LOW (#532 audit MF1).
+FORMERLY_PROTECTED = (
     ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
     "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
     "*/data/secrets/*", "scripts/check_immutable_evaluator.py", "libs/ops/release.py",
@@ -170,12 +227,44 @@ PROTECTED = (
     # governing prose
     "docs/research.md", "docs/cro/*", "ops/memory/*", ".mcp.json", "*/.mcp.json",
 )  # fmt: skip
-#: Prose files: one whose name matches FORCED_LIVE is a governing document, so PROTECTED.
+#: Prose files: one whose name matches FORCED_LIVE is a governing document, so AUTO, never LOW.
 DOC_EXTS = (".md", ".txt", ".rst")
 #: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
 PROTECTED_FILE = Path(__file__).resolve().parents[2] / "ops" / "release" / "protected_paths.txt"
+ROOT_POLICY_FILE = (
+    Path(__file__).resolve().parents[2] / "ops" / "release" / "authority" / "ROOT_POLICY.json"
+)
+#: Never covered by zuck's standing approval, on top of the ROOT policy's own lists (root,
+#: enforced root, grow-only). Since #1172 put the base-run trusted-eval over the gating workflows
+#: and the release machinery (tests/ops/test_gating_workflows_pinned.py and the release, seal,
+#: signing, promotion and adopt-guard pins in ops/release/trusted_eval_suites.txt), every other
+#: PROTECTED path stands on an Auditor CLEAR plus a green base-run trusted-eval of the exact head.
+#: What stays his: every workflow, the memecoin fence, replay-shadow's and the review's exception
+#: and model lists, the seal's NON_CODE, the release authority's own service and its signer list
+#: (#1192 audit HOLD). Each can leave this list only with a base pin of its own.
+#: ops/release/ceilings.json stands only when the change is inside the ROOT policy's delegated
+#: envelope (zuck 2026-11-14 03:30Z, risk autonomy).
+NEVER_STANDING = (
+    # every workflow (#1192 audit HOLD 1): no base suite pins which steps receive the State App
+    # key (live-seal) or stops a new workflow file declaring it, so they stay his
+    ".github/workflows/*",
+    # the memecoin LIVE fence (#1192 audit HOLD 2)
+    ".github/scripts/memecoin_gate.py",
+    # replay-shadow's exceptions and the independent review's models and rubric: one row turns a
+    # replay FAIL into MATCHES_DECLARED or takes a script off the money path (#1192 HOLD 3)
+    "ops/release/expected_divergence.json", "ops/release/not_money_scripts.txt",
+    "ops/release/local_models.json", "ops/release/review_rubric.md",
+    # NON_CODE: the paths the seal skips (#1192 audit HOLD 4)
+    "libs/ops/release.py",
+    "ops/release_authority.py", "ops/run_release_authority.cmd", "ops/signing/*",
+)  # fmt: skip
+#: The risk ceilings: standing only inside the delegated envelope (see NEVER_STANDING).
+CEILINGS_FILE = "ops/release/ceilings.json"
+#: The job that holds a PR to the ceilings and the firm rules. Required on every merge that rests on
+#: the standing approval, so a prop firm's own limit binds on every autonomous path.
+RISK_JOB = "risk-invariants"
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
@@ -183,6 +272,7 @@ CI_APP = "github-actions"
 #: branch, or any App, can post a check run with any name on any sha).
 WORKFLOW_OF = {
     **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
+    "trusted-eval": ".github/workflows/trusted-eval.yml",
     **dict.fromkeys(
         ("risk-invariants", "replay-shadow", "independent-review"),
         ".github/workflows/release-gates.yml",
@@ -289,15 +379,14 @@ def protected_patterns() -> tuple[str, ...] | None:
 def is_protected(name: str, extra: Iterable[str] = ()) -> bool:
     """Case-blind (#455 audit MF2): on the box's NTFS checkout `claude.md` IS `CLAUDE.md`."""
     low = name.lower()
-    if low.endswith(DOC_EXTS) and FORCED_LIVE.search(low):
-        return True  # a governing document
     return any(fnmatch.fnmatchcase(low, pat.lower()) for pat in (*PROTECTED, *extra))
 
 
 def tier(
     files: list[Mapping[str, Any]], changed: int, referenced: Callable[[str], bool]
 ) -> tuple[str, str]:
-    """("LOW" | "AUTO" | "PROTECTED", why). The strictest file decides; unsure is PROTECTED."""
+    """("LOW" | "AUTO" | "PROTECTED" | "REFUSED", why). The strictest file decides; unsure is
+    PROTECTED; a secrets path is REFUSED (never merged)."""
     if not files or len(files) != changed or len(files) >= MAX_FILES:
         return "PROTECTED", f"PROTECTED: {len(files)} of {changed} changed files listed"
     extra = protected_patterns()
@@ -307,8 +396,22 @@ def tier(
         (str(n), f) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
     ]
     for name, _ in names:
-        if is_protected(name, extra):
-            return "PROTECTED", f"PROTECTED: {name}"
+        if any(fnmatch.fnmatchcase(name.lower(), p) for p in SECRETS):
+            return "REFUSED", f"REFUSED: {name} is a secrets path; it never merges"
+    for name, f in names:  # both sides of a rename/copy: moving a carrier out is refused too
+        if str(f.get("status") or "") != "removed" and any(
+            fnmatch.fnmatchcase(name.lower(), p) for p in SEAL_CARRIERS
+        ):
+            return "REFUSED", f"REFUSED: {name} is a seal carrier; carriers never merge"
+    for name, _ in names:
+        if is_protected(name):
+            return "PROTECTED", f"PROTECTED: {name} (it changes a check that judges this PR)"
+    for name, _ in names:
+        low = name.lower()
+        if any(fnmatch.fnmatchcase(low, p.lower()) for p in (*FORMERLY_PROTECTED, *extra)) or (
+            low.endswith(DOC_EXTS) and FORCED_LIVE.search(low)
+        ):
+            return "AUTO", f"AUTO tier: {name} (formerly protected or governing; never LOW)"
     for name, f in names:
         if (
             name in APPEND_ONLY
@@ -339,10 +442,14 @@ def _zuck_typed(c: Mapping[str, Any]) -> bool:
 
 
 def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
-    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE."""
+    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE.
+    The line is read in any letter case and with any run of spaces between the words: a phone's
+    autocorrect posted "Approve merges" on 2026-11-13 and the gate silently ignored it. Every
+    other rule stands (zuck's own account, typed by him, unedited, nothing else in the body)."""
     best: str | None = None
     for c in comments:
-        if str(c.get("body") or "").strip() == APPROVE and _zuck_typed(c):
+        line = " ".join(str(c.get("body") or "").split()).upper()
+        if line == APPROVE and _zuck_typed(c):
             best = max(best or "", str(c["created_at"]))
     return best
 
@@ -374,16 +481,116 @@ def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> 
     return last[1], f"`{phrase}` is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
-def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
-    """Does zuck's latest approval cover this CLEAR? Only a CLEAR given BEFORE it does."""
+def never_standing_patterns() -> tuple[str, ...] | None:
+    """NEVER_STANDING plus ROOT_POLICY.json's root_files, enforced_root_files and grow_only;
+    None when the policy cannot be read or names no root file (fail closed)."""
+    try:
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        lists = [policy[k] for k in ("root_files", "enforced_root_files", "grow_only")]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        return None
+    if not all(isinstance(v, list) and all(isinstance(x, str) and x for x in v) for v in lists):
+        return None
+    if not lists[0]:
+        return None
+    return (*NEVER_STANDING, *(x for v in lists for x in v))
+
+
+def standing(
+    level: str,
+    board: Iterable[Mapping[str, Any]],
+    names: Iterable[str] = (),
+    trusted: Callable[[], bool] | None = None,
+    ceilings_ok: Callable[[], bool] | None = None,
+) -> bool:
+    """May zuck's approval stand for CLEARs that come after it, on a PR of this tier and these
+    files? LOW and AUTO, yes. PROTECTED, only when it names its files, none of them is
+    NEVER-STANDING (this gate's runner, the authority service and signers, root), the root policy
+    is readable, `trusted()` says the base-run trusted-eval passed on this exact head (#1162 audit
+    HOLD 2), and, when it changes ops/release/ceilings.json, `ceilings_ok()` says the change is
+    inside the delegated envelope. No callable is a no. Never for REFUSED or anything else, and
+    never while the controller is switched off."""
+    if not activated(board)[0]:
+        return False
+    if level in ("LOW", "AUTO"):
+        return True
+    if level != "PROTECTED":
+        return False
+    files = [str(n) for n in names if n]
+    pats = never_standing_patterns()
+    if not files or pats is None or trusted is None:
+        return False
+    if any(fnmatch.fnmatchcase(n.lower(), p.lower()) for n in files for p in pats):
+        return False
+    try:
+        if any(n.lower() == CEILINGS_FILE for n in files) and (
+            ceilings_ok is None or ceilings_ok() is not True
+        ):
+            return False
+        return trusted() is True
+    except Exception:  # an unreadable trusted-eval is a no
+        return False
+
+
+def ceilings_delegated(base_ref: str, head: str) -> bool:
+    """Is the head's ops/release/ceilings.json change inside the ROOT policy's delegated envelope
+    (ops/release/authority/policy.py envelope_check, the policy read from THIS checkout)? Any
+    read or parse error is a no."""
+    try:
+        pol = _authority_mod("policy")
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        sides = [
+            json.loads(_git("show", f"{rev}:{CEILINGS_FILE}"))
+            for rev in (f"origin/{base_ref}", head)
+        ]
+        return not pol.envelope_check(sides[0], sides[1], policy.get("envelope") or {})
+    except Exception:
+        return False
+
+
+STANDING_WHY = "covered by zuck's standing approval of"
+
+
+def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
+    """Does zuck's latest approval cover this CLEAR? A CLEAR given BEFORE it, always; a later
+    one only when the approval is standing (`stands`, and typed at or after STANDING_FROM)."""
     if at is None:
         return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
+    if clear["at"] >= at and stands and at >= STANDING_FROM:
+        return True, f"{STANDING_WHY} {at}"
     if clear["at"] >= at:
         return False, (
             f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
             "it waits for the next one"
         )
     return True, f"approved by zuck at {at}"
+
+
+def approval_covers(
+    found: list[dict[str, str]],
+    head: str,
+    same_change: Callable[[str], bool],
+    at: str | None,
+    stands: bool = False,
+) -> tuple[bool, str]:
+    """Does zuck's approval cover the PR's latest CLEAR (`found[-1]`)? First as `approved` reads
+    it. Failing that, it still covers when he approved an EARLIER CLEAR of this same change: a
+    CLEAR typed before his approval whose sha is the head, or carries to it byte for byte
+    (`same_change`, the patch-id `cleared` uses), with no HOLD after it. His approval names a
+    change, not a comment time: a re-CLEAR of a clean LIVE merge-in of a head he approved voided
+    it on a NEVER-STANDING PR (#1196, 2026-11-17 15:50Z). A HOLD after that CLEAR, or any other
+    change, still needs a CLEAR he approves."""
+    ok, why = approved(found[-1], at, stands)
+    if ok or at is None:
+        return ok, why
+    for v in reversed(found[:-1]):
+        if v["verdict"] != "CLEAR":
+            break  # a HOLD after it: an earlier approval no longer speaks for this change
+        if v["at"] < at and (v["sha"] == head or same_change(v["sha"])):
+            return True, (
+                f"approved by zuck at {at}: he approved CLEAR {v['sha'][:9]}, the same change"
+            )
+    return ok, why
 
 
 def cleared(
@@ -451,14 +658,49 @@ def checks(
     return "pass", f"{len(newest)} check run(s) green, gating jobs succeeded"
 
 
+#: The AUTO job a signed MATCHES_DECLARED may stand in for (ops/release/replay_shadow.py: a Fusion
+#: roster divergence that equals the Auditor's declaration for this PR and exact head exits 1,
+#: never PASS). Only the release authority maps it, and only to CONTROLLER (policy.py).
+REPLAY_JOB = "replay-shadow"
+
+
+def newest_run_id(
+    runs: Iterable[Mapping[str, Any]], name: str, genuine: Callable[[Mapping[str, Any]], bool]
+) -> Any:
+    """The id of the newest genuine check run called `name`, or None."""
+    mine = [r for r in runs if str(r.get("name") or "") == name and genuine(r)]
+    if not mine:
+        return None
+    return max(mine, key=lambda r: str(r.get("started_at") or "")).get("id")
+
+
 # ------------------------------------------------------------------------ the GitHub side
 
 
-def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
+#: Seconds any one gh call may take before the gate gives up on it.
+GH_TIMEOUT_S = 120
+
+
+def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    p = subprocess.run(
+    try:
+        p = _gh_run(cmd, data) if timeout is None else _gh_run(cmd, data, timeout)
+    except subprocess.TimeoutExpired as exc:
+        # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
+        # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
+        # As a RuntimeError every caller's per-PR handling logs it and the sweep goes on.
+        raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
+    return json.loads(p.stdout) if p.stdout.strip() else None
+
+
+def _gh_run(
+    cmd: list[str], data: Mapping[str, Any] | None, timeout: float | None = None
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         cmd,
         input=json.dumps(data) if data is not None else None,
         capture_output=True,
@@ -468,10 +710,10 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         encoding="utf-8",
         errors="replace",
         check=False,
+        # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
+        # every call ends, and a timeout is an error the sweep logs (it never merges on one).
+        timeout=GH_TIMEOUT_S if timeout is None else timeout,
     )
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
 
 
 def _git(*args: str) -> str:
@@ -536,6 +778,417 @@ def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], b
     return genuine
 
 
+#: Times the box may merge the base into one PR's branch (#552 audit SF1): past it the PR stops
+#: being brought up, and the watcher's CLEAR-unmerged RED names it.
+BRING_UP_CAP = 4
+#: Bring-ups per sweep (#552 audit SF2): each one starts a full CI run on the shared free pool,
+#: and the most merge-ready PRs come first, so a few per pass drain the queue without flooding it.
+BRING_UPS_PER_SWEEP = 2
+
+# THE REGISTRY PATH (zuck 2026-11-03 17:11Z: "Allow the box to auto-merge .github/ops release
+# changes after an auditor CLEAR and 24h veto window"; 17:00Z "The box may auto-merge everything
+# autonomously ... don't ever make me merge again"; journal D-20261103-005). Only the box's run
+# reads it, from a file on the box that no PR can write: the Auditor's lane appends one row per
+# verdict there ({"pr", "sha", "verdict": "CLEAR"|"HOLD", "at"}). A PR the manual path would hold
+# for zuck merges from the box instead only when ALL of these hold: zuck's own CLEAR + APPROVE
+# path did not already clear it (that path always comes first and is never replaced); merges are
+# not DEACTIVATEd; the PR's latest row is a CLEAR naming the EXACT head, dated no later than now;
+# the gate ITSELF has sent the veto notice for that (pr, head) and a channel delivered it; that
+# delivery is REGISTRY_HOLD_H old by the gate's OWN clock (a row's self-declared "at" never
+# starts the window, so a backdated row merges nothing early); no AUDIT HOLD stands on the PR;
+# the head is up to date with the base; and every gating AND every AUTO job (replay-shadow
+# included) passed. A HOLD row, a HOLD comment, a DEACTIVATE or a new push is a veto. The gate
+# that judges a PR is always the base's copy, so a gate change is judged by the gate it would
+# replace, never by itself.
+REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
+#: The command that sends the veto notice; the gate appends the title and body as two arguments
+#: and counts the notice as sent only on exit 0 (scripts/send_alert.py: a channel delivered it).
+#: Unset, no notice can go out, so no window ever starts and nothing merges by the registry.
+REGISTRY_NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
+#: zuck 2026-11-13 12:14Z ("Nothing should be protected ... everything done as fast as possible"):
+#: no veto wait. A delivered notice merges on the same sweep; every other condition still binds.
+REGISTRY_HOLD_H = 0.0
+#: Audit HOLD on #1088 (MF1): a PR touching a ROOT_POLICY root_files / enforced_root_files path
+#: (this gate, the authority, trusted-eval, the publisher, the merger, workflow_gate) keeps the
+#: 24 h veto on the registry path, so the next edit to the release machinery is never same-sweep.
+ROOT_REGISTRY_HOLD_H = 24.0
+#: A row dated this far past the gate's clock is refused (clock skew allowance).
+REGISTRY_SKEW_S = 300.0
+#: The marker in a registry merge's commit title (auto_revert() looks for it).
+REGISTRY_TITLE = "registry CLEAR"
+
+
+def registry_rows(path: str | None) -> tuple[list[dict[str, Any]], str]:
+    """(the registry's rows, oldest first; why there are none). No path, or ANY unreadable line,
+    reads as no rows: the registry only ever adds a merge path, so failing closed falls back to
+    zuck's. The why says which, so a broken registry is never silent."""
+    if not path:
+        return [], "no registry configured"
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig")
+        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    except (OSError, ValueError) as exc:
+        return [], f"the registry is unreadable ({type(exc).__name__}), so it counts as empty"
+    if not all(isinstance(r, dict) for r in rows):
+        return [], "the registry has a line that is not an object, so it counts as empty"
+    return rows, ""
+
+
+def touches_root(files: list[Mapping[str, Any]]) -> bool:
+    """True when any changed path (or a rename's old path) matches the gate's OWN copy of
+    ROOT_POLICY.json root_files or enforced_root_files. Fails closed: an unreadable policy or
+    an empty file list counts as ROOT, so the longer window applies."""
+    try:
+        policy = json.loads((AUTHORITY_DIR / "ROOT_POLICY.json").read_text(encoding="utf-8"))
+        pats = [*policy["root_files"], *(policy.get("enforced_root_files") or ())]
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    if not files:
+        return True
+    for f in files:
+        for n in (f.get("filename"), f.get("previous_filename")):
+            if n and any(fnmatch.fnmatchcase(str(n).lower(), p.lower()) for p in pats):
+                return True
+    return False
+
+
+def registry_hold_h(root: bool) -> float:
+    """The registry veto window for a PR: ROOT_REGISTRY_HOLD_H when it touches ROOT."""
+    return max(REGISTRY_HOLD_H, ROOT_REGISTRY_HOLD_H) if root else REGISTRY_HOLD_H
+
+
+def notice_title(pr: int, head: str, hold_h: float | None = None) -> str:
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
+    if hold <= 0:
+        return f"PR #{pr} {head[:9]} auto-merges from the box now (Auditor CLEAR, all checks green)"
+    return f"PR #{pr} {head[:9]} auto-merges from the box in {hold:.0f} h unless vetoed"
+
+
+def registry_window(
+    seen_path: Path,
+    pr: int,
+    head: str,
+    now: datetime,
+    notify: Callable[[str, str], bool],
+    hold_h: float | None = None,
+) -> tuple[datetime | None, str]:
+    """(when the veto window for (pr, head) started, or None; why). The start is the gate's own
+    record of the moment its notice was DELIVERED, kept in `seen_path` beside the registry. The
+    first time a head is seen the notice is sent; the window starts only if it went out, and a
+    failed send is tried again by the next sweep. An unreadable record, or one that cannot be
+    written, starts nothing."""
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
+    key = f"{pr}:{head}"
+    try:
+        seen = json.loads(seen_path.read_text(encoding="utf-8")) if seen_path.exists() else {}
+        if not isinstance(seen, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        return None, f"the veto-window record is unreadable ({type(exc).__name__})"
+    if key in seen:
+        try:
+            at = datetime.fromisoformat(str(seen[key]))
+        except ValueError:
+            return None, "the veto-window record has an unreadable time"
+        if at.tzinfo is None or at > now:
+            return None, "the veto-window record has a bad time"
+        return at, ""
+    body = (
+        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {hold:.0f} h "
+        "with every check green. To stop it: an AUDIT HOLD on the PR, a HOLD row, DEACTIVATE "
+        "merges, or a new push."
+    )
+    try:
+        sent = bool(notify(notice_title(pr, head, hold), body))
+    except Exception as exc:
+        return None, f"the veto notice failed ({type(exc).__name__}); the next sweep retries"
+    if not sent:
+        return None, "the veto notice was not delivered; the next sweep retries"
+    seen[key] = now.isoformat()
+    try:
+        tmp = seen_path.with_suffix(seen_path.suffix + ".tmp")
+        tmp.write_text(json.dumps(seen, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, seen_path)
+    except OSError as exc:
+        return None, f"the veto-window record could not be written ({type(exc).__name__})"
+    if hold <= 0:
+        return now, ""  # no wait: the delivered notice is the only step, so this sweep merges
+    return None, f"veto notice sent for {head[:9]}: the {hold:.0f} h window starts now"
+
+
+def run_notify(title: str, body: str) -> bool:
+    """Send the veto notice with the box's REGISTRY_NOTIFY_ENV command; True only on exit 0."""
+    cmd = os.environ.get(REGISTRY_NOTIFY_ENV)
+    if not cmd:
+        return False
+    import shlex
+
+    done = subprocess.run(
+        [*shlex.split(cmd, posix=os.name != "nt"), title, body],
+        capture_output=True,
+        timeout=GH_TIMEOUT_S,
+        check=False,
+    )
+    return done.returncode == 0
+
+
+def registry_clear(
+    rows: list[dict[str, Any]],
+    pr: int,
+    head: str,
+    window: Callable[[], tuple[datetime | None, str]],
+    now: datetime | None = None,
+    hold_h: float | None = None,
+) -> tuple[dict[str, str] | None, str]:
+    """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
+    is called only once the row itself qualifies, and gives the gate's own window start."""
+    now = now or datetime.now(UTC)
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
+    mine = [r for r in rows if r.get("pr") == pr]
+    if not mine:
+        return None, "no registry verdict"
+    last = mine[-1]
+    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
+        sha = str(last.get("sha"))[:9]
+        return None, f"the latest registry verdict is {last.get('verdict')} {sha}"
+    try:
+        at = datetime.fromisoformat(str(last.get("at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None, "the registry CLEAR has no readable time"
+    if at.tzinfo is None:
+        return None, "the registry CLEAR has no time zone"
+    if (at - now).total_seconds() > REGISTRY_SKEW_S:
+        return None, "the registry CLEAR is dated in the future"
+    start, wwhy = window()
+    if start is None:
+        return None, wwhy
+    age_h = (now - start).total_seconds() / 3600.0
+    if age_h < hold:
+        return None, f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {hold:.0f} h"
+    got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
+    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+
+
+# THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
+# ops/release/authority/ONE_TIME_AUTHORISATION.md). Once zuck sets QUANT_AUTHORITY_PUBKEY on the
+# box, the registry path reads NO unsigned row at all: a PR's CLEAR is an Ed25519-signed
+# attestation from the release authority (a separate service, account, key and read-only GitHub
+# App), verified here against the public key in a box file no PR can write. It must name this
+# repo, this PR, the EXACT head, the change's byte patch-id, a class consistent with the gate's
+# own tier, and the root policy digest that this checkout has AND that zuck pinned on the box. A
+# verified HOLD for the head -- alone or beside a CLEAR (a conflict) -- is a veto. A CONTROLLER-
+# class PR (one that changes a check) also needs a passing base-run trusted-eval for the exact
+# head. Everything else is the registry path above, unchanged: zuck's path first, switches, no
+# AUDIT HOLD, up to date, the gate's own delivered veto notice, REGISTRY_HOLD_H by the gate's
+# clock, every gating and AUTO job, the merge pinned to the head, auto-revert.
+AUTHORITY_PUBKEY_ENV = "QUANT_AUTHORITY_PUBKEY"
+AUTHORITY_DIR_ENV = "QUANT_AUTHORITY_ATTESTATIONS"
+AUTHORITY_PIN_ENV = "QUANT_AUTHORITY_ROOT_PIN"
+TRUSTED_EVAL = "trusted-eval"
+#: Emergency stop: this file in the attestations folder switches the authority path off at once
+#: (the authority signs nothing, the gate merges nothing by it). Remove it to resume.
+AUTHORITY_KILL = "DEACTIVATE"
+AUTHORITY_DIR = Path(__file__).resolve().parents[2] / "ops" / "release" / "authority"
+
+
+def _authority_mod(name: str) -> Any:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(f"_gate_{name}", AUTHORITY_DIR / f"{name}.py")
+    if spec is None or spec.loader is None:
+        raise ImportError(name)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def gate_root_digest() -> str | None:
+    """The root digest of THIS checkout (the base's, trusted), or None on any error."""
+    try:
+        pol = _authority_mod("policy")
+        top = Path(__file__).resolve().parents[2]
+        # from the COMMIT, not the working tree: the box's gate clone is sparse, and a dirty
+        # file must never change what is pinned
+        names = subprocess.run(
+            ["git", "-C", str(top), "ls-tree", "-r", "--name-only", "HEAD"],
+            capture_output=True, text=True, check=True,
+        ).stdout.splitlines()  # fmt: skip
+
+        def read(n: str) -> bytes | None:
+            got = subprocess.run(
+                ["git", "-C", str(top), "show", f"HEAD:{n}"], capture_output=True, check=False
+            )
+            return got.stdout if got.returncode == 0 else None
+
+        policy = json.loads(read("ops/release/authority/ROOT_POLICY.json") or b"")
+        return str(pol.root_digest(read, names, policy))
+    except Exception:
+        return None
+
+
+def authority_verdicts(
+    folder: str, pr: int, repo: str, pub_path: str, digest: str, now: datetime
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """(verified statements for `pr`, why each other file was rejected)."""
+    att = _authority_mod("attestation")
+    public, kid = att.load_public(pub_path)
+    good: list[dict[str, Any]] = []
+    bad: list[str] = []
+    for f in sorted(Path(folder).glob(f"pr{pr}-*.json")):
+        try:
+            env = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            bad.append(f"{f.name}: unreadable")
+            continue
+        st, why = att.verify(env, public, kid, now, policy_digest=digest, repo=repo)
+        if st is None or st.get("pr") != pr:
+            bad.append(f"{f.name}: {why if st is None else 'names another PR'}")
+            continue
+        good.append(st)
+    return good, bad
+
+
+def authority_clear(
+    statements: list[dict[str, Any]], head: str, patch: str | None, gate_tier: str
+) -> tuple[dict[str, Any] | None, str]:
+    """(the verified CLEAR statement for `head`, or None; why). Pure."""
+    mine = [st for st in statements if st.get("head_sha") == head]
+    if not mine:
+        return None, f"no verified authority attestation for {head[:9]}"
+    holds = [st for st in mine if st.get("verdict") == "HOLD"]
+    clears = [st for st in mine if st.get("verdict") == "CLEAR"]
+    if holds and clears:
+        return None, f"conflicting authority verdicts for {head[:9]}: HOLD wins"
+    if holds:
+        return None, f"authority HOLD {head[:9]}: {'; '.join(holds[-1].get('reasons') or [])}"
+    st = max(clears, key=lambda x: str(x.get("issued_at")))
+    if not patch or st.get("patch_id") != patch:
+        return None, "the authority CLEAR names another change (patch-id)"
+    want = {"PROTECTED": ("CONTROLLER",), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
+    declared = (st.get("evidence") or {}).get("replay_declared") if isinstance(
+        st.get("evidence"), dict) else None  # fmt: skip
+    if st.get("tier") == "CONTROLLER" and gate_tier in ("AUTO", "LOW") and declared:
+        # the authority raised it to CONTROLLER for a MATCHES_DECLARED replay: stricter, so
+        # trusted-eval and the CONTROLLER window apply on top of every gating job
+        want = {**want, gate_tier: (*want[gate_tier], "CONTROLLER")}
+    if st.get("tier") not in want.get(gate_tier, ()):
+        return None, f"the authority judged class {st.get('tier')}, the gate reads {gate_tier}"
+    return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
+
+
+#: Paths whose base copy the trusted-eval judge runs (trusted-eval.yml): every test-config file,
+#: the release harness and suite lists, the workflows, and every test file. A base change that
+#: touches none of them cannot change the judge's verdict on a given head.
+_JUDGE_INPUT = re.compile(
+    r"(^|/)(conftest\.py|pytest\.ini|tox\.ini|setup\.cfg|setup\.py|pyproject\.toml"
+    r"|sitecustomize\.py|usercustomize\.py)$|\.pth$|^ops/release/|^\.github/"
+    r"|(^|/)tests?/|(^|/)test_[^/]*\.py$"
+)
+
+#: How many pages (100 runs each) of trusted-eval runs the gate reads looking for this head.
+TRUSTED_EVAL_PAGES = 5
+
+
+def _judge_unchanged(repo: str, ran_on: str, base: str) -> tuple[bool, str]:
+    """True when no judge input differs between the base commit a run used and the base now.
+    Any read error, or a comparison GitHub truncates, is a no."""
+    if not ran_on:
+        return False, "the run names no base commit"
+    try:
+        cmp = _gh(f"repos/{repo}/compare/{ran_on}...{base}")
+    except RuntimeError as exc:
+        return False, f"base comparison unreadable ({str(exc)[:120]})"
+    files = (cmp or {}).get("files")
+    if not isinstance(files, list) or len(files) >= 300 \
+            or (cmp or {}).get("status") not in ("ahead", "identical"):
+        return False, f"base {ran_on[:9]} is not a readable ancestor of {base}"
+    names = {str(f.get(k) or "") for f in files for k in ("filename", "previous_filename")}
+    hit = sorted(n for n in names if n and _JUDGE_INPUT.search(n))
+    if hit:
+        return False, f"the judge changed since base {ran_on[:9]} ({', '.join(hit[:3])})"
+    return True, f"judge unchanged since base {ran_on[:9]}"
+
+
+def trusted_eval_passed(repo: str, pr: int, head: str, base: str) -> tuple[bool, str]:
+    """Did the BASE's trusted-eval.yml (pull_request_target: the base's file, never the PR's)
+    succeed for this PR at this exact head? Its run-name carries the PR and head it checked out,
+    from the base's own file; any read error is a no.
+
+    AN EARLIER GREEN STANDS WHILE A RE-RUN WAITS (2026-11-14). The newest run decided alone, so a
+    re-fired run sitting in the queue (171 deep, oldest 20 h that morning) hid a success for the
+    same head and an approved PR waited behind it for nothing. Now the newest COMPLETED run
+    decides: a failure there is a no whatever is queued after it, and a success counts while a
+    newer run is still queued only when no judge input (`_JUDGE_INPUT`) changed on the base
+    between the base commit that run used and the base now -- so it is the same judge's verdict
+    on the same head. With nothing completed, a queued run is still "still running"."""
+    want = f"{TRUSTED_EVAL} {pr} {head}"
+    runs: list[Mapping[str, Any]] = []
+    for page in range(1, TRUSTED_EVAL_PAGES + 1):
+        try:
+            got = _gh(f"repos/{repo}/actions/workflows/trusted-eval.yml/runs"
+                      f"?event=pull_request_target&per_page=100&page={page}")  # fmt: skip
+        except RuntimeError as exc:
+            return False, f"trusted-eval runs unreadable ({str(exc)[:120]})"
+        batch = (got or {}).get("workflow_runs") or []
+        runs += [
+            r for r in batch
+            if str(r.get("display_title") or "") == want
+            and str(r.get("path") or "").endswith(WORKFLOW_OF[TRUSTED_EVAL])
+            and str(r.get("head_branch") or "") == base
+            and str(r.get("event") or "") == "pull_request_target"
+        ]  # fmt: skip
+        if len(batch) < 100:
+            break
+    if not runs:
+        return False, f"no base-run {TRUSTED_EVAL} for {head[:9]}"
+    last = max(runs, key=lambda r: str(r.get("created_at") or ""))
+    done = [r for r in runs if r.get("status") == "completed"]
+    if not done:
+        return False, f"{TRUSTED_EVAL} still running"
+    fin = max(done, key=lambda r: str(r.get("created_at") or ""))
+    if fin.get("conclusion") != "success":
+        return False, f"{TRUSTED_EVAL} {fin.get('conclusion')}"
+    if fin is last:
+        return True, f"{TRUSTED_EVAL} passed (run {fin.get('id')})"
+    same, why = _judge_unchanged(repo, str(fin.get("head_sha") or ""), base)
+    if not same:
+        return False, f"{TRUSTED_EVAL} still running ({why})"
+    return True, (f"{TRUSTED_EVAL} passed (run {fin.get('id')}; a newer run is queued and "
+                  f"{why})")
+
+
+BEHIND = "it is behind"
+
+
+def bring_up(repo: str, pr: int, head: str, base: str = LIVE) -> bool:
+    """Merge the base into a PR whose own GENUINE gating checks pass (provenance, #552 audit
+    SF3: a forged success never spends a CI run), pinned to `head` (GitHub refuses if the head
+    moved). False when its checks do not pass, after BRING_UP_CAP earlier merges of the base,
+    on a conflict (422: a merge by hand, Autonomy's) or any other refusal: the PR is left as it
+    is."""
+    try:
+        got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+        runs = (got or {}).get("check_runs") or []
+        if checks(runs, GATING_JOBS, provenance(repo, pr, head))[0] != "pass":
+            return False
+        cmp = _gh(f"repos/{repo}/compare/{base}...{head}")
+        mine = f"Merge branch '{base}' into "
+        done = sum(
+            1 for c in (cmp or {}).get("commits") or []
+            if str((c.get("commit") or {}).get("message") or "").startswith(mine)
+        )  # fmt: skip
+        if done >= BRING_UP_CAP:
+            _summary(f"RED BRING_UP_CAPPED #{pr} @ {head[:9]}: {base} was merged in {done} "
+                     "times and it still has not merged; it needs a look")  # fmt: skip
+            return False
+        _gh(f"repos/{repo}/pulls/{pr}/update-branch", "-X", "PUT",
+            data={"expected_head_sha": head})  # fmt: skip
+    except RuntimeError as exc:
+        _summary(f"#{pr} @ {head[:9]}: LIVE could not be merged in ({str(exc)[:200]})")
+        return False
+    return True
+
+
 def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     """May a no-comment path test-and-merge this head? Only when the head already contains the
     base's tip (#456 audit MF3: otherwise the tree that merges, base + PR, was never tested) and
@@ -551,16 +1204,90 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
         capture_output=True,
         check=False,
     )
+    lag = ""
     if behind.returncode != 0:
-        return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        state = state_only_lag(base_ref, head)
+        if state is None:
+            return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        lag = f" but for {state} box-state path(s)"
+    # The base must have gained no .github change the head lacks (#455 audit MF1: a stale branch
+    # runs older checks under the same job names). Compared from the merge-base, so a PR's OWN
+    # .github change is not "stale" (2026-11-03: compared head-to-base, every PR that changes a
+    # workflow read as stale forever, so the registry path could never merge one).
+    try:
+        fork = _git("merge-base", f"origin/{base_ref}", head)
+    except subprocess.CalledProcessError:
+        return False, "no merge-base with the base"
     same = subprocess.run(
-        ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
+        ["git", "diff", "--quiet", fork, f"origin/{base_ref}", "--", ".github"],
         capture_output=True,
         check=False,
     )
     if same.returncode != 0:
-        return False, f"its .github differs from {base_ref}"
-    return True, "up to date"
+        return False, f"{base_ref} changed .github since it forked (merge {base_ref} in first)"
+    return True, f"up to date{lag}"
+
+
+def _is_state_path() -> Callable[[str], bool] | None:
+    """libs.ops.release.is_state_path from THIS checkout (the base's, trusted code), loaded by
+    path so the gate needs no install; None (every path is code) when it cannot be loaded."""
+    import importlib.util
+
+    src = Path(__file__).resolve().parents[2] / "libs" / "ops" / "release.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_gate_release", src)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        state, governed = mod.is_state_path, mod.is_governed_state
+    except Exception:  # any failure is "code": the PR must merge the base in
+        return None
+    if not (callable(state) and callable(governed)):
+        return None
+    # #521 audit MF1: a sign row, a pin, the survivor canon, the allocator proof or a switch is
+    # state that governs code: a PR tested against the old copy merges the base in first.
+    return lambda rel: bool(state(rel)) and not governed(rel)
+
+
+#: A draft whose PR has not moved for this long is brought up like a ready PR: no session is
+#: pushing to it, so a merge commit breaks no one's next push (#552 audit SF5 still holds for a
+#: draft in motion). MEASURED 2026-11-03: 98 of 100 open PRs were drafts, none audited by comment,
+#: so none was ever brought up and none could be up to date.
+QUIET_DRAFT_H = 6.0
+
+
+def quiet(p: Mapping[str, Any], now: datetime | None = None) -> bool:
+    """Has this PR gone QUIET_DRAFT_H hours without an update? An unreadable time is not quiet."""
+    try:
+        at = datetime.fromisoformat(str(p.get("updated_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return ((now or datetime.now(UTC)) - at).total_seconds() >= QUIET_DRAFT_H * 3600.0
+
+
+def state_only_lag(base_ref: str, head: str) -> int | None:
+    """How many paths the base gained since the head forked, when EVERY one is box state
+    (libs.ops.release.is_state_path); None when any is code, or on any error.
+
+    MEASURED 2026-10-29: the box publishes its state onto LIVE every 15 minutes, while a PR's
+    checks waited over two hours for a runner, so no no-comment PR was ever "up to date" by the
+    time its checks finished: merging LIVE in moved the head and restarted the checks, forever.
+    A state-only lag merges no untested CODE (#456 audit MF3 is about code): the files it adds
+    are the box's own records, already on LIVE without any PR's tests. Code on the base still
+    makes the PR merge the base in first."""
+    is_state = _is_state_path()
+    if is_state is None:
+        return None
+    try:
+        fork = _git("merge-base", f"origin/{base_ref}", head)
+        paths = _git("diff", "--name-only", "--no-renames", fork, f"origin/{base_ref}")
+    except subprocess.CalledProcessError:
+        return None
+    changed = [p for p in paths.splitlines() if p.strip()]
+    if not changed or not all(is_state(p) for p in changed):
+        return None
+    return len(changed)
 
 
 def queued_review(
@@ -655,7 +1382,7 @@ def _flat(pages: Any) -> list[Any]:
 
 
 def _summary(line: str) -> None:
-    print(line)
+    print(line, flush=True)  # the box streams these into its log as they come
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
         with open(path, "a", encoding="utf-8") as fh:
@@ -691,12 +1418,16 @@ def run(
     poll_s: float = 60.0,
     box: bool = False,
     approvals_issue: int = APPROVALS_ISSUE,
+    bring_ups: list[int] | None = None,
 ) -> int:
     """Merge #pr when the rule holds. `box`: the box's run with a user token -- it needs no label,
     merges workflow-file PRs too (the Actions run, box=False, leaves those to it), posts no
-    pending status and dispatches nothing."""
+    pending status and dispatches nothing. `bring_ups`: the sweep's remaining bring-up budget,
+    one element, spent here (None: no limit, a single PR's run)."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
+    # the replay-shadow run a verified authority CLEAR judged MATCHES_DECLARED (authority_rows)
+    declared: dict[str, Any] = {"run": None}
     if p.get("state") != "open":
         _summary(f"#{pr} is {p.get('state')}: nothing to do")
         return 0
@@ -706,6 +1437,9 @@ def run(
     if (p["head"].get("repo") or {}).get("full_name") != repo:
         _summary(f"#{pr} comes from a fork: never merged by the gate")
         return 0
+    if str(p["head"].get("ref") or "").lower().startswith(SEAL_CARRIER_BRANCH):
+        _summary(f"#{pr} is a seal carrier ({p['head'].get('ref')}): carriers never merge")
+        return 0
     files = _flat(_gh(f"repos/{repo}/pulls/{pr}/files?per_page=100", "--paginate", "--slurp"))
     p2 = _gh(f"repos/{repo}/pulls/{pr}")
     if str(p2["head"]["sha"]) != head:
@@ -714,6 +1448,28 @@ def run(
     level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
+    # the PR's files, for the standing approval; empty (so never standing for PROTECTED) when the
+    # listing is incomplete or the AUTO floor is unreadable, the two cases tier() calls unsure
+    listed = bool(files) and len(files) == int(p2.get("changed_files") or 0) < MAX_FILES
+    names = (
+        [str(n) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n]
+        if listed and protected_patterns() is not None
+        else []
+    )
+
+    def te() -> bool:
+        """The base-run trusted-eval passed on this exact head (read only for a PROTECTED PR)."""
+        return trusted_eval_passed(repo, pr, head, base)[0]
+
+    def ce() -> bool:
+        """The head's ceilings change is inside the delegated envelope (read only if it has one)."""
+        return ceilings_delegated(base, head)
+
+    if level == "REFUSED":
+        _summary(f"#{pr} @ {head[:9]}: {twhy}")
+        if not box:
+            _status(repo, head, "failure", twhy)
+        return 1
 
     def switches() -> tuple[bool, str]:
         board = _flat(
@@ -723,31 +1479,93 @@ def run(
                 "--slurp",
             )
         )
+        boards.append(board)
         on, owhy = activated(board)
         if on and level == "AUTO":
             on, owhy = activated(board, ACTIVATE_AUTO)
         return on, owhy
+
+    boards: list[list[dict[str, Any]]] = []
+    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
+    # at every open PR, most of which carry no verdict at all).
+    ids: dict[str, str | None] = {}
+
+    def same_change(sha: str) -> bool:
+        if "head" not in ids:
+            ids["head"] = patch_id(base, head)
+        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
+
+    def pinned(found: list[dict[str, str]]) -> str | None:
+        """Why an audited PR takes the manual path, or None: it may take the no-comment path.
+        zuck 2026-10-29 19:12Z ("i want to be free not having to do any merges"): an AUDIT verdict
+        no longer pins a PR to his path for good. Only a standing HOLD (an edit counts as one), or
+        a CLEAR he has already approved (his override, which skips the AUTO jobs), sends it there;
+        any other CLEAR leaves the PR on the AUTO path with every AUTO job."""
+        if not found:
+            return None
+        last = found[-1]
+        if last["verdict"] != "CLEAR":
+            return f"the latest verdict is AUDIT HOLD {last['sha'][:9]}"
+        # the CLEAR names this change: its head, or the same diff carried over (as cleared() reads
+        # it), so a rebased identical change zuck approved keeps his override (#537 audit S1)
+        ours = last["sha"] == head or same_change(last["sha"])
+        if (
+            ours
+            and boards
+            and approval_covers(
+                found,
+                head,
+                same_change,
+                approval_at(boards[-1]),
+                standing(level, boards[-1], names, te, ce),
+            )[0]
+        ):
+            return "zuck approved its CLEAR of this head"
+        return None
 
     def pr_verdicts() -> list[dict[str, str]]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         return verdicts(_flat(pages))
 
     # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
-    # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs it:
-    # it takes the manual path.
+    # A standing HOLD, or a CLEAR zuck approved, sends an audited PR to the manual path (pinned).
     mode = "manual"
     if level in ("LOW", "AUTO"):
         on, owhy = switches()
         if not on:
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
-        elif pr_verdicts():
-            twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        elif pin := pinned(audited := pr_verdicts()):
+            twhy = f"{twhy}, but {pin}: it takes the CLEAR + APPROVE path"
         else:
             fresh, fwhy = up_to_date(base, head)
-            if fresh:
-                mode = level.lower()
+            auto_on = bool(boards) and activated(boards[-1], ACTIVATE_AUTO)[0]
+            if fresh and audited and not auto_on:
+                twhy = f"{twhy}, but it is audited and AUTO is off: the CLEAR + APPROVE path"
+            elif fresh:  # an audited LOW PR runs every AUTO job (#454 audit S1)
+                mode = "auto" if audited else level.lower()
+            elif (
+                box
+                and fwhy.startswith(BEHIND)  # only behind: a fetch failure never loops (SF1)
+                # a session's branch only, and a draft only once audited: a merge commit on a
+                # branch someone is still pushing breaks their next push (#552 audit SF5)
+                and str(p["head"].get("ref") or "").startswith("claude/")
+                and (not p.get("draft") or bool(audited) or quiet(p))
+                and (bring_ups is None or bring_ups[0] > 0)
+                and bring_up(repo, pr, head, base)
+            ):
+                if bring_ups is not None:
+                    bring_ups[0] -= 1
+                # BEHIND IS NOT A DEMOTION (Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE
+                # went to zuck's path and nothing merged for 40 min). The box merges LIVE into
+                # the branch with zuck's login, which starts the PR's CI on the new head; the
+                # next run decides on that tested tree.
+                _summary(f"#{pr} @ {head[:9]}: {twhy}, but {fwhy}: LIVE merged in; the next "
+                         "run decides on the new head")  # fmt: skip
+                return 0
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
+    # the box's registry path is tried only after zuck's own path fails (see REGISTRY_ENV)
+    registry = box and mode == "manual" and bool(os.environ.get(REGISTRY_ENV))
     low = mode != "manual"  # no verdict or approval needed on this path
     required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
@@ -763,23 +1581,19 @@ def run(
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
             _summary(f"(label not removed: {exc})")
-    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
-    # at every open PR, most of which carry no verdict at all).
-    ids: dict[str, str | None] = {}
-
-    def same_change(sha: str) -> bool:
-        if "head" not in ids:
-            ids["head"] = patch_id(base, head)
-        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         found = pr_verdicts()
         if low:
-            if found:  # the auditor spoke mid-run: the next run takes the manual path
-                return None, f"{twhy}, but an AUDIT verdict arrived: the audit governs it now"
-            on, owhy = switches()  # a DEACTIVATE since the first read is honoured
-            if not on:
+            on, owhy = switches()  # a DEACTIVATE since the first read is honoured; read first so
+            if not on:  # pinned() sees a mid-run APPROVE on this poll (#537 audit S2)
                 return None, f"{twhy}, but {owhy}"
+            pin = pinned(found)
+            if pin:  # a HOLD (or zuck's approval) arrived mid-run: the next run decides
+                return None, f"{twhy}, but {pin}: the audit governs it now"
+            if found and mode == "low":  # a verdict arrived mid-run on an unaudited LOW PR: it is
+                # audited now and must run every AUTO job, so the next run decides (#537 audit MF1)
+                return None, f"{twhy}, but it was audited mid-run: the next run decides"
             fresh, fwhy = up_to_date(base, head)  # LIVE may have moved: the merged tree
             if not fresh:  # must still be the tested one
                 return None, f"{twhy}, but {fwhy}"
@@ -787,13 +1601,95 @@ def run(
                 twhy
             )
         clear, why = cleared(found, head, same_change)
-        if clear is None:
+        if clear is not None:
+            ap = _gh(
+                f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                "--paginate",
+                "--slurp",
+            )
+            board = _flat(ap)
+            ok, awhy = approval_covers(
+                found, head, same_change, approval_at(board), standing(level, board, names, te, ce)
+            )
+            if ok and awhy.startswith(STANDING_WHY):
+                # it rests on the standing approval, not a comment newer than the CLEAR: the
+                # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
+                clear = {**clear, "standing": "yes"}
+            if ok or not registry:
+                return (clear if ok else None), f"{why}; {awhy}"
+            why = f"{why}; {awhy}"
+        if not registry:
             return None, why
-        ap = _gh(
-            f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
+        return registry_now(found, why)
+
+    def authority_rows() -> tuple[list[dict[str, Any]], str]:
+        """The authority path's one CLEAR row for this head, or none; why (see AUTHORITY_*)."""
+        declared["run"] = None
+        pub = os.environ.get(AUTHORITY_PUBKEY_ENV) or ""
+        folder = os.environ.get(AUTHORITY_DIR_ENV) or ""
+        pin_path = os.environ.get(AUTHORITY_PIN_ENV) or ""
+        if not (folder and pin_path):
+            return [], "authority: no attestations folder or root pin configured"
+        if (Path(folder) / AUTHORITY_KILL).exists():
+            return [], f"authority: {AUTHORITY_KILL} file present, the path is off"
+        legacy, _ = registry_rows(os.environ.get(REGISTRY_ENV))
+        mine = [r for r in legacy if r.get("pr") == pr]
+        if mine and mine[-1].get("verdict") == "HOLD":  # a pasted HOLD row is still a veto
+            return [], "authority: a HOLD row in the registry stands"
+        digest = gate_root_digest()
+        try:
+            pin = json.loads(Path(pin_path).read_text(encoding="utf-8-sig")).get("digest")
+        except (OSError, ValueError, AttributeError):
+            pin = None
+        if digest is None or pin != digest:
+            return [], "authority: LIVE's root digest is not the pinned one, so the path is off"
+        try:
+            sts, _bad = authority_verdicts(folder, pr, repo, pub, digest, datetime.now(UTC))
+        except Exception as exc:  # no key, no cryptography, unreadable folder: nothing verifies
+            return [], f"authority: attestations cannot be verified ({type(exc).__name__})"
+        st, why = authority_clear(sts, head, patch_id(base, head), level)
+        if st is None:
+            return [], f"authority: {why}"
+        if st["tier"] == "CONTROLLER":
+            ok, ewhy = trusted_eval_passed(repo, pr, head, base)
+            if not ok:
+                return [], f"authority: {why}, but {ewhy}"
+        ev: dict[str, Any] = st["evidence"] if isinstance(st.get("evidence"), dict) else {}
+        rd = ev.get("replay_declared") if st["tier"] == "CONTROLLER" else None
+        declared["run"] = rd.get("run") if isinstance(rd, dict) else None
+        # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
+        return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
+
+    def registry_now(found: list[dict[str, str]], mwhy: str) -> tuple[dict[str, str] | None, str]:
+        """The registry path, after zuck's path did not clear the head (see REGISTRY_ENV). With
+        AUTHORITY_PUBKEY_ENV set, only a verified authority attestation counts: no unsigned row is
+        read at all."""
+        path = os.environ.get(REGISTRY_ENV) or ""
+        if os.environ.get(AUTHORITY_PUBKEY_ENV):
+            rows, gone = authority_rows()
+        else:
+            rows, gone = registry_rows(path)
+        if not rows:
+            return None, f"{mwhy}; registry: {gone or 'no rows'}"
+        if found and found[-1]["verdict"] != "CLEAR":  # a HOLD (or an edit) on the PR wins
+            return None, f"{mwhy}; registry: AUDIT HOLD {found[-1]['sha'][:9]} stands on the PR"
+        on, owhy = switches()
+        if not on:
+            return None, f"{mwhy}; registry: {owhy}"
+        fresh, fwhy = up_to_date(base, head)
+        if not fresh:
+            return None, f"{mwhy}; registry: {fwhy}"
+        now = datetime.now(UTC)
+        seen = Path(path + ".window.json")
+        hold = registry_hold_h(touches_root(files))
+        return registry_clear(
+            rows,
+            pr,
+            head,
+            lambda: registry_window(seen, pr, head, now, run_notify, hold),
+            now,
+            hold,
         )
-        ok, awhy = approved(clear, approval_at(_flat(ap)))
-        return (clear if ok else None), f"{why}; {awhy}"
 
     clear, why = verdict_now()
     if clear is None:
@@ -819,18 +1715,51 @@ def run(
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
-        state, cwhy = checks(runs, required, genuine)
+        auto: tuple[str, ...] = AUTO_JOBS if clear.get("by") == "registry" else ()
+        if (
+            auto
+            and declared["run"] is not None
+            and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+        ):  # the very run the authority signed as MATCHES_DECLARED; a re-run is judged anew
+            auto = tuple(j for j in auto if j != REPLAY_JOB)
+        need = required + auto
+        if clear.get("standing") and RISK_JOB not in need:
+            need = (*need, RISK_JOB)
+        state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
-        if state == "fail" and REVIEWER in required:
+        if state == "fail" and REVIEWER in need:
             review = queued_review(repo, runs, genuine)
             rest = [r for r in runs if r is not review]
-            if review is not None and checks(rest, required, genuine)[0] != "fail":
+            if review is not None and checks(rest, need, genuine)[0] != "fail":
                 # no free reviewer answered: QUEUED, never a pass and never a quarantine
                 qwhy = f"{REVIEWER} queued: no free reviewer answered; {requeue(repo, review)}"
                 _status(repo, head, "pending", qwhy)
                 _summary(f"#{pr} @ {head[:9]}: not merged -- {qwhy}")
                 return 0
+        if (
+            state == "fail"
+            and low
+            and box
+            and os.environ.get(REGISTRY_ENV)
+            and os.environ.get(AUTHORITY_PUBKEY_ENV)
+            and checks(runs, tuple(j for j in need if j != REPLAY_JOB), genuine)[0] != "fail"
+        ):
+            # replay-shadow is the one red job: a MATCHES_DECLARED the authority signed for this
+            # exact run is never an AUTO merge, so the PR leaves the no-comment path for the
+            # authority's CONTROLLER path (trusted-eval, the veto window) instead of quarantine
+            rclear, rwhy = registry_now(pr_verdicts(), "replay-shadow red on the AUTO path")
+            if (
+                declared["run"] is not None
+                and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+            ):
+                if rclear is None:  # signed, but its window is still running: no quarantine
+                    _summary(f"#{pr} @ {head[:9]}: not merged -- {rwhy}")
+                    return 0
+                mode, low, registry, required = "manual", False, True, GATING_JOBS
+                _summary(f"#{pr} @ {head[:9]}: replay-shadow MATCHES_DECLARED, signed by the "
+                         "authority as CONTROLLER: the authority path decides")  # fmt: skip
+                continue
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             if low:  # the no-comment paths quarantine a failure; the manual path reports it
@@ -841,7 +1770,12 @@ def run(
                 except RuntimeError as exc:
                     _summary(f"(quarantine label not added: {exc})")
             return 1
-        if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
+        # A LOW-tier PR never holds a runner, and with `wait_min` 0 no PR does: the box sweep
+        # looks again. MEASURED 2026-10-29: every CLEARed PR's gate polled for up to 300 min on
+        # a runner of the same free pool its own checks were queued for, so under a backlog the
+        # gates held the slots the checks needed (189 runs queued, oldest 14:05Z, nothing but box
+        # state reached LIVE for 4h). Holding a runner to wait for runners is the class.
+        if box or low or wait_min <= 0:
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
             return 0
         if time.monotonic() > deadline:
@@ -860,7 +1794,7 @@ def run(
         except RuntimeError as exc:
             _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
-        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
+        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
     _gh(
         f"repos/{repo}/pulls/{pr}/merge",
         "-X",
@@ -871,6 +1805,8 @@ def run(
             "commit_title": (
                 f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
                 if clear["verdict"] == mode.upper()
+                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
+                if clear.get("by") == "registry"
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
@@ -885,18 +1821,184 @@ def run(
     return 0
 
 
-def sweep(repo: str, base: str, approvals_issue: int = APPROVALS_ISSUE) -> int:
-    """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
-    One PR's failure never stops the others; the worst exit code is returned."""
-    pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
+#: How long one box sweep may run before it stops and leaves the rest to the next one.
+SWEEP_BUDGET_S = 15 * 60
+#: THE ORDER READ IS CHEAP OR IT IS SKIPPED (Desk health 2026-11-03 19:08Z: inside the box task a
+#: check-runs read averaged 13 s with 120 s stalls, so 209 open PRs spent the whole budget on the
+#: pre-read and no sweep reached a merge from 17:07Z). Each read gets PRE_READ_TIMEOUT_S, and the
+#: pre-read stops at PRE_READ_SHARE of the budget; a PR it did not reach is ordered last, never
+#: dropped, and its full run still decides.
+PRE_READ_TIMEOUT_S = 20.0
+PRE_READ_SHARE = 0.4
+
+
+def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> list[str]:
+    """The registry merges on the base (newest first) whose LIVE ci FAILED while their first
+    parent's ci PASSED (so the merge itself broke LIVE, not a base-side transient it inherited),
+    and that no listed commit reverts. `commits`: the base's recent commits, newest first; `ci`:
+    sha -> conclusions of its completed ci runs. Cancelled or still-running is never a failure."""
+    reverted = {
+        m.group(1)
+        for c in commits
+        for m in re.finditer(r"This reverts commit ([0-9a-f]{40})", str(c["commit"]["message"]))
+    }
+    out = []
+    for c in commits:
+        msg, sha = str(c["commit"]["message"]), str(c["sha"])
+        parents = [str(x.get("sha")) for x in c.get("parents") or []]
+        first = parents[0] if parents else ""
+        if (
+            is_registry_merge(msg)
+            and "failure" in ci.get(sha, [])
+            and "success" in ci.get(first, [])
+            and sha not in reverted
+        ):
+            out.append(sha)
+    return out
+
+
+def is_registry_merge(msg: str) -> bool:
+    return msg.startswith("Merge #") and REGISTRY_TITLE in msg.split("\n", 1)[0]
+
+
+def _ci_conclusions(repo: str, sha: str) -> list[str]:
+    runs = _gh(f"repos/{repo}/actions/runs?head_sha={sha}&per_page=20") or {}
+    return [
+        str(r.get("conclusion"))
+        for r in runs.get("workflow_runs") or []
+        if r.get("name") == "ci" and r.get("status") == "completed"
+    ]
+
+
+def auto_revert(repo: str, base: str) -> int:
+    """AUTO-REVERT (journal D-20261103-005): a registry merge that turned LIVE ci red is reverted
+    on the base by the box, so the tree goes back to the one LIVE ran green before it. Any
+    failure is logged and leaves the base as it is (rc 1); a revert that does not apply is
+    aborted and the checkout is put back on the base, so the next sweep starts clean. It never
+    merges anything."""
+    try:
+        commits = _gh(f"repos/{repo}/commits?sha={base}&per_page=30") or []
+        ci: dict[str, list[str]] = {}
+        for c in commits:
+            if is_registry_merge(str(c["commit"]["message"])):
+                ci[str(c["sha"])] = _ci_conclusions(repo, str(c["sha"]))
+                parents = c.get("parents") or []
+                if parents:
+                    first = str(parents[0].get("sha"))
+                    ci[first] = _ci_conclusions(repo, first)
+        bad = to_revert(commits, ci)
+    except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, AttributeError) as exc:
+        _summary(f"AUTO-REVERT failed, nothing reverted: {exc}")
+        return 1
     rc = 0
-    for p in _flat(pages):
-        n = int(p["number"])
+    for sha in bad:
         try:
-            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
-        except (RuntimeError, subprocess.CalledProcessError) as exc:
+            _git("fetch", "-q", "--no-tags", "origin", base)
+            # an older revert past the 30 listed commits still counts (#591 audit SF2)
+            if _git("log", f"origin/{base}", "--format=%H", f"--grep=This reverts commit {sha}"):
+                continue
+            _git("checkout", "-q", "-B", "gate-auto-revert", f"origin/{base}")
+            _git("revert", "-m", "1", "--no-edit", sha)
+            _git("push", "-q", "origin", f"HEAD:{base}")
+            _summary(f"AUTO-REVERT: {sha[:9]} (a registry merge) broke LIVE ci; reverted on {base}")
+        except (RuntimeError, subprocess.SubprocessError) as exc:
+            _summary(f"AUTO-REVERT of {sha[:9]} failed, nothing pushed: {exc}")
+            rc = 1
+        finally:
+            for args in (("revert", "--abort"), ("checkout", "-q", "--detach", f"origin/{base}")):
+                with contextlib.suppress(RuntimeError, subprocess.SubprocessError):
+                    _git(*args)
+    return rc
+
+
+def sweep(
+    repo: str,
+    base: str,
+    approvals_issue: int = APPROVALS_ISSUE,
+    budget_s: float = SWEEP_BUDGET_S,
+    clock: Callable[[], float] = time.monotonic,
+) -> int:
+    """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
+    One PR's failure never stops the others; the worst exit code is returned.
+
+    MEASURED 2026-10-29: with 231 PRs open, a full run for each outlasted the task's 30-minute
+    limit, so the sweep was killed before its first log line, every time, from 13:14Z. Now one
+    cheap read skips a PR whose gating checks are still running (a skip never merges anything),
+    each line is flushed as it is written, and the pass stops at `budget_s`."""
+    # a red registry merge goes back before anything new merges (only where registry merges run)
+    rc = auto_revert(repo, base) if os.environ.get(REGISTRY_ENV) else 0
+    pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
+    deadline = clock() + budget_s
+    looked = skipped = failed = 0
+    # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
+    # green PR waited behind dozens that could not merge). One cheap read per PR sorts them:
+    # every check green, then the gating ones, then a failed gating check (its full run still
+    # quarantines it and counts in rc; #552 audit SF4), then checks still running. The read is
+    # ORDER ONLY: no PR is dropped on it, so a forged check run can reorder but never hide one
+    # (#552 audit SF3); every merge and bring-up decides on provenance-checked runs.
+    # REGISTRY FIRST: a PR whose latest registry row CLEARs its exact listed head is the one a
+    # sweep can merge without zuck, so it is run before any order read (an ordering only: its
+    # full run still checks the window, every job and the HOLDs).
+    reg_rows, _ = registry_rows(os.environ.get(REGISTRY_ENV))
+    latest = {r.get("pr"): r for r in reg_rows}
+    ready: list[tuple[int, int, int]] = []
+    bring_ups = [BRING_UPS_PER_SWEEP]
+    read_until = clock() + budget_s * PRE_READ_SHARE
+    unread = 0
+    for i, p in enumerate(_flat(pages)):
+        n = int(p["number"])
+        head = str((p.get("head") or {}).get("sha") or "")
+        row = latest.get(n) or {}
+        if head and row.get("verdict") == "CLEAR" and row.get("sha") == head:
+            ready.append((-1, i, n))
+            continue
+        if clock() > min(deadline, read_until):  # the pre-read is inside the budget (#552 SF6)
+            unread += 1
+            ready.append((4, i, n))  # never dropped: ordered after every PR that was read
+            continue
+        rank = 1
+        if head:  # no sha in the listing: no shortcut, the full run decides
+            try:
+                got = _gh(
+                    f"repos/{repo}/commits/{head}/check-runs?per_page=100",
+                    timeout=PRE_READ_TIMEOUT_S,
+                )
+            # A TIMEOUT SKIPS ONE PR (Desk health 2026-11-03: 378 sweeps since 10-30 died on one
+            # 120 s gh TimeoutExpired here, so every sweep read "0 looked at" and merged nothing).
+            except (RuntimeError, subprocess.SubprocessError) as exc:
+                _summary(f"#{n}: its checks could not be read: {exc}")
+                rc = 1
+                continue
+            runs = (got or {}).get("check_runs") or []
+            state = checks(runs, GATING_JOBS, lambda r: True)[0]
+            if state == "pending":
+                skipped += 1
+                rank = 3
+            elif state == "fail":
+                failed += 1
+                rank = 2
+            else:
+                every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
+                rank = 0 if every == "pass" else 1
+        ready.append((rank, i, n))
+    if unread:
+        _summary(f"order read stopped at {PRE_READ_SHARE:.0%} of the budget; {unread} PR(s) unread "
+                 "go last")  # fmt: skip
+    for _rank, _i, n in sorted(ready):
+        if clock() > deadline:
+            _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
+                     "the next sweep goes on")  # fmt: skip
+            break
+        try:
+            looked += 1
+            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue,
+                             bring_ups=bring_ups))  # fmt: skip
+        except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
+    _summary(f"sweep: {looked} PR(s) looked at; {skipped} with CI still running and {failed} "
+             f"with a gating check failed went last; "
+             f"{BRING_UPS_PER_SWEEP - bring_ups[0]} brought up")  # fmt: skip
     return rc
 
 
@@ -925,7 +2027,7 @@ def main(argv: list[str] | None = None) -> int:
             box=a.box,
             approvals_issue=a.approvals_issue,
         )
-    except (RuntimeError, subprocess.CalledProcessError) as exc:
+    except (RuntimeError, subprocess.SubprocessError) as exc:
         _summary(f"#{a.pr}: the gate failed: {exc}")
         return 1
 

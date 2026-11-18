@@ -282,19 +282,33 @@ def terminal_health() -> dict[str, Any]:
     else:
         opened = False
         try:
-            if mt5.terminal_info() is None:
-                try:
-                    from mt5desk.config import terminal_path
-                    path = terminal_path()
-                except Exception:
-                    path = ""
-                opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
-            ti = mt5.terminal_info()
-            if ti is None:
+            # Pinned to the desk's terminal and proven Fusion's (2026-11-11): the box runs FTMO
+            # too, and a healthy FTMO terminal says nothing about the desk's.
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            from research.mt5_session import attach_or_initialize, venue_refusal
+            held = mt5.terminal_info() is not None
+            attached = attach_or_initialize(mt5, path=path or None, timeout=15000)
+            opened = attached and not held
+            why = venue_refusal(mt5, path or None) if attached else None
+            ti = mt5.terminal_info() if attached else None
+            if why is not None:
+                opened = True                   # the wrong terminal is let go, whoever held it
+                out["terminal"] = {"status": "UNMEASURED",
+                                   "why": f"wrong venue, refused: {why}"}
+            elif ti is None:
                 out["terminal"] = {"status": "FAIL", "why": f"unreachable ({mt5.last_error()})"}
             else:
                 tick = mt5.symbol_info_tick("XAUUSD")
-                tick_age = (time.time() - float(tick.time)) if tick is not None else None
+                # `tick.time` is broker wall-clock seconds (New York + 7 h): its age is taken on
+                # the true UTC instant, or a live quote reads 2-3 h in the future (a negative age).
+                from mt5desk.broker_clock import broker_epoch_to_utc
+                tick_at = broker_epoch_to_utc(tick.time) if tick is not None else None
+                tick_age = ((datetime.now(tz=UTC) - tick_at).total_seconds()
+                            if tick_at is not None else None)
                 ok = bool(ti.connected) and bool(ti.trade_allowed)
                 out["terminal"] = {
                     "status": "PASS" if ok else "FAIL",
