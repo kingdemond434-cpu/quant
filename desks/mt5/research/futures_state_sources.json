@@ -74,6 +74,23 @@
    "note": "VIX index and VX futures settlements; site terms not yet confirmed for automated use"
   },
   {
+   "id": "cboe_put_call_ratios",
+   "idea": "build_check row 72 (C_DEDUPE 2026-11-18): Cboe put/call extremes x VIX regime",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "Terms and Conditions for Use of Cboe Websites s2: 'You may view, print and download one copy of the Materials for your personal non-commercial use'; you may not otherwise 'copy, reproduce, alter, store either in hard copy or in an electronic retrieval system' or 'publish, rent, sublicense, distribute, or otherwise use' the Materials without Cboe's prior written consent (route: 'Request to Use Cboe Content')",
+   "terms_url": "https://www.cboe.com/terms",
+   "terms_read": "2026-11-18",
+   "robots": "https://www.cboe.com/robots.txt read 2026-11-18: 'User-Agent: * / Disallow: /book/ / Disallow: /*market_statistics/volume_reports/'; the daily statistics page is not disallowed, and robots allowing a path never overrides refusing terms",
+   "url": "https://www.cboe.com/us/options/market_statistics/daily/",
+   "targets": [
+    "US500",
+    "NAS100"
+   ],
+   "why": "Daily total, index and equity put/call ratios, z-scored to an extreme state and combined with the VIX regime as a contrarian conditioner for US500 and NAS100.",
+   "note": "FENCED, not built. A trading desk storing the ratios in an electronic retrieval system is the commercial, automated use s2 reserves to Cboe's written consent, so nothing is fetched and no lake series or cell exists. The domain is already refused in libs/data/refused_hosts.py ('cboe.com'). Terms and robots read by WebFetch; this container's proxy refuses www.cboe.com and cdn.cboe.com to curl (CONNECT 403), not worked around. Unblocks only with Cboe's written consent recorded here. The VIX leg has the same owner and the same terms (cboe_vix_history above)."
+  },
+  {
    "id": "fred_vixcls",
    "adapter": "none",
    "terms": "TO_CONFIRM",
