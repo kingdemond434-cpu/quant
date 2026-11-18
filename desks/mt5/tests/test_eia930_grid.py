@@ -225,6 +225,9 @@ def test_surprise_and_zscore() -> None:
     assert eg.zscore(prior[:10], 3.0) is None                     # below Z_MIN_H
     assert eg.zscore(prior, 1.5) == pytest.approx(2.0)            # mean .5, sd .5
     assert eg.zscore([0.2] * 200, 0.3) is None                    # zero sd: no z, never 0
+    # a float-residue sd (~1e-16, seen on CI) is still zero sd, never a z of ~1e15
+    assert eg.zscore([0.1] * 199 + [0.1 + 1e-15], 0.3) is None
+    assert eg.zscore([1000.2] * 200, 1000.3) is None
     # the window is the trailing Z_WINDOW_H only
     long = [100.0] * 50 + [0.0, 1.0] * eg.Z_WINDOW_H
     assert eg.zscore(long, 1.5) == pytest.approx(2.0)

@@ -598,6 +598,10 @@ def surprise(demand: float, forecast: float) -> float | None:
     return (demand - forecast) / forecast
 
 
+#: Relative sd floor below which a window counts as constant (see zscore).
+Z_SD_EPS = 1e-9
+
+
 def zscore(prior: list[float], x: float, window: int = Z_WINDOW_H,
            min_n: int = Z_MIN_H) -> float | None:
     """x against the trailing `window` STRICTLY EARLIER values; None below `min_n` or zero sd."""
@@ -606,7 +610,12 @@ def zscore(prior: list[float], x: float, window: int = Z_WINDOW_H,
         return None
     m = sum(w) / len(w)
     sd = math.sqrt(sum((v - m) ** 2 for v in w) / len(w))
-    return (x - m) / sd if sd > 0 else None
+    # A constant window has sd 0 in exact arithmetic, but the float mean can leave a residue of
+    # ~1e-16 (it does on CI's Python), and dividing by it yields a z of ~1e15. Treat any sd
+    # below float resolution relative to the window's scale as zero: no z, never a giant one.
+    if sd <= Z_SD_EPS * max(1.0, abs(m)):
+        return None
+    return (x - m) / sd
 
 
 def surprise_series(store: Mapping[str, Mapping[str, Any]]) -> dict[str, list[dict[str, Any]]]:
