@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-18T18:02:36+00:00",
+ "generated_utc": "2026-11-18T18:47:25+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -79268,15 +79268,15 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 147,
+   "runs": 156,
    "fetches": 6265,
    "ok": 3884,
    "http_errors": 158,
    "transport_errors": 2223,
-   "seconds": 12595.8,
+   "seconds": 12640.4,
    "rows": 126,
-   "last_run": "2026-11-18T11:35:16+00:00",
-   "fetches_per_s": 0.4974,
+   "last_run": "2026-11-18T18:47:25+00:00",
+   "fetches_per_s": 0.4956,
    "success_rate": 0.62,
    "wall_s_24h": 2038.5,
    "cpu_s_24h": 173.9
@@ -79306,8 +79306,8 @@
    "last_run": "2026-11-18T18:02:36+00:00",
    "fetches_per_s": 0.4726,
    "success_rate": 0.5925,
-   "wall_s_24h": 2075.8,
-   "cpu_s_24h": 293.9
+   "wall_s_24h": 2473.2,
+   "cpu_s_24h": 407.4
   },
   "forest_china": {
    "runs": 24,
@@ -79324,16 +79324,16 @@
    "cpu_s_24h": 462.6
   },
   "forest_europe": {
-   "runs": 25,
-   "fetches": 10244,
-   "ok": 8144,
-   "http_errors": 559,
-   "transport_errors": 1541,
-   "seconds": 18857.3,
-   "rows": 3609,
+   "runs": 24,
+   "fetches": 9834,
+   "ok": 7820,
+   "http_errors": 539,
+   "transport_errors": 1475,
+   "seconds": 18254.9,
+   "rows": 3464,
    "last_run": "2026-11-18T15:05:35+00:00",
-   "fetches_per_s": 0.5432,
-   "success_rate": 0.795,
+   "fetches_per_s": 0.5387,
+   "success_rate": 0.7952,
    "wall_s_24h": 5461.5,
    "cpu_s_24h": 880.8
   },
@@ -79397,8 +79397,8 @@
    "last_run": "2026-11-18T11:02:07+00:00",
    "fetches_per_s": 0.5546,
    "success_rate": 0.912,
-   "wall_s_24h": 2856.8,
-   "cpu_s_24h": 177.8
+   "wall_s_24h": 1999.4,
+   "cpu_s_24h": 113.5
   },
   "forest_japan": {
    "runs": "UNMEASURED",
@@ -79408,16 +79408,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 26,
-   "fetches": 2346,
-   "ok": 1481,
+   "runs": 25,
+   "fetches": 2260,
+   "ok": 1397,
    "http_errors": 16,
-   "transport_errors": 849,
-   "seconds": 7706.8,
-   "rows": 296,
+   "transport_errors": 847,
+   "seconds": 7283.2,
+   "rows": 284,
    "last_run": "2026-11-18T17:48:23+00:00",
-   "fetches_per_s": 0.3044,
-   "success_rate": 0.6313,
+   "fetches_per_s": 0.3103,
+   "success_rate": 0.6181,
    "wall_s_24h": 2398.6,
    "cpu_s_24h": 283.0
   },
