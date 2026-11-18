@@ -1156,8 +1156,18 @@ def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
 
 # ------------------------------------------------------------------ the fast lane (2026-11-17)
 _STUB = """
-def classify(paths, head=None):
+import subprocess
+from pathlib import Path
+
+
+def classify(paths, head=None, closure_rev=None):
     p = list(paths)[0]
+    if closure_rev is not None:  # the target's closure: does its money code import the path?
+        root = Path(__file__).resolve().parents[2]
+        m = subprocess.run(["git", "-C", str(root), "show", closure_rev + ":libs/x.py"],
+                           capture_output=True, text=True).stdout
+        if Path(p).stem in m:
+            return False, p + " is on the target's money path (stub)"
     if p.startswith("research/"):
         return True, "off the money path (stub)"
     return False, p + " is on the money path (stub)"
@@ -1209,3 +1219,22 @@ def test_a_broken_classifier_exempts_nothing(repo: Path) -> None:
     assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
     _with_classifier(repo, "this is not python(\n")
     assert ag.fast_lane_exempt(repo, ["research/r.py"], change, []) == {}
+
+
+def test_a_cleared_money_change_that_newly_imports_a_fast_path_holds_it(repo: Path) -> None:
+    """#1287 audit MF1: the sealed closure never reached research/r.py, but the target's does,
+    because a CLEARed change to libs/x.py in the same target imports it."""
+    _with_classifier(repo)
+    head = _head(repo)
+    money = _origin(repo, head, {"libs/x.py": "from research import r\nX = 2\n"}, msg="money")
+    both = _origin(repo, money, {"research/r.py": "R = 1\n"}, msg="fast")
+    target = _with_clears(repo, both, _clear(repo, money))
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
+
+
+def test_a_classifier_that_cannot_read_the_target_closure_exempts_nothing(repo: Path) -> None:
+    _with_classifier(repo, "def classify(paths, head=None):\n    return True, 'old'\n")
+    change = _origin(repo, _head(repo), {"research/r.py": "R = 1\n"})
+    code, doc = ag.pre(repo, change, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]

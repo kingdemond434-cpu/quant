@@ -732,7 +732,7 @@ def fast_lane_exempt(
     paths: list[str],
     target: str,
     clears: list[Clear],
-    classify: Callable[[list[str], str], tuple[bool, str]] | None = None,
+    classify: Callable[..., tuple[bool, str]] | None = None,
 ) -> dict[str, str]:
     """{path: why} for each uncovered path the box's OWN fast-lane classifier calls non-money.
 
@@ -743,8 +743,11 @@ def fast_lane_exempt(
     in the box's current, sealed checkout (never the incoming one) says it is off the money path,
     off the release and box machinery, no risk suite and no producer of a file the money code
     reads. Each path is judged alone with the target's copy, which is what the per-file rules
-    already do. A HOLD row naming the path's target content still holds it; a missing or failing
-    classifier exempts nothing; FAST_LANE_OFF_REL switches the whole exemption off.
+    already do, and against the money closure of the TARGET as well as the sealed tree's (#1287
+    audit MF1: a cleared money change in the same target may newly import it); a classifier that
+    cannot take the target's closure exempts nothing. A HOLD row naming the path's target
+    content still holds it; a missing or failing classifier exempts nothing; FAST_LANE_OFF_REL
+    switches the whole exemption off.
     """
     if not paths or (root / FAST_LANE_OFF_REL).exists():
         return {}
@@ -769,7 +772,9 @@ def fast_lane_exempt(
         if (p, tree.get(p)) in held:
             continue
         try:
-            fast, why = classify([p], target)
+            fast, why = classify([p], target, closure_rev=target)
+        except TypeError:  # a classifier that cannot read the target's closure: exempt nothing
+            return {}
         except Exception:
             continue
         if fast:
