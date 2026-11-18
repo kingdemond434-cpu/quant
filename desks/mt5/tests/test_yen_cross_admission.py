@@ -41,6 +41,15 @@ _NEEDS_CATALOGUE = pytest.mark.skipif(
     not (DESK / "data" / "e8_catalogue.json").exists(),
     reason="UNMEASURED: data/e8_catalogue.json is box-only; run this check on the trading box")
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def test_symbol_allowlist_alone_would_admit_every_rr_variant(tmp_path: Path) -> None:
     """THE HOLE `live_sleeves` EXISTS TO CLOSE. Admitting the SYMBOL admits every certified
@@ -105,29 +114,45 @@ def test_an_unreadable_policy_still_falls_back_to_gold_only(tmp_path: Path) -> N
 
 def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
     """The artifact itself, as it will be read on the box. Principal 2026-10-07: EURZAR, USDZAR
-    and AUDCHF joined gold for the certified sleeve book; USDJPY stays a live symbol but its
-    rr2.5 sleeve is Reddit-lineage quarantined (`live_sleeves.USDJPY == []`) until re-certified,
-    and the CHFNOK carry rows are quarantined for lookahead. BOOKS_PATCH v5 (2026-10-13): the
+    and AUDCHF joined gold for the certified sleeve book, and the CHFNOK carry rows are
+    quarantined for lookahead. Principal 2026-10-13: an idea's Reddit origin is no fence, so
+    USDJPY's whole-symbol quarantine becomes the rr2.5-only allowlist, and EURUSD joins for
+    session_range_breakout only (its `live_sleeves` keeps cot_positioning and discovered out). BOOKS_PATCH v5 (2026-10-13): the
     gap_decay rows are stopped (AUDCHF and USDZAR leave the universe, EURZAR admits only its
     carry name) and USDNOK / EURILS join for their one funded sleeve each."""
     f = DESK / "data" / "live_sleeve_policy.json"
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"})
+    # principal zuck 2026-11-13: whitelist lifted; the quarantines below are by NAME now
+    assert pol.live_symbols == frozenset({"*"})
     assert "discovered" in pol.banned_families
+    srb = {"family": "session_range_breakout", "timeframe": "H1"}
     for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
-        assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
+        assert lp.refuse({**srb, "symbol": "USDJPY", "name": name}, pol) is None
+    for name in ("USDJPY.asia#rr=1.5", "usdjpy_session_range_breakout_asia_5_wb_12"):
+        assert lp.refuse({**srb, "symbol": "USDJPY", "name": name}, pol) is not None
+    for name in ("EURUSD.asia#rr=1.5_wait_bars=8", "eurusd_session_range_breakout_asia_rr15_wb8"):
+        assert lp.refuse({**srb, "symbol": "EURUSD", "name": name}, pol) is None
+    # The 2026-11-13 lift opens EURUSD to every certified family (its 2026-11-11 one-sleeve
+    # allowlist only opened the door under the old whitelist); the 'discovered' ban stands.
+    for name in ("EURUSD.cot_positioning.asia", "eurusd_cot_positioning_asia_p_0"):
+        assert lp.refuse({"symbol": "EURUSD", "family": "cot_positioning", "timeframe": "H1",
+                          "name": name}, pol) is None
+    assert lp.refuse({"symbol": "EURUSD", "family": "discovered", "timeframe": "H1",
+                      "name": "EURUSD.discovered.asia"}, pol) is not None
     assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
                      pol) is not None
     for sym in ("EURZAR", "USDZAR", "AUDCHF"):
-        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is not None
+        name = f"{sym.lower()}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay", "name": name},
+                         pol) is not None
     for sym, name in (("EURZAR", "eurzar_carry_asia_p_8339edce23032d21"),
                       ("USDNOK", "usdnok_carry_asia_p_ff35bb7c8427d66f"),
                       ("EURILS", "eurils_formula_asia_p_673857a649d3c271")):
         assert lp.refuse({"symbol": sym, "name": name}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
-                     pol) is not None
+                     pol) is None
     assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
 
 
@@ -314,7 +339,7 @@ def test_the_clock_key_the_promoter_writes_is_admitted(tmp_path: Path) -> None:
     """The promoter names a LIVE row by its forward clock's key; rr=2.5/wb=12 on asia is
     `USDJPY.asia#rr=2.5` (wait_bars 12 is the window default). Admitting only an alias no
     writer produces would keep the approved sleeve off the live account forever. Pinned on the
-    allowlist shape, since the shipped file holds USDJPY quarantined (see the test above)."""
+    allowlist shape, independent of what the shipped file admits (see the test above)."""
     pol = _policy(tmp_path, {"live_symbols": ["XAUUSD", "USDJPY"], "live_sleeves": {
         "USDJPY": ["USDJPY.asia#rr=2.5", CHOSEN_MT5]}})
     row = {"name": "USDJPY.asia#rr=2.5", "symbol": "USDJPY", "family": "session_range_breakout"}
