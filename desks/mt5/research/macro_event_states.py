@@ -41,6 +41,15 @@ WHAT IT WRITES
   * `reports/MACRO_EVENT_STATES.json` -- the record: per-source status, terms evidence, store
     size, latest state and its z, cells, missed-growth lines.
 
+THE EXPECTATION (a consensus substitute). No paid consensus is read: `expectation(series,
+release_time, method, period)` is the desk's own point-in-time statistical expectation from prints
+public before the release -- zero, trailing mean of 4, trailing median of 12, 5-year seasonal
+same-week / same-month mean, seasonal naive (one year back) and an OLS AR(1). Every method is
+computed for every print and named in the row; one is PRIMARY per series (EIA seasonal_5y, USDA
+trailing_mean4, TIC trailing_median12, SNB zero). surprise = actual - expectation, and surprise_z
+scales it by the std of that method's strictly earlier surprises. Official nowcasts (GDPNow, NY
+Fed Staff Nowcast, Philadelphia Fed SPF) are listed as optional inputs, NOT built.
+
 POINT-IN-TIME RULE. `available_time` is never earlier than the moment the publisher released the
 number:
   * FIRST PULL (backfill): the publisher's release rule, as a LATE bound (or the moment of the
@@ -206,7 +215,23 @@ TERMS_EVIDENCE: dict[str, dict[str, Any]] = {
     },
 }
 
+#: Free official nowcasts that could join the desk's own expectation as further inputs for a
+#: related macro print. OPTIONAL and lower priority than the five sources: none of the five
+#: releases here is the print these nowcast, so none is wired, and none was fetched -- their
+#: terms and robots were NOT read on this pass, so each stays closed until they are.
+OPTIONAL_EXPECTATION_INPUTS: dict[str, dict[str, str]] = {
+    "atlanta_fed_gdpnow": {"what": "Atlanta Fed GDPNow (US real GDP nowcast)",
+                           "status": "NOT_BUILT", "terms": "UNREAD this pass"},
+    "ny_fed_staff_nowcast": {"what": "New York Fed Staff Nowcast (US real GDP)",
+                             "status": "NOT_BUILT", "terms": "UNREAD this pass"},
+    "philly_fed_spf": {"what": "Philadelphia Fed Survey of Professional Forecasters",
+                       "status": "NOT_BUILT", "terms": "UNREAD this pass"},
+}
+
 MISSED_GROWTH: dict[str, str] = {
+    "nowcasts": ("no official nowcast or survey joins the expectation: a GDP / payrolls print "
+                 "has only the desk's statistical expectation until GDPNow, the NY Fed nowcast "
+                 "or the SPF are read for terms and robots and wired as inputs"),
     "snb_sight_deposits": ("SNB sight-deposit intervention state not built: no EURCHF / USDCHF / "
                            "XAUUSD cell or event row on the SNB's weekly FX footprint until the "
                            "SNB's non-commercial clause is lifted for the desk"),
@@ -547,8 +572,8 @@ class Source:
     slow_h: float
     fast_h: float
     fast_window: Callable[[datetime], bool]
-    #: (series it derives from, surprise name, baseline kind)
-    states: tuple[tuple[str, str, str], ...] = field(default_factory=tuple)
+    #: (series it derives from, surprise name, "change" | "level", expectation methods, primary)
+    states: tuple[tuple[str, str, str, tuple[str, ...], str], ...] = field(default_factory=tuple)
     #: symbols per surprise series when they differ by series (USDA commodity -> its CFD)
     series_symbols: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     z_window: int = 52
@@ -558,24 +583,30 @@ SOURCES: dict[str, Source] = {
     "snb_sight_deposits": Source(
         "snb_sight_deposits", "N5", "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
         parse_snb_cube, ("EURCHF", "USDCHF", "XAUUSD"), 20.0, 20.0, lambda _n: False,
-        (("snb_sd_total", "snb_sd_change_w", "change"),)),
+        (("snb_sd_total", "snb_sd_change_w", "change",
+          ("zero", "trailing_mean4", "seasonal_naive", "ar1"), "zero"),)),
     "usda_export_sales": Source(
         "usda_export_sales", "N7", "https://apps.fas.usda.gov/export-sales/highlite.htm",
         parse_usda_highlights, ("CORN", "WHEAT", "SOYBEAN"), 24.0, 1.0, _thursday_window(8),
-        tuple((f"usda_esr_{c}_net", f"usda_esr_{c}_surprise_4w", "mean4")
-              for c in USDA_COMMODITIES),
+        tuple((f"usda_esr_{c}_net", f"usda_esr_{c}_surprise_4w", "level",
+               ("trailing_mean4", "trailing_median12", "seasonal_naive", "ar1"),
+               "trailing_mean4") for c in USDA_COMMODITIES),
         {"usda_esr_corn_surprise_4w": ("CORN",), "usda_esr_wheat_surprise_4w": ("WHEAT",),
          "usda_esr_soybeans_surprise_4w": ("SOYBEAN",)}),
     "eia_gas_storage": Source(
         "eia_gas_storage", "N8", "https://www.eia.gov/dnav/ng/hist/nw2_epg0_swo_r48_bcfw.htm",
         parse_eia_history, ("XNGUSD",), 24.0, 1.0, _thursday_window(10),
-        (("eia_ngs_level", "eia_ngs_surprise_5y", "five_year"),)),
+        (("eia_ngs_level", "eia_ngs_surprise_5y", "change",
+          ("seasonal_5y", "trailing_mean4", "seasonal_naive", "ar1"), "seasonal_5y"),)),
     "tic_foreign_flows": Source(
         "tic_foreign_flows", "N6",
         "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/"
         "slt_table1.txt",
         parse_tic_table1, ("USDJPY", "EURUSD", "US500", "US30", "NAS100", "US2000"),
-        24.0, 1.0, _tic_window, (("tic_net_lt", "tic_net_lt_surprise_12m", "median12"),),
+        24.0, 1.0, _tic_window,
+        (("tic_net_lt", "tic_net_lt_surprise_12m", "level",
+          ("trailing_median12", "trailing_mean4", "seasonal_naive", "ar1"),
+          "trailing_median12"),),
         z_window=24),
     "boj_rinban": Source(
         "boj_rinban", "N4", "https://www.boj.or.jp/en/mopo/mkt/index.htm",
@@ -825,74 +856,148 @@ def weekly_changes(pts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def _same_week(changes: Mapping[date, float], d: date, years_back: int) -> float | None:
-    y = d.year - years_back
+# ------------------------------------------------------------------- the consensus substitute
+#: The desk's own point-in-time statistical expectation of a print, standing in for a paid
+#: economic consensus. Every method reads ONLY points of the same series with an earlier period
+#: AND an available_time strictly before the release being judged, so no expectation can see the
+#: print it is judged against or anything published after it. Every row names its method, and
+#: every method is computed for every print, so the judge can compare them.
+EXPECTATION_METHODS: tuple[str, ...] = ("zero", "trailing_mean4", "trailing_median12",
+                                        "seasonal_5y", "seasonal_naive", "ar1")
+AR1_WINDOW = {"weekly": 52, "monthly": 36}
+AR1_MIN = 12
+#: Surprises a method needs behind it before its surprise is scaled by their std.
+SCALE_MIN = 8
+SCALE_WINDOW = {"weekly": 104, "monthly": 60}
+
+
+def _freq(period: str) -> str:
+    return "monthly" if len(period) == 7 else "weekly"
+
+
+def _ordinal(period: str) -> int:
+    """Weekly: days since epoch; monthly: months since year 0 (for span checks)."""
+    if len(period) == 7:
+        return int(period[:4]) * 12 + int(period[5:7]) - 1
+    d = _day(period)
+    return d.toordinal() if d else 0
+
+
+def _span_ok(prev: list[dict[str, Any]], period: str, n: int) -> bool:
+    """`n` prints with no gap wider than one missing print in the run up to `period`."""
+    if len(prev) < n:
+        return False
+    span = _ordinal(period) - _ordinal(prev[0]["period"])
+    return span <= ((n + 1) if _freq(period) == "monthly" else 7 * (n + 1))
+
+
+def _years_back(period: str, k: int) -> list[str]:
+    """Candidate periods `k` years before `period`, nearest first (a weekly period matches
+    within +-3 days, the Friday drifting a day or two a year)."""
+    if len(period) == 7:
+        return [f"{int(period[:4]) - k:04d}{period[4:]}"]
+    d = _day(period)
+    if d is None:
+        return []
     try:
-        target = date(y, d.month, d.day)
+        target = date(d.year - k, d.month, d.day)
     except ValueError:
-        target = date(y, d.month, 28)
-    best = min(((abs((k - target).days), k) for k in changes
-                if abs((k - target).days) <= 3), default=None)
-    return None if best is None else changes[best[1]]
+        target = date(d.year - k, d.month, 28)
+    return [(target + timedelta(days=i)).isoformat() for i in (0, -1, 1, -2, 2, -3, 3)]
 
 
-def surprises(pts: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
-    """Each point against its baseline from STRICTLY EARLIER points only:
-      change     value = the week-on-week change, baseline 0 (SNB)
-      mean4      baseline = mean of the previous 4 prints, all within 42 days (USDA)
-      five_year  value = the weekly change, baseline = mean of the same-week change in each of
-                 the previous 5 years (+-3 days), all five required (EIA)
-      median12   baseline = median of the previous 12 months, all within 13 months (TIC)
-    `surprise` = value - baseline; points without a full baseline are dropped, never padded."""
-    out: list[dict[str, Any]] = []
-    if kind in ("change", "five_year"):
-        ch = weekly_changes(pts)
-        if kind == "change":
-            return [{**c, "actual": c["value"], "baseline": 0.0, "surprise": c["value"]}
-                    for c in ch]
-        by_day = {d: c["value"] for c in ch if (d := _day(c["period"])) is not None}
-        for c in ch:
-            d = _day(c["period"])
-            if d is None:
-                continue
-            prior = [_same_week(by_day, d, k) for k in range(1, 6)]
-            if any(p is None for p in prior):
-                continue
-            base = sum(float(p) for p in prior if p is not None) / 5.0
-            out.append({**c, "actual": c["value"], "baseline": base,
-                        "surprise": c["value"] - base, "value": c["value"] - base})
-        return out
-    for i, p in enumerate(pts):
-        if kind == "mean4":
-            prev = pts[max(0, i - 4):i]
-            d0, d1 = _day(prev[0]["period"]) if prev else None, _day(p["period"])
-            if len(prev) < 4 or d0 is None or d1 is None or (d1 - d0).days > 42:
-                continue
-            base = sum(q["value"] for q in prev) / 4.0
-        elif kind == "median12":
-            prev = pts[max(0, i - 12):i]
-            if len(prev) < 12:
-                continue
-            y0, m0 = int(prev[0]["period"][:4]), int(prev[0]["period"][5:7])
-            y1, m1 = int(p["period"][:4]), int(p["period"][5:7])
-            if (y1 - y0) * 12 + (m1 - m0) > 13:
-                continue
-            base = float(statistics.median(q["value"] for q in prev))
-        else:
-            continue
-        out.append({**p, "actual": p["value"], "baseline": base, "surprise": p["value"] - base,
-                    "value": p["value"] - base})
-    return out
+def _same_season(by_period: Mapping[str, float], period: str, k: int) -> float | None:
+    return next((by_period[c] for c in _years_back(period, k) if c in by_period), None)
 
 
-def zscore(values: list[float], window: int) -> float | None:
-    """The last value against the `window` strictly earlier values; None below 8 of them."""
-    prior, x = values[:-1][-window:], values[-1] if values else None
-    if x is None or len(prior) < 8:
+def _ar1(values: list[float]) -> float | None:
+    """One-step OLS AR(1) forecast x_t = a + b x_{t-1} from the given history."""
+    if len(values) < AR1_MIN:
         return None
-    m = sum(prior) / len(prior)
-    sd = math.sqrt(sum((v - m) ** 2 for v in prior) / len(prior))
-    return (x - m) / sd if sd > 0 else None
+    x, y = values[:-1], values[1:]
+    mx, my = sum(x) / len(x), sum(y) / len(y)
+    vx = sum((v - mx) ** 2 for v in x)
+    if vx <= 0:
+        return my
+    b = sum((a - mx) * (c - my) for a, c in zip(x, y, strict=True)) / vx
+    return (my - b * mx) + b * values[-1]
+
+
+def expectation(series: list[dict[str, Any]], release_time: datetime | str, method: str,
+                period: str) -> float | None:
+    """The desk's own expectation of `series` at `period`, from what was public before
+    `release_time` only. None when the method lacks the history it needs (never padded):
+      zero               0 -- the print itself is the surprise (a flow that should net to zero)
+      trailing_mean4     mean of the last 4 prints (no more than one missing)
+      trailing_median12  median of the last 12 prints (no more than one missing)
+      seasonal_5y        mean of the same week / month in each of the previous 5 years, all five
+      seasonal_naive     the same week / month one year earlier
+      ar1                OLS AR(1) one-step forecast over the last 52 weeks / 36 months (>= 12)
+    """
+    rt = _t(release_time) if isinstance(release_time, str) else release_time
+    if rt is None:
+        return None
+    prior = [p for p in series if p["period"] < period
+             and (t := _t(p["available_time"])) is not None and t < rt]
+    if method == "zero":
+        return 0.0
+    if method in ("trailing_mean4", "trailing_median12"):
+        n = 4 if method == "trailing_mean4" else 12
+        prev = prior[-n:]
+        if not _span_ok(prev, period, n):
+            return None
+        vals = [float(p["value"]) for p in prev]
+        return sum(vals) / n if n == 4 else float(statistics.median(vals))
+    by_period = {p["period"]: float(p["value"]) for p in prior}
+    if method == "seasonal_naive":
+        return _same_season(by_period, period, 1)
+    if method == "seasonal_5y":
+        got = [_same_season(by_period, period, k) for k in range(1, 6)]
+        if any(g is None for g in got):
+            return None
+        return sum(float(g) for g in got if g is not None) / 5.0
+    if method == "ar1":
+        return _ar1([float(p["value"]) for p in prior[-AR1_WINDOW[_freq(period)]:]])
+    raise ValueError(f"unknown expectation method {method!r}")
+
+
+def surprises(pts: list[dict[str, Any]], kind: str, methods: tuple[str, ...],
+              primary: str) -> list[dict[str, Any]]:
+    """Each print against every expectation method, and the PRIMARY method's row fields.
+
+    `kind` "change" judges the week-on-week change of a level series, "level" the print itself.
+    Per method: `expectation`, `surprise` = actual - expectation, and `surprise_z` = the
+    surprise scaled by the std of that method's STRICTLY EARLIER surprises (>= SCALE_MIN of
+    them, else None). Rows without a primary expectation are dropped, never padded; the row's
+    `value` is the primary surprise_z (None until it is scalable)."""
+    target = weekly_changes(pts) if kind == "change" else pts
+    hist: dict[str, list[float]] = {m: [] for m in methods}
+    out: list[dict[str, Any]] = []
+    for p in target:
+        exps: dict[str, dict[str, Any]] = {}
+        for m in methods:
+            e = expectation(target, p["available_time"], m, p["period"])
+            if e is None:
+                exps[m] = {"expectation": None, "surprise": None, "surprise_z": None}
+                continue
+            s = float(p["value"]) - e
+            prior = hist[m][-SCALE_WINDOW[_freq(p["period"])]:]
+            z = None
+            if len(prior) >= SCALE_MIN:
+                sd = statistics.pstdev(prior)
+                z = s / sd if sd > 0 else None
+            hist[m].append(s)
+            exps[m] = {"expectation": round(e, 6), "surprise": round(s, 6),
+                       "surprise_z": None if z is None else round(z, 6)}
+        prim = exps.get(primary) or {}
+        if prim.get("expectation") is None:
+            continue
+        out.append({"period": p["period"], "available_time": p["available_time"],
+                    "pit_quality": p.get("pit_quality"), "actual": float(p["value"]),
+                    "method": primary, "baseline": prim["expectation"],
+                    "surprise": prim["surprise"], "surprise_z": prim["surprise_z"],
+                    "value": prim["surprise_z"], "expectations": exps})
+    return out
 
 
 def _event_time(period: str) -> str:
@@ -1122,41 +1227,55 @@ def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
         syms_all, sym_skipped = allowed(paths, src.symbols)
         if sym_skipped:
             rec["symbols_skipped"] = sym_skipped
-        for base, name, kind in src.states:
-            pts = surprises(_points(store, base), kind)
+        for base, name, kind, methods, primary in src.states:
+            pts = surprises(_points(store, base), kind, methods, primary)
+            scaled = [p for p in pts if p["value"] is not None]
             want = src.series_symbols.get(name, src.symbols)
             syms = [s for s in syms_all if s in want]
             latest = pts[-1] if pts else None
-            z = zscore([p["value"] for p in pts], src.z_window) if pts else None
             rec["states"][name] = (
                 {"status": UNMEASURED, "points": 0} if latest is None else
                 {"period": latest["period"], "actual": latest["actual"],
-                 "baseline": round(latest["baseline"], 4),
-                 "surprise": round(latest["surprise"], 4),
-                 "z": None if z is None else round(z, 4),
+                 "method": primary, "expectation": latest["baseline"],
+                 "surprise": latest["surprise"], "surprise_z": latest["surprise_z"],
+                 "expectations": latest["expectations"],
                  "available_time": latest["available_time"], "points": len(pts),
-                 "symbols": syms})
-            if not dry_run and pts and (w := write_lake(paths, name, pts)):
-                lake.append(w)
-            if len(pts) < MIN_POINTS:
+                 "scaled_points": len(scaled), "symbols": syms})
+            if not dry_run:
+                # the primary method's scaled surprise feeds the cells; every other method's
+                # scaled surprise is written beside it so methods can be compared on the tape
+                if (w := write_lake(paths, name, scaled)):
+                    lake.append(w)
+                for m in methods:
+                    if m == primary:
+                        continue
+                    alt = [{**p, "value": p["expectations"][m]["surprise_z"]} for p in pts
+                           if p["expectations"][m]["surprise_z"] is not None]
+                    if (w := write_lake(paths, f"{name}__{m}", alt)):
+                        lake.append(w)
+            if len(scaled) < MIN_POINTS:
                 rec["states"][name]["missed_growth"] = MISSED_GROWTH["history"].format(
-                    name=name, need=MIN_POINTS, have=len(pts))
+                    name=name, need=MIN_POINTS, have=len(scaled))
             else:
-                grid += build_cells(name, sid, syms, len(pts), src.z_window, now)
+                grid += build_cells(name, sid, syms, len(scaled), src.z_window, now)
             for p in pts:
                 if syms:
                     events.append({
                         "at": p["available_time"], "kind": f"mes_{sid}", "name": name,
                         "instruments": syms, "actual": p["actual"], "consensus": p["baseline"],
-                        "surprise": p["surprise"], "period": p["period"],
-                        "pit_quality": p.get("pit_quality"), "source": sid})
+                        "consensus_method": primary, "surprise": p["surprise"],
+                        "surprise_z": p["surprise_z"], "expectations": p["expectations"],
+                        "period": p["period"], "pit_quality": p.get("pit_quality"),
+                        "source": sid})
         report_src[sid] = rec
     state["last_requests"] = client.requests
     events.sort(key=lambda e: (e["at"], e["kind"], e["name"]))
     clock = {"generated_at": _iso(now), "writer": "research/macro_event_states.py",
              "rule": ("one row per surprise: `at` is the release's point-in-time available_time; "
-                      "`actual` the print (or the week's change), `consensus` the baseline from "
-                      "strictly earlier prints"),
+                      "`actual` the print (or the week's change); `consensus` the desk's own "
+                      "expectation by `consensus_method` from prints public before the release "
+                      "(a substitute for a paid consensus); `expectations` every method's "
+                      "expectation, surprise and std-scaled surprise_z"),
              "n_events": len(events), "events": events,
              "consumers": ["research/event_response_atlas.py (load_events ground "
                            "macro_event_states)"]}
@@ -1178,8 +1297,13 @@ def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
            "cells": {"grid": len(grid), "built": len(take),
                      "minted": int(don.get("donated") or 0),
                      "trials_charged": 0 if dry_run else len(take), "donation": don},
-           "missed_growth": {s: r["missed_growth"] for s, r in report_src.items()
-                             if r.get("missed_growth")},
+           "expectation": {"methods": list(EXPECTATION_METHODS),
+                           "primary": {name: prim for src_ in SOURCES.values()
+                                       for _b, name, _k, _m, prim in src_.states},
+                           "optional_inputs": OPTIONAL_EXPECTATION_INPUTS},
+           "missed_growth": {**{s: r["missed_growth"] for s, r in report_src.items()
+                                if r.get("missed_growth")},
+                             "nowcasts": MISSED_GROWTH["nowcasts"]},
            "mode": "DRY_RUN" if dry_run else "RAN",
            "seconds": round(time.monotonic() - t0, 1)}
     if not dry_run:

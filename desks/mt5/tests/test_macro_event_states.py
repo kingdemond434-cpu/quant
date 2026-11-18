@@ -138,7 +138,7 @@ def _run(paths: me.Paths, fake: Fake, now: datetime = T0, minted: list[Any] | No
                   key=lambda: key, **kw)
 
 
-def _pages(n_eia: int = 320, n_tic: int = 50) -> dict[str, bytes]:
+def _pages(n_eia: int = 320, n_tic: int = 60) -> dict[str, bytes]:
     return {"eia_gas_storage": eia_page(eia_weeks(n_eia, date(2026, 11, 13))),
             "usda_export_sales": usda_page(date(2026, 11, 13)),
             "tic_foreign_flows": tic_page([(p, 1000.0 + 10 * i) for i, p in
@@ -291,8 +291,8 @@ def test_snb_parser_kept_for_when_terms_allow() -> None:
                                                   ("2026-11-13", 462500.0)]
     ch = me.surprises([{"period": o.period, "value": o.value,
                         "available_time": me._iso(o.rule_time), "pit_quality": "x"}
-                       for o in obs], "change")
-    assert ch[0]["surprise"] == 2500.0
+                       for o in obs], "change", ("zero",), "zero")
+    assert ch[0]["surprise"] == 2500.0 and ch[0]["method"] == "zero"
 
 
 # --------------------------------------------------------------------- release rules (PIT)
@@ -350,39 +350,96 @@ def test_store_is_idempotent_and_revisions_are_stamped_when_seen(tmp_path: Path)
     assert me._points(back, "tic_net_lt")[0]["value"] == 100.0
 
 
-# ------------------------------------------------------------------------- surprise maths
-def _pts(vals: list[float], periods: list[str], avail: str = "2026-01-01T00:00:00+00:00"
-         ) -> list[dict[str, Any]]:
-    return [{"period": p, "value": v, "available_time": avail, "pit_quality": "t"}
-            for p, v in zip(periods, vals, strict=True)]
+# ------------------------------------------------------------------- expectation and surprise
+def _pts(vals: list[float], periods: list[str]) -> list[dict[str, Any]]:
+    """Each print public 12 hours after its period starts (strictly increasing stamps)."""
+    out = []
+    for p, v in zip(periods, vals, strict=True):
+        d = date.fromisoformat(p if len(p) == 10 else p + "-01")
+        out.append({"period": p, "value": v, "pit_quality": "t",
+                    "available_time": me._iso(datetime(d.year, d.month, d.day, 12, tzinfo=UTC))})
+    return out
 
 
-def test_mean4_uses_strictly_earlier_prints() -> None:
-    days = [(date(2026, 1, 1) + timedelta(days=7 * i)).isoformat() for i in range(6)]
-    out = me.surprises(_pts([10, 20, 30, 40, 100, 0], days), "mean4")
+def _weekly(n: int, start: date = date(2026, 1, 2)) -> list[str]:
+    return [(start + timedelta(days=7 * i)).isoformat() for i in range(n)]
+
+
+def test_expectation_reads_only_what_was_public_before_release() -> None:
+    days = _weekly(6)
+    pts = _pts([10, 20, 30, 40, 100, 0], days)
+    rel = pts[4]["available_time"]
+    assert me.expectation(pts, rel, "trailing_mean4", days[4]) == 25.0
+    # a print stamped AFTER the release (a late revision, a delayed print) is invisible to it
+    late = [dict(p) for p in pts]
+    late[3]["available_time"] = me._iso(datetime(2027, 1, 1, tzinfo=UTC))
+    assert me.expectation(late, rel, "trailing_mean4", days[4]) is None
+    # the print being judged is never part of its own expectation
+    assert me.expectation(pts, "2030-01-01T00:00:00+00:00", "trailing_mean4", days[4]) == 25.0
+
+
+def test_every_method_is_named_and_unknown_methods_raise() -> None:
+    pts = _pts([float(i) for i in range(30)], _weekly(30))
+    for m in me.EXPECTATION_METHODS:
+        me.expectation(pts, pts[-1]["available_time"], m, pts[-1]["period"])
+    with pytest.raises(ValueError):
+        me.expectation(pts, pts[-1]["available_time"], "consensus_we_bought", pts[-1]["period"])
+
+
+def test_trailing_mean4_and_gappy_window() -> None:
+    days = _weekly(6)
+    out = me.surprises(_pts([10, 20, 30, 40, 100, 0], days), "level",
+                       ("trailing_mean4",), "trailing_mean4")
     assert [o["period"] for o in out] == days[4:]
     assert out[0]["baseline"] == 25.0 and out[0]["surprise"] == 75.0
     assert out[1]["baseline"] == (20 + 30 + 40 + 100) / 4
+    gappy = ["2026-01-02", "2026-03-06", "2026-03-13", "2026-03-20", "2026-03-27"]
+    assert me.surprises(_pts([1, 2, 3, 4, 5], gappy), "level", ("trailing_mean4",),
+                        "trailing_mean4") == []
 
 
-def test_mean4_refuses_a_gappy_window() -> None:
-    days = ["2026-01-01", "2026-03-01", "2026-03-08", "2026-03-15", "2026-03-22"]
-    assert me.surprises(_pts([1, 2, 3, 4, 5], days), "mean4") == []
-
-
-def test_median12_against_the_previous_twelve() -> None:
+def test_trailing_median12() -> None:
     per = months_back(14, "2026-09")
     vals = [float(i) for i in range(13)] + [1000.0]
-    out = me.surprises(_pts(vals, per), "median12")
+    out = me.surprises(_pts(vals, per), "level", ("trailing_median12",), "trailing_median12")
     assert len(out) == 2
     assert out[0]["baseline"] == 5.5 and out[0]["surprise"] == 12 - 5.5
     assert out[1]["baseline"] == 6.5
 
 
+def test_seasonal_naive_and_ar1() -> None:
+    per = months_back(30, "2026-09")
+    vals = [100.0 + 2.0 * i for i in range(30)]               # a straight line: AR(1) is exact
+    pts = _pts(vals, per)
+    rel = pts[-1]["available_time"]
+    assert me.expectation(pts, rel, "seasonal_naive", per[-1]) == vals[-13]
+    assert me.expectation(pts, rel, "ar1", per[-1]) == pytest.approx(vals[-1])
+    assert me.expectation(pts[:5], pts[4]["available_time"], "ar1", per[4]) is None
+
+
+def test_surprise_is_scaled_by_its_own_earlier_surprises() -> None:
+    per = months_back(40, "2026-09")
+    vals = [float((i * 7) % 11) for i in range(40)]
+    out = me.surprises(_pts(vals, per), "level", ("trailing_median12", "ar1"),
+                       "trailing_median12")
+    hist = [o["surprise"] for o in out]
+    for i, o in enumerate(out):
+        prior = hist[:i][-me.SCALE_WINDOW["monthly"]:]
+        if len(prior) < me.SCALE_MIN:
+            assert o["surprise_z"] is None and o["value"] is None
+        else:
+            import statistics
+            assert o["surprise_z"] == pytest.approx(o["surprise"] / statistics.pstdev(prior),
+                                                    abs=1e-5)
+        assert set(o["expectations"]) == {"trailing_median12", "ar1"}
+        assert o["method"] == "trailing_median12"
+
+
 def test_five_year_same_week_average_of_changes() -> None:
     weeks = eia_weeks(6 * 52 + 4, date(2026, 11, 13))
-    pts = _pts([v for _, v in weeks], [d.isoformat() for d, _ in weeks])
-    out = me.surprises(pts, "five_year")
+    pts = [{"period": d.isoformat(), "value": v, "pit_quality": "t",
+            "available_time": me._iso(me.eia_release_time(d))} for d, v in weeks]
+    out = me.surprises(pts, "change", ("seasonal_5y",), "seasonal_5y")
     assert out, "five years of history must yield surprises"
     last = out[-1]
     changes = {d: b - a for (_, a), (d, b) in pairwise(weeks)}
@@ -394,12 +451,7 @@ def test_five_year_same_week_average_of_changes() -> None:
     assert last["actual"] == changes[d]
     assert last["baseline"] == pytest.approx(sum(prior) / 5)
     assert last["surprise"] == pytest.approx(changes[d] - sum(prior) / 5)
-    # the first surprise needs five prior years: nothing in the first 5 years of history
-    assert _day(out[0]["period"]) >= weeks[0][0] + timedelta(days=5 * 365 - 10)
-
-
-def _day(s: str) -> date:
-    return date.fromisoformat(s)
+    assert date.fromisoformat(out[0]["period"]) >= weeks[0][0] + timedelta(days=5 * 365 - 10)
 
 
 def test_weekly_change_skips_missing_weeks() -> None:
@@ -495,3 +547,18 @@ def test_live_pass_stamps_new_print_at_bracketed_rule(tmp_path: Path) -> None:
     rec = me.load_store(paths, "eia_gas_storage")[("eia_ngs_level", "2026-11-20")]
     assert rec["pit_quality"] == "live_rule"
     assert rec["available_time"] == me._iso(me.eia_release_time(date(2026, 11, 20)))
+
+
+def test_every_emitted_family_has_a_registered_builder(tmp_path: Path) -> None:
+    """The Judge's condition: a cell naming a family the registry cannot build lands as
+    NO_REGISTERED_BUILDER and never gets a verdict."""
+    from research.axis_registry import registered_families
+    from research.family_policy import family_banned
+    minted: list[dict[str, Any]] = []
+    _run(_paths(tmp_path), Fake(_pages()), minted=minted,
+         now=datetime(2026, 11, 20, 12, tzinfo=UTC))
+    assert minted
+    families = {c["family"] for c in minted}
+    registry = registered_families()
+    assert families <= registry, families - registry
+    assert not any(family_banned(f) for f in families)
