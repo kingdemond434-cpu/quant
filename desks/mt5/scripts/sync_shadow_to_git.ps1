@@ -688,6 +688,9 @@ $relPaths = @(
     # plain-English answer to "is the desk running", which until now only a person at the box saw.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
+    # PASS WATCH (2026-11-18): ops/pass_watch.py, on MT5-ProcessHealth's clock. The hourly pass
+    # reads this one file and goes deeper only when its flag is set (zuck: cheaper watching).
+    "desks/mt5/reports/PASS_WATCH.json",
     "desks/mt5/reports/DESK_HEALTH.json",
     "desks/mt5/reports/PR_BLOCKERS.json",
     # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
