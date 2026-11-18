@@ -1207,6 +1207,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
     # network, two small reads; the cloud hourly pass runs the full GitHub half.
     "arch_health",
+    # Diebold-Yilmaz connectedness across the book's asset classes on desk bars (build check
+    # 2026-11-18: "cross-asset lead-lag and spillover graph" not built). Report only; stands
+    # down inside 20h on unchanged bars, so most passes cost one file read.
+    "spillover_graph",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
@@ -6465,6 +6469,9 @@ def main() -> None:
     ahl = _costed("arch_health", lambda: _producer(
         "arch_health", "scripts/arch_health.py", "--static-only",
         "--out", "desks/mt5/reports/ARCH_HEALTH.json"))
+    # THE SPILLOVER GRAPH (2026-11-18): who transmits shocks to whom, returns and volatility.
+    spg = _costed("spillover_graph", lambda: _producer(
+        "spillover_graph", "research/spillover_graph.py", "--once"))
     # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
     # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
     # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
@@ -6730,7 +6737,7 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
-                    "arch_health": ahl,
+                    "arch_health": ahl, "spillover_graph": spg,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "llm_yield": llmy, "llm_budget_census": lbc,
