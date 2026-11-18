@@ -8,8 +8,12 @@ writes, and changes nothing: no gate, no bar, no trial count, no worker count. R
 
   reports/JUDGING_RATE_TREND.json
     * per UTC day, the last 7 days: changed-verdict events and FIRST-TERMINAL verdicts, read from
-      judging_throughput's ledger index (data/judging_rate_ledger_index.json, which keeps every
-      row's stamp for 8 days). No second stream of the 1.6M-row ledger is ever made.
+      the resume checkpoint judging_throughput ALREADY WRITES beside the verdict ledger
+      (data/hypotheses/gate_verdict_rate_ckpt.json): its `raw` and `first` maps hold the count
+      of changed and first-ruling rows per second-precision stamp for the whole ledger, which is
+      exactly a per-day count once bucketed. No second stream of the 1.6M-row ledger is made,
+      and no second writer exists to fall silent: the earlier version read an index file nothing
+      wrote, so the trend read UNMEASURED every hour (Auditor HOLD on #1037, 2026-11-18).
     * per sweep: each distinct sweep end JUDGE_RESIDENT.json reports is recorded with its
       duration and the verdicts stamped inside it, so verdicts/sweep and verdicts per
       sweep-hour accumulate one row per sweep, kept for the newest SWEEP_KEEP.
@@ -43,7 +47,10 @@ REPORTS = BASE / "reports"
 OUT = REPORTS / "JUDGING_RATE_TREND.json"
 CAPACITY_OUT = REPORTS / "CAPACITY_MODEL.json"
 
-LEDGER_INDEX = BASE / "data" / "judging_rate_ledger_index.json"
+#: The verdict-rate resume checkpoint `judging_throughput._persist` writes every pass, and the
+#: ledger it describes (a checkpoint short of the ledger's size is a stream still catching up).
+VERDICT_CKPT = BASE / "data" / "hypotheses" / "gate_verdict_rate_ckpt.json"
+GATE_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 RESIDENT = REPORTS / "JUDGE_RESIDENT.json"
 RATE = REPORTS / "JUDGING_RATE.json"
 THROUGHPUT = REPORTS / "JUDGING_THROUGHPUT.json"
@@ -106,20 +113,57 @@ def _write_atomic(path: Path, doc: Any) -> None:
 # 630: the 7-day trend
 # --------------------------------------------------------------------------------------------
 
-def _index_rows(index: Any) -> tuple[list[tuple[int, int]] | None, str]:
-    """The index's kept rows as (epoch, is_first), or None and why."""
+Row = tuple[int, int, int]                     # (epoch, verdict events, first-terminal)
+
+
+def index_from_checkpoint(ckpt: Any, *, now: datetime, ckpt_mtime: datetime | None,
+                          ledger_size: int | None) -> dict[str, Any] | None:
+    """The trend's index, built from judging_throughput's resume checkpoint. Pure.
+
+    `raw` and `first` map a second-precision ISO stamp to its row count; only stamps inside the
+    trend window (TREND_DAYS + 1 days) are kept, aggregated per stamp. The index counts as
+    updated at the checkpoint's write time only when its offset reached the ledger's end;
+    otherwise the stream is still catching up and it speaks only up to the newest stamp read."""
+    if not isinstance(ckpt, dict) or not isinstance(ckpt.get("raw"), dict):
+        return None
+    first = ckpt.get("first") if isinstance(ckpt.get("first"), dict) else {}
+    lo = now - timedelta(days=TREND_DAYS + 1)
+    rows: list[list[int]] = []
+    for stamp, n in ckpt["raw"].items():
+        t = _parse(stamp)
+        if t is None or t < lo:
+            continue
+        with contextlib.suppress(TypeError, ValueError):
+            rows.append([int(t.timestamp()), int(n), int(first.get(stamp) or 0)])
+    rows.sort()
+    try:
+        caught_up = ledger_size is not None and int(ckpt.get("offset") or -1) >= ledger_size
+    except (TypeError, ValueError):
+        caught_up = False
+    updated = ckpt_mtime if caught_up else _parse(ckpt.get("last"))
+    return {"recent": rows, "updated_at": _iso(updated) if updated else None,
+            "kept_since": int(lo.timestamp()), "caught_up": caught_up,
+            "source": f"desks/mt5/data/hypotheses/{VERDICT_CKPT.name}"}
+
+
+def _index_rows(index: Any) -> tuple[list[Row] | None, str]:
+    """The index's rows as (epoch, events, first), or None and why. A two-field row is one
+    verdict event whose second field says whether it was the cell's first ruling."""
     if not isinstance(index, dict):
-        return None, f"{LEDGER_INDEX.name} absent or unreadable"
-    rows: list[tuple[int, int]] = []
+        return None, f"{VERDICT_CKPT.name} absent or unreadable"
+    rows: list[Row] = []
     try:
         for r in index.get("recent") or []:
-            rows.append((int(r[0]), int(r[1])))
+            if len(r) >= 3:
+                rows.append((int(r[0]), int(r[1]), int(r[2])))
+            else:
+                rows.append((int(r[0]), 1, int(bool(int(r[1])))))
     except (TypeError, ValueError, IndexError):
-        return None, f"{LEDGER_INDEX.name} `recent` is malformed"
+        return None, f"{VERDICT_CKPT.name} `recent` is malformed"
     return rows, ""
 
 
-def daily_series(rows: list[tuple[int, int]], now: datetime, kept_since: int | None,
+def daily_series(rows: list[Row], now: datetime, kept_since: int | None,
                  updated_at: datetime | None) -> list[dict[str, Any]]:
     """One row per UTC day for the last TREND_DAYS days, oldest first. Pure.
 
@@ -129,11 +173,11 @@ def daily_series(rows: list[tuple[int, int]], now: datetime, kept_since: int | N
     days = [today - timedelta(days=k) for k in range(TREND_DAYS - 1, -1, -1)]
     events = dict.fromkeys(days, 0)
     first = dict.fromkeys(days, 0)
-    for at, is_first in rows:
+    for at, n_events, n_first in rows:
         d = datetime.fromtimestamp(at, UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         if d in events:
-            events[d] += 1
-            first[d] += int(bool(is_first))
+            events[d] += n_events
+            first[d] += n_first
     out = []
     for d in days:
         end = d + timedelta(days=1)
@@ -157,7 +201,7 @@ def daily_series(rows: list[tuple[int, int]], now: datetime, kept_since: int | N
 
 
 def record_sweep(sweeps: list[dict[str, Any]], resident: Any,
-                 rows: list[tuple[int, int]] | None) -> list[dict[str, Any]]:
+                 rows: list[Row] | None) -> list[dict[str, Any]]:
     """Append the resident's last completed sweep if it is new. Pure; returns a new list."""
     out = [s for s in sweeps if isinstance(s, dict)]
     if not isinstance(resident, dict):
@@ -178,9 +222,9 @@ def record_sweep(sweeps: list[dict[str, Any]], resident: Any,
                    first_terminal_per_sweep_hour=UNMEASURED)
     else:
         lo, hi = start.timestamp(), end.timestamp()
-        inside = [f for at, f in rows if lo <= at <= hi]
-        n_first = sum(1 for f in inside if f)
-        row.update(verdict_events=len(inside), first_terminal=n_first,
+        inside = [(e, f) for at, e, f in rows if lo <= at <= hi]
+        n_first = sum(f for _e, f in inside)
+        row.update(verdict_events=sum(e for e, _f in inside), first_terminal=n_first,
                    first_terminal_per_sweep_hour=round(n_first / (dur / 3600.0), 3))
     out.append(row)
     out.sort(key=lambda s: str(s.get("ended_utc")))
@@ -200,7 +244,9 @@ def build_trend(now: datetime | None = None, *, index: Any = None, resident: Any
     sweeps = record_sweep(list(prev_sweeps), resident, rows)
     doc: dict[str, Any] = {"at": _iso(t), "floor_per_day": FLOOR_PER_DAY,
                            "floor_basis": "first-terminal verdicts per UTC day",
-                           "source": f"desks/mt5/data/{LEDGER_INDEX.name}",
+                           "source": ((index.get("source") if isinstance(index, dict)
+                                       else None)
+                                      or f"desks/mt5/data/hypotheses/{VERDICT_CKPT.name}"),
                            "index_updated_at": _iso(updated) if updated else None,
                            "sweeps": sweeps}
     if rows is None:
@@ -277,12 +323,17 @@ def _certs_last_24h(cert: Any, now: datetime) -> float | None:
     if not isinstance(rows, list):
         return None
     cut = now - timedelta(hours=24)
-    n = 0
+    n = parsed = 0
     for r in rows:
         t = _parse(r.get("certified_at")) if isinstance(r, dict) else None
-        if t is not None and cut <= t <= now:
+        if t is None:
+            continue
+        parsed += 1
+        if cut <= t <= now:
             n += 1
-    return float(n)
+    # No parseable stamp is the UNMEASURED case check_certificate_clock_law names, never a rate
+    # of zero (Auditor SF, 2026-11-18).
+    return float(n) if parsed else None
 
 
 def stages(now: datetime, *, rate: Any, throughput: Any, backpressure: Any, cert: Any,
@@ -405,8 +456,11 @@ def build_capacity(now: datetime | None = None, *, rate: Any = None, throughput:
             "n_unmeasured_stages": sum(1 for k in STAGES
                                        if _num(st[k]["arrival_per_h"]) is None
                                        and _num(st[k]["service_per_h"]) is None),
+            # The source stage (miners) has no upstream, so its arrival is never measured and its
+            # alarm is always UNMEASURED; requiring it made "OK" unreachable (Auditor SF).
             "status": "ALARM" if firing else (
-                "OK" if all(st[k]["alarm"]["status"] == "OK" for k in STAGES) else UNMEASURED),
+                "OK" if all(st[k]["alarm"]["status"] == "OK" for k in STAGES[1:])
+                else UNMEASURED),
             "source_ages": ages,
             "binding_stage": min(measured, key=lambda k: measured[k]) if measured else UNMEASURED,
             "alarm_rule": f"arrival > service on every sample over {ALARM_HOURS:.0f} h",
@@ -415,10 +469,23 @@ def build_capacity(now: datetime | None = None, *, rate: Any = None, throughput:
             "samples": samples}
 
 
+def read_index(now: datetime) -> dict[str, Any] | None:
+    """The trend index from the live checkpoint, with its write time and the ledger's size."""
+    try:
+        mtime: datetime | None = datetime.fromtimestamp(VERDICT_CKPT.stat().st_mtime, UTC)
+    except OSError:
+        return None
+    try:
+        size: int | None = GATE_LEDGER.stat().st_size
+    except OSError:
+        size = None
+    return index_from_checkpoint(_read(VERDICT_CKPT), now=now, ckpt_mtime=mtime,
+                                 ledger_size=size)
+
+
 def run(now: datetime | None = None, *, write: bool = True) -> dict[str, Any]:
     t = _now(now)
-    trend = build_trend(t, index=_read(LEDGER_INDEX), resident=_read(RESIDENT),
-                        previous=_read(OUT))
+    trend = build_trend(t, index=read_index(t), resident=_read(RESIDENT), previous=_read(OUT))
     cap = build_capacity(t, rate=_read(RATE), throughput=_read(THROUGHPUT),
                          backpressure=_read(BACKPRESSURE), cert=_read(CERT_CLOCK),
                          clocks=_read(CLOCK_LEDGER), previous=_read(CAPACITY_OUT))

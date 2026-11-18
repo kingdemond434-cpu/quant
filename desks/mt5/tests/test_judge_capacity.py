@@ -1,6 +1,7 @@
 """The judge-capacity report (ideas 630/632): the 7-day trend and the five-stage queue model."""
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
 from research import judge_capacity as jc
@@ -132,10 +133,80 @@ def test_clock_service_is_the_change_in_clocks_against_an_older_sample():
 def test_run_writes_both_reports(tmp_path, monkeypatch):
     monkeypatch.setattr(jc, "OUT", tmp_path / "JUDGING_RATE_TREND.json")
     monkeypatch.setattr(jc, "CAPACITY_OUT", tmp_path / "CAPACITY_MODEL.json")
-    for name in ("LEDGER_INDEX", "RESIDENT", "RATE", "THROUGHPUT", "BACKPRESSURE",
-                 "CERT_CLOCK", "CLOCK_LEDGER"):
+    for name in ("VERDICT_CKPT", "GATE_LEDGER", "RESIDENT", "RATE", "THROUGHPUT",
+                 "BACKPRESSURE", "CERT_CLOCK", "CLOCK_LEDGER"):
         monkeypatch.setattr(jc, name, tmp_path / f"{name}.json")
     out = jc.run(NOW)
     assert (tmp_path / "JUDGING_RATE_TREND.json").exists()
     assert (tmp_path / "CAPACITY_MODEL.json").exists()
     assert out["trend"]["status"] == jc.UNMEASURED
+
+
+# THE TREND READS A FILE THAT IS ACTUALLY WRITTEN (Auditor HOLD on #1037, 2026-11-18). The first
+# version read data/judging_rate_ledger_index.json, which nothing wrote, so idea 630 read
+# UNMEASURED every hour. The source is now judging_throughput's own resume checkpoint; these
+# tests drive the real writer and read its output, so a writer that stops writing fails here.
+
+def _writer_rows(now: datetime) -> tuple[list[str], dict[str, tuple[int, int]]]:
+    """Ledger lines in the gauntlet's own layout, and the expected (events, first) per day."""
+    lines, want = [], {}
+    for k, (n_new, n_again) in enumerate(((3, 1), (5, 0), (2, 4))):
+        day = (now - timedelta(days=k + 1)).replace(hour=6, minute=0, second=0, microsecond=0)
+        at = day.isoformat(timespec="seconds")
+        for i in range(n_new):
+            lines.append(json.dumps({"at": at, "cell": f"d{k}|c{i}", "graph_id": "",
+                                     "sym": "EURUSD", "family": "carry", "passed": False,
+                                     "terminal_gate": "dsr", "downstream_status": None}))
+        later = (day + timedelta(hours=1)).isoformat(timespec="seconds")
+        for i in range(n_again):
+            lines.append(json.dumps({"at": later, "cell": f"d{k}|c{i}", "graph_id": "",
+                                     "sym": "EURUSD", "family": "carry", "passed": False,
+                                     "terminal_gate": "oos", "downstream_status": None}))
+        # A repeat beyond the day's new cells names a cell never ruled before: its first ruling.
+        want[day.date().isoformat()] = (n_new + n_again, n_new + max(0, n_again - n_new))
+    return lines, want
+
+
+def test_the_trend_reads_the_checkpoint_the_verdict_stream_writes(tmp_path):
+    import json as _json
+
+    from research import judging_throughput as jt
+    now = datetime.now(UTC).replace(microsecond=0)
+    lines, want = _writer_rows(now)
+    lines.sort(key=lambda s: _json.loads(s)["at"])
+    led = tmp_path / "gate_verdict_ledger.jsonl"
+    led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    ck = tmp_path / jt.VERDICT_CKPT_NAME
+    jt._verdict_counts(now, led, checkpoint=ck)
+    assert ck.exists(), "the verdict stream wrote no checkpoint: the trend has no source"
+    idx = jc.index_from_checkpoint(_json.loads(ck.read_text("utf-8")), now=now,
+                                   ckpt_mtime=now, ledger_size=led.stat().st_size)
+    assert idx is not None and idx["caught_up"] is True
+    doc = jc.build_trend(now, index=idx)
+    got = {d["day"]: (d["verdict_events"], d["first_terminal"]) for d in doc["days"]
+           if d["day"] in want}
+    assert got == want
+    assert doc["status"] in ("BELOW_FLOOR", "AT_FLOOR")
+
+
+def test_a_checkpoint_short_of_the_ledger_speaks_only_to_its_newest_stamp():
+    last = NOW - timedelta(days=2, hours=3)
+    ck = {"raw": {last.isoformat(timespec="seconds"): 4},
+          "first": {last.isoformat(timespec="seconds"): 1},
+          "offset": 10, "last": last.isoformat(timespec="seconds")}
+    idx = jc.index_from_checkpoint(ck, now=NOW, ckpt_mtime=NOW, ledger_size=99)
+    assert idx["caught_up"] is False
+    doc = jc.build_trend(NOW, index=idx)
+    states = {d["day"]: d["state"] for d in doc["days"]}
+    assert states[(NOW - timedelta(days=3)).date().isoformat()] == "COMPLETE"
+    assert states[(NOW - timedelta(days=1)).date().isoformat()] == jc.UNMEASURED
+
+
+def test_no_checkpoint_is_unmeasured():
+    assert jc.index_from_checkpoint(None, now=NOW, ckpt_mtime=None, ledger_size=None) is None
+    assert jc.build_trend(NOW, index=None)["status"] == jc.UNMEASURED
+
+
+def test_no_parseable_certificate_stamp_is_unmeasured_not_zero():
+    assert jc._certs_last_24h({"certificates": [{"certified_at": "?"}]}, NOW) is None
+    assert jc._certs_last_24h({"certificates": []}, NOW) is None
