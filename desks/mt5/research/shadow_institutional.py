@@ -25,8 +25,8 @@ FOR EVERY SENSOR OFF THE FIVE REFUSED ACTS: a publisher's terms are a ROUTING LA
 `terms_note` and `licence`, they bound what the desk may REDISTRIBUTE, and they have never bound
 what it may read. The old "CATALOGUED AND NEVER FETCHED" disposition was a discovery brake the
 desk imposed on itself and is deleted; the notes survive as provenance, and no access control or
-paywall is ever bypassed. A robots "no" (disallowed, UNREAD or hard stop) on a robots-checked
-sensor STOPS the automated fetch (Auditor ruling 2026-11-18, #1335).
+paywall is ever bypassed. A robots "no" (disallowed, UNREAD or hard stop) STOPS every automated
+wire fetch, whatever the sensor's `robots` field says (Auditor ruling 2026-11-18, #1335).
 
 THE DISAGREEMENT DATASET. D_t = [retail, institutional (COT), derivatives, options, news, macro]
 is a feature series in its own right, because the market's own factions disagreeing is an
@@ -604,14 +604,14 @@ class Guard:
             return None, "refused: only http(s) grounds are fetched"
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
-        if sensor.robots == "checked":
-            # A robots "no" (disallowed, UNREAD or hard stop) STOPS an automated fetch: Auditor
-            # ruling 2026-11-18 on #1335, whatever LAWS 5e's routing-label text says.
-            ok, why = self.robots_ok(url)
-            if not ok:
-                why = f"refused by robots: {why}"
-                self.robots_refused.append({"sensor": sensor.sensor_id, "why": why})
-                return None, why
+        # A robots "no" (disallowed, UNREAD or hard stop) STOPS EVERY automated fetch: Auditor
+        # ruling 2026-11-18 on #1335, whatever LAWS 5e's routing-label text says. Read on every
+        # wire fetch, whatever `sensor.robots` declares -- an "api" sensor is no exemption.
+        ok, why = self.robots_ok(url)
+        if not ok:
+            why = f"refused by robots: {why}"
+            self.robots_refused.append({"sensor": sensor.sensor_id, "why": why})
+            return None, why
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
             self.calls += 1

@@ -112,3 +112,26 @@ def test_a_real_allow_still_fetches(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     assert opened == ["https://h.example/robots.txt", DATA_URL]
     assert payload == [{"d": "2026-11-17", "v": 1.0}] and why.startswith("fetched")
     assert guard.robots_refused == []
+
+
+def test_a_sensor_with_robots_unset_still_obeys_a_disallow(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`robots` left at its "api" default is no exemption: every wire fetch reads robots."""
+    opened = _wire(monkeypatch, body=REAL_DENY)
+    sensor = si.Sensor(sensor_id="api_sensor", latent="global_risk_appetite", what="x",
+                       fetch_class="public_endpoint", source="x", cadence="daily",
+                       pit_lag_days=0.0, machine_use_allowed=True, licence="", sign=1,
+                       consumers=("US500",), url=DATA_URL)
+    assert sensor.robots == "api"
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tmp_path)
+    payload, why = guard.get(sensor)
+    assert payload is None and why.startswith("refused by robots")
+    assert opened == ["https://h.example/robots.txt"], "no data request past a Disallow"
+    assert guard.robots_refused == [{"sensor": "api_sensor", "why": why}]
+
+
+def test_the_fixture_path_reads_no_robots(monkeypatch: pytest.MonkeyPatch,
+                                          tmp_path: Path) -> None:
+    opened = _wire(monkeypatch, body=REAL_DENY)
+    payload, why = si.Guard(no_fetch=True, fixtures=tmp_path).get(_sensor())
+    assert payload is None and "no fixture" in why and opened == []

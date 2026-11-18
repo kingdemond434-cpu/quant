@@ -13,9 +13,11 @@ hard-boundary act (a login, an access control, a paywall) still never opens a so
 """
 from __future__ import annotations
 
+import io
 import json
 import sys
 from datetime import UTC, date, datetime, timedelta
+from email.message import Message
 from pathlib import Path
 from typing import Any
 
@@ -121,9 +123,13 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     opened: list[str] = []
 
     def _spy(req: Any, **_k: Any) -> Any:
+        url = str(getattr(req, "full_url", req))
+        if url.endswith("/robots.txt"):
+            # Every wire fetch reads robots first (Auditor ruling 2026-11-18): answer "no file".
+            raise si.urllib.error.HTTPError(url, 404, "no robots", Message(), io.BytesIO(b""))
         # Record that the door OPENED, then fail the way an offline box fails, so the guard's
         # own error handling runs instead of the test's exception escaping through it.
-        opened.append(str(getattr(req, "full_url", req)))
+        opened.append(url)
         raise si.urllib.error.URLError("no network in this test")
 
     monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
