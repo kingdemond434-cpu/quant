@@ -24,12 +24,15 @@ def _ev() -> list[SleeveEvidence]:
     common = rng.normal(0, 1, n)
     out = [
         # strong, long, corroborated by two independent mechanisms on EURUSD
-        SleeveEvidence("EURUSD.breakout", rng.normal(0.12, 1.0, n), family="breakout",
+        SleeveEvidence("EURUSD.breakout", rng.normal(0.25, 1.0, n), family="breakout",
                        symbol="EURUSD", n_trials=5),
         SleeveEvidence("EURUSD.carry", rng.normal(0.08, 1.0, n), family="carry",
                        symbol="EURUSD", n_trials=5),
         SleeveEvidence("EURUSD.gap", rng.normal(0.08, 1.0, n), family="gap", symbol="EURUSD",
                        n_trials=5),
+        # lone, modest sleeves on their own instruments: the book's typical corroboration is 0
+        SleeveEvidence("GBPUSD.x", rng.normal(0.05, 1.0, n), family="x", symbol="GBPUSD"),
+        SleeveEvidence("AUDUSD.y", rng.normal(0.05, 1.0, n), family="y", symbol="AUDUSD"),
         # weak, selected from many trials, alone on its instrument
         SleeveEvidence("XAUUSD.fade", rng.normal(0.005, 1.0, n), family="fade",
                        symbol="XAUUSD", n_trials=2000),
@@ -49,7 +52,8 @@ def test_registered_two_sided_and_able_to_raise_capital() -> None:
 
 def test_strong_corroborated_sleeve_is_raised_and_weak_lone_one_cut() -> None:
     f = cm.conviction_factors(_ev())
-    assert f["EURUSD.breakout"]["factor"] > 1.2
+    assert f["EURUSD.breakout"]["factor"] > 1.4
+    assert f["EURUSD.breakout"]["agreement"] > 1.0
     assert f["EURUSD.breakout"]["agreeing"] == 2
     assert f["XAUUSD.fade"]["factor"] < 1.0
     # correlated same-instrument sleeves are not independent: they do not corroborate each other
