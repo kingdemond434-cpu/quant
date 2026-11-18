@@ -6,6 +6,7 @@ a host the shared list already refuses, so both halves are pinned without the tw
 from __future__ import annotations
 
 import http.server
+import sys
 import threading
 import urllib.error
 import urllib.request
@@ -147,7 +148,10 @@ def test_reddit_hot_is_unmeasured_never_an_empty_list(monkeypatch: pytest.Monkey
     assert any("reddit.com" in u and r["status"] == "BLOCKED_ON_TERMS" for u, r in rec.items())
 
 
-def test_crowding_records_reddit_unmeasured_not_zero_posts() -> None:
+def test_crowding_records_reddit_unmeasured_not_zero_posts(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    # crowding_miner runs from the research dir and imports `free_data` by its bare name.
+    monkeypatch.setitem(sys.modules, "free_data", fd)
     from research import crowding_miner as cm
     act = cm.reddit_activity_of(fd.Unmeasured("BLOCKED_ON_TERMS: x"))
     assert act == {"status": "UNMEASURED", "reason": "BLOCKED_ON_TERMS: x"}
@@ -186,7 +190,6 @@ def test_the_user_agent_is_honest_and_never_overridden(monkeypatch: pytest.Monke
 
 def test_reddit_miner_sends_nothing_and_writes_nothing(monkeypatch: pytest.MonkeyPatch,
                                                        tmp_path: Path) -> None:
-    import sys
     side = str(Path(fd.__file__).resolve().parents[1] / "side_channels")
     monkeypatch.syspath_prepend(side)
     import reddit_miner as rm
