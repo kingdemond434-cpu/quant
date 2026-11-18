@@ -875,6 +875,29 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # RELEASE CALENDAR STATES (2026-11-18, pass idea 26). Hourly leg
+        # `release_calendar_states`; not in the Tier-1 ledger, so its artifacts and readers are
+        # declared here: the lake series are loaded by the alt_release_drift family its cells
+        # name, the cells enter through proposer_common's donation door, and the clock is a
+        # ground of event_response_atlas.load_events.
+        ComponentSpec(
+            component_id="executable:desks/mt5/research/release_calendar_states.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/research/release_calendar_states.py",),
+            inputs=("desks/mt5/data/release_calendar_grounds.json",
+                    "desks/mt5/data/release_calendar_states/"),
+            outputs=("desks/mt5/reports/RELEASE_CALENDAR_STATES.json",
+                     "desks/mt5/reports/RELEASE_CALENDAR_CLOCK.json"),
+            consumers=("desks/mt5/mt5desk/family_alt_release.py",
+                       "desks/mt5/research/proposer_common.py",
+                       "desks/mt5/research/event_response_atlas.py"),
+            cadence_s=3600, timeout_s=300, progress_metric="cells.minted",
+            expected_artifact_schema="desks/mt5/reports/RELEASE_CALENDAR_STATES.json",
+            owner="department:macro", restart_action="restart:resident:dept_macro",
+            criticality="optional", resource_budget={"budget_s": 300},
+            schedule="hourly_cycle:release_calendar_states", artifact_class="hourly",
+            notes=("terms from the grounds file (CONFIRMED and built only), refused-hosts and "
+                   "robots gates fail closed per route; 401/403/429/451 or a wall hard-stops")),
         # THE CHINESE-MODEL RESEARCH ENSEMBLE (2026-11-17, #1242). Run by the MT5-DeepSeek task
         # right after the DeepSeek cycle (ops/run_deepseek_windows.ps1). Its discoveries enter the
         # same compiler every seat feeds; the report is its per-model, per-provider record.

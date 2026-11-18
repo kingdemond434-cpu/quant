@@ -1,0 +1,380 @@
+{
+ "generated": "2026-11-18",
+ "writer": "hand-read terms, 2026-11-18 (claude/gdd-release-calendars)",
+ "rule": "one row per zero-claim region of the 2026-11-18 cloud deep-forest pass. verdict: CONFIRMED (terms read and quoted, machine reuse allowed), BLOCKED_ON_TERMS (terms refuse or are UNREAD -- unread counts as a refusal, LAWS 5e act 6), HARD_STOP (a wall/challenge or 401/403/429/451: never bypassed), NO_CALENDAR (terms allow but no publication time can be stamped). `built` names the regions research/release_calendar_states.py fetches; it fetches nothing else.",
+ "how_read": "terms and robots pages were read through a page reader from the build container (its proxy refuses these hosts to curl). The organ's live gate re-reads robots.txt on the box with the honest UA before any data request and fails closed",
+ "regions": [
+  {
+   "region": "ae",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "FCSC",
+   "calendar_url": "https://fcsc.gov.ae/en-us",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "fcsc.gov.ae answered 'Page not found'; terms unread; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "bd",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "BBS",
+   "calendar_url": "https://bbs.gov.bd/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "bbs.gov.bd unreachable (cloud pass 2026-11-18): terms unread; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "ca",
+   "verdict": "CONFIRMED",
+   "institution": "Statistics Canada",
+   "calendar_url": "https://www150.statcan.gc.ca/n1/dai-quo/cal2-eng.htm",
+   "terms_url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence",
+   "terms_quote": "Statistics Canada grants you a worldwide, royalty-free, non-exclusive licence to: use, reproduce, publish, freely distribute, or sell the Information",
+   "symbols": [
+    "USDCAD"
+   ],
+   "built": true,
+   "route": "statcan_wds",
+   "why": "CPI all-items (v41690973, yoy computed) and LFS unemployment rate (v2062815) from the Web Data Service; every data point carries releaseTime (Ottawa local), the publisher's own publication stamp",
+   "checked_at": "2026-11-18",
+   "robots": "www150.statcan.gc.ca/robots.txt refused to the page reader (robots_disallowed); UNREAD here, so the live gate decides on the box and fails closed"
+  },
+  {
+   "region": "co",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "DANE / BanRep",
+   "calendar_url": "https://www.dane.gov.co/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "no condiciones de uso or calendar link in the page text; no MT5 symbol (USDCOP absent)",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "cz",
+   "verdict": "CONFIRMED",
+   "institution": "CZSO (print republished by Eurostat)",
+   "calendar_url": "https://ec.europa.eu/eurostat/news/release-calendar",
+   "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+   "terms_quote": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. ... can be reused without any payment or written licence provided that: the source is indicated as Eurostat; when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information.",
+   "symbols": [
+    "EURCZK",
+    "USDCZK"
+   ],
+   "built": true,
+   "route": "eurostat_hicp + eurostat_unemployment",
+   "why": "CONFIRMED on Eurostat's terms (geo=CZ). CZSO's own conditions page (czso.cz/csu/czso/conditions-for-the-use-of-czso-data) answered the page reader client_error twice: CZSO's direct route stays unbuilt until it is read. Eurostat's CZ row lands after CZSO's own release: a late bound",
+   "checked_at": "2026-11-18",
+   "robots": "ec.europa.eu/robots.txt read 2026-11-18: 'User-agent: *' disallows /eurostat/SDMX/diss-web/rest/, /eurostat/search, /eurostat/tgm/ and portal search/login paths; nothing matches /eurostat/api/dissemination/"
+  },
+  {
+   "region": "ea",
+   "verdict": "CONFIRMED",
+   "institution": "Eurostat (euro indicators)",
+   "calendar_url": "https://ec.europa.eu/eurostat/news/release-calendar",
+   "terms_url": "https://ec.europa.eu/eurostat/about-us/policies/copyright",
+   "terms_quote": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. ... can be reused without any payment or written licence provided that: the source is indicated as Eurostat; when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information.",
+   "symbols": [
+    "EURUSD"
+   ],
+   "built": true,
+   "route": "eurostat_hicp + eurostat_unemployment",
+   "why": "HICP annual rate and unemployment rate for the euro area from the dissemination API",
+   "checked_at": "2026-11-18",
+   "robots": "ec.europa.eu/robots.txt read 2026-11-18: 'User-agent: *' disallows /eurostat/SDMX/diss-web/rest/, /eurostat/search, /eurostat/tgm/ and portal search/login paths; nothing matches /eurostat/api/dissemination/",
+   "calendar_machine_route": "the dissemination API carries the calendar per dataset: extension annotations DISSEMINATION_TIMESTAMP_PLANNED (scheduled) and DISSEMINATION_TIMESTAMP_DATA (actual), read 2026-11-18 on prc_hicp_minr"
+  },
+  {
+   "region": "eg",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "CAPMAS",
+   "calendar_url": "https://www.capmas.gov.eg/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "JavaScript shell only: terms unread; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "gb",
+   "verdict": "CONFIRMED",
+   "institution": "Office for National Statistics",
+   "calendar_url": "https://www.ons.gov.uk/releasecalendar",
+   "terms_url": "https://www.ons.gov.uk/help/termsandconditions",
+   "terms_quote": "Most content on this website is available under the Open Government Licence (OGL). Reproduction of information is subject to the terms of the OGL ... We make most of the content on this website available through feeds for other websites and applications to use.",
+   "symbols": [
+    "GBPUSD",
+    "EURGBP"
+   ],
+   "built": true,
+   "route": "ons_timeseries",
+   "why": "CPI annual rate (D7G7/MM23) and ILO unemployment rate (MGSX/LMS) from the ONS time-series JSON; each month carries updateDate (the release day, stamped at London midnight, read 2026-11-18), published at 07:00 London under the release calendar's 7am rule",
+   "checked_at": "2026-11-18",
+   "robots": "ons.gov.uk/robots.txt not readable from the build container (client_error); the live gate reads it on the box before every pass and fails closed"
+  },
+  {
+   "region": "hu",
+   "verdict": "CONFIRMED",
+   "institution": "KSH / HCSO (print republished by Eurostat)",
+   "calendar_url": "https://ec.europa.eu/eurostat/news/release-calendar",
+   "terms_url": "https://www.ksh.hu/copyright_eng",
+   "terms_quote": "content on the site is licensed under CC BY 4.0 ... can be copied, reproduced and redistributed without limitations ... Any content can only be used if HCSO is indicated as a source (Source: HCSO / ksh.hu)",
+   "symbols": [
+    "EURHUF",
+    "USDHUF"
+   ],
+   "built": true,
+   "route": "eurostat_hicp + eurostat_unemployment",
+   "why": "KSH terms CONFIRMED; the print is read from Eurostat (geo=HU) on Eurostat's CONFIRMED terms so one guarded route serves four regions; a late bound against KSH's own release",
+   "checked_at": "2026-11-18",
+   "robots": "ec.europa.eu/robots.txt read 2026-11-18: 'User-agent: *' disallows /eurostat/SDMX/diss-web/rest/, /eurostat/search, /eurostat/tgm/ and portal search/login paths; nothing matches /eurostat/api/dissemination/",
+   "eurostat_terms": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. ... can be reused without any payment or written licence provided that: the source is indicated as Eurostat; when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information."
+  },
+  {
+   "region": "il",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "CBS Israel",
+   "calendar_url": "https://www.cbs.gov.il/en/Pages/Release-Calendar.aspx",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [
+    "USDILS",
+    "EURILS"
+   ],
+   "built": false,
+   "route": null,
+   "why": "the calendar's rules were read ('All media releases, except those for price indices, are published at 1 PM'; price indices on the 15th at 6:30 PM) but no terms or copyright page was found: terms UNREAD",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "it",
+   "verdict": "CONFIRMED",
+   "institution": "ISTAT (print republished by Eurostat)",
+   "calendar_url": "https://ec.europa.eu/eurostat/news/release-calendar",
+   "terms_url": "https://www.istat.it/en/legal-notice/",
+   "terms_quote": "Unless otherwise stated, content on this website is licensed under a Creative Commons License - Attribution - 4.0 ... copy and redistribute the material in any medium or format for any purpose, even commercially.",
+   "symbols": [
+    "EURUSD"
+   ],
+   "built": true,
+   "route": "eurostat_hicp + eurostat_unemployment",
+   "why": "ISTAT's own terms CONFIRMED (CC BY 4.0); the print is read from Eurostat (geo=IT), whose terms are CONFIRMED, because istat.it served the page reader client_error and its SDMX endpoint is rate-limited. No Italian FX or index CFD is in the registry, so the mapping is EURUSD (indirect: Italy is the third-largest euro-area print). Eurostat's IT row lands AFTER ISTAT's own release: available_time is Eurostat's, a late bound, never early",
+   "checked_at": "2026-11-18",
+   "robots": "ec.europa.eu/robots.txt read 2026-11-18: 'User-agent: *' disallows /eurostat/SDMX/diss-web/rest/, /eurostat/search, /eurostat/tgm/ and portal search/login paths; nothing matches /eurostat/api/dissemination/",
+   "eurostat_terms": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. ... can be reused without any payment or written licence provided that: the source is indicated as Eurostat; when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information."
+  },
+  {
+   "region": "ke",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "KNBS",
+   "calendar_url": "https://www.knbs.or.ke/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "no terms or calendar link in the page text; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "kr",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "KOSTAT (now MODS)",
+   "calendar_url": "https://mods.go.kr/menu.es?mid=a20301000000",
+   "terms_url": "https://mods.go.kr/anse/",
+   "terms_quote": "(c) Ministry of Data and Statistics. All rights reserved.",
+   "symbols": [
+    "USDKRW"
+   ],
+   "built": false,
+   "route": null,
+   "why": "kostat.go.kr redirects to mods.go.kr; no KOGL mark or reuse licence on the page, only 'All rights reserved'. BOK ECOS is KOGL 'no restriction' (alt_proxies kr_bok_card_spend) but keyed: not built",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "lk",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "CBSL / DCS",
+   "calendar_url": "https://www.cbsl.gov.lk/advance-release-calendar-2026",
+   "terms_url": "https://www.cbsl.gov.lk/",
+   "terms_quote": "(c) Central Bank of Sri Lanka, 2018. All Rights Reserved",
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "calendar exists; all rights reserved with no reuse licence; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "mx",
+   "verdict": "CONFIRMED",
+   "institution": "INEGI / Banco de Mexico",
+   "calendar_url": "https://www.inegi.org.mx/app/calendario/",
+   "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
+   "terms_quote": "Puede explotar comercialmente la informacion, utilizandola como insumo para generar otros productos o servicios. / Debe otorgar los creditos correspondientes al INEGI como autor (alt_proxies TERMS_EVIDENCE mx_inegi_emec, read 2026-09-30)",
+   "symbols": [
+    "USDMXN",
+    "EURMXN"
+   ],
+   "built": false,
+   "route": null,
+   "why": "terms CONFIRMED but the print's machine routes (INEGI BIE API, Banxico SIE API) need a per-user token: not built here (no logins); alt_proxies already holds the INEGI route",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "no",
+   "verdict": "CONFIRMED",
+   "institution": "Statistics Norway (print republished by Eurostat, EEA)",
+   "calendar_url": "https://www.ssb.no/en/kalender",
+   "terms_url": "https://www.ssb.no/en/informasjon/copyright",
+   "terms_quote": "subject to copyright under the Norwegian Licence for Open Government Data (NLOD) ... use the information commercially ... users shall attribute us as Statistics Norway",
+   "symbols": [
+    "EURNOK",
+    "USDNOK"
+   ],
+   "built": true,
+   "route": "eurostat_hicp + eurostat_unemployment",
+   "why": "SSB terms CONFIRMED (NLOD). Read from Eurostat (geo=NO): SSB table 03013's metadata ends at 2025M12 (read 2026-11-18), i.e. the table was superseded and its successor is unread",
+   "checked_at": "2026-11-18",
+   "robots": "ec.europa.eu/robots.txt read 2026-11-18: 'User-agent: *' disallows /eurostat/SDMX/diss-web/rest/, /eurostat/search, /eurostat/tgm/ and portal search/login paths; nothing matches /eurostat/api/dissemination/",
+   "eurostat_terms": "Eurostat has a policy of encouraging free re-use of its data, both for non-commercial and commercial purposes. ... can be reused without any payment or written licence provided that: the source is indicated as Eurostat; when re-use involves modifications to the data or text, this must be stated clearly to the end user of the information."
+  },
+  {
+   "region": "nz",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "Stats NZ",
+   "calendar_url": "https://www.stats.govt.nz/release-calendar",
+   "terms_url": "https://www.stats.govt.nz/about-us/legal-matters/copyright/",
+   "terms_quote": null,
+   "symbols": [
+    "NZDUSD",
+    "AUDNZD"
+   ],
+   "built": false,
+   "route": null,
+   "why": "copyright page client_error and a JS shell on the alternate: terms UNREAD (LAWS 5e act 6)",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "pe",
+   "verdict": "HARD_STOP",
+   "institution": "BCRP / INEI",
+   "calendar_url": "https://www.bcrp.gob.pe/",
+   "terms_url": "https://www.bcrp.gob.pe/",
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "bcrp.gob.pe answered an Incapsula bot challenge (_Incapsula_Resource): a wall; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "ph",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "PSA",
+   "calendar_url": "https://psa.gov.ph/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "terms page not found in the page text; no MT5 symbol (USDPHP absent)",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "pk",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "Pakistan Bureau of Statistics",
+   "calendar_url": null,
+   "terms_url": "https://www.pbs.gov.pk/",
+   "terms_quote": "Pakistan Bureau of Statistics (c) 2026. All Rights Reserved",
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "all rights reserved, no reuse licence, no advance release calendar found; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "sa",
+   "verdict": "CONFIRMED",
+   "institution": "GASTAT",
+   "calendar_url": "https://www.stats.gov.sa/statistical-calendar-releases",
+   "terms_url": "https://www.stats.gov.sa/en/use-policy",
+   "terms_quote": "1.2.2 including commercial use in accordance with the Open Data principle ... provided that GASTAT is acknowledged as the official source and any modifications are clearly indicated",
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "no MT5 symbol: USDSAR is not in the universe registry (the riyal is pegged)",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "sg",
+   "verdict": "NO_CALENDAR",
+   "institution": "SingStat",
+   "calendar_url": "https://www.singstat.gov.sg/data-tools-services/advance-release-calendar",
+   "terms_url": "https://data.gov.sg/open-data-licence",
+   "terms_quote": "You can use, access, download, copy, distribute, transmit, modify and adapt the datasets ... whether commercially or non-commercially (alt_proxies TERMS_EVIDENCE sg_port_throughput, read 2026-09-30)",
+   "symbols": [
+    "USDSGD"
+   ],
+   "built": false,
+   "route": null,
+   "why": "terms CONFIRMED (Singapore Open Data Licence) but the advance release calendar lists bare dates (e.g. '30-11-2027') with no release name or time in its text and no ics/csv/json export (read 2026-11-18): no publication time can be stamped",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "ua",
+   "verdict": "BLOCKED_ON_TERMS",
+   "institution": "Ukrstat / NBU",
+   "calendar_url": "https://www.ukrstat.gov.ua/",
+   "terms_url": null,
+   "terms_quote": null,
+   "symbols": [],
+   "built": false,
+   "route": null,
+   "why": "ukrstat.gov.ua robots refused the page reader; bank.gov.ua carries no terms link; no MT5 symbol",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "us",
+   "verdict": "CONFIRMED",
+   "institution": "BLS / BEA / Census",
+   "calendar_url": "https://www.bls.gov/schedule/news_release/",
+   "terms_url": "https://www.law.cornell.edu/uscode/text/17/105",
+   "terms_quote": "17 U.S.C. 105(a): 'Copyright protection under this title is not available for any work of the United States Government'",
+   "symbols": [
+    "US500",
+    "USDX"
+   ],
+   "built": false,
+   "route": null,
+   "why": "covered elsewhere: libs/data/keyed_sources.py (BLS) and the EIA/USDA/TIC organs; not duplicated",
+   "checked_at": "2026-11-18"
+  },
+  {
+   "region": "za",
+   "verdict": "HARD_STOP",
+   "institution": "Stats SA / SARB",
+   "calendar_url": "https://www.statssa.gov.za/?page_id=1847",
+   "terms_url": "https://www.statssa.gov.za/",
+   "terms_quote": null,
+   "symbols": [
+    "USDZAR"
+   ],
+   "built": false,
+   "route": null,
+   "why": "statssa.gov.za serves an Incapsula challenge (a wall: hard stop, never bypassed); its notice was read only on a third-party mirror (alt_proxies za_statssa_retail, to_confirm); 2026-11-18 the page reader got client_error",
+   "checked_at": "2026-11-18"
+  }
+ ]
+}

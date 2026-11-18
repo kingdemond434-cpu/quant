@@ -340,6 +340,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
+  },
+  "release_calendar_states": {
+   "hypothesis": "Official statistics offices' headline prints (Eurostat HICP and unemployment for the euro area, Italy, Czechia, Hungary and Norway; ONS CPI and unemployment; StatCan CPI and unemployment), stamped at the publisher's own publication time and scored against a point-in-time naive expectation, give EUR, CZK, HUF, NOK, GBP and CAD dated surprise events that price-only families cannot see, so alt_release_drift cells on them carry information and the event clock gives the event lane dated surprises to measure.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "cells.minted",
+    "better": "up",
+    "organ": "report:RELEASE_CALENDAR_STATES.json"
+   },
+   "falsifier": {
+    "metric": "store_rows",
+    "op": "==",
+    "threshold": 0,
+    "after": "7 days on the trading box with no stored observation from any route: the grounds, robots or response-shape gates refuse every pass and no print reaches the store, a cell or the clock"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
