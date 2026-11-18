@@ -24,5 +24,12 @@
  "consumer": "UNMEASURED",
  "measured_on": "vm",
  "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
- "measured_at": "2026-11-13T13:03:25+00:00"
+ "measured_at": "2026-11-18T04:32:32+00:00",
+ "only_missing": {
+  "at": "2026-11-18T04:32:32+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
