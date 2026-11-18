@@ -333,9 +333,9 @@ def test_the_lane_runs_the_base_s_classifier_on_the_base(wf: str) -> None:
 def test_a_draft_runs_smoke_only_and_ready_reruns_the_full_checks(wf: str) -> None:
     lane = _jobs(wf)["lane"]
     step = lane["steps"][-1]
-    assert step["env"]["DRAFT"] == "${{ github.event.pull_request.draft }}"
+    assert step["env"]["PR"] == "${{ github.event.pull_request.number }}"  # read LIVE (MF1)
     run = step["run"]
-    draft = run.index('if [ "$DRAFT" = true ]')
+    draft = run.index('DRAFT=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .draft')
     assert run.index('no "a fork"') < draft < run.index("fast_lane.py")  # a fork never skips
     doc = yaml.safe_load((WF / wf).read_text("utf-8"))
     on = doc.get("on", doc.get(True))
@@ -350,3 +350,25 @@ def test_smoke_runs_on_fast_prs_only_and_audit_gate_turns_the_lane_on() -> None:
     assert "pytest --co" in run and "ruff check" in run
     text = (WF / "audit-gate.yml").read_text("utf-8")
     assert text.count('QUANT_FAST_LANE: "1"') == 2
+
+
+def test_a_target_closure_counts_beside_the_base_s(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#1287 audit MF1: an adoption target where a cleared money change newly imports X must
+    hold X, though the sealed base's closure never reached it."""
+    x = "desks/mt5/research/a_brand_new_helper_nobody_imports.py"
+    assert fl.classify([x])[0]  # off the base's closure
+    monkeypatch.setattr(fl, "closure_at", lambda rev: frozenset({x}))
+    fast, why = fl.classify([x], closure_rev="target")
+    assert not fast and "money path" in why
+
+    def boom(rev: str) -> frozenset[str]:
+        raise RuntimeError("unreadable target")
+
+    monkeypatch.setattr(fl, "closure_at", boom)
+    assert not fl.classify([x], closure_rev="target")[0]  # unreadable: not fast
+
+
+def test_closure_at_head_equals_the_checkout_s_closure() -> None:
+    facts = fl.base_facts(str(fl.ROOT), fl._tree_id())
+    assert not isinstance(facts, str)
+    assert fl.closure_at("HEAD") == frozenset(facts[3])

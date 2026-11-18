@@ -269,10 +269,37 @@ def base_facts(root: str, tree: str) -> Any:
     return rs, held, suites, closure, state, roster, made
 
 
-def classify(paths: Iterable[str], head: str | None = None) -> tuple[bool, str]:
+@functools.lru_cache(maxsize=4)
+def closure_at(rev: str) -> frozenset[str]:
+    """The money closure of the tree at commit `rev`, read from git objects (no checkout), with
+    the same seeds and roots as the base's. #1287 audit MF1: the box judges an adoption TARGET
+    that may carry a cleared money change making M newly import X beside a fast change to X;
+    X must be judged against the target's closure as well as the sealed one. Raises."""
+    rs = _load("_fast_rs_at", "ops/release/replay_shadow.py")  # a private copy to re-point
+    files = frozenset(subprocess.run(
+        ["git", "-C", str(ROOT), "ls-tree", "-r", "--name-only", rev],
+        capture_output=True, text=True, check=True).stdout.splitlines())  # fmt: skip
+    blobs: dict[str, str | None] = {}
+
+    def read(_tree: Path, path: str) -> str | None:
+        if path not in blobs:
+            r = subprocess.run(["git", "-C", str(ROOT), "show", f"{rev}:{path}"],
+                               capture_output=True, check=False)  # fmt: skip
+            blobs[path] = rs._text(r.stdout) if r.returncode == 0 else None
+        return blobs[path]
+
+    setattr(rs, "tree_files", lambda _tree: set(files))  # noqa: B010 (a module loaded by path)
+    setattr(rs, "read", read)  # noqa: B010
+    return frozenset(money_closure(rs))
+
+
+def classify(
+    paths: Iterable[str], head: str | None = None, closure_rev: str | None = None
+) -> tuple[bool, str]:
     """(fast, why). `head`: the PR head's commit; each changed file's head copy is read through
-    git for what it spells (MF3), and the head must be readable when given. Fail closed: an empty
-    list, or anything that cannot be read, is not fast."""
+    git for what it spells (MF3), and the head must be readable when given. `closure_rev`: a
+    commit whose money closure counts too (the box's adoption target, #1287 audit MF1). Fail
+    closed: an empty list, or anything that cannot be read, is not fast."""
     names = sorted({p.strip() for p in paths if p and p.strip()})
     if not names:
         return False, "no changed paths read"
@@ -285,6 +312,8 @@ def classify(paths: Iterable[str], head: str | None = None) -> tuple[bool, str]:
             subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{head}^{{commit}}"],
                            capture_output=True, check=True)  # fmt: skip
         files = rs.tree_files(ROOT)
+        if closure_rev is not None:
+            closure = closure | closure_at(closure_rev)
     except Exception as exc:  # any read or import failure: the full path
         return False, f"the classifier could not read the base ({type(exc).__name__}: {exc})"
     for n in names:

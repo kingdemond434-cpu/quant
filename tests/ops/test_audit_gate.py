@@ -3239,3 +3239,64 @@ def test_the_gate_reads_more_than_one_page_of_trusted_eval_runs(monkeypatch) -> 
     monkeypatch.setattr(ag, "_gh", fake)
     assert ag.trusted_eval_passed("o/r", 7, "h" * 40, "live")[0] is True
     assert len(pages) == 2
+
+
+# ------------------------------------------------- drafts run smoke only (#1240 audit MF1)
+
+
+def _skipped(name: str, run_id: int) -> dict[str, Any]:
+    r = _r(f"{name} {ag.SKIPPED_SUFFIX}")
+    r["details_url"] = f"https://github.com/o/r/actions/runs/{run_id}/job/{r['id']}"
+    return r
+
+
+def test_skipped_runs_are_named_by_their_workflow_run() -> None:
+    te = _r("trusted-eval", conclusion="skipped")
+    te["details_url"] = "https://github.com/o/r/actions/runs/30/job/1"
+    runs = [_skipped("quality", 10), _skipped("mt5-money-path", 10), _skipped("replay-shadow", 20),
+            te, _r("smoke")]  # fmt: skip
+    assert ag.skipped_runs(runs) == {10, 20, 30}
+
+
+def test_a_cleared_draft_is_marked_ready_first_and_its_skipped_runs_rerun(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A draft ran smoke only: nothing would ever bring its full checks into existence, and a
+    ready event from the gate's own token starts no run. The gate readies it and re-runs."""
+    runs = [_r("smoke"), _skipped("quality", 10), _skipped("replay-shadow", 20)]
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], draft=True, runs=runs)
+    real = h.__call__
+    attempts = {10: 1, 20: 3}  # run 20 is at the re-run cap
+
+    def gh(*args: str, data: Any = None) -> Any:
+        tail = args[0].rsplit("/", 1)[-1]
+        if "-X" not in args and "/actions/runs/" in args[0] and tail.isdigit():
+            rid = int(tail)
+            return {"id": rid, "status": "completed", "run_attempt": attempts[rid]}
+        return real(*args, data=data)
+
+    ag._gh = gh
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0
+    assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
+    reruns = [w[1] for w in h.writes if w[1].endswith("/rerun")]
+    assert reruns == ["repos/o/r/actions/runs/10/rerun"]
+    assert _merges(h) == []  # nothing merges on a skipped check
+
+
+def test_a_draft_with_a_hold_is_not_readied(hub: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+                      _c(f"AUDIT HOLD {A}", "2026-10-28T10:01:00Z")],
+            draft=True, runs=[_r("smoke"), _skipped("quality", 10)])  # fmt: skip
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0
+    assert ran == [] and not any(w[1].endswith("/rerun") for w in h.writes)
+
+
+@pytest.mark.parametrize("wf", ["ci.yml", "release-gates.yml", "trusted-eval.yml"])
+def test_the_lane_reads_the_draft_state_live_so_a_rerun_takes_the_full_path(wf: str) -> None:
+    text = (ROOT / ".github" / "workflows" / wf).read_text(encoding="utf-8")
+    assert 'DRAFT=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .draft' in text
+    assert "github.event.pull_request.draft" not in text

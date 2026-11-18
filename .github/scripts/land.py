@@ -43,10 +43,9 @@ LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 REPO = "kingdemond434-cpu/quant"
 APPROVALS_ISSUE = 453
 TITLE = "Land (FAST lane, direct"
-TRAILER = (
-    "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
-    "Claude-Session: https://claude.ai/code/session_015zQxSBybnApU2oFCn8rxey"
-)
+#: Attribution comes from the branch's own commits (the merge's second parent), so nothing here
+#: names one session for every landing (#1240 audit SF2).
+TRAILER = "\n\nLanded-By: .github/scripts/land.py"
 HERE = Path(__file__).resolve().parent
 
 
@@ -167,8 +166,54 @@ def classify_on_live(wt: Path, sha: str, paths: Sequence[str]) -> str:
     return str(why)
 
 
+def holds(head: str, branch: str, verdicts: Callable[[list[dict[str, Any]]], list[dict[str, str]]],
+          api: Callable[[str], Any] | None = None) -> str | None:  # fmt: skip
+    """Why an AUDIT HOLD stops this landing, or None (#1240 audit MF2: an Audit HOLD beats green
+    CI, and it must beat a direct landing too). Every OPEN PR that carries `head` or comes from
+    `branch` is read, with LIVE's own verdict parser; its newest verdict being a HOLD refuses.
+    Anything unreadable refuses: never land blind."""
+
+    def gh(path: str) -> Any:
+        out = subprocess.run(["gh", "api", path, "--paginate", "--slurp"], capture_output=True,
+                             text=True, check=True).stdout  # fmt: skip
+        pages = json.loads(out)
+        return [x for page in pages for x in (page if isinstance(page, list) else [page])]
+
+    api = api or gh
+    owner = REPO.split("/", 1)[0]
+    try:
+        prs = {int(p["number"]): p for p in api(f"repos/{REPO}/commits/{head}/pulls")
+               if p.get("state") == "open"}  # fmt: skip
+        for p in api(f"repos/{REPO}/pulls?state=open&head={owner}:{branch}&per_page=100"):
+            prs[int(p["number"])] = p
+        for n in sorted(prs):
+            found = verdicts(api(f"repos/{REPO}/issues/{n}/comments?per_page=100"))
+            if found and found[-1]["verdict"] != "CLEAR":
+                return f"AUDIT HOLD {found[-1]['sha'][:9]} stands on #{n}"
+    except (OSError, subprocess.CalledProcessError, ValueError, KeyError, TypeError) as exc:
+        return f"the audit verdicts could not be read ({type(exc).__name__}): not landing blind"
+    return None
+
+
+@contextlib.contextmanager
+def merged_checkout(cwd: Path, sha: str) -> Iterator[Path]:
+    """A private worktree of the merge commit itself, so smoke judges exactly what lands (#1240
+    audit SF1). It takes the caller's sparse patterns, as git does for a new worktree."""
+    with tempfile.TemporaryDirectory(prefix="land-merge-") as tmp:
+        wt = Path(tmp) / "m"
+        r = subprocess.run(["git", "-C", str(cwd), "worktree", "add", "-q", "--detach", str(wt),
+                            sha], env=_CLEAN, capture_output=True, text=True,
+                           check=False)  # fmt: skip
+        if r.returncode != 0:
+            raise Refused(f"a checkout of the merge failed: {r.stderr.strip()[:300]}")
+        try:
+            yield wt
+        finally:
+            git(cwd, "worktree", "remove", "--force", str(wt), check=False)
+
+
 def smoke(cwd: Path, paths: Sequence[str]) -> None:
-    """The fast lane's smoke job, here (ci.yml `smoke`)."""
+    """The fast lane's smoke job, here (ci.yml `smoke`), run in `cwd` (the merge's checkout)."""
     py = [p for p in paths if p.endswith(".py") and (cwd / p).is_file()]
     tests = [p for p in py if Path(p).name.startswith("test_")]
     steps: list[list[str]] = []
@@ -187,7 +232,8 @@ def smoke(cwd: Path, paths: Sequence[str]) -> None:
 
 def land(cwd: Path, *, push: bool, tries: int = 3,
          fetch: Callable[[], list[dict[str, Any]]] = board,
-         check: Callable[[Path, Sequence[str]], None] = smoke) -> str:  # fmt: skip
+         check: Callable[[Path, Sequence[str]], None] = smoke,
+         api: Callable[[str], Any] | None = None) -> str:  # fmt: skip
     """One line saying what happened. Raises Refused."""
     if git(cwd, "status", "--porcelain", "--untracked-files=no").strip():
         raise Refused("the working tree has uncommitted changes: commit them first")
@@ -197,11 +243,16 @@ def land(cwd: Path, *, push: bool, tries: int = 3,
             f"+refs/heads/{LIVE}:refs/remotes/origin/{LIVE}")  # fmt: skip
         live = git(cwd, "rev-parse", f"origin/{LIVE}").strip()
         sha, paths = merged_tree(cwd, head, live)
+        branch = git(cwd, "rev-parse", "--abbrev-ref", "HEAD").strip()
         with live_tree(cwd, live) as wt:
             if off := switched_off(wt, fetch):
                 raise Refused(off)
+            gate = _module("land_gate", wt / ".github/scripts/audit_gate.py")
+            if held := holds(head, branch, gate.verdicts, api):
+                raise Refused(held)
             why = classify_on_live(wt, sha, paths)
-        check(cwd, paths)
+        with merged_checkout(cwd, sha) as mt:
+            check(mt, paths)
         if not push:
             return f"would land {sha[:9]} ({len(paths)} path(s)): {why}"
         p = subprocess.run(["git", "-C", str(cwd), "push", "-q", "origin",

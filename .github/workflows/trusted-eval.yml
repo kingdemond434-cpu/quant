@@ -70,7 +70,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
           SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-          DRAFT: ${{ github.event.pull_request.draft }}
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           no() { echo "fast=false" >> "$GITHUB_OUTPUT"; echo "not fast: $1"; exit 0; }
           case "$EVENT" in pull_request|pull_request_target) ;; *) no "$EVENT run" ;; esac
@@ -80,6 +81,11 @@ jobs:
           # 2026-11-17) is what starved the PRs that were ready. Marking it ready fires
           # ready_for_review, which re-runs this lane and the full checks on the same head;
           # nothing merges a draft, and a skipped check carries the "(... not run)" name.
+          # The draft state is read LIVE, never from the event: when the gate marks a CLEARed
+          # draft ready with its own token (which starts no run) it RE-RUNS these runs, and a
+          # re-run carries the old payload (#1240 audit MF1). Unreadable reads as not a draft,
+          # so the full checks run rather than wait.
+          DRAFT=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .draft 2>/dev/null || echo false)
           if [ "$DRAFT" = true ]; then
             echo "fast=true" >> "$GITHUB_OUTPUT"; echo "a draft: full checks wait for ready"; exit 0
           fi

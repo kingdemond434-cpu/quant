@@ -1461,6 +1461,47 @@ def run_fast(
     return 0
 
 
+#: The name suffix a heavy job carries when the lane skipped it (ci.yml / release-gates.yml).
+SKIPPED_SUFFIX = "(fast lane: not run)"
+#: A run is re-run at most up to this attempt, so a lane and a gate that disagree cost runner
+#: time a bounded number of times, never every sweep forever.
+MAX_RERUN_ATTEMPT = 3
+
+
+def skipped_runs(check_runs: Iterable[Mapping[str, Any]]) -> set[int]:
+    """The workflow run ids on a head whose heavy jobs took the lane's skip path: a job named
+    "... (fast lane: not run)", or trusted-eval itself skipped."""
+    ids: set[int] = set()
+    for r in check_runs:
+        name, concl = str(r.get("name") or ""), str(r.get("conclusion") or "")
+        if name.endswith(SKIPPED_SUFFIX) or (name == "trusted-eval" and concl == "skipped"):
+            m = re.search(r"/actions/runs/(\d+)", str(r.get("details_url") or ""))
+            if m:
+                ids.add(int(m.group(1)))
+    return ids
+
+
+def rerun_skipped(repo: str, head: str) -> list[int]:
+    """Re-run every COMPLETED run on `head` whose heavy jobs skipped (#1240 audit MF1).
+
+    A draft runs smoke only; once the gate marks a CLEARed draft ready with the workflow token,
+    GitHub starts no new run for that event, so these re-runs are what bring the full checks
+    into existence (the lane reads the draft state live, so a re-run of a now-ready PR takes the
+    full path). Called on the manual path only, never for a fast PR. A run still in progress is
+    left for the next sweep; one past MAX_RERUN_ATTEMPT is left alone."""
+    pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
+    runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
+    done: list[int] = []
+    for rid in sorted(skipped_runs(runs)):
+        run = _gh(f"repos/{repo}/actions/runs/{rid}") or {}
+        attempt = int(run.get("run_attempt") or 1)
+        if run.get("status") != "completed" or attempt >= MAX_RERUN_ATTEMPT:
+            continue
+        _gh(f"repos/{repo}/actions/runs/{rid}/rerun", "-X", "POST")
+        done.append(rid)
+    return done
+
+
 def touches_workflows(files: Iterable[Mapping[str, Any]]) -> bool:
     """True when the PR changes .github/workflows/** (a rename counts from either side)."""
     for f in files:
@@ -1759,6 +1800,17 @@ def run(
         return 0
     _status(repo, head, "success", why)
     _summary(f"#{pr} @ {head[:9]}: {why}")
+    # #1240 audit MF1: a draft ran smoke only, so a CLEARed, HOLD-free draft is brought up
+    # FIRST -- marked ready, then every run on its head that skipped is re-run on the full path
+    # -- instead of waiting on checks that will never exist. The next sweep judges those runs.
+    if p.get("draft"):
+        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
+        p = {**p, "draft": False}
+        _summary(f"#{pr} @ {head[:9]}: marked ready (CLEARed draft)")
+    if again := rerun_skipped(repo, head):
+        _summary(f"#{pr} @ {head[:9]}: re-ran {len(again)} run(s) that skipped as a draft; "
+                 "the next sweep judges them")  # fmt: skip
+        return 0
     deadline = time.monotonic() + wait_min * 60
     while True:
         now_head = str(_gh(f"repos/{repo}/pulls/{pr}")["head"]["sha"])
