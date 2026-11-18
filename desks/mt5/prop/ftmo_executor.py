@@ -7,7 +7,8 @@ sized sleeve was published SIZED_NO_EXECUTOR and its J was missed growth. This i
 
 WHAT IT TRADES. The keys the allocator laid into the `ftmo` block of data/CERT_BOOK_LIVE.json with
 a positive fraction AND a certificate spec in reports/FTMO_ALLOCATOR.json `specs` -- both, or
-nothing. Gold is never traded here (the follower is gold's one FTMO owner). FAIL CLOSED, ALWAYS A
+nothing. The follower's gold copy (`_FOLLOWER_KEYS`) is never traded here; a CERTIFIED gold
+sleeve of the allocator's own book is (`GOLD_SLEEVES`, 2026-11-18). FAIL CLOSED, ALWAYS A
 ZERO: an allocator report that is absent, stale (`ALLOC_MAX_AGE_S`), not deployable, or a block
 that load_cert_book voids, trades nothing new; open positions are still managed.
 
@@ -84,8 +85,17 @@ INTENTS = DESK / "data" / "ftmo_exec_intents.jsonl"
 LOG = DESK / "logs" / "ftmo_executor.log"
 #: The allocator runs hourly; a report older than this is not today's book.
 ALLOC_MAX_AGE_S = 3 * 3600
-#: Gold has one FTMO owner, the follower.
+#: Gold symbols. Until 2026-11-18 gold had one FTMO owner, the follower, so FTMO could fill only on
+#: the days E8's gold_asia filled (7 of 12 market days in November) and only while the copy was
+#: armed; seventeen certified XAUUSD Asia sleeves had no FTMO route at all.
 SKIP_SYMBOLS = frozenset({"XAUUSD"})
+#: GOLD SLEEVES ARE THIS LANE'S (zuck 2026-11-18 02:04Z, every account fills every market day).
+#: A gold key the allocator funds that is NOT the follower's copy trades here under the same doors,
+#: the same FTMO rails on the whole book, the same cross-account opposite fence and the same
+#: one-position-per-symbol rule (`ALREADY_OPEN`, which reads every magic). The follower refuses any
+#: gold against its side from any source, so the two lanes can never hold gold both ways. False is
+#: the revert path: gold is the follower's alone again, nothing else changes.
+GOLD_SLEEVES = True
 #: Hourly bars fetched per sleeve: the E8 executor's lookback.
 LOOKBACK_BARS = 900
 MIN_BARS = 60
@@ -183,10 +193,11 @@ def book_sleeves(alloc: Any, cert: dict[str, float] | None, now: datetime
         frac = min(float(frac), float(got))
         if not (frac > 0) or not isinstance(spec, dict):
             continue
-        if str(spec.get("symbol") or "").upper() in SKIP_SYMBOLS:
+        if str(spec.get("symbol") or "").upper() in SKIP_SYMBOLS and \
+                (not GOLD_SLEEVES or key in _FOLLOWER_KEYS):
             continue
         out.append((key, frac, spec))
-    return out, f"{len(out)} funded non-gold sleeve(s) with a spec"
+    return out, f"{len(out)} funded sleeve(s) with a spec (the follower's gold copy excluded)"
 
 
 def comment_for(col: str, ttl_bars: object, tf: str) -> str:
