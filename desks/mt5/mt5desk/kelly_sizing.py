@@ -65,6 +65,28 @@ def load_kelly_survival(path: Path, venue: str, now: datetime | None = None,
 #: books live"). Data with an author and a date, read by the Fusion gateway and the E8 lanes.
 CERT_BOOK_FILE = Path(__file__).resolve().parents[1] / "data" / "CERT_BOOK_LIVE.json"
 
+#: KEYS THE CODE OPENS OVER THE BOX'S BOOK (2026-11-18, zuck: "this strat is fr everyday ... fr
+#: all" -- E8, FTMO and Fusion are meant to trade every market day; the E8 calendar showed 7 of 12
+#: November market days traded, one gold trade a day at most). CERT_BOOK_LIVE.json is box state
+#: (libs/ops/release.STATE_PREFIXES): an origin edit to it is reverted by the box's next push, and
+#: no organ writes its `e8` block, so the opening lives here, in code, where adoption carries it.
+#:
+#: E8 USDJPY session_range_breakout (asia, rr=2.5 wait_bars=12) at 0.004: the principal's approved
+#: target (CERT_BOOK_LIVE `e8_pending`, decision card 2026-10-14 "Add USDJPY"), held at 0.0 only
+#: until its lineage cleared -- the Reddit-origin ban was lifted 2026-10-13 and built 2026-11-11
+#: (live_sleeve_policy `reddit_origin_lifted`), which left the explicit 0.0 as the last door.
+#: Evidence: forward clock USDJPY.asia#rr=2.5 n=40 since 2026-09-18, +0.061R/trade, +2.43R cum
+#: (reports/shadow/shadow_state.json, 2026-11-18); certified 2,107-day backtest under 3x costs,
+#: CPCV OOS Sharpe 0.163, DSR 1.00, forward t 2.6 at promotion; gold vs the yen block -0.117, so
+#: it is a second independent bet, not more gold. It fires on 40 of the ~43 market days since
+#: 2026-09-18, which is what makes E8 trade daily. Worst day with gold_asia: 0.006 + 0.004 = 1.0%
+#: of equity against E8's 2.5% daily limit. Every other door still binds (principal exclusions,
+#: replication, the Tier S door, E8_CERT_CEILING, the daily guard). Journal D-20261118-001.
+#: Removing a key here closes it again; a positive value in the file always wins.
+CODE_BOOK_OPEN: dict[str, dict[str, float]] = {
+    "e8": {"USDJPY_session_range_breakout_asia": 0.004},
+}
+
 
 def load_cert_book(path: Path, venue: str) -> dict[str, float] | None:
     """{book key: risk fraction of equity} for `venue` ("fusion" or "e8") from the certified
@@ -97,4 +119,10 @@ def load_cert_book(path: Path, venue: str) -> dict[str, float] | None:
         if v != v or not 0.0 <= v <= MAX_RISK_FRAC:
             return None
         out[str(key)] = v
+    # THE CODE-SIDE OPENINGS (CODE_BOOK_OPEN, above). Laid over a VALID block only: a void book
+    # stays void, so this can never open a venue the file has stood down. It only lifts a key
+    # the file holds at 0.0 or does not name -- a positive file value always stands.
+    for key, v in CODE_BOOK_OPEN.get(venue, {}).items():
+        if out.get(key, 0.0) == 0.0 and 0.0 < v <= MAX_RISK_FRAC:
+            out[key] = v
     return out

@@ -649,6 +649,18 @@ def book_name(name: object) -> str:
 #: principal act. Each is a missed-growth line (rail "principal_zero_pin"; journal D-20261020-001).
 #:
 #: zuck 2026-10-20 21:52Z: "trade only gold asia for fusion and mt5" -- both books.
+#:
+#: 2026-11-18: THAT ORDER IS REVERSED (zuck: "this strat is fr everyday ... fr all"; decision card
+#: answered "Open all three"; journal D-20261118-001 reverses D-20261020-001). THE PIN STAYS, NOW AS
+#: AN EVIDENCE ZERO, because Growth Governance Rule 1 and the reopening brief ("only reopen windows
+#: the judge and forward evidence support") both bind and neither window has positive evidence:
+#: gold_london_am realised -0.120R/trade over 9 live fills (live_ledger.jsonl) and -0.088R in the
+#: audit's round-4 replay; gold_afternoon 0.000R over 5 live fills and -0.040R in the replay; and
+#: neither has a forward clock in shadow_state.json. Kelly sizes a non-positive edge at 0, so
+#: funding either would lower E[log W] and E8's pass probability. The daily trade comes instead
+#: from E8's USDJPY session_range_breakout (kelly_sizing.CODE_BOOK_OPEN), which has positive
+#: forward evidence and fires on almost every market day. LIFT RULE: remove a window from this
+#: set when its realised or forward record reaches mean R > 0 at n >= 20.
 GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset({"gold_london_am", "gold_afternoon"})
 #: The scalp lane's stand-down (zuck 2026-09-29; the XAU scalp sleeves retired 2026-09-30). The
 #: allocator's pf.book still funded xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z
