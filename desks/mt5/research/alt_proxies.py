@@ -1768,6 +1768,178 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+# ================================================================ paid-replica builds (2026-11-18)
+#: INDEED HIRING LAB JOB POSTINGS (CC BY 4.0, GitHub raw). The free replica of the paid job-
+#: postings panels (LinkUp, Revelio Labs, Thinknum job listings): Indeed's own seasonally adjusted
+#: index of total postings per country, daily (7-day trailing mean), refreshed weekly.
+INDEED_URL = ("https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/"
+              "{cc}/aggregate_job_postings_{cc}.csv")
+INDEED_COUNTRIES: tuple[str, ...] = ("US", "CA", "GB", "AU", "DE", "FR", "IE")
+
+
+def parse_indeed_postings(body: bytes, ctx: Ctx) -> list[Obs]:
+    """`date,jobcountry,indeed_job_postings_index_SA,indeed_job_postings_index_NSA,variable`:
+    the SA index of TOTAL postings, one series per country (`<cc>_postings`). New-postings rows
+    and blank cells are skipped, never zero-filled."""
+    import csv
+    text = body.decode("utf-8", errors="replace").lstrip("﻿")
+    if not text.startswith("date,jobcountry"):
+        return []
+    out: list[Obs] = []
+    for r in csv.DictReader(io.StringIO(text)):
+        if str(r.get("variable") or "").strip().lower() != "total postings":
+            continue
+        cc = str(r.get("jobcountry") or "").strip().upper()
+        v = _num(str(r.get("indeed_job_postings_index_SA") or ""))
+        try:
+            d = date.fromisoformat(str(r.get("date") or "")[:10])
+        except ValueError:
+            continue
+        if len(cc) == 2 and cc.isalpha() and v is not None:
+            out.append(Obs(f"{cc.lower()}_postings", d, v))
+    return out
+
+
+#: SENTINEL-2 L2A CROP GREENNESS, FROM THE SCENE CLASSIFICATION ALONE. The free replica of the
+#: paid satellite crop-condition products (Gro Intelligence, Descartes Labs, Planet crop
+#: monitoring, EOS crop analytics): every Sentinel-2 L2A scene carries ESA's own scene-
+#: classification shares in its STAC item (`s2:vegetation_percentage`, `s2:not_vegetated_
+#: percentage`), so the green share of the CLEAR land in a cropland tile is read without
+#: touching a pixel. A dekad's tile value is the clear-area-weighted mean over its scenes; a
+#: region's value is the mean over its tiles; the anomaly is that value minus the same dekad-of-
+#: year in every PRIOR year held (planting delays, drought browning, early senescence).
+S2_BUCKET = "https://sentinel-cogs.s3.us-west-2.amazonaws.com"
+S2_PREFIX = "sentinel-s2-l2a-cogs"
+#: region -> (MGRS tiles, growing-season months). Tiles were located from the town coordinates
+#: (MGRS from WGS84) and each tile's archive was listed from this container on 2026-11-18.
+S2_REGIONS: dict[str, tuple[tuple[str, ...], tuple[int, ...]]] = {
+    "us_corn_soy": (("15TVG", "16TCK", "16TEK", "14TNL"), (5, 6, 7, 8, 9)),
+    "us_hrw_wheat": (("14SPH", "14SMG"), (3, 4, 5, 6)),
+    "black_sea_wheat": (("36UVU", "36UXV", "37TEL"), (4, 5, 6, 7)),
+    "brazil_soy": (("21LXG", "22KEF"), (11, 12, 1, 2, 3)),
+}
+#: A scene whose clear land (vegetated + not vegetated, % of valid pixels) is below this says
+#: nothing about the crop: it is cloud, snow or water.
+S2_MIN_CLEAR = 20.0
+#: The archive is walked forward from here (global L2A coverage begins December 2018).
+S2_BACKFILL_FROM = "2019-01"
+#: Item fetches per pass (listings are separate). Forward backfill costs ~14k items once.
+S2_ITEMS_PER_PASS = 240
+#: A dekad is composed only once this many days have passed after its end (late scenes land).
+S2_SETTLE_DAYS = 3
+_S2_TILE = re.compile(r"^(\d{1,2})([C-X])([A-Z]{2})$")
+_S2_ITEM = re.compile(r"<Prefix>(" + S2_PREFIX + r"/[^<]+/(S2[ABC]_(\w{5})_(\d{8})_(\d+)_L2A))/"
+                      r"</Prefix>")
+
+
+def s2_list_url(tile: str, year: int, month: int) -> str:
+    m = _S2_TILE.match(tile)
+    if not m:
+        raise ValueError(f"not an MGRS tile: {tile}")
+    pre = f"{S2_PREFIX}/{int(m[1])}/{m[2]}/{m[3]}/{year}/{month}/"
+    return f"{S2_BUCKET}/?list-type=2&delimiter=/&prefix={urllib.parse.quote(pre)}"
+
+
+def s2_list_items(body: bytes) -> list[tuple[str, str]]:
+    """(item prefix, item id) per scene in an S3 ListObjectsV2 page, keeping only the highest
+    processing sequence per satellite and day (a re-processed scene replaces its predecessor)."""
+    best: dict[tuple[str, str, str], tuple[int, str, str]] = {}
+    for m in _S2_ITEM.finditer(body.decode("utf-8", errors="replace")):
+        prefix, iid, tile, day, seq = m[1], m[2], m[3], m[4], int(m[5])
+        k = (iid[:3], tile, day)
+        if k not in best or seq > best[k][0]:
+            best[k] = (seq, prefix, iid)
+    return sorted((p, i) for _, p, i in best.values())
+
+
+def parse_s2_item(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One STAC item -> one Obs `scene_<tile>`: the green share of the scene's clear land (0..1),
+    stamped with the item's own `created` time. Its weight is `s2_weight` of the same body. A
+    cloud-, snow- or water-dominated scene yields nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+        p = doc["properties"]
+        veg = float(p["s2:vegetation_percentage"])
+        bare = float(p["s2:not_vegetated_percentage"])
+        tile = str(p.get("grid:code") or "").removeprefix("MGRS-") or str(doc["id"]).split("_")[1]
+        when = datetime.fromisoformat(str(p["datetime"]).replace("Z", "+00:00"))
+        created = datetime.fromisoformat(str(p.get("created") or p["datetime"])
+                                         .replace("Z", "+00:00"))
+    except (ValueError, KeyError, TypeError, IndexError, AttributeError):
+        return []
+    if veg + bare < S2_MIN_CLEAR or not math.isfinite(veg + bare):
+        return []
+    return [Obs(f"scene_{tile}", when.date(), veg / (veg + bare),
+                created if created.tzinfo else created.replace(tzinfo=UTC))]
+
+
+def s2_weight(body: bytes) -> float:
+    """The clear land the scene saw, in tile-percent: (veg + bare) x (1 - nodata)."""
+    try:
+        p = json.loads(body.decode("utf-8", errors="replace"))["properties"]
+        return ((float(p["s2:vegetation_percentage"]) + float(p["s2:not_vegetated_percentage"]))
+                * max(0.0, 1.0 - float(p.get("s2:nodata_pixel_percentage") or 0.0) / 100.0))
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return 0.0
+
+
+def dekad_end(d: date) -> date:
+    if d.day <= 10:
+        return d.replace(day=10)
+    if d.day <= 20:
+        return d.replace(day=20)
+    return _month_end(d.year, d.month)
+
+
+def _dekad_of_year(d: date) -> int:
+    return (d.month - 1) * 3 + min(2, (d.day - 1) // 10)
+
+
+def s2_dekads(scenes: dict[str, dict[str, Any]], now: datetime) -> list[Obs]:
+    """Scenes -> per-region dekad Obs: `<region>_green` (level) and `<region>_green_anom` (minus
+    the mean of the same dekad-of-year in every PRIOR year held, at least two). Only in-season,
+    SETTLED dekads; available at the latest `created` among the scenes composing it, never before
+    the dekad closes. A region needs half its tiles in a dekad."""
+    tile_dek: dict[tuple[str, date], list[tuple[float, float, datetime]]] = {}
+    for s in scenes.values():
+        try:
+            d = date.fromisoformat(str(s["d"]))
+            created = datetime.fromisoformat(str(s["created"]))
+            tile_dek.setdefault((str(s["tile"]), dekad_end(d)), []).append(
+                (float(s["v"]), float(s["w"]), created))
+        except (KeyError, TypeError, ValueError):
+            continue
+    level: dict[str, dict[date, tuple[float, datetime]]] = {}
+    for region, (tiles, months) in S2_REGIONS.items():
+        by_dek: dict[date, list[tuple[float, datetime]]] = {}
+        for (tile, dk), rows in tile_dek.items():
+            if tile not in tiles or dk.month not in months:
+                continue
+            if now.date() < dk + timedelta(days=S2_SETTLE_DAYS):
+                continue
+            w = sum(r[1] for r in rows)
+            if w <= 0:
+                continue
+            by_dek.setdefault(dk, []).append((sum(r[0] * r[1] for r in rows) / w,
+                                              max(r[2] for r in rows)))
+        level[region] = {}
+        for dk, vals in by_dek.items():
+            if len(vals) * 2 < len(tiles):
+                continue
+            avail = max(max(v[1] for v in vals),
+                        _utc(dk.year, dk.month, dk.day) + timedelta(days=1))
+            level[region][dk] = (sum(v[0] for v in vals) / len(vals), avail)
+    out: list[Obs] = []
+    for region, pts in level.items():
+        for dk, (v, avail) in sorted(pts.items()):
+            out.append(Obs(f"{region}_green", dk, v, avail))
+            prior = [pv for pd, (pv, _) in pts.items()
+                     if pd.year < dk.year and _dekad_of_year(pd) == _dekad_of_year(dk)]
+            if len(prior) >= 2:
+                out.append(Obs(f"{region}_green_anom", dk, v - sum(prior) / len(prior), avail))
+    return out
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -2074,6 +2246,90 @@ SOURCES: tuple[Source, ...] = (
               "studies, they are not signal series, and reserves are the one current series. "
               "SIE serves the current vintage only, so the first history fetch is stamped "
               "vintage=current")),
+    Source(
+        id="jobs_indeed_postings",
+        name="Indeed Hiring Lab job postings index (SA, total postings, 7 countries)",
+        url=INDEED_URL.format(cc="US"),
+        region="GLOBAL", language="en", cadence="daily", parse=parse_indeed_postings,
+        # Daily rows (7-day trailing mean) refreshed WEEKLY: on 2026-11-18 the file ended at
+        # 2026-11-13. A row can wait up to a refresh cycle plus the trailing window, so it is
+        # stamped period + 11 days: late, never early.
+        rule=_lag_rule(11, 0), transform="level_dev",
+        instruments={"US500": 1, "USDJPY": 1, "EURUSD": -1, "XAUUSD": -1},
+        series_instruments={
+            "us_postings": {"US500": 1, "USDJPY": 1, "EURUSD": -1, "XAUUSD": -1, "UST10Y": -1},
+            "ca_postings": {"USDCAD": -1},
+            "gb_postings": {"GBPUSD": 1, "EURGBP": -1, "UK100": 1},
+            "au_postings": {"AUDUSD": 1, "AUS200": 1},
+            "de_postings": {"EURUSD": 1, "GER40": 1},
+            "fr_postings": {"EURUSD": 1, "FRA40": 1},
+            "ie_postings": {"EURUSD": 1}},
+        signal_series=("us_postings", "gb_postings", "ca_postings", "au_postings",
+                       "de_postings", "fr_postings"),
+        mechanism=("labour DEMAND, counted daily from the postings on the largest job site, "
+                   "seasonally adjusted by its owner: it turns weeks before payrolls, JOLTS, the "
+                   "LFS or the ABS labour survey, and those prints move the policy path that "
+                   "prices the currency and the index"),
+        payer=("rates and FX holders positioned on the last official labour print and the "
+               "consensus built from it"),
+        constraint=("official labour data is monthly with a lag of weeks; a book that must "
+                    "justify a position cites the official print, not a vendor index"),
+        licence=("Indeed Hiring Lab job_postings_tracker README 'Licence': Creative Commons "
+                 "Attribution 4.0 International; 'freely available for public use, as long as "
+                 "Indeed Hiring Lab is cited as a source'"),
+        source_culture="GLOBAL/en", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when Indeed's share of the posting market moves (a "
+                                 "product or pricing change) or when the seasonal model is "
+                                 "re-estimated, which re-writes the history (vintage=current); "
+                                 "neither coincides with a payrolls surprise regime"),
+        crowding_prior="medium", substitutes_for=("job-postings panels (LinkUp, Revelio Labs, "
+                                                  "Thinknum job listings)"),
+        vintage="current",
+        note=("Seven CSVs a pass (US CA GB AU DE FR IE; JP has no country file, read 2026-11-18). "
+              "The SA index is re-estimated on every refresh, so the history is the current "
+              "vintage and the first value seen per date is what is used. Credit: 'Source: "
+              "Indeed Hiring Lab'.")),
+    Source(
+        id="sat_s2_crop_green",
+        name="Sentinel-2 L2A crop greenness by region (scene classification, AWS Open Data)",
+        url=f"{S2_BUCKET}/{S2_PREFIX}/",
+        region="GLOBAL", language="en", cadence="10-daily", parse=parse_s2_item,
+        # A dekad is composed S2_SETTLE_DAYS after it ends; the page stamp (the latest scene's
+        # `created`) governs, and this rule is only the bound for a stamp that is not believed.
+        rule=_lag_rule(5, 0, weekday=True), transform="given",
+        instruments={"CORN": -1, "SOYBEAN": -1, "WHEAT": -1},
+        series_instruments={"us_corn_soy": {"CORN": -1, "SOYBEAN": -1},
+                            "us_hrw_wheat": {"WHEAT": -1},
+                            "black_sea_wheat": {"WHEAT": -1},
+                            "brazil_soy": {"SOYBEAN": -1, "USDBRL": -1}},
+        signal_series=("us_corn_soy_green_anom", "us_hrw_wheat_green_anom",
+                       "black_sea_wheat_green_anom", "brazil_soy_green_anom"),
+        mechanism=("a cropland tile greener than in every prior year at the same dekad is a "
+                   "crop ahead of schedule or unstressed; browner is late planting, drought or "
+                   "early senescence. Satellites see it within days; USDA crop condition, WASDE "
+                   "and CONAB print it weekly to monthly, after"),
+        payer=("grain futures holders who price the crop off the weekly USDA condition rating "
+               "and the monthly WASDE"),
+        constraint=("crop analytics desks pay for imagery pipelines; a CTA or index book trades "
+                    "the official reports, not raw scenes"),
+        licence=("Copernicus Sentinel data via the AWS Registry of Open Data (sentinel-cogs, "
+                 "RequesterPays False): 'Access to Sentinel data is free, full and open'; the "
+                 "STAC item's own license link is the Sentinel Data Legal Notice"),
+        source_culture="GLOBAL/en", participant_structure=("institutional", "physical_flow"),
+        failure_mode_hypothesis=("fails when cloud persists over a tile through a dekad (no "
+                                 "value, never a zero), when a crop-mix change moves the tile's "
+                                 "baseline, or when ESA re-baselines the scene classifier "
+                                 "(processing baseline 04.00 in 2022); a dry spell that is "
+                                 "already in the weather forecasts is priced before the scene"),
+        crowding_prior="low", substitutes_for=("satellite crop-condition analytics (Gro "
+                                               "Intelligence, Descartes Labs, Planet crop "
+                                               "monitoring, EOS)"),
+        vintage="current",
+        note=("Metadata-level: only the STAC item JSON is read (about 10 KB a scene), never a "
+              "pixel. The archive is walked forward from 2019-01 at most "
+              f"{S2_ITEMS_PER_PASS} items a pass, then the last two months are re-listed every "
+              "pass. History items may be re-processed products, hence vintage=current. Credit: "
+              "'Contains modified Copernicus Sentinel data'.")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2774,6 +3030,10 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    "jobs_indeed_postings": ("confirmed", "Indeed Hiring Lab data: CC BY 4.0 (repository LICENSE "
+                             "and README 'Licence'), Indeed Hiring Lab cited"),
+    "sat_s2_crop_green": ("confirmed", "Copernicus Sentinel data on the AWS Registry of Open Data: "
+                          "'free, full and open'; no requester-pays, no key"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -2825,6 +3085,43 @@ _OI_EV: dict[str, str] = {
     "checked_at": _CHK,
 }
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    # Paid-replica builds, read from the authoring container 2026-11-18 (HTTPS through its proxy).
+    "jobs_indeed_postings": {
+        "terms_url": ("https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/"
+                      "README.md"),
+        "terms_quote": ("The data generated by Indeed Hiring Lab are available under the "
+                        "Creative Commons Attribution 4.0 International License. The data and "
+                        "files that we have generated are freely available for public use, as "
+                        "long as Indeed Hiring Lab is cited as a source."),
+        "licence_url": ("https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/"
+                        "master/LICENSE"),
+        "licence_quote": "Attribution 4.0 International (the repository LICENSE file, HTTP 200)",
+        "robots": ("raw.githubusercontent.com/robots.txt HTTP 404 (no rules); the seven country "
+                   "CSVs answered 200 (JP 404: no country file)"),
+        "credit": "Source: Indeed Hiring Lab",
+        "judgement": ("CC BY 4.0 permits commercial use with attribution; GitHub raw is the "
+                      "publisher's own distribution of the files"),
+        "checked_at": "2026-11-18"},
+    "sat_s2_crop_green": {
+        "terms_url": ("https://raw.githubusercontent.com/awslabs/open-data-registry/main/"
+                      "datasets/sentinel-2-l2a-cogs.yaml"),
+        "terms_quote": ("License: Access to Sentinel data is free, full and open for the broad "
+                        "Regional, National, European and International user community. View "
+                        "Terms and Conditions (sentinels.copernicus.eu/documents/247904/690755/"
+                        "Sentinel_Data_Legal_Notice). Resources: Level 2A scenes and metadata, "
+                        "ARN arn:aws:s3:::sentinel-cogs, RequesterPays: False"),
+        "item_license": ("every STAC item's links carry rel=license -> "
+                         "https://sentinel.esa.int/documents/247904/690755/"
+                         "Sentinel_Data_Legal_Notice (read in S2A_15TVK_20250716_0_L2A.json)"),
+        "robots": ("sentinel-cogs.s3.us-west-2.amazonaws.com/robots.txt HTTP 404 (no rules); "
+                   "anonymous ListObjectsV2 and item GETs answered 200"),
+        "credit": "Contains modified Copernicus Sentinel data [year]",
+        "judgement": ("the registry's own licence line is plainly open and the bucket is not "
+                      "requester-pays; the ESA legal notice itself was NOT readable from the "
+                      "authoring container (its proxy refused sentinel.esa.int and eur-lex), so "
+                      "the box re-reads it (Commission Delegated Regulation (EU) No 1159/2013: "
+                      "free, full and open use, commercial included) on its first live pass"),
+        "checked_at": "2026-11-18"},
     "cn_maoyan_box_office": {
         "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
         "terms_quote": "(not readable: the page and the data endpoint are robots.txt-disallowed)",
@@ -3483,6 +3780,9 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         return reqs
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
+    if src.id == "jobs_indeed_postings":
+        return [Request(INDEED_URL.format(cc=cc), Ctx(part=cc, fetched_at=now))
+                for cc in INDEED_COUNTRIES]
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
         return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
@@ -4284,6 +4584,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if getter is http_get and src.id in ROBOTS_GATED:
+        getter = robots_gated_get
     if getter is http_get and src.key_env:
         key = key_value(src)
         getter = functools.partial(http_get, secrets=(key,) if key else ())
@@ -4297,6 +4599,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     if held is not None and now < held and fixtures is None:
         rec.update({"requests": 0, "store_rows": len(store),
                     "why": f"STOPPED until {sst['stop_until']}: {sst.get('stop_why', '')}"})
+        return rec
+    if src.id == "sat_s2_crop_green":
+        rec.update(collect_s2(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
+                              deadline=deadline, getter=getter))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
         return rec
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
@@ -4321,7 +4629,10 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
-                stop = _stop_seconds(exc) if src.key_header else None
+                stop = (_stop_seconds(exc) if src.key_header or src.id in ROBOTS_GATED
+                        else None)
+                if stop is None and src.id in ROBOTS_GATED and isinstance(exc, PermissionError):
+                    stop = STOP_DEFAULT_S                  # a robots refusal is a stop too
                 if stop is not None:
                     # A refusal or an exhausted quota is a STOP, never something to retry into.
                     sst["stop_until"] = (now + timedelta(seconds=stop)).isoformat(
@@ -4411,6 +4722,165 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     return {"requests": len(reqs), "fetched": fetched, "parsed": parsed, "merge": m,
             "days_published": sorted({o.period.isoformat() for o in done}),
             "days_dropped_for_gaps": dropped, "days_open": len(acc), "errors": errors[:6]}
+
+
+# ------------------------------------------------------------------- robots gate and S2 loop
+#: Sources added by the paid-replica builds pass robots.txt before every request (fail closed:
+#: an unreadable robots.txt other than 404/410 is a refusal), and stop on 401/403/429/451.
+ROBOTS_GATED: frozenset[str] = frozenset({"jobs_indeed_postings", "sat_s2_crop_green"})
+_ROBOTS_CACHE: dict[str, Any] = {}
+
+
+def robots_refusal(url: str, fetch: Callable[[str], tuple[int, str]] | None = None) -> str | None:
+    """None when robots.txt lets this organ's UA fetch `url`, else why not. 404/410 means no
+    rules; 401/403 means disallow-all; anything else unreadable is a refusal."""
+    import urllib.robotparser
+    parts = urllib.parse.urlsplit(url)
+    if parts.path == "/robots.txt":
+        return None
+    key = f"{parts.scheme}://{parts.netloc}"
+    rules = _ROBOTS_CACHE.get(key) if fetch is None else None
+    if rules is None:
+        def _default(u: str) -> tuple[int, str]:
+            req = urllib.request.Request(u, headers={"User-Agent": UA})
+            try:
+                with urllib.request.urlopen(req, timeout=15.0, context=_tls()) as r:
+                    return int(getattr(r, "status", 200)), r.read(500_000).decode("utf-8",
+                                                                                 "replace")
+            except urllib.error.HTTPError as e:
+                return int(e.code), ""
+        try:
+            code, text = (fetch or _default)(f"{key}/robots.txt")
+        except Exception as e:
+            return f"robots.txt unreadable ({type(e).__name__})"
+        rp = urllib.robotparser.RobotFileParser()
+        if code in (404, 410):
+            rp.parse([])
+        elif code in (401, 403):
+            rp.parse(["User-agent: *", "Disallow: /"])
+        elif code == 200:
+            rp.parse(text.splitlines())
+        else:
+            return f"robots.txt unreadable (HTTP {code})"
+        rules = rp
+        if fetch is None:
+            _ROBOTS_CACHE[key] = rules
+    return None if rules.can_fetch(UA, url) else f"robots.txt disallows {parts.path or '/'}"
+
+
+def robots_gated_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    why = robots_refusal(url)
+    if why:
+        raise PermissionError(f"REFUSED: {why}")
+    return http_get(url, headers)
+
+
+def _months(start: str, end: date) -> list[tuple[int, int]]:
+    y, m = (int(x) for x in start.split("-"))
+    out = []
+    while (y, m) <= (end.year, end.month):
+        out.append((y, m))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return out
+
+
+def collect_s2(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+               now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+               getter: Callable[[str], tuple[bytes, str]] = robots_gated_get) -> dict[str, Any]:
+    """Sentinel-2's own loop. The archive is walked FORWARD a month at a time from
+    S2_BACKFILL_FROM (cursor `s2_month`), every tile per month; the last two months are re-listed
+    every pass once the walk has caught up. Scenes go to a side file (one row per scene);
+    dekads are composed and merged only after the walk reaches the live window, so every
+    anomaly is computed against the full prior-year history and its first value is final."""
+    scenes_p = paths.obs_dir / f"{src.id}.scenes.json"
+    scenes: dict[str, dict[str, Any]] = _read_json(scenes_p, {})
+    errors: list[str] = []
+    listed = fetched = parsed = 0
+    tiles = sorted({t for ts, _ in S2_REGIONS.values() for t in ts})
+    if fixtures is not None:
+        for fp in sorted(fixtures.glob(f"{src.id}*.json")):
+            body = fp.read_bytes()
+            for o in parse_s2_item(body, Ctx(fetched_at=now)):
+                scenes[f"{o.series}|{o.period}|{fp.stem}"] = {
+                    "tile": o.series.removeprefix("scene_"), "d": o.period.isoformat(),
+                    "v": round(o.value, 6), "w": round(s2_weight(body), 4),
+                    "created": (o.published_at or now).isoformat(timespec="seconds")}
+                parsed += 1
+        caught_up = True
+    else:
+        cursor = str(sst.get("s2_month") or S2_BACKFILL_FROM)
+        live_from = (now.date().replace(day=1) - timedelta(days=1)).replace(day=1)
+        months = _months(cursor, now.date())
+        caught_up = date(*(int(x) for x in cursor.split("-")), 1) >= live_from
+        if caught_up:
+            months = _months(f"{live_from:%Y-%m}", now.date())
+        budget = S2_ITEMS_PER_PASS
+        for y, m in months if fetch else []:
+            month_ok = True
+            for tile in tiles:
+                if time.monotonic() > deadline or budget <= 0:
+                    month_ok = False
+                    break
+                try:
+                    body, _ = getter(s2_list_url(tile, y, m))
+                    listed += 1
+                except Exception as exc:
+                    errors.append(f"list {tile} {y}-{m:02d}: {type(exc).__name__}: "
+                                  f"{str(exc)[:90]}")
+                    if _stop_seconds(exc) is not None or isinstance(exc, PermissionError):
+                        sst["stop_until"] = (now + timedelta(seconds=STOP_DEFAULT_S)).isoformat(
+                            timespec="seconds")
+                        sst["stop_why"] = errors[-1]
+                    month_ok = False
+                    break
+                seen: dict[str, str] = sst.setdefault("s2_seen", {})
+                for prefix, iid in s2_list_items(body):
+                    if iid in seen:
+                        continue
+                    if budget <= 0 or time.monotonic() > deadline:
+                        month_ok = False
+                        break
+                    try:
+                        ib, _ = getter(f"{S2_BUCKET}/{prefix}/{iid}.json")
+                        fetched += 1
+                        budget -= 1
+                    except Exception as exc:
+                        errors.append(f"item {iid}: {type(exc).__name__}: {str(exc)[:80]}")
+                        month_ok = False
+                        break
+                    seen[iid] = f"{y}-{m:02d}"
+                    for o in parse_s2_item(ib, Ctx(fetched_at=now)):
+                        scenes[f"{o.series}|{o.period}|{iid[:3]}"] = {
+                            "tile": o.series.removeprefix("scene_"), "d": o.period.isoformat(),
+                            "v": round(o.value, 6), "w": round(s2_weight(ib), 4),
+                            "created": (o.published_at or now).isoformat(timespec="seconds")}
+                        parsed += 1
+                if not month_ok:
+                    break
+            if not month_ok:
+                break
+            if not caught_up:
+                nxt = (date(y, m, 28) + timedelta(days=4)).replace(day=1)
+                sst["s2_month"] = f"{nxt:%Y-%m}"
+        caught_up = caught_up or date(*(int(x) for x in str(sst.get("s2_month") or
+                                                             S2_BACKFILL_FROM).split("-")),
+                                      1) >= live_from
+        # The seen-set only has to cover the months still being listed: older rows are pruned
+        # so the state stays a few hundred rows, never the whole archive.
+        floor = (f"{live_from:%Y-%m}" if caught_up
+                 else str(sst.get("s2_month") or S2_BACKFILL_FROM))
+        sst["s2_seen"] = {k: v for k, v in (sst.get("s2_seen") or {}).items() if v >= floor}
+    _atomic(scenes_p, scenes)
+    m = {"added": 0, "revised": 0}
+    composed: list[Obs] = []
+    if caught_up:
+        composed = s2_dekads(scenes, now)
+        m = merge_vintages(store, src, composed, now)
+    return {"listed": listed, "fetched": fetched, "parsed": parsed, "merge": m,
+            "scenes_held": len(scenes), "dekads_composed": len(composed),
+            "walk": ("live" if caught_up
+                     else f"backfill at {sst.get('s2_month') or S2_BACKFILL_FROM}"),
+            "requests": listed + fetched, "errors": errors[:6]}
 
 
 # ============================================================================ agreement

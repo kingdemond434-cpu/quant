@@ -1,0 +1,1467 @@
+{
+ "schema": "paid_replica_map/1",
+ "at": "2026-11-18",
+ "note": "THE PAID-REPLICA MAP: every paid alt-data category and terminal function tier-1 firms buy, the MT5 instruments it moves, what the desk ALREADY builds free (fetchers cited live as file:line by the paid_substitute_engine's hourly replica leg), the best free inputs, and an ROI prior. AUTHORED DATA: edit here, never in code. The hourly leg re-ranks it against the live catalogue and the universe policy and writes desks/mt5/reports/PAID_REPLICA_MAP.json; build tasks for the top unbuilt rows go to desks/mt5/data/deep_forest_queue/paid_replica_builds.json, which deep_forest_miner reads every hour. A free proxy is a lawful estimate of the ECONOMIC QUANTITY, never a copy of anyone's product.",
+ "roi_rule": "roi = edge x sum(instrument_value over instruments may_hypothesise admits) x buildability / effort_days x (1 + ln(1 + paid rows in the category) / 4); a category with a measured PASS gain test gets edge x 1.25, a measured FAIL x 0.75",
+ "instrument_value": {
+  "EURUSD": 1.0,
+  "USDJPY": 1.0,
+  "GBPUSD": 0.9,
+  "AUDUSD": 0.8,
+  "USDCAD": 0.8,
+  "USDCHF": 0.7,
+  "XAUUSD": 1.0,
+  "XAGUSD": 0.6,
+  "XTIUSD": 0.9,
+  "XBRUSD": 0.9,
+  "XNGUSD": 0.8,
+  "US500": 1.0,
+  "NAS100": 0.9,
+  "US30": 0.8,
+  "GER40": 0.8,
+  "UK100": 0.7,
+  "JPN225": 0.7,
+  "HK50": 0.6,
+  "AUS200": 0.6,
+  "FRA40": 0.6,
+  "UST10Y": 0.7,
+  "CORN": 0.6,
+  "SOYBEAN": 0.6,
+  "WHEAT": 0.6,
+  "XCUUSD": 0.6,
+  "USDCNH": 0.6,
+  "USDKRW": 0.4,
+  "USDBRL": 0.5,
+  "USDMXN": 0.5,
+  "USDTRY": 0.3,
+  "USDINR": 0.4,
+  "USDNOK": 0.4,
+  "EURGBP": 0.6
+ },
+ "default_instrument_value": 0.4,
+ "parents": {
+  "bloomberg_terminal": {
+   "label": "Bloomberg Terminal (and LSEG Workspace / FactSet as its peers): the five functions a trading desk uses",
+   "rank_note": "ranked as its own high row: its score is the sum of its functions' scores"
+  }
+ },
+ "categories": [
+  {
+   "id": "card_transactions",
+   "label": "Card / transaction panels (Second Measure, Earnest, Consumer Edge, Facteus, BofA card)",
+   "kind": "alt_data",
+   "classes": [
+    "card_consumer"
+   ],
+   "keywords": [
+    "card spend",
+    "card transaction",
+    "transaction data",
+    "debit card",
+    "credit card",
+    "payments panel"
+   ],
+   "instruments": {
+    "US500": 1,
+    "USDJPY": 1,
+    "EURUSD": 1,
+    "USDKRW": 1,
+    "USDBRL": 1,
+    "USDMXN": 1,
+    "USDTRY": 1
+   },
+   "edge": 0.55,
+   "buildability": 0.7,
+   "effort_days": 4,
+   "built": [
+    {
+     "source_id": "us_census_marts_ex_autos"
+    },
+    {
+     "source_id": "kr_bok_card_spend"
+    },
+    {
+     "source_id": "br_bcb_payments"
+    },
+    {
+     "source_id": "cn_nbs_retail"
+    },
+    {
+     "source_id": "jp_meti_retail"
+    },
+    {
+     "source_id": "tr_tuik_retail"
+    },
+    {
+     "source_id": "mx_inegi_emec"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "US Census MARTS advance retail (API)",
+     "url": "https://api.census.gov/data/timeseries/eits/marts",
+     "terms": "confirmed"
+    },
+    {
+     "name": "BCB payments statistics",
+     "url": "https://olinda.bcb.gov.br",
+     "terms": "confirmed"
+    }
+   ],
+   "gap": "US daily card panel: the free daily panel (Opportunity Insights/Affinity) ended 2024-06; only monthly official receipts are live for the US."
+  },
+  {
+   "id": "e_receipts",
+   "label": "E-receipt panels (Edison Trends, Measurable AI, Numerator)",
+   "kind": "alt_data",
+   "classes": [],
+   "keywords": [
+    "receipt*",
+    "e-receipt*",
+    "email receipt*"
+   ],
+   "from_classes": [
+    "card_consumer",
+    "web_scraped_corporate",
+    "foot_traffic"
+   ],
+   "instruments": {
+    "US500": 1,
+    "NAS100": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.35,
+   "effort_days": 8,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "US Census MARTS nonstore retailers (NAICS 454)",
+     "url": "https://api.census.gov/data/timeseries/eits/marts",
+     "terms": "confirmed"
+    },
+    {
+     "name": "SEC EDGAR XBRL company facts (reported revenue, the truth the panel nowcasts)",
+     "url": "https://data.sec.gov/api/xbrl/companyfacts/",
+     "terms": "confirmed",
+     "note": "SEC fair-access: declared UA, <=10 req/s"
+    }
+   ],
+   "gap": "item-level basket data has no free source; the index-level signal is nonstore retail sales"
+  },
+  {
+   "id": "web_traffic",
+   "label": "Web traffic / clickstream (Similarweb, Semrush, Comscore)",
+   "kind": "alt_data",
+   "classes": [
+    "web_traffic"
+   ],
+   "keywords": [
+    "web traffic",
+    "clickstream",
+    "site visits",
+    "website visits",
+    "digital traffic"
+   ],
+   "instruments": {
+    "US500": 1,
+    "NAS100": 1,
+    "USDJPY": 1,
+    "USDCNH": 1
+   },
+   "edge": 0.35,
+   "buildability": 0.75,
+   "effort_days": 3,
+   "built": [
+    {
+     "source_id": "wiki_asia_attention"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Wikimedia pageviews REST API",
+     "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/",
+     "terms": "confirmed"
+    },
+    {
+     "name": "Tranco top-sites list",
+     "url": "https://tranco-list.eu/",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "Cloudflare Radar API (free key)",
+     "url": "https://api.cloudflare.com/client/v4/radar/",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "app_data",
+   "label": "App downloads and usage (Sensor Tower, data.ai, Apptopia)",
+   "kind": "alt_data",
+   "classes": [
+    "app_data"
+   ],
+   "keywords": [
+    "app download",
+    "app usage",
+    "app store",
+    "mobile app",
+    "app intelligence"
+   ],
+   "instruments": {
+    "NAS100": 1,
+    "US500": 1,
+    "HK50": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.8,
+   "effort_days": 2,
+   "built": [
+    {
+     "organ": "libs/data/free_stack.py",
+     "roster_id": "app_rank_apple",
+     "roster": "desks/mt5/data/free_stack_sources.json"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Apple Marketing Tools top-chart RSS",
+     "url": "https://rss.applemarketingtools.com/api/v2/us/apps/top-free/100/apps.json",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "jobs",
+   "label": "Job postings and hiring (LinkUp, Revelio Labs, Thinknum, Lightcast)",
+   "kind": "alt_data",
+   "classes": [
+    "jobs"
+   ],
+   "keywords": [
+    "job posting",
+    "job listing",
+    "hiring",
+    "labor market",
+    "labour market",
+    "workforce"
+   ],
+   "instruments": {
+    "US500": 1,
+    "USDJPY": 1,
+    "EURUSD": 1,
+    "GBPUSD": 1,
+    "USDCAD": 1,
+    "AUDUSD": 1,
+    "GER40": 1,
+    "UK100": 1,
+    "XAUUSD": 1
+   },
+   "edge": 0.55,
+   "buildability": 0.95,
+   "effort_days": 1,
+   "built": [
+    {
+     "source_id": "jobs_indeed_postings"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Indeed Hiring Lab job_postings_tracker (CC BY 4.0)",
+     "url": "https://raw.githubusercontent.com/hiring-lab/job_postings_tracker/master/",
+     "terms": "confirmed"
+    },
+    {
+     "name": "USAJOBS API (free key, federal postings only)",
+     "url": "https://data.usajobs.gov/api/",
+     "terms": "confirmed"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "FRED ICSA/CCSA/JTSJOL",
+     "host": "fred.stlouisfed.org",
+     "clause": "St. Louis Fed terms refuse every automated fetch (terms ruling 2026-11-13, libs/data/refused_hosts.py)",
+     "missed_growth": "weekly claims and JOLTS via FRED are lost; the BLS/DOL primaries remain the route"
+    }
+   ]
+  },
+  {
+   "id": "sat_retail_parking",
+   "label": "Satellite retail parking-lot car counts (RS Metrics, Orbital Insight)",
+   "kind": "alt_data",
+   "classes": [
+    "foot_traffic"
+   ],
+   "keywords": [
+    "parking",
+    "car count",
+    "foot traffic",
+    "footfall",
+    "visits",
+    "mobility",
+    "location data"
+   ],
+   "instruments": {
+    "US500": 1,
+    "XTIUSD": 1,
+    "HK50": 1,
+    "JPN225": 1
+   },
+   "edge": 0.35,
+   "buildability": 0.6,
+   "effort_days": 3,
+   "built": [
+    {
+     "source_id": "us_tsa_throughput"
+    },
+    {
+     "source_id": "kr_seoul_subway"
+    },
+    {
+     "source_id": "hk_immd_passenger"
+    },
+    {
+     "source_id": "jp_estat_immigration"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "TSA checkpoint volumes",
+     "url": "https://www.tsa.gov/travel/passenger-volumes",
+     "terms": "confirmed"
+    }
+   ],
+   "gap": "car counts need sub-metre imagery, which no free sensor provides (Sentinel-2 is 10 m); the free proxy is counted footfall (TSA, subway, border crossings)"
+  },
+  {
+   "id": "sat_oil_storage",
+   "label": "Satellite oil-storage / floating-roof tank inventories (Ursa, Kayrros, Orbital Insight)",
+   "kind": "alt_data",
+   "classes": [],
+   "keywords": [
+    "oil storage",
+    "tank",
+    "tanks",
+    "floating roof",
+    "crude inventor*",
+    "oil inventor*",
+    "stockpile*"
+   ],
+   "from_classes": [
+    "satellite",
+    "commodities_physical",
+    "energy_power",
+    "shipping_ais"
+   ],
+   "instruments": {
+    "XTIUSD": 1,
+    "XBRUSD": 1,
+    "USDCAD": 1,
+    "USDNOK": 1
+   },
+   "edge": 0.6,
+   "buildability": 0.4,
+   "effort_days": 6,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "EIA Weekly Petroleum Status Report tables (keyless files)",
+     "url": "https://ir.eia.gov/wpsr/",
+     "terms": "confirmed",
+     "note": "US federal work; ir.eia.gov unreachable from the authoring container"
+    },
+    {
+     "name": "Sentinel-1 GRD on Microsoft Planetary Computer (public STAC, SAS-signed)",
+     "url": "https://planetarycomputer.microsoft.com/api/stac/v1",
+     "terms": "to_confirm",
+     "note": "host refused by the authoring container's proxy"
+    },
+    {
+     "name": "JODI Oil World Database",
+     "url": "https://www.jodidata.org/oil/",
+     "terms": "to_confirm"
+    }
+   ],
+   "gap": "SAR tank-shadow inventories need pixel processing of Sentinel-1; AWS sentinel-1 buckets are requester-pays (not free)"
+  },
+  {
+   "id": "sat_crop",
+   "label": "Satellite crop condition and yield (Gro, Descartes Labs, Planet, EOS)",
+   "kind": "alt_data",
+   "classes": [],
+   "keywords": [
+    "crop*",
+    "ndvi",
+    "agricultur*",
+    "vegetation",
+    "harvest*",
+    "farm*",
+    "yield forecast*"
+   ],
+   "from_classes": [
+    "satellite",
+    "commodities_physical"
+   ],
+   "instruments": {
+    "CORN": 1,
+    "SOYBEAN": 1,
+    "WHEAT": 1,
+    "USDBRL": 1
+   },
+   "edge": 0.55,
+   "buildability": 0.85,
+   "effort_days": 2,
+   "built": [
+    {
+     "source_id": "sat_s2_crop_green"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Sentinel-2 L2A STAC items, AWS Open Data sentinel-cogs",
+     "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/",
+     "terms": "confirmed"
+    },
+    {
+     "name": "NOAA CDR NDVI (AVHRR/VIIRS), AWS Open Data",
+     "url": "https://noaa-cdr-ndvi-pds.s3.amazonaws.com/",
+     "terms": "to_confirm",
+     "note": "netCDF ~55 MB/day: heavier"
+    }
+   ]
+  },
+  {
+   "id": "sat_night_lights",
+   "label": "Night lights / economic activity from space (SpaceKnow, Black Marble products)",
+   "kind": "alt_data",
+   "classes": [],
+   "keywords": [
+    "night light*",
+    "nightlight*",
+    "black marble",
+    "viirs",
+    "luminosity"
+   ],
+   "from_classes": [
+    "satellite"
+   ],
+   "instruments": {
+    "USDCNH": 1,
+    "USDINR": 1,
+    "AUDUSD": 1,
+    "XCUUSD": 1
+   },
+   "edge": 0.35,
+   "buildability": 0.45,
+   "effort_days": 5,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "NASA Black Marble VNP46A (LAADS, free Earthdata token)",
+     "url": "https://ladsweb.modaps.eosdis.nasa.gov/",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "sat_industrial",
+   "label": "Industrial / mining activity from space (thermal anomalies, NO2, fires)",
+   "kind": "alt_data",
+   "classes": [
+    "satellite"
+   ],
+   "keywords": [
+    "industrial",
+    "thermal",
+    "smelter",
+    "steel",
+    "mining",
+    "no2",
+    "emission",
+    "fire",
+    "geospatial",
+    "imagery",
+    "earth observation"
+   ],
+   "instruments": {
+    "XCUUSD": 1,
+    "AUDUSD": 1,
+    "USDCNH": 1,
+    "XTIUSD": 1
+   },
+   "edge": 0.4,
+   "buildability": 0.6,
+   "effort_days": 3,
+   "built": [
+    {
+     "source_id": "cn_firms_industrial"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "NASA FIRMS area API (free MAP_KEY)",
+     "url": "https://firms.modaps.eosdis.nasa.gov/api/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "shipping_ais",
+   "label": "Ship and tanker AIS flows (Kpler, Vortexa, MarineTraffic, Spire)",
+   "kind": "alt_data",
+   "classes": [
+    "shipping_ais"
+   ],
+   "keywords": [
+    "ais",
+    "tanker",
+    "vessel",
+    "shipping",
+    "freight",
+    "port call",
+    "maritime",
+    "container"
+   ],
+   "instruments": {
+    "XTIUSD": 1,
+    "XBRUSD": 1,
+    "XNGUSD": 1,
+    "AUDUSD": 1,
+    "USDCNH": 1,
+    "XCUUSD": 1
+   },
+   "edge": 0.55,
+   "buildability": 0.55,
+   "effort_days": 4,
+   "built": [
+    {
+     "source_id": "kr_mof_container_teu"
+    },
+    {
+     "source_id": "sg_port_throughput"
+    },
+    {
+     "source_id": "imf_portwatch_ports"
+    },
+    {
+     "source_id": "imf_portwatch_chokepoints"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1175",
+     "branch": "claude/gdd-free-terminal-feeds",
+     "path": "desks/mt5/research/ais_norway.py",
+     "note": "Kystverket open AIS (NLOD 2.0): Norwegian tanker port calls -> XNGUSD, XBRUSD"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Kystverket open AIS stream (NLOD 2.0)",
+     "url": "https://www.kystverket.no/",
+     "terms": "confirmed",
+     "note": "on #1175, not LIVE"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "aisstream.io",
+     "host": "aisstream.io",
+     "clause": "site publishes no terms of service (read 2026-11-13, ais_norway.py docstring); unread terms fail closed",
+     "missed_growth": "global live AIS positions; Norwegian coast only until a permitted global feed is found"
+    },
+    {
+     "input": "IMF PortWatch",
+     "host": "services9.arcgis.com (IMF PortWatch)",
+     "clause": "terms pending reconciliation (worker rules 2026-11-18); FeatureServer answers 499 Token Required since 2026-11",
+     "missed_growth": "daily port calls and chokepoint transits for 1,600 ports"
+    }
+   ]
+  },
+  {
+   "id": "flight_air_cargo",
+   "label": "Flight and air-cargo activity (Cirium, OAG, ForwardKeys)",
+   "kind": "alt_data",
+   "classes": [],
+   "keywords": [
+    "flight*",
+    "air cargo",
+    "airline*",
+    "aviation",
+    "ads-b",
+    "airport*",
+    "air travel"
+   ],
+   "from_classes": [
+    "foot_traffic",
+    "shipping_ais",
+    "supply_chain",
+    "trade_customs"
+   ],
+   "instruments": {
+    "US500": 1,
+    "XTIUSD": 1,
+    "USDJPY": 1,
+    "HK50": 1
+   },
+   "edge": 0.35,
+   "buildability": 0.5,
+   "effort_days": 4,
+   "built": [
+    {
+     "source_id": "us_tsa_throughput"
+    },
+    {
+     "source_id": "hk_immd_passenger"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "BTS T-100 segment data (monthly)",
+     "url": "https://www.transtats.bts.gov/",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "HKIA monthly air-cargo statistics",
+     "url": "https://www.hongkongairport.com/",
+     "terms": "to_confirm"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "OpenSky Network ADS-B",
+     "host": "opensky-network.org",
+     "clause": "OpenSky terms of use restrict data to non-commercial research use (not re-read from this container: host refused by its proxy); fails closed",
+     "missed_growth": "daily global flight counts and cargo-carrier activity"
+    }
+   ],
+   "gap": "air CARGO tonnage is monthly and unbuilt; passenger throughput is built"
+  },
+  {
+   "id": "news_sentiment",
+   "label": "News and social sentiment (RavenPack, Bloomberg/Refinitiv news analytics, Accern)",
+   "kind": "alt_data",
+   "classes": [
+    "news_nlp",
+    "sentiment"
+   ],
+   "keywords": [
+    "news",
+    "sentiment",
+    "social",
+    "nlp",
+    "media",
+    "tone",
+    "twitter",
+    "reddit"
+   ],
+   "instruments": {
+    "US500": 1,
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "XAUUSD": 1,
+    "XTIUSD": 1,
+    "USDCNH": 1
+   },
+   "edge": 0.45,
+   "buildability": 0.8,
+   "effort_days": 3,
+   "built": [
+    {
+     "source_id": "gdelt_events_country"
+    },
+    {
+     "organ": "desks/mt5/research/news_event_stream.py"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1279",
+     "branch": "claude/gdd-live-wire",
+     "path": "desks/mt5/research/live_wire.py",
+     "note": "47 OK first-party feeds polled every 2 minutes into news_captures.jsonl"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "GDELT 2.0 events (15-min)",
+     "url": "http://data.gdeltproject.org/gdeltv2/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "esg",
+   "label": "ESG scores and emissions (MSCI ESG, Sustainalytics, Trucost)",
+   "kind": "alt_data",
+   "classes": [
+    "esg"
+   ],
+   "keywords": [
+    "esg",
+    "sustainab",
+    "carbon",
+    "climate risk",
+    "governance score"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "GER40": 1
+   },
+   "edge": 0.12,
+   "buildability": 0.6,
+   "effort_days": 4,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "EU ETS EUTL verified emissions",
+     "url": "https://union-registry-data.ec.europa.eu/",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "EPA GHGRP facility emissions",
+     "url": "https://www.epa.gov/ghgreporting",
+     "terms": "confirmed"
+    },
+    {
+     "name": "Climate TRACE emissions API",
+     "url": "https://api.climatetrace.org/",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "supply_chain_customs",
+   "label": "Supply chain, bills of lading and customs (Panjiva, ImportGenius, Descartes Datamyne)",
+   "kind": "alt_data",
+   "classes": [
+    "supply_chain",
+    "trade_customs"
+   ],
+   "keywords": [
+    "bill of lading",
+    "customs",
+    "import",
+    "export",
+    "supply chain",
+    "trade flow",
+    "shipment"
+   ],
+   "instruments": {
+    "USDKRW": 1,
+    "AUDUSD": 1,
+    "USDCNH": 1,
+    "XCUUSD": 1,
+    "XAUUSD": 1,
+    "USDINR": 1
+   },
+   "edge": 0.5,
+   "buildability": 0.6,
+   "effort_days": 4,
+   "built": [
+    {
+     "source_id": "kr_exports_early"
+    },
+    {
+     "source_id": "in_gold_imports"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "NY Fed GSCPI",
+     "url": "https://www.newyorkfed.org/research/policy/gscpi",
+     "terms": "to_confirm"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "UN Comtrade",
+     "host": "comtrade.un.org",
+     "clause": "terms refuse automated use (ruling 2026-11-13, libs/data/refused_hosts.py)",
+     "missed_growth": "bilateral monthly trade by HS code for every reporter"
+    }
+   ]
+  },
+  {
+   "id": "weather",
+   "label": "Weather actuals and forecasts (Maxar/Atmospheric G2, Speedwell, DTN)",
+   "kind": "alt_data",
+   "classes": [
+    "weather"
+   ],
+   "keywords": [
+    "weather",
+    "temperature",
+    "degree day",
+    "precipitation",
+    "forecast model",
+    "climate data"
+   ],
+   "instruments": {
+    "XNGUSD": 1,
+    "CORN": 1,
+    "WHEAT": 1,
+    "SOYBEAN": 1,
+    "XTIUSD": 1
+   },
+   "edge": 0.6,
+   "buildability": 0.6,
+   "effort_days": 3,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "NOAA GHCN-Daily on AWS Open Data (by_year csv.gz, 127 MB for 2026)",
+     "url": "https://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/by_year/",
+     "terms": "to_confirm",
+     "note": "reachable; NODD terms to read; per-station files are stale since 2025-02"
+    },
+    {
+     "name": "NOAA GFS 0.25 on AWS Open Data (GRIB2)",
+     "url": "https://noaa-gfs-bdp-pds.s3.amazonaws.com/",
+     "terms": "to_confirm",
+     "note": "forecast degree days: needs a GRIB reader"
+    },
+    {
+     "name": "Open-Meteo historical/forecast API",
+     "url": "https://archive-api.open-meteo.com/",
+     "terms": "to_confirm"
+    }
+   ],
+   "gap": "population-weighted US HDD/CDD vs normal, the input every natgas desk buys; next build"
+  },
+  {
+   "id": "energy_grid",
+   "label": "Power grid and energy fundamentals (Genscape/Wood Mackenzie, Montel, ICIS)",
+   "kind": "alt_data",
+   "classes": [
+    "energy_power",
+    "commodities_physical"
+   ],
+   "keywords": [
+    "power",
+    "grid",
+    "electricity",
+    "load",
+    "pipeline",
+    "lng",
+    "gas flow",
+    "generation"
+   ],
+   "instruments": {
+    "XNGUSD": 1,
+    "XTIUSD": 1,
+    "XBRUSD": 1,
+    "EURUSD": 1,
+    "GER40": 1
+   },
+   "edge": 0.5,
+   "buildability": 0.55,
+   "effort_days": 4,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "EIA-930 hourly grid monitor (EIA API, free key)",
+     "url": "https://api.eia.gov/v2/electricity/rto/",
+     "terms": "confirmed"
+    },
+    {
+     "name": "ENTSO-E transparency platform (free token)",
+     "url": "https://web-api.tp.entsoe.eu/api",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "GIE AGSI+ EU gas storage (free key)",
+     "url": "https://agsi.gie.eu/api",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "Elexon BMRS (keyless)",
+     "url": "https://data.elexon.co.uk/bmrs/api/v1/",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "options_positioning",
+   "label": "Options and positioning flow (CME/OCC flow, Cboe LiveVol, bank FX flow, COT analytics)",
+   "kind": "alt_data",
+   "classes": [
+    "positioning",
+    "options_vol",
+    "fx_order_flow",
+    "flows"
+   ],
+   "keywords": [
+    "option",
+    "positioning",
+    "order flow",
+    "fund flow",
+    "cot",
+    "commitments of traders",
+    "open interest",
+    "volatility"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "XAUUSD": 1,
+    "XTIUSD": 1,
+    "US500": 1
+   },
+   "edge": 0.5,
+   "buildability": 0.7,
+   "effort_days": 3,
+   "built": [
+    {
+     "organ": "scripts/screen_cot_positioning.py"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1175",
+     "branch": "claude/gdd-free-terminal-feeds",
+     "path": "desks/mt5/research/crowding_conditioner.py",
+     "note": "CFTC legacy + TFF z-scores and FFAJ retail FX positioning as a two-sided cell modifier"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "CFTC COT (Socrata public reporting)",
+     "url": "https://publicreporting.cftc.gov/",
+     "terms": "confirmed"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "Cboe options data",
+     "host": "cboe.com",
+     "clause": "terms refuse automated collection (libs/data/refused_hosts.py)",
+     "missed_growth": "index option volume, put/call and VIX term structure from the venue"
+    }
+   ]
+  },
+  {
+   "id": "consensus_estimates",
+   "label": "Consensus and estimates (Bloomberg ECO survey, Refinitiv I/B/E/S, FactSet Estimates)",
+   "kind": "alt_data",
+   "classes": [
+    "consensus_estimates"
+   ],
+   "keywords": [
+    "consensus",
+    "estimate",
+    "forecast survey",
+    "analyst",
+    "guidance",
+    "nowcast"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "US500": 1,
+    "XAUUSD": 1
+   },
+   "edge": 0.45,
+   "buildability": 0.75,
+   "effort_days": 2,
+   "built": [
+    {
+     "organ": "desks/mt5/side_channels/forexfactory_miner.py"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "ForexFactory weekly calendar JSON (consensus/previous)",
+     "url": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "Philadelphia Fed SPF, ECB SPF, Atlanta Fed GDPNow, NY Fed Nowcast",
+     "url": "https://www.philadelphiafed.org/surveys-and-data",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "expert_networks",
+   "label": "Expert networks and call transcripts (GLG, Tegus/AlphaSense, Third Bridge)",
+   "kind": "alt_data",
+   "classes": [
+    "expert_surveys"
+   ],
+   "keywords": [
+    "expert",
+    "transcript",
+    "channel check",
+    "survey",
+    "interview"
+   ],
+   "instruments": {
+    "US500": 1,
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GER40": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.6,
+   "effort_days": 3,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "Fed Beige Book (district anecdotes, 8x a year)",
+     "url": "https://www.federalreserve.gov/monetarypolicy/beige-book-default.htm",
+     "terms": "confirmed"
+    },
+    {
+     "name": "BoJ Tankan",
+     "url": "https://www.boj.or.jp/en/statistics/tk/",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "ifo / ZEW / EC business surveys (headlines)",
+     "url": "https://ec.europa.eu/economy_finance/db_indicators/surveys/",
+     "terms": "to_confirm"
+    }
+   ],
+   "gap": "no free expert-call corpus; central-bank surveys of firms are the lawful analogue"
+  },
+  {
+   "id": "macro_nowcast",
+   "label": "Macro nowcasts and PIT vintages (Haver, Macrobond, CEIC, TE)",
+   "kind": "alt_data",
+   "classes": [
+    "macro",
+    "pricing",
+    "real_estate"
+   ],
+   "keywords": [
+    "macro",
+    "inflation",
+    "cpi",
+    "gdp",
+    "nowcast",
+    "house price",
+    "real estate",
+    "economic data"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "AUDUSD": 1,
+    "USDMXN": 1,
+    "XAUUSD": 1,
+    "US500": 1
+   },
+   "edge": 0.4,
+   "buildability": 0.85,
+   "effort_days": 2,
+   "built": [
+    {
+     "source_id": "jp_tokyo_cpi"
+    },
+    {
+     "source_id": "mx_banxico_sie"
+    },
+    {
+     "source_id": "in_dgi_iip_consumer"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "Statistics-office APIs (e-Stat, INEGI, ONS, Eurostat)",
+     "url": "https://ec.europa.eu/eurostat/api/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "rates_credit",
+   "label": "Rates curves and credit (ICE BofA indices, Markit CDS, Tradeweb)",
+   "kind": "alt_data",
+   "classes": [
+    "rates_curves",
+    "credit"
+   ],
+   "keywords": [
+    "yield",
+    "curve",
+    "cds",
+    "credit spread",
+    "bond",
+    "treasury",
+    "swap"
+   ],
+   "instruments": {
+    "UST10Y": 1,
+    "USDJPY": 1,
+    "EURUSD": 1,
+    "XAUUSD": 1,
+    "US500": 1
+   },
+   "edge": 0.4,
+   "buildability": 0.8,
+   "effort_days": 2,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "US Treasury daily par yield curve (FiscalData / home.treasury.gov XML)",
+     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/",
+     "terms": "confirmed"
+    },
+    {
+     "name": "ECB data portal yield curves",
+     "url": "https://data-api.ecb.europa.eu/",
+     "terms": "to_confirm"
+    }
+   ]
+  },
+  {
+   "id": "ticks_market_data",
+   "label": "Tick and order-book market data (Refinitiv Tick History, Bloomberg B-PIPE, TickData)",
+   "kind": "alt_data",
+   "classes": [
+    "ticks"
+   ],
+   "keywords": [
+    "tick data",
+    "order book",
+    "market depth",
+    "level 2",
+    "trade and quote"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "XAUUSD": 1,
+    "US500": 1,
+    "XTIUSD": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.9,
+   "effort_days": 1,
+   "built": [
+    {
+     "organ": "desks/mt5/research/bars_state.py",
+     "note": "the desk's own MT5 bars and tick tape on the trading box; bars_state publishes their freshness"
+    }
+   ],
+   "free_inputs": [
+    {
+     "name": "MT5 broker feed (the desk's own venue)",
+     "url": "mt5://broker",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "corporate_web",
+   "label": "Web-scraped corporate data and patents (Thinknum, YipitData, IFI Claims)",
+   "kind": "alt_data",
+   "classes": [
+    "web_scraped_corporate",
+    "patents",
+    "corporate_events"
+   ],
+   "keywords": [
+    "patent",
+    "scraped",
+    "pricing data",
+    "product catalog",
+    "corporate event",
+    "insider",
+    "filing"
+   ],
+   "instruments": {
+    "US500": 1,
+    "NAS100": 1
+   },
+   "edge": 0.2,
+   "buildability": 0.6,
+   "effort_days": 4,
+   "built": [],
+   "free_inputs": [
+    {
+     "name": "SEC EDGAR submissions and full-text search",
+     "url": "https://data.sec.gov/submissions/",
+     "terms": "confirmed",
+     "note": "declared UA, <=10 req/s"
+    },
+    {
+     "name": "USPTO PatentsView API",
+     "url": "https://search.patentsview.org/api/v1/",
+     "terms": "to_confirm"
+    }
+   ],
+   "gap": "single names mint only in the event lane and cross-sectional class books; index-level aggregates only here"
+  },
+  {
+   "id": "terminal_headlines",
+   "label": "Bloomberg Terminal: fast headlines and wire news (FIRST, NI, BN wire)",
+   "kind": "terminal_function",
+   "parent": "bloomberg_terminal",
+   "classes": [
+    "terminals"
+   ],
+   "keywords": [
+    "headline",
+    "wire",
+    "news feed"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "XAUUSD": 1,
+    "US500": 1,
+    "XTIUSD": 1
+   },
+   "edge": 0.6,
+   "buildability": 0.7,
+   "effort_days": 2,
+   "built": [
+    {
+     "organ": "desks/mt5/research/news_desk.py",
+     "note": "poll_official_rss: six first-party CB/stat RSS feeds, hourly"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1279",
+     "branch": "claude/gdd-live-wire",
+     "path": "desks/mt5/research/live_wire.py",
+     "note": "47 OK first-party feeds, 2-minute box task MT5-LiveWire, conditional GETs, four clocks"
+    }
+   ],
+   "primary_source": "publishers' own RSS/press pages (Fed, ECB, BoE, BoJ, Treasury, OFAC, statistics offices)",
+   "latency_gap": {
+    "live": "up to 60 min (hourly leg) after the publisher's post",
+    "with_pending": "about 2 min (MT5-LiveWire) plus publisher feed refresh",
+    "terminal": "seconds (wire)"
+   },
+   "free_inputs": [
+    {
+     "name": "first-party RSS registry (live_wire_feeds.json on #1279)",
+     "url": "https://www.federalreserve.gov/feeds/feeds.htm",
+     "terms": "confirmed"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "Reuters / Bloomberg wire text",
+     "host": "reuters.com, bloomberg.com",
+     "clause": "both sites' terms prohibit automated collection of their content",
+     "missed_growth": "non-official breaking news (company, geopolitical) that reaches wires before any first-party post"
+    }
+   ]
+  },
+  {
+   "id": "terminal_eco_calendar",
+   "label": "Bloomberg Terminal: economic calendar with consensus and actuals (ECO, ECOS)",
+   "kind": "terminal_function",
+   "parent": "bloomberg_terminal",
+   "classes": [
+    "terminals",
+    "calendars"
+   ],
+   "keywords": [
+    "economic calendar",
+    "eco survey",
+    "release calendar"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "AUDUSD": 1,
+    "USDCAD": 1,
+    "XAUUSD": 1,
+    "US500": 1
+   },
+   "edge": 0.55,
+   "buildability": 0.8,
+   "effort_days": 2,
+   "built": [
+    {
+     "organ": "desks/mt5/side_channels/forexfactory_miner.py",
+     "note": "weekly calendar with consensus and previous"
+    },
+    {
+     "organ": "libs/execution/event_guard.py",
+     "note": "the guard's calendar"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1175",
+     "branch": "claude/gdd-free-terminal-feeds",
+     "path": "libs/data/event_calendar.py",
+     "note": "schedules parsed from Fed, BLS, BEA, ECB, BoE, BoJ, SNB, BoC pages, IANA-zoned"
+    }
+   ],
+   "primary_source": "agency release schedules and the releases themselves (BLS, BEA, Census, ONS, Eurostat, StatCan, ABS)",
+   "latency_gap": {
+    "live": "schedule: days ahead (fine); ACTUALS: up to 60 min via hourly legs",
+    "terminal": "actual within ~1 s of the embargo lift"
+   },
+   "free_inputs": [
+    {
+     "name": "BLS/BEA release pages",
+     "url": "https://www.bls.gov/schedule/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "terminal_marks",
+   "label": "Bloomberg Terminal: FX, rates and commodity marks (BGN/CMPN, curves)",
+   "kind": "terminal_function",
+   "parent": "bloomberg_terminal",
+   "classes": [
+    "terminals"
+   ],
+   "keywords": [
+    "pricing",
+    "marks",
+    "quotes",
+    "composite"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "XAUUSD": 1,
+    "XTIUSD": 1,
+    "UST10Y": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.9,
+   "effort_days": 1,
+   "built": [
+    {
+     "organ": "desks/mt5/research/bars_state.py",
+     "note": "the desk trades on its own MT5 feed: the executable price, real-time"
+    }
+   ],
+   "primary_source": "the MT5 broker feed for every tradable instrument; US Treasury daily par curve for rates",
+   "latency_gap": {
+    "live": "tradables: 0 (the venue's own quote); cash rates curve: end of day",
+    "terminal": "real-time composite for every instrument"
+   },
+   "free_inputs": [
+    {
+     "name": "US Treasury daily par yield curve XML",
+     "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "terminal_central_banks",
+   "label": "Bloomberg Terminal: central-bank feeds (statements, speeches, auctions)",
+   "kind": "terminal_function",
+   "parent": "bloomberg_terminal",
+   "classes": [
+    "terminals"
+   ],
+   "keywords": [
+    "central bank",
+    "statement",
+    "speech",
+    "auction"
+   ],
+   "instruments": {
+    "EURUSD": 1,
+    "USDJPY": 1,
+    "GBPUSD": 1,
+    "AUDUSD": 1,
+    "USDCAD": 1,
+    "USDCHF": 1,
+    "XAUUSD": 1
+   },
+   "edge": 0.6,
+   "buildability": 0.85,
+   "effort_days": 1,
+   "built": [
+    {
+     "organ": "desks/mt5/research/news_desk.py",
+     "note": "Fed/ECB/BoJ/BoE/SNB RSS, hourly"
+    },
+    {
+     "source_id": "gdelt_events_country"
+    }
+   ],
+   "pending_branches": [
+    {
+     "pr": "#1279",
+     "branch": "claude/gdd-live-wire",
+     "path": "desks/mt5/research/live_wire.py",
+     "note": "56 central-bank rows assessed, sub-hour"
+    }
+   ],
+   "primary_source": "each central bank's own press RSS, BIS speeches feed, TreasuryDirect auction results",
+   "latency_gap": {
+    "live": "up to 60 min",
+    "with_pending": "about 2 min",
+    "terminal": "seconds"
+   },
+   "free_inputs": [
+    {
+     "name": "BIS central bankers' speeches RSS",
+     "url": "https://www.bis.org/doclist/cbspeeches.rss",
+     "terms": "to_confirm"
+    },
+    {
+     "name": "TreasuryDirect auction results XML",
+     "url": "https://www.treasurydirect.gov/auctions/",
+     "terms": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "terminal_earnings_calendar",
+   "label": "Bloomberg Terminal: earnings calendar (EVTS/ERN)",
+   "kind": "terminal_function",
+   "parent": "bloomberg_terminal",
+   "classes": [
+    "terminals"
+   ],
+   "keywords": [
+    "earnings",
+    "eps",
+    "reporting date"
+   ],
+   "instruments": {
+    "US500": 1,
+    "NAS100": 1,
+    "US30": 1
+   },
+   "edge": 0.3,
+   "buildability": 0.7,
+   "effort_days": 2,
+   "built": [],
+   "primary_source": "SEC EDGAR (8-K item 2.02 and filing index), company IR calendars",
+   "latency_gap": {
+    "live": "no lawful source wired: desks/mt5/side_channels/earnings_miner.py scrapes Yahoo with a browser UA, a terms-refused host, so it is not counted",
+    "terminal": "dates weeks ahead, results within seconds"
+   },
+   "free_inputs": [
+    {
+     "name": "SEC EDGAR submissions JSON + daily index",
+     "url": "https://data.sec.gov/submissions/",
+     "terms": "confirmed",
+     "note": "declared UA, fair-access rate"
+    }
+   ],
+   "blocked_inputs": [
+    {
+     "input": "Yahoo earnings calendar",
+     "host": "yahoo.com",
+     "clause": "Yahoo terms s2(d)(9) refuse automated collection (libs/data/refused_hosts.py)",
+     "missed_growth": "a consolidated forward earnings calendar for US500/NAS100 constituents"
+    }
+   ]
+  }
+ ]
+}
