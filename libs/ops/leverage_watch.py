@@ -114,6 +114,7 @@ def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
     venues: dict[str, Any] = raw_venues if isinstance(raw_venues, dict) else {}
     raw_row = venues.get(venue)
     row: dict[str, Any] = raw_row if isinstance(raw_row, dict) else {}
+    prior = row
     raw_changes = row.get("changes")
     changes: list[Any] = raw_changes if isinstance(raw_changes, list) else []
     lev = float(leverage) if isinstance(leverage, (int, float)) and leverage > 0 else None
@@ -126,18 +127,20 @@ def observe(path: Path, leverage: float | None, *, venue: str = "fusion",
             changes = [*changes, changed][-MAX_CHANGES_KEPT:]
         row = {"leverage": lev, "read_at": now.isoformat(timespec="seconds"),
                "changes": changes}
-    raw_syms = row.get("symbols")
+    # The account rebuild above keeps only the account fields; the per-symbol state is read from
+    # the row as it stood on disk.
+    raw_syms = prior.get("symbols")
     prev_syms: dict[str, Any] = raw_syms if isinstance(raw_syms, dict) else {}
+    raw_sc = prior.get("symbol_changes")
+    kept: list[Any] = raw_sc if isinstance(raw_sc, list) else []
     sym_changes: list[dict[str, Any]] = []
     if symbols:
         sym_changes = _symbol_changes(prev_syms, symbols, now.isoformat(timespec="seconds"))
-        raw_sc = row.get("symbol_changes")
-        kept: list[Any] = raw_sc if isinstance(raw_sc, list) else []
         row = {**row, "symbols": {**prev_syms, **symbols},
                "symbols_read_at": now.isoformat(timespec="seconds"),
                "symbol_changes": [*kept, *sym_changes][-MAX_CHANGES_KEPT:]}
     elif prev_syms:
-        row = {**row, "symbols": prev_syms}
+        row = {**row, "symbols": prev_syms, "symbol_changes": kept}
     read_at = _parse(row.get("read_at"))
     age_h = None if read_at is None else round((now - read_at).total_seconds() / 3600.0, 2)
     if read_at is None:
