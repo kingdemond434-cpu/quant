@@ -16,70 +16,98 @@
  "last_sweep_s": 53407.8,
  "uptime_s": 186359.8,
  "last_sweep_ended_utc": "2026-11-18T22:07:00+00:00",
- "heartbeat_utc": "2026-11-18T22:19:42+00:00",
+ "heartbeat_utc": "2026-11-18T22:34:44+00:00",
  "sweep_phase": {
   "pid": 14816,
   "sweep_started_utc": "2026-11-18T22:07:07+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-11-18T22:07:07+00:00",
+  "phases": {
+   "plan": 886.4
+  },
+  "phase": "prewarm",
+  "phase_started_utc": "2026-11-18T22:21:54+00:00",
   "plan_steps": {
    "lane_and_docket": 47.5,
    "docket_grouping": 53.0,
    "gate0": 56.5,
    "preflight": 105.2,
-   "cache_prune": 458.4
+   "cache_prune": 458.4,
+   "order": 125.2,
+   "yield_allocation": 40.7
   },
-  "plan_step": "order",
-  "plan_step_started_utc": "2026-11-18T22:19:08+00:00",
+  "plan_step": "prewarm",
+  "plan_step_started_utc": "2026-11-18T22:21:54+00:00",
   "plan_counts": {
    "docket_rows": 1595115,
    "unique_cells": 1594703,
    "gate0_advance": 1594703
   },
-  "plan_last_marker": "  breadth: 36 chart x session bucket(s) judged so far; least covered ('D1', 'ny') (1), most ('H1', 'all') (192000)",
+  "plan_last_marker": "  docket order: 9199 never-judged cell(s) first, then 284466 in symbol-rotation order",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 72,
+     "samples": 86,
      "top": [
       {
        "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 24,
-       "share": 0.333
+       "share": 0.279
       },
       {
        "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 8,
-       "share": 0.111
+       "share": 0.093
       },
       {
        "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 5,
-       "share": 0.069
+       "share": 0.058
       },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 4,
-       "share": 0.056
+       "share": 0.047
       },
       {
        "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
        "n": 3,
-       "share": 0.042
+       "share": 0.035
       }
      ],
      "process": {
-      "cpu_s": 451.4,
-      "page_faults": 11657124.0,
-      "read_bytes": 8043459700.0,
-      "write_bytes": 80472.0,
-      "sampled_s": 710.0,
-      "rss_mb_max": 4269.3,
-      "cpu_share_of_wall": 0.636
+      "cpu_s": 585.0,
+      "page_faults": 16042923.0,
+      "read_bytes": 11041292207.0,
+      "write_bytes": 228471.0,
+      "sampled_s": 850.0,
+      "rss_mb_max": 6537.0,
+      "cpu_share_of_wall": 0.688
+     }
+    },
+    "prewarm": {
+     "samples": 70,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
+       "n": 67,
+       "share": 0.957
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
+       "n": 3,
+       "share": 0.043
+      }
+     ],
+     "process": {
+      "cpu_s": 312.0,
+      "page_faults": 19280738.0,
+      "read_bytes": 8672493.0,
+      "write_bytes": 22216534568.0,
+      "sampled_s": 690.0,
+      "rss_mb_max": 3438.6,
+      "cpu_share_of_wall": 0.452
      }
     }
    }
