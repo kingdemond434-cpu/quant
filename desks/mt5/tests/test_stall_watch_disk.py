@@ -52,7 +52,10 @@ def test_there_is_a_real_ladder_not_one_pool() -> None:
 
 #: The judge's cache-prune rule, as an AST shape: `_t.time() - <x>.stat().st_mtime > 3 * 86400`.
 _DAYS, _DAY_S = 3, 86400
-_STOPS = (ast.Return, ast.Raise, ast.Break, ast.Continue)
+#: Statements after which nothing in the same block runs.
+_DEAD_AFTER = (ast.Return, ast.Raise, ast.Break, ast.Continue)
+#: Calls that end the process: a statement after one never runs.
+_EXITS = {("sys", "exit"), ("os", "_exit"), (None, "exit"), (None, "quit")}
 
 
 def _is_const(node: ast.AST, value: object) -> bool:
@@ -60,87 +63,194 @@ def _is_const(node: ast.AST, value: object) -> bool:
             and node.value == value)
 
 
-def _is_prune_rule(test: ast.AST) -> bool:
-    """EXACTLY the rule and nothing else: one `>` comparison, no `and`/`or`, no extra factor."""
+def _stat_target(test: ast.AST) -> str | None:
+    """The NAME whose `.stat()` the rule reads, when `test` is EXACTLY the rule (one `>`
+    comparison, nothing and-ed or multiplied into it); None otherwise."""
     if not (isinstance(test, ast.Compare) and len(test.ops) == 1
             and isinstance(test.ops[0], ast.Gt) and len(test.comparators) == 1):
-        return False
+        return None
     left, right = test.left, test.comparators[0]
     if not (isinstance(left, ast.BinOp) and isinstance(left.op, ast.Sub)):
-        return False
+        return None
     now, mtime = left.left, left.right
-    return (isinstance(now, ast.Call) and not now.args and not now.keywords
-            and isinstance(now.func, ast.Attribute) and now.func.attr == "time"
-            and isinstance(now.func.value, ast.Name) and now.func.value.id == "_t"
-            and isinstance(mtime, ast.Attribute) and mtime.attr == "st_mtime"
-            and isinstance(mtime.value, ast.Call) and isinstance(mtime.value.func, ast.Attribute)
-            and mtime.value.func.attr == "stat"
-            and isinstance(right, ast.BinOp) and isinstance(right.op, ast.Mult)
-            and _is_const(right.left, _DAYS) and _is_const(right.right, _DAY_S))
+    ok = (isinstance(now, ast.Call) and not now.args and not now.keywords
+          and isinstance(now.func, ast.Attribute) and now.func.attr == "time"
+          and isinstance(now.func.value, ast.Name) and now.func.value.id == "_t"
+          and isinstance(mtime, ast.Attribute) and mtime.attr == "st_mtime"
+          and isinstance(mtime.value, ast.Call) and not mtime.value.args
+          and isinstance(mtime.value.func, ast.Attribute) and mtime.value.func.attr == "stat"
+          and isinstance(mtime.value.func.value, ast.Name)
+          and isinstance(right, ast.BinOp) and isinstance(right.op, ast.Mult)
+          and _is_const(right.left, _DAYS) and _is_const(right.right, _DAY_S))
+    return mtime.value.func.value.id if ok else None
 
 
-def _is_unlink(stmt: ast.stmt) -> bool:
-    return (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)
-            and isinstance(stmt.value.func, ast.Attribute) and stmt.value.func.attr == "unlink")
+def _unlinks(stmt: ast.stmt, target: str) -> bool:
+    """`stmt` deletes the file the rule stat'ed: `<target>.unlink(...)` or
+    `Path(<target> | <target>.path).unlink(...)` -- never another object's."""
+    if not (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Attribute)
+            and stmt.value.func.attr == "unlink"):
+        return False
+    recv = stmt.value.func.value
+    if isinstance(recv, ast.Name):
+        return recv.id == target
+    if not (isinstance(recv, ast.Call) and isinstance(recv.func, ast.Name)
+            and recv.func.id == "Path" and len(recv.args) == 1 and not recv.keywords):
+        return False
+    arg = recv.args[0]
+    return ((isinstance(arg, ast.Name) and arg.id == target)
+            or (isinstance(arg, ast.Attribute) and arg.attr == "path"
+                and isinstance(arg.value, ast.Name) and arg.value.id == target))
 
 
-def _statically_false(test: ast.AST) -> bool:
-    """A guard that can never be true: a falsy constant, `not <truthy constant>`, or an `and`
-    with any such operand."""
-    if isinstance(test, ast.Constant):
-        return not test.value
-    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
-        return isinstance(test.operand, ast.Constant) and bool(test.operand.value)
-    if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.And):
-        return any(_statically_false(v) for v in test.values)
+def _binds(node: ast.AST, name: str) -> bool:
+    """`node` binds `name`: an assignment, loop/with/except target, argument, def/class, import
+    alias, or global/nonlocal declaration."""
+    if isinstance(node, ast.Name):
+        return node.id == name and not isinstance(node.ctx, ast.Load)
+    if isinstance(node, ast.arg):
+        return node.arg == name
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.ExceptHandler)):
+        return node.name == name
+    if isinstance(node, (ast.Global, ast.Nonlocal)):
+        return name in node.names
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        return any((a.asname or a.name.split(".")[0]) == name for a in node.names)
     return False
 
 
-def _reaches_live_prune(stmts: list[ast.stmt]) -> bool:
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef, ast.ListComp,
+           ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+
+def _scope_bindings(scope: ast.AST, name: str) -> list[ast.AST]:
+    """The nodes binding `name` in `scope` ITSELF (a module or a function): nested functions,
+    classes, lambdas and comprehensions are their own scopes and are not entered, though a nested
+    def's own name binds here. Another function rebinding `_t` (the judge's thread loops do) is
+    not this scope's `_t`."""
+    out: list[ast.AST] = []
+    todo: list[ast.AST] = list(ast.iter_child_nodes(scope))
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        todo = [*scope.body, *ast.iter_child_nodes(scope.args)]
+    while todo:
+        node = todo.pop()
+        if _binds(node, name):
+            out.append(node)
+        if not isinstance(node, _SCOPES):
+            todo.extend(ast.iter_child_nodes(node))
+    return out
+
+
+def _resolves_to(scopes: list[ast.AST], name: str, ok) -> bool:
+    """Python's own lookup, innermost scope first: the first scope that binds `name` decides,
+    and EVERY binding of it there must satisfy `ok`. Unbound everywhere is False."""
+    for scope in reversed(scopes):
+        found = _scope_bindings(scope, name)
+        if found:
+            return all(ok(b) for b in found)
+    return False
+
+
+def _is_time_import(b: ast.AST) -> bool:
+    return isinstance(b, ast.Import) and all(
+        a.name == "time" for a in b.names if a.asname == "_t") and any(
+        a.name == "time" and a.asname == "_t" for a in b.names)
+
+
+def _is_pathlib_import(b: ast.AST) -> bool:
+    return isinstance(b, ast.ImportFrom) and b.module == "pathlib" and all(
+        a.name == "Path" for a in b.names if (a.asname or a.name) == "Path")
+
+
+def _uses_path(stmt: ast.stmt) -> bool:
+    return any(isinstance(n, ast.Name) and n.id == "Path" for n in ast.walk(stmt))
+
+
+def _ends_block(stmt: ast.stmt) -> bool:
+    """Nothing after `stmt` in its block runs: return/raise/break/continue, an always-failing
+    assert, a process exit, or a bare division by zero."""
+    if isinstance(stmt, _DEAD_AFTER):
+        return True
+    if isinstance(stmt, ast.Assert):
+        return isinstance(stmt.test, ast.Constant) and not stmt.test.value
+    if isinstance(stmt, ast.Expr):
+        v = stmt.value
+        if isinstance(v, ast.Call):
+            f = v.func
+            key = ((f.value.id if isinstance(f.value, ast.Name) else "?", f.attr)
+                   if isinstance(f, ast.Attribute) else (None, getattr(f, "id", "")))
+            return key in _EXITS
+        if isinstance(v, ast.BinOp) and isinstance(v.op, (ast.Div, ast.FloorDiv, ast.Mod)):
+            return _is_const(v.right, 0)
+    return False
+
+
+def _reaches_live_prune(stmts: list[ast.stmt], called: set[str],
+                        scopes: list[ast.AST]) -> bool:
+    """Walk ONLY through code that runs: a function body when the function is called by name, a
+    `try` body, a `with` body, a `for` body over anything but a literal. An `if`/`while` is never
+    entered -- a guard of any kind (`if []:`, `if 0 == 1:`, a FLAG, TYPE_CHECKING) cannot be
+    shown true by reading it, so a rule behind one does not count (fails closed). The rule-`if`
+    must hold its unlink as its FIRST statement."""
     for stmt in stmts:
-        if isinstance(stmt, ast.If) and _is_prune_rule(stmt.test):
-            for inner in stmt.body:
-                if isinstance(inner, _STOPS):
-                    break
-                if _is_unlink(inner):
-                    return True
-        guard_false = isinstance(stmt, (ast.If, ast.While)) and _statically_false(stmt.test)
-        blocks = [getattr(stmt, f, None) for f in ("orelse", "finalbody")]
-        if not guard_false:
-            blocks.insert(0, getattr(stmt, "body", None))
-        blocks += [h.body for h in getattr(stmt, "handlers", None) or []]
-        if any(isinstance(b, list) and b and _reaches_live_prune(b) for b in blocks):
-            return True
-        if isinstance(stmt, (ast.Return, ast.Raise)):
-            return False                  # everything after it in this block is dead code
+        if isinstance(stmt, ast.If):
+            target = _stat_target(stmt.test)
+            if (target and stmt.body and _unlinks(stmt.body[0], target)
+                    and _resolves_to(scopes, "_t", _is_time_import)
+                    and (not _uses_path(stmt.body[0])
+                         or _resolves_to(scopes, "Path", _is_pathlib_import))):
+                return True
+        elif isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if stmt.name in called and _reaches_live_prune(stmt.body, called,
+                                                           [*scopes, stmt]):
+                return True
+        elif isinstance(stmt, (ast.For, ast.AsyncFor)):
+            literal = isinstance(stmt.iter, (ast.List, ast.Tuple, ast.Set, ast.Dict,
+                                             ast.Constant))
+            if not literal and _reaches_live_prune(stmt.body, called, scopes):
+                return True
+        elif isinstance(stmt, (ast.With, ast.AsyncWith, ast.Try)):
+            if _reaches_live_prune(stmt.body, called, scopes):
+                return True
+        if _ends_block(stmt):
+            return False
     return False
 
 
 def _judge_prunes_past_three_days(src: str) -> bool:
-    """The rule is LIVE CODE that DELETES, read from the AST (v2.2, audit of e9175a8aa: a line
-    scan still passed `and False`, `if False and`, a nested `if False:`, an early return and a
-    `* 0`). True only when an `if` whose test IS the rule -- exactly, with nothing and-ed or
-    multiplied into it -- carries an `.unlink(...)` call as a DIRECT statement of its body, with
-    no return/raise/break/continue before it in that body, and the `if` is reachable: no
-    enclosing `if`/`while` is statically false and no statement before it in any enclosing
-    block returns or raises. A string or a docstring is not code and never counts.
+    """The rule is LIVE CODE that DELETES THE FILE IT AGED, read from the AST.
+
+    v2.2 (audit of e9175a8aa) made it an AST check; v2.2.1 (audit of 136fac4c0) closes the
+    evasions the auditor found: a rebound `_t` or shadowed `Path`, a non-literal false guard, a
+    break/continue before the rule, an assert/exit/1/0 before the unlink, an unlink on another
+    object, a function never called and a loop over a literal. True only when an `if` whose test
+    IS the rule has, as its first statement, the unlink of the very name it stat'ed, and that
+    `if` is reached through called functions, `try`/`with` bodies and real loops with nothing
+    before it that ends the block. A string or docstring is not code and never counts.
     """
     try:
         tree = ast.parse(src)
     except SyntaxError:
         return False
-    return _reaches_live_prune(tree.body)
+    called = {n.func.id for n in ast.walk(tree)
+              if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    return _reaches_live_prune(tree.body, called, [tree])
 
 
 def test_the_prune_pin_fails_when_the_rule_is_disarmed() -> None:
     """Each way to keep the text and lose the behaviour reads False."""
-    def fn(body: str) -> str:
-        return "def prune():\n    import time as _t\n" + body
+    head = "from pathlib import Path\n"
 
-    live = fn("    for _e in entries:\n"
-              "        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
-              "            Path(_e.path).unlink(missing_ok=True)\n"
-              "            n += 1\n")
+    def fn(body: str, call: bool = True, pre: str = "") -> str:
+        return (head + pre + "def prune():\n    import time as _t\n" + body
+                + ("prune()\n" if call else ""))
+
+    loop = ("    for _e in entries:\n"
+            "        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
+            "            Path(_e.path).unlink(missing_ok=True)\n"
+            "            n += 1\n")
+    live = fn(loop)
     assert _judge_prunes_past_three_days(live)
     glob = fn("    try:\n"
               "        for _f in CACHE_DIR.glob('*.npz'):\n"
@@ -149,25 +259,29 @@ def test_the_prune_pin_fails_when_the_rule_is_disarmed() -> None:
               "    except OSError:\n"
               "        pass\n")
     assert _judge_prunes_past_three_days(glob)
+    # the clock bound once at module level, used from a function: live
+    assert _judge_prunes_past_three_days(head + "import time as _t\ndef prune():\n" + loop
+                                         + "prune()\n")
+    # another function rebinding its OWN `_t` (the judge's thread loops do) changes nothing here
+    assert _judge_prunes_past_three_days(live + "def other():\n    _t = 1\n    return _t\n")
     rule = "_t.time() - _e.stat().st_mtime > 3 * 86400"
     unlink = "Path(_e.path).unlink(missing_ok=True)"
+    in_body = f"            {unlink}\n"
     disarmed = {
         "no_unlink": live.replace(unlink, "pass"),
         "commented": "".join("# " + ln + "\n" for ln in live.splitlines()),
         "unlink_commented": live.replace(unlink, "pass  # " + unlink),
         "rule_in_comment": live.replace(f"if {rule}:", f"if True:  # {rule}"),
-        "unlink_outside": live.replace(f"            {unlink}\n", "            pass\n")
-        + f"    {unlink}\n",
+        "unlink_outside": live.replace(in_body, "            pass\n").replace(
+            "prune()\n", f"{unlink}\nprune()\n"),
         "four_days": live.replace("> 3 * 86400", "> 4 * 86400"),
         # the auditor's disarmed variants (audit of e9175a8aa)
         "and_false": live.replace(f"if {rule}:", f"if {rule} and False:"),
         "if_false_and": live.replace(f"if {rule}:", f"if False and {rule}:"),
         "rule_in_docstring": fn(f'    """if {rule}:\n        {unlink}"""\n'),
         "rule_in_string": fn(f"    _s = 'if {rule}: {unlink}'\n"),
-        "nested_if_false": live.replace(f"            {unlink}\n",
-                                        f"            if False:\n                {unlink}\n"),
-        "early_return": live.replace(f"            {unlink}\n",
-                                     f"            return\n            {unlink}\n"),
+        "nested_if_false": live.replace(in_body, f"            if False:\n    {in_body}"),
+        "early_return": live.replace(in_body, f"            return\n{in_body}"),
         "early_return_outer": live.replace("    for _e in entries:\n",
                                            "    return\n    for _e in entries:\n"),
         "times_zero": live.replace("> 3 * 86400", "> 3 * 86400 * 0"),
@@ -175,8 +289,40 @@ def test_the_prune_pin_fails_when_the_rule_is_disarmed() -> None:
             f"if {rule}:", "if (_t.time() - _e.stat().st_mtime) * 0 > 3 * 86400:"),
         "outer_if_false": live.replace("    for _e in entries:\n",
                                        "    if False:\n     for _e in entries:\n"),
+        # the auditor's v2.2 evasions (audit of 136fac4c0)
+        "t_rebound_module": (head + "import time as _t\n_t = None\ndef prune():\n" + loop
+                             + "prune()\n"),
+        "t_global_rebound": live.replace("    import time as _t\n",
+                                         "    global _t\n    import time as _t\n    _t = 0\n"),
+        "t_rebound_local": live.replace("    import time as _t\n",
+                                        "    import time as _t\n    _t = FakeClock()\n"),
+        "t_from_elsewhere": live.replace("    import time as _t\n", "    import fake as _t\n"),
+        "guard_empty_list": live.replace("    for _e in entries:\n",
+                                         "    if []:\n     for _e in entries:\n"),
+        "guard_0_eq_1": live.replace("    for _e in entries:\n",
+                                     "    if 0 == 1:\n     for _e in entries:\n"),
+        "guard_flag": fn(loop.replace("    for _e in entries:\n",
+                                      "    if FLAG:\n     for _e in entries:\n"),
+                         pre="FLAG = False\n"),
+        "guard_type_checking": live.replace("    for _e in entries:\n",
+                                            "    if TYPE_CHECKING:\n     for _e in entries:\n"),
+        "continue_before": live.replace(f"        if {rule}:",
+                                        f"        continue\n        if {rule}:"),
+        "break_before": live.replace(f"        if {rule}:", f"        break\n        if {rule}:"),
+        "assert_false_before": live.replace(in_body, f"            assert False\n{in_body}"),
+        "sys_exit_before": live.replace(in_body, f"            sys.exit(0)\n{in_body}"),
+        "div_zero_before": live.replace(in_body, f"            1 / 0\n{in_body}"),
+        "unlink_other_path": live.replace(unlink, "Path(_x.path).unlink(missing_ok=True)"),
+        "unlink_other_name": live.replace(unlink, "other.unlink(missing_ok=True)"),
+        "shadowed_path_class": fn(loop, pre="class Path:\n    def __init__(self, p): pass\n"
+                                            "    def unlink(self, **k): pass\n"),
+        "shadowed_path_assign": fn(loop, pre="Path = FakePath\n"),
+        "path_from_elsewhere": live.replace(head, "from fakepath import Path\n"),
+        "never_called": fn(loop, call=False),
+        "loop_over_literal": live.replace("for _e in entries:", "for _e in []:"),
     }
     for name, src in disarmed.items():
+        ast.parse(src)                               # every variant is real, parseable code
         assert not _judge_prunes_past_three_days(src), (name, src)
 
 
