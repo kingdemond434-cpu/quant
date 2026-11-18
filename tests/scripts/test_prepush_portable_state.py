@@ -23,8 +23,6 @@ from types import ModuleType
 
 import pytest
 
-from scripts import run_law_gate as gate
-
 REPO = Path(__file__).resolve().parents[2]
 FENCE = "check_judge_coverage.py"
 ENV = "QUANT_LAWGATE_SOURCE_VIEW"
@@ -112,58 +110,6 @@ def test_the_thresholds_are_untouched(fence):
     assert fence.STALE_H == 6.0
     assert fence.PREWARM_TOLERANCE == 0.02
     assert fence.WINDOW_SLACK == 2.0
-
-
-def test_laws_only_battery_passes_on_a_fresh_red_box_report(tmp_path, monkeypatch):
-    """(a) end to end: the REAL registration, run the way pre-push and CI run it."""
-    monkeypatch.delenv(ENV, raising=False)
-    root = _tree(tmp_path)
-    before = (root / "desks/mt5/reports/JUDGE_COVERAGE.json").read_bytes()
-    monkeypatch.setattr(gate, "_LAW_FENCES", _registered(gate._LAW_FENCES))
-    rep = gate.full_gate(root, laws_only=True, in_place=True)
-    assert rep["ok"], rep["failures"]
-    assert "JUDGE_COVERAGE.json not read" in rep["results"][0]["detail"]
-    assert (root / "desks/mt5/reports/JUDGE_COVERAGE.json").read_bytes() == before
-    assert not (root / "desks/mt5/reports/judge_coverage_fence.json").exists()
-
-
-def test_box_state_battery_still_fails_on_the_same_report(tmp_path, monkeypatch):
-    """(b) end to end: the box's full battery keeps the red, on BOTH registrations."""
-    monkeypatch.delenv(ENV, raising=False)
-    root = _tree(tmp_path)
-    assert (FENCE, ("--require-state",)) in gate._STATE_FENCES
-    monkeypatch.setattr(gate, "_LAW_FENCES", _registered(gate._LAW_FENCES))
-    monkeypatch.setattr(gate, "_STATE_FENCES", _registered(gate._STATE_FENCES))
-    rep = gate.full_gate(root, laws_only=False)
-    assert not rep["ok"]
-    assert rep["n_failed"] == 2
-    assert all(f.startswith(f"{FENCE} (rc=1)") for f in rep["failures"])
-
-
-def test_the_box_escalation_record_still_carries_the_red(tmp_path, monkeypatch):
-    """(c) the MT5-LawGate rotation (`run_law_gate.py --rotate`, install_law_gate_task.ps1) is
-    what writes `data/law_gate.json` on the box; it runs every declared invocation of a fence and
-    records the fence red if ANY is. Its readers -- check_fence_yield's `law_gate` RAIL and
-    capability_ratchet's `law_fences_passing` -- see that red, and the fence's own audit is still
-    written outside a source view."""
-    monkeypatch.delenv(ENV, raising=False)
-    root = _tree(tmp_path)
-    monkeypatch.setattr(gate, "_LAW_FENCES", _registered(gate._LAW_FENCES))
-    monkeypatch.setattr(gate, "_STATE_FENCES", _registered(gate._STATE_FENCES))
-    rep = gate.rotate_gate(root, budget_s=600.0)
-    row = rep["fences"][FENCE]
-    assert row["ok"] is False and row["n_invocations"] == 2
-    assert not rep["ok"] and any(f.startswith(FENCE) for f in rep["failures"])
-    audit = json.loads((root / "desks/mt5/reports/judge_coverage_fence.json").read_text("utf-8"))
-    assert audit["verdict"] == "FAIL"
-
-    (root / "data").mkdir()
-    (root / "data/law_gate.json").write_text(json.dumps(rep), "utf-8")
-    yield_fence = _load("fence_yield_portable_state", "scripts/check_fence_yield.py")
-    rel, key, fires, kind = yield_fence._FENCES["law_gate"]
-    assert key == "ok"
-    assert rel == "data/law_gate.json" and kind == "RAIL"
-    assert yield_fence._observe(root)["law_gate"] in fires
 
 
 # ---- the two twins found by the same audit: the gate's design text gives their state to

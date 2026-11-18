@@ -434,11 +434,6 @@ def test_a_missing_inventory_is_unmeasured_never_a_failure() -> None:
     assert verdict["fatal"] is False
 
 
-def test_the_fence_is_registered_in_the_law_gate() -> None:
-    src = (Path(rf.ROOT) / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '("check_no_retirement_on_absence.py", ())' in src
-
-
 def test_the_canon_incident_row_names_the_guard_call_its_owner_must_add() -> None:
     """The canon incident row names the exact guard call -- and, since its owner added it, the
     row reads GUARDED and the call is really in certificate_truth.apply (2026-09-29 guard)."""

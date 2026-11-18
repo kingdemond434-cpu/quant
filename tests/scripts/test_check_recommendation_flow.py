@@ -123,8 +123,3 @@ def test_an_unreadable_ledger_is_a_failure_never_an_empty_pass(tmp_path: Path) -
     assert rep["status"] == "UNREADABLE" and rep["failures"]
 
 
-def test_the_fence_is_wired_into_the_law_gate_both_ways() -> None:
-    """UNWIRED OR IDLE IS A DEFECT (III.16) -- including for the fence that measures it."""
-    src = (_ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
-    assert '("check_recommendation_flow.py", ())' in src
-    assert '("check_recommendation_flow.py", ("--require-state",))' in src

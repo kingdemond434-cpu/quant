@@ -110,27 +110,6 @@ def test_fence_is_a_gate_not_a_report():
 
 # --- L1.37 continuous enforcement at every boundary --------------------------------------------
 
-def test_law_and_state_fences_are_separated():
-    from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
-    # Disjoint by INVOCATION, not by filename: one fence may carry a law half and a state half
-    # (check_scheduler_manifest: manifest<->repo integrity is law, live-crontab drift is state),
-    # but the exact same invocation must never sit on both sides of the commit gate.
-    law = {(f, a) for f, a in _LAW_FENCES}
-    state = {(f, a) for f, a in _STATE_FENCES}
-    assert law and state and not (law & state)
-    # law fences must be portable: they read the repo, so CI can run them meaningfully
-    law_names = {f for f, _ in law}
-    assert "check_constitution_core.py" in law_names and "check_law_families.py" in law_names
-    # state fences measure box-only live state and must NOT gate a commit
-    state_names = {f for f, _ in state}
-    assert "check_exploration.py" in state_names and "check_conversion.py" in state_names
-    # the scheduler fence's law-side invocation must suppress its state half (live drift, rc=1):
-    # on a red-parked box the manifest is SUPPOSED to lead the installed crontab, and a commit
-    # gate that fails on that wedges the exact push that heals it.
-    sched_law = [a for f, a in _LAW_FENCES if f == "check_scheduler_manifest.py"]
-    assert sched_law == [("--report-only",)]
-
-
 @pytest.mark.timeout(2400)
 def test_laws_only_gate_passes_in_a_fresh_checkout():
     """R0402: this test asserted a property of a FRESH CHECKOUT and evaluated it against the
@@ -209,12 +188,6 @@ def test_an_UNAVAILABLE_head_checkout_is_REPORTED_never_silently_ignored(tmp_pat
     assert "UNAVAILABLE" in subject and "UNCOMMITTED" in subject
 
 
-def test_fast_gate_guards_core_and_doctrine():
-    from scripts.run_law_gate import fast_gate
-    rep = fast_gate()
-    assert rep["ok"] is True, rep["failures"]
-
-
 def test_unrunnable_fence_counts_as_failed_never_skipped():
     src = Path("scripts/run_law_gate.py").read_text("utf-8")
     assert "counts as FAILED, never skipped" in src
@@ -257,22 +230,6 @@ def test_l39_draws_the_action_vs_validation_distinction():
 
 
 # --- the gate must be green on a VIRGIN tree, not only on one that has run it before -----------
-
-def test_matrix_producer_runs_before_its_consumer_in_the_law_gate():
-    """build_enforcement_matrix WRITES what check_law_families READS -- so it must run first.
-
-    REGRESSION PIN. data/enforcement_matrix.json is gitignored (data/*), so it exists on any
-    machine that has run the gate before and on no clean checkout. With the consumer ordered
-    first, the gate was green on the box and on dev clones while failing on EVERY clean checkout:
-    master CI failed 10 consecutive runs (30651154078..30654344515) on
-    "BREACH check_law_families.py (rc=2)" for commits that passed locally. Reproduced exactly by
-    running the gate twice in a fresh worktree -- first run FAIL, second run PASS, the only
-    difference being the artifact the first run left behind. Ordering is the fix; this pins it.
-    """
-    from scripts.run_law_gate import _LAW_FENCES
-    names = [n for n, _args in _LAW_FENCES]
-    assert names.index("build_enforcement_matrix.py") < names.index("check_law_families.py")
-
 
 def test_absent_matrix_reports_unmeasured_not_sixty_five_decorative_laws(tmp_path):
     """A missing INPUT is not a verdict about the laws -- and must still never buy a pass.

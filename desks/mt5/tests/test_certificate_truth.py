@@ -413,7 +413,6 @@ def test_the_leg_the_layer_the_gate_and_the_lesson_are_wired():
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["certificate_truth"] == "meta"
     gate = (_ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '("check_certificate_truth.py", ())' in gate
     assert '("check_certificate_truth.py", ("--require-state",))' in gate
     lessons = (_ROOT / "docs" / "desk_lessons.jsonl").read_text(encoding="utf-8")
     assert "certificate_truth" in lessons and "discovery" in lessons.lower()

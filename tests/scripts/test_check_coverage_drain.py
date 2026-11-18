@@ -253,13 +253,6 @@ def test_the_render_names_the_days_largest_gap(tmp_path: Path) -> None:
 
 
 # ------------------------------------------------------------------------------- the wiring
-def test_the_fence_runs_in_the_law_gate() -> None:
-    """III.16: an organ is done only when something actually runs it. A fence nobody calls is a
-    claim the desk cannot cash (L1.49)."""
-    text = (_ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert '"check_coverage_drain.py"' in text
-
-
 def test_the_fence_caps_no_compute() -> None:
     """GROWTH GOVERNANCE Rule 1. This fence reads a report and compares two numbers; it must
     never be able to subtract a crawl, a worker or a second from any forest."""

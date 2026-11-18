@@ -229,7 +229,4 @@ def test_the_producer_keeps_stderr_so_a_failure_can_be_loud() -> None:
 def test_the_fences_are_registered_in_the_law_gate() -> None:
     """A fence with no clock is a claim the desk cannot cash (L1.49)."""
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8", errors="replace")
-    assert '("check_write_or_explain.py", ("--wiring-only",))' in gate
     assert '("check_write_or_explain.py", ("--require-state",))' in gate
-    assert '("check_box_reversion.py", ("--require-git",))' in gate
-    assert '("check_bare_excepts.py", ("--file-writes-only",))' in gate

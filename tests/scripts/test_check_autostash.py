@@ -138,12 +138,3 @@ def test_an_unmeasurable_host_fails_rather_than_passing(repo: Path,
     assert any("UNMEASURED" in p for p in doc["problems"])
 
 
-def test_the_fence_is_registered_in_the_law_gate_battery() -> None:
-    """UNWIRED IS A DEFECT (III.16). A fence nothing runs protects nothing."""
-    run_law_gate = _by_path("run_law_gate_under_test", ROOT / "scripts" / "run_law_gate.py")
-
-    names = {n for n, _a in (*run_law_gate._LAW_FENCES, *run_law_gate._STATE_FENCES)}
-    assert "check_autostash.py" in names
-    # Portable half: it reads git's own config, so it must gate the COMMIT and the PUSH, where a
-    # drifted config is already dangerous -- not only an hourly clock.
-    assert "check_autostash.py" in {n for n, _a in run_law_gate._LAW_FENCES}

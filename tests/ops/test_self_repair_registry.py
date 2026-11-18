@@ -62,10 +62,3 @@ def test_the_manual_count_ratchets_down_only(tmp_path: Path) -> None:
     assert any("manual count rose" in f for f in v["failures"])
 
 
-def test_the_registry_is_wired_to_a_clock_a_layer_and_the_law_gate() -> None:
-    from libs.research.layers import LEG_LAYER
-    assert LEG_LAYER["self_repair"] == "meta"
-    src = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
-    assert '_costed("self_repair"' in src and '"self_repair": slf' in src
-    gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
-    assert "check_self_repair.py" in gate

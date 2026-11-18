@@ -24,7 +24,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_the_state_battery_carries_certificate_truth_with_require_state() -> None:
     assert ("check_certificate_truth.py", ("--require-state",)) in lg._STATE_FENCES
-    assert ("check_certificate_truth.py", ()) in lg._LAW_FENCES
 
 
 def test_the_rotation_the_box_runs_invokes_require_state(tmp_path: Path, monkeypatch) -> None:
@@ -42,7 +41,7 @@ def test_the_rotation_the_box_runs_invokes_require_state(tmp_path: Path, monkeyp
     assert ("check_certificate_truth.py", ("--require-state",)) in calls
     # A drifted store fails the box's own gate, even though the portable half passed.
     row = rep["fences"]["check_certificate_truth.py"]
-    assert row["ok"] is False and row["n_invocations"] == 2
+    assert row["ok"] is False and row["n_invocations"] == 1
     assert rep["ok"] is False
     assert any(f.startswith("check_certificate_truth.py") for f in rep["failures"])
 

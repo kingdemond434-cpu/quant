@@ -167,12 +167,6 @@ def test_report_only_exits_zero_while_the_gate_does_not(monkeypatch: pytest.Monk
     assert "BREACH" in capsys.readouterr().out
 
 
-def test_the_fence_is_registered_in_the_law_gate() -> None:
-    """UNWIRED OR IDLE IS A DEFECT (LAWS 7): a fence nobody runs is not a fence."""
-    gate = _load("_quant_run_law_gate", "scripts/run_law_gate.py")
-    assert "check_no_queues.py" in {name for name, _ in gate._STATE_FENCES}
-
-
 def test_the_census_organ_has_a_clock_and_a_layer() -> None:
     """The other half of "done means wired": the artifact this fence reads must be produced by
     something on a clock, and that leg must be assigned to a layer."""

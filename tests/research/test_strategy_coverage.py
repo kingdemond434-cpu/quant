@@ -199,7 +199,7 @@ def test_the_fence_runs_at_both_boundaries_with_the_right_halves():
     from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
     law = dict(_LAW_FENCES)
     state = dict(_STATE_FENCES)
-    assert law.get("check_strategy_breadth.py") == ("--surfaces-only",)
+    assert "check_strategy_breadth.py" not in law       # a reading, not a rule (2026-11-18)
     assert state.get("check_strategy_breadth.py") == ()
 
 
