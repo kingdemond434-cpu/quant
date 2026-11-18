@@ -62,6 +62,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.portfolio.rails import RAILS
+from libs.research import forward_ledger as _fl
 from libs.research.bandit import ARMS, SOURCE_ARM
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -617,14 +618,14 @@ class Ledgers:
                 out[(str(r["sleeve"]), day)] += v
         shadow = self.root / SHADOW_DIR
         if shadow.is_dir():
-            for f in sorted(shadow.glob("ledger_*.json")):
+            for f in _fl.iter_ledgers(shadow):
                 try:
                     rows = json.loads(f.read_text("utf-8"))
                 except (OSError, ValueError):
                     continue
                 if not isinstance(rows, list):
                     continue
-                name = f.stem.removeprefix("ledger_")
+                name = _fl.label_of(f)
                 for row in rows:
                     if not isinstance(row, dict) or str(row.get("phase") or "") != "forward":
                         continue
