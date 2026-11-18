@@ -87,7 +87,8 @@ MECHANISMS: tuple[tuple[str, str], ...] = (
     ("rsi", "mean_reversion_rsi"), ("逆張り", "mean_reversion_rsi"),
     ("均值回归", "range_reversion"), ("mean reversion", "range_reversion"),
     ("震荡", "range_reversion"), ("レンジ", "range_reversion"),
-    ("跳空", "overnight_gap_decay"), ("gap", "overnight_gap_decay"), ("窓埋め", "overnight_gap_decay"),
+    ("跳空", "overnight_gap_decay"), ("gap", "overnight_gap_decay"),
+    ("窓埋め", "overnight_gap_decay"),
     ("隔夜", "overnight_drift"), ("overnight", "overnight_drift"),
     ("动量", "momentum_volgate"), ("momentum", "momentum_volgate"), ("모멘텀", "momentum_volgate"),
     ("波动率", "vol_transition"), ("volatility breakout", "volatility_squeeze"),
@@ -362,10 +363,10 @@ def run(dry_run: bool = False, queries: tuple[tuple[str, str], ...] = QUERIES,
             stats["ideas"] += len(i)
     # one row per (family, symbol) per pass: the best-starred repo carries it
     best: dict[tuple[str, str], dict[str, Any]] = {}
-    for h in hyps:
-        k = (h["family"], h["symbols"][0])
-        if k not in best or (h.get("stars") or 0) > (best[k].get("stars") or 0):
-            best[k] = h
+    for row in hyps:
+        k = (row["family"], row["symbols"][0])
+        if k not in best or (row.get("stars") or 0) > (best[k].get("stars") or 0):
+            best[k] = row
     cells = list(best.values())
     donated: dict[str, Any] = {"donated": 0}
     if not dry_run and cells:
