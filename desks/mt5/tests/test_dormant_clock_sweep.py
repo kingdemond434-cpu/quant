@@ -110,36 +110,58 @@ def test_apply_appends_once_and_never_rewrites(tmp_path: Path,
         "symbol": t["symbol"], "family": t["family"], "params": t["params"],
         dcs.TAG_FIELD: t["cell_id"]})
     doc = _build([], {})
-    res = dcs.apply(doc, NOW, docket=docket)
+    res = dcs.apply(doc, NOW, docket=docket, prior={})
     assert res["queued"] == 2
     assert all(t["on_docket"] for t in doc["targets"])
     rows = json.loads(docket.read_text(encoding="utf-8"))
     assert rows[0] == {"symbol": "EURUSD", "family": "f"}
     assert len(rows) == 3
     doc2 = _build([], {})
-    res2 = dcs.apply(doc2, NOW, docket=docket)
+    res2 = dcs.apply(doc2, NOW, docket=docket, prior={"queued_at": doc["queued_at"]})
     assert res2["queued"] == 0 and res2["already_on_docket"] == 2
     assert len(json.loads(docket.read_text(encoding="utf-8"))) == 3
 
 
-def test_a_cell_already_judged_is_never_reappended(tmp_path: Path,
-                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_stamp_before_queueing_never_suppresses_the_rejudge(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF1: the August judgement must not stop the re-judge; one after we queued it does."""
+    lam, aft = "XAUUSD.session_range_breakout.rs=10", "XAUUSD.session_range_breakout.rs=14"
     seen = tmp_path / "seen.json"
-    seen.write_text(json.dumps({"XAUUSD.session_range_breakout.rs=10": "2026-11-18"}),
+    seen.write_text(json.dumps({lam: "2026-08-26T10:00:00+00:00",
+                                aft: "2026-11-18T05:00:00+00:00"}), encoding="utf-8")
+    monkeypatch.setattr(dcs, "SEEN_CELLS", seen)
+    docket = tmp_path / "docket.json"
+    docket.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(dcs, "docket_row", lambda t, now: {dcs.TAG_FIELD: t["cell_id"]})
+    prior = {"queued_at": {lam: "2026-11-18T04:00:00+00:00",
+                           aft: "2026-11-18T04:00:00+00:00"}}
+    doc = _build([], {})
+    res = dcs.apply(doc, NOW, docket=docket, prior=prior)
+    tags = [r[dcs.TAG_FIELD] for r in json.loads(docket.read_text(encoding="utf-8"))]
+    assert tags == [lam]                       # seen BEFORE it was queued: re-judged
+    assert res["already_judged"] == 1 and res["already_on_docket"] == 0
+    by = {t["cell_id"]: t for t in doc["targets"]}
+    assert by[aft]["already_judged"] and not by[lam]["already_judged"]
+
+
+def test_never_queued_cells_are_queued_whatever_the_seen_stamp(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = tmp_path / "seen.json"
+    seen.write_text(json.dumps({"XAUUSD.session_range_breakout.rs=10": "2026-08-26"}),
                     encoding="utf-8")
     monkeypatch.setattr(dcs, "SEEN_CELLS", seen)
     docket = tmp_path / "docket.json"
     docket.write_text("[]", encoding="utf-8")
     monkeypatch.setattr(dcs, "docket_row", lambda t, now: {dcs.TAG_FIELD: t["cell_id"]})
-    res = dcs.apply(_build([], {}), NOW, docket=docket)
-    assert res["queued"] == 1
-    assert [r[dcs.TAG_FIELD] for r in json.loads(docket.read_text(encoding="utf-8"))] == [
-        "XAUUSD.session_range_breakout.rs=14"]
+    doc = _build([], {})
+    res = dcs.apply(doc, NOW, docket=docket, prior={})
+    assert res["queued"] == 2
+    assert set(doc["queued_at"]) == {t["cell_id"] for t in doc["targets"]}
 
 
 def test_apply_refuses_an_unreadable_docket(tmp_path: Path) -> None:
     doc = _build([], {})
-    res = dcs.apply(doc, NOW, docket=tmp_path)            # a directory cannot be read as bytes
+    res = dcs.apply(doc, NOW, docket=tmp_path, prior={})            # a directory cannot be read as bytes
     assert res["queued"] == 0 and "refused" in res
 
 

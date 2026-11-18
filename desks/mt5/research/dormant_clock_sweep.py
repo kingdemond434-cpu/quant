@@ -252,32 +252,59 @@ def build(now: datetime | None = None, *, sleeves: Any = None, shadow: Any = Non
     }
 
 
-def apply(doc: dict[str, Any], now: datetime | None = None,
-          docket: Path | None = None) -> dict[str, Any]:
-    """Append every target not yet on the docket. Never removes, never rewrites a row."""
+def _when(v: Any) -> datetime | None:
+    try:
+        d = datetime.fromisoformat(str(v))
+    except ValueError:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def apply(doc: dict[str, Any], now: datetime | None = None, docket: Path | None = None,
+          prior: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Append every target not yet on the docket. Never removes, never rewrites a row.
+
+    ONE RE-JUDGE PER QUEUEING, NEVER ZERO (audit of #1322, MF1 over SF2). A cell counts as
+    already judged only when the gauntlet's seen-stamp for it is dated AT OR AFTER the time this
+    sweep queued it (`queued_at`, carried in its own artifact). A stamp from before -- the
+    August judgement this organ exists to revisit -- never suppresses the re-judge, and a cell
+    judged after we queued it is never re-appended even if a compaction drops its docket row.
+    """
     path = docket or DOCKET
     t = now or datetime.now(UTC)
     targets = doc.get("targets") or []
+    prev = _read(OUT) if prior is None else prior
+    queued_at: dict[str, str] = {}
+    if isinstance(prev, dict) and isinstance(prev.get("queued_at"), dict):
+        queued_at = {str(k): str(v) for k, v in prev["queued_at"].items()}
+    doc["queued_at"] = queued_at
     if not targets:
         return {"queued": 0}
     present = docket_tags(path)
     if present is None:
         return {"queued": 0, "refused": "docket unreadable; UNMEASURED, retried next pass"}
-    # A cell the gauntlet has already judged at this identity is never re-appended, even if a
-    # docket compaction dropped its tagged row (audit of #1322, SF2): one re-judge, ever.
     seen = _read(SEEN_CELLS)
-    judged = set(seen) if isinstance(seen, dict) else set()
+    seen = seen if isinstance(seen, dict) else {}
+
+    def judged_since_queued(cid: str) -> bool:
+        q, s_ = _when(queued_at.get(cid)), _when(seen.get(cid))
+        return q is not None and s_ is not None and s_ >= q
+
+    judged = {x["cell_id"] for x in targets if judged_since_queued(x["cell_id"])}
     missing = [x for x in targets if x["cell_id"] not in present and x["cell_id"] not in judged]
     from attestation_remint import append_to_docket
     res = append_to_docket(path, [docket_row(x, t) for x in missing])
     queued_ok = not res.get("refused")
     missing_ids = {x["cell_id"] for x in missing}
+    if queued_ok:
+        for cid in missing_ids:
+            queued_at[cid] = t.isoformat(timespec="seconds")
     for x in targets:
         x["on_docket"] = x["cell_id"] in present or (x["cell_id"] in missing_ids and queued_ok)
-        if x["cell_id"] in judged:
-            x["already_judged"] = True
+        x["already_judged"] = x["cell_id"] in judged
     return {"queued": int(res.get("appended") or 0),
-            "already_on_docket": len(targets) - len(missing),
+            "already_on_docket": sum(1 for x in targets if x["cell_id"] in present),
+            "already_judged": len(judged),
             **({"refused": res["refused"]} if res.get("refused") else {})}
 
 
