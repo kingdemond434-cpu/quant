@@ -490,6 +490,7 @@ desks/mt5/data/import_stems_cache.json
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/MERGE_PIPELINE.json
+!desks/mt5/reports/PASS_WATCH.json
 !desks/mt5/reports/DESK_HEALTH.json
 !desks/mt5/reports/PR_BLOCKERS.json
 !desks/mt5/reports/process_health.json
