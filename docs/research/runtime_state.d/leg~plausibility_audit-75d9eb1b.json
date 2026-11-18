@@ -1,0 +1,28 @@
+{
+ "organ": "leg:plausibility_audit",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/plausibility_audit.py"
+ ],
+ "clock": "hourly_cycle:plausibility_audit",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
+ "artifact_declared": "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-14T02:57:15+00:00"
+}

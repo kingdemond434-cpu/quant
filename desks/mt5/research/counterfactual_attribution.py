@@ -80,6 +80,13 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -804,12 +811,12 @@ def sleeve_histories(deadline: float) -> tuple[dict[str, dict[str, Any]], dict[s
                               "status": str(s.get("status") or ""), "trades": []})
         hist[key]["status"] = str(s.get("status") or hist[key].get("status") or "")
     if SHADOW.is_dir():
-        for path in sorted(SHADOW.glob("ledger_*.json")):
+        for path in _fl.iter_ledgers(SHADOW):
             if time.monotonic() > deadline:
                 notes["budget_stopped"] = True
                 break
             notes["shadow_files"] += 1
-            key = _norm_sleeve(path.stem[len("ledger_"):])
+            key = _norm_sleeve(_fl.label_of(path))
             rows = _read_json(path)
             if not isinstance(rows, list):
                 continue

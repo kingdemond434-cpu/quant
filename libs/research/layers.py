@@ -103,6 +103,7 @@ LEG_LAYER: dict[str, str] = {
     # than meta -- the same side of the line as `markout` and `fill_attribution`.
     "halt_rail": "execution",
     "producer_census": "meta", "productivity_census": "meta",
+    "llm_yield": "meta", "llm_budget_census": "meta",
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
@@ -114,6 +115,7 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rank": "meta", "factory_contracts": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
+    "policy_lift_reopen": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
@@ -257,11 +259,20 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # ORDER-SENSITIVE DECAY VERDICTS (R0312): the demote/shrink INPUT beside the decay monitor's
+    # own verdicts, read per sleeve by whatever sizes the book later -- portfolio, as its sibling.
+    "decay_verdicts": "portfolio",
+    # THE TIER-S CLUSTER JUDGE (P8-J1): dependence and concentration of the forward clocks at
+    # the bar, an input to whatever counts independent bets in the book -- portfolio.
+    "cluster_judge": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The open-PR blocker census (scripts/pr_blockers.py), hourly: the machine reading its own
+    # merge queue, not any strategy.
+    "pr_blockers": "meta",
     # The box's bar and tick freshness report, hourly before publication: the machine measuring
     # its own inputs, not any strategy.
     "bars_state": "meta",
@@ -281,6 +292,7 @@ LEG_LAYER: dict[str, str] = {
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information",
     "residual_search": "information", "unseen_frontier": "information",
+    "vocabulary_proposer": "information", "contradiction_miner": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
@@ -668,7 +680,7 @@ LEG_LAYER: dict[str, str] = {
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
-    "acquire_datasets": "information", "dukascopy_backfill": "information",
+    "acquire_datasets": "information", "tape_deepen": "information",
     # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
     # ledger of which keys are set measures the desk itself: meta
     "keyed_sources": "information", "credential_coverage": "meta",
@@ -686,6 +698,7 @@ LEG_LAYER: dict[str, str] = {
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
+    "six_event_trace": "meta",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

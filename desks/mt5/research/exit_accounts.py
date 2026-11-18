@@ -50,6 +50,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -122,14 +129,14 @@ def load_trades() -> tuple[list[dict], dict[str, str]]:
         if not d.is_dir():
             continue
         seen_dir = True
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(d, also_frozen=_fl.frozen_names(LEDGER_DIRS)):
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _fl.label_of(f)
             for r in rows:
                 t = _trade(r, sleeve, "shadow")
                 if t is not None:

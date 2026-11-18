@@ -66,7 +66,8 @@ def _get(url: str, timeout: float = 20.0) -> Any:
     tok = read_key("GITHUB_TOKEN") or None
     if tok:
         req.add_header("Authorization", f"Bearer {tok}")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    from libs.data.keyed_sources import keyed_urlopen
+    with keyed_urlopen(req, timeout=timeout, secrets=(tok,) if tok else ()) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
