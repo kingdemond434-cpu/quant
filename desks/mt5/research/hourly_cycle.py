@@ -1432,6 +1432,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "judging_throughput",
                      "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     # gate 1's six-field prior debt, per family (H3)
+                     "prior_backfill",
                      "attestation_remint",
                      "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
@@ -2338,6 +2340,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Streams the backlog from a byte cursor at ~3,400 rows/s and self-stops 45 s inside its
     # --budget-s; 240 s of work plus the docket stream and the write fit 300 s.
     "cell_culture_index": 300,
+    # One streaming docket read (~2 s on 57k rows; ~1.5m rows on the box is under a minute).
+    "prior_backfill": 180,
     # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
     # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
     "culture_gap_cells": 300,
@@ -6009,6 +6013,11 @@ def main() -> None:
     # ~3 s measured, one run_gauntlet call.
     pla = _costed("placebo_audit", lambda: _producer(
         "placebo_audit", "research/placebo_audit.py"))
+    # H3 CAUSAL REASONING: gate 1 now asks a NAMED cell for the six-field EconomicPrior, and the
+    # 2026-11-18 grandfather roster exempts every family the desk already hunted. This names that
+    # exemption's debt per family, every hour. One streaming docket read; ~2 s on 57k rows.
+    pbf = _costed("prior_backfill", lambda: _producer(
+        "prior_backfill", "research/economic_prior_backfill.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     # INDEX-DRIVEN DISCOVERY (seat data/intelligence/index_discovery/): addresses, never page
@@ -6704,7 +6713,7 @@ def main() -> None:
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "placebo_audit": pla,
+                    "placebo_audit": pla, "prior_backfill": pbf,
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,

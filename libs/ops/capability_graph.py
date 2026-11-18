@@ -891,6 +891,8 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/LAKE_PROMOTION.json",)),
     Node("orthogonality", "desks/mt5/research/orthogonality.py",
          writes=("desks/mt5/reports/ORTHOGONALITY.json",)),
+    Node("prior_backfill", "desks/mt5/research/economic_prior_backfill.py",
+         writes=("desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json",)),
     Node("prosecutor", "scripts/check_prosecutor.py",
          writes=("desks/mt5/reports/prosecutor_census.json",)),
     Node("research_exchange_score", "scripts/research_exchange.py",

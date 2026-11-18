@@ -29,6 +29,7 @@ sys.path.insert(0, str(BASE / "desks" / "mt5" / "side_channels"))
 
 from mt5desk import families
 from mt5desk.engine import Costs, run_backtest
+from research.frontier_identity import economic_prior
 from research.survivor_publication import unrunnable_reason
 from mt5desk.families import (
     FAMILY_REGISTRY,
@@ -207,6 +208,15 @@ def step_convert(discoveries):
 
 
 # ── STEP 3: BACKTEST (FULL param-grid sweep — no cells missed) ────
+#: The fields a hypothesis carries about its own mechanism. They ride every step from the
+#: hypothesis to the gate so gate 1 judges the cell's real prior, not a constant.
+PRIOR_KEYS = ("mechanism_status", "mechanism_note", "economic_prior")
+
+
+def _prior_fields(row: dict) -> dict:
+    return {k: row[k] for k in PRIOR_KEYS if row.get(k)}
+
+
 def _expand_grid(grid: list[dict]) -> list[dict]:
     """Expand (sym, family) cells into EVERY registered param-grid combination."""
     import itertools
@@ -220,7 +230,8 @@ def _expand_grid(grid: list[dict]) -> list[dict]:
         pgrid = entry.get("param_grid", {})
         if not pgrid:
             expanded.append({"sym": sym, "family": family_name, "params": defaults,
-                             "source": cell.get("source", ""), "url": cell.get("url", "")})
+                             "source": cell.get("source", ""), "url": cell.get("url", ""),
+                             **_prior_fields(cell)})
             continue
         keys = list(pgrid.keys())
         combos = list(itertools.product(*[pgrid[k] for k in keys]))
@@ -234,7 +245,8 @@ def _expand_grid(grid: list[dict]) -> list[dict]:
                 continue
             seen_keys.add(pkey)
             expanded.append({"sym": sym, "family": family_name, "params": params,
-                             "source": cell.get("source", ""), "url": cell.get("url", "")})
+                             "source": cell.get("source", ""), "url": cell.get("url", ""),
+                             **_prior_fields(cell)})
     return expanded
 
 
@@ -252,7 +264,8 @@ def step_backtest(hypotheses):
         if not func:
             continue
         base_grid.append({"sym": sym, "family": family_name,
-                          "source": h.get("id", ""), "url": h.get("url", "")})
+                          "source": h.get("id", ""), "url": h.get("url", ""),
+                          **_prior_fields(h)})
 
     grid = _expand_grid(base_grid)
 
@@ -320,6 +333,7 @@ def step_backtest(hypotheses):
             "params": cell["params"], "n": len(trades),
             "exp_r": round(exp_r, 4), "max_dd_r": round(max_dd, 2),
             "source": cell["source"], "url": cell["url"],
+            **_prior_fields(cell),
         })
         print(f"  PASS {cell['sym']:8s}.{cell['family']:26s} "
               f"params={json.dumps(cell['params'])} n={len(trades):4d} exp={exp_r:+.4f}R maxDD={max_dd:+.1f}R")
@@ -387,7 +401,7 @@ def step_gauntlet(survivors):
             continue
         cell_objs.append({"sym": s["symbol"], "family": s["family"],
                           "params": s.get("params", {}), "df": h1, "sigs": sigs,
-                          "costs": costs_for(s["symbol"], meta)})
+                          "costs": costs_for(s["symbol"], meta), **_prior_fields(s)})
 
     if not cell_objs:
         print("  No buildable cells")
@@ -452,7 +466,12 @@ def step_gauntlet(survivors):
         sr = sr_canon(arr)
 
         stages = {
-            "economic_prior": {"passed": True, "message": "discovered via external channel", "mechanism_status": "NAMED"},
+            # GATE 1 IS JUDGED, NOT ASSERTED. This stage was the constant `passed: True`, so every
+            # cell this channel certified skipped the economic-prior gate the universal gauntlet
+            # applies. It now runs the same rule (frontier_identity.economic_prior): a statistical
+            # find fails, a NAMED cell needs the six-field EconomicPrior, and a family on the
+            # 2026-11-18 grandfather roster passes with its missing fields recorded.
+            "economic_prior": economic_prior(c),
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
 
