@@ -31,8 +31,18 @@ class _FakeMT5(SimpleNamespace):
         self.checked: list[dict] = []
         self.sent: list[dict] = []
 
-    def initialize(self) -> bool:
+    def initialize(self, **kwargs: Any) -> bool:
         return True
+
+    # The desk's own terminal, attached and on Fusion's server (the venue pin, 2026-11-11).
+    def terminal_info(self) -> Any:
+        return SimpleNamespace(path=r"C:\T")
+
+    def account_info(self) -> Any:
+        return SimpleNamespace(server="FusionMarkets-Live")
+
+    def shutdown(self) -> None:
+        pass
 
     def last_error(self) -> tuple[int, str]:
         return (1, "ok")
@@ -55,6 +65,9 @@ def fake(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> _FakeMT5:
     monkeypatch.setenv("MT5_ORDER_DOOR_DIR", str(tmp_path))
     mod = _FakeMT5()
     monkeypatch.setitem(sys.modules, "MetaTrader5", mod)
+    _order_door()                       # puts the desk on sys.path for mt5desk.config
+    from mt5desk import config
+    monkeypatch.setattr(config, "terminal_path", lambda: r"C:\T\terminal64.exe")
     _order_door()._MEMORY_IN_DOUBT.clear()
     return mod
 
@@ -84,3 +97,11 @@ def test_a_broker_check_reject_is_rejected_without_a_send(fake: _FakeMT5) -> Non
     res = MT5Broker().place_order(_req())
     assert res.status == "rejected" and fake.sent == []
     assert res.broker_order_id == 0 and res.filled_qty == 0.0
+
+
+def test_mt5_broker_refuses_a_non_fusion_account(fake: _FakeMT5) -> None:
+    """The venue pin (2026-11-11): FTMO runs beside Fusion on the box; the broker refuses it."""
+    from libs.execution.errors import BrokerError
+    fake.account_info = lambda: SimpleNamespace(server="FTMO-Server3")
+    with pytest.raises(BrokerError, match="wrong venue"):
+        MT5Broker()
