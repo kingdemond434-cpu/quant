@@ -446,6 +446,8 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
 
 #: The scheduler refused to start a new instance because one is still running (0x800710E0).
 REFUSED = 2147946720
+#: What 0x800710E0 means on a task the manifest declares IgnoreNew: nothing was stopped.
+IGNORE_NEW_MEANING = "an instance is already running (IgnoreNew)"
 #: The verdicts that count toward a bad streak on their own.
 BAD_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE"})
 MANIFEST = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
@@ -471,8 +473,78 @@ def is_resident(trigger: str) -> bool:
     """A KEEP-ALIVE TRIGGER IS REFUSED WHEN ITS RESIDENT IS ALIVE (Hourly pass 2026-11-18). These
     tasks fire every few minutes only to restart a 24/7 process that died, so 0x800710E0 ("an
     instance is already running") is their healthy answer. Whether the resident PRODUCES is the
-    artifact contract's question, never the refusal's."""
+    artifact contract's question, never the refusal's.
+
+    MT5-Gauntlet is deliberately NOT matched here although its trigger respawns a resident:
+    `resident` makes a row restartable by never_stale, and ending a sweep that is hours into a
+    healthy pass destroys its work. The gauntlet has its own no-progress watchdog; its refusals
+    are excused by `in_flight` instead (see `streaks`)."""
     return "keep-alive" in trigger.lower()
+
+
+def ignores_new(trigger: str) -> bool:
+    """The manifest declares MultipleInstances=IgnoreNew for this task's trigger."""
+    return "ignorenew" in trigger.lower()
+
+
+#: A RESIDENT MID-PASS IS NOT STALE (coordinator 2026-11-18, after a box read). A full sharded
+#: gauntlet pass on ~11k cells runs past its 240 min artifact contract by design (one measured
+#: sweep took 64,711 s), so artifact age alone called a healthy sweep STALE. These residents
+#: publish a heartbeat while a pass is in flight; the contract is excused only while that
+#: heartbeat reads RUNNING, beat recently, and started AFTER the artifact was last written.
+IN_FLIGHT_HEARTBEATS: dict[str, str] = {
+    "MT5-Gauntlet": "desks/mt5/reports/GAUNTLET_HEARTBEAT.json",
+}
+#: A heartbeat older than this many beat intervals (or 10 min with no interval) is not a beat.
+BEAT_GRACE_INTERVALS = 10
+BEAT_GRACE_FLOOR_S = 600.0
+
+
+def _utc(text: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def pass_in_flight(name: str, artifact_age_min: float | None,
+                   now: datetime) -> str | None:
+    """The reason a stale contract is excused because a pass is running now, or None.
+
+    None unless ALL hold: the organ publishes a heartbeat; it reads RUNNING; its last beat is
+    within BEAT_GRACE_INTERVALS beats (floor BEAT_GRACE_FLOOR_S); the pass started after the
+    artifact was last written; and the heartbeat's own run deadline, when it states one, has
+    not passed. Anything unreadable is None, so the row stays STALE (L1.28a)."""
+    rel = IN_FLIGHT_HEARTBEATS.get(name)
+    if not rel or artifact_age_min is None:
+        return None
+    try:
+        hb = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(hb, dict) or hb.get("status") != "RUNNING":
+        return None
+    beat, started = _utc(hb.get("beat_utc")), _utc(hb.get("started_utc"))
+    if beat is None or started is None:
+        return None
+    try:
+        every = float(hb.get("beat_every_s") or 0)
+    except (TypeError, ValueError):
+        every = 0.0
+    grace = max(BEAT_GRACE_FLOOR_S, every * BEAT_GRACE_INTERVALS)
+    if (now - beat).total_seconds() > grace:
+        return None
+    written = now.timestamp() - artifact_age_min * 60.0
+    if started.timestamp() <= written:
+        return None
+    deadline = _utc(hb.get("run_deadline_utc")
+                    or (hb.get("deadlines") or {}).get("run_deadline_utc"))
+    if deadline is not None and now > deadline:
+        return None
+    phase = str(hb.get("phase") or "unknown")
+    mins = (now - started).total_seconds() / 60.0
+    return f"a pass is in flight: started {mins:.0f} min ago, phase {phase}, beating"
 
 
 def streaks(rows: list[dict[str, Any]], previous: dict[str, Any] | None,
@@ -487,7 +559,8 @@ def streaks(rows: list[dict[str, Any]], previous: dict[str, Any] | None,
             if isinstance(r, dict)}
     for row in rows:
         refused = row.get("last_result_code") == REFUSED
-        bad = row["verdict"] in BAD_VERDICTS or (refused and not row.get("resident"))
+        alive = row.get("resident") or row.get("in_flight")
+        bad = row["verdict"] in BAD_VERDICTS or (refused and not alive)
         before = prev.get(str(row["name"])) or {}
         n = int(before.get("bad_reads") or 0)
         row["bad_reads"] = n + 1 if bad else 0
@@ -605,7 +678,8 @@ def build() -> dict[str, Any]:
                 "will start this is UNMEASURED")
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
-        elif artifact and max_age and age is not None and age > max_age:
+        elif (artifact and max_age and age is not None and age > max_age
+              and not pass_in_flight(name, age, now)):
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
@@ -618,10 +692,17 @@ def build() -> dict[str, Any]:
         else:
             verdict, why = "OK", ("" if code is not None else
                                   "artifact fresh; last result not read this pass")
-        resident = is_resident(str((manifest.get(name) or {}).get("trigger") or ""))
+        trigger = str((manifest.get(name) or {}).get("trigger") or "")
+        resident = is_resident(trigger)
+        flight = pass_in_flight(name, age, now) if name in IN_FLIGHT_HEARTBEATS else None
+        stale_age = bool(artifact and max_age and age is not None and age > max_age)
+        if flight and stale_age and verdict == "OK":
+            why = f"{age:.0f} min old against a {max_age} min contract, but {flight}"
         if code == REFUSED and verdict in ("OK", "UNCONTRACTED"):
             why = ((why + "; ") if why else "") + (
                 "keep-alive refused because the resident is alive" if resident else
+                "trigger refused because the running pass holds the slot (IgnoreNew)"
+                if flight else
                 "the last trigger was refused: the previous run was still going a whole "
                 "interval later")
 
@@ -634,6 +715,7 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
+                            else IGNORE_NEW_MEANING if code == REFUSED and ignores_new(trigger)
                             else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
@@ -642,6 +724,7 @@ def build() -> dict[str, Any]:
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
             "resident": resident,
+            "in_flight": bool(flight),
             "lane": (manifest.get(name) or {}).get("lane") or None,
         })
 
@@ -664,8 +747,13 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
         elif is_component and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
-        elif is_component and age is not None and max_age and age > max_age:
+        elif (is_component and age is not None and max_age and age > max_age
+              and not pass_in_flight(parent, age, now)):
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+        elif is_component and age is not None and max_age and age > max_age:
+            verdict, why = "OK", (f"artifact of scheduled task {parent}; {age:.0f} min old "
+                                  f"against a {max_age} min contract, but "
+                                  f"{pass_in_flight(parent, age, now)}")
         elif is_component:
             verdict, why = "OK", f"artifact of scheduled task {parent}"
         else:
