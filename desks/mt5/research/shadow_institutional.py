@@ -549,16 +549,26 @@ class Guard:
         parts = urllib.parse.urlsplit(url)
         root = f"{parts.scheme}://{parts.netloc}"
         if root not in self._robots:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(f"{root}/robots.txt")
+            from libs.data import robots_body as rb
             self.calls += 1
+            # Read by hand, not `RobotFileParser.read()`: that parses an HTML page served 200 as
+            # allow-all and reads 429/451 as allow-all, so the LABEL would claim a yes.
+            req = urllib.request.Request(f"{root}/robots.txt", headers={"User-Agent": UA})
             try:
-                rp.read()
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
+                    got_ = rb.robots_rules_or_refusal(getattr(r, "status", 200),
+                                                      r.headers.get("Content-Type"),
+                                                      r.read(500_000))
+            except urllib.error.HTTPError as exc:
+                got_ = rb.robots_rules_or_refusal(int(exc.code), None, "")
+                exc.close()
             except (OSError, urllib.error.URLError, ValueError) as exc:
-                self._robots[root] = f"unreadable: {type(exc).__name__}"
-            else:
-                self._robots[root] = rp
+                got_ = f"unreadable: {type(exc).__name__}"
+            self._robots[root] = got_
         got = self._robots[root]
+        if isinstance(got, str) and got.startswith("ROBOTS_HARD_STOP"):
+            return False, (f"{got}: a refusal, RECORDED AS A LABEL (LAWS 5e); it routes "
+                           "redistribution, not reading")
         if isinstance(got, str):
             return True, f"robots.txt {got} -- UNMEASURED, recorded as a label, not a refusal"
         ok = bool(got.can_fetch(UA, url))
