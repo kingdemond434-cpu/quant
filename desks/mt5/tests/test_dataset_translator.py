@@ -392,3 +392,17 @@ def test_arcgis_is_not_refused_wholesale():
     """Auditor SF2: PortWatch is refused by name; other ArcGIS-hosted datasets are not."""
     assert "arcgis.com" not in dt.LOCAL_REFUSED_HOSTS
     assert "portwatch" in dt.LOCAL_REFUSED_NAMES
+
+
+def test_two_datasets_on_one_stem_never_mint_the_same_cell_twice(tmp_path: Path) -> None:
+    """Hourly pass SF: a duplicate (stem, symbol, side, family) in one pass is a second trial
+    charge on the census for nothing."""
+    stems = _lake(tmp_path, "fs_cnx_dce")
+    ds = _datasets(tmp_path, stems=stems, free_stack=[{
+        "id": "cnx_dce", "name": "DCE quotes (iron ore, soy complex)", "region": "cn",
+        "language": "zh", "url": "http://www.dce.com.cn/x"}])
+    twin = {**ds[0], "id": ds[0]["id"] + "_twin"}
+    _, cells, _ = dt.translate([ds[0], twin], ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
+    keys = [(c["params"]["source"], c["symbol"], c["params"].get("side_when_high"), c["family"])
+            for c in cells]
+    assert len(keys) == len(set(keys))

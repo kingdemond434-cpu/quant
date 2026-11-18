@@ -704,6 +704,9 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
         rows.append(row)
         ready.append((ds, trad, ents, stem, cols[0], fam))
     cells: list[dict[str, Any]] = []
+    #: ONE PASS, ONE TRIAL PER (stem, symbol, side, family): two datasets resolving to the same
+    #: lake stem would otherwise mint the same cell twice and charge the trial census twice.
+    minted: set[tuple[str, str, int, str]] = set()
     if gate is None or coverage is None:
         why = ("research.universe_policy unimportable" if gate is None else
                "the registry's dedupe identity is unreadable, so a cell could be a second trial")
@@ -743,14 +746,19 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
         cell = None
         for k in range(len(grid)):
             sym, side = grid[(int(st["next"]) + k) % len(grid)]
+            key = (stem, sym, int(side), fam)
+            if key in minted:
+                continue
             cand = _cell(ds, sym, side, stem, col, fam, trad, ents)
             if not coverage.exists(cand):
+                minted.add(key)
                 cell = cand
                 st["next"] = (int(st["next"]) + k + 1) % len(grid)
                 break
         if cell is None:
             row.update(status=COVERED, covered_by="registry",
-                       reason="every (tradable, side) is already a registry trial")
+                       reason="every (tradable, side) is already a registry trial or was "
+                              "minted earlier this pass")
             continue
         cells.append(cell)
         st["emitted"] = int(st["emitted"]) + 1
