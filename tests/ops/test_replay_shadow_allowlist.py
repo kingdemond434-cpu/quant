@@ -150,7 +150,7 @@ def test_the_gitignore_line_must_match_exactly(tmp_path: Path, gi: list[str]) ->
 @pytest.mark.parametrize(
     "comment",
     [
-        "    # box at 62.171.172.249",
+        "    # box at 10.0.0.1",
         "    # see https://example.org/x",
         "    # written from C:\\opt\\quant",
         "    # account 12345678",
