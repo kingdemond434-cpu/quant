@@ -151,6 +151,11 @@ if (Test-Path $installer) {
     Ok 'task installer run'
 } else { Warn 'Install-QuantWindows.ps1 not found; tasks not registered' }
 Disable-ScheduledTask -TaskName MT5-AdoptRelease -ErrorAction SilentlyContinue | Out-Null
+# THE DISABLE IS DELIBERATE, SO IT CARRIES ITS HOLD MARKER (Auditor MF1 on #1226, 2026-11-17).
+# MT5-StallWatch re-enables a Disabled control task every ten minutes unless
+# desks\mt5\data\TASK_HOLD_<name> exists; without this line it would undo the disable below.
+$adoptHold = Join-Path $Root 'desks\mt5\data\TASK_HOLD_MT5-AdoptRelease'
+Set-Content -LiteralPath $adoptHold -Encoding UTF8 -Value 'migrate_to_new_box: left DISABLED after an OOM kill corrupted the money path mid-write; delete this file to let it heal'
 Ok 'MT5-AdoptRelease left DISABLED (it was OOM-killed mid-write and corrupted the money path hourly)'
 
 # ---------------------------------------------------------------- 7. the seal gate

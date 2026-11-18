@@ -46,6 +46,15 @@
 
 .PARAMETER Branch
     Branch to adopt. Defaults to the live desk branch named in CLAUDE.md.
+
+.PARAMETER GuardRoot
+    MANUAL RUNS ONLY (ops\box\adopt_once.cmd); the scheduled task never passes it. A clean
+    checkout of a release commit whose adopt guard and release gate scripts
+    decide this run instead of the running tree's copies, against -RepoRoot. Nothing is skipped:
+    every check runs, in the same order, from audited release code. It exists because a guard
+    that cannot read a record its successor fixed (11-14: the old parse_clears refusing a
+    multi-line ADOPT_CLEARS row, which #1216 reads) refuses every release, and the fix can only
+    arrive through the adoption it blocks. Refused unless its HEAD is an ancestor of the target.
 #>
 param(
     [string] $RepoRoot,
@@ -53,7 +62,9 @@ param(
     # Adopt the branch tip even when no green release covers it -- the escape hatch for the day
     # CI is down and a fix must land. The file desks\mt5\data\ADOPT_UNRELEASED and the variable
     # QUANT_ADOPT_UNRELEASED=1 do the same for the scheduled task. Each is logged by name.
-    [switch] $AllowUnreleased
+    [switch] $AllowUnreleased,
+    # See .PARAMETER GuardRoot. Logged by name on every run that uses it.
+    [string] $GuardRoot
 )
 
 # NATIVE STDERR IS NOT AN ERROR. git reports a successful fetch on stderr; under `Stop` that
@@ -90,7 +101,10 @@ if (-not (Test-Path $py)) {
 # "when did this start failing", and only a history answers it. Failing to write the log NEVER
 # fails the adoption -- an unwritable log is a lost diagnostic, not a reason to stop delivering
 # code to a live trading box.
-$script:AdoptLog = Join-Path $PSScriptRoot "..\logs\adopt_and_seal.log"
+# THE BOX TREE'S LOG, not this script's folder (adopt_once audit MF1): a run from a release
+# checkout (-GuardRoot) must leave its lines where plumbing_watchdog and the freshness fence read.
+# For the scheduled task $RepoRoot is three levels above this script, so the path is unchanged.
+$script:AdoptLog = Join-Path $RepoRoot "desks\mt5\logs\adopt_and_seal.log"
 try {
     $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:AdoptLog) -ErrorAction Stop
 } catch { $script:AdoptLog = $null }
@@ -254,6 +268,38 @@ if (-not $script:HeadBefore) { Log "cannot read HEAD under the lock"; Done 2 "he
 
 # ------------------------------------------------ 0a. THE GUARD, AND A STALE HOLD HEALED FIRST
 $script:GuardScript = Join-Path $RepoRoot "scripts\adopt_guard.py"
+# THE DECIDERS FROM A RELEASE CHECKOUT (manual runs only; see .PARAMETER GuardRoot). Both scripts
+# take --root, so they read and write this box's tree, never the checkout's. A checkout with any
+# local change is refused before either runs: the code that decides must be the commit it names.
+$script:GuardRootArgs = @()
+$script:GuardHead = $null
+$script:DeciderRoot = $RepoRoot
+if ($GuardRoot) {
+    $guardDir = $null
+    try { $guardDir = (Resolve-Path -LiteralPath $GuardRoot -ErrorAction Stop).Path } catch { }
+    if (-not $guardDir -or -not (Test-Path (Join-Path $guardDir "scripts\adopt_guard.py"))) {
+        Log "GUARD ROOT $GuardRoot has no scripts\adopt_guard.py; not adopting"
+        Done 8 "guard-root-missing"
+    }
+    $grDirty = @(git -C $guardDir status --porcelain --untracked-files=no 2>$null | Where-Object { "$_" -match '\S' })
+    $script:GuardHead = (git -C $guardDir rev-parse HEAD 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $script:GuardHead -notmatch '^[0-9a-f]{40}$' -or $grDirty.Count -gt 0) {
+        Log ("GUARD ROOT {0} is not a clean checkout (head '{1}', {2} changed path(s)); not adopting" -f $guardDir, $script:GuardHead, $grDirty.Count)
+        Done 8 "guard-root-unclean"
+    }
+    # RELEASED CODE ONLY, BEFORE IT RUNS ANYTHING (adopt_once audit SF1): heal and state-verify
+    # run from here before the release gate, so the checkout must already be inside production
+    # (the ref ci.yml's promote job fast-forwards), which adopt_once fetches into the checkout.
+    & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Log ("GUARD ROOT head {0} is not inside origin/production in {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardDir)
+        Done 8 "guard-root-not-released"
+    }
+    $script:GuardScript = Join-Path $guardDir "scripts\adopt_guard.py"
+    $script:GuardRootArgs = @("--root", $RepoRoot)
+    $script:DeciderRoot = $guardDir
+    Log ("GUARD ROOT (manual run): guard and release gate from {0} at {1}, against {2}" -f $guardDir, $script:GuardHead.Substring(0, 12), $RepoRoot)
+}
 $script:Adopted = $false
 $script:Recycled = $false
 # THIS RUN'S NAME ON ITS HOLD (adopter v3 audit MF1): a "nothing was adopted" exit lifts only the
@@ -280,7 +326,7 @@ function Lift-IfClean([string] $stage) {
 # Log both writes the file and EMITS the line; inside a function an emitted line would join the
 # return value, so every Log here goes to the host instead.
 function Invoke-AdoptGuard([string[]] $guardArgs) {
-    $out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1 | ForEach-Object { "$_" })
+    $out = @(& $py @pyArgs $script:GuardScript @script:GuardRootArgs @guardArgs 2>&1 | ForEach-Object { "$_" })
     $rc = $LASTEXITCODE
     $json = @($out | Where-Object { $_ -match '^\s*\{' }) | Select-Object -Last 1
     $doc = $null
@@ -304,7 +350,7 @@ function Undo-Adoption([string] $why, [int] $code, [string] $stage) {
     }
     Log ("rolled back to {0}: {1}" -f $script:HeadBefore.Substring(0, 12), $why) | Out-Host
     $loaded = "0"
-    try { $loaded = ((& $py @pyArgs $script:GuardScript loaded-since --since $script:StartedAt 2>$null) | Select-Object -Last 1).Trim() } catch { }
+    try { $loaded = ((& $py @pyArgs $script:GuardScript @script:GuardRootArgs loaded-since --since $script:StartedAt 2>$null) | Select-Object -Last 1).Trim() } catch { }
     $expect = "0"
     $rbAt = (Get-Date).ToUniversalTime().ToString('o')
     if ($script:Recycled -or $loaded -eq "1") {
@@ -336,7 +382,7 @@ if (-not (Test-Path $script:GuardScript)) {
 # A GATEWAY IS EXPECTED when one was passing before this run OR its task is not disabled: a
 # resident that was down at the start is still supposed to come back on the new code.
 $gatewayWasAlive = "0"
-try { $gatewayWasAlive = ((& $py @pyArgs $script:GuardScript gateway-alive 2>$null) | Select-Object -Last 1).Trim() } catch { }
+try { $gatewayWasAlive = ((& $py @pyArgs $script:GuardScript @script:GuardRootArgs gateway-alive 2>$null) | Select-Object -Last 1).Trim() } catch { }
 $script:GatewayExpected = $gatewayWasAlive
 if ($script:GatewayExpected -ne "1") {
     $gr = Get-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
@@ -369,7 +415,7 @@ $null = Invoke-AdoptGuard @("state-verify")
 # to adopt an untested branch tip. Retry through the scheduled path after the defect clears.
 $script:ReleaseGate = $null
 $gateTarget = $null
-$gateScript = Join-Path $RepoRoot "scripts\release_promotion.py"
+$gateScript = Join-Path $script:DeciderRoot "scripts\release_promotion.py"
 if (Test-Path $gateScript) {
     $gateArgs = @($gateScript, "gate", "--branch", $Branch, "--root", $RepoRoot)
     if ($AllowUnreleased) { $gateArgs += "--allow-unreleased" }
@@ -426,6 +472,15 @@ if (Test-Path $gateScript) {
 # and on ANY failure after the first byte is written, puts the code back to the commit this run
 # started from (an accepted seal a minute ago) by itself, under a new-risk hold that every lane
 # obeys and only a passing health check lifts. A guard that cannot run keeps the running release.
+# A GUARD ROOT DECIDES ONLY FOR CODE IT IS PART OF: its commit must be an ancestor of (or be) the
+# target, so the guard that vouches is never newer than, or foreign to, the release it lets in.
+if ($script:GuardHead) {
+    & git -C $RepoRoot merge-base --is-ancestor $script:GuardHead $gateTarget 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Log ("GUARD ROOT head {0} is not an ancestor of the target {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $gateTarget.Substring(0, 12))
+        Done 8 "guard-root-not-in-target"
+    }
+}
 $pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget)
 if ($pre.Code -eq 10) {
     $held = switch ($pre.Decision) {
