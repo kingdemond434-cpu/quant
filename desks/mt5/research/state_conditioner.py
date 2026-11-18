@@ -17,8 +17,8 @@ gauntlet verdict and this module only uses it, it adds none:
      rule is minted and never inflated by minting it again.
 
 THE CLOCK, BECAUSE IT IS WHERE A STATE LEAKS. Bars and ticks are stamped on the BROKER's wall
-clock under a UTC label (UTC+2 winter / UTC+3 summer; `research/bars_state.py`). A state computed
-from data up to broker instant `t` is published with `available_time` = the TRUE UTC of `t`,
+clock under a UTC label (UTC+2 winter / UTC+3 summer; `research/bars_state.py`). A state
+computed on bars up to broker instant `t` is published with `available_time` = the TRUE UTC of `t`,
 converted through the server anchor `bars_state.broker_to_utc`. With the anchor unavailable the
 conversion falls back to `t - 2h`, the LATER of the two possible UTC instants -- a stamp that can
 only be late, never early. The donated cells then hold the value back `CELL_LAG_HOURS` on top,
