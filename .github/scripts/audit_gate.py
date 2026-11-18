@@ -987,8 +987,8 @@ def registry_clear(
 # the merge pinned to the head. The PR must be ROOT-ONLY: any other file sends it to the normal
 # paths. A veto is any of: an AUDIT HOLD, a trusted comment exactly `VETO` anywhere on the PR
 # (never lifted on this path, not even by a later CLEAR), a DEACTIVATE on #453, or a new push (a
-# new head starts a new window). The window record sits beside the box registry; with no registry, or no delivered
-# notice, no window starts and nothing merges this way.
+# new head starts a new window). The window record sits beside the box registry; with no
+# registry, or no delivered notice, no window starts and nothing merges this way.
 SILENT_ROOT_HOLD_H = 72.0
 SILENT_ROOT_LOCKED = (
     ".github/workflows/*",
