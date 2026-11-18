@@ -4354,7 +4354,8 @@ def fault_path() -> Path:
     return REPORT.with_name(FAULT_NAME)
 
 
-def write_fault(verdict: str, why: str, *, now: datetime | None = None) -> Path | None:
+def write_fault(verdict: str, why: str, *, now: datetime | None = None,
+                report_untouched: bool = True) -> Path | None:
     """THE TABLE WAS NOT REWRITTEN, AND THAT IS NOW A RECORD, NOT A PRINT (2026-10-29).
 
     `merge_hypotheses` calls `order_docket` as the report's writer of record, and the hourly leg
@@ -4367,6 +4368,8 @@ def write_fault(verdict: str, why: str, *, now: datetime | None = None) -> Path 
     to the report it did NOT rewrite; `check_judge_coverage --require-state` fails on it.
     `why` is a fixed phrase or an exception's TYPE, never its text (the rule of this module).
     Best-effort by construction: a fault while recording the fault never costs the docket.
+    `report_untouched` is False when the pass failed AFTER its commit point: the report may
+    then carry this pass's writes, and the record must not vouch for it being the old table.
     """
     t = now or datetime.now(tz=UTC)
     target = fault_path()
@@ -4374,15 +4377,14 @@ def write_fault(verdict: str, why: str, *, now: datetime | None = None) -> Path 
     doc = {"at": t.isoformat(timespec="seconds"), "verdict": verdict, "why": str(why)[:2000],
            "report": REPORT.name,
            "report_at": prior.get("at") if isinstance(prior, dict) else None,
-           "report_untouched": True,
+           "report_untouched": bool(report_untouched),
            "rule": ("an intake pass that does not publish the coverage table says so here; the "
                     "report keeps the `at` of the last pass that did, and the next publishing "
                     "pass deletes this file in its own commit")}
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(f"{target.name}.tmp-{os.getpid()}")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-        _replace_retry(tmp, target)
+        # Atomic, and leaves no `.tmp-<pid>` sibling behind when the rename fails.
+        _atomic_write_text(target, json.dumps(doc, indent=1, default=str))
     except OSError:
         return None
     return target
@@ -4554,7 +4556,8 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
         if publish:
-            write_fault("FAULT", why=type(exc).__name__, now=now)
+            write_fault("FAULT", why=type(exc).__name__, now=now,
+                        report_untouched=not commit_reached)
         return entry_rows, {"verdict": "UNMEASURED", "why": type(exc).__name__}
 
 

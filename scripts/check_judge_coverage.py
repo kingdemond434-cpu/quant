@@ -456,9 +456,19 @@ def _republish_checks(path: Path, doc: Mapping[str, Any], checks: list[dict[str,
             failures.append("report_restamped")
         else:
             checks.append({"metric": "restamped", "state": "OK", "lag_h": round(lag_h, 2)})
-    fault = _read(path.with_name(FAULT_NAME))
-    if isinstance(fault, dict):
-        f_age = _signed_age_h(fault.get("at"), now)
+    fault_file = path.with_name(FAULT_NAME)
+    fault = _read(fault_file)
+    f_age = _signed_age_h(fault.get("at"), now) if isinstance(fault, dict) else None
+    if fault_file.exists() and (not isinstance(fault, dict) or f_age is None):
+        # A fault record that exists but cannot be read, or whose `at` cannot be placed, says
+        # the intake failed at an unknown time: it cannot be shown to predate the table, so it
+        # is never read as absent (L1.28a).
+        checks.append({"metric": "intake_fault", "state": "FAIL",
+                       "why": (f"{FAULT_NAME} exists but is "
+                               f"{'unreadable' if not isinstance(fault, dict) else 'undated'}"
+                               ": an intake fault at an unknown time")})
+        failures.append("intake_fault")
+    elif isinstance(fault, dict):
         if f_age is not None and (at is None or f_age <= at):
             checks.append({"metric": "intake_fault", "state": "FAIL",
                            "why": (f"the intake did not publish the table at "

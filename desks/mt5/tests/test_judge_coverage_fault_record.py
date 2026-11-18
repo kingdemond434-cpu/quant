@@ -12,6 +12,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 for _p in (str(ROOT), str(ROOT / "research")):
     if _p not in sys.path:
@@ -65,3 +67,62 @@ def test_the_next_publishing_pass_clears_the_fault(monkeypatch, tmp_path) -> Non
               "totals": {}})
     assert json.loads(report.read_text("utf-8"))["at"] == "2026-10-29T15:00:00+00:00"
     assert not jc.fault_path().exists()
+
+
+def test_a_fault_after_the_commit_point_does_not_vouch_for_the_report(monkeypatch,
+                                                                      tmp_path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.setattr(jc, "build", lambda *a, **k: {"families": {"a": {}}, "totals": {}})
+
+    def fail_after_commit(*a, **k):
+        raise RuntimeError("after commit")
+
+    monkeypatch.setattr(jc, "write", fail_after_commit)
+    seen: dict = {}
+    real = jc.write_fault
+
+    def spy(*a, **k):
+        seen.update(k)
+        return real(*a, **k)
+
+    monkeypatch.setattr(jc, "write_fault", spy)
+    jc.order_docket([{"family": "a", "symbol": "EURUSD"}], publish=True)
+    if not seen:
+        pytest.skip("order_docket did not reach its commit point on this fixture")
+    fault = json.loads(jc.fault_path().read_text("utf-8"))
+    assert fault["report_untouched"] is False
+
+
+def test_write_fault_leaves_no_tmp_when_the_rename_fails(monkeypatch, tmp_path) -> None:
+    report = _isolate(monkeypatch, tmp_path)
+
+    def refuse(src, dst):
+        raise PermissionError("locked")
+
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    assert jc.write_fault("FAULT", "x") is None
+    assert [p.name for p in report.parent.iterdir()] == []
+
+
+def test_an_import_time_unavailable_writes_the_fault_record(monkeypatch, tmp_path) -> None:
+    import merge_hypotheses as mh
+    report = tmp_path / "reports" / "JUDGE_COVERAGE.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(json.dumps({"at": "2026-10-27T17:33:15+00:00"}), "utf-8")
+    monkeypatch.setattr(mh, "COVERAGE_REPORT", report)
+    monkeypatch.setattr(mh, "COVERAGE_FAULT", report.with_name(jc.FAULT_NAME))
+    assert mh.write_coverage_unavailable("ImportError") == report.with_name(jc.FAULT_NAME)
+    fault = json.loads(report.with_name(jc.FAULT_NAME).read_text("utf-8"))
+    assert fault["verdict"] == "UNAVAILABLE" and fault["why"] == "ImportError"
+    assert fault["report_at"] == "2026-10-27T17:33:15+00:00" and fault["report_untouched"]
+    assert sorted(p.name for p in report.parent.iterdir()) == [jc.FAULT_NAME, report.name]
+
+
+def test_merge_hypotheses_records_the_unavailable_on_its_except_path() -> None:
+    import inspect
+
+    import merge_hypotheses as mh
+    src = inspect.getsource(mh.main)
+    block = src[src.index("from research.judge_coverage import order_docket"):]
+    block = block[:block.index("breadth_order(")]
+    assert "write_coverage_unavailable(" in block

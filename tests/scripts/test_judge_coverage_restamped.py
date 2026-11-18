@@ -94,3 +94,17 @@ def test_a_fault_older_than_the_table_is_history(fence, tmp_path):
         "at": (now - timedelta(minutes=70)).isoformat(timespec="seconds"),
         "verdict": "FAULT", "why": "old"}), "utf-8")
     assert fence.judge(p, require_state=True, now=now)["verdict"] == "PASS"
+
+
+@pytest.mark.parametrize("body", [
+    "{not json",
+    json.dumps(["a", "list"]),
+    json.dumps({"verdict": "FAULT", "why": "x"}),
+    json.dumps({"at": "yesterday-ish", "verdict": "FAULT", "why": "x"}),
+])
+def test_a_corrupt_or_undated_fault_record_is_never_read_as_absent(fence, tmp_path, body):
+    now = datetime.now(tz=UTC)
+    p = _report(tmp_path, now - timedelta(minutes=10), now - timedelta(minutes=10))
+    (tmp_path / "JUDGE_COVERAGE_FAULT.json").write_text(body, "utf-8")
+    doc = fence.judge(p, require_state=True, now=now)
+    assert doc["verdict"] == "FAIL" and "intake_fault" in doc["why"]
