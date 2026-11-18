@@ -2445,6 +2445,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # `enrol_clocks` was raised -- a cap below an organ's budget truncates it at the same prefix.
     "experiment_spine": 700,
     "certificate_truth": 150,
+    # REBALANCE INTERVAL is report-only: a few JSON reads, then a circular block bootstrap
+    # (N_BOOT x 5 seeds x 7 simulations) over a window capped at MAX_WINDOW_H = 2,016 h --
+    # measured ~27 s at the cap with seven sleeves. Without an entry it ran on the 720 s
+    # default; the cap sits well above the measured cost.
+    "rebalance_interval": 240,
     # Each standing battery stops itself at --budget-s 600 (it starts no organ it cannot finish
     # inside what is left); the cap sits above that so a rotation is never cut at the same prefix
     # every hour, which would starve the tail of the roster permanently.

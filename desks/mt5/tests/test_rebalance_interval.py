@@ -210,7 +210,7 @@ def test_trade_is_booked_at_exit_not_entry() -> None:
     rows = [{"entry_time": (start + timedelta(hours=1)).isoformat(),
              "exit_time": (start + timedelta(hours=30)).isoformat(), "r_multiple": 1.0},
             {"entry_time": (start + timedelta(hours=2)).isoformat(), "r_multiple": 9.0}]
-    tr, no_exit, _stops, _ = RI.forward_trades(rows, start)
+    tr, no_exit, _stops = RI.forward_trades(rows, start)
     assert no_exit == 1 and tr == [(start + timedelta(hours=30), 1.0)]
     grid = RI.hourly_returns({"a": tr}, start, NOW)
     assert grid[30] == {"a": RI.RISK_UNIT} and grid[1] == {}
@@ -251,12 +251,12 @@ def test_scalp_schema_on_broker_clock() -> None:
          "closed_at": (start + timedelta(hours=4)).isoformat(), "r": 1.0},
         {"opened_at": (start + timedelta(hours=5)).isoformat(),
          "closed_at": (start + timedelta(hours=7)).isoformat(), "r": -1.0}]
-    tr, no_exit, _s, needs = RI.forward_trades(rows, start, 3.0)
-    assert not needs and no_exit == 0
+    tr, no_exit, _s = RI.forward_trades(rows, start, 3.0)
+    assert no_exit == 0
     assert tr == [(start + timedelta(hours=4), -1.0)]
-    # no stamped offset -> the desk's own (0.0 today): rows read as UTC, never refused
-    tr0, _n, _s0, needs0 = RI.forward_trades(rows, start, None)
-    assert needs0 is False and len(tr0) == 2
+    # no stamped offset -> rows read as UTC (0.0), never refused
+    tr0, _n, _s0 = RI.forward_trades(rows, start, None)
+    assert len(tr0) == 2
     assert RI.broker_offset("sc", [{"sleeves": {"sc": {"broker_offset_h": 3.0}}}]) == 3.0
 
 
@@ -315,3 +315,58 @@ def test_stop_needs_five_rows(tmp_path: Path) -> None:
     doc = RI.build(NOW, **w)
     c = doc["symbols"]["XAUUSD"]["gold_a"]
     assert c["status"] == RI.UNMEASURED and "fewer than 5" in c["why"]
+
+
+def test_leg_has_a_budget_entry_and_the_window_is_capped(tmp_path: Path) -> None:
+    """SF1: the hourly leg is budgeted, and a book older than the cap is read on the cap."""
+    import re
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    table = src[src.index("LEG_BUDGET_SEC: dict[str, int] = {"):]
+    table = table[:table.index("\n}\n")]
+    m = re.search(r'"rebalance_interval":\s*([0-9_]+)', table)
+    assert m is not None, "rebalance_interval has no LEG_BUDGET_SEC entry"
+    assert int(m.group(1).replace("_", "")) > 0
+    assert RI.MIN_HOURS <= RI.MAX_WINDOW_H
+    old = NOW - timedelta(days=200)
+    paths = _world(tmp_path)
+    doc_s = json.loads(paths["sleeves_path"].read_text())
+    for row in doc_s["sleeves"]:
+        row["forward_start"] = old.isoformat()
+    paths["sleeves_path"].write_text(json.dumps(doc_s))
+    sd = paths["shadow_dir"]
+    (sd / "ledger_gold_a.json").write_text(json.dumps(_ledger(1, old, n_days=200)))
+    (sd / "ledger_fx_b.json").write_text(json.dumps(_ledger(2, old, n_days=200)))
+    doc = RI.build(NOW, **paths)
+    assert doc["rules"]["max_window_h"] == RI.MAX_WINDOW_H
+    assert RI._ts(doc["common_forward_start"]) == NOW - timedelta(hours=RI.MAX_WINDOW_H)
+    assert doc["hours"] <= RI.MAX_WINDOW_H + 1
+
+
+def test_no_metatrader5_import_and_no_dead_offset_guard() -> None:
+    """SF2: the report-only leg never imports MetaTrader5; forward_trades returns 3 fields."""
+    src = (DESK / "research" / "rebalance_interval.py").read_text("utf-8")
+    assert "MetaTrader5" not in src and "needs_off" not in src
+    assert not hasattr(RI, "_desk_offset")
+    assert len(RI.forward_trades([], NOW)) == 3
+
+
+def test_pruned_sleeve_does_not_hold_the_common_window_short(tmp_path: Path) -> None:
+    """SF3: a late-starting sleeve pruned for coverage must not set the common start."""
+    paths = _world(tmp_path)
+    late = NOW - timedelta(days=10)
+    doc_s = json.loads(paths["sleeves_path"].read_text())
+    doc_s["sleeves"].append({"name": "late_c", "symbol": "XAUUSD", "status": "LIVE",
+                             "risk_frac": 0.01, "forward_start": late.isoformat()})
+    paths["sleeves_path"].write_text(json.dumps(doc_s))
+    # one day of rows out of ten: silent, so it is pruned
+    (paths["shadow_dir"] / RI.ledger_name("late_c")).write_text(
+        json.dumps(_ledger(3, late, n_days=1)))
+    doc = RI.build(NOW, **paths)
+    c = next(r for r in doc["sleeves"] if r["sleeve"] == "late_c")
+    assert c["status"] == RI.UNMEASURED and "ledger silent" in c["why"]
+    # the window is the two survivors' 30 days, not the pruned sleeve's 10 (< MIN_HOURS)
+    assert RI._ts(doc["common_forward_start"]) == FS
+    assert doc["status"] == RI.PARTIAL and doc["n_measured_sleeves"] == 2
+    for name in ("gold_a", "fx_b"):
+        row = next(r for r in doc["sleeves"] if r["sleeve"] == name)
+        assert row["status"] == RI.MEASURED
