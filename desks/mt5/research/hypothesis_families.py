@@ -1252,7 +1252,8 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
         return out, summary(doc), Pending(children, doc, report_path, ledger, identity_fn)
     except Exception as exc:
-        return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
+        # The type only: this block is published in merge_report.json["hypothesis_families"].
+        return rows, {"status": f"FAILED: {type(exc).__name__}"}, None
     finally:
         _RULE_CACHE = None
 

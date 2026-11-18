@@ -1117,7 +1117,7 @@ def main() -> int:
               f"rules -> {families.get('l2_families')} families, k_eff {families.get('k_eff')}; "
               f"intake {_in.get('by_status')} -> {_in.get('reaimed')} re-aimed (0 removed)")
     except Exception as exc:
-        families = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        families = {"status": f"FAILED: {type(exc).__name__}"}   # type only: published
         print(f"   families census unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
     # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
@@ -1266,7 +1266,7 @@ def main() -> int:
         try:
             families["commit"] = families_pending.commit(rows_out)
         except Exception as exc:
-            families["commit"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+            families["commit"] = {"status": f"FAILED: {type(exc).__name__}"}   # type only
     # THE SHARED COVERAGE MAP AND THE NOVELTY REPORT -- only after the docket is durable, so the
     # map every producer reads next pass describes exactly the docket that exists, and the steer
     # ledger never names a child the written docket does not hold.
