@@ -234,6 +234,55 @@ DESK_HOSTS: tuple[str, ...] = ("vmi3571445",)
 UNVERIFIABLE = "UNVERIFIABLE (old-format host stamp: no machine_id)"
 
 
+#: ORGANS NO PASS MAY ATTEST (2026-11-18). Each name maps to why. A row for one of these was
+#: dropped on LIVE on purpose -- task:MT5-FTMO-Allocator under audit HOLD (3d2ffd653, 74492b47f)
+#: -- and came back four times: the box's full pass re-appended it, `--only-missing` re-minted it
+#: because the registry still declares the task, and the PR conflict resolver copied it into
+#: every PR whose monolith still had it (#1142, #1147). Listing it here is the one place that
+#: keeps it out; remove the entry when the hold is lifted.
+HELD_FILE = "runtime_state_held.json"
+
+
+def held_organs(paths: Paths) -> dict[str, str]:
+    """{organ: why} from HELD_FILE beside the monolith; none when absent or unreadable."""
+    doc = _read_json(paths.out_json.parent / HELD_FILE)
+    held = doc.get("held") if isinstance(doc, dict) else None
+    return {str(k): str(v) for k, v in held.items()} if isinstance(held, dict) else {}
+
+
+def prune_sidecars(paths: Paths) -> list[dict[str, str]]:
+    """Delete each sidecar that can only fail `check_runtime_attestation` or re-add a held row,
+    and say which and why. SELF-HEAL (2026-11-18): a copied, unstamped row turned quality red on
+    every PR that carried it until a session noticed; every pass now removes it. A sidecar is
+    pruned when it is unreadable or names no organ, its file name is not `sidecar_name(organ)`,
+    it carries no `measured_on` / `only_missing` stamp, or its organ is held. A removed row's
+    organ, if the registry still declares it, is re-minted correctly by the next
+    `--only-missing` pass; nothing else about a sidecar is decided here."""
+    out: list[dict[str, str]] = []
+    if not paths.sidecars.is_dir():
+        return out
+    held = held_organs(paths)
+    for f in sorted(paths.sidecars.glob("*.json")):
+        doc = _read_json(f)
+        organ = doc.get("organ") if isinstance(doc, dict) else None
+        if not isinstance(doc, dict) or not isinstance(organ, str) or not organ:
+            why = "unreadable or names no organ"
+        elif f.name != sidecar_name(organ):
+            why = f"misnamed for {organ} (want {sidecar_name(organ)})"
+        elif not doc.get("measured_on") or not isinstance(doc.get("only_missing"), dict):
+            why = f"{organ}: no measured_on / only_missing stamp (copied, not minted)"
+        elif organ in held:
+            why = f"{organ}: held -- {held[organ]}"
+        else:
+            continue
+        try:
+            f.unlink()
+        except OSError as exc:
+            why += f" -- NOT removed ({type(exc).__name__})"
+        out.append({"file": f.name, "why": why})
+    return out
+
+
 def read_sidecars(paths: Paths) -> list[dict[str, Any]]:
     """Every well-formed sidecar row, in file-name order. A malformed file is skipped here and
     named by `scripts/check_runtime_attestation.py`, which fails on it."""
@@ -705,6 +754,11 @@ def _trim(doc: dict[str, Any], only: list[dict[str, Any]] | None = None) -> dict
 def attest(paths: Paths | None = None, budget_s: float = 180.0) -> dict[str, Any]:
     p = paths or Paths.at()
     rows, scope = organ_rows(p, budget_s)
+    held = held_organs(p)
+    if held:
+        scope["held"] = sorted(o for o in held if any(r["organ"] == o for r in rows))
+        rows = [r for r in rows if r["organ"] not in held]
+        scope["attested"] = len(rows)
     census = {s: sum(1 for r in rows if r["state"] == s) for s in STATES}
     host = host_identity(p)
     doc: dict[str, Any] = {
@@ -805,7 +859,8 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     doc: dict[str, Any] = _doc
     have = {str(r.get("organ")) for r in doc["organs"] if isinstance(r, dict)}
     rows, _scope = organ_rows(paths, budget_s)
-    added = [r for r in rows if str(r["organ"]) not in have]
+    held = held_organs(paths)
+    added = [r for r in rows if str(r["organ"]) not in have and str(r["organ"]) not in held]
     if not added:
         return {"doc": doc, "added": []}
     # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off
@@ -933,6 +988,8 @@ def main(argv: list[str] | None = None) -> int:
                          "ratchet are left untouched (run on a FULL tree)")
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.root))
+    for gone in prune_sidecars(paths):
+        print(f"runtime_attestation: pruned sidecar {gone['file']}: {gone['why']}")
     if a.only_missing:
         try:
             res = attest_only_missing(paths, budget_s=float(a.budget_s))
