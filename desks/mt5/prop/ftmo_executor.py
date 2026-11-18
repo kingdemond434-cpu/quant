@@ -71,6 +71,8 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import gold_oco as _oco  # noqa: E402
+
 from prop import ftmo_follower as _fw  # noqa: E402
 
 LANE = "ftmo"
@@ -429,6 +431,52 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
     doc["actions"].append(act)
 
 
+def _gold_against_today(p: Any, server_epoch: float) -> str | None:
+    """Why this lane's own gold position must be flattened at once: it was opened today against
+    the day's gold direction (gold_oco rule 7, `positions_to_flatten`, the follower's own rule).
+    None for a non-gold position, an unreadable direction state (the follower's reading too: the
+    lock's gate already refused new legs) or no server clock."""
+    if str(getattr(p, "symbol", "")).upper() != _oco.SYMBOL or not server_epoch:
+        return None
+    date = _oco.trading_date(float(server_epoch))
+    entry, ewhy = _oco.day_entry(date)
+    if ewhy is not None:
+        return None
+    t = getattr(p, "time", None)
+    row = {"id": int(p.ticket), "side": _oco.side_of(_side_of(int(getattr(p, "type", -1)))),
+           "opened_date": _oco.trading_date(float(t)) if isinstance(t, (int, float))
+           and not isinstance(t, bool) and t > 0 else None}
+    if _oco.positions_to_flatten(entry, [row], date=date):
+        return (f"it is against today's gold direction ({(entry or {}).get('direction')}, first "
+                f"fill on {(entry or {}).get('first_fill_lane')}): flattened at once")
+    return None
+
+
+def _gold_lock_refusal(mt5: Any, side: str, server_epoch: float, holder: str
+                       ) -> tuple[str | None, str | None, str | None]:
+    """(why refused, account key, trading date) for a gold leg, UNDER the placement lock: the
+    cross-account gold direction lock every gold lane runs (mt5desk/gold_oco.py). The account's
+    gold state is republished first (every magic, so the follower's gold and this lane's are one
+    book to the other lanes, and a fill here claims the day's direction), then `gate` decides --
+    in the default fallback mode no FTMO gold leg is placed before E8's first fill of the day, and
+    only in E8's direction; GOLD_OCO_MODE.json "ftmo": "oco" is the visible switch that lets FTMO
+    lead. Fails closed on anything it cannot read."""
+    if not server_epoch:
+        return "gold OCO: no server clock this pass; fail closed", None, None
+    try:
+        key = _oco.mt5_oco_key(mt5)
+    except _oco.IdentityUnavailable as exc:
+        return f"gold OCO identity: {exc}; fail closed", None, None
+    date = _oco.trading_date(float(server_epoch))
+    sync = _oco.sync_lane("ftmo", key, lambda: _oco.mt5_gold_rows(mt5), date=date,
+                          holder=holder)
+    if not sync.get("published"):
+        return (f"gold OCO: this account's gold state was not republished under the lock "
+                f"({sync.get('why')}); fail closed"), key, date
+    v = _oco.gate("ftmo", side, key=key, date=date)
+    return (None if v.allowed else v.why), key, date
+
+
 def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *, cet: str,
            armed: bool, now: datetime, server_epoch: float) -> None:
     """Time exits, the both-ways opposite rule and the shared stop management (`protect`) for
@@ -448,6 +496,11 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
                 continue
             if _xa.opposite_block(book, p.symbol, side, account=acct) is not None:
                 why = f"the {acct} account now holds the opposite side of {p.symbol}"
+        if why is None:
+            why = _gold_against_today(p, server_epoch)
+            if why is not None:
+                doc["alerts"].append(f"FTMO gold {side} #{p.ticket} against today's gold "
+                                     f"direction: flattened")
         due = exit_epoch(p)
         if due is None:
             # THE HOLD KEPT AT THE SEND (audit 2026-10-29): a broker that rewrote or cut the
@@ -841,6 +894,12 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                     why = (f"cross-firm copy: the {acct} account holds the same {same} on {sym}; "
                            f"the cross-firm copy override is switched off")
                     break
+        gold_key, gold_date = None, None
+        if why is None and sym == _oco.SYMBOL:
+            why, gold_key, gold_date = _gold_lock_refusal(
+                mt5, side, server_epoch, holder=f"ftmo_executor:{col}")
+            if why is not None:
+                rail = _oco.RAIL
         if why is None:
             live_p, live_o = mt5.positions_get(), mt5.orders_get()
             if live_p is None or live_o is None:
@@ -915,6 +974,12 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                 _xa.bounded(lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
                             what="ftmo_executor publish")
+            if gold_key is not None and gold_date is not None:
+                # the fill claims the day's direction before the lock is released (gold_oco
+                # rule 1); never raises
+                after = _oco.sync_lane("ftmo", gold_key, lambda: _oco.mt5_gold_rows(mt5),
+                                       date=gold_date, holder=f"ftmo_executor:{col}:sent")
+                row["gold_oco_republished"] = bool(after.get("published"))
         code = getattr(res, "retcode", None)
         m = _COMMENT_RE.match(comment)
         if code in OK_CODES and m is not None and int(m.group(1)) > 0 and server_epoch:
