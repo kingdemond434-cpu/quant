@@ -33,7 +33,7 @@ def _board(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rows: list[dict]) ->
 
 @pytest.mark.parametrize("row,expected", [
     (_row("MT5-Forest-Korea"), True),
-    (_row("MT5-Dept-Data", lane="data"), True),
+    (_row("MT5-TickRecorder", lane="data"), False),
     (_row("MT5-AllocatorPulse", lane="money"), False),
     (_row("MT5-Forest-Korea", resident=False), False),
     (_row("MT5-Forest-Korea", verdict="FAILING"), False),
@@ -66,3 +66,11 @@ def test_dry_run_ends_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     out = ns.run(apply=False)
     assert calls == []
     assert out["acted"][0]["action"] == "would restart resident"
+
+
+def test_a_failed_end_is_a_failed_restart(monkeypatch: pytest.MonkeyPatch) -> None:
+    started: list[str] = []
+    monkeypatch.setattr(ns, "_end", lambda t: (False, "access denied"))
+    monkeypatch.setattr(ns, "_start", lambda t: (started.append(t), (True, "ok"))[1])
+    ok, why = ns._restart_resident("MT5-Forest-China")
+    assert ok is False and "end FAILED" in why and started == []

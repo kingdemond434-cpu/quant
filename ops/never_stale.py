@@ -28,7 +28,7 @@ A STUCK RESIDENT IS THE ONE EXCEPTION (Hourly pass 2026-11-18, the principal's s
 restart a 24/7 resident that died, so while a resident is alive but making nothing its trigger is
 REFUSED (0x800710E0) and `schtasks /run` is a no-op: the old remedy could never reach it, and the
 keep-alive silently masked a dead resident for weeks. For exactly that shape -- a resident
-(keep-alive trigger) in a research or data lane whose contracted artifact is STALE or absent --
+(keep-alive trigger) in the research lane whose contracted artifact is STALE or absent --
 this ends the task's instance and starts it again. Never a money, prop or ops task, never a
 periodic one, never a task without a contract to prove it is stuck.
 
@@ -66,7 +66,10 @@ HEALTH_MAX_AGE_MIN = 90
 #: resurrected the exact reverters the principal spent the day killing.
 RESTARTABLE = {"STALE", "NO_ARTIFACT"}
 #: The lanes whose stuck residents may be ended and restarted (see the module docstring).
-RESIDENT_RESTART_LANES = frozenset({"research", "data"})
+#: Research only (audit HOLD MF1, 2026-11-18): the one data-lane keep-alive is MT5-TickRecorder,
+#: judged on its newest tick, which is legitimately STALE all weekend -- restarting it every pass
+#: until Sunday open would put a kill next to the first tape writes of the week.
+RESIDENT_RESTART_LANES = frozenset({"research"})
 
 #: Result codes whose cure is a registration change, not a restart. Named so the report carries
 #: the diagnosis rather than the code.
@@ -264,15 +267,19 @@ def _end(task: str) -> tuple[bool, str]:
 
 
 def resident_restartable(row: dict[str, Any]) -> bool:
-    """A stuck 24/7 resident in a research or data lane, proved stuck by its own contract."""
+    """A stuck 24/7 resident in the research lane, proved stuck by its own contract."""
     return (bool(row.get("resident")) and row.get("lane") in RESIDENT_RESTART_LANES
             and str(row.get("verdict") or "") in RESTARTABLE and bool(row.get("artifact")))
 
 
 def _restart_resident(task: str) -> tuple[bool, str]:
     ended, why_end = _end(task)
+    if not ended:
+        # A resident that could not be ended is still holding its slot, so a start would be
+        # refused: report the restart as FAILED rather than as a start that "worked".
+        return False, f"end FAILED: {why_end}; not started"
     ok, why_run = _start(task)
-    return ok, f"end: {'ok' if ended else why_end}; run: {why_run}"
+    return ok, f"end: ok; run: {why_run}"
 
 
 def run(apply: bool) -> dict:
@@ -389,7 +396,7 @@ def run(apply: bool) -> dict:
                               "if they stopped. Not broken -- unwatched. Add each to "
                               "ops/organ_contract.CONTRACTS."),
         "authority": ("This watchdog may START a scheduled task, and END then START a stuck "
-                      "research/data resident proved stale by its own contract; nothing else. "
+                      "research-lane resident proved stale by its own contract; nothing else. "
                       "It never edits a task, kills any other process, rewrites config or "
                       "re-enables a DISABLED task -- "
                       "a disabled task is a DECISION, and undoing those would resurrect the very "
