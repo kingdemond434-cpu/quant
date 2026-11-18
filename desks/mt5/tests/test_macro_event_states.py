@@ -103,7 +103,7 @@ class Fake:
                 return code, b""
         base = f"{parts.scheme}://{parts.netloc}{parts.path}"
         for sid, body in self.pages.items():
-            if base == me.SOURCES[sid].url or (sid == "eia_api" and base == me.EIA_API):
+            if (base == me.EIA_API) if sid == "eia_api" else (base == me.SOURCES[sid].url):
                 return 200, body
         return 404, b""
 
@@ -411,7 +411,8 @@ def test_weekly_change_skips_missing_weeks() -> None:
 def test_full_pass_cells_only_on_admitted_symbols(tmp_path: Path) -> None:
     paths = _paths(tmp_path)
     minted: list[dict[str, Any]] = []
-    doc = _run(paths, Fake(_pages()), minted=minted)
+    # read after the last synthetic week's release, as on the box
+    doc = _run(paths, Fake(_pages()), minted=minted, now=datetime(2026, 11, 20, 12, tzinfo=UTC))
     assert doc["sources"]["eia_gas_storage"]["status"] == "OK"
     assert doc["sources"]["tic_foreign_flows"]["status"] == "OK"
     assert doc["sources"]["usda_export_sales"]["status"] == "OK"
