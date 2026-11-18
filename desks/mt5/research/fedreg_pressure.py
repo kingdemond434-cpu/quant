@@ -65,6 +65,7 @@ for an old document may carry corrections made after it printed.
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import math
 import os
@@ -197,6 +198,8 @@ MISSED_GROWTH = {
 @dataclass(frozen=True)
 class Paths:
     desk: Path = DESK
+    #: the repo root whose data/ the issue board reads; None = two levels above `desk`
+    root: Path | None = None
 
     @property
     def store(self) -> Path:
@@ -217,6 +220,12 @@ class Paths:
     @property
     def series(self) -> Path:
         return self.desk / "data" / "lake" / "series"
+
+    @property
+    def alarm(self) -> Path:
+        """Read by research/issue_board.py ALARMS: a refused or mis-shaped pass reaches the
+        board, not only this organ's own report."""
+        return (self.root or self.desk.parent.parent) / "data" / "FEDREG_ALARM.txt"
 
     @property
     def universe(self) -> Path:
@@ -761,33 +770,70 @@ def effective_at(d: date) -> datetime:
     return datetime(d.year, d.month, d.day, *EFFECTIVE_LOCAL, tzinfo=NY).astimezone(UTC)
 
 
+def _first_rule_pages(r: Mapping[str, Any]) -> int | None:
+    """Page length as FIRST SEEN (the point-in-time value), never the latest revision."""
+    v = r.get("page_length")
+    return v if r.get("type") == "RULE" and isinstance(v, int) else None
+
+
 def build_clock(store: Mapping[str, Mapping[str, Any]], now: datetime,
                 instruments: list[str], *, source_status: str) -> dict[str, Any]:
     """Significant final rules with an effective date in [now - CLOCK_BACK_DAYS, future): one
-    calendar row each, on the latest known effective date (a delayed rule moves)."""
+    calendar row each, on the latest known effective date (a delayed rule moves).
+
+    NO HINDSIGHT. Selection reads the FIRST-SEEN type / significant flag / page length, and the
+    size threshold for each rule is the p90 over final rules KNOWN BEFORE that rule became known
+    (MIN_SIZE_SAMPLE of them, or the size route is closed for it). `at` is never earlier than
+    the moment the market could know the rule (its available_time, or the revision that moved
+    its effective date): an interim, direct-final or retroactive rule that binds on or before
+    publication is clamped to that moment and counted, never placed in the past."""
     thr = size_threshold(store)
     today = now.astimezone(NY).date()
     lo = today - timedelta(days=CLOCK_BACK_DAYS)
+    known: list[tuple[datetime, int]] = sorted(
+        (t, pg) for r in store.values()
+        if (pg := _first_rule_pages(r)) is not None
+        and (t := _t(r.get("available_time"))) is not None)
+    times = [t for t, _ in known]
     events: list[dict[str, Any]] = []
+    n_clamped = 0
     for r in store.values():
         last = r.get("last") or r
-        if last.get("type") != "RULE":
+        if r.get("type") != "RULE":
             continue
         eff = _day(last.get("effective_on"))
         if eff is None or eff < lo:
             continue
-        pages = last.get("page_length")
-        by_flag = last.get("significant") is True
-        by_size = thr is not None and isinstance(pages, int) and pages >= thr
+        avail = _t(r.get("available_time"))
+        if avail is None:
+            continue
+        knowable = avail
+        if last.get("effective_on") != r.get("effective_on"):
+            rev = _t(r.get("revision_time"))
+            knowable = max(avail, rev) if rev is not None else now
+        pages = r.get("page_length")
+        prior = sorted(pg for _, pg in known[:bisect.bisect_left(times, avail)])
+        thr_pit = (prior[min(len(prior) - 1, math.ceil(SIZE_QUANTILE * len(prior)) - 1)]
+                   if len(prior) >= MIN_SIZE_SAMPLE else None)
+        by_flag = r.get("significant") is True
+        by_size = thr_pit is not None and isinstance(pages, int) and pages >= thr_pit
         if not (by_flag or by_size):
             continue
+        at = effective_at(eff)
+        clamped = at < knowable
+        if clamped:
+            at = knowable
+            n_clamped += 1
         events.append({
-            "at": _iso(effective_at(eff)), "effective_on": eff.isoformat(),
+            "at": _iso(at), "effective_on": eff.isoformat(),
             "effective_on_first_seen": r.get("effective_on"),
+            "at_clamped_to_knowable": clamped, "knowable_at": _iso(knowable),
             "kind": "fedreg_rule_effective", "name": str(r.get("title") or "")[:160],
-            "document_number": r["document_number"], "agencies": last.get("agencies") or [],
-            "page_length": pages, "significant": last.get("significant"),
-            "why": "significant_flag" if by_flag else f"page_length>=p90 ({thr})",
+            "document_number": r["document_number"], "agencies": r.get("agencies") or [],
+            "page_length": pages, "significant": r.get("significant"),
+            "why": ("significant_flag" if by_flag
+                    else f"page_length>=p90 of rules known before it ({thr_pit})"),
+            "selection": "point_in_time",
             "publication_date": r.get("publication_date"),
             "available_time": r.get("available_time"), "instruments": list(instruments),
             "upcoming": eff >= today, "source": "federalregister.gov"})
@@ -799,6 +845,9 @@ def build_clock(store: Mapping[str, Mapping[str, Any]], now: datetime,
                  "final-rule length); `at` is 09:30 New York on the effective date, the first "
                  "US cash session the rule binds"),
         "size_threshold_pages": thr, "n_events": len(events),
+        "n_clamped_to_knowable": n_clamped,
+        "selection": ("point-in-time: first-seen type/flag/pages, p90 over rules known before "
+                      "each rule; `at` clamped to when the rule was knowable"),
         "n_upcoming": sum(1 for e in events if e["upcoming"]), "events": events,
         "consumers": ["research/event_response_atlas.py (load_events ground fedreg_effective)"],
         "attribution": TERMS_EVIDENCE["attribution"]}
@@ -927,6 +976,25 @@ def collect(paths: Paths, state: dict[str, Any], store: dict[str, dict[str, Any]
     return rec
 
 
+#: Pass outcomes that page the issue board: the API answered in a shape this organ does not
+#: recognise, or the host stopped it. Anything else clears the alarm.
+ALARM_STATUSES = ("METADATA_MISMATCH", "UNPARSEABLE", "HARD_STOP", "ROBOTS_REFUSED")
+
+
+def _alarm(paths: Paths, status: str, rec: Mapping[str, Any]) -> None:
+    try:
+        if status in ALARM_STATUSES:
+            paths.alarm.parent.mkdir(parents=True, exist_ok=True)
+            paths.alarm.write_text(
+                f"fedreg_pressure {status} at {rec.get('why') or status}\n"
+                "repair: read reports/FEDREG_PRESSURE.json fetch.why; fix the parser or the "
+                "access fence, never loosen the check\n", "utf-8")
+        elif paths.alarm.exists():
+            paths.alarm.unlink()
+    except OSError:
+        pass
+
+
 def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
         get: Getter | None = None, now: datetime | None = None,
         sleep: Callable[[float], None] = time.sleep,
@@ -952,6 +1020,7 @@ def run(paths: Paths = Paths(), *, fetch: bool = True, dry_run: bool = False,
             rec["missed_growth"] = MISSED_GROWTH["blocked"]
         if not dry_run:
             _atomic(paths.state, state)
+            _alarm(paths, status, rec)
     daily = daily_aggregate(store)
     series = build_series(store, daily)
     symbols, sym_skipped = allowed_symbols(paths)

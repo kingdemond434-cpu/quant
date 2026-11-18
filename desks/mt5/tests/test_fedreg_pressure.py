@@ -82,7 +82,7 @@ def _paths(tmp_path: Path, symbols: tuple[str, ...] = ("US500", "US2000", "US30"
     (tmp_path / "data" / "universe").mkdir(parents=True)
     uni = {s: {"asset_class": "Indices"} for s in symbols}
     (tmp_path / "data" / "universe" / "universe.json").write_text(json.dumps(uni), "utf-8")
-    return fr.Paths(desk=tmp_path)
+    return fr.Paths(desk=tmp_path, root=tmp_path / "root")
 
 
 def _run(paths: fr.Paths, fake: FakeFR, now: datetime = T0,
@@ -352,3 +352,65 @@ def test_window_over_the_pagination_cap_is_halved() -> None:
     rows = fr.pull_window(c, date(2026, 10, 1), date(2026, 10, 31))
     assert len(calls) > 1 and rows
     assert all((date.fromisoformat(b) - date.fromisoformat(a)).days <= 31 for a, b in calls)
+
+
+# ------------------------------------------------- the clock carries no hindsight (audit SFs)
+def _rule(n: str, avail: str, eff: str, pages: int, *, sig: bool | None = None,
+          last: dict[str, Any] | None = None, rev: str | None = None) -> dict[str, Any]:
+    first = {"document_number": n, "type": "RULE", "publication_date": avail[:10],
+             "page_length": pages, "significant": sig, "effective_on": eff,
+             "agencies": ["epa"], "title": n}
+    r = {**first, "available_time": avail, "last": {**first, **(last or {})}}
+    if rev:
+        r["revision_time"] = rev
+    return r
+
+
+def test_clock_clamps_rules_that_bind_before_they_were_knowable() -> None:
+    # an interim final rule published the 10th, effective (retroactively) the 1st
+    store = {"A": _rule("A", "2026-11-10T23:59:00+00:00", "2026-11-01", 5, sig=True)}
+    c = fr.build_clock(store, T0, ["US500"], source_status="OK")
+    (e,) = c["events"]
+    assert e["at_clamped_to_knowable"] is True and c["n_clamped_to_knowable"] == 1
+    assert e["at"] == "2026-11-10T23:59:00+00:00" >= e["available_time"]
+
+
+def test_clock_moved_effective_date_is_knowable_only_from_its_revision() -> None:
+    store = {"B": _rule("B", "2026-10-01T23:00:00+00:00", "2026-12-01", 5, sig=True,
+                        last={"effective_on": "2026-11-05"},
+                        rev="2026-11-12T12:00:00+00:00")}
+    (e,) = fr.build_clock(store, T0, ["US500"], source_status="OK")["events"]
+    assert e["effective_on"] == "2026-11-05" and e["at_clamped_to_knowable"] is True
+    assert e["at"] == "2026-11-12T12:00:00+00:00"
+
+
+def test_clock_selection_is_point_in_time() -> None:
+    from datetime import timedelta as td
+    base = datetime(2025, 1, 1, 23, 0, tzinfo=UTC)
+    store: dict[str, Any] = {}
+    # 60 small rules known early, then one 30-page rule, then 60 big ones that would lift a
+    # whole-store p90 above it
+    for i in range(60):
+        store[f"s{i}"] = _rule(f"s{i}", (base + td(days=i)).isoformat(), "2020-01-01", 10)
+    store["X"] = _rule("X", (base + td(days=70)).isoformat(), "2025-03-20", 30)
+    for i in range(60):
+        store[f"b{i}"] = _rule(f"b{i}", (base + td(days=80 + i)).isoformat(), "2020-01-01", 500)
+    # a rule whose LATEST revision says significant but which was first seen as not
+    store["Y"] = _rule("Y", (base + td(days=75)).isoformat(), "2025-03-25", 1, sig=False,
+                       last={"significant": True})
+    c = fr.build_clock(store, datetime(2025, 6, 1, tzinfo=UTC), ["US500"], source_status="OK")
+    names = {e["document_number"] for e in c["events"]}
+    assert "X" in names and "Y" not in names
+    assert c["size_threshold_pages"] == 500                    # whole-store p90 would drop X
+    assert all(e["selection"] == "point_in_time" for e in c["events"])
+
+
+def test_mismatch_reaches_the_issue_board_and_clears(tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    fake = FakeFR(_docs(10, T0.date()), outside=True)
+    assert _run(paths, fake)["status"] == "METADATA_MISMATCH"
+    assert paths.alarm.exists() and "METADATA_MISMATCH" in paths.alarm.read_text("utf-8")
+    from research import issue_board as IB
+    assert "FEDREG_ALARM.txt" in {a[0] for a in IB.ALARMS}
+    fr._alarm(paths, "OK", {})
+    assert not paths.alarm.exists()

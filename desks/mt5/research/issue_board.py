@@ -201,6 +201,9 @@ ALARMS: tuple[tuple[str, str, str], ...] = (
      "recover"),
     ("SAMEDAY_ALARM.txt", "BLIND", "the same-day pipeline fence is breached"),
     ("FENCE_ALARM.txt", "BLIND", "a standing fence is breached"),
+    ("FEDREG_ALARM.txt", "BLIND",
+     "the Federal Register API answered in a shape fedreg_pressure does not recognise, or "
+     "the host stopped it"),
     ("PROMPT_PREFIX_ALARM.txt", "DEGRADED", "the prompt prefix drifted"),
     ("JUDGE_ALIVE_ALARM.txt", "STALLED",
      "the judge's sweep was killed for making no progress (or its watchdog is wedged) and no "
