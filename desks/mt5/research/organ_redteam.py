@@ -154,12 +154,15 @@ ARTIFACT_DIRS = ("desks/mt5/reports", "desks/mt5/data", "reports", "data", "docs
 #:   BROKER   (HOLD 2, MF1) importing MetaTrader5, at any depth (a helper that imports it counts):
 #:            the terminal is reached over C-level IPC that no socket or open event sees.
 #:            Outcome broker_refused.
-#:   NATIVE   (HOLD 2, SF a) ctypes.call_function always, and ctypes.dlopen of anything but
-#:            the running process (ctypes' own import) or a library inside the Python install
-#:            or site-packages -- those are RECORDED as native_seen and allowed, because Windows
-#:            wheels preload their own DLLs with ctypes.WinDLL at import. Outcome native_refused.
-#:            Measured 2026-11-18 on Linux: importing numpy, pandas and scipy.stats fires one
-#:            ctypes.dlopen(None) and no call_function, so all three still import.
+#:   NATIVE   (HOLD 2, SF a) ctypes.call_function always; ctypes.dlsym (a symbol lookup --
+#:            measured 2026-11-18: an ordinary foreign call such as CDLL(None).getpid() raises
+#:            NO call_function event, only dlopen and dlsym, so the lookup is where it is
+#:            stopped); and ctypes.dlopen of anything but the running process (ctypes' own
+#:            import) -- except a library inside the Python install or site-packages, whose
+#:            dlopen/dlsym is RECORDED as native_seen and allowed, because Windows wheels preload
+#:            their own DLLs with ctypes.WinDLL at import. Outcome native_refused. Measured the
+#:            same day on Linux: importing numpy, pandas and scipy.stats fires one
+#:            ctypes.dlopen(None), no dlsym and no call_function, so all three still import.
 #:
 #: Each refusal is appended to `_refused` in the sandbox as `kind<TAB>detail`, so an organ that
 #: swallows the PermissionError is still seen to have tried, and the outcome is classified from
@@ -257,6 +260,16 @@ def _install():
             record("spawn", event, SpawnRefused)
         if event == "ctypes.call_function":
             record("native", event, NativeRefused)
+        if event == "ctypes.dlsym":
+            # A plain foreign call (CDLL(None).system(...)) raises no call_function event: its
+            # only trace is this symbol lookup, so the lookup is where it is refused.
+            lib, sym = (args[0] if args else None), (args[1] if len(args) > 1 else "?")
+            lname = getattr(lib, "_name", None)
+            n = norm(lname) if isinstance(lname, str) else None
+            if n is not None and any(inside(n, d) for d in py_dirs):
+                record("native_seen", "ctypes.dlsym " + os.path.basename(n) + ":" + str(sym))
+                return
+            record("native", "ctypes.dlsym " + str(lname) + ":" + str(sym), NativeRefused)
         if event == "ctypes.dlopen":
             name = args[0] if args else None
             if name is None:

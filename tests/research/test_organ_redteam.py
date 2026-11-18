@@ -352,9 +352,11 @@ def test_hold2_sf_native_calls_are_refused_and_plain_ctypes_imports(tmp_path: Pa
         "plain.py": "import ctypes, numpy, pandas\nprint(ctypes.sizeof(ctypes.c_int))",
         "call.py": "import ctypes\nctypes.CDLL(None).getpid()",
         "load.py": "import ctypes\nctypes.CDLL('libc.so.6')",
+        "helper_call.py": "import ctypes\nctypes._CFuncPtr  # noqa\nimport _ctypes\n"
+                          "_ctypes.call_function(0, ())",
     })
     assert _go(repo, "plain.py")["outcome"] == rt.RAN_OK
-    for n in ("call.py", "load.py"):
+    for n in ("call.py", "load.py", "helper_call.py"):
         r = _go(repo, n)
         assert r["outcome"] == rt.NATIVE_REFUSED and r["exception"] == "NativeRefused", (n, r)
 
