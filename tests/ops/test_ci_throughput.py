@@ -116,6 +116,19 @@ def test_the_gate_keeps_one_waiting_run_per_pr() -> None:
     assert "cancel-in-progress: false" in top  # never cut off a gate that is merging
 
 
+def test_gate_rechecks_collapse_per_pr_and_skip_cancelled_triggers() -> None:
+    """A completed ci/release-gates run re-checks its PR in that PR's own waiting slot, and a
+    cancelled trigger (a queue drain) neither takes a runner nor replaces a waiting re-check."""
+    text = (WF / "audit-gate.yml").read_text(encoding="utf-8")
+    top = text.split("\njobs:", 1)[0]
+    assert "format('after-{0}'," in top and "workflow_run.pull_requests[0].number" in top
+    noise = top.split("}}-${{", 1)[1]
+    assert "github.event.workflow_run.conclusion == 'cancelled'" in noise  # cancel -> noise group
+    assert "'noise' || 'gate'" in noise
+    job = text.split("  after-checks:", 1)[1].split("    concurrency:", 1)[0]
+    assert "github.event.workflow_run.conclusion != 'cancelled'" in job  # skipped, no runner
+
+
 def test_release_gates_supersede_an_old_head() -> None:
     text = (WF / "release-gates.yml").read_text(encoding="utf-8")
     top = text.split("\njobs:", 1)[0]

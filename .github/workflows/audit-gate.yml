@@ -32,10 +32,20 @@ on:
 # newest waiting run sees everything the replaced one would have. A run for an unrelated label
 # waits in its own "noise" group, so it can never replace a waiting gate run (it skips its job
 # anyway). The job-level groups below are unchanged.
+#
+# RE-CHECKS COLLAPSE PER PR (2026-11-18: 317 after-checks runs sat queued, one per completed ci or
+# release-gates run, most of them fired by queue-drain cancels). A completed run on a PR waits in
+# that PR's own "after-N" group, so a newer re-check replaces the one still waiting (it reads the
+# same PR state when it starts). A CANCELLED trigger has nothing new to judge: it waits in the
+# noise group, so it can never replace a waiting gate run, and its job is skipped without a runner.
 concurrency:
   group: >-
-    audit-gate-run-${{ github.event.pull_request.number || github.event.workflow_run.head_sha
-    }}-${{ (github.event.action == 'labeled' && github.event.label.name != 'audit-clear')
+    audit-gate-run-${{ github.event.pull_request.number
+    || (github.event.workflow_run.pull_requests[0] && format('after-{0}',
+    github.event.workflow_run.pull_requests[0].number))
+    || github.event.workflow_run.head_sha
+    }}-${{ ((github.event.action == 'labeled' && github.event.label.name != 'audit-clear')
+    || github.event.workflow_run.conclusion == 'cancelled')
     && 'noise' || 'gate' }}
   cancel-in-progress: false
 
@@ -90,7 +100,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion != 'cancelled'
     concurrency:
       group: audit-gate-after-${{ github.event.workflow_run.head_sha }}
       cancel-in-progress: true
