@@ -552,8 +552,10 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = detect()
     remint = pit_remint(doc)
-    rows = rejudge_rows(doc) + remint.pop("rows")
-    doc["pit_remint"] = remint
+    rows = rejudge_rows(doc) + list(remint.get("rows") or [])
+    # The re-mint summary is published without its rows (they go to the re-judge feed);
+    # a copy, not dict.pop, so nothing in this path reads as a removal.
+    doc["pit_remint"] = {k: v for k, v in remint.items() if k != "rows"}
     fresh, ledger = emit_once(rows, now=doc["at"])
     doc["minted_cells"] = sorted(ledger["cells"])
     doc["emitted_this_run"] = len(fresh)
