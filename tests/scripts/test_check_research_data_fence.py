@@ -30,6 +30,9 @@ TREE: dict[str, str] = {
     "desks/mt5/mt5desk/__init__.py": "",
     GW: "LOT = 0.1\n",
 }
+#: every synthetic tree carries this checkout's replay_shadow: check() judges a tree by its own
+RS_FILE = "ops/release/replay_shadow.py"
+RS_SRC = (ROOT / RS_FILE).read_text("utf-8")
 SPAWN = "import subprocess\ndef f(c):\n    subprocess.run(c)\n"  # line 3 is the site
 
 
@@ -43,7 +46,7 @@ def _pins(*rows: tuple[str, int, str]) -> str:
 
 
 def _check(tmp_path: Path, edits: dict[str, str]) -> dict[str, object]:
-    files = {**TREE, fence.PINS: _pins(), **edits}
+    files = {**TREE, RS_FILE: RS_SRC, fence.PINS: _pins(), **edits}
     for rel, text in files.items():
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / rel).write_text(text, "utf-8")
@@ -137,7 +140,8 @@ def test_an_f_string_is_red(tmp_path: Path) -> None:
     ],
 )
 def test_a_resolved_listing_into_or_over_the_home_is_red(tmp_path: Path, src: str) -> None:
-    _red(tmp_path, {GW: src}, "lists")
+    """Into the home: a hit. Recursively over an ancestor: a dynamic site, red until pinned."""
+    _red(tmp_path, {GW: src}, "list")
 
 
 @pytest.mark.parametrize(
@@ -198,3 +202,55 @@ def test_a_tree_without_the_entry_points_fails_closed(tmp_path: Path) -> None:
 def test_main_prints_one_verdict_line(capsys: pytest.CaptureFixture[str]) -> None:
     assert fence.main([]) == 0
     assert capsys.readouterr().out.strip().splitlines()[-1].startswith("RESEARCH-DATA FENCE PASS")
+
+
+# ------------------------------------- the programs the money path RUNS (Auditor MF, 2026-11-18)
+
+ROW = 'TASK name="MT5-Prop" runs="desks/mt5/prop/prop_runner.py" lane="money"\n'
+PLANT = "from pathlib import Path\nD = Path('desks/mt5/research/data') / 'x.json'\n"
+
+
+def test_a_money_row_program_outside_the_closure_naming_the_home_is_red(tmp_path: Path) -> None:
+    _red(tmp_path, {RS.MANIFEST: ROW, "desks/mt5/prop/prop_runner.py": PLANT},
+         "a money-run program")  # fmt: skip
+
+
+def test_a_money_script_program_outside_the_closure_naming_the_home_is_red(
+    tmp_path: Path,
+) -> None:
+    _red(tmp_path, {"desks/mt5/scripts/tool.py": PLANT}, "a money-run program")
+
+
+def test_a_module_a_money_run_program_imports_is_scanned_too(tmp_path: Path) -> None:
+    _red(
+        tmp_path,
+        {
+            "desks/mt5/scripts/tool.py": "from helpers import reader\n",
+            "desks/mt5/helpers/__init__.py": "",
+            "desks/mt5/helpers/reader.py": PLANT,
+        },
+        "a money-run program",
+    )
+
+
+@pytest.mark.parametrize("where", ["desks/mt5/scripts/tool.py", "desks/mt5/prop/prop_runner.py"])
+def test_a_new_dynamic_site_in_a_money_run_program_is_red(tmp_path: Path, where: str) -> None:
+    _red(tmp_path, {RS.MANIFEST: ROW, where: SPAWN}, "unpinned dynamic site")
+
+
+def test_root_is_judged_by_its_own_replay_shadow(tmp_path: Path) -> None:
+    """--root DIR loads DIR's replay_shadow: an entry point only DIR declares is fenced."""
+    extra = "tools/extra_entry.py"
+    own = RS_SRC.replace("ENTRY_POINTS = (\n", f"ENTRY_POINTS = (\n    {extra!r},\n", 1)
+    assert own != RS_SRC
+    edits = {RS_FILE: own, extra: PLANT}
+    rep = _check(tmp_path, edits)
+    assert rep["ok"] is False and any("home" in v for v in rep["violations"]), rep  # type: ignore[attr-defined]
+    assert fence.main(["--root", str(tmp_path)]) == 1
+    # this checkout's rules do not see that entry point: the tree's own rules are what fenced it
+    assert fence.check(tmp_path, fence.RS)["ok"] is True
+
+
+def test_a_root_without_replay_shadow_fails_closed(tmp_path: Path) -> None:
+    rep = fence.check(tmp_path)
+    assert rep["ok"] is False and "cannot be loaded" in rep["violations"][0]

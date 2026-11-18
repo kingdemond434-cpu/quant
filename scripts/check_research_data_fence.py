@@ -10,8 +10,10 @@ home. This fence makes it a checked fact. It FAILS when:
   set ops/money_closure.txt pins) names the home or anything under it: a string literal, a
   constant fold of literals (os.path.join, Path / Path, `+`, an f-string's literal parts; a part
   that is not a literal is a wildcard), or a `__file__`-anchored path that resolves into it;
-- such a module lists a directory that resolves into the home, or lists an ancestor of it
-  recursively (rglob, os.walk, a `**` glob);
+- such a module lists a directory that resolves into the home; a recursive listing (rglob,
+  os.walk, a `**` glob) of an ancestor of it is a dynamic site, pinned only once read;
+- the same holds for every Python program the money path RUNS (a money script, a script a money
+  row runs, a .py a scanned module names) and for its own import closure, imported or not;
 - a script the closure names, a money script (`replay_shadow.money_scripts`), a money row of the
   box's task table, or a script such a row runs names the home;
 - a DYNAMIC SITE of the closure (a listing whose argument does not resolve, a dynamic import, a
@@ -59,6 +61,8 @@ def _replay_shadow(root: Path) -> ModuleType:
     return mod
 
 
+#: This checkout's replay_shadow, for callers that want its constants. check() never uses it: it
+#: loads the replay_shadow of the tree it checks, so `--root DIR` judges DIR by DIR's own rules.
 RS = _replay_shadow(ROOT)
 
 _LISTERS = frozenset({"glob", "iglob", "rglob", "iterdir", "listdir", "scandir", "walk"})
@@ -206,19 +210,24 @@ def _site_key(line: str) -> str:
     return hashlib.sha256(line.strip().encode("utf-8")).hexdigest()
 
 
-def module_facts(tree: Path, mod: str, files: set[str]) -> dict[str, Any] | None:
-    """A closure module's references to the home, the scripts it names and its dynamic sites;
-    None when it cannot be read or parsed (fail closed)."""
-    src = RS.read(tree, mod)
+def module_facts(
+    tree: Path, mod: str, files: set[str], rs: ModuleType | None = None
+) -> dict[str, Any] | None:
+    """A scanned module's references to the home, the scripts it names and its dynamic sites;
+    None when it cannot be read or parsed (fail closed). `rs`: the tree's replay_shadow."""
+    rs = RS if rs is None else rs
+    src = rs.read(tree, mod)
     if src is None:
         return None
     try:
-        return _facts(ast.parse(src), mod, files, src.splitlines())
+        return _facts(ast.parse(src), mod, files, src.splitlines(), rs)
     except (SyntaxError, ValueError, RecursionError):  # unparseable, or too deep: fail closed
         return None
 
 
-def _facts(node: ast.AST, mod: str, files: set[str], lines: list[str]) -> dict[str, Any]:
+def _facts(
+    node: ast.AST, mod: str, files: set[str], lines: list[str], rs: ModuleType
+) -> dict[str, Any]:
     stores: dict[str, int] = {}
     for n in ast.walk(node):
         if isinstance(n, ast.Name) and not isinstance(n.ctx, ast.Load):
@@ -292,11 +301,11 @@ def _facts(node: ast.AST, mod: str, files: set[str], lines: list[str]) -> dict[s
             if _names_home(target):
                 hit(n, f"lists {target}, inside the home")
             elif got[0] and recursive and (where in ("", ".") or HOME.startswith(where + "/")):
-                hit(
-                    n, f"lists {target or '<repository root>'} recursively, an ancestor of the home"
-                )
+                # its pattern decides whether it reaches the home: a site to read, then pin
+                site(n, f"a recursive listing of {where or '<repository root>'}, an ancestor of "
+                        "the home")  # fmt: skip
             elif not got[0] and recursive and where in ("", "."):
-                hit(n, "lists the working directory recursively, which may hold the home")
+                site(n, "a recursive listing of the working directory, which may hold the home")
         elif name in _SPAWN or (
             isinstance(recv, ast.Name) and recv.id == "subprocess" and name in _SUBPROCESS
         ):
@@ -314,7 +323,7 @@ def _facts(node: ast.AST, mod: str, files: set[str], lines: list[str]) -> dict[s
             got = _resolve(n.args[i], mod, env, memo) if len(n.args) > i else None
             if (
                 got is not None and name in _BY_NAME and not got[0]
-                and not got[1].startswith(".") and not RS._module_files(got[1], files)
+                and not got[1].startswith(".") and not rs._module_files(got[1], files)
             ):  # fmt: skip
                 continue  # a module outside the repository: the standard library or a package
             site(n, f"a dynamic import ({name})")
@@ -330,62 +339,90 @@ def load_pins(root: Path) -> dict[tuple[str, int], str] | None:
         return None
 
 
-def check(root: Path = ROOT) -> dict[str, Any]:
-    """{"ok", "violations", "sites", "pinned", "stale_pins"} for the tree at `root`."""
+def check(root: Path = ROOT, rs: ModuleType | None = None) -> dict[str, Any]:
+    """{"ok", "violations", "closure", "scanned", "sites", "pinned", "stale_pins"} for the tree
+    at `root`, judged by that tree's own replay_shadow (`rs`, loaded from `root` when None)."""
     bad: list[str] = []
+    if rs is None:
+        try:
+            rs = _replay_shadow(root)
+        except (OSError, ImportError, SyntaxError) as exc:
+            msg = f"{root}/ops/release/replay_shadow.py cannot be loaded ({type(exc).__name__})"
+            return {"ok": False, "violations": [msg + ": no closure to fence (fail closed)"],
+                    "closure": 0, "scanned": 0, "sites": 0, "pinned": 0, "site_rows": [],
+                    "stale_pins": []}  # fmt: skip
     pins = load_pins(root)
     if pins is None:
         bad.append(f"{PINS} cannot be read: every dynamic site is unpinned (fail closed)")
         pins = {}
-    files = RS.tree_files(root)
-    missing = [e for e in RS.ENTRY_POINTS if e not in files]
+    files = rs.tree_files(root)
+    missing = [e for e in rs.ENTRY_POINTS if e not in files]
     bad += [f"entry point {e} is not in the tree: no closure to fence" for e in missing]
-    closure = RS.import_closure(root)
+    closure = rs.import_closure(root)
     by_name: dict[str, set[str]] = {}
     for f in files:
         by_name.setdefault(Path(f).name.casefold(), set()).add(f)
-    seen: set[tuple[str, int]] = set()
-    scripts: set[str] = set()
-    for m in sorted(closure):
-        fx = module_facts(root, m, files)
-        if fx is None:
-            bad.append(f"{m}: a money-closure module that cannot be read or parsed (fail closed)")
-            continue
-        bad += [f"{h} (a money-closure module)" for h in fx["hits"]]
-        scripts |= {f for b in fx["scripts"] for f in by_name.get(b, set())}
-        for line, key, what in fx["sites"]:
-            seen.add((m, line))
-            if pins.get((m, line)) != key:
-                bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
-    scripts |= RS.money_scripts((root,), closure)
-    manifest = RS.read(root, RS.MANIFEST)
-    if manifest is None and RS.MANIFEST in files:
-        bad.append(f"{RS.MANIFEST} cannot be read (fail closed)")
+    # what the money path RUNS, beside what it imports: the money scripts and the money rows
+    scripts: set[str] = set(rs.money_scripts((root,), closure))
+    manifest = rs.read(root, rs.MANIFEST)
+    if manifest is None and rs.MANIFEST in files:
+        bad.append(f"{rs.MANIFEST} cannot be read (fail closed)")
     for line in (manifest or "").splitlines():
-        attrs, low = dict(RS._ATTR.findall(line)), line.lower()
+        attrs, low = dict(rs._ATTR.findall(line)), line.lower()
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         if (
             line.startswith("TASK ")
-            and attrs.get("lane") in RS._FREE_LANES
-            and not (RS.MONEY_WORDS.search(low) or RS.STATE_WORDS.search(low))
+            and attrs.get("lane") in rs._FREE_LANES
+            and not (rs.MONEY_WORDS.search(low) or rs.STATE_WORDS.search(low))
         ):
             continue  # not a money row
         if _text_names_home(line):
-            bad.append(f"{RS.MANIFEST}: a money row names the home: {line.strip()[:120]}")
+            bad.append(f"{rs.MANIFEST}: a money row names the home: {line.strip()[:120]}")
         for k in ("runs", "also_runs", "installer"):
             scripts |= {p.strip() for p in attrs.get(k, "").split(",") if p.strip() in files}
+    # every Python program the money path runs is scanned as a module with its own import
+    # closure, whether or not an entry point imports it (Auditor MF, 2026-11-18)
+    run_py = sorted(s for s in scripts if s.endswith(".py") and s not in closure)
+    scan = closure | (rs.import_closure(root, tuple(run_py)) if run_py else set())
+    seen: set[tuple[str, int]] = set()
+    rows: list[tuple[str, int, str, str]] = []  # every site found: (file, line, sha256, what)
+    for m in sorted(scan):
+        fx = module_facts(root, m, files, rs)
+        what_m = "a money-closure module" if m in closure else "a money-run program's module"
+        if fx is None:
+            bad.append(f"{m}: {what_m} that cannot be read or parsed (fail closed)")
+            continue
+        bad += [f"{h} ({what_m})" for h in fx["hits"]]
+        scripts |= {f for b in fx["scripts"] for f in by_name.get(b, set())}
+        for line, key, what in fx["sites"]:
+            seen.add((m, line))
+            rows.append((m, line, key, what))
+            if pins.get((m, line)) != key:
+                bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
     for s in sorted(scripts):
         if s.endswith(".py"):
-            continue  # Python on the money path is read as a module above, when imported
-        text = RS.read(root, s)
+            if s not in scan:  # named by a scanned module's literal: scan it the same way
+                fx = module_facts(root, s, files, rs)
+                if fx is None:
+                    bad.append(f"{s}: a money-run program that cannot be read or parsed")
+                    continue
+                bad += [f"{h} (a money-run program)" for h in fx["hits"]]
+                for line, key, what in fx["sites"]:
+                    seen.add((s, line))
+                    rows.append((s, line, key, what))
+                    if pins.get((s, line)) != key:
+                        bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
+            continue
+        text = rs.read(root, s)
         if text is None:
             bad.append(f"{s}: a money script that cannot be read (fail closed)")
         elif _text_names_home(text):
             bad.append(f"{s}: a money script names the home")
     return {
-        "ok": not bad, "violations": bad, "closure": len(closure), "sites": len(seen),
-        "pinned": len(pins), "stale_pins": sorted(f"{f}:{n}" for f, n in set(pins) - seen),
+        "ok": not bad, "violations": bad, "closure": len(closure), "scanned": len(scan),
+        "sites": len(seen), "pinned": len(pins), "site_rows": rows,
+        "stale_pins": sorted(f"{f}:{n}" for f, n in set(pins) - seen),
     }  # fmt: skip
 
 
@@ -401,6 +438,7 @@ def main(argv: list[str] | None = None) -> int:
     verdict = "PASS" if rep["ok"] else f"FAIL ({len(rep['violations'])} violations)"
     print(
         f"RESEARCH-DATA FENCE {verdict}: {rep['closure']} money-closure modules, "
+        f"{rep['scanned']} scanned with the money-run programs, "
         f"{rep['sites']} dynamic sites, {rep['pinned']} pinned; nothing on the money path may "
         f"read {HOME}/"
     )
