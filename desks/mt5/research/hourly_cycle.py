@@ -1207,6 +1207,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
     # network, two small reads; the cloud hourly pass runs the full GitHub half.
     "arch_health",
+    # The judge's docket priority (H2 originality via hypmax fingerprints, H4 cross-source
+    # agreement, H5 information gain): one streaming pass over the docket, ~4s and ~170MB
+    # measured 2026-11-18 on 57,538 rows. Core because the warmer's tilt ignores a lookup older
+    # than 6h, so a heavy-only rotation would leave it stale between rotations.
+    "docket_priority",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
@@ -6475,6 +6480,11 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # THE JUDGE'S DOCKET PRIORITY (build check rows 9/10/76, 2026-11-18): ORIGINALITY.json,
+    # CROSS_SOURCE.json, INFO_GAIN.json and the lookup judge_docket_order.priority_tilt reads.
+    # Ordering inputs only; no gate reads any of them.
+    dkp = _costed("docket_priority", lambda: _producer(
+        "docket_priority", "research/docket_priority.py"))
     # ARCHITECTURE HEALTH, box half (zuck 2026-11-13, Phase 6). A monitor, never a gate.
     ahl = _costed("arch_health", lambda: _producer(
         "arch_health", "scripts/arch_health.py", "--static-only",
@@ -6745,7 +6755,7 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
-                    "arch_health": ahl,
+                    "arch_health": ahl, "docket_priority": dkp,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "llm_yield": llmy, "llm_budget_census": lbc,

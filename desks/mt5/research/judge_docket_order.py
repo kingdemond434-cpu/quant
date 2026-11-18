@@ -26,8 +26,14 @@ ONE DELIBERATE DIFFERENCE, AND IT IS A READ-ONLY ONE. `allocate_by_yield` also W
 the warmer can never overwrite the judge's own published allocation with its view of the docket.
 
 Consumers: `scripts/warm_gauntlet_cache.py` (`run_round`, via `sealed_docket` and `sealed_keep`).
-Nothing here decides a verdict, reorders the judge or drops a cell: it only tells a feeder which
-cells the judge will read, in the order it will read them.
+Nothing here decides a verdict or drops a cell: it tells a feeder which cells the judge will read.
+
+THE SECOND DELIBERATE DIFFERENCE (2026-11-18, H2/H4/H5): the ORDER of the kept set. After the
+sealed trim, `priority_tilt` reorders `keep` -- never its membership -- by a bounded blend of three
+hourly scores from `research/docket_priority.py` (ORIGINAL mechanisms with a quota, rows on which
+2+ independent sources agree, and expected information gain). The warmer builds in that order and
+the sealed sweep judges every cached cell, so the tilt decides which cells are judged FIRST and
+nothing about how any cell is judged. Revert: JUDGE_DOCKET_TILT=0 or data/DOCKET_TILT_DISABLED.
 """
 from __future__ import annotations
 
@@ -119,7 +125,7 @@ def sealed_docket(G: Any, meta: dict, memo: dict | None = None, *,
             cells[key] = {"sym": sym, "family": fam, "params": params,
                           "mechanism_status": h.get("mechanism_status"),
                           "mechanism_note": h.get("mechanism_note"),
-                          "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
+                          "prejudge_flagged": bool((h.get("prejudge") or {}).get("flags"))}
     census["cells"] = len(cells)
     if memo is not None:
         return _partition_memoised(G, meta, cells, memo, census, live_ttl_s=live_ttl_s)
@@ -397,9 +403,170 @@ def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True) -> tuple[lis
     if novelty:
         ordered, n_redundant = drop_redundant(G, ordered)
     keep = allocate(G, ordered)
+    keep, tilt = priority_tilt(keep, load_priority(G))
     return keep, {"eligible": len(specs), "never_judged": n_new, "banned_set_aside": n_banned,
                   "novelty_set_aside": n_redundant, "keep": len(keep),
                   "keep_never_judged": sum(1 for sp in keep if sp.get("_never_judged")),
                   "outside_keep": len(ordered) - len(keep) if len(ordered) >= len(keep) else 0,
+                  "priority_tilt": tilt,
                   "order": "sealed: never-judged, intraday, CEO family, least-covered bucket, "
-                           "symbol rotation; then ban set-aside, novelty head, yield trim"}
+                           "symbol rotation; then ban set-aside, novelty head, yield trim; "
+                           "then the bounded originality / cross-source / information-gain "
+                           "tilt inside the kept set (membership unchanged)"}
+
+
+# ---------------------------------------------------------------------------------------------
+# THE PRIORITY TILT (H2 originality quota, H4 cross-source, H5 information gain; 2026-11-18).
+#
+# WHAT IT MAY CHANGE: the ORDER of `keep` -- the cells the next sweep reads -- and nothing else.
+# Membership is the sealed trim's, every cell stays in the docket, and no gate, verdict or
+# certificate reads any of it. The warmer builds `keep` in this order and the sealed sweep judges
+# every CACHED cell, so the order decides which cells are judged FIRST when the gate room is
+# short; it can never decide whether a cell is judged correctly.
+#
+# BOUNDED BY CONSTRUCTION. Each cell's sort key is its sealed position (as a fraction of `keep`)
+# minus TILT_MAX x blend, blend in [0, 1] the mean of three published scores, so no cell moves up
+# by more than TILT_MAX of the docket. The ORIGINAL quota then keeps the share of ORIGINAL rows in
+# every prefix at ORIGINAL_QUOTA or above while ORIGINAL rows remain within QUOTA_REACH, pulling
+# rows of a not-yet-seen mechanism fingerprint first.
+#
+# REVERT: env JUDGE_DOCKET_TILT=0, or the file desks/mt5/data/DOCKET_TILT_DISABLED. A lookup that
+# is missing, unreadable, of another version or older than PRIORITY_MAX_AGE_S tilts nothing and
+# says so in the census (UNMEASURED is a verdict, never a silent default).
+# ---------------------------------------------------------------------------------------------
+
+#: The lookup `research/docket_priority.py` writes every hour, relative to the repo root.
+PRIORITY_LOOKUP = ("desks", "mt5", "data", "docket_priority.json")
+PRIORITY_VERSION = 1
+PRIORITY_MAX_AGE_S = 6 * 3600
+TILT_DISABLED_FILE = ("desks", "mt5", "data", "DOCKET_TILT_DISABLED")
+
+
+def _env_frac(name: str, default: float, hi: float = 0.5) -> float:
+    try:
+        v = float(os.environ.get(name, str(default)))
+    except ValueError:
+        v = default
+    return min(max(v, 0.0), hi)
+
+
+#: The most any cell may move up, as a fraction of `keep`.
+TILT_MAX = _env_frac("JUDGE_DOCKET_TILT_MAX", 0.25)
+#: The share of every prefix the ORIGINAL quota keeps for ORIGINAL rows.
+ORIGINAL_QUOTA = _env_frac("JUDGE_DOCKET_ORIGINAL_QUOTA", 0.10)
+#: How far (fraction of `keep`) the quota may pull a row forward.
+QUOTA_REACH = 0.5
+
+
+def load_priority(G: Any, *, now: float | None = None) -> dict | None:
+    """The hourly lookup, or a dict with `_unmeasured` naming why it cannot be used."""
+    import time as _time
+
+    base = getattr(G, "BASE", None)
+    if base is None:
+        return {"_unmeasured": "no repo root on the judge module"}
+    if os.environ.get("JUDGE_DOCKET_TILT", "1") == "0":
+        return {"_unmeasured": "disabled: JUDGE_DOCKET_TILT=0"}
+    if Path(base).joinpath(*TILT_DISABLED_FILE).exists():
+        return {"_unmeasured": "disabled: DOCKET_TILT_DISABLED present"}
+    path = Path(base).joinpath(*PRIORITY_LOOKUP)
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"_unmeasured": f"{path.name} absent or unreadable"}
+    if not isinstance(doc, dict) or doc.get("version") != PRIORITY_VERSION:
+        return {"_unmeasured": f"{path.name} is not version {PRIORITY_VERSION}"}
+    age = (now if now is not None else _time.time()) - float(doc.get("at_epoch") or 0.0)
+    if age > PRIORITY_MAX_AGE_S:
+        return {"_unmeasured": f"{path.name} is {age / 3600:.1f}h old "
+                               f"(limit {PRIORITY_MAX_AGE_S / 3600:.0f}h)"}
+    return doc
+
+
+def _scores(DP: Any, sp: dict, original: set[str], agreement: dict,
+            info: dict) -> tuple[float, float, float, bool]:
+    """(original, cross-source, information gain) in [0, 1] for one cell, and ORIGINAL?"""
+    fam = str(sp.get("family") or "")
+    params = sp.get("params") or {}
+    orig = DP.cell_key(sp.get("sym"), fam, params) in original
+    n = int(agreement.get(DP.mech_key(sp.get("sym"), fam)) or 0)
+    cross = min(1.0, (n - 1) / 2.0) if n >= 2 else 0.0
+    tf_own = str(params.get("timeframe") or "H1").upper()
+    ig = info.get(f"{fam}|{sp.get('tf') or tf_own}")
+    if ig is None:
+        ig = info.get(f"{fam}|{tf_own}")
+    return (1.0 if orig else 0.0), cross, min(1.0, max(0.0, float(ig or 0.0))), orig
+
+
+#: How many ORIGINAL rows the quota scans for a not-yet-placed fingerprint before taking the next.
+_QUOTA_SCAN = 256
+
+
+def priority_tilt(keep: list[dict], prio: dict | None) -> tuple[list[dict], dict]:
+    """`keep` reordered by the bounded tilt and the ORIGINAL quota; same cells, same count."""
+    n = len(keep)
+    if not prio or prio.get("_unmeasured") or n < 2:
+        why = (prio or {}).get("_unmeasured") or ("no lookup" if not prio else "fewer than 2")
+        return keep, {"status": "DISABLED" if "disabled" in str(why) else "UNMEASURED",
+                      "why": why, "moved": 0}
+    try:
+        import docket_priority as DP
+        from originality_share import mechanism_fingerprint
+        original = set(prio.get("original") or [])
+        agreement = dict(prio.get("agreement") or {})
+        info = dict(prio.get("info_gain") or {})
+        scored = [_scores(DP, sp, original, agreement, info) for sp in keep]
+    except Exception as exc:          # a broken lookup must never cost the sweep its docket
+        return keep, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}", "moved": 0}
+    blend = [(o + c + i) / 3.0 for o, c, i, _orig in scored]
+    idx = sorted(range(n), key=lambda k: (k / (n - 1) - TILT_MAX * blend[k], k))
+    # THE ORIGINAL QUOTA: every prefix keeps ORIGINAL_QUOTA of ORIGINAL rows while one remains
+    # within QUOTA_REACH of the head; a row of a fingerprint not yet placed is pulled first.
+    reach = max(1, int(QUOTA_REACH * n))
+    at = {k: p for p, k in enumerate(idx)}
+    origs = [k for k in idx if scored[k][3]]
+    fps = {k: mechanism_fingerprint(keep[k]) for k in origs}
+    taken = [False] * n
+    out: list[int] = []
+    seen_fp: set[str] = set()
+    mptr = optr = placed_orig = pulled = 0
+    while len(out) < n:
+        while taken[idx[mptr]]:
+            mptr += 1
+        while optr < len(origs) and taken[origs[optr]]:
+            optr += 1
+        k = idx[mptr]
+        if (placed_orig < ORIGINAL_QUOTA * (len(out) + 1) and not scored[k][3]
+                and optr < len(origs) and at[origs[optr]] - mptr < reach):
+            first = None
+            for c in origs[optr:optr + _QUOTA_SCAN]:
+                if taken[c] or at[c] - mptr >= reach:
+                    continue
+                if first is None:
+                    first = c
+                if fps[c] not in seen_fp:
+                    first = c
+                    break
+            if first is not None:
+                k = first
+                pulled += 1
+        taken[k] = True
+        out.append(k)
+        if scored[k][3]:
+            placed_orig += 1
+            seen_fp.add(fps[k])
+    moves = [k - pos for pos, k in enumerate(out)]
+    up = [m for m in moves if m > 0]
+    new = [keep[k] for k in out]
+    head = max(1, min(n, 1000))
+    return new, {
+        "status": "APPLIED", "lookup_at": prio.get("at"),
+        "tilt_max": TILT_MAX, "original_quota": ORIGINAL_QUOTA,
+        "moved": sum(1 for m in moves if m != 0), "moved_up": len(up),
+        "max_up": max(up, default=0), "mean_up": round(sum(up) / len(up), 1) if up else 0.0,
+        "quota_pulls": pulled,
+        "original_rows": sum(1 for s in scored if s[3]),
+        "cross_source_rows": sum(1 for s in scored if s[1] > 0),
+        "info_gain_scored": sum(1 for s in scored if s[2] > 0),
+        "head_original_share": round(sum(1 for k in out[:head] if scored[k][3]) / head, 4),
+        "head_original_share_before": round(sum(1 for s in scored[:head] if s[3]) / head, 4)}
