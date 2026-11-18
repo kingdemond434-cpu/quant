@@ -509,7 +509,7 @@ def plan(now: datetime | None = None, *, report: Path | None = None,
                     "" if model["ready"] else model["reason"]) if x)),
         "open_window": open_window(wins, when),
         "upcoming_windows": upcoming, "calendar_notes": notes,
-        "seat": str(SEAT.relative_to(_DESK)), "rows_today": _rows_today(when),
+        "seat": SEAT.as_posix(), "rows_today": _rows_today(when),
     }
     if write:
         path = report or REPORT
