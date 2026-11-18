@@ -31,7 +31,8 @@ That absence is UNMEASURED, never a reason to fall back to a price pattern.
 """
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+import datetime as _dt
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -58,7 +59,7 @@ _CACHE: dict[str, Any] = {}
 
 def cut_utc(expiry: date) -> datetime:
     """10:00 New York on the expiry date, in UTC (14:00 in EDT, 15:00 in EST)."""
-    return datetime.combine(expiry, CUT_LOCAL, tzinfo=NY).astimezone(UTC)
+    return datetime.combine(expiry, CUT_LOCAL, tzinfo=NY).astimezone(_dt.UTC)
 
 
 def series_path(root: Path | None = None) -> Path | None:
