@@ -1,0 +1,58 @@
+{
+  "schema": "cpu_shape/v1",
+  "why": "The trading box's CPU-shaping rules, as committed data. Read every MT5-StallWatch pass (10 min, SYSTEM) by libs/ops/box_shaper.py, which measures every process, writes desks/mt5/reports/BOX_BOTTLENECKS.json and applies ONLY what this file says, inside the rails the code enforces: nothing is ever raised above AboveNormal; the money path, the judge and the protected writers are only ever RAISED (never an affinity, never a lower class); mining is never set below BelowNormal and is affinity-capped only while the judge is starved, never below mining_floor_cores; nothing is ever killed. Replaces the hand-installed Quant-CpuShaper / Quant-MemecoinCpuCap tasks (owner, 2026-10-29: memecoin holds at most 10% of the CPU and keeps running). Change a rule by committing this file; the box adopts it hourly.",
+  "window_s": 5,
+  "priority_ceiling": "AboveNormal",
+  "groups": {
+    "money": ["terminal64", "run_gateway_loop", "gateway_resident", "e8_executor", "e8_window_guard",
+              "e8-executor", "ftmo_follow", "ftmo_venue_reader", "fusion_deadman", "executor",
+              "e8_gold.py", "e8_book.py", "run_deadman_switch.py", "run_deadman_reconciliation"],
+    "money_feed": ["pf_allocator", "allocator_trigger", "prop_challenge_allocator"],
+    "money_feed_pinned": ["pf_allocator:heavy"],
+    "adopt": ["adopt-and-seal", "adopt-release"],
+    "judge": ["run_sharded_gauntlet", "external_gauntlet", "quant-research-runtime"],
+    "memecoin": ["memecoin"],
+    "protected": ["claude.exe remote-control", "claude remote-control", "bridge_watchdog.ps1",
+                  "moat_recorder", "tick_integrity", "recorders.", "tick_recorder", "promoter",
+                  "shadow_cycle", "shadow_sync", "publish_state", "ledger", "certif", "tape"],
+    "system_names": ["system", "idle", "registry", "smss.exe", "csrss.exe", "wininit.exe",
+                     "services.exe", "lsass.exe", "svchost.exe", "msmpeng.exe", "memcompression",
+                     "dwm.exe", "winlogon.exe", "trustedinstaller.exe", "tiworker.exe"],
+    "mining": ["miner", "moat_", "breadth_sweep", "deepening_worker", "local_converter",
+               "research_supervisor", "edge_search", "orthogonal_sweep", "frontier", "hunt",
+               "deep_forest", "world_crawler"]
+  },
+  "rules": [
+    {"name": "adopt_release_raise", "group": "adopt", "priority": "AboveNormal",
+     "why": "Owner rule 23 / money path on top (2026-10-29): the first automatic Adopt-And-Seal run (MT5-AdoptRelease, SYSTEM) was measured with its python child on ~13% of a core, a step that took 2.5 min at 14:25Z running past 25 min. The whole Adopt-And-Seal / Adopt-Release tree (the powershell matched by command line, every py/python/git below it by parent chain) is group adopt: raise-only like the money path, so it is never put on the side mask, never share-capped, and is raised to AboveNormal while it runs -- never above the lowest money-path class (the code cuts it to that class and refuses it when a money class is unreadable)."},
+    {"name": "memecoin_cap", "match": "memecoin", "affinity": "0x30000", "priority": "BelowNormal",
+     "max_box_share": 0.10,
+     "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
+    {"name": "pf_allocator_heavy", "script": "pf_allocator", "mode": "heavy", "affinity": "0xFF",
+     "track_wall": true,
+     "why": "AN AGENT-RECORDED EXCEPTION, NOT A PRINCIPAL DECISION: this thread carried the cores 0-7 cap on pf_allocator --mode heavy into adopted code (D-20261029-011, corrected by D-20261029-017). The principal override on record (zuck, 2026-10-29T14:37Z: the judge holds 8 of the 18 cores permanently, with a phase-aware boost) does not cover this pin; it stands until the principal rules on it. Why it exists: the overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched. Matched by script identity and parsed mode (path or -m form; --mode heavy or --mode=heavy). Every other mode (fast, normal, a bare run that defaults to normal) is group money_feed and is never narrowed. track_wall records each run's wall time in BOX_BOTTLENECKS.json wall.pf_allocator_heavy, so the 8-core cap can be checked against allocator proof staleness."},
+    {"name": "money_feed_never_narrowed", "group": "money_feed",
+     "why": "Audits MF1 and MF-A (2026-10-29): the processes that size the money path's book -- prop_challenge_allocator, allocator_trigger and pf_allocator in every mode but heavy (fast: MT5-AllocatorFast; normal: hourly_cycle; a bare run defaults to normal) -- read as mining/other. groups.money_feed names them by SCRIPT IDENTITY (path or -m module form) and groups.money_feed_pinned the modes left to their own pin (pf_allocator:heavy), parsed from argv (--mode X, --mode=X, absent = normal). They were reserve-moved, narrowed and share-capped. Group money_feed (with every process below them by parent chain, a pinned mode excepted) is raise-only: never on the side mask, never share-capped, never a dedupe candidate, and -- like the money group -- widened to every core on EVERY pass when it is not already there (money_widen; a child inherits the side mask of hourly_cycle or research_supervisor, audit MF-B). It is NOT raised: the allocator is CPU-heavy, and AboveNormal beside the judge would take CPU from it. This rule sets nothing; it names the group."},
+    {"name": "money_path_raise", "group": "money", "priority": "AboveNormal",
+     "why": "Money path on top (audit MF2, 2026-10-29): the whole money group -- the MT5 terminals, the gateway python (MT5-GatewayResident ran at default Normal, BELOW the adopt tree at AboveNormal), the executors, the window guard and the deadman -- is raised to AboveNormal so research load never starves a fill. Raise-only: a terminal already at High stays there. The code also holds the adopt tree at or under the lowest money class this pass leaves, and applies the money raises first: an adopt raise lands only if every money raise did."}
+  ],
+  "share_cap": {
+    "threshold_cores": 6,
+    "sustained_runs": 2,
+    "mask": "0x3000F",
+    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 0-3 and 16-17 (six cores, the mining floor, entirely outside the judge reserve even when boosted), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone. Once the judge is no longer starved each pin is released to where the process was (its original cores; the side mask for mining/other python under the judge reserve), the pins surviving any UNMEASURED or RULES_REFUSED pass. Every throttle (this cap, memecoin_cap, pf_allocator_heavy, judge_reserve) bills a two-sided line in BOX_BOTTLENECKS.json missed_growth: the share the throttled process gave up and the judge share gained."
+  },
+  "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
+  "judge_min_share": 0.15,
+  "judge_wait_phases": ["done"],
+  "adopt_red_after_min": 15,
+  "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes, or when the judge's phase is UNKNOWN (JUDGE_SWEEP_PHASE.json absent, unreadable or without a pid; a dead pid or phase done is no work, not unknown) for more than 2 passes. RED at once when desks/mt5/reports/ADOPTION_HEARTBEAT.json shows an Adopt-And-Seal run started more than adopt_red_after_min (15) minutes ago with no finished_at (no seal or refusal line). Read by desks/mt5/scripts/check_desk_health.py.",
+  "mining_floor_cores": 6,
+  "judge_reserve": {
+    "base_mask": "0xFF00",
+    "boost_mask": "0xFFF0",
+    "serial_phases": ["plan", "plan_handoff", "collect_and_cut", "merge_and_publish"],
+    "exempt": ["pf_allocator"],
+    "why": "OWNER OVERRIDE (zuck, 2026-10-29): cores 8-15 are reserved for the judge ALWAYS -- his informed override of never-cut-mining for those eight cores. Mining/other python processes run on the full mask minus the reserve: 0x300FF (cores 0-7 and 16-17, ten cores) on the 18-core trading box. BOOST: while desks/mt5/reports/JUDGE_SWEEP_PHASE.json names a serial phase (and its pid is alive) or the judge is starved, the reserve widens to 0xFFF0 (cores 4-15), leaving mining/other 0x3000F (cores 0-3 and 16-17) = exactly the 6-core mining floor; 0x3FF00 was rejected because memecoin sits on 16-17 and it would leave only 8 cores split around the allocator. When the boost ends, processes the reservation narrowed are widened back to 0x300FF. The code refuses any reserve that would leave fewer than mining_floor_cores. Never moved: money path, judge, protected, memecoin, and pf_allocator (exempt here and pinned by its own rule to 0-7, so during a boost it still shares cores 4-7 with the judge)."
+  }
+}
