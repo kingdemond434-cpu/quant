@@ -79,3 +79,10 @@ def test_take_over_refuses_a_pid_that_is_not_a_resident() -> None:
     import os
     ok, why = gr._take_over(os.getpid())
     assert ok is False and "not a gateway resident" in why
+
+
+def test_a_running_loop_whose_passes_raise_is_not_stuck(tmp_path: Path) -> None:
+    p = _stamp(tmp_path, pid=42, last_pass_at=None,
+               started_at=(NOW - timedelta(days=1)).isoformat(),
+               last_attempt_at=(NOW - timedelta(minutes=1)).isoformat())
+    assert gr.holder_stuck(NOW, p, 1800)[0] is False

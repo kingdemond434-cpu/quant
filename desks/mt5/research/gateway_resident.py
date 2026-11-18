@@ -352,7 +352,8 @@ def holder_stuck(now: datetime | None = None, stamp: Path | None = None,
         return False, None, "no readable load stamp: UNMEASURED, nothing is ended"
     if not isinstance(doc, dict):
         return False, None, "load stamp is not an object: UNMEASURED, nothing is ended"
-    ref = doc.get("last_pass_at") or doc.get("started_at")
+    ref = max((str(v) for v in (doc.get("last_pass_at"), doc.get("last_attempt_at")) if v),
+              default=None) or doc.get("started_at")
     try:
         at = datetime.fromisoformat(str(ref))
         pid = int(doc.get("pid"))  # type: ignore[arg-type]
@@ -361,7 +362,8 @@ def holder_stuck(now: datetime | None = None, stamp: Path | None = None,
     if at.tzinfo is None:
         at = at.replace(tzinfo=UTC)
     age = (now - at).total_seconds()
-    which = "last pass" if doc.get("last_pass_at") else "start (no pass yet)"
+    which = ("last pass" if doc.get("last_pass_at") or doc.get("last_attempt_at")
+             else "start (no pass yet)")
     if age <= limit:
         return False, pid, f"holder pid {pid}: {which} {age:.0f}s ago, inside {limit:.0f}s"
     return True, pid, f"holder pid {pid}: {which} {age:.0f}s ago, past {limit:.0f}s"
@@ -442,6 +444,7 @@ def main() -> int:
         pass
 
     passes = 0
+    last_ok: str | None = None
     while True:
         started = time.monotonic()
         passes += 1
@@ -466,10 +469,17 @@ def main() -> int:
             return 0
         try:
             run_gateway_loop.main()
-            _stamp_loaded(identity, last_pass_at=datetime.now(UTC).isoformat())
+            last_ok = datetime.now(UTC).isoformat()
+            _stamp_loaded(identity, last_pass_at=last_ok)
         except Exception as exc:
             # A failed pass is one missed look, not a dead gateway. The failure is already logged
             # by the pass itself; swallowing it here is what keeps the next bar reachable.
+            # The attempt is stamped too, so a loop that is RUNNING but erroring is never taken
+            # for a stuck one and killed every tick (audit SF, 2026-11-18): a restart cannot fix
+            # an exception, and process_health still calls it STALE on gateway_state.json.
+            _stamp_loaded(identity, last_pass_at=last_ok,
+                          last_attempt_at=datetime.now(UTC).isoformat(),
+                          last_error=type(exc).__name__)
             try:
                 from mt5desk import gateway
                 gateway.log(f"RESIDENT: pass raised {type(exc).__name__}: {exc}")
