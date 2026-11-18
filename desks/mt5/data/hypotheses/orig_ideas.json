@@ -1,0 +1,568 @@
+{
+ "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
+ "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
+ "updated_at": "2026-11-14T08:36:00Z",
+ "ideas": [
+  {
+   "id": "IQ-689",
+   "orig": true,
+   "breadth_gap": [
+    "energy"
+   ],
+   "symbols": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "floating storage of laden tankers off Norway with a weekly EIA crude-stock surprise: contango carry (storage build means oversupply, Brent weakens against WTI over 5 days) against pre-rerouting hoarding (Brent strengthens); spread drift after joint build events, net of 2x spread cost",
+   "falsifier": "no sign-consistent XBR-XTI spread drift after joint build events net of 2x spread"
+  },
+  {
+   "id": "IQ-690",
+   "orig": true,
+   "breadth_gap": [],
+   "symbols": [
+    "EURNOK",
+    "USDNOK",
+    "EURUSD"
+   ],
+   "mechanism": "UK-Norway interconnector net export with an LNG outage flag: NOK revenue flow (NOK bid) against EU scarcity risk-off (EUR offered); decompose the EURNOK move into USDNOK and EURUSD legs on event days",
+   "falsifier": "neither leg moves on event days beyond placebo days"
+  },
+  {
+   "id": "IQ-696",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism": "COT leveraged-fund gold positioning extreme (3y percentile) into the SGE benchmark hour 02-03 UTC: crowded-unwind reversal against momentum persistence; sign of XAUUSD 02-09 UTC return by pre-registered positioning quintile, point-in-time lag 3 days",
+   "falsifier": "02-09 UTC return sign is flat across positioning quintiles"
+  },
+  {
+   "id": "IQ-697",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "mechanism": "JP225 last-30-minute drift into the Tokyo close leads USDJPY 06-07 UTC: foreign-investor close hedging flow against a common risk factor; lead-lag controlling for the overnight US index return, placebo at 05:00",
+   "falsifier": "lead-lag vanishes once the overnight US index return is controlled, or equals the 05:00 placebo"
+  },
+  {
+   "id": "IQ-700",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "indices"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "GER40",
+    "UK100"
+   ],
+   "mechanism": "London gold fix (10:30/15:00 UK) imbalance leads DAX/FTSE index drift over the next 60 minutes: bullion-bank physical-hedge rebalancing spills into equity-index risk against a common USD shock; partial lead-lag controlling the 1-minute dollar return, placebo at 10:00/14:30",
+   "falsifier": "index drift after the fix equals the placebo-time drift once the dollar return is controlled"
+  },
+  {
+   "id": "IQ-701",
+   "orig": true,
+   "breadth_gap": [
+    "02_09_utc"
+   ],
+   "symbols": [
+    "AUDUSD",
+    "NZDUSD"
+   ],
+   "mechanism": "China onshore CNY fixing surprise (PBoC mid against the model-implied fix) at 01:15 UTC leads AUDUSD/NZDUSD 02-06 UTC: policy-signal channel against the fix merely tracking overnight USD; regress on the surprise residual orthogonal to the overnight dollar, Holm over 2 pairs",
+   "falsifier": "the surprise residual has no 02-06 UTC effect after Holm over the two pairs"
+  },
+  {
+   "id": "IQ-OPT-VRP",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "gold_metals"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "XTIUSD"
+   ],
+   "traditions": [
+    "stochastic_processes"
+   ],
+   "mechanism": "option-implied variance risk premium (implied minus realised variance, Black-Scholes/variance-swap view) from the CBOE VIX, GVZ and OVX tape in recorders/vol_archive.py: (a) insurance-selling compensation -- a wide premium is earned by short-vol holders and predicts calm forward drift and positive index returns; against (b) fear about to be realised -- a wide premium predicts the realised variance that follows. Separating test: regress next-5-day realised variance and next-5-day return on the premium quintile, point-in-time daily close, Holm over the three underlyings STAND-IN when the implied series has no fresh licensed print (Cboe series reached via FRED are held data only): the realised-vol term structure, 5-day over 60-day realised variance from MT5 bars, in the same percentile rule, reported as the stand-in and never as the implied premium",
+   "falsifier": "forward return and forward realised variance are flat across premium quintiles on all three underlyings after Holm",
+   "stand_in": "realised_vol_term_structure_5d_over_60d"
+  },
+  {
+   "id": "IQ-OPT-HESTON",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "gold_metals",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "traditions": [
+    "stochastic_processes"
+   ],
+   "mechanism": "Heston-style variance mean-reversion speed (kappa) estimated by rolling regression of daily realised variance changes on its level, used as a regime feature: (a) fast reversion means vol shocks are transient, so breakouts fade and mean reversion pays; against (b) slow reversion means persistent vol regimes, so trend continuation pays. Separating test: payoff of a fixed reversal and a fixed breakout rule split by kappa tercile, estimated only on data before each date",
+   "falsifier": "the reversal-minus-breakout payoff spread does not change sign or size across kappa terciles"
+  },
+  {
+   "id": "IQ-OPT-JUMP",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "gold_metals",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY",
+    "GER40"
+   ],
+   "traditions": [
+    "stochastic_processes",
+    "extreme_value"
+   ],
+   "mechanism": "jump-diffusion jump intensity (Merton/Bates-style; estimated as realised variance minus bipower variation on intraday bars) as an event-risk conditioner: (a) a high recent jump share signals scheduled-event or liquidity-gap risk that persists, so stops widen and intraday edges degrade; against (b) jumps are one-off and mean-revert, so the conditioner carries nothing. Separating test: next-day jump share and the hit rate of the desk's live intraday sleeves by prior jump-share quintile",
+   "falsifier": "next-day jump share and intraday sleeve hit rate are flat across prior jump-share quintiles"
+  },
+  {
+   "id": "IQ-705",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "traditions": [
+    "stochastic_processes",
+    "survival_hazard"
+   ],
+   "mechanism": "in the two Asia sessions before COMEX gold option (OG) expiry, M5 return autocorrelation turns negative and price centres on the 25 USD strike grid (dealer long-gamma pin, proxied from the desk's own tick tape). Competing explanations: dealer hedging pin against generic thin-Asia mean reversion against CTA roll flow. Separating test: expiry weeks against matched low-liquidity non-expiry weeks; the pin must centre on grid strikes and vanish after expiry",
+   "falsifier": "autocorrelation and distance to the 25 USD grid are the same in expiry weeks and matched non-expiry weeks, or the pin persists after expiry"
+  },
+  {
+   "id": "IQ-706",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "traditions": [
+    "stochastic_processes",
+    "change_point"
+   ],
+   "mechanism": "variance risk premium (VIX minus 20-day realised vol, from vol_archive) below its 10th percentile conditions London-open EURUSD/GBPUSD range breakouts to follow through more after costs (complacency precedes realised expansion). Competing explanations: vol-of-vol clustering against mechanical VIX mean reversion against macro calendar coincidence. Separating test: drop event days (EVENT_WINDOW_POLICY calendar); placebo with the premium lagged 20 days. Linked to IQ-OPT-VRP STAND-IN when the implied series has no fresh licensed print (Cboe series reached via FRED are held data only): the realised-vol term structure, 5-day over 60-day realised variance from MT5 bars, in the same percentile rule, reported as the stand-in and never as the implied premium",
+   "falsifier": "breakout follow-through after costs is the same in the low-premium decile and the 20-day-lagged placebo once event days are dropped",
+   "stand_in": "realised_vol_term_structure_5d_over_60d"
+  },
+  {
+   "id": "IQ-710",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "XAUUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "change_point"
+   ],
+   "mechanism": "CFTC managed-money gold futures+options weekly net change at a top/bottom-decile extreme prints Friday 15:30 ET, about 90 minutes before the 17:00 ET weekly close, so the reaction can start Friday afternoon and the first full session after it is the Monday Asia open: slow diffusion of COT information (Asia drift continues in the COT-delta direction after costs) against a Friday 15:30-17:00 ET reaction that is already priced by Monday, against weekend-news gap against thin-Asia gap reversal. Separating test: holiday-shifted and shutdown-delayed release weeks (cot_usable_index) must move the reaction to the actual release time if it is COT information; weekend news would not move. Point-in-time on the release timestamp; pre-Aug history only until the COT refresher lands. Check: measure the Friday 15:30-17:00 ET move separately and count only Monday-Asia drift beyond it",
+   "falsifier": "Monday Asia XAUUSD drift after costs is the same in extreme-delta weeks and non-extreme weeks, or the reaction does not follow the shifted release time",
+   "competing_explanations": [
+    "slow diffusion of COT information",
+    "Friday 15:30-17:00 ET reaction before the weekly close",
+    "weekend-news gap",
+    "thin-Asia gap reversal"
+   ],
+   "separating_test": "holiday- and shutdown-shifted release weeks via cot_usable_index move the reaction only if it is COT information"
+  },
+  {
+   "id": "IQ-711",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "AUDJPY",
+    "GBPJPY"
+   ],
+   "traditions": [
+    "game_theory_ecology",
+    "survival_hazard"
+   ],
+   "mechanism": "FFAJ Japanese retail net-long extreme in a JPY cross ahead of the Tokyo 09:55 JST fix (00:55 UTC): a pre-fix sell-off unwinds crowded retail longs, against Gotobi corporate USD demand, against generic carry drift. Separating test: split Gotobi from non-Gotobi days at the same FFAJ extreme; a retail effect holds on both, a Gotobi effect only on Gotobi days. Point-in-time on the FFAJ publication lag",
+   "falsifier": "the pre-fix return at the FFAJ extreme equals the non-extreme return on non-Gotobi days after costs",
+   "competing_explanations": [
+    "retail-crowding unwind",
+    "Gotobi corporate USD demand",
+    "generic carry drift"
+   ],
+   "separating_test": "Gotobi versus non-Gotobi days at the same FFAJ extreme"
+  },
+  {
+   "id": "IQ-715",
+   "orig": true,
+   "breadth_gap": [
+    "02_09_utc"
+   ],
+   "symbols": [
+    "NZDUSD",
+    "AUDUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "linear_response"
+   ],
+   "mechanism": "Global Dairy Trade price-index surprise at the Tuesday auction close: dairy is about a quarter of NZ goods exports, so a GDT shock reprices NZ terms of trade and the NZDUSD-minus-AUDUSD relative leg (AUD has no dairy exposure) drifts in the shock's direction into the Asia session. Competing: terms-of-trade repricing against a common USD move against the RBNZ-expectation channel. Separating test: the relative leg cancels the common USD move; the RBNZ channel predicts the effect only in Monetary Policy Statement weeks, terms of trade predicts it in every week. Point-in-time on the auction-result timestamp",
+   "falsifier": "the relative-leg drift after the auction is the same for large and small GDT surprises, in RBNZ and non-RBNZ weeks",
+   "competing_explanations": [
+    "terms-of-trade repricing",
+    "common USD move",
+    "RBNZ-expectation channel"
+   ],
+   "separating_test": "NZDUSD-minus-AUDUSD relative leg; RBNZ MPS weeks against non-MPS weeks",
+   "data_gate": "GDT site terms unread; the event series is not fetched until Global data reads them through robots_gate (fails closed)"
+  },
+  {
+   "id": "IQ-716",
+   "orig": true,
+   "breadth_gap": [
+    "energy"
+   ],
+   "symbols": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "EIA Weekly Petroleum Status Report (Wednesday 10:30 ET): Cushing is the WTI delivery point, so a Cushing stock build beyond what the total US crude change explains widens Brent over WTI. Competing: Cushing storage arbitrage against a headline inventory surprise against refinery-run noise. Separating test: regress the XBR-XTI spread move on the Cushing change orthogonalised to total crude and on total crude; the storage mechanism predicts a residual loading with total crude insignificant. Point-in-time on the release timestamp, net of 2x spread cost",
+   "falsifier": "the spread loads on total crude and not on the Cushing residual, or neither loading survives 2x spread cost",
+   "competing_explanations": [
+    "Cushing storage arbitrage",
+    "headline inventory surprise",
+    "refinery-run noise"
+   ],
+   "separating_test": "Cushing residual loading against total-crude loading"
+  },
+  {
+   "id": "IQ-725",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals"
+   ],
+   "symbols": [
+    "XAUUSD"
+   ],
+   "traditions": [
+    "information_theory",
+    "survival_hazard"
+   ],
+   "mechanism": "XAUUSD tick imbalance in the last 30 minutes before the Friday close against the sign of the Sunday-open gap: informed weekend positioning (the imbalance sign predicts the gap sign) against liquidity withdrawal (spread widening, not imbalance, predicts only the gap size). Separating test: regress the gap sign on the imbalance with spread widening as a control and |gap| on spread widening; positioning predicts a significant imbalance coefficient after the control, withdrawal predicts zero. Own tick tape only",
+   "falsifier": "the imbalance coefficient on the gap sign is zero once spread widening is controlled",
+   "competing_explanations": [
+    "informed weekend positioning",
+    "liquidity withdrawal into the close"
+   ],
+   "separating_test": "gap sign on tick imbalance controlling for spread widening; |gap| on spread widening",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-726",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "EURUSD"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "US500 CFD tick imbalance in the first 5 seconds after 08:30 ET US releases (13:30 UTC in winter) leads the EURUSD 5-60 second move: flow transmission (the lead also appears on non-release minutes) against common news (the lead appears only at release minutes and vanishes once the surprise sign is removed). Separating test: lead-lag beta on release minutes against matched non-release minutes with the surprise sign partialled out, charged real latency and spread costs. Own tick tape only",
+   "falsifier": "the lead-lag beta is the same at release and matched non-release minutes, or vanishes once the surprise sign is partialled out, after latency and spread costs",
+   "competing_explanations": [
+    "cross-asset flow transmission",
+    "common news shock"
+   ],
+   "separating_test": "release against matched non-release minutes with the surprise sign partialled out",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial; the surprise sign needs a consensus series, UNMEASURED until one passes terms and robots (most consensus feeds are third-party), so the first test runs release against matched non-release minutes without it"
+  },
+  {
+   "id": "IQ-730",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "causal"
+   ],
+   "mechanism": "EURUSD tick imbalance in the 5 minutes before the London 4pm fix on month-end days against the month-to-date US500 minus GER40 return differential: equity-rebalancing pressure (the imbalance sign follows the differential on month-end days only) against generic end-of-day liquidity noise (the same pattern on non-month-end days). Separating test: the interaction of the differential with a month-end dummy on the pre-fix imbalance and on the 16:00-16:30 London move, net of costs. The month-end fix trade is crowded at bar level, so the tick-imbalance rule must beat the plain bar rule on the same days. Own tick tape only",
+   "falsifier": "the differential-by-month-end interaction is zero, or the tick rule does not beat the plain bar rule after costs",
+   "competing_explanations": [
+    "month-end equity-rebalancing pressure",
+    "generic end-of-day liquidity noise"
+   ],
+   "separating_test": "differential x month-end dummy on pre-fix imbalance and the 16:00-16:30 London move; must beat the plain bar rule",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-731",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "USDJPY",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "information_theory"
+   ],
+   "mechanism": "During the Tokyo cash lunch break (11:30-12:30 JST, 02:30-03:30 UTC) USDJPY tick imbalance leads US500 CFD moves at 1-10 minutes: Nikkei-futures hedging routed through JPY against a common risk-on factor (contemporaneous co-movement only, no lead). Separating test: the lead-lag beta in the lunch hour against matched non-lunch Asian hours, with contemporaneous co-movement partialled out. Own tick tape only",
+   "falsifier": "the lunch-hour lead-lag beta equals the matched non-lunch beta once contemporaneous co-movement is partialled out",
+   "competing_explanations": [
+    "Nikkei-futures hedging routed through JPY",
+    "common risk-on factor"
+   ],
+   "separating_test": "lunch against matched non-lunch Asian hours, contemporaneous co-movement partialled out",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-735",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "UST10Y"
+   ],
+   "traditions": [
+    "linear_response",
+    "causal"
+   ],
+   "mechanism": "The XAUUSD reaction to the 08:30 ET US CPI surprise conditioned on the pre-release UST10Y CFD tick imbalance: rates-led pricing (positioning already taken in rates shrinks the gold surprise beta) against gold-specific flow (the beta does not depend on the rates imbalance). Separating test: the surprise x pre-release imbalance interaction on the 1-30 minute XAUUSD move. CPI-gold is crowded at bar level, so any edge must come from the interaction. Own tick tape only",
+   "falsifier": "the surprise x pre-release rates-imbalance interaction on the 1-30 minute gold move is zero after costs",
+   "competing_explanations": [
+    "rates-led pricing",
+    "gold-specific flow"
+   ],
+   "separating_test": "surprise x pre-release UST10Y tick imbalance interaction on the 1-30 minute XAUUSD move",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial; the CPI surprise needs a consensus series, UNMEASURED until one passes terms and robots (as IQ-726)"
+  },
+  {
+   "id": "IQ-736",
+   "orig": true,
+   "breadth_gap": [
+    "indices",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "US500",
+    "USDJPY"
+   ],
+   "traditions": [
+    "causal",
+    "survival_hazard"
+   ],
+   "mechanism": "US500 CFD drift at the broker's Sunday reopen conditioned on Friday's last-hour cash-close tick imbalance and on Sunday's first-hour USDJPY move: weekend news repriced through JPY against Friday flow continuation. Separating test: regress the reopen gap and drift on both regressors jointly; news loads on USDJPY, continuation on the Friday imbalance. Broker-specific CFD reopen, so the gap is measured on our own venue. Own tick tape only",
+   "falsifier": "neither the Friday imbalance nor the Sunday first-hour USDJPY move loads on the reopen gap after costs",
+   "competing_explanations": [
+    "weekend news repriced through JPY",
+    "Friday flow continuation"
+   ],
+   "separating_test": "joint regression of the reopen gap on the Friday last-hour imbalance and the Sunday first-hour USDJPY move",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-747",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "indices"
+   ],
+   "symbols": [
+    "BTCUSD",
+    "USDJPY",
+    "AUDJPY",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "linear_response"
+   ],
+   "mechanism": "Fusion BTCUSD CFD return over the weekend, while FX is shut, as a predictor of the sign and size of the Sunday-open USDJPY and AUDJPY gap: BTC trades through the weekend and may price weekend risk that FX can only reprice at the reopen. Separating test: regress the Sunday-open gap on the BTC weekend return, controlling for Friday's US500 return and the Friday last-hour tick imbalance, out of sample over 2 years, net of the Sunday-open spread. Own broker bars and tick tape only; BTCUSD is used as an MT5 CFD informing MT5 FX, never as a hunted crypto universe",
+   "falsifier": "the BTC weekend return carries no out-of-sample loading on the Sunday-open gap once Friday's US500 return and last-hour imbalance are controlled for, or the loading does not clear the Sunday-open spread",
+   "competing_explanations": [
+    "BTC prices weekend risk",
+    "spurious, via Friday's US500 move"
+   ],
+   "separating_test": "out-of-sample regression of the Sunday-open USDJPY/AUDJPY gap on the BTC weekend return with Friday US500 return and Friday last-hour tick imbalance as controls, net of the Sunday-open spread",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-748",
+   "orig": true,
+   "breadth_gap": [
+    "energy",
+    "indices"
+   ],
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "US500",
+    "NAS100",
+    "US30"
+   ],
+   "traditions": [
+    "change_point",
+    "extreme_value"
+   ],
+   "mechanism": "At the broker's energy and index CFD contract-roll timestamps, the tick mid may overshoot the broker's published roll adjustment and revert within 1h: a liquidity hole as the underlying contract switches. Separating test: the residual move beyond the published adjustment, measured against the spread at the roll; a pure bar artefact leaves a residual of zero. Own broker ticks and published roll adjustments only",
+   "falsifier": "the residual beyond the published roll adjustment is within the spread at the roll, or does not revert within 1h net of costs",
+   "competing_explanations": [
+    "liquidity-hole overshoot at the roll",
+    "bar artefact equal to the adjustment"
+   ],
+   "separating_test": "residual tick-mid move beyond the broker's published roll adjustment versus the spread at the roll, and its 1h reversion",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-752",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "traditions": [
+    "causal",
+    "stochastic_processes"
+   ],
+   "mechanism": "On US cash-market holidays and half-days (Thanksgiving 2026-11-26, half-day 2026-11-27), NY-session EURUSD and GBPUSD tick volatility may fall and 15-minute range reversion may clear costs, against matched non-holiday sessions. Separating test: a holiday dummy controlling for the count of scheduled releases in the session, with P&L net of the measured spread. Holiday calendar is hand-entered (no fetch); own broker ticks only; forward test first due 2026-11-26",
+   "falsifier": "the holiday dummy carries no loading on NY-session tick volatility or on net 15-minute range-reversion P&L once release count is controlled for",
+   "competing_explanations": [
+    "holiday liquidity drought",
+    "fewer scheduled releases"
+   ],
+   "separating_test": "holiday dummy versus release-count control on NY-session tick vol and net 15-minute range-reversion P&L, matched sessions",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-753",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "USDJPY"
+   ],
+   "traditions": [
+    "causal",
+    "change_point"
+   ],
+   "mechanism": "Falsifier for the existing Gotobi rows: if the USDJPY pre-9:55 JST flow is real corporate settlement, it must shift to the prior business day when the 5th/10th-multiple date falls on a Japanese holiday or weekend; a data-mined artefact stays on the nominal date or vanishes. Japanese holiday calendar is hand-entered (no fetch); own broker bars only. One test that kills or sharpens the existing Gotobi rows",
+   "falsifier": "the pre-9:55 JST USDJPY move does not shift to the prior business day on holiday- or weekend-displaced Gotobi dates",
+   "competing_explanations": [
+    "real settlement flow that follows the business-day convention",
+    "data-mined calendar artefact"
+   ],
+   "separating_test": "pre-9:55 JST USDJPY return on displaced Gotobi dates: prior business day versus nominal date",
+   "data_gate": ""
+  },
+  {
+   "id": "IQ-758",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "gold_metals",
+    "indices"
+   ],
+   "symbols": [
+    "EURUSD",
+    "XAUUSD",
+    "US500"
+   ],
+   "traditions": [
+    "extreme_value",
+    "stochastic_processes"
+   ],
+   "mechanism": "Round price levels (EURUSD x.x000 and x.x500, XAUUSD 00 and 50, US500 00) may show excess first-touch bounces and excess post-break travel against matched non-round offsets fixed in advance: take-profit orders cluster at round numbers and stop orders just beyond them (Osler). Separating test: the clustering account needs BOTH excesses, net of spread, per asset class; a random walk shows neither. Own broker ticks only",
+   "falsifier": "no excess first-touch bounce or no excess post-break travel at round levels versus the pre-fixed non-round offsets, net of spread, in any asset class",
+   "competing_explanations": [
+    "take-profit and stop-order clustering at round numbers",
+    "random walk"
+   ],
+   "separating_test": "first-touch bounce rate and post-break travel at round levels versus matched non-round offsets fixed in advance, net of spread, per asset class",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-759",
+   "orig": true,
+   "breadth_gap": [
+    "indices"
+   ],
+   "symbols": [
+    "BTCUSD",
+    "US500"
+   ],
+   "traditions": [
+    "causal",
+    "information_theory"
+   ],
+   "mechanism": "Fusion BTCUSD CFD return and tick imbalance over 13:00-13:30 UTC as a predictor of US500's first 15 minutes after the cash open, controlling for US500's own pre-open move and its gap. BTCUSD is used only as an MT5 CFD informing an MT5 index, never as a hunted crypto universe. Own broker ticks only",
+   "falsifier": "the BTCUSD 13:00-13:30 UTC return and imbalance carry no out-of-sample loading on US500's first 15 minutes once US500's pre-open move and gap are controlled for, net of costs",
+   "competing_explanations": [
+    "BTC prices extra risk sentiment",
+    "a common futures driver already in US500's pre-open move"
+   ],
+   "separating_test": "out-of-sample regression of US500's first-15-minute return on the BTCUSD 13:00-13:30 UTC return and imbalance, with US500 pre-open move and gap as controls",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  }
+ ]
+}
