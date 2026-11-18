@@ -142,6 +142,11 @@ _GIT_VARS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
              "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES")  # fmt: skip
 
 
+#: Environment names that carry a credential (GH_TOKEN, GITHUB_TOKEN, OPENROUTER_API_KEY, ...).
+_SECRET = re.compile(r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_?KEY|_KEY$|^GH_|^GITHUB_",
+                     re.IGNORECASE)  # fmt: skip
+
+
 def mint_only_missing(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
     """{sidecar path: text} for `organs`, each written by `runtime_attestation.py --only-missing`
     on a full checkout of `tree` -- stamped with where it was measured, as the check requires.
@@ -154,7 +159,8 @@ def mint_only_missing(cwd: Path, tree: str, organs: set[str]) -> dict[str, str]:
         git(wt, "clean", "-fdq", "--", SIDECARS)
     else:
         git(cwd, "worktree", "add", "-q", "--detach", "-f", str(wt), commit)
-    env = {k: v for k, v in os.environ.items() if k not in _GIT_VARS}
+    # It runs the PR's own code: no git location it could act through, and no credential
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_VARS and not _SECRET.search(k)}
     p = subprocess.run([sys.executable, "desks/mt5/research/runtime_attestation.py",
                         "--only-missing", "--root", str(wt)], cwd=wt, env=env,
                        capture_output=True, text=True, check=False)  # fmt: skip

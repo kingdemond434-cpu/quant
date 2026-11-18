@@ -242,3 +242,26 @@ def test_a_pr_that_merges_cleanly_is_never_pushed(
     monkeypatch.setattr(rc, "git", git)
     out = rc.one(repo, 5, push=True, quiet_min=0)
     assert "merges cleanly" in out and not any(c[0] == "push" for c in calls)
+
+
+def test_the_minter_runs_the_pr_s_code_without_credentials(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Audit soft fix on #1258: runtime_attestation --only-missing runs PR-tree code."""
+    for k in ("GH_TOKEN", "GITHUB_TOKEN", "OPENROUTER_API_KEY", "HCNSEC_SECRET", "GIT_DIR"):
+        monkeypatch.setenv(k, "x")
+    monkeypatch.setenv("PATH_KEEP_ME", "y")
+    seen: dict[str, Any] = {}
+
+    def fake_run(cmd: list[str], **kw: Any) -> Any:
+        seen.update(kw["env"])
+        return subprocess.CompletedProcess(cmd, 1, "", "stop here")
+
+    monkeypatch.setattr(rc, "git", lambda cwd, *a, **k: str(tmp_path) if "rev-parse" in a else "c")
+    (tmp_path / rc.MINT_WT / ".git").mkdir(parents=True)
+    monkeypatch.setattr(rc.subprocess, "run", fake_run)
+    with pytest.raises(rc.Conflict):
+        rc.mint_only_missing(tmp_path, "t", {"leg:p"})
+    assert seen["PATH_KEEP_ME"] == "y"
+    for k in ("GH_TOKEN", "GITHUB_TOKEN", "OPENROUTER_API_KEY", "HCNSEC_SECRET", "GIT_DIR"):
+        assert k not in seen
