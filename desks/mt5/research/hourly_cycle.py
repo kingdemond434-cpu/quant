@@ -1153,6 +1153,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "policy_lift_reopen",
+    # EVERY DORMANT SLEEVE OR ZEROED WINDOW OWES A CLOCK OR A RE-JUDGE (principal 2026-11-18,
+    # every account every market day): names each one's state and puts the exact spec of every
+    # clockless, certificateless one on the gauntlet docket, so a pass enrols its clock.
+    "dormant_clock_sweep",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     # THE REPAIR SWEEP THAT GIVES A CLOCKLESS CERTIFICATE ITS CLOCK (principal 2026-11-13: "All
     # certs passed go on forward clocks immediately"). It sat on the HEAVY plan only, so on a box
@@ -2408,6 +2412,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
     "policy_lift_reopen": 120,
+    "dormant_clock_sweep": 120,
     "six_event_trace": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -5878,6 +5883,10 @@ def main() -> None:
     # of-cost edge, is renamed so the sealed promoter re-judges that clock through every door.
     plr = _costed("policy_lift_reopen", lambda: _producer(
         "policy_lift_reopen", "research/policy_lift_reopen.py"))
+    # DORMANT WINDOWS (principal 2026-11-18): a zeroed or STANDBY row with no clock can never
+    # earn its way back; its exact spec goes on the docket so the gauntlet can give it one.
+    dcs = _costed("dormant_clock_sweep", lambda: _producer(
+        "dormant_clock_sweep", "research/dormant_clock_sweep.py"))
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
     # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
     # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
@@ -6783,6 +6792,7 @@ def main() -> None:
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr, "policy_lift_reopen": plr,
+                    "dormant_clock_sweep": dcs,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8", newline="\n")
