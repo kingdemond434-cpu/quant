@@ -210,7 +210,7 @@ def _fixture_opener(codes: dict[str, int] | None = None, robots: bytes | None = 
     def open_(req: urllib.request.Request, timeout: float) -> tuple[int, str, bytes]:
         url = req.full_url
         seen.append(url)
-        assert req.get_header("User-agent", "").startswith("quant-usd-liquidity/")
+        assert req.get_header("User-agent", "").startswith("quant-desk-research/")
         if url.endswith("/robots.txt"):
             return (200, "text/plain", robots) if robots is not None else (404, "", b"")
         for k, b in body.items():
