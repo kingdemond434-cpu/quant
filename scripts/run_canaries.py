@@ -107,6 +107,9 @@ CANARIES: dict[str, tuple[str, str, str]] = {
 LIVE_PATH_CANARY = "C3"
 
 
+from libs.data.refused_hosts import refusal as _terms_refusal  # noqa: E402
+
+
 def _get(url: str) -> tuple[int, str]:
     req = urllib.request.Request(url, headers={
         "User-Agent": "quant-canary/1.0", "Accept": "*/*"})
@@ -178,6 +181,17 @@ def run_all() -> dict:
     base = _baselines()
     results: dict[str, dict] = {}
     for cid, (label, url, kind) in CANARIES.items():
+        refused = _terms_refusal(url)
+        if refused:
+            # A canary read is an automated contact. A host whose terms refuse it is never
+            # contacted, and the verdict says so: not PASS (nothing was looked at) and not
+            # UNREACHABLE (the network was never tried).
+            results[cid] = {"label": label, "status": None, "value": None,
+                            "verdict": "BLOCKED_ON_TERMS", "note": f"BLOCKED_ON_TERMS: {refused}",
+                            "missed_growth": {"mechanism": f"canary_{cid}_terms_refusal",
+                                              "lost": f"the shift watch on: {label}",
+                                              "verdict": "a gap, not a zero"}}
+            continue
         status, body = _get(url)
         if status != 200:
             # NEVER "PASS". "We could not look" and "we looked and nothing moved" are opposite
@@ -212,12 +226,14 @@ def main() -> int:
     results = run_all()
     shifts = [c for c, r in results.items() if r["verdict"] == "SHIFT"]
     blind = [c for c, r in results.items() if r["verdict"] == "UNREACHABLE"]
+    refused = [c for c, r in results.items() if r["verdict"] == "BLOCKED_ON_TERMS"]
     out = {
         "ts": datetime.now(tz=UTC).isoformat(),
         "seconds": round(time.time() - t0, 1),
         "canaries": len(results),
         "shifts": shifts,
         "unreachable": blind,
+        "blocked_on_terms": refused,
         "live_path_blind": LIVE_PATH_CANARY in blind,
         "results": results,
         "verdict": (
@@ -240,7 +256,8 @@ def main() -> int:
     print(f"canaries: {len(results) - len(blind)}/{len(results)} reachable | "
           f"{len(shifts)} shift(s) | {out['seconds']}s")
     for cid, r in results.items():
-        mark = {"SHIFT": "SHIFT", "PASS": "ok   ", "UNREACHABLE": "BLIND"}[r["verdict"]]
+        mark = {"SHIFT": "SHIFT", "PASS": "ok   ", "UNREACHABLE": "BLIND",
+                "BLOCKED_ON_TERMS": "TERMS"}[r["verdict"]]
         print(f"  [{mark}] {cid} {r['label'][:46]:<46} {r.get('value') or r['note'][:40]}")
     return 0
 

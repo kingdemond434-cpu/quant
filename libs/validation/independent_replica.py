@@ -45,6 +45,7 @@ THE ENGINE CONTRACT (restated from `mt5desk.engine.run_backtest`'s docstring and
       on the first bar whose [low, high] contains it; it is a LIMIT when it sits on the favourable
       side of bar t+1's open, and a limit fill bar may not also pay the target
     * stop and target are checked intrabar from the fill bar; if both are touched the STOP wins
+    * a bar after the fill bar that OPENS through the stop exits at that open, not at the stop
     * after `ttl_bars` bars from the fill the position closes at the OPEN of bar fill+ttl
     * one position at a time: a signal whose entry bar is at or before the last exit is skipped;
       a trigger that never fills does not occupy the book
@@ -376,6 +377,9 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
         exit_i = -1
         why = "ttl"
         for j in range(fill_i, min(len(ix), fill_i + s.ttl)):
+            if j > fill_i and (o[j] <= s.stop if s.side > 0 else o[j] >= s.stop):
+                exit_px, exit_i, why = float(o[j]), j, "stop"
+                break
             stopped = lo[j] <= s.stop if s.side > 0 else h[j] >= s.stop
             if stopped:
                 exit_px, exit_i, why = s.stop, j, "stop"
