@@ -94,3 +94,21 @@ def test_no_new_contract_is_judged_on_a_log(name: str) -> None:
         assert name in LOG_CONTRACTS_GRANDFATHERED, (
             f"{name} is contracted on {artifact}: a log moves on errors too. Contract it on the "
             f"file it produces.")
+
+
+def test_published_errors_carry_no_raw_text() -> None:
+    health = {"processes": [{"name": "MT5-A", "verdict": "FAILING", "bad_reads": 4,
+                             "last_result_code": 1, "why": r"C:\\opt\\x failed: secret"}]}
+    ns = {"acted": [{"task": "MT5-B", "verdict": "STALE", "action": "start FAILED",
+                     "detail": r"ERROR: C:\\Users\\x access denied"}],
+          "escalated": [{"task": "MT5-C", "verdict": "FAILING", "code": 2,
+                         "diagnosis": r"C:\\opt\\y missing"}]}
+    blob = json.dumps(fq.detect(health, ns, {}))
+    assert "C:" not in blob and "secret" not in blob and "denied" not in blob
+    assert "exit code 1" in blob
+
+
+def test_daily_fill_alarms_join_the_queue() -> None:
+    found = fq.detect({}, {}, {}, {"alarms": [{"key": "zero_fills:e8", "kind": "zero_fills",
+                                               "task": "e8"}]})
+    assert found == {"zero_fills:e8": {"kind": "zero_fills", "task": "e8"}}
