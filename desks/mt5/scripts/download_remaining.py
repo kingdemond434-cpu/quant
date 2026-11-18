@@ -98,12 +98,22 @@ def main(argv: list[str] | None = None) -> int:
     charts = [t.strip().upper() for t in args.timeframes.split(",") if t.strip()]
     PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not mt5.initialize():
+    # PINNED (2026-11-11): the desk's terminal by path, never a Session-0 launch, and only on
+    # Fusion's account -- the box runs FTMO too, and its bars are not this desk's universe.
+    from mt5desk.config import terminal_path
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
         # THE TERMINAL'S ABSENCE IS REPORTED, NOT ASSUMED AWAY. This script is scheduled on the
         # research VPS too, where there is no terminal; exiting 2 (this desk's UNANSWERED code)
         # distinguishes "no terminal here" from "fetched nothing", which look identical in a log.
         print(f"UNANSWERED: MT5 will not initialize ({mt5.last_error()}); no bars can be "
               f"fetched on this host", file=sys.stderr)
+        return 2
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        print(f"UNANSWERED: wrong venue, refused ({why}); no bars fetched", file=sys.stderr)
+        mt5.shutdown()
         return 2
     print(f"MT5 initialized -> writing into {PARQUET_DIR}")
 

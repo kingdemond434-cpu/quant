@@ -186,3 +186,21 @@ def test_calendar_rows_say_whether_the_book_is_in_the_window(desk: Path) -> None
     assert rows["tokyo"]["acted"] is False
     assert "NO LIVE SLEEVE" in rows["tokyo"]["desk"]
     assert macro["surprise"]["status"]["status"] in ("MISSING", "UNMEASURED")
+
+
+def test_live_section_carries_each_live_sleeves_decay_verdict(desk: Path) -> None:
+    """DECAY_VERDICTS.json is read on the page: each LIVE sleeve's verdict, never a clock's."""
+    assert DDS._decay_block()["status"] == "MISSING"
+    _write(desk / "desks/mt5/reports/DECAY_VERDICTS.json", {
+        "counts": {"DECAYING": 1, "UNMEASURED_TOO_FEW_TRADES": 1},
+        "sizing_hook": {"status": "NOT_WIRED"},
+        "sleeves": {
+            "live:gold_asia": {"sleeve": "gold_asia", "verdict": "DECAYING", "n": 40,
+                               "block_mean_r": [1.0, 1.0, -1.0, -1.0]},
+            "live:audchf_gap": {"sleeve": "audchf_gap", "verdict": "UNMEASURED_TOO_FEW_TRADES",
+                                "n": 7, "why": "7 realised trade(s) < 20"},
+            "clock:XAUUSD.asia": {"sleeve": "XAUUSD.asia", "verdict": "DECAYING", "n": 30}}})
+    block = DDS._live(time.time() + 20)["decay"]
+    assert block["status"] == "MEASURED" and "NOT_WIRED" in block["role"]
+    assert [r["sleeve"] for r in block["live_sleeves"]["value"]] == ["audchf_gap", "gold_asia"]
+    assert block["live_decaying"]["value"] == ["gold_asia"]

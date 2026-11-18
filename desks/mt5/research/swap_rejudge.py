@@ -37,6 +37,13 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parents[1]
 if str(BASE) not in sys.path:
@@ -142,14 +149,17 @@ def _ledger_nights(symbol: str, family: str, window: str) -> dict[str, Any]:
     from mt5desk.engine import rollovers_between
 
     match = "exact"
+    # A legacy file several clock keys wrote is frozen (libs.research.forward_ledger): its rows
+    # carry no key, so it is never this sleeve's holding record, nor a pooled neighbour's.
+    frozen = _fl.frozen_names(SHADOW)
     exact = SHADOW / f"ledger_{symbol}_{family}_{window}.json"
-    cands = [exact] if exact.exists() else []
+    cands = [exact] if exact.exists() and exact.name not in frozen else []
     if not cands:
         match = "symbol+family"
-        cands = sorted(SHADOW.glob(f"ledger_{symbol}_{family}_*.json"))
+        cands = list(_fl.iter_ledgers(SHADOW, f"ledger_{symbol}_{family}_*.json"))
     if not cands:
         match = "symbol only (POOLED: another sleeve's holding behaviour)"
-        cands = sorted(SHADOW.glob(f"ledger_{symbol}_*.json"))
+        cands = list(_fl.iter_ledgers(SHADOW, f"ledger_{symbol}_*.json"))
     if not cands:
         return {"nights": None, "why": f"no shadow ledger on disk for {symbol}", "n": 0,
                 "ledgers": [], "match": "none"}
