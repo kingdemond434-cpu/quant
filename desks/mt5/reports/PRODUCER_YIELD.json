@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-18T14:53:56+00:00",
+ "generated_utc": "2026-11-18T15:05:21+00:00",
  "law": "EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output is DEAD and carries a replacement; low output is STARVED and carries a budget question; no artifact is UNMEASURED and carries neither.",
  "window_days": 3.0,
  "median_rows": 640,
@@ -711,7 +711,7 @@
   },
   {
    "producer": "descendants",
-   "rows_in_window": 51087871,
+   "rows_in_window": 51411796,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -735,7 +735,7 @@
   },
   {
    "producer": "world",
-   "rows_in_window": 852471,
+   "rows_in_window": 851925,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -747,7 +747,7 @@
   },
   {
    "producer": "tier_s",
-   "rows_in_window": 337749,
+   "rows_in_window": 335493,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -765,13 +765,13 @@
   },
   {
    "producer": "asia",
-   "rows_in_window": 197230,
+   "rows_in_window": 179300,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "asia_plane",
-   "rows_in_window": 197230,
+   "rows_in_window": 179300,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -843,7 +843,7 @@
   },
   {
    "producer": "asia_endpoints",
-   "rows_in_window": 14740,
+   "rows_in_window": 14363,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1329,7 +1329,7 @@
   "set_aside": {
    "available": true,
    "path": "desks\\mt5\\reports\\SET_ASIDE_LEDGER.json",
-   "at": "2026-11-18T14:45:42+00:00",
+   "at": "2026-11-18T14:55:59+00:00",
    "organs": [
     "alpha_lineage_search",
     "alpha_rl_run",
@@ -1340,13 +1340,13 @@
     "sares"
    ],
    "stages": 17,
-   "set_aside_total": 4165974,
+   "set_aside_total": 4166628,
    "worst": [
     {
      "stage": "alpha_lineage_search/shared_ancestors",
-     "set_aside": 1864185,
-     "kept": 117800,
-     "considered": 1981985,
+     "set_aside": 1864818,
+     "kept": 117840,
+     "considered": 1982658,
      "ordering": "-len(families), -n_descendants"
     },
     {
@@ -1365,9 +1365,9 @@
     },
     {
      "stage": "alpha_lineage_search/untried_mutations",
-     "set_aside": 62055,
-     "kept": 118200,
-     "considered": 180255,
+     "set_aside": 62076,
+     "kept": 118240,
+     "considered": 180316,
      "ordering": "-len(untried), -n_nodes"
     },
     {
