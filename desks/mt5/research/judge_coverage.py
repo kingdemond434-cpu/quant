@@ -3749,6 +3749,25 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     return doc
 
 
+def _unmined_reasons(unmined: list[str]) -> dict[str, Any]:
+    """Each unmined family's measured cause, from `research/zero_cell_families`' last report.
+
+    Annotation only: no quota, order or count changes. A family the report does not name, or an
+    absent report, reads UNMEASURED -- never "no cause", which would be a silent clean verdict.
+    """
+    try:
+        desk = str(BASE)
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from research import zero_cell_families as zcf
+        got = zcf.reasons()
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"zero_cell_families unreadable ({type(exc).__name__})"}
+    return {f: got.get(f, {"cause": "UNMEASURED", "why": "not in ZERO_CELL_FAMILIES.json yet"})
+            for f in unmined}
+
+
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
            ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -4190,6 +4209,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
         "build_input_probe": probe_census,
+        # WHY each unmined live family has no docket cell (research/zero_cell_families.py).
+        "unmined_reasons": _unmined_reasons(unmined[:40]),
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
         "occupancy_order": occ,

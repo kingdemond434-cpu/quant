@@ -1418,7 +1418,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alt_equity_handoff",
                      # the asset-class specialists' named mechanisms, built by the sealed
                      # gauntlet's own build_cell before they are donated
-                     "specialist_cell"),
+                     "specialist_cell",
+                     # every live family the judge has never been handed a cell for: its cause
+                     # measured, and first cells minted where a pre-screen forwards none
+                     "zero_cell_families"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -2308,6 +2311,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "cross_sectional_breadth": 1_000,
     # stops itself at its own 900 s `--budget-s` and writes; resumes next pass from its state
     "specialist_cell": 1_000,
+    # Diagnosis reads artifacts in seconds; the first-cell screens stop at its own 600 s budget.
+    "zero_cell_families": 700,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
     "event_surprise": 400,
@@ -4570,6 +4575,13 @@ def main() -> None:
     # charged to the trial census; writes reports/SPECIALIST_CELLS.json. Additive.
     spcl = _costed("specialist_cell", lambda: _producer(
         "specialist_cell", "research/specialist_cell.py", "--once", "--budget-s", "900"))
+    # ZERO-CELL FAMILIES (2026-11-18): JUDGE_COVERAGE named twenty live families with no docket
+    # cell and no reason. Each one's cause is measured from its producer's own artifact and its
+    # inputs (BLOCKED_INPUT by name where an input is absent), and a family whose producer's
+    # pre-screen forwards nothing gets at most three first cells through that producer's door;
+    # writes reports/ZERO_CELL_FAMILIES.json, which judge_coverage publishes as unmined_reasons.
+    zcf = _costed("zero_cell_families", lambda: _producer(
+        "zero_cell_families", "research/zero_cell_families.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -6587,7 +6599,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
-                    "specialist_cell": spcl,
+                    "specialist_cell": spcl, "zero_cell_families": zcf,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
