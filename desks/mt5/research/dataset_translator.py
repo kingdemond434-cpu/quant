@@ -91,22 +91,26 @@ CELL_EMITTED = "CELL_EMITTED"
 CELL_QUEUED = "CELL_QUEUED"
 AWAITING = "MAPPED_AWAITING_SERIES"
 UNMAPPABLE = "UNMAPPABLE"
+#: Mapped and with a series, but another proposer (or the registry) already holds every cell the
+#: translator would mint. Counts toward the wired share: the dataset IS a signal on a tradable.
+COVERED = "COVERED_ELSEWHERE"
 
-#: Worker-rule terms refusals not yet in `libs.data.refused_hosts` (2026-11-18). Matched by suffix.
-EXTRA_REFUSED: dict[str, str] = {
+#: TERMS REFUSALS ARE READ, NOT RESTATED. Hosts come from `libs.data.refused_hosts.REFUSED_HOSTS`
+#: (matched by suffix, and by the host's first label as a word of the dataset's id, which is how a
+#: key-catalogue row whose URL is a sign-up console -- YOUTUBE_API_KEY, COMTRADE_API_KEY -- is
+#: caught); a lake series published by `alt_proxies` is judged by that organ's own `TERMS`.
+#: THIS LOCAL LIST HOLDS ONLY WHAT NEITHER CARRIES YET (2026-11-18), each by the worker-rule
+#: ruling that names it, and an entry leaves the day `refused_hosts.py` carries it:
+#:   * Reddit -- refused by the data and fetching law; absent from refused_hosts.py today.
+#:   * IMF PortWatch -- the law says "pending reconciliation"; alt_proxies.TERMS still reads
+#:     `confirmed` for imf_portwatch_*, so the stricter reading holds until the two reconcile.
+LOCAL_REFUSED_HOSTS: dict[str, str] = {
     "reddit.com": "Reddit: Data API terms bar commercial use without an agreement",
     "arcgis.com": "IMF PortWatch via ArcGIS: terms pending reconciliation",
 }
-#: Terms-refused PROVIDERS named in a dataset's id or title where its URL is a sign-up or console
-#: page rather than the refused host itself (the key catalogue's YouTube and Comtrade rows).
-REFUSED_NAMES: dict[str, str] = {
-    "youtube": "YouTube: terms refuse automated access",
-    "comtrade": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
-    "fred": "FRED: refused for all automated fetches (terms ruling 2026-11-13)",
-    "alfred": "FRED/ALFRED: refused for all automated fetches (terms ruling 2026-11-13)",
-    "yahoo": "Yahoo: terms refuse automated collection",
-    "dukascopy": "Dukascopy: terms refuse bots and commercial use",
-    "portwatch": "IMF PortWatch: terms pending reconciliation",
+LOCAL_REFUSED_NAMES: dict[str, str] = {
+    "reddit": "Reddit: Data API terms bar commercial use without an agreement",
+    "portwatch": "IMF PortWatch: terms pending reconciliation (alt_proxies.TERMS disagrees)",
 }
 #: Key-catalogue rows that are the companion of another credential, not a dataset of their own.
 _KEY_COMPANIONS = ("_USER_AGENT", "_APP_ID", "_SECONDARY", "_PASS", "_PASSWORD", "_USER",
@@ -251,14 +255,25 @@ def _axes(path: Path) -> list[dict[str, Any]]:
         d = _read(p, {}) or {}
         name = p.stem
         src = str(d.get("source") or "")
-        url = src if "://" in src else (f"https://{src}" if "." in src and "/" not in src else "")
-        if name == "fred":
-            url = url or "https://fred.stlouisfed.org/"
+        bare = re.fullmatch(r"[a-z0-9.-]+\.[a-z]{2,}", src.lower()) and not src.lower().endswith(
+            (".csv", ".json", ".zip", ".txt"))
+        url = src if "://" in src else (f"https://{src}" if bare else "")
         cur = " ".join(str(c) for c in d.get("currencies") or [])
         out.append(_ds(f"axis:{name}", "axis", title=f"{name} axis", url=url,
+                       refused=axis_refusal(name),
                        declared=list(d.get("symbols") or []), text=f"{name} {src} {cur}",
                        available_time=str(d.get("at") or ""), prefixes=[f"axis_{p.stem}"]))
     return out
+
+
+def axis_refusal(name: str) -> str | None:
+    """The axis organ's own terms ruling (`axis_ingest.REFUSED_LAKE_AXES`), read, not restated.
+    Unimportable fails closed."""
+    try:
+        from axis_ingest import REFUSED_LAKE_AXES
+    except Exception as exc:                                          # pragma: no cover
+        return f"axis_ingest.REFUSED_LAKE_AXES unimportable ({type(exc).__name__}); fail closed"
+    return REFUSED_LAKE_AXES.get(name)
 
 
 def _keyed(path: Path) -> list[dict[str, Any]]:
@@ -449,25 +464,127 @@ def columns_of(path: Path) -> tuple[list[str], bool]:
     return sig, "available_time" in names
 
 
+def _id_words(name: str) -> set[str]:
+    return {w for w in re.split(r"[^a-z0-9]+", name.lower()) if w}
+
+
 def refusal_of(url: str, host: str, name: str = "") -> str | None:
-    """Why the dataset may not be used, or None. An unimportable host list fails CLOSED."""
-    low = name.lower()
-    for word, why in REFUSED_NAMES.items():
-        if re.search(r"(?<![a-z0-9])" + word + r"(?![a-z0-9])", low):
-            return why
-    for dom, why in EXTRA_REFUSED.items():
-        if host == dom or host.endswith("." + dom):
-            return why
-    if not url and not host:
-        return None
+    """Why the dataset may not be used, or None. `name` is the dataset's id. An unimportable
+    host list fails CLOSED; an unimportable alt_proxies.TERMS fails closed for its series."""
+    words = _id_words(name)
     try:
         from libs.data.refused_hosts import REFUSED_HOSTS
     except Exception as exc:                                          # pragma: no cover
         return f"refused-host list unimportable ({type(exc).__name__}); fail closed"
-    for dom, why in REFUSED_HOSTS.items():
-        if host == dom or host.endswith("." + dom):
+    hosts = {**REFUSED_HOSTS, **LOCAL_REFUSED_HOSTS}
+    for dom, why in hosts.items():
+        if host and (host == dom or host.endswith("." + dom)):
             return why
+        if dom.split(".")[0] in words:
+            return why
+    for word, why in LOCAL_REFUSED_NAMES.items():
+        if word in words:
+            return why
+    m = re.search(r"(?:^|[:_])alt_([a-z0-9_]+?)__", name.lower())
+    if m:
+        try:
+            from alt_proxies import TERMS
+        except Exception as exc:                                      # pragma: no cover
+            return f"alt_proxies.TERMS unimportable ({type(exc).__name__}); fail closed"
+        state, why = TERMS.get(m.group(1), ("to_confirm", "no TERMS row"))
+        if state != "confirmed":
+            return f"alt_proxies.TERMS {state}: {why}"
     return None
+
+
+# ------------------------------------------------------------------------------ coverage ---
+class Coverage:
+    """WHAT ANOTHER PROPOSER ALREADY MINTS, so no translator cell is a second trial.
+
+    Trial count is a shared multiple-testing cost (CLAUDE.md, TWO LANES): a cell that repeats one
+    the desk already charged raises the bar every other hypothesis must clear and buys nothing.
+    Three layers, each keyed WITHOUT the parameters, so nothing slips past on lag_hours alone:
+      * `owners`  -- a series a proposer mints from by construction (free stack: `fs_<id>` with
+        signal columns; keyed roster: `ks_<id>__<series>` with mapped instruments);
+      * `pairs`   -- every (params.source, symbol) already in the canonical registry;
+      * `exists`  -- the registry's own dedupe identity (`registry.content_hash` over family,
+        symbol, params and chart), the key that makes two cells one trial.
+    """
+
+    def __init__(self, owners: dict[str, str], pairs: set[tuple[str, str]],
+                 exists: Callable[[dict[str, Any]], bool]) -> None:
+        self.owners = owners
+        self.pairs = pairs
+        self._exists = exists
+
+    @classmethod
+    def empty(cls) -> Coverage:
+        return cls({}, set(), lambda _c: False)
+
+    def owner(self, stem: str) -> str | None:
+        return self.owners.get(stem)
+
+    def covered(self, stem: str, sym: str) -> bool:
+        return (stem, sym) in self.pairs
+
+    def exists(self, cell: dict[str, Any]) -> bool:
+        return self._exists(cell)
+
+
+def proposer_owners(stems: Iterable[str], fs_columns: Path | None = None,
+                    keyed: Path | None = None) -> dict[str, str]:
+    """{stem: proposer} for every lake series the free-stack or keyed proposer mints from."""
+    cols = _read(fs_columns or FS_COLUMNS, {}) or {}
+    ks: dict[str, str] = {}
+    for r in (_read(keyed or KEYED, {}) or {}).get("sources") or []:
+        for name, s in ((r or {}).get("series") or {}).items():
+            if isinstance(s, dict) and s.get("instruments"):
+                ks[f"ks_{r.get('id')}__{name}"] = "keyed_sources"
+    out: dict[str, str] = {}
+    for stem in stems:
+        if stem.startswith("fs_") and cols.get(stem[3:]):
+            out[stem] = "free_stack_proposer"
+        elif stem in ks:
+            out[stem] = ks[stem]
+    return out
+
+
+def registry_coverage(db: Path | None = None
+                      ) -> tuple[set[tuple[str, str]], Callable[[dict[str, Any]], bool]] | None:
+    """(registry (source, symbol) pairs, content-hash lookup), or None when the registry cannot
+    be read -- and then the translator mints NOTHING: an unread dedupe is not a clean one."""
+    import sqlite3
+    try:
+        from libs.moat import registry as reg
+        path = db or reg.path()
+        if not Path(path).exists():
+            return None
+        conn = sqlite3.connect(f"file:{Path(path).as_posix()}?mode=ro", uri=True, timeout=30)
+    except Exception:
+        return None
+    pairs: set[tuple[str, str]] = set()
+    try:
+        for sym, pj in conn.execute("SELECT symbol, params_json FROM research_candidates "
+                                    "WHERE params_json LIKE '%\"source\"%'"):
+            try:
+                src = (json.loads(pj or "{}") or {}).get("source")
+            except ValueError:
+                continue
+            if src:
+                pairs.add((str(src), str(sym)))
+    except Exception:
+        conn.close()
+        return None
+
+    def exists(cell: dict[str, Any]) -> bool:
+        h = reg.content_hash(str(cell.get("family") or ""), str(cell.get("symbol") or ""),
+                             cell.get("params") or {}, str(cell.get("chart") or ""))
+        try:
+            return conn.execute("SELECT 1 FROM research_candidates WHERE content_hash=? LIMIT 1",
+                                (h,)).fetchone() is not None
+        except Exception:
+            return True                  # an unreadable identity is treated as a duplicate
+    return pairs, exists
 
 
 # -------------------------------------------------------------------------------- cells ---
@@ -479,8 +596,9 @@ def _cell(ds: dict[str, Any], sym: str, side: int, stem: str, col: str, family: 
                                   "threshold": 1.0, "side": 1, "timeframe": CHART}
     else:
         params = {"source": stem, "signal": col, "transform": "level_z", "threshold": 1.0,
-                  "side_when_high": side, "lag_hours": int(ds["lag_hours"]),
-                  "timeframe": CHART}
+                  "side_when_high": side, "timeframe": CHART}
+        if int(ds["lag_hours"]) > DEFAULT_LAG_H:     # the family's own default is 24h
+            params["lag_hours"] = int(ds["lag_hours"])
     mech = (f"translation rule: dataset {ds['id']} ({ds['title'][:80]}) maps via "
             f"{', '.join(ents[:4]) or 'declared symbols'} to {sym}; its series {stem}.{col} "
             f"conditions {sym}")
@@ -498,10 +616,12 @@ def _cell(ds: dict[str, Any], sym: str, side: int, stem: str, col: str, family: 
 
 def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: dict[str, str],
               stems: dict[str, Path], cursor: dict[str, Any], *,
-              gate: Callable[[str, str], bool] | None, per_pass: int = PER_PASS
+              gate: Callable[[str, str], bool] | None, coverage: Coverage | None,
+              per_pass: int = PER_PASS
               ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """(rows, cells, new cursor). One cell per dataset per pass, newest dataset first from a
-    rotating offset; a dataset with no series NEVER yields a cell."""
+    rotating offset; a dataset with no series NEVER yields a cell, and no cell repeats a
+    (series, tradable) another proposer already mints or the registry already holds."""
     state = dict(cursor.get("datasets") or {})
     rows: list[dict[str, Any]] = []
     ready: list[tuple[dict[str, Any], list[str], list[str], str, str, str]] = []
@@ -516,7 +636,7 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
                                "declared_tradables": [s for s in ds.get("declared") or []
                                                       if s in registry
                                                       and registry[s] != "Equities"]}
-        refused = refusal_of(ds["url"], ds["host"], f"{ds['id']} {ds['title']}")
+        refused = ds.get("refused") or refusal_of(ds["url"], ds["host"], ds["id"])
         if refused:
             row.update(status=UNMAPPABLE, reason=f"BLOCKED_ON_TERMS: {refused}",
                        would_map=trad, tradables=[],
@@ -545,11 +665,14 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
         rows.append(row)
         ready.append((ds, trad, ents, stem, cols[0], fam))
     cells: list[dict[str, Any]] = []
-    if gate is None:
+    if gate is None or coverage is None:
+        why = ("research.universe_policy unimportable" if gate is None else
+               "the registry's dedupe identity is unreadable, so a cell could be a second trial")
         for row in rows:
             if row.get("series"):
-                row.update(status=CELL_QUEUED,
-                           reason="BLOCKED_DEPENDENCY: research.universe_policy unimportable")
+                row.update(status=CELL_QUEUED, reason=f"BLOCKED_DEPENDENCY: {why}",
+                           missed_growth=("the series waits for the dependency; no cell is "
+                                          "lost, it is judged the first pass both are readable"))
         return rows, cells, {"datasets": state, "offset": cursor.get("offset", 0)}
     ready.sort(key=lambda t: str(t[0]["available_time"]), reverse=True)
     off = int(cursor.get("offset") or 0) % max(1, len(ready))
@@ -558,20 +681,42 @@ def translate(datasets: list[dict[str, Any]], onto: dict[str, Any], registry: di
     for ds, trad, ents, stem, col, fam in order:
         row = by_id[ds["id"]]
         st = state.setdefault(ds["id"], {"next": 0, "emitted": 0})
-        grid = [(s, side) for s in trad if gate(s, fam) for side in SIDES]
-        if not grid:
+        owner = coverage.owner(stem)
+        if owner:
+            row.update(status=COVERED, covered_by=owner,
+                       reason=f"{owner} already mints from {stem}; a translator cell would be a "
+                              "second trial")
+            continue
+        lane = [s for s in trad if gate(s, fam)]
+        grid = [(s, side) for s in lane if not coverage.covered(stem, s) for side in SIDES]
+        if not lane:
             row.update(status=UNMAPPABLE, reason="no mapped tradable is in the hypothesis lane")
+            continue
+        if not grid:
+            row.update(status=COVERED, covered_by="registry",
+                       reason=f"every mapped tradable already has a registry cell on {stem}")
             continue
         if len(cells) >= per_pass:
             row.update(status=CELL_EMITTED if st["emitted"] else CELL_QUEUED,
                        reason=None if st["emitted"] else "per-pass cap reached",
                        missed_growth=None if st["emitted"] else MISSED_GROWTH_CAP)
             continue
-        sym, side = grid[int(st["next"]) % len(grid)]
-        cells.append(_cell(ds, sym, side, stem, col, fam, trad, ents))
-        st["next"] = (int(st["next"]) + 1) % len(grid)
+        cell = None
+        for k in range(len(grid)):
+            sym, side = grid[(int(st["next"]) + k) % len(grid)]
+            cand = _cell(ds, sym, side, stem, col, fam, trad, ents)
+            if not coverage.exists(cand):
+                cell = cand
+                st["next"] = (int(st["next"]) + k + 1) % len(grid)
+                break
+        if cell is None:
+            row.update(status=COVERED, covered_by="registry",
+                       reason="every (tradable, side) is already a registry trial")
+            continue
+        cells.append(cell)
         st["emitted"] = int(st["emitted"]) + 1
-        row.update(status=CELL_EMITTED, cell={"symbol": sym, "side": side, "family": fam})
+        row.update(status=CELL_EMITTED,
+                   cell={"symbol": cell["symbol"], "side": side, "family": fam})
     new_off = (off + len(cells)) % max(1, len(ready))
     return rows, cells, {"datasets": state, "offset": new_off}
 
@@ -626,7 +771,10 @@ def main(argv: list[str] | None = None) -> int:
                                   deep_forest=DEEP_FOREST, axes=AXES, keyed=KEYED,
                                   env_keys=ENV_KEYS)
     cursor = _read(CURSOR, {}) or {}
-    rows, cells, nxt = translate(datasets, onto, registry, stems, cursor, gate=universe_gate())
+    rc = registry_coverage()
+    coverage = None if rc is None else Coverage(proposer_owners(stems), rc[0], rc[1])
+    rows, cells, nxt = translate(datasets, onto, registry, stems, cursor, gate=universe_gate(),
+                                 coverage=coverage)
     path = None
     counts: dict[str, Any] = {}
     if cells and not a.dry_run:
@@ -647,6 +795,9 @@ def main(argv: list[str] | None = None) -> int:
         "deep_forest_rows_raw": len(_jsonl(DEEP_FOREST)),
         "deep_forest_note": ("deep-forest rows are de-duplicated by URL: one page fetched twice "
                              "is one dataset"),
+        "registry_dedupe": ("UNREADABLE: nothing minted" if coverage is None else
+                            {"registry_pairs": len(coverage.pairs),
+                             "proposer_owned_series": len(coverage.owners)}),
         "lake_series_on_host": len(stems), "datasets_with_series": with_series,
         "cells_built": len(cells), "per_pass_cap": PER_PASS,
         "passes_to_cover": -(-with_series // PER_PASS) if with_series else 0,

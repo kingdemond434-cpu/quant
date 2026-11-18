@@ -24,6 +24,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
 import dataset_translator as dt  # noqa: E402
 
 REG = dt.tradable_registry()
+EMPTY = dt.Coverage.empty()
 ONTO, DROPPED = dt.load_ontology(REG)
 
 
@@ -143,7 +144,7 @@ def test_cells_land_only_on_symbols_the_lane_policy_allows(tmp_path: Path) -> No
         "id": "cnx_dce", "name": "DCE quotes (iron ore, soy complex)", "region": "cn",
         "language": "zh", "url": "http://www.dce.com.cn/x"}])
     refused = {"AUDUSD"}
-    rows, cells, nxt = dt.translate(ds, ONTO, REG, stems, {},
+    rows, cells, nxt = dt.translate(ds, ONTO, REG, stems, {}, coverage=EMPTY,
                                     gate=lambda s, f: _gate(s, f) and s not in refused)
     assert len(cells) == 1, "one cell per dataset per pass"
     c = cells[0]
@@ -152,7 +153,7 @@ def test_cells_land_only_on_symbols_the_lane_policy_allows(tmp_path: Path) -> No
     assert c["params"]["source"] == "fs_cnx_dce" and c["params"]["signal"] == "value"
     assert rows[0]["status"] == dt.CELL_EMITTED
     # The ring advances: the next pass takes the next (tradable, side), never the same one.
-    _, cells2, _ = dt.translate(ds, ONTO, REG, stems, nxt, gate=_gate)
+    _, cells2, _ = dt.translate(ds, ONTO, REG, stems, nxt, gate=_gate, coverage=EMPTY)
     first = (c["symbol"], c["params"]["side_when_high"])
     assert (cells2[0]["symbol"], cells2[0]["params"]["side_when_high"]) != first
 
@@ -161,7 +162,7 @@ def test_no_policy_mints_nothing(tmp_path: Path) -> None:
     stems = _lake(tmp_path, "fs_cn_weibo")
     ds = _datasets(tmp_path, stems=stems, free_stack=[{"id": "cn_weibo", "name": "Weibo",
                                                       "region": "cn", "url": "https://x.cn/"}])
-    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=None)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=None, coverage=EMPTY)
     assert cells == [] and rows[0]["status"] == dt.CELL_QUEUED
 
 
@@ -169,12 +170,12 @@ def test_mapped_awaiting_series_never_mints(tmp_path: Path) -> None:
     ds = _datasets(tmp_path, deep_forest=[{
         "title": "Notices and Press releases", "url": "https://www.riksbank.se/en-gb/press/",
         "host": "www.riksbank.se", "region": "se", "lang": "en", "source_hash": "abc"}])
-    rows, cells, _ = dt.translate(ds, ONTO, REG, {}, {}, gate=_gate)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, {}, {}, gate=_gate, coverage=EMPTY)
     assert cells == []
     assert rows[0]["status"] == dt.AWAITING and "USDSEK" in rows[0]["tradables"]
     # A series with no point-in-time stamp is not a series the family may read.
     stems = _lake(tmp_path, "df_www_riksbank_se", cols="date,value")
-    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
     assert cells == [] and rows[0]["status"] == dt.AWAITING
 
 
@@ -183,7 +184,7 @@ def test_the_moment_a_series_lands_the_awaiting_mapping_is_judged(tmp_path: Path
     ds = _datasets(tmp_path, stems=stems, deep_forest=[{
         "title": "Statistics", "url": "https://www.riksbank.se/en-gb/statistics/",
         "host": "www.riksbank.se", "region": "se", "source_hash": "abc"}])
-    _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate)
+    _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
     assert len(cells) == 1 and "SEK" in cells[0]["symbol"]
 
 
@@ -191,7 +192,7 @@ def test_a_refused_host_is_blocked_on_terms_and_mints_nothing(tmp_path: Path) ->
     stems = _lake(tmp_path, "fs_reddit")
     ds = _datasets(tmp_path, stems=stems, free_stack=[{"id": "reddit", "name": "Reddit gold",
                                                       "url": "https://www.reddit.com/r/x"}])
-    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
     assert cells == []
     assert rows[0]["status"] == dt.UNMAPPABLE
     assert rows[0]["reason"].startswith("BLOCKED_ON_TERMS") and rows[0]["missed_growth"]
@@ -204,11 +205,13 @@ def test_the_per_pass_cap_queues_the_rest_with_a_missed_growth_line(tmp_path: Pa
     ds = _datasets(tmp_path, stems=stems, free_stack=[
         {"id": s, "name": s, "region": "cn", "url": "https://x.cn/"}
         for s in ("cn_weibo", "cn_guba", "cn_xueqiu")])
-    rows, cells, nxt = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, per_pass=2)
+    rows, cells, nxt = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY,
+                                    per_pass=2)
     assert len(cells) == 2
     queued = [r for r in rows if r["status"] == dt.CELL_QUEUED]
     assert len(queued) == 1 and queued[0]["missed_growth"]
-    _, cells2, _ = dt.translate(ds, ONTO, REG, stems, nxt, gate=_gate, per_pass=2)
+    _, cells2, _ = dt.translate(ds, ONTO, REG, stems, nxt, gate=_gate, coverage=EMPTY,
+                                    per_pass=2)
     got = {c["dataset_id"] for c in cells + cells2}
     assert len(got) == 3, "the rotating offset reaches the queued dataset on the next pass"
 
@@ -259,6 +262,113 @@ def test_an_unclaimed_lake_series_is_a_dataset_of_its_own(tmp_path: Path) -> Non
     stems = _lake(tmp_path, "br_conab_soy_crop")
     ds = _datasets(tmp_path, stems=stems)
     assert [d["id"] for d in ds] == ["lake:br_conab_soy_crop"]
-    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
     assert rows[0]["status"] == dt.CELL_EMITTED and "country:BR" in rows[0]["entities"]
     assert cells[0]["params"]["source"] == "br_conab_soy_crop"
+
+
+# ------------------------------------------------------------- no second trial, ever ---
+def test_a_series_the_free_stack_proposer_mints_gets_no_translator_cell_but_still_counts(
+        tmp_path: Path) -> None:
+    stems = _lake(tmp_path, "fs_cn_weibo")
+    cols = tmp_path / "columns.json"
+    cols.write_text(json.dumps({"cn_weibo": {"mentions": {"hypothesis": ["USDCNH"]}}}), "utf-8")
+    owners = dt.proposer_owners(stems, fs_columns=cols, keyed=tmp_path / "none.json")
+    assert owners == {"fs_cn_weibo": "free_stack_proposer"}
+    ds = _datasets(tmp_path, stems=stems, free_stack=[{"id": "cn_weibo", "name": "Weibo",
+                                                      "region": "cn", "url": "https://x.cn/"}])
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate,
+                                  coverage=dt.Coverage(owners, set(), lambda _c: False))
+    assert cells == []
+    assert rows[0]["status"] == dt.COVERED and rows[0]["covered_by"] == "free_stack_proposer"
+    s = dt.summarise(rows, Counter())
+    assert s["mapped"] == 1 and s["wired_share"] == 1.0
+
+
+def test_a_keyed_series_with_instruments_is_owned_by_the_keyed_proposer(tmp_path: Path) -> None:
+    keyed = _roster(tmp_path / "k.json", [{"id": "eia_petroleum_weekly", "series": {
+        "crude_stocks": {"instruments": {"XTIUSD": -1}}, "unmapped": {"instruments": {}}}}])
+    owners = dt.proposer_owners(["ks_eia_petroleum_weekly__crude_stocks",
+                                 "ks_eia_petroleum_weekly__unmapped"],
+                                fs_columns=tmp_path / "none.json", keyed=keyed)
+    assert owners == {"ks_eia_petroleum_weekly__crude_stocks": "keyed_sources"}
+
+
+def _registry_db(tmp: Path, rows: list[tuple[str, str, dict[str, Any], str]]) -> Path:
+    import sqlite3
+
+    from libs.moat import registry as reg
+    db = tmp / "reg.sqlite"
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE research_candidates (id TEXT, family TEXT, symbol TEXT, "
+                "params_json TEXT, content_hash TEXT)")
+    for i, (fam, sym, params, chart) in enumerate(rows):
+        con.execute("INSERT INTO research_candidates VALUES (?,?,?,?,?)",
+                    (str(i), fam, sym, json.dumps(params, sort_keys=True),
+                     reg.content_hash(fam, sym, params, chart)))
+    con.commit()
+    con.close()
+    return db
+
+
+def test_a_registry_pair_on_the_same_series_is_skipped_whatever_its_params(
+        tmp_path: Path) -> None:
+    stems = _lake(tmp_path, "fs_cnx_dce")
+    ds = _datasets(tmp_path, stems=stems, free_stack=[{
+        "id": "cnx_dce", "name": "DCE quotes (iron ore, soy complex)", "region": "cn",
+        "url": "http://www.dce.com.cn/x"}])
+    trad, _, _ = dt.infer(ds[0], ONTO, REG)
+    first = next(s for s in trad if _gate(s, dt.EXO))
+    # Another proposer minted `first` on this series with a DIFFERENT lag and threshold.
+    db = _registry_db(tmp_path, [(dt.EXO, first, {"source": "fs_cnx_dce", "signal": "x",
+                                                  "lag_hours": 72, "threshold": 2.0}, "H4")])
+    rc = dt.registry_coverage(db)
+    assert rc is not None and ("fs_cnx_dce", first) in rc[0]
+    cov = dt.Coverage({}, rc[0], rc[1])
+    _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
+    assert len(cells) == 1 and cells[0]["symbol"] != first
+
+
+def test_the_registry_content_hash_is_the_dedupe_key(tmp_path: Path) -> None:
+    stems = _lake(tmp_path, "br_conab_soy_crop")
+    ds = _datasets(tmp_path, stems=stems)
+    _, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=EMPTY)
+    c = cells[0]
+    assert "lag_hours" not in c["params"], "the family default lag is not a new identity"
+    # The exact cell is already a registry trial (minted under another source label, so the
+    # (source, symbol) pair check alone would not see it): the ring moves past it.
+    db = _registry_db(tmp_path, [(c["family"], c["symbol"], c["params"], c["chart"])])
+    rc = dt.registry_coverage(db)
+    assert rc is not None and rc[1](c)
+    cov = dt.Coverage({}, set(), rc[1])
+    _, again, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=cov)
+    assert again and (again[0]["symbol"], again[0]["params"]["side_when_high"]) != (
+        c["symbol"], c["params"]["side_when_high"])
+
+
+def test_an_unreadable_registry_mints_nothing(tmp_path: Path) -> None:
+    assert dt.registry_coverage(tmp_path / "absent.sqlite") is None
+    stems = _lake(tmp_path, "br_conab_soy_crop")
+    ds = _datasets(tmp_path, stems=stems)
+    rows, cells, _ = dt.translate(ds, ONTO, REG, stems, {}, gate=_gate, coverage=None)
+    assert cells == [] and rows[0]["status"] == dt.CELL_QUEUED and rows[0]["missed_growth"]
+
+
+def test_refusals_are_read_from_refused_hosts_and_alt_proxies_terms() -> None:
+    from alt_proxies import TERMS
+
+    from libs.data.refused_hosts import REFUSED_HOSTS
+    # A key-catalogue row whose URL is a sign-up console is caught by the refused host's label.
+    assert dt.refusal_of("https://console.cloud.google.com/x", "console.cloud.google.com",
+                         "key:YOUTUBE_API_KEY") == REFUSED_HOSTS["youtube.com"]
+    assert dt.refusal_of("https://comtradedeveloper.un.org/", "comtradedeveloper.un.org",
+                         "key:COMTRADE_API_KEY") == REFUSED_HOSTS["comtrade.un.org"]
+    # A lake series alt_proxies publishes is judged by its own TERMS row.
+    refused = next(k for k, (st, _) in TERMS.items() if st == "refused")
+    why = dt.refusal_of("", "", f"lake:alt_{refused}__series")
+    assert why and why.startswith("alt_proxies.TERMS refused")
+    ok = next(k for k, (st, _) in TERMS.items() if st == "confirmed" and "portwatch" not in k)
+    assert dt.refusal_of("", "", f"lake:alt_{ok}__series") is None
+    # The local list only carries what neither source has yet.
+    assert not set(dt.LOCAL_REFUSED_HOSTS) & set(REFUSED_HOSTS)
+    assert dt.refusal_of("https://www.reddit.com/r/x", "www.reddit.com", "free_stack:reddit")
