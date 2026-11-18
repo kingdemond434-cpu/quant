@@ -4,6 +4,7 @@ Every case builds its own box tree under tmp_path; nothing reads the repository'
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,7 +12,12 @@ from typing import Any
 
 import pytest
 
-from ops import daily_fills as df
+# Loaded by path: `ops` also names desks/mt5/ops, which wins on a whole-suite collection.
+_spec = importlib.util.spec_from_file_location(
+    "daily_fills_under_test", Path(__file__).resolve().parents[2] / "ops" / "daily_fills.py")
+assert _spec and _spec.loader
+df = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(df)
 
 D = "desks/mt5/data"
 # Wednesday 2026-11-18; the close is 20:30 UTC.
@@ -196,7 +202,7 @@ def test_report_is_written_and_self_describing(tmp_path: Path) -> None:
 
 
 def test_the_check_makes_no_venue_call() -> None:
-    src = Path(df.__file__).read_text(encoding="utf-8")
+    src = (Path(__file__).resolve().parents[2] / "ops" / "daily_fills.py").read_text("utf-8")
     for banned in ("MetaTrader5", "mt5.", "order_send", "tradelocker", "TradeLocker(",
                    "requests", "subprocess"):
         assert banned not in src, banned
