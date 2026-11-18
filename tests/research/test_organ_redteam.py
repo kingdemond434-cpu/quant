@@ -352,8 +352,10 @@ def test_hold2_sf_native_calls_are_refused_and_plain_ctypes_imports(tmp_path: Pa
         "plain.py": "import ctypes, numpy, pandas\nprint(ctypes.sizeof(ctypes.c_int))",
         "call.py": "import ctypes\nctypes.CDLL(None).getpid()",
         "load.py": "import ctypes\nctypes.CDLL('libc.so.6')",
-        "helper_call.py": "import ctypes\nctypes._CFuncPtr  # noqa\nimport _ctypes\n"
-                          "_ctypes.call_function(0, ())",
+        # the one path that raises ctypes.call_function: the _ctypes helper on a live pointer
+        "helper_call.py": ("import ctypes, _ctypes\n"
+                           "cb = ctypes.CFUNCTYPE(ctypes.c_int)(lambda: 7)\n"
+                           "_ctypes.call_function(ctypes.cast(cb, ctypes.c_void_p).value, ())"),
     })
     assert _go(repo, "plain.py")["outcome"] == rt.RAN_OK
     for n in ("call.py", "load.py", "helper_call.py"):
