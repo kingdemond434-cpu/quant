@@ -302,3 +302,70 @@ def test_a_hold_stands_the_pass_down(tmp_path: Path) -> None:
     assert not calls and doc["status"] == "STOOD_DOWN"
     assert doc["stood_down_because"] == "gold asia placing window"
     assert doc["cursor"] == "libs/a.py"
+
+
+def test_hold2_mf1_a_helper_that_imports_metatrader5_is_refused(tmp_path: Path) -> None:
+    stub = tmp_path / "stub"
+    (stub / "MetaTrader5").mkdir(parents=True)
+    marker = tmp_path / "terminal_reached"
+    (stub / "MetaTrader5" / "__init__.py").write_text(
+        f"open({str(marker)!r}, 'w').write('1')\ndef initialize():\n    return True\n", "utf-8")
+    repo = _organs(tmp_path, {
+        "helper.py": "import MetaTrader5 as mt5\ndef up():\n    return mt5.initialize()\n",
+        "organ.py": f"import sys\nsys.path.insert(0, {str(stub)!r})\nimport helper\nhelper.up()",
+        # an organ that treats the broker as optional and carries on is still classified
+        "optional.py": (f"import sys\nsys.path.insert(0, {str(stub)!r})\n"
+                        "try:\n    import helper\nexcept ImportError:\n    helper = None\n"
+                        "print('carried on')"),
+    })
+    for n in ("organ.py", "optional.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.BROKER_REFUSED and r["exception"] == "BrokerRefused", (n, r)
+        assert "broker: import MetaTrader5" in r["refused"]  # type: ignore[operator]
+    assert not marker.exists()
+
+
+def test_hold2_mf2_a_multiprocessing_child_is_refused(tmp_path: Path) -> None:
+    marker = tmp_path / "mp_child_ran"
+    repo = _organs(tmp_path, {
+        "mp.py": ("import multiprocessing as mp\n"
+                  f"def child():\n    open({str(marker)!r}, 'w').write('1')\n"
+                  "if __name__ == '__main__':\n"
+                  "    p = mp.Process(target=child)\n    p.start()\n    p.join()\n"),
+        "mp_spawn.py": ("import multiprocessing as mp\n"
+                        f"def child():\n    open({str(marker)!r}, 'w').write('1')\n"
+                        "if __name__ == '__main__':\n"
+                        "    p = mp.get_context('spawn').Process(target=child)\n"
+                        "    p.start()\n    p.join()\n"),
+    })
+    for n in ("mp.py", "mp_spawn.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.CRASHED and r["exception"] == "SpawnRefused", (n, r)
+    assert not marker.exists()
+
+
+def test_hold2_sf_native_calls_are_refused_and_plain_ctypes_imports(tmp_path: Path) -> None:
+    import pytest
+    if sys.platform == "win32":
+        pytest.skip("the libc names below are POSIX")
+    repo = _organs(tmp_path, {
+        "plain.py": "import ctypes, numpy, pandas\nprint(ctypes.sizeof(ctypes.c_int))",
+        "call.py": "import ctypes\nctypes.CDLL(None).getpid()",
+        "load.py": "import ctypes\nctypes.CDLL('libc.so.6')",
+    })
+    assert _go(repo, "plain.py")["outcome"] == rt.RAN_OK
+    for n in ("call.py", "load.py"):
+        r = _go(repo, n)
+        assert r["outcome"] == rt.NATIVE_REFUSED and r["exception"] == "NativeRefused", (n, r)
+
+
+def test_hold2_sf_the_guard_state_is_not_reachable_by_name() -> None:
+    import ast
+    tree = ast.parse(rt.BOOTSTRAP)
+    names = {t.id for n in tree.body if isinstance(n, ast.Assign) for t in n.targets
+             if isinstance(t, ast.Name)}
+    names |= {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
+    # `_install` (deleted after use) and `_organ` (the path) are the only module-scope names
+    assert names == {"_install", "_organ"}, names
+    assert "busy" not in {t.id for n in tree.body if isinstance(n, ast.Assign)
+                          for t in n.targets if isinstance(t, ast.Name)}

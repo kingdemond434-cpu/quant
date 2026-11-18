@@ -74,9 +74,12 @@ OUT = DESK / "reports" / "ORGAN_REDTEAM.json"
 MONEY_CLOSURE = ROOT / "ops" / "money_closure.txt"
 SELF = "desks/mt5/research/organ_redteam.py"
 
-RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED = (
-    "ran_ok", "crashed", "no_output", "timeout", "skipped_denylisted", "network_refused")
-OUTCOMES = (RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED)
+RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED = (
+    "ran_ok", "crashed", "no_output", "timeout", "skipped_denylisted")
+NETWORK_REFUSED, BROKER_REFUSED, NATIVE_REFUSED = (
+    "network_refused", "broker_refused", "native_refused")
+OUTCOMES = (RAN_OK, CRASHED, NO_OUTPUT, TIMEOUT, SKIPPED, NETWORK_REFUSED, BROKER_REFUSED,
+            NATIVE_REFUSED)
 #: The environment an organ inherits: these names, and anything starting PYTHON or QUANT_REDTEAM_
 #: (audit HOLD on #1334, SF1). Never dict(os.environ): a credential in the parent's environment
 #: has no business in an organ started blind. The temp names are pointed at the sandbox.
@@ -144,8 +147,19 @@ ARTIFACT_DIRS = ("desks/mt5/reports", "desks/mt5/data", "reports", "data", "docs
 #:            utime, link, symlink, rmtree and sqlite3.connect.
 #:   NETWORK  (MF1) socket.connect, socket.getaddrinfo, socket.gethostbyname(_ex/addr) and
 #:            sendto, with NO loopback exception: the gateway and the terminal are local.
-#:   SPAWN    (MF2) subprocess.Popen, os.system, os.exec*, os.spawn*, os.posix_spawn and
-#:            os.startfile: a child would run without the hook.
+#:   SPAWN    (MF2) subprocess.Popen, os.system, os.exec*, os.spawn*, os.posix_spawn,
+#:            os.startfile and _winapi.CreateProcess (Windows multiprocessing): a child would
+#:            run without the hook. POSIX multiprocessing forks through fork_exec, which raises
+#:            no event, so importing its start methods' popen_* modules is refused instead.
+#:   BROKER   (HOLD 2, MF1) importing MetaTrader5, at any depth (a helper that imports it counts):
+#:            the terminal is reached over C-level IPC that no socket or open event sees.
+#:            Outcome broker_refused.
+#:   NATIVE   (HOLD 2, SF a) ctypes.call_function always, and ctypes.dlopen of anything but
+#:            the running process (ctypes' own import) or a library inside the Python install
+#:            or site-packages -- those are RECORDED as native_seen and allowed, because Windows
+#:            wheels preload their own DLLs with ctypes.WinDLL at import. Outcome native_refused.
+#:            Measured 2026-11-18 on Linux: importing numpy, pandas and scipy.stats fires one
+#:            ctypes.dlopen(None) and no call_function, so all three still import.
 #:
 #: Each refusal is appended to `_refused` in the sandbox as `kind<TAB>detail`, so an organ that
 #: swallows the PermissionError is still seen to have tried, and the outcome is classified from
@@ -154,82 +168,125 @@ ARTIFACT_DIRS = ("desks/mt5/reports", "desks/mt5/data", "reports", "data", "docs
 #: filename literal the static gate could see.
 BOOTSTRAP = r"""
 import os, sys, runpy
-def _real(p):
-    return os.path.normcase(os.path.realpath(os.path.abspath(p)))
-_ROOT = _real(os.environ["QUANT_REDTEAM_ROOT"])
-_SANDBOX = os.environ["QUANT_REDTEAM_SANDBOX"]
-_REFUSED = os.path.join(_SANDBOX, "_refused")
-_ALLOWED = tuple(_real(p) for p in (_SANDBOX, os.environ["QUANT_REDTEAM_SYSTEMP"]) if p)
-_DEVNULL = _real(os.devnull)
-with open(os.environ["QUANT_REDTEAM_TRACKED"], encoding="utf-8") as _f:
-    _TRACKED = frozenset(ln.strip() for ln in _f if ln.strip())
-_W = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
-_busy = [False]
-class WriteRefused(PermissionError):
-    pass
-class NetworkRefused(PermissionError):
-    pass
-class SpawnRefused(PermissionError):
-    pass
-def _norm(p):
-    if isinstance(p, bytes):
-        p = os.fsdecode(p)
-    if not isinstance(p, (str, os.PathLike)):
-        return None
-    return _real(os.fspath(p))
-def _inside(n, base):
-    return n == base or n.startswith(base.rstrip(os.sep) + os.sep)
-def _write_ok(p):
-    n = _norm(p)
-    if n is None:
-        return True  # an int fd: the open that produced it was already judged
-    if _inside(n, _ROOT):  # judged first: a repository under the temp dir is still the repo
-        parts = n[len(_ROOT):].split(os.sep)
-        return "reports" in parts and n not in _TRACKED
-    return n == _DEVNULL or any(_inside(n, a) for a in _ALLOWED)
-def _record(kind, detail, exc):
-    _busy[0] = True
+def _install():
+    # EVERYTHING the guard holds lives in this closure (audit HOLD 2 on #1334, SF b): the organ
+    # runs in another namespace, but a flag at module scope is one `import __main__` from being
+    # flipped. An audit hook cannot be removed once added, and nothing here is reachable by name.
+    import site
+    def real(p):
+        return os.path.normcase(os.path.realpath(os.path.abspath(p)))
+    root = real(os.environ["QUANT_REDTEAM_ROOT"])
+    sandbox = os.environ["QUANT_REDTEAM_SANDBOX"]
+    refused_log = os.path.join(sandbox, "_refused")
+    allowed = tuple(real(p) for p in (sandbox, os.environ["QUANT_REDTEAM_SYSTEMP"]) if p)
+    devnull = real(os.devnull)
+    with open(os.environ["QUANT_REDTEAM_TRACKED"], encoding="utf-8") as f:
+        tracked = frozenset(ln.strip() for ln in f if ln.strip())
+    # The Python installation and its site-packages: a native library loaded from here is a
+    # package's own DLL (Windows wheels preload theirs with ctypes.WinDLL at import, delvewheel).
     try:
-        with open(_REFUSED, "a", encoding="utf-8") as f:
-            f.write(kind + "\t" + str(detail)[:200].replace("\n", " ") + "\n")
-    finally:
-        _busy[0] = False
-    raise exc("organ_redteam: " + kind + " refused")
-_NET = {"socket.connect", "socket.getaddrinfo", "socket.gethostbyname",
-        "socket.gethostbyaddr", "socket.sendto", "socket.sendmsg"}
-_SPAWN = ("subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn",
-          "os.startfile")
-_WRITE2 = {"os.rename", "os.link", "os.symlink"}
-_WRITE1 = {"os.remove", "os.rmdir", "os.mkdir", "os.truncate", "os.chmod", "os.chown",
-           "os.utime", "shutil.rmtree", "sqlite3.connect"}
-def _hook(event, args):
-    if _busy[0]:
-        return
-    if event in _NET:
-        tgt = args[1] if event in ("socket.connect", "socket.sendto") and len(args) > 1 else (
-            args[0] if args else "")
-        _record("network", event + " " + repr(tgt), NetworkRefused)
-    if event.startswith(_SPAWN):
-        _record("spawn", event, SpawnRefused)
-    paths = ()
-    if event == "open":
-        mode, flags = args[1], args[2]
-        w = (isinstance(mode, str) and any(c in mode for c in "wax+")) or (
-            mode is None and isinstance(flags, int) and bool(flags & _W))
-        paths = (args[0],) if w else ()
-    elif event in _WRITE2:
-        paths = (args[0], args[1])
-    elif event in _WRITE1:
-        paths = (args[0],)
-    for p in paths:
-        if not _write_ok(p):
-            n = _norm(p) or "?"
-            shown = os.path.relpath(n, _ROOT) if _inside(n, _ROOT) else n
-            _record("write", shown, WriteRefused)
+        sites = list(site.getsitepackages()) + [site.getusersitepackages()]
+    except Exception:
+        sites = []
+    py_dirs = tuple(real(p) for p in {sys.prefix, sys.base_prefix, sys.exec_prefix, *sites} if p)
+    wmask = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
+    busy = [False]
+    class WriteRefused(PermissionError):
+        pass
+    class NetworkRefused(PermissionError):
+        pass
+    class SpawnRefused(PermissionError):
+        pass
+    class NativeRefused(PermissionError):
+        pass
+    class BrokerRefused(ImportError):
+        pass
+    def norm(p):
+        if isinstance(p, bytes):
+            p = os.fsdecode(p)
+        if not isinstance(p, (str, os.PathLike)):
+            return None
+        return real(os.fspath(p))
+    def inside(n, base):
+        return n == base or n.startswith(base.rstrip(os.sep) + os.sep)
+    def write_ok(p):
+        n = norm(p)
+        if n is None:
+            return True  # an int fd: the open that produced it was already judged
+        if inside(n, root):  # judged first: a repository under the temp dir is still the repo
+            parts = n[len(root):].split(os.sep)
+            return "reports" in parts and n not in tracked
+        return n == devnull or any(inside(n, a) for a in allowed)
+    def record(kind, detail, exc=None):
+        busy[0] = True
+        try:
+            with open(refused_log, "a", encoding="utf-8") as f:
+                f.write(kind + "\t" + str(detail)[:200].replace("\n", " ") + "\n")
+        finally:
+            busy[0] = False
+        if exc is not None:
+            raise exc("organ_redteam: " + kind + " refused")
+    net = {"socket.connect", "socket.getaddrinfo", "socket.gethostbyname",
+           "socket.gethostbyaddr", "socket.sendto", "socket.sendmsg"}
+    spawn = ("subprocess.Popen", "os.system", "os.exec", "os.spawn", "os.posix_spawn",
+             "os.startfile", "_winapi.CreateProcess")
+    # POSIX multiprocessing starts its children through _posixsubprocess.fork_exec (spawn,
+    # forkserver) or os.fork, and fork_exec raises no audit event: refuse the start methods'
+    # own modules, which Process.start() imports on first use.
+    mp_popen = {"multiprocessing.popen_spawn_posix", "multiprocessing.popen_forkserver",
+                "multiprocessing.popen_fork"}
+    write2 = {"os.rename", "os.link", "os.symlink"}
+    write1 = {"os.remove", "os.rmdir", "os.mkdir", "os.truncate", "os.chmod", "os.chown",
+              "os.utime", "shutil.rmtree", "sqlite3.connect"}
+    def hook(event, args):
+        if busy[0]:
+            return
+        if event == "import":
+            mod = str(args[0] or "")
+            if mod.split(".", 1)[0] == "MetaTrader5":
+                # The terminal is reached over C-level IPC: no socket or open event would fire.
+                record("broker", "import " + mod, BrokerRefused)
+            if mod in mp_popen:
+                record("spawn", "import " + mod, SpawnRefused)
+            return
+        if event in net:
+            tgt = args[1] if event in ("socket.connect", "socket.sendto") and len(args) > 1 else (
+                args[0] if args else "")
+            record("network", event + " " + repr(tgt), NetworkRefused)
+        if event.startswith(spawn):
+            record("spawn", event, SpawnRefused)
+        if event == "ctypes.call_function":
+            record("native", event, NativeRefused)
+        if event == "ctypes.dlopen":
+            name = args[0] if args else None
+            if name is None:
+                return  # the running process itself (ctypes' own import: pythonapi)
+            n = norm(name)
+            if n is not None and any(inside(n, d) for d in py_dirs):
+                record("native_seen", "ctypes.dlopen " + os.path.basename(n))
+                return
+            record("native", "ctypes.dlopen " + str(name), NativeRefused)
+        paths = ()
+        if event == "open":
+            mode, flags = args[1], args[2]
+            w = (isinstance(mode, str) and any(c in mode for c in "wax+")) or (
+                mode is None and isinstance(flags, int) and bool(flags & wmask))
+            paths = (args[0],) if w else ()
+        elif event in write2:
+            paths = (args[0], args[1])
+        elif event in write1:
+            paths = (args[0],)
+        for p in paths:
+            if not write_ok(p):
+                n = norm(p) or "?"
+                shown = os.path.relpath(n, root) if inside(n, root) else n
+                record("write", shown, WriteRefused)
+    return hook
+sys.addaudithook(_install())
+del _install
 _organ = sys.argv[1]
 sys.argv = sys.argv[1:]
 sys.path[0] = os.path.dirname(os.path.abspath(_organ))
-sys.addaudithook(_hook)
 runpy.run_path(_organ, run_name="__main__")
 """
 
@@ -468,8 +525,12 @@ def run_one(organ: str, args: Sequence[str], artifacts: Sequence[str], *, cap_s:
         return {"outcome": TIMEOUT, **base}
     if killed == "memory":
         return {"outcome": CRASHED, "exception": "MemoryGuard", **base}
+    if "broker" in kinds:
+        return {"outcome": BROKER_REFUSED, "exception": "BrokerRefused", **base}
     if "network" in kinds:
         return {"outcome": NETWORK_REFUSED, "exception": "NetworkRefused", **base}
+    if "native" in kinds:
+        return {"outcome": NATIVE_REFUSED, "exception": "NativeRefused", **base}
     if "spawn" in kinds:
         return {"outcome": CRASHED, "exception": "SpawnRefused", **base}
     if "write" in kinds:
