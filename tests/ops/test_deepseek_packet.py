@@ -115,3 +115,25 @@ def test_resource_state_measures_ram_or_says_unmeasured(
     assert "ram_total_gb" not in dark
     assert dark["ram"].startswith("UNMEASURED: ")
     assert dark["cpu_count"] == measured["cpu_count"]
+
+
+def test_packet_reads_asset_class_and_the_survivor_family_slot(tmp_path: Path) -> None:
+    from libs.ops.deepseek_packet import _frontier, _universe
+
+    uni = tmp_path / "desks/mt5/data/universe/universe.json"
+    uni.parent.mkdir(parents=True)
+    uni.write_text(json.dumps({
+        "EURUSD": {"asset_class": "fx"}, "XAUUSD": {"asset_class": "metal"},
+        "OLD": {"category": "index"}, "_meta": {"asset_class": "x"},
+    }))
+    assert _universe(tmp_path)["by_category"] == {"fx": 1, "metal": 1, "index": 1}
+
+    surv = tmp_path / "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"
+    surv.parent.mkdir(parents=True)
+    surv.write_text(json.dumps({"n": 3, "survivors": {
+        "external.XAUUSD.session_range_breakout": {},
+        "external.USDJPY.session_range_breakout": {},
+        "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon": {},
+    }}))
+    fams = _frontier(tmp_path)["survivor_families"]
+    assert fams == {"session_range_breakout": 2, "dav_range_filter_adx": 1}

@@ -38,6 +38,14 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[1]))
+    from libs.research import forward_ledger as _fl
+
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 SHADOW = DESK / "reports" / "shadow"
@@ -90,7 +98,10 @@ def _ledger_for(sym: str, fam: str, selector: str) -> Path | None:
     # Older rows were written before the family was carried in the name.
     cand.append(SHADOW / f"ledger_{sym}_{fam}.json")
     cand.append(SHADOW / f"ledger_{sym}_{selector}.json")
-    return next((c for c in cand if c.exists()), None)
+    # A legacy file several clock keys wrote is frozen (libs.research.forward_ledger): its rows
+    # carry no key, so it is no identity's panel.
+    frozen = _fl.frozen_names(SHADOW)
+    return next((c for c in cand if c.exists() and c.name not in frozen), None)
 
 
 def _forward_trades(path: Path) -> list[tuple[str, float]]:

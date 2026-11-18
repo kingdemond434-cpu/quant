@@ -22,6 +22,9 @@ adding it to a list:
                     path with no working directory                 -> report with the diagnosis
     FAILING (kill)  0x800710E0 / 0xC000013A on a LONG-RUNNING job  -> report as a daemon
                                                                       registered as periodic
+    FAILING (other) any code with no diagnosis, off the order path -> start once more, at most
+                                                                      hourly and 4 a day, then
+                                                                      report (2026-11-17)
 
 WHY IT ONLY EVER STARTS THINGS. A watchdog that edits task definitions, kills processes or
 rewrites config is a second actor on the money path with no review, and this desk has a law about
@@ -121,7 +124,73 @@ TASK_DIAGNOSIS = {
         "a Python traceback or a kill (taskkill /F exits 1) -- since 2026-10-14 a terminal that "
         "is down at start no longer exits. Read the tail of desks/mt5/logs/MT5-TickRecorder.log; "
         "the contract on the tape's own newest tick restarts it while the tape is stale."),
+    ("MT5-TickIntegrity", 2): (
+        "the integrity audit's own ALARM, not a missing script: 2 means FAIL (or, since #974, "
+        "newly-failed) tick days, or no tape. If TICK_INTEGRITY.json is fresh the organ ran -- "
+        "read its verdicts and paging block and chase the named symbol-days. Never re-register "
+        "or restart for this. (Measured 2026-11-17: read as a broken registration for hours.)"),
 }
+
+
+#: FAILING IS RE-RUN, NOT ONLY NAMED (principal 2026-11-17: routine recovery never waits on a
+#: person). A task whose last run failed with a code that has no registration diagnosis above
+#: and no organ-specific remedy is started once more on its own registered action -- the same
+#: single mutation this file already makes for STALE. Bounded so a task that fails every time is
+#: not hammered: at most once per RERUN_COOLDOWN_MIN and RERUN_MAX_PER_DAY a day per task, after
+#: which it escalates exactly as before. Never for a task on the order path (manifest lane
+#: "money" or "prop"): a failed order-path task is a fault to read, not a button to press again.
+RERUN_COOLDOWN_MIN = 60
+RERUN_MAX_PER_DAY = 4
+RERUNS = ROOT / "desks" / "mt5" / "logs" / "never_stale_reruns.json"
+MANIFEST = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+ORDER_PATH_LANES = frozenset({"money", "prop"})
+#: THE ORDER PATH BY NAME, whatever its lane says (Auditor MF2 on #1226, 2026-11-17): the
+#: order-placing MT5-GatewayResident carries lane "ops", and MT5-Gateway is not in the manifest at
+#: all, so the lane alone let a failing gateway be re-run. fnmatch patterns, case-insensitive.
+ORDER_PATH_NAMES = ("MT5-Gateway*", "E8-*", "MT5-E8*", "MT5-FTMO*", "*FTMO*", "*Deadman*",
+                    "*E8WindowGuard*")
+
+
+def _manifest_tasks() -> tuple[frozenset[str] | None, frozenset[str] | None]:
+    """(order-path task names by lane, every task name the manifest lists); (None, None) when the
+    manifest is unreadable -- then nothing is re-run: an unread lane is not a research lane."""
+    import re
+    try:
+        text = MANIFEST.read_text(encoding="utf-8")
+    except OSError:
+        return None, None
+    order, known = set(), set()
+    for m in re.finditer(r'^TASK\s+name="([^"]+)"(.*)$', text, re.M):
+        known.add(m.group(1))
+        lane = re.search(r'lane="([^"]+)"', m.group(2))
+        if lane and lane.group(1) in ORDER_PATH_LANES:
+            order.add(m.group(1))
+    return frozenset(order), frozenset(known)
+
+
+def _rerunnable(task: str, order_path: frozenset[str] | None,
+                known: frozenset[str] | None) -> bool:
+    """Off the order path by lane AND by name, and a task the manifest actually lists."""
+    import fnmatch
+    if order_path is None or known is None or task not in known or task in order_path:
+        return False
+    return not any(fnmatch.fnmatch(task.lower(), p.lower()) for p in ORDER_PATH_NAMES)
+
+
+def _rerun_allowed(task: str, history: dict[str, Any], now: datetime) -> tuple[bool, str]:
+    stamps = []
+    for x in history.get(task, []):
+        try:
+            t = datetime.fromisoformat(str(x))
+        except ValueError:
+            continue
+        if (now - t).total_seconds() < 86400:
+            stamps.append(t)
+    if len(stamps) >= RERUN_MAX_PER_DAY:
+        return False, f"re-run {len(stamps)} times in 24h already; escalating"
+    if stamps and (now - max(stamps)).total_seconds() < RERUN_COOLDOWN_MIN * 60:
+        return False, f"re-run less than {RERUN_COOLDOWN_MIN} min ago; waiting"
+    return True, ""
 
 
 def _read(p: Path) -> Any:
@@ -262,6 +331,10 @@ def run(apply: bool) -> dict:
     acted: list[dict] = []
     escalated: list[dict] = []
     uncontracted: list[str] = []
+    order_path, known_tasks = _manifest_tasks()
+    reruns = _read(RERUNS)
+    reruns = reruns if isinstance(reruns, dict) else {}
+    now = datetime.now(tz=UTC)
     for row in (doc.get("processes") or []):
         verdict = str(row.get("verdict") or "")
         name = str(row.get("name") or "")
@@ -300,9 +373,27 @@ def run(apply: bool) -> dict:
         diag = TASK_DIAGNOSIS.get((name, code)) if isinstance(code, int) else None
         if diag is None and isinstance(code, int):
             diag = DIAGNOSIS.get(code)
+        task = str(row.get("task") or name.split(" (", 1)[0].strip() or name)
+        held = ""
+        if (verdict == "FAILING" and diag is None and isinstance(code, int)
+                and _rerunnable(task, order_path, known_tasks)):
+            ok_rerun, held = _rerun_allowed(task, reruns, now)
+            if ok_rerun:
+                if not apply:
+                    acted.append({"task": name, "verdict": verdict, "code": code,
+                                  "action": "would re-run", "why": row.get("why")})
+                    continue
+                ok, msg = _start(task)
+                if ok:
+                    reruns.setdefault(task, []).append(now.isoformat(timespec="seconds"))
+                    acted.append({"task": name, "verdict": verdict, "code": code,
+                                  "action": "JOURNAL re-run (FAILING, no standing diagnosis)",
+                                  "detail": msg, "why": row.get("why")})
+                    continue
+                held = f"re-run FAILED: {msg}"
         escalated.append({
             "task": name, "verdict": verdict, "code": code,
-            "why": row.get("why"),
+            "why": row.get("why") if not held else f"{row.get('why')} ({held})",
             # THE DIAGNOSIS IS THE POINT. A list of broken task names costs an hour of bisection;
             # a list with the cure attached costs thirty seconds.
             "diagnosis": diag or ("no standing remedy for this shape -- inspect the task's own "
@@ -333,6 +424,15 @@ def run(apply: bool) -> dict:
             "needs_human": True,
         })
 
+    if apply and reruns:
+        try:
+            RERUNS.parent.mkdir(parents=True, exist_ok=True)
+            RERUNS.write_text(json.dumps({k: [x for x in v if (now - datetime.fromisoformat(x))
+                                              .total_seconds() < 86400]
+                                          for k, v in reruns.items()}, indent=1),
+                              encoding="utf-8")
+        except (OSError, ValueError):
+            pass
     capital = _capital_faults()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
