@@ -394,8 +394,10 @@ def _r07_silent_failures() -> dict[str, Any]:
     read, total, bad_legs = [], 0.0, 0
     counts = _dict(health, "counts")
     if counts:
-        read.append(f"{_rel(PROCESS_HEALTH)} counts.FAILING+NOT_SCHEDULED")
-        total += (_num(counts.get("FAILING")) or 0.0) + (_num(counts.get("NOT_SCHEDULED")) or 0.0)
+        read.append(f"{_rel(PROCESS_HEALTH)} counts.FAILING+NOT_SCHEDULED+HUNG")
+        # HUNG (process_health, 2026-10-29): Running past its own ExecutionTimeLimit with no
+        # fresh output, so IgnoreNew refuses every new start -- as failed as FAILING.
+        total += sum(_num(counts.get(k)) or 0.0 for k in ("FAILING", "NOT_SCHEDULED", "HUNG"))
     if isinstance(marker, dict):
         read.append(f"{_rel(SYNC_MARKER)} legs LEG_FAILED/TIMEOUT")
         # A leg killed at its cap is reported by `_producer` with `timeout_s` and NO status.
@@ -425,7 +427,7 @@ def _r07_silent_failures() -> dict[str, Any]:
     headline = str(health.get("status") or "")
     procs = health.get("processes")
     if (not isinstance(health.get("counts"), dict) or not isinstance(procs, list)
-            or headline not in ("OK", "ATTENTION")):
+            or headline not in ("OK", "ATTENTION", "RED")):  # RED: a HUNG task, a reading
         return _mk(dim, None,
                    f"UNMEASURED: {_rel(PROCESS_HEALTH)} status {headline or 'absent'!r}, "
                    f"counts {type(health.get('counts')).__name__}, processes "

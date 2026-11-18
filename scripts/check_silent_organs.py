@@ -66,7 +66,9 @@ OUT = DESK / "reports" / "SILENT_ORGANS.json"
 #: NEVER_STALE.json -- so its NEEDS_HUMAN rows are carried here as fence items (audit R2).
 NEVER_STALE = DESK / "reports" / "NEVER_STALE.json"
 
-SILENT_TASK_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE"})
+#: HUNG (process_health, 2026-10-29): Running past its own ExecutionTimeLimit with no fresh
+#: output -- silent by definition, and IgnoreNew means no new run will start.
+SILENT_TASK_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE", "HUNG"})
 SILENT_LEG_STATUSES = frozenset({"LEG_FAILED", "TIMEOUT", "MISSING"})
 #: A leg outcome that says the leg did not run (or could not judge) this pass: nobody looked.
 UNMEASURED_LEG_STATUSES = frozenset({"UNMEASURED", "SKIPPED", "ROTATED_OUT"})
