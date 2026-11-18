@@ -547,7 +547,7 @@ def test_a_calendar_claim_naming_several_months_stays_queued(tmp_path: Path) -> 
 
 def test_a_month_named_without_an_effect_word_mints_no_calendar_trial(tmp_path: Path) -> None:
     assert dt.month_effect("gold is weak every 十月") is True
-    assert dt.month_effect("铜价每年12月偏强") is True
+    assert dt.month_effect("铜价12月往往偏强") is True
     assert dt.month_effect("minutes of the March meeting were published") is False
     for claim in ("minutes of the March meeting were published",
                   "notes written at month end by the desk"):
