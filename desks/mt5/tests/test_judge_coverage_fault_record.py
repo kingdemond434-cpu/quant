@@ -115,7 +115,7 @@ def test_an_import_time_unavailable_writes_the_fault_record(monkeypatch, tmp_pat
     fault = json.loads(report.with_name(jc.FAULT_NAME).read_text("utf-8"))
     assert fault["verdict"] == "UNAVAILABLE" and fault["why"] == "ImportError"
     assert fault["report_at"] == "2026-10-27T17:33:15+00:00" and fault["report_untouched"]
-    assert sorted(p.name for p in report.parent.iterdir()) == [jc.FAULT_NAME, report.name]
+    assert sorted(p.name for p in report.parent.iterdir()) == sorted([jc.FAULT_NAME, report.name])
 
 
 def test_merge_hypotheses_records_the_unavailable_on_its_except_path() -> None:
