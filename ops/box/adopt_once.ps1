@@ -26,6 +26,12 @@
          from the release's code, against the box. The adopter refuses if the checkout has any
          local change or its commit is not an ancestor of the target the gate picks.
       6. Prints the adopter's exit code and the stage it reached (ADOPTION_HEARTBEAT.json).
+      7. Arms the gate's registry notices, whatever step 5 decided: sets QUANT_REGISTRY_NOTIFY
+         (user scope, for the account Quant-WorkflowGate runs as) to the live tree's
+         libs\ops\send_alert.py, then sends one test notice and prints whether a channel
+         delivered it. Unset, the box gate can send no veto notice, so no registry CLEAR ever
+         merges (.github/scripts/audit_gate.py REGISTRY_NOTIFY_ENV). Never fatal, never a secret:
+         only the variable's name, the command and the delivery result are logged.
 
     WHAT IT NEVER DOES. No flag that skips a check, no -AllowUnreleased, no write into
     C:\opt\quant except through Adopt-And-Seal.ps1 itself, no credentials (the repository is
@@ -148,6 +154,53 @@ try {
     $stageName = [string]$hb.stage
     Say ("heartbeat: stage {0}, exit {1}, head {2}" -f $hb.stage, $hb.exit_code, $hb.head_after)
 } catch { Say "heartbeat unreadable" }
+# 7. THE GATE'S REGISTRY NOTICES, ARMED (2026-11-18). The box gate sends its veto notice with the
+# command in QUANT_REGISTRY_NOTIFY and counts it only on exit 0; unset, nothing can be sent, so no
+# registry CLEAR ever merges. Set at user scope for the account Quant-WorkflowGate runs as (each
+# task run reads that account's environment when it starts), never machine-wide, never a secret.
+function Arm-RegistryNotify {
+    try {
+        $name = "QUANT_REGISTRY_NOTIFY"
+        $sendAlert = Join-Path $QuantRoot "libs\ops\send_alert.py"
+        if (-not (Test-Path -LiteralPath $sendAlert)) { Say "notify: NOT ARMED, $sendAlert is missing"; return }
+        $gate = Get-ScheduledTask -TaskName "Quant-WorkflowGate" -ErrorAction SilentlyContinue
+        if (-not $gate) { Say "notify: NOT ARMED, no Quant-WorkflowGate task on this box"; return }
+        $acct = [string]$gate.Principal.UserId
+        $sid = (New-Object Security.Principal.NTAccount($acct)).Translate([Security.Principal.SecurityIdentifier]).Value
+        $mine = ($sid -eq $me.Identity.User.Value)
+        $profileDir = (Get-CimInstance Win32_UserProfile -ErrorAction SilentlyContinue | Where-Object { $_.SID -eq $sid } | Select-Object -First 1).LocalPath
+        $py = $null
+        $cands = @()
+        if ($profileDir) { $cands += (Join-Path $profileDir "AppData\Local\Programs\Python\Python314\python.exe") }
+        $cands += 'C:\Program Files\Python314\python.exe'
+        foreach ($c in $cands) { if (Test-Path -LiteralPath $c) { $py = $c; break } }
+        if (-not $py) { Say "notify: NOT ARMED, no Python 3.14 for $acct (the gate's own Python)"; return }
+        # the gate splits the command with shlex (posix=False): a path with a space becomes its 8.3 name
+        $fso = New-Object -ComObject Scripting.FileSystemObject
+        if ($py -match ' ') { $py = $fso.GetFile($py).ShortPath }
+        if ($sendAlert -match ' ') { $sendAlert = $fso.GetFile($sendAlert).ShortPath }
+        $cmd = "$py $sendAlert"
+        if ($mine) {
+            $was = [Environment]::GetEnvironmentVariable($name, "User")
+            if ($was -ne $cmd) { [Environment]::SetEnvironmentVariable($name, $cmd, "User") }
+        } else {
+            $key = "Registry::HKEY_USERS\$sid\Environment"
+            if (-not (Test-Path -LiteralPath $key)) { Say "notify: NOT ARMED, $acct is not logged on (its environment is not loaded); run this again as $acct"; return }
+            $was = (Get-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue).$name
+            if ($was -ne $cmd) { Set-ItemProperty -LiteralPath $key -Name $name -Value $cmd -Type String }
+        }
+        if ($was -eq $cmd) { Say "notify: $name already set for $acct" } else { Say "notify: $name set for $acct to: $cmd" }
+        $out = (& $py -I $sendAlert "box: registry notices armed" "adopt_once set $name for $acct on $env:COMPUTERNAME; this is the one test notice." 2>&1 | Out-String)
+        $sent = $LASTEXITCODE
+        $out.Trim() -split "`n" | ForEach-Object { Say "  send_alert: $_" }
+        if ($sent -eq 0) { Say "notify: ARMED, the test notice was delivered" }
+        else { Say "notify: SET BUT NOT DELIVERED (send_alert exit $sent): no channel is armed on this box yet" }
+    } catch {
+        Say "notify: NOT ARMED ($($_.Exception.Message))"
+    }
+}
+Arm-RegistryNotify
+
 if ($rc -eq 0 -and $stageName -in @("sealed", "already-sealed", "target-unsealed", "accepts-nothing-to-seal")) {
     Finish 0 "DONE: the box adopted the release (stage $stageName). The hourly task takes it from here."
 }
