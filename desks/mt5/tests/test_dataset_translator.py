@@ -450,14 +450,163 @@ def test_the_committed_claim_file_holds_no_verbatim_text(tmp_path: Path) -> None
         assert set(rec) <= dt.CLAIM_FIELDS
         for t in rec["tellings"]:
             assert set(t) <= dt.TELLING_FIELDS
+    # The allowed set is pinned exactly: a new field is a deliberate edit to this test.
+    pinned = frozenset({
+        "mechanism_key", "mechanism_class", "analogues", "direction", "horizon",
+        "quantity_kind", "lang", "event_time", "claim_hash", "host", "ingested_time",
+        "tellings", "months", "turn_of_month", "factors", "event_kind", "session_kind",
+        "class_reason"})
+    assert pinned == dt.CLAIM_FIELDS
     # The file in the repository obeys the same contract.
     real = json.loads(dt.CLOUD_CLAIMS.read_text("utf-8"))
     assert real["rows"], "the committed claim file is empty"
     for rec in real["rows"]:
         assert set(rec) <= dt.CLAIM_FIELDS
+        _assert_derived_tokens_only(rec)
         assert all(set(t) <= dt.TELLING_FIELDS for t in rec["tellings"])
         assert all(isinstance(w, str) and len(w) <= 40 for k in ("direction", "horizon")
                    for w in rec[k]), "a direction/horizon entry is a sentence, not a word"
+
+
+def _assert_derived_tokens_only(rec: dict[str, Any]) -> None:
+    """Every derived field is a number, a flag, a symbol or a controlled-vocabulary word."""
+    from research.forced_flow_calendar import KINDS
+    assert all(isinstance(m, int) and 1 <= m <= 12 for m in rec.get("months", []))
+    assert isinstance(rec.get("turn_of_month", False), bool)
+    assert all(isinstance(f, str) and dt._SYMBOL_RE.match(f) for f in rec.get("factors", []))
+    assert rec.get("event_kind", "") in {"", *KINDS}
+    assert rec.get("session_kind", "") in {"", *dt.SESSION_FAMILY}
+    assert rec.get("class_reason", "") in {"", *(k for k, _r, _t in dt.CLASS_REASONS)}
+
+
+def test_month_factor_and_token_extraction_never_stores_raw_text() -> None:
+    words = ("SECRET-WORDS 6월 선물 옵션 동시 만기 night session 夜盘 ギャップ 高开 "
+             "turn-of-the-month in May October 十二月 Nigerian sector momentum")
+    doc = dt.compact_cloud_claims([_ledger_row(
+        claim=words, quantities=["만기", "SECRET-QTY"], horizon=["SECRET-HOR"],
+        mechanism_class="microstructure",
+        instruments={"analogues": ["XAUUSD"], "mentioned": ["SECRET-MENTION"],
+                     "indirect": ["USDCAD", "not a symbol, a sentence"],
+                     "channels": ["opec: SECRET-CHANNEL -> oil"]})])
+    (rec,) = doc["rows"]
+    blob = json.dumps(doc, ensure_ascii=False)
+    for w in ("SECRET", "선물", "夜盘", "ギャップ", "May", "October", "十二月", "Nigerian",
+              "opec", "sentence"):
+        assert w not in blob, w
+    assert rec["months"] == [5, 6, 10, 12] and rec["turn_of_month"] is True
+    assert rec["factors"] == ["USDCAD"]
+    assert rec["event_kind"] == "option_expiry" and rec["session_kind"] == "night_session"
+    assert rec["class_reason"] == "sector_momentum" and rec["mechanism_class"] == "other"
+    _assert_derived_tokens_only(rec)
+
+
+def test_a_page_date_is_not_a_month_the_claim_names() -> None:
+    assert dt.claim_months("更新日期 2018年1月29日") == []
+    assert dt.claim_months("11月17日早评") == []
+    assert dt.claim_months("12月1号之后铜价上涨") == [12]
+    assert dt.claim_months("You may buy. May is quiet") == []
+
+
+def _one_cell_family(tmp: Path, **kw: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    return _claim_pass(tmp, [_ledger_row(quantities=["stocks"], direction=["up"], **kw)])
+
+
+@pytest.mark.parametrize(("claim", "family", "fixed", "side_arg"), [
+    ("gold is weak every 十月 on the curve", "calendar_month", {"active_month": 10}, "side_bias"),
+    ("gold drifts up into the turn of the month", "turn_of_month", {}, "side_bias"),
+    ("gold sells off into option expiry", "forced_flow", {"event_kind": "option_expiry"}, None),
+])
+def test_a_calendar_claim_reaches_the_builder_its_derived_token_names(
+        tmp_path: Path, claim: str, family: str, fixed: dict[str, Any],
+        side_arg: str | None) -> None:
+    import inspect
+
+    from mt5desk.cell_modifiers import SIDE_MODES
+    from mt5desk.executables import resolve_family
+    rows, cells = _one_cell_family(tmp_path, claim=claim, mechanism_class="calendar",
+                                   mechanism_key="k_cal")
+    assert cells, rows
+    names = set(inspect.signature(resolve_family(family)).parameters)
+    for c in cells:
+        assert c["family"] == family
+        assert {k: c["params"][k] for k in fixed} == fixed
+        assert c["params"]["side_mode"] in SIDE_MODES
+        assert set(c["params"]) - {"side_mode"} <= names     # the family's own argument names
+        if side_arg:
+            assert c["params"][side_arg] == (1 if c["params"]["side_mode"] == "long" else -1)
+
+
+def test_a_calendar_claim_naming_several_months_stays_queued(tmp_path: Path) -> None:
+    rows, cells = _one_cell_family(tmp_path, claim="gold rallies 3月 and 9月",
+                                   mechanism_class="calendar", mechanism_key="k_cal2")
+    assert not cells and rows[0]["status"] == dt.CELL_QUEUED
+    assert "names 2 months [3, 9]" in rows[0]["reason"]
+
+
+def test_a_flow_claim_with_an_event_kind_is_forced_flow(tmp_path: Path) -> None:
+    _, cells = _one_cell_family(tmp_path, claim="trackers buy at the index rebalance",
+                                mechanism_class="flow", mechanism_key="k_flow")
+    assert cells and all(c["family"] == "forced_flow"
+                         and c["params"]["event_kind"] == "index_rebalance" for c in cells)
+    rows, none = _one_cell_family(tmp_path, claim="foreigners keep buying",
+                                  mechanism_class="flow", mechanism_key="k_flow2")
+    assert not none and "names no event kind" in rows[0]["reason"]
+
+
+def test_a_cross_asset_claim_regresses_on_its_named_other_leg(tmp_path: Path) -> None:
+    from mt5desk.cell_modifiers import SIDE_MODES
+    _, cells = _one_cell_family(
+        tmp_path, mechanism_class="cross_asset", mechanism_key="k_x",
+        instruments={"analogues": ["XTIUSD"], "indirect": ["USDCAD", "USDNOK"]})
+    assert len(cells) == 1
+    (c,) = cells
+    assert c["family"] == "cross_asset_residual" and c["symbol"] == "XTIUSD"
+    assert c["params"]["factor_symbols"] == ["USDCAD", "USDNOK"]
+    assert c["params"]["side_mode"] == "revert" and "revert" in SIDE_MODES
+    # One instrument and no second leg: queued with the reason, never a factor-less cell.
+    rows, none = _one_cell_family(tmp_path, mechanism_class="cross_asset",
+                                  mechanism_key="k_x1", instruments={"analogues": ["XTIUSD"]})
+    assert not none and "no second leg" in rows[0]["reason"]
+
+
+@pytest.mark.parametrize(("claim", "family", "side_mode"), [
+    ("沪镍夜盘领跌", "overnight_drift", None),
+    ("oil did not react at the open", "session_range_breakout", None),
+    ("日経 ギャップアップ継続 で買い", "overnight_gap_decay", "revert"),
+    ("恒生指数 高开 后迅速倒跌", "overnight_gap_decay", None),
+])
+def test_a_session_microstructure_claim_reaches_the_session_and_gap_families(
+        tmp_path: Path, claim: str, family: str, side_mode: str | None) -> None:
+    _, cells = _one_cell_family(tmp_path, claim=claim, mechanism_class="microstructure",
+                                mechanism_key="k_ms", instruments={"analogues": ["XAUUSD"]})
+    assert cells and {c["family"] for c in cells} == {family}
+    if side_mode:
+        assert len(cells) == 1 and cells[0]["params"]["side_mode"] == side_mode
+    # The hold is `ttl_bars` on all three: overnight_drift's `hold_bars` is its lookback.
+    assert all("ttl_bars" in c["params"] for c in cells)
+
+
+def test_a_mislabelled_microstructure_claim_is_reclassified_and_unminted(tmp_path: Path) -> None:
+    rows, cells = _one_cell_family(
+        tmp_path, claim="trailing 252-day sector momentum across Select Sector SPDR ETFs",
+        mechanism_class="microstructure", direction=["reverses"], mechanism_key="k_mis")
+    assert not cells
+    assert rows[0]["mechanism_class"] == "other"
+    assert "reclassified microstructure -> other (sector_momentum)" in rows[0]["reason"]
+
+
+def test_other_microstructure_waits_on_the_named_tick_builder(tmp_path: Path) -> None:
+    rows, cells = _one_cell_family(tmp_path, claim="order book depth thins",
+                                   mechanism_class="microstructure", mechanism_key="k_ms2")
+    assert not cells and "session_open_microstructure" in rows[0]["reason"]
+
+
+def test_a_derived_family_never_changes_a_claim_the_existing_maps_mint(tmp_path: Path) -> None:
+    # A REVERT microstructure claim that is also a gap story keeps range_reversion.
+    _, cells = _claim_pass(tmp_path, [_ledger_row(
+        claim="恒生指数 高开 后迅速倒跌", mechanism_class="microstructure",
+        direction=["revert"], mechanism_key="k_rr")])
+    assert cells and {c["family"] for c in cells} == {"range_reversion"}
 
 
 def test_an_unregistered_class_is_queued_never_emitted(tmp_path: Path) -> None:

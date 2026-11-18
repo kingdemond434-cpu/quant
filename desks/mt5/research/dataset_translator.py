@@ -325,7 +325,10 @@ CLOUD_CLAIMS = DESK / "data" / "deep_forest_cloud_claims.json"
 CLAIM_KIND = "deep_forest_claim"
 CLAIM_FIELDS: frozenset[str] = frozenset({
     "mechanism_key", "mechanism_class", "analogues", "direction", "horizon", "quantity_kind",
-    "lang", "event_time", "claim_hash", "host", "ingested_time", "tellings"})
+    "lang", "event_time", "claim_hash", "host", "ingested_time", "tellings",
+    # DERIVED TOKENS (hourly pass, 2026-11-18): month NUMBERS, a flag, mapped MT5 symbols and
+    # controlled-vocabulary words -- never the words they were read from.
+    "months", "turn_of_month", "factors", "event_kind", "session_kind", "class_reason"})
 TELLING_FIELDS: frozenset[str] = frozenset({"claim_hash", "host", "ingested_time", "event_time"})
 #: H1 bars a claim's horizon bucket (`mechanism_claims._HOR_BUCKET_TERMS`) holds for. A horizon
 #: the claim does not state uses the family's own declared `ttl_bars` default, read from its
@@ -335,13 +338,16 @@ HOLD_BARS: dict[str, int] = {"intraday": 6, "daily": 24, "weekly": 120, "monthly
 #: Why a class the deepener's own map (`rule_deepening.CLASS_FALLBACK`, then its
 #: QUANTITY_FALLBACK) gives no price-only family is QUEUED: the builder it would need.
 MISSING_BUILDER: dict[str, str] = {
-    "calendar": ("calendar: `calendar_month` / `turn_of_month` need the month or day the claim "
-                 "names, which the compact file does not carry"),
-    "flow": "flow: needs a flow series conditioner on the analogue; none is joined to a claim",
+    "calendar": ("calendar: names no turn-of-month day, no dated forced-flow event and not "
+                 "exactly one month, so `turn_of_month` / `forced_flow` / `calendar_month` have "
+                 "no argument the claim supplies"),
+    "flow": ("flow: names no event kind the `forced_flow` calendar dates (index rebalance, "
+             "expiry, roll, fixing, auction, month/quarter end)"),
     "cross_asset": ("cross_asset: needs a lead_lag / relative_value builder with the peer the "
                     "claim implies; the claim names no peer series"),
-    "microstructure": ("microstructure: only a REVERT claim maps (range_reversion); other "
-                       "microstructure claims need tick/order-book builders the desk lacks"),
+    "microstructure": ("microstructure: not a REVERT claim (range_reversion) and no night-session"
+                       " / session-open / gap story bars can test; waits on Tick moat's pending "
+                       "`session_open_microstructure` builder (tick / order-book)"),
     "momentum": "momentum: direction word in no bucket the deepener maps",
     "reversion": "reversion: direction word in no bucket the deepener maps",
     "other": ("other: the claim names no mechanism class and no breakout / reversion / momentum "
@@ -369,6 +375,139 @@ CLASS_SERIES_FAMILY: dict[str, tuple[str, str]] = {
 }
 #: Fixed arguments a class-series family needs to be the mechanism the class names.
 CLASS_SERIES_PARAMS: dict[str, dict[str, Any]] = {"inventory": {"event_kind": "inventory"}}
+
+# ----------------------------------------------- derived tokens: month, factor, event, session ---
+#: THREE MORE CLASSES REACH A BUILDER THAT EXISTS (hourly pass, 2026-11-18), each through a
+#: DERIVED token the compaction keeps instead of the words: `calendar` through the month NUMBER
+#: or a turn-of-month flag, `cross_asset` through the mapped MT5 symbols of the other leg, `flow`
+#: through a `forced_flow_calendar.KINDS` word. And the microstructure claims that are session
+#: stories bars can test (Tick moat's read) reach the session and gap families. Every regex is
+#: narrow and anchored on a calendar or market word; what it read never leaves this function.
+_ZH_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9,
+           "十": 10, "十一": 11, "十二": 12}
+_MONTH_EN = ("January", "February", "March", "April", "May", "June", "July", "August",
+             "September", "October", "November", "December")
+#: zh / ja `N月`, ko `N월` (a digit not preceded by another digit), zh numerals `十二月`, and the
+#: capitalised English names. A full `YYYY年M月D日` stamp is a page date, not a month the claim
+#: names, so a month between a year and a day is not read. `May` needs a preposition before
+#: it: the modal verb is not a month.
+_MONTH_RES: tuple[re.Pattern[str], ...] = (
+    re.compile(r"(?<![\d.\-/])(?<!年)(?<!年 )(1[0-2]|0?[1-9])\s?[月월](?!\s?\d{1,2}\s?日)"),
+    re.compile(r"(?<![一二三四五六七八九十\d])(十[一二]|[一二三四五六七八九十])月"),
+    re.compile(r"\b(" + "|".join(m for m in _MONTH_EN if m != "May") + r")\b"),
+    re.compile(r"\b(?:in|of|early|late|mid-?)\s(May)\b"),
+)
+_TOM_RE = re.compile(r"turn[- ]of[- ](?:the[- ])?month|month[- ]end\b|end[- ]of[- ](?:the[- ])?"
+                     r"month|月末|月底|月初|월말|월초", re.I)
+#: (forced_flow_calendar kind, pattern), first match wins. A roll word outranks an expiry word:
+#: "rolling from one expiry to the next" is a roll.
+EVENT_KIND_TERMS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("index_rebalance", re.compile(r"rebalanc|index (?:review|inclusion)|再平衡|指数调整|"
+                                   r"리밸런싱|リバランス", re.I)),
+    ("fixing", re.compile(r"\bfixing\b|\bwmr\b|london fix|\b4\s?pm fix|定盘价|仲値", re.I)),
+    ("bond_auction", re.compile(r"\bauctions?\b|国债招标|국채\s?입찰|入札", re.I)),
+    ("futures_roll", re.compile(r"\brollover\b|\brolling from\b|换月|移仓|롤오버|限月交代", re.I)),
+    ("option_expiry", re.compile(r"\bexpir(?:y|ation)\b|\b0dte\b|到期|交割日|만기|満期|"
+                                 r"vencimiento", re.I)),
+    ("quarter_end", re.compile(r"quarter[- ]end|季末|분기말|四半期末", re.I)),
+    ("month_end", _TOM_RE),
+)
+#: Session stories bars can test (Tick moat, 2026-11-18). First match wins: a night-session lead
+#: that opens with a gap is a night-session claim.
+SESSION_KIND_TERMS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("night_session", re.compile(r"夜盘|夜盤|夜間取引|야간\s?(?:선물|장|거래)|night session",
+                                 re.I)),
+    ("gap_continuation", re.compile(r"ギャップ(?:アップ|ダウン)?継続|\bgap[- ](?:up |down )?"
+                                    r"continuation\b|跳空[^。]{0,6}延续", re.I)),
+    ("gap", re.compile(r"高开|低开|跳空|ギャップ|窓開け|갭\s?(?:상승|하락)|\bgaps? (?:up|down|"
+                       r"overnight)\b", re.I)),
+    ("session_open", re.compile(r"开盘|早盘|寄り付き|寄付|前場|朝高|시초가|장\s?초반|at the open\b|"
+                                r"на открытии", re.I)),
+)
+#: Microstructure-labelled claims that are another mechanism (Tick moat, 2026-11-18), moved to
+#: `other` with the reason. None has a builder here, so each stays unminted, by name.
+CLASS_REASONS: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    ("sector_momentum", re.compile(r"sector (?:spdr|etf|momentum|rotation)", re.I),
+     "a cross-sectional sector-momentum book; no sector-ETF class book on this tree"),
+    ("value_factor", re.compile(r"book[- ]to[- ]market|value factor", re.I),
+     "a cross-sectional value factor on share books; single names never mint statistically"),
+    ("stop_placement", re.compile(r"стоп-лосс|stop[- ]loss (?:placement|level)", re.I),
+     "stop placement is trade management, not an entry signal"),
+    ("data_vendor", re.compile(r"tick to daily resolution", re.I),
+     "a data vendor's product description names no mechanism"),
+    ("ngn_money_market", re.compile(r"\bnigerian\b", re.I),
+     "Nigerian money-market colour; no NGN instrument in the broker registry"),
+)
+#: The existing builder each session kind becomes, and the side-mode it is judged under. None of
+#: these three names `side_mode`, so `cell_modifiers` applies it: long/short filter the family's
+#: own trade, `revert` (a SIDE_MODES value) flips the gap fade into gap continuation.
+SESSION_FAMILY: dict[str, tuple[str, str | None]] = {
+    "night_session": ("overnight_drift", None),
+    "session_open": ("session_range_breakout", None),
+    "gap": ("overnight_gap_decay", None),
+    "gap_continuation": ("overnight_gap_decay", "revert"),
+}
+_SYMBOL_RE = re.compile(r"^[A-Z0-9][A-Z0-9._]{1,15}$")
+#: How many factor legs a residual cell regresses on: the family needs every named factor's bars.
+MAX_FACTORS = 6
+
+
+def claim_months(text: str) -> list[int]:
+    """The month NUMBERS a claim names (1-12), sorted. The words are never returned."""
+    out: set[int] = set()
+    for rx in _MONTH_RES:
+        for m in rx.finditer(text or ""):
+            g = m.group(1)
+            if g.isdigit():
+                out.add(int(g))
+            elif g in _ZH_NUM:
+                out.add(_ZH_NUM[g])
+            elif g in _MONTH_EN:
+                out.add(_MONTH_EN.index(g) + 1)
+    return sorted(n for n in out if 1 <= n <= 12)
+
+
+def _first_token(table: Iterable[tuple[Any, ...]], text: str) -> str:
+    for row in table:
+        if row[1].search(text or ""):
+            return str(row[0])
+    return ""
+
+
+def claim_event_kind(text: str) -> str:
+    return _first_token(EVENT_KIND_TERMS, text)
+
+
+def claim_session_kind(text: str) -> str:
+    return _first_token(SESSION_KIND_TERMS, text)
+
+
+def claim_class_reason(text: str) -> str:
+    return _first_token(CLASS_REASONS, text)
+
+
+def claim_factors(inst: dict[str, Any]) -> list[str]:
+    """The other leg's MT5 symbols: the ledger's channel-mapped `indirect` list (already run
+    through the analogue mapping). Only strings shaped like a symbol survive."""
+    out: list[str] = []
+    for s in inst.get("indirect") or []:
+        s = str(s)
+        if _SYMBOL_RE.match(s) and s not in out:
+            out.append(s)
+    return out
+
+
+def _derived(r: dict[str, Any]) -> dict[str, Any]:
+    """The derived tokens of ONE ledger row. Reads the claim's words; returns none of them."""
+    text = " ".join([str(r.get("claim") or "")] + [str(w) for w in r.get("quantities") or []]
+                    + [str(w) for w in r.get("horizon") or []])
+    return {"months": claim_months(str(r.get("claim") or "")),
+            "turn_of_month": bool(_TOM_RE.search(text)),
+            "factors": claim_factors(r.get("instruments") or {}),
+            "event_kind": claim_event_kind(text),
+            "session_kind": claim_session_kind(text),
+            "class_reason": (claim_class_reason(text)
+                             if str(r.get("mechanism_class") or "") == "microstructure" else "")}
 
 
 def _quantity_kind(quantities: Iterable[Any]) -> str:
@@ -410,11 +549,12 @@ def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") ->
             excluded["refused host (terms)"] += 1
             continue
         inst = r.get("instruments") or {}
+        der = _derived(r)
         tell = {"claim_hash": str(r.get("claim_hash") or ""), "host": host,
                 "ingested_time": ingested, "event_time": str(r.get("event_time") or "")}
         rec = by_key.get(mkey)
         if rec is None:
-            by_key[mkey] = {
+            rec = by_key[mkey] = {
                 "mechanism_key": mkey,
                 "mechanism_class": str(r.get("mechanism_class") or "other"),
                 "analogues": [str(a) for a in inst.get("analogues") or []],
@@ -422,7 +562,10 @@ def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") ->
                 "horizon": [str(w) for w in r.get("horizon") or []],
                 "quantity_kind": _quantity_kind(r.get("quantities") or []),
                 "lang": str(r.get("lang") or r.get("language") or ""),
+                **der,
                 "tellings": [tell]}
+            if der["class_reason"]:
+                rec["mechanism_class"] = "other"
             continue
         rec["tellings"].append(tell)
         for k, vals in (("analogues", inst.get("analogues")), ("direction", r.get("direction")),
@@ -431,6 +574,11 @@ def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") ->
                 if str(v) not in rec[k]:
                     rec[k].append(str(v))
         rec["quantity_kind"] = rec["quantity_kind"] or _quantity_kind(r.get("quantities") or [])
+        rec["months"] = sorted(set(rec["months"]) | set(der["months"]))
+        rec["turn_of_month"] = bool(rec["turn_of_month"] or der["turn_of_month"])
+        rec["factors"] += [f for f in der["factors"] if f not in rec["factors"]]
+        for k in ("event_kind", "session_kind"):
+            rec[k] = rec[k] or der[k]
     claims = []
     for rec in by_key.values():
         rec["tellings"].sort(key=lambda t: t["ingested_time"])
@@ -525,6 +673,10 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
     from libs.research import mechanism_claims as mc
     from libs.research import rule_deepening as rd
     cls = str(claim.get("mechanism_class") or "other")
+    why = str(claim.get("class_reason") or "")
+    if why:
+        text = next((t for k, _rx, t in CLASS_REASONS if k == why), why)
+        return None, f"NO_BUILDER: reclassified microstructure -> other ({why}): {text}"
     words = [str(w) for w in claim.get("direction") or []]
     dbucket = mc._bucket(mc._DIR_BUCKET_TERMS, words)
     hbucket = mc._bucket(mc._HOR_BUCKET_TERMS, [str(w) for w in claim.get("horizon") or []])
@@ -541,12 +693,26 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
     if fam is None and cls in CLASS_SERIES_FAMILY:
         fam, hold_param = CLASS_SERIES_FAMILY[cls]
         basis = "class_series"
+    fixed: dict[str, Any] = (dict(CLASS_SERIES_PARAMS.get(cls, {})) if basis == "class_series"
+                             else {})
+    side_arg: str | None = None
+    side_mode: str | None = None
+    if fam is None:
+        got = _derived_family(claim, cls)
+        if isinstance(got, str):
+            return None, got
+        if got is not None:
+            fam, basis, fixed, side_arg, side_mode = got
     base = {"class": cls, "direction_bucket": dbucket, "horizon_bucket": hbucket,
             "family_basis": basis}
     if fam is None:
         return None, f"NO_BUILDER: {MISSING_BUILDER.get(cls, cls + ': no registered builder')}"
     if resolve_family(fam) is None:
         return None, f"NO_BUILDER: {fam} has no registered builder on this tree"
+    if basis.startswith("derived:"):
+        gap = _signature_gap(fam, {*fixed, hold_param, *([side_arg] if side_arg else [])})
+        if gap:
+            return None, f"NO_BUILDER: {fam} {gap}"
     if hbucket == "tick":
         return None, "NO_BUILDER: a tick-horizon claim has no sub-bar builder on H1"
     hold = HOLD_BARS.get(hbucket) or _family_default_hold(fam, hold_param)
@@ -555,9 +721,79 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
                       "states none")
     buckets = {mc._bucket(mc._DIR_BUCKET_TERMS, [w]) for w in words} & set(_CLAIM_DIRECTION_SIDES)
     sides = ((_CLAIM_DIRECTION_SIDES[next(iter(buckets))],) if len(buckets) == 1 else SIDES)
+    if side_mode:
+        # The family picks the side and `side_mode` names the claim; one cell, not two.
+        sides = (1,)
     return {**base, "family": fam, "hold": int(hold), "hold_param": hold_param,
-            "fixed": dict(CLASS_SERIES_PARAMS.get(cls, {})) if basis == "class_series" else {},
+            "fixed": fixed, "side_arg": side_arg, "side_mode": side_mode,
             "sides": sides}, None
+
+
+def _derived_family(claim: dict[str, Any], cls: str
+                    ) -> tuple[str, str, dict[str, Any], str | None, str | None] | str | None:
+    """(family, basis, fixed args, the family's own side argument, a fixed side_mode) from the
+    compact file's DERIVED tokens; a QUEUED reason; or None. Only ever reached when neither the
+    class map, the quantity fallback nor the class-series map named a family."""
+    ek = str(claim.get("event_kind") or "")
+    if cls == "calendar":
+        months = [int(m) for m in claim.get("months") or [] if 1 <= int(m) <= 12]
+        if claim.get("turn_of_month"):
+            return "turn_of_month", "derived:turn_of_month", {}, "side_bias", None
+        if ek:
+            return "forced_flow", f"derived:event_kind:{ek}", {"event_kind": ek}, None, None
+        if len(months) == 1:
+            return ("calendar_month", "derived:month", {"active_month": months[0]},
+                    "side_bias", None)
+        if len(months) > 1:
+            # `seasonal_window` takes one start/end month-day pair; several months named is
+            # several claims, and the compact file does not say which the mechanism is.
+            return (f"NO_BUILDER: calendar: names {len(months)} months {months}; "
+                    "`calendar_month` takes one `active_month` and `seasonal_window` one "
+                    "start_md/end_md window, and the claim does not say which month is the effect")
+        return None
+    if cls == "flow" and ek:
+        return "forced_flow", f"derived:event_kind:{ek}", {"event_kind": ek}, None, None
+    if cls == "cross_asset":
+        # The factor legs are per tradable (every other leg but the one traded): `_claim_row`
+        # resolves them against the registry and queues the claim when none is left.
+        return "cross_asset_residual", "derived:factors", {}, None, "revert"
+    sk = str(claim.get("session_kind") or "")
+    if cls == "microstructure" and sk in SESSION_FAMILY:
+        fam, mode = SESSION_FAMILY[sk]
+        return fam, f"derived:session:{sk}", {}, None, mode
+    return None
+
+
+def _signature_gap(fam: str, supplied: set[str]) -> str | None:
+    """What the family's REAL signature refuses: an argument it does not take, or a required one
+    the claim does not supply. `side_mode` and the identity keys are applied outside the call."""
+    import inspect
+
+    from mt5desk.executables import resolve_family
+    try:
+        params = inspect.signature(resolve_family(fam)).parameters  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return "has no readable signature"
+    names = set(list(params)[1:])
+    unknown = sorted(supplied - names)
+    if unknown:
+        return f"takes no argument {unknown}"
+    need = sorted(n for n, p in list(params.items())[1:] if p.default is inspect.Parameter.empty
+                  and p.kind is inspect.Parameter.KEYWORD_ONLY and n not in supplied)
+    return f"needs {need}, which the claim does not supply" if need else None
+
+
+def _claim_params(spec: dict[str, Any], sym: str, side: int) -> dict[str, Any]:
+    """The cell's params. `side_mode` is a `cell_modifiers.SIDE_MODES` value on every path."""
+    params: dict[str, Any] = {**dict(spec.get("fixed") or {}),
+                              str(spec.get("hold_param") or "ttl_bars"): spec["hold"],
+                              "side_mode": spec.get("side_mode")
+                              or ("long" if side > 0 else "short")}
+    if spec.get("side_arg"):
+        params[str(spec["side_arg"])] = 1 if side > 0 else -1
+    if spec.get("factor_pool") is not None:
+        params["factor_symbols"] = [f for f in spec["factor_pool"] if f != sym][:MAX_FACTORS]
+    return params
 
 
 def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
@@ -565,9 +801,7 @@ def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
     from proposer_common import candidate
     cl = ds["claim"]
     fam = spec["family"]
-    params = {**dict(spec.get("fixed") or {}),
-              str(spec.get("hold_param") or "ttl_bars"): spec["hold"],
-              "side_mode": "long" if side > 0 else "short"}
+    params = _claim_params(spec, sym, side)
     mech = (f"deep-forest claim {cl['mechanism_key']} (class {spec['class']}, direction "
             f"{spec['direction_bucket']}, horizon {spec['horizon_bucket']}, "
             f"{cl.get('n_tellings', 1)} telling(s), lang {ds['lang'] or '?'}) on analogue "
@@ -1094,6 +1328,20 @@ def _claim_row(ds: dict[str, Any], onto: dict[str, Any], registry: dict[str, str
                    missed_growth=(f"claim {cl.get('mechanism_key')} on {', '.join(trad[:4])} "
                                   "is never judged until the named builder exists"))
         return row, None
+    if spec["family"] == "cross_asset_residual":
+        pool: list[str] = []
+        for s in [*(cl.get("factors") or []), *(cl.get("analogues") or [])]:
+            if s in registry and registry[s] != "Equities" and s not in pool:
+                pool.append(str(s))
+        if not any(f != s for s in trad for f in pool):
+            row.update(status=CELL_QUEUED,
+                       reason=("NO_BUILDER: cross_asset: the claim names no second leg the "
+                               "registry prices (no channel-mapped factor, one analogue), so "
+                               "`cross_asset_residual` has no factor to regress on"),
+                       missed_growth=(f"claim {cl.get('mechanism_key')} is never judged until "
+                                      "a factor leg is named"))
+            return row, None
+        spec = {**spec, "factor_pool": pool}
     row.update(claim_spec={k: (list(v) if isinstance(v, tuple) else v)
                            for k, v in spec.items()}, family=spec["family"])
     return row, spec
@@ -1123,7 +1371,9 @@ def _mint_claims(ready: list[tuple[dict[str, Any], list[str], dict[str, Any]]],
         if not lane:
             row.update(status=UNMAPPABLE, reason="no mapped tradable is in the hypothesis lane")
             continue
+        pool = spec.get("factor_pool")
         grid = [(s, side) for s in lane if not coverage.covered(stem, s)
+                and (pool is None or any(f != s for f in pool))
                 for side in spec["sides"]]
         if not grid:
             row.update(status=COVERED, covered_by="registry",
@@ -1140,7 +1390,12 @@ def _mint_claims(ready: list[tuple[dict[str, Any], list[str], dict[str, Any]]],
             sym, side = grid[(int(st["next"]) + k) % len(grid)]
             # The spec IS the trial: two claims (or two keys) resolving to the same family, hold,
             # tradable and side are one cell, whatever the claims' words.
-            key = (f"claim:ttl{spec['hold']}", sym, int(side), fam)
+            # A derived argument (month, event kind, factor legs, side_mode) is part of the spec.
+            extra = {k: v for k, v in _claim_params(spec, sym, side).items()
+                     if k not in {str(spec.get("hold_param") or "ttl_bars"), "side_mode"}
+                     or (k == "side_mode" and spec.get("side_mode"))}
+            key = (f"claim:ttl{spec['hold']}" + (f":{json.dumps(extra, sort_keys=True)}"
+                                                 if extra else ""), sym, int(side), fam)
             if key in minted:
                 continue
             cand = _claim_cell(ds, sym, side, spec, trad)

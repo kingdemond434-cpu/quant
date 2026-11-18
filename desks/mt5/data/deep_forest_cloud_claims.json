@@ -1,9 +1,9 @@
 {
  "writer": "research/dataset_translator.py --build-cloud-claims",
- "built_at": "2026-11-18T03:37:42Z",
+ "built_at": "2026-11-18T03:56:58Z",
  "source": "ALL_CLAIMS_cloud_ledger.jsonl",
- "ledger_rows": 465,
- "claims": 373,
+ "ledger_rows": 516,
+ "claims": 400,
  "excluded": {
   "refused host (terms)": 2
  },
@@ -26,6 +26,15 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [
+    8,
+    9
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9122b65a15ab",
@@ -54,6 +63,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    8
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e5a81e163372",
@@ -86,6 +103,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    9
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6e83ccddaa59",
@@ -112,6 +137,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "de500d9bf18c",
@@ -150,6 +181,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4489c8731aa0",
@@ -189,6 +226,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1e49a4e7e04c",
@@ -216,6 +259,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6f463a3b1ee7",
@@ -246,6 +295,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ee9f84ba1d96",
@@ -277,6 +332,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "31c90673d581",
@@ -306,6 +367,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "661f6ab7d1e6",
@@ -336,6 +403,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3448e43d46f2",
@@ -369,6 +442,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f7bfd0a2f65b",
@@ -432,6 +511,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4a63052aec87",
@@ -485,6 +570,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "350d6bc9d1b1",
@@ -515,6 +606,12 @@
    ],
    "quantity_kind": "",
    "lang": "pt",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f5f37b471b06",
@@ -551,6 +648,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "85b8567c454d",
@@ -582,6 +685,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "GBPUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "90f21fb845de",
@@ -607,6 +718,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "GBPUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8c1004b41548",
@@ -632,6 +751,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1762da9aec8d",
@@ -659,6 +787,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": true,
+   "factors": [],
+   "event_kind": "month_end",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "435aa2b096c9",
@@ -686,6 +820,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9d23a1b4c2cf",
@@ -701,7 +841,7 @@
   },
   {
    "mechanism_key": "f40b648f8b761d74",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [
     "US500"
    ],
@@ -715,6 +855,15 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [
+    6,
+    12
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "sector_momentum",
    "tellings": [
     {
      "claim_hash": "8e75537dee7f",
@@ -751,6 +900,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c9d861ce40cd",
@@ -780,6 +935,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1d41e40824cf",
@@ -808,6 +969,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9e61df49711e",
@@ -837,6 +1004,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7e15d0e78c0e",
@@ -865,6 +1038,14 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [
+    1
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0029977de673",
@@ -894,6 +1075,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f0021ae572fd",
@@ -924,6 +1111,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": true,
+   "factors": [],
+   "event_kind": "month_end",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "eb087fc9f4ac",
@@ -953,6 +1146,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b815af536ce8",
@@ -982,6 +1181,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "950e2e6a2331",
@@ -1011,6 +1216,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "90b1f3c9c873",
@@ -1040,6 +1251,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c487c7ae6a32",
@@ -1055,7 +1272,7 @@
   },
   {
    "mechanism_key": "aeef29d73f97743e",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [
     "XTIUSD",
     "BTCUSD"
@@ -1069,6 +1286,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "value_factor",
    "tellings": [
     {
      "claim_hash": "4139d778ccc0",
@@ -1098,6 +1321,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6deb646cf361",
@@ -1126,6 +1355,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f7365338fcac",
@@ -1155,6 +1390,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "25f959d2349d",
@@ -1184,6 +1425,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "60c1c6ce42c4",
@@ -1213,6 +1460,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "63de99cb1eaf",
@@ -1241,6 +1494,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2b6b11b4dcd8",
@@ -1277,6 +1536,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e1ddd9e455cd",
@@ -1330,6 +1595,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e143ff7fd8ab",
@@ -1351,7 +1622,7 @@
   },
   {
    "mechanism_key": "598adcd7a3e3d37b",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [
     "XAUUSD",
     "XAGUSD",
@@ -1371,6 +1642,12 @@
    ],
    "quantity_kind": "breakout",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "stop_placement",
    "tellings": [
     {
      "claim_hash": "9dd4c7e07350",
@@ -1405,6 +1682,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6a5c6d3bfa89",
@@ -1440,6 +1723,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "211afcdeb1e9",
@@ -1474,6 +1763,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "925e6f872749",
@@ -1509,6 +1804,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "eec069a5f975",
@@ -1543,6 +1844,12 @@
    ],
    "quantity_kind": "breakout",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "895f5b46e895",
@@ -1570,6 +1877,12 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8e0d709edae6",
@@ -1601,6 +1914,16 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6357d1bc8bcf",
@@ -1633,6 +1956,18 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [
+    6
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f8c73054bc80",
@@ -1664,6 +1999,16 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a587eaf32773",
@@ -1695,6 +2040,16 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3d45e3ae0c08",
@@ -1726,6 +2081,16 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "33f467f004d7",
@@ -1754,6 +2119,16 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fb9d92ad6aad",
@@ -1783,11 +2158,29 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [
+    6
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "aab5acddc184",
      "host": "www.paxnet.co.kr",
      "ingested_time": "2026-09-06T17:33:44+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "aab5acddc184",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:38+00:00",
      "event_time": ""
     }
    ],
@@ -1810,11 +2203,23 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "40b0e94072cf",
      "host": "www.paxnet.co.kr",
      "ingested_time": "2026-09-06T17:33:54+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "40b0e94072cf",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:47+00:00",
      "event_time": ""
     }
    ],
@@ -1839,6 +2244,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4fa8b7bded8a",
@@ -1869,6 +2283,15 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1493fd65e46f",
@@ -1898,6 +2321,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ea553a9e7b1e",
@@ -1928,6 +2360,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ca8bc5335326",
@@ -1956,6 +2397,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "40d91f7369ac",
@@ -1993,6 +2440,18 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [
+    6,
+    7
+   ],
+   "turn_of_month": true,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "month_end",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ce6f6327cd1d",
@@ -2021,6 +2480,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    12
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fa93f6d78030",
@@ -2046,6 +2513,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "12157caf397e",
@@ -2074,6 +2547,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0bfdfcc61e9c",
@@ -2099,6 +2578,16 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    8
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "USDINR"
+   ],
+   "event_kind": "bond_auction",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "11dd5c85a5f3",
@@ -2128,6 +2617,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "71b3a7df73bb",
@@ -2163,6 +2658,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6ad353f106a2",
@@ -2178,7 +2679,7 @@
   },
   {
    "mechanism_key": "99edb144898e8407",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [
     "NAS100",
     "US500"
@@ -2192,6 +2693,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "data_vendor",
    "tellings": [
     {
      "claim_hash": "08f849a824a7",
@@ -2221,6 +2728,15 @@
    ],
    "quantity_kind": "reversion",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "450ebdfdc9fe",
@@ -2252,6 +2768,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "614a73cc232b",
@@ -2277,6 +2799,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "da608d92bc4b",
@@ -2314,6 +2842,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "63f87eea4b81",
@@ -2344,6 +2878,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a02a91088090",
@@ -2377,6 +2917,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9c755e3ba0fc",
@@ -2405,6 +2951,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "138270da3b05",
@@ -2433,6 +2985,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c3fb0d9bd5a0",
@@ -2460,6 +3018,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "night_session",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9e3cf8bb6411",
@@ -2486,6 +3050,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "futures_roll",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f937364b3b14",
@@ -2512,6 +3082,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "futures_roll",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "66c4ffc945c8",
@@ -2537,6 +3113,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "futures_roll",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d5c7aca50f3a",
@@ -2564,6 +3146,12 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0b5fdebec13b",
@@ -2597,6 +3185,12 @@
    ],
    "quantity_kind": "breakout",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cffbc54e80b6",
@@ -2630,6 +3224,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a8fbee2c4bc2",
@@ -2662,6 +3262,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "afd7d9648322",
@@ -2703,6 +3309,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6da8dfc80f80",
@@ -2736,6 +3348,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5dfe46bf0fb2",
@@ -2794,6 +3412,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [
+    8
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c04a4db02842",
@@ -2821,6 +3447,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7878bb58f6e7",
@@ -2854,6 +3486,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3e3e839363ee",
@@ -2891,6 +3529,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f7837c529a46",
@@ -2931,6 +3577,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1bf5f1919729",
@@ -2959,6 +3611,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d90d310d14df",
@@ -2988,6 +3646,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8080b90f53a5",
@@ -3014,6 +3678,12 @@
    ],
    "quantity_kind": "",
    "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d27c81aca180",
@@ -3041,6 +3711,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "28ac471ea991",
@@ -3066,6 +3742,12 @@
    ],
    "quantity_kind": "breakout",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "91d94dfbcbe0",
@@ -3097,6 +3779,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f98f5d4c31d9",
@@ -3130,6 +3820,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    9
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c63b5787f96d",
@@ -3158,6 +3856,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "00c9c9bb0b35",
@@ -3186,6 +3897,20 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    9
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "US500",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8a10c6863a37",
@@ -3214,6 +3939,18 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "US500",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b6adc6d2b2fc",
@@ -3239,6 +3976,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d2dc964da609",
@@ -3254,7 +4000,7 @@
   },
   {
    "mechanism_key": "06124bcc2d84c57a",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [],
    "direction": [
     "narrow"
@@ -3265,6 +4011,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "ngn_money_market",
    "tellings": [
     {
      "claim_hash": "9c370b493cdb",
@@ -3280,7 +4032,7 @@
   },
   {
    "mechanism_key": "3f45161d189f23ea",
-   "mechanism_class": "microstructure",
+   "mechanism_class": "other",
    "analogues": [
     "UK100"
    ],
@@ -3292,6 +4044,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "ngn_money_market",
    "tellings": [
     {
      "claim_hash": "58e15f4786e6",
@@ -3323,6 +4081,14 @@
    ],
    "quantity_kind": "",
    "lang": "uk",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDRUB"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0b9eb6e1a7a0",
@@ -3348,6 +4114,12 @@
    ],
    "quantity_kind": "",
    "lang": "ar",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d6457057fa7d",
@@ -3373,6 +4145,12 @@
    ],
    "quantity_kind": "",
    "lang": "ar",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9c125f7e2be1",
@@ -3407,6 +4185,16 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [
+    2,
+    7,
+    8
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bc6541c7b009",
@@ -3437,6 +4225,12 @@
      "host": "www.finews.ch",
      "ingested_time": "2026-11-18T02:54:09+00:00",
      "event_time": ""
+    },
+    {
+     "claim_hash": "8d9bc00e61b1",
+     "host": "www.sbv.gov.vn",
+     "ingested_time": "2026-11-18T03:07:36+00:00",
+     "event_time": "2026-11-04"
     }
    ],
    "claim_hash": "bc6541c7b009",
@@ -3457,6 +4251,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1c8e0b077fd1",
@@ -3488,6 +4288,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0dea9183e3f8",
@@ -3515,6 +4321,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6f6552f830fc",
@@ -3544,6 +4356,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "984aa34afcd4",
@@ -3574,6 +4392,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ecc36676d332",
@@ -3604,6 +4428,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2c425d55544e",
@@ -3635,6 +4465,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d030996884e7",
@@ -3666,6 +4502,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ff068215cc58",
@@ -3696,6 +4538,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "42961dd71a9e",
@@ -3727,6 +4575,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "940abf49903b",
@@ -3758,6 +4612,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "89ecdb27e077",
@@ -3785,6 +4645,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ec9fa18d9392",
@@ -3812,6 +4678,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5b0389a353cd",
@@ -3837,6 +4709,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "48c18224d3a1",
@@ -3871,6 +4751,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c0453dd7f070",
@@ -3904,6 +4792,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e54b7ba40838",
@@ -3999,6 +4893,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "62af852d858b",
@@ -4033,6 +4935,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c4b758e05eb5",
@@ -4068,6 +4976,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6acb59d859b2",
@@ -4100,6 +5014,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "513e8bced603",
@@ -4137,6 +5057,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "348a86f5aa50",
@@ -4164,6 +5090,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d6b1c826178b",
@@ -4193,6 +5125,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bcba8da405b5",
@@ -4221,6 +5159,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a166f99c7b03",
@@ -4251,6 +5195,12 @@
    ],
    "quantity_kind": "breakout",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6c0a58f6c38b",
@@ -4292,6 +5242,17 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "USDCNH",
+    "USDHKD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ffa3fccd9bdd",
@@ -4319,6 +5280,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ab29e17f8633",
@@ -4355,6 +5322,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    4
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "USDCNH",
+    "USDHKD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "01aa71e7ed61",
@@ -4385,6 +5365,21 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    7
+   ],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "EURUSD",
+    "USDMXN",
+    "USDCNH",
+    "USDTRY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "07590b478aa6",
@@ -4417,6 +5412,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "EURUSD",
+    "USDMXN",
+    "USDCNH",
+    "USDTRY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "57b8f11faaba",
@@ -4445,6 +5453,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "febb7747c062",
@@ -4475,6 +5489,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "EURUSD",
+    "USDMXN",
+    "USDCNH",
+    "USDTRY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7888c9bbf1b7",
@@ -4502,6 +5529,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "eebc42fc4c9c",
@@ -4533,6 +5566,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500",
+    "EURUSD",
+    "USDMXN",
+    "USDCNH",
+    "USDTRY"
+   ],
+   "event_kind": "bond_auction",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "98e5ce67e1c0",
@@ -4561,6 +5607,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c15bc58ba830",
@@ -4590,6 +5642,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1f87cb591769",
@@ -4618,6 +5676,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b5c0502a24fa",
@@ -4651,6 +5715,15 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e62bfaae0261",
@@ -4680,6 +5753,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "db8ae10f57f8",
@@ -4712,6 +5791,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "79410dc2a289",
@@ -4749,6 +5836,15 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "88b7b886307b",
@@ -4782,6 +5878,15 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7f506953d3b8",
@@ -4814,6 +5919,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "72f3baaea0c4",
@@ -4837,6 +5948,18 @@
      "claim_hash": "9eca764e1d30",
      "host": "media.rakuten-sec.net",
      "ingested_time": "2026-11-18T02:11:58+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "56a26d9504b2",
+     "host": "media.rakuten-sec.net",
+     "ingested_time": "2026-11-18T02:57:11+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "c6dd74e5b710",
+     "host": "kabutan.jp",
+     "ingested_time": "2026-11-18T02:58:06+00:00",
      "event_time": ""
     }
    ],
@@ -4862,6 +5985,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "91a1ed619ebb",
@@ -4904,6 +6033,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bf3235e0c7e7",
@@ -4934,6 +6069,12 @@
      "host": "www.finews.ch",
      "ingested_time": "2026-11-18T02:54:09+00:00",
      "event_time": ""
+    },
+    {
+     "claim_hash": "6ddb4302e078",
+     "host": "www.finews.ch",
+     "ingested_time": "2026-11-18T03:41:15+00:00",
+     "event_time": ""
     }
    ],
    "claim_hash": "bf3235e0c7e7",
@@ -4958,6 +6099,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9063253dddfd",
@@ -4987,6 +6134,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5b0d990397a4",
@@ -5016,6 +6169,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0b74cb130493",
@@ -5045,6 +6204,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0a1bff688ee5",
@@ -5074,6 +6239,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9adfc82503d2",
@@ -5102,6 +6273,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cef4545ebd34",
@@ -5130,6 +6307,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fe75e357b630",
@@ -5157,6 +6340,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f1d636e6a9fb",
@@ -5178,14 +6367,23 @@
    ],
    "direction": [
     "buy",
-    "sell"
+    "sell",
+    "매수",
+    "상승"
    ],
    "horizon": [
     "overnight",
-    "close"
+    "close",
+    "일"
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4eaeebff2be1",
@@ -5197,6 +6395,12 @@
      "claim_hash": "122b8791127d",
      "host": "quantocracy.com",
      "ingested_time": "2026-09-11T07:23:16+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "2ee72aefe837",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:36+00:00",
      "event_time": ""
     }
    ],
@@ -5225,6 +6429,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    4,
+    12
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bcbe718bde8b",
@@ -5252,6 +6465,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "09866cde0931",
@@ -5285,6 +6504,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7e530a4fbd82",
@@ -5318,6 +6543,14 @@
    ],
    "quantity_kind": "reversion",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "984f70d845fc",
@@ -5352,6 +6585,14 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "74d5cb8eef7a",
@@ -5386,6 +6627,14 @@
    ],
    "quantity_kind": "breakout",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "gap_continuation",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "19e991764c0e",
@@ -5419,6 +6668,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "270a0aa94dc6",
@@ -5452,6 +6709,14 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8b704f05a6d7",
@@ -5480,6 +6745,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    6,
+    7
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "eee3151b719c",
@@ -5508,6 +6782,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "068efe722d88",
@@ -5540,6 +6820,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "129bd764a6de",
@@ -5571,6 +6857,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "933ee5f7f413",
@@ -5598,6 +6890,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9994bdc7421b",
@@ -5634,6 +6932,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cab3c0b3e2d3",
@@ -5666,6 +6970,14 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDTHB"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ce515dcf25e8",
@@ -5697,6 +7009,14 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDTHB"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bd69516601aa",
@@ -5728,6 +7048,14 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDTHB"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "10a7c99290ba",
@@ -5763,6 +7091,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "013de30a91cf",
@@ -5790,6 +7124,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9602fc73b117",
@@ -5819,6 +7159,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "gap",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "03ae6adc3ea6",
@@ -5846,6 +7192,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    8
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2d53b1c00519",
@@ -5866,19 +7220,35 @@
     "XAUUSD"
    ],
    "direction": [
-    "跌"
+    "跌",
+    "bán"
    ],
    "horizon": [
-    "月"
+    "月",
+    "tháng"
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    5
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "441bb25eee89",
      "host": "xueqiu.com",
      "ingested_time": "2026-09-12T07:16:55+00:00",
      "event_time": "2024-06-07"
+    },
+    {
+     "claim_hash": "263c617cd0f8",
+     "host": "www.sbv.gov.vn",
+     "ingested_time": "2026-11-18T03:07:36+00:00",
+     "event_time": "2026-10-28"
     }
    ],
    "claim_hash": "441bb25eee89",
@@ -5900,6 +7270,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "423bc5f800c5",
@@ -5927,6 +7303,12 @@
    ],
    "quantity_kind": "reversion",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "45d42c25a850",
@@ -5955,6 +7337,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b0397f8f5566",
@@ -5977,18 +7365,31 @@
    ],
    "direction": [
     "下跌",
-    "预测"
+    "预测",
+    "反弹"
    ],
    "horizon": [
     "周"
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "85d938b18e5a",
      "host": "www.7hcn.com",
      "ingested_time": "2026-11-18T02:07:19+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "e032332494fd",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:42+00:00",
      "event_time": ""
     }
    ],
@@ -6013,6 +7414,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    10
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3c29964ed8ec",
@@ -6041,6 +7450,14 @@
    ],
    "quantity_kind": "breakout",
    "lang": "zh",
+   "months": [
+    10
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "gap",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3bea3e8e904e",
@@ -6062,18 +7479,40 @@
    ],
    "direction": [
     "预测",
-    "走弱"
+    "走弱",
+    "空头"
    ],
    "horizon": [
     "月"
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    10,
+    11
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f5b0bba74954",
      "host": "www.7hcn.com",
      "ingested_time": "2026-11-18T02:07:19+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "d8d5e86db823",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:42+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "efb0a477b8bc",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:52+00:00",
      "event_time": ""
     }
    ],
@@ -6104,6 +7543,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4489c8731aa0",
@@ -6132,6 +7580,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [
+    10
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1ec377dd09e3",
@@ -6158,6 +7614,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "65014eb5d575",
@@ -6188,6 +7650,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "gap_continuation",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5f0553182264",
@@ -6216,6 +7684,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1e6368b07d3c",
@@ -6255,6 +7729,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a9527c41276b",
@@ -6283,6 +7763,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8f71d2d2032b",
@@ -6313,6 +7799,14 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [
+    6
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bdf4047bbbc8",
@@ -6352,6 +7846,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ae8c9f571831",
@@ -6389,6 +7891,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fde908291498",
@@ -6437,6 +7945,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fa97b6007a6e",
@@ -6480,6 +7994,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3b2a0b7f0ba8",
@@ -6507,6 +8027,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5c4623fc33c1",
@@ -6540,6 +8066,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f93195f28a81",
@@ -6572,6 +8106,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9f1036a6c245",
@@ -6601,6 +8143,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "11a5c9167d4e",
@@ -6640,6 +8188,17 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "80f4f9ce3933",
@@ -6672,6 +8231,17 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "12a0089ba3cb",
@@ -6708,6 +8278,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1e4f4e573322",
@@ -6740,6 +8318,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "86fdedaa1fbd",
@@ -6771,6 +8355,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "15adbd68c6e5",
@@ -6802,6 +8392,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a8002a7a7bf3",
@@ -6834,6 +8430,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d31bbc75051e",
@@ -6863,6 +8465,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3133c65148b6",
@@ -6911,6 +8519,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9423d9681202",
@@ -6939,6 +8555,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cccf546062b9",
@@ -6972,6 +8594,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "81a9c899180b",
@@ -7013,6 +8641,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b6be4115debb",
@@ -7042,6 +8678,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bfe255d3d0c7",
@@ -7079,6 +8721,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4560e91b93ac",
@@ -7117,6 +8765,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b1d237a85701",
@@ -7146,6 +8802,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3762a3a00838",
@@ -7189,6 +8851,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b08c233a3c9d",
@@ -7216,6 +8886,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fbd979c71417",
@@ -7242,6 +8918,14 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fb6020d83acb",
@@ -7271,6 +8955,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1fe377833830",
@@ -7303,6 +8993,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2998c8d47d36",
@@ -7324,7 +9020,8 @@
    ],
    "direction": [
     "上昇",
-    "反発"
+    "反発",
+    "続落"
    ],
    "horizon": [
     "時間",
@@ -7332,11 +9029,25 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [
+    11
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "93fcb3b54338",
      "host": "kabutan.jp",
      "ingested_time": "2026-11-18T02:12:55+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "8c162c475b7c",
+     "host": "kabutan.jp",
+     "ingested_time": "2026-11-18T02:58:06+00:00",
      "event_time": ""
     }
    ],
@@ -7363,6 +9074,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8c507f58f5cc",
@@ -7393,6 +9110,12 @@
    ],
    "quantity_kind": "",
    "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5e196e5b0cb2",
@@ -7430,6 +9153,14 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": true,
+   "factors": [
+    "CHINAH"
+   ],
+   "event_kind": "month_end",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3d6e04841725",
@@ -7457,6 +9188,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cd083c1e3f3c",
@@ -7484,6 +9221,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "fixing",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a3d10e7faa5a",
@@ -7513,6 +9256,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cd34dfd03100",
@@ -7540,6 +9289,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "70bcff6ca6c4",
@@ -7569,6 +9324,15 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [
+    11,
+    12
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c83c532029b1",
@@ -7596,6 +9360,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "28ad45eff688",
@@ -7624,6 +9394,12 @@
    ],
    "quantity_kind": "",
    "lang": "zh-Hant",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "60fef3001552",
@@ -7652,6 +9428,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c46e6b2f88ff",
@@ -7679,6 +9461,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ba3fe0235b50",
@@ -7710,6 +9498,12 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9ce0073ee08c",
@@ -7739,6 +9533,12 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fea4d6af7d68",
@@ -7770,11 +9570,23 @@
    ],
    "quantity_kind": "",
    "lang": "th",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4b3c5881a2d8",
      "host": "pantip.com",
      "ingested_time": "2026-11-18T02:18:54+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "277e027dc23a",
+     "host": "pantip.com",
+     "ingested_time": "2026-11-18T03:05:54+00:00",
      "event_time": ""
     }
    ],
@@ -7790,7 +9602,8 @@
     "XAUUSD"
    ],
    "direction": [
-    "xả"
+    "xả",
+    "gom"
    ],
    "horizon": [
     "tuần",
@@ -7798,11 +9611,23 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fba413bba9e7",
      "host": "cafef.vn",
      "ingested_time": "2026-11-18T02:19:56+00:00",
+     "event_time": "2026-11-18"
+    },
+    {
+     "claim_hash": "1772a51d0731",
+     "host": "cafef.vn",
+     "ingested_time": "2026-11-18T03:06:35+00:00",
      "event_time": "2026-11-18"
     }
    ],
@@ -7826,6 +9651,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "05024b4303f6",
@@ -7851,6 +9682,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a1bf8530de89",
@@ -7877,6 +9714,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1a1da1fffef7",
@@ -7911,6 +9754,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "c6e2f838e057",
@@ -7939,6 +9788,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d498cf7777a9",
@@ -7966,6 +9821,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0174580519d7",
@@ -7992,6 +9853,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a8e3b670df8e",
@@ -8024,15 +9891,28 @@
    ],
    "horizon": [
     "phút",
-    "tháng"
+    "tháng",
+    "giờ"
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "38f9ea09ca6e",
      "host": "vietstock.vn",
      "ingested_time": "2026-11-18T02:20:31+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "5df218c3074d",
+     "host": "vietstock.vn",
+     "ingested_time": "2026-11-18T03:07:18+00:00",
      "event_time": ""
     }
    ],
@@ -8058,6 +9938,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "aea354ae6fe4",
@@ -8083,6 +9969,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "aa2e3427915a",
@@ -8101,20 +9993,34 @@
    "mechanism_class": "other",
    "analogues": [],
    "direction": [
-    "giảm"
+    "giảm",
+    "하락"
    ],
    "horizon": [
     "ngày",
-    "trong phiên"
+    "trong phiên",
+    "일"
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "561d96287ec6",
      "host": "vietstock.vn",
      "ingested_time": "2026-11-18T02:20:31+00:00",
      "event_time": "2026-11-18"
+    },
+    {
+     "claim_hash": "1cc9063bc1c3",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:41+00:00",
+     "event_time": ""
     }
    ],
    "claim_hash": "561d96287ec6",
@@ -8134,6 +10040,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "553ee4dae0e2",
@@ -8164,6 +10076,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ca02ba080f7b",
@@ -8195,6 +10113,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3aead567b698",
@@ -8225,6 +10149,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "baead5635258",
@@ -8246,15 +10176,23 @@
     "tăng",
     "vượt",
     "hausse",
-    "achet"
+    "achet",
+    "매수"
    ],
    "horizon": [
     "cuối phiên",
     "ouverture",
-    "séance"
+    "séance",
+    "분"
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e6d1f57093c8",
@@ -8266,6 +10204,12 @@
      "claim_hash": "768f453b37ed",
      "host": "boursenews.ma",
      "ingested_time": "2026-11-18T02:42:15+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "efc9158bc853",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:36+00:00",
      "event_time": ""
     }
    ],
@@ -8288,11 +10232,23 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bf9b8eea7d60",
      "host": "vietstock.vn",
      "ingested_time": "2026-11-18T02:20:31+00:00",
+     "event_time": "2026-11-18"
+    },
+    {
+     "claim_hash": "39d620124fc1",
+     "host": "vietstock.vn",
+     "ingested_time": "2026-11-18T03:07:18+00:00",
      "event_time": "2026-11-18"
     }
    ],
@@ -8318,6 +10274,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cf6c85831930",
@@ -8337,20 +10299,35 @@
    "analogues": [],
    "direction": [
     "tăng",
-    "giảm"
+    "giảm",
+    "매수"
    ],
    "horizon": [
     "ngày",
-    "trong phiên"
+    "trong phiên",
+    "일",
+    "주"
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9cac76015688",
      "host": "vietstock.vn",
      "ingested_time": "2026-11-18T02:20:31+00:00",
      "event_time": "2026-11-17"
+    },
+    {
+     "claim_hash": "930c2b6d8e3e",
+     "host": "gall.dcinside.com",
+     "ingested_time": "2026-11-18T02:59:27+00:00",
+     "event_time": ""
     }
    ],
    "claim_hash": "9cac76015688",
@@ -8371,6 +10348,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8fbfc52a245b",
@@ -8402,6 +10385,12 @@
    ],
    "quantity_kind": "",
    "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f9c9bd287835",
@@ -8431,6 +10420,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8f0d4e5e1efc",
@@ -8461,6 +10458,14 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "df5e7924e6f1",
@@ -8490,6 +10495,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b3ef84abf2df",
@@ -8515,6 +10526,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "02911c84dad2",
@@ -8544,6 +10563,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "48ce953b3ca3",
@@ -8569,6 +10594,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0cbbeefa2296",
@@ -8594,6 +10625,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "futures_roll",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "dd033c782cce",
@@ -8621,6 +10658,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "61e54518d619",
@@ -8649,6 +10692,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "48e24762a7e5",
@@ -8676,6 +10725,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "7fcffc229368",
@@ -8703,6 +10758,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e8d3663e7b05",
@@ -8730,6 +10791,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f238cd07e8fe",
@@ -8757,6 +10824,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "51cf9f640f88",
@@ -8788,6 +10861,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "bond_auction",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "de4db0c5e20e",
@@ -8813,6 +10892,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "3fa58e290d91",
@@ -8843,6 +10928,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "AUDUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "88a7283e46c3",
@@ -8876,6 +10969,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "AUDUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "dbfd053f5c68",
@@ -8917,6 +11018,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5b5fc1eb7326",
@@ -8944,6 +11054,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0249b3a5e764",
@@ -8984,6 +11100,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9ca7d5b00a65",
@@ -9023,6 +11148,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "gap",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "64269ab4a808",
@@ -9054,6 +11188,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0618cd38b5ff",
@@ -9081,6 +11221,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e345aa4373be",
@@ -9109,6 +11255,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d85d4edb4c6a",
@@ -9137,6 +11289,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4c6e64cd4c3c",
@@ -9164,6 +11322,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d9af5a646432",
@@ -9191,6 +11355,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6fa4bd042998",
@@ -9220,6 +11390,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "US500"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a09f1eabfeef",
@@ -9247,6 +11426,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "index_rebalance",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "281382e0a4ca",
@@ -9275,6 +11460,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bbfb8589a770",
@@ -9303,6 +11494,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "82c96d8b74f9",
@@ -9328,6 +11525,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD",
+    "USDMXN"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5686469fb4d4",
@@ -9355,6 +11561,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6a4301820801",
@@ -9380,6 +11592,16 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "AUDUSD",
+    "USDZAR",
+    "USDBRL"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9987effbda76",
@@ -9412,6 +11634,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "24f75f365e2f",
@@ -9439,6 +11674,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "16f71c56a56e",
@@ -9469,6 +11710,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e43d8188f807",
@@ -9499,6 +11753,19 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD",
+    "XBRUSD",
+    "USDCAD",
+    "USDNOK",
+    "USDINR"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6aeeca0fd250",
@@ -9530,6 +11797,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fada1665345f",
@@ -9562,6 +11835,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e643b06534df",
@@ -9600,6 +11879,12 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "811d0fdb8719",
@@ -9631,6 +11916,12 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5c3cba1b9ae4",
@@ -9679,6 +11970,12 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "05cf18cd3bd8",
@@ -9706,11 +12003,25 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [
+    11
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "55c181bda9ee",
      "host": "stock3.com",
      "ingested_time": "2026-11-18T02:31:34+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "915c7713af7e",
+     "host": "stock3.com",
+     "ingested_time": "2026-11-18T03:16:54+00:00",
      "event_time": ""
     }
    ],
@@ -9739,6 +12050,12 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "8e544f44c30c",
@@ -9769,6 +12086,12 @@
    ],
    "quantity_kind": "",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "1238d679f277",
@@ -9798,6 +12121,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "de",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2ee3968b50a2",
@@ -9826,6 +12155,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fac6c66ac443",
@@ -9851,6 +12186,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e71cba8450cb",
@@ -9881,6 +12222,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "67b42d03fc6c",
@@ -9910,6 +12257,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "982b02fe388f",
@@ -9939,6 +12292,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "2325622dcda1",
@@ -9972,6 +12331,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d6fcd488ccb8",
@@ -9999,6 +12364,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f6b139383150",
@@ -10027,6 +12398,12 @@
    ],
    "quantity_kind": "",
    "lang": "ru",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "23afc97250cd",
@@ -10077,6 +12454,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "86ad9604ae43",
@@ -10115,6 +12498,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "ea24578f757f",
@@ -10153,6 +12542,12 @@
    ],
    "quantity_kind": "",
    "lang": "tr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "70ddde849168",
@@ -10180,6 +12575,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [
+    1
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "937e7ad4ebf5",
@@ -10211,6 +12614,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "24d44e00efd0",
@@ -10247,6 +12656,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "bdee9c4b15b7",
@@ -10277,6 +12692,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d93bae235907",
@@ -10305,6 +12726,14 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5d5f1f9dec4c",
@@ -10332,6 +12761,14 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "06d09328d438",
@@ -10359,6 +12796,14 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "10c10ad5faf3",
@@ -10390,6 +12835,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a7232eb5d5ca",
@@ -10421,6 +12872,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "19b670c57ea0",
@@ -10452,6 +12909,15 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD",
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0f2bfb1f371e",
@@ -10485,6 +12951,12 @@
    ],
    "quantity_kind": "",
    "lang": "fr",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cb7d850ed2ec",
@@ -10520,6 +12992,12 @@
    ],
    "quantity_kind": "",
    "lang": "nl",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "0aaf8d27eccc",
@@ -10556,6 +13034,14 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9371094d151f",
@@ -10585,6 +13071,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d3e45574c58d",
@@ -10624,6 +13116,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e3a2e6ef7460",
@@ -10651,6 +13149,14 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDSGD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5c47d9a78ace",
@@ -10678,6 +13184,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "be4a608f8e13",
@@ -10715,6 +13227,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "EURUSD",
+    "USDJPY"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a070340db006",
@@ -10745,6 +13266,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "815a6aa48031",
@@ -10775,6 +13302,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "28da675adabd",
@@ -10806,6 +13339,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "a3dd9c604d27",
@@ -10837,6 +13376,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fe687d849e60",
@@ -10867,6 +13412,12 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9f99d8472494",
@@ -10898,6 +13449,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "13b30d5699d0",
@@ -10928,6 +13485,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "9eafe4da2699",
@@ -10956,6 +13519,12 @@
    ],
    "quantity_kind": "",
    "lang": "pl",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "15b49b05e8b7",
@@ -10983,6 +13552,12 @@
    ],
    "quantity_kind": "",
    "lang": "da",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "24aed92b8fda",
@@ -11010,11 +13585,23 @@
    ],
    "quantity_kind": "",
    "lang": "fi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "819e2732e858",
      "host": "www.inderes.fi",
      "ingested_time": "2026-11-18T02:49:38+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "14907358fbd3",
+     "host": "www.inderes.fi",
+     "ingested_time": "2026-11-18T03:36:46+00:00",
      "event_time": ""
     }
    ],
@@ -11035,6 +13622,12 @@
    ],
    "quantity_kind": "",
    "lang": "fi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "d7cf3bd0467a",
@@ -11064,6 +13657,15 @@
    ],
    "quantity_kind": "",
    "lang": "fi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6709811fa29e",
@@ -11094,6 +13696,15 @@
    ],
    "quantity_kind": "",
    "lang": "fi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDX",
+    "EURUSD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b18c14679d21",
@@ -11119,6 +13730,15 @@
    ],
    "quantity_kind": "",
    "lang": "pt",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDSGD",
+    "USDBRL"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "f4900bd89fce",
@@ -11146,6 +13766,14 @@
    ],
    "quantity_kind": "",
    "lang": "pt",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDSGD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "cadeff2f875b",
@@ -11184,6 +13812,12 @@
    ],
    "quantity_kind": "",
    "lang": "pt",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "b904d12c4be7",
@@ -11211,6 +13845,14 @@
    ],
    "quantity_kind": "",
    "lang": "pt",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDSGD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "358756d2da91",
@@ -11241,6 +13883,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "e7bfa2eec73f",
@@ -11268,6 +13916,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "304f68c802a1",
@@ -11297,6 +13951,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "273cf47a37cf",
@@ -11325,6 +13985,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "6472380ef25d",
@@ -11353,6 +14019,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "42fc02096a9e",
@@ -11381,6 +14053,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "73bf57188f97",
@@ -11406,6 +14084,12 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "668b8d896b3e",
@@ -11440,6 +14124,14 @@
    ],
    "quantity_kind": "",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDSGD"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "4475ed3d5ccb",
@@ -11468,6 +14160,12 @@
    ],
    "quantity_kind": "momentum",
    "lang": "es",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "46031d9c1c84",
@@ -11493,6 +14191,14 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDCHF"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "92ad3524af73",
@@ -11518,6 +14224,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDCHF",
+    "USDPLN"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "fb6739d5f639",
@@ -11543,6 +14258,15 @@
    ],
    "quantity_kind": "",
    "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDCHF",
+    "USDPLN"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
    "tellings": [
     {
      "claim_hash": "5f5707882534",
@@ -11554,6 +14278,967 @@
    "claim_hash": "5f5707882534",
    "host": "www.snb.ch",
    "ingested_time": "2026-11-18T02:54:06+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "a43f939ea155ba45",
+   "mechanism_class": "positioning",
+   "analogues": [
+    "XAUUSD"
+   ],
+   "direction": [
+    "减仓"
+   ],
+   "horizon": [
+    "日线"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "e50020fb9cbc",
+     "host": "www.bilibili.com",
+     "ingested_time": "2026-11-18T02:54:48+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "e50020fb9cbc",
+   "host": "www.bilibili.com",
+   "ingested_time": "2026-11-18T02:54:48+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "b0945a329c2777a6",
+   "mechanism_class": "calendar",
+   "analogues": [],
+   "direction": [
+    "contract",
+    "contracts"
+   ],
+   "horizon": [
+    "每日",
+    "bar"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "5ac62e380b7d",
+     "host": "www.vnpy.com",
+     "ingested_time": "2026-11-18T02:55:14+00:00",
+     "event_time": "2018-01-01"
+    }
+   ],
+   "claim_hash": "5ac62e380b7d",
+   "host": "www.vnpy.com",
+   "ingested_time": "2026-11-18T02:55:14+00:00",
+   "event_time": "2018-01-01"
+  },
+  {
+   "mechanism_key": "d7550f69e6c3b856",
+   "mechanism_class": "calendar",
+   "analogues": [],
+   "direction": [
+    "continue"
+   ],
+   "horizon": [
+    "expiry"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "67ed9faae7d7",
+     "host": "www.vnpy.com",
+     "ingested_time": "2026-11-18T02:55:14+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "67ed9faae7d7",
+   "host": "www.vnpy.com",
+   "ingested_time": "2026-11-18T02:55:14+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "e118f5cbb77a442d",
+   "mechanism_class": "microstructure",
+   "analogues": [],
+   "direction": [
+    "止盈"
+   ],
+   "horizon": [
+    "日内",
+    "周"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "dc32e7c8f385",
+     "host": "www.vnpy.com",
+     "ingested_time": "2026-11-18T02:55:17+00:00",
+     "event_time": "2020-06-11"
+    }
+   ],
+   "claim_hash": "dc32e7c8f385",
+   "host": "www.vnpy.com",
+   "ingested_time": "2026-11-18T02:55:17+00:00",
+   "event_time": "2020-06-11"
+  },
+  {
+   "mechanism_key": "56b2a5bf8d7b429c",
+   "mechanism_class": "reversion",
+   "analogues": [],
+   "direction": [
+    "反弹"
+   ],
+   "horizon": [
+    "月"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [
+    10
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "1ee7eedeba85",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:42+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "1ee7eedeba85",
+   "host": "www.7hcn.com",
+   "ingested_time": "2026-11-18T02:55:42+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "5f07a933ffe976f8",
+   "mechanism_class": "reversion",
+   "analogues": [
+    "XCUUSD",
+    "XALUSD",
+    "XZNUSD",
+    "XTIUSD"
+   ],
+   "direction": [
+    "反弹",
+    "跌"
+   ],
+   "horizon": [
+    "月"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "f47459c105f4",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:42+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "f47459c105f4",
+   "host": "www.7hcn.com",
+   "ingested_time": "2026-11-18T02:55:42+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "808b1bf7fbaad83f",
+   "mechanism_class": "positioning",
+   "analogues": [],
+   "direction": [
+    "涨",
+    "跌"
+   ],
+   "horizon": [
+    "月"
+   ],
+   "quantity_kind": "",
+   "lang": "zh",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "516fc09a8cb9",
+     "host": "www.7hcn.com",
+     "ingested_time": "2026-11-18T02:55:42+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "516fc09a8cb9",
+   "host": "www.7hcn.com",
+   "ingested_time": "2026-11-18T02:55:42+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "dcd48f7ea6881e9e",
+   "mechanism_class": "other",
+   "analogues": [
+    "USDJPY",
+    "AUDUSD",
+    "USDCNH",
+    "NVIDIA"
+   ],
+   "direction": [
+    "買い",
+    "円安"
+   ],
+   "horizon": [
+    "週"
+   ],
+   "quantity_kind": "",
+   "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "4a7cecde934c",
+     "host": "fx.minkabu.jp",
+     "ingested_time": "2026-11-18T02:57:27+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "361398587d55",
+     "host": "fx.minkabu.jp",
+     "ingested_time": "2026-11-18T02:57:29+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "411f296fca8c",
+     "host": "fx.minkabu.jp",
+     "ingested_time": "2026-11-18T02:57:30+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "4a7cecde934c",
+   "host": "fx.minkabu.jp",
+   "ingested_time": "2026-11-18T02:57:27+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "8c3bca9ac640ed44",
+   "mechanism_class": "microstructure",
+   "analogues": [
+    "NVIDIA"
+   ],
+   "direction": [
+    "続落"
+   ],
+   "horizon": [
+    "引け"
+   ],
+   "quantity_kind": "",
+   "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "session_open",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "6843488728a5",
+     "host": "kabutan.jp",
+     "ingested_time": "2026-11-18T02:58:06+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "6843488728a5",
+   "host": "kabutan.jp",
+   "ingested_time": "2026-11-18T02:58:06+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "175732b5a9c33761",
+   "mechanism_class": "microstructure",
+   "analogues": [
+    "JPN225"
+   ],
+   "direction": [
+    "買い"
+   ],
+   "horizon": [
+    "分",
+    "日"
+   ],
+   "quantity_kind": "",
+   "lang": "ja",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "0875d759ad5a",
+     "host": "kabutan.jp",
+     "ingested_time": "2026-11-18T02:58:07+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "0875d759ad5a",
+   "host": "kabutan.jp",
+   "ingested_time": "2026-11-18T02:58:07+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "0dc26764112dedf4",
+   "mechanism_class": "other",
+   "analogues": [
+    "USDKRW"
+   ],
+   "direction": [
+    "increase"
+   ],
+   "horizon": [
+    "hour"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "2f142143d47b",
+     "host": "www.theinvestor.co.kr",
+     "ingested_time": "2026-11-18T02:59:02+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "2f142143d47b",
+   "host": "www.theinvestor.co.kr",
+   "ingested_time": "2026-11-18T02:59:02+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "219b04ea014bbe89",
+   "mechanism_class": "other",
+   "analogues": [
+    "USDKRW"
+   ],
+   "direction": [
+    "rose"
+   ],
+   "horizon": [
+    "hours",
+    "daily"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "39b0fedef7c6",
+     "host": "www.theinvestor.co.kr",
+     "ingested_time": "2026-11-18T02:59:02+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "39b0fedef7c6",
+   "host": "www.theinvestor.co.kr",
+   "ingested_time": "2026-11-18T02:59:02+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "87f276da664463e8",
+   "mechanism_class": "microstructure",
+   "analogues": [
+    "USDKRW"
+   ],
+   "direction": [
+    "weaken",
+    "rebound"
+   ],
+   "horizon": [
+    "hour"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "1730c2ad06f1",
+     "host": "www.theinvestor.co.kr",
+     "ingested_time": "2026-11-18T02:59:02+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "1730c2ad06f1",
+   "host": "www.theinvestor.co.kr",
+   "ingested_time": "2026-11-18T02:59:02+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "83eabb74358bda99",
+   "mechanism_class": "flow",
+   "analogues": [],
+   "direction": [
+    "상승",
+    "하락"
+   ],
+   "horizon": [
+    "초"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDKRW"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "70b89f04457c",
+     "host": "www.bok.or.kr",
+     "ingested_time": "2026-11-18T02:59:15+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "70b89f04457c",
+   "host": "www.bok.or.kr",
+   "ingested_time": "2026-11-18T02:59:15+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "5b85f0a654583629",
+   "mechanism_class": "other",
+   "analogues": [
+    "XTIUSD",
+    "BTCUSD"
+   ],
+   "direction": [
+    "진입"
+   ],
+   "horizon": [
+    "일",
+    "주"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "e44906645509",
+     "host": "gall.dcinside.com",
+     "ingested_time": "2026-11-18T02:59:31+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "e44906645509",
+   "host": "gall.dcinside.com",
+   "ingested_time": "2026-11-18T02:59:31+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "1919c1df757743bb",
+   "mechanism_class": "calendar",
+   "analogues": [
+    "XAUUSD",
+    "US500",
+    "NVIDIA"
+   ],
+   "direction": [
+    "급락"
+   ],
+   "horizon": [
+    "분",
+    "초"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "a587eaf32773",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:36+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "a587eaf32773",
+   "host": "www.paxnet.co.kr",
+   "ingested_time": "2026-11-18T02:59:36+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "f531e3d1aed7674e",
+   "mechanism_class": "calendar",
+   "analogues": [
+    "XAUUSD",
+    "US500",
+    "NVIDIA"
+   ],
+   "direction": [
+    "매수",
+    "상승"
+   ],
+   "horizon": [
+    "주",
+    "월"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [
+    6
+   ],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "f8c73054bc80",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:36+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "f8c73054bc80",
+   "host": "www.paxnet.co.kr",
+   "ingested_time": "2026-11-18T02:59:36+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "438be56cb40e4b2a",
+   "mechanism_class": "other",
+   "analogues": [
+    "XAUUSD",
+    "XTIUSD",
+    "US500"
+   ],
+   "direction": [
+    "상승"
+   ],
+   "horizon": [
+    "분",
+    "일"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "ef91138be540",
+     "host": "www.paxnet.co.kr",
+     "ingested_time": "2026-11-18T02:59:42+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "ef91138be540",
+   "host": "www.paxnet.co.kr",
+   "ingested_time": "2026-11-18T02:59:42+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "bc54ef2e63ac7a1b",
+   "mechanism_class": "positioning",
+   "analogues": [],
+   "direction": [
+    "매수",
+    "매도"
+   ],
+   "horizon": [
+    "분",
+    "일"
+   ],
+   "quantity_kind": "",
+   "lang": "ko",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "f5f0ec4847c7",
+     "host": "data.krx.co.kr",
+     "ingested_time": "2026-11-18T02:59:45+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "f5f0ec4847c7",
+   "host": "data.krx.co.kr",
+   "ingested_time": "2026-11-18T02:59:45+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "d0bffe9d67e17853",
+   "mechanism_class": "policy",
+   "analogues": [
+    "XAUUSD"
+   ],
+   "direction": [
+    "tăng",
+    "tăng giá"
+   ],
+   "horizon": [
+    "tháng"
+   ],
+   "quantity_kind": "",
+   "lang": "vi",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "dfdef276314d",
+     "host": "www.sbv.gov.vn",
+     "ingested_time": "2026-11-18T03:07:36+00:00",
+     "event_time": "2026-11-11"
+    }
+   ],
+   "claim_hash": "dfdef276314d",
+   "host": "www.sbv.gov.vn",
+   "ingested_time": "2026-11-18T03:07:36+00:00",
+   "event_time": "2026-11-11"
+  },
+  {
+   "mechanism_key": "11604027488ed72f",
+   "mechanism_class": "other",
+   "analogues": [
+    "XAUUSD",
+    "NAS100",
+    "US500"
+   ],
+   "direction": [
+    "short"
+   ],
+   "horizon": [
+    "monthly",
+    "daily"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDTHB"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "62b4f0a338f8",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:47+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "62b4f0a338f8",
+   "host": "tradetron.tech",
+   "ingested_time": "2026-11-18T03:08:47+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "50a85e60a87eb340",
+   "mechanism_class": "momentum",
+   "analogues": [
+    "US500"
+   ],
+   "direction": [
+    "sell"
+   ],
+   "horizon": [
+    "weekly",
+    "hourly"
+   ],
+   "quantity_kind": "momentum",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "c1261877c696",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:47+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "c1261877c696",
+   "host": "tradetron.tech",
+   "ingested_time": "2026-11-18T03:08:47+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "60075c0563916751",
+   "mechanism_class": "calendar",
+   "analogues": [
+    "XAUUSD",
+    "NAS100",
+    "US500"
+   ],
+   "direction": [
+    "buy"
+   ],
+   "horizon": [
+    "expiry"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDTHB"
+   ],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "9d789329e54b",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:47+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "9d789329e54b",
+   "host": "tradetron.tech",
+   "ingested_time": "2026-11-18T03:08:47+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "bfc3cfad7140c1a4",
+   "mechanism_class": "calendar",
+   "analogues": [
+    "US500"
+   ],
+   "direction": [
+    "short",
+    "sell",
+    "long"
+   ],
+   "horizon": [
+    "day",
+    "expiry"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "95b612174504",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:47+00:00",
+     "event_time": ""
+    },
+    {
+     "claim_hash": "c39f144382cd",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:51+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "95b612174504",
+   "host": "tradetron.tech",
+   "ingested_time": "2026-11-18T03:08:47+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "c1c1a986bd102121",
+   "mechanism_class": "calendar",
+   "analogues": [
+    "US500"
+   ],
+   "direction": [
+    "long",
+    "short"
+   ],
+   "horizon": [
+    "expiry"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [],
+   "event_kind": "option_expiry",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "2cf13e8f74dc",
+     "host": "tradetron.tech",
+     "ingested_time": "2026-11-18T03:08:51+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "2cf13e8f74dc",
+   "host": "tradetron.tech",
+   "ingested_time": "2026-11-18T03:08:51+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "04cddfbf7d298ad0",
+   "mechanism_class": "other",
+   "analogues": [
+    "NAS100",
+    "US500",
+    "USDINR",
+    "USDTRY",
+    "USDHUF",
+    "BTCUSD"
+   ],
+   "direction": [
+    "sell",
+    "buy"
+   ],
+   "horizon": [
+    "open"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDMXN"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "b4ae108bdbe2",
+     "host": "tradingqna.com",
+     "ingested_time": "2026-11-18T03:09:22+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "b4ae108bdbe2",
+   "host": "tradingqna.com",
+   "ingested_time": "2026-11-18T03:09:22+00:00",
+   "event_time": ""
+  },
+  {
+   "mechanism_key": "d8ba69c13df99e86",
+   "mechanism_class": "other",
+   "analogues": [
+    "NAS100",
+    "US500",
+    "USDINR",
+    "USDTRY",
+    "USDHUF",
+    "BTCUSD"
+   ],
+   "direction": [
+    "buy"
+   ],
+   "horizon": [
+    "open"
+   ],
+   "quantity_kind": "",
+   "lang": "en",
+   "months": [],
+   "turn_of_month": false,
+   "factors": [
+    "USDMXN"
+   ],
+   "event_kind": "",
+   "session_kind": "",
+   "class_reason": "",
+   "tellings": [
+    {
+     "claim_hash": "3b6f6fb902c8",
+     "host": "tradingqna.com",
+     "ingested_time": "2026-11-18T03:09:22+00:00",
+     "event_time": ""
+    }
+   ],
+   "claim_hash": "3b6f6fb902c8",
+   "host": "tradingqna.com",
+   "ingested_time": "2026-11-18T03:09:22+00:00",
    "event_time": ""
   }
  ]
