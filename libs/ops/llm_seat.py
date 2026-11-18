@@ -61,10 +61,15 @@ from pathlib import Path
 from typing import Any
 
 from libs.ops import openrouter_guard
+from libs.ops.env_keys import read_key
 
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
 SPEND_LEDGER = _ROOT / "data" / "llm_spend.jsonl"
+#: `Seat.source` of a seat on a FREE-CREDIT RELAY (hcnsec, AgentRouter: libs/ops/cn_ensemble.py).
+#: Its calls draw that relay's own allowance, never OpenRouter's, so they are kept out of
+#: OpenRouter's daily request count and booked at $0 (the credit is granted, not bought).
+FREE_RELAY = "free_relay"
 
 #: Environment variables consulted, in order. OPENROUTER IS FIRST, and the reason is the auto-
 #: upgrade requirement rather than convenience.
@@ -222,7 +227,7 @@ def seats() -> list[Seat]:
     """
     out: list[Seat] = []
     for var, name, base in KEY_ENV_VARS:
-        key = os.environ.get(var, "").strip()
+        key = read_key(var)
         if key:
             out.append(Seat(name=name, base_url=os.environ.get(f"{name.upper()}_BASE_URL", base),
                             key=key, model=os.environ.get(f"{name.upper()}_MODEL", ""),
@@ -619,7 +624,7 @@ def calls_today(now: datetime | None = None) -> int:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if str(row.get("utc", "")).startswith(stamp):
+        if str(row.get("utc", "")).startswith(stamp) and row.get("provider") != FREE_RELAY:
             n += 1
     return n
 
@@ -698,7 +703,7 @@ def chat(
     # free. Stopping one call short of the ceiling is the difference between an organ that skips
     # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
     # account takes EVERY organ with it, not just the one that spent the last request.
-    if free_tier_only():
+    if free_tier_only() and getattr(s, "source", "") != FREE_RELAY:
         left = free_budget_left()
         if left <= 0:
             return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
@@ -939,7 +944,8 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any], 
     """HTTP errors carry their BODY into the message. A bare '400 Bad Request' from a model API
     is unactionable; the body says which parameter the provider rejected."""
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_ctx()) as fh:
+        from libs.data.keyed_sources import keyed_urlopen
+        with keyed_urlopen(req, timeout=timeout, context=_ctx()) as fh:
             parsed: dict[str, Any] = json.loads(fh.read().decode("utf8", errors="ignore"))
             return parsed, None
     except urllib.error.HTTPError as exc:
@@ -1015,13 +1021,17 @@ def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
     raw_usage = body.get("usage")
     usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
     tok = int(usage.get("total_tokens") or 0)
-    free = is_free_model(model)
+    relay = getattr(seat, "source", "") == FREE_RELAY
+    free = is_free_model(model) or relay
     row: dict[str, Any] = {
         "utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
         "organ": calling_organ(), "model": model, "tokens": tok, "free": free,
         # ZERO for a free model, and it is zero because it IS zero -- not a discount, not an
         # assumption. The estimate is kept for metered models only, where erring high is right.
         "usd": 0.0 if free else round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
+    if relay:
+        row["provider"] = FREE_RELAY
+        row["relay"] = seat.name
     for key in ("prompt_tokens", "completion_tokens"):
         raw = usage.get(key)
         if raw is not None:
