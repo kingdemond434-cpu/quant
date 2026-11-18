@@ -389,20 +389,20 @@
    "firm": "Two Sigma",
    "url": "https://www.twosigma.com/careers/",
    "terms": {
-    "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "status": "refused",
+    "url": "https://www.twosigma.com/legal-disclosures/",
+    "reading": "bans data mining, robots or similar extraction without written approval; non-commercial use only",
+    "checked": "2026-11-18"
    }
   },
   {
    "firm": "D. E. Shaw",
    "url": "https://www.deshaw.com/careers",
    "terms": {
-    "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "status": "refused",
+    "url": "https://www.deshaw.com/assets/important-disclosure/Terms_and_Conditions_of_Use.pdf",
+    "reading": "bans any commercial use without written permission and gathering intelligence for a competitive offering",
+    "checked": "2026-11-18"
    }
   },
   {
@@ -410,9 +410,9 @@
    "url": "https://www.citadel.com/careers/",
    "terms": {
     "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "url": "https://www.citadel.com/terms-of-use/",
+    "reading": "terms page could not be fetched 2026-11-18",
+    "checked": "2026-11-18"
    }
   },
   {
@@ -420,19 +420,19 @@
    "url": "https://careers.aqr.com/",
    "terms": {
     "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "url": "https://www.aqr.com/Terms-of-Use",
+    "reading": "aqr.com terms are silent on automated access but bar reproduction; careers.aqr.com is a different host whose terms were not read",
+    "checked": "2026-11-18"
    }
   },
   {
    "firm": "Man Group",
    "url": "https://www.man.com/careers",
    "terms": {
-    "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "status": "refused",
+    "url": "https://www.man.com/terms-and-conditions",
+    "reading": "bans robotic mechanisms, crawlers, spiders and scraping of content",
+    "checked": "2026-11-18"
    }
   },
   {
@@ -441,8 +441,8 @@
    "terms": {
     "status": "unread",
     "url": "",
-    "reading": "",
-    "checked": ""
+    "reading": "no terms of use found on the disclosures page",
+    "checked": "2026-11-18"
    }
   },
   {
@@ -451,28 +451,28 @@
    "terms": {
     "status": "unread",
     "url": "",
-    "reading": "",
-    "checked": ""
+    "reading": "no terms of use found on the disclosures page",
+    "checked": "2026-11-18"
    }
   },
   {
    "firm": "Jump Trading",
    "url": "https://www.jumptrading.com/careers/",
    "terms": {
-    "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "status": "refused",
+    "url": "https://www.jumptrading.com/policies/terms-of-use",
+    "reading": "licence is for private, non-commercial informational use only",
+    "checked": "2026-11-18"
    }
   },
   {
    "firm": "Winton",
    "url": "https://www.winton.com/careers",
    "terms": {
-    "status": "unread",
-    "url": "",
-    "reading": "",
-    "checked": ""
+    "status": "refused",
+    "url": "https://www.winton.com/terms-of-use",
+    "reading": "bans data mining, robots or similar extraction programs",
+    "checked": "2026-11-18"
    }
   },
   {
