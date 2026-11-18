@@ -386,6 +386,8 @@ def status_for(
     if verdict == "CLEAR":
         if f.get("cls") in ("AUTO", "LOW"):
             return "success", "CLEAR"
+        if veto_h <= 0:
+            return "success", "CLEAR, no veto window"
         if since is None:
             return "pending", "CLEAR, veto window not started"
         left = timedelta(hours=veto_h) - (now - since)

@@ -25,8 +25,10 @@ RED when any of these holds:
     LIVE_STALLED    no code commit on LIVE for 6 h while any PR holds a CLEAR
     REVIEWER_FP     over half of (3+) open heads the independent reviewer FAILed carry an
                     Auditor CLEAR: the reviewer is blocking what the audit passed
-    LIVE_CI_QUEUED  a push run on LIVE itself has been queued over 30 min: the box cannot adopt
-                    (Adopt-And-Seal waits for green) and the gate cannot see LIVE green
+    LIVE_CI_QUEUED  a push or dispatch run on LIVE itself has waited over 30 min since it was
+                    created, queued for a runner or pending behind the running LIVE run (#1265's
+                    one group per branch): the box cannot adopt (Adopt-And-Seal waits for green)
+                    and the gate cannot see LIVE green
     NO_MERGE_24H    no PR merged into LIVE for 24 h while an open PR's gating jobs (quality,
                     mt5-money-path, coverage-floor) are green on its head (10-30 to 11-03: four
                     days with nothing merged, and every rule above stayed quiet, because no CLEAR
@@ -236,12 +238,13 @@ def assess(
         for a in (
             _age_min(now, str(r.get("created_at")))
             for r in queued_runs
-            if r.get("event") == "push" and str(r.get("head_branch")) == base
+            # the gate's merges dispatch ci.yml (workflow_dispatch): those are LIVE runs too
+            if r.get("event") in ("push", "workflow_dispatch") and str(r.get("head_branch")) == base
         )
         if a is not None
     ]
     if live_q and max(live_q) > QUEUED_RED_MIN:
-        red.append(f"LIVE_CI_QUEUED: a push run on LIVE queued {max(live_q):.0f} min")
+        red.append(f"LIVE_CI_QUEUED: a run on LIVE waiting {max(live_q):.0f} min")
     sign: dict[str, Any] | None = None
     if sign_expected:
         if not sign_beat:
@@ -447,8 +450,16 @@ def collect(
                 for x in st.get("statuses") or []
             ):
                 ready[n] = max(str(done[k].get("completed_at")) for k in ALL_CHECKS)
+    # A LIVE run held by the concurrency group reads `pending`, never `queued` (#1265 audit SF):
+    # it joins the fence's runs, and only LIVE's, so the PR ordering read above is unchanged.
+    try:
+        pending_live = [r for r in _runs(repo, "pending", pages=1)
+                        if str(r.get("head_branch")) == base]  # fmt: skip
+    except RuntimeError as exc:
+        print(f"  pending LIVE runs unread: {exc}")
+        pending_live = []
     rep = assess(
-        now, prs, checks, clears, queued, running, live, ready, _beat(heartbeat),
+        now, prs, checks, clears, queued + pending_live, running, live, ready, _beat(heartbeat),
         heartbeat is not None, _beat(sign_beat), sign_beat is not None, base, merged,
     )  # fmt: skip
     return with_coverage(rep, len(prs), len(prs) - len(unread), unread, must, clears_complete)
