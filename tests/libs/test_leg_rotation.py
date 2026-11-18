@@ -180,6 +180,24 @@ def test_record_publishes_never_run_by_name(tmp_path: Path) -> None:
     assert LR.load_record(out)["never_run"] == ["dark"]
 
 
+def test_department_plan_never_overwrites_the_hourly_record(tmp_path: Path, monkeypatch) -> None:
+    """HP3 2026-11-11: a one-leg dept:asean pass replaced the 162-leg hourly plan in RECORD."""
+    rec = tmp_path / "LEG_ROTATION.json"
+    monkeypatch.setattr(LR, "RECORD", rec)
+    att = _att({"a": 1, "b": 1}, costs={"a": 1.0, "b": 1.0})
+    hourly = LR.plan_pass(["a", "b"], att, plan="core", budget_s=100.0)
+    LR.record(hourly, att, ["a", "b"])
+    dept = LR.plan_pass(["a"], att, plan="dept:asean", budget_s=100.0)
+    LR.record(dept, att, ["a"])
+    assert json.loads(rec.read_text(encoding="utf-8"))["plan"] == "core"
+    assert json.loads((tmp_path / "LEG_ROTATION.core.json").read_text(encoding="utf-8"))[
+        "plan"] == "core"
+    assert json.loads((tmp_path / "LEG_ROTATION.dept_asean.json").read_text(encoding="utf-8"))[
+        "plan"] == "dept:asean"
+    assert LR.plan_record("dept:a/b c") == tmp_path / "LEG_ROTATION.dept_a_b_c.json"
+    assert LR.is_department_plan("dept:x") and not LR.is_department_plan("heavy")
+
+
 def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) -> None:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
@@ -292,7 +310,8 @@ def test_artifact_age_reads_the_oldest_input_and_absent_is_infinite(tmp_path: Pa
 def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
     from libs.tiers import promotion_authority as PA
     door = {(PA.REPLICATION, "at"), (PA.FDR_ROWS, "generated_utc"), (PA.FREEZE, "at")}
-    ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
+    ours = {(LR.DESK / rel, key) for leg, arts in LR.DUE_ARTIFACTS.items()
+            if leg in ("tier_s", "replication_civilization") for rel, key in arts}
     assert ours == door
     assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)
 
@@ -318,3 +337,15 @@ def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
     dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
     assert dec.deferred == {"b"} and not dec.unschedulable
     assert "leads the next pass" in dec.why["b"]
+
+
+def test_the_certificate_clock_chain_is_forced_inside_its_two_hour_sla() -> None:
+    """Principal 2026-11-13: every passed certificate on a forward clock immediately, and the
+    hourly pass must see a stale census. The repair sweep and both clock fences are due-by-age,
+    hard at 2 h, keyed on the artifact each one writes."""
+    for leg, rel in (("forward_enrolment", "reports/FORWARD_ENROLMENT.json"),
+                     ("certificate_clock_law", "reports/CERTIFICATE_CLOCK_LAW.json"),
+                     ("clock_accrual", "reports/CLOCK_ACCRUAL.json")):
+        soft, hard = LR.DUE_BY_AGE_H[leg]
+        assert soft <= 1.0 and hard <= 2.0, leg
+        assert LR.DUE_ARTIFACTS[leg] == ((rel, "at"),), leg
