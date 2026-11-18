@@ -481,6 +481,53 @@ def latest_by_leg(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+#: A leg stopped at its cap this many times IN A ROW with nothing moved is not a slow pass; it is
+#: an organ that cannot finish under the load it runs in (math_lab and physics_lab, every pass
+#: 10-10 to 10-29, measured on the box). One timeout is already a defect; this names the chronic
+#: ones so the fix is the budget or the checkpointing, never another retry.
+CHRONIC_TIMEOUTS = 3
+
+
+#: Only rows this recent count: a streak from last month is history, not the leg's state now.
+CHRONIC_WINDOW_H = 24.0
+
+
+def chronic_timeouts(rows: list[dict[str, Any]], *, run: int = CHRONIC_TIMEOUTS,
+                     window_h: float = CHRONIC_WINDOW_H) -> list[dict[str, Any]]:
+    """Legs whose last `run` decided contract rows inside `window_h` are all LEG_TIMEOUT.
+
+    A PARTIAL WRITE DOES NOT EXCUSE A TIMEOUT (audit of 1ce440654, SF1). math_lab now checkpoints
+    its donation before the kill, so a leg that is stopped at its cap every pass still moves an
+    artifact; requiring "nothing written" would have hidden exactly the chronic case the
+    checkpoint was built for. Whether anything moved is reported, not used to acquit.
+    SKIPPED and LEG_FAILED rows neither extend nor break the streak (SF2): a crash between two
+    kills is another defect, not evidence that the leg now fits its budget. A row with no
+    readable time is outside every window.
+    """
+    tail: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        leg = str(row.get("leg") or "")
+        if not leg or row.get("verdict") in (SKIPPED, LEG_FAILED):
+            continue
+        age = _age_h(row.get("at"))
+        if age is None or age > window_h:
+            continue
+        tail.setdefault(leg, []).append(row)
+        del tail[leg][:-run]
+    out = []
+    for leg, last in sorted(tail.items()):
+        if len(last) == run and all(r.get("verdict") == LEG_TIMEOUT for r in last):
+            partial = sum(1 for r in last if r.get("wrote"))
+            out.append({"leg": leg, "timeouts_in_a_row": run, "since": last[0].get("at"),
+                        "wall_s": [r.get("wall_s") for r in last],
+                        "passes_that_moved_a_partial_artifact": partial,
+                        "detail": f"{leg} hit its cap {run} passes running ({partial} of them "
+                                  f"left a partial artifact): its work does not fit its budget "
+                                  f"under this load -- shrink the plan to the measured wall "
+                                  f"clock"})
+    return out
+
+
 def build_report(*, window_h: float = WINDOW_H) -> dict[str, Any]:
     rows = read_ledger()
     declared = leg_table()
@@ -537,6 +584,7 @@ def build_report(*, window_h: float = WINDOW_H) -> dict[str, Any]:
                  "detail": f"{leg} has not reached a leg boundary for {age:.1f} h "
                            f"(window {window_h} h); its clock is not firing"})
     rep["scanned"] = len(fresh)
+    rep["chronic_timeouts"] = chronic_timeouts(rows)
     n_sil, n_fail = len(rep["silent_no_ops"]), len(rep["failed"])
     n_never = len(rep["never_observed"])
     if n_sil or n_fail:
