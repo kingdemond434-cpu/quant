@@ -59,6 +59,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
@@ -183,8 +190,9 @@ def book_daily() -> tuple[pd.Series | None, str]:
             pass
     rows: dict[pd.Timestamp, list[float]] = {}
     n_ledgers = 0
+    n_skipped = 0  # rows with no usable time or no finite r: reported, never silent
     if SHADOW_LEDGERS.is_dir():
-        for f in sorted(SHADOW_LEDGERS.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(SHADOW_LEDGERS):
             try:
                 recs = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
@@ -194,6 +202,7 @@ def book_daily() -> tuple[pd.Series | None, str]:
             n_ledgers += 1
             for r in recs:
                 if not isinstance(r, dict):
+                    n_skipped += 1
                     continue
                 when = r.get("entry_time") or r.get("time")
                 val = r.get("r_multiple", r.get("r"))
@@ -201,15 +210,23 @@ def book_daily() -> tuple[pd.Series | None, str]:
                     ts = pd.Timestamp(when)
                     v = float(val)
                 except (TypeError, ValueError):
+                    n_skipped += 1
+                    continue
+                # pd.Timestamp(None) / pd.Timestamp("") is NaT, not an exception: a ledger row
+                # with no entry_time killed the whole daily leg on the box (NaTType has no
+                # normalize, 2026-11-04). A NaN r would poison the day's mean the same way.
+                if pd.isna(ts) or not np.isfinite(v):
+                    n_skipped += 1
                     continue
                 ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
                 rows.setdefault(ts.normalize(), []).append(v)
     if len(rows) >= 40:
         s = pd.Series({k: float(np.mean(v)) for k, v in rows.items()}).sort_index()
-        return s, f"{n_ledgers} shadow ledger(s), equal weight, {len(s)} days"
+        return s, (f"{n_ledgers} shadow ledger(s), equal weight, {len(s)} days, "
+                   f"{n_skipped} row(s) skipped (no time or no finite r)")
     return None, (f"no book to residualise against: {ALLOCATION.name} carries no heats with a "
                   f"matching {SLEEVE_DAILY.name}, and {SHADOW_LEDGERS.name} holds under 40 days "
-                  f"of ledger rows ({len(rows)} found)")
+                  f"of ledger rows ({len(rows)} found, {n_skipped} row(s) skipped)")
 
 
 def book_on(index: pd.DatetimeIndex, daily: pd.Series) -> pd.Series:

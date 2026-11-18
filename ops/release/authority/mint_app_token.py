@@ -40,8 +40,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--key", required=True)
     ap.add_argument("--find-installation", metavar="OWNER",
                     help="print the App's installation id on OWNER's account and exit")  # fmt: skip
+    ap.add_argument("--permissions", metavar="INSTALLATION_ID",
+                    help="print an installation's permissions as JSON and exit")  # fmt: skip
     a = ap.parse_args(argv)
     token = jwt(a.app_id, Path(a.key).read_bytes())
+    if a.permissions:
+        req = urllib.request.Request(
+            f"https://api.github.com/app/installations/{int(a.permissions)}",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            print(json.dumps(json.loads(r.read()).get("permissions") or {}, sort_keys=True))
+        return 0
     if a.find_installation:
         req = urllib.request.Request(
             "https://api.github.com/app/installations",

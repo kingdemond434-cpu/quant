@@ -187,8 +187,8 @@ def test_the_thresholds_are_the_drafts(fd) -> None:
     """Pinned so this wave provably changed no number in the rail."""
     assert (fd.DAILY_LOSS_PCT, fd.EQUITY_FLOOR_EUR, fd.WEEKLY_LOSS_PCT, fd.MAX_OPEN_POSITIONS,
             fd.MIN_FREE_MARGIN_FRAC, fd.MAX_SIZE_MULTIPLE, fd.STALE_HEARTBEAT_MIN,
-            fd.CONFIRM_READS) == (0.10, 300.0, 0.20, 24, 0.25, 3.0, 45, 2)
-    assert fd.rails() == {"DAILY_LOSS_PCT": 0.10, "EQUITY_FLOOR_EUR": 300.0,
+            fd.CONFIRM_READS) == (0.10, 10.0, 0.20, 24, 0.25, 3.0, 45, 2)
+    assert fd.rails() == {"DAILY_LOSS_PCT": 0.10, "EQUITY_FLOOR_EUR": 10.0,
                           "WEEKLY_LOSS_PCT": 0.20, "MAX_OPEN_POSITIONS": 24,
                           "MIN_FREE_MARGIN_FRAC": 0.25, "MAX_SIZE_MULTIPLE": 3.0,
                           "STALE_HEARTBEAT_MIN": 45, "CONFIRM_READS": 2}
@@ -343,3 +343,71 @@ def test_the_main_entry_point_defaults_to_dry_run() -> None:
     src = MODULE.read_text("utf-8")
     assert 'main(dry_run="--live" not in sys.argv)' in src
     assert "def main(dry_run: bool = True)" in src
+
+
+# ------------------------------------------------- the age of the reading the rails are judged on
+
+def test_the_reading_carries_its_age_by_the_worse_of_its_two_clocks(fd) -> None:
+    """A reading is only as current as its staler clock, and no clock at all is UNMEASURED.
+
+    THE EXACT BOX STATE OF 2026-11-14, which nothing measured for fourteen days:
+    `gateway_state.json` froze 2026-10-30 19:50:13Z at equity 266.01 with a flat book, and the
+    stamp published those figures with no age beside them, so every reader -- the log, the duty
+    checks, the CRO pass -- saw a live account at EUR 266.
+    """
+    frozen = "2026-10-30T19:50:13+00:00"
+    now = datetime(2026, 11, 14, 12, 40, 39, tzinfo=UTC)
+    age, why = fd.reading_age_min({"last_reconcile": frozen}, None, now=now)
+    assert age is not None and round(age) == 21_170              # 352.8 hours
+    assert "last_reconcile" in why and "21170min" in why
+
+    # The WORSE clock wins: a file written this minute does not make a dead reconcile fresh...
+    age2, why2 = fd.reading_age_min({"last_reconcile": frozen}, 0.0, now=now)
+    assert age2 == age and "last_reconcile" in why2
+    # ...and a fresh reconcile stamp inside a file nobody has touched is just as stale.
+    fresh = (now - timedelta(minutes=1)).isoformat()
+    age3, why3 = fd.reading_age_min({"last_reconcile": fresh}, 900.0, now=now)
+    assert age3 == 900.0 and "last written" in why3
+
+    # UNMEASURED, never young: no clock at all, and an unparseable stamp.
+    assert fd.reading_age_min({}, None, now=now) == (
+        None, "no last_reconcile and no publication time")
+    assert fd.reading_age_min({"last_reconcile": "not a time"}, None, now=now)[0] is None
+
+
+def test_the_stamp_publishes_the_readings_age_and_changes_no_verdict(fd) -> None:
+    """The measurement lands on the stamp; the rails decide exactly what they decided before.
+
+    The second half is the point of the first: which breaches a stale reading should raise, and
+    whether an account nobody can see may hold or must resume, is the principal's call on an
+    ARMED survival rail. This change only ends the blindness.
+
+    AND THE READING IS WHY BOTH HALVES MATTER AT ONCE. On the code THIS branch carries -- the
+    principal's EUR 10 floor (zuck 2026-11-05) -- equity 266.01 raises NO breach, so the halt
+    the live box has held for 177 consecutive passes clears the moment this branch is adopted.
+    The live box is still running the EUR 300 floor it was sealed with on 2026-11-10, judging
+    the SAME 352-hour-old number as a ruin. So this rail's verdict on this reading is a function
+    of which release is adopted, and nothing published the reading's age to say so.
+    """
+    _write_state(fd, equity=266.01, last="2026-10-30T19:50:13+00:00")
+    assert fd.main(dry_run=True) == 0, "the EUR 10 floor sees no breach in a 266.01 reading"
+    s = _stamp(fd)
+    r = s["readings"]
+    assert r["measured"] is False
+    assert r["age_min"] is not None and r["age_min"] > fd.STALE_HEARTBEAT_MIN
+    assert "last_reconcile" in r["age_why"] and r["source"].endswith("gateway_state.json")
+    assert r["equity"] == 266.01            # the figures are published beside the age, not instead
+    # THE VERDICT IS THE RAILS', UNCHANGED: exactly what `evaluate` returns for this reading.
+    assert s["breaches"] == [c for c, _ in fd.evaluate(
+        {"equity": 266.01, "margin_free": 15_000.0,
+         "last_reconcile": "2026-10-30T19:50:13+00:00", "withdrawn_offset": 0.0},
+        [], [], max(266.01, 0.0))]
+    assert not fd.PAUSED.exists()           # a dry-run pass still writes no pause file
+
+
+def test_a_fresh_reading_reads_as_measured(fd) -> None:
+    _write_state(fd, equity=20_000.0)
+    assert fd.main(dry_run=True) == 0
+    r = _stamp(fd)["readings"]
+    assert r["measured"] is True and r["age_min"] is not None
+    assert r["age_min"] <= fd.STALE_HEARTBEAT_MIN

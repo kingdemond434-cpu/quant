@@ -3,7 +3,10 @@ bridge alive without zuck and keep it from doing anything the hand-started bridg
 
 from __future__ import annotations
 
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -36,7 +39,10 @@ BANNED = {
     "environment write": r"\$env:\w+\s*=|SetEnvironmentVariable|Set-Item\s+-Path\s+env:|setx",
     "registry write": r"Set-ItemProperty|New-ItemProperty|reg(\.exe)?\s+add|HKLM:|HKCU:",
     "auto-logon": r"Winlogon|AutoAdminLogon|Autologon|DefaultPassword",
-    "stored password": r"-Password\b|ConvertTo-SecureString|-LogonType\s+(Password|S4U)",
+    # S4U is allowed (2026-11-13, -AtStartup): it runs a task as a named user with NO password
+    # passed or stored; the Password logon type is the one that stores one. See
+    # test_boot_start_is_s4u_only_behind_the_switch_and_measured_first.
+    "stored password": r"-Password\b|ConvertTo-SecureString|-LogonType\s+Password|Get-Credential",
     "process kill": r"Stop-Process|taskkill|\.Kill\(",
     "sign-in": r"auth\s+login|setup-token|ANTHROPIC_API_KEY|credentials",
     "live tree": r"C:\\opt\\quant(?!\w)",
@@ -213,8 +219,52 @@ def test_installer_rearms_and_registers_one_interactive_task() -> None:
     assert "-AtLogOn" in code and "-RepetitionInterval (New-TimeSpan -Minutes 5)" in code
     assert "-MultipleInstances IgnoreNew" in code
     assert "-ExecutionTimeLimit (New-TimeSpan -Seconds 0)" in code
-    assert code.count("Register-ScheduledTask ") == 1
+    # one watchdog task; the only other registration is the one-shot S4U probe, removed in finally
+    assert code.count("Register-ScheduledTask -TaskName $TaskName ") == 1
+    assert code.count("Register-ScheduledTask ") == 2
     assert "-LogonType Interactive" in code
+
+
+def test_boot_start_is_s4u_only_behind_the_switch_and_measured_first() -> None:
+    """zuck 2026-11-13: start at boot, legitimate auto-start only, no credential workarounds."""
+    code = SCRIPTS["installer"]
+    assert "[switch] $AtStartup" in code
+    # S4U appears only in the probe and inside the -AtStartup branch, never as the default
+    assert code.count("-LogonType S4U") == 2
+    mk = "$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType "
+    default = code.index(mk + "Interactive")
+    branch = code.index(mk + "S4U")
+    assert default < branch
+    assert code.rfind("if ($AtStartup) {", 0, branch) > default
+    assert "New-ScheduledTaskTrigger -AtStartup" in code
+    # the probe runs before the switch, only reads (`auth status`), and is always unregistered
+    probe = code[code.index("function Test-S4USignIn") : code.index("$s4uWhy = Test-S4USignIn")]
+    assert "auth status" in probe and "auth login" not in probe
+    assert "finally {" in probe and "Unregister-ScheduledTask -TaskName $probeTask" in probe
+    assert "$j.loggedIn -eq $true" in probe
+    assert probe.count("Remove-Item -LiteralPath $probeOut") == 2  # never left readable
+    assert code.index("$s4uWhy = Test-S4USignIn") < branch
+    assert "AT_STARTUP_REFUSED" in code and "$AtStartup = $false" in code
+    # no second bridge: a live interactive watchdog means register, do not start
+    assert "$liveBefore" in code
+    gate = code[code.index("if ($AtStartup -and $liveBefore)") :]
+    assert gate.index("NOT started now") < gate.index("Start-ScheduledTask -TaskName $TaskName")
+    # no password anywhere near a principal
+    for m in re.finditer(r"New-ScheduledTaskPrincipal[^\n]*", code):
+        line = m.group(0)
+        assert "-Password" not in line and "Password" not in line.split("-LogonType")[-1]
+
+
+def test_heartbeat_carries_boot_evidence_and_status_judges_it() -> None:
+    wd = SCRIPTS["watchdog"]
+    for k in ('"session_id"', '"boot_at"', '"started_after_boot_s"', '"uptime_source"'):
+        assert k in wd
+    assert "GetCurrentProcess().SessionId" in wd
+    assert "TickCount64" in wd and "0xFFFFFFFFL" in wd  # Windows PowerShell 5.1 fallback
+    st = SCRIPTS["status"]
+    for v in ('"PROVEN"', '"SESSION0"', '"INTERACTIVE"', '"UNMEASURED"'):
+        assert v in st
+    assert "-le 900" in st and "boot_start=$bootStart" in st
 
 
 def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:
@@ -468,10 +518,11 @@ def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
     ]
     assert inst.index("$Checkout)) {") < inst.index("function Lock-Folder")
     body = inst.split("function Lock-Folder", 1)[1].split("\n}\n", 1)[0]
-    assert _block(body, "if (Test-Path -LiteralPath $dir) {", 6) == [
+    assert _block(body, "if (Test-Path -LiteralPath $dir) {", 7) == [
         "if (Test-Path -LiteralPath $dir) {",
         "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {",
         "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        "if (Test-DebugLatestLink $c $LogDir) { continue }",
         'throw "$($c.FullName) is a junction or symlink; not installing"',
         "}",
         "}",
@@ -483,9 +534,10 @@ def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
     rows = [x.strip() for x in body.splitlines()]
     at = [n for n, x in enumerate(rows) if x == loop]
     assert len(at) == 2
-    assert rows[at[1] : at[1] + 4] == [
+    assert rows[at[1] : at[1] + 5] == [
         loop,
         "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        "if (Test-DebugLatestLink $c $LogDir) { continue }",
         'throw "$($c.FullName) is a junction or symlink; not installing"',
         "}",
     ]
@@ -526,3 +578,144 @@ def test_the_uncapped_flag_means_what_it_says(cmd: str, uncapped: bool) -> None:
     pats = re.findall(r"-notmatch '([^']+)'", line)
     assert len(pats) == 2 and line.count("-notmatch") == 2 and " -and " in line
     assert (not any(re.search(p, cmd) for p in pats)) is uncapped
+
+
+# THE CLI'S `latest` DEBUG LINK (2026-11-05, Desk health; the shape Governance set). The claude CLI
+# drops a symbolic link `logs\latest` beside its --debug-file. The child walk refused it, so every
+# watchdog run since 10-28 13:46Z exited 4 and the bridge never came back on its own. One shape is
+# exempt, identically in the three scripts; every other reparse point is still a refusal.
+LATEST_FN_HEAD = "function Test-DebugLatestLink($c, [string] $logDir) {"
+LATEST_FN = [
+    LATEST_FN_HEAD,
+    "try {",
+    "if ($c.Name -cne 'latest') { return $false }",
+    "if ([string]$c.LinkType -cne 'SymbolicLink') { return $false }",
+    "$ld = [IO.Path]::GetFullPath($logDir).TrimEnd([IO.Path]::DirectorySeparatorChar)",
+    "if ([IO.Path]::GetFullPath($c.FullName) -ne (Join-Path $ld 'latest')) { return $false }",
+    "$t = @($c.Target)",
+    "if ($t.Count -ne 1 -or -not $t[0]) { return $false }",
+    "$tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))",
+    "if ((Split-Path -Parent $tp) -ne $ld) { return $false }",
+    "if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\\d{8}_\\d{6}\\.log$') { return $false }",
+    "$f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop",
+    "if ($f.PSIsContainer) { return $false }",
+    "if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }",
+    "return $true",
+    "} catch { return $false }",
+    "}",
+]
+
+
+@pytest.mark.parametrize("name", ["watchdog", "status", "installer"])
+def test_the_latest_link_exemption_is_one_identical_narrow_function(name: str) -> None:
+    """Pinned whole: a junction or mount point (LinkType), another name, a target outside the log
+    folder or in a subfolder, a non-rc_debug target, a directory or reparse-point target, and an
+    unreadable or dangling target all return $false. Only the exact shape returns $true."""
+    src = SCRIPTS[name]
+    assert src.count(LATEST_FN_HEAD) == 1
+    assert _block(src, LATEST_FN_HEAD, len(LATEST_FN)) == LATEST_FN
+
+
+@pytest.mark.parametrize("name", ["watchdog", "status"])
+def test_the_child_walk_exempts_only_through_the_function(name: str) -> None:
+    rows = [x.strip() for x in SCRIPTS[name].splitlines()]
+    refuse = (
+        "if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) "
+        '{ return "$($c.FullName) is a reparse point" }'
+    )
+    at = [n for n, x in enumerate(rows) if x == refuse]
+    assert len(at) == 1
+    assert rows[at[0] - 1] == "if (Test-DebugLatestLink $c $LogDir) { continue }"
+    walk = "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {"
+    assert rows[at[0] - 2] == walk
+    # the folder itself and every parent stay refused outright: no exemption on those lines
+    assert sum("Test-DebugLatestLink $c" in x for x in rows) == 1
+
+
+def test_the_installer_exempts_the_same_shape_in_both_scans() -> None:
+    rows = [x.strip() for x in SCRIPTS["installer"].splitlines()]
+    assert sum(x == "if (Test-DebugLatestLink $c $LogDir) { continue }" for x in rows) == 2
+
+
+_PWSH_CASES = r"""
+$ErrorActionPreference = 'Stop'
+$base = Join-Path ([IO.Path]::GetTempPath()) ("lk_" + [guid]::NewGuid().ToString('N'))
+$ld = Join-Path $base 'logs'
+$out = @{}
+function Case([string] $label, [string] $target, [string] $name = 'latest') {
+    if (Test-Path -LiteralPath $ld) { Remove-Item -LiteralPath $ld -Recurse -Force }
+    New-Item -ItemType Directory -Path (Join-Path $ld 'sub') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $base 'elsewhere') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $ld 'rc_debug_20261028_134611.log') -Value x
+    Set-Content -LiteralPath (Join-Path $ld 'notes.txt') -Value x
+    Set-Content -LiteralPath (Join-Path $ld 'sub/rc_debug_20261028_134611.log') -Value x
+    Set-Content -LiteralPath (Join-Path $base 'elsewhere/rc_debug_20261028_134611.log') -Value x
+    New-Item -ItemType Directory -Path (Join-Path $ld 'rc_debug_20261028_000000.log') | Out-Null
+    [void][IO.File]::CreateSymbolicLink((Join-Path $ld 'rc_debug_20261028_111111.log'),
+        (Join-Path $ld 'rc_debug_20261028_134611.log'))
+    $link = Join-Path $ld $name
+    [void][IO.File]::CreateSymbolicLink($link, $target)
+    $c = Get-ChildItem -LiteralPath $ld -Force | Where-Object { $_.Name -ceq $name }
+    $out[$label] = [bool](Test-DebugLatestLink $c $ld)
+}
+Case 'exact' (Join-Path $ld 'rc_debug_20261028_134611.log')
+Case 'relative' 'rc_debug_20261028_134611.log'
+Case 'outside' (Join-Path $base 'elsewhere/rc_debug_20261028_134611.log')
+Case 'subfolder' (Join-Path $ld 'sub/rc_debug_20261028_134611.log')
+Case 'other_name' (Join-Path $ld 'rc_debug_20261028_134611.log') 'newest'
+Case 'not_rc_debug' (Join-Path $ld 'notes.txt')
+Case 'dir_target' (Join-Path $ld 'rc_debug_20261028_000000.log')
+Case 'link_target' (Join-Path $ld 'rc_debug_20261028_111111.log')
+Case 'dangling' (Join-Path $ld 'rc_debug_20261028_222222.log')
+Remove-Item -LiteralPath $base -Recurse -Force
+$out | ConvertTo-Json -Compress
+"""
+
+
+@pytest.mark.skipif(not shutil.which("pwsh"), reason="pwsh not installed")
+def test_the_latest_link_exemption_accepts_one_shape_and_refuses_the_rest() -> None:
+    """Runs the function as shipped. A junction cannot be made off Windows; its refusal is the
+    pinned LinkType line above (a junction's LinkType is 'Junction', never 'SymbolicLink')."""
+    fn_src = WATCHDOG.split(LATEST_FN_HEAD, 1)[1]
+    fn_src = LATEST_FN_HEAD + fn_src.split("\n}\n", 1)[0].replace("\r", "") + "\n}\n"
+    r = subprocess.run(
+        ["pwsh", "-NoProfile", "-NonInteractive", "-Command", fn_src + _PWSH_CASES],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr
+    got = json.loads(r.stdout.strip().splitlines()[-1])
+    assert got == {
+        "exact": True,
+        "relative": True,
+        "outside": False,
+        "subfolder": False,
+        "other_name": False,
+        "not_rc_debug": False,
+        "dir_target": False,
+        "link_target": False,
+        "dangling": False,
+    }
+
+
+def test_a_second_session_never_runs_a_second_watchdog() -> None:
+    """Audit 2026-11-13 #1132 MF1: Local\\ mutexes are per session; the S4U re-arm runs in
+    session 0 while an RDP copy may run in another. The newcomer exits on a live, fresh,
+    other-pid heartbeat before it writes anything or starts a server."""
+    code = SCRIPTS["watchdog"]
+    guard = code[code.index("$prevPid = [int]$prev.watchdog_pid") : code.index("watchdog.sha256")]
+    i = code.index("$prevPid = [int]$prev.watchdog_pid")
+    assert code.index("WaitOne(0)") < i
+    assert i < code.index('Beat @{ state = "TAMPERED"')
+    assert i < code.index("Start-Process -FilePath $claude")
+    assert "$prevPid -ne $PID" in guard and "Get-Process -Id $prevPid" in guard
+    assert "StartTime" in guard and "started_at" in guard  # a recycled pid is not the watchdog
+    assert "$ageS -le 3 * $every" in guard and "exit 0" in guard
+
+
+def test_the_probe_never_echoes_what_auth_status_printed() -> None:
+    code = SCRIPTS["installer"]
+    probe = code[code.index("function Test-S4USignIn") : code.index("$s4uWhy = Test-S4USignIn")]
+    assert "Substring" not in probe and "$($txt.Length) characters" in probe
+    assert "UNPROVEN" not in RAW["installer"]

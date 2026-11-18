@@ -95,7 +95,10 @@ jobs:
           set -euo pipefail
           present=()
           while read -r t; do [ -e "$t" ] && present+=("$t"); done < "$RUNNER_TEMP/trusted/suites"
-          want=$(pytest -q --co -p no:randomly -p no:cacheprovider "${present[@]}" | grep -c '::' || true)
+          # no -q here: pyproject's addopts already carry one, and a second (-qq) prints
+          # "file: N" lines with no node ids, so this counted 0 and failed every PR (#646).
+          # A miscount can only fail closed: want=0 exits 1 below.
+          want=$(pytest --co -p no:randomly -p no:cacheprovider "${present[@]}" | grep -c '::' || true)
           pytest -q -p no:randomly -p no:cacheprovider --timeout=600 \
             --junitxml "$RUNNER_TEMP/trusted/junit.xml" "${present[@]}"
           # every collected base test must have RUN: an early exit 0 is not a pass

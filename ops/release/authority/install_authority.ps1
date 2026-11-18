@@ -47,9 +47,13 @@ if (-not $Python) {
     }
 }
 if (-not $Python) { throw "No machine-wide Python under C:\Program Files. Install Python 3 for all users, then run this again." }
-& $Python -c "import cryptography" 2>$null
+# A native command's stderr is a terminating error under Stop in Windows PowerShell 5.1, so the
+# probe runs under Continue: a missing module must reach the pip line, not end the install (11-03).
+$eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+& $Python -c "import cryptography" 2>&1 | Out-Null
+$probe = $LASTEXITCODE; $ErrorActionPreference = $eap
 # pinned, wheels only: this runs elevated (#643 audit SF2)
-if ($LASTEXITCODE -ne 0) { & $Python -m pip install --quiet --only-binary :all: "cryptography==50.0.1"; if ($LASTEXITCODE -ne 0) { throw "pip install cryptography failed" } }
+if ($probe -ne 0) { & $Python -m pip install --quiet --only-binary :all: "cryptography==50.0.1"; if ($LASTEXITCODE -ne 0) { throw "pip install cryptography failed" } }
 Write-Host "   $Python"
 
 Step "Folders and ACLs"

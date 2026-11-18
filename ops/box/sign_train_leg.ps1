@@ -98,6 +98,10 @@ $env:GIT_AUTHOR_EMAIL = 'sign-train@quantbox.invalid'
 $env:GIT_COMMITTER_NAME = $env:GIT_AUTHOR_NAME
 $env:GIT_COMMITTER_EMAIL = $env:GIT_AUTHOR_EMAIL
 $env:PATH = (Split-Path -Parent $Gh) + ';' + $env:PATH
+# LEVEL 2 step 3: the quant-merger App when installed (ops/release/merger/merger_env.ps1, read
+# from the train's own clean clone of LIVE); otherwise zuck's gh login as before.
+$mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
+if (Test-Path -LiteralPath $mergerEnv) { . $mergerEnv; $null = Use-MergerIdentity $Clone }
 
 try {
     if (-not (Test-Path -LiteralPath $Python)) { throw "no desk Python at $Python" }

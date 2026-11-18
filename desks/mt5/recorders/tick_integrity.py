@@ -63,9 +63,15 @@ check that needs to know an instrument's class, and it still keeps that promise:
 `research/universe_policy`. A symbol the registry does not carry is UNCLASSIFIED and is never
 called FX on the strength of its name -- absence is not a permission, in either direction.
 
-IT FAILS LOUDLY. `main()` returns 2 on any FAIL verdict. The alternative -- a report that records
-a hole and exits 0 -- is a report nobody reads twice, and this desk's own laws call an unread
-alarm worse than no alarm because it suppresses the ones that matter.
+IT FAILS LOUDLY, ONCE PER FAILURE. `main()` returns 2 when a symbol-day is FAIL that the
+previous report did not already carry as FAIL (`new_failures`). A FAIL day that was already known
+stays in `failures` and in the verdict -- `tape_features` still refuses it, and nothing about the
+day is forgiven -- but it does not page again every hour. A day that failed, cleared and failed
+again pages again; a missing or unreadable previous report makes every failure new, so losing the
+memory can only make the checker louder, never quieter. `--page-on-any` restores the old
+behaviour of paging on every FAIL verdict. The alternative -- 82 old FAIL days returning rc 2 every
+hour -- is an alarm nobody reads twice, and this desk's own laws call an unread alarm worse than no
+alarm because it suppresses the ones that matter (idea 615).
 
 UNMEASURED IS A VERDICT, NEVER A PASS (L1.28a). A day with too little history behind it to
 establish a session, a symbol whose manifest cannot be read, a day whose segments are all
@@ -74,7 +80,9 @@ missing: each returns UNMEASURED with the reason attached. None of them counts t
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import sys
 from contextlib import suppress
 from dataclasses import asdict, dataclass, field
@@ -571,10 +579,114 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
     return worst, reasons
 
 
+#: THE VERDICT CACHE, AND WHY A CHECKER NEEDS ONE. Measured on the box 2026-11-11: a 10-day pass
+#: over 245 symbols took 73 to 118 minutes, so the hourly task skipped every other slot and the
+#: desk was watched every two hours while believing it was watched every hour. Almost all of that
+#: is re-decoding SEALED days that have not changed since the last pass. A sealed day before today
+#: whose files, gap rows, session mask and thresholds are all byte-for-byte what they were is
+#: judged exactly as it was, so its verdict is reused. Anything that moves -- a new segment, an
+#: orphan, a compaction, a gap row, a shifted session, a threshold, this schema -- changes the key
+#: and the day is judged again. Unsealed days and today are never cached.
+#:
+#: BIT ROT IS THE ONE CHANGE A STAT CANNOT SEE, so every cached day is re-verified in full at
+#: least once per `CACHE_REVERIFY_S`, staggered per day so the whole tape never falls due in one
+#: pass. The cache lives beside the tape (`<root>/state/`), not in the repository, and a missing
+#: or unreadable cache only costs time: every day is judged in full.
+CACHE_VERSION = 1
+CACHE_REVERIFY_S = 24 * 3600
+CACHE_FILE = "tick_integrity_cache.json"
+
+
+def _stat_sig(path: Path) -> list[Any]:
+    try:
+        st = path.stat()
+    except OSError:
+        return [path.name, None]
+    return [path.name, st.st_size, st.st_mtime_ns]
+
+
+def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel) -> str:
+    """Everything `judge_day` reads for a sealed past day, reduced to one digest."""
+    h = hashlib.sha256()
+    d = store.day_dir(symbol, day)
+    try:
+        files = sorted(f for f in d.iterdir() if f.is_file())
+    except OSError:
+        files = []
+    session, basis, obs = model.mask_for(day)
+    parts: list[Any] = [
+        CACHE_VERSION, SCHEMA, symbol, day,
+        [_stat_sig(f) for f in files], _stat_sig(store.gap_path(symbol, day)),
+        basis, int(obs), hashlib.sha256(np.packbits(session).tobytes()).hexdigest(),
+        bool(model.pooled_obs >= MIN_SESSION_DAYS),
+        [COVERAGE_FAIL, COVERAGE_DEGRADED, UNEXPLAINED_FAIL_MIN, UNEXPLAINED_DEGRADED_MIN,
+         DUP_DEGRADED, CROSSED_DEGRADED, STALE_RUN_S, ONE_SIDED_FX, SESSION_QUORUM,
+         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS],
+        asset_class_of(symbol), bool(is_fx(symbol)),
+    ]
+    h.update(json.dumps(parts, default=str, sort_keys=True).encode("utf-8"))
+    return h.hexdigest()
+
+
+def _reverify_due(key: str, judged_at: float, now_s: float) -> bool:
+    """True once a cached day is older than its staggered re-verification period."""
+    jitter = int(hashlib.sha256(key.encode("utf-8")).hexdigest()[:8], 16) % (CACHE_REVERIFY_S // 4)
+    return now_s - judged_at >= CACHE_REVERIFY_S - jitter
+
+
+def _load_cache(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("version") != CACHE_VERSION:
+        return {}
+    rows = doc.get("days")
+    return rows if isinstance(rows, dict) else {}
+
+
+#: Unvisited cache rows older than this are dropped, so a cache merged across narrow passes
+#: (`--days 3`, `--symbols X`) does not grow without bound.
+CACHE_KEEP_DAYS = 60
+
+
+def _merge_cache(old: dict[str, Any], fresh: dict[str, Any], today: str) -> dict[str, Any]:
+    """This pass's rows over the previous cache: a narrow pass must not evict what it skipped."""
+    floor = (pd.Timestamp(today) - pd.Timedelta(days=CACHE_KEEP_DAYS)).date().isoformat()
+    out = {k: v for k, v in old.items() if k.rsplit("/", 1)[-1] >= floor}
+    out.update(fresh)
+    return out
+
+
+def _save_cache(path: Path, rows: dict[str, Any]) -> None:
+    with suppress(OSError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Per-process temp name: two overlapping passes must never interleave one temp file.
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({"version": CACHE_VERSION, "days": rows},
+                                  separators=(",", ":")), "utf-8")
+        tmp.replace(path)
+
+
+def _from_cache(entry: Any, fp: str) -> DayVerdict | None:
+    if not isinstance(entry, dict) or entry.get("fp") != fp:
+        return None
+    with suppress(TypeError):
+        return DayVerdict(**entry["row"])
+    return None
+
+
 def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | None = None,
-        include_unsealed: bool = True) -> dict[str, Any]:
+        include_unsealed: bool = True, use_cache: bool = True) -> dict[str, Any]:
     """Judge every symbol-day the tape holds. Returns the report document."""
     syms = symbols if symbols is not None else store.symbols()
+    cache_path = store.state_dir / CACHE_FILE
+    cache = _load_cache(cache_path) if use_cache else {}
+    fresh: dict[str, Any] = {}
+    stats = {"enabled": use_cache, "hits": 0, "judged": 0, "reverified": 0, "uncacheable": 0,
+             "path": str(cache_path)}
+    now_s = datetime.now(tz=UTC).timestamp()
+    today = datetime.now(tz=UTC).date().isoformat()
     cutoff = ""
     if days_back:
         cutoff = (datetime.now(tz=UTC).date() - timedelta(days=int(days_back))).isoformat()
@@ -589,7 +701,29 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             judged = [d for d in judged if store.seal(sym, d) is not None]
         sym_rows = []
         for d in judged:
-            sym_rows.append(judge_day(store, sym, d, model, now_ms))
+            key = f"{sym}/{d}"
+            cacheable = use_cache and d < today and store.seal(sym, d) is not None
+            if not cacheable:
+                stats["uncacheable"] += 1
+                sym_rows.append(judge_day(store, sym, d, model, now_ms))
+                continue
+            fp = day_fingerprint(store, sym, d, model)
+            entry = cache.get(key)
+            hit = _from_cache(entry, fp)
+            if hit is not None and not _reverify_due(key, float(entry.get("at") or 0), now_s):
+                stats["hits"] += 1
+                fresh[key] = entry
+                sym_rows.append(hit)
+                continue
+            if hit is not None:
+                stats["reverified"] += 1
+            stats["judged"] += 1
+            row = judge_day(store, sym, d, model, now_ms)
+            # Keyed on the files AFTER judging: `reconcile` may recover an orphan into the
+            # manifest, and the next pass must see the day as it now stands.
+            fresh[key] = {"fp": day_fingerprint(store, sym, d, model), "at": now_s,
+                          "row": asdict(row)}
+            sym_rows.append(row)
         rows.extend(sym_rows)
         ticks = sum(r.n_ticks for r in sym_rows)
         byts = sum(r.bytes for r in sym_rows)
@@ -614,6 +748,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "verdicts": _tally([r.verdict for r in sym_rows]),
         }
 
+    if use_cache:
+        _save_cache(cache_path, _merge_cache(cache, fresh, today))
     recorder = _recorder_status()
     tally = _tally([r.verdict for r in rows])
     total_ticks = sum(r.n_ticks for r in rows)
@@ -662,6 +798,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "one_sided_symbol_days": sum(1 for r in rows if r.one_sided),
         },
         "verdicts": tally,
+        "verdict_cache": stats,
         "recorder": recorder,
         "by_symbol": per_symbol,
         # Worst first: the point of the report is the failures, and burying them under 250 clean
@@ -716,6 +853,64 @@ def _tally(values: list[str]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def _fail_keys(doc: dict[str, Any]) -> set[str]:
+    """Every `symbol/day` a report called FAIL, read from its uncapped `days` list.
+
+    `failures` is capped at 200 rows, so it is only the fallback for a report without `days`;
+    `known_failures` carries forward what an older report already knew.
+    """
+    rows = doc.get("days")
+    if not isinstance(rows, list):
+        rows = doc.get("failures") if isinstance(doc.get("failures"), list) else []
+    keys = {f"{r.get('symbol')}/{r.get('day')}" for r in rows
+            if isinstance(r, dict) and r.get("verdict") == FAIL}
+    return keys
+
+
+def _previous_fail_keys(path: Path) -> tuple[set[str], str]:
+    """The FAIL days the last report already carried, and how that memory was read.
+
+    ABSENCE MAKES THE CHECKER LOUDER, NEVER QUIETER: no previous report, or one that cannot be
+    read, means nothing is known and every FAIL pages.
+    """
+    if not path.exists():
+        return set(), "no previous report: every FAIL is new"
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return set(), f"previous report unreadable ({type(exc).__name__}): every FAIL is new"
+    if not isinstance(doc, dict):
+        return set(), "previous report is not an object: every FAIL is new"
+    return _fail_keys(doc), f"previous report at {doc.get('generated_utc')}"
+
+
+def split_new_failures(rep: dict[str, Any], known: set[str], memory: str) -> dict[str, Any]:
+    """Annotate `rep` with which FAIL days are NEW (they page) and which were already known.
+
+    A known key is kept only while the day is still FAIL in this run: a day that cleared drops
+    out of memory, so if it fails again later it pages again, and a day that left the window is
+    forgotten with it.
+    """
+    now = _fail_keys(rep)
+    new = sorted(now - known)
+    rep["paging"] = {
+        "memory": memory,
+        "new_failures": new[:200],
+        "new_failure_count": len(new),
+        "known_failure_count": len(now & known),
+        "pages": bool(new),
+    }
+    return rep
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """Write the report through a sibling temp file, so the next run's memory is never torn."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, "utf-8")
+    tmp.replace(path)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Prove the MT5 tick tape is what it claims to be")
     ap.add_argument("--root", type=Path, default=None)
@@ -723,6 +918,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--days", type=int, default=None, help="only judge the last N days")
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--sealed-only", action="store_true")
+    ap.add_argument("--page-on-any", action="store_true",
+                    help="exit 2 on every FAIL verdict, not only on failures new since last run")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="judge every day in full, ignoring and not writing the verdict cache")
     args = ap.parse_args(argv)
 
     from recorders.tick_recorder import DEFAULT_TAPE_ROOT
@@ -736,9 +935,11 @@ def main(argv: list[str] | None = None) -> int:
               f"somewhere else (MT5_TAPE_ROOT).")
         return 2
 
-    rep = run(store, syms, args.days, include_unsealed=not args.sealed_only)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    known, memory = _previous_fail_keys(args.out)
+    rep = run(store, syms, args.days, include_unsealed=not args.sealed_only,
+              use_cache=not args.no_cache)
+    split_new_failures(rep, known, memory)
+    _atomic_write(args.out, json.dumps(rep, indent=1, sort_keys=True) + "\n")
 
     t = rep["totals"]
     print(f"tick_integrity: {rep['verdict']}  {t['symbols']} symbols, "
@@ -746,6 +947,9 @@ def main(argv: list[str] | None = None) -> int:
           f"{t['bytes']/1e6:.1f} MB  ({t['bytes_per_tick']} B/tick, "
           f"{t['bytes_per_symbol_day']/1e6:.3f} MB per symbol-day)")
     print(f"  verdicts: {rep['verdicts']}")
+    vc = rep["verdict_cache"]
+    print(f"  verdict cache: {vc['hits']} reused, {vc['judged']} judged in full "
+          f"({vc['reverified']} periodic re-verify), {vc['uncacheable']} unsealed or today")
     print(f"  UNEXPLAINED session minutes: {t['unexplained_minutes']}  "
           f"(explained by a gap row: {t['explained_minutes']})")
     print(f"  compaction: {t['days_compacted']} day(s) folded, {t['segments_folded']:,} "
@@ -758,8 +962,15 @@ def main(argv: list[str] | None = None) -> int:
               f"'{top}' on most ticks")
     for row in rep["failures"][:10]:
         print(f"  FAIL {row['symbol']}/{row['day']}: {'; '.join(row['reasons'][:2])}")
+    pg = rep["paging"]
+    print(f"  paging: {pg['new_failure_count']} NEW FAIL day(s), {pg['known_failure_count']} "
+          f"already known ({pg['memory']})")
+    for key in pg["new_failures"][:10]:
+        print(f"  NEW FAIL {key}")
     print(f"  -> {args.out}")
-    return 2 if rep["verdict"] == FAIL else 0
+    if args.page_on_any:
+        return 2 if rep["verdict"] == FAIL else 0
+    return 2 if pg["pages"] else 0
 
 
 if __name__ == "__main__":

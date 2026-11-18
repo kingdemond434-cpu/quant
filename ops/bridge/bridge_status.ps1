@@ -34,6 +34,14 @@
 #   LIVE_SERVER_AT_RISK   LIVE, but the server was started by hand without --capacity 1 in a
 #               shared-checkout mode (R0423); exit 2 until it is stopped and the watchdog's own runs
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
+#
+# Every line that reads the heartbeat also carries boot_start= (2026-11-13, -AtStartup):
+#   PROVEN      this watchdog runs in session 0 (the S4U boot task, no desktop) and began within
+#               15 min of the last boot: the bridge came back with nobody logged on
+#   SESSION0    session 0 but began later than that (a re-arm or a manual start): the task is the
+#               boot task, but this run is not the proof; a reboot drill gives it
+#   INTERACTIVE the watchdog runs in an RDP session: after a reboot it waits for a logon
+#   UNMEASURED  a heartbeat from a watchdog older than this field
 param([string] $LogDir = "C:\ProgramData\ClaudeBridge\logs", [string] $BinDir = "C:\ProgramData\ClaudeBridge\bin",
       [string] $TaskName = "Claude-Bridge-Watchdog")
 
@@ -55,6 +63,30 @@ function Get-AclProblem([string] $path, [int64] $mask, [string[]] $owners = $Adm
     }
     return $null
 }
+# THE CLI'S OWN `latest` DEBUG LINK IS THE ONE REPARSE POINT ALLOWED (2026-11-05, Desk health).
+# `claude remote-control --debug-file <file>` drops a symbolic link named `latest` beside the file.
+# The child walk refused it, so from the watchdog's first restart (10-28 13:46Z) every run exited 4
+# and the bridge stayed down. Exactly one shape is exempt, identically in the watchdog, its status
+# reader and the installer: a SymbolicLink (never a junction or mount point) named `latest` directly
+# in the log folder, whose single target is a regular, non-reparse file directly in that same folder
+# named rc_debug_YYYYMMDD_HHMMSS.log. Anything else, or anything that cannot be read, stays a refusal.
+function Test-DebugLatestLink($c, [string] $logDir) {
+    try {
+        if ($c.Name -cne 'latest') { return $false }
+        if ([string]$c.LinkType -cne 'SymbolicLink') { return $false }
+        $ld = [IO.Path]::GetFullPath($logDir).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if ([IO.Path]::GetFullPath($c.FullName) -ne (Join-Path $ld 'latest')) { return $false }
+        $t = @($c.Target)
+        if ($t.Count -ne 1 -or -not $t[0]) { return $false }
+        $tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))
+        if ((Split-Path -Parent $tp) -ne $ld) { return $false }
+        if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\d{8}_\d{6}\.log$') { return $false }
+        $f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop
+        if ($f.PSIsContainer) { return $false }
+        if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }
+        return $true
+    } catch { return $false }
+}
 function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners = $AdminSids) {
     try {
         $item = Get-Item -LiteralPath $dir -Force -ErrorAction Stop
@@ -68,6 +100,7 @@ function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners =
         }
         if (-not $Shallow) {
             foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
+                if (Test-DebugLatestLink $c $LogDir) { continue }
                 if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
             }
         }
@@ -96,7 +129,13 @@ $every = 60
 if ($b.beat_every_s) { $every = [Math]::Max(60, [int]$b.beat_every_s) }
 $alive = $false
 if ($b.server_pid) { $alive = [bool](Get-Process -Id ([int]$b.server_pid) -ErrorAction SilentlyContinue) }
-$detail = "state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) spawn=$($b.spawn_mode) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
+$bootStart = "UNMEASURED"
+if ($null -ne $b.session_id) {
+    if ([int]$b.session_id -ne 0) { $bootStart = "INTERACTIVE" }
+    elseif ($null -ne $b.started_after_boot_s -and [int]$b.started_after_boot_s -le 900) { $bootStart = "PROVEN" }
+    else { $bootStart = "SESSION0" }
+}
+$detail = "boot_start=$bootStart session=$($b.session_id) boot_at=$($b.boot_at) state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) spawn=$($b.spawn_mode) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
 if ($age -gt 3 * $every) { "STALE: $detail"; exit 1 }
 if ($b.state -ne "RUNNING") { "$($b.state): $detail needs=$($b.needs)"; exit 1 }
 if (-not $alive) { "DEAD_SERVER: $detail"; exit 1 }

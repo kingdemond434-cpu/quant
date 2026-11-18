@@ -28,7 +28,37 @@ H1, H2 = sb_mod.H1, sb_mod.H2
 
 @pytest.fixture
 def sb(tmp_path: Path) -> Any:
-    return sb_mod.Sandbox(tmp_path)
+    # The window mechanics (notice, veto, expiry) are pinned at 24 h here so every veto path
+    # stays tested; LIVE runs with no wait (REGISTRY_HOLD_H = 0, zuck 2026-11-13), which
+    # test_with_no_wait_a_signed_clear_merges_on_the_first_sweep covers.
+    s = sb_mod.Sandbox(tmp_path)
+    s.ag.REGISTRY_HOLD_H = 24.0
+    return s
+
+
+def test_with_no_wait_a_signed_clear_merges_on_the_first_sweep(tmp_path: Path) -> None:
+    s = sb_mod.Sandbox(tmp_path)
+    assert s.ag.REGISTRY_HOLD_H == 0.0
+    assert s.authority()[0] == "CLEAR"
+    s.gate()
+    (m,) = s.gh.merges()
+    assert m["sha"] == H1 and "registry CLEAR" in m["commit_title"] and len(s.notices) == 1
+
+
+def test_with_no_wait_a_hold_or_a_new_push_still_stops_the_merge(tmp_path: Path) -> None:
+    s = sb_mod.Sandbox(tmp_path)
+    assert s.authority()[0] == "CLEAR"
+    s.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": "2026-11-05T00:00:00Z",
+                          "updated_at": "2026-11-05T00:00:00Z",
+                          "author_association": "OWNER"})  # fmt: skip
+    s.gate()
+    assert s.gh.merges() == []
+    (tmp_path / "b").mkdir()
+    s2 = sb_mod.Sandbox(tmp_path / "b")
+    assert s2.authority()[0] == "CLEAR"
+    s2.gh.pr["head"]["sha"] = H2
+    s2.gate()
+    assert s2.gh.merges() == []
 
 
 def _through_window(sb: Any) -> None:
@@ -242,11 +272,19 @@ def test_a_firm_rule_is_never_raised(env: Any) -> None:
     assert any("firm rule" in b for b in bad)
 
 
-def test_a_lowered_ceiling_is_not_delegated_either(env: Any) -> None:
-    """#637 audit MF2: NEVER REDUCE AGGRESSIVENESS -- a cap lowered by fiat is zuck's call."""
-    bad = env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.06), env["env"])
-    assert any("lowered" in b for b in bad)
-    assert env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
+def test_a_delegated_knob_moves_both_ways_one_step_at_a_time(env: Any) -> None:
+    """zuck 2026-11-14 03:30Z (risk autonomy): a raisable knob may be lowered too, one step per PR,
+    never to zero; a firm rule may be tightened, never raised; any other lowering is still ROOT."""
+    check = env["pol"].envelope_check
+    assert check(_ceil(m=0.08), _ceil(m=0.06), env["env"]) == []
+    assert any("one step" in b for b in check(_ceil(m=0.08), _ceil(m=0.05), env["env"]))
+    assert any("positive" in b for b in check(_ceil(m=0.08), _ceil(m=0.0), env["env"]))
+    assert check(_ceil(d=0.05), _ceil(d=0.04), env["env"]) == []  # a firm rule tightened
+    base, head = _ceil(), _ceil()
+    base["max"]["x.py"] = {"K": 2.0}
+    head["max"]["x.py"] = {"K": 1.0}
+    assert any("not delegated" in b for b in check(base, head, env["env"]))
+    assert check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
 
 
 def test_pins_and_rail_lists_cannot_move_through_the_envelope(env: Any) -> None:
@@ -377,4 +415,177 @@ def test_every_root_file_is_protected_so_no_no_comment_path_can_merge_it(
     """A root file on the AUTO path would merge with no authority at all once AUTO is active."""
     files = [{"filename": path, "status": "modified", "additions": 1, "deletions": 0}]
     assert sb.ag.tier(files, 1, lambda n: False)[0] == "PROTECTED"
-    assert sb.auth.pol._match(path, sb.policy["root_files"])
+    assert sb.auth.pol._match(path, [*sb.policy["root_files"], *sb.policy["enforced_root_files"]])
+
+
+# ---- Level 2: the commit status the LIVE ruleset requires -------------------------------------
+
+
+def _auth() -> Any:
+    return sb_mod._load("authority_service_l2", ROOT / "ops/release/authority/authority.py")
+
+
+def test_status_auto_clear_is_success() -> None:
+    a = _auth()
+    assert a.status_for({"cls": "AUTO"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
+
+
+def test_status_controller_waits_out_the_veto() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    a = _auth()
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    f = {"cls": "CONTROLLER"}
+    assert a.status_for(f, "CLEAR", [], since=None, veto_h=24, now=now)[0] == "pending"
+    assert a.status_for(f, "CLEAR", [], since=None, veto_h=0, now=now)[0] == "success"
+    early = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=23), veto_h=24, now=now)
+    assert early[0] == "pending" and "1.0 h left" in early[1]
+    late = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=24), veto_h=24, now=now)
+    assert late[0] == "success"
+
+
+@pytest.mark.parametrize("verdict,state", [("HOLD", "failure"), ("FAIL", "failure"),
+                                           ("WAIT", "pending")])  # fmt: skip
+def test_status_never_success_without_clear(verdict: str, state: str) -> None:
+    a = _auth()
+    got = a.status_for({"cls": "CONTROLLER"}, verdict, ["why"], since=None, veto_h=24)
+    assert got[0] == state
+
+
+def test_first_signed_reads_the_earliest_statement(tmp_path: Path) -> None:
+    a = _auth()
+    head = "a" * 40
+    for i, t in enumerate(["2026-11-03T10:00:00+00:00", "2026-11-03T08:00:00+00:00"]):
+        (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-{i}.json").write_text(
+            json.dumps({"statement": {"head_sha": head, "issued_at": t}}), encoding="utf-8"
+        )
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-x.json").write_text(
+        json.dumps({"statement": {"head_sha": "b" * 40, "issued_at": "2026-11-01T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    from datetime import UTC, datetime
+
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 8 and got.day == 3
+    # a HOLD at 09:00 restarts the window: only the 10:00 CLEAR counts
+    (tmp_path / f"pr7-{head[:12]}-HOLD-deadbeef-h.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-03T09:00:00+00:00",
+                                  "verdict": "HOLD"}}), encoding="utf-8")  # fmt: skip
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
+    # a future-dated CLEAR is ignored
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-f.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-09T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
+
+
+def test_status_is_failure_outside_the_delegated_classes_even_on_clear() -> None:
+    a = _auth()
+    for cls in ("ROOT", "REFUSED", None):
+        assert a.status_for({"cls": cls}, "CLEAR", [], since=None, veto_h=24)[0] == "failure"
+
+
+def _check_ruleset() -> Any:
+    return sb_mod._load("check_ruleset", ROOT / "ops/release/authority/check_ruleset.py")
+
+
+def test_prepared_ruleset_is_refused_until_the_state_app_is_named() -> None:
+    cr = _check_ruleset()
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    assert cr.problems(rs) == [
+        "bypass actor Integration has a placeholder id: fill in the state App's id"
+    ]
+    for b in rs["bypass_actors"]:
+        if b["actor_id"] == 0:
+            b["actor_id"] = 7777777
+    assert cr.problems(rs) == []
+
+
+@pytest.mark.parametrize("bad", [
+    {"actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always"},
+    {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "always"},
+    {"actor_type": "DeployKey", "actor_id": 1, "bypass_mode": "always"},
+])  # fmt: skip
+def test_ruleset_check_refuses_unsafe_bypass(bad: dict[str, Any]) -> None:
+    cr = _check_ruleset()
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    rs["bypass_actors"] = [b for b in rs["bypass_actors"] if b["actor_id"] != 0]
+    rs["bypass_actors"] += [{"actor_type": "Integration", "actor_id": 7777777,
+                             "bypass_mode": "always"}, bad]  # fmt: skip
+    assert cr.problems(rs)
+
+
+def test_seal_environment_must_admit_live_alone() -> None:
+    """desk-sync-clean is pushed by the VPS with no review: a ci.yml edited there must never run
+    in the environment that holds the state App's key (that App bypasses the LIVE ruleset)."""
+    cr = _check_ruleset()
+    ok = {"deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    live = [{"name": "claude/llm-auto-upgrade-verify-gcjac3", "type": "branch"}]
+    assert cr.env_problems(ok, live) == []
+    assert cr.env_problems({"deployment_branch_policy": None}, live)
+    assert cr.env_problems(ok, [*live, {"name": "desk-sync-clean", "type": "branch"}])
+    assert cr.env_problems(ok, [*live, {"name": "claude/*", "type": "branch"}])
+    assert cr.env_problems(ok, [])
+    assert cr.env_problems(ok, [*live, {"name": "v*", "type": "tag"}])
+
+
+def test_a_pass_stops_judging_at_its_budget_and_still_finishes(
+    sb: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Every authority pass from 18:01Z on 2026-11-05 hit the task's 30-minute limit and was
+    killed mid-sweep. A spent budget ends the pass cleanly instead of being killed."""
+    args = ["--repo", "o/r", "--out", str(sb.folder), "--key", str(sb.key_pem),
+            "--root-pin", str(sb.pin), "--pr", "41", "--dry-run", "--budget-s", "-1"]  # fmt: skip
+    assert sb.auth.main(args) == 0
+    assert "budget of -1 s spent after 0 of 1 PRs" in capsys.readouterr().out
+    assert sb.auth.BUDGET_S < 30 * 60  # inside install_authority.ps1's ExecutionTimeLimit
+
+
+def test_a_pr_the_last_pass_did_not_reach_is_judged_first() -> None:
+    a = _auth()
+    prs = [{"number": 7, "updated_at": "2026-11-05T21:00:00Z"},
+           {"number": 3, "updated_at": "2026-11-01T00:00:00Z"},
+           {"number": 9, "updated_at": "2026-11-05T22:00:00Z"}]  # fmt: skip
+    assert a.order_prs(prs, {}) == [9, 7, 3]  # never judged: newest activity first
+    assert a.order_prs(prs, {"9": 100.0, "7": 100.0}) == [3, 9, 7]  # the one left over goes first
+
+
+def test_an_untouched_old_pr_is_judged_within_bounded_passes() -> None:
+    """#776 audit MF1: with a budget that covers fewer than all open PRs and newer PRs whose
+    activity keeps moving, the oldest untouched PR is still judged within ceil(open/per_pass)
+    passes, because the order is by when this authority last judged each PR."""
+    a = _auth()
+    n_open, per_pass = 10, 3
+    old = {"number": 1, "updated_at": "2026-10-01T00:00:00Z"}
+    judged_at: dict[str, float] = {}
+    reached_old_on = None
+    for t in range(1, 2 * n_open):
+        # every newer PR is bumped each pass, so ordering by activity alone would starve #1
+        prs = [old] + [{"number": k, "updated_at": f"2026-11-05T{t:02d}:{k:02d}:00Z"}
+                       for k in range(2, n_open + 1)]  # fmt: skip
+        this_pass = a.order_prs(prs, judged_at)[:per_pass]
+        judged_at.update({str(n): float(t) for n in this_pass})
+        if 1 in this_pass:
+            reached_old_on = t
+            break
+    assert reached_old_on is not None and reached_old_on <= -(-n_open // per_pass)
+
+
+def test_one_pr_per_pass_reaches_every_pr_in_n_passes() -> None:
+    """The #776 audit's counterexample to a one-pass memory: 9 (22:00), 7 (21:00), 3 (11-01), one
+    PR per pass, went 9, 7, 9, 7... With the cumulative map every PR is judged in 3 passes."""
+    a = _auth()
+    prs = [{"number": 7, "updated_at": "2026-11-05T21:00:00Z"},
+           {"number": 3, "updated_at": "2026-11-01T00:00:00Z"},
+           {"number": 9, "updated_at": "2026-11-05T22:00:00Z"}]  # fmt: skip
+    judged_at: dict[str, float] = {}
+    order = []
+    for t in range(1, 7):
+        n = a.order_prs(prs, judged_at)[0]
+        judged_at[str(n)] = float(t)
+        order.append(n)
+    assert order == [9, 7, 3, 9, 7, 3]

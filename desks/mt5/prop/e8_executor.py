@@ -43,6 +43,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+# NUMPY LOADS BEFORE ANY BROKER SESSION (2026-11-04). pandas was imported lazily inside _frame(),
+# i.e. after main() had already connected to TradeLocker. Under a commit-charge spike the import
+# fails ("The paging file is too small for this operation to complete", measured on the box with
+# a 205.7 GB commit peak against a 201.9 GB limit), _frame() swallowed the ImportError and the
+# sleeve was silently skipped with a live session open. Importing here makes that failure kill the
+# process before connect(), where a missed pass is visible and no session is left half-used.
+import pandas as pd
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
@@ -289,10 +297,6 @@ def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
     each bar to the E8 server clock used by the guard before invoking a certified family.
     The offset is evaluated per bar, including historical DST; prices and bar order are unchanged.
     """
-    try:
-        import pandas as pd
-    except ImportError:
-        return None
     # THE SLEEVE'S OWN CHART, NOT A CONSTANT (fixed 2026-09-14). This asked for "1H" for every
     # sleeve. While H1 was the only chart the desk collected that was merely redundant; the
     # moment an M15 certificate exists it becomes a silent defect -- the executor would evaluate
