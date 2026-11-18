@@ -141,7 +141,7 @@ def _run(paths: me.Paths, fake: Fake, now: datetime = T0, minted: list[Any] | No
 def _pages(n_eia: int = 320, n_tic: int = 60) -> dict[str, bytes]:
     return {"eia_gas_storage": eia_page(eia_weeks(n_eia, date(2026, 11, 13))),
             "usda_export_sales": usda_page(date(2026, 11, 13)),
-            "tic_foreign_flows": tic_page([(p, 1000.0 + 10 * i) for i, p in
+            "tic_foreign_flows": tic_page([(p, 1000.0 + 10 * i + 50.0 * ((i * 7) % 11)) for i, p in
                                            enumerate(months_back(n_tic, "2026-09"))])}
 
 
