@@ -169,10 +169,49 @@ def default_get(url: str, timeout: float) -> tuple[int, bytes, str]:
         return int(exc.code), body, str(exc.headers.get("Content-Type", "") if exc.headers else "")
 
 
+#: How far into a robots body the HTML markers are looked for (the same 512 as #1343's
+#: libs/data/robots_body.py).
+_SNIFF = 512
+
+
 def _looks_html(body: bytes) -> bool:
-    head = body[:400].lstrip().lower()
-    return head.startswith((b"<!doctype", b"<html", b"<head", b"<?xml-stylesheet")) or \
-        b"<html" in head
+    """FAILS CLOSED. A real robots file never starts with "<": a WAF page may open with <body>,
+    a comment or a bare <?xml, so ANY leading "<" is markup, as is "<html" or "<!doctype"
+    anywhere in the first 512 characters (case-insensitive)."""
+    text = body[: _SNIFF * 4].decode("utf-8", errors="replace")
+    if text.lstrip("\ufeff \t\r\n\f\v").startswith("<"):
+        return True
+    low = text[:_SNIFF].lower()
+    return "<html" in low or "<!doctype" in low
+
+
+def _robots_rules_or_refusal(status: int | None, content_type: str | None,
+                             body: bytes | None) -> urllib.robotparser.RobotFileParser | str:
+    """Parsed rules, or a refusal string. SAME SIGNATURE AND CONTRACT as
+    `libs.data.robots_body.robots_rules_or_refusal` (#1343, not on LIVE yet): when #1343 merges,
+    this function is deleted and the one call in `robots_refusal` imports that one instead.
+    Holds (401/403/451 until released, 429 for 24h) are mapped BEFORE this is called."""
+    code = int(status or 0)
+    if code in (404, 410):
+        rp = urllib.robotparser.RobotFileParser()
+        rp.parse([])
+        return rp
+    if code in (401, 403, 429, 451):
+        return f"ROBOTS_HARD_STOP: robots.txt HTTP {code}"
+    if code == 0:
+        return "ROBOTS_UNREAD: robots.txt unreachable"
+    if not 200 <= code < 300:
+        return f"ROBOTS_UNREAD: robots.txt HTTP {code}"
+    ctype = str(content_type or "").split(";", 1)[0].strip().lower()
+    if ctype in ("text/html", "application/xhtml+xml"):
+        return f"ROBOTS_UNREAD: robots.txt answered HTML ({ctype})"
+    if ctype and not ctype.startswith("text/"):
+        return f"ROBOTS_UNREAD: robots.txt answered {ctype}, not text"
+    if _looks_html(body or b""):
+        return "ROBOTS_UNREAD: robots.txt answered HTML, which counts as unread"
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse((body or b"").decode("utf-8", errors="replace").splitlines())
+    return rp
 
 
 def is_waf(body: bytes) -> bool:
@@ -226,15 +265,11 @@ def robots_refusal(url: str, get: Getter, timeout: float, now: datetime
     hold = hold_for(status, body, now)
     if hold:
         return f"{hold['hold']}: robots.txt answered {hold['why']}", hold
-    if status in (404, 410):
-        return None, None
-    if status != 200:
-        return f"ROBOTS_UNREAD: robots.txt answered HTTP {status}", None
-    if "html" in ctype.lower() or _looks_html(body):
-        return "ROBOTS_UNREAD: robots.txt answered HTML, which counts as unread", None
-    rp = urllib.robotparser.RobotFileParser()
-    rp.parse(body.decode("utf-8", errors="replace").splitlines())
-    if not rp.can_fetch(ROBOTS_AGENT, url):
+    # ONE LINE TO SWITCH when #1343 lands: libs.data.robots_body.robots_rules_or_refusal.
+    rules = _robots_rules_or_refusal(status, ctype, body)
+    if isinstance(rules, str):
+        return rules, None
+    if not rules.can_fetch(ROBOTS_AGENT, url):
         return f"ROBOTS_REFUSED: robots.txt disallows {parts.path or '/'}", None
     return None, None
 

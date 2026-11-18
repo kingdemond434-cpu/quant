@@ -185,3 +185,35 @@ def test_a_language_without_a_lexicon_is_unmeasured_not_scored_in_english(monkey
 def test_the_agent_is_honest_and_names_the_organ() -> None:
     assert pdn.HONEST_UA.startswith(pdn.ROBOTS_AGENT) and "Mozilla" not in pdn.HONEST_UA
     assert "policy_doc_nlp" in pdn.HONEST_UA
+
+
+def test_robots_markup_fails_closed_however_it_opens(monkeypatch, tmp_path) -> None:
+    """A WAF page served as text/plain that opens with <body>, a comment or a bare <?xml is
+    markup, not rules: unread, so refused, and the listing is never requested."""
+    _point(monkeypatch, tmp_path)
+    for body in (b"<body><h1>Checking your browser</h1></body>",
+                 b"\n  <!-- edge 7f3a --><div>blocked</div>",
+                 b'<?xml version="1.0"?><error>denied</error>',
+                 b"User-agent: *\nAllow: /\n<!DOCTYPE html><html>tail</html>"):
+        seen: list[str] = []
+        table = {"https://bank.example.org/robots.txt": (200, body, "text/plain")}
+        doc = pdn.run(now=NOW, get=_getter(table, seen), sources=[_open_src()])
+        assert doc["sources"]["test_bank"]["status"] == "ROBOTS_UNREAD", body
+        assert seen == ["https://bank.example.org/robots.txt"]
+    assert pdn._looks_html(b"\xef\xbb\xbf<html>")
+    assert not pdn._looks_html(b"User-agent: *\nDisallow:\n")
+
+
+def test_robots_hold_mapping_is_kept_and_non_text_is_unread(monkeypatch, tmp_path) -> None:
+    _point(monkeypatch, tmp_path)
+    for status, want in ((401, pdn.HELD_UNTIL_RELEASED), (403, pdn.HELD_UNTIL_RELEASED),
+                         (451, pdn.HELD_UNTIL_RELEASED), (429, pdn.HELD_24H)):
+        (tmp_path / "state.json").unlink(missing_ok=True)
+        table = {"https://bank.example.org/robots.txt": (status, b"", "text/plain")}
+        doc = pdn.run(now=NOW, get=_getter(table, []), sources=[_open_src()])
+        assert doc["sources"]["test_bank"]["status"] == want
+    (tmp_path / "state.json").unlink(missing_ok=True)
+    table = {"https://bank.example.org/robots.txt": (200, b"User-agent: *\nAllow: /\n",
+                                                     "application/octet-stream")}
+    doc = pdn.run(now=NOW, get=_getter(table, []), sources=[_open_src()])
+    assert doc["sources"]["test_bank"]["status"] == "ROBOTS_UNREAD"
