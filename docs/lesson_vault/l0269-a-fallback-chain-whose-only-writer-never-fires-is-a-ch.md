@@ -1,6 +1,6 @@
 ---
 id: L0269
-cost: the desk's most important state dimension unjudged since it was written
+cost: blind
 tags: ["broker-clock", "session", "state-admission", "fallbacks"]
 ---
 
@@ -10,7 +10,7 @@ A fallback chain whose only writer never fires is a chain with one tier. `sessio
 
 ## Evidence
 
-10 majors place the volume trough at stamp hour 00 (8-14% of the median hour), unanimously +2 vs the 22:00 UTC rollover; session went UNJUDGED -> RETAIN_SHRUNK, 8 buckets, 258 test trades, t=-1.57
+10 majors place the volume trough at stamp hour 00 (8-14% of the median hour), unanimously +2 vs the 22:00 UTC rollover; session went UNJUDGED -> RETAIN_SHRUNK, 8 buckets, 258 test trades, t=-1.57 [cost as recorded: the desk's most important state dimension unjudged since it was written]
 
 ## Tags
 
@@ -22,7 +22,7 @@ A fallback chain whose only writer never fires is a chain with one tier. `sessio
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0010-textbook-mechanisms-on-daily-bars-are-picked-clean-spe]]
 - [[l0045-an-empty-forward-slot-buys-no-safety-holm-is-priced-at]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
 - [[l0049-a-checklist-that-fires-on-recall-is-not-a-control-if-a]]
+- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
-- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
-- [[l0058-check-the-as-of-date-of-a-ratio-s-denominator-separate]]

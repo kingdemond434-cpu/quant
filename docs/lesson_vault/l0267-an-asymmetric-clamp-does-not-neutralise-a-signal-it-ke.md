@@ -1,6 +1,6 @@
 ---
 id: L0267
-cost: nine of eleven research arms allocated on price alone
+cost: wasted
 tags: ["bandit", "research-allocation", "clamp", "breadth"]
 ---
 
@@ -10,7 +10,7 @@ An asymmetric clamp does not neutralise a signal, it keeps half of it. The resea
 
 ## Evidence
 
-RESEARCH_BANDIT.json 2026-09-04: worth=1.000 for all 11 arms, born=0 for 9 of them; after the fix corr(share,1/cost) = -0.38 and breadth-buying arms went 20.6% -> 54.6%
+RESEARCH_BANDIT.json 2026-09-04: worth=1.000 for all 11 arms, born=0 for 9 of them; after the fix corr(share,1/cost) = -0.38 and breadth-buying arms went 20.6% -> 54.6% [cost as recorded: nine of eleven research arms allocated on price alone]
 
 ## Tags
 

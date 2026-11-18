@@ -1,6 +1,6 @@
 ---
 id: L0262
-cost: mined strategies tested on the wrong chart
+cost: wasted
 tags: ["timeframes", "miners", "grading", "false-negative"]
 ---
 
@@ -10,7 +10,7 @@ A hardcoded chart's severity depends entirely on where it sits, so grade the hit
 
 ## Evidence
 
-PIPELINE 280, MINER_SOURCE 4, OTHER 39, THROWAWAY 33
+PIPELINE 280, MINER_SOURCE 4, OTHER 39, THROWAWAY 33 [cost as recorded: mined strategies tested on the wrong chart]
 
 ## Tags
 
@@ -18,11 +18,11 @@ PIPELINE 280, MINER_SOURCE 4, OTHER 39, THROWAWAY 33
 
 ## Related
 
+- [[l0005-when-a-claim-is-checkable-in-one-command-checking-is-c]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
 - [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
+- [[l0034-never-slide-a-signal-parameter-to-clear-an-observation]]
 - [[l0051-an-inert-gate-s-constants-are-never-calibrated-so-wiri]]
+- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
 - [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
-- [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]
-- [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
-- [[l0067-before-replacing-a-fabricated-default-with-unmeasured-]]
-- [[l0070-a-detector-that-has-never-fired-is-not-evidence-of-hea]]
+- [[l0060-rank-a-mined-comment-tree-by-mechanism-keyword-density]]

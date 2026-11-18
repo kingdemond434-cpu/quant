@@ -1,6 +1,6 @@
 ---
 id: L0245
-cost: would have manufactured corroboration that never existed
+cost: blind
 tags: ["frontier", "evidence", "genealogy"]
 ---
 
@@ -10,7 +10,7 @@ Ten reposts are not ten confirmations. One origin travelling through a forum, tw
 
 ## Evidence
 
-claims.independent_sources clusters by 5-word shingle overlap at 0.35 and counts distinct origins, not rows
+claims.independent_sources clusters by 5-word shingle overlap at 0.35 and counts distinct origins, not rows [cost as recorded: would have manufactured corroboration that never existed]
 
 ## Tags
 
@@ -18,11 +18,11 @@ claims.independent_sources clusters by 5-word shingle overlap at 0.35 and counts
 
 ## Related
 
+- [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
+- [[l0094-a-coverage-metric-pinned-exactly-constant-for-hundreds]]
 - [[l0098-before-combining-p-values-check-the-sub-periods-do-not]]
+- [[l0110-before-reporting-that-two-independent-estimates-agree-]]
 - [[l0112-a-gate-whose-trigger-population-includes-work-the-desk]]
-- [[l0184-prove-pagination-moves-before-trusting-any-multi-page-]]
-- [[l0188-a-track-record-ground-has-two-independent-routes-per-e]]
-- [[l0190-group-scope-every-robots-txt-read-against-the-desk-s-o]]
-- [[l0226-independence-is-bought-in-units-of-input-fields-never-]]
-- [[l0247-an-organ-s-freshness-must-not-be-a-function-of-how-lon]]
-- [[l0264-a-correct-subtraction-over-two-different-populations-i]]
+- [[l0137-before-minting-a-module-grep-for-the-capability-not-ju]]
+- [[l0139-when-a-fence-claims-it-cannot-be-gamed-list-the-verbs-]]
+- [[l0146-a-test-that-redirects-a-module-s-own-paths-can-still-w]]

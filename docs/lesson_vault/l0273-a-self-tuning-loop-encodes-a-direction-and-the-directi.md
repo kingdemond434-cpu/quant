@@ -1,6 +1,6 @@
 ---
 id: L0273
-cost: two caps that could never re-certify themselves
+cost: blind
 tags: ["rails", "calibration", "caps", "growth-governance"]
 ---
 
@@ -10,7 +10,7 @@ A self-tuning loop encodes a DIRECTION, and the direction is not the same for ev
 
 ## Evidence
 
-family_cap and sleeve_share_cap were binary rails producing review tasks; hazard_shrink and position_inertia had been walking for days
+family_cap and sleeve_share_cap were binary rails producing review tasks; hazard_shrink and position_inertia had been walking for days [cost as recorded: two caps that could never re-certify themselves]
 
 ## Tags
 
@@ -21,8 +21,8 @@ family_cap and sleeve_share_cap were binary rails producing review tasks; hazard
 - [[l0001-a-heartbeat-proves-the-loop-is-alive-never-that-the-pi]]
 - [[l0009-campaign-width-buys-nothing-and-length-buys-everything]]
 - [[l0012-no-economic-mechanism-means-overfit-a-hard-kill-not-a-]]
+- [[l0034-never-slide-a-signal-parameter-to-clear-an-observation]]
 - [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
+- [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
 - [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
 - [[l0065-a-green-local-gate-proves-nothing-unless-the-installed]]
-- [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
-- [[l0079-grep-for-a-governance-flag-s-consumers-not-its-writers]]

@@ -1,6 +1,6 @@
 ---
 id: L0256
-cost: a capability reporting PARTIAL on a file nobody can open
+cost: blind
 tags: ["paths", "ontology", "two-root", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ The two-root confusion again: research organs live under desks/mt5/, publication
 
 ## Evidence
 
-1 of 43 declared owners did not exist on disk; found by a test asserting every owner resolves
+1 of 43 declared owners did not exist on disk; found by a test asserting every owner resolves [cost as recorded: a capability reporting PARTIAL on a file nobody can open]
 
 ## Tags
 
@@ -19,10 +19,10 @@ The two-root confusion again: research organs live under desks/mt5/, publication
 ## Related
 
 - [[l0003-on-a-two-venue-hedge-measure-both-legs-the-same-way-ac]]
+- [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0012-no-economic-mechanism-means-overfit-a-hard-kill-not-a-]]
 - [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
 - [[l0028-price-a-filter-in-both-errors-before-shipping-it-a-luc]]
-- [[l0064-when-two-organs-read-the-same-source-share-the-filter-]]
-- [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
-- [[l0068-to-prove-a-failing-test-is-environment-rather-than-you]]
-- [[l0070-a-detector-that-has-never-fired-is-not-evidence-of-hea]]
+- [[l0040-a-required-argument-nobody-computes-is-a-dead-code-pat]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
+- [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]

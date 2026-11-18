@@ -1,6 +1,6 @@
 ---
 id: L0266
-cost: a removed cap that removed nothing for two days
+cost: blind
 tags: ["heat", "ceiling", "money-path", "dead-removal"]
 ---
 
@@ -10,7 +10,7 @@ A constant removed at the POLICY layer keeps binding wherever it is also the SAM
 
 ## Evidence
 
-5 live binding sites found on 2026-09-07 after the 2026-09-05 removal; corr(share, 1/cost)=0.87 was the analogous defect in the research bandit
+5 live binding sites found on 2026-09-07 after the 2026-09-05 removal; corr(share, 1/cost)=0.87 was the analogous defect in the research bandit [cost as recorded: a removed cap that removed nothing for two days]
 
 ## Tags
 
@@ -22,7 +22,7 @@ A constant removed at the POLICY layer keeps binding wherever it is also the SAM
 - [[l0002-paginate-every-venue-history-endpoint-truncation-is-th]]
 - [[l0004-a-committed-fix-is-inert-until-the-process-actually-re]]
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
+- [[l0009-campaign-width-buys-nothing-and-length-buys-everything]]
 - [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
-- [[l0036-a-0-guard-does-not-survive-floating-point-dust-use-a-m]]
-- [[l0049-a-checklist-that-fires-on-recall-is-not-a-control-if-a]]
-- [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
+- [[l0027-a-constant-that-was-never-measured-is-a-guess-wearing-]]
+- [[l0031-the-backtest-gauntlet-is-a-screen-with-zero-promotion-]]

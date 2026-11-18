@@ -28,3 +28,6 @@ ADVERSARIAL_REVIEW_RUBRIC class 8; the same asymmetry that makes a pre-filter's 
 - [[l0165-enumerate-a-bulk-archive-with-curl-raw-counts-never-th]]
 - [[l0182-measure-a-producer-s-health-as-usable-output-never-as-]]
 - [[l0204-before-reporting-a-file-as-missing-ask-whether-this-ho]]
+- [[l0336-a-stop-loss-and-the-opposite-leg-of-a-bracket-at-the-s]]
+- [[l0376-slot-scarcity-was-a-self-imposed-evidence-bottleneck-n]]
+- [[l0378-classify-to-route-use-never-to-stop-mining-the-lawful-]]

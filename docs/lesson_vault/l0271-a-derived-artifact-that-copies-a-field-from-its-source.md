@@ -1,6 +1,6 @@
 ---
 id: L0271
-cost: a repair that corrected 27 symbols and changed nothing
+cost: wasted
 tags: ["provenance", "snapshots", "execution", "cost"]
 ---
 
@@ -10,7 +10,7 @@ A derived artifact that COPIES a field from its source freezes that field at bui
 
 ## Evidence
 
-after --apply, n_measured stayed 0 until the denominator was switched to the live registry, then went to 12
+after --apply, n_measured stayed 0 until the denominator was switched to the live registry, then went to 12 [cost as recorded: a repair that corrected 27 symbols and changed nothing]
 
 ## Tags
 

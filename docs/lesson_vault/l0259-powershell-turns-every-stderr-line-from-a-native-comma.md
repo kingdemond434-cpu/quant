@@ -1,6 +1,6 @@
 ---
 id: L0259
-cost: the adoption aborted before it touched one file
+cost: slow
 tags: ["powershell", "windows", "native-commands", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ PowerShell turns every stderr LINE from a native command into an ErrorRecord, an
 
 ## Evidence
 
-Adopt-Release.ps1:196 NativeCommandError on the fetch, on the box's first real run; sync_shadow_to_git.ps1 already carried the correct guard with a comment 60 lines above a second call that lacked it
+Adopt-Release.ps1:196 NativeCommandError on the fetch, on the box's first real run; sync_shadow_to_git.ps1 already carried the correct guard with a comment 60 lines above a second call that lacked it [cost as recorded: the adoption aborted before it touched one file]
 
 ## Tags
 
@@ -19,10 +19,10 @@ Adopt-Release.ps1:196 NativeCommandError on the fetch, on the box's first real r
 ## Related
 
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
+- [[l0008-when-a-gate-looks-too-harsh-hunt-for-a-double-correcti]]
 - [[l0018-one-config-line-drifting-from-its-siblings-kills-organ]]
+- [[l0028-price-a-filter-in-both-errors-before-shipping-it-a-luc]]
 - [[l0037-garman-klass-is-provably-non-negative-on-any-real-bar-]]
+- [[l0040-a-required-argument-nobody-computes-is-a-dead-code-pat]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
 - [[l0049-a-checklist-that-fires-on-recall-is-not-a-control-if-a]]
-- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
-- [[l0064-when-two-organs-read-the-same-source-share-the-filter-]]
-- [[l0069-a-sibling-can-claim-your-l1-x-number-mid-build-check-t]]
-- [[l0071-a-negative-exit-code-is-a-verdict-about-the-box-never-]]

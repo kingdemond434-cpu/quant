@@ -1,6 +1,6 @@
 # Desk lessons
 
-326 lessons, generated from `docs/desk_lessons.jsonl`.
+392 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -18,36 +18,36 @@ there dilutes the lessons that do apply.
 
 ## Tags
 
-- #governance (30)
-- #ops (21)
-- #measurement (17)
+- #governance (52)
+- #ops (31)
+- #research (27)
+- #measurement (18)
 - #statistics (17)
-- #research (14)
+- #execution (15)
+- #wiring (14)
+- #data (13)
 - #verification (13)
 - #design (13)
 - #priors (11)
+- #testing (11)
 - #validation (10)
-- #testing (10)
-- #execution (9)
-- #data (8)
+- #money-path (9)
 - #mining (8)
+- #scheduling (7)
 - #silent-failure (7)
-- #wiring (7)
+- #plumbing (7)
 - #provenance (6)
+- #clocks (6)
 - #frontier (6)
+- #monitoring (5)
 - #fences (5)
+- #scheduler (5)
 - #windows (5)
+- #coverage (5)
+- #release (5)
 - #staleness (5)
 - #breadth (5)
-- #monitoring (4)
-- #ci (4)
-- #scheduling (4)
-- #coverage (4)
-- #free-data (4)
-- #sizing (4)
-- #money-path (4)
-- #allocator (4)
-- #research-loop (4)
+- #allocator (5)
 
 ## All lessons
 
@@ -377,3 +377,69 @@ there dilutes the lessons that do apply.
 - [[l0324-before-concluding-data-was-never-recorded-look-beside-]]
 - [[l0325-refusing-an-over-sized-book-is-not-the-conservative-ou]]
 - [[l0326-a-cost-the-backtest-engine-does-not-model-cannot-be-st]]
+- [[l0327-when-a-new-consumer-for-a-previously-useless-artifact-]]
+- [[l0328-a-get-against-a-field-name-that-does-not-exist-returns]]
+- [[l0329-n-eff-is-the-gating-variable-on-leverage-and-the-desk-]]
+- [[l0330-an-edge-materially-larger-than-the-best-documented-pub]]
+- [[l0331-copy-trading-and-retail-track-record-platforms-darwine]]
+- [[l0332-before-acting-on-a-branches-have-diverged-by-n-commits]]
+- [[l0333-a-certificate-is-perishable-so-replacement-rate-matter]]
+- [[l0334-a-gate-that-cannot-run-does-not-hold-the-line-at-its-l]]
+- [[l0335-when-a-sleeve-reports-no-signal-prove-the-signal-funct]]
+- [[l0336-a-stop-loss-and-the-opposite-leg-of-a-bracket-at-the-s]]
+- [[l0337-when-a-detector-reports-zero-occurrences-of-the-thing-]]
+- [[l0338-every-ground-converts-to-cells-any-source-ground-feed-]]
+- [[l0339-every-mined-row-must-reach-a-terminal-disposition-a-ce]]
+- [[l0340-every-producer-produces-or-it-is-replaced-by-a-named-a]]
+- [[l0341-read-your-broker-s-regulatory-disclosures-before-infer]]
+- [[l0342-no-source-is-ever-blocked-for-want-of-a-collector-a-de]]
+- [[l0343-a-missing-scheduled-task-is-invisible-to-every-artifac]]
+- [[l0344-the-condition-params-envelope-fault-recurs-because-eac]]
+- [[l0345-a-timeout-is-not-a-liveness-check-lock-by-owner-pid-ne]]
+- [[l0346-join-the-allocator-s-book-to-the-registry-by-derived-i]]
+- [[l0347-re-evaluate-a-stored-admission-verdict-before-trusting]]
+- [[l0348-when-a-lane-has-never-once-succeeded-suspect-the-contr]]
+- [[l0349-never-let-a-covariance-that-needs-overlapping-history-]]
+- [[l0350-register-every-unattended-task-with-the-system-princip]]
+- [[l0351-a-migration-is-not-done-when-the-new-box-trades-it-is-]]
+- [[l0352-lay-a-family-sleeve-s-bracket-from-the-entry-the-venue]]
+- [[l0353-one-gateway-process-one-lock-rule-and-passes-aligned-t]]
+- [[l0354-judge-a-family-on-its-pooled-live-record-and-act-on-th]]
+- [[l0355-no-forward-lane-may-sit-inactive-and-no-certificate-ma]]
+- [[l0356-an-organ-that-publishes-a-verdict-nobody-consumes-or-t]]
+- [[l0357-a-cycle-whose-legs-budgets-sum-past-its-task-limit-run]]
+- [[l0358-building-faster-than-wiring-produces-a-tree-full-of-or]]
+- [[l0359-a-store-that-nothing-writes-is-a-claim-not-a-record-wh]]
+- [[l0360-every-directory-an-organ-writes-is-state-wherever-it-l]]
+- [[l0361-research-producers-run-as-24-7-residents-department-re]]
+- [[l0362-wiring-and-clocks-are-never-queued-the-wirer-runs-hour]]
+- [[l0363-every-certificate-and-every-stopped-or-stale-clock-get]]
+- [[l0364-no-dataset-sits-in-storage-laws-5c-every-ingested-unit]]
+- [[l0365-stop-a-live-mechanism-at-the-admission-doors-never-by-]]
+- [[l0366-legality-is-a-surgical-router-never-a-research-brake-c]]
+- [[l0367-read-a-singleton-lock-s-unreadability-as-proof-of-life]]
+- [[l0368-launch-every-budgeted-child-through-libs-ops-proctree-]]
+- [[l0369-keep-one-certificate-lane-and-audit-every-derived-stor]]
+- [[l0370-wiring-is-measured-by-the-classifier-as-much-as-by-the]]
+- [[l0371-prove-a-scheduled-clock-by-observation-every-pass-pres]]
+- [[l0372-register-a-repeating-box-task-as-a-daily-trigger-with-]]
+- [[l0373-spawn-every-subprocess-through-libs-ops-proctree-run-a]]
+- [[l0374-a-green-producer-is-not-a-written-artifact-check-the-l]]
+- [[l0375-compare-the-path-a-consumer-reads-with-the-path-its-pr]]
+- [[l0376-slot-scarcity-was-a-self-imposed-evidence-bottleneck-n]]
+- [[l0377-an-hourly-deployment-must-not-spend-its-lock-window-on]]
+- [[l0378-classify-to-route-use-never-to-stop-mining-the-lawful-]]
+- [[l0379-nothing-is-queued-a-row-is-processed-on-arrival-and-wh]]
+- [[l0380-a-certificate-store-needs-one-pen-and-a-restorer-on-a-]]
+- [[l0381-measure-a-forward-clock-s-liveness-against-the-engine-]]
+- [[l0382-when-you-write-an-organ-that-fetches-read-docs-laws-md]]
+- [[l0383-never-ratchet-a-quantity-that-moves-with-the-clock-bef]]
+- [[l0384-when-a-producer-is-dark-measure-which-of-the-five-caus]]
+- [[l0385-before-any-pass-removes-a-row-prove-its-reference-stor]]
+- [[l0386-when-a-standing-law-makes-most-of-the-book-non-complia]]
+- [[l0387-a-forward-clock-exists-if-and-only-if-a-canonical-cert]]
+- [[l0388-check-a-scheduled-task-s-next-run-time-never-just-that]]
+- [[l0389-if-git-c-work-tree-and-cd-are-refused-call-enterworktr]]
+- [[l0390-a-rail-whose-only-input-is-written-by-the-organ-its-ha]]
+- [[l0391-do-not-expect-a-gated-push-to-land-on-a-branch-another]]
+- [[l0392-corrects-l0052-treat-a-refusal-from-a-public-endpoint-]]

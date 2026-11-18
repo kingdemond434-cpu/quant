@@ -1,6 +1,6 @@
 ---
 id: L0244
-cost: every claim written in ordinary prose
+cost: blind
 tags: ["frontier", "ontology", "extraction", "silent-failure"]
 ---
 
@@ -10,7 +10,7 @@ A deliberately literal mapper needs something upstream that does the naming. ont
 
 ## Evidence
 
-'guy who used to work there says they run thousands of small models and average them' -> map_to_capabilities returned ()
+'guy who used to work there says they run thousands of small models and average them' -> map_to_capabilities returned () [cost as recorded: every claim written in ordinary prose]
 
 ## Tags
 
@@ -18,11 +18,11 @@ A deliberately literal mapper needs something upstream that does the naming. ont
 
 ## Related
 
+- [[l0012-no-economic-mechanism-means-overfit-a-hard-kill-not-a-]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
 - [[l0045-an-empty-forward-slot-buys-no-safety-holm-is-priced-at]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
+- [[l0049-a-checklist-that-fires-on-recall-is-not-a-control-if-a]]
 - [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
+- [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
-- [[l0071-a-negative-exit-code-is-a-verdict-about-the-box-never-]]
-- [[l0077-a-single-tokenized-commodity-chart-cannot-tell-a-real-]]
-- [[l0085-in-any-counterfactual-estimator-a-period-where-the-eve]]
-- [[l0086-adding-a-doc-to-a-scanned-set-is-not-the-same-as-count]]
-- [[l0095-a-handed-defect-owed-work-list-is-a-snapshot-of-a-queu]]

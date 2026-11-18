@@ -1,6 +1,6 @@
 ---
 id: L0264
-cost: 23 phantom work items, and an afternoon chasing them
+cost: wasted
 tags: ["counting", "issue-board", "populations", "enrolment"]
 ---
 
@@ -10,7 +10,7 @@ A correct subtraction over two different populations is a wrong number that look
 
 ## Evidence
 
-check_enrolment_gap on the live box: 52/52 passed enrolment, 0 refused, 2 BLOCKED_NO_BARS; dashboard reported forward_clocks=29 and clockless=23
+check_enrolment_gap on the live box: 52/52 passed enrolment, 0 refused, 2 BLOCKED_NO_BARS; dashboard reported forward_clocks=29 and clockless=23 [cost as recorded: 23 phantom work items, and an afternoon chasing them]
 
 ## Tags
 
@@ -22,7 +22,7 @@ check_enrolment_gap on the live box: 52/52 passed enrolment, 0 refused, 2 BLOCKE
 - [[l0005-when-a-claim-is-checkable-in-one-command-checking-is-c]]
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0016-any-guard-whose-ambiguous-branch-allows-the-action-is-]]
+- [[l0027-a-constant-that-was-never-measured-is-a-guess-wearing-]]
 - [[l0044-removing-a-common-factor-manufactures-negative-residua]]
 - [[l0051-an-inert-gate-s-constants-are-never-calibrated-so-wiri]]
 - [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
-- [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]

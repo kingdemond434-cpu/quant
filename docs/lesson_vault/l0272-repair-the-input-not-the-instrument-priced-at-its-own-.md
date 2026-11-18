@@ -1,6 +1,6 @@
 ---
 id: L0272
-cost: would have shifted 28 posterior means on a producer bug
+cost: blind
 tags: ["execution", "cost", "provenance", "refusal"]
 ---
 
@@ -10,7 +10,7 @@ Repair the INPUT, not the instrument. Priced at its own fill hour against a brok
 
 ## Evidence
 
-EURUSD registry 0.0 vs its own bars 12.0; after repair GBPJPY_asia 1.15x, USDJPY 1.00x, AUDCHF 0.53x
+EURUSD registry 0.0 vs its own bars 12.0; after repair GBPJPY_asia 1.15x, USDJPY 1.00x, AUDCHF 0.53x [cost as recorded: would have shifted 28 posterior means on a producer bug]
 
 ## Tags
 
@@ -19,10 +19,10 @@ EURUSD registry 0.0 vs its own bars 12.0; after repair GBPJPY_asia 1.15x, USDJPY
 ## Related
 
 - [[l0001-a-heartbeat-proves-the-loop-is-alive-never-that-the-pi]]
+- [[l0034-never-slide-a-signal-parameter-to-clear-an-observation]]
+- [[l0047-before-penalising-a-quantity-check-it-is-not-already-i]]
 - [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
 - [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
 - [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
 - [[l0060-rank-a-mined-comment-tree-by-mechanism-keyword-density]]
-- [[l0063-run-a-leak-detector-on-data-you-know-is-clean-before-y]]
-- [[l0067-before-replacing-a-fabricated-default-with-unmeasured-]]

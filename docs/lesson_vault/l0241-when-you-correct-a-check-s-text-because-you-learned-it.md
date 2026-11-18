@@ -1,6 +1,6 @@
 ---
 id: L0241
-cost: told the principal a live gold book was armed when the gateway was refusing every order
+cost: blind
 tags: ["reporting", "severity"]
 ---
 
@@ -10,7 +10,7 @@ When you correct a check's TEXT because you learned its finding is more serious 
 
 ## Evidence
 
-check_gold_live reported the release verdict with INFO severity, written when I believed NEW_RISK_OK gated only the promoted lanes. On finding it also gates gold (gateway.py:2116, in the bracket loop's CALLER) I rewrote the message to 'NOTHING places until this is true ... GOLD is refused by this too' and left it INFO, so it never entered `blocking`. The box then printed that sentence and 'VERDICT: nothing on the money path refuses the gold book' in the same run, with NEW_RISK_OK=False.
+check_gold_live reported the release verdict with INFO severity, written when I believed NEW_RISK_OK gated only the promoted lanes. On finding it also gates gold (gateway.py:2116, in the bracket loop's CALLER) I rewrote the message to 'NOTHING places until this is true ... GOLD is refused by this too' and left it INFO, so it never entered `blocking`. The box then printed that sentence and 'VERDICT: nothing on the money path refuses the gold book' in the same run, with NEW_RISK_OK=False. [cost as recorded: told the principal a live gold book was armed when the gateway was refusing every order]
 
 ## Tags
 
@@ -18,11 +18,11 @@ check_gold_live reported the release verdict with INFO severity, written when I 
 
 ## Related
 
+- [[l0001-a-heartbeat-proves-the-loop-is-alive-never-that-the-pi]]
+- [[l0003-on-a-two-venue-hedge-measure-both-legs-the-same-way-ac]]
+- [[l0004-a-committed-fix-is-inert-until-the-process-actually-re]]
 - [[l0007-a-verdict-about-the-host-is-not-a-verdict-about-the-de]]
 - [[l0009-campaign-width-buys-nothing-and-length-buys-everything]]
+- [[l0015-walk-the-import-graph-a-one-hop-grep-proves-a-name-exi]]
+- [[l0017-a-pre-filter-s-false-negatives-are-structurally-invisi]]
 - [[l0023-never-accept-done-for-a-human-step-verify-with-the-act]]
-- [[l0040-a-required-argument-nobody-computes-is-a-dead-code-pat]]
-- [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
-- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
-- [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
-- [[l0061-before-grading-a-cross-venue-join-defect-check-whether]]
