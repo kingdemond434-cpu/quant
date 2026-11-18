@@ -1391,7 +1391,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
-                     "culture_gap_cells"),
+                     "culture_gap_cells", "asia_github"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -2336,6 +2336,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
     # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
     "culture_gap_cells": 300,
+    # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
+    # one README read per new repository; stops itself at its 900 s budget.
+    "asia_github": 1_000,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -6257,6 +6260,9 @@ def main() -> None:
     # day it landed on the container's data: 33 of 34 ZERO gaps left ZERO after one pass.
     cgc = _costed("culture_gap_cells", lambda: _producer(
         "culture_gap_cells", "research/culture_gap_cells.py", "--once", "--budget-s", "240"))
+    # ASIAN RETAIL QUANTS ON GITHUB (zuck 2026-11-18): their strategies, translated to exact
+    # MT5 analogues, plus their data-source lists. Heavy plan: an API walk, not an artifact read.
+    agh = _costed("asia_github", lambda: _producer("asia_github", "research/asia_github_miner.py"))
     gdp = _costed("ground_depth", lambda: _producer(
         "ground_depth", "research/ground_depth.py", "--once", "--budget-s", "600"))
     # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
@@ -6711,7 +6717,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc, "futures_state": fst,
+                    "culture_gap_cells": cgc, "asia_github": agh, "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
