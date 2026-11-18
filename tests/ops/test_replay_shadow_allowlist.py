@@ -176,9 +176,9 @@ def test_removing_or_reordering_a_base_entry_is_unmeasured(tmp_path: Path) -> No
 
 def test_a_missing_comma_or_duplicate_is_unmeasured(tmp_path: Path) -> None:
     no_comma = [*BASE_ENTRIES, f'    "{NEW}"']
-    assert any("commas" in p for p in _judge(tmp_path, no_comma))
+    assert any("commas" in p for p in _judge(tmp_path / "comma", no_comma))
     dup = _added(NEW, NEW)
-    assert any("twice" in p for p in _judge(tmp_path, dup))
+    assert any("twice" in p for p in _judge(tmp_path / "dup", dup))
 
 
 def test_no_added_path_is_not_measured(tmp_path: Path) -> None:
