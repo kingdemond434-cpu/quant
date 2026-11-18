@@ -16,7 +16,7 @@
  "last_sweep_s": 25613.0,
  "uptime_s": 132952.0,
  "last_sweep_ended_utc": "2026-11-18T07:16:52+00:00",
- "heartbeat_utc": "2026-11-18T14:20:11+00:00",
+ "heartbeat_utc": "2026-11-18T14:35:12+00:00",
  "sweep_phase": {
   "pid": 19640,
   "sweep_started_utc": "2026-11-18T07:16:59+00:00",
@@ -252,42 +252,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 60,
+     "samples": 90,
      "top": [
       {
        "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
-       "n": 16,
-       "share": 0.267
+       "n": 27,
+       "share": 0.3
       },
       {
        "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 14,
-       "share": 0.233
+       "n": 18,
+       "share": 0.2
       },
       {
        "stack": "datetimes.py:_new_DatetimeIndex:73 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
-       "n": 7,
-       "share": 0.117
+       "n": 9,
+       "share": 0.1
       },
       {
        "stack": "base.py:ensure_index:7659 < managers.py:__setstate__:1945 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
-       "n": 4,
+       "n": 6,
        "share": 0.067
       },
       {
-       "stack": "numeric.py:_frombuffer:1904 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
+       "stack": "managers.py:unpickle_block:1933 < managers.py:<genexpr>:1948 < managers.py:__setstate__:1947 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808",
        "n": 4,
-       "share": 0.067
+       "share": 0.044
       }
      ],
      "process": {
-      "cpu_s": 379.2,
-      "page_faults": 2762847.0,
-      "read_bytes": 2432270961.0,
-      "write_bytes": 430879324.0,
-      "sampled_s": 590.0,
-      "rss_mb_max": 8098.1,
-      "cpu_share_of_wall": 0.643
+      "cpu_s": 810.5,
+      "page_faults": 4410369.0,
+      "read_bytes": 4099015132.0,
+      "write_bytes": 430968545.0,
+      "sampled_s": 890.0,
+      "rss_mb_max": 9395.8,
+      "cpu_share_of_wall": 0.911
      }
     }
    }
