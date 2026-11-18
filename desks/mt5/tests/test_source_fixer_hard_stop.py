@@ -1,7 +1,10 @@
-"""source_fixer: 401/403/429/WAF is a hard stop held until a person releases it.
+"""source_fixer: 401/403/429/WAF is a hard stop; how long it is held depends on which no.
 
-No variant, no scheme/www swap and no Wayback lookup follows a refusal, and no timer lapses the
-hold. All network is faked; every request the module would make is counted.
+No variant, no scheme/www swap and no Wayback lookup follows a refusal. 401/403/WAF is access
+control: a site-wide hold no timer lapses, released only by a person. 429 is a rate refusal: a
+hold on that one source alone, lapsing on its own after HARD_STOP_H (24 h), retried once under
+the same honest client name. All network is faked; every request the module would make is
+counted.
 """
 from __future__ import annotations
 
@@ -47,11 +50,13 @@ def env(tmp_path, monkeypatch):
     (tmp_path / "asia_sources.json").write_text(json.dumps(
         {"sources": [{"id": "s1", "url": URL, "expect": "json"}]}))
     calls: list[str] = []
+    agents: list[str | None] = []
     answers: dict[str, Any] = {}
 
     def fake_urlopen(req, timeout=None, **_k):
         url = req if isinstance(req, str) else req.full_url
         calls.append(url)
+        agents.append(None if isinstance(req, str) else req.get_header("User-agent"))
         ans = answers.get(url, 404)
         if isinstance(ans, _Resp):
             return ans
@@ -62,14 +67,15 @@ def env(tmp_path, monkeypatch):
     def verdict(**row: Any) -> None:
         (tmp_path / "AC.json").write_text(json.dumps({"rows": [{"id": "s1", **row}]}))
 
-    return {"calls": calls, "answers": answers, "verdict": verdict, "tmp": tmp_path}
+    return {"calls": calls, "agents": agents, "answers": answers, "verdict": verdict,
+            "tmp": tmp_path}
 
 
 def _state(env) -> dict[str, Any]:
     return json.loads((env["tmp"] / "sfs.json").read_text())
 
 
-@pytest.mark.parametrize("code", [401, 403, 429])
+@pytest.mark.parametrize("code", [401, 403])
 def test_collector_refusal_makes_zero_requests_and_holds_for_a_person(env, code) -> None:
     env["verdict"](status="HTTP_ERROR", http=code)
     doc = source_fixer.run()
@@ -99,7 +105,75 @@ def test_variant_refusal_stops_every_further_request_including_wayback(env, code
     assert not any("archive.org" in c for c in env["calls"])
     assert doc["results"][0]["outcome"] == "HELD"
     host = source_fixer._host(first)
-    assert _state(env)["_holds"][f"site:{host}"]["released_by"] is None
+    holds = _state(env)["_holds"]
+    if code == 429:  # rate refusal: this source alone, on a timer
+        assert f"site:{host}" not in holds
+        assert holds["source:s1"]["release"] == "timer"
+    else:
+        assert holds[f"site:{host}"]["released_by"] is None
+
+
+def test_collector_429_holds_only_that_source_for_hard_stop_h(env: dict[str, Any]) -> None:
+    env["verdict"](status="HTTP_ERROR", http=429)
+    doc = source_fixer.run()
+    assert env["calls"] == []  # no variant, no www/bare, no http/https, no Wayback
+    (row,) = doc["results"]
+    assert row["outcome"] == "HELD"
+    holds = _state(env)["_holds"]
+    assert not any(k.startswith("site:") for k in holds)  # never the whole site
+    hold = holds["source:s1"]
+    assert hold["release"] == "timer" and hold["status"] == 429
+    assert hold["recheck_after_ts"] == pytest.approx(
+        hold["held_at"] + source_fixer.HARD_STOP_H * 3600)
+    assert source_fixer.HARD_STOP_H == 24.0
+    assert hold["missed_growth"]["delta_elogw"] == "UNMEASURED" and doc["n_held"] == 1
+
+
+def test_a_429_on_one_source_never_blocks_another_on_the_same_host(
+        env: dict[str, Any]) -> None:
+    other = "https://data.example.org/api/other.json"
+    (env["tmp"] / "asia_sources.json").write_text(json.dumps({"sources": [
+        {"id": "s1", "url": URL, "expect": "json"},
+        {"id": "s2", "url": other, "expect": "json"}]}))
+    (env["tmp"] / "AC.json").write_text(json.dumps({"rows": [
+        {"id": "s1", "status": "HTTP_ERROR", "http": 429},
+        {"id": "s2", "status": "ROUTE_CHANGED", "http": 200}]}))
+    fix = source_fixer.candidate_urls(other)[0]
+    env["answers"][fix] = _Resp(200, b'{"ok": 1}', "application/json")
+    doc = source_fixer.run()
+    out = {r["id"]: r for r in doc["results"]}
+    assert out["s1"]["outcome"] == "HELD"
+    assert out["s2"]["outcome"] == "REPAIRED" and env["calls"] == [fix]
+
+
+def test_429_hold_lapses_alone_and_retries_once_under_the_same_honest_ua(
+        env: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    env["verdict"](status="HTTP_ERROR", http=429)
+    source_fixer.run()
+    real = source_fixer.time.time
+    # 23 h on: the hold stands and no request is made.
+    monkeypatch.setattr(source_fixer.time, "time", lambda: real() + 23 * 3600)
+    assert source_fixer.run()["results"][0]["outcome"] == "HELD"
+    assert env["calls"] == []
+    # 25 h on, no person involved: one retry of the registered URL, same honest client name.
+    monkeypatch.setattr(source_fixer.time, "time", lambda: real() + 25 * 3600)
+    env["answers"][URL] = 429
+    doc = source_fixer.run()
+    assert env["calls"] == [URL]
+    assert env["agents"] == [source_fixer.USER_AGENT]
+    assert doc["results"][0]["outcome"] == "HELD"  # a second 429: a fresh 24 h hold
+    hold = _state(env)["_holds"]["source:s1"]
+    assert hold["released_by"] is None
+    assert hold["recheck_after_ts"] == pytest.approx(real() + 49 * 3600, abs=60)
+    # Another 25 h on, the host answers: the source recovered with no person and no override.
+    monkeypatch.setattr(source_fixer.time, "time", lambda: real() + 50 * 3600)
+    env["answers"][URL] = _Resp(200, b'{"ok": 1}', "application/json")
+    doc = source_fixer.run()
+    assert doc["results"][0]["outcome"] == "RECOVERED" and doc["n_held"] == 0
+    assert env["calls"] == [URL, URL]
+    assert set(env["agents"]) == {source_fixer.USER_AGENT}
+    reg = json.loads((env["tmp"] / "asia_sources.json").read_text())
+    assert "url_override" not in reg["sources"][0]
 
 
 def test_waf_body_on_a_variant_is_a_hard_stop(env) -> None:
@@ -110,8 +184,8 @@ def test_waf_body_on_a_variant_is_a_hard_stop(env) -> None:
     assert env["calls"] == [first] and doc["results"][0]["outcome"] == "HELD"
 
 
-def test_hold_never_lapses_and_only_a_person_releases_it(env, monkeypatch) -> None:
-    env["verdict"](status="HTTP_ERROR", http=429)
+def test_access_hold_never_lapses_and_only_a_person_releases_it(env, monkeypatch) -> None:
+    env["verdict"](status="HTTP_ERROR", http=403)
     source_fixer.run()
     # 400 days on, whatever any clock says, the hold stands.
     real = source_fixer.time.time

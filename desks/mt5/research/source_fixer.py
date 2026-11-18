@@ -17,12 +17,22 @@ source stays HTTP-dead for live collection: an archive is history, not a feed. A
 verdict a reader can act on, never a row that quietly stopped appearing.
 
 WHAT IT NEVER DOES. A source that answered 401/403/429 or a WAF/challenge page -- to the
-collector or to any variant probe here -- is a HARD STOP: no further variant, no scheme or
-`www` swap, no Wayback lookup. That is the site saying no, and trying its other doors or an
-archive of it is a route-around. The stop is recorded as a PERSON-RELEASED hold in this organ's
-own state (`_holds["site:<host>"]`, the record shape hard_stop and polite_fetch share, with
-`released_by` null and a missed_growth line). It never lapses on a timer; it stands until a
-person runs `source_fixer.py --release site:<host> --by <name>`. It does not touch a source
+collector or to any variant probe here -- is a HARD STOP for that pass: no further variant, no
+scheme or `www` swap, no Wayback lookup. That is the site saying no, and trying its other doors
+or an archive of it is a route-around. The stop is recorded as a hold in this organ's own state
+(`_holds`, the record shape hard_stop and polite_fetch share, with a missed_growth line), and
+the two kinds of no are held differently:
+
+- 401/403 and a WAF/challenge page are ACCESS CONTROL: a PERSON-RELEASED hold on the whole site
+  (`_holds["site:<host>"]`, `released_by` null). It never lapses on a timer; it stands until a
+  person runs `source_fixer.py --release site:<host> --by <name>`.
+- 429 is RATE REFUSAL, not a refusal of access: a TIMED hold on the ONE source that got it
+  (`_holds["source:<id>"]`, `release: "timer"`), lapsing on its own HARD_STOP_H (24 h) after it
+  was set. Nothing a person must do, and no other source on the host is held by it. The retry
+  after the lapse asks the registered URL once, under the same honest USER_AGENT (L0392: a
+  refusal is never a cue to come back under another name); a second 429 sets a fresh 24 h hold.
+
+It does not touch a source
 blocked by robots.txt, or one declared `key`/`paid` without a key; it never
 hammers a host (one variant per second, the collector's own politeness), and it never invents a
 URL that does not derive from the registered one.
@@ -48,8 +58,13 @@ OUT = BASE / "reports" / "SOURCE_FIXER.json"
 STATE = BASE / "data" / "lake" / "source_fixer_state.json"
 
 FIX_STATUSES = frozenset({"HTTP_ERROR", "UNREACHABLE", "ROUTE_CHANGED"})
-# Access control and rate refusal: a hard stop on the source, held until a person releases it.
+# Access control and rate refusal: a hard stop for the pass (no variant, no archive).
 HARD_STOP_HTTP = frozenset({401, 403, 429})
+# Access control: a site-wide hold that only a person releases.
+PERSON_HOLD_HTTP = frozenset({401, 403})
+# Rate refusal: a hold on the one source, lapsing on its own after HARD_STOP_H.
+TIMED_HOLD_HTTP = frozenset({429})
+HARD_STOP_H = 24.0
 SKIP_HTTP = HARD_STOP_HTTP
 # Bytes a WAF/bot-challenge interstitial carries in its first 4 KB (Cloudflare, Akamai,
 # Imperva, generic captcha walls). Matched lower-case.
@@ -164,15 +179,50 @@ def hold_row(url: str, verdict: str, status: int | None) -> dict[str, Any]:
                                         f"person releases {f'site:{host}'}")}}
 
 
-def _active(row: Any) -> bool:
-    # A row carrying a legacy recheck_after_ts is still active: time never releases a hold.
-    return isinstance(row, dict) and not row.get("released_by")
+def _source_key(sid: str) -> str:
+    return f"source:{sid}"
+
+
+def timed_hold_row(sid: str, url: str, status: int, now: float | None = None) -> dict[str, Any]:
+    """A 429 hold on ONE source: lapses on its own HARD_STOP_H after it was set, no person."""
+    held_at = time.time() if now is None else now
+    host = _host(url)
+    return {"key": _source_key(sid), "source": sid, "verdict": f"HTTP {status}",
+            "status": status, "host": host, "url": url[:300], "held_at": held_at,
+            "release": "timer", "recheck_after_ts": held_at + HARD_STOP_H * 3600.0,
+            "released_by": None, "released_at": None,
+            "missed_growth": {"delta_elogw": "UNMEASURED",
+                              "cause": (f"HTTP {status} from {host}: source {sid} is rate "
+                                        f"refused; it is retried, once and under the same "
+                                        f"honest client name, {HARD_STOP_H:g} h later")}}
+
+
+def _active(row: Any, now: float | None = None) -> bool:
+    if not isinstance(row, dict) or row.get("released_by"):
+        return False
+    if row.get("release") == "timer":  # a 429 hold: the clock releases it
+        try:
+            due = float(row["recheck_after_ts"])
+        except (KeyError, TypeError, ValueError):
+            return True  # an unreadable deadline never releases a hold
+        return (time.time() if now is None else now) < due
+    # A person-held row (no release: "timer") carrying a legacy recheck_after_ts is still
+    # active: time never releases access control.
+    return True
 
 
 def held_by(holds: dict[str, Any], url: str) -> dict[str, Any] | None:
     for k in _site_keys(_host(url)):
         if _active(holds.get(k)):
             return dict(holds[k])
+    return None
+
+
+def _lapsed_timed(holds: dict[str, Any], sid: str) -> dict[str, Any] | None:
+    row = holds.get(_source_key(sid))
+    if isinstance(row, dict) and row.get("release") == "timer" and not row.get("released_by") \
+            and not _active(row):
+        return row
     return None
 
 
@@ -291,10 +341,38 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
             results.append({"id": sid, "outcome": "HELD", "hold": standing,
                             "why": "person-released hold stands; no request is made"})
             continue
+        timed = holds.get(_source_key(sid))
+        if isinstance(timed, dict) and _active(timed):
+            results.append({"id": sid, "outcome": "HELD", "hold": dict(timed),
+                            "why": "429 hold stands until its own deadline; no request is made"})
+            continue
         stop = _verdict_hard_stop(verdict)
+        http = verdict.get("http") if isinstance(verdict.get("http"), int) else None
+        lapsed = _lapsed_timed(holds, sid)
+        if lapsed is not None:
+            # The 24 h are up: retire the hold and retry the registered URL once, under the
+            # same honest USER_AGENT. A 200 of the declared shape means the source recovered.
+            lapsed["released_by"] = "timer"
+            lapsed["released_at"] = time.time()
+            if stop and http in TIMED_HOLD_HTTP:
+                status, ctype, head = _probe(src_url)
+                ok = _acceptable(str(src.get("expect") or "any"), ctype, head)[0] \
+                    if status == 200 else False
+                if ok:
+                    results.append({"id": sid, "outcome": "RECOVERED", "url": src_url,
+                                    "why": "the 429 hold lapsed and the retry answered"})
+                    continue
+                http = status
+                stop = f"HTTP {status}" if status in HARD_STOP_HTTP else None
+        if stop and http in TIMED_HOLD_HTTP:
+            row = timed_hold_row(sid, src_url, int(http))
+            holds[row["key"]] = row
+            results.append({"id": sid, "outcome": "HELD", "hold": row,
+                            "why": (f"HTTP {http} is a rate refusal: this source alone is held "
+                                    f"{HARD_STOP_H:g} h; no variant, no Wayback")})
+            continue
         if stop:
-            row = hold_row(src_url, stop, verdict.get("http") if isinstance(
-                verdict.get("http"), int) else None)
+            row = hold_row(src_url, stop, http)
             holds[row["key"]] = row
             results.append({"id": sid, "outcome": "HELD", "hold": row,
                             "why": f"{stop} is a hard stop; no variant, no Wayback"})
@@ -315,8 +393,12 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
             status, ctype, head = _probe(cand)
             if status in HARD_STOP_HTTP:
                 tried.append({"url": cand, "status": status, "ok": False})
-                refused = hold_row(cand, f"HTTP {status} (a WAF/challenge page reads as 403)",
-                                   status)
+                if status in TIMED_HOLD_HTTP:
+                    refused = timed_hold_row(sid, cand, status)
+                else:
+                    refused = hold_row(cand,
+                                       f"HTTP {status} (a WAF/challenge page reads as 403)",
+                                       status)
                 holds[refused["key"]] = refused
                 break
             ok, _shape = (_acceptable(expect, ctype, head) if status == 200 else (False, ""))
@@ -360,7 +442,8 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
     if not dry_run:
         _write_atomic(STATE, json.dumps(fstate, indent=1))
     # Every standing hold, including one on a source the collector no longer lists as failed:
-    # a hold leaves this list only when a person releases it.
+    # a site hold leaves this list only when a person releases it, a 429 hold when its own
+    # HARD_STOP_H deadline passes.
     standing_holds = [dict(v) for _k, v in sorted(holds.items()) if _active(v)]
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -380,7 +463,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--budget", type=float, default=240.0)
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--release", metavar="KEY", help="release one person-held hold (site:<host>)")
+    ap.add_argument("--release", metavar="KEY",
+                    help="release one hold (site:<host>; a source:<id> 429 hold also lapses alone)")
     ap.add_argument("--by", metavar="NAME", help="the person releasing it")
     args = ap.parse_args(argv)
     if args.release:
