@@ -142,3 +142,11 @@ def test_the_leg_is_wired_hourly() -> None:
     assert "dormant_clock_sweep" in hc.CORE_LEGS
     src = (DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '"dormant_clock_sweep", "research/dormant_clock_sweep.py"' in src
+
+
+def test_certified_rows_are_unmeasured_when_nothing_authorizes_on_this_host() -> None:
+    rows = [{"name": "c1", "status": "STANDBY", "certificate": "external.X.c1"}]
+    doc = _build(rows, {"XAUUSD.london_am": {}, "XAUUSD.afternoon": {}}, cert_keys={})
+    row = next(r for r in doc["rows"] if r["name"] == "c1")
+    assert row["state"] == dcs.UNMEASURED
+    assert "CERTIFIED_NOT_CLOCKED" not in doc["counts"]

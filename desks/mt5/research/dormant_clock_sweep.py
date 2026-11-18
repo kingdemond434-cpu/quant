@@ -19,6 +19,8 @@ never starts a clock by hand. For every dormant row it measures one of:
                           pass enrols the clock automatically (certified_sleeves), a fail is the
                           desk's measured answer, recorded where every verdict is
   UNRESOLVED              no spec this organ can state exactly -- never guessed; named with why
+  UNMEASURED              a certified row on a host where NO certificate authorizes (an off-box
+                          tree with a stale canon): its clock state is the box's to measure
 
 Dormant means a roster row that is STANDBY (reversible, zero risk) plus every gateway window the
 live book zeroes by name. RETIRED rows are retirements on evidence and are counted, not swept.
@@ -194,6 +196,18 @@ def build(now: datetime | None = None, *, sleeves: Any = None, shadow: Any = Non
         name = str(r.get("name") or "")
         cert = r.get("certificate")
         cell = str(cert.get("cell") or "") if isinstance(cert, dict) else str(cert or "")
+        if cell and not cert_keys:
+            # NO certificate authorizes on this host at all. Measured 2026-11-18: that is an
+            # off-box tree reading a stale canon the box never publishes (UNIVERSAL_SURVIVORS.json
+            # is money evidence), while the box's own shadow_state holds these clocks. Calling
+            # every certified row CERTIFIED_NOT_CLOCKED here would be a status asserted where it
+            # could not be read (L1.28a), so it is UNMEASURED and the box's pass is the answer.
+            out_rows.append({"name": name, "kind": "standby", "state": UNMEASURED,
+                             "certificate": cell,
+                             "why": (cert_why or "no certificate authorizes on this host (canon "
+                                     "unreadable at the attestation in force); measured on the "
+                                     "box's own pass")})
+            continue
         if cell:
             key = cert_keys.get(cell)
             if key and key in clocks:
