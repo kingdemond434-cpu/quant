@@ -61,9 +61,12 @@ def gate_code(gate: Mapping[str, Any] | None) -> str:
     state = str(gate.get("state") or "")
     return {"pending": "GATE_PENDING", "success": "GATE_SUCCESS", "failure": "GATE_FAILURE",
             "error": "GATE_ERROR"}.get(state, "GATE_NONE")  # fmt: skip
-#: .github/scripts/audit_gate.py GATING_JOBS and REGISTRY_HOLD_H (pinned by the tests).
+#: .github/scripts/audit_gate.py GATING_JOBS, REGISTRY_HOLD_H and ROOT_REGISTRY_HOLD_H (pinned by
+#: the tests). The gate holds a CLEARed PR for no time (zuck 2026-11-13) unless it touches a ROOT
+#: path, which keeps the 24 h veto (#1088 MF1); `touches_root` is the gate's own, never a copy.
 GATING_JOBS = ("quality", "mt5-money-path", "coverage-floor")
-VETO_H = 24.0
+VETO_H = 0.0
+ROOT_VETO_H = 24.0
 REPORT = ROOT / "desks" / "mt5" / "reports" / "PR_BLOCKERS.json"
 UA = "pr-blockers"
 ORDER = ("CONFLICT", "AUDIT_MISSING", "AUDIT_HOLD", "AUDIT_STALE", "CI_FAILED", "CI_PENDING",
@@ -134,8 +137,10 @@ def classify(
     row: Mapping[str, Any] | None,
     ci: tuple[str, list[str]],
     gate: Mapping[str, Any] | None,
+    root: bool = False,
 ) -> dict[str, Any]:
-    """One PR's blocker, from facts only (pure: the tests drive it)."""
+    """One PR's blocker, from facts only (pure: the tests drive it). `root`: the PR touches a
+    ROOT path, so the gate's longer veto window applies."""
     head = str((pr.get("head") or {}).get("sha") or "")
     gate_at = gate_code(gate)
     found: list[str] = []
@@ -153,7 +158,8 @@ def classify(
         found.append("CI_PENDING")
     if row is not None and row.get("sha") == head and row.get("verdict") == "CLEAR":
         at = _ts(row.get("at"))
-        if at is not None and (now - at).total_seconds() / 3600.0 < VETO_H:
+        hold = max(VETO_H, ROOT_VETO_H) if root else VETO_H
+        if at is not None and (now - at).total_seconds() / 3600.0 < hold:
             found.append("VETO_WINDOW")
     if gate_at == "GATE_PATH_OFF":
         found.append("GATE_PATH_OFF")
@@ -272,8 +278,31 @@ def collect(repo: str, now: datetime, fetch: Fetch,
         gate = next((s for s in st.get("statuses") or [] if s.get("context") == GATE_STATUS), None)
         pr = {**p, "mergeable": detail.get("mergeable"),
               "mergeable_state": detail.get("mergeable_state")}  # fmt: skip
-        out.append(classify(now, pr, rows.get(n), ci_state(runs), gate))
+        row = rows.get(n)
+        root = False
+        if row is not None and row.get("sha") == head and row.get("verdict") == "CLEAR":
+            root = _touches_root(fetch, repo, n)
+        out.append(classify(now, pr, row, ci_state(runs), gate, root=root))
     return out
+
+
+def _touches_root(fetch: Fetch, repo: str, n: int) -> bool:
+    """The gate's own `touches_root` on the PR's files. Fails closed as the gate does: a file
+    list or a gate that cannot be read counts as ROOT, so the longer window is shown."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "audit_gate_ro", ROOT / ".github" / "scripts" / "audit_gate.py")
+        if spec is None or spec.loader is None:
+            return True
+        ag = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ag)
+        files = list(fetch(f"repos/{repo}/pulls/{n}/files?per_page=100") or [])
+        if len(files) >= 100:  # a full page may hide a ROOT path on page 2: fail closed
+            return True
+        return bool(ag.touches_root(files))
+    except Exception:  # fail closed, and no text reaches the published file
+        return True
 
 
 def unmeasured(pr: Mapping[str, Any], why: str) -> dict[str, Any]:
