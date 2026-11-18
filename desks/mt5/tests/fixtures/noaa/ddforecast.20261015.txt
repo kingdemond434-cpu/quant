@@ -1,0 +1,19 @@
+ MONTHLY TOTAL DEGREE DAY FORECAST
+ BASE 65 F
+ NWS CLIMATE PREDICTION CENTER  COLLEGE PARK MD
+ 300 PM EDT THU 15 OCT 2026
+
+ NEW ENGLAND        (CT ME MA NH RI VT)                   NORMALS       FORECAST
+                 HEATING              COOLING           (1981-2010)     DEPARTURE
+ YEAR MONTH  90%   MEAN    10%     90%   MEAN    10%      HDD    CDD    HDD    CDD
+ 2026  11   594.   704.   802.      0.     0.     0.     731.     0.   -27.     0.
+ 2026  12   872.  1030.  1165.      0.     0.     0.    1086.     0.   -56.     0.
+ 2027   1   976.  1184.  1409.      0.     0.     0.    1260.     0.   -76.     0.
+
+
+ MID ATLANTIC       (NJ NY PA)                            NORMALS       FORECAST
+                 HEATING              COOLING           (1981-2010)     DEPARTURE
+ YEAR MONTH  90%   MEAN    10%     90%   MEAN    10%      HDD    CDD    HDD    CDD
+ 2026  11   524.   636.   733.      0.     0.     0.     666.     0.   -30.     0.
+ 2026  12   793.   956.  1110.      0.     0.     0.    1010.     0.   -54.     0.
+ 2027   1   876.  1089.  1298.      0.     0.     0.    1162.     0.   -73.     0.

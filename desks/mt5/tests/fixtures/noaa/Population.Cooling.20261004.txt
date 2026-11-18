@@ -1,0 +1,14 @@
+Product: Daily Cooling Degree Days Forecast Based on NDFD Data Issued 0000UTC 20261004
+Regions: CPC::Regions::CensusDivisions
+Weights: Population
+Region|20261004|20261005|20261006|20261007|20261008|20261009|20261010|Total
+1|0|0|0|0|0|0|0|0
+2|0|0|0|0|0|0|0|0
+3|0|0|0|0|0|0|0|0
+4|0|0|0|2|1|2|4|9
+5|7|8|5|4|4|5|5|38
+6|6|4|3|3|3|3|4|26
+7|9|9|9|9|9|10|11|66
+8|6|6|6|6|6|6|5|41
+9|12|12|12|12|11|8|4|71
+CONUS|5|5|4|5|4|4|4|31
