@@ -4775,6 +4775,11 @@ def robots_gated_get(url: str, headers: dict[str, str] | None = None) -> tuple[b
     return http_get(url, headers)
 
 
+def _ym(s: str) -> date:
+    y, m = (int(x) for x in s.split("-")[:2])
+    return date(y, m, 1)
+
+
 def _months(start: str, end: date) -> list[tuple[int, int]]:
     y, m = (int(x) for x in start.split("-"))
     out = []
@@ -4811,7 +4816,7 @@ def collect_s2(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, 
         cursor = str(sst.get("s2_month") or S2_BACKFILL_FROM)
         live_from = (now.date().replace(day=1) - timedelta(days=1)).replace(day=1)
         months = _months(cursor, now.date())
-        caught_up = date(*(int(x) for x in cursor.split("-")), 1) >= live_from
+        caught_up = _ym(cursor) >= live_from
         if caught_up:
             months = _months(f"{live_from:%Y-%m}", now.date())
         else:                                   # the walk stops at the live window's edge
@@ -4864,21 +4869,19 @@ def collect_s2(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, 
             if not caught_up:
                 nxt = (date(y, m, 28) + timedelta(days=4)).replace(day=1)
                 sst["s2_month"] = f"{nxt:%Y-%m}"
-        caught_up = caught_up or date(*(int(x) for x in str(sst.get("s2_month") or
-                                                             S2_BACKFILL_FROM).split("-")),
-                                      1) >= live_from
+        caught_up = caught_up or _ym(str(sst.get("s2_month") or S2_BACKFILL_FROM)) >= live_from
         # The seen-set only has to cover the months still being listed: older rows are pruned
         # so the state stays a few hundred rows, never the whole archive.
         floor = (f"{live_from:%Y-%m}" if caught_up
                  else str(sst.get("s2_month") or S2_BACKFILL_FROM))
         sst["s2_seen"] = {k: v for k, v in (sst.get("s2_seen") or {}).items() if v >= floor}
     _atomic(scenes_p, scenes)
-    m = {"added": 0, "revised": 0}
+    merged = {"added": 0, "revised": 0}
     composed: list[Obs] = []
     if caught_up:
         composed = s2_dekads(scenes, now)
-        m = merge_vintages(store, src, composed, now)
-    return {"listed": listed, "fetched": fetched, "parsed": parsed, "merge": m,
+        merged = merge_vintages(store, src, composed, now)
+    return {"listed": listed, "fetched": fetched, "parsed": parsed, "merge": merged,
             "scenes_held": len(scenes), "dekads_composed": len(composed),
             "walk": ("live" if caught_up
                      else f"backfill at {sst.get('s2_month') or S2_BACKFILL_FROM}"),

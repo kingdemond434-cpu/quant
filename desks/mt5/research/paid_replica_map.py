@@ -38,20 +38,19 @@ catalogue it just loaded -- seeds, the robots-respecting listing crawl, and the 
      and write `reports/PAID_REPLICA_MAP.json` with the ranked table, every row's state and the
      coverage figure (share of rows BUILT or QUEUED; BUILT share beside it).
 
-Nothing here sizes, vetoes or trades. It ranks, cites and queues.
-
-    python research/paid_replica_map.py            # rank against the committed catalogue
+Nothing here sizes, vetoes or trades. It ranks, cites and queues. It is a LIBRARY of the
+`paid_substitute_engine` leg, not a separate clock: `python research/paid_substitute_engine.py
+--no-fetch --dry-run` runs it, and the ranked table lands in the engine's report.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import math
 import os
 import re
 import sys
 from collections import Counter
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -157,7 +156,7 @@ def _kw_hit(kw: str, text: str) -> bool:
     return re.search(pat, text) is not None
 
 
-def route(row: Mapping[str, Any], cats: list[Mapping[str, Any]]) -> str:
+def route(row: Mapping[str, Any], cats: Sequence[Mapping[str, Any]]) -> str:
     """The category a paid row is rebuilt under.
 
       1. a terminal product -> its parent's function group;
@@ -286,7 +285,7 @@ def row_state(row: Mapping[str, Any], cats_by_id: Mapping[str, Mapping[str, Any]
 
 
 # ----------------------------------------------------------------------------- build tasks
-def build_grounds(tasks: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def build_grounds(tasks: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Each unbuilt category as deep-forest `search` grounds over its named free inputs, in the
     shape `deep_forest_miner._queued_grounds` reads (name, route, queries)."""
     out: list[dict[str, Any]] = []
@@ -424,20 +423,3 @@ def _atomic(path: Path, doc: Any) -> None:
     tmp = path.with_suffix(path.suffix + f".tmp{os.getpid()}")
     tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), "utf-8")
     os.replace(tmp, path)
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    ap.add_argument("--dry-run", action="store_true", help="print the ranking, write nothing")
-    a = ap.parse_args(argv)
-    from research import paid_substitute_engine as pse
-    doc = run(pse.load_catalogue(), write=not a.dry_run)
-    for t in doc["ranked"]:
-        print(f"{t['rank']:>3} {t['roi']:>8.3f} {t['state']:<7} {t['id']}")
-    print(json.dumps({k: doc[k] for k in ("catalogue_rows", "row_states",
-                                          "coverage_built_or_queued", "built_share")}))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
