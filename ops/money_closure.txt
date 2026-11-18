@@ -148,6 +148,7 @@ libs/data/calendar.py
 libs/data/datahub.py
 libs/data/duckdb_client.py
 libs/data/errors.py
+libs/data/honest_ua.py
 libs/data/instruments.py
 libs/data/lake.py
 libs/data/medallion.py

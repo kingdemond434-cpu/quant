@@ -98,7 +98,21 @@ def test_no_module_impersonates_a_browser() -> None:
 #: data sent to every host (four audit HOLDs of this class on 2026-11-18: #1330, #1335, #1339,
 #: #1341). SEC EDGAR's required contact is the owner's own EDGAR_UA key, read at run time, never
 #: a literal, so it never appears here.
-UA_FORBIDDEN = re.compile(r"github\.com|gitlab\.com|kingdemond|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\."
+def _owner_handle() -> str:
+    """The repository owner's handle, read from the origin remote so the fence follows the repo
+    if it moves; the historic handle stands when no remote is readable (a tarball checkout)."""
+    import subprocess
+    try:
+        url = subprocess.run(["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True,
+                             text=True, timeout=10, check=False).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        url = ""
+    m = re.search(r"github\.com[:/]+([^/]+)/", url)
+    return m.group(1) if m else "kingdemond434-cpu"
+
+
+_HANDLE = re.escape(_owner_handle().split("-")[0])
+UA_FORBIDDEN = re.compile(rf"github\.com|gitlab\.com|{_HANDLE}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\."
                           r"[A-Za-z]{2,}")
 _UA_NAME = re.compile(r"(^|_)(UA|USER_AGENT|AGENT|HEADERS?)$|user_?agent", re.I)
 
@@ -149,7 +163,7 @@ def test_the_ua_scan_sees_each_shape() -> None:
     import tempfile
     src = ('UA = "x/1 (+https://github.com/someone/repo)"\n'
            'H = {"User-Agent": "bot me@example.org"}\n'
-           'cmd = ["curl", "-A", "kingdemond-bot", "u"]\n'
+           f'cmd = ["curl", "-A", "{_owner_handle()}-bot", "u"]\n'
            'OK_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"\n')
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "m.py"
