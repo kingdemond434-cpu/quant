@@ -1033,6 +1033,10 @@ def resume_order(chosen: list[str], cursor: dict[str, Any] | None) -> list[str]:
     return first + [t for t in chosen if t not in first]
 
 
+def _not_started(panel: Panel) -> str:
+    return f"panel {panel.target}: not started before the science deadline"
+
+
 def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: dict[str, Any],
                    census: dict[str, int], deadline: float | None = None,
                    clock: Any = None) -> dict[str, Any]:
@@ -1049,6 +1053,8 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
     if deadline is not None and started >= deadline:
         result["status"] = NOT_REACHED
         result["compute_s"] = 0.0
+        result["panels_not_reached"] = [p.target for p in panels]
+        result["unmeasured"] = [_not_started(p) for p in panels]
         return result
     try:
         kwargs = {"roi": roi, "operators_used": census} if tradition == "meta_mathematics" else {}
@@ -1066,8 +1072,7 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         left = float("inf") if deadline is None else deadline - clock()
         if left <= 0:
             result["panels_not_reached"] = [p.target for p in panels[i:]]
-            result["unmeasured"].append(f"{len(panels) - i} panel(s) not started before the "
-                                        f"science deadline")
+            result["unmeasured"].extend(_not_started(p) for p in panels[i:])
             break
         per_panel_now = min(per_panel, left)
         view = _copy_panel(panel)
