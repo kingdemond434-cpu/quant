@@ -77,6 +77,11 @@ LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 INTENTS = DATA / "order_intents.jsonl"
 DECISIONS = DATA / "decision_ledger.jsonl"
 SLEEVES = DATA / "sleeves.json"
+#: Gate 1's bookkeeping keys (frontier_identity.economic_prior, 2026-11-18): the prior verdict,
+#: its missing fields, where the prior came from and whether it bound. They describe the RECORD,
+#: not what the experiment was, so they stay out of the chain hash: a certificate minted after
+#: they existed must hash the same as one minted before for the same experiment.
+PRIOR_RECORD_KEYS = frozenset({"verdict", "missing", "prior_source", "binding"})
 REGISTRY = DATA / "sleeve_registry.json"
 CANON = DATA / "UNIVERSAL_SURVIVORS.canon.json"
 INPUT_IDENTITY = DATA / "input_identity.json"
@@ -335,7 +340,9 @@ def resolve(deal: Mapping[str, Any], src: Sources) -> dict[str, Any]:
             "cert": cert_key, "hunt": rec.get("hunt"), "days": rec.get("days"),
             "gated_at": rec.get("gated_at"),
             "n_trials": ((rec.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
-            "gates": {g: {k: v for k, v in (s or {}).items() if k != "message"}
+            "gates": {g: {k: v for k, v in (s or {}).items()
+                          if k != "message" and not (g == "economic_prior"
+                                                     and k in PRIOR_RECORD_KEYS)}
                       for g, s in (rec.get("gates") or {}).items() if isinstance(s, dict)},
             "gate_policy": src.gate_policy}
         joins["certificate->clock"], clock_key = link_certificate_clock(cert_key, src)

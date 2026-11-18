@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from libs.validation.economic_prior import REQUIRED_FIELDS, economic_prior_gate
-
 #: The chart every historical cell was hunted on, and the one whose name stays unwritten.
 #:
 #: THE CORRUPTION THIS PREVENTS (2026-09-05, when the sweep gained the full M1..D1 ladder). Cell
@@ -139,15 +137,37 @@ PRIOR_INCOMPLETE = "PRIOR_INCOMPLETE"
 GRANDFATHERED_UNMEASURED = "GRANDFATHERED_UNMEASURED"
 STATISTICAL_ONLY = "STATISTICAL_ONLY"
 
+#: The six answers of `libs.validation.economic_prior.REQUIRED_FIELDS`, restated here so this
+#: module never imports `libs.validation` at import time: the gateway imports frontier_identity
+#: for `cell_id`, and the validation package (pydantic and every gate) has no business in that
+#: process. The validator itself is imported lazily, inside `prior_missing`, on the judge path
+#: only. `test_economic_prior_six_field` pins the two tuples equal.
+REQUIRED_FIELDS: tuple[str, ...] = (
+    "why_it_works", "why_it_might_fail", "why_overfit", "why_decay", "how_detect_decay",
+    "what_replaces_it",
+)
+
 #: Every field an `EconomicPrior` must carry, `mechanism` first.
 PRIOR_FIELDS: tuple[str, ...] = ("mechanism", *REQUIRED_FIELDS)
+
+#: THE SWITCH. Gate 1's six-field requirement RECORDS by default and binds only on evidence.
+#: SHADOW: a PRIOR_INCOMPLETE cell passes gate 1 with the verdict and its missing fields recorded
+#: (`binding: False`); nothing is vetoed. LIVE: it fails gate 1. OFF: the requirement is not
+#: applied at all (the verdict still names the missing fields, as GRANDFATHERED_UNMEASURED does).
+#: `research/economic_prior_backfill.py` moves SHADOW <-> LIVE across the pre-declared bars
+#: (mean - 2 SE > 0 promotes, mean + 1 SE < 0 demotes) on forward clocks; `"pinned": true`
+#: freezes the mode. Rule 1: a veto must first prove it raises robust forward E[log W].
+PRIOR_MODE_PATH = Path(__file__).resolve().parents[1] / "data" / "ECONOMIC_PRIOR_MODE.json"
+PRIOR_MODES = ("SHADOW", "LIVE", "OFF")
+DEFAULT_PRIOR_MODE = "SHADOW"
 
 #: THE GRANDFATHER ROSTER, FROZEN 2026-11-18. Measured that day on the live branch's own data:
 #: 0 of 57,538 docket rows, 0 of 58 certificates and 0 of 26 STANDBY sleeves carried a six-field
 #: prior, and no family had one written. Requiring it of them at once would have stopped 100% of
 #: the docket at gate 1 -- a cut in research breadth by fiat, which growth governance forbids.
-#: So the requirement binds NEW mechanisms only: a family absent from this list must arrive with
-#: its six fields or be recorded PRIOR_INCOMPLETE. A family on it keeps passing exactly as it did,
+#: So the requirement reaches NEW mechanisms only: a family absent from this list must arrive with
+#: its six fields or be recorded PRIOR_INCOMPLETE -- which, while the switch is SHADOW, still
+#: passes gate 1 and is counted as owed. A family on it keeps passing exactly as it did,
 #: and its verdict reads GRANDFATHERED_UNMEASURED with the missing fields named, so the debt is
 #: visible (`research/economic_prior_backfill.py` reports it hourly) and never silent.
 #:
@@ -222,10 +242,26 @@ def prior_for(cell: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
     return None, None
 
 
+def prior_mode() -> str:
+    """The switch's mode, read once per process. Absent or unreadable is SHADOW (records only)."""
+    if "mode" not in _REGISTRY_CACHE:
+        mode = DEFAULT_PRIOR_MODE
+        try:
+            doc = json.loads(PRIOR_MODE_PATH.read_text("utf-8"))
+            if isinstance(doc, dict) and str(doc.get("mode") or "").upper() in PRIOR_MODES:
+                mode = str(doc["mode"]).upper()
+        except (OSError, ValueError):
+            mode = DEFAULT_PRIOR_MODE
+        _REGISTRY_CACHE["mode"] = mode
+    out: str = _REGISTRY_CACHE["mode"]
+    return out
+
+
 def prior_missing(prior: dict[str, Any] | None) -> list[str]:
     """Which of the seven `EconomicPrior` fields are absent or blank; [] when it is complete."""
     if not prior:
         return list(PRIOR_FIELDS)
+    from libs.validation.economic_prior import economic_prior_gate  # lazy: see REQUIRED_FIELDS
     gate = economic_prior_gate(prior)
     return [] if gate.passed else list(gate.missing)
 
@@ -241,7 +277,9 @@ def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
       * STATISTICAL_ONLY          -- no mechanism at all; fails, as it always has.
       * PRIOR_COMPLETE            -- NAMED, and the prior validates as an EconomicPrior; passes.
       * PRIOR_INCOMPLETE          -- NAMED, a family outside the grandfather roster, and the
-                                     prior is absent or short; fails, naming the missing fields.
+                                     prior is absent or short. Recorded with the missing fields
+                                     named; it PASSES while the switch is SHADOW (the default)
+                                     or OFF and fails only once evidence has flipped it LIVE.
       * GRANDFATHERED_UNMEASURED  -- NAMED, a family on the 2026-11-18 roster with no complete
                                      prior yet; passes as before, with the missing fields named.
     """
@@ -269,10 +307,12 @@ def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
         verdict, passed = GRANDFATHERED_UNMEASURED, True
         message = note or "named registered family"
     else:
-        verdict, passed = PRIOR_INCOMPLETE, False
+        mode = prior_mode()
+        verdict, passed = PRIOR_INCOMPLETE, mode != "LIVE"
         message = (f"family {family!r} is not on the 2026-11-18 grandfather roster and its "
-                   f"economic prior is missing {missing}")
-    return {
+                   f"economic prior is missing {missing}"
+                   + ("" if mode == "LIVE" else f" (recorded, not binding: switch {mode})"))
+    out = {
         "passed": passed,
         "message": message,
         "mechanism_status": status,
@@ -280,3 +320,6 @@ def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
         "missing": missing,
         "prior_source": source,
     }
+    if verdict == PRIOR_INCOMPLETE:
+        out["binding"] = not passed
+    return out
