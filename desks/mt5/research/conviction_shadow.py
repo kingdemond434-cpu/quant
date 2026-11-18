@@ -164,7 +164,12 @@ def _log1p(x: float) -> float:
 
 def score_record(rec: Mapping[str, Any], realised: Mapping[str, Mapping[str, float]]
                  ) -> dict[str, Any] | None:
-    """The record's pair on the first realised day strictly after the record's day."""
+    """The record's pair on the first realised day strictly after the record's day.
+
+    UNMEASURED IS NOT ZERO (audit MF2). A name scores 0 on day d only when its own series has
+    dates at or after d (it was being recorded and was flat that day); a name with no realised
+    series at or after d is unmeasured, and so is the whole record -- it is returned with
+    status UNMEASURED and kept out of the deltas."""
     base = {str(k): float(v) for k, v in (rec.get("base_book") or {}).items()}
     conv = {str(k): float(v) for k, v in (rec.get("conviction_book") or {}).items()}
     names = set(base) | set(conv)
@@ -172,15 +177,32 @@ def score_record(rec: Mapping[str, Any], realised: Mapping[str, Mapping[str, flo
     if not after:
         return None
     d = after[0]
+    missing = sorted(n for n in names if not any(x >= d for x in (realised.get(n) or {})))
+    if missing:
+        return {"day": rec["day"], "realised_day": d, "status": "UNMEASURED",
+                "unmeasured": missing[:10], "n_unmeasured": len(missing)}
     r = {n: float((realised.get(n) or {}).get(d, 0.0)) for n in names}
     pb = sum(base.get(n, 0.0) * r[n] for n in names)
     pc = sum(conv.get(n, 0.0) * r[n] for n in names)
     facs = rec.get("factors") or {}
     down = sum((conv.get(n, 0.0) - base.get(n, 0.0)) * r[n] for n in names
                if float(facs.get(n, 1.0)) < 1.0)
-    return {"day": rec["day"], "realised_day": d, "delta_logw": _log1p(pc) - _log1p(pb),
+    return {"day": rec["day"], "realised_day": d, "status": "MEASURED",
+            "delta_logw": _log1p(pc) - _log1p(pb),
             "base_logw": _log1p(pb), "conviction_logw": _log1p(pc),
             "down_half_logw": down}
+
+
+def distinct_realised(scored: Any) -> list[dict[str, Any]]:
+    """One row per REALISED day (audit MF1): Fri, Sat and Sun records all score on Monday's R,
+    which is one observation, not three. Keep the LATEST record before each realised day, so n
+    in the promotion rule counts distinct realised days. Oldest realised day first."""
+    best: dict[str, dict[str, Any]] = {}
+    for s in scored:
+        k = str(s["realised_day"])
+        if k not in best or str(s["day"]) > str(best[k]["day"]):
+            best[k] = s
+    return [best[k] for k in sorted(best)]
 
 
 def _ledger(path: Path | None = None) -> list[dict[str, Any]]:
@@ -194,7 +216,9 @@ def _ledger(path: Path | None = None) -> list[dict[str, Any]]:
 def run(budget_s: float = 240.0, write: bool = True) -> dict[str, Any]:
     t0 = time.time()
     mode = cm.conviction_mode()
-    doc: dict[str, Any] = {"generated_utc": _now(), "mode": mode,
+    switch = cm.switch_mode()
+    doc: dict[str, Any] = {"generated_utc": _now(), "mode": mode, "switch_mode": switch,
+                           "registered": cm.registered(),
                            "switch": "desks/mt5/data/" + cm.CONVICTION_SWITCH.name,
                            "rule": ("conviction = clip(strength x agreement, 0.5, 2.0); strength "
                                     "= 1 + n/(n+120) x (2 DSR - 1) x 0.5; agreement = "
@@ -232,10 +256,16 @@ def run(budget_s: float = 240.0, write: bool = True) -> dict[str, Any]:
                 with LEDGER.open("a", encoding="utf-8") as fh:
                     fh.write(json.dumps(rec) + "\n")
     realised = realised_by_day() if rows else {}
-    scored = [s for s in (score_record(r, realised) for r in rows) if s is not None]
+    attempted = [s for s in (score_record(r, realised) for r in rows) if s is not None]
+    unmeasured = [s for s in attempted if s.get("status") == "UNMEASURED"]
+    scored = distinct_realised(s for s in attempted if s.get("status") == "MEASURED")
     deltas = [float(s["delta_logw"]) for s in scored]
-    promo = cm.conviction_promotion(deltas, mode)
+    # THE CLOCK READS THE FILE, NOT THE EFFECTIVE MODE: it keeps running while the sealed
+    # registry lacks the row, and the allocator obeys `conviction_mode` (file AND registered).
+    promo = cm.conviction_promotion(deltas, switch)
     doc["forward"] = {"ledger_days": len(rows), "matured": len(scored),
+                      "unmeasured": len(unmeasured), "unmeasured_recent": unmeasured[-5:],
+                      "matured_basis": "distinct realised days, latest record before each",
                       "recent": scored[-10:], "promotion": promo,
                       "need": cm.CONV_PROMOTE_N}
     # THE MISSED-GROWTH LINE: what the DOWNWARD half did on the latest matured day.

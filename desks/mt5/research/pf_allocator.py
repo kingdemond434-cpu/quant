@@ -2594,15 +2594,23 @@ def apply_conviction_scaling(ev: list[SleeveEvidence]
     GROWTH GOVERNANCE. Rule 2: a deflated-Sharpe-strong, independently corroborated sleeve is
     RAISED up to 2x. Rule 1: its downward half is billed as a missed-growth line
     (`missed_growth.published_conviction_lines`) and the switch itself goes LIVE only on
-    robustly positive forward dE[log W]. Nothing here touches the heat floor, the daily-loss or lot parameters: the total
-    is still the heat law's.
+    robustly positive forward dE[log W]. Nothing here touches the heat floor, the daily-loss or
+    lot parameters: the total is still the heat law's.
     """
-    from libs.portfolio.conviction import apply_conviction, conviction_factors, conviction_mode
+    from libs.portfolio.conviction import (
+        apply_conviction,
+        conviction_factors,
+        conviction_mode,
+        registered,
+        switch_mode,
+    )
     base = list(ev)
     mode = conviction_mode()
     if mode != "LIVE":
-        return {"mode": "SHADOW", "status": "evidence untouched; research/conviction_shadow.py "
-                                            "measures the forward dE[log W]"}, base
+        # LIVE needs the switch AND the sealed registry row; the reader sees which one is absent.
+        return {"mode": "SHADOW", "switch": switch_mode(), "registered": registered(),
+                "status": "evidence untouched; research/conviction_shadow.py measures the "
+                          "forward dE[log W]"}, base
     try:
         factors = conviction_factors(ev)
         ev[:] = apply_conviction(ev, factors)

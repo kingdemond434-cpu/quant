@@ -48,6 +48,12 @@ AGREE_LO, AGREE_HI = 0.75, 1.5
 CONVICTION_SWITCH = DESK / "data" / "CONVICTION_SCALING.json"
 #: Forward passes (distinct UTC days) the shadow comparison needs before it may flip the switch.
 CONV_PROMOTE_N = 20
+#: THE PROMOTION BAR (audit SF1): SHADOW -> LIVE needs mean - PROMOTE_K_SE x se > 0. Two standard
+#: errors, one-sided ~97.7% under normality, because the evidence is a SIMPLIFIED re-solve (the
+#: funded book plus forty candidates, no floor fill, no exchange zeros), so the promotion side
+#: carries the conservative bar. Demotion stays at mean + DEMOTE_K_SE x se < 0 (hysteresis).
+PROMOTE_K_SE = 2.0
+DEMOTE_K_SE = 1.0
 
 #: The registry row, two-sided by construction (G4: hi > 1.0).
 MODIFIER = Modifier("conviction", CONV_LO, CONV_HI, "two_sided",
@@ -57,13 +63,30 @@ MODIFIER = Modifier("conviction", CONV_LO, CONV_HI, "two_sided",
                     "desks/mt5/reports/CONVICTION_SHADOW.json")
 
 
-def conviction_mode(path: Path | None = None) -> str:
-    """LIVE only when the switch file says so; everything else (absent too) reads SHADOW."""
+def switch_mode(path: Path | None = None) -> str:
+    """What the switch FILE says: LIVE only on {"mode": "LIVE"}; absent or unreadable is SHADOW.
+    The promotion clock reads this; it keeps running whether or not the row is registered."""
     try:
         doc = json.loads((path or CONVICTION_SWITCH).read_text("utf-8"))
     except (OSError, ValueError):
         return "SHADOW"
     return "LIVE" if isinstance(doc, dict) and doc.get("mode") == "LIVE" else "SHADOW"
+
+
+def registered() -> bool:
+    """True when the SEALED `capital_modifiers.REGISTRY` carries a Modifier named "conviction"."""
+    try:
+        from libs.portfolio.capital_modifiers import REGISTRY
+    except Exception:
+        return False
+    return any(getattr(m, "name", None) == MODIFIER.name for m in REGISTRY)
+
+
+def conviction_mode(path: Path | None = None) -> str:
+    """The EFFECTIVE mode the allocator obeys: LIVE only when the switch file says LIVE AND the
+    sealed registry carries the conviction row (audit MF1348-3). An unregistered modifier never
+    moves capital, whatever the switch says; the growth fence cannot hold a row it cannot see."""
+    return "LIVE" if switch_mode(path) == "LIVE" and registered() else "SHADOW"
 
 
 def _finite(a: Any) -> np.ndarray:
@@ -172,22 +195,32 @@ def conviction_promotion(deltas: Sequence[float], current: str, n: int = CONV_PR
 
     `deltas` are forward realised dE[log W] per pass (conviction book minus base book, one per
     distinct UTC day, oldest first). Over the last `n`:
-      * SHADOW -> LIVE when mean - se > 0 (robustly positive forward growth);
-      * LIVE -> SHADOW when mean + se < 0 (robustly negative: the modifier lost its authority);
+      * SHADOW -> LIVE when mean - PROMOTE_K_SE x se > 0 (robustly positive forward growth);
+      * LIVE -> SHADOW when mean + DEMOTE_K_SE x se < 0 (the modifier lost its authority);
       * otherwise the mode stands. Fewer than `n` matured passes is UNMEASURED and stands.
     """
     arr = np.asarray([float(d) for d in deltas if math.isfinite(float(d))][-n:], dtype=float)
     if arr.size < n:
         return {"mode": current, "changed": False, "verdict": "UNMEASURED", "n": int(arr.size),
-                "need": n}
+                "need": n, **_bar()}
     mean = float(arr.mean())
     se = float(arr.std(ddof=1) / math.sqrt(arr.size)) if arr.size > 1 else 0.0
     nxt = current
-    if current != "LIVE" and mean - se > 0:
+    up = mean - PROMOTE_K_SE * se > 0
+    down = mean + DEMOTE_K_SE * se < 0
+    if current != "LIVE" and up:
         nxt = "LIVE"
-    elif current == "LIVE" and mean + se < 0:
+    elif current == "LIVE" and down:
         nxt = "SHADOW"
-    verdict = ("RAISES_ELOG" if mean - se > 0 else
-               ("LOWERS_ELOG" if mean + se < 0 else "UNPROVEN"))
+    verdict = "RAISES_ELOG" if up else ("LOWERS_ELOG" if down else "UNPROVEN")
     return {"mode": nxt, "changed": nxt != current, "verdict": verdict, "n": int(arr.size),
-            "mean_delta_logw": round(mean, 10), "se": round(se, 10)}
+            "mean_delta_logw": round(mean, 10), "se": round(se, 10), **_bar()}
+
+
+def _bar() -> dict[str, Any]:
+    """The promotion and demotion bars, with their implied one-sided normal levels."""
+    from scipy.stats import norm
+    return {"bar": {"promote": f"mean - {PROMOTE_K_SE:g} x se > 0",
+                    "promote_one_sided_level": round(float(norm.cdf(PROMOTE_K_SE)), 4),
+                    "demote": f"mean + {DEMOTE_K_SE:g} x se < 0",
+                    "demote_one_sided_level": round(float(norm.cdf(DEMOTE_K_SE)), 4)}}

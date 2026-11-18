@@ -99,6 +99,7 @@ def test_live_switch_tilts_the_evidence(tmp_path, monkeypatch) -> None:
     sw = tmp_path / "CONVICTION_SCALING.json"
     sw.write_text(json.dumps({"mode": "LIVE"}), "utf-8")
     monkeypatch.setattr(cm, "CONVICTION_SWITCH", sw)
+    monkeypatch.setattr(cm, "registered", lambda: True)
     ev = _ev()
     meta, base = pa.apply_conviction_scaling(ev)
     assert meta["status"] == "APPLIED" and meta["n_up"] >= 1 and meta["n_down"] >= 1
@@ -164,3 +165,63 @@ def test_missed_growth_bills_the_down_half_only_when_live(tmp_path, monkeypatch)
                                                            "realised_day": today}}))
     got = mg.published_conviction_lines()
     assert got["sample"] is True and got["value_logw_per_day"] == pytest.approx(-1e-4)
+
+
+def test_weekend_records_scored_on_one_monday_count_once() -> None:
+    import conviction_shadow as cs
+    book = {"base_book": {"A": 0.1}, "conviction_book": {"A": 0.2}, "factors": {"A": 1.5}}
+    realised = {"A": {"2026-01-01": 0.5, "2026-01-05": 1.0}}       # Thu, then Monday
+    recs = [{"day": d, **book} for d in ("2026-01-01", "2026-01-02", "2026-01-03",
+                                         "2026-01-04")]            # Thu, Fri, Sat, Sun
+    scored = [cs.score_record(r, realised) for r in recs]
+    assert scored[0] is not None and scored[0]["realised_day"] == "2026-01-05"
+    mondays = [s for s in scored if s and s["realised_day"] == "2026-01-05"]
+    assert len(mondays) == 3                                       # Fri, Sat, Sun -> Monday
+    kept = cs.distinct_realised(s for s in scored if s and s["status"] == "MEASURED")
+    assert [k["realised_day"] for k in kept].count("2026-01-05") == 1
+    assert next(k for k in kept if k["realised_day"] == "2026-01-05")["day"] == "2026-01-04"
+
+
+def test_a_name_with_no_series_at_or_after_the_day_is_unmeasured_not_flat() -> None:
+    import conviction_shadow as cs
+    rec = {"day": "2026-01-01", "base_book": {"A": 0.1, "B": 0.1},
+           "conviction_book": {"A": 0.2, "B": 0.0}, "factors": {"A": 1.5, "B": 0.5}}
+    # B stopped being recorded before Jan 2: unmeasured, never a flat zero
+    got = cs.score_record(rec, {"A": {"2026-01-02": 1.0}, "B": {"2025-12-31": -1.0}})
+    assert got is not None and got["status"] == "UNMEASURED" and got["unmeasured"] == ["B"]
+    assert "delta_logw" not in got
+    # B still recorded (a later date) but flat on Jan 2: that IS a zero
+    got = cs.score_record(rec, {"A": {"2026-01-02": 1.0}, "B": {"2026-01-03": -1.0}})
+    assert got is not None and got["status"] == "MEASURED"
+    assert got["delta_logw"] == pytest.approx(np.log1p(0.2) - np.log1p(0.1))
+
+
+def test_live_switch_is_inert_until_the_sealed_registry_carries_the_row(tmp_path,
+                                                                        monkeypatch) -> None:
+    from libs.portfolio import capital_modifiers
+    sw = tmp_path / "CONVICTION_SCALING.json"
+    sw.write_text(json.dumps({"mode": "LIVE"}), "utf-8")
+    monkeypatch.setattr(cm, "CONVICTION_SWITCH", sw)
+    monkeypatch.setattr(capital_modifiers, "REGISTRY",
+                        tuple(m for m in capital_modifiers.REGISTRY if m.name != "conviction"))
+    assert cm.switch_mode() == "LIVE"            # the clock still reads the file
+    assert not cm.registered() and cm.conviction_mode() == "SHADOW"
+    monkeypatch.setattr(capital_modifiers, "REGISTRY",
+                        (*capital_modifiers.REGISTRY, cm.MODIFIER))
+    assert cm.registered() and cm.conviction_mode() == "LIVE"
+
+
+def test_promotion_needs_two_standard_errors_and_records_its_bar() -> None:
+    n = cm.CONV_PROMOTE_N
+    rng = np.random.default_rng(3)
+    x = rng.normal(0, 1, n)
+    x = (x - x.mean()) / x.std(ddof=1)               # mean 0, sd 1 -> se = 1/sqrt(n)
+    se = 1 / np.sqrt(n)
+    one_se = list(x + 1.5 * se)                      # mean - 1 se > 0, mean - 2 se < 0
+    got = cm.conviction_promotion(one_se, "SHADOW")
+    assert got["mode"] == "SHADOW" and not got["changed"]
+    assert got["bar"]["promote"] == "mean - 2 x se > 0"
+    assert got["bar"]["promote_one_sided_level"] == pytest.approx(0.9772, abs=1e-4)
+    assert cm.conviction_promotion(list(x + 2.5 * se), "SHADOW")["mode"] == "LIVE"
+    # demotion keeps the 1 se bar (hysteresis)
+    assert cm.conviction_promotion(list(x - 1.5 * se), "LIVE")["mode"] == "SHADOW"
