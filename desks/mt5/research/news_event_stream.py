@@ -196,7 +196,7 @@ SOURCE_TIERS: tuple[tuple[str, str], ...] = (
 #: not read by the stream and is named in the report, so the gap is visible rather than assumed.
 NEWS_SEATS: tuple[str, ...] = ("central_banks", "bis_speeches", "investing", "forexfactory",
                                "earnings", "shipping", "weather", "china", "asia", "korea",
-                               "world", "sec_edgar")
+                               "world", "sec_edgar", "presser_stt")
 
 TAU0 = 4.0                 # resting precision of a world-state component, in effective items
 WEIGHT_SCALE = 3.0         # what one fully-confident, fully-novel, fully-surprising item weighs

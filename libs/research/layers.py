@@ -631,6 +631,8 @@ LEG_LAYER: dict[str, str] = {
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     "asia_github": "information",
+    # press-conference speech to text: collects a bank's own words into a news seat: information.
+    "presser_stt": "information",
     "firm_lanes": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.

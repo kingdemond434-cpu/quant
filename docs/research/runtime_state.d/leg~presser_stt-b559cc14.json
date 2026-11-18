@@ -1,0 +1,37 @@
+{
+ "organ": "leg:presser_stt",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/presser_stt.py"
+ ],
+ "clock": "hourly_cycle:presser_stt",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/PRESSER_STT.json",
+ "artifact_declared": "desks/mt5/reports/PRESSER_STT.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 15,
+ "artifact_bytes": 5801,
+ "artifact_sha256": "e758950fd8913a76ad915987e98ac084fb5c2fbca0e7e99c98da78b7f72220ad",
+ "summary": {
+  "status": "UNMEASURED"
+ },
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-18T08:18:59+00:00",
+ "only_missing": {
+  "at": "2026-11-18T08:18:59+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
