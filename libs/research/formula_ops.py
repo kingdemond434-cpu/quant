@@ -1,15 +1,9 @@
 """OPERATOR-EXACT FORMULA ENGINE: the published GTJA-191 and Qlib operator sets, on a panel.
 
-WHY A SECOND EVALUATOR, AND WHY IT IS NOT A SECOND GRAMMAR. `alpha_grammar` is the desk's search
-language: a closed, typed, unit-checked operator set the generators sample and mutate. Its
-operators are deliberately the desk's own (a `decay`, a `ts_rank` on a fixed window vocabulary,
-`rank` translated to time), and `alpha_dsl` transpiles the 101 published alphas INTO it by
-semantic type, approximating where the desk has no analogue. That is right for search and wrong
-for a LIBRARY: a GTJA formula re-said in the grammar is a different formula. This module
-evaluates a published formula with the published operators, exactly as the publication defines
-them, and nothing else. It is reached from the grammar through ONE node, `["lib", key]`
-(`alpha_grammar.LIBRARY`), which is never sampled and never mutated: the search stays the
-search, and a library cell is the publication's own recipe.
+WHY NOT THE GRAMMAR. `alpha_grammar` is the desk's search language, with its own operators;
+a published formula re-said in it is a different formula. This module evaluates a publication's
+formula with the publication's own operators. The grammar reaches it through one node,
+`["lib", key]`, which is never sampled or mutated.
 
 TWO DIALECTS, ONE PARSER. The publications spell operators differently and DEFINE them
 differently, and the definition is the part that must not drift:
@@ -37,12 +31,10 @@ members ignored). A single instrument is a one-column panel, so a formula with n
 same series whether it is evaluated alone or among peers -- which `needs_panel` reports, and
 which the producer and the judge's executor rely on.
 
-THE FIELDS A BROKER FEED HAS, AND THE ONES IT DOES NOT. open/high/low/close and the broker's
-TICK volume. `VOLUME`/`$volume` read tick counts, never exchange volume, and every formula that
-reads them is marked `volume_proxy = "tick"` by the catalogue. VWAP, AMOUNT (turnover), a
-benchmark index and the Fama-French factor returns do not exist on an MT5 feed: a formula that
-needs one is NONTESTABLE with the field named, and the engine refuses to invent it (an absent
-field raises `MissingField`, it never evaluates to a proxy).
+FIELDS. open/high/low/close and the broker's TICK volume (`VOLUME`/`$volume` are tick counts;
+the catalogue marks those formulas `volume_proxy = "tick"`). VWAP, AMOUNT, a benchmark index and
+factor returns do not exist on MT5: such a formula is NONTESTABLE, and an absent field raises
+`MissingField`, never a proxy.
 
 Nothing here has authority: it computes series. Pure numpy/pandas, no I/O.
 """
