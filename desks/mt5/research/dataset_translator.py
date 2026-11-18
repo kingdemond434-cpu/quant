@@ -335,14 +335,8 @@ HOLD_BARS: dict[str, int] = {"intraday": 6, "daily": 24, "weekly": 120, "monthly
 #: Why a class the deepener's own map (`rule_deepening.CLASS_FALLBACK`, then its
 #: QUANTITY_FALLBACK) gives no price-only family is QUEUED: the builder it would need.
 MISSING_BUILDER: dict[str, str] = {
-    "carry": ("carry: the registered `carry` family takes its side from the broker swap, not "
-              "from a claim; a claim-sided carry builder does not exist"),
-    "policy": ("policy: needs `event_reaction` with a point-in-time policy-event calendar for the "
-               "analogue; no such event feed is wired to a claim"),
     "calendar": ("calendar: `calendar_month` / `turn_of_month` need the month or day the claim "
                  "names, which the compact file does not carry"),
-    "positioning": ("positioning: needs a positioning series (COT / retail ratio) conditioner on "
-                    "the analogue; none is joined to a claim"),
     "inventory": ("inventory: needs an inventory-release series conditioner on the analogue; "
                   "none is joined to a claim"),
     "flow": "flow: needs a flow series conditioner on the analogue; none is joined to a claim",
@@ -356,6 +350,20 @@ MISSING_BUILDER: dict[str, str] = {
               "quantity, so no family is implied"),
 }
 _CLAIM_DIRECTION_SIDES: dict[str, int] = {"long": 1, "short": -1}
+#: THE CLASSES WHOSE BUILDER ALREADY EXISTS AND READS ITS OWN SERIES (Judge, 2026-11-18). These
+#: three were QUEUED as NO_BUILDER, but the registry builds each of them and the sealed judge's
+#: `family_inputs` joins the series itself: `carry` reads the symbol's recorded broker swap,
+#: `cot_positioning` the symbol's COT frame, `event_reaction` the box's event-calendar vintages.
+#: The claim supplies what the builder lacks a prior for (the analogue, the hold, the side), and
+#: the builder supplies the series. A symbol with no such series is refused by NAME at build
+#: time ("no COT frame for X"), never judged on an empty input. Applied ONLY where neither the
+#: class map nor the quantity fallback named a family, so no cell minted today changes.
+#: The value is the family's hold argument: `carry` and `event_reaction` call it `hold_bars`.
+CLASS_SERIES_FAMILY: dict[str, tuple[str, str]] = {
+    "carry": ("carry", "hold_bars"),
+    "positioning": ("cot_positioning", "ttl_bars"),
+    "policy": ("event_reaction", "hold_bars"),
+}
 
 
 def _quantity_kind(quantities: Iterable[Any]) -> str:
@@ -492,13 +500,13 @@ def claim_tradables(analogues: Iterable[str], registry: dict[str, str], onto: di
     return trad, rolled, dropped
 
 
-def _family_default_hold(fam: str) -> int | None:
+def _family_default_hold(fam: str, param: str = "ttl_bars") -> int | None:
     import inspect
 
     from mt5desk.executables import resolve_family
     fn = resolve_family(fam)
     try:
-        p = inspect.signature(fn).parameters.get("ttl_bars") if fn else None
+        p = inspect.signature(fn).parameters.get(param) if fn else None
     except (TypeError, ValueError):
         return None
     return int(p.default) if p is not None and isinstance(p.default, int) else None
@@ -524,6 +532,10 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
         # breakout (rule_deepening.deepen picks session_range_breakout only on a named session).
         fam = {"breakout": "level_breakout", "reversion": "range_reversion",
                "momentum": "momentum_volgate"}.get(qk)
+    hold_param = "ttl_bars"
+    if fam is None and cls in CLASS_SERIES_FAMILY:
+        fam, hold_param = CLASS_SERIES_FAMILY[cls]
+        basis = "class_series"
     base = {"class": cls, "direction_bucket": dbucket, "horizon_bucket": hbucket,
             "family_basis": basis}
     if fam is None:
@@ -532,12 +544,14 @@ def claim_spec(claim: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None
         return None, f"NO_BUILDER: {fam} has no registered builder on this tree"
     if hbucket == "tick":
         return None, "NO_BUILDER: a tick-horizon claim has no sub-bar builder on H1"
-    hold = HOLD_BARS.get(hbucket) or _family_default_hold(fam)
+    hold = HOLD_BARS.get(hbucket) or _family_default_hold(fam, hold_param)
     if hold is None:
-        return None, f"NO_BUILDER: {fam} declares no ttl_bars default and the claim states none"
+        return None, (f"NO_BUILDER: {fam} declares no {hold_param} default and the claim "
+                      "states none")
     buckets = {mc._bucket(mc._DIR_BUCKET_TERMS, [w]) for w in words} & set(_CLAIM_DIRECTION_SIDES)
     sides = ((_CLAIM_DIRECTION_SIDES[next(iter(buckets))],) if len(buckets) == 1 else SIDES)
-    return {**base, "family": fam, "hold": int(hold), "sides": sides}, None
+    return {**base, "family": fam, "hold": int(hold), "hold_param": hold_param,
+            "sides": sides}, None
 
 
 def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
@@ -545,7 +559,8 @@ def _claim_cell(ds: dict[str, Any], sym: str, side: int, spec: dict[str, Any],
     from proposer_common import candidate
     cl = ds["claim"]
     fam = spec["family"]
-    params = {"ttl_bars": spec["hold"], "side_mode": "long" if side > 0 else "short"}
+    params = {str(spec.get("hold_param") or "ttl_bars"): spec["hold"],
+              "side_mode": "long" if side > 0 else "short"}
     mech = (f"deep-forest claim {cl['mechanism_key']} (class {spec['class']}, direction "
             f"{spec['direction_bucket']}, horizon {spec['horizon_bucket']}, "
             f"{cl.get('n_tellings', 1)} telling(s), lang {ds['lang'] or '?'}) on analogue "

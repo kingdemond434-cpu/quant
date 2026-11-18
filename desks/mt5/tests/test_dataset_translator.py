@@ -462,12 +462,39 @@ def test_the_committed_claim_file_holds_no_verbatim_text(tmp_path: Path) -> None
 
 def test_an_unregistered_class_is_queued_never_emitted(tmp_path: Path) -> None:
     rows, cells = _claim_pass(tmp_path, [_ledger_row(
-        mechanism_class="policy", quantities=["rate"], mechanism_key="k_policy")])
+        mechanism_class="inventory", quantities=["stocks"], mechanism_key="k_inventory")])
     assert not cells
     (row,) = rows
     assert row["status"] == dt.CELL_QUEUED
-    assert row["reason"].startswith("NO_BUILDER: policy") and "event_reaction" in row["reason"]
+    assert row["reason"].startswith("NO_BUILDER: inventory")
     assert row["missed_growth"]
+
+
+@pytest.mark.parametrize(("cls", "family", "hold_param"), [
+    ("carry", "carry", "hold_bars"),
+    ("positioning", "cot_positioning", "ttl_bars"),
+    ("policy", "event_reaction", "hold_bars"),
+])
+def test_a_class_whose_builder_reads_its_own_series_is_emitted(
+        tmp_path: Path, cls: str, family: str, hold_param: str) -> None:
+    # The builder exists and the sealed judge joins its series (swap, COT, event calendar), so
+    # the claim is a cell, with the hold under the name the family's signature uses.
+    from research.miner_candidate_compiler import _registered_family
+    rows, cells = _claim_pass(tmp_path, [_ledger_row(
+        mechanism_class=cls, quantities=["rate"], mechanism_key=f"k_{cls}",
+        instruments={"analogues": ["EURUSD"]})])
+    assert cells, rows
+    for c in cells:
+        assert c["family"] == family and _registered_family(family)
+        assert c["params"] == {hold_param: 24, "side_mode": "long"}
+    assert rows[0]["status"] != dt.CELL_QUEUED
+
+
+def test_the_class_series_map_never_overrides_a_mapped_claim(tmp_path: Path) -> None:
+    # A carry claim whose quantity already names momentum keeps the family it has today.
+    _, cells = _claim_pass(tmp_path, [_ledger_row(mechanism_class="carry",
+                                                  mechanism_key="k_carry_mom")])
+    assert cells and {c["family"] for c in cells} == {"momentum_volgate"}
 
 
 def test_every_claim_cell_is_a_registered_family_on_a_lane_symbol(tmp_path: Path) -> None:
