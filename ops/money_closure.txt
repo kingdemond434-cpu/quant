@@ -352,5 +352,7 @@ libs/ops/env_keys.py
 libs/ops/env_secret.py
 libs/ops/token_refresh.py
 libs/research/forward_ledger.py
+libs/regime/disagreement.py
+desks/mt5/research/decay_backtest.py
 libs/data/dataset_use.py
 libs/data/terms_fence.py
