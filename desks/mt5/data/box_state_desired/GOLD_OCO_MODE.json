@@ -1,0 +1,5 @@
+{
+ "lanes": ["e8", "fusion", "ftmo"],
+ "modes": {"fusion": "fallback", "ftmo": "oco"},
+ "note": "2026-11-18, under the 11-14 risk-autonomy ruling (coordinator 03:38Z) and zuck's every-account-every-market-day rule (11-18 02:04Z), with his cross-firm copy consent (10-28 14:31Z, extended to all sleeves 10-29 15:27Z): FTMO is declared a gold lane again and may lead gold, so its certified gold sleeves (#1323) can fill on the days E8's gold_asia does not. Still ONE gold direction a day across every account (gold_oco rules 1-7) and FTMO's own 5% daily / 10% max loss rails. Fusion is unchanged from the box's last recorded file (10-28 07:06Z). REVERSAL, one line: commit {\"lanes\": [\"e8\", \"fusion\"], \"modes\": {\"fusion\": \"fallback\"}} here (the 10-28 file), or set ftmo to fallback."
+}
