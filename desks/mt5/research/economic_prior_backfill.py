@@ -15,13 +15,14 @@ records PRIOR_INCOMPLETE: a NAMED family off the roster with no complete prior.
 THE SWITCH AND ITS EVIDENCE (Rule 1). PRIOR_INCOMPLETE is recorded, not binding, while
 `data/ECONOMIC_PRIOR_MODE.json` reads SHADOW (the default). This organ is the only writer that
 moves it, on a window declared here before any data is read: per forward clock in
-reports/shadow/shadow_state.json with >= MIN_CLOCK_N forward observations, its forward exp_r,
-split by whether the clock's family holds a complete prior. The statistic is the difference of
-the two group means (complete minus incomplete) over the newest WINDOW clocks a side, with the
-Welch SE. LIVE when mean - 2 SE > 0 with >= N_MIN clocks a side, SHADOW when mean + 1 SE < 0,
-held in between; `"pinned": true` and OFF are left alone. Its missed-growth line -- what the
-veto WOULD cost in SHADOW and does cost in LIVE -- is published on the report and carried into
-MISSED_GROWTH.json by research/missed_growth.py.
+reports/shadow/shadow_state.json with >= MIN_CLOCK_N forward observations, its forward exp_r.
+The veto is judged on the clocks it would actually refuse -- family off the grandfather roster
+AND no complete prior -- never on a pool that includes grandfathered clocks LIVE never touches.
+Over the newest WINDOW of them: LIVE when mean + 2 SE < 0 (they robustly lose) with >= N_MIN
+clocks, SHADOW when mean - 1 SE > 0 (they earn), held in between and below N_MIN;
+`"pinned": true` and OFF are left alone. Complete-minus-incomplete is reported as a diagnostic.
+Its missed-growth line -- what the veto WOULD cost in SHADOW and does cost in LIVE -- is
+published on the report and carried into MISSED_GROWTH.json by research/missed_growth.py.
 
 Writes desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json, and the switch only across a bar. Changes
 no verdict already recorded, no certificate and no sleeve.
@@ -73,11 +74,12 @@ EARNS, COSTS, UNMEASURED = "EARNS_ITS_PLACE", "COSTS_GROWTH", "UNMEASURED"
 MODE_RULE = ("SHADOW records only: a NAMED cell of a family off the 2026-11-18 grandfather "
              "roster without a complete six-field EconomicPrior passes gate 1 as "
              "PRIOR_INCOMPLETE with its missing fields named. research/economic_prior_backfill.py "
-             "writes LIVE (PRIOR_INCOMPLETE fails gate 1) when mean - 2 SE > 0 of the "
-             "forward-clock difference (prior-complete minus prior-incomplete exp_r per clock) "
-             f"over >= {N_MIN} clocks a side with >= {MIN_CLOCK_N} forward observations each "
-             f"(newest {WINDOW} clocks a side), SHADOW when mean + 1 SE < 0, and leaves the mode "
-             "alone in between. pinned=true freezes the mode; OFF stops the requirement.")
+             "writes LIVE (PRIOR_INCOMPLETE fails gate 1) when the forward exp_r of the clocks "
+             "LIVE would refuse (family off the roster, no complete prior) is robustly negative, "
+             f"mean + 2 SE < 0 over >= {N_MIN} such clocks with >= {MIN_CLOCK_N} forward "
+             f"observations each (newest {WINDOW}), SHADOW when mean - 1 SE > 0, and leaves the "
+             "mode alone in between and below the window. Complete-minus-incomplete is reported "
+             "as a diagnostic only. pinned=true freezes the mode; OFF stops the requirement.")
 
 
 def _read_json(path: Path) -> Any:
@@ -145,38 +147,60 @@ def _side(rows: list[dict[str, Any]]) -> tuple[int, float | None, float | None]:
     return n, mean, var
 
 
-def evidence(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """PROMOTE when (complete - incomplete) - 2 SE > 0, DEMOTE when + 1 SE < 0, else HOLD."""
+def refused_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The clocks a LIVE switch would refuse: off the roster AND without a complete prior."""
+    return [r for r in rows if not r["prior_complete"] and not r["grandfathered"]]
+
+
+def _diagnostic(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Prior-complete minus prior-incomplete forward exp_r. REPORTED ONLY, never a bar: the
+    incomplete side pools grandfathered clocks that LIVE never refuses."""
     nc, mc, vc = _side([r for r in rows if r["prior_complete"]])
     ni, mi, vi = _side([r for r in rows if not r["prior_complete"]])
     out: dict[str, Any] = {
-        "metric": "forward exp_r per clock, prior-complete minus prior-incomplete",
-        "window": {"min_clock_n": MIN_CLOCK_N, "n_min_per_side": N_MIN, "newest": WINDOW},
-        "bars": {"promote": f"mean - {PROMOTE_SE:g} SE > 0",
-                 "demote": f"mean + {DEMOTE_SE:g} SE < 0", "between": "hold the current mode"},
+        "metric": "forward exp_r per clock, prior-complete minus prior-incomplete (diagnostic)",
         "n_complete": nc, "n_incomplete": ni,
         "mean_complete_r": None if mc is None else round(mc, 6),
         "mean_incomplete_r": None if mi is None else round(mi, 6)}
-    if nc < N_MIN or ni < N_MIN or mc is None or mi is None or vc is None or vi is None:
+    if (mc is not None and mi is not None and vc is not None and vi is not None
+            and math.isfinite(vc) and math.isfinite(vi)):
+        out.update(diff_r=round(mc - mi, 6), se_r=round(math.sqrt(vc / nc + vi / ni), 6))
+    return out
+
+
+def evidence(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Judge the veto on the cells it would actually refuse.
+
+    PROMOTE when the refused clocks' forward exp_r is robustly negative (mean + 2 SE < 0 over
+    >= N_MIN clocks): refusing them would raise forward growth. DEMOTE when it is positive
+    (mean - 1 SE > 0): refusing them would cost growth. HOLD otherwise, including below N_MIN.
+    """
+    n, mean, var = _side(refused_rows(rows))
+    out: dict[str, Any] = {
+        "metric": ("forward exp_r per clock of the clocks LIVE would refuse "
+                   "(family off the grandfather roster and no complete prior)"),
+        "window": {"min_clock_n": MIN_CLOCK_N, "n_min": N_MIN, "newest": WINDOW},
+        "bars": {"promote": f"mean + {PROMOTE_SE:g} SE < 0",
+                 "demote": f"mean - {DEMOTE_SE:g} SE > 0", "between": "hold the current mode"},
+        "n_refused": n, "mean_refused_r": None if mean is None else round(mean, 6),
+        "diagnostic": _diagnostic(rows)}
+    if n < N_MIN or mean is None or var is None or not math.isfinite(var):
         return {**out, "verdict": UNMEASURED, "action": "HOLD", "promote": False,
                 "demote": False,
-                "why": f"{nc} prior-complete and {ni} prior-incomplete clocks; {N_MIN} a side "
-                       f"are needed before the requirement can bind"}
-    diff = mc - mi
-    se = math.sqrt(vc / nc + vi / ni)
-    out.update(diff_r=round(diff, 6), se_r=round(se, 6),
-               promote_bar_r=round(diff - PROMOTE_SE * se, 6),
-               demote_bar_r=round(diff + DEMOTE_SE * se, 6))
-    if diff + DEMOTE_SE * se < 0:
+                "why": f"{n} refused clocks; {N_MIN} are needed before the requirement can bind"}
+    se = math.sqrt(var / n)
+    out.update(se_r=round(se, 6), promote_bar_r=round(mean + PROMOTE_SE * se, 6),
+               demote_bar_r=round(mean - DEMOTE_SE * se, 6))
+    if mean - DEMOTE_SE * se > 0:
         return {**out, "verdict": COSTS, "action": "DEMOTE", "promote": False, "demote": True,
-                "why": "prior-complete clocks earn less forward than prior-incomplete ones "
-                       "(mean + 1 SE < 0): requiring the prior would cost growth"}
-    if diff - PROMOTE_SE * se > 0:
+                "why": "the clocks the veto would refuse earn forward (mean - 1 SE > 0): "
+                       "binding would cost growth"}
+    if mean + PROMOTE_SE * se < 0:
         return {**out, "verdict": EARNS, "action": "PROMOTE", "promote": True, "demote": False,
-                "why": "prior-complete clocks earn more forward (mean - 2 SE > 0): the "
-                       "requirement selects what survives"}
+                "why": "the clocks the veto would refuse lose forward (mean + 2 SE < 0): "
+                       "refusing them raises growth"}
     return {**out, "verdict": UNMEASURED, "action": "HOLD", "promote": False, "demote": False,
-            "why": "inside the dead band (mean - 2 SE <= 0 <= mean + 1 SE): mode held"}
+            "why": "inside the dead band (mean + 2 SE >= 0 >= mean - 1 SE): mode held"}
 
 
 def read_mode(path: Path = PRIOR_MODE_PATH) -> tuple[str, dict[str, Any]]:
@@ -200,7 +224,7 @@ def move_switch(v: dict[str, Any], *, path: Path = PRIOR_MODE_PATH,
         path.write_text(json.dumps({
             "mode": want, "set_by": "research/economic_prior_backfill.py",
             "at": datetime.now(tz=UTC).isoformat(), "rule": MODE_RULE,
-            "evidence": {k: v.get(k) for k in ("n_complete", "n_incomplete", "diff_r", "se_r",
+            "evidence": {k: v.get(k) for k in ("n_refused", "mean_refused_r", "se_r",
                                                "promote_bar_r", "demote_bar_r", "verdict",
                                                "action")}}, indent=1) + "\n", "utf-8")
     return {"mode": want, "changed": True, "from": cur, "action": v.get("action")}
@@ -253,7 +277,7 @@ def build(docket: Path = DOCKET, certs: Path = CERTS, sleeves: Path = SLEEVES,
     mode = move_switch(ev, path=mode_path, write=write_switch)
     # THE MISSED-GROWTH LINE. What binding the requirement costs (LIVE) or would cost (SHADOW):
     # the docket rows it vetoes, and the forward R of clocks whose family it would refuse today.
-    refused = [r for r in clocks_rows if not r["prior_complete"] and not r["grandfathered"]]
+    refused = refused_rows(clocks_rows)
     now = datetime.now(UTC).isoformat()
     line = {"gate": "economic_prior_six_field", "at": now, "mode": mode["mode"],
             "binding": mode["mode"] == "LIVE",
@@ -262,11 +286,12 @@ def build(docket: Path = DOCKET, certs: Path = CERTS, sleeves: Path = SLEEVES,
             "forward_clocks_refused_if_binding": len(refused),
             "forward_r_per_trade_refused": (round(sum(r["exp_r"] for r in refused)
                                                   / len(refused), 6) if refused else None),
-            **{k: ev.get(k) for k in ("n_complete", "n_incomplete", "diff_r", "se_r",
+            **{k: ev.get(k) for k in ("n_refused", "mean_refused_r", "se_r",
                                       "promote_bar_r", "demote_bar_r")},
-            "why": ("forward exp_r per clock, prior-complete minus prior-incomplete; in SHADOW "
-                    "it is what the requirement WOULD select, and nothing was vetoed. The "
-                    "E[log W] price is UNMEASURED until a side carries a risk fraction.")}
+            "why": ("forward exp_r per clock of the clocks the veto would refuse (off the "
+                    "roster, no complete prior): positive is growth the veto forgoes. In "
+                    "SHADOW nothing was vetoed. The E[log W] price is UNMEASURED until those "
+                    "clocks carry a risk fraction.")}
     # Largest exposure first: the families whose prior would cover the most of the desk.
     per_family.sort(key=lambda r: (r["status"] == "COMPLETE", -r["docket_rows"],
                                    -r["certificates"], r["family"]))

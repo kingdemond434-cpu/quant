@@ -1,5 +1,5 @@
 {
  "mode": "SHADOW",
  "set_by": "default",
- "rule": "SHADOW records only: a NAMED cell of a family off the 2026-11-18 grandfather roster without a complete six-field EconomicPrior passes gate 1 as PRIOR_INCOMPLETE with its missing fields named. research/economic_prior_backfill.py writes LIVE (PRIOR_INCOMPLETE fails gate 1) when mean - 2 SE > 0 of the forward-clock difference (prior-complete minus prior-incomplete exp_r per clock) over >= 10 clocks a side with >= 10 forward observations each (newest 200 clocks a side), SHADOW when mean + 1 SE < 0, and leaves the mode alone in between. pinned=true freezes the mode; OFF stops the requirement."
+ "rule": "SHADOW records only: a NAMED cell of a family off the 2026-11-18 grandfather roster without a complete six-field EconomicPrior passes gate 1 as PRIOR_INCOMPLETE with its missing fields named. research/economic_prior_backfill.py writes LIVE (PRIOR_INCOMPLETE fails gate 1) when the forward exp_r of the clocks LIVE would refuse (family off the roster, no complete prior) is robustly negative, mean + 2 SE < 0 over >= 10 such clocks with >= 10 forward observations each (newest 200), SHADOW when mean - 1 SE > 0, and leaves the mode alone in between and below the window. Complete-minus-incomplete is reported as a diagnostic only. pinned=true freezes the mode; OFF stops the requirement."
 }

@@ -155,7 +155,8 @@ PRIOR_FIELDS: tuple[str, ...] = ("mechanism", *REQUIRED_FIELDS)
 #: (`binding: False`); nothing is vetoed. LIVE: it fails gate 1. OFF: the requirement is not
 #: applied at all (the verdict still names the missing fields, as GRANDFATHERED_UNMEASURED does).
 #: `research/economic_prior_backfill.py` moves SHADOW <-> LIVE across the pre-declared bars
-#: (mean - 2 SE > 0 promotes, mean + 1 SE < 0 demotes) on forward clocks; `"pinned": true`
+#: on the forward exp_r of the clocks it would refuse (mean + 2 SE < 0 promotes, mean - 1 SE > 0
+#: demotes, >= 10 such clocks); `"pinned": true`
 #: freezes the mode. Rule 1: a veto must first prove it raises robust forward E[log W].
 PRIOR_MODE_PATH = Path(__file__).resolve().parents[1] / "data" / "ECONOMIC_PRIOR_MODE.json"
 PRIOR_MODES = ("SHADOW", "LIVE", "OFF")

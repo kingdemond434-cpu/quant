@@ -136,21 +136,27 @@ def test_local_required_fields_match_the_validator() -> None:
     assert fi.REQUIRED_FIELDS == REQUIRED_FIELDS
 
 
-def _clocks(path: Path, complete: list[float], incomplete: list[float]) -> None:
+def _clocks(path: Path, complete: list[float], refused: list[float],
+            grandfathered: list[float] | None = None) -> None:
+    """Three kinds of clock: a prior-complete family (fam_c), a family LIVE would refuse
+    (fam_new: off the roster, no prior) and a grandfathered family (carry), which LIVE never
+    refuses."""
     doc = {}
-    for i, r in enumerate(complete):
-        doc[f"EURUSD.fam_c.s{i}"] = {"n": 20, "exp_r": r, "last_entry": f"2026-11-{i % 28 + 1:02d}"}
-    for i, r in enumerate(incomplete):
-        doc[f"EURUSD.carry.s{i}"] = {"n": 20, "exp_r": r, "last_entry": f"2026-11-{i % 28 + 1:02d}"}
+    for tag, fam, vals in (("c", "fam_c", complete), ("r", "fam_new", refused),
+                           ("g", "carry", grandfathered or [])):
+        for i, r in enumerate(vals):
+            doc[f"EURUSD.{fam}.{tag}{i}"] = {"n": 20, "exp_r": r,
+                                             "last_entry": f"2026-11-{i % 28 + 1:02d}"}
     doc["USDJPY.asia"] = {"n": 50, "exp_r": 9.0}       # a hunt key names no family: not counted
-    doc["EURUSD.carry.young"] = {"n": 3, "exp_r": 9.0}  # under MIN_CLOCK_N: not counted
+    doc["EURUSD.fam_new.young"] = {"n": 3, "exp_r": -9.0}  # under MIN_CLOCK_N: not counted
     path.write_text(json.dumps(doc), encoding="utf-8")
 
 
-def _switch_case(tmp_path: Path, complete: list[float], incomplete: list[float],
-                 start: str) -> dict:
+def _switch_case(tmp_path: Path, complete: list[float], refused: list[float],
+                 start: str, grandfathered: list[float] | None = None) -> dict:
+    assert "fam_new" not in GRANDFATHERED_FAMILIES and "carry" in GRANDFATHERED_FAMILIES
     clocks = tmp_path / "clocks.json"
-    _clocks(clocks, complete, incomplete)
+    _clocks(clocks, complete, refused, grandfathered)
     reg = tmp_path / "priors.json"
     reg.write_text(json.dumps({"families": {"fam_c": FULL}}), encoding="utf-8")
     mode = tmp_path / "mode.json"
@@ -160,20 +166,46 @@ def _switch_case(tmp_path: Path, complete: list[float], incomplete: list[float],
                     mode_path=mode, write_switch=True)
 
 
-def test_switch_promotes_on_two_se_and_demotes_on_one_se(tmp_path: Path) -> None:
-    up = _switch_case(tmp_path, [0.5 + 0.01 * i for i in range(12)],
-                      [0.0 + 0.01 * i for i in range(12)], "SHADOW")
-    assert up["evidence"]["action"] == "PROMOTE" and up["mode"]["mode"] == "LIVE"
+def test_switch_promotes_when_refused_clocks_robustly_lose(tmp_path: Path) -> None:
+    up = _switch_case(tmp_path, [0.1] * 12, [-0.5 + 0.01 * i for i in range(12)], "SHADOW",
+                      grandfathered=[0.4] * 12)
+    ev = up["evidence"]
+    assert ev["n_refused"] == 12 and ev["promote_bar_r"] < 0
+    assert ev["action"] == "PROMOTE" and up["mode"]["mode"] == "LIVE"
     assert json.loads((tmp_path / "mode.json").read_text("utf-8"))["mode"] == "LIVE"
-    down = _switch_case(tmp_path, [0.0 + 0.01 * i for i in range(12)],
-                        [0.5 + 0.01 * i for i in range(12)], "LIVE")
+    assert up["missed_growth"][0]["forward_clocks_refused_if_binding"] == 12
+
+
+def test_switch_never_promotes_while_refused_clocks_earn(tmp_path: Path) -> None:
+    """Complete-prior clocks beat the rest by far more than 2 SE, but the cells LIVE would
+    refuse earn: the diagnostic says 'complete wins', and the switch must not move."""
+    report = _switch_case(tmp_path, [2.0 + 0.01 * i for i in range(12)],
+                          [0.2 + 0.01 * i for i in range(12)], "SHADOW",
+                          grandfathered=[-1.0 + 0.01 * i for i in range(12)])
+    diag = report["evidence"]["diagnostic"]
+    assert diag["diff_r"] - 2 * diag["se_r"] > 0
+    assert report["evidence"]["action"] != "PROMOTE"
+    assert report["mode"]["mode"] == "SHADOW"
+    assert json.loads((tmp_path / "mode.json").read_text("utf-8"))["mode"] == "SHADOW"
+
+
+def test_switch_demotes_when_refused_clocks_earn(tmp_path: Path) -> None:
+    down = _switch_case(tmp_path, [0.0] * 12, [0.5 + 0.01 * i for i in range(12)], "LIVE")
     assert down["evidence"]["action"] == "DEMOTE" and down["mode"]["mode"] == "SHADOW"
     line = down["missed_growth"][0]
     assert line["gate"] == "economic_prior_six_field" and line["verdict"] == "COSTS_GROWTH"
 
 
+def test_grandfathered_losers_never_promote(tmp_path: Path) -> None:
+    """Losing grandfathered clocks are not the veto's cells: no refused clocks, no move."""
+    report = _switch_case(tmp_path, [0.5] * 12, [], "SHADOW",
+                          grandfathered=[-0.5 + 0.01 * i for i in range(12)])
+    assert report["evidence"]["n_refused"] == 0
+    assert report["evidence"]["action"] == "HOLD" and report["mode"]["mode"] == "SHADOW"
+
+
 def test_switch_holds_below_the_window_and_when_pinned(tmp_path: Path) -> None:
-    few = _switch_case(tmp_path, [0.9] * 5, [0.0] * 5, "SHADOW")
+    few = _switch_case(tmp_path, [0.9] * 5, [-0.9 + 0.01 * i for i in range(5)], "SHADOW")
     assert few["evidence"]["verdict"] == "UNMEASURED" and few["mode"]["mode"] == "SHADOW"
     (tmp_path / "mode.json").write_text(json.dumps({"mode": "SHADOW", "pinned": True}), "utf-8")
     report = bf.build(docket=tmp_path / "none.json", certs=tmp_path / "x.json",
