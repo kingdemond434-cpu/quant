@@ -379,3 +379,12 @@ def test_data_alternates_refuses_an_html_robots_page(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(DA.urllib.request, "urlopen",
                         lambda req, timeout: _R(b"User-agent: *\nAllow: /\n"))
     DA._robots_allows("https://api.db.nomics.world/v22/series")
+
+
+@pytest.mark.parametrize("page", ["<head><title>x</title></head>", "<body>blocked</body>",
+                                  '<?xml version="1.0"?><error/>', "<!-- waf -->\n<div>no</div>",
+                                  "\n\n<!DOCTYPE html>", "x\n<html><body>hi</body></html>"])
+def test_any_markup_page_served_as_robots_is_unread(page: str) -> None:
+    import usd_liquidity_primary as U
+    assert U._looks_like_html(page)
+    assert not U._looks_like_html("User-agent: *\nDisallow: /private\n")
