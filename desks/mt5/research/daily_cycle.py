@@ -242,8 +242,23 @@ def _markout() -> None:
         "n_deals": m.n_deals, "attributed_deals": m.attributed_deals,
         "attributed_share": m.attributed_share,
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
+        "median_slip_r": m.median_slip_r,
         "edge_share": m.edge_share, "why": m.why,
+        # PER SLEEVE AND PER SYMBOL (2026-11-11). A book mean cannot say which sleeve's fills
+        # cost it, nor tell a sleeve that loses money from one whose fills lose it.
+        "sign": "positive slip = filled worse than asked",
+        "by_sleeve": m.by_sleeve, "by_symbol": m.by_symbol,
+        "risk_basis": {b: sum(1 for r in m.rows if r.get("risk_basis") == b)
+                       for b in sorted({str(r.get("risk_basis")) for r in m.rows})},
     }, indent=2), encoding="utf-8")
+    # PER ACCOUNT (idea pass p11, rebuilt 2026-11-14). markout.json is MIXED whenever the ledger
+    # holds more than one account; MARKOUT_V2.json measures each account on its own. Fail-soft:
+    # a broken v2 never costs the legacy report or the chain below.
+    try:
+        from research import markout_v2
+        markout_v2.main([])
+    except Exception as exc:  # noqa: BLE001 -- a report leg, never fatal
+        dlog(f"  markout_v2 skipped: {type(exc).__name__}")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
     # the share of all deals that have one. The programme's "no semantic breaks" property is
@@ -418,6 +433,10 @@ def _proposers() -> None:
                  # control-room regime at a time, purged walk-forward as the kill, survivors
                  # donated as family `regime_split` to the same gauntlet.
                  "regime_split_miner",
+                 # REGIME DISAGREEMENT (ROMAN-0806, 2026-11-11): our own regime systems (EWMA,
+                 # GARCH, HMM, Kalman, BOCPD, control room) vote; where they agree or split
+                 # gates every price-only family, donated as `regime_disagreement`.
+                 "regime_disagreement_miner",
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
@@ -562,7 +581,7 @@ def _research_memory() -> None:
 
 
 def _futures_curves() -> None:
-    """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
+    """Write the curve collector's record. Yahoo is REFUSED on terms, so it opens no socket."""
     import fetch_futures_curves
 
     rc = fetch_futures_curves.main([])
