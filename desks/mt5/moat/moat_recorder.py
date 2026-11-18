@@ -86,6 +86,45 @@ def write_json_atomic(path: Path, obj: dict) -> None:
     os.replace(tmp, path)
 
 
+def _proc_started(pid: int) -> float | None:
+    """The process's start time, or None when it cannot be read. With the pid it names ONE
+    process: a pid reused by another process (after a reboot, typically) has another start."""
+    try:
+        import psutil
+        return round(float(psutil.Process(int(pid)).create_time()), 3)
+    except Exception:
+        return None
+
+
+def _boot_time() -> float | None:
+    try:
+        import psutil
+        return float(psutil.boot_time())
+    except Exception:
+        return None
+
+
+def _holder_is_a_stranger(info: dict, pid: int) -> bool:
+    """True when the live pid is provably NOT the recorder that wrote the lock (2026-11-17).
+
+    After a reboot the recorded pid is often reused by an unrelated process, so "a process with
+    that pid is alive" kept the recorder standing down until a person deleted the lock. The lock
+    now records the holder's own start time; a live pid whose start differs is a stranger. A lock
+    written before that field existed is a stranger only if it predates this boot. Anything
+    unprovable stays "alive" -- never double-run on a guess.
+    """
+    rec = info.get("proc_started")
+    if isinstance(rec, (int, float)) and not isinstance(rec, bool):
+        now_started = _proc_started(pid)
+        return now_started is not None and abs(now_started - float(rec)) > 1.0
+    boot = _boot_time()
+    try:
+        taken = datetime.fromisoformat(str(info.get("started"))).timestamp()
+    except (TypeError, ValueError):
+        return False
+    return boot is not None and taken < boot
+
+
 def single_instance() -> bool:
     """PID lock: a duplicate start (watchdog task) exits instantly instead of double-writing."""
     stale = True
@@ -100,11 +139,16 @@ def single_instance() -> bool:
                 stale = False
         except Exception:
             stale = False       # cannot verify -> assume alive; refuse to double-run
+        if not stale and _holder_is_a_stranger(info, pid):
+            log(f"JOURNAL lock holder pid {pid} is alive but is not the recorder that took the "
+                f"lock (start time differs, or the lock predates this boot); taking it over")
+            stale = True
     if pid and not stale:
         return False
     try:
         write_json_atomic(LOCK,
-                          {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat()})
+                          {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat(),
+                           "proc_started": _proc_started(os.getpid())})
     except PermissionError as exc:
         # Non-elevated shell against an admin-owned C:\moat, or a concurrent starter winning
         # the race -- either way this instance must not record. Say why and stand down.
