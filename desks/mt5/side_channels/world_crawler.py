@@ -55,6 +55,7 @@ sys.path.insert(0, str(BASE))
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
 from libs.data.refused_hosts import RefusedRedirect  # noqa: E402
+from libs.data.honest_ua import HONEST_UA  # noqa: E402
 from libs.data.refused_hosts import opener as _refusing_opener  # noqa: E402
 from libs.data.refused_hosts import refusal as terms_refusal  # noqa: E402
 
@@ -62,11 +63,10 @@ WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
 
-#: Browser UA, because a bot string is refused or served a stub by a large share of the ground
-#: this desk needs -- the gotcha recorded in the free-data-plane findings, where a healthy source
-#: reads as dead purely from its User-Agent.
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+#: The desk's honest User-Agent (libs/data/honest_ua.py). This was desktop Chrome until 2026-11-18;
+#: the fetch law forbids impersonating a browser. A ground that refuses or stubs this name has
+#: refused the desk as it is: that is recorded as a refusal, never routed around.
+UA = HONEST_UA
 
 #: Per-request and whole-run budgets. The run budget is what makes this safe to put on an hourly
 #: timer beside everything else on a 3.8 GB box: it stops on the clock, not when it runs out of

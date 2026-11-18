@@ -24,10 +24,11 @@ import requests
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
+from libs.data.honest_ua import HONEST_UA  # noqa: E402
+
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "seed_miners_state.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                         "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+HEADERS = {"User-Agent": HONEST_UA}
 LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
@@ -109,8 +110,8 @@ SOURCE_WALLS: dict[str, dict] = {
     # robots.txt was READ FIRST for all three (that is always permitted and is what it is for).
     # None names ClaudeBot/Anthropic and none carries a wildcard Disallow: /, so these are
     # server-side refusals and throttles, NOT a refusal in writing. That distinction decides the
-    # probe cadence above, and it is why the UA these miners send was left as a browser string
-    # rather than being treated as the forexpeacearmy case.
+    # probe cadence above. The UA these miners send was a browser string until 2026-11-18; it is
+    # now the desk's honest name (libs/data/honest_ua.py), and a refusal of it is recorded as one.
     "china": {
         "verdict": "ANTIBOT_CHALLENGE",
         "host": "www.zhihu.com",

@@ -43,8 +43,12 @@ from email.message import Message
 from typing import Any, TypeVar
 from urllib.parse import urlparse
 
-BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+from libs.data.honest_ua import HONEST_UA
+
+#: The desk's honest User-Agent (libs/data/honest_ua.py). It was desktop Chrome until 2026-11-18;
+#: the BROWSER_* names are kept only so existing importers resolve, and they no longer impersonate
+#: anything. A 401/403/429/451 to this name is the host refusing the desk: a hard stop.
+BROWSER_UA = HONEST_UA
 BROWSER_HEADERS: dict[str, str] = {
     "User-Agent": BROWSER_UA,
     "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"

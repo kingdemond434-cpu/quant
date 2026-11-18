@@ -90,6 +90,10 @@ from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 _HERE = Path(__file__).resolve().parent
 _DESK = _HERE.parent
@@ -117,7 +121,7 @@ MIN_VINTAGES = 60
 RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
-UA = "Mozilla/5.0 (MT5 research desk; point-in-time vol collector)"
+UA = HONEST_UA
 
 
 @dataclass(frozen=True)

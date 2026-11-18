@@ -19,6 +19,10 @@ from pathlib import Path
 
 import pandas as pd
 from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 OUT = DATA / "cot_tff"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -47,7 +51,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 def load_year(year: int) -> pd.DataFrame | None:
     url = f"https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": HONEST_UA})
     try:
         data = urllib.request.urlopen(req, timeout=180, context=ctx).read()
     except Exception:

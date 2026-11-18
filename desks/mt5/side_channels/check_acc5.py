@@ -2,8 +2,12 @@
 import json
 import re
 import urllib.request
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+UA = HONEST_UA
 
 def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})

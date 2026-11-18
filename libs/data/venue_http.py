@@ -10,7 +10,9 @@ WHY THIS EXISTS. On 2026-08-01 a study recorded a public data endpoint as BLOCKE
 with the agent proxy reporting no relay failures -- which reads unambiguously as "the source is
 refusing this box". It was not. `urllib.request.urlopen(url)` sends
 ``User-Agent: Python-urllib/3.11``, and the endpoint's CDN bot-filter rejects it. The IDENTICAL
-request with a browser User-Agent returned data on the first try.
+request with a browser User-Agent returned data on the first try. (Since 2026-11-18 the desk
+sends its own declared name, libs/data/honest_ua.py, never a browser's: a host that refuses that
+name has refused the desk, and that is recorded, not routed around.)
 
 That failure mode is the expensive kind: it does not throw anything that says "header", it throws
 a plausible-looking authorisation error, and the desk's convention of honestly recording blockers
@@ -34,12 +36,16 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-#: A real browser User-Agent. NOT cosmetic and NOT an attempt to hide what the desk is: these are
-#: public, unauthenticated, documented market-data endpoints, and the header is what their CDN
-#: bot-filters check before answering. Sending the library default is what produced a 403 that was
-#: then recorded as a venue refusal.
-BROWSER_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+from libs.data.honest_ua import HONEST_UA
+
+#: THE DESK'S HONEST User-Agent (2026-11-18). This was a desktop-Chrome string; the desk's fetch
+#: law forbids impersonating a browser, so every request now names what is reading
+#: (libs/data/honest_ua.py). The name BROWSER_UA is kept only so existing importers resolve. A 403
+#: to this name is the host's answer to the desk as it really is: record it as a refusal (a hard
+#: stop with its missed_growth line), never retry it under a browser's name. The L0052 lesson
+#: below still holds for the library default (``Python-urllib``), which is not a name the desk
+#: chose and is never sent.
+BROWSER_UA = HONEST_UA
 
 DEFAULT_HEADERS = {"User-Agent": BROWSER_UA, "Accept": "application/json"}
 

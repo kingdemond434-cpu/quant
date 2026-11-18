@@ -47,6 +47,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from libs.data.pit_certificate import certify  # noqa: E402
+from libs.data.honest_ua import HONEST_UA  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
 
@@ -55,10 +56,9 @@ STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
 REPORT = DESK / "reports" / "dataset_acquisition.json"
 
-#: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
-#: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-       "Chrome/124.0 Safari/537.36")
+#: The desk's declared User-Agent (libs/data/honest_ua.py), never the urllib default and never a
+#: browser's name (it was desktop Chrome until 2026-11-18). A 403 to this name is a real refusal.
+_UA = HONEST_UA
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB

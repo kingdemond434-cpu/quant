@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "reddit"
@@ -21,7 +25,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"}
+HEADERS = {"User-Agent": HONEST_UA}
 
 SYMBOLS = [
     "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",

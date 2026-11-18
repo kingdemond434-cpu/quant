@@ -22,12 +22,16 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
+UA = HONEST_UA
 
 
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:

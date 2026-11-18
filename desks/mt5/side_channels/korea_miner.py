@@ -8,6 +8,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "korea"
@@ -35,8 +39,7 @@ def mine_korea() -> list[dict]:
     discoveries = []
     for source, url in SOURCES.items():
         try:
-            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36", "Accept-Language": "ko-KR,ko;q=0.9"},
+            resp = requests.get(url, headers={"User-Agent": HONEST_UA, "Accept-Language": "ko-KR,ko;q=0.9"},
                               timeout=15)
             resp.raise_for_status()
             content = re.sub(r'<[^>]+>', ' ', resp.text)[:2000]

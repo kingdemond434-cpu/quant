@@ -36,6 +36,11 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/hurdle_rate.json"
 
@@ -43,7 +48,7 @@ OUT = ROOT / "data/hurdle_rate.json"
 def _get(u, t=35):
     return json.loads(
         urllib.request.urlopen(
-            urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=t
+            urllib.request.Request(u, headers={"User-Agent": HONEST_UA}), timeout=t
         )
         .read()
         .decode()

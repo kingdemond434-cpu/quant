@@ -2,6 +2,10 @@ import json
 import sys
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 sys.path.insert(0, r"C:\Users\dell\mt5-research\mt5desk")
 
@@ -19,8 +23,7 @@ params = {
 }
 url = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json?" + urllib.parse.urlencode(params)
 print(url[:300])
-req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
+req = urllib.request.Request(url, headers={"User-Agent": HONEST_UA})
 try:
     body = urllib.request.urlopen(req, timeout=90).read().decode()
     print("OK len:", len(body))

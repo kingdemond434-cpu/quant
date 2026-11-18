@@ -11,6 +11,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "mql5"
@@ -52,8 +56,7 @@ def mine_codebase(max_pages: int = 3) -> list[dict]:
             resp = requests.get(
                 CODEBASE_URL,
                 params={"page": page, "sort": "date"},
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"},
+                headers={"User-Agent": HONEST_UA},
                 timeout=15,
             )
             resp.raise_for_status()

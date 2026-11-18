@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Patch collect_x_signals.py: add x.com SSR fallback (Nitter is dead)."""
 from pathlib import Path
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 p = Path("/home/quant/quant-platform/scripts/collect_x_signals.py")
 src = p.read_text()
@@ -16,7 +20,7 @@ def _try_xcom_ssr(account: str, limit: int = 20) -> list[dict[str, Any]]:
     import html as _html
     import re as _re
     import urllib.request
-    ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+    ua = HONEST_UA
     try:
         req = urllib.request.Request(
             f"https://x.com/{account}",

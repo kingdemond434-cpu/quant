@@ -26,8 +26,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+UA = HONEST_UA
 
 PRIORITY_ACCOUNTS = ["L1vsun", "shmidtqq", "antpalkin"]
 OUT_DIR = Path("data/x_deep_mine")

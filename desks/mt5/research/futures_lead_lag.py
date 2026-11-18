@@ -65,6 +65,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -107,7 +111,7 @@ OUT_REL = "desks/mt5/reports/FUTURES_LEAD_LAG.json"
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
 
 _CHART = "https://query2.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval={iv}"
-_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+_UA = HONEST_UA
 
 
 def _clean_returns(close: pd.Series) -> pd.Series:

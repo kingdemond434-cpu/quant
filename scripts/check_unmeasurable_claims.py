@@ -44,9 +44,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.data.honest_ua import HONEST_UA  # noqa: E402
+
 OUT = ROOT / "data" / "unmeasurable_claims.json"
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk availability probe)"}
+_UA = {"User-Agent": HONEST_UA}
 
 #: Candidate free sources per blocked observable. This list is the SEARCH RECORD: an observable
 #: with no entry here has not been searched for, which is a different and worse state than

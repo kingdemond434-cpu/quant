@@ -2,12 +2,15 @@ import io
 import ssl
 import urllib.request
 import zipfile
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+UA = {"User-Agent": HONEST_UA}
 url = "https://www.cftc.gov/files/dea/history/fut_fin_txt_2024.zip"
 req = urllib.request.Request(url, headers=UA)
 try:

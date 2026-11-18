@@ -52,6 +52,8 @@ from dataclasses import dataclass
 from typing import Any, Final
 from urllib.parse import quote
 
+from libs.data.honest_ua import HONEST_UA
+
 #: The three postures `probe_all` publishes, NAMED HERE because the reader must not re-type them.
 #: libs/research/source_health imports these rather than matching string literals, so renaming a
 #: posture cannot silently stop the reader matching -- the failure this desk calls actuatorless:
@@ -85,8 +87,7 @@ _MIN_INTERVAL_S: Final[dict[str, float]] = {
 _BACKED_OFF: set[str] = set()
 
 _UA: Final[dict[str, str]] = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "User-Agent": HONEST_UA,
     "Accept": "application/json, text/html, application/rss+xml, */*",
 }
 

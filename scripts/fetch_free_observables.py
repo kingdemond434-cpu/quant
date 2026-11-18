@@ -40,11 +40,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "desks" / "mt5" / "data" / "observables"
 OUT = ROOT / "data" / "free_observables.json"
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk research fetcher)"}
+_UA = {"User-Agent": HONEST_UA}
 
 #: Sources, each with where it lands and what it unblocks. Adding one here is the whole
 #: onboarding: the adapters read from `OBS` and do not know about HTTP.

@@ -24,10 +24,15 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 ROOT = Path(__file__).resolve().parent.parent
 PROVENANCE = ROOT / "data" / "data_route_provenance.json"
 TIMEOUT = 30
-UA = {"User-Agent": "Mozilla/5.0 (quant-desk data fixer)"}
+UA = {"User-Agent": HONEST_UA}
 
 
 def _get(url: str) -> bytes:

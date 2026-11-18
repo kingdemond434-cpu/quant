@@ -38,10 +38,15 @@ from pathlib import Path
 
 import certifi
 
+try:
+    from libs.data.honest_ua import HONEST_UA
+except ImportError:  # run as a bare script, repo root not on sys.path
+    HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+
 ROOT = Path("/home/quant/quant-platform")
 BRONZE = ROOT / "data/lake/bronze"
 CTX = ssl.create_default_context(cafile=certifi.where())
-UA = {"User-Agent": "Mozilla/5.0 (research; solo desk; contact via repo)"}
+UA = {"User-Agent": HONEST_UA}
 
 
 
@@ -51,7 +56,7 @@ def curl(url: str, timeout: int = 90) -> bytes:
     import subprocess
     r = subprocess.run(
         ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
-         "-A", "Mozilla/5.0 (research; solo quant desk)", url],
+         "-A", HONEST_UA, url],
         capture_output=True, timeout=timeout + 15)
     if r.returncode != 0 or not r.stdout:
         raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
