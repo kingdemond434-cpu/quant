@@ -105,8 +105,19 @@ def _raise_leaky(*_a: object, **_k: object) -> object:
 
 def _inject_everywhere(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Every exception the pass catches carries a secret, a path and a host."""
+    import importlib
+
     from research import build_input_probe as probe
     from research import fire_inputs
+
+    # The prescreen's reports stay under tmp in BOTH module spellings `_prescreen` may import.
+    monkeypatch.syspath_prepend(str(DESK / "research"))
+    for name in ("judge_prescreen", "research.judge_prescreen"):
+        jp = importlib.import_module(name)
+        for attr in ("INTAKE_REPORT", "REPORT"):
+            cur = getattr(jp, attr, None)
+            if isinstance(cur, Path):
+                monkeypatch.setattr(jp, attr, tmp_path / f"prescreen_{cur.name}")
 
     class _Dk:
         score = staticmethod(_raise_leaky)
