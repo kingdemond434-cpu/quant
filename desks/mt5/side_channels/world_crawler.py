@@ -668,7 +668,7 @@ SEEDS = (
     "https://www.mql5.com/zh/code",
     "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
-    "https://www.reddit.com/r/algotrading/top/?t=week",
+    # (r/algotrading removed 2026-11-18: reddit.com is refused on its own terms, refused_hosts)
     "https://quantocracy.com/",
     "https://www.quantstart.com/articles/",
     "https://xueqiu.com/",
