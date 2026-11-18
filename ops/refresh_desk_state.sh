@@ -114,6 +114,12 @@ PY
 # time, so a desk that stops publishing must show an age that GROWS. Rebuilding only on change
 # would freeze the age at the moment of the last update and make a dead box look merely quiet --
 # which is the exact confusion this desk keeps paying for.
+# THE TERMINAL'S AGENTS TAB (C row 14). web/terminal.html is served from web/ beside
+# desk_state.json and reads web/threads.json, written here on the same tick. An absent
+# docs/thread_briefs/INDEX.json writes status UNMEASURED with the reason, never an empty "all done".
+python3 scripts/publish_thread_status.py --out web/threads.json \
+  || echo "publish_thread_status.py FAILED -- the Agents tab keeps its previous threads.json"
+
 if python3 scripts/build_zentech_state.py >/dev/null 2>&1; then
   age="$(python3 - <<'PY' 2>/dev/null
 import json, pathlib
