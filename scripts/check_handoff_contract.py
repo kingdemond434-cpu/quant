@@ -22,7 +22,7 @@ WHAT IT FAILS:
      republished GROSS downstream; one instrument and unit change horizon bucket across stages.
 
 An absent artifact is UNMEASURED and named, never a pass. Exit 1 on any failure, else 0; the
-verdict is PASS only when every surface was measured.
+run is clean only when every surface was measured.
 
     python scripts/check_handoff_contract.py [--json]
 """
