@@ -137,3 +137,21 @@ def test_packet_reads_asset_class_and_the_survivor_family_slot(tmp_path: Path) -
     }}))
     fams = _frontier(tmp_path)["survivor_families"]
     assert fams == {"session_range_breakout": 2, "dav_range_filter_adx": 1}
+
+
+def test_free_ram_and_disk_moving_between_builds_keep_the_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1270: free RAM and free disk move on a busy runner; the hash must identify content only."""
+    import libs.ops.deepseek_packet as dp
+
+    root = _fixture(tmp_path)
+    free = iter([1.0, 2.0])
+
+    def resources(_base: Path) -> dict[str, object]:
+        v = next(free)
+        return {"cpu_count": 4, "disk_total_gb": 100.0, "disk_free_gb": v, "ram_total_gb": 16.0,
+                "ram_available_gb": v}
+
+    monkeypatch.setattr(dp, "_resources", resources)
+    assert build(root)["packet_hash"] == build(root)["packet_hash"]
