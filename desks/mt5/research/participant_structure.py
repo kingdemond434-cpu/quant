@@ -52,6 +52,11 @@ WINDOW = 52
 FRESH_DAYS = 120
 FLOOR_BOUNDS = (0.05, 0.5)
 UNMEASURED = "UNMEASURED"
+#: A legacy COT report carries Tuesday's positions and is published the following Friday, so a
+#: row is knowable only COT_RELEASE_LAG_DAYS after its report_date (the same lag
+#: orthogonal_sweep applies). Rows not yet published at `now` are dropped, and freshness is aged
+#: from publication, not from the positions date.
+COT_RELEASE_LAG_DAYS = 3
 
 #: Held legacy COT file -> MT5 symbol. SEED, not a boundary: a file not named here is reported
 #: as unmapped, never silently dropped.
@@ -80,14 +85,17 @@ def gross_small_share(path: Path, now: datetime) -> dict[str, Any]:
             "noncomm_positions_short_all", "comm_positions_long_all", "comm_positions_short_all")
     if any(c not in df.columns for c in need) or df.empty:
         return {"status": UNMEASURED, "why": "missing legacy columns"}
-    df = df.sort_values("report_date").tail(WINDOW)
+    known_at = pd.to_datetime(df["report_date"], utc=True) + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+    df = df[known_at <= pd.Timestamp(now)].sort_values("report_date").tail(WINDOW)
+    if df.empty:
+        return {"status": UNMEASURED, "why": "no report published by now"}
     oi = df["open_interest_all"].astype(float)
     held = (df["noncomm_positions_long_all"] + df["noncomm_positions_short_all"]
             + df["comm_positions_long_all"] + df["comm_positions_short_all"]).astype(float)
     share = (1.0 - held / (2.0 * oi)).where(oi > 0).dropna()
     last = pd.Timestamp(df["report_date"].iloc[-1])
     last = last.tz_localize("UTC") if last.tzinfo is None else last
-    age = (now - last.to_pydatetime()).days
+    age = (now - (last + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)).to_pydatetime()).days
     if share.empty:
         return {"status": UNMEASURED, "why": "no open interest"}
     row = {"gross_small_share": round(float(share.mean()), 4), "n_reports": len(share),

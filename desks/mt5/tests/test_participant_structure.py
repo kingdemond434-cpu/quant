@@ -101,3 +101,13 @@ def test_breadth_sweep_applies_the_floor_inside_its_cap(monkeypatch, tmp_path) -
     want = round(doc["exploration_floor"]["floor"] * 6)
     assert sum(r["symbol"] == "XAUUSD" for r in out[:6]) == want
     assert bs.CLUSTER_FLOOR_STATS["moved"] >= 1
+
+
+def test_a_cot_row_counts_only_once_published(tmp_path: Path) -> None:
+    """Positions dated Tuesday are knowable the Friday after (COT_RELEASE_LAG_DAYS); a report
+    whose publication is still in the future at `now` must not enter the share."""
+    p = tmp_path / "late.parquet"
+    _cot(p, 0.3, last="2026-11-17")
+    row = ps.gross_small_share(p, NOW)
+    assert row["last_report"] == "2026-11-10"
+    assert row["age_days"] == (NOW - datetime(2026, 11, 13, tzinfo=UTC)).days
