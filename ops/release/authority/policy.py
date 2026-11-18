@@ -13,6 +13,13 @@ CLASSES (strictest file wins):
                  AUTO job: the PR's own `pull_request` runs are self-attested for these files.
   AUTO / LOW  -- the gate's own tiers; every gating and AUTO job.
 
+MATCHES_DECLARED (replay-shadow's Fusion-roster verdict, ops/release/replay_shadow.py): a PR whose
+only red required job is replay-shadow, whose report says MATCHES_DECLARED, and whose measured
+admit/refuse flips equal exactly one row for this PR and full head sha in the BASE's
+DECLARED_REGISTRY (every refusal with a missed_growth line) is judged as at least CONTROLLER:
+replay-shadow stands in as passed, and the base-run trusted-eval and the CONTROLLER veto window
+are added. Never AUTO or LOW, never ROOT relief: classify() still runs first and ROOT still HOLDs.
+
 VERDICTS: "CLEAR" (sign it), "HOLD" (sign it: a no that no later evidence on this head can
 change -- ROOT, REFUSED, a standing AUDIT HOLD), "FAIL" (a required check failed; signed as
 nothing, the gate refuses it by itself, and a passing re-run may still CLEAR the head), "WAIT"
@@ -25,6 +32,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
+import re
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -33,6 +41,11 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
 POLICY_FILE = HERE / "ROOT_POLICY.json"
 CEILINGS = "ops/release/ceilings.json"
+#: The Auditor's declared Fusion-roster divergences, read from the BASE only (a PR cannot declare
+#: its own): {"rows": [{"pr", "head_sha", "admit": [name], "refuse": [{"name", "missed_growth"}]}]}
+DECLARED_REGISTRY = "ops/release/expected_divergence.json"
+MATCHES_DECLARED = "MATCHES_DECLARED"
+_FLIP_KINDS = ("admit", "refuse")
 
 
 def load_policy(path: Path = POLICY_FILE) -> dict[str, Any]:
@@ -92,9 +105,25 @@ def envelope_check(base: Mapping | None, head: Mapping | None, env: Mapping) -> 
             if new == old:
                 continue
             if new < old:
-                # NEVER REDUCE AGGRESSIVENESS (principal 2026-09-08) and GROWTH GOVERNANCE Rule 1:
-                # a cap lowered by fiat is not delegated (#637 audit MF2); zuck's path decides
-                out.append(f"{path}:{knob} ceiling lowered {old} -> {new}: not delegated")
+                # RISK AUTONOMY (zuck 2026-11-14 03:30Z: "U can change live risk limits etc without
+                # me to wtv best"): a delegated knob moves both ways, one step per PR. Lowering a
+                # firm rule only tightens it. Anything else lowered stays the owner's path. A
+                # lowering still answers to GROWTH GOVERNANCE Rule 1 in review: evidence, not fiat.
+                low_spec = (raisable.get(path) or {}).get(knob)
+                if knob in (fixed.get(path) or ()):
+                    if new < 0:
+                        out.append(f"{path}:{knob} firm rule lowered below zero")
+                    continue
+                if not low_spec:
+                    out.append(f"{path}:{knob} ceiling lowered {old} -> {new}: not delegated")
+                    continue
+                if new <= 0:
+                    out.append(f"{path}:{knob} lowered to {new}: a delegated knob stays positive")
+                elif old > 0 and (old - new) / old > float(low_spec["max_step_frac"]) + 1e-12:
+                    out.append(
+                        f"{path}:{knob} lowered {old} -> {new}, more than one step "
+                        f"({low_spec['max_step_frac']:.0%}) in one PR"
+                    )
                 continue
             if knob in (fixed.get(path) or ()):
                 out.append(f"{path}:{knob} is a firm rule ({old} -> {new}): never raised")
@@ -210,3 +239,54 @@ def required_jobs(cls: str, gating: tuple[str, ...], auto: tuple[str, ...], poli
     """The head's own check runs every class needs. A CONTROLLER PR's base-run trusted-eval is
     not a check run on the head (pull_request_target runs on the base), so it is read apart."""
     return gating + auto
+
+
+def declared_replay(report: Any, registry: Any, pr: int, head_sha: str) -> str | None:
+    """None when replay-shadow's `report` is a MATCHES_DECLARED whose flips equal exactly one
+    row of the base's `registry` for this PR and full head sha; otherwise why not. Pure. Fails
+    closed on every shape it does not expect."""
+    if not isinstance(report, dict) or report.get("verdict") != MATCHES_DECLARED:
+        return "the replay-shadow report is not MATCHES_DECLARED"
+    if not re.fullmatch(r"[0-9a-f]{40}", head_sha or "") or not isinstance(pr, int):
+        return "no PR number or no full 40-hex head sha"
+    roster = report.get("fusion_roster")
+    if not isinstance(roster, dict) or roster.get("measured") is not True:
+        return "the Fusion roster leg did not measure both trees"
+    if roster.get("declared") != "matched":
+        return "the replay did not match a declaration itself"
+    div = roster.get("divergence")
+    if not isinstance(div, list) or not div:
+        return "no divergence listed"
+    flips: list[tuple[str, str, str]] = []
+    for d in div:
+        if not (isinstance(d, list) and len(d) == 3 and all(isinstance(x, str) for x in d)):
+            return "a divergence row has the wrong shape"
+        if d[0] not in _FLIP_KINDS:
+            return f"undeclarable divergence ({d[0]})"
+        flips.append((d[0], d[1], d[2]))
+    problems = report.get("problems")
+    if problems != [f"fusion roster {k} {sym} {n}" for k, sym, n in flips]:
+        return "the report lists problems other than the declared roster flips"
+    rows = registry.get("rows") if isinstance(registry, dict) else None
+    if not isinstance(rows, list):
+        return f"{DECLARED_REGISTRY} on the base is missing or unreadable"
+    mine = [
+        r
+        for r in rows
+        if isinstance(r, dict) and r.get("pr") == pr and r.get("head_sha") == head_sha
+    ]
+    if len(mine) != 1:
+        return f"{len(mine)} declared rows for #{pr} at {head_sha[:9]} (exactly one is required)"
+    row = mine[0]
+    admit, refuse = row.get("admit") or [], row.get("refuse") or []
+    if not (isinstance(admit, list) and isinstance(refuse, list)):
+        return "the declared row has the wrong shape"
+    if not all(isinstance(r, dict) and isinstance(r.get("missed_growth"), str)
+               and r["missed_growth"].strip() and isinstance(r.get("name"), str)
+               for r in refuse):  # fmt: skip
+        return "a declared refusal carries no missed_growth line"
+    want = ({str(n) for n in admit}, {str(r["name"]) for r in refuse})
+    got = ({n for k, _s, n in flips if k == "admit"}, {n for k, _s, n in flips if k == "refuse"})
+    if want != got:
+        return "the measured flips differ from the declared admit/refuse sets"
+    return None
