@@ -225,7 +225,6 @@ jobs:
       # when the base's script predates --reuse-only (it runs from LIVE's tip, not the PR).
       - name: Reuse this change's earlier review
         id: reuse
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
@@ -234,6 +233,7 @@ jobs:
           --pr "${{ github.event.pull_request.number }}"
           --head "${{ github.event.pull_request.head.sha }}"
           --base-sha "${{ github.event.pull_request.base.sha }}"
+          || echo "reuse: not checked (exit $?); the review runs"
 
       # A failure here is not a verdict: the review below finds no pinned model and queues.
       # #457 audit MF1: no install script and no sudo. The release archive runs only when its

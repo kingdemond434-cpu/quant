@@ -168,4 +168,4 @@ def test_workflow_skips_models_only_on_a_hit() -> None:
     assert job.count("if: steps.reuse.outputs.hit != 'true'") == 2
     # the step runs LIVE's script: one without --reuse-only (or any crash) must not fail the job
     step = job[job.index("id: reuse") : serve]
-    assert "continue-on-error: true" in step
+    assert '|| echo "reuse: not checked' in step and "continue-on-error" not in step
