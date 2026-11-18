@@ -1,51 +1,57 @@
 {
  "schema": 1,
- "started_at": "2026-11-18T01:41:56+00:00",
- "pid": 17224,
- "phase": "written",
- "phase_at": "2026-11-18T01:47:06+00:00",
- "done": false,
+ "started_at": "2026-11-18T02:38:38+00:00",
+ "pid": 11236,
+ "phase": "applied",
+ "phase_at": "2026-11-18T02:43:43+00:00",
+ "done": true,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-11-18T01:41:56+00:00",
+   "at": "2026-11-18T02:38:38+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-11-18T01:41:56+00:00",
+   "at": "2026-11-18T02:38:38+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "queue",
-   "at": "2026-11-18T01:44:17+00:00",
-   "elapsed_s": 140.3
+   "at": "2026-11-18T02:40:57+00:00",
+   "elapsed_s": 139.7
   },
   {
    "phase": "plan",
-   "at": "2026-11-18T01:44:17+00:00",
-   "elapsed_s": 140.4
+   "at": "2026-11-18T02:40:57+00:00",
+   "elapsed_s": 139.7
   },
   {
    "phase": "rate",
-   "at": "2026-11-18T01:44:17+00:00",
-   "elapsed_s": 140.4
+   "at": "2026-11-18T02:40:57+00:00",
+   "elapsed_s": 139.7
   },
   {
    "phase": "rate_written",
-   "at": "2026-11-18T01:46:57+00:00",
-   "elapsed_s": 300.2
+   "at": "2026-11-18T02:42:05+00:00",
+   "elapsed_s": 207.6
   },
   {
    "phase": "task_limit",
-   "at": "2026-11-18T01:47:01+00:00",
-   "elapsed_s": 304.6
+   "at": "2026-11-18T02:42:09+00:00",
+   "elapsed_s": 211.4
   },
   {
    "phase": "written",
-   "at": "2026-11-18T01:47:06+00:00",
-   "elapsed_s": 309.4
+   "at": "2026-11-18T02:42:12+00:00",
+   "elapsed_s": 214.4
+  },
+  {
+   "phase": "applied",
+   "at": "2026-11-18T02:43:43+00:00",
+   "elapsed_s": 305.1
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
+ "seconds": 305.1
 }
