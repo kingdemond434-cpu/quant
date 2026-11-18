@@ -1152,3 +1152,60 @@ def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
     text = json.dumps(_ROW) + "\n" + json.dumps(_ROW, indent=1) + "\n\n{oops\n"
     with pytest.raises(ag.GuardError, match=rf":{text.count(chr(10))} is not JSON"):
         ag.parse_clears(text)
+
+
+# ------------------------------------------------------------------ the fast lane (2026-11-17)
+_STUB = """
+def classify(paths, head=None):
+    p = list(paths)[0]
+    if p.startswith("research/"):
+        return True, "off the money path (stub)"
+    return False, p + " is on the money path (stub)"
+"""
+
+
+def _with_classifier(repo: Path, stub: str = _STUB) -> None:
+    _write(repo, ag.FAST_LANE_REL, stub)  # the box's own sealed copy: in its checkout
+    code = _commit(repo, "classifier")
+    _write(repo, REL, json.dumps({"code_sha": code}) + "\n")
+    _commit(repo, "seal")
+
+
+def test_with_no_classifier_on_the_box_nothing_is_exempt(repo: Path) -> None:
+    change = _origin(repo, _head(repo), {"research/r.py": "R = 1\n"})
+    code, doc = ag.pre(repo, change, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
+
+
+def test_a_non_money_merge_adopts_without_a_clear_and_money_still_holds(repo: Path) -> None:
+    _with_classifier(repo)
+    head = _head(repo)
+    research = _origin(repo, head, {"research/r.py": "R = 1\n"})
+    code, doc = ag.pre(repo, research, now=QUIET, offset_h=summer)
+    assert code == ag.GO, doc
+    assert doc["fast_lane_exempt"] == {"research/r.py": "off the money path (stub)"}
+
+    both = _origin(repo, head, {"research/r.py": "R = 1\n", "libs/x.py": "X = 2\n"})
+    code, doc = ag.pre(repo, both, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["libs/x.py"]  # money code needs its CLEAR
+
+
+def test_a_hold_row_beats_the_fast_lane_and_the_switch_turns_it_off(repo: Path) -> None:
+    _with_classifier(repo)
+    change = _origin(repo, _head(repo), {"research/r.py": "R = 1\n"})
+    held = _with_clears(repo, change, _clear(repo, change, "HOLD"))
+    code, doc = ag.pre(repo, held, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
+
+    _write(repo, ag.FAST_LANE_OFF_REL, "")
+    code, doc = ag.pre(repo, change, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
+
+
+def test_a_broken_classifier_exempts_nothing(repo: Path) -> None:
+    _with_classifier(repo, "def classify(paths, head=None):\n    raise RuntimeError('x')\n")
+    change = _origin(repo, _head(repo), {"research/r.py": "R = 1\n"})
+    code, doc = ag.pre(repo, change, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == ["research/r.py"]
+    _with_classifier(repo, "this is not python(\n")
+    assert ag.fast_lane_exempt(repo, ["research/r.py"], change, []) == {}
