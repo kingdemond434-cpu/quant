@@ -23,6 +23,13 @@
  "progress_metric": "gate_runs",
  "consumer": "desks/mt5/research/plumbing_watchdog.py",
  "measured_on": "vm",
- "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
- "measured_at": "2026-10-29T14:59:54+00:00"
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-18T04:34:49+00:00",
+ "only_missing": {
+  "at": "2026-11-18T04:34:49+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
 }
