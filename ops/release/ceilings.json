@@ -248,6 +248,48 @@
         ],
         "until_pr": 389
       }
+    },
+    "desks/mt5/mt5desk/family_fx_expiry_pin.py": {
+      "SERIES_DIR": "Path(__file__).resolve().parents[1] / 'data' / 'lake' / 'series'",
+      "SERIES_ID": "'fx_option_expiry_strikes'",
+      "PAIRS": "('EURUSD', 'USDJPY', 'AUDUSD', 'GBPUSD')",
+      "NY": "ZoneInfo('America/New_York')",
+      "CUT_LOCAL": "time(10, 0)",
+      "MODES": "('pin', 'release')",
+      "CLOCKS": "('bars', 'utc')",
+      "series_path(root=)": "None",
+      "load_prints(root=)": "None",
+      "family_fx_expiry_pin(side=)": "1",
+      "family_fx_expiry_pin(mode=)": "'pin'",
+      "family_fx_expiry_pin(proximity_atr=)": "0.5",
+      "family_fx_expiry_pin(min_notional_usd=)": "1000000000.0",
+      "family_fx_expiry_pin(lead_bars=)": "3",
+      "family_fx_expiry_pin(release_bars=)": "6",
+      "family_fx_expiry_pin(lag_minutes=)": "120",
+      "family_fx_expiry_pin(stop_atr=)": "1.0",
+      "family_fx_expiry_pin(rr=)": "1.5",
+      "family_fx_expiry_pin(atr_n=)": "14",
+      "family_fx_expiry_pin(clock=)": "'bars'",
+      "family_fx_expiry_pin(series_root=)": "None"
+    },
+    "desks/mt5/mt5desk/family_hazard_shock.py": {
+      "SERIES_DIR": "Path(__file__).resolve().parents[1] / 'data' / 'lake' / 'series'",
+      "SERIES_ID": "'natural_hazard_events'",
+      "KINDS": "('quake_jp', 'quake_tw', 'quake_cl', 'storm_gulf')",
+      "MODES": "('drift', 'fade')",
+      "CLOCKS": "('bars', 'utc')",
+      "load_events(root=)": "None",
+      "family_hazard_shock(side=)": "1",
+      "family_hazard_shock(prior_side=)": "1",
+      "family_hazard_shock(mode=)": "'drift'",
+      "family_hazard_shock(min_magnitude=)": "0.0",
+      "family_hazard_shock(hold_bars=)": "24",
+      "family_hazard_shock(fade_after=)": "6",
+      "family_hazard_shock(stop_atr=)": "2.0",
+      "family_hazard_shock(rr=)": "1.5",
+      "family_hazard_shock(atr_n=)": "20",
+      "family_hazard_shock(clock=)": "'bars'",
+      "family_hazard_shock(series_root=)": "None"
     }
   }
 }
