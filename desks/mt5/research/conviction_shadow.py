@@ -1,6 +1,6 @@
 """Conviction scaling, in SHADOW: what the allocator's book would be with it, and what it earned.
 
-Build C row 143. `libs.portfolio.capital_modifiers.conviction_factors` multiplies each sleeve's
+Build C row 143. `libs.portfolio.conviction.conviction_factors` multiplies each sleeve's
 evidence weight by its evidence STRENGTH (deflated Sharpe probability, shrunk by n) and by how
 many INDEPENDENT signals agree with it. `pf_allocator` applies it only when the switch
 `desks/mt5/data/CONVICTION_SCALING.json` reads LIVE; absent, it is SHADOW and the live fractions
@@ -16,11 +16,11 @@ are byte-identical. This leg is how the switch earns its flip:
   4. once per UTC day, ledger the two books; score every earlier day's pair on the FIRST
      realised day after it (forward ledgers first, then the allocator's own daily-R matrix):
      dlogW = log(1 + h_conv.r) - log(1 + h_base.r);
-  5. `capital_modifiers.conviction_promotion` over the last N matured days flips the switch
+  5. `conviction.conviction_promotion` over the last N matured days flips the switch
      LIVE when mean - se > 0 and back to SHADOW when mean + se < 0. No human gate.
 
 The downward half (sleeves the modifier cut) is priced per matured day as
-sum_{f<1} (h_conv - h_base) x r and read by `missed_growth.measure_conviction`.
+sum_{f<1} (h_conv - h_base) x r and read by `missed_growth.published_conviction_lines`.
 
     python desks/mt5/research/conviction_shadow.py --once --budget-s 240 [--json]
 """
@@ -44,7 +44,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from libs.portfolio import capital_modifiers as cm  # noqa: E402
+from libs.portfolio import conviction as cm  # noqa: E402
 
 REPORTS = DESK / "reports"
 DATA = DESK / "data"

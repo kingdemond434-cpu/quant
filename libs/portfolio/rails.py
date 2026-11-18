@@ -131,14 +131,6 @@ RAILS: tuple[Rail, ...] = (
          "book at EXPLORE_SHARE of total heat",
          "measure_explore", tunable=True, lo=0.25, hi=1.0,
          weaken_means="a smaller share of the book is lent to exploration inside the margin"),
-    # CONVICTION SCALING'S DOWNWARD HALF (Build C row 143). The modifier is two-sided; the
-    # sleeves it CUTS (weak deflated Sharpe, little independent corroboration) are billed here,
-    # per matured forward day, as sum_{f<1} (h_conv - h_base) x r from
-    # reports/CONVICTION_SHADOW.json. Sampled only while the switch is LIVE -- in SHADOW it cuts
-    # nothing on the account. Not tunable: the switch's own promotion rule is its calibration.
-    Rail("conviction_scaling", "shrink",
-         "pf_allocator.apply_conviction_scaling <- capital_modifiers.conviction_factors",
-         "measure_conviction"),
     Rail("floor_mandate", "mandate", "heat_policy.resolve HEAT_TARGET 20% floor",
          "measure_floor"),
     Rail("proof_fallback", "gate", "gateway.allocator_book <- allocator_proof",

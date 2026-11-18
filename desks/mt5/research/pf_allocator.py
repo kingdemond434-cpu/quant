@@ -51,6 +51,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
 try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
     from libs.research import forward_ledger as _fl
 except ImportError:  # run as a script from the desk: put the repo root on the path
@@ -2587,20 +2588,16 @@ def apply_conviction_scaling(ev: list[SleeveEvidence]
 
     SHADOW: `ev` is not touched and no factor is computed -- the solve reads the very same
     objects it read before this function existed, which is what makes SHADOW byte-identical.
-    LIVE: `ev` is replaced in place by `capital_modifiers.apply_conviction` (a mean tilt, bounded
+    LIVE: `ev` is replaced in place by `conviction.apply_conviction` (a mean tilt, bounded
     two-sided [0.5, 2.0]); a failure leaves the original evidence and says so.
 
     GROWTH GOVERNANCE. Rule 2: a deflated-Sharpe-strong, independently corroborated sleeve is
-    RAISED up to 2x. Rule 1: its downward half is billed by the missed-growth rail
-    `conviction_scaling` and the switch itself goes LIVE only on robustly positive forward
-    dE[log W]. Nothing here touches the heat floor, the daily-loss or lot parameters: the total
+    RAISED up to 2x. Rule 1: its downward half is billed as a missed-growth line
+    (`missed_growth.published_conviction_lines`) and the switch itself goes LIVE only on
+    robustly positive forward dE[log W]. Nothing here touches the heat floor, the daily-loss or lot parameters: the total
     is still the heat law's.
     """
-    from libs.portfolio.capital_modifiers import (
-        apply_conviction,
-        conviction_factors,
-        conviction_mode,
-    )
+    from libs.portfolio.conviction import apply_conviction, conviction_factors, conviction_mode
     base = list(ev)
     mode = conviction_mode()
     if mode != "LIVE":
@@ -2618,7 +2615,7 @@ def apply_conviction_scaling(ev: list[SleeveEvidence]
             "n_up": sum(1 for v in moved.values() if float(v["factor"]) > 1.0),
             "n_down": sum(1 for v in moved.values() if float(v["factor"]) < 1.0),
             "n_sleeves": len(ev), "largest": dict(top),
-            "modifier": "capital_modifiers.REGISTRY conviction (two_sided, 0.5..2.0)"}, base
+            "modifier": "libs.portfolio.conviction.MODIFIER (two_sided, 0.5..2.0)"}, base
 
 
 def write_conviction_inputs(ev: Sequence[SleeveEvidence], book: Mapping[str, float],

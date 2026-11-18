@@ -14,7 +14,8 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.portfolio import capital_modifiers as cm  # noqa: E402
+from libs.portfolio import conviction as cm  # noqa: E402
+from libs.portfolio.capital_modifiers import REGISTRY  # noqa: E402
 from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, optimise  # noqa: E402
 
 
@@ -45,9 +46,11 @@ def _ev() -> list[SleeveEvidence]:
     return out
 
 
-def test_registered_two_sided_and_able_to_raise_capital() -> None:
-    m = {x.name: x for x in cm.REGISTRY}["conviction"]
+def test_two_sided_and_able_to_raise_capital() -> None:
+    m = cm.MODIFIER
+    # the growth fence's G4 rule, asserted on the row the sealed REGISTRY will carry
     assert m.kind == "two_sided" and m.lo < 1.0 < m.hi and m.hi >= 2.0
+    assert m.name not in {x.name for x in REGISTRY} or m in REGISTRY
 
 
 def test_strong_corroborated_sleeve_is_raised_and_weak_lone_one_cut() -> None:
@@ -150,17 +153,14 @@ def test_shadow_leg_writes_both_books_and_scores_forward(tmp_path, monkeypatch) 
 
 def test_missed_growth_bills_the_down_half_only_when_live(tmp_path, monkeypatch) -> None:
     from research import missed_growth as mg
-    from libs.portfolio.rails import rail
-    r = rail("conviction_scaling")
-    assert r.measure in mg.MEASURES
     p = tmp_path / "CONVICTION_SHADOW.json"
     monkeypatch.setattr(mg, "CONVICTION", p)
-    assert mg.measure_conviction(r, {}, {})["verdict"] == mg.UNMEASURED
+    assert mg.published_conviction_lines()["verdict"] == mg.UNMEASURED
     p.write_text(json.dumps({"mode": "SHADOW", "down_half": {"value_logw_per_day": -1e-4}}))
-    assert mg.measure_conviction(r, {}, {})["verdict"] == mg.NOT_BINDING
+    assert mg.published_conviction_lines()["verdict"] == mg.NOT_BINDING
     from datetime import UTC, datetime
     today = datetime.now(tz=UTC).date().isoformat()
     p.write_text(json.dumps({"mode": "LIVE", "down_half": {"value_logw_per_day": -1e-4,
                                                            "realised_day": today}}))
-    got = mg.measure_conviction(r, {}, {})
+    got = mg.published_conviction_lines()
     assert got["sample"] is True and got["value_logw_per_day"] == pytest.approx(-1e-4)

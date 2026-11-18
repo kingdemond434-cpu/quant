@@ -5861,7 +5861,7 @@ def main() -> None:
     # CONVICTION SCALING, SHADOW FIRST (Build C row 143). Reads the evidence the solve above just
     # snapshotted, solves the book with and without the two-sided conviction modifier at the same
     # heat, ledgers both once a day and scores them forward; flips CONVICTION_SCALING.json LIVE
-    # (or back) by `capital_modifiers.conviction_promotion`. Artifact: CONVICTION_SHADOW.json.
+    # (or back) by `conviction.conviction_promotion`. Artifact: CONVICTION_SHADOW.json.
     cvs = _costed("conviction_shadow", lambda: _producer(
         "conviction_shadow", "research/conviction_shadow.py", "--once", "--budget-s", "240"))
     atg = _costed("allocator_trigger", lambda: _producer(
