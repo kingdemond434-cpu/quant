@@ -27,7 +27,7 @@ def _book(tmp_path: Path, doc: dict) -> Path:
 
 
 def test_the_opening_is_the_principals_approved_target() -> None:
-    assert ks.CODE_BOOK_OPEN == {"e8": {KEY: 0.004}}
+    assert ks.CODE_BOOK_OPEN == {"e8": {KEY: 0.004}, "ftmo": {KEY: 0.004}}
 
 
 def test_a_file_zero_is_lifted(tmp_path: Path) -> None:
@@ -63,7 +63,21 @@ def test_other_venues_and_gold_windows_are_untouched(tmp_path: Path) -> None:
     e8 = ks.load_cert_book(p, "e8")
     assert e8 is not None and e8["gold_london_am"] == 0.0 and e8["gold_afternoon"] == 0.0
     assert ks.load_cert_book(p, "fusion") == {KEY: 0.0}
-    assert ks.load_cert_book(p, "ftmo") == {"gold_asia": 0.009}
+    assert ks.load_cert_book(p, "ftmo") == {"gold_asia": 0.009, KEY: 0.004}
+
+
+def test_ftmo_still_needs_the_allocators_own_solve() -> None:
+    """The FTMO opening is a ceiling: with no solved fraction for the key, nothing is sent."""
+    from datetime import UTC, datetime
+    from prop import ftmo_executor as fx
+    now = datetime.now(tz=UTC)
+    alloc = {"generated_at": now.isoformat(), "deployable": True,
+             "specs": {KEY: {"symbol": "USDJPY"}}, "executable": {}}
+    assert fx.book_sleeves(alloc, {KEY: 0.004}, now)[0] == []
+    alloc["executable"] = {KEY: 0.002}
+    assert fx.book_sleeves(alloc, {KEY: 0.004}, now)[0] == [(KEY, 0.002, {"symbol": "USDJPY"})]
+    alloc["executable"] = {KEY: 0.01}
+    assert fx.book_sleeves(alloc, {KEY: 0.004}, now)[0][0][1] == 0.004
 
 
 def test_the_gold_windows_stay_pinned_in_code() -> None:

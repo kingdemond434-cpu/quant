@@ -82,9 +82,19 @@ CERT_BOOK_FILE = Path(__file__).resolve().parents[1] / "data" / "CERT_BOOK_LIVE.
 #: 2026-09-18, which is what makes E8 trade daily. Worst day with gold_asia: 0.006 + 0.004 = 1.0%
 #: of equity against E8's 2.5% daily limit. Every other door still binds (principal exclusions,
 #: replication, the Tier S door, E8_CERT_CEILING, the daily guard). Journal D-20261118-001.
+#:
+#: FTMO, the same sleeve at the same 0.004 CAP (coordinator 2026-11-18, on zuck's "fr all": FTMO's
+#: follower copies only E8's gold_asia fill and its sleeve executor had nothing funded). This is a
+#: CEILING, not a size: prop/ftmo_executor.book_sleeves sends min(block, the FTMO allocator's own
+#: solve this pass) and nothing without the allocator's published spec and a fresh deployable
+#: report, so the allocator still decides whether and how much; the overlay only stops the box's
+#: unarmed or stale `ftmo` block from standing the sleeve down. Worst FTMO day with the gold copy:
+#: 0.009 + 0.004 = 1.3% against the 2-Step 5% daily / 10% max (the executor re-tests both rails
+#: on the whole book before every send). Tier S door on the committed state: block() -> None.
 #: Removing a key here closes it again; a positive value in the file always wins.
 CODE_BOOK_OPEN: dict[str, dict[str, float]] = {
     "e8": {"USDJPY_session_range_breakout_asia": 0.004},
+    "ftmo": {"USDJPY_session_range_breakout_asia": 0.004},
 }
 
 
