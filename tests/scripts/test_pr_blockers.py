@@ -192,3 +192,5 @@ def test_root_is_read_with_the_gates_own_rule_and_fails_closed() -> None:
     assert pb._touches_root(boom, "o/r", 7) is True  # unreadable files: the longer window
     assert pb._touches_root(lambda _u: [{"filename": "README.md"}], "o/r", 7) is False
     assert pb._touches_root(lambda _u: [], "o/r", 7) is True  # empty list counts as ROOT
+    full = [{"filename": f"docs/x{i}.md"} for i in range(100)]
+    assert pb._touches_root(lambda _u: full, "o/r", 7) is True  # a full page may hide ROOT

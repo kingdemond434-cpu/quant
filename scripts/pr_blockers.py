@@ -297,8 +297,10 @@ def _touches_root(fetch: Fetch, repo: str, n: int) -> bool:
             return True
         ag = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ag)
-        files = fetch(f"repos/{repo}/pulls/{n}/files?per_page=100") or []
-        return bool(ag.touches_root(list(files)))
+        files = list(fetch(f"repos/{repo}/pulls/{n}/files?per_page=100") or [])
+        if len(files) >= 100:  # a full page may hide a ROOT path on page 2: fail closed
+            return True
+        return bool(ag.touches_root(files))
     except Exception:  # fail closed, and no text reaches the published file
         return True
 
