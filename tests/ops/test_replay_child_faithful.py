@@ -39,14 +39,17 @@ BRACKET_SLIP_FILE = DATA / "E8_GOLD_SLIP.json"
 
 
 def run(venue, mt5, *, armed=False):
-    from prop import account_breakers as ab
+    from mt5desk import account_breakers as ab
 
+    import pandas as pd
     now = datetime.now(tz=UTC)
-    tick = mt5.symbol_info_tick("XAUUSD").time
+    tick = mt5.symbol_info_tick("XAUUSD").time  # broker clock, NY+7, as the terminal stamps it
+    wall = pd.Timestamp(tick, unit="s") - pd.Timedelta(hours=7)
+    tick_utc = wall.tz_localize("America/New_York").tz_convert("UTC").timestamp()
     BRACKET_SLIP_FILE.write_text(json.dumps({"measured_at": now.isoformat()}))
     latched = Path(ab.STATE).exists()
     Path(ab.STATE).write_text("{}")
-    return {"now": now.isoformat(), "tick_age_s": now.timestamp() - tick, "latched": latched,
+    return {"now": now.isoformat(), "tick_age_s": now.timestamp() - tick_utc, "latched": latched,
             "isinstance": isinstance(now, datetime), "slip": str(BRACKET_SLIP_FILE),
             "breaker": str(ab.STATE)}
 '''
@@ -64,11 +67,12 @@ def tree(tmp_path: Path) -> Path:
     (t / "desks" / "mt5" / "data").mkdir()
     (prop / "__init__.py").write_text("")
     (prop / "e8_gold.py").write_text(BOOK)
-    (prop / "account_breakers.py").write_text(BREAKERS)
+    (t / "desks" / "mt5" / "mt5desk").mkdir()  # a namespace package, as on #890
+    (t / "desks" / "mt5" / "mt5desk" / "account_breakers.py").write_text(BREAKERS)
     return t
 
 
-def _replay(tree: Path, tmp: Path, name: str) -> list[dict[str, Any]]:
+def _run(tree: Path, tmp: Path, name: str) -> dict[str, Any]:
     work = tmp / name
     work.mkdir()
     sc = {"id": name, "day": "2026-10-13", "shape": "range", "seed": 1, "equity": 100000.0,
@@ -78,14 +82,23 @@ def _replay(tree: Path, tmp: Path, name: str) -> list[dict[str, Any]]:
                         str(work / "out.json")], cwd=work, capture_output=True, text=True,
                        check=False, timeout=300)  # fmt: skip
     assert p.returncode == 0, p.stderr[-2000:]
-    steps = json.loads((work / "out.json").read_text())["steps"]
+    out: dict[str, Any] = json.loads((work / "out.json").read_text())
+    return out
+
+
+def _replay(tree: Path, tmp: Path, name: str) -> list[dict[str, Any]]:
+    out = _run(tree, tmp, name)
+    assert "mt5desk.account_breakers" not in out["sandbox_absent"]
+    assert out["tree_writes"] == []
+    steps = out["steps"]
     assert all(s["error"] is None for s in steps), [s["error"] for s in steps]
     return [s["doc"] for s in steps]
 
 
 def test_the_book_reads_the_scenario_clock_not_the_runner_s(tree: Path, tmp_path: Path) -> None:
     docs = _replay(tree, tmp_path, "a")
-    assert [d["now"] for d in docs] == ["2026-10-13T07:00:00+00:00", "2026-10-13T09:30:00+00:00"]
+    # broker 07:00 on 2026-10-13 (NY summer, so UTC+3) is 04:00 UTC
+    assert [d["now"] for d in docs] == ["2026-10-13T04:00:00+00:00", "2026-10-13T06:30:00+00:00"]
     assert all(abs(d["tick_age_s"]) < 1 for d in docs)  # a fresh tick reads fresh
     assert all(d["isinstance"] for d in docs)
 
@@ -108,9 +121,46 @@ def test_scenario_clock_honours_tz_and_reads_like_datetime() -> None:
 
     import pandas as pd
 
-    clock = {"now": pd.Timestamp("2026-10-13T07:30:00", tz="UTC")}
+    clock = {"now": pd.Timestamp("2026-10-13T07:30:00", tz="UTC")}  # broker wall time
     sd = rc.scenario_clock(clock)
-    assert sd.now(dtm.UTC) == dtm.datetime(2026, 10, 13, 7, 30, tzinfo=dtm.UTC)
-    assert sd.now().tzinfo is None and sd.utcnow() == dtm.datetime(2026, 10, 13, 7, 30)
+    assert sd.now(dtm.UTC) == dtm.datetime(2026, 10, 13, 4, 30, tzinfo=dtm.UTC)
+    assert sd.now().tzinfo is None and sd.utcnow() == dtm.datetime(2026, 10, 13, 4, 30)
     assert isinstance(dtm.datetime(2020, 1, 1), sd) and issubclass(dtm.datetime, sd)
     assert sd.fromisoformat("2026-01-02T00:00:00").year == 2026
+
+
+def test_the_sandbox_names_the_real_latch_module_and_reports_one_the_tree_lacks(
+    tree: Path, tmp_path: Path
+) -> None:
+    """Audit HOLD on #1353: keyed on prop.account_breakers, the loop skipped #890's latch."""
+    assert "mt5desk.account_breakers" in rc.SANDBOXED_ELSEWHERE
+    (tree / "desks/mt5/mt5desk/account_breakers.py").unlink()
+    (tree / "desks/mt5/prop/e8_gold.py").write_text(
+        BOOK.replace("    from mt5desk import account_breakers as ab\n", "")
+        .replace("latched = Path(ab.STATE).exists()\n    Path(ab.STATE).write_text(\"{}\")",
+                 "latched = False")
+        .replace("\"breaker\": str(ab.STATE)", "\"breaker\": None")
+    )
+    out = _run(tree, tmp_path, "c")
+    assert "mt5desk.account_breakers" in out["sandbox_absent"]
+
+
+def test_the_child_s_broker_clock_is_the_desk_s() -> None:
+    """Both DST sides, the spring gap and the autumn repeat match session_clock.server_to_utc."""
+    import pandas as pd
+
+    from libs.regime.session_clock import server_to_utc
+
+    for stamp in ("2026-01-15 07:00", "2026-07-15 07:00", "2026-03-08 09:30",
+                  "2026-11-01 08:30", "2026-10-13 23:54"):  # fmt: skip
+        want = pd.Timestamp(server_to_utc([pd.Timestamp(stamp)])[0])
+        assert rc.broker_to_utc(pd.Timestamp(stamp, tz="UTC")) == want, stamp
+
+
+def test_a_write_the_sandbox_misses_is_reported(tree: Path, tmp_path: Path) -> None:
+    (tree / "desks/mt5/prop/e8_gold.py").write_text(
+        BOOK + '\nOLD_RUN = run\n\n\ndef run(venue, mt5, *, armed=False):\n'
+        '    (DATA / "leak.json").write_text("{}")\n    return OLD_RUN(venue, mt5, armed=armed)\n'
+    )
+    out = _run(tree, tmp_path, "d")
+    assert out["tree_writes"] == ["desks/mt5/data/leak.json"]
