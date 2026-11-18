@@ -654,6 +654,9 @@ def build() -> dict[str, Any]:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
         age = _artifact_age(artifact) if artifact else None
+        # A pass running NOW (its heartbeat, see IN_FLIGHT_HEARTBEATS) excuses an artifact past
+        # its contract and a trigger IgnoreNew refused; it never excuses DISABLED or absence.
+        flight = pass_in_flight(name, age, now) if name in IN_FLIGHT_HEARTBEATS else None
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -679,12 +682,13 @@ def build() -> dict[str, Any]:
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif (artifact and max_age and age is not None and age > max_age
-              and not pass_in_flight(name, age, now)):
+              and not flight):
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
-        elif code is not None and code not in (0, 267009, 267011) and not _running:
+        elif (code is not None and code not in (0, 267009, 267011) and not _running
+              and not (code == REFUSED and flight)):
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
@@ -694,7 +698,6 @@ def build() -> dict[str, Any]:
                                   "artifact fresh; last result not read this pass")
         trigger = str((manifest.get(name) or {}).get("trigger") or "")
         resident = is_resident(trigger)
-        flight = pass_in_flight(name, age, now) if name in IN_FLIGHT_HEARTBEATS else None
         stale_age = bool(artifact and max_age and age is not None and age > max_age)
         if flight and stale_age and verdict == "OK":
             why = f"{age:.0f} min old against a {max_age} min contract, but {flight}"
