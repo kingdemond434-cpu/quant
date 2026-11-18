@@ -1114,3 +1114,41 @@ def test_an_edited_version_behind_a_merge_parent_is_still_refused(repo: Path) ->
     _g(repo, "merge", "-q", "--no-edit", "-s", "ours", side)
     with pytest.raises(ag.GuardError, match="not a prefix"):
         ag.committed_clears(repo, _head(repo))
+
+
+# A ROW LANDED PRETTY-PRINTED (2026-11-14 13:47Z, LIVE dca73be61). Read line by line its first
+# line, `{`, refused the whole record, and append-only made that permanent for every later
+# release. The reader takes whitespace-separated JSON objects; every row check still applies.
+_ROW = {"commit": "a" * 40, "verdict": "CLEAR", "report": "reports/audit/a.md",
+        "report_sha256": "f" * 64, "paths": {"x.py": "1" * 40, "gone.py": None}}
+
+
+def test_a_row_spread_over_lines_reads_as_the_same_row() -> None:
+    one = json.dumps(_ROW)
+    pretty = json.dumps(_ROW, indent=1)
+    assert "\n" in pretty
+    text = one + "\n" + pretty + "\n" + one + "\n"
+    rows = ag.parse_clears(text)
+    assert len(rows) == 3 and rows[0] == rows[1] == rows[2]
+    assert ag.vouched(rows) == {("x.py", "1" * 40), ("gone.py", None)}
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "{",                                    # an object that never closes
+        json.dumps(_ROW, indent=1)[:-1],        # a pretty row cut short
+        json.dumps(_ROW) + " x",                # trailing garbage after a row
+        "[" + json.dumps(_ROW) + "]",           # a list is not a row
+        "7",                                    # nor a number
+    ],
+)
+def test_a_broken_or_foreign_value_anywhere_still_refuses_the_file(tail: str) -> None:
+    with pytest.raises(ag.GuardError):
+        ag.parse_clears(json.dumps(_ROW) + "\n" + tail + "\n")
+
+
+def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
+    text = json.dumps(_ROW) + "\n" + json.dumps(_ROW, indent=1) + "\n\n{oops\n"
+    with pytest.raises(ag.GuardError, match=rf":{text.count(chr(10))} is not JSON"):
+        ag.parse_clears(text)
