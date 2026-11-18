@@ -61,6 +61,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # replay-shadow and the box auto-revert, secrets by the gate and .gitignore, data terms by
     # robots_gate, ROOT files by zuck. Research tools and health readings run in the STATE
     # battery below as readings. The full verdict list: simplify/fence_verdicts.csv.
+    #
+    # Two fences stay here because they guard hard rules, not paperwork (Auditor HOLD on #1289):
+    # SEAL_CLEARS.jsonl stays append-only and parseable, so an Audit HOLD row cannot be dropped
+    # or rewritten (sign_train.py auto-signs on a CLEAR row there); and every destructive pass
+    # must check a live reference first, so no ledger, certificate, tape or evidence row is
+    # retired against an empty or stale source.
+    ("check_seal_clears.py", ()),
+    ("check_no_retirement_on_absence.py", ()),
 )
 
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
