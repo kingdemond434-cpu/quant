@@ -1,0 +1,28 @@
+{
+ "organ": "executable:desks/mt5/scripts/money_task_pager.py",
+ "kind": "executable",
+ "code": [
+  "desks/mt5/scripts/money_task_pager.py"
+ ],
+ "clock": "invoked:desks/mt5/scripts/stall_watch.ps1",
+ "cadence_s": null,
+ "max_silence_s": null,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/logs/money_task_strikes.json",
+ "artifact_declared": "desks/mt5/logs/money_task_strikes.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "UNMEASURED",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-11T01:59:42+00:00"
+}

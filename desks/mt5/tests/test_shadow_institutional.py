@@ -90,18 +90,22 @@ def test_every_crypto_sensor_names_mt5_consumers() -> None:
     assert any("not MT5 targets" in p for p in problems)
 
 
-def test_a_terms_note_is_a_label_and_no_sensor_is_refused_for_terms() -> None:
-    """LAWS 5e (2026-09-23). `cboe_delayed_surface` was the desk's ONE terms refusal and this
-    test pinned it: `machine_use_allowed=False`, guard refuses by identity. That was a discovery
-    brake -- Cboe's terms restrict REDISTRIBUTION of the delayed tables, not reading them -- so
-    the flag is True now and the fact rides in `licence` and `terms_note`. What is missing on
-    that row is a written route, which is why `fetch_class` is still UNMEASURED."""
-    assert [s.sensor_id for s in si.CRYPTO_SENSORS if not s.machine_use_allowed] == []
+def test_cboe_and_vix_rows_are_refused_on_terms_and_keep_their_missed_growth() -> None:
+    """Governance, FRED ruling addendum 2026-11-14: Cboe's terms restrict automated extraction,
+    so `cboe_delayed_surface` is refused (it was flipped to True on 2026-09-23 under LAWS 5e,
+    which labels held rows and never grants a fetch). `vix_level` is refused twice over: FRED
+    and Cboe. Both rows stay registered, name the act, and carry a missed_growth line."""
     cboe = next(s for s in si.CRYPTO_SENSORS if s.sensor_id == "cboe_delayed_surface")
-    assert cboe.machine_use_allowed is True
+    vix = next(s for s in si.ENSEMBLES["global_risk_appetite"] if s.sensor_id == "vix_level")
+    oas = [s for rows in si.ENSEMBLES.values() for s in rows
+           if s.axis_series == "BAMLH0A0HYM2"]
+    assert len(oas) == 2
+    for row in (cboe, vix, *oas):
+        assert row.machine_use_allowed is False
+        assert row.licence.startswith("BLOCKED_ON_TERMS")
+        assert "missed_growth" in row.terms_note
     assert cboe.fetch_class == si.UNMEASURED
-    assert cboe.licence and "redistribution" in cboe.licence.lower()
-    assert "REGISTERED AND MINED" in cboe.terms_note
+    assert not si.check_sensors([cboe, vix, *oas])
     # A row that DOES claim a hard-boundary refusal must name the act in its licence line.
     bad = si.Sensor(sensor_id="bad", latent="global_risk_appetite", what="x",
                     fetch_class="public_endpoint", source="x", cadence="daily", pit_lag_days=0.0,
@@ -341,8 +345,15 @@ def test_gap_map_has_a_measured_status_on_every_row(tmp_path: Path) -> None:
     assert by["decades of clean history"]["status"] == si.UNMEASURED   # empty tmp tree
     options = by["options surface (vendor)"]
     assert options["detail"]["deribit_sensors_declared"] >= 5
-    # LAWS 5e (2026-09-23): Cboe is no longer refused for terms -- it is LABELLED and mined.
-    assert options["detail"]["refused_for_terms"] == []
+    # Refused at the door on terms (BLOCKED_ON_TERMS, 2026-11-14): UN Comtrade's rows (its
+    # licence s.5 forbids automated downloading) and Cboe's delayed tables plus the FRED VIX row
+    # (Governance). Cboe stays LABELLED as well, so the gap is named, never silent.
+    refused = set(options["detail"]["refused_for_terms"])
+    # The FRED-hosted rows (vix_level, and the ICE BofA OAS behind us_credit_oas and
+    # credit_spread) are refused under the FRED ruling of 2026-11-13. Equality, not a subset,
+    # so a newly refused source must be named here.
+    assert refused == {"cn_customs_exports", "cn_iron_ore_imports", "cboe_delayed_surface",
+                       "vix_level", "us_credit_oas", "credit_spread"}, refused
     assert "cboe_delayed_surface" in options["detail"]["terms_labelled"]
     # every row that is not fully shadowed NAMES what is missing
     for r in rows:
@@ -408,6 +419,12 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
                     "T10Y2Y": {"points": [{"d": d, "v": float(i % 3)}
                                           for i, d in enumerate(_days(400))]}}}),
         encoding="utf-8")
+    # The desk's own USDJPY bars: a lawful second risk sensor (jpy_carry_proxy), since the
+    # planted VIX and OAS rows are refused on terms.
+    import pandas as pd
+    pd.DataFrame({"close": [100.0 + (i % 11) for i in range(400)]},
+                 index=pd.to_datetime(_days(400))).to_parquet(
+                     tree["universe"] / "USDJPY_D1.parquet")
     doc = si.run(no_fetch=True, dry_run=False, desk=tree["desk"], axes=tree["axes"],
                  universe=tree["universe"], fixtures=tree["fixtures"],
                  report_path=tree["report"])
@@ -415,7 +432,9 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
     assert tree["report"].exists()
     risk = next(r for r in doc["ensembles"] if r["latent"] == "global_risk_appetite")
     assert risk["status"] == "MEASURED"
-    assert risk["n_sensors_used"] == 3
+    # VIXCLS and BAMLH0A0HYM2 are planted but refused on terms (FRED + Cboe, FRED + ICE BofA,
+    # 2026-11-14): held, never used. T10Y2Y and the desk's USDJPY tape carry the latent.
+    assert risk["n_sensors_used"] == 2
     assert (tree["axes"] / "shadow_global_risk_appetite.json").exists()
     # every other latent is UNMEASURED BY NAME on a tree with nothing planted for it
     china = next(r for r in doc["ensembles"] if r["latent"] == "china_activity")

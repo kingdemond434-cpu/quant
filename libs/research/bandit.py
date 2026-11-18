@@ -1043,7 +1043,29 @@ def _cluster_of(row: Mapping[str, Any]) -> str | None:
     return None
 
 
-def breadth_credit() -> dict[str, Any]:
+#: The hypothesis-graph columns the bandit reads: `evidence` and `temperature_ladder` (id, source,
+#: kind, fate and the time stamp), and `_cluster_of` (family, cell, name). Nothing else is kept.
+GRAPH_FIELDS: tuple[str, ...] = ("id", "source", "kind", "fate", "family", "cell", "name",
+                                 "at", "ts", "_t")
+
+
+def graph_rows() -> list[dict[str, Any]]:
+    """The graph's rows, projected to `GRAPH_FIELDS`, read once by the caller.
+
+    The box ledger is 4.59 GB / 7.31M rows (2026-11-10); whole rows held twice per run is what
+    kept the bandit past its 720 s leg cap since 2026-11-07 and the daily chain silent for nine
+    hours on 2026-11-09. A graph without the projected reader (an older tree, a test stub) is
+    read whole, as before.
+    """
+    from libs.research.hypothesis_graph import Graph
+    g = Graph()
+    proj = getattr(g, "projected_rows", None)
+    if callable(proj):
+        return list(proj(GRAPH_FIELDS))
+    return [r for r in g.rows() if isinstance(r, dict)]
+
+
+def breadth_credit(rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Per-arm portfolio dE[log W] credit, measured where the graph allows and declared elsewhere.
 
     THE ARM THAT CAN RAISE BREADTH WAS THE ARM BEING STARVED. `new_mechanism` owns
@@ -1054,8 +1076,12 @@ def breadth_credit() -> dict[str, Any]:
     """
     try:
         from libs.research.breadth_credit import credits, occupied_shares
-        from libs.research.hypothesis_graph import Graph
-        rows = [r for r in Graph().rows() if isinstance(r, dict)]
+        # THE GRAPH IS PARSED ONCE PER RUN. `run` already holds every row; a second `Graph()`
+        # here parsed the whole ledger again, which doubled the cost of the one step that the
+        # daily chain sat inside for nine hours on 2026-11-09 (MT5-Daily killed at PT10H).
+        if rows is None:
+            rows = graph_rows()
+        rows = [r for r in rows if isinstance(r, dict)]
         state = None
         try:
             from libs.research.breadth_credit import book_state
@@ -1289,8 +1315,7 @@ def temperature_ladder(graph_rows: Iterable[dict[str, Any]],
 def run(seed: int = 0, write: bool = True,
         variant: str = CONTROLLER_VARIANT) -> dict[str, Any]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph().rows()
+        rows = graph_rows()
     except Exception:
         rows = []
     marginal = _marginal_by_arm()
@@ -1305,7 +1330,7 @@ def run(seed: int = 0, write: bool = True,
               * float((ccred.get("by_arm") or {}).get(a, 1.0))
               for a in set(rcred.get("by_arm") or {}) | set(ccred.get("by_arm") or {})}
     ev = evidence(rows, marginal, measured=mc, credit=credit or None)
-    bc = breadth_credit()
+    bc = breadth_credit(rows)
     audit: dict[str, Any] = {}
     shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
                       credit=bc.get("credit"), audit=audit)
