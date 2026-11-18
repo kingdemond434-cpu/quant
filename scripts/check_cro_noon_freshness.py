@@ -22,8 +22,8 @@ resolves to a clean verdict).
 A NON-ZERO EXIT IS RED TOO (K6, 2026-11-17). The launcher's early exits (5 when the lease is not
 acquired, 3 when the agent CLI is missing, ...) write no ledger row at all, so a lane that keeps
 failing to start read only as "age" until 26 h had passed. `scripts/publish_cro_lane_state.py`
-(hourly leg `cro_lane_state`, just before this one) publishes the lane's checkpoint and log tail
-as desks/mt5/reports/CRO_NOON_STATE.json with the last exit code it read. When that code is
+(hourly leg `cro_lane_state`, just before this one) publishes the lane's parsed exit codes and
+checkpoint fields as desks/mt5/reports/CRO_NOON_STATE.json with the last exit code it read. When that code is
 non-zero and is NEWER than the newest landed noon pass, this check is RED whatever the age. An
 absent or unreadable state file changes nothing here and is recorded as `published_state:
 UNMEASURED`.

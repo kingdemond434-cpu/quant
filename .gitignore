@@ -634,3 +634,6 @@ desks/mt5/data/tier_s/emitted_cells.json
 !desks/mt5/reports/CRO_NOON_FRESHNESS.json
 !desks/mt5/reports/COMMITTEE_HEALTH.json
 !desks/mt5/reports/PNL_EXPLAIN.json
+# Its per-account detail stays on the box (audit SF2, 2026-11-18): never published, never in
+# $reportPaths. Already covered by `**/reports/*`; named so no later `!` can un-ignore it by accident.
+desks/mt5/reports/PNL_EXPLAIN_ACCOUNTS.local.json

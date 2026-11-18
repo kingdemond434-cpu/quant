@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DAILY P&L EXPLAIN: each account's realised P&L per day, split into what earned it.
+"""DAILY P&L EXPLAIN: the book's realised P&L per day, split into what earned it.
 
     python research/pnl_explain.py [--days 90] [--out reports/PNL_EXPLAIN.json]
 
@@ -32,16 +32,35 @@ account-currency value of the entry-to-stop distance from the venue's tick value
 account currency per quote unit the broker applied. `fx` is the conversion residual: what the
 broker's account-currency P&L carries that the quote-currency price move at that rate does not.
 
-NO MONEY IS PUBLISHED. Every component is in basis points of the position's entry notional, and a
-day's figure is the notional-weighted mean over its closed positions; the day also carries its
-summed R (r_multiple, unitless) and each component's share of the day's gross absolute movement.
-Accounts are labelled `<kind>-<n>` in order of first appearance -- never a login, a key, a server
-or a balance -- and no notional, price, ticket or deal id leaves this file.
+NO MONEY AND NO ACCOUNT IS PUBLISHED (audit SF2, 2026-11-18). Every component is in basis points
+of the position's entry notional, and a day's figure is the notional-weighted mean over its closed
+positions; the day also carries its summed R (r_multiple, unitless) and each component's share of
+the day's gross absolute movement. The PUBLISHED report is BOOK-LEVEL only: every account's
+positions are pooled into one series per day, with no per-account row, label, login, key, server
+or name. Per-account detail (labelled `<kind>-<n>` in order of first appearance, still never a
+login, key or server) goes to reports/PNL_EXPLAIN_ACCOUNTS.local.json, which is gitignored and is
+not in sync_shadow_to_git.ps1's $reportPaths: it stays on the box. No notional, price, ticket or
+deal id leaves this file in either report.
 
 UNMEASURED IS A REAL ANSWER (L1.28a). A position with no matched intent has no slippage or signal
 split (its price move is reported unsplit and counted); one with no stop, no risk or no entry has
 no venue rate and so no bps at all, and is counted under `unmeasured`. A day of nothing but such
 rows reads UNMEASURED, never zero.
+
+A ROW IS MEASURED ONLY WHEN EVERY COST AND THE RATE ARE MEASURED (audit MF2/SF1, 2026-11-18). Two
+gaps keep a row's numbers but mark it PARTIAL, with the gap named in its `flags`, and so keep its
+day and the report off MEASURED:
+
+  * UNMEASURED_ENTRY_COST -- the gateway wrote `entry_cost_allocated: null` with
+    `net_cost_status: "UNMEASURED_ENTRY_COST"` (or the row predates both fields). The entry
+    deal's costs are then absent from `pl_quote` too, so `commission` and `net` are the KNOWN
+    costs only, and the unknown entry cost is never summed in as a zero.
+  * RATE_QUOTE_FALLBACK -- the venue rate is exactly 1. That is what
+    `decision_core.closed_trade_r` produces when the venue's tick value or tick size was missing
+    and it fell back to the quote-currency distance; it is also what an account whose currency
+    is the quote currency produces, and the row cannot tell the two apart. Either way no
+    conversion was measured, so `fx_conversion` on such a row is the residual of an assumed rate
+    of 1, not a measured FX effect.
 """
 from __future__ import annotations
 
@@ -64,10 +83,18 @@ DATA = BASE / "data"
 LEDGER = DATA / "live_ledger.jsonl"
 INTENTS = DATA / "order_intents.jsonl"
 OUT = BASE / "reports" / "PNL_EXPLAIN.json"
+#: Per-account detail, BOX-LOCAL: gitignored (`**/reports/*` plus its own line) and never in
+#: sync_shadow_to_git.ps1's $reportPaths.
+LOCAL_OUT = BASE / "reports" / "PNL_EXPLAIN_ACCOUNTS.local.json"
 DAYS = 90
 COMPONENTS = ("signal", "slippage", "commission", "swap", "fx_conversion")
 #: The intent ticket can be any of these on a ledger row (markout's join keys).
 JOIN_KEYS = ("entry_order", "position_id", "order")
+#: A venue rate this close to 1 is indistinguishable from closed_trade_r's quote-currency
+#: fallback (risk_quote is rounded to 6 dp on the ledger).
+RATE_ONE_TOL = 1e-6
+ENTRY_COST_GAP = "UNMEASURED_ENTRY_COST"
+RATE_GAP = "RATE_QUOTE_FALLBACK"
 _BUY = {0, 2, 4}
 _SELL = {1, 3, 5}
 
@@ -137,8 +164,9 @@ def _day(row: dict[str, Any]) -> str | None:
 def explain_row(row: dict[str, Any], intent: dict[str, Any] | None) -> dict[str, Any]:
     """One closed position's split, in bps of entry notional, with its notional as weight.
 
-    Returns {"status": MEASURED|UNMEASURED, "why", and when measured: "bps": {...},
-    "split": bool, "weight": notional (quote currency, never published), "r": r_multiple}.
+    Returns {"status": MEASURED|PARTIAL|UNMEASURED, "why", and when not UNMEASURED: "bps": {...},
+    "split": bool, "flags": [...], "weight": notional (quote currency, never published),
+    "r": r_multiple}. PARTIAL carries the same numbers with each gap named in `flags`.
     """
     entry, exit_ = _num(row.get("entry_price")), _num(row.get("fill_price"))
     sl, vol = _num(row.get("sl")), _num(row.get("volume"))
@@ -151,11 +179,23 @@ def explain_row(row: dict[str, Any], intent: dict[str, Any] | None) -> dict[str,
     dirn = direction(row, intent)
     if dirn == 0:
         return {"status": "UNMEASURED", "why": "no direction"}
+    flags: list[str] = []
     notional = entry * vol * cs                      # quote currency
-    rate = risk / (abs(entry - sl) * vol * cs)       # account currency per quote unit
+    quote_risk = abs(entry - sl) * vol * cs
+    rate = risk / quote_risk                         # account currency per quote unit
+    if abs(risk - quote_risk) <= RATE_ONE_TOL + 1e-9 * quote_risk:
+        flags.append(RATE_GAP)
     to_bps = 1e4 / (notional * rate)                 # account currency -> bps of notional
-    commission = sum(_num(row.get(k)) or 0.0
-                     for k in ("commission", "exit_fee", "entry_cost_allocated"))
+    # The entry deal's cost is summed only when the gateway measured it; a null is a gap, never
+    # a zero. pl_quote then carries no entry cost either, so the known costs stay consistent.
+    entry_cost = _num(row.get("entry_cost_allocated"))
+    if entry_cost is None or row.get("net_cost_status") == ENTRY_COST_GAP:
+        flags.append(ENTRY_COST_GAP)
+        entry_cost = None
+    known = [_num(row.get(k)) for k in ("commission", "exit_fee")]
+    if entry_cost is not None:
+        known.append(entry_cost)
+    commission = sum(v for v in known if v is not None)
     swap = _num(row.get("swap")) or 0.0
     gross = net - commission - swap
     move_bps = (exit_ - entry) * dirn / entry * 1e4
@@ -173,8 +213,8 @@ def explain_row(row: dict[str, Any], intent: dict[str, Any] | None) -> dict[str,
     else:
         bps["slippage"] = bps["signal"] = None
         bps["price_unsplit"] = move_bps
-    return {"status": "MEASURED", "bps": bps, "split": split, "weight": notional,
-            "r": _num(row.get("r_multiple"))}
+    return {"status": "PARTIAL" if flags else "MEASURED", "flags": flags, "bps": bps,
+            "split": split, "weight": notional, "r": _num(row.get("r_multiple"))}
 
 
 def _intent_index(intents: list[dict[str, Any]]) -> dict[Any, dict[str, Any]]:
@@ -198,13 +238,74 @@ def _rnd(x: float | None, nd: int = 2) -> float | None:
     return None if x is None else round(x, nd)
 
 
-def build(ledger: list[dict[str, Any]], intents: list[dict[str, Any]], now: datetime,
-          days: int = DAYS) -> dict[str, Any]:
+def _day_entry(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """One day's pooled split over `rows` (any accounts); PARTIAL rows count with their flags."""
+    meas = [r for r in rows if r["status"] != "UNMEASURED"]
+    unmeas = len(rows) - len(meas)
+    split = [r for r in meas if r["split"]]
+    flags: dict[str, int] = defaultdict(int)
+    for r in meas:
+        for f in r["flags"]:
+            flags[f] += 1
+    entry: dict[str, Any] = {"closed": len(rows), "measured": len(meas),
+                             "unmeasured": unmeas, "split": len(split),
+                             "partial": sum(1 for r in meas if r["status"] == "PARTIAL"),
+                             "flags": dict(sorted(flags.items()))}
+    if not meas:
+        entry.update(status="UNMEASURED", why="no closed position on this day could be split")
+        return entry
+    w = sum(r["weight"] for r in meas)
+    ws = sum(r["weight"] for r in split)
+
+    def wmean(key: str, pool: list[dict[str, Any]], wt: float) -> float | None:
+        vals = [(r["bps"][key], r["weight"]) for r in pool if r["bps"].get(key) is not None]
+        return (sum(v * x for v, x in vals) / wt) if vals and wt else None
+
+    comp = {k: wmean(k, meas, w) for k in ("commission", "swap", "fx_conversion", "net")}
+    # signal and slippage are means over the SPLIT rows, re-weighted onto the whole day so
+    # the five components and the unsplit remainder sum to the day's net.
+    for k in ("signal", "slippage"):
+        m = wmean(k, split, ws)
+        comp[k] = None if m is None else m * ws / w
+    comp["price_unsplit"] = wmean("price_unsplit", meas, w)
+    gross_abs = sum(abs(comp[k] or 0.0) for k in (*COMPONENTS, "price_unsplit"))
+    rs = [r["r"] for r in meas if r["r"] is not None]
+    clean = len(split) == len(meas) and not unmeas and not entry["partial"]
+    entry.update(
+        status="MEASURED" if clean else "PARTIAL",
+        bps={k: _rnd(v) for k, v in comp.items()},
+        share={k: (_rnd(abs(comp[k] or 0.0) / gross_abs, 4) if gross_abs else None)
+               for k in (*COMPONENTS, "price_unsplit")},
+        r_sum=_rnd(sum(rs), 4) if rs else None)
+    return entry
+
+
+def _totals(days: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    ds = days.values()
+    return {"closed": sum(d["closed"] for d in ds), "measured": sum(d["measured"] for d in ds),
+            "split": sum(d["split"] for d in ds), "partial": sum(d["partial"] for d in ds),
+            "days_measured": sum(1 for d in ds if d["status"] != "UNMEASURED")}
+
+
+def _status(t: dict[str, Any]) -> tuple[str, str]:
+    if not t["measured"]:
+        return "UNMEASURED", "no closed position in the window could be split"
+    clean = t["measured"] - t["partial"]
+    why = (f"{t['measured']} of {t['closed']} closed positions split in bps of entry notional"
+           f" ({clean} fully measured, {t['partial']} partial)")
+    full = t["partial"] == 0 and t["measured"] == t["closed"] and t["split"] == t["measured"]
+    return ("MEASURED" if full else "PARTIAL"), why
+
+
+def build_all(ledger: list[dict[str, Any]], intents: list[dict[str, Any]], now: datetime,
+              days: int = DAYS) -> tuple[dict[str, Any], dict[str, Any]]:
+    """(the PUBLISHED book-level report, the BOX-LOCAL per-account detail)."""
     by_ticket = _intent_index(intents)
     since = (now - timedelta(days=days)).date().isoformat()
     labels: dict[tuple[Any, Any, Any], str] = {}
     kinds_seen: dict[str, int] = defaultdict(int)
-    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    by_day: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_acct: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     undated = 0
     for row in ledger:
         acct = (row.get("account_key") or row.get("account"), row.get("server"),
@@ -219,65 +320,46 @@ def build(ledger: list[dict[str, Any]], intents: list[dict[str, Any]], now: date
             continue
         if day < since:
             continue
-        groups[(labels[acct], day)].append(explain_row(row, _match(row, by_ticket)))
+        ex = explain_row(row, _match(row, by_ticket))
+        by_day[day].append(ex)
+        by_acct[(labels[acct], day)].append(ex)
 
-    accounts: dict[str, dict[str, Any]] = {}
-    for (label, day), rows in sorted(groups.items()):
-        meas = [r for r in rows if r["status"] == "MEASURED"]
-        unmeas = len(rows) - len(meas)
-        split = [r for r in meas if r["split"]]
-        entry: dict[str, Any] = {"closed": len(rows), "measured": len(meas),
-                                 "unmeasured": unmeas, "split": len(split)}
-        if not meas:
-            entry.update(status="UNMEASURED", why="no closed position on this day could be split")
-        else:
-            w = sum(r["weight"] for r in meas)
-            ws = sum(r["weight"] for r in split)
-
-            def wmean(key: str, pool: list[dict[str, Any]], wt: float) -> float | None:
-                vals = [(r["bps"][key], r["weight"]) for r in pool if r["bps"].get(key) is not None]
-                return (sum(v * x for v, x in vals) / wt) if vals and wt else None
-
-            comp = {k: wmean(k, meas, w) for k in ("commission", "swap", "fx_conversion", "net")}
-            # signal and slippage are means over the SPLIT rows, re-weighted onto the whole day so
-            # the five components and the unsplit remainder sum to the day's net.
-            for k in ("signal", "slippage"):
-                m = wmean(k, split, ws)
-                comp[k] = None if m is None else m * ws / w
-            comp["price_unsplit"] = wmean("price_unsplit", meas, w)
-            gross_abs = sum(abs(comp[k] or 0.0) for k in (*COMPONENTS, "price_unsplit"))
-            rs = [r["r"] for r in meas if r["r"] is not None]
-            entry.update(
-                status="MEASURED" if len(split) == len(meas) and not unmeas else "PARTIAL",
-                bps={k: _rnd(v) for k, v in comp.items()},
-                share={k: (_rnd(abs(comp[k] or 0.0) / gross_abs, 4) if gross_abs else None)
-                       for k in (*COMPONENTS, "price_unsplit")},
-                r_sum=_rnd(sum(rs), 4) if rs else None)
-        acc = accounts.setdefault(label, {"days": {}})
-        acc["days"][day] = entry
-
-    for acc in accounts.values():
-        ds = acc["days"].values()
-        acc["closed"] = sum(d["closed"] for d in ds)
-        acc["measured"] = sum(d["measured"] for d in ds)
-        acc["split"] = sum(d["split"] for d in ds)
-        acc["days_measured"] = sum(1 for d in ds if d["status"] != "UNMEASURED")
-
-    total = sum(a["closed"] for a in accounts.values())
-    measured = sum(a["measured"] for a in accounts.values())
-    status = "UNMEASURED" if not measured else "MEASURED"
-    return {
-        "generated_utc": now.isoformat(), "window_days": days, "status": status,
-        "why": ("no closed position in the window could be split" if not measured
-                else f"{measured} of {total} closed positions split in bps of entry notional"),
+    book_days = {day: _day_entry(rows) for day, rows in sorted(by_day.items())}
+    book = _totals(book_days)
+    status, why = _status(book)
+    common = {
+        "generated_utc": now.isoformat(), "window_days": days,
         "units": "bps of entry notional, notional-weighted per day; r_sum is unitless R",
         "components": [*COMPONENTS, "price_unsplit"],
         "identity": "net = signal + slippage + commission + swap + fx_conversion + price_unsplit",
         "sign": "positive adds to P&L; slippage is negative when the fill was worse than asked",
-        "accounts": accounts, "undated_rows": undated,
-        "report_only": True,
+        "flags_meaning": {
+            ENTRY_COST_GAP: "entry deal cost unmeasured by the gateway; commission and net "
+                            "carry the known costs only",
+            RATE_GAP: "venue rate exactly 1 (tick value missing, or account currency is the "
+                      "quote currency); fx_conversion is not a measured conversion"},
+        "undated_rows": undated, "report_only": True,
         "sources": ["desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/order_intents.jsonl"],
     }
+    published = {**common, "status": status, "why": why,
+                 "scope": "book: every account pooled; no per-account row or identifier",
+                 "book": {**book, "days": book_days}}
+
+    accounts: dict[str, dict[str, Any]] = {}
+    for (label, day), rows in sorted(by_acct.items()):
+        accounts.setdefault(label, {"days": {}})["days"][day] = _day_entry(rows)
+    for acc in accounts.values():
+        acc.update(_totals(acc["days"]))
+    local = {**common, "status": status, "why": why,
+             "scope": "per account, BOX-LOCAL (gitignored, never published)",
+             "accounts": accounts}
+    return published, local
+
+
+def build(ledger: list[dict[str, Any]], intents: list[dict[str, Any]], now: datetime,
+          days: int = DAYS) -> dict[str, Any]:
+    """The published, book-level report."""
+    return build_all(ledger, intents, now, days)[0]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -285,13 +367,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ledger", type=Path, default=LEDGER)
     ap.add_argument("--intents", type=Path, default=INTENTS)
     ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--local-out", type=Path, default=LOCAL_OUT)
     ap.add_argument("--days", type=int, default=DAYS)
     a = ap.parse_args(argv)
-    doc = build(_load(a.ledger), _load(a.intents), datetime.now(UTC), a.days)
-    a.out.parent.mkdir(parents=True, exist_ok=True)
-    write_text_resilient(a.out, json.dumps(doc, indent=1) + "\n")
+    doc, local = build_all(_load(a.ledger), _load(a.intents), datetime.now(UTC), a.days)
+    for path, body in ((a.out, doc), (a.local_out, local)):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_text_resilient(path, json.dumps(body, indent=1) + "\n")
     print(json.dumps({"status": doc["status"], "why": doc["why"],
-                      "accounts": sorted(doc["accounts"])}))
+                      "accounts": len(local["accounts"])}))
     return 0
 
 
