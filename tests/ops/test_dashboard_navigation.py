@@ -17,6 +17,7 @@ dashboard; deleting them would have turned a live URL into a 404 for no gain.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 WEB = Path(__file__).resolve().parent.parent.parent / "web"
@@ -49,7 +50,10 @@ def test_every_other_page_redirects_to_it() -> None:
         if p.name == TERMINAL:
             assert "desk_state.json" in src and "read-only" in src
             assert f'href="{CANONICAL}"' in src, f"{p.name} must point at {CANONICAL}"
-            assert "<form" not in src.lower() and "method=\"post\"" not in src.lower(), (
+            # Any write verb, in an HTML attribute or a fetch/XHR options object, is a control.
+            writes = re.findall(r"(?:method\s*[=:]\s*|\.open\(\s*)[\"']?\s*(post|put|patch|delete)",
+                                src, re.I)
+            assert "<form" not in src.lower() and not writes, (
                 f"{p.name} is a read-only view; a control on it would make it a second desk")
             continue
         assert CANONICAL in src, f"{p.name} does not point at {CANONICAL}"
