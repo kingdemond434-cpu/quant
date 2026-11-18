@@ -3032,8 +3032,12 @@ TERMS: dict[str, tuple[str, str]] = {
                             "documented OGD API (free key)"),
     "jobs_indeed_postings": ("confirmed", "Indeed Hiring Lab data: CC BY 4.0 (repository LICENSE "
                              "and README 'Licence'), Indeed Hiring Lab cited"),
-    "sat_s2_crop_green": ("confirmed", "Copernicus Sentinel data on the AWS Registry of Open Data: "
-                          "'free, full and open'; no requester-pays, no key"),
+    "sat_s2_crop_green": ("to_confirm", "the AWS Registry entry ('free, full and open', no "
+                          "requester-pays) points to the Sentinel Data Legal Notice for its terms, "
+                          "and every STAC item's rel=license names that notice; the notice has not "
+                          "been read (sentinel.esa.int refused from the build container), so the "
+                          "source stays BLOCKED_ON_TERMS until the box or a reader quotes its "
+                          "clause (audit 2026-11-18)"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),

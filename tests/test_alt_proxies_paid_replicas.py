@@ -152,9 +152,14 @@ def test_robots_gate_fails_closed() -> None:
 
 
 def test_new_sources_are_confirmed_with_evidence_and_map_only_admissible_instruments() -> None:
+    # sat_s2_crop_green fails closed: its operative terms are the Sentinel Data Legal Notice,
+    # which nobody has read yet (audit 2026-11-18); it is never fetched until that is quoted
+    assert A.BY_ID["jobs_indeed_postings"].terms == "confirmed"
+    assert A.BY_ID["sat_s2_crop_green"].terms == "to_confirm"
+    assert A.status_of(A.BY_ID["sat_s2_crop_green"], {}).startswith("BLOCKED_ON_TERMS")
     for sid in ("jobs_indeed_postings", "sat_s2_crop_green"):
         src = A.BY_ID[sid]
-        assert src.terms == "confirmed" and sid in A.TERMS_EVIDENCE and sid in A.ROBOTS_GATED
+        assert sid in A.TERMS_EVIDENCE and sid in A.ROBOTS_GATED
         assert src.substitutes_for and src.vintage == "current"
         for m in (src.instruments, *src.series_instruments.values()):
             for sym in m:
