@@ -770,7 +770,7 @@ def _derived_family(claim: dict[str, Any], cls: str
         effect = bool(claim.get("month_effect"))
         if claim.get("turn_of_month") and effect:
             return "turn_of_month", "derived:turn_of_month", {}, "side_bias", None
-        if ek:
+        if ek and (ek != "month_end" or effect):
             return "forced_flow", f"derived:event_kind:{ek}", {"event_kind": ek}, None, None
         if (months or claim.get("turn_of_month")) and not effect:
             return ("NO_BUILDER: calendar: names a month or month-end with no seasonality, "
