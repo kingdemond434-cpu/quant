@@ -1,0 +1,37 @@
+{
+ "organ": "leg:dataset_translator",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/dataset_translator.py"
+ ],
+ "clock": "hourly_cycle:dataset_translator",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/DATASET_TRANSLATION.json",
+ "artifact_declared": "desks/mt5/reports/DATASET_TRANSLATION.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 159,
+ "artifact_bytes": 167718,
+ "artifact_sha256": "1c0385023f689d45e0f077a0b50460aff387d6077d021885efd97802a6e7c0fb",
+ "summary": {
+  "status": "DRY_RUN"
+ },
+ "progress_metric": "leg_completions",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-18T02:34:31+00:00",
+ "only_missing": {
+  "at": "2026-11-18T02:34:31+00:00",
+  "host": "vm",
+  "machine_id": "d165c2d88d894a4787be219662b439ad",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}
