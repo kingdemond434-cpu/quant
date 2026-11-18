@@ -63,6 +63,13 @@ DBNOMICS_TERMS = {
 _ROBOTS: dict[str, object] = {}
 
 
+def _looks_like_html(text: str) -> bool:
+    """A page served in place of robots rules: a leading '<' (a real robots file never starts with
+    one: <head>, <body>, <?xml, a comment) or '<html' / '<!doctype' in the first 512 chars."""
+    head = text.lstrip()[:512].lower()
+    return head.startswith("<") or "<html" in head or "<!doctype" in head
+
+
 def _robots_allows(url: str) -> None:
     """robots.txt for the URL's host, read once per process. 404/410 is an empty file; any other
     non-2xx, an unreadable file or a disallow raises: unread robots are not permission."""
@@ -77,7 +84,7 @@ def _robots_allows(url: str) -> None:
             req = urllib.request.Request(f"{key}/robots.txt", headers=UA)
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
                 text = r.read().decode("utf-8", "replace")
-            if text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+            if _looks_like_html(text):
                 _ROBOTS[key] = "robots.txt answered HTML"   # a page parses as allow-all
             else:
                 rp.parse(text.splitlines())

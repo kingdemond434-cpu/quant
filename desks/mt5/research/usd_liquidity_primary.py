@@ -351,6 +351,13 @@ def _urlopen(req: urllib.request.Request, timeout: float) -> tuple[int, str, byt
             exc.close()
 
 
+def _looks_like_html(text: str) -> bool:
+    """A page served in place of robots rules: a leading '<' (a real robots file never starts with
+    one: <head>, <body>, <?xml, a comment) or '<html' / '<!doctype' in the first 512 chars."""
+    head = text.lstrip()[:512].lower()
+    return head.startswith("<") or "<html" in head or "<!doctype" in head
+
+
 class Door:
     """refused_hosts -> robots.txt -> GET, with hard stops remembered per host for the pass."""
 
@@ -376,7 +383,7 @@ class Door:
                 rp.parse([])
             elif 200 <= code < 300:
                 text = body.decode("utf-8", "replace")
-                if text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                if _looks_like_html(text):
                     # A page in place of rules parses as allow-all: that is unread, not a yes.
                     self.robots[key] = "robots.txt answered HTML"
                     return self.robots[key]
