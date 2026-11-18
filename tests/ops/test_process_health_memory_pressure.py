@@ -26,6 +26,14 @@ assert _spec and _spec.loader
 ph = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ph)
 
+
+@pytest.fixture(autouse=True)
+def _isolated_scheduler_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Every test starts with no last-good cache and no task XML directory (the live box's
+    C:\\Windows\\System32\\Tasks and desks/mt5/logs/ are never read or written by a test)."""
+    monkeypatch.setattr(ph, "sched_cache_path", lambda: tmp_path / "sched_cache.json")
+    monkeypatch.setattr(ph, "TASKS_DIR", tmp_path / "no-task-xml-here")
+
 BRIEF = (
     '"TaskName","Next Run Time","Status"\r\n'
     '"\\MT5-Hourly","20/10/2026 19:05:00","Ready"\r\n'
