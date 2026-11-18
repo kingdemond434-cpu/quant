@@ -148,8 +148,11 @@ STATE_MAX_AGE_S = 3 * 3600
 #: Keys the gold follower trades (prop/ftmo_follower.py). Non-gold keys are the sleeve
 #: executor's (`executor_runs`); a non-copy gold window has no FTMO executor.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
-#: Symbols the sleeve executor never trades: gold has one FTMO owner, the follower.
-EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
+#: Symbols the sleeve executor does not trade. Empty since 2026-11-18: a certified gold sleeve
+#: with a spec is the sleeve executor's (prop/ftmo_executor.GOLD_SLEEVES); only the follower's copy
+#: keys (`FTMO_EXECUTABLE`) stay the follower's. The revert is {"XAUUSD"} here AND
+#: GOLD_SLEEVES = False there; a test pins the two together.
+EXECUTOR_SKIP_SYMBOLS: frozenset[str] = frozenset()
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
