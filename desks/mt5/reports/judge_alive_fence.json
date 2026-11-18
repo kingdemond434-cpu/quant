@@ -1,14 +1,14 @@
 {
- "generated_utc": "2026-11-18T14:48:08+00:00",
+ "generated_utc": "2026-11-18T15:58:06+00:00",
  "fence": "judge_alive",
- "verdict": "PASS",
- "state": "PASS",
- "why": "heartbeat RUNNING (phase merge_and_publish, last beat 2026-11-18T14:47:51+00:00); stall record CLEAR",
+ "verdict": "FAIL",
+ "state": "FAIL",
+ "why": "sweep pid 19640 reads RUNNING but its heartbeat is 25 min old (> 10 min): the sweep's watchdog is wedged or the process was frozen",
  "checks": [
   {
    "metric": "judge_alive",
-   "state": "PASS",
-   "why": "heartbeat RUNNING (phase merge_and_publish, last beat 2026-11-18T14:47:51+00:00); stall record CLEAR"
+   "state": "FAIL",
+   "why": "sweep pid 19640 reads RUNNING but its heartbeat is 25 min old (> 10 min): the sweep's watchdog is wedged or the process was frozen"
   },
   {
    "metric": "judge_stop",
