@@ -38,6 +38,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parent.parent
 TAPE = BASE / "data" / "tape" / "ticks"
@@ -239,11 +246,11 @@ def summarise(rows: list[Exec]) -> dict:
 def collect() -> list[Exec]:
     """Every shadow decision the desk has recorded, as an execution chain."""
     rows: list[Exec] = []
-    for ledger in sorted(SHADOW.glob("ledger_*.json")):
+    for ledger in _fl.iter_ledgers(SHADOW):
         data = _read_json(ledger)
         if not isinstance(data, list) or not data:
             continue
-        stem = ledger.stem[len("ledger_"):]
+        stem = _fl.label_of(ledger)
         parts = stem.split("_")
         symbol = parts[0]
         session = "_".join(parts[1:]) or "unknown"

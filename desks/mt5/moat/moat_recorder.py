@@ -30,6 +30,13 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 
+_DESK = Path(__file__).resolve().parents[1]
+if str(_DESK) not in sys.path:
+    sys.path.insert(0, str(_DESK))
+from research.mt5_session import attach_or_initialize, venue_refusal  # noqa: E402
+
+#: The desk's execution terminal (mt5desk/config.py TERMINAL_FILE; broker_switch writes it).
+TERMINAL_FILE = _DESK / "data" / "terminal_path.txt"
 BRONZE = Path(os.environ.get("MOAT_BRONZE", r"C:\moat\bronze"))
 CHECKPOINTS = Path(os.environ.get("MOAT_CHECKPOINTS", r"C:\moat\checkpoints"))
 LOCK = Path(os.environ.get("MOAT_LOCK", r"C:\moat\recorder.lock"))
@@ -85,6 +92,45 @@ def write_json_atomic(path: Path, obj: dict) -> None:
     os.replace(tmp, path)
 
 
+def _proc_started(pid: int) -> float | None:
+    """The process's start time, or None when it cannot be read. With the pid it names ONE
+    process: a pid reused by another process (after a reboot, typically) has another start."""
+    try:
+        import psutil
+        return round(float(psutil.Process(int(pid)).create_time()), 3)
+    except Exception:
+        return None
+
+
+def _boot_time() -> float | None:
+    try:
+        import psutil
+        return float(psutil.boot_time())
+    except Exception:
+        return None
+
+
+def _holder_is_a_stranger(info: dict, pid: int) -> bool:
+    """True when the live pid is provably NOT the recorder that wrote the lock (2026-11-17).
+
+    After a reboot the recorded pid is often reused by an unrelated process, so "a process with
+    that pid is alive" kept the recorder standing down until a person deleted the lock. The lock
+    now records the holder's own start time; a live pid whose start differs is a stranger. A lock
+    written before that field existed is a stranger only if it predates this boot. Anything
+    unprovable stays "alive" -- never double-run on a guess.
+    """
+    rec = info.get("proc_started")
+    if isinstance(rec, (int, float)) and not isinstance(rec, bool):
+        now_started = _proc_started(pid)
+        return now_started is not None and abs(now_started - float(rec)) > 1.0
+    boot = _boot_time()
+    try:
+        taken = datetime.fromisoformat(str(info.get("started"))).timestamp()
+    except (TypeError, ValueError):
+        return False
+    return boot is not None and taken < boot
+
+
 def single_instance() -> bool:
     """PID lock: a duplicate start (watchdog task) exits instantly instead of double-writing."""
     stale = True
@@ -99,11 +145,16 @@ def single_instance() -> bool:
                 stale = False
         except Exception:
             stale = False       # cannot verify -> assume alive; refuse to double-run
+        if not stale and _holder_is_a_stranger(info, pid):
+            log(f"JOURNAL lock holder pid {pid} is alive but is not the recorder that took the "
+                f"lock (start time differs, or the lock predates this boot); taking it over")
+            stale = True
     if pid and not stale:
         return False
     try:
         write_json_atomic(LOCK,
-                          {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat()})
+                          {"pid": os.getpid(), "started": datetime.now(tz=UTC).isoformat(),
+                           "proc_started": _proc_started(os.getpid())})
     except PermissionError as exc:
         # Non-elevated shell against an admin-owned C:\moat, or a concurrent starter winning
         # the race -- either way this instance must not record. Say why and stand down.
@@ -111,6 +162,19 @@ def single_instance() -> bool:
             f"{LOCK.parent}; standing down")
         return False
     return True
+
+
+#: Exit code for "attached to a terminal that is not the desk's": a refusal, not a crash.
+EXIT_WRONG_VENUE = 3
+
+
+def terminal_path() -> str | None:
+    """The configured terminal64.exe, or None when the file is missing or empty."""
+    try:
+        p = TERMINAL_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return p or None
 
 
 def disk_free_gb() -> float:
@@ -323,6 +387,13 @@ class Recorder:
         if was_paused:
             self.health_row(event="RESUMED")
         if mono - self.last["universe"] >= UNIVERSE_REFRESH_S or not self.universe:
+            # The attached terminal can be logged into another account while this runs; every
+            # universe refresh proves it is still the desk's before another tick is filed.
+            why = venue_refusal(mt5, terminal_path())
+            if why is not None:
+                self.health_row(event="wrong_venue", why=why)
+                log(f"REFUSED mid-run: {why} -- exiting; the next trigger re-attaches by path")
+                raise SystemExit(EXIT_WRONG_VENUE)
             self.refresh_universe()
             self.last["universe"] = mono
         if mono - self.last["ticks"] >= TICK_INTERVAL_S:
@@ -348,9 +419,24 @@ def main() -> int:
     if not single_instance():
         log("another recorder instance is alive -- exiting (single-instance lock)")
         return 0
-    if not mt5.initialize():
-        log(f"mt5.initialize FAILED: {mt5.last_error()}")
+    # NEVER A BARE initialize() FROM SESSION 0 (2026-11-13), AND PINNED TO THE DESK'S TERMINAL
+    # (2026-11-11). This runs as SYSTEM every ten minutes; after the 2026-11-12 reboot, before
+    # anyone logged on, a bare initialize() from a SYSTEM task launched the Fusion terminal
+    # headless in Session 0 with no login, the interactive watchdog then refused to launch beside
+    # it, and E8's cross-account fence failed closed on every gold window. The shared guard
+    # (`attach_or_initialize`) never launches from Session 0. And the box runs Fusion and FTMO
+    # logged in side by side, so an attach with no path took whichever the bridge saw first:
+    # restart order decided which broker the moat tape recorded. The path pins it.
+    terminal = terminal_path()
+    if not attach_or_initialize(mt5, path=terminal, timeout=15000):
+        log(f"mt5 attach refused or failed ({'pinned terminal' if terminal else 'no terminal_path.txt'}; Session 0 "
+            f"never launches a terminal): {mt5.last_error()}")
         return 1
+    why = venue_refusal(mt5, terminal)
+    if why is not None:
+        log(f"REFUSED: {why} -- recording nothing; the next trigger retries")
+        mt5.shutdown()
+        return EXIT_WRONG_VENUE
     rec = Recorder()
     rec.health_row(event="recorder_start", once=once, backfill_h=BACKFILL_H)
     log(f"moat recorder up: bronze={BRONZE} universe pending, backfill={BACKFILL_H}h")

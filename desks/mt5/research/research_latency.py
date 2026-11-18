@@ -26,6 +26,13 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 BASE = Path(__file__).resolve().parents[1]
 REPO = BASE.parents[1]
@@ -138,14 +145,14 @@ def forward_first_rows(dirs: tuple[Path, ...] = LEDGER_DIRS) -> dict[str, str]:
     for d in dirs:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(d, also_frozen=_fl.frozen_names(dirs)):
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
                 continue
             if not isinstance(rows, list):
                 continue
-            name = f.stem.removeprefix("ledger_")
+            name = _fl.label_of(f)
             times = [str(r.get("entry_time")) for r in rows
                      if isinstance(r, dict) and r.get("entry_time")]
             if times:
