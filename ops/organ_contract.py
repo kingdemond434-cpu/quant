@@ -148,6 +148,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the watchdog's own reading -- if THIS goes stale nothing is watching"),
     "MT5-ProcessHealth":  ("desks/mt5/reports/process_health.json", 60,
                            "every process, its last run and whether it is healthy"),
+    # Rides MT5-ProcessHealth's half-hourly clock (ops/run_process_health.cmd), so its own row:
+    # a DAILY_FILLS.json that stops refreshing means no one is checking whether the books trade.
+    "MT5-ProcessHealth (daily fills)": (
+        "desks/mt5/reports/DAILY_FILLS.json", 180,
+        "per account (fusion, e8, ftmo) whether the market day filled, and its zero-fill alarms"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,
