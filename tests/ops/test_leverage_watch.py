@@ -55,7 +55,8 @@ def test_the_lab_wires_it() -> None:
     # measure, so the vocabulary row rides on its own; emit() still writes it (unknown_kind).
     src = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "research"
            / "financing_lab.py").read_text(encoding="utf-8")
-    assert "from libs.ops.leverage_watch import observe" in src
+    assert "from libs.ops.leverage_watch import assess, observe" in src
+    assert "feasibility=(assess(acct" in src
     assert 'live = acct.get("source") == "live terminal"' in src
     assert "symbol_margins(" in src
 
