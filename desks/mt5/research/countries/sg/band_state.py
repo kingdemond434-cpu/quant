@@ -143,8 +143,10 @@ def write_calendar(path: Path = CALENDAR_PATH) -> bool:
 
 # ------------------------------------------------------------------------------ the level
 
-def _closes(load: Callable[[str], pd.DataFrame | None], symbol: str) -> pd.Series | None:
-    """Last H1 close per BROKER date, indexed by the true UTC instant that bar closed."""
+def _closes(load: Callable[[str], pd.DataFrame | None], symbol: str
+            ) -> tuple[pd.Series, pd.Series] | None:
+    """(last H1 close per BROKER date, the true UTC instant that bar closed), both indexed by the
+    broker date. None when the tape is absent."""
     df = load(symbol)
     if df is None or len(df) == 0 or "close" not in df.columns:
         return None
@@ -157,10 +159,13 @@ def _closes(load: Callable[[str], pd.DataFrame | None], symbol: str) -> pd.Serie
     if s.empty:
         return None
     last = s.groupby(s.index.normalize()).tail(1)
-    closed = server_to_utc(last.index) + pd.Timedelta(hours=1)
-    out = pd.Series(last.to_numpy(), index=pd.DatetimeIndex(last.index.normalize()))
-    out.attrs["closed_utc"] = pd.Series(closed, index=out.index)
-    return out
+    # the newest broker date may still be trading: only completed days become rows
+    last = last.iloc[:-1]
+    if last.empty:
+        return None
+    day = pd.DatetimeIndex(last.index.normalize())
+    closed = pd.Series(server_to_utc(last.index) + pd.Timedelta(hours=1), index=day)
+    return pd.Series(last.to_numpy(), index=day), closed
 
 
 def synthetic_neer(load: Callable[[str], pd.DataFrame | None]
@@ -168,14 +173,20 @@ def synthetic_neer(load: Callable[[str], pd.DataFrame | None]
     """(frame of broker-date rows with `log_neer` and `closed_utc`, notes on the legs used).
 
     Each currency leg is the log value of one SGD in that currency, from the direct SGD cross
-    where the broker has it and through USD otherwise. A date missing any leg has no row."""
+    where the broker has it and through USD otherwise. A date missing any leg has no row, and its
+    `closed_utc` is the LATEST close among the legs it used."""
     notes: list[str] = []
-    cache: dict[str, pd.Series | None] = {}
+    cache: dict[str, tuple[pd.Series, pd.Series] | None] = {}
+    used: set[str] = set()
 
     def c(sym: str) -> pd.Series | None:
         if sym not in cache:
             cache[sym] = _closes(load, sym)
-        return cache[sym]
+        got = cache[sym]
+        if got is None:
+            return None
+        used.add(sym)
+        return got[0]
 
     usdsgd = c("USDSGD")
     if usdsgd is None:
@@ -196,9 +207,10 @@ def synthetic_neer(load: Callable[[str], pd.DataFrame | None]
         x_per_usd = np.log(u) if usd_quoted_first else -np.log(u)
         return x_per_usd - lu
 
+    cnh = c("USDCNH")
     legs = {
         "USD": -lu,
-        "CNY": (np.log(c("USDCNH")) - lu) if c("USDCNH") is not None else None,
+        "CNY": (np.log(cnh) - lu) if cnh is not None else None,
         "EUR": via("EURSGD", True, "EURUSD", False),
         "JPY": via("SGDJPY", False, "USDJPY", True),
         "AUD": via("AUDSGD", True, "AUDUSD", False),
@@ -209,8 +221,8 @@ def synthetic_neer(load: Callable[[str], pd.DataFrame | None]
         return pd.DataFrame(), [*notes, f"legs absent: {missing} -- the state is UNMEASURED"]
     frame = pd.concat({k: v for k, v in legs.items() if v is not None}, axis=1).dropna()
     frame["log_neer"] = sum(WEIGHTS[k] * frame[k] for k in WEIGHTS)
-    closed = pd.concat([s.attrs["closed_utc"] for s in cache.values() if s is not None],
-                       axis=1).max(axis=1)
+    closed = pd.concat([pd.to_datetime(got[1], utc=True) for sym, got in cache.items()
+                        if got is not None and sym in used], axis=1).max(axis=1)
     frame["closed_utc"] = closed.reindex(frame.index)
     return frame[["log_neer", "closed_utc"]].dropna(), notes
 

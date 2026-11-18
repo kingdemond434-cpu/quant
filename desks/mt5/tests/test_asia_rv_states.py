@@ -52,7 +52,7 @@ def _bars(start: str, end: str, close: float) -> pd.DataFrame:
     return pd.DataFrame({"close": np.full(len(idx), close)}, index=idx)
 
 
-def _basket(start: str = "2020-01-02", end: str = "2022-03-31", **override: float):
+def _basket(start: str = "2020-01-02", end: str = "2022-06-30", **override: float):
     px = {"USDSGD": 1.35, "USDCNH": 6.9, "EURSGD": 1.5, "SGDJPY": 80.0, "AUDSGD": 0.95,
           "GBPSGD": 1.75, **override}
     frames = {s: _bars(start, end, v) for s, v in px.items()}
@@ -193,7 +193,7 @@ def test_the_band_starts_at_the_first_recentring_and_crawls_at_the_slope() -> No
     assert np.allclose(flat["band_pos"], 0.0)
     # then the centre crawls up at 0.5%/yr (2021-10-14) and 1.0%/yr (2022-01-25), so a flat
     # basket falls through the band: one year at 0.5%/yr is a quarter of the 2% half-width
-    after = band[ev > pd.Timestamp("2022-01-26")]
+    after = band[(ev > pd.Timestamp("2022-01-26")) & (ev < pd.Timestamp("2022-04-14"))]
     assert (after["band_pos"] < 0).all()
     assert after["band_pos"].is_monotonic_decreasing
     # 2022-04-14 re-centres to the prevailing level: back at the centre
@@ -225,7 +225,8 @@ def test_a_stronger_basket_reads_higher_in_the_band() -> None:
     j = pd.concat([w, h], axis=1, keys=["w", "h"]).dropna()
     j = j[j.index > pd.Timestamp(strong_from)]
     j = j[j.index < pd.Timestamp("2022-04-14")]
-    assert np.allclose(j["h"] - j["w"], 0.5, atol=1e-6)          # 1% = half the half-width
+    # 1% stronger is log(1.01) / 2% = about half the half-width
+    assert np.allclose(j["h"] - j["w"], np.log(1.01) / SG.HALF_WIDTH, atol=1e-9)
 
 
 def test_no_band_row_uses_a_later_bar_or_a_later_statement() -> None:
@@ -246,8 +247,9 @@ def test_no_band_row_uses_a_later_bar_or_a_later_statement() -> None:
     early = a.index < pd.Timestamp("2021-05-31")
     assert np.allclose(a[early], b[early])
     # each row is available only after its own broker day closed (true UTC)
-    ev = pd.to_datetime(band["event_time"]).dt.tz_localize("UTC")
-    assert (pd.to_datetime(band["available_time"], utc=True) > ev).all()
+    from libs.regime.session_clock import server_to_utc
+    day_end = server_to_utc(pd.DatetimeIndex(band["event_time"]) + pd.Timedelta(hours=23))
+    assert (pd.DatetimeIndex(pd.to_datetime(band["available_time"], utc=True)) >= day_end).all()
 
 
 def test_a_missing_leg_is_unmeasured_not_a_smaller_basket() -> None:

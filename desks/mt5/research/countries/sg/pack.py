@@ -188,7 +188,7 @@ CENTRAL_BANK: dict[str, Any] = {
 #: the level of the target, a slope change is a change in its drift, and a cell that treats them
 #: as the same event is averaging a jump with a trend.
 BAND_STATE: tuple[dict[str, str], ...] = (
-    {"date": "2020-03-30", "action": "EASE", "slope": "reduced to zero",
+    {"date": "2020-03-30", "action": "EASE (OFF-CYCLE)", "slope": "reduced to zero",
      "centre": "re-centred DOWN to the prevailing level", "width": "unchanged",
      "note": "the pandemic easing: a simultaneous slope cut and downward re-centring, the only "
              "one of its kind in the sample"},
