@@ -58,7 +58,7 @@ def _ok_row(fid: str = "bank_media", url: str = "https://bank.example.gov/rss/me
 def _registry(tmp_path: Path, feeds: list[dict[str, Any]], **kw: Any) -> Path:
     doc = {"schema": lw.SCHEMA, "user_agent": "test-agent/1.0", "backfill_window_h": 48,
            "max_new_per_feed": 50, "refused_hosts": {"reddit.com": "terms refuse"},
-           "crypto_exchange_domains": ["binance.com"], "feeds": feeds}
+           "crypto_exchange_domains": ["exchange.invalid"], "feeds": feeds}
     doc.update(kw)
     p = tmp_path / "live_wire_feeds.json"
     p.write_text(json.dumps(doc), "utf-8")
@@ -124,9 +124,9 @@ def test_crypto_exchange_rows_must_be_labelled_research_signal_inputs(tmp_path: 
         host = lw.host_of(r["url"]) or ""
         if any(host == d or host.endswith("." + d) for d in crypto):
             assert r["publisher_class"] == "crypto_exchange", r["id"]
-    bad = json.loads(_registry(tmp_path, [_ok_row(url="https://api.binance.com/x")]).read_text())
+    bad = json.loads(_registry(tmp_path, [_ok_row(url="https://api.exchange.invalid/x")]).read_text())
     assert any("crypto-exchange" in p for p in lw.registry_problems(bad))
-    good_row = _ok_row(url="https://api.binance.com/x")
+    good_row = _ok_row(url="https://api.exchange.invalid/x")
     good_row["publisher_class"] = "crypto_exchange"
     good = json.loads(_registry(tmp_path, [good_row]).read_text())
     assert not any("crypto-exchange" in p for p in lw.registry_problems(good))
