@@ -166,3 +166,6 @@ def test_workflow_skips_models_only_on_a_hit() -> None:
     review = job.index("Review the whole diff")
     assert reuse < serve < review
     assert job.count("if: steps.reuse.outputs.hit != 'true'") == 2
+    # the step runs LIVE's script: one without --reuse-only (or any crash) must not fail the job
+    step = job[job.index("id: reuse") : serve]
+    assert "continue-on-error: true" in step

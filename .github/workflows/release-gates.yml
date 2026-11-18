@@ -221,9 +221,11 @@ jobs:
       # THE SAME CHANGE IS READ ONCE (2026-11-18): every screen runs on this head, then an
       # earlier head of this PR with the same change (patch-id style key) whose own job here
       # succeeded within 7 days is reused, and the download and models below are skipped. A
-      # miss or any error falls through to the full review; this step never fails the job.
+      # miss or any error falls through to the full review; this step never fails the job, even
+      # when the base's script predates --reuse-only (it runs from LIVE's tip, not the PR).
       - name: Reuse this change's earlier review
         id: reuse
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
