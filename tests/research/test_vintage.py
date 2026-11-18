@@ -250,6 +250,9 @@ def test_the_collector_records_a_vintage_before_overwriting(
     monkeypatch.setattr(collector, "_WEB", tmp_path / "web" / "fred_macro.json")
     monkeypatch.setattr(collector, "_SERIES", ("M2SL",))
     monkeypatch.setattr(collector, "_key", lambda: "fake-key-never-used")
+    # FRED is refused on terms (BACKLOG 609), so main() fetches nothing by default; the vintage
+    # discipline is still exercised here with the refusal lifted and the network faked.
+    monkeypatch.setattr(collector, "refusal", lambda url: None)
     monkeypatch.setattr(collector, "_fetch", lambda key, sid: [("2026-06-01", 21500.0)])
     collector.main()
 

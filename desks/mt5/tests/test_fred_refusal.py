@@ -150,6 +150,21 @@ def test_data_alternates_fred_route_raises_before_the_wire(wire: list[str]) -> N
     assert wire == []
 
 
+def test_collect_fred_macro_is_refused_and_writes_nothing(tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch) -> None:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("collect_fred_macro_t",
+                                                  ROOT / "scripts" / "collect_fred_macro.py")
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod, "_ARCHIVE", tmp_path / "fred_macro.json")
+    monkeypatch.setattr(mod, "_key", lambda: "never-used")
+    monkeypatch.setattr(mod, "_fetch", lambda *a: pytest.fail("FRED fetched"))
+    mod.main()
+    assert not (tmp_path / "fred_macro.json").exists()
+
+
 # ------------------------------------------------------------------------ the replacements
 def test_h41_parser_reads_the_week_average_column() -> None:
     import usd_liquidity_primary as U
