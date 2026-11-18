@@ -689,6 +689,7 @@ $relPaths = @(
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/PR_BLOCKERS.json",
     # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
     # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
@@ -733,6 +734,9 @@ $relPaths = @(
     # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
     # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
     "desks/mt5/reports/markout.json",
+    # PER-ACCOUNT MARKOUT (2026-11-14): markout.json is MIXED on a multi-account ledger; the
+    # daily markout leg writes MARKOUT_V2.json beside it with one figure per account.
+    "desks/mt5/reports/MARKOUT_V2.json",
     # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
     # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
     # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
@@ -842,11 +846,24 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the math lab's per-tradition yield per compute-hour and its hypothesis -> tradition
+    # routing log (2026-11-13): the evidence the lab's compute shares are earned on
+    "desks/mt5/reports/MATH_LAB.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
+    # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
+    # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read
+    "desks/mt5/reports/DECAY_VERDICTS.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE E8 GOLD LANE'S PLACEMENT EVIDENCE (2026-10-20). prop/e8_evidence.py writes both on every
+    # five-minute E8-Gold pass; scripts/check_placement_interlock.py judges the lane from them.
+    # Until now they existed only on the box, so no reader off it could say whether the E8 book
+    # was placing or which host had sent its orders. The account is written as a keyed pseudonym
+    # (`account_ref`), never the id; the ledger is bounded at 1 MB by its writer.
+    "desks/mt5/data/e8_gold_heartbeat.json",
+    "desks/mt5/data/e8_decision_ledger.jsonl",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
@@ -870,6 +887,22 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # THE LOSS BRAIN (2026-11-11, zuck: "did we finish the loss intelligence"). decay_monitor
+    # runs hourly and loss_learner hourly + daily on the box, but none of their outputs crossed
+    # the wire: origin's decay_live.json still read NO_ROSTER from 2026-09-04, and the loss
+    # learner's report, replacements and per-book rollout requests had never been committed --
+    # so the hourly pass scored all five loss-brain lines RED off the box whatever the box held.
+    # (decay_live.json follows in its own PR: its writer is a money-closure file whose status
+    # strings must first stop carrying exception text, and that change has its own veto clock.)
+    "desks/mt5/reports/LOSS_LEARNER.json",
+    "desks/mt5/data/loss_learning/replacements.jsonl",
+    "desks/mt5/data/loss_learning/BOOK_ROLLOUTS.json",
+    # the too-good-to-be-true forensics (libs/validation/plausibility): every flagged cell's
+    # evidence, and the fast-track list forward shadow reads first
+    "desks/mt5/data/plausibility/forensics.jsonl",
+    "desks/mt5/data/plausibility/FAST_TRACK.json",
+    "desks/mt5/data/plausibility/LEAK_PROVEN.json",
+    "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
