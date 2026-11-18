@@ -17,17 +17,31 @@ nothing and a degraded one produces something worse, and only the second is dang
     python scripts/check_credentials.py            # human table
     python scripts/check_credentials.py --json     # machine-readable
     python scripts/check_credentials.py --missing  # only what is absent, for a setup checklist
+
+ONE INVENTORY, TWO HALVES, ONE SOURCE OF TRUTH EACH (2026-09-30). This file owns the SECRETS
+FILES (`CREDENTIALS` below). Environment credentials -- the free API keys the principal sets with
+`setx` -- are owned by `libs/data/credentials.py` (data: `desks/mt5/data/credential_registry.json`),
+which the hourly `credential_coverage` leg also reads. This script IMPORTS that registry for its
+`environment` section and for each file's `env_vars` cross-reference; it never restates a var, and
+the registry never restates a file's shape. A registry that fails to load is reported as
+`registry_error`, and the files half still answers.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SECRETS = ROOT / "data/secrets"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.data import credentials as registry  # noqa: E402 -- the env half's one source
 
 
 @dataclass(frozen=True)
@@ -201,8 +215,47 @@ def _inspect(cred: Credential) -> dict[str, Any]:
     return row
 
 
+def _tokens() -> list[dict[str, Any]]:
+    try:
+        from libs.ops import token_refresh
+        return token_refresh.status_report()
+    except Exception as e:  # an inventory never crashes on one section
+        return [{"error": f"token_refresh unavailable ({type(e).__name__})"}]
+
+
+def _ts(v: Any) -> str:
+    if not isinstance(v, (int, float)):
+        return "-"
+    return datetime.fromtimestamp(float(v), UTC).isoformat(timespec="minutes")
+
+
+def env_vars_for(file_name: str) -> list[str]:
+    """Registry vars that also accept this secrets file -- derived, never restated here."""
+    rel = f"data/secrets/{file_name}"
+    out: list[str] = []
+    for v in registry.registry():
+        specs = list(v.secrets) + [r for c in v.consumers for r in c.reads]
+        if any(s.startswith("file:") and s[5:].partition("#")[0] == rel for s in specs):
+            out.append(v.env)
+    return out
+
+
+def environment() -> list[dict[str, Any]]:
+    """The env half, from the registry: presence under an accepted name, names only."""
+    out: list[dict[str, Any]] = []
+    for v in registry.registry():
+        st = registry.status(v, root=ROOT)
+        out.append({"env": v.env, "provider": v.provider, "status": st["status"],
+                    "present_as": st["present_as"], "built": v.built,
+                    "machine_use_allowed": v.machine_use_allowed})
+    return out
+
+
 def build() -> dict[str, Any]:
     rows = [_inspect(c) for c in CREDENTIALS]
+    for r, c in zip(rows, CREDENTIALS, strict=True):
+        r["env_vars"] = env_vars_for(c.name)
+    env_rows = environment()
     ok = [r for r in rows if r["status"] == "OK"]
     broken = [r for r in rows if r["status"] in {"UNREADABLE", "MALFORMED", "INCOMPLETE"}]
     # `relative_to` RAISES when the directory is not under ROOT, which is exactly the case on a
@@ -225,6 +278,13 @@ def build() -> dict[str, Any]:
         "worst_first": [r["file"] for r in broken] + [r["file"] for r in rows
                                                       if r["status"] == "MISSING"],
         "credentials": rows,
+        # SHORT-LIVED TOKENS minted from env credentials by libs.ops.token_refresh: presence of
+        # the long-lived credential, the cached token's expiry and the last refresh status. Never
+        # a value; reading this makes no network call.
+        "short_lived_tokens": _tokens(),
+        "environment": env_rows,
+        "environment_source": "libs/data/credentials.py (desks/mt5/data/credential_registry.json)",
+        "registry_error": registry.load_error(),
         "note": "presence and shape only -- no key is printed, and none is validated against a "
                 "venue. This output is safe to paste.",
     }
@@ -262,6 +322,31 @@ def main() -> int:
             print(f"       WITHOUT IT: {r['without']}")
             print(f"       HOW:        {r['how']}")
         print()
+
+    print("SHORT-LIVED TOKENS (minted from the long-lived env credential; no values shown):")
+    for t in rep["short_lived_tokens"]:
+        if "error" in t:
+            print(f"  {t['error']}")
+            continue
+        long_ = t["long_lived_set"] or ("ABSENT -- set " + " or ".join(t["long_lived_options"]))
+        print(f"  {t['env']:<18} {t.get('status', '-'):<16} terms: {t.get('terms', '-'):<11} "
+              f"long-lived: {long_}")
+        print(f"  {'':<18} pasted short-lived: {'yes' if t['short_lived_env_set'] else 'no'}"
+              f"   cached expiry: {_ts(t['cached_expires_at']) if t['cached_token'] else '-'}"
+              f"   last refresh: {t['last_status']}"
+              f"{' HTTP ' + str(t['last_http']) if t['last_http'] else ''}"
+              f" at {_ts(t['last_attempt_at'])}")
+    print()
+    env = [e for e in rep["environment"] if not a.missing or e["status"] != "SET"]
+    print(f"ENVIRONMENT (from {rep['environment_source']}) -- "
+          f"{sum(e['status'] == 'SET' for e in rep['environment'])}/"
+          f"{len(rep['environment'])} set")
+    if rep["registry_error"]:
+        print(f"  {rep['registry_error']}")
+    for e in env:
+        fence = "" if e["machine_use_allowed"] else "  [terms: no machine use]"
+        print(f"  {e['status']:<16} {e['env']:<28} {e['provider']}{fence}")
+    print()
 
     if not a.missing:
         print("UNLOCKS, for the ones that are absent:")

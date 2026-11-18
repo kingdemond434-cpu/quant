@@ -79,6 +79,30 @@ def _ts(x: Any) -> datetime | None:
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
+_RA: Any = None
+
+
+def _runtime_doc(path: Path) -> Any:
+    """The runtime attestation at `path` merged with the PR sidecars beside it
+    (`runtime_attestation.load_attestation_file`); the bare file when that cannot be loaded."""
+    global _RA
+    try:
+        if _RA is None:
+            import importlib.util as _ilu
+
+            spec = _ilu.spec_from_file_location(
+                "_runtime_attestation", Path(__file__).with_name("runtime_attestation.py"))
+            assert spec is not None and spec.loader is not None
+            mod = _ilu.module_from_spec(spec)
+            sys.modules[spec.name] = mod      # a dataclass resolves its module by this name
+            spec.loader.exec_module(mod)
+            _RA = mod
+        doc = _RA.load_attestation_file(Path(path))
+    except Exception:  # the reader falls back to what it always read
+        doc = None
+    return doc
+
+
 def _json(p: Path) -> Any:
     try:
         return json.loads(p.read_text("utf-8-sig"))
@@ -174,7 +198,7 @@ def judge(organ: dict[str, Any], event: dict[str, Any] | None) -> tuple[str, str
 def build(runtime: Path | None = None, events: Path | None = None,
           acceptance: Path | None = None, stall: Path | None = None,
           readers: dict[str, Path] | None = None) -> dict[str, Any]:
-    rt = _json(runtime or RUNTIME)
+    rt = _runtime_doc(runtime or RUNTIME) or _json(runtime or RUNTIME)
     ev_last, ev_newest, ev_present = read_events(events or EVENTS)
     acc = _json(acceptance or ACCEPTANCE)
     sw = _json(stall or STALL)
