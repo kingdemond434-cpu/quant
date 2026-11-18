@@ -219,7 +219,11 @@ def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
             "hist_rows": [], "history_ok": True, "instrument_id": IID,
             # A FLAT Fusion terminal: the retry is cross-account fenced (audit round 2) and
             # fails closed without one; the fence itself is pinned in test_fusion_minlot_book.
-            "mt5": _flat_fusion_terminal(), **kw}
+            "mt5": _flat_fusion_terminal(),
+            # A measured budget with room: a re-send is budgeted like a first send and held
+            # without one (should-fix 2, test_e8_recut_v2_audit_fixes).
+            "budget": {"committed": 0.0, "detail": {"slip_points": 0.0}, "contract": 100.0,
+                       "room": 1e9}, **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
