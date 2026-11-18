@@ -35,6 +35,7 @@ import io
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -443,6 +444,56 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+#: The scheduler refused to start a new instance because one is still running (0x800710E0).
+REFUSED = 2147946720
+#: The verdicts that count toward a bad streak on their own.
+BAD_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE"})
+MANIFEST = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+_ATTR = re.compile(r'(\w+)="([^"]*)"')
+
+
+def _manifest() -> dict[str, dict[str, str]]:
+    """Task name -> its manifest attributes (trigger, runs, lane). {} when unreadable."""
+    out: dict[str, dict[str, str]] = {}
+    try:
+        text = MANIFEST.read_text(encoding="utf-8")
+    except OSError:
+        return out
+    for line in text.splitlines():
+        if line.startswith("TASK "):
+            attrs = dict(_ATTR.findall(line))
+            if attrs.get("name"):
+                out[attrs["name"]] = attrs
+    return out
+
+
+def is_resident(trigger: str) -> bool:
+    """A KEEP-ALIVE TRIGGER IS REFUSED WHEN ITS RESIDENT IS ALIVE (Hourly pass 2026-11-18). These
+    tasks fire every few minutes only to restart a 24/7 process that died, so 0x800710E0 ("an
+    instance is already running") is their healthy answer. Whether the resident PRODUCES is the
+    artifact contract's question, never the refusal's."""
+    return "keep-alive" in trigger.lower()
+
+
+def streaks(rows: list[dict[str, Any]], previous: dict[str, Any] | None,
+            at: str) -> None:
+    """Stamp `bad_reads` (consecutive health reads this task was bad on) and `bad_since` (the
+    read that began the run) onto each row, carried from the previous report.
+
+    Bad is a BAD_VERDICTS row, or a refused trigger on a task that is NOT a keep-alive: a
+    periodic job whose next run was refused is still running a whole interval later. The count
+    is of READS (this file runs hourly), not of the task's own runs, and is named as such."""
+    prev = {str(r.get("name")): r for r in ((previous or {}).get("processes") or [])
+            if isinstance(r, dict)}
+    for row in rows:
+        refused = row.get("last_result_code") == REFUSED
+        bad = row["verdict"] in BAD_VERDICTS or (refused and not row.get("resident"))
+        before = prev.get(str(row["name"])) or {}
+        n = int(before.get("bad_reads") or 0)
+        row["bad_reads"] = n + 1 if bad else 0
+        row["bad_since"] = (before.get("bad_since") or at) if bad and n else (at if bad else None)
+
+
 def claude_settings() -> dict[str, Any]:
     """Whether the Claude Code settings files that shape the box's Remote Control sessions parse
     (ops/claude_settings_health.py, read-only, no values). Off Windows it is NOT_APPLICABLE: the
@@ -508,6 +559,7 @@ def account_key_backup() -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     contracts = _contracts()
+    manifest = _manifest()
     now = datetime.now(tz=UTC)
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -566,6 +618,12 @@ def build() -> dict[str, Any]:
         else:
             verdict, why = "OK", ("" if code is not None else
                                   "artifact fresh; last result not read this pass")
+        resident = is_resident(str((manifest.get(name) or {}).get("trigger") or ""))
+        if code == REFUSED and verdict in ("OK", "UNCONTRACTED"):
+            why = ((why + "; ") if why else "") + (
+                "keep-alive refused because the resident is alive" if resident else
+                "the last trigger was refused: the previous run was still going a whole "
+                "interval later")
 
         rows.append({
             "name": name,
@@ -583,6 +641,7 @@ def build() -> dict[str, Any]:
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
+            "resident": resident,
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
@@ -628,6 +687,8 @@ def build() -> dict[str, Any]:
              "NO_ARTIFACT": 2, "STALE": 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
+    at = now.isoformat(timespec="seconds")
+    streaks(rows, _read_report(), at)
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
@@ -652,7 +713,7 @@ def build() -> dict[str, Any]:
     if key_fault or backup_fault or settings_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
-        "at": now.isoformat(timespec="seconds"),
+        "at": at,
         "host": __import__("socket").gethostname(),
         "scheduler_status": scheduler_status,
         "n_processes": len(rows),
@@ -671,6 +732,9 @@ def build() -> dict[str, Any]:
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(settings_fault),
+        # THREE BAD READS IN A ROW IS THE FIX-THIS-PASS LINE (principal's rule, 2026-11-18 01:51Z):
+        # the Hourly pass reads this list instead of re-deriving streaks from history.
+        "bad_3_in_a_row": sorted(str(r["name"]) for r in rows if int(r.get("bad_reads") or 0) >= 3),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
