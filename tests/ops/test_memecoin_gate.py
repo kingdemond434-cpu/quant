@@ -165,3 +165,60 @@ def test_off_the_box_or_without_a_registry_it_does_nothing(monkeypatch):
     assert mg.main(["--box"]) == 0
     monkeypatch.setenv(mg.MEMECOIN_REGISTRY_ENV, "x")
     assert mg.main([]) == 0
+
+
+def test_a_name_only_exemption_lifts_one_pattern_from_one_file_and_nothing_else():
+    """Governance 2026-11-17: wallet_intelligence.py is caught by *wallet* by name only; it gets
+    the scrutiny of any other src/ module, never less."""
+    scoring = "src/strategies/wallet_intelligence.py"
+    assert _decide(files=_files((scoring, "+        rate = prior.shrink(hits, trials)")))[0] == (
+        "merge"
+    )
+    # the full LIVE_WORDS scan still binds it
+    for line in (
+        "+    dry_run = False",
+        "+    kp = keypair.load(path)",
+        "+    key = private_key",
+        "+    from src.execution import signer",
+        "+    os.environ['X'] = '1'",
+    ):
+        assert _decide(files=_files((scoring, line)))[0] == "zuck", line
+    # real wallet/keypair paths, near-misses, renames onto or off the name stay fenced
+    for path in (
+        "src/wallet.py",
+        "data/wallet.json",
+        "src/strategies/wallet_signer.py",
+        "src/strategies/wallet_intelligence.pyc",
+        "deploy/windows/memecoin-health.ps1",
+    ):
+        assert _decide(files=_files((path, "+x = 1")))[0] == "zuck", path
+    for old, new in ((("src/wallet_keys.py", scoring)), ((scoring, "src/x.py"))):
+        moved = [
+            {
+                "filename": new,
+                "previous_filename": old,
+                "patch": "",
+                "changes": 0,
+                "status": "renamed",
+            }
+        ]
+        assert _decide(files=moved)[0] == "zuck", (old, new)
+
+
+def test_docs_may_name_the_switch_but_nothing_else_may():
+    line = "+| 1 | promotion bar | PRESENT | `src/research/promotion_gate.py` |"
+    assert _decide(files=_files(("docs/QUANT_PORT_LEDGER.md", line)))[0] == "merge"
+    for path in ("README.md", "docs/tool.py", "src/notes.md", "docs/x.md.py"):
+        assert _decide(files=_files((path, line)))[0] == "zuck", path
+    # a path pattern still binds a doc, e.g. anything under .github/
+    assert _decide(files=_files((".github/x.md", "+text")))[0] == "zuck"
+    renamed = [
+        {
+            "filename": "docs/a.md",
+            "previous_filename": "src/main.py",
+            "patch": line,
+            "changes": 1,
+            "status": "renamed",
+        }
+    ]
+    assert _decide(files=renamed)[0] == "zuck"

@@ -1079,3 +1079,76 @@ def test_the_box_republishing_over_an_origin_edit_is_the_boxs(repo: Path) -> Non
     edit = _origin(repo, _head(repo), {rel: '{"gold": 0.5}\n'})
     target = _publish(repo, edit, {rel: '{"gold": 0.03}\n'})
     assert ag.pre(repo, target, now=QUIET, offset_h=summer)[0] == ag.GO
+
+
+def test_proving_the_clear_record_costs_a_constant_number_of_git_calls(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-04, measured on the box: one rev-list and one show per commit and per parent,
+    twice, was 388 git calls and a 58-minute `pre`. The proof must not grow with history."""
+    head = _head(repo)
+    for i in range(12):
+        change = _origin(repo, head, {"libs/x.py": f"X = {i}\n"})
+        head = _with_clears(repo, change, _clear(repo, change))
+    real = subprocess.run
+    calls: list[list[str]] = []
+
+    def counting(cmd: Any, *a: Any, **k: Any) -> Any:
+        calls.append(list(cmd))
+        return real(cmd, *a, **k)
+
+    monkeypatch.setattr(ag.subprocess, "run", counting)
+    rows = ag.committed_clears(repo, head)
+    assert len(rows) == 12
+    assert len(calls) <= 8, [c[3:5] for c in calls]  # was 2 + 2 per commit and parent
+
+
+def test_an_edited_version_behind_a_merge_parent_is_still_refused(repo: Path) -> None:
+    """The batched walk must read every parent, as the per-commit walk did."""
+    change = _origin(repo, _head(repo), {"libs/x.py": "X = 2\n"})
+    side = _with_clears(
+        repo, change, {"commit": change, "verdict": "HOLD", "report": "reports/audit/a/Y.md"}
+    )
+    main = _with_clears(repo, change, _clear(repo, change))
+    _g(repo, "checkout", "-q", main)
+    _g(repo, "merge", "-q", "--no-edit", "-s", "ours", side)
+    with pytest.raises(ag.GuardError, match="not a prefix"):
+        ag.committed_clears(repo, _head(repo))
+
+
+# A ROW LANDED PRETTY-PRINTED (2026-11-14 13:47Z, LIVE dca73be61). Read line by line its first
+# line, `{`, refused the whole record, and append-only made that permanent for every later
+# release. The reader takes whitespace-separated JSON objects; every row check still applies.
+_ROW = {"commit": "a" * 40, "verdict": "CLEAR", "report": "reports/audit/a.md",
+        "report_sha256": "f" * 64, "paths": {"x.py": "1" * 40, "gone.py": None}}
+
+
+def test_a_row_spread_over_lines_reads_as_the_same_row() -> None:
+    one = json.dumps(_ROW)
+    pretty = json.dumps(_ROW, indent=1)
+    assert "\n" in pretty
+    text = one + "\n" + pretty + "\n" + one + "\n"
+    rows = ag.parse_clears(text)
+    assert len(rows) == 3 and rows[0] == rows[1] == rows[2]
+    assert ag.vouched(rows) == {("x.py", "1" * 40), ("gone.py", None)}
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "{",                                    # an object that never closes
+        json.dumps(_ROW, indent=1)[:-1],        # a pretty row cut short
+        json.dumps(_ROW) + " x",                # trailing garbage after a row
+        "[" + json.dumps(_ROW) + "]",           # a list is not a row
+        "7",                                    # nor a number
+    ],
+)
+def test_a_broken_or_foreign_value_anywhere_still_refuses_the_file(tail: str) -> None:
+    with pytest.raises(ag.GuardError):
+        ag.parse_clears(json.dumps(_ROW) + "\n" + tail + "\n")
+
+
+def test_the_error_names_the_line_the_bad_value_starts_on() -> None:
+    text = json.dumps(_ROW) + "\n" + json.dumps(_ROW, indent=1) + "\n\n{oops\n"
+    with pytest.raises(ag.GuardError, match=rf":{text.count(chr(10))} is not JSON"):
+        ag.parse_clears(text)
