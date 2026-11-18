@@ -280,22 +280,24 @@ def test_youtube_caption_endpoints_are_refused_by_robots_not_attempted(conn, mon
     url = "https://www.youtube.com/api/timedtext?v=abc123"
     assert mc.robots_barred(url)
     cap = mc.collect_transcript({"source_id": "yt", "url": url}, 30.0)[0]
-    assert "robots.txt" in cap.unmeasured and cap.content_length == 0
+    assert "terms-refused" in cap.unmeasured and cap.content_length == 0
 
 
-def test_a_youtube_watch_url_goes_through_the_desk_s_mirror_rotation(conn, monkeypatch):
+@pytest.mark.parametrize("url", ["https://www.youtube.com/watch?v=abc123xyz",
+                                 "https://youtu.be/abc123xyz",
+                                 "https://m.youtube.com/shorts/abc123xyz"])
+def test_a_youtube_url_is_terms_refused_before_any_contact(conn, monkeypatch, url):
+    """wayback-youtube-ruling-2026-11-14: no mirror rotation, no robots read, a named gap."""
     _explode(monkeypatch)
-    calls: list[str] = []
 
-    def _transcript(video_id: str, lang: str = "en") -> tuple[str, str | None]:
-        calls.append(video_id)
-        return "gold rallies into the London fix in 62% of sessions", None
+    def _boom(*_a, **_k):
+        raise AssertionError("a refused YouTube ground was contacted")
 
-    monkeypatch.setattr(mc.dfm, "youtube_transcript", _transcript)
-    cap = mc.collect_transcript(
-        {"source_id": "yt", "url": "https://www.youtube.com/watch?v=abc123xyz"}, 30.0)[0]
-    assert calls == ["abc123xyz"]
-    assert "London fix" in cap.text
+    monkeypatch.setattr(mc.dfm, "youtube_transcript", _boom)
+    monkeypatch.setattr(mc, "robots_barred", _boom)
+    cap = mc.collect_transcript({"source_id": "yt", "url": url}, 30.0)[0]
+    assert cap.content_length == 0
+    assert "terms-refused" in cap.unmeasured and "missed_growth" in cap.unmeasured
 
 
 @pytest.mark.parametrize(("text", "script"), [
