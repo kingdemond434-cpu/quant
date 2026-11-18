@@ -458,6 +458,9 @@ desks/mt5/data/free_data_cache/
 # keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
 # the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
 desks/mt5/data/keyed_sources/
+# macro_event_states store: PIT observations of five public releases and cursors are box-local
+# raw pulled data; reports/MACRO_EVENT_STATES.json and the _CLOCK report are its record.
+desks/mt5/data/macro_event_states/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/

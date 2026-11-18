@@ -1456,7 +1456,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # five scheduled public releases -> PIT surprise states + event clock
+                     "macro_event_states"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2308,6 +2310,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # stops itself at --budget-s 240 (16 throttled requests, 2 s apart, 30 s timeout each)
+    "macro_event_states": 300,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
@@ -4572,6 +4576,13 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # MACRO EVENT STATES (ideas N4-N8): SNB sight deposits, USDA export sales, EIA gas storage,
+    # TIC foreign flows and BoJ rinban as point-in-time surprise series, exogenous_conditioner
+    # cells and an event clock (reports/MACRO_EVENT_STATES_CLOCK.json, read by
+    # event_response_atlas). Terms, refused-hosts and robots gates fail closed per source;
+    # 401/403/429/451 hard-stop; each source fetches only when due.
+    mevs = _costed("macro_event_states", lambda: _producer(
+        "macro_event_states", "research/macro_event_states.py", "--once", "--budget-s", "240"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -6575,6 +6586,7 @@ def main() -> None:
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "macro_event_states": mevs,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
