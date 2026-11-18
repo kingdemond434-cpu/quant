@@ -174,3 +174,62 @@ def test_every_hunt_uses_the_same_calibrated_cost_and_trial_policy() -> None:
     assert "pd.DataFrame(cols).sort_index().fillna(0.0)" in source
     assert '"curve_compendium"' in source
     assert "stress_x3_return" in source
+
+
+def test_formula_certificate_reading_spread_or_ticks_waits_for_its_re_gate(tmp_path: Path) -> None:
+    """Box 2026-11-10: 5,702 of 5,757 formula certificates read the spread or tick columns, the
+    spread column changes meaning at 2020, and on AUDSGD the fills vanish when a zero is read as
+    undefined. Such a certificate gets no clock until it is re-gated on the corrected reading
+    (a matured clock is promoted with no human act). A price-only formula, and any other family,
+    is untouched; the switch counts without holding; a re-gate at or after the rule lifts it."""
+    import os
+
+    import shadow_admission as sa
+
+    gates = {name: {"passed": True} for name in GATES}
+
+    def cert(family: str, expr: object, gated: str = "2026-11-01T00:00:00+00:00") -> dict:
+        params = {"expr": expr} if expr is not None else {"n": 1}
+        return {"sym": "AUDSGD", "gates": gates, "status": "UNIVERSAL", "gated_at": gated,
+                "shadow_spec": {"symbol": "AUDSGD", "family": family, "selector": "asia",
+                                "params": params}}
+    survivors = {
+        "external.AUDSGD.formula.p=1": cert("formula", ["neg", ["sum", "spread", 120]]),
+        "external.AUDSGD.formula.p=2": cert("formula", "zscore(activity, 24)"),
+        "external.AUDSGD.formula.p=3": cert("formula", "['neg', ['delta', 'flow', 3]]"),
+        "external.AUDSGD.formula.p=4": cert("formula", ["neg", ["delta", "close", 3]]),
+        "external.AUDSGD.formula.p=5": cert("formula", ["neg", ["sum", "spread", 60]],
+                                            gated="2026-12-02T00:00:00Z"),
+        "external.AUDSGD.range_reversion.p=6": cert("range_reversion", None),
+    }
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 6}), encoding="utf-8")
+    reading = {f"external.AUDSGD.formula.p={i}" for i in (1, 2, 3, 5)}
+    old_env = os.environ.get("QUANT_FORMULA_INPUT_HOLD")
+    old_eff = sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC
+    try:
+        os.environ.pop("QUANT_FORMULA_INPUT_HOLD", None)
+        assert sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC is None       # shipped: nothing is lifted yet
+        names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+        assert names == set(survivors) - reading
+        assert {h["certificate"] for h in sa.FORMULA_INPUT_HELD} == reading
+        assert sum("FORMULA_INPUT_UNMEASURED" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 4
+        assert sa.formula_reads_inputs({"expr": "spreadsheet(close, 3)"}) == []   # whole names only
+
+        sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC = "2026-12-01T00:00:00+00:00"
+        names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+        assert names == set(survivors) - (reading - {"external.AUDSGD.formula.p=5"})
+        assert sa.formula_input_unmeasured("external.AUDSGD.formula.p=5",
+                                           survivors["external.AUDSGD.formula.p=5"]) is None
+
+        os.environ["QUANT_FORMULA_INPUT_HOLD"] = "0"             # counted, not held
+        names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+        assert names == set(survivors)
+        assert len(sa.FORMULA_INPUT_HELD) == 3
+    finally:
+        sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC = old_eff
+        if old_env is None:
+            os.environ.pop("QUANT_FORMULA_INPUT_HOLD", None)
+        else:
+            os.environ["QUANT_FORMULA_INPUT_HOLD"] = old_env
