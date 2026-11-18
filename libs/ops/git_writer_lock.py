@@ -536,6 +536,13 @@ HUNG_MIN_AGE_S = 600.0
 #: trigger-happy in that direction is the failure that would get the reaper switched off.
 HUNG_SAMPLE_S = 60.0
 
+#: THE CEILING ON SPARING A WRITER FOR ITS CHILDREN'S WORK (#708 audit SF). A child that spins
+#: forever must not hold the writer mutex forever. DERIVATION: the pre-push law gate is the
+#: longest legitimate child; measured on the trading box 2026-11-04 at ~20-25 min per push (three
+#: pushes were killed mid-gate at 1,209 s), so 2 x 25 min. Past it the ordinary zero-movement rule
+#: on the writer itself decides again.
+TREE_SPARE_MAX_AGE_S = 2 * 25 * 60.0
+
 #: `sshd` is excluded on purpose -- see note 1 above.
 _WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})
 
@@ -577,6 +584,24 @@ _HELPER_CMD_MARKERS = ("credential-manager", "credential-helper", "git-remote-ht
 #: the zero-movement reaper while every release fetch queued behind it.  This is narrower than a
 #: generic "orphan" rule: only Git protocols whose result has no consumer without the parent.
 _ORPHANABLE_STDIN_MARKERS = ("index-pack --stdin", "update-index --stdin")
+
+
+def _descendant_cpu_s(psutil_mod: Any, pid: int) -> float | None:
+    """Total CPU seconds of `pid`'s descendants (not `pid` itself), or None when unreadable. A
+    descendant that exits between the two samples takes its CPU with it, so a falling total
+    never spares anything; only a rise does."""
+    try:
+        kids = psutil_mod.Process(pid).children(recursive=True)
+    except Exception:
+        return None
+    total = 0.0
+    for k in kids:
+        try:
+            t = k.cpu_times()
+            total += float(t.user) + float(t.system)
+        except Exception:
+            continue
+    return total
 
 
 def _is_writer(name: str, cmd: str) -> bool:
@@ -682,6 +707,7 @@ def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SA
                       "writer that is holding the lock open")
         return rec
 
+    tree_before = {pid: _descendant_cpu_s(psutil_mod, pid) for pid in old}
     sleep(sample_s)
     second = _writer_sample(psutil_mod)
     for pid, before in old.items():
@@ -709,6 +735,18 @@ def hung_writers(*, min_age_s: float = HUNG_MIN_AGE_S, sample_s: float = HUNG_SA
             rec["spared"].append({
                 **row, "why": f"moved {d_cpu:.3f}s of CPU and {d_io}B of I/O in {sample_s:.0f}s: "
                               "slow, not stopped"})
+            continue
+        # WAITING ON ITS OWN WORK IS NOT STOPPED (2026-11-04). A `git push` sits at zero CPU while
+        # its pre-push hook runs the law gate (~20 min on this box) in a child process; the reaper
+        # killed three such pushes at 0.34h, each mid-gate. A writer whose own descendants moved
+        # CPU in the sample is slow by the same rule as above, measured on its whole tree.
+        b_tree, a_tree = tree_before.get(pid), _descendant_cpu_s(psutil_mod, pid)
+        if (b_tree is not None and a_tree is not None and a_tree > b_tree
+                and float(after["age_s"]) <= TREE_SPARE_MAX_AGE_S):
+            rec["spared"].append({
+                **row, "d_tree_cpu_s": round(a_tree - b_tree, 4),
+                "why": (f"its own child processes moved {a_tree - b_tree:.3f}s of CPU in "
+                        f"{sample_s:.0f}s (a hook at work under it): slow, not stopped")})
             continue
         rec["hung"].append({
             **row, "why": (f"{float(after['age_s']) / 3600.0:.2f}h old and moved 0.000s of CPU "
