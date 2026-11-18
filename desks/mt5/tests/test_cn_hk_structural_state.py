@@ -9,7 +9,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402 -- tests add the desk roots before importing standalone research modules.
 import sys
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -164,3 +164,60 @@ def test_a_robots_disallow_fetches_nothing(monkeypatch: pytest.MonkeyPatch,
     assert any(n.get("series") == "cn_parity_dev" and n["status"] == "UNMEASURED"
                for n in doc["notes"])
     assert "cn_golden_week" in doc["series"]
+
+
+def test_the_user_agent_names_no_person_or_address() -> None:
+    assert m.UA == m.HONEST_UA == "quant-desk-research/1.0 (automated research; honours robots.txt)"
+    low = m.UA.lower()
+    assert "github.com/" not in low and "kingdemond" not in low and "@" not in m.UA
+
+
+@pytest.mark.parametrize("body", [
+    "<html><body>Access denied</body></html>",
+    "   <!DOCTYPE html><html></html>",
+    "\n<?xml version='1.0'?><error/>",
+    "User-agent: *\nDisallow:\n" + " " * 10 + "<HTML>",
+])
+def test_an_html_robots_body_is_unread_never_an_allow(body: str) -> None:
+    ok, why = m.robots_verdict("https://example.org/data.csv", lambda u: body)
+    assert ok is False and "unread" in why
+
+
+@pytest.mark.parametrize("code", [404, 410])
+def test_a_missing_robots_file_allows(code: int) -> None:
+    def gone(url: str) -> str:
+        raise m.FetchError(code, url, f"HTTP {code}")
+    assert m.robots_verdict("https://example.org/data.csv", gone)[0] is True
+
+
+def test_a_plain_robots_file_is_still_read() -> None:
+    ok, _ = m.robots_verdict("https://example.org/data.csv",
+                             lambda u: "User-agent: *\nDisallow: /private/\n")
+    assert ok is True
+
+
+def test_a_429_is_a_timed_hold_and_a_refusal_is_not(monkeypatch: pytest.MonkeyPatch,
+                                                    tmp_path: Path) -> None:
+    _isolate(monkeypatch, tmp_path)
+    t0 = datetime(2026, 11, 18, 6, tzinfo=UTC)
+    for code, released_after_a_day in ((429, True), (403, False), (451, False), (401, False)):
+        state: dict[str, Any] = {}
+
+        def stop(url: str, code: int = code) -> str:
+            if url.endswith("/robots.txt"):
+                return "User-agent: *\nAllow: /\n"
+            raise m.HardStop(code, url)
+
+        m.collect_parity(stop, state, [], t0)
+        assert state["hard_stops"]["bis_xru_cny"]["code"] == code
+        asked: list[str] = []
+
+        def ok(url: str, asked: list[str] = asked) -> str:
+            asked.append(url)
+            return "User-agent: *\nAllow: /\n" if url.endswith("/robots.txt") else ""
+
+        m.collect_parity(ok, state, [], t0 + timedelta(hours=23))
+        assert asked == []
+        m.collect_parity(ok, state, [], t0 + timedelta(hours=25))
+        assert bool(asked) is released_after_a_day
+        assert ("bis_xru_cny" in state["hard_stops"]) is not released_after_a_day

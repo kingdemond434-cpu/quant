@@ -83,8 +83,14 @@ STATE = STATE_DIR / "state.json"
 SERIES = DESK / "data" / "lake" / "series"
 OUT = DESK / "reports" / "CN_HK_STRUCTURAL_STATE.json"
 
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; cn_hk_structural_state)"
+#: The desk's honest User-Agent: says what it is and that it honours robots.txt, and names no
+#: person, account or address.
+HONEST_UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
+UA = HONEST_UA
 HARD_STOP = frozenset({401, 403, 429, 451})
+#: 429 is the server asking us to slow down, not a refusal: the source is held for this long and
+#: then asked again. 401, 403 and 451 stay held until `source_fixer --release` clears them.
+RATE_LIMIT_HOLD_H = 24
 BIS_URL = ("https://stats.bis.org/api/v1/data/WS_XRU/D.CN.CNY.A"
            "?format=csv&detail=dataonly&startPeriod={start}")
 BIS_HISTORY_START = "2015-08-11"     # the fix reform; the formula before it is another regime
@@ -209,18 +215,41 @@ def fetch_text(url: str, timeout: float = 40.0) -> str:
     return r.text
 
 
+def looks_like_html(body: str) -> bool:
+    """True for a body that is an HTML page rather than a robots file."""
+    head = (body or "").lstrip()[:512].lower()
+    return head.startswith("<") or "<html" in head or "<!doctype" in head
+
+
+def hold_active(stop: Mapping[str, Any] | None, now: datetime) -> bool:
+    """Whether a recorded hard stop still holds the source. A 429 holds for RATE_LIMIT_HOLD_H
+    from when it was recorded (an unreadable stamp keeps holding); any other code holds until
+    released."""
+    if not stop:
+        return False
+    if int(stop.get("code") or 0) != 429:
+        return True
+    at = pd.to_datetime(stop.get("at"), utc=True, errors="coerce")
+    return bool(pd.isna(at) or pd.Timestamp(now) - at < pd.Timedelta(hours=RATE_LIMIT_HOLD_H))
+
+
 def robots_verdict(url: str, get_text: Callable[[str], str]) -> tuple[bool, str]:
-    """(allowed, why) for this exact path under our own UA. A 404 robots allows (RFC 9309); any
-    other failure to read it does not, so an unread policy is never a yes."""
+    """(allowed, why) for this exact path under our own UA. A 404 or 410 robots allows (RFC
+    9309); any other failure to read it does not, so an unread policy is never a yes. A 200 that
+    is an HTML page (a CDN shell, a login or error page) is NOT a robots file: parsed, it has no
+    rules and would allow everything, so it is treated as unread."""
     p = urllib.parse.urlsplit(url)
     rp = urllib.robotparser.RobotFileParser()
     try:
-        rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+        body = get_text(f"{p.scheme}://{p.netloc}/robots.txt")
+        if looks_like_html(body):
+            return False, "robots.txt unread: the server answered an HTML page"
+        rp.parse(body.splitlines())
     except HardStop as hs:
         return False, f"robots.txt answered HTTP {hs.code}"
     except FetchError as exc:
-        if exc.code == 404:
-            return True, "no robots.txt (404)"
+        if exc.code in (404, 410):
+            return True, f"no robots.txt ({exc.code})"
         return False, f"robots.txt unreadable ({exc})"
     except Exception as exc:
         return False, f"robots.txt unreadable ({type(exc).__name__})"
@@ -262,7 +291,10 @@ def collect_parity(get_text: Callable[[str], str] | None, state: dict[str, Any],
             notes.append({"source": "bis_xru_cny", "status": "RAW_UNREADABLE"})
     last = pd.to_datetime(state.get("bis_last_fetch"), utc=True, errors="coerce")
     due = pd.isna(last) or (pd.Timestamp(now) - last) >= pd.Timedelta(hours=BIS_REFETCH_H)
-    if get_text is None or not due or "bis_xru_cny" in state.get("hard_stops", {}):
+    stops = state.setdefault("hard_stops", {})
+    if "bis_xru_cny" in stops and not hold_active(stops["bis_xru_cny"], now):
+        stops.pop("bis_xru_cny")          # a 429's timed hold has run out: ask again
+    if get_text is None or not due or "bis_xru_cny" in stops:
         return held
     start = (BIS_HISTORY_START if held.empty
              else (held.index.max() - pd.Timedelta(days=45)).strftime("%Y-%m-%d"))
@@ -291,8 +323,11 @@ def collect_parity(get_text: Callable[[str], str] | None, state: dict[str, Any],
         state["bis_last_fetch"] = now.isoformat(timespec="seconds")
         return merged
     except HardStop as hs:
-        state.setdefault("hard_stops", {})["bis_xru_cny"] = {
-            "code": hs.code, "at": now.isoformat(timespec="seconds")}
+        stop: dict[str, Any] = {"code": hs.code, "at": now.isoformat(timespec="seconds")}
+        if hs.code == 429:
+            stop["until"] = (now + timedelta(hours=RATE_LIMIT_HOLD_H)).isoformat(
+                timespec="seconds")
+        state.setdefault("hard_stops", {})["bis_xru_cny"] = stop
     except FetchError as exc:
         notes.append({"source": "bis_xru_cny", "status": "NO_REPLY", "code": exc.code})
     except Exception as exc:
