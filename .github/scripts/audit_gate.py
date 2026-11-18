@@ -984,9 +984,10 @@ def registry_clear(
 # unreadable side, a rename, an added or removed file, an unparsable .py, any other path in the
 # never-standing set. Everything else still binds: the Auditor CLEAR of the head, the base-run
 # trusted-eval, every gating and AUTO job, up to date with LIVE, the controller switched on, and
-# the merge pinned to the head. A veto is any of: an AUDIT HOLD, a trusted comment exactly
-# `VETO` on the PR newer than the CLEAR, a DEACTIVATE on #453, or a new push (a new head starts a
-# new window). The window record sits beside the box registry; with no registry, or no delivered
+# the merge pinned to the head. The PR must be ROOT-ONLY: any other file sends it to the normal
+# paths. A veto is any of: an AUDIT HOLD, a trusted comment exactly `VETO` anywhere on the PR
+# (never lifted on this path, not even by a later CLEAR), a DEACTIVATE on #453, or a new push (a
+# new head starts a new window). The window record sits beside the box registry; with no registry, or no delivered
 # notice, no window starts and nothing merges this way.
 SILENT_ROOT_HOLD_H = 72.0
 SILENT_ROOT_LOCKED = (
