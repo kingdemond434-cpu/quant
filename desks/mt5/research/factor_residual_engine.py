@@ -59,6 +59,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
@@ -185,7 +192,7 @@ def book_daily() -> tuple[pd.Series | None, str]:
     n_ledgers = 0
     n_skipped = 0  # rows with no usable time or no finite r: reported, never silent
     if SHADOW_LEDGERS.is_dir():
-        for f in sorted(SHADOW_LEDGERS.glob("ledger_*.json")):
+        for f in _fl.iter_ledgers(SHADOW_LEDGERS):
             try:
                 recs = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
