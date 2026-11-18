@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-18T16:30:02.885614+00:00",
+  "swept_at": "2026-11-18T16:45:02.622964+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -108,7 +108,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2717,
+      "shadow_exp_r": -0.2966,
       "woke_on_shadow": false
     },
     "AUDNZD|overnight_gap_decay_asia": {
@@ -415,8 +415,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 61,
-      "shadow_exp_r": 0.1344,
+      "shadow_n": 90,
+      "shadow_exp_r": 0.2302,
       "woke_on_shadow": false
     },
     "EURCAD|cross_asset_residual_asia": {
@@ -526,7 +526,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1384,
+      "shadow_exp_r": -0.1109,
       "woke_on_shadow": false
     },
     "EURMXN|overnight_gap_decay_asia": {
@@ -1505,7 +1505,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0552,
+      "shadow_exp_r": 0.0822,
       "woke_on_shadow": false
     },
     "USDSEK|formula_asia": {
@@ -1692,7 +1692,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 65,
-      "shadow_exp_r": 0.1317,
+      "shadow_exp_r": 0.1241,
       "woke_on_shadow": false
     },
     "XAGEUR|cross_asset_residual_asia": {
