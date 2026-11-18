@@ -1,0 +1,135 @@
+{
+ "_note": "SYNTHETIC fixture shaped like a Banxico SIE reply (series/<ids>/datos/<from>/<to>): bmx.series[].{idSerie,titulo,datos[].{fecha DD/MM/YYYY,dato}}. Values are invented, not Banxico data. SF99999 stands for a series the row did not ask for (dropped).",
+ "bmx": {
+  "series": [
+   {
+    "idSerie": "SF43707",
+    "titulo": "Reserva Internacional (synthetic)",
+    "datos": [
+     {
+      "fecha": "01/05/2026",
+      "dato": "250,350.0"
+     },
+     {
+      "fecha": "08/05/2026",
+      "dato": "250,120.0"
+     },
+     {
+      "fecha": "15/05/2026",
+      "dato": "250,710.0"
+     },
+     {
+      "fecha": "22/05/2026",
+      "dato": "250,720.0"
+     },
+     {
+      "fecha": "29/05/2026",
+      "dato": "251,550.0"
+     },
+     {
+      "fecha": "05/06/2026",
+      "dato": "251,800.0"
+     },
+     {
+      "fecha": "12/06/2026",
+      "dato": "252,870.0"
+     },
+     {
+      "fecha": "19/06/2026",
+      "dato": "253,360.0"
+     },
+     {
+      "fecha": "26/06/2026",
+      "dato": "254,670.0"
+     },
+     {
+      "fecha": "03/07/2026",
+      "dato": "255,400.0"
+     },
+     {
+      "fecha": "10/07/2026",
+      "dato": "256,950.0"
+     },
+     {
+      "fecha": "17/07/2026",
+      "dato": "257,920.0"
+     },
+     {
+      "fecha": "24/07/2026",
+      "dato": "259,710.0"
+     },
+     {
+      "fecha": "31/07/2026",
+      "dato": "260,920.0"
+     },
+     {
+      "fecha": "07/08/2026",
+      "dato": "262,950.0"
+     },
+     {
+      "fecha": "14/08/2026",
+      "dato": "264,400.0"
+     },
+     {
+      "fecha": "21/08/2026",
+      "dato": "266,670.0"
+     },
+     {
+      "fecha": "28/08/2026",
+      "dato": "268,360.0"
+     },
+     {
+      "fecha": "04/09/2026",
+      "dato": "270,870.0"
+     },
+     {
+      "fecha": "11/09/2026",
+      "dato": "272,800.0"
+     },
+     {
+      "fecha": "18/09/2026",
+      "dato": "N/E"
+     }
+    ]
+   },
+   {
+    "idSerie": "SF296154",
+    "titulo": "Subastas al vencimiento de coberturas cambiarias, asignado (synthetic)",
+    "datos": [
+     {
+      "fecha": "20/11/2023",
+      "dato": "200.0"
+     },
+     {
+      "fecha": "27/11/2023",
+      "dato": "N/E"
+     }
+    ]
+   },
+   {
+    "idSerie": "SF99999",
+    "titulo": "A series the row did not ask for (synthetic)",
+    "datos": [
+     {
+      "fecha": "08/05/2026",
+      "dato": "0"
+     },
+     {
+      "fecha": "15/05/2026",
+      "dato": "400.0"
+     }
+    ]
+   },
+   {
+    "idSerie": "not-an-id",
+    "titulo": "dropped",
+    "datos": [
+     {
+      "fecha": "08/05/2026",
+      "dato": "1"
+     }
+    ]
+   }
+  ]
+ }
+}
