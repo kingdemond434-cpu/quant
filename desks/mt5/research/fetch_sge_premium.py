@@ -48,6 +48,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))   # libs.data.refused_hosts
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "lake"
@@ -92,6 +93,8 @@ _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
     try:
+        from libs.data.refused_hosts import guard
+        guard(url)      # FRED refused on terms (2026-11-13): raises before the wire -> None
         r = requests.get(url, timeout=timeout)
         r.raise_for_status()
     except Exception as exc:                                        # noqa: BLE001

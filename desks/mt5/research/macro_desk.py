@@ -74,7 +74,10 @@ def _mom(x: pd.Series, yoy: bool = False) -> float | None:
 def series_state(series_id: str) -> dict:
     d = fd.fred_series(series_id)
     if not d:
-        return {"series": series_id, "ok": False}
+        # A terms refusal (FRED, BACKLOG 609) is named as one, never read as an outage or data.
+        blocked = (getattr(fd, "FRED_REFUSALS", {}) or {}).get(series_id) or {}
+        return {"series": series_id, "ok": False,
+                **({"status": blocked["status"], "why": blocked.get("why")} if blocked else {})}
     s = pd.Series(d).sort_index()
     s.index = pd.to_datetime(s.index)
     out = {"series": series_id, "ok": True, "last": float(s.iloc[-1]),

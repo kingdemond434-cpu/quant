@@ -1,0 +1,4 @@
+{"refRates": [
+ {"effectiveDate": "2026-11-13", "type": "SOFR", "percentRate": 3.91},
+ {"effectiveDate": "2026-11-16", "type": "SOFR", "percentRate": 3.93}
+]}

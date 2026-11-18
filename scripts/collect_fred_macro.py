@@ -32,6 +32,7 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+from libs.data.refused_hosts import guard, refusal  # noqa: E402 -- fail closed on import
 from libs.research.vintage import record  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
@@ -64,6 +65,7 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
     start = (datetime.now(tz=UTC) - timedelta(days=_LOOKBACK_DAYS)).date().isoformat()
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
                                 "observation_start": start})
+    guard(_BASE)        # FRED refused on terms (2026-11-13): raises before the wire
     req = urllib.request.Request(f"{_BASE}?{q}", headers={"User-Agent": "quant-fred/1.0"})
     with urllib.request.urlopen(req, timeout=30) as r:
         obs = json.loads(r.read()).get("observations", [])
@@ -76,6 +78,13 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
 
 
 def main() -> None:
+    why = refusal(_BASE)
+    if why:
+        # BACKLOG 609: FRED's terms refuse automated access on every route, keyed or not. The
+        # held archives stay as they are (labelled by their vintage records); nothing is fetched.
+        print(f"fred-macro: BLOCKED_ON_TERMS ({why}) -- skipped; held archive left as it is. "
+              "missed_growth: the macro state's FRED inputs stop refreshing; a gap, not a zero")
+        return
     key = _key()
     if not key:
         print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")

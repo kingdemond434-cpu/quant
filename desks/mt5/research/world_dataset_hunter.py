@@ -336,7 +336,13 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429."""
+    """Default transport: urllib, a named UA, one polite retry on 429. A host whose own terms
+    refuse automated contact (libs.data.refused_hosts: FRED, Yahoo, Cboe, ...) is refused here,
+    before the wire, and counted under its own bucket (BACKLOG 609)."""
+    from libs.data.refused_hosts import refusal
+    why = refusal(url)
+    if why:
+        raise FetchError("blocked_on_terms", why)
     for attempt in (0, 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                    "Accept": "application/json, text/csv, */*"})
@@ -821,10 +827,9 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
-    for sid in _fred_ids():
-        out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
-                    "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
-                            + urllib.parse.urlencode({"id": sid})), "currencies": ["USD"]})
+    # FRED LEFT THE DIRECT LIST 2026-11-18 (BACKLOG 609): its terms refuse automated access
+    # (ruling 2026-11-13), so no fredgraph.csv spec is built. `_fred_ids` stays for the reports
+    # that name what the refusal costs. missed_growth: those ids are a gap, not a zero.
     return out
 
 
