@@ -428,7 +428,6 @@ def _offline(monkeypatch, tmp_path: Path) -> list:
     monkeypatch.setattr(dfm, "_universe", lambda: _UNIVERSE)      # the real Fusion universe
     monkeypatch.setattr(dfm, "_http", _dispatch)
     monkeypatch.setattr(dfm.time, "sleep", lambda s: None)
-    monkeypatch.setattr(dfm, "youtube_transcript", lambda vid, lang="en": ("", "mirror rotation dead (measured)"))
     monkeypatch.setattr(dfm._Run, "rendered", lambda self, url: "")     # no browser off-box
     art = [_Art("ゴールド 逆張り 検証", "https://p.test/1", "ゴールドはロンドン仲値の後、1時間で逆張りの反発が出やすい。")]
     from libs.data import bilibili, cn_sources, foreign_sources, papers
@@ -512,7 +511,10 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     statuses = {g["ground"]: g for g in doc["grounds"]}
     assert len(statuses) == len(_SRC["grounds"])
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
-           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
+           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")
+           # a ground refused on its owner's terms is a decision with its missed-growth line,
+           # never a route that failed to resolve (Governance wayback ruling 2026-11-14)
+           and not (v["status"] == "BLOCKED_ON_TERMS" and v.get("missed_growth"))}
     assert not bad, bad
     # The fixture world serves the same page everywhere, so most grounds see claims already
     # banked (REACHED_NO_CLAIMS); the first of each route converts and every route resolves.
@@ -614,11 +616,14 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
-    assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
+    # Wayback is refused on terms (Governance 2026-11-14): no capture is asked for.
+    assert st["Quantopian"]["fetched"] == 0 and "scholarship" in st["Quantopian"]["errors"][0]
+    assert "missed_growth" in st["Quantopian"]["missed_growth"]
     assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
-    # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
+    # The YouTube route converts search-index METADATA only; transcripts are refused on terms.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
-    assert any("mirror rotation dead" in e for e in st["YouTube JP"]["errors"])
+    assert st["YouTube JP"]["transcripts_status"] == "BLOCKED_ON_TERMS"
+    assert any("BLOCKED_ON_TERMS" in e for e in st["YouTube JP"]["errors"])
     assert st["Telegram RU"]["status"] == "PRODUCTIVE" and st["Telegram RU"]["channels"] == 1
     # The fenced foreign function is refused by the allowlist, not by luck.
     assert st["coinpan never"]["status"] == "BLOCKED" and "allowlist" in st["coinpan never"]["error"]
@@ -689,3 +694,18 @@ def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> No
          "url": "https://m.test/"}])
     assert doc["momentum_only_grounds"] == ["Momentum only"]
     assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}
+
+
+def test_wayback_and_youtube_are_refused_on_terms_and_never_requested(monkeypatch) -> None:
+    """Governance wayback-youtube-ruling-2026-11-14: neither fetcher sends a request, both name
+    the refusal, and the hosts are refused for every route through access_refusal."""
+    def _no_net(url: str, **kw) -> str:
+        raise AssertionError(f"a refused fetcher reached the network: {url}")
+    monkeypatch.setattr(dfm, "_http", _no_net)
+    snap, err = dfm.wayback_snapshot("https://www.quantopian.com/posts", "20200601")
+    assert snap == "" and err == dfm.WAYBACK_TERMS
+    text, err = dfm.youtube_transcript("abcdefghijk")
+    assert text == "" and err == dfm.YOUTUBE_TERMS
+    for url in ("https://web.archive.org/web/2020/https://x.test/", "https://archive.org/x",
+                "https://www.youtube.com/watch?v=abcdefghijk", "https://youtu.be/abcdefghijk"):
+        assert str(dfm.access_refusal(url)).startswith("TERMS_REFUSED")
