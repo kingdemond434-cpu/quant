@@ -7,8 +7,12 @@ bars, indneutralize within the peer class MetaTrader's registry gives each instr
 declared CFD proxies named (tick volume, tick-volume ADV, typical price for vwap), and `cap`
 UNMEASURED because no honest proxy exists. This adapter turns that panel into a packet:
 
-  * every alpha with a measurable status is ONE CHARGED TRIAL for its cross-sectional rank IC,
-    plus one per symbol whose time-series rank IC against the forward return is measured;
+  * every alpha with a measurable status is ONE CHARGED TRIAL for its cross-sectional rank IC;
+  * a per-symbol donation is charged ONCE PER CELL: about 95 alphas collapse onto the two donated
+    families keyed only by window, so the donations are deduplicated by (symbol, family, params)
+    BEFORE charging -- the first alpha to reach a cell donates it, every later alpha that lands on
+    the same cell is named in that donation's `collapsed_alphas` and counted in the census
+    (`collapsed_duplicates`, `collapsed_by_alpha`), so nothing vanishes and nothing is paid twice;
   * every finite (alpha, symbol) association is donated as a STRUCTURED_HYPOTHESIS under a
     registered price-only family -- the SIGN chooses momentum or reversion, never a strength
     threshold, so a weak association is donated exactly like a strong one -- parameterised at
@@ -92,6 +96,8 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     cands: list[dict[str, Any]] = []
     trials = 0
     not_reached: list[str] = []
+    cells: dict[tuple[str, str, tuple[tuple[str, int], ...]], dict[str, Any]] = {}
+    collapsed_by_alpha: dict[str, int] = {}
     for aid in order:
         if deadline.expired():
             not_reached.append(aid)
@@ -108,13 +114,18 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         per_symbol: dict[str, float | None] = {}
         for j, sym in enumerate(panel.symbols):
             idx = np.flatnonzero(panel.present[:, j])
-            trials += 1
             ic = F.rank_ic(sig[idx, j], fwd[idx, j])
             per_symbol[sym] = None if np.isnan(ic) else ic
             if np.isnan(ic):
                 continue
             fam, params = family_for(ic, info["horizon_bars"])
-            cands.append(A.candidate(
+            cell = (sym, fam, tuple(sorted(params.items())))
+            if cell in cells:              # same (symbol, family, params): one cell, one charge
+                cells[cell]["evidence"].setdefault("collapsed_alphas", []).append(aid)
+                collapsed_by_alpha[aid] = collapsed_by_alpha.get(aid, 0) + 1
+                continue
+            trials += 1
+            cand = A.candidate(
                 fam, [sym],
                 f"{sym} H1: published formulaic alpha {aid} ({info['status'].lower()}"
                 f"{', proxies ' + '/'.join(info['proxies']) if info['proxies'] else ''}) scores "
@@ -126,7 +137,9 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                           "status": info["status"], "proxies": info["proxies"],
                           "parameters": params, "forward_bars": h,
                           "method": "time-series rank IC of a cross-sectional formulaic alpha "
-                                    "(desk numpy operators, causal)"}))
+                                    "(desk numpy operators, causal)"})
+            cells[cell] = cand
+            cands.append(cand)
         reps.append({"kind": "formulaic_alpha", "alpha": aid, "status": info["status"],
                      "proxies": info["proxies"], "xs_ic_mean": None if np.isnan(xic) else xic,
                      "xs_bars": n_rows, "ic_by_symbol": per_symbol,
@@ -136,6 +149,9 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
     reps.insert(0, {"kind": "formulaic_alpha_census", "n_alphas": len(F.ALPHAS), **counts,
                     "proxies": F.PROXIES, "no_proxy": F.NO_PROXY,
                     "not_reached_this_pass": not_reached, "set_aside_by_lane": aside,
+                    "donated_cells": len(cells),
+                    "collapsed_duplicates": sum(collapsed_by_alpha.values()),
+                    "collapsed_by_alpha": collapsed_by_alpha,
                     "panel_symbols": list(panel.symbols),
                     "groups": dict(zip(panel.symbols, panel.groups, strict=True)),
                     "source": "Kakushadze (2015) 101 Formulaic Alphas; desk numpy operators"})

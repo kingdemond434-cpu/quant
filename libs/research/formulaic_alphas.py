@@ -155,14 +155,15 @@ def k_argmin(x: np.ndarray, d: int) -> np.ndarray:
 
 
 def k_tsrank(x: np.ndarray, d: int) -> np.ndarray:
-    """This bar's rank within its own last d values, in [0, 1] (ties take the average)."""
+    """This bar's 1-based rank within its own last d values over d, in (0, 1] (ties take the
+    average) -- never zero, so #084's signedpower(ts_rank, negative delta) stays finite."""
     w = _windows(x, d)
     if w is None:
         return np.full(x.shape[0], np.nan)
     last = w[:, -1:]
     below = (w < last).sum(axis=-1)
     ties = (w == last).sum(axis=-1) - 1
-    body = (below + 0.5 * ties) / max(d - 1, 1)
+    body = (below + 0.5 * ties + 1.0) / max(d, 1)
     body = body.astype(float)
     body[_bad(w)] = np.nan
     return _pad(x, d, body)
@@ -354,7 +355,7 @@ class Panel:
     # ------------------------------------------------------------------- cross-sectional
     def rank(self, x: np.ndarray) -> np.ndarray:
         """At each bar, the symbol's rank among the symbols present, in [0, 1], ties averaged."""
-        return xs_rank(np.where(self.present, x, np.nan))
+        return paper_rank(np.where(self.present, x, np.nan))
 
     def scale(self, x: np.ndarray, a: float = 1.0) -> np.ndarray:
         """Rescale each bar's cross-section so its absolute values sum to `a`."""
@@ -398,6 +399,18 @@ def xs_rank(x: np.ndarray) -> np.ndarray:
     r, cnt = row_ranks(x)
     den = np.where(cnt >= MIN_XS, cnt - 1, 1)[:, None]
     return np.where((cnt >= MIN_XS)[:, None], (r - 1.0) / den, np.nan)
+
+
+def paper_rank(x: np.ndarray) -> np.ndarray:
+    """The paper's cross-sectional rank: the 1-based average-tie rank over the count of finite
+    entries, r / cnt, so it lies in (0, 1] and is NEVER zero. A [0, 1] rank sends the lowest
+    symbol to 0 and alphas that divide by a rank, take its log or raise it to a negative power
+    (#042, #057, #072, #081, #093) to inf/NaN on every bar -- always the same symbol. NaN where a
+    row has fewer than MIN_XS finite entries. (`xs_rank` stays [0, 1] for callers that centre it
+    on one half.)"""
+    r, cnt = row_ranks(x)
+    den = np.where(cnt >= MIN_XS, cnt, 1)[:, None]
+    return np.where((cnt >= MIN_XS)[:, None], r / den, np.nan)
 
 
 def avg_rank(v: np.ndarray) -> np.ndarray:
