@@ -34,6 +34,7 @@ so the sealed gauntlet (side=1) and the forward clock (side=-1 on a short) build
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from functools import lru_cache
 from itertools import pairwise
 from pathlib import Path
@@ -531,25 +532,42 @@ def family_equity_gap_breadth(
 
 
 # ------------------------------------------------------------------------------- N1 ----------
+def _ymd_set(dates: Iterable[object] | None) -> frozenset[int]:
+    return frozenset(int(str(d).replace("-", "")) for d in (dates or []))
+
+
 @lru_cache(maxsize=16)
-def _holidays(name: str, mtime_ns: int) -> frozenset[int]:
+def _calendar(name: str, mtime_ns: int) -> tuple[frozenset[int], frozenset[int]]:
     del mtime_ns
     try:
         doc = json.loads((CALENDARS / f"holidays_{name}.json").read_text("utf-8"))
     except (OSError, ValueError):
-        return frozenset()
-    return frozenset(int(str(d).replace("-", "")) for d in doc.get("holidays") or [])
+        return frozenset(), frozenset()
+    return _ymd_set(doc.get("holidays")), _ymd_set(doc.get("specials"))
+
+
+def _read(name: str) -> tuple[frozenset[int], frozenset[int]]:
+    if not name or not name.isalnum():
+        return frozenset(), frozenset()
+    path = CALENDARS / f"holidays_{name}.json"
+    try:
+        return _calendar(name, path.stat().st_mtime_ns)
+    except OSError:
+        return frozenset(), frozenset()
 
 
 def holidays(name: str) -> frozenset[int]:
     """The closure dates (YYYYMMDD) of a rule-generated venue calendar; empty if unreadable."""
-    if not name or not name.isalnum():
-        return frozenset()
-    path = CALENDARS / f"holidays_{name}.json"
-    try:
-        return _holidays(name, path.stat().st_mtime_ns)
-    except OSError:
-        return frozenset()
+    return _read(name)[0]
+
+
+def scheduled_holidays(name: str) -> frozenset[int]:
+    """The closures a trader could name two sessions ahead: every calendar date except the
+    one-off SPECIALS (Hurricane Sandy, days of mourning, jubilees), which were announced days
+    before or on the day itself. Reading one of those as known two sessions early is look-ahead,
+    so the pre-holiday leg sees only these."""
+    every, specials = _read(name)
+    return every - specials
 
 
 def _next_weekday(ymd: int) -> int:
@@ -587,6 +605,9 @@ def family_holiday_drift(
     del side
     flip = SIDES.get(str(direction))
     hol = holidays(str(calendar))
+    # pre is decided at the close two sessions before the closure, so it may only see closures
+    # that were scheduled by then; post is decided after the closure has happened
+    trigger = scheduled_holidays(str(calendar)) if leg == "pre" else hol
     o_min, c_min = LC.minutes_of(open_at), LC.minutes_of(close_at)
     if flip is None or leg not in ("pre", "post") or not hol or o_min is None or c_min is None:
         return []
@@ -605,7 +626,7 @@ def family_holiday_drift(
     out: list[Signal] = []
     for k in range(1, len(dates) - 1):
         day = dates[k]
-        if _next_weekday(day) not in hol:
+        if _next_weekday(day) not in trigger:
             continue
         # pre: decided at the close of the session before; post: on the bar before the first
         # post-holiday session's open bar, held through that session (the calendar is known in

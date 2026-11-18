@@ -146,7 +146,7 @@ def test_holiday_drift_fires_around_the_venue_calendar(tmp_path, monkeypatch) ->
     (tmp_path / "holidays_test.json").write_text(json.dumps(
         {"holidays": ["2023-07-04", "2023-11-23", "2023-12-25"]}), "utf-8")
     monkeypatch.setattr(t1, "CALENDARS", tmp_path)
-    t1._holidays.cache_clear()
+    t1._calendar.cache_clear()
     d = _bars()
     pre = t1.family_holiday_drift(d, calendar="test")
     post = t1.family_holiday_drift(d, calendar="test", leg="post")
@@ -158,6 +158,25 @@ def test_holiday_drift_fires_around_the_venue_calendar(tmp_path, monkeypatch) ->
     assert all(s.side == -1 for s in short)
     assert t1.family_holiday_drift(d, calendar="missing") == []
     assert t1.family_holiday_drift(d, calendar="../etc") == []
+
+
+def test_holiday_drift_pre_leg_never_reads_an_unscheduled_closure_ahead(
+        tmp_path, monkeypatch) -> None:
+    # 2023-11-23 stands in for a one-off closure (a storm, a day of mourning) announced too late
+    # for a trader two sessions earlier to know it: the pre leg must not fire on it, while the
+    # post leg, decided after the closure happened, still does
+    (tmp_path / "holidays_test.json").write_text(json.dumps(
+        {"holidays": ["2023-07-04", "2023-11-23", "2023-12-25"],
+         "specials": {"2023-11-23": "unannounced closure"}}), "utf-8")
+    monkeypatch.setattr(t1, "CALENDARS", tmp_path)
+    t1._calendar.cache_clear()
+    d = _bars()
+    _m, ymd = t1.LC.local_frame(d.index, "America/New_York")
+    pre = t1.family_holiday_drift(d, calendar="test")
+    post = t1.family_holiday_drift(d, calendar="test", leg="post")
+    assert {int(ymd[d.index.get_loc(s.time)]) for s in pre} == {20230630, 20231221}
+    assert {int(ymd[d.index.get_loc(s.time)]) for s in post} == {20230705, 20231124, 20231226}
+    assert t1.scheduled_holidays("test") == {20230704, 20231225}
 
 
 def test_holiday_calendars_match_published_2024_dates_and_are_current() -> None:
