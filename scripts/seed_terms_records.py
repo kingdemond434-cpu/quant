@@ -309,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
         print("terms_records/ is current" if same else "terms_records/ is STALE")
         return 0 if same else 1
     write(files, d)
-    print(f"wrote {d.relative_to(ROOT)}/ ({len(files)} files): {doc['counts']}; "
+    print(f"wrote {d}/ ({len(files)} files): {doc['counts']}; "
           f"not seeded: {len(doc['not_seeded'])}")
     return 0
 
