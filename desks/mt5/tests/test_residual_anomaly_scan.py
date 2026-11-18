@@ -21,8 +21,8 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
 
 import residual_anomaly_scan as ras  # noqa: E402
 
-#: Hypothesis-lane symbols in the broker registry: four USD pairs, one cross, two metals.
-SYMS = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD", "XAUUSD", "XAGUSD")
+#: Hypothesis-lane symbols in the broker registry: five USD pairs, one cross, two metals.
+SYMS = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD", "EURGBP", "XAUUSD", "XAGUSD")
 N_BARS = 2_000
 
 
@@ -44,10 +44,10 @@ def _returns(seed: int) -> dict[str, np.ndarray]:
     common = rng.normal(0, 0.002, N_BARS)
     out["XAUUSD"] = out["XAUUSD"] + common
     out["XAGUSD"] = out["XAGUSD"] + common
-    # A shared-USD-leg co-movement, which is known structure.
-    usd = rng.normal(0, 0.0015, N_BARS)
-    out["EURUSD"] = out["EURUSD"] + usd
-    out["GBPUSD"] = out["GBPUSD"] + usd
+    # A shared-EUR-leg co-movement (EURGBP has no class peers), which is known structure.
+    eur = rng.normal(0, 0.0015, N_BARS)
+    out["EURUSD"] = out["EURUSD"] + eur
+    out["EURGBP"] = out["EURGBP"] + eur
     # AUDUSD's own residual reverts at lag 1.
     e = rng.normal(0, 0.001, N_BARS)
     out["AUDUSD"] = e - 0.45 * np.concatenate([[0.0], e[:-1]])
@@ -115,10 +115,12 @@ def test_patterns_are_donated_in_the_compilers_shapes_once(desk: Path) -> None:
     pair = [r for r in rows if r["kind"] == "anomaly"]
     assert {(r["symbol"], r["against"]) for r in pair} == {("XAGUSD", "XAUUSD")} or \
         {(r["symbol"], r["against"]) for r in pair} == {("XAUUSD", "XAGUSD")}
-    # The shared-USD-leg pair is measured, reported, and never donated.
-    usd = [e for e in report["eligible_patterns"] if e["pattern"] == "comovement"
-           and {e["symbol"], e["against"]} == {"EURUSD", "GBPUSD"}]
-    assert usd and usd[0]["disposition"].startswith("REPORTED: shared currency leg")
+    # The shared-EUR-leg pair is measured, reported, and never donated.
+    eur = [e for e in report["eligible_patterns"] if e["pattern"] == "comovement"
+           and {e["symbol"], e["against"]} == {"EURUSD", "EURGBP"}]
+    assert eur and eur[0]["disposition"] == ("REPORTED: shared currency leg EUR; "
+                                             "not an unknown")
+    assert ras.shared_leg("XAUUSD", "XAGUSD") is None
 
     universe = set(SYMS)
     for r in hyp:

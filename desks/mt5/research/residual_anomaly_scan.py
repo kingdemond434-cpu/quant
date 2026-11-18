@@ -121,8 +121,8 @@ MAX_SEEN = 5_000
 PAIR_HORIZON = 24
 #: An hour whose neighbour's mean residual cancels it to within this share is a quote bounce.
 BOUNCE_FRAC = 0.5
-#: A factor column defined on fewer than this share of a symbol's bars is dropped, not regressed.
-MIN_FACTOR_COVERAGE = 0.5
+#: Other members a peer class needs among the scanned symbols before it is a regressor.
+MIN_CLASS_PEERS = 2
 #: Share of the budget the family-exposure stage may spend before later symbols are regressed on
 #: market and class factors only (named in the report as `families_unmeasured`).
 FAMILY_STAGE_SHARE = 0.6
@@ -250,13 +250,15 @@ def standardised_residual(y: np.ndarray, X: np.ndarray, beta_win: int = BETA_WIN
 def residual_for(symbol: str, df: pd.DataFrame, sums: pd.DataFrame, counts: pd.DataFrame,
                  klass: str | None, orient: int,
                  families: dict[str, Callable[..., Any]] | None,
-                 note: dict[str, Any]) -> pd.Series | None:
+                 note: dict[str, Any], class_peers: int = 0) -> pd.Series | None:
     """The standardised residual series of one symbol, indexed by its own bar clock."""
     close = df["close"].astype(float)
     r = np.log(close).diff()
     cols: dict[str, np.ndarray] = {}
     cols["MKT"] = leave_one_out(sums, counts, "MKT", r).to_numpy()
-    if klass and f"CLS:{klass}" in sums:
+    # The class column is chosen by MEMBERSHIP, never by how often it was defined over the whole
+    # sample: a class with fewer than MIN_CLASS_PEERS other members is not regressed at all.
+    if klass and f"CLS:{klass}" in sums and class_peers >= MIN_CLASS_PEERS:
         cols[f"CLS:{klass}"] = leave_one_out(sums, counts, f"CLS:{klass}", r,
                                              weight=orient).to_numpy()
     failed: dict[str, str] = {}
@@ -266,21 +268,15 @@ def residual_for(symbol: str, df: pd.DataFrame, sums: pd.DataFrame, counts: pd.D
             e = family_exposure(df, func)
         except Exception as exc:                          # a family that raises is named
             failed[name] = f"{type(exc).__name__}: {str(exc)[:80]}"
-            continue
-        if np.count_nonzero(e) == 0:
-            continue
+            e = np.zeros(len(df))          # the column set stays fixed (see below)
+        # A family that never fires here is KEPT as a zero column. Dropping it because the whole
+        # sample is silent would let a signal that fires only in the future change the model
+        # every earlier residual was fitted with -- a lookahead in the column set itself.
         cols[f"FAM:{name}"] = e
-        used.append(name)
-    # A factor that is undefined on a bar (no peers trading) is absent, not zero: the row is
-    # left out of the window's sums by `rolling_betas` rather than read as a flat market. A factor
-    # undefined on most bars (a class with one other member) would empty the regression, so it
-    # is dropped and named.
-    dropped = [k for k, v in cols.items() if np.isfinite(v).mean() < MIN_FACTOR_COVERAGE]
-    for k in dropped:
-        del cols[k]
-    if dropped:
-        note["regressors_dropped"] = {k: f"defined on < {MIN_FACTOR_COVERAGE:.0%} of bars"
-                                      for k in dropped}
+        if np.count_nonzero(e):
+            used.append(name)
+    # A factor that is undefined on a bar (fewer than two peers trading) is absent, not zero: the
+    # row is left out of the window's sums by `rolling_betas` rather than read as a flat market.
     X = np.column_stack(list(cols.values()))
     _eps, z = standardised_residual(r.to_numpy(), X)
     note.update(regressors=list(cols), families_used=used, families_failed=failed)
@@ -414,6 +410,10 @@ def shared_leg(a: str, b: str) -> str | None:
     """The currency two six-letter pairs share, or None. Two pairs on one currency co-move for a
     reason every FX desk can name; that is known structure, reported and never donated as an
     unknown."""
+    import universe_policy as up
+    fx = ("fx_usd", "fx_cross")
+    if up.peer_class(a) not in fx or up.peer_class(b) not in fx:
+        return None                    # XAUUSD and XAGUSD share a quote, not a currency bet
     la = {a[:3].upper(), a[3:].upper()} if len(a) == 6 and a.isalpha() else set()
     lb = {b[:3].upper(), b[3:].upper()} if len(b) == 6 and b.isalpha() else set()
     common = sorted(la & lb)
@@ -585,7 +585,12 @@ def scan(symbols: Iterable[str], *, budget_s: float = 240.0, universe_dir: Path 
         use_fam = families if time.monotonic() < fam_deadline else None
         if families and use_fam is None:
             note["families_unmeasured"] = "family stage budget spent; market and class only"
-        z = residual_for(s, df, sums, counts, classes[s], orient[s], use_fam, note)
+        peers = sum(1 for o in bars if o != s and classes[o] and classes[o] == classes[s])
+        if classes[s] and peers < MIN_CLASS_PEERS:
+            note["class_factor"] = (f"not regressed: {peers} other {classes[s]} member(s) with "
+                                    f"bars < {MIN_CLASS_PEERS}")
+        z = residual_for(s, df, sums, counts, classes[s], orient[s], use_fam, note,
+                         class_peers=peers)
         if z is not None:
             zs[s] = z
         notes[s] = note
