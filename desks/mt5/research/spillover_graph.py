@@ -47,6 +47,7 @@ import os
 import sys
 import time
 from datetime import UTC, datetime
+from functools import reduce
 from pathlib import Path
 from typing import Any
 
@@ -113,25 +114,48 @@ def daily(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def common_calendar(frames: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    """Each symbol's broker-day bars, restricted to the days EVERY listed symbol traded.
+
+    The join comes BEFORE any differencing: a close diffed per symbol and joined afterwards can
+    span two days for one symbol and one for another on the same row (a symbol missing a day
+    contributes a two-day return beside everyone else's one-day return)."""
+    dailies = {sym: daily(df) for sym, df in frames.items()}
+    if not dailies:
+        return {}
+    days = reduce(lambda a, b: a.intersection(b),
+                  (d.index for d in dailies.values())).sort_values()
+    return {sym: d.loc[days] for sym, d in dailies.items()}
+
+
+def coverage(frames: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """How many broker days each symbol has against how many they ALL share, so a reader sees
+    which symbol is shrinking the common calendar."""
+    own = {sym: len(daily(df)) for sym, df in frames.items()}
+    joined = common_calendar(frames)
+    common = len(next(iter(joined.values()))) if joined else 0
+    return {"common_days": common, "symbol_days": dict(sorted(own.items())),
+            "common_share": {s: (round(common / n, 3) if n else None)
+                             for s, n in sorted(own.items())}}
+
+
 def channels(frames: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-    """Per channel, a (day x symbol) panel on the days EVERY listed symbol traded."""
-    rets: dict[str, pd.Series] = {}
-    vols: dict[str, pd.Series] = {}
-    for sym, df in frames.items():
-        d = daily(df)
-        c = d["close"].astype(float)
-        hi, lo = d["high"].astype(float), d["low"].astype(float)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            rets[sym] = np.log(c).diff()
-            # Parkinson daily variance -> log volatility, the DY 2012 volatility channel
-            pv = (np.log(hi / lo) ** 2) / (4.0 * math.log(2.0))
-            vols[sym] = 0.5 * np.log(pv.where(pv > 0))
+    """Per channel, a (day x symbol) panel on the days EVERY listed symbol traded, every row
+    the same interval for every symbol (joined first, differenced after)."""
+    joined = common_calendar(frames)
+    if not joined:
+        return {}
+    close = pd.DataFrame({s: d["close"].astype(float) for s, d in joined.items()})
+    hi = pd.DataFrame({s: d["high"].astype(float) for s, d in joined.items()})
+    lo = pd.DataFrame({s: d["low"].astype(float) for s, d in joined.items()})
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rets = np.log(close).diff()
+        # Parkinson daily variance -> log volatility, the DY 2012 volatility channel
+        pv = (np.log(hi / lo) ** 2) / (4.0 * math.log(2.0))
+        vols = 0.5 * np.log(pv.where(pv > 0))
     out = {}
-    for name, cols in (("returns", rets), ("volatility", vols)):
-        if not cols:
-            continue
-        panel = pd.concat(cols, axis=1, join="inner").replace([np.inf, -np.inf], np.nan).dropna()
-        out[name] = panel
+    for name, panel in (("returns", rets), ("volatility", vols)):
+        out[name] = panel.replace([np.inf, -np.inf], np.nan).dropna()
     return out
 
 
@@ -325,7 +349,7 @@ def run(*, universe_dir: Path = UNIVERSE_DIR, out: Path = OUT, force: bool = Fal
             "Diebold-Yilmaz connectedness: OLS VAR(p<=%d, BIC) on standardised daily series, "
             "Pesaran-Shin generalized FEVD at horizon %d, rows normalised" % (MAX_LAG, HORIZON)),
         "channels": result, "symbols": sorted(frames), "asset_class": klass,
-        "missing": sorted(missing), "inputs": fp,
+        "missing": sorted(missing), "inputs": fp, "coverage": coverage(frames),
         "source": "desk H1 bars (desks/mt5/data/universe/*_H1.parquet) only",
         "consumers": "report only: no signal, gate, cap or veto reads it",
         "wall_s": round(time.monotonic() - t0, 2)}

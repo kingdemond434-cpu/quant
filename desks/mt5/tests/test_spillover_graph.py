@@ -75,3 +75,34 @@ def test_unchanged_inputs_stand_down_inside_the_refresh_window(tmp_path: Path,
     again = sg.run(universe_dir=tmp_path, out=out)
     assert again["stood_down"] is True
     assert again["channels"] == json.loads(out.read_text("utf-8"))["channels"]
+
+
+def _daily_bars(closes: list[float], days: list[str]) -> pd.DataFrame:
+    idx = pd.DatetimeIndex([pd.Timestamp(d, tz="UTC") + pd.Timedelta(hours=12) for d in days])
+    c = np.asarray(closes, dtype=float)
+    return pd.DataFrame({"open": c, "high": c * 1.01, "low": c * 0.99, "close": c}, index=idx)
+
+
+def test_a_missing_day_never_yields_a_mismatched_interval_row() -> None:
+    """B has no bar on day 3. Diffed before the join, B's day-4 row would be a two-day return
+    (day 2 -> day 4) beside A's one-day return (day 3 -> day 4). Joined first, every row spans
+    the same interval: the day-4 row is day 2 -> day 4 for BOTH symbols."""
+    days = ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"]
+    a = _daily_bars([100.0, 101.0, 110.0, 121.0], days)
+    b = _daily_bars([50.0, 51.0, 60.0], [days[0], days[1], days[3]])
+    ret = sg.channels({"A": a, "B": b})["returns"]
+    assert list(ret.index.strftime("%Y-%m-%d")) == ["2024-01-02", "2024-01-04"]
+    assert ret.loc["2024-01-04", "A"] == pytest.approx(np.log(121.0 / 101.0))
+    assert ret.loc["2024-01-04", "B"] == pytest.approx(np.log(60.0 / 51.0))
+    cov = sg.coverage({"A": a, "B": b})
+    assert cov["common_days"] == 3
+    assert cov["symbol_days"] == {"A": 4, "B": 3}
+    assert cov["common_share"] == {"A": 0.75, "B": 1.0}
+
+
+def test_run_reports_common_days_against_each_symbols_own(tmp_path: Path, roster: None) -> None:
+    _write_universe(tmp_path)
+    doc = sg.run(universe_dir=tmp_path, out=tmp_path / "out.json", force=True)
+    cov = doc["coverage"]
+    assert set(cov["symbol_days"]) == {"US500", "XAUUSD", "EURUSD"}
+    assert all(cov["common_days"] <= n for n in cov["symbol_days"].values())
