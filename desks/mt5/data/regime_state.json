@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-17T23:45:02.893942+00:00",
+  "swept_at": "2026-11-18T00:00:03.450637+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -361,7 +361,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2448,
+      "shadow_exp_r": -0.3986,
       "woke_on_shadow": false
     },
     "CHFNOK|spread_state_asia": {
