@@ -64,10 +64,10 @@ def _now() -> str:
     return datetime.now(tz=UTC).isoformat()
 
 
-def load_inputs(path: Path = INPUTS) -> tuple[list[Any], dict[str, float], str]:
+def load_inputs(path: Path | None = None) -> tuple[list[Any], dict[str, float], str]:
     """The allocator's pre-conviction evidence and its published book."""
     from libs.portfolio.robust_elog import SleeveEvidence
-    z = np.load(path, allow_pickle=False)
+    z = np.load(path or INPUTS, allow_pickle=False)
     lens = z["lens"]
     flat = z["flat"].astype(float)
     offs = np.concatenate([[0], np.cumsum(lens)])
@@ -179,9 +179,9 @@ def score_record(rec: Mapping[str, Any], realised: Mapping[str, Mapping[str, flo
             "down_half_logw": down}
 
 
-def _ledger(path: Path = LEDGER) -> list[dict[str, Any]]:
+def _ledger(path: Path | None = None) -> list[dict[str, Any]]:
     try:
-        return [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+        return [json.loads(ln) for ln in (path or LEDGER).read_text("utf-8").splitlines() if ln.strip()]
     except (OSError, ValueError):
         return []
 
