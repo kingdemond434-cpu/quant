@@ -736,3 +736,13 @@ def test_a_sidecar_that_cannot_be_read_is_kept(tmp_path: Path, monkeypatch) -> N
 
     monkeypatch.setattr(Path, "read_bytes", flaky)
     assert ra.prune_sidecars(p) == [] and f.exists()
+
+
+def test_a_bom_prefixed_stamped_sidecar_survives_the_prune(tmp_path: Path) -> None:
+    """Audit HOLD on #1329 (aa705aed7): the check reads utf-8-sig, so the prune must too."""
+    p = ra.Paths.at(tmp_path)
+    p.sidecars.mkdir(parents=True)
+    row = dict(_row("good"), measured_on="vm", only_missing={"on_attesting_host": False})
+    f = p.sidecars / ra.sidecar_name("good")
+    f.write_bytes(b"\xef\xbb\xbf" + json.dumps(row).encode("utf-8"))
+    assert ra.prune_sidecars(p) == [] and f.exists()

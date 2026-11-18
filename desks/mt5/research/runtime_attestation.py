@@ -268,7 +268,7 @@ def prune_sidecars(paths: Paths) -> list[dict[str, str]]:
         except OSError:
             continue  # a read that failed is no evidence about the file: it stays (audit, #1329)
         try:
-            doc = json.loads(raw.decode("utf-8"))
+            doc = json.loads(raw.decode("utf-8-sig"))  # as _read_json and the check read it
         except (UnicodeDecodeError, ValueError):
             doc = None
         organ = doc.get("organ") if isinstance(doc, dict) else None
