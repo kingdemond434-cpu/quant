@@ -1002,3 +1002,16 @@ def test_stop_seconds_reads_the_reset_and_ignores_ordinary_errors() -> None:
     assert A._stop_seconds(_http_error(404, b"")) is None
     assert A._stop_seconds(OSError("down")) is None
     assert A._stop_seconds(_http_error(400, b'{"secondsToReset": 999999}')) == 86400
+
+
+def test_a_quota_400_is_both_diagnosed_and_a_stop_from_one_body_read() -> None:
+    """The merge of #921 with LIVE gave one HTTPError body two readers: the 400/422 diagnosis
+    and Banxico's quota stop. The body stream reads once; both must see it, in either order."""
+    src = A.BY_ID["mx_banxico_sie"]
+    body = b'{"error": {"mensaje": "limite"}, "secondsToReset": 240}'
+    exc = _http_error(400, body)
+    assert "limite" in A._error_body(exc, src)              # the diagnosis reads it first
+    assert A._stop_seconds(exc) == 300                      # and the stop still sees the reset
+    exc = _http_error(400, body)
+    assert A._stop_seconds(exc) == 300                      # the other order
+    assert "secondsToReset" in A._error_body(exc, src)
