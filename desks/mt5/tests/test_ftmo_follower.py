@@ -661,7 +661,9 @@ def test_a_void_ftmo_block_places_nothing(world, cert: dict) -> None:
 
 def test_the_shipped_cert_book_funds_ftmo_gold_asia_at_0009() -> None:
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
-    assert load_cert_book(CERT_BOOK_FILE, "ftmo") == {"gold_asia": 0.009}
+    # The FILE funds gold_asia at 0.009; USDJPY is the code-side cap (CODE_BOOK_OPEN, 2026-11-18).
+    assert load_cert_book(CERT_BOOK_FILE, "ftmo") == {
+        "gold_asia": 0.009, "USDJPY_session_range_breakout_asia": 0.004}
 
 
 # ======================================================================== FTMO's own rules

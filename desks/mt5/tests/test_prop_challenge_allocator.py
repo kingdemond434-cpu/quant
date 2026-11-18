@@ -284,6 +284,10 @@ def test_e8_symbols_are_read_for_the_overlap_mark(tmp_path: Path, monkeypatch) -
     p = tmp_path / "b.json"
     p.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006, "AUDCHF_x_asia": 0.0}}))
     monkeypatch.setattr(pca, "CERT_BOOK", p)
+    # USDJPY: the code-side E8 opening (kelly_sizing.CODE_BOOK_OPEN, audit SF2 2026-11-18).
+    assert pca.e8_symbols() == {"XAUUSD", "USDJPY"}
+    from mt5desk import kelly_sizing as ks
+    monkeypatch.setattr(ks, "CODE_BOOK_OPEN", {})
     assert pca.e8_symbols() == {"XAUUSD"}
 
 
