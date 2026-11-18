@@ -168,3 +168,26 @@ def test_s2_seen_set_is_pruned_to_the_months_still_listed(tmp_path: Path) -> Non
     A.collect_s2(paths, A.BY_ID["sat_s2_crop_green"], sst, {}, NOW, fetch=False, fixtures=None,
                  deadline=time.monotonic() + 5)
     assert sst["s2_seen"] == {"keep": "2026-10"}
+
+
+def test_every_family_the_new_sources_emit_has_a_registered_builder() -> None:
+    """The Judge's condition (2026-11-18): a cell whose family no code builds lands as
+    NO_REGISTERED_BUILDER and never gets a verdict. Every direct cell the two builds can donate
+    names a family `mt5desk.executables.resolve_family` (the forward engine's own constructor
+    lookup) answers to; indirect children inherit a certified parent's family and are refused
+    before donation when it does not resolve (`_parent_signal_returns`)."""
+    from mt5desk.executables import resolve_family
+    from research import paid_substitute_engine as pse
+    gains = {}
+    for sid in ("jobs_indeed_postings", "sat_s2_crop_green"):
+        src = A.BY_ID[sid]
+        for series in src.signal_series:
+            for sym in src.instruments_for(series):
+                gains[f"{sid}|{series}|{sym}"] = {"verdict": "PASS", "ic": 0.1, "n": 100}
+    cells = A.direct_cells(gains, NOW)
+    assert cells
+    for fam in {c["family"] for c in cells}:
+        assert resolve_family(fam) is not None, fam
+    # the engine's indirect use is emitted only when its family is buildable here
+    if pse.gate_family_available():
+        assert resolve_family("exogenous_gate") is not None
