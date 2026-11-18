@@ -32,6 +32,14 @@ holds -- same entity, same kind, similar words inside the window -- towards zero
 fourteen re-filings of one headline move the world state once. That is not a filter on
 information; it is the difference between evidence and echo.
 
+**NEW IS ELEVEN THINGS, NOT ONE (DATA-30).** Lexical similarity cannot tell a re-filed wire from a
+revised figure, a new country joining a story, a central bank turning from hike to hold, or a
+second INDEPENDENT source confirming the first. `novelty_components` scores each axis --
+semantic, entity, relationship, numerical, severity, policy_state, geographic, confirmation,
+contradiction, revision, causal_channel -- against the same window, and `Novelty.components`
+carries them beside the unchanged one-number `score`. An axis the document gives nothing to read
+is UNMEASURED (None), never 0.
+
 **AN ANALOGUE IS A PLACE TO LOOK, NEVER A FORECAST.** `analogues` returns prior events that share
 kind and entities, with whatever reaction the event atlas measured for them. Nothing here assumes
 a prior event repeats, and every returned row says so in its own `note`.
@@ -49,9 +57,11 @@ Pure: it opens no file, fetches nothing, and decides nothing. numpy only.
 # these rules call ambiguous. Here they are the data, not a typo waiting to be found.
 from __future__ import annotations
 
+import functools
 import hashlib
 import math
 import re
+import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, NamedTuple
@@ -60,8 +70,11 @@ __all__ = [
     "ASSET_CLASSES",
     "COMMODITIES",
     "COUNTRIES",
+    "COUNTRY_REGION",
     "HORIZONS",
     "KINDS",
+    "KIND_SEVERITY",
+    "NOVELTY_COMPONENTS",
     "ONTOLOGY",
     "SOURCE_LADDER",
     "STATE_VARS",
@@ -80,14 +93,21 @@ __all__ = [
     "analogues",
     "assert_ladder_monotone",
     "classify",
+    "direction_of",
     "entities_in",
     "event_id",
     "event_key",
+    "figures_in",
+    "is_copy",
     "novelty",
+    "novelty_components",
     "novelty_of",
     "resolve_event_id",
     "seed_entity_graph",
+    "semantic_similarity",
+    "severity_level",
     "source_confidence",
+    "stance_of",
     "surprise",
     "surprise_of",
 ]
@@ -876,6 +896,14 @@ class Novelty:
     max_similarity: float
     nearest_id: str = ""
     basis: str = ""
+    #: DATA-30: the eleven named axes (`NOVELTY_COMPONENTS`), each `{score, measured, basis}`.
+    #: `score` stays the one-number reading every existing caller consumes, unchanged.
+    components: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
+
+    def vector(self) -> dict[str, float | None]:
+        """name -> score, None where the axis is UNMEASURED for this document."""
+        return {k: (None if v.get("score") is None else float(v["score"]))
+                for k, v in self.components.items()}
 
 
 @dataclass(frozen=True)
@@ -1002,11 +1030,537 @@ def novelty_of(event: Mapping[str, Any], recent: Sequence[Mapping[str, Any]]) ->
         score = min(score, max(0.0, 1.0 - best))
     basis = ("no prior row shares this kind and entity" if repeats == 0
              else f"{repeats} prior rows share kind+entity; nearest claim similarity {best:.2f}")
-    return Novelty(round(float(score), 4), int(repeats), round(float(best), 4), nearest, basis)
+    return Novelty(round(float(score), 4), int(repeats), round(float(best), 4), nearest, basis,
+                   novelty_components(event, recent))
 
 
 def novelty(event: Mapping[str, Any], recent: Sequence[Mapping[str, Any]]) -> float:
     return novelty_of(event, recent).score
+
+
+# ============================================================================= novelty, by axis
+#: THE ELEVEN AXES ON WHICH A DOCUMENT CAN BE NEW (DATA-30). Lexical similarity alone cannot tell
+#: a re-filed wire from a REVISED figure, a new country joining the story, a central bank that
+#: turned from hike to hold, or a second, independent source confirming the first -- each of
+#: which is a different piece of evidence and each of which the one-number `novelty` collapsed
+#: into "similar words, therefore an echo". Every component is computed against the SAME window
+#: the caller passed, scores in [0, 1] where 1 is maximally new on that axis, and is None
+#: (UNMEASURED, with a basis saying why) when the document carries nothing the axis can read:
+#: a document with no figure has no numerical novelty to report, not a numerical novelty of 0.
+NOVELTY_COMPONENTS: tuple[str, ...] = (
+    "semantic", "entity", "relationship", "numerical", "severity", "policy_state",
+    "geographic", "confirmation", "contradiction", "revision", "causal_channel",
+)
+#: Character n-gram width for the embedding-free semantic axis. Character grams read every script
+#: the forests are written in -- CJK and Arabic need no tokenizer -- and survive inflection.
+SEMANTIC_NGRAM = 3
+#: Char-gram TF-IDF cosine at or above which a prior row is the SAME claim told again: a copy,
+#: syndicated or re-filed, which can never be an independent confirmation of itself.
+COPY_SIMILARITY = 0.85
+#: Severity rise (on the 0..1 scale below) that counts as a full step of escalation.
+SEVERITY_STEP = 0.25
+#: The newest rows the char-gram axes compare against. The other axes read the whole window; the
+#: TF-IDF cosine is the one quadratic cost, and the firehose must not spill on it.
+SEMANTIC_WINDOW = 150
+
+#: DECLARED base severity per kind: how much of the world one occurrence can reach. A prior, not
+#: a measurement, and only ever used RELATIVELY (is this more severe than what the window held).
+KIND_SEVERITY: dict[str, float] = {
+    "war_escalation": 0.90, "sovereign_default": 0.85, "pandemic": 0.80,
+    "natural_disaster": 0.70, "sanctions": 0.65, "central_bank_surprise": 0.60,
+    "supply_disruption": 0.60, "political_instability": 0.60, "cyber_attack": 0.60,
+    "fx_intervention": 0.55, "capital_flow_measure": 0.55, "ceasefire": 0.50,
+    "tariffs": 0.50, "inflation_surprise": 0.50, "labour_surprise": 0.45,
+    "corporate_shock": 0.45, "strike": 0.40, "election": 0.40, "other": 0.10,
+}
+#: Words that raise the severity or SCOPE of the same kind of event, in the forests' languages.
+_INTENSIFIERS: tuple[str, ...] = (
+    "nuclear", "full-scale", "full scale", "all-out", "emergency", "record", "largest",
+    "massive", "widens", "widened", "expands", "expanded", "nationwide", "spreads to",
+    "unprecedented", "escalat", "核", "全面", "紧急", "緊急", "史上最大", "创纪录", "扩大", "拡大",
+    "ядерн", "полномасштаб", "чрезвычайн", "рекорд", "nuclear", "masivo", "sin precedentes",
+    "nucléaire", "urgence", "massiv", "beispiellos", "نووي", "طوارئ", "전면", "핵", "비상",
+)
+_LATIN = re.compile(r"[a-z]")
+
+
+def _lex_pattern(terms: Iterable[str]) -> re.Pattern[str]:
+    """Latin terms match on word boundaries ('cut' must not fire inside 'execution'); CJK and
+    other scripts with no boundaries match as substrings, which is how the kind table works."""
+    parts = []
+    for t in terms:
+        esc = re.escape(t)
+        parts.append(rf"(?<![a-z]){esc}(?![a-z])" if _LATIN.search(t) else esc)
+    return re.compile("|".join(parts))
+
+
+#: POLICY STANCE: the state a policy-maker is in. A change of stance on the same entity is new
+#: even when every other word of the release is boilerplate.
+_STANCE_TERMS: dict[str, tuple[str, ...]] = {
+    "tighten": ("rate hike", "rate hikes", "hikes rates", "hiked rates", "raises rates",
+                "raised rates", "raises interest rates", "raised interest rates",
+                "raises its policy rate", "tightening", "tightens", "hawkish", "加息", "利上げ",
+                "повысил ставку", "повышение ставки", "sube los tipos", "subida de tipos",
+                "relève ses taux", "hausse des taux", "erhöht den leitzins", "zinserhöhung",
+                "رفع سعر الفائدة", "금리 인상"),
+    "ease": ("rate cut", "rate cuts", "cuts rates", "cut rates", "cuts interest rates",
+             "cut interest rates", "lowers rates", "lowered rates", "cuts its policy rate",
+             "easing", "eases policy", "dovish", "降息", "利下げ", "снизил ставку",
+             "снижение ставки", "baja los tipos", "recorte de tipos", "baisse des taux",
+             "abaisse ses taux", "senkt den leitzins", "zinssenkung", "خفض سعر الفائدة",
+             "금리 인하"),
+    "hold": ("holds rates", "held rates", "hold rates", "keeps rates unchanged",
+             "left rates unchanged", "leaves rates unchanged", "on hold", "pauses",
+             "维持利率不变", "据え置き", "сохранил ставку", "mantiene los tipos",
+             "maintient ses taux", "belässt den leitzins", "금리 동결", "تثبيت سعر الفائدة"),
+}
+_STANCE_RE: dict[str, re.Pattern[str]] = {s: _lex_pattern(t) for s, t in _STANCE_TERMS.items()}
+
+#: DIRECTION of a claim, for contradiction. Up and down, plus an explicit denial.
+_DIRECTION_TERMS: dict[str, tuple[str, ...]] = {
+    "up": ("rise", "rises", "rose", "risen", "raises", "raised", "boosts", "boosted",
+           "increase", "increases", "increased", "higher",
+           "jump", "jumps", "jumped", "surge", "surges", "surged", "climb", "climbs", "climbed",
+           "beat", "beats", "above expectations", "accelerated", "accelerates", "上升", "上涨",
+           "增加", "上昇", "増加", "上回", "вырос", "выросла", "рост", "sube", "subió",
+           "aumentó", "aumento", "hausse", "augmente", "augmenté", "steigt", "gestiegen",
+           "anstieg", "ارتفاع", "ارتفع", "상승", "증가"),
+    "down": ("fall", "falls", "fell", "fallen", "cuts", "reduces", "reduced", "lowers",
+             "lowered", "decrease", "decreases", "decreased", "lower",
+             "drop", "drops", "dropped", "decline", "declines", "declined", "plunge", "plunged",
+             "slump", "slumped", "miss", "missed", "below expectations", "slowed", "slows",
+             "下降", "下跌", "减少", "下落", "減少", "下回", "упал", "упала", "снижение",
+             "снизил", "baja", "bajó", "cae", "cayó", "descenso", "baisse", "recul", "chute",
+             "sinkt", "gesunken", "rückgang", "انخفاض", "انخفض", "하락", "감소"),
+}
+_DIRECTION_RE: dict[str, re.Pattern[str]] = {d: _lex_pattern(t)
+                                              for d, t in _DIRECTION_TERMS.items()}
+_DENIAL_RE = _lex_pattern((
+    "denies", "denied", "deny", "refutes", "refuted", "false report", "did not happen",
+    "否认", "否認", "опроверг", "niega", "negó", "dément", "démenti", "dementiert", "نفى",
+    "부인"))
+_REVISION_RE = _lex_pattern((
+    "revised", "revises", "revision", "corrected", "correction", "restated", "updated figure",
+    "修正", "修订", "改定", "пересмотр", "скорректир", "revisado", "revisión", "révisé",
+    "révision", "revidiert", "korrigiert", "معدل", "تعديل", "수정"))
+_INTENSIFIER_RE = _lex_pattern(_INTENSIFIERS)
+
+#: Coarse regions, so a story that reaches a new CONTINENT reads as geographically new even when
+#: the country itself was never named before.
+COUNTRY_REGION: dict[str, str] = {
+    "US": "americas", "CA": "americas", "MX": "americas", "BR": "americas", "VE": "americas",
+    "EU": "europe", "DE": "europe", "FR": "europe", "GB": "europe", "NO": "europe",
+    "CH": "europe", "UA": "europe", "RU": "europe", "TR": "middle_east", "IL": "middle_east",
+    "IR": "middle_east", "SA": "middle_east", "AE": "middle_east", "NG": "africa",
+    "ZA": "africa", "JP": "asia", "CN": "asia", "KR": "asia", "TW": "asia", "IN": "asia",
+    "AU": "oceania", "NZ": "oceania",
+}
+
+_NUMBER = re.compile(
+    r"(?<![A-Za-z0-9_.])([-+−]?\d+(?:[.,]\d+)*)\s*(%|percent|per cent|pct|bps|bp|basis points|"
+    r"billion|bn|million|mn|trillion|万|亿|億|兆|млрд|млн|mil millones|milliards?|mrd)?",
+    re.IGNORECASE)
+_UNIT = {"percent": "%", "per cent": "%", "pct": "%", "bps": "bp", "basis points": "bp",
+         "bn": "billion", "mn": "million", "млрд": "billion", "млн": "million",
+         "mil millones": "billion", "milliard": "billion", "milliards": "billion",
+         "mrd": "billion", "億": "亿"}
+
+
+def _row_text(row: Mapping[str, Any]) -> str:
+    return str(row.get("claim") or row.get("text") or row.get("title") or "")
+
+
+def _norm_text(text: str) -> str:
+    return " ".join(unicodedata.normalize("NFKC", str(text or "")).lower().split())
+
+
+def _number_value(raw: str) -> float | None:
+    s = raw.replace("−", "-")
+    if "," in s and "." not in s:
+        head, _sep, tail = s.rpartition(",")
+        # 1,250 is a thousands separator; 5,25 is a continental decimal.
+        s = s.replace(",", "") if len(tail) == 3 and head else s.replace(",", ".")
+    else:
+        s = s.replace(",", "")
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def figures_in(text: str) -> list[tuple[float, str]]:
+    return list(_figures_cached(str(text or "")))
+
+
+@functools.lru_cache(maxsize=8192)
+def _figures_cached(text: str) -> tuple[tuple[float, str], ...]:
+    """The figures a body of text states, as (value, unit). A bare year is a date, not a figure.
+
+    Full-width digits are NFKC-normalised first, so a full-width 5.25% is the same figure.
+    """
+    out: list[tuple[float, str]] = []
+    for m in _NUMBER.finditer(_norm_text(text)):
+        value = _number_value(m.group(1))
+        if value is None:
+            continue
+        unit = (m.group(2) or "").lower()
+        unit = _UNIT.get(unit, unit)
+        if not unit and float(value).is_integer() and 1900 <= value <= 2100:
+            continue
+        pair = (round(float(value), 6), unit)
+        if pair not in out:
+            out.append(pair)
+    return tuple(out[:24])
+
+
+def _figures(row: Mapping[str, Any]) -> list[tuple[float, str]]:
+    held = row.get("figures")
+    if isinstance(held, list | tuple):
+        out: list[tuple[float, str]] = []
+        for f in held:
+            if isinstance(f, list | tuple) and len(f) == 2 and isinstance(f[0], int | float):
+                out.append((round(float(f[0]), 6), str(f[1])))
+        return out
+    return figures_in(_row_text(row))
+
+
+@functools.lru_cache(maxsize=8192)
+def stance_of(text: str) -> str | None:
+    """tighten / ease / hold, or None when the text states no policy stance."""
+    low = _norm_text(text)
+    hits = {s for s, rx in _STANCE_RE.items() if rx.search(low)}
+    return next(iter(hits)) if len(hits) == 1 else None
+
+
+@functools.lru_cache(maxsize=8192)
+def direction_of(text: str) -> str | None:
+    """'up', 'down', 'denial', or None. A stance is a direction too: tighten is up."""
+    low = _norm_text(text)
+    if _DENIAL_RE.search(low):
+        return "denial"
+    up = len(_DIRECTION_RE["up"].findall(low))
+    down = len(_DIRECTION_RE["down"].findall(low))
+    stance = stance_of(low)
+    up += int(stance == "tighten")
+    down += int(stance == "ease")
+    if up == down:
+        return None
+    return "up" if up > down else "down"
+
+
+def severity_level(row: Mapping[str, Any]) -> float:
+    """The DECLARED kind severity, raised by intensifiers and by scope (entities named)."""
+    held = row.get("severity")
+    if isinstance(held, int | float) and not isinstance(held, bool):
+        return float(max(0.0, min(1.0, float(held))))
+    base = KIND_SEVERITY.get(str(row.get("kind") or "other"), KIND_SEVERITY["other"])
+    hits = _intensity(_row_text(row))
+    scope = max(0, len(_ents(row)) - 1)
+    return round(min(1.0, base + 0.1 * min(3, hits) + 0.05 * min(3, scope)), 4)
+
+
+@functools.lru_cache(maxsize=8192)
+def _intensity(text: str) -> int:
+    return len(set(_INTENSIFIER_RE.findall(_norm_text(text))))
+
+
+def _ents(row: Mapping[str, Any]) -> set[str]:
+    return {str(e).strip().upper() for e in (row.get("entities") or ()) if str(e).strip()}
+
+
+@functools.lru_cache(maxsize=8192)
+def _grams(text: str, n: int = SEMANTIC_NGRAM) -> dict[str, int]:
+    s = f" {_norm_text(text)} "
+    out: dict[str, int] = {}
+    for i in range(max(0, len(s) - n + 1)):
+        g = s[i:i + n]
+        if g.strip():
+            out[g] = out.get(g, 0) + 1
+    return out
+
+
+def _tfidf_sims(mine: str, others: Sequence[str]) -> list[float]:
+    """TF-IDF cosine of `mine` against each of `others`, IDF fitted on the window plus `mine`."""
+    docs = [_grams(mine)] + [_grams(t) for t in others]
+    n = len(docs)
+    df: dict[str, int] = {}
+    for d in docs:
+        for g in d:
+            df[g] = df.get(g, 0) + 1
+
+    def vec(d: Mapping[str, int]) -> dict[str, float]:
+        return {g: (1.0 + math.log(c)) * (1.0 + math.log((1.0 + n) / (1.0 + df[g])))
+                for g, c in d.items()}
+
+    vecs = [vec(d) for d in docs]
+    norms = [math.sqrt(sum(v * v for v in x.values())) for x in vecs]
+    out: list[float] = []
+    for j in range(1, n):
+        if not norms[0] or not norms[j]:
+            out.append(0.0)
+            continue
+        small, big = (vecs[0], vecs[j]) if len(vecs[0]) <= len(vecs[j]) else (vecs[j], vecs[0])
+        dot = sum(v * big.get(g, 0.0) for g, v in small.items())
+        out.append(float(min(1.0, dot / (norms[0] * norms[j]))))
+    return out
+
+
+def semantic_similarity(a: str, b: str) -> float:
+    """Embedding-free semantic closeness of two texts: char-gram TF-IDF cosine over the pair."""
+    return _tfidf_sims(a, [b])[0] if a and b else 0.0
+
+
+def is_copy(similarity: float, figures: Sequence[tuple[float, str]],
+            prior_figures: Sequence[tuple[float, str]]) -> bool:
+    """A near-verbatim telling with the SAME figures. "GDP grew 2.1%" and "GDP grew 1.6%" are
+    one character apart and are a revision, not a copy: changed figures always break a copy."""
+    return similarity >= COPY_SIMILARITY and set(figures) == set(prior_figures)
+
+
+def _channels(kind: str, entities: Iterable[str], affected_rows: Any = None) -> set[str]:
+    spec = ONTOLOGY.get(kind)
+    names: set[str] = set()
+    if spec is not None:
+        for edge in spec.edges:
+            names.add(f"class:{edge.asset_class}")
+            names.update(edge.anchors)
+    if isinstance(affected_rows, list):
+        for a in affected_rows:
+            asset = a.get("asset") if isinstance(a, Mapping) else a
+            if asset:
+                names.add(str(asset))
+    return {f"{e}>{c}" for e in entities for c in names}
+
+
+def _comp(score: float | None, basis: str, **detail: Any) -> dict[str, Any]:
+    return {"score": None if score is None else round(float(score), 4),
+            "measured": score is not None, "basis": basis, **detail}
+
+
+def _row_ref(row: Mapping[str, Any]) -> str:
+    return str(row.get("doc_id") or row.get("item_id") or row.get("observation_id")
+               or row.get("id") or row.get("event_id") or "")
+
+
+def novelty_components(event: Mapping[str, Any],
+                       recent: Sequence[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
+    """The eleven novelty axes of one document against the trailing window (oldest first).
+
+    Each value is `{score, measured, basis, ...detail}`; `score` None means UNMEASURED on that
+    axis. A component never reads absence as a zero: no figure, no stance, no direction, no
+    source and no entity are each named in the basis rather than scored.
+    """
+    kind = str(event.get("kind") or "other")
+    ents = _ents(event)
+    text = _row_text(event)
+    eid = str(event.get("event_id") or "")
+    window = [r for r in recent if r is not event]
+    # The story the document belongs to: same kind, overlapping entities (or both unnamed).
+    story = [r for r in window if str(r.get("kind") or "") == kind
+             and ((not ents and not _ents(r)) or bool(ents & _ents(r)))]
+    out: dict[str, dict[str, Any]] = {}
+
+    # semantic -----------------------------------------------------------------------------
+    near = window[-SEMANTIC_WINDOW:]
+    sims = _tfidf_sims(text, [_row_text(r) for r in near]) if text and near else []
+    if not text:
+        out["semantic"] = _comp(None, "UNMEASURED: the document carries no text")
+    elif not window:
+        out["semantic"] = _comp(1.0, "empty window: nothing to resemble", nearest="",
+                                similarity=0.0)
+    else:
+        j = max(range(len(sims)), key=lambda i: sims[i])
+        out["semantic"] = _comp(1.0 - sims[j], "1 - char-gram TF-IDF cosine to the nearest of "
+                                f"the newest {len(near)} rows", nearest=_row_ref(near[j]),
+                                similarity=round(sims[j], 4))
+
+    # entity / relationship / geographic -------------------------------------------------------
+    seen_ents = {e for r in window for e in _ents(r)}
+    if not ents:
+        out["entity"] = _comp(None, "UNMEASURED: no entity resolved in the document")
+        out["relationship"] = _comp(None, "UNMEASURED: no entity, so no relationship")
+    else:
+        new = sorted(ents - seen_ents)
+        out["entity"] = _comp(len(new) / len(ents), f"{len(new)} of {len(ents)} entities "
+                              "absent from the window", new=new)
+        mine_pairs = ({f"{e}*{kind}" for e in ents}
+                      | {f"{a}&{b}" for a in ents for b in ents if a < b})
+        seen_pairs: set[str] = set()
+        for r in window:
+            re_ = _ents(r)
+            rk = str(r.get("kind") or "other")
+            seen_pairs |= {f"{e}*{rk}" for e in re_}
+            seen_pairs |= {f"{a}&{b}" for a in re_ for b in re_ if a < b}
+        newp = sorted(mine_pairs - seen_pairs)
+        out["relationship"] = _comp(len(newp) / len(mine_pairs),
+                                    f"{len(newp)} of {len(mine_pairs)} entity-entity and "
+                                    "entity-kind pairs absent from the window", new=newp)
+    countries = {e for e in ents if e in _BY_COUNTRY}
+    if not countries:
+        out["geographic"] = _comp(None, "UNMEASURED: no country resolved in the document")
+    else:
+        seen_c = {e for e in seen_ents if e in _BY_COUNTRY}
+        regions = {COUNTRY_REGION.get(c, c) for c in countries}
+        seen_r = {COUNTRY_REGION.get(c, c) for c in seen_c}
+        new_c, new_r = sorted(countries - seen_c), sorted(regions - seen_r)
+        out["geographic"] = _comp((len(new_c) + len(new_r)) / (len(countries) + len(regions)),
+                                  f"{len(new_c)} new countries, {len(new_r)} new regions",
+                                  new_countries=new_c, new_regions=new_r)
+
+    # numerical ------------------------------------------------------------------------------
+    figs = _figures(event)
+    prior_figs: list[tuple[float, str]] = []
+    prior_ref = ""
+    for r in reversed(story):
+        f = _figures(r)
+        if f:
+            prior_figs, prior_ref = f, _row_ref(r)
+            break
+    if not figs:
+        out["numerical"] = _comp(None, "UNMEASURED: the document states no figure")
+    elif not prior_figs:
+        out["numerical"] = _comp(1.0, "first figure on this entity x kind in the window",
+                                 figures=[list(f) for f in figs])
+    else:
+        changed = [f for f in figs if f not in prior_figs]
+        out["numerical"] = _comp(len(changed) / len(figs),
+                                 f"{len(changed)} of {len(figs)} figures differ from the last "
+                                 "figures on this entity x kind", figures=[list(f) for f in figs],
+                                 prior=[list(f) for f in prior_figs], prior_ref=prior_ref)
+
+    # severity -------------------------------------------------------------------------------
+    sev = severity_level(event)
+    prior_sev = [severity_level(r) for r in window
+                 if (ents & _ents(r)) or (not ents and not _ents(r))]
+    if not prior_sev:
+        out["severity"] = _comp(1.0, "no prior row on these entities: the severity is all new",
+                                level=sev, prior_max=None)
+    else:
+        top = max(prior_sev)
+        out["severity"] = _comp(max(0.0, min(1.0, (sev - top) / SEVERITY_STEP)),
+                                f"severity {sev:.2f} against the window's {top:.2f} on these "
+                                "entities", level=sev, prior_max=top)
+
+    # policy state ---------------------------------------------------------------------------
+    stance = event.get("stance") or stance_of(text)
+    if stance is None:
+        out["policy_state"] = _comp(None, "UNMEASURED: no policy stance stated")
+    else:
+        last = None
+        for r in reversed(window):
+            if ents and not (ents & _ents(r)):
+                continue
+            s = r.get("stance") or stance_of(_row_text(r))
+            if s:
+                last = (s, _row_ref(r))
+                break
+        if last is None:
+            out["policy_state"] = _comp(1.0, f"first stance ({stance}) on these entities in the "
+                                        "window", stance=stance, prior=None)
+        else:
+            out["policy_state"] = _comp(float(last[0] != stance),
+                                        f"stance {last[0]} -> {stance}", stance=stance,
+                                        prior=last[0], prior_ref=last[1])
+
+    # contradiction --------------------------------------------------------------------------
+    direction = event.get("direction") or direction_of(text)
+    if direction is None:
+        out["contradiction"] = _comp(None, "UNMEASURED: the document states no direction")
+    else:
+        last_d = None
+        for r in reversed(story):
+            d = r.get("direction") or direction_of(_row_text(r))
+            if d and d != "denial":
+                last_d = (d, _row_ref(r))
+                break
+        asserted = next((r for r in reversed(story)
+                         if (r.get("direction") or direction_of(_row_text(r))) != "denial"),
+                        None)
+        if last_d is None and direction == "denial" and asserted is not None:
+            # A denial contradicts the claim it denies whether or not that claim had a sign.
+            out["contradiction"] = _comp(1.0, "a denial of an earlier assertion on this story",
+                                         direction=direction, prior="assertion",
+                                         contradicts=_row_ref(asserted))
+        elif last_d is None:
+            out["contradiction"] = _comp(0.0, "nothing directional earlier on this story",
+                                         direction=direction)
+        else:
+            opposed = direction == "denial" or direction != last_d[0]
+            out["contradiction"] = _comp(float(opposed), f"{last_d[0]} -> {direction}",
+                                         direction=direction, prior=last_d[0],
+                                         contradicts=last_d[1] if opposed else "")
+
+    # confirmation ---------------------------------------------------------------------------
+    src = str(event.get("source_id") or "").strip()
+    if not src:
+        out["confirmation"] = _comp(None, "UNMEASURED: no source, so independence is unknown")
+    elif not story:
+        out["confirmation"] = _comp(0.0, "nothing earlier on this story to confirm",
+                                    independent_sources=1)
+    else:
+        # The cosines the semantic axis already paid for, reused: one TF-IDF pass per document.
+        sim_of = {id(r): s for r, s in zip(near, sims, strict=True)} if sims else {}
+        sources = {str(r.get("source_id") or "") for r in story} - {""}
+        copy_of = [(_row_ref(r), sim_of[id(r)]) for r in story
+                   if is_copy(sim_of.get(id(r), 0.0), figs, _figures(r))]
+        if (out["contradiction"].get("score") or 0.0) >= 1.0:
+            out["confirmation"] = _comp(0.0, "it contradicts the story; it does not confirm it",
+                                        independent_sources=len(sources))
+        elif src in sources:
+            out["confirmation"] = _comp(0.0, "this source already carried the story: an echo",
+                                        independent_sources=len(sources))
+        elif copy_of:
+            out["confirmation"] = _comp(0.0, "near-verbatim copy of an earlier row: syndication "
+                                        "is not independent evidence", copy_of=copy_of[0][0],
+                                        independent_sources=len(sources))
+        else:
+            out["confirmation"] = _comp(1.0, f"a new independent source joins {len(sources)} "
+                                        "earlier on this story",
+                                        independent_sources=len(sources) + 1,
+                                        confirms=[_row_ref(r) for r in story
+                                                  if str(r.get("source_id") or "") != src][-4:])
+
+    # revision -------------------------------------------------------------------------------
+    same_event = [r for r in window if eid and str(r.get("event_id") or "") == eid]
+    worded = bool(_REVISION_RE.search(_norm_text(text)))
+    if not eid:
+        out["revision"] = _comp(None, "UNMEASURED: no event_id, so nothing can be revised")
+    elif not figs:
+        out["revision"] = _comp(None, "UNMEASURED: the document states no figure to revise",
+                                worded=worded)
+    else:
+        base = next((r for r in reversed(same_event) if _figures(r)), None)
+        if base is None:
+            out["revision"] = _comp(0.0, "no earlier figure on this event_id", worded=worded)
+        else:
+            old = _figures(base)
+            moved = [f for f in figs if f not in old]
+            if not moved:
+                out["revision"] = _comp(0.0, "same figures as the earlier row on this event_id",
+                                        worded=worded)
+            else:
+                out["revision"] = _comp(1.0 if worded else 0.6,
+                                        ("figures revised (stated as a revision)" if worded else
+                                         "figures changed on the same event_id with no revision "
+                                         "word: a revision or a new print"),
+                                        worded=worded, revised_ref=_row_ref(base),
+                                        before=[list(f) for f in old],
+                                        after=[list(f) for f in figs])
+
+    # causal channel -------------------------------------------------------------------------
+    mine_ch = _channels(kind, ents, event.get("affected"))
+    if not mine_ch:
+        out["causal_channel"] = _comp(None, "UNMEASURED: the kind declares no transmission edge "
+                                      "or no entity was resolved")
+    else:
+        seen_ch: set[str] = set()
+        for r in window:
+            seen_ch |= _channels(str(r.get("kind") or "other"), _ents(r), r.get("affected"))
+        new_ch = sorted(mine_ch - seen_ch)
+        out["causal_channel"] = _comp(len(new_ch) / len(mine_ch),
+                                      f"{len(new_ch)} of {len(mine_ch)} entity->channel edges not "
+                                      "seen in the window", new=new_ch[:12])
+    return {name: out[name] for name in NOVELTY_COMPONENTS}
 
 
 def surprise_of(event: Mapping[str, Any],
