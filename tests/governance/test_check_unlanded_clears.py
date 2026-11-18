@@ -265,8 +265,9 @@ def test_desk_health_turns_red_into_a_problem_and_writes_the_report(
         assert dh._FINDINGS[0]["level"] == level, verdict
 
 
-def test_unlanded_clears_report_is_not_ignored() -> None:
-    # The sync list and the two NON_CODE lists (PROTECTED files) carry it in the separate
-    # publish PR, claude/unlanded-clears-publish; until then it stays on the box (README).
+def test_unlanded_clears_report_is_published_on_the_box_wire() -> None:
     rel = "desks/mt5/reports/UNLANDED_CLEARS.json"
+    for f in ("desks/mt5/scripts/sync_shadow_to_git.ps1", "libs/ops/release.py",
+              "desks/mt5/mt5desk/release_identity.py"):
+        assert f'"{rel}"' in (ROOT / f).read_text("utf-8", errors="ignore"), f
     assert f"!{rel}" in (ROOT / ".gitignore").read_text("utf-8")

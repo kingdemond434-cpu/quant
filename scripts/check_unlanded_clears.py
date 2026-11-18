@@ -44,7 +44,7 @@ late CLEAR is a landing, and a gate that refused every push while one was late w
 landing push too; a malformed row still fails). The box reads it hourly through
 `desks/mt5/scripts/check_desk_health.py` (audit MF1), which writes
 desks/mt5/reports/UNLANDED_CLEARS.json and turns RED into a PROBLEM finding in DESK_HEALTH.json.
-The JSON is published off the box once claude/unlanded-clears-publish lands (README).
+The JSON is published off the box by sync_shadow_to_git.ps1.
 """
 
 from __future__ import annotations
