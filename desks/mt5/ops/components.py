@@ -875,6 +875,23 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE CHINESE-MODEL RESEARCH ENSEMBLE (2026-11-17, #1242). Run by the MT5-DeepSeek task
+        # right after the DeepSeek cycle (ops/run_deepseek_windows.ps1). Its discoveries enter the
+        # same compiler every seat feeds; the report is its per-model, per-provider record.
+        ComponentSpec(
+            component_id="executable:scripts/run_cn_ensemble.py",
+            kind="executable", host="box",
+            code_paths=("scripts/run_cn_ensemble.py", "libs/ops/cn_ensemble.py"),
+            inputs=("data/llm_spend.jsonl", "data/cn_ensemble_relay_calls.jsonl"),
+            outputs=("desks/mt5/reports/CN_MODEL_ENSEMBLE.json",
+                     "data/intelligence/cn_ensemble/"),
+            consumers=("desks/mt5/research/miner_candidate_compiler.py",),
+            cadence_s=3600, timeout_s=1800, progress_metric="distinct_ideas",
+            expected_artifact_schema="desks/mt5/reports/CN_MODEL_ENSEMBLE.json",
+            owner="lane:research", restart_action="restart:task:MT5-DeepSeek",
+            criticality="optional", resource_budget={"budget_s": 1800},
+            schedule="invoked:ops/run_deepseek_windows.ps1", artifact_class="hourly",
+            notes="propose-only; public prompts; always exits 0 so the task keeps DeepSeek's rc"),
         # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
         # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
         # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),
@@ -914,6 +931,23 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="daily_cycle:proposers", artifact_class="daily",
             notes=("book_forensics.run() inside daily_cycle._proposers on MT5-Daily: the "
                    "alive+dead genome, its base rates, priors and screened cells")),
+        # THE REGIME-DISAGREEMENT MINER'S CLOCK (ROMAN-0806, 2026-11-11). Run by name
+        # (`__import__`) inside daily_cycle._proposers beside regime_split_miner, so the reach
+        # walk cannot see the edge; declared here on its own code path with that step's clock.
+        ComponentSpec(
+            component_id="executable:desks/mt5/research/regime_disagreement_miner.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/research/regime_disagreement_miner.py",),
+            outputs=("desks/mt5/reports/regime_disagreement_miner.json",),
+            consumers=("desks/mt5/research/proposer_common.py",),
+            cadence_s=86_400, timeout_s=3_600, progress_metric="tests_run",
+            expected_artifact_schema="desks/mt5/reports/regime_disagreement_miner.json",
+            owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+            criticality="optional", resource_budget={"budget_s": 3600},
+            schedule="daily_cycle:proposers", artifact_class="daily",
+            notes=("regime_disagreement_miner.run() inside daily_cycle._proposers on MT5-Daily: "
+                   "our own regime systems' disagreement gating every price-only family, "
+                   "survivors donated through proposer_common.donate")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",

@@ -73,38 +73,92 @@ def test_a_protected_pr_without_a_base_run_trusted_eval_never_stands() -> None:
     assert ag.standing("AUTO", ON, ["libs/x.py"])  # the lower tiers do not read it
 
 
-def test_root_risk_replay_and_review_files_are_never_standing() -> None:
+def test_root_the_gate_runner_and_the_authority_are_never_standing() -> None:
     for name in (
         "ops/release/authority/ROOT_POLICY.json",
         "ops/release/authority/pin_root.py",
         "ops/release/publisher/x.py",
         "ops/release/merger/x.py",
         "ops/box/workflow_gate.ps1",
+        ".github/scripts/audit_gate.py",
         ".github/workflows/trusted-eval.yml",
-        ".github/workflows/release-gates.yml",
         ".github/workflows/audit-gate.yml",
-        "ops/release/ceilings.json",
-        "ops/release/replay_shadow.py",
-        "ops/release/replay_child.py",
-        "ops/release/risk_invariants.py",
-        "ops/release/independent_review.py",
-        "ops/release/review_rubric.md",
-        "ops/release/ruleset-live.json",
         "ops/release/protected_paths.txt",
         "ops/release/risk_suites.txt",
         "ops/release/trusted_eval_suites.txt",
-        "OPS/RELEASE/CEILINGS.JSON",  # case-blind, as on the box's NTFS checkout
-        # #1162 audit HOLD: every workflow, all of ops/release, the approving machinery
-        ".github/workflows/ci.yml",
-        "ops/release/not_money_scripts.txt",
-        "ops/release/adopt_rows.py",
         "ops/release_authority.py",
         "ops/run_release_authority.cmd",
         "ops/signing/allowed_signers",
+        # #1192 audit HOLD: unpinned by any base suite
+        ".github/workflows/ci.yml",
+        ".github/workflows/youtube-corpus.yml",
+        ".github/workflows/new-workflow.yml",
+        ".github/scripts/memecoin_gate.py",
+        "ops/release/expected_divergence.json",
+        "ops/release/not_money_scripts.txt",
+        "ops/release/local_models.json",
+        "ops/release/review_rubric.md",
         "libs/ops/release.py",
+        "OPS/RELEASE/AUTHORITY/ROOT_POLICY.JSON",  # case-blind, as on the box's NTFS checkout
     ):
-        assert not ag.standing("PROTECTED", ON, [name], YES), name
-        assert not ag.standing("PROTECTED", ON, ["ops/gates.sh", name], YES), name
+        assert not ag.standing("PROTECTED", ON, [name], YES, YES), name
+        assert not ag.standing("PROTECTED", ON, ["ops/gates.sh", name], YES, YES), name
+
+
+def test_self_judging_paths_stand_on_a_base_run_trusted_eval_since_1172() -> None:
+    """#1172 put the base-run trusted-eval over the gating workflows and the release machinery."""
+    for name in (
+        "ops/release/replay_shadow.py",
+        "ops/release/risk_invariants.py",
+        "ops/release/independent_review.py",
+        "ops/release/ruleset-live.json",
+        "ops/release/adopt_rows.py",
+    ):
+        assert ag.standing("PROTECTED", ON, [name], YES), name
+        assert not ag.standing("PROTECTED", ON, [name], NO), name
+        assert not ag.standing("PROTECTED", ON, [name]), name
+
+
+def test_a_ceilings_change_stands_only_inside_the_delegated_envelope() -> None:
+    names = ["ops/release/ceilings.json"]
+    assert ag.standing("PROTECTED", ON, names, YES, YES)
+    assert not ag.standing("PROTECTED", ON, names, YES, NO)
+    assert not ag.standing("PROTECTED", ON, names, YES)  # no envelope reading: a no
+    assert not ag.standing("PROTECTED", ON, ["OPS/RELEASE/CEILINGS.JSON"], YES, NO)
+
+    def boom() -> bool:
+        raise RuntimeError("git show failed")
+
+    assert not ag.standing("PROTECTED", ON, names, YES, boom)
+    assert ag.standing("PROTECTED", ON, ["pyproject.toml"], YES)  # not read when untouched
+
+
+def test_ceilings_delegated_fails_closed_on_any_read_error(monkeypatch: Any) -> None:
+    def no_git(*a: str) -> str:
+        raise RuntimeError("no such object")
+
+    monkeypatch.setattr(ag, "_git", no_git)
+    assert ag.ceilings_delegated("live", "h" * 40) is False
+
+
+def test_ceilings_delegated_reads_both_sides_through_the_envelope(monkeypatch: Any) -> None:
+    import json as _json
+
+    base = {"max": {"desks/mt5/mt5desk/sizing.py": {"MAX_RISK_FRAC": 0.08}}}
+    up = {"max": {"desks/mt5/mt5desk/sizing.py": {"MAX_RISK_FRAC": 0.1}}}
+    far = {"max": {"desks/mt5/mt5desk/sizing.py": {"MAX_RISK_FRAC": 0.5}}}
+    for head, want in ((up, True), (far, False)):
+        sides = {"origin/live": base, "h": head}
+        monkeypatch.setattr(ag, "_git", lambda *a, s=sides: _json.dumps(s[a[1].split(":")[0]]))
+        assert ag.ceilings_delegated("live", "h") is want
+
+
+def test_a_standing_merge_requires_the_risk_invariants_job() -> None:
+    assert ag.RISK_JOB == "risk-invariants" and ag.RISK_JOB in ag.AUTO_JOBS
+    ok, why = ag.approved({"at": LATER}, AFTER, ag.standing("AUTO", ON))
+    assert ok and why.startswith(ag.STANDING_WHY)
+    ok, why = ag.approved({"at": AFTER}, LATER, False)  # his comment newer than the CLEAR
+    assert ok and not why.startswith(ag.STANDING_WHY)
 
 
 def test_an_unreadable_root_policy_covers_no_protected_pr(tmp_path: Path, monkeypatch: Any) -> None:

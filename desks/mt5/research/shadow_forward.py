@@ -79,9 +79,14 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                 continue
         except Exception:
             pass
+        hold = _row_hold(row)
         if key in state:
             if "enrolled_at" not in state[key]:
                 state[key]["enrolled_at"] = stamp
+                changed += 1
+            if isinstance(state[key], dict) and \
+                    state[key].get(PROMOTION_HOLD_FIELD) != (hold or None):
+                stamp_hold(state[key], hold)
                 changed += 1
             continue
         state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
@@ -89,6 +94,7 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                       "enrolled_at": stamp, "promotion_authority": False,
                       "order_authority": False,
                       "evidence_note": "clock enrolled; forward replay pending"}
+        stamp_hold(state[key], hold)
         added += 1
     if added or changed:
         state["configured_sleeves"] = len(seen)
@@ -140,35 +146,131 @@ WINDOWS = {
 #: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
 SLEEVES: list[tuple[str, str]] = []
 
-#: Certificates the research-integrity door held on the LAST `certified_sleeves()` pass, each with
-#: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
-#: the run that just happened. Only certificates WITHOUT a clock are ever here.
+#: Certificates the research-integrity door holds FROM PROMOTION on the LAST `certified_sleeves()`
+#: pass, each with its named reason (`research/admission_integrity.py`). Reset every pass. Since
+#: 2026-11-13 every one of them HAS a clock: the door stamps the clock, it never withholds it.
 HELD_AT_INTEGRITY: list[dict] = []
+
+try:
+    from admission_integrity import PROMOTION_HOLD_FIELD, stamp_hold
+except ImportError:                                            # pragma: no cover
+    try:
+        from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+            PROMOTION_HOLD_FIELD,
+            stamp_hold,
+        )
+    except Exception:
+        # THE CLOCK ENGINE MUST NOT DIE ON A MISSING LIBRARY. Same field, same rule, inline.
+        PROMOTION_HOLD_FIELD = "integrity_hold"
+
+        def stamp_hold(row: dict, reason: str | None) -> None:  # type: ignore[misc]
+            if reason:
+                row[PROMOTION_HOLD_FIELD] = reason
+                row["promotion_authority"] = False
+            else:
+                row.pop(PROMOTION_HOLD_FIELD, None)
+
+
+def _row_hold(row: tuple) -> str:
+    """The promotion hold carried as an enrolment row's ninth field ("" = none)."""
+    return str(row[8] or "") if len(row) > 8 else ""
+
+
+#: RE-STAMPED, NEVER RE-JUDGED (2026-11-13). The lockbox ledger (`research/lockbox_recert.py`)
+#: rules a certificate RESTAMPED when it sits under the attestation in force still carrying the
+#: gated_at it was judged on BEFORE that attestation existed: a header was flipped over it, no
+#: judge ran. Seven such rows were found on the box (USDJPY and XAUUSD session_range_breakout,
+#: all gated 2026-08-26). Their clocks keep running -- forward evidence is still worth having --
+#: but none of them may become a PROMOTION CANDIDATE until a sweep re-judges it under the header
+#: it wears (`attestation_remint` queues them). Positive evidence only: an absent or unreadable
+#: ledger holds nothing, exactly as an absent ledger never voids a gold retirement.
+LOCKBOX_RECERT_FILE = BASE / "reports" / "LOCKBOX_RECERT.json"
+REMINT_STATUS_FILE = BASE / "reports" / "REMINT_STATUS.json"
+RESTAMP_HOLD = "HELD_RESTAMPED_NOT_REJUDGED"
+#: clock key -> certificate key, for every clock enrolled from a re-stamped certificate this pass.
+RESTAMP_HELD: dict[str, str] = {}
+#: GROWTH RULE 1: the hold is a veto on PROMOTE, so every held verdict writes what it forgoes.
+MISSED_GROWTH_LEDGER = BASE / "data" / "missed_growth.jsonl"
+RESTAMP_RAIL = "restamp_promotion_hold"
+
+
+def restamped_certificates(lockbox: Path | None = None,
+                           remint: Path | None = None) -> set[str]:
+    """Certificate keys the desk has POSITIVE evidence were re-stamped without a re-judge."""
+    out: set[str] = set()
+    try:
+        doc = json.loads((lockbox or LOCKBOX_RECERT_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    for k, row in ((doc or {}).get("certificates") or {}).items() if isinstance(doc, dict) else ():
+        after = row.get("after") if isinstance(row, dict) else None
+        if isinstance(after, dict) and after.get("state") == "RESTAMPED":
+            out.add(str(after.get("key") or k))
+    try:
+        rem = json.loads((remint or REMINT_STATUS_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rem = None
+    if isinstance(rem, dict):
+        out.update(str(k) for k in (rem.get("restamped_not_rejudged") or []))
+    return out
+
+
+def restamp_hold(key: str, st: dict) -> bool:
+    """Hold `key`'s promotion if its certificate is re-stamped; release a stale hold otherwise.
+
+    Returns True when the clock is held. It holds the NEXT verdict only: a clock already a
+    PROMOTION CANDIDATE keeps its status and is only marked, because un-promoting a row the
+    promoter may already have written LIVE is a change to the live book, which no session makes
+    on its own (the mark is what the report and the principal read)."""
+    cert = RESTAMP_HELD.get(key)
+    if cert is None:
+        if st.get("promotion_hold") == RESTAMP_HOLD:
+            st.pop("promotion_hold", None)
+            st.pop("promotion_hold_certificate", None)
+            st.pop("promotion_hold_since", None)
+        return False
+    if st.get("promotion_hold") != RESTAMP_HOLD or not st.get("promotion_hold_since"):
+        st["promotion_hold_since"] = datetime.now(UTC).isoformat(timespec="seconds")
+    st["promotion_hold"] = RESTAMP_HOLD
+    st["promotion_hold_certificate"] = cert
+    if st.get("status") == "PROMOTION CANDIDATE":
+        slog(f"{key}: ALREADY A PROMOTION CANDIDATE on certificate {cert}, which was re-stamped "
+             f"and never re-judged -- marked; its status is left as it is (a live-book change "
+             f"is not a session's)")
+    return True
 
 
 def _integrity_door() -> tuple[object | None, set[str], str]:
-    """(gate, keys that already own a clock, why).
+    """(gate, keys that own a clock enrolled BEFORE the door existed, why).
+
+    A clock stamped with a promotion hold is NOT in the returned set: it is re-asked every pass,
+    so its hold lifts the pass after replication lands.
 
     FAIL CLOSED: an unreadable door holds NEW certificates by name rather than waving them
     through; running clocks are untouched either way."""
     try:
-        from admission_integrity import IntegrityGate, lane_clock_keys
+        from admission_integrity import IntegrityGate, lane_clock_keys, lane_hold_keys
     except ImportError:
         try:
             from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
                 IntegrityGate,
                 lane_clock_keys,
+                lane_hold_keys,
             )
         except Exception as exc:
             return None, set(), f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
     try:
-        return IntegrityGate.load(), lane_clock_keys(SHADOW_DIR), ""
+        return (IntegrityGate.load(),
+                lane_clock_keys(SHADOW_DIR) - lane_hold_keys(SHADOW_DIR), "")
     except Exception as exc:
         return None, set(), f"integrity door unreadable: {type(exc).__name__}: {exc}"
 
 
 def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
-    """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    """The promotion hold for this certificate's clock, or None.
+
+    Asked for every certificate except a clock that predates the door (those keep the promotion
+    path they always had). The answer never decides whether the clock exists -- it always does."""
     if key in clocked:
         return None
     if gate is None:
@@ -177,6 +279,50 @@ def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str)
                      symbol=run.get("symbol"), family=run.get("family"),
                      selector=run.get("selector"), side=run.get("side"),
                      params=run.get("params"))
+
+
+def record_restamp_missed_growth(key: str, st: dict, now: datetime | None = None,
+                                 ledger: Path | None = None) -> bool:
+    """One missed-growth line per held PROMOTE verdict per day (Growth Rule 1).
+
+    `value` is the clock's own forward expectancy in R, floored at 0: what the held promotion
+    would have earned per trade had the certificate been re-judged already. Returns True when a
+    NEW line was written; never raises (a ledger it cannot write is logged, not fatal)."""
+    path = ledger or MISSED_GROWTH_LEDGER
+    stamp = now or datetime.now(UTC)
+    day = stamp.date().isoformat()
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if RESTAMP_RAIL in line and day in line and key in line:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if (row.get("rail") == RESTAMP_RAIL and row.get("day") == day
+                        and row.get("cell") == key):
+                    return False
+    except OSError:
+        pass
+    try:
+        exp = float(st.get("exp_r") or 0.0)
+    except (TypeError, ValueError):
+        exp = 0.0
+    row = {"day": day, "rail": RESTAMP_RAIL, "value": max(exp, 0.0),
+           "at": stamp.isoformat(timespec="seconds"), "cell": key,
+           "certificate": st.get("promotion_hold_certificate"), "n": st.get("n"),
+           "exp_r": st.get("exp_r"), "max_dd_r": st.get("max_dd_r"),
+           "held_since": st.get("promotion_hold_since"),
+           "why": "PROMOTE verdict held: certificate re-stamped under the attestation in force, "
+                  "never re-judged; releases on the pass after its re-judge",
+           "two_sided": True}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+    except OSError as exc:
+        slog(f"missed-growth ledger not written ({type(exc).__name__})")
+        return False
+    return True
 
 
 def certified_sleeves() -> list[tuple[str, str, dict]]:
@@ -193,6 +339,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     """
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
+    RESTAMP_HELD.clear()
+    restamped = restamped_certificates()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
     # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
@@ -219,12 +367,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 if reason:
                     HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
                                               "key": key, "reason": reason})
-                    slog(f"HELD {key}: {reason}")
-                    continue
+                    slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
+                if str(run.get("certificate") or "") in restamped:
+                    RESTAMP_HELD[key] = str(run["certificate"])
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
-                             bool(run.get("promotion_authority", True))))
+                             bool(run.get("promotion_authority", True)), reason or ""))
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -254,12 +403,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             if reason:
                 HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
                                           "reason": reason})
-                slog(f"HELD {key}: {reason}")
-                continue
+                slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
+            if str(run.get("certificate") or "") in restamped:
+                RESTAMP_HELD[key] = str(run["certificate"])
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
-                         bool(run.get("promotion_authority", True))))
+                         bool(run.get("promotion_authority", True)), reason or ""))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
@@ -577,6 +727,87 @@ def per_symbol_costs(meta: dict, sym: str):
 
     from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
     return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
+
+
+#: THE MEASURED SPREAD BY BROKER HOUR (research/cost_surface.py, rebuilt on the box daily).
+COST_SURFACE_FILE = BASE / "data" / "cost_surface.json"
+_SURFACE_CACHE: dict[str, object] = {}
+
+
+def _cost_surface() -> dict | None:
+    """The cost surface, read once per process. None when absent or unreadable."""
+    if "doc" not in _SURFACE_CACHE:
+        try:
+            _SURFACE_CACHE["doc"] = json.loads(COST_SURFACE_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _SURFACE_CACHE["doc"] = None
+    doc = _SURFACE_CACHE["doc"]
+    return doc if isinstance(doc, dict) else None
+
+
+def modal_fill_hour(sigs, timeframe: str = "H1") -> int | None:
+    """The broker hour a clock's signals actually FILL in (signal time + wait_bars of its own
+    chart), the same rule as the judge's `external_gauntlet._modal_fill_hour`."""
+    from mt5desk.universe_registry import timeframe_minutes
+    try:
+        minutes = timeframe_minutes(timeframe)
+    except KeyError:
+        minutes = 60
+    hours: dict[int, int] = {}
+    for sig in sigs or ():
+        ts = getattr(sig, "time", None)
+        h = int(getattr(ts, "hour", -1)) if ts is not None else -1
+        if h < 0:
+            continue
+        off = int(getattr(ts, "minute", 0) or 0) + int(getattr(sig, "wait_bars", 0) or 0) * minutes
+        h = (h + off // 60) % 24
+        hours[h] = hours.get(h, 0) + 1
+    if not hours:
+        return None
+    return max(hours.items(), key=lambda kv: kv[1])[0]
+
+
+def fill_hour_costs(costs, meta: dict, sym: str, sigs, timeframe: str,
+                    frozen: dict | None) -> tuple[object, str, float | None]:
+    """(costs, spread_basis, spread_pts charged): charge the spread of the hour the clock FILLS.
+
+    WHY (2026-11-13, measured). Every forward clock was charged ONE pooled median spread per
+    symbol, while the judge (`external_gauntlet.build_cell`) has charged the fill hour since
+    2026-08-29. The rollover-hour clocks were therefore scored on a book that does not exist:
+    GBPSEK pooled 246 pts against 2,952 at broker hour 00, CHFNOK 267 against 4,511, GBPMXN 327
+    against 4,633 -- and five of the six exotics that reached the live account lost. A liquid-hour
+    clock on a major is charged LESS than the pooled figure by the same rule, so this is one
+    measurement applied both ways, not a haircut; the cheaper direction is named by
+    `sleeve_registry.rebase_cost` (`cost_rebase_cheaper`).
+
+    THE BASIS IS FROZEN WITH THE CLOCK. Once a clock carries `spread_basis` for its fill hour, the
+    frozen spread stands and the daily re-measure does not churn the identity. An hour the surface
+    has not measured keeps the pooled basis and says so (`pooled_median`, L1.28a: named, not
+    silently substituted). The engine replays, so a rebase reprices every observation;
+    `forward_start` never moves.
+    """
+    hour = modal_fill_hour(sigs, timeframe)
+    if hour is None:
+        return costs, "pooled_median", None
+    basis = f"fill_hour_{hour:02d}"
+    if isinstance(frozen, dict) and frozen.get("spread_basis") == basis:
+        return costs, basis, (float(frozen["spread_pts"]) if frozen.get("spread_pts")
+                              is not None else None)
+    surf = _cost_surface()
+    if surf is None:
+        return costs, "pooled_median", None
+    try:
+        from research.cost_surface import spread_pts
+        pts = spread_pts(surf, sym, hour)
+    except Exception:
+        pts = None
+    if pts is None:
+        return costs, "pooled_median", None
+    import dataclasses
+
+    from mt5desk.engine import Costs
+    hour_costs = Costs.from_symbol(meta[sym], spread_pts=pts)
+    return dataclasses.replace(costs, spread_per_lot=hour_costs.spread_per_lot), basis, pts
 
 
 def frozen_costs(key: str):
@@ -1250,6 +1481,18 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            # THE FILL HOUR'S SPREAD, NOT THE POOLED ONE (2026-11-13; see `fill_hour_costs`).
+            try:
+                import sleeve_registry as _reg_fh
+                costs, _spread_basis, _spread_pts = fill_hour_costs(
+                    costs, meta, sym, sigs, timeframe_of(params),
+                    _reg_fh.frozen_cost_fields(key))
+            except Exception as exc:
+                _spread_basis, _spread_pts = "pooled_median", None
+                slog(f"{key}: fill-hour spread unavailable ({type(exc).__name__}: {exc}); "
+                     f"pooled basis this pass")
+            st["spread_basis"] = _spread_basis
+            st["spread_pts_charged"] = _spread_pts
             ledger = _fl.writer_path(key, SHADOW_DIR, shared_ledgers)
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
@@ -1297,7 +1540,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # an average over two different games. Stamped per row so the promoter
             # can split them.
             _stamp = bars.stamp()
-            ledger.write_text(json.dumps(
+            _ledger_text = json.dumps(
                 [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
                   "side": t.side, "entry": t.entry, "exit": t.exit,
                   "r_multiple": t.r_multiple, "reason": t.reason,
@@ -1305,7 +1548,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                             else "historical"),
                   **_stamp}
                  for t in all_trades],
-                indent=2), encoding="utf-8")
+                indent=2)
+            ledger.write_text(_ledger_text, encoding="utf-8")
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours
@@ -1380,6 +1624,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                         "commission_per_lot": getattr(costs, "commission_per_lot", None),
                         "contract_oz": getattr(costs, "contract_oz", None),
                         "quote_per_account": getattr(costs, "quote_per_account", None),
+                        "spread_basis": _spread_basis, "spread_pts": _spread_pts,
                     })
                     if _why:
                         _drift = []
@@ -1438,7 +1683,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st.pop("identity_drift", None)
                     st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                            cost_fields=vars(costs),
+                            cost_fields={**vars(costs), "spread_basis": _spread_basis,
+                                         "spread_pts": _spread_pts},
                             runtime_version=st.get("runtime_version"))
                 st["sleeve_id"] = _ident["sleeve_id"]
             except Exception as exc:
@@ -1507,6 +1753,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             if _defs:
                 st["power_deficiencies"] = _defs
             st["promotion_authority"] = bool(bars.promotion_authority and _row_auth)
+            # THE PROMOTION HOLD RIDES ON THE CLOCK (admission_integrity, 2026-11-13): the clock
+            # accrues like every other; only its promotion waits for replication.
+            stamp_hold(st, _row_hold(row))
             if trades:
                 rs = [t.r_multiple for t in trades]
                 cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -1581,8 +1830,25 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
+            held = restamp_hold(key, st)
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
-                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD \
+                        and st.get(PROMOTION_HOLD_FIELD):
+                    # MATURED ON A CLOCK THE INTEGRITY DOOR STILL HOLDS (2026-11-13). The clock
+                    # stays ACTIVE and keeps accruing; the pass after the door's two facts clear
+                    # (stamp lifted above) this same clause writes PROMOTION CANDIDATE. Before
+                    # 2026-11-13 such a certificate had no clock at all, so the bar is unchanged.
+                    st["matured_promotion_held"] = st[PROMOTION_HOLD_FIELD]
+                    slog(f"{key}: VERDICT PROMOTE HELD n={st['n']} exp={st['exp_r']:.3f}R -- "
+                         f"{st[PROMOTION_HOLD_FIELD]}")
+                elif held and st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    # Only the PROMOTE verdict waits on the re-judge; a KILL is the clock's own
+                    # forward record and needs no certificate to stand.
+                    slog(f"{key}: VERDICT PROMOTE HELD ({RESTAMP_HOLD}) n={st['n']} "
+                         f"exp={st['exp_r']:.3f}R")
+                    record_restamp_missed_growth(key, st)
+                elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    st.pop("matured_promotion_held", None)
                     st["status"] = "PROMOTION CANDIDATE"
                     slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")
