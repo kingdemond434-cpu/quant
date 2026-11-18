@@ -190,7 +190,7 @@ def run(budget_s: float = 240.0, write: bool = True) -> dict[str, Any]:
     t0 = time.time()
     mode = cm.conviction_mode()
     doc: dict[str, Any] = {"generated_utc": _now(), "mode": mode,
-                           "switch": str(cm.CONVICTION_SWITCH.relative_to(ROOT)),
+                           "switch": "desks/mt5/data/" + cm.CONVICTION_SWITCH.name,
                            "rule": ("conviction = clip(strength x agreement, 0.5, 2.0); strength "
                                     "= 1 + n/(n+120) x (2 DSR - 1) x 0.5; agreement = "
                                     "clip(sqrt((1+k)/(1+k_ref)), 0.75, 1.5), k = same-instrument "
@@ -266,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
         f = doc.get("forward") or {}
         print(f"conviction_shadow: mode={doc['mode']} status={doc.get('status')} "
               f"matured={f.get('matured')} promotion={(f.get('promotion') or {}).get('verdict')} "
-              f"-> {OUT.relative_to(ROOT)}")
+              f"-> {OUT.name}")
     return 0
 
 
