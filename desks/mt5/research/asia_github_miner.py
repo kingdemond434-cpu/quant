@@ -163,7 +163,7 @@ def search(query: str, per_page: int = PER_QUERY) -> list[dict[str, Any]]:
     for sort in ("stars", "updated"):
         try:
             doc = _gh(f"search/repositories?q={q}&sort={sort}&order=desc&per_page={per_page}")
-        except (RuntimeError, ValueError, subprocess.SubprocessError):
+        except (RuntimeError, ValueError, OSError, subprocess.SubprocessError):
             continue
         for it in (doc or {}).get("items", []):
             rows[str(it.get("full_name"))] = it
@@ -174,7 +174,7 @@ def search(query: str, per_page: int = PER_QUERY) -> list[dict[str, Any]]:
 def readme(full_name: str) -> str:
     try:
         doc = _gh(f"repos/{full_name}/readme")
-    except (RuntimeError, ValueError, subprocess.SubprocessError):
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError):
         return ""
     try:
         return base64.b64decode(str((doc or {}).get("content", ""))).decode("utf-8", "replace")
@@ -201,7 +201,7 @@ def code_hits(query: str, per_page: int = 30) -> list[dict[str, Any]]:
     from urllib.parse import quote
     try:
         doc = _gh(f"search/code?q={quote(query)}&per_page={per_page}")
-    except (RuntimeError, ValueError, subprocess.SubprocessError):
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError):
         return []
     time.sleep(6.5)                              # code search: 10 requests / minute
     out = []

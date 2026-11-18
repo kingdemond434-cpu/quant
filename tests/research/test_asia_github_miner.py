@@ -63,3 +63,11 @@ def test_offline_pass_donates_through_the_door(tmp_path: Path, monkeypatch) -> N
     assert got["rows"][0]["symbols"] == ["XAGUSD"]
     assert doc["repos_read"] == 1
     assert m.run(queries=(("cn", "q"),))["repos_read"] == 0   # an unchanged repo is not re-read
+
+
+def test_missing_gh_binary_does_not_kill_the_leg(monkeypatch) -> None:
+    def boom(*a, **k):
+        raise FileNotFoundError("gh")
+    monkeypatch.setattr(m.subprocess, "run", boom)
+    monkeypatch.setattr(m.time, "sleep", lambda s: None)
+    assert m.search("q") == [] and m.readme("a/b") == "" and m.code_hits("q") == []
