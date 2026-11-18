@@ -24,6 +24,7 @@ minus growth forgone), curve gaps (growth at one heat minus another) and proof f
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import sys
@@ -961,25 +962,34 @@ def _unspilled_lines(records: tuple[Path, ...]) -> list[dict[str, Any]]:
     return uniq
 
 
-def _unspilled_dropped(records: tuple[Path, ...]) -> int:
+def _unspilled_dropped(records: tuple[Path, ...]) -> tuple[int, int]:
     """How many failed-spill lines the organ's records had to drop past their cap (`n_dropped`
-    under any `unspilled` block): each is a cost nobody can see any more."""
+    under any `unspilled` block): each is a cost nobody can see any more. Also how many counts
+    were MALFORMED (not a finite non-negative whole number: a string, NaN, an infinity) -- those
+    read UNMEASURED and never abort the build (audit of d3b07717db1). Never raises."""
     total = 0
+    malformed = 0
 
     def walk(x: Any) -> None:
-        nonlocal total
+        nonlocal total, malformed
         if isinstance(x, dict):
             u = x.get("unspilled")
-            if isinstance(u, dict) and isinstance(u.get("n_dropped"), (int, float)):
-                total += int(u["n_dropped"])
+            if isinstance(u, dict) and "n_dropped" in u:
+                v = u["n_dropped"]
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) \
+                        or v < 0 or v != int(v):
+                    malformed += 1
+                else:
+                    total += int(v)
             for v in x.values():
                 walk(v)
         elif isinstance(x, list):
             for v in x:
                 walk(v)
     for path in records:
-        walk(_json(path))
-    return total
+        with contextlib.suppress(Exception):
+            walk(_json(path))
+    return total, malformed
 
 
 def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = None,
@@ -990,9 +1000,9 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
     NOT_BINDING (the rail never cost); any sidecar line that could not be read -> UNMEASURED."""
     doc = _json(path)
     extra, torn = _spill_lines(spill)
-    dropped = _unspilled_dropped(unspilled)
+    dropped, malformed = _unspilled_dropped(unspilled)
     extra = [*extra, *_unspilled_lines(unspilled)]
-    if not doc and not extra and not torn and not dropped:
+    if not doc and not extra and not torn and not dropped and not malformed:
         return {"verdict": UNMEASURED, "lines": [],
                 "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
     doc = doc or {}
@@ -1000,12 +1010,14 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
     if extra:                                 # interleave the sidecar by time
         lines = sorted(lines, key=lambda x: str(x.get("at") or ""))
     lines = lines[-recent:]
-    if dropped:
+    if dropped or malformed:
         return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
                 "n_lines": len(lines), "unspilled_dropped": dropped, "lost_s": None,
+                **({"unspilled_dropped_malformed": malformed} if malformed else {}),
                 **({"torn_spill_lines": torn} if torn else {}),
-                "why": f"{dropped} unspilled line(s) were dropped past the record's cap: "
-                       f"their cost is unseen"}
+                "why": (f"{dropped} unspilled line(s) were dropped past the record's cap"
+                        + (f", and {malformed} drop count(s) are malformed" if malformed else "")
+                        + ": their cost is unseen")}
     if torn:
         return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
                 "n_lines": len(lines), "torn_spill_lines": torn, "lost_s": None,
