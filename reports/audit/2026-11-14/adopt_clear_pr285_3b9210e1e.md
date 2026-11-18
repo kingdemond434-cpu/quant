@@ -1,0 +1,16 @@
+# ADOPT CLEAR: PR #285
+
+Auditor, 2026-11-14T16:10Z. Commit 3b9210e1e6d30365a39a69959e6beaac29125a77. pre-merge row at CLEARed head; diff from merge-base 3802c6e60f04565d7750c1146791ff98cca2da36 with LIVE 3802c6e60f04.
+PR #285 head 3b9210e1e6d30365a39a69959e6beaac29125a77 holds a CLEAR registry row; every blob below is identical to that CLEARed head.
+Vouches only for these (path, blob) pairs. A merge where LIVE also changed one of these files yields a different blob and is not covered.
+
+- desks/mt5/research/hourly_cycle.py 392cca0dc2e6c5b26c4fe94e7a69f8c5e25c1c36
+- desks/mt5/research/principles_enforcement.py ba2069eb58e4c0b3fdcb8f1c48579135512f2e9a
+- libs/ops/queue_cycle.py dbf4fe94510d718f1fd363e1aaef19a76e95990d
+- libs/research/layers.py c97a820fda8283b53f2ce4f316f36a9d371a7f7a
+- libs/tiers/principles.py 8972f7e8b9e358b8832cec53c163f16b0d2f7aa2
+- scripts/check_principles.py 47952bd3fb115001ad4dace54f3c219bdd1e9711
+- scripts/run_law_gate.py 69dd755b7b54ddc5240ecbdd00041279029d7687
+- tests/ops/test_principles.py 08c4826a913e494c60c21116dfd3592d075990cd
+
+Verdict: CLEAR for adoption of the listed blobs.
