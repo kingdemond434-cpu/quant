@@ -1,57 +1,51 @@
 {
  "schema": 1,
- "started_at": "2026-11-18T13:56:33+00:00",
- "pid": 18624,
- "phase": "applied",
- "phase_at": "2026-11-18T13:59:44+00:00",
- "done": true,
+ "started_at": "2026-11-18T14:48:09+00:00",
+ "pid": 17972,
+ "phase": "written",
+ "phase_at": "2026-11-18T14:49:03+00:00",
+ "done": false,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-11-18T13:56:33+00:00",
+   "at": "2026-11-18T14:48:09+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-11-18T13:56:33+00:00",
+   "at": "2026-11-18T14:48:09+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "queue",
-   "at": "2026-11-18T13:56:39+00:00",
-   "elapsed_s": 5.9
+   "at": "2026-11-18T14:48:21+00:00",
+   "elapsed_s": 12.0
   },
   {
    "phase": "plan",
-   "at": "2026-11-18T13:56:39+00:00",
-   "elapsed_s": 5.9
+   "at": "2026-11-18T14:48:21+00:00",
+   "elapsed_s": 12.1
   },
   {
    "phase": "rate",
-   "at": "2026-11-18T13:56:39+00:00",
-   "elapsed_s": 5.9
+   "at": "2026-11-18T14:48:21+00:00",
+   "elapsed_s": 12.1
   },
   {
    "phase": "rate_written",
-   "at": "2026-11-18T13:58:11+00:00",
-   "elapsed_s": 97.9
+   "at": "2026-11-18T14:49:02+00:00",
+   "elapsed_s": 53.3
   },
   {
    "phase": "task_limit",
-   "at": "2026-11-18T13:58:13+00:00",
-   "elapsed_s": 100.3
+   "at": "2026-11-18T14:49:03+00:00",
+   "elapsed_s": 54.0
   },
   {
    "phase": "written",
-   "at": "2026-11-18T13:58:13+00:00",
-   "elapsed_s": 100.5
-  },
-  {
-   "phase": "applied",
-   "at": "2026-11-18T13:59:44+00:00",
-   "elapsed_s": 190.7
+   "at": "2026-11-18T14:49:03+00:00",
+   "elapsed_s": 54.2
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
- "seconds": 190.7
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
 }
