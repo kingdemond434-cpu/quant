@@ -42,7 +42,6 @@ import importlib.util
 import json
 import os
 import re
-import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -466,5 +465,6 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if rep["ok"] else 1
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+# No command-line entry yet: until the ROOT half wires this into scripts/run_law_gate.py
+# (_LAW_FENCES) with its runtime_state row, its clock is the quality check, which runs
+# tests/scripts/test_check_research_data_fence.py::test_todays_tree_is_green on every PR.
