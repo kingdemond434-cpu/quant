@@ -170,15 +170,15 @@ def test_missed_growth_bills_the_down_half_only_when_live(tmp_path, monkeypatch)
 def test_weekend_records_scored_on_one_monday_count_once() -> None:
     import conviction_shadow as cs
     book = {"base_book": {"A": 0.1}, "conviction_book": {"A": 0.2}, "factors": {"A": 1.5}}
-    realised = {"A": {"2026-01-01": 0.5, "2026-01-05": 1.0}}       # Thu, then Monday
+    realised = {"A": {"2026-01-01": 0.5, "2026-01-02": 0.7, "2026-01-05": 1.0}}  # Thu Fri Mon
     recs = [{"day": d, **book} for d in ("2026-01-01", "2026-01-02", "2026-01-03",
                                          "2026-01-04")]            # Thu, Fri, Sat, Sun
     scored = [cs.score_record(r, realised) for r in recs]
-    assert scored[0] is not None and scored[0]["realised_day"] == "2026-01-05"
+    assert scored[0] is not None and scored[0]["realised_day"] == "2026-01-02"
     mondays = [s for s in scored if s and s["realised_day"] == "2026-01-05"]
     assert len(mondays) == 3                                       # Fri, Sat, Sun -> Monday
     kept = cs.distinct_realised(s for s in scored if s and s["status"] == "MEASURED")
-    assert [k["realised_day"] for k in kept].count("2026-01-05") == 1
+    assert [k["realised_day"] for k in kept] == ["2026-01-02", "2026-01-05"]   # n = 2, not 4
     assert next(k for k in kept if k["realised_day"] == "2026-01-05")["day"] == "2026-01-04"
 
 
