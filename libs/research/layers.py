@@ -103,6 +103,7 @@ LEG_LAYER: dict[str, str] = {
     # than meta -- the same side of the line as `markout` and `fill_attribution`.
     "halt_rail": "execution",
     "producer_census": "meta", "productivity_census": "meta",
+    "llm_yield": "meta", "llm_budget_census": "meta",
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
@@ -114,6 +115,7 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rank": "meta", "factory_contracts": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
+    "policy_lift_reopen": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
@@ -629,6 +631,8 @@ LEG_LAYER: dict[str, str] = {
     "futures_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
+    "asia_github": "information",
+    "firm_lanes": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
