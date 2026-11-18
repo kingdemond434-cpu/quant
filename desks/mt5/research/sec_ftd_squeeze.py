@@ -117,7 +117,9 @@ RULE = ("a fails-to-deliver squeeze state per US share CFD, stamped at the SEC f
         "publication instant; event lane only -- it mints no hypothesis, donates nothing, "
         "and sizes, caps or vetoes nothing")
 MISSED_GROWTH = ("no squeeze state for the event lane's share CFDs until the SEC contact "
-                 "User-Agent is set (EDGAR_UA / QUANT_EDGAR_UA, machine scope)")
+                 "User-Agent is set (any of alpha_capture.EDGAR_UA_ENV: QUANT_EDGAR_UA, "
+                 "EDGAR_UA, QP_SECRET_EDGAR_UA, SEC_EDGAR_USER_AGENT, SEC_EDGAR_UA; machine "
+                 "scope)")
 
 
 # ============================================================================= periods
