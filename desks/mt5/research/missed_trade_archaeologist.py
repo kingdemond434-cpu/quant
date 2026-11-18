@@ -40,6 +40,13 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (libs/research/forward_ledger.py)
+    from libs.research import forward_ledger as _fl
+except ImportError:  # run as a script from the desk: put the repo root on the path
+    import sys as _fl_sys
+    from pathlib import Path as _FlPath
+    _fl_sys.path.insert(0, str(_FlPath(__file__).resolve().parents[3]))
+    from libs.research import forward_ledger as _fl
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -750,10 +757,10 @@ def load_shadow(shadow_dir: Path = SHADOW_DIR) -> tuple[dict[str, list[dict[str,
     if not shadow_dir.exists():
         return {}, f"absent: {shadow_dir}"
     out: dict[str, list[dict[str, Any]]] = {}
-    for p in sorted(shadow_dir.glob("ledger_*.json")):
+    for p in _fl.iter_ledgers(shadow_dir):
         rows = _read(p)
         if isinstance(rows, list):
-            name = p.stem[len("ledger_"):]
+            name = _fl.label_of(p)
             # ledger_XAUUSD_asia -> XAUUSD.asia ; regime-tagged clocks keep their third part
             bits = name.split("_", 1)
             clock = bits[0] + ("." + bits[1].replace("_", ".", 1) if len(bits) > 1 else "")
