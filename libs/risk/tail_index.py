@@ -234,18 +234,18 @@ def kelly_ratio(r: np.ndarray, rng: np.random.Generator | None = None,
 
 def measure(r: Sequence[float] | np.ndarray, *, rng: np.random.Generator | None = None,
             sim_n: int = SIM_N, boot: int = BOOT) -> TailReading | None:
-    r = np.asarray(r, dtype=float)
-    r = r[np.isfinite(r)]
-    if r.size < MIN_OBS:
+    x: np.ndarray = np.asarray(r, dtype=float)
+    x = x[np.isfinite(x)]
+    if x.size < MIN_OBS:
         return None
     rng = rng or np.random.default_rng(0)
-    lh = hill(-r, rng, boot)
-    gh = hill(r, rng, boot)
-    lp = pot(-r)
-    ga = gaussian_tail(r)
+    lh = hill(-x, rng, boot)
+    gh = hill(x, rng, boot)
+    lp = pot(-x)
+    ga = gaussian_tail(x)
     es = lp.get("es995")
     ratio = (es / ga["es995"]) if es is not None and math.isfinite(es) and ga["es995"] > 0 \
         else None
-    fg, fs, kr = kelly_ratio(r, rng, sim_n)
-    return TailReading(n=int(r.size), loss_hill=lh, gain_hill=gh, loss_pot=lp, gaussian=ga,
+    fg, fs, kr = kelly_ratio(x, rng, sim_n)
+    return TailReading(n=int(x.size), loss_hill=lh, gain_hill=gh, loss_pot=lp, gaussian=ga,
                        es995_ratio=ratio, kelly_gauss=fg, kelly_spliced=fs, kelly_ratio=kr)
