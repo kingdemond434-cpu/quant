@@ -256,3 +256,53 @@ def test_root_is_judged_by_its_own_replay_shadow(tmp_path: Path) -> None:
 def test_a_root_without_replay_shadow_fails_closed(tmp_path: Path) -> None:
     rep = fence.check(tmp_path)
     assert rep["ok"] is False and "cannot be loaded" in rep["violations"][0]
+
+
+# ------------------- the programs a scanned module RUNS, to a fixed point (Auditor MF, 2026-11-18)
+
+RUN_HELPER = "import subprocess, sys\nsubprocess.run([sys.executable, 'tools/new_helper.py'])\n"
+RUN_A = "import subprocess, sys\nsubprocess.run([sys.executable, 'tools/a.py'])\n"
+RUN_B = "import runpy\nrunpy.run_path('tools/b.py')\n"
+RUN_B_LINE = RUN_B.splitlines()[1]
+
+
+def test_a_program_a_closure_module_runs_is_scanned_with_its_imports(tmp_path: Path) -> None:
+    """closure module -> the .py it runs -> a module that .py imports, naming the home: red."""
+    _red(
+        tmp_path,
+        {
+            GW: RUN_HELPER,
+            fence.PINS: _pins((GW, 2, RUN_HELPER.splitlines()[1])),
+            "tools/new_helper.py": "from libs.foo import load\n",
+            "libs/__init__.py": "",
+            "libs/foo.py": "def load():\n    return open('desks/mt5/research/data/x.json')\n",
+        },
+        "libs/foo.py:2",
+    )
+
+
+def test_a_two_hop_chain_of_run_programs_is_scanned(tmp_path: Path) -> None:
+    """closure module runs a.py, a.py runs b.py, b.py names the home: red."""
+    _red(
+        tmp_path,
+        {
+            GW: RUN_A,
+            "tools/a.py": RUN_B,
+            "tools/b.py": PLANT,
+            fence.PINS: _pins((GW, 2, RUN_A.splitlines()[1]), ("tools/a.py", 2, RUN_B_LINE)),
+        },
+        "tools/b.py:2",
+    )
+
+
+def test_a_chain_whose_hop_is_unpinned_is_red_on_the_hop(tmp_path: Path) -> None:
+    rep = _check(tmp_path, {GW: RUN_A, "tools/a.py": RUN_B, "tools/b.py": "X = 1\n",
+                            fence.PINS: _pins((GW, 2, RUN_A.splitlines()[1]))})  # fmt: skip
+    assert rep["ok"] is False and rep["scanned"] >= 2, rep
+    assert any("tools/a.py:2" in v for v in rep["violations"]), rep  # type: ignore[attr-defined]
+
+
+def test_a_program_only_named_not_run_is_not_scanned(tmp_path: Path) -> None:
+    """A .py named as data (a provenance table hashed, never run) is not a program it runs."""
+    rep = _check(tmp_path, {GW: "HASHED = {'h': 'tools/hashed.py'}\n", "tools/hashed.py": PLANT})
+    assert rep["ok"] is True, rep

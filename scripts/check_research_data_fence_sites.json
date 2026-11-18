@@ -9,6 +9,13 @@
    "reason": "globs *.parquet under the tick tape: it returns parquet files only, never a JSON or YAML research file"
   },
   {
+   "file": "desks/mt5/frontier_intel/frontier_supervisor.py",
+   "line": 103,
+   "sha256": "046b376a9c613159578f5a556132fe15b238cecdb32c839d3ac9c08cc867646a",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "rglob *.json under INTEL_ROOTS, which are desks/mt5/data/intelligence and data/intelligence: neither is the home nor contains it (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
    "file": "desks/mt5/mt5desk/data.py",
    "line": 110,
    "sha256": "ac80a9e8e862418b3d164034847c807bf7dab045d1d6d52f53a6fd270bb606f8",
@@ -49,6 +56,13 @@
    "sha256": "2c64bb040de5e858c69076d4cc606126e16f0d74e0f183d142d838b14b376aa9",
    "kind": "a directory listing whose argument does not resolve",
    "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/mt5desk/triangle_tape.py",
+   "line": 72,
+   "sha256": "6550ad72dc24ecd5e28d5f43f7f7e63c42f68f3c0fb89bb320edbf2d2ab03690",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs *.parquet under mt5desk.tape.TICKS = desks/mt5/data/tape/ticks/<symbol>: outside the home (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
   },
   {
    "file": "desks/mt5/ops/components.py",
@@ -168,6 +182,34 @@
    "sha256": "2690b661c2089844735a3f37d29cc689de37185ad21845dd4d6e5f34ec1431a3",
    "kind": "a process start that does not resolve to a covered program",
    "reason": "re-launches this same file (gateway_resident.py, an entry point in the scanned closure) with the running interpreter"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 116,
+   "sha256": "0bb8fafe2022eacf21fe2b83887b18a12e0d176180642715b5a25d288ab39d1d",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "start() launches research\\\\<script> for EXPECTED = run_hunt12.py and run_hunt16.py only; their import closures (231 modules) were scanned by hand for this pin and name nothing in the home; their own dynamic sites are not judged by this pin (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 439,
+   "sha256": "ef0496c1895a82448e51bb7dbd098c5d2724fb4e69694bb288c0690205ddbf53",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs scripts/sync_shadow_to_git.ps1 through PowerShell -File: that .ps1 is a literal the fence collects and text-scans as a money script (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 638,
+   "sha256": "3b1d1a5872ab628940f4827a949f1ab4693fb0b12213cfcdfde662908d55f5b7",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs desks/mt5/scripts/smoke_release.py, which resolves and is scanned with its import closure (a money script) (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
+   "file": "desks/mt5/research/hourly_cycle.py",
+   "line": 780,
+   "sha256": "59c9b684e9986c990c4c102df76e60a571f32c7458f5f6132428640f3e6e91f6",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs desks/mt5/scripts/heal_identity_broken_clocks.py --apply, which resolves and is scanned with its import closure (a money script) (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
   },
   {
    "file": "desks/mt5/research/hypothesis_families.py",
@@ -835,6 +877,13 @@
    "reason": "pinned as read, not proven unable to reach the home: lists a directory its caller or a computed path names (a money-run program or its closure; Auditor MF 2026-11-18)"
   },
   {
+   "file": "desks/mt5/side_channels/base.py",
+   "line": 68,
+   "sha256": "b2e3c25c10b7dc3cb1d0e5a86a4923884eb73e1cc962a8b2459abb15b5a61ae6",
+   "kind": "a directory listing whose argument does not resolve",
+   "reason": "globs SC-*.yaml under DATA_DIR/hypotheses = desks/mt5/data/intelligence/hypotheses: outside the home (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
+  },
+  {
    "file": "libs/core/reproducibility.py",
    "line": 38,
    "sha256": "0bb8fafe2022eacf21fe2b83887b18a12e0d176180642715b5a25d288ab39d1d",
@@ -952,6 +1001,13 @@
    "sha256": "15ccc2720df7b08ea6543dd1ea75605bbe94895a6af0c36fe5e8e7173409a7c6",
    "kind": "a process start that does not resolve to a covered program",
    "reason": "git show <commit>:<rel> for the seal's own file list; pinned so any change is re-read"
+  },
+  {
+   "file": "libs/ops/state_publication.py",
+   "line": 74,
+   "sha256": "d1e1c8c4ee3a1580fa40873b661aa9b521b9196849a87d9e40e57e1b115e4a3e",
+   "kind": "a process start that does not resolve to a covered program",
+   "reason": "runs git with the caller's arguments: a git process, never a Python program (reached by the fixed-point scan of programs the money path runs; Auditor MF 2026-11-18)"
   },
   {
    "file": "libs/portfolio/leg_factors.py",

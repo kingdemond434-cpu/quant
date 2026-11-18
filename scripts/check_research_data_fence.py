@@ -13,7 +13,9 @@ home. This fence makes it a checked fact. It FAILS when:
 - such a module lists a directory that resolves into the home; a recursive listing (rglob,
   os.walk, a `**` glob) of an ancestor of it is a dynamic site, pinned only once read;
 - the same holds for every Python program the money path RUNS (a money script, a script a money
-  row runs, a .py a scanned module names) and for its own import closure, imported or not;
+  row runs, a .py that a scanned module's process start or by-path load resolves to) and for
+  its own import closure, imported or not, to a fixed point: a program so reached is scanned
+  in turn, and so is every program it runs;
 - a script the closure names, a money script (`replay_shadow.money_scripts`), a money row of the
   box's task table, or a script such a row runs names the home;
 - a DYNAMIC SITE of the closure (a listing whose argument does not resolve, a dynamic import, a
@@ -255,12 +257,17 @@ def _facts(
                 inner |= {id(a) for a in n.args}
                 if isinstance(fn, ast.Attribute):
                     inner.add(id(fn.value))
-    out: dict[str, Any] = {"hits": [], "scripts": set(), "sites": []}
+    out: dict[str, Any] = {"hits": [], "scripts": set(), "py": set(), "sites": []}
     memo: dict[int, Any] = {}
     folds: dict[int, str] = {}
 
     def hit(n: ast.AST, what: str) -> None:
         out["hits"].append(f"{mod}:{getattr(n, 'lineno', 0)} {what}")
+
+    def runs(got: tuple[bool, str] | None) -> None:  # the .py a process start or a load runs
+        for tok in _TOKEN.split((got or (False, ""))[1].replace("\\", "/").casefold()):
+            if tok.endswith(".py"):
+                out["py"].add(re.sub(r"^(?:\.{1,2}/)+", "", tok))
 
     def site(n: ast.Call, kind: str) -> None:
         text = lines[n.lineno - 1] if 0 < n.lineno <= len(lines) else ""
@@ -316,11 +323,15 @@ def _facts(
                 else _resolve(p, mod, env, memo)
                 for p in parts
             ]  # fmt: skip
+            for g in got_all:
+                runs(g)
             if any(g is None or g[1].endswith(".py") for g in got_all):
                 site(n, "a process start that does not resolve to a covered program")
         elif name in _BY_NAME or name in _BY_PATH:
             i = _BY_NAME.get(name, _BY_PATH.get(name, 0))
             got = _resolve(n.args[i], mod, env, memo) if len(n.args) > i else None
+            if name in _BY_PATH:
+                runs(got)
             if (
                 got is not None and name in _BY_NAME and not got[0]
                 and not got[1].startswith(".") and not rs._module_files(got[1], files)
@@ -328,6 +339,17 @@ def _facts(
                 continue  # a module outside the repository: the standard library or a package
             site(n, f"a dynamic import ({name})")
     return out
+
+
+def _named_py(tok: str, mod: str, files: set[str], by_name: dict[str, set[str]]) -> set[str]:
+    """The tree's .py files a literal token names: a path names every file it is a path-suffix
+    of; a bare name names its sibling of the naming module, else every file of that name."""
+    same = {f for f in by_name.get(tok.rsplit("/", 1)[-1], set())
+            if f.casefold() == tok or f.casefold().endswith("/" + tok)}  # fmt: skip
+    if "/" in tok:
+        return same
+    sibling = {f for f in same if f.rsplit("/", 1)[0] == mod.rsplit("/", 1)[0]}
+    return sibling or same
 
 
 def load_pins(root: Path) -> dict[tuple[str, int], str] | None:
@@ -382,38 +404,37 @@ def check(root: Path = ROOT, rs: ModuleType | None = None) -> dict[str, Any]:
         for k in ("runs", "also_runs", "installer"):
             scripts |= {p.strip() for p in attrs.get(k, "").split(",") if p.strip() in files}
     # every Python program the money path runs is scanned as a module with its own import
-    # closure, whether or not an entry point imports it (Auditor MF, 2026-11-18)
-    run_py = sorted(s for s in scripts if s.endswith(".py") and s not in closure)
-    scan = closure | (rs.import_closure(root, tuple(run_py)) if run_py else set())
+    # closure, whether or not an entry point imports it (Auditor MF, 2026-11-18); a .py that a
+    # scanned module runs is such a program too, so the scan runs to a fixed point: each pass
+    # adds every newly run .py with its import closure, until nothing new is reached
+    scan: set[str] = set()
+    pending = set(closure) | {s for s in scripts if s.endswith(".py")}
     seen: set[tuple[str, int]] = set()
     rows: list[tuple[str, int, str, str]] = []  # every site found: (file, line, sha256, what)
-    for m in sorted(scan):
-        fx = module_facts(root, m, files, rs)
-        what_m = "a money-closure module" if m in closure else "a money-run program's module"
-        if fx is None:
-            bad.append(f"{m}: {what_m} that cannot be read or parsed (fail closed)")
-            continue
-        bad += [f"{h} ({what_m})" for h in fx["hits"]]
-        scripts |= {f for b in fx["scripts"] for f in by_name.get(b, set())}
-        for line, key, what in fx["sites"]:
-            seen.add((m, line))
-            rows.append((m, line, key, what))
-            if pins.get((m, line)) != key:
-                bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
+    while pending:
+        run_py = tuple(sorted(s for s in pending if s not in closure))
+        new = (pending | (rs.import_closure(root, run_py) if run_py else set())) - scan
+        scan |= new
+        named: set[str] = set()
+        for m in sorted(new):
+            fx = module_facts(root, m, files, rs)
+            what_m = "a money-closure module" if m in closure else "a money-run program's module"
+            if fx is None:
+                bad.append(f"{m}: {what_m} that cannot be read or parsed (fail closed)")
+                continue
+            bad += [f"{h} ({what_m})" for h in fx["hits"]]
+            named |= {f for b in fx["scripts"] for f in by_name.get(b, set())}
+            named |= {f for t in fx["py"] for f in _named_py(t, m, files, by_name)}
+            for line, key, what in fx["sites"]:
+                seen.add((m, line))
+                rows.append((m, line, key, what))
+                if pins.get((m, line)) != key:
+                    bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
+        scripts |= named
+        pending = {s for s in named if s.endswith(".py")} - scan
     for s in sorted(scripts):
         if s.endswith(".py"):
-            if s not in scan:  # named by a scanned module's literal: scan it the same way
-                fx = module_facts(root, s, files, rs)
-                if fx is None:
-                    bad.append(f"{s}: a money-run program that cannot be read or parsed")
-                    continue
-                bad += [f"{h} (a money-run program)" for h in fx["hits"]]
-                for line, key, what in fx["sites"]:
-                    seen.add((s, line))
-                    rows.append((s, line, key, what))
-                    if pins.get((s, line)) != key:
-                        bad.append(f"unpinned dynamic site: {what} (new, moved or changed)")
-            continue
+            continue  # scanned above, with its import closure
         text = rs.read(root, s)
         if text is None:
             bad.append(f"{s}: a money script that cannot be read (fail closed)")
