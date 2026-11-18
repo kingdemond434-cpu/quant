@@ -375,7 +375,12 @@ class Door:
             if code in (404, 410):
                 rp.parse([])
             elif 200 <= code < 300:
-                rp.parse(body.decode("utf-8", "replace").splitlines())
+                text = body.decode("utf-8", "replace")
+                if text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                    # A page in place of rules parses as allow-all: that is unread, not a yes.
+                    self.robots[key] = "robots.txt answered HTML"
+                    return self.robots[key]
+                rp.parse(text.splitlines())
             else:
                 self.robots[key] = f"robots.txt unreadable (HTTP {code})"
                 return self.robots[key]

@@ -76,8 +76,12 @@ def _robots_allows(url: str) -> None:
         try:
             req = urllib.request.Request(f"{key}/robots.txt", headers=UA)
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-                rp.parse(r.read().decode("utf-8", "replace").splitlines())
-            _ROBOTS[key] = rp
+                text = r.read().decode("utf-8", "replace")
+            if text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                _ROBOTS[key] = "robots.txt answered HTML"   # a page parses as allow-all
+            else:
+                rp.parse(text.splitlines())
+                _ROBOTS[key] = rp
         except urllib.error.HTTPError as e:
             if e.code in (404, 410):
                 rp.parse([])
