@@ -142,8 +142,17 @@ def _paths(tmp: Path) -> dict[str, Path]:
 
 def test_a_newly_catalogued_product_is_ranked_on_the_next_pass(tmp_path: Path) -> None:
     p = _paths(tmp_path)
+    conns = [sqlite3.connect(":memory:"), sqlite3.connect(":memory:")]
     kw = {"now": NOW, "fetch": False, "paths": p, "environ": {}, "asia_globs": [],
-          "registry_conn": sqlite3.connect(":memory:"), "door": lambda **k: ("c", True)}
+          "registry_conn": conns[0], "door": lambda **k: ("c", True)}
+    try:
+        _two_passes(tmp_path, p, kw, conns)
+    finally:
+        for c in conns:
+            c.close()
+
+
+def _two_passes(tmp_path: Path, p: dict, kw: dict, conns: list) -> None:
     first = pse.run(**kw)
     rep = tmp_path / "reports" / "PAID_REPLICA_MAP.json"
     before = json.loads(rep.read_text("utf-8"))
@@ -154,7 +163,7 @@ def test_a_newly_catalogued_product_is_ranked_on_the_next_pass(tmp_path: Path) -
         "id": new_id, "vendor": "Example Orbital", "dataset": "Crude oil storage tanks index",
         "class": "UNSTATED", "region": "global", "seed_source": "crawl:https://example.org"}]}),
         "utf-8")
-    kw["registry_conn"] = sqlite3.connect(":memory:")
+    kw["registry_conn"] = conns[1]
     pse.run(**kw)
     after = json.loads(rep.read_text("utf-8"))
     assert after["catalogue_rows"] == before["catalogue_rows"] + 1
