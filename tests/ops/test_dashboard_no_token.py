@@ -150,8 +150,6 @@ def test_desk_page_reads_the_live_issues_shape() -> None:
 @pytest.mark.parametrize(
     "path",
     [
-        "/",
-        "",
         "/zentech_state.json",
         "/%7a%65ntech_state.json",
         "/sub/",
@@ -181,3 +179,14 @@ def test_the_allowlist_is_the_pages_and_the_two_data_files() -> None:
 def _call_public_name(path: str) -> str | None:
     name: str | None = sd._public_name(path)
     return name
+
+
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+@pytest.mark.parametrize("path", ["/", "/?x=1"])
+def test_the_bare_address_redirects_to_the_page(server: int, method: str, path: str) -> None:
+    c = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+    c.request(method, path)
+    r = c.getresponse()
+    assert r.status == 302
+    assert r.getheader("Location") == "/desk.html"
+    c.close()

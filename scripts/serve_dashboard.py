@@ -109,6 +109,13 @@ class _Handler(SimpleHTTPRequestHandler):
     token = ""
 
     def send_head(self) -> BinaryIO | None:
+        if unquote(urlsplit(self.path).path) == "/":
+            # The bare address opens the page: a redirect to an allowlisted name, nothing read.
+            self.send_response(302)
+            self.send_header("Location", "/desk.html")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return None
         name = _public_name(self.path)
         if name is None:
             self.send_error(404, "Not found")
