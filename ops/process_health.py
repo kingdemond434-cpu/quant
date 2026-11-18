@@ -533,7 +533,11 @@ def pass_in_flight(name: str, artifact_age_min: float | None,
     None unless ALL hold: the organ publishes a heartbeat; it reads RUNNING; its last beat is
     within BEAT_GRACE_INTERVALS beats (floor BEAT_GRACE_FLOOR_S); the pass started after the
     artifact was last written; and the heartbeat's own run deadline, when it states one, has
-    not passed. Anything unreadable is None, so the row stays STALE (L1.28a)."""
+    not passed. Anything unreadable is None, so the row stays STALE (L1.28a).
+
+    A heartbeat that states no run deadline is excused for as long as it keeps beating. That
+    leans on the gauntlet's own no-progress watchdog (run_sharded_gauntlet: a tree idle for
+    no_progress_s is killed and the heartbeat turns STALLED/KILLED), which ends the excuse."""
     rel = IN_FLIGHT_HEARTBEATS.get(name)
     if not rel or artifact_age_min is None:
         return None
