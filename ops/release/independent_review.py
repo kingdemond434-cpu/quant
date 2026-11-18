@@ -45,6 +45,14 @@ Runs from the BASE checkout; the PR's code is never executed here (the diff is f
 through the API). Fails closed on a diff too large to read whole, a truncated diff, a head that
 moved, or any concern flagged as risk or control. Standard library only.
 
+THE SAME CHANGE IS READ ONCE (2026-11-18, CI wall-clock). `--reuse-only` runs every screen
+above on this head, then looks for an earlier head of THIS PR whose diff is the same change
+(`change_key`: the diff without its `index` lines and hunk line numbers, as `git patch-id`
+normalises) and whose own independent-review job succeeded within REUSE_DAYS. A hit skips the
+model download and the models: a clean merge-in of LIVE re-read a 58k diff for up to 2 h 42 min
+of runner. Any changed line, context line or file is a different key and is read in full. The
+reuse step never fails the job; a miss, a screen hit or an API error falls through to the review.
+
     GH_TOKEN=... python -I \
         ops/release/independent_review.py --repo o/r --pr 7 --head <sha> --base-sha <sha>
 """
@@ -52,6 +60,7 @@ moved, or any concern flagged as risk or control. Standard library only.
 from __future__ import annotations
 
 import argparse
+import calendar
 import contextvars
 import hashlib
 import importlib.util
@@ -64,6 +73,7 @@ import sys
 import time
 import unicodedata
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
@@ -134,6 +144,11 @@ CHARS_PER_TOKEN = 3
 #: Tokens kept free in the local context for the answer.
 ANSWER_TOKENS = 2_000
 UNAVAILABLE = 75
+#: An earlier success older than this is never reused: the pinned reviewers and their rules move.
+REUSE_DAYS = 7
+#: The newest earlier successes compared, each one compare call.
+REUSE_TRIES = 5
+WORKFLOW = ".github/workflows/release-gates.yml"
 KEYS = ("verdict", "risk_increasing", "touches_control", "findings", "summary")
 ANSWER = (
     'Answer with ONE JSON object and nothing else: {"verdict": "PASS" or "FAIL", '
@@ -1018,11 +1033,142 @@ def reads_whole(ladder: list[tuple[str, str, Asker]], local: set[str]) -> bool:
     return len({fam for fam, mid, _ in ladder if mid not in local}) >= VOTES
 
 
+_ANNOTATE = [True]
+
+
 def _annotate(reason: str) -> None:
     """A FAIL's reason as a check-run annotation: the API serves it where the job log cannot be
     read (a cloud session's blob host is blocked), so a failing review is never blind."""
+    if not _ANNOTATE[0]:  # the reuse step: the review step that follows says it, once
+        return
     one = " ".join(reason.split())[:900].replace("%", "%25")
     print(f"::error title=REVIEW_FAIL::{one}")
+
+
+def _diff(repo: str, base: str, head: str) -> str:
+    return _gh(f"repos/{repo}/compare/{base}...{head}", "-H", "Accept: application/vnd.github.diff")
+
+
+def change_key(diff: str) -> str:
+    """The change, as `git patch-id` sees it: blob ids and hunk line numbers dropped, every
+    added, removed and context line and every file header kept."""
+    kept = []
+    for line in diff.split("\n"):
+        if line.startswith("index "):
+            continue
+        if line.startswith("@@"):
+            parts = line.split("@@", 2)
+            line = "@@" + (parts[2] if len(parts) == 3 else "")
+        kept.append(line)
+    return hashlib.sha256("\n".join(kept).encode("utf-8")).hexdigest()
+
+
+def _age_days(stamp: str, now: float) -> float:
+    t = calendar.timegm(time.strptime(stamp[:19], "%Y-%m-%dT%H:%M:%S"))
+    return (now - t) / 86400.0
+
+
+def earlier_success(
+    repo: str, pr: int, ref: str, base: str, head: str, key: str, now: float | None = None
+) -> str | None:
+    """The run id of an earlier head of this PR, with the same change_key, whose own
+    independent-review job succeeded within REUSE_DAYS; None when there is none."""
+    now = time.time() if now is None else now
+    runs = json.loads(
+        _gh(
+            f"repos/{repo}/actions/workflows/release-gates.yml/runs"
+            f"?event=pull_request&status=completed&per_page=50&branch={urllib.parse.quote(ref)}"
+        )
+    ).get("workflow_runs", [])
+    tries = 0
+    for run in runs:
+        if tries >= REUSE_TRIES:
+            break
+        if (
+            run.get("path") != WORKFLOW
+            or run.get("event") != "pull_request"
+            or (run.get("head_repository") or {}).get("full_name") != repo
+            or pr not in [p.get("number") for p in run.get("pull_requests") or []]
+            or _age_days(str(run.get("created_at") or ""), now) > REUSE_DAYS
+        ):
+            continue
+        jobs = json.loads(_gh(f"repos/{repo}/actions/runs/{run['id']}/jobs?filter=all"))
+        if not any(
+            j.get("name") == "independent-review" and j.get("conclusion") == "success"
+            for j in jobs.get("jobs", [])
+        ):
+            continue
+        tries += 1
+        old = run.get("head_sha") or ""
+        if old == head:
+            return str(run["id"])
+        # base...old is old's own change: base is the newer LIVE, so the merge base is old's
+        earlier = _diff(repo, base, old)
+        if len(earlier) <= MAX_DIFF_CHARS and change_key(earlier) == key:
+            return str(run["id"])
+    return None
+
+
+def screened(a: argparse.Namespace) -> tuple[str, dict[str, Any]] | None:
+    """The head's diff and PR when every screen holds; None (after saying why) when one fails."""
+    # pinned to the exact shas this job runs for, never "the PR's diff right now"
+    diff = _diff(a.repo, a.base_sha, a.head)
+    pr = json.loads(_gh(f"repos/{a.repo}/pulls/{a.pr}"))
+    if pr["head"]["sha"] != a.head:
+        print("FAIL: the head moved while the diff was read; the new head gets its own review")
+        _annotate("FAIL: the head moved while the diff was read; the new head gets its own review")
+        return None
+    if len(diff) > MAX_DIFF_CHARS:
+        print(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
+        _annotate(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
+        return None
+    if _ODD_BREAKS.search(diff):
+        print("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
+        _annotate("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
+        return None
+    spoken = addressed_to_reviewer(diff)
+    if spoken:  # never put in front of a model: one that obeys it is one PASS short of a merge
+        print("FAIL: the diff addresses the reviewer; the manual path reads it")
+        # the count only: the lines themselves are the attacker's text
+        _annotate(f"FAIL: the diff addresses the reviewer ({len(spoken)} lines, in the log)")
+        for line in spoken[:20]:
+            print(f"  + {line}")
+        return None
+    want = int(pr.get("changed_files") or 0)
+    named = {line for line in diff.split("\n") if line.startswith("diff --git a/")}
+    if len(named) != want:  # a truncated diff is never reviewed as if it were whole
+        print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
+        _annotate(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
+        return None
+    return diff, pr
+
+
+def reuse(a: argparse.Namespace) -> int:
+    """--reuse-only: writes hit=true to $GITHUB_OUTPUT on a hit; always exits 0."""
+    _ANNOTATE[0] = False
+    try:
+        got = screened(a)
+        hit = (
+            earlier_success(
+                a.repo, a.pr, got[1]["head"]["ref"], a.base_sha, a.head, change_key(got[0])
+            )
+            if got
+            else None
+        )
+    except (RuntimeError, OSError, ValueError, KeyError) as e:  # never a verdict: review in full
+        print(f"reuse: not checked ({type(e).__name__}); the review runs")
+        hit = None
+    finally:
+        _ANNOTATE[0] = True
+    if hit is None:
+        print("reuse: no earlier success for this change; the review runs")
+        return 0
+    print(f"reuse: run {hit} reviewed this same change and succeeded; not read again")
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a", encoding="utf-8") as f:
+            f.write("hit=true\n")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1031,41 +1177,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pr", type=int, required=True)
     ap.add_argument("--head", required=True)
     ap.add_argument("--base-sha", required=True)
+    ap.add_argument("--reuse-only", action="store_true")
     a = ap.parse_args(argv)
-    # pinned to the exact shas this job runs for, never "the PR's diff right now"
-    diff = _gh(
-        f"repos/{a.repo}/compare/{a.base_sha}...{a.head}",
-        "-H",
-        "Accept: application/vnd.github.diff",
-    )
-    pr = json.loads(_gh(f"repos/{a.repo}/pulls/{a.pr}"))
-    if pr["head"]["sha"] != a.head:
-        print("FAIL: the head moved while the diff was read; the new head gets its own review")
-        _annotate("FAIL: the head moved while the diff was read; the new head gets its own review")
+    if a.reuse_only:
+        return reuse(a)
+    got = screened(a)
+    if got is None:
         return 1
-    if len(diff) > MAX_DIFF_CHARS:
-        print(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
-        _annotate(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
-        return 1
-    if _ODD_BREAKS.search(diff):
-        print("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
-        _annotate("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
-        return 1
-    spoken = addressed_to_reviewer(diff)
-    if spoken:  # never put in front of a model: one that obeys it is one PASS short of a merge
-        print("FAIL: the diff addresses the reviewer; the manual path reads it")
-        # the count only: the lines themselves are the attacker's text
-        _annotate(f"FAIL: the diff addresses the reviewer ({len(spoken)} lines, in the log)")
-        for line in spoken[:20]:
-            print(f"  + {line}")
-        return 1
+    diff = got[0]
     files = changed_files(diff)
-    want = int(pr.get("changed_files") or 0)
-    named = {line for line in diff.split("\n") if line.startswith("diff --git a/")}
-    if len(named) != want:  # a truncated diff is never reviewed as if it were whole
-        print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
-        _annotate(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
-        return 1
     ladder, notes = rungs(len(diff))
     closure, why = read_closure(a.repo, a.base_sha, a.head)
     notes.append(why)
