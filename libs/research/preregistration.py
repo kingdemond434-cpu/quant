@@ -20,6 +20,7 @@ below for why none of that held until 2026-09-30.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 from collections.abc import Container, Mapping
@@ -353,10 +354,8 @@ def _save_sidecar(p: Path, doc: dict[str, Any]) -> None:
                                   separators=(",", ":")), "utf-8")
         os.replace(tmp, target)
     except OSError:
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink()
-        except OSError:
-            pass
 
 
 def spec_index(path: Path | None = None) -> dict[str, tuple[str, str]]:
