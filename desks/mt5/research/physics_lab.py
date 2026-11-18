@@ -127,8 +127,8 @@ def _copy(panel: Panel) -> Panel:
                  source=panel.source, residual_discovery_id=panel.residual_discovery_id)
 
 
-def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: float, seed: int
-                   ) -> dict[str, Any]:
+def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: float, seed: int,
+                   deadline: float = float("inf")) -> dict[str, Any]:
     """One tradition of one civilization over every working panel. Never raises."""
     started = time.monotonic()
     result: dict[str, Any] = {"civilization": civ, "tradition": tradition, "objects": [],
@@ -142,10 +142,19 @@ def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: floa
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
     for panel in panels:
+        # THE SCIENCE DEADLINE REACHES THE SCIENTIST (audit SF5): a panel it cannot start in time
+        # is named UNMEASURED, and one it starts gets no more than the time left, so a thread
+        # the pass stops waiting for is a thread that is already winding down.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            result["unmeasured"].append(f"panel {panel.target}: not started before the science "
+                                        f"deadline")
+            continue
+        per_panel_now = min(per_panel, left)
         view = _copy(panel)
         rng = np.random.default_rng(seed + (abs(hash((tradition, panel.target))) % 100_000))
         try:
-            objects = scientist.propose(view, per_panel, rng)
+            objects = scientist.propose(view, per_panel_now, rng)
         except Exception as exc:
             result["status"] = "FAILED"
             result["why"] = f"{type(exc).__name__}: {exc}"
@@ -164,6 +173,17 @@ def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: floa
         result["unmeasured"].extend(scientist.unmeasured)
     result["compute_s"] = round(time.monotonic() - started, 3)
     return result
+
+
+def registry_rows(scientists_ran: dict[str, dict[str, Any]], target: str
+                  ) -> dict[str, dict[str, Any]]:
+    """Per-tradition rows for `math_lab.record_registry`, carrying `yield_measured` and the
+    status through, so a tradition a civilization never finished is skipped, not written 0."""
+    return {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
+                "evaluated": v["evaluated"], "passed": v["passed"], "compute_s": v["compute_s"],
+                "target": target, "status": v.get("status", "OK"),
+                "yield_measured": v.get("yield_measured", True)}
+            for t, v in scientists_ran.items()}
 
 
 def department_roi() -> dict[str, float | None]:
@@ -222,24 +242,27 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                                                "engines": budget_s / 3}
     pops = populations(pass_index, physics, maths)
     civ_results: dict[str, dict[str, dict[str, Any]]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        futures = {}
-        for civ, traditions in pops.items():
-            for tradition in traditions:
-                dept = "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
-                n_dept = max(1, sum(1 for t in traditions
-                                    if (t in PHYSICS_REGISTRY) == (dept == "physics")))
-                share = float(budgets.get(dept, budget_s / 3)) / (len(pops) * n_dept)
-                futures[(civ, tradition)] = pool.submit(_run_tradition, civ, tradition, working,
-                                                        max(2.0, share), CIVILIZATIONS[civ])
-        for (civ, tradition), fut in futures.items():
-            try:
-                civ_results.setdefault(civ, {})[tradition] = fut.result()
-            except Exception as exc:
-                civ_results.setdefault(civ, {})[tradition] = {
-                    "civilization": civ, "tradition": tradition, "objects": [], "evaluated": 0,
-                    "distinct": set(), "unmeasured": [], "status": "FAILED",
-                    "why": f"{type(exc).__name__}: {exc}", "compute_s": 0.0, "panels": []}
+    pool = ThreadPoolExecutor(max_workers=max(1, workers))
+    futures = {}
+    for civ, traditions in pops.items():
+        for tradition in traditions:
+            dept = "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
+            n_dept = max(1, sum(1 for t in traditions
+                                if (t in PHYSICS_REGISTRY) == (dept == "physics")))
+            share = float(budgets.get(dept, budget_s / 3)) / (len(pops) * n_dept)
+            futures[(civ, tradition)] = pool.submit(_run_tradition, civ, tradition, working,
+                                                    max(2.0, share), CIVILIZATIONS[civ],
+                                                    started + ML.SCIENCE_WALL_SHARE * budget_s)
+    # The scientists stop being WAITED ON at the shared science deadline (math_lab.collect):
+    # a scientist that ignores its budget under CPU contention held this pass past its 700 s cap
+    # on every run from 10-10 to 10-29, so nothing was ever judged, carded or donated.
+    collected, timed_out = ML.collect(
+        futures, started + ML.SCIENCE_WALL_SHARE * budget_s,
+        lambda key, status, why: ML.unfinished_row(started, status, why,
+                                                   civilization=key[0], tradition=key[1]))
+    pool.shutdown(wait=not timed_out, cancel_futures=True)
+    for (civ, tradition), row in collected.items():
+        civ_results.setdefault(civ, {})[tradition] = row
 
     # ---- judge every object inside its civilization, then card it
     lifetime = {m: int((previous.get("methods", {}).get(m) or {}).get("lifetime_trials", 0))
@@ -322,6 +345,11 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             agg["passed"] += passed
             agg["compute_s"] += float(result.get("compute_s", 0.0))
             agg["civilizations"].append(civ)
+            # ONE UNFINISHED CIVILIZATION MAKES THE TRADITION'S YIELD UNMEASURED (audit of
+            # 9505672752cc, MF2): its sum over civilizations is then a partial count, and
+            # record_registry must not write it into generator_yield as the tradition's yield.
+            if result.get("yield_measured") is False:
+                agg["yield_measured"] = False
             if result.get("status") != "OK":
                 agg["status"] = str(result.get("status"))
             evaluated_by_method[tradition] = evaluated_by_method.get(tradition, 0) + distinct
@@ -467,7 +495,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         if obj.object_id not in seen:
             seen.add(obj.object_id)
             unique_forward.append(obj)
-    already = set((_read_json(DONATED) or {}).get("object_ids") or [])
+    already, ledger = ML.load_donated(DONATED, SOURCE)
     donation_rows, refused = ML.donation_rows(
         sa.take(unique_forward, MAX_DONATIONS, organ="physics_lab", stage="donations",
                 ordering="card status (FORWARD, PROVISIONAL, then the rest), then -value"),
@@ -483,6 +511,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in unique_forward if o.object_id in already]),
+                                "ledger": ledger,
                                 "rule": "every card's executable object is donated, ordered by "
                                         "card status then value; the status is a RANK and the "
                                         "ten gates are the only judge"}
@@ -493,21 +522,21 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             path = PC.donate(SOURCE, donation_rows,
                              tests_run=sum(evaluated_by_method.values()))
             donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in donation_rows:
+            written = ML.written_rows(path)
+            for row in written:
                 t = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[t] = donated_by_tradition.get(t, 0) + 1
-            I.atomic_json(DONATED, {"at": I.now_iso(), "object_ids": sorted(
-                already | {r["mathlab_object_id"] for r in donation_rows})})
+            ML.mark_donated(DONATED, already, written)
         except Exception as exc:
             donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
     elif donation_rows:
         donation["status"] = "SKIPPED_DRY_RUN"
+    donation.setdefault("status", ML.donation_status(
+        len(donation_rows), int(donation.get("donated") or 0),
+        int(donation["already_donated_in_a_previous_pass"]), len(refused)))
     donation["by_tradition"] = donated_by_tradition
-    per_tradition_registry = {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
-                                  "evaluated": v["evaluated"], "passed": v["passed"],
-                                  "compute_s": v["compute_s"],
-                                  "target": working[0].target}
-                              for t, v in scientists_ran.items()}
+    ML.checkpoint(OUT, started, "donated", donation, len(unique_forward), dry_run)
+    per_tradition_registry = registry_rows(scientists_ran, working[0].target)
     seen.clear()
     unique_admitted = [o for o in admitted_objects
                        if not (o.object_id in seen or seen.add(o.object_id))]  # type: ignore[func-returns-value]
@@ -622,17 +651,20 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     physics = [t.strip() for t in a.physics.split(",") if t.strip()] or None
     maths = [t.strip() for t in a.maths.split(",") if t.strip()] or None
-    report = run(budget_s=a.budget_s, dry_run=a.dry_run, max_targets=a.max_targets,
-                 physics=physics, maths=maths)
-    print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
-                      "cards": report["cards"]["total"],
-                      "by_status": report["cards"]["by_status"],
-                      "nulls_rejected": report["null_factory"].get("rejected"),
-                      "lockbox_untouched": report["lockbox"].get("untouched"),
-                      "wiring_complete": report["wiring_proof"].get("complete"),
-                      "donated": report["donation"].get("donated"),
-                      "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return 0
+
+    def body() -> None:
+        report = run(budget_s=a.budget_s, dry_run=a.dry_run, max_targets=a.max_targets,
+                     physics=physics, maths=maths)
+        print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
+                          "cards": report["cards"]["total"],
+                          "by_status": report["cards"]["by_status"],
+                          "nulls_rejected": report["null_factory"].get("rejected"),
+                          "lockbox_untouched": report["lockbox"].get("untouched"),
+                          "wiring_complete": report["wiring_proof"].get("complete"),
+                          "donated": report["donation"].get("donated"),
+                          "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
+
+    return ML.run_then_exit(body)
 
 
 if __name__ == "__main__":                                                # pragma: no cover
