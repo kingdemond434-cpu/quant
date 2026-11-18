@@ -103,6 +103,7 @@ LEG_LAYER: dict[str, str] = {
     # than meta -- the same side of the line as `markout` and `fill_attribution`.
     "halt_rail": "execution",
     "producer_census": "meta", "productivity_census": "meta",
+    "llm_yield": "meta", "llm_budget_census": "meta",
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
