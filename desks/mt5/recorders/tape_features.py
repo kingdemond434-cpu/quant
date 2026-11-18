@@ -134,9 +134,25 @@ DEFAULT_DAYS = 30
 OPEN_DAY_REBUILD_S = float(os.environ.get("QUANT_TAPE_OPEN_DAY_REBUILD_S", "7200"))
 _OPEN_BUILT = "_open_day_built_at"
 
+#: THE PASS FINISHES INSIDE ITS OWN LIMIT (2026-11-11). MT5-TapeFeatures carries a 50-min
+#: ExecutionTimeLimit, and from 2026-11-10 16:45Z every hourly pass was either still running or
+#: killed by it (267014): no run ever exited 0, so the report, the cost surface and the slippage
+#: surface were never written, and nothing could say whether the per-symbol watermarks advanced.
+#: A pass now stops BUILDING once this many seconds have passed since the process started (the
+#: job lock's wait for room counts), still pools every symbol's cached cells into both surfaces,
+#: writes its report with the backlog it left, and exits 0. The next pass starts with the symbols
+#: this one did not finish, so a budget-bound tape converges instead of redoing the same head.
+PASS_BUDGET_S = float(os.environ.get("QUANT_TAPE_FEATURES_BUDGET_S", "2400"))
+_SYMBOL_DONE = "_symbol_done_at"
+_T0 = time.monotonic()
+
 
 def _now_s() -> float:
     return time.time()
+
+
+def _mono() -> float:
+    return time.monotonic()
 
 
 def _cache_path(symbol: str, day: str) -> Path:
@@ -487,12 +503,25 @@ def slippage_surface(by_symbol: dict[str, list[ms.QuoteStats]]) -> dict[str, Any
 
 
 def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEFAULT_DAYS,
-        rebuild: bool = False) -> dict[str, Any]:
-    """Build every symbol-day whose bronze is newer than its silver. Incremental by design."""
+        rebuild: bool = False, deadline: float | None = None) -> dict[str, Any]:
+    """Build every symbol-day whose bronze is newer than its silver. Incremental by design.
+
+    `deadline` is a `_mono()` reading after which nothing more is BUILT: the remaining days are
+    pooled from their cached cells and counted as backlog, so the pass still ends with complete
+    surfaces and an honest report instead of being killed with neither.
+    """
+    started = _mono()
     registry = _load(UNIVERSE, {})
     state = {} if rebuild else _load(STATE, {})
     failed_days, integrity_note = _failed_days()
     syms = symbols if symbols is not None else store.symbols()
+    done_at: dict[str, float] = state.setdefault(_SYMBOL_DONE, {})
+    # LEAST RECENTLY FINISHED FIRST, never-finished before all: a pass cut short by its budget
+    # hands the next pass the symbols it did not reach, not the ones it just built.
+    syms = sorted(syms, key=lambda s: (float(done_at.get(s, 0.0)), s))
+    budget_hit = False
+    backlog: list[str] = []
+    backlog_uncached = 0
     cutoff = ""
     if days_back:
         cutoff = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=int(days_back))).date().isoformat()
@@ -507,6 +536,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
     pruned = 0
     for sym in syms:
         cells: list[ms.QuoteStats] = []
+        sym_backlog = 0
         for day in store.days(sym):
             if cutoff and day < cutoff:
                 continue
@@ -536,6 +566,17 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
                     deferred_open.append(key)
                     deferred_age_s.append(age)
                     continue
+            if deadline is not None and _mono() >= deadline:
+                # OUT OF BUDGET: pool what is cached, build nothing more, and say what was left.
+                budget_hit = True
+                sym_backlog += 1
+                backlog.append(key)
+                cached = _cached_cells(sym, day)
+                if cached is not None:
+                    cells.extend(cached)
+                else:
+                    backlog_uncached += 1
+                continue
             point = _point_for(sym, store, day, registry)
             res = build_day(store, sym, day, point)
             if res["status"] != "BUILT":
@@ -556,6 +597,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
                 open_built.pop(key, None)
         if cells:
             by_symbol[sym] = _merge_cells(cells)
+        if not sym_backlog:
+            done_at[sym] = _now_s()
         pruned += _prune_cache(sym, cutoff)
         # CHECKPOINT PER SYMBOL: a pass killed at its time limit keeps the watermarks it earned
         # instead of losing all of them, which made the next pass redo the same work.
@@ -598,6 +641,17 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "open_days_deferred_max_age_s": (round(max(deferred_age_s), 1) if deferred_age_s
                                          else None),
         "cell_cache_pruned": pruned,
+        # WHETHER THE PASS FINISHED ITS WORK OR ITS BUDGET, and what it left for the next one.
+        # Two consecutive reports with a non-shrinking backlog mean the tape grows faster than
+        # this organ builds it -- a real capacity finding, not a scheduler kill.
+        "elapsed_s": round(_mono() - started, 1),
+        "budget_left_at_start_s": (round(deadline - started, 1) if deadline is not None else None),
+        "budget_exhausted": budget_hit,
+        "backlog_symbol_days": len(backlog),
+        "backlog_sample": backlog[:20],
+        # BACKLOG DAYS NEVER BUILT BEFORE have no cached cells, so they are ABSENT from both
+        # surfaces this pass, not merely stale: a non-zero count means the surfaces are partial.
+        "backlog_uncached_days": backlog_uncached,
         # NAMED, NOT IMPLIED. A feature nobody reads is the failure mode this module exists to
         # avoid, so every artifact says who is supposed to read it and what happens if nobody does.
         "consumers": CONSUMERS,
@@ -714,8 +768,11 @@ def main(argv: list[str] | None = None) -> int:
     except ImportError:
         exclusive_job = None                                   # type: ignore[assignment]
 
+    # THE BUDGET RUNS FROM PROCESS START, so a long wait for room in the job lock is paid for out
+    # of it rather than pushing the pass past the scheduler's limit.
+    deadline = _T0 + PASS_BUDGET_S if PASS_BUDGET_S > 0 else None
     if exclusive_job is None:
-        rep = run(store, syms, args.days, args.rebuild)
+        rep = run(store, syms, args.days, args.rebuild, deadline)
     else:
         with exclusive_job("tape_features", need_mb=NEED_MB) as admitted:
             if not admitted:
@@ -723,16 +780,19 @@ def main(argv: list[str] | None = None) -> int:
                       "pass right now). The tape is unharmed and the next run resumes from the "
                       "watermark.")
                 return 0
-            rep = run(store, syms, args.days, args.rebuild)
+            rep = run(store, syms, args.days, args.rebuild, deadline)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    _write_json_atomic(args.out, rep, indent=1, sort_keys=True)
     print(f"tape_features: {rep['symbol_days_built']} symbol-day(s) built, "
           f"{rep['silver_rows']:,} silver rows, {rep['cells_measured']}/{rep['cells_total']} "
           f"symbol-hour cells MEASURED")
     for freq, t in rep["intrabar"].items():
         print(f"  intrabar {freq}: {t['bars']:,} bars, high came first on "
               f"{t['high_first_frac']} of them")
+    if rep["budget_exhausted"]:
+        print(f"  build budget reached ({rep['elapsed_s']}s into the pass): "
+              f"{rep['backlog_symbol_days']} symbol-day(s) left for the next pass")
     print(f"  -> {COST_OUT.name}, {SLIPPAGE_OUT.name}, {args.out.name}")
     # YIELD line, in the convention `research/hourly_discovery.run_organ` parses.
     print(f"YIELD symbol_days={rep['symbol_days_built']} cells={rep['cells_measured']} "

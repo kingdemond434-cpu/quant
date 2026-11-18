@@ -282,15 +282,24 @@ def terminal_health() -> dict[str, Any]:
     else:
         opened = False
         try:
-            if mt5.terminal_info() is None:
-                try:
-                    from mt5desk.config import terminal_path
-                    path = terminal_path()
-                except Exception:
-                    path = ""
-                opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
-            ti = mt5.terminal_info()
-            if ti is None:
+            # Pinned to the desk's terminal and proven Fusion's (2026-11-11): the box runs FTMO
+            # too, and a healthy FTMO terminal says nothing about the desk's.
+            try:
+                from mt5desk.config import terminal_path
+                path = terminal_path()
+            except Exception:
+                path = ""
+            from research.mt5_session import attach_or_initialize, venue_refusal
+            held = mt5.terminal_info() is not None
+            attached = attach_or_initialize(mt5, path=path or None, timeout=15000)
+            opened = attached and not held
+            why = venue_refusal(mt5, path or None) if attached else None
+            ti = mt5.terminal_info() if attached else None
+            if why is not None:
+                opened = True                   # the wrong terminal is let go, whoever held it
+                out["terminal"] = {"status": "UNMEASURED",
+                                   "why": f"wrong venue, refused: {why}"}
+            elif ti is None:
                 out["terminal"] = {"status": "FAIL", "why": f"unreachable ({mt5.last_error()})"}
             else:
                 tick = mt5.symbol_info_tick("XAUUSD")

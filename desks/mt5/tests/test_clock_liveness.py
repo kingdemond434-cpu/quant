@@ -359,3 +359,24 @@ class TestAnUnreadableSchedulerIsUnmeasuredNeverDisabled:
             host="host_unmeasured", host_why="the scheduler could not be read")
         assert row["verdict"] == cl.UNMEASURED
         assert row["expected_bars"] is None and row["actual_bars"] is None
+
+
+# ------------------------------------------- the published report carries no absolute box path
+
+def test_the_published_report_holds_no_absolute_box_path(tmp_path: Path) -> None:
+    """Auditor follow-up 2026-11-14: CLOCK_LIVENESS.json/.md are synced to a public branch."""
+    box = "C:\\opt\\quant\\desks\\mt5\\reports\\shadow\\shadow_state.json"
+    posix = "/home/quant/secret_box_root/logs/shadow.log"
+    doc = {"at": "2026-11-14T05:00:00+00:00", "host_why": f"lane read from {box}",
+           "roster": f"unreadable at {posix}", "session_source": "market_constraints.json",
+           "rule": "r", "frozen": [{"lane": "main", "key": "K", "timeframe": "H1",
+                                    "lag_bars": 3, "freeze_bars": 2, "cause": "X",
+                                    "cause_why": f"see {posix}"}],
+           posix: "a key that is a path"}
+    r, m = cl.publish(doc, report=tmp_path / "CLOCK_LIVENESS.json",
+                      markdown=tmp_path / "CLOCK_LIVENESS.md")
+    for path in (r, m):
+        text = path.read_text(encoding="utf-8")
+        assert "secret_box_root" not in text and "C:\\\\opt" not in text and "C:\\opt" not in text
+        assert "/home/quant" not in text
+    assert "shadow_state.json" in r.read_text(encoding="utf-8")   # the basename survives
