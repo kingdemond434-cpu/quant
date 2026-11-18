@@ -167,7 +167,12 @@ def test_every_decision_that_moved_is_still_reachable_through_the_gateway() -> N
     # (`position_manager.tightens_by_min_step`). `test_gold_exit_fixes.py::
     # test_d_neither_money_path_consults_the_r_threshold` pins that the gateway no longer consults
     # it; no caller reads it off `mt5desk.gateway` (it lives on in decision_core for reference).
-    exempt = {"load_retired_gold", "ACCEPTED_RETCODES", "MIN_RATCHET_IMPROVEMENT_R"}
+    # `PROMOTED_MIN_EQUITY` was taken off the gateway ON PURPOSE by #771 (D-20261105-042): the
+    # roster filter now stands down only below the principal's ruin line FUSION_RUIN_FLOOR_EUR;
+    # PROMOTED_MIN_EQUITY still prices the MINLOT_OVERRIDE waiver inside decision_core, and
+    # test_fusion_ruin_floor.py pins that the gateway no longer reads it.
+    exempt = {"load_retired_gold", "ACCEPTED_RETCODES", "MIN_RATCHET_IMPROVEMENT_R",
+              "PROMOTED_MIN_EQUITY"}
     assert (wanted - exempt) <= bound, f"lost from the gateway: {sorted(wanted - exempt - bound)}"
     assert "_load_retired_gold" in bound
 

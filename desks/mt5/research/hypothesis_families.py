@@ -536,6 +536,18 @@ def _asset_class(sym: str, cache: dict[str, str]) -> str:
     return cache[sym]
 
 
+def _declared_classes(cache: dict[str, str]) -> list[str]:
+    """Every asset class, named as `_asset_class` names it, that holds a hypothesis-lane symbol
+    in the broker registry. [] when the registry or the lane law cannot be read, which declares
+    nothing rather than guessing (L1.28a)."""
+    try:
+        from research.universe_policy import _registry, may_hypothesise
+        return sorted({_asset_class(sym, cache) for sym in _registry()
+                       if may_hypothesise(sym)} - {"unclassified"})
+    except Exception:
+        return []
+
+
 def _alpha_cluster(fam: str, cache: dict[str, str]) -> str:
     if fam not in cache:
         try:
@@ -629,6 +641,11 @@ def census(rows: list[dict[str, Any]], clusters: Mapping[str, str] | None = None
         declared["alpha_cluster"] = [c.key for c in _CL]
     except Exception:                                                 # pragma: no cover
         pass
+    # EVERY HYPOTHESIS-LANE CLASS THE BROKER LISTS IS DECLARED (2026-11-03). asset_class had no
+    # declared list, so a class with ZERO families was not "empty", it was invisible: the 11-02
+    # steering listed eight values and energy and bonds were simply not among them, with
+    # `empty_declared: []` saying nothing was missing.
+    declared["asset_class"] = _declared_classes(ac_cache)
     for axis, vals in axes.items():
         counts = {v: len(s) for v, s in vals.items()}
         empty = sorted(set(declared.get(axis, [])) - set(counts))

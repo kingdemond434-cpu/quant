@@ -437,3 +437,91 @@ def test_carry_rejects_unknown_score_and_crash(universe):
     df = universe["GGGHHH"]
     assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", score="swap") == []
     assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", crash="vix") == []
+
+
+def test_a_measurement_stands_for_the_remeasure_window():
+    """Firing is re-measured weekly, not daily: a daily re-measure of the whole grid kept every
+    pass inside the alphabet's first classes and the FX classes were never reached."""
+    from research import cross_sectional_breadth as csb
+    assert csb._due({}, "2026-11-10")
+    assert not csb._due({"day": "2026-11-09"}, "2026-11-10")
+    assert csb._due({"day": "2026-11-03"}, "2026-11-10")
+    assert csb._due({"day": "garbled"}, "2026-11-10")
+
+
+def test_a_cut_short_pass_resumes_on_the_classes_it_did_not_reach():
+    from research import cross_sectional_breadth as csb
+
+    def plan_of(sym):
+        return [("fam", None, {"symbol": sym})]
+    cells = {csb.identity("AAA", "fam", {"symbol": "AAA"}): {"day": "2026-11-10"},
+             csb.identity("BBB", "fam", {"symbol": "BBB"}): {"day": "2026-11-01"}}
+    order = csb._oldest_first({"a_equity": ["AAA", "BBB"], "fx_usd": ["EURUSD"]}, cells, plan_of)
+    assert order == [("fx_usd", "EURUSD"), ("a_equity", "BBB"), ("a_equity", "AAA")]
+
+
+def test_the_seeding_loop_stops_inside_its_share_of_the_budget(universe, tmp_path, monkeypatch):
+    """A zero budget measures nothing and still returns (and saves) instead of being killed."""
+    from research import cross_sectional_breadth as csb
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    got = csb.seed(budget_s=0.0, dry_run=False)
+    assert got["status"] == "OK" and got["stopped_because"].startswith("time budget")
+    assert sum(v.get("measured_this_pass", 0) for v in got["cells_by_family"].values()) == 0
+    assert (tmp_path / "state.json").exists()
+
+
+def test_an_under_floor_cell_is_due_daily_once_the_grid_was_covered():
+    from research import cross_sectional_breadth as csb
+    low = {"day": "2026-11-09", "trade_days_lb": csb.SEED_FLOOR - 1}
+    high = {"day": "2026-11-09", "trade_days_lb": csb.SEED_FLOOR}
+    assert not csb._due(low, "2026-11-10")
+    assert csb._due(low, "2026-11-10", covered=True)
+    assert not csb._due(low, "2026-11-09", covered=True)
+    assert not csb._due(high, "2026-11-10", covered=True)
+
+
+def test_a_family_that_raises_is_retried_the_next_day_not_the_same_day():
+    from research import cross_sectional_breadth as csb
+    errored = {"error_day": "2026-11-10", "error": "KeyError"}
+    assert not csb._due(errored, "2026-11-10")
+    assert csb._due(errored, "2026-11-11")
+    # a cell measured long ago that raised today is not retried today either
+    stale = {"day": "2026-10-01", "error_day": "2026-11-10", "error": "KeyError"}
+    assert not csb._due(stale, "2026-11-10")
+    assert csb._due(stale, "2026-11-11")
+
+    def plan_of(sym):
+        return [("fam", None, {"symbol": sym})]
+    cells = {csb.identity("AAA", "fam", {"symbol": "AAA"}): errored}
+    order = csb._oldest_first({"k": ["AAA", "BBB"]}, cells, plan_of)
+    assert order == [("k", "BBB"), ("k", "AAA")], "an errored symbol must not hold the front"
+
+
+def test_a_cleared_cell_the_door_refused_is_donated_before_any_budget(universe, tmp_path,
+                                                                      monkeypatch):
+    """Measured and undonated sorts LAST in the walk; a pass with no budget must still offer it."""
+    from research import cross_sectional_breadth as csb
+    from research import proposer_common as pc
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    fam = next(iter(xs.CROSS_SECTIONAL_FAMILIES))
+    call = {"symbol": MEMBERS[0], **csb.grid(fam)[0]}
+    ident = csb.identity(MEMBERS[0], fam, call)
+    today = csb.datetime.now(tz=csb.UTC).date().isoformat()
+    (tmp_path / "state.json").write_text(json.dumps({"cells": {ident: {
+        "day": today, "family": fam, "symbol": MEMBERS[0], "klass": "k", "params": call,
+        "trade_days_lb": csb.SEED_FLOOR, "signal_days": csb.SEED_FLOOR}}}), "utf-8")
+    donated: list[list[dict]] = []
+
+    def fake_donate(source, rows, tests_run):
+        donated.append(list(rows))
+        return tmp_path / "discoveries.json"
+    monkeypatch.setattr(pc, "donate", fake_donate)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
+    got = csb.seed(budget_s=0.0)
+    assert got["stopped_because"].startswith("time budget")
+    assert [r["params"] for r in donated[0]] == [call]
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert state["cells"][ident]["donated_at"]
+    assert not state.get("covered_once"), "a cut-short pass has not covered the grid"

@@ -31,6 +31,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -203,6 +204,17 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
             for r in runs
             if str(r.get("name")) in need and genuine(r)
         }
+        if f["checks"][0] == "fail":
+            dec = declared_divergence(ag, repo, pr, head, base, runs, genuine)
+            if dec is not None:
+                rest = tuple(n for n in need if n != ag.REPLAY_JOB)
+                f["checks"] = ag.checks(runs, rest, genuine)
+                f["replay_declared"] = dec
+                if cls != "CONTROLLER":
+                    cls = "CONTROLLER"
+                    f["cls"] = cls
+                    raised = "replay-shadow MATCHES_DECLARED: CONTROLLER (trusted-eval, veto)"
+                    f["cls_reasons"] = [*why, raised]
         if cls == "CONTROLLER" and f["checks"][0] == "pass":
             # a check-changing PR: its own pull_request runs are self-attested, so the BASE's
             # trusted-eval (pull_request_target) must also have passed on this exact head
@@ -214,6 +226,67 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                 f["evidence"]["trusted-eval"] = ewhy
         f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
     return f
+
+
+#: An artifact larger than this is not a replay report.
+REPORT_MAX_BYTES = 4_000_000
+
+
+def _artifact_zip(repo: str, artifact_id: int) -> bytes | None:
+    """The artifact's zip, or None on any error (it is read as nothing)."""
+    try:
+        p = subprocess.run(["gh", "api", f"repos/{repo}/actions/artifacts/{artifact_id}/zip"],
+                           capture_output=True, check=False, timeout=120)  # fmt: skip
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return p.stdout if p.returncode == 0 and len(p.stdout) <= REPORT_MAX_BYTES else None
+
+
+def declared_divergence(
+    ag: Any, repo: str, pr: int, head: str, base: str,
+    runs: list[dict[str, Any]], genuine: Callable[[dict[str, Any]], bool],
+) -> dict[str, Any] | None:  # fmt: skip
+    """The replay-shadow run judged MATCHES_DECLARED ({"run", "why"}), or None. Only when the
+    newest genuine replay-shadow run is the one red required job, its own report (the artifact
+    `replay-shadow-report-<attempt>` of that run, for this exact head) says MATCHES_DECLARED, and
+    the authority itself re-matches it against the BASE's DECLARED_REGISTRY. Any read error is
+    None, so the PR stays FAIL."""
+    import io
+    import zipfile
+
+    rid = ag.newest_run_id(runs, ag.REPLAY_JOB, genuine)
+    run = next((r for r in runs if r.get("id") == rid), None)
+    if run is None or run.get("status") != "completed" or run.get("conclusion") != "failure":
+        return None
+    try:
+        job = ag._gh(f"repos/{repo}/actions/jobs/{rid}")
+        wf_run = ag._gh(f"repos/{repo}/actions/runs/{job['run_id']}")
+        if str(wf_run.get("head_sha")) != head or not str(wf_run.get("path") or "").endswith(
+            ag.WORKFLOW_OF[ag.REPLAY_JOB]
+        ):
+            return None
+        name = f"replay-shadow-report-{int(job.get('run_attempt') or 1)}"
+        arts = ag._gh(f"repos/{repo}/actions/runs/{job['run_id']}/artifacts?per_page=100")
+        found = [a for a in (arts or {}).get("artifacts") or []
+                 if a.get("name") == name and not a.get("expired")]  # fmt: skip
+        if len(found) != 1:
+            return None
+        blob = _artifact_zip(repo, int(found[0]["id"]))
+        if blob is None:
+            return None
+        with zipfile.ZipFile(io.BytesIO(blob)) as z:
+            info = z.getinfo("replay_shadow.json")
+            if info.file_size > REPORT_MAX_BYTES:
+                return None
+            report = json.loads(z.read(info).decode("utf-8"))
+        raw = _git_bytes("show", f"origin/{base}:{pol.DECLARED_REGISTRY}")
+        registry = json.loads(raw.decode("utf-8")) if raw is not None else None
+    except (RuntimeError, KeyError, ValueError, TypeError, zipfile.BadZipFile):
+        return None
+    if pol.declared_replay(report, registry, pr, head) is not None:
+        return None
+    flips = (report.get("fusion_roster") or {}).get("divergence") or []
+    return {"run": rid, "why": f"MATCHES_DECLARED: {len(flips)} declared roster flip(s)"}
 
 
 def issue(
@@ -233,7 +306,9 @@ def issue(
         patch_id=f.get("patch_id"), tier=str(f.get("cls")), verdict=verdict,
         policy_digest=digest,
         evidence={"checks": f.get("evidence") or {}, "files": f.get("files") or [],
-                  "gate_tier": f.get("tier"), "checks_why": (f.get("checks") or ("", ""))[1]},
+                  "gate_tier": f.get("tier"), "checks_why": (f.get("checks") or ("", ""))[1],
+                  **({"replay_declared": f["replay_declared"]} if f.get("replay_declared")
+                     else {})},
         reasons=reasons, kid=kid, now=now, ttl=timedelta(hours=ttl_h),
         authority_version=VERSION,
     )  # fmt: skip
@@ -311,6 +386,8 @@ def status_for(
     if verdict == "CLEAR":
         if f.get("cls") in ("AUTO", "LOW"):
             return "success", "CLEAR"
+        if veto_h <= 0:
+            return "success", "CLEAR, no veto window"
         if since is None:
             return "pending", "CLEAR, veto window not started"
         left = timedelta(hours=veto_h) - (now - since)
@@ -468,6 +545,31 @@ def _freeze(out: Path, bad: list[str]) -> str:
     return f"RED: LIVE push log violation, DEACTIVATE raised: {'; '.join(bad)}"
 
 
+# Judging stops after this many seconds so a pass always finishes inside the task's 30-minute
+# limit (install_authority.ps1), leaving room for the token mint, the detector and the last PR.
+BUDGET_S = 20 * 60.0
+
+
+def order_prs(open_prs: list[dict[str, Any]], judged_at: dict[str, float]) -> list[int]:
+    """LEAST RECENTLY JUDGED FIRST, UNDER A BUDGET (2026-11-05). Every pass from 18:01Z ran into
+    the task's 30-minute limit and was killed mid-sweep (event 329, 0x8007050B), so the PRs at
+    the end of the list were never judged. Ordering by when THIS authority last judged a PR (never
+    = first) means a PR the budget cut is at the head of the next pass, so every open PR is judged
+    within ceil(open / judged-per-pass) passes; ties (all never judged) go newest activity first.
+    An untouched PR's updated_at never moves (statuses do not bump it), so ordering by activity
+    alone starved the oldest ones forever (#776 audit MF1)."""
+    by_time = sorted(open_prs, key=lambda p: str(p.get("updated_at") or ""), reverse=True)
+    newest = [int(p["number"]) for p in by_time]
+    return sorted(newest, key=lambda n: float(judged_at.get(str(n), 0.0)))  # stable: ties newest
+
+
+def _judged_file(out: str) -> Path:
+    """When each PR was last judged (epoch seconds). Kept in the attestations folder, which this
+    account can write; every reader of that folder globs `pr<N>-*.json`, so it is never read as
+    an attestation."""
+    return Path(out) / "last_judged.state"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -477,6 +579,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root-pin", required=True)
     ap.add_argument("--pr", type=int)
     ap.add_argument("--dry-run", action="store_true", help="decide and print; sign nothing")
+    ap.add_argument("--budget-s", type=float, default=BUDGET_S,
+                    help="stop judging new PRs after this many seconds")  # fmt: skip
     ap.add_argument("--post-status", action="store_true",
                     help=f"also post the {STATUS_CONTEXT!r} commit status (on by itself when "
                          f"{STATUS_FLAG} exists beside the attestations folder)")  # fmt: skip
@@ -502,7 +606,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
-        prs = [int(p["number"]) for p in ag._flat(pages)]
+        try:
+            judged_at = dict(json.loads(_judged_file(a.out).read_text(encoding="utf-8")))
+        except (OSError, ValueError, TypeError):
+            judged_at = {}
+        prs = order_prs(ag._flat(pages), judged_at)
     seen = detector_pass(ag, a.repo, base, Path(a.out))
     if seen:
         print(seen, flush=True)
@@ -513,7 +621,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"level 2: {'ENFORCED' if enforced else 'not enforced'} -- {ewhy}", flush=True)
     veto_h = float(policy.get("veto_hours", 24))
     rc = 0
-    for n in prs:
+    started = time.monotonic()
+    judged: list[int] = []
+    for i, n in enumerate(prs):
+        if time.monotonic() - started > a.budget_s:
+            left = " ".join(f"#{x}" for x in prs[i:])
+            print(f"budget of {a.budget_s:.0f} s spent after {i} of {len(prs)} PRs; SET_ASIDE "
+                  f"until a later pass (least recently judged first): {left}",
+                  flush=True)  # fmt: skip
+            break
+        judged.append(n)
         try:
             f = facts(ag, a.repo, n, base, policy, enforced=enforced)
             verdict, reasons = pol.decide(f)
@@ -540,6 +657,15 @@ def main(argv: list[str] | None = None) -> int:
                 line += f" [status not posted: {exc}]"
                 rc = 1
         print(line, flush=True)
+    if a.pr is None and not a.dry_run:
+        now = time.time()
+        still_open = {str(x) for x in prs}
+        kept = {k: v for k, v in judged_at.items() if k in still_open}  # closed PRs drop out
+        kept.update({str(n): now for n in judged})
+        try:
+            _judged_file(a.out).write_text(json.dumps(kept, sort_keys=True), encoding="utf-8")
+        except OSError as exc:
+            print(f"last-judged times not written: {exc}")
     return rc
 
 

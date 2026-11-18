@@ -91,7 +91,7 @@ def test_an_unscorable_or_empty_held_book_never_binds(monkeypatch) -> None:
 def test_run_binds_the_verdict_before_the_artifact_is_written() -> None:
     src = inspect.getsource(pa.run)
     i_nt = src.index("nt = no_trade(")
-    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded)")
+    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded,")
     i_art = src.index('"proposed_book": proposed_book')
     assert i_nt < i_bind < i_art
     # the heat the gateway caps at is the PUBLISHED book's, not the solve's, when the verdict binds
