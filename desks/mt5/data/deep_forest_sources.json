@@ -7737,6 +7737,46 @@
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): PTAX averages four BCB dealer consultations at 10:00, 11:00, 12:00 and 13:00-13:10 Brasilia time and is announced soon after the last one (about 13:15)",
    "url": "https://www.cmegroup.com/rulebook/files/S_5886.pdf"
+  },
+  {
+   "name": "GASTAT Saudi statistics",
+   "region": "sa",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "cloud add 2026-11-18: statistics office whose terms #1327's release-calendar read CONFIRMED (docs/research/RELEASE_CALENDAR_GROUNDS.md); robots allows",
+   "url": "https://www.stats.gov.sa/en"
+  },
+  {
+   "name": "ISTAT",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "cloud add 2026-11-18: statistics office whose terms #1327's release-calendar read CONFIRMED (docs/research/RELEASE_CALENDAR_GROUNDS.md); robots allows",
+   "url": "https://www.istat.it/en/"
+  },
+  {
+   "name": "CZSO Czech statistics",
+   "region": "cz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "cloud add 2026-11-18: statistics office whose terms #1327's release-calendar read CONFIRMED (docs/research/RELEASE_CALENDAR_GROUNDS.md); robots allows",
+   "url": "https://www.czso.cz/csu/czso/home"
+  },
+  {
+   "name": "KSH Hungarian statistics",
+   "region": "hu",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 1.0,
+   "why": "cloud add 2026-11-18: statistics office whose terms #1327's release-calendar read CONFIRMED (docs/research/RELEASE_CALENDAR_GROUNDS.md); robots allows",
+   "url": "https://www.ksh.hu/?lang=en"
   }
  ],
  "engines": [
