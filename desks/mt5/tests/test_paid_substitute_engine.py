@@ -198,6 +198,25 @@ def _paths(tmp: Path) -> dict[str, Path]:
             "asia_table": tmp / "absent" / "paid_data_substitutes_asia_blocked.json"}
 
 
+_CONNS: list[sqlite3.Connection] = []
+
+
+def _mem() -> sqlite3.Connection:
+    """An in-memory registry the autouse fixture closes: Python 3.13 raises a ResourceWarning
+    for a connection left to the garbage collector, and filterwarnings=error makes that a
+    failure in whichever later test the collector happens to run in."""
+    c = sqlite3.connect(":memory:")
+    _CONNS.append(c)
+    return c
+
+
+@pytest.fixture(autouse=True)
+def _close_conns():
+    yield
+    while _CONNS:
+        _CONNS.pop().close()
+
+
 class _Door:
     def __init__(self) -> None:
         self.calls: list[dict] = []
@@ -236,7 +255,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
                                 "utf-8")
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     enrolled = json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]
     ids = {e["dataset_id"] for e in enrolled}
     assert ids == {"psub_fred_bamlh0a0hym2", "psub_cboe_vix"} and doc["headline"]["enrolled"] == 2
@@ -268,7 +287,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     # idempotent: a second pass enqueues nothing new
     n = len(door.calls)
     pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-            registry_conn=sqlite3.connect(":memory:"))
+            registry_conn=_mem())
     assert len(door.calls) == n
 
 
@@ -278,7 +297,7 @@ def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
     p = _paths(tmp_path)
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     assert door.calls == [] and doc["headline"]["enrolled"] == 0
     assert doc["headline"]["ready_awaiting_acquisition"] > 0
     lib = {s["id"]: s for s in pse.load_library()}
