@@ -328,7 +328,8 @@ CLAIM_FIELDS: frozenset[str] = frozenset({
     "lang", "event_time", "claim_hash", "host", "ingested_time", "tellings",
     # DERIVED TOKENS (hourly pass, 2026-11-18): month NUMBERS, a flag, mapped MT5 symbols and
     # controlled-vocabulary words -- never the words they were read from.
-    "months", "turn_of_month", "factors", "event_kind", "session_kind", "class_reason"})
+    "months", "turn_of_month", "factors", "event_kind", "session_kind", "class_reason",
+    "month_effect"})
 TELLING_FIELDS: frozenset[str] = frozenset({"claim_hash", "host", "ingested_time", "event_time"})
 #: H1 bars a claim's horizon bucket (`mechanism_claims._HOR_BUCKET_TERMS`) holds for. A horizon
 #: the claim does not state uses the family's own declared `ttl_bars` default, read from its
@@ -399,6 +400,20 @@ _MONTH_RES: tuple[re.Pattern[str], ...] = (
 )
 _TOM_RE = re.compile(r"turn[- ]of[- ](?:the[- ])?month|month[- ]end\b|end[- ]of[- ](?:the[- ])?"
                      r"month|月末|月底|月初|월말|월초", re.I)
+#: A month or month-end word mints a calendar trial only when a seasonality, regularity or
+#: direction word sits within `EFFECT_WINDOW` characters of it (Auditor SF, 2026-11-18): a page
+#: date or a passing mention ("the March meeting") is not an effect the claim asserts, and every
+#: such trial is charged to the shared deflated-Sharpe budget.
+_EFFECT_RE = re.compile(
+    r"\b(?:season|effect|anomal|tend|typical|histor|pattern|every|each\b|always|usually|"
+    r"regular|rall(?:y|ies)|drift|weak|strong|rises?\b|falls?\b|sell[s-]? ?off|bid\b)|"
+    r"сезон|эффект|кажд", re.I)
+#: The CJK / Korean words, judged on a narrower window: one character there carries about a
+#: word, and a 40-character window on a headline digest spans three other stories.
+_EFFECT_CJK_RE = re.compile(r"季节|效应|规律|規則|往往|通常|每年|每逢|历年|歷年|涨|跌|偏强|偏弱|"
+                            r"アノマリー|傾向|毎年|上昇|下落|경향|계절|매년|상승|하락")
+EFFECT_WINDOW = 40
+EFFECT_WINDOW_CJK = 10
 #: (forced_flow_calendar kind, pattern), first match wins. A roll word outranks an expiry word:
 #: "rolling from one expiry to the next" is a roll.
 EVENT_KIND_TERMS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -467,6 +482,17 @@ def claim_months(text: str) -> list[int]:
     return sorted(n for n in out if 1 <= n <= 12)
 
 
+def month_effect(text: str) -> bool:
+    """True when some month or month-end word in `text` has an effect word within
+    `EFFECT_WINDOW` (`EFFECT_WINDOW_CJK` for CJK / Korean words) characters
+    either side. Reads the words; returns only the flag."""
+    text = text or ""
+    spans = [m.span() for rx in (*_MONTH_RES, _TOM_RE) for m in rx.finditer(text)]
+    return any(_EFFECT_RE.search(text[max(0, a - EFFECT_WINDOW):b + EFFECT_WINDOW])
+               or _EFFECT_CJK_RE.search(text[max(0, a - EFFECT_WINDOW_CJK):b + EFFECT_WINDOW_CJK])
+               for a, b in spans)
+
+
 def _first_token(table: Iterable[tuple[Any, ...]], text: str) -> str:
     for row in table:
         if row[1].search(text or ""):
@@ -503,6 +529,7 @@ def _derived(r: dict[str, Any]) -> dict[str, Any]:
                     + [str(w) for w in r.get("horizon") or []])
     return {"months": claim_months(str(r.get("claim") or "")),
             "turn_of_month": bool(_TOM_RE.search(text)),
+            "month_effect": month_effect(text),
             "factors": claim_factors(r.get("instruments") or {}),
             "event_kind": claim_event_kind(text),
             "session_kind": claim_session_kind(text),
@@ -576,6 +603,7 @@ def compact_cloud_claims(rows: Iterable[dict[str, Any]], *, source: str = "") ->
         rec["quantity_kind"] = rec["quantity_kind"] or _quantity_kind(r.get("quantities") or [])
         rec["months"] = sorted(set(rec["months"]) | set(der["months"]))
         rec["turn_of_month"] = bool(rec["turn_of_month"] or der["turn_of_month"])
+        rec["month_effect"] = bool(rec.get("month_effect") or der["month_effect"])
         rec["factors"] += [f for f in der["factors"] if f not in rec["factors"]]
         for k in ("event_kind", "session_kind"):
             rec[k] = rec[k] or der[k]
@@ -737,10 +765,17 @@ def _derived_family(claim: dict[str, Any], cls: str
     ek = str(claim.get("event_kind") or "")
     if cls == "calendar":
         months = [int(m) for m in claim.get("months") or [] if 1 <= int(m) <= 12]
-        if claim.get("turn_of_month"):
+        # A compact file written before `month_effect` existed carries no flag: absent is not
+        # a pass, so its month claims queue until the next rebuild derives it.
+        effect = bool(claim.get("month_effect"))
+        if claim.get("turn_of_month") and effect:
             return "turn_of_month", "derived:turn_of_month", {}, "side_bias", None
         if ek:
             return "forced_flow", f"derived:event_kind:{ek}", {"event_kind": ek}, None, None
+        if (months or claim.get("turn_of_month")) and not effect:
+            return ("NO_BUILDER: calendar: names a month or month-end with no seasonality, "
+                    "regularity or direction word near it, so no calendar effect is asserted "
+                    "(a page date or passing mention mints no trial)")
         if len(months) == 1:
             return ("calendar_month", "derived:month", {"active_month": months[0]},
                     "side_bias", None)

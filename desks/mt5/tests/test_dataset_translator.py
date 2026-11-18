@@ -454,7 +454,8 @@ def test_the_committed_claim_file_holds_no_verbatim_text(tmp_path: Path) -> None
     pinned = frozenset({
         "mechanism_key", "mechanism_class", "analogues", "direction", "horizon",
         "quantity_kind", "lang", "event_time", "claim_hash", "host", "ingested_time",
-        "tellings", "months", "turn_of_month", "factors", "event_kind", "session_kind",
+        "tellings", "months", "turn_of_month", "month_effect", "factors", "event_kind",
+        "session_kind",
         "class_reason"})
     assert pinned == dt.CLAIM_FIELDS
     # The file in the repository obeys the same contract.
@@ -542,6 +543,23 @@ def test_a_calendar_claim_naming_several_months_stays_queued(tmp_path: Path) -> 
                                    mechanism_class="calendar", mechanism_key="k_cal2")
     assert not cells and rows[0]["status"] == dt.CELL_QUEUED
     assert "names 2 months [3, 9]" in rows[0]["reason"]
+
+
+def test_a_month_named_without_an_effect_word_mints_no_calendar_trial(tmp_path: Path) -> None:
+    assert dt.month_effect("gold is weak every 十月") is True
+    assert dt.month_effect("铜价每年12月偏强") is True
+    assert dt.month_effect("minutes of the March meeting were published") is False
+    for claim in ("minutes of the March meeting were published",
+                  "notes written at month end by the desk"):
+        rows, cells = _one_cell_family(tmp_path, claim=claim, mechanism_class="calendar",
+                                       mechanism_key="k_cal_" + claim[:5])
+        assert not cells and rows[0]["status"] == dt.CELL_QUEUED
+        assert "no seasonality, regularity or direction word" in rows[0]["reason"]
+
+
+def test_a_compact_file_without_the_effect_flag_queues_its_month_claims() -> None:
+    got = dt._derived_family({"months": [10], "turn_of_month": True}, "calendar")
+    assert isinstance(got, str) and got.startswith("NO_BUILDER")
 
 
 def test_a_flow_claim_with_an_event_kind_is_forced_flow(tmp_path: Path) -> None:
