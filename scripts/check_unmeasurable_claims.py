@@ -99,8 +99,19 @@ SEARCH_SPACE: dict[str, list[tuple[str, str]]] = {
 }
 
 
+def _guard(url: str) -> None:
+    """The refused-hosts guard (libs/data/refused_hosts.guard), before any wire. Without the
+    module nothing is fetched: fail closed (audit of the FRED refusal, SF1)."""
+    root = str(Path(__file__).resolve().parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data.refused_hosts import guard
+    guard(url)
+
+
 def _probe(url: str, timeout: int = 25) -> tuple[bool, str]:
     try:
+        _guard(url)
         req = urllib.request.Request(url, headers=_UA)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             body = r.read(200)

@@ -332,3 +332,17 @@ def test_fence_catches_an_ungated_fred_fetch() -> None:
     src = ('import urllib.request\n'
            'urllib.request.urlopen("https://fred.stlouisfed.org/graph/fredgraph.csv?id=X")\n')
     assert _FRED_ENDPOINT.search(src) and not any(g in src for g in _GATES)
+
+
+def test_sofr_is_stamped_on_the_sifma_calendar_not_the_federal_one() -> None:
+    import usd_liquidity_primary as U
+    # Thursday 2026-04-02: Good Friday 04-03 is a SIFMA close, so the print lands Monday 04-06.
+    assert U.available_sofr(date(2026, 4, 2)) == "2026-04-06T13:30:00+00:00"
+    # Tuesday 2018-12-04: 2018-12-05 was a SIFMA full close (national day of mourning).
+    assert U.available_sofr(date(2018, 12, 4)) == "2018-12-06T13:30:00+00:00"
+
+
+def test_the_liquidity_user_agent_names_no_person_or_repository() -> None:
+    import usd_liquidity_primary as U
+    assert "github" not in U.UA.lower() and "http" not in U.UA.lower()
+    assert U.UA.startswith("quant-desk-research/")

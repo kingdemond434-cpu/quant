@@ -34,6 +34,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -79,8 +80,19 @@ SOURCES: dict[str, dict[str, str]] = {
 }
 
 
+def _guard(url: str) -> None:
+    """The refused-hosts guard (libs/data/refused_hosts.guard), before any wire. Without the
+    module nothing is fetched: fail closed (audit of the FRED refusal, SF1)."""
+    root = str(Path(__file__).resolve().parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data.refused_hosts import guard
+    guard(url)
+
+
 def _get(url: str, timeout: int = 90) -> bytes | None:
     try:
+        _guard(url)
         req = urllib.request.Request(url, headers=_UA)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return bytes(r.read())
