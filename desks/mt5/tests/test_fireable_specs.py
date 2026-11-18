@@ -560,13 +560,16 @@ def test_the_stale_takeover_is_atomic(tmp_path, monkeypatch) -> None:
 
 def test_the_heartbeat_keeps_a_long_pass_s_lock(tmp_path, monkeypatch) -> None:
     import time as _t
+    # The stale window is 20 beats wide (production: 900 s / 60 s = 15). At 6 beats (0.3 s)
+    # a CI runner under xdist load starved the beat thread past the window and the rival took
+    # the lock (#1187, job 134710269266); the property under test is unchanged.
     monkeypatch.setattr(jc, "OUTSTANDING_LOCK_BEAT_S", 0.05)
-    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_STALE_S", 0.3)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_STALE_S", 1.0)
     monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
     side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
     holder = jc._SidecarLock(side, "long")
     assert holder.acquire()
-    _t.sleep(0.8)                                            # longer than the stale window
+    _t.sleep(2.0)                                            # twice the stale window
     rival = jc._SidecarLock(side, "rival")
     assert rival.acquire() is False and holder.owned()
     holder.release()
