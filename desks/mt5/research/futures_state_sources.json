@@ -1417,6 +1417,7 @@
    "releases": [
     {
      "series": "PAYEMS",
+     "first_print_lake": "bls_payrolls",
      "at": "08:30",
      "transform": "diff",
      "why": "nonfarm payrolls: the largest scheduled USD and gold mover",
@@ -1428,6 +1429,7 @@
     },
     {
      "series": "UNRATE",
+     "first_print_lake": "bls_unemployment_rate",
      "at": "08:30",
      "transform": "diff",
      "why": "unemployment rate, released with payrolls",
@@ -1439,6 +1441,7 @@
     },
     {
      "series": "CPIAUCSL",
+     "first_print_lake": "bls_cpi",
      "at": "08:30",
      "transform": "logdiff",
      "why": "headline CPI m/m",
@@ -1446,6 +1449,7 @@
     },
     {
      "series": "CPILFESL",
+     "first_print_lake": "bls_core_cpi",
      "at": "08:30",
      "transform": "logdiff",
      "why": "core CPI m/m, the Fed's reaction input",
@@ -1464,6 +1468,7 @@
     },
     {
      "series": "RSAFS",
+     "first_print_lake": "census_retail_sales",
      "at": "08:30",
      "transform": "logdiff",
      "why": "advance retail sales",

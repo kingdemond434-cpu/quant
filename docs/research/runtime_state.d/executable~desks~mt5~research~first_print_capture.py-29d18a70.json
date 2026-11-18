@@ -1,0 +1,37 @@
+{
+ "organ": "executable:desks/mt5/research/first_print_capture.py",
+ "kind": "executable",
+ "code": [
+  "desks/mt5/research/first_print_capture.py"
+ ],
+ "clock": "hourly_cycle:first_print_capture",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/data/",
+ "artifact_declared": "desks/mt5/reports/FIRST_PRINT_CAPTURE.json",
+ "artifact_resolved_by": "relocated (declared data/lake/first_prints/)",
+ "artifact_declared_n": 2,
+ "artifact_age_s": 0,
+ "artifact_bytes": 3060,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {
+  "_": "UNMEASURED (not a readable JSON object)"
+ },
+ "progress_metric": "first_prints_held",
+ "consumer": "desks/mt5/research/futures_state.py",
+ "measured_on": "vm",
+ "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+ "measured_at": "2026-11-18T05:24:13+00:00",
+ "only_missing": {
+  "at": "2026-11-18T05:24:13+00:00",
+  "host": "vm",
+  "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

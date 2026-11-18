@@ -1,0 +1,56 @@
+{
+ "_doc": "Grounds for research/first_print_capture.py: which primary publishers it may fetch, what their robots.txt and terms said when this was written, and which series it captures. A publisher with verdict other than CONFIRMED or built != true is never fetched; its row is the record of why. robots.txt is re-read by the leg on every pass with its own agent and an unreadable file is a refusal, never a yes. No FRED, no ALFRED.",
+ "checked": "2026-11-18",
+ "checked_how": "from the build container: its egress proxy refuses api.bls.gov, oui.doleta.gov, api.census.gov and apps.bea.gov to direct HTTP, so robots.txt was read through a page reader where it would load and is otherwise UNMEASURED here; the leg reads it live on the box before any data request",
+ "publishers": {
+  "bls": {
+   "verdict": "CONFIRMED",
+   "built": true,
+   "terms": "US federal government work, public domain; BLS API terms of service permit automated access within the published limits (v2 registered: 500 queries/day, 50 series/query, 20 years; v1 keyless: 25 queries/day, 25 series/query, 10 years)",
+   "terms_url": "https://www.bls.gov/developers/termsOfService.htm",
+   "robots": "www.bls.gov/robots.txt read 2026-11-18: User-agent * disallows /scripts /crs /_private /iisadmin /srchadm /advisory/members/ /idcf /*print*; no API path disallowed. api.bls.gov/robots.txt UNMEASURED from the container (the page reader declined it); the leg reads it live",
+   "auth": "BLS_API_KEY through libs.ops.env_keys.read_key and the credential registry's accepted names; absent -> keyless API v1, at most one request per 110 minutes (12/day, under v1's 25)"
+  },
+  "census": {
+   "verdict": "CONFIRMED",
+   "built": true,
+   "terms": "Census Data API terms of service: free, keyless use allowed up to 500 queries per day per IP; products must carry the notice 'This product uses the Census Bureau Data API but is not endorsed or certified by the Census Bureau.'",
+   "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+   "notice": "This product uses the Census Bureau Data API but is not endorsed or certified by the Census Bureau.",
+   "robots": "api.census.gov/robots.txt UNMEASURED from the container (the page reader got a request-rejected page); the leg reads it live and fails closed",
+   "auth": "keyless (Economic Indicators Time Series, EITS)",
+   "confirm_on_box": "the EITS dataset path and the category/data-type codes are the publisher's as best known from a container that cannot reach the host; a wrong code returns the API's own error, recorded, never a zero"
+  },
+  "dol": {
+   "verdict": "NOT_BUILT",
+   "built": false,
+   "terms": "US federal government work, public domain",
+   "robots": "www.dol.gov/robots.txt read 2026-11-18: User-agent * disallows only CMS paths (/core/ /profiles/ /admin/ /search/ /user/*); oui.doleta.gov/robots.txt came back empty through the page reader (UNMEASURED)",
+   "why_not": "no keyless machine-readable endpoint carries the weekly headline: the DOL data API (dataportal.dol.gov) needs a registered key, the Thursday news release is a PDF, and oui.doleta.gov/unemploy/csv/ar539.csv is state-reported NSA claims that lag the headline by a week, so a value first seen there is not the release's first print"
+  },
+  "bea": {
+   "verdict": "NOT_BUILT",
+   "built": false,
+   "terms": "US federal government work, public domain",
+   "robots": "apps.bea.gov/robots.txt read 2026-11-18: User-agent * Disallow / with exceptions /scb/ /eFile/ /regional/bearfacts/ /histdatacore/ /api/ /international/factsheet/ /industry/factsheet/ /regional/rims/rimsii/",
+   "why_not": "the only robots-permitted machine route is /api/, and the BEA API requires a registered UserID: not keyless. The release tables are under paths robots disallows"
+  }
+ },
+ "series": [
+  {"id": "bls_payrolls", "publisher": "bls", "code": "CES0000000001", "at": "08:30",
+   "title": "Nonfarm payrolls (SA, thousands)", "targets": ["USDX", "XAUUSD", "US500", "EURUSD", "USDJPY"]},
+  {"id": "bls_unemployment_rate", "publisher": "bls", "code": "LNS14000000", "at": "08:30",
+   "title": "Unemployment rate (SA, %)", "targets": ["USDX", "XAUUSD", "US500"]},
+  {"id": "bls_avg_hourly_earnings", "publisher": "bls", "code": "CES0500000003", "at": "08:30",
+   "title": "Average hourly earnings, total private (SA, $)", "targets": ["USDX", "XAUUSD", "UST10Y"]},
+  {"id": "bls_cpi", "publisher": "bls", "code": "CUSR0000SA0", "at": "08:30",
+   "title": "CPI-U all items (SA index)", "targets": ["USDX", "XAUUSD", "UST10Y", "US500"]},
+  {"id": "bls_core_cpi", "publisher": "bls", "code": "CUSR0000SA0L1E", "at": "08:30",
+   "title": "CPI-U less food and energy (SA index)", "targets": ["USDX", "XAUUSD", "UST10Y", "US500"]},
+  {"id": "bls_ppi_final_demand", "publisher": "bls", "code": "WPSFD4", "at": "08:30",
+   "title": "PPI final demand (SA index)", "targets": ["USDX", "UST10Y"]},
+  {"id": "census_retail_sales", "publisher": "census", "dataset": "timeseries/eits/marts",
+   "category_code": "44X72", "data_type_code": "SM", "seasonally_adj": "yes", "at": "08:30",
+   "title": "Advance retail and food services sales (SA, $ millions)", "targets": ["USDX", "US500", "XAUUSD"]}
+ ]
+}

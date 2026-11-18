@@ -1461,7 +1461,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # primary-publisher first prints (BLS, Census), revisions kept apart
+                     "first_print_capture"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2313,6 +2315,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # at most four requests (two robots reads, two data reads), 30 s timeout each
+    "first_print_capture": 180,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
@@ -4582,6 +4586,12 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # FIRST-PRINT CAPTURE (build-check row 45): the value each scheduled US release FIRST
+    # published, read from the primary publisher (BLS API v2 with its key, else keyless v1;
+    # Census EITS), stamped at the release slot, every later revision kept in its own file
+    # under data/lake/first_prints/<series>/. No FRED, no ALFRED; robots fail closed.
+    fpc = _costed("first_print_capture", lambda: _producer(
+        "first_print_capture", "research/first_print_capture.py", "--once", "--budget-s", "150"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -6589,6 +6599,7 @@ def main() -> None:
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "first_print_capture": fpc,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,

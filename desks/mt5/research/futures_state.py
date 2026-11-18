@@ -775,6 +775,26 @@ def write_release_calendar(oid: str, rel: Mapping[str, Any], prints: pd.DataFram
     return p
 
 
+def lake_first_prints(lake_series: str, lake: Path | None = None) -> pd.DataFrame:
+    """[period, released, value] from research/first_print_capture.py's lake: the primary
+    publisher's first prints, captured as they landed. The fallback when ALFRED is not fetched
+    (FRED is refused for automated fetches); it holds only what the capture has seen since it
+    began, so a series mints nothing until MIN_ROWS releases have accumulated."""
+    empty = pd.DataFrame(columns=["period", "released", "value"])
+    try:
+        from research import first_print_capture as fpc
+    except ImportError:
+        return empty
+    rows = fpc.first_print_frame_rows(lake_series, lake if lake is not None else fpc.LAKE)
+    if not rows:
+        return empty
+    d = pd.DataFrame(rows)
+    return pd.DataFrame({"period": pd.to_datetime(d["period"]),
+                         "released": pd.to_datetime(d["released"]),
+                         "value": pd.to_numeric(d["value"], errors="coerce")}
+                        ).dropna().sort_values("period").reset_index(drop=True)
+
+
 def first_release_outputs(cv: Mapping[str, Any], key: str, get: Callable[[str], Any] | None,
                           raw_dir: Path, notes: list[dict[str, Any]]
                           ) -> list[tuple[str, pd.DataFrame, dict[str, Any]]]:
@@ -797,6 +817,9 @@ def first_release_outputs(cv: Mapping[str, Any], key: str, get: Callable[[str], 
                 notes.append({"source": oid, "error": f"{type(exc).__name__}"})
         if prints.empty and raw.exists():
             prints = pd.read_parquet(raw)
+        if prints.empty and rel.get("first_print_lake"):
+            # ALFRED not fetched (FRED is refused): the primary publisher's first-print lake
+            prints = lake_first_prints(str(rel["first_print_lake"]))
         if len(prints) < MIN_ROWS:
             continue
         try:
