@@ -340,6 +340,48 @@ def _withdrawn_offset(real: float) -> float:
         return 0.0
 
 
+def reading_age_min(account: dict, published_age_min: float | None = None,
+                    *, now: datetime | None = None) -> tuple[float | None, str]:
+    """How old this account reading is, in minutes, by the WORSE of its two clocks.
+
+    NOTHING MEASURED THE AGE OF THE NUMBER THE RAILS ARE JUDGED ON, AND IT COST FOURTEEN DAYS.
+    `main()` takes equity, free margin, the open book and the reconcile stamp from one file the
+    gateway publishes, and judged them as a current account whatever their age. On 2026-10-30
+    20:50 `gateway_state.json` stopped being written with equity 266.01 and a flat book; the
+    EQUITY_FLOOR rail (then EUR 300) breached on that frozen number on every pass for 352 hours
+    -- 177 consecutive by 2026-11-14 12:40Z -- and the halt stops the only organ that rewrites
+    that file, so the breach could not be re-measured by anyone. Nothing in the stamp, the log or
+    any duty check said the reading was two weeks old: `readings` published the figures and not
+    their age, so every reader saw a live account at EUR 266.
+    THIS FUNCTION CHANGES NO VERDICT. It is the measurement that was missing, published on the
+    stamp beside the numbers it dates (`readings.measured`, `age_min`, `age_why`, `source`), so a
+    frozen file can never again read as a live account. Which breaches a stale reading should
+    raise -- and whether an account nobody can see may hold or must resume -- is the principal's
+    call on an ARMED survival rail, and is recorded for them rather than decided here.
+
+    Two clocks, because they fail differently and each one alone has a blind spot. A gateway that
+    publishes every pass while reconciling nothing has a fresh FILE and a dead reading; a gateway
+    that died mid-pass has a fresh `last_reconcile` inside a file nobody has touched since. Taking
+    the older of the two is the fail-closed direction: a reading is only as current as its staler
+    clock. `None` means neither clock could be read, which is UNMEASURED, never young.
+    """
+    now = now or datetime.now(tz=UTC)
+    ages: list[tuple[float, str]] = []
+    last = account.get("last_reconcile")
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(str(last))).total_seconds() / 60
+        except (ValueError, TypeError):
+            return None, f"last_reconcile {str(last)!r} is unparseable"
+        ages.append((age, f"last_reconcile {last}"))
+    if published_age_min is not None:
+        ages.append((float(published_age_min), f"{STATE.name} last written"))
+    if not ages:
+        return None, "no last_reconcile and no publication time"
+    age, why = max(ages)
+    return age, f"{why} is {age:.0f}min old (bound {STALE_HEARTBEAT_MIN}min)"
+
+
 def evaluate(account: dict, positions: list[dict], rows: list[dict],
              peak_equity: float, halt_codes: tuple = (),
              expected: dict[int, float] | None = None, *,
@@ -609,9 +651,17 @@ def main(dry_run: bool = True) -> int:
                "last_reconcile": st.get("last_reconcile"), "pending": st.get("pending") or [],
                "day_start_equity": st.get("day_start_equity"),
                "withdrawn_offset": _withdrawn_offset(float(st.get("equity", 0.0) or 0.0))}
+    # THE SECOND CLOCK ON THE READING (see `reading_age_min`): when the gateway last PUBLISHED,
+    # not when it last said it reconciled. An absent file is UNMEASURED, not fresh.
+    try:
+        published_age = (datetime.now(tz=UTC).timestamp() - STATE.stat().st_mtime) / 60
+    except OSError:
+        published_age = None
     positions = st.get("position") or []
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None})
+    age_min, age_why = reading_age_min(account, published_age)
+    measured = age_min is not None and age_min <= STALE_HEARTBEAT_MIN
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
     expected = expected_lots(intent_rows())
     day = broker_day()
@@ -690,7 +740,14 @@ def main(dry_run: bool = True) -> int:
     stamp["readings"] = {"equity": account["equity"], "margin_free": account["margin_free"],
                          "last_reconcile": account["last_reconcile"],
                          "open_positions": len(positions), "peak_equity": peak,
-                         "size_guard": size_guard(positions, expected)[1]}
+                         "size_guard": size_guard(positions, expected)[1],
+                         # EVERY READING CARRIES ITS OWN AGE (2026-11-14), so no reader of this
+                         # stamp -- human, duty check or fence -- can mistake a frozen file for a
+                         # current account the way every reader did for fourteen days. Published
+                         # beside the figures, never instead of them, and no verdict depends on
+                         # it: see `reading_age_min`.
+                         "measured": measured, "age_min": age_min, "age_why": age_why,
+                         "source": str(STATE)}
     stamp["rails"] = rails()
     stamp["breaches"] = codes
     stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,

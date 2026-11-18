@@ -1,0 +1,28 @@
+{
+ "organ": "library:desks/mt5/research/input_fill_census.py",
+ "kind": "library",
+ "code": [
+  "desks/mt5/research/input_fill_census.py"
+ ],
+ "clock": "import:desks/mt5/scripts/run_sharded_gauntlet.py",
+ "cadence_s": null,
+ "max_silence_s": null,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/INPUT_FILL_CENSUS.json",
+ "artifact_declared": "desks/mt5/reports/INPUT_FILL_CENSUS.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "UNMEASURED",
+ "consumer": "UNMEASURED",
+ "measured_on": "vm",
+ "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+ "measured_at": "2026-11-13T12:54:16+00:00"
+}
