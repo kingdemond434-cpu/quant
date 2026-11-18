@@ -1,36 +1,53 @@
 {
- "pid": 2956,
- "create_time": 1794564453.021808,
+ "pid": 320,
+ "create_time": 1794935623.0626593,
  "status": "RUNNING",
- "started_utc": "2026-11-13T10:07:33+00:00",
- "beat_utc": "2026-11-13T12:50:10+00:00",
- "beats": 175,
+ "started_utc": "2026-11-17T17:13:43+00:00",
+ "beat_utc": "2026-11-18T00:04:43+00:00",
+ "beats": 748,
  "beat_every_s": 30.0,
- "phase": "prewarm",
- "phase_started_utc": "2026-11-13T10:27:14+00:00",
- "phase_elapsed_s": 8575.6,
+ "phase": "merge_and_publish",
+ "phase_started_utc": "2026-11-17T23:33:57+00:00",
+ "phase_elapsed_s": 1846.2,
  "phases_done": {
-  "plan": 1177.3
+  "plan": 834.8,
+  "prewarm": 19090.8,
+  "plan_handoff": 596.4,
+  "build_shards": 1745.5,
+  "collect_and_cut": 475.5,
+  "rule_shards": 66.7
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
-  "run_s": 172800.0,
-  "run_deadline_utc": "2026-11-15T10:07:33+00:00",
-  "phase_s": 172800.0,
-  "phase_deadline_utc": "2026-11-15T10:27:14+00:00",
-  "no_progress_s": 3600.0,
-  "consecutive_stalls": 1
+  "run_s": 129422.8,
+  "run_deadline_utc": "2026-11-19T05:10:46+00:00",
+  "phase_s": 153594.0,
+  "phase_deadline_utc": "2026-11-19T18:13:51+00:00",
+  "no_progress_s": 1800.0,
+  "consecutive_stalls": 0
  },
- "run_deadline_utc": "2026-11-15T10:07:33+00:00",
+ "run_deadline_utc": "2026-11-19T05:10:46+00:00",
  "slow": [],
- "shards": {},
+ "shards": {
+  "phase": "rule",
+  "total": 15,
+  "done": 15,
+  "failed": 0,
+  "running": 0,
+  "stalled": 0,
+  "slow": 0,
+  "retrying": 0,
+  "shard_slow_s": 1800.0,
+  "shard_idle_kill_s": 1800.0,
+  "wave_started_utc": "2026-11-17T23:32:50+00:00"
+ },
  "tree": {
-  "procs": 16,
-  "rss_mb": 7890.4,
-  "cpu_s": 12883.3
+  "procs": 1,
+  "rss_mb": 5990.5,
+  "cpu_s": 3433.9
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-13T12:50:10+00:00",
+ "last_progress_utc": "2026-11-18T00:04:43+00:00",
  "idle_s": 0.0,
- "progress_gaps": 1
+ "progress_gaps": 7
 }

@@ -268,7 +268,11 @@ if ($agentName -eq "claude") {
     ) + $webFetchRules + @(
         "--disallowedTools",
         "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git reset --hard:*)",
-        "Bash(git stash:*)", "Bash(git commit -a:*)", "Edit(scripts/run_deadman_switch.py)",
+        "Bash(git stash:*)", "Bash(git commit -a:*)",
+        # Hooks are the law gate (2026-11-11: a noon plan wrote "GREEN -> push --no-verify").
+        "Bash(git push --no-verify:*)", "Bash(git push origin --no-verify:*)",
+        "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)",
+        "Edit(scripts/run_deadman_switch.py)",
         "Write(scripts/run_deadman_switch.py)", "Read(data/secrets/**)"
     )
 } elseif ($agentName -eq "codex") {
@@ -388,6 +392,11 @@ directly and never git stash / commit -a. $isolationWhere, test there, rebase
 on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
 hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
 Remove the worktree when done.
+
+NEVER --no-verify. The pre-commit and pre-push hooks are the law gate; never pass --no-verify
+or -n to git commit or git push, whatever the gate's verdict, run time or a plan step says. If
+the pre-push gate is slow or killed, do not push: record the item BLOCKED on the gate, with its
+run time, in work_items. The hourly state sync carries this pass's ledger rows up on its own.
 
 AUTHORITY. Do not change validated live trading logic, live certificate/registry state, arming or
 allocation unless an existing authorization record covers it; otherwise disposition the item as
