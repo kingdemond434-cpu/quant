@@ -52,7 +52,7 @@ from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
-from research.mt5_session import attach_or_initialize
+from research.mt5_session import attach_or_initialize, venue_refusal
 
 #: The dtype every source must return. Field names match MT5's own tick struct so the MT5
 #: implementation is a zero-copy pass-through and the fake cannot drift from it.
@@ -140,20 +140,40 @@ class Mt5TickSource:
     def __init__(self, terminal_path: str | None = None) -> None:
         self._terminal_path = terminal_path
         self._initialised = False
+        #: Why the attached terminal was refused as not the desk's (None while it is accepted).
+        self.refusal: str | None = None
 
     def _mt5(self) -> Any:
         import MetaTrader5 as mt5  # the vendor's own casing
         return mt5
 
+    def _venue_ok(self, mt5: Any) -> bool:
+        """THE TAPE IS FUSION'S OR IT IS NOTHING (2026-11-11). Two logged-in terminals share this
+        box's session, Fusion and FTMO. A tape filed under Fusion symbols but read off FTMO is
+        another broker's spreads, hours and prices, and nothing downstream could tell. A refused
+        terminal is detached (so the next attempt re-attaches by path) and the cycle reads as
+        SOURCE_UNAVAILABLE: a named gap the integrity checker and backfill already handle."""
+        why = venue_refusal(mt5, self._terminal_path)
+        if why != self.refusal:
+            print(f"tick source: REFUSED the attached terminal -- {why}" if why else
+                  "tick source: attached terminal verified as the desk's (Fusion)", flush=True)
+        self.refusal = why
+        if why is None:
+            return True
+        with suppress(Exception):
+            mt5.shutdown()
+        self._initialised = False
+        return False
+
     def initialize(self) -> bool:
         """Connect, or say why not. Idempotent: safe to call every cycle after a restart."""
         mt5 = self._mt5()
         if mt5.terminal_info() is not None:
-            self._initialised = True
-            return True
+            self._initialised = self._venue_ok(mt5)
+            return self._initialised
         ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000)
-        self._initialised = ok
-        return ok
+        self._initialised = ok and self._venue_ok(mt5)
+        return self._initialised
 
     def alive(self) -> bool:
         try:
@@ -171,6 +191,10 @@ class Mt5TickSource:
                 return self.initialize()
             except Exception:
                 return False
+        # Asked every cycle, not once: a terminal can be logged into another account while the
+        # recorder runs, and the first tick read off it would be filed as Fusion's.
+        if not self._venue_ok(mt5):
+            return False
         return bool(getattr(info, "connected", True))
 
     def symbols(self) -> list[str]:
