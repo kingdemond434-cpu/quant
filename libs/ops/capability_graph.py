@@ -285,7 +285,10 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/STATE_ADMISSION.json",
                 # VETO_ALPHA: the counterfactual world's per-reason table, which `_veto_evidence`
                 # merges over FILTER_VALUE's rows -- the veto rails' better evidence.
-                "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"),
+                "desks/mt5/reports/COUNTERFACTUAL_WORLD.json",
+                # ECONOMIC_PRIOR: prior_backfill's hourly report, published here as the
+                # missed-growth line of the six-field prior rail (`ECONOMIC_PRIOR` in the module).
+                "desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json"),
          writes=("desks/mt5/reports/MISSED_GROWTH.json", "desks/mt5/data/missed_growth.jsonl",
                  "desks/mt5/data/rail_calibration.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
@@ -892,7 +895,10 @@ NODES: tuple[Node, ...] = (
     Node("orthogonality", "desks/mt5/research/orthogonality.py",
          writes=("desks/mt5/reports/ORTHOGONALITY.json",)),
     Node("prior_backfill", "desks/mt5/research/economic_prior_backfill.py",
-         writes=("desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json",)),
+         writes=("desks/mt5/reports/ECONOMIC_PRIOR_BACKFILL.json",),
+         # Its report reaches a decision only through missed_growth, which publishes it as the
+         # six-field prior rail's missed-growth line, so that is the rent line that prices it.
+         billed_as=("missed_growth",)),
     Node("prosecutor", "scripts/check_prosecutor.py",
          writes=("desks/mt5/reports/prosecutor_census.json",)),
     Node("research_exchange_score", "scripts/research_exchange.py",
