@@ -346,3 +346,36 @@ def test_the_liquidity_user_agent_names_no_person_or_repository() -> None:
     import usd_liquidity_primary as U
     assert "github" not in U.UA.lower() and "http" not in U.UA.lower()
     assert U.UA.startswith("quant-desk-research/")
+
+
+def test_an_html_page_served_as_robots_is_not_permission() -> None:
+    # A soft-404 or challenge page at /robots.txt with HTTP 200 parses as allow-all; it is unread.
+    import usd_liquidity_primary as U
+    open_, seen = _fixture_opener(robots=b"<!DOCTYPE html><html><body>Not found</body></html>")
+    doc = U.ingest(U.Door(open_))
+    assert doc["n_series"] == 0
+    assert all(u.endswith("/robots.txt") for u in seen)
+
+
+def test_data_alternates_refuses_an_html_robots_page(monkeypatch: pytest.MonkeyPatch) -> None:
+    import io
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+    import data_alternates as DA
+
+    class _R(io.BytesIO):
+        def __enter__(self) -> _R:
+            return self
+
+        def __exit__(self, *a: object) -> None:
+            self.close()
+
+    monkeypatch.setattr(DA, "_ROBOTS", {})
+    monkeypatch.setattr(DA.urllib.request, "urlopen",
+                        lambda req, timeout: _R(b"<html><body>hi</body></html>"))
+    with pytest.raises(PermissionError, match="answered HTML"):
+        DA._robots_allows("https://api.db.nomics.world/v22/series")
+    monkeypatch.setattr(DA, "_ROBOTS", {})
+    monkeypatch.setattr(DA.urllib.request, "urlopen",
+                        lambda req, timeout: _R(b"User-agent: *\nAllow: /\n"))
+    DA._robots_allows("https://api.db.nomics.world/v22/series")
