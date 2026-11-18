@@ -154,7 +154,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
-                                          " overnight_drift overnight_gap_decay",
+                                          " overnight_drift overnight_gap_decay"
+                                          " overnight_intraday_tug",
     "session_handover price_only limit": "asia_meanrev",
     "session_information_handoff price_only market": "lvc_asia_london session_handoff",
     "hedging_demand_close_flow price_only market": "comex_settlement hedging_demand_close"
@@ -176,7 +177,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
-                                            " ae_latent",
+                                            " ae_latent weekend_driver_gap"
+                                            " equity_gap_breadth",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
     "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
@@ -202,7 +204,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "forced_liquidation carry market": "carry_risk_off",
     "calendar_seasonality cross_asset market": "month_end_rebalance",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
-                                               " mass_screen_clock seasonal_window",
+                                               " mass_screen_clock seasonal_window"
+                                               " pre_holiday_drift",
     # hunt16_cell (2026-09-30) rebuilds the hunt16 dav_range_filter_adx cells (side, signal hour,
     # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"

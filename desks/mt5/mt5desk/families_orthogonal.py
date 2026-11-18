@@ -2660,3 +2660,17 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+# TIER-1 IDEA FAMILIES (2026-11-18, the 2026-11-11 "closing the gap to tier 1" list). Four
+# mechanisms the build check found named but inexpressible on desk bars: the overnight-vs-day tug
+# of war (U2), the crypto weekend move into the Monday open (U4), share-CFD earnings-gap breadth
+# as an index signal (U5) and the pre-holiday drift (N1). Self-loading like the specialist
+# families, so the sealed gauntlet builds them with its ordinary `fn(h1, **params)` call;
+# `research/specialist_cell.py` names and charges their cells.
+from mt5desk.families_tier1 import INPUTS as _T1_INPUTS  # noqa: E402
+from mt5desk.families_tier1 import TIER1_FAMILIES  # noqa: E402
+from mt5desk.families_tier1 import TIMEFRAMES as _T1_TIMEFRAMES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(TIER1_FAMILIES)
+FAMILY_INPUTS.update(_T1_INPUTS)
+FAMILY_TIMEFRAMES.update(_T1_TIMEFRAMES)

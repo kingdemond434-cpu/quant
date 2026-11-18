@@ -595,6 +595,14 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates each asset-class desk's catalogue, "
                     "builds every cell through the sealed build_cell and charges its own trials; "
                     "sweeping it here would charge them twice"),
+    # The Tier-1 idea families (mt5desk/families_tier1.py): their venues, drivers and windows
+    # are named per cell by research/specialist_cell, which builds and charges each cell.
+    **dict.fromkeys(("overnight_intraday_tug", "weekend_driver_gap", "equity_gap_breadth",
+                     "pre_holiday_drift"),
+                    "research/specialist_cell enumerates the Tier-1 idea cells (venue clock, "
+                    "driver, class breadth, holiday venue), builds every cell through the sealed "
+                    "build_cell and charges its own trials; sweeping it here would charge them "
+                    "twice"),
     "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
                          "regime or cross-asset filter are named by research/residual_search "
                          "from a BH-corrected residual finding, which charges its own tests. "
