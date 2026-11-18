@@ -122,7 +122,9 @@ def test_shadow_leg_writes_both_books_and_scores_forward(tmp_path, monkeypatch) 
     monkeypatch.setattr(cs, "OUT", tmp_path / "CONVICTION_SHADOW.json")
     monkeypatch.setattr(cs, "LEDGER", tmp_path / "ledger.jsonl")
     monkeypatch.setattr(cm, "CONVICTION_SWITCH", tmp_path / "CONVICTION_SCALING.json")
-    ev = _ev()
+    from dataclasses import replace
+    # R per day at a scale a 20% book survives in every sampled world
+    ev = [replace(e, daily_r=e.daily_r * 0.1) for e in _ev()]
     book = {"EURUSD.breakout": 0.08, "XAUUSD.fade": 0.07, "USDJPY.a": 0.05}
     assert "NOT written" not in pa.write_conviction_inputs(ev, book, {"generated_utc": "x"})
     monkeypatch.setattr(cs, "realised_by_day", lambda: {})

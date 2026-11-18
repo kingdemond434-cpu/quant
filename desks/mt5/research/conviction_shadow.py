@@ -126,7 +126,11 @@ def shadow_books(ev: Sequence[Any], book: Mapping[str, float],
             "ex_ante": {
                 "base_mean_log_per_day": sb["mean_log_growth"],
                 "conviction_mean_log_per_day": sc["mean_log_growth"],
-                "delta_mean_log_per_day": sc["mean_log_growth"] - sb["mean_log_growth"],
+                # None when either book is ruinous on these worlds (-inf - -inf is not a number)
+                "delta_mean_log_per_day": (
+                    sc["mean_log_growth"] - sb["mean_log_growth"]
+                    if math.isfinite(sc["mean_log_growth"]) and math.isfinite(sb["mean_log_growth"])
+                    else None),
                 "conviction_on_its_own_worlds": conv.mean_log_growth,
                 "basis": ("both books scored on the UNTILTED worlds, where the base book is the "
                           "optimum by construction: ex-ante reads <= 0 and never promotes; the "
@@ -181,7 +185,8 @@ def score_record(rec: Mapping[str, Any], realised: Mapping[str, Mapping[str, flo
 
 def _ledger(path: Path | None = None) -> list[dict[str, Any]]:
     try:
-        return [json.loads(ln) for ln in (path or LEDGER).read_text("utf-8").splitlines() if ln.strip()]
+        text = (path or LEDGER).read_text("utf-8")
+        return [json.loads(ln) for ln in text.splitlines() if ln.strip()]
     except (OSError, ValueError):
         return []
 
