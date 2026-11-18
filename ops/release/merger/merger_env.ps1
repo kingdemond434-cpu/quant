@@ -25,10 +25,21 @@ function Use-MergerIdentity([string] $CloneRoot) {
     Set-Item -LiteralPath "env:GIT_CONFIG_KEY_$n" -Value "http.https://github.com/.extraheader"
     Set-Item -LiteralPath "env:GIT_CONFIG_VALUE_$n" -Value "AUTHORIZATION: basic $basic"
     $env:GIT_CONFIG_COUNT = "$($n + 1)"
-    # GCM must not answer with zuck's stored login once the header is set
+    # GCM must not answer with zuck's stored login once the header is set. The reset is an EMPTY
+    # value, and PowerShell DELETES a variable set to "" (Set-Item env: and .NET alike), so git saw
+    # GIT_CONFIG_COUNT=3 with no GIT_CONFIG_VALUE_2 and refused every command: "missing config
+    # value GIT_CONFIG_VALUE_2" (the gate's "sparse-checkout failed (128)", all of 2026-11-13).
+    # kernel32's SetEnvironmentVariableW keeps an empty string, and children inherit it.
     $m = $n + 1
+    if (-not ('QuantMerger.Env' -as [type])) {
+        Add-Type -Namespace QuantMerger -Name Env -MemberDefinition (
+            '[DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] ' +
+            'public static extern bool SetEnvironmentVariable(string name, string value);')
+    }
     Set-Item -LiteralPath "env:GIT_CONFIG_KEY_$m" -Value "credential.helper"
-    Set-Item -LiteralPath "env:GIT_CONFIG_VALUE_$m" -Value ""
+    if (-not [QuantMerger.Env]::SetEnvironmentVariable("GIT_CONFIG_VALUE_$m", "")) {
+        throw "could not set the empty credential.helper reset"
+    }
     $env:GIT_CONFIG_COUNT = "$($m + 1)"
     return $true
 }
