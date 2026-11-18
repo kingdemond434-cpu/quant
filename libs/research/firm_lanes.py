@@ -379,6 +379,10 @@ def pod_stops(deals: Iterable[Mapping[str, Any]], firm_dd_pct: float, risk_pct: 
             ts = datetime.fromisoformat(t.replace("Z", "+00:00"))
         except ValueError:
             continue
+        if ts.tzinfo is None:
+            # A naive stamp is read as UTC (the ledger's own convention) rather than crashing
+            # the comparison with an aware `now`.
+            ts = ts.replace(tzinfo=UTC)
         if (now - ts).days > lookback_days:
             continue
         pl = d.get("pl_quote")
@@ -430,6 +434,15 @@ CAREER_THEMES: dict[str, tuple[str, str]] = {
     "data_engineering": (r"data engineer|data pipeline|data platform", "data_acquisition"),
     "options_vol": (r"options|volatility (trad|research)|derivativ", "asset_horizon_grid"),
 }
+
+
+def terms_confirmed(page: Mapping[str, Any]) -> bool:
+    """A careers page is read only when its own terms record says automated reading is allowed.
+    robots.txt and the refused-host list are necessary, not sufficient: a host whose terms were
+    never read fails CLOSED (libs/data/refused_hosts.py)."""
+    t = page.get("terms") or {}
+    return bool(t.get("status") == "confirmed" and t.get("url") and t.get("checked")
+                and t.get("reading"))
 
 
 def career_themes(text: str) -> dict[str, int]:

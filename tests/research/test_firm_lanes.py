@@ -147,3 +147,34 @@ def test_drain_keeps_refused_rows_queued(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1, "refusals": []})
     out = leg._drain(["grid"], lib, "t")
     assert out["grid"]["drained"] == 1 and q.pending() == [] and lib.has("a")
+
+
+def test_careers_fail_closed_without_a_terms_record() -> None:
+    assert not fl.terms_confirmed({"url": "https://x"})
+    assert not fl.terms_confirmed({"terms": {"status": "confirmed", "url": "u"}})
+    assert fl.terms_confirmed({"terms": {"status": "confirmed", "url": "u", "checked": "d",
+                                         "reading": "automated reading of public pages allowed"}})
+    for page in fl.load_roster()["careers_pages"]:
+        assert "terms" in page
+
+
+def test_careers_pass_fetches_nothing_unconfirmed(tmp_path: Path, monkeypatch) -> None:
+    import sys
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import firm_lanes as leg
+    from research import index_discovery as idx
+    monkeypatch.setattr(leg, "CAREERS_STATE", tmp_path / "c.json")
+    monkeypatch.setattr(leg, "TOPICS", tmp_path / "t.jsonl")
+    monkeypatch.setattr(leg, "CAREERS_REPORT", tmp_path / "C.json")
+    called = []
+    monkeypatch.setattr(idx, "_get", lambda *a, **k: called.append(a) or (None, "HTTP 200"))
+    out = leg._careers({"careers_pages": [{"firm": "F", "url": "https://f.example/careers"}]},
+                       datetime(2026, 11, 18, tzinfo=UTC))
+    assert not called and out["blocked_on_terms"] == 1
+
+
+def test_pod_stops_read_a_naive_stamp_as_utc() -> None:
+    now = datetime(2026, 11, 18, tzinfo=UTC)
+    rep = fl.pod_stops([{"sleeve": "a", "time": "2026-11-17T10:00:00", "pl_quote": -10,
+                         "risk_quote": -10, "account": 1}], 8.0, 0.5, now=now)
+    assert rep["n_pods"] == 1

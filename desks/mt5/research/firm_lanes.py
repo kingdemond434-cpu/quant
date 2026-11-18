@@ -122,11 +122,20 @@ def _careers(roster: dict[str, Any], now: datetime) -> dict[str, Any]:
     reads: list[dict[str, Any]] = []
     for page in roster.get("careers_pages", []):
         url, firm = str(page.get("url")), str(page.get("firm"))
+        if not fl.terms_confirmed(page):
+            reads.append({"firm": firm, "url": url,
+                          "result": "BLOCKED_ON_TERMS: no confirmed terms record for this page; "
+                                    "fail closed until one is added to the roster"})
+            continue
         why = refusal(url)
         if why:
             reads.append({"firm": firm, "url": url, "result": f"REFUSED: {why}"})
             continue
         body, res = idx._get(url, cap=1_500_000)
+        # Exception TYPE only: `_get` appends the exception's message, which can carry a host's
+        # error page or a path, and the report is published.
+        if not res.startswith(("HTTP", "REFUSED")):
+            res = res.split(":", 1)[0]
         reads.append({"firm": firm, "url": url, "result": res})
         if body:
             themes[firm] = fl.career_themes(body.decode("utf-8", errors="replace"))
@@ -135,12 +144,15 @@ def _careers(roster: dict[str, Any], now: datetime) -> dict[str, Any]:
                              for n in new])
     merged = {**(prev.get("themes") or {}), **themes}
     _write(CAREERS_STATE, {"at": now.isoformat(), "themes": merged})
-    doc = {"at": now.isoformat(), "status": "READ", "reads": reads, "themes": themes,
+    status = "READ" if themes else "NO_PAGE_READ"
+    doc = {"at": now.isoformat(), "status": status, "reads": reads, "themes": themes,
            "new_or_grown": new,
            "rule": "firms' own careers pages only, robots.txt and the refused-host list obeyed; "
                    "LinkedIn and boards that ban automated reading are never contacted"}
     _write(CAREERS_REPORT, doc)
-    return {"status": "READ", "pages": len(reads),
+    return {"status": status, "pages": len(reads),
+            "blocked_on_terms": sum(1 for r in reads
+                                    if str(r["result"]).startswith("BLOCKED_ON_TERMS")),
             "fetched": sum(1 for r in reads if str(r["result"]).startswith("HTTP 2")),
             "new_or_grown": len(new)}
 
@@ -173,7 +185,7 @@ def run(now: datetime | None = None, *, careers: bool = True) -> dict[str, Any]:
         try:
             car = _careers(roster, now)
         except Exception as exc:                                       # network is optional
-            car = {"status": f"ERROR: {type(exc).__name__}: {str(exc)[:120]}"}
+            car = {"status": f"ERROR: {type(exc).__name__}"}
 
     verdicts: dict[str, int] = {}
     for r in lanes:
@@ -196,7 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         doc = run()
     except (OSError, ValueError) as exc:
-        print(f"FIRM LANES: roster unreadable: {exc}")
+        print(f"FIRM LANES: roster unreadable: {type(exc).__name__}")
         return 1
     print(f"FIRM LANES  {doc['at']}  verdicts={doc['verdicts']}")
     print(f"  not on branch {[x['id'] for x in doc['not_on_branch']]}; dark {doc['dark']}")
