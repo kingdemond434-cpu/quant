@@ -35,7 +35,6 @@ replay_shadow reads it: from git HEAD when the root is a checkout, else from the
 
 from __future__ import annotations
 
-import argparse
 import ast
 import hashlib
 import importlib.util
@@ -446,25 +445,6 @@ def check(root: Path = ROOT, rs: ModuleType | None = None) -> dict[str, Any]:
     }  # fmt: skip
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--root", type=Path, default=ROOT)
-    a = ap.parse_args(argv)
-    rep = check(a.root)
-    for v in rep["violations"][:200]:
-        print(" -", v)
-    for p in rep["stale_pins"]:
-        print(f" . stale pin (its site is gone; safe to drop): {p}")
-    verdict = "PASS" if rep["ok"] else f"FAIL ({len(rep['violations'])} violations)"
-    print(
-        f"RESEARCH-DATA FENCE {verdict}: {rep['closure']} money-closure modules, "
-        f"{rep['scanned']} scanned with the money-run programs, "
-        f"{rep['sites']} dynamic sites, {rep['pinned']} pinned; nothing on the money path may "
-        f"read {HOME}/"
-    )
-    return 0 if rep["ok"] else 1
-
-
-# No command-line entry yet: until the ROOT half wires this into scripts/run_law_gate.py
+# No main() or command-line entry yet: until the ROOT half restores them and wires this into scripts/run_law_gate.py
 # (_LAW_FENCES) with its runtime_state row, its clock is the quality check, which runs
 # tests/scripts/test_check_research_data_fence.py::test_todays_tree_is_green on every PR.

@@ -201,11 +201,6 @@ def test_a_tree_without_the_entry_points_fails_closed(tmp_path: Path) -> None:
     assert rep["ok"] is False and any("entry point" in v for v in rep["violations"])  # type: ignore[attr-defined]
 
 
-def test_main_prints_one_verdict_line(capsys: pytest.CaptureFixture[str]) -> None:
-    assert fence.main([]) == 0
-    assert capsys.readouterr().out.strip().splitlines()[-1].startswith("RESEARCH-DATA FENCE PASS")
-
-
 # ------------------------------------- the programs the money path RUNS (Auditor MF, 2026-11-18)
 
 ROW = 'TASK name="MT5-Prop" runs="desks/mt5/prop/prop_runner.py" lane="money"\n'
@@ -248,7 +243,6 @@ def test_root_is_judged_by_its_own_replay_shadow(tmp_path: Path) -> None:
     edits = {RS_FILE: own, extra: PLANT}
     rep = _check(tmp_path, edits)
     assert rep["ok"] is False and any("home" in v for v in rep["violations"]), rep  # type: ignore[attr-defined]
-    assert fence.main(["--root", str(tmp_path)]) == 1
     # this checkout's rules do not see that entry point: the tree's own rules are what fenced it
     assert fence.check(tmp_path, fence.RS)["ok"] is True
 
