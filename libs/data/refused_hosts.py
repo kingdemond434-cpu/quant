@@ -34,6 +34,12 @@ REFUSED_HOSTS: dict[str, str] = {
     "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "theice.com": "ICE: terms refuse automated collection of its data",
+    "cmegroup.com": ("CME: Data Terms of Use refuse spiders, robots and systematic retrieval to "
+                     "create databases, and allow personal non-commercial use only; robots.txt "
+                     "disallows / to Python-urllib (read 2026-11-18)"),
+    "krx.co.kr": ("KRX: no data \"may be reproduced, transmitted digitally, distributed to a "
+                  "third party ... without the prior permission of KRX\", provided \"NOT FOR "
+                  "TRADING\" (data.krx.co.kr disclaimer, read 2026-11-18)"),
 }
 
 

@@ -1396,7 +1396,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
-                     "culture_gap_cells", "firm_lanes", "asia_github"),
+                     "culture_gap_cells", "firm_lanes", "asia_github",
+                     # Terms-fenced event states: CME margin changes (forced_flow) and the
+                     # USDKRW KOSPI200-expiry phase. Calendar and fence only, no fetch.
+                     "cme_margin_events", "kr_options_state"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -2346,6 +2349,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ~60 GitHub search calls paced to the API's own limits (search 30/min, code 10/min) plus
     # one README read per new repository; stops itself at its 900 s budget.
     "asia_github": 1_000,
+    # Both are a terms fence plus calendar arithmetic: well under a second each, no network.
+    "cme_margin_events": 60,
+    "kr_options_state": 60,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -6271,6 +6277,13 @@ def main() -> None:
     # ASIAN RETAIL QUANTS ON GITHUB (zuck 2026-11-18): their strategies, translated to exact
     # MT5 analogues, plus their data-source lists. Heavy plan: an API walk, not an artifact read.
     agh = _costed("asia_github", lambda: _producer("asia_github", "research/asia_github_miner.py"))
+    # CME MARGIN CHANGES AND THE KOSPI200 EXPIRY (build check rows 126, 111). CME's and KRX's
+    # terms refuse automated retrieval, so the first publishes its fence and cell contract with
+    # zero cells; the second is the expiry-cycle phase for USDKRW, derived from the calendar.
+    cme = _costed("cme_margin_events", lambda: _producer(
+        "cme_margin_events", "research/cme_margin_events.py"))
+    krs = _costed("kr_options_state", lambda: _producer(
+        "kr_options_state", "research/countries/kr/pack.py"))
     gdp = _costed("ground_depth", lambda: _producer(
         "ground_depth", "research/ground_depth.py", "--once", "--budget-s", "600"))
     # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
@@ -6726,6 +6739,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "firm_lanes": flanes, "asia_github": agh,
+                    "cme_margin_events": cme, "kr_options_state": krs,
                     "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
