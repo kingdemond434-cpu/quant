@@ -116,3 +116,71 @@ def test_presser_seat_feeds_the_news_stream_and_has_a_layer() -> None:
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["presser_stt"] == "information"
     assert news_event_stream.source_tier("central_bank_presser_fed") == "official_statement"
+
+
+class _Resp(io.BytesIO):
+    def __init__(self, body: bytes, ctype: str | None) -> None:
+        super().__init__(body)
+        self.headers = {"Content-Type": ctype} if ctype is not None else {}
+
+
+def _robots(body: bytes, ctype: str | None):
+    def _open(req, timeout=None):
+        return _Resp(body, ctype)
+    return _open
+
+
+def test_robots_html_body_or_wrong_type_is_held_not_permission(monkeypatch) -> None:
+    for body, ctype in ((b"  <!DOCTYPE html><html>blocked</html>", "text/plain"),
+                        (b"\n<HTML><body>waf</body></HTML>", None),
+                        (b"User-agent: *\nDisallow:\n", "text/html; charset=utf-8"),
+                        (b"User-agent: *\nDisallow:\n", "application/octet-stream")):
+        monkeypatch.setattr(m, "_ROBOTS", {})
+        why = m.gate("https://c.example.org/v.mp4", open_url=_robots(body, ctype))
+        assert why is not None and why.startswith(m.HELD), (body, ctype)
+    monkeypatch.setattr(m, "_ROBOTS", {})
+    ok = _robots(b"User-agent: *\nDisallow: /private/\n", "text/plain; charset=utf-8")
+    assert m.gate("https://c.example.org/v.mp4", open_url=ok) is None
+    monkeypatch.setattr(m, "_ROBOTS", {})
+    assert m.gate("https://d.example.org/v.mp4", open_url=_robots(b"", None)) is None
+
+
+def test_robots_429_is_a_timed_hold(monkeypatch) -> None:
+    monkeypatch.setattr(m, "_ROBOTS", {})
+    monkeypatch.setattr(m, "_ROBOTS_HELD_UNTIL", {})
+    t0 = datetime(2026, 12, 1, tzinfo=UTC)
+
+    def too_many(req, timeout=None):
+        raise urllib.error.HTTPError(req.full_url, 429, "x", {}, None)  # type: ignore[arg-type]
+    got = m._robots_for("https", "e.example.org", too_many, now=lambda: t0)
+    assert isinstance(got, str) and "429" in got and "2026-12-02T00:00:00Z" in got
+    assert "https://e.example.org" not in m._ROBOTS          # not a permanent process state
+    still = m._robots_for("https", "e.example.org", _no_network,
+                          now=lambda: t0 + m.ROBOTS_429_HOLD / 2)
+    assert isinstance(still, str) and "held until" in still
+    later = m._robots_for("https", "e.example.org", _robots(b"User-agent: *\n", "text/plain"),
+                          now=lambda: t0 + m.ROBOTS_429_HOLD)
+    assert not isinstance(later, str)
+
+
+def test_watch_below_the_memory_floor_loads_nothing(tmp_path, monkeypatch) -> None:
+    fomc = tmp_path / "ev.json"
+    fomc.write_text(json.dumps({"events": [{"utc": "2026-12-09T19:00:00Z",
+                                            "name": "FOMC decision"}]}))
+    monkeypatch.setattr(m, "FOMC_CALENDAR", fomc)
+    monkeypatch.setattr(m, "BOC_CALENDAR", tmp_path / "absent.json")
+    monkeypatch.setattr(m, "SEAT", tmp_path / "seat")
+    monkeypatch.setattr(m, "REPORT", tmp_path / "PRESSER_STT.json")
+    monkeypatch.setitem(m.SOURCES, "fed", {**m.SOURCES["fed"], "verdict": m.ALLOWED,
+                                           "media_url": "https://x.example.org/live.m3u8"})
+    monkeypatch.setattr(m, "model_status", lambda *_a: {"ready": True, "status": "READY",
+                                                        "model_dir": "x", "reason": ""})
+    monkeypatch.setattr(m, "capture_live", lambda *_a, **_k: (_ for _ in ()).throw(
+        AssertionError("loaded below the floor")))
+    doc = m.watch(datetime(2026, 12, 9, 19, 40, tzinfo=UTC),
+                  available_mb=lambda: m.MODEL_RAM_FLOOR_MB - 1)
+    assert doc["capture"]["status"] == m.UNMEASURED
+    assert str(m.MODEL_RAM_FLOOR_MB) in doc["capture"]["reason"]
+    assert m.MODEL_RAM_FLOOR_MB >= 3072 + 1 and doc["runtime"]["executable"]
+    ok, _ = m.memory_admits(lambda: m.MODEL_RAM_FLOOR_MB + 1)
+    assert ok

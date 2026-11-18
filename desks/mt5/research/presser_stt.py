@@ -256,11 +256,37 @@ def open_window(wins: Iterable[Mapping[str, Any]], now: datetime) -> dict[str, A
 
 # ============================================================================= the fetch law
 _ROBOTS: dict[str, urllib.robotparser.RobotFileParser | str] = {}
+#: host -> when a 429 on its robots.txt stops holding it. A 429 is a TIMED hold, like the fetch
+#: law's: the host asked us to wait, it did not publish rules, and it is asked again after a day.
+_ROBOTS_HELD_UNTIL: dict[str, datetime] = {}
+ROBOTS_429_HOLD = timedelta(hours=24)
+_HTML_HEAD = ("<html", "<!doctype")
 
 
-def _robots_for(scheme: str, host: str,
-                open_url: Callable[..., Any]) -> urllib.robotparser.RobotFileParser | str:
+def _robots_body_is_rules(content_type: str, body: bytes) -> bool:
+    """A 200 is RULES only as text/plain (or no type) whose body is not an HTML page. A WAF or
+    soft-404 page served as 200 would otherwise parse as 'no rules' and read as permission."""
+    ctype = content_type.split(";")[0].strip().lower()
+    if ctype and ctype != "text/plain":
+        return False
+    head = body[:512].decode("utf-8", errors="replace").lstrip().lower()
+    return not head.startswith(_HTML_HEAD)
+
+
+def _robots_for(scheme: str, host: str, open_url: Callable[..., Any],
+                now: Callable[[], datetime] | None = None
+                ) -> urllib.robotparser.RobotFileParser | str:
+    """The host's robots rules, or why they are unread (which the gate turns into HELD).
+
+    TODO: switch to libs/data/robots_body once #1343 is on LIVE; this is the same fail-closed
+    reading, kept local until then."""
     key = f"{scheme}://{host}"
+    clock = now or _now
+    until = _ROBOTS_HELD_UNTIL.get(key)
+    if until is not None:
+        if clock() < until:
+            return f"robots.txt answered HTTP 429; held until {_iso(until)}"
+        _ROBOTS_HELD_UNTIL.pop(key, None)
     if key in _ROBOTS:
         return _ROBOTS[key]
     rp = urllib.robotparser.RobotFileParser()
@@ -268,9 +294,20 @@ def _robots_for(scheme: str, host: str,
     out: urllib.robotparser.RobotFileParser | str
     try:
         with open_url(req, timeout=15.0) as r:
-            rp.parse(r.read(500_000).decode("utf-8", errors="replace").splitlines())
-        out = rp
+            headers = getattr(r, "headers", None)
+            ctype = str(headers.get("Content-Type") or "") if headers is not None else ""
+            body = r.read(500_000)
+        if _robots_body_is_rules(ctype, body):
+            rp.parse(body.decode("utf-8", errors="replace").splitlines())
+            out = rp
+        else:
+            out = (f"robots.txt unreadable (HTTP 200 as {ctype or 'no type'} with an HTML or "
+                   "non-text body: a WAF or soft-404 page is not rules)")
     except urllib.error.HTTPError as e:
+        if e.code == 429:
+            held = clock() + ROBOTS_429_HOLD
+            _ROBOTS_HELD_UNTIL[key] = held
+            return f"robots.txt answered HTTP 429; held until {_iso(held)}"
         if e.code in (404, 410):
             rp.parse([])
             out = rp
@@ -339,6 +376,30 @@ def model_status(model_dir: Path | None = None) -> dict[str, Any]:
     return {"ready": True, "status": "READY", "model_dir": str(where), "reason": ""}
 
 
+#: The small int8 model plus decode buffers needs ~3 GB resident; the headroom keeps the trading
+#: terminal's working set untouched. Below this much AVAILABLE memory nothing is loaded.
+MODEL_RAM_NEED_MB = 3072
+MODEL_RAM_HEADROOM_MB = 1024
+MODEL_RAM_FLOOR_MB = MODEL_RAM_NEED_MB + MODEL_RAM_HEADROOM_MB
+
+
+def memory_admits(available_mb: Callable[[], float] | None = None) -> tuple[bool, str]:
+    """(True, '') when measured available memory clears MODEL_RAM_FLOOR_MB, else why not."""
+    try:
+        if available_mb is None:
+            import psutil  # type: ignore[import-untyped,unused-ignore]
+            have = psutil.virtual_memory().available / 1024 ** 2
+        else:
+            have = float(available_mb())
+    except Exception as e:
+        return False, f"available memory unmeasurable ({type(e).__name__}); nothing loaded"
+    if have < MODEL_RAM_FLOOR_MB:
+        return False, (f"{have:.0f} MB available is below the {MODEL_RAM_FLOOR_MB} MB floor "
+                       f"({MODEL_RAM_NEED_MB} MB model + {MODEL_RAM_HEADROOM_MB} MB headroom); "
+                       "nothing loaded")
+    return True, ""
+
+
 Segment = tuple[float, float, str]
 
 
@@ -348,8 +409,11 @@ def transcribe(media: Path, *, model_dir: Path | None = None,
     status = model_status(model_dir)
     if not status["ready"]:
         return [], status
+    ok, why = memory_admits()
+    if not ok:
+        return [], {**status, "ready": False, "status": UNMEASURED, "reason": why}
     try:
-        from faster_whisper import WhisperModel  # type: ignore[import-not-found]
+        from faster_whisper import WhisperModel  # type: ignore[import-not-found,unused-ignore]
         model = WhisperModel(status["model_dir"], device="cpu", compute_type="int8",
                              cpu_threads=max(1, (os.cpu_count() or 2) // 4),
                              local_files_only=True)
@@ -529,8 +593,11 @@ def _rows_today(when: datetime) -> int:
         return 0
 
 
-def watch(now: datetime | None = None) -> dict[str, Any]:
+def watch(now: datetime | None = None, *,
+          available_mb: Callable[[], float] | None = None) -> dict[str, Any]:
     doc = plan(now)
+    doc["runtime"] = {"python": sys.version.split()[0], "executable": sys.executable}
+    print(f"[presser_stt] python {doc['runtime']['python']} at {sys.executable}", flush=True)
     win = doc["open_window"]
     if not win:
         doc["capture"] = {"status": "NO_WINDOW"}
@@ -539,6 +606,8 @@ def watch(now: datetime | None = None) -> dict[str, Any]:
                           "reason": SOURCES[win["bank"]]["reading"]}
     elif not doc["model"]["ready"]:
         doc["capture"] = {"status": UNMEASURED, "reason": doc["model"]["reason"]}
+    elif not (mem := memory_admits(available_mb))[0]:
+        doc["capture"] = {"status": UNMEASURED, "reason": mem[1]}
     else:
         doc["capture"] = capture_live(win["bank"], _parse(win["ends_at"]) or _now())
     return doc
@@ -558,7 +627,7 @@ def main(argv: list[str] | None = None) -> int:
         out = from_media(a.media, a.bank, start)
     elif a.watch:
         out = watch()
-        out = {k: out[k] for k in ("status", "why", "open_window", "capture")}
+        out = {k: out[k] for k in ("status", "why", "runtime", "open_window", "capture")}
     else:
         out = plan()
         out = {k: out[k] for k in ("status", "why", "allowed_sources", "upcoming_windows")}
