@@ -997,6 +997,423 @@ REAIM_VERSION = "family-reaim-v1"
 #: Provenance a child may carry. NOT `contributing_sources` / `n_independent_sources`: no source
 #: named the new instrument, so copying them would overstate agreement (deepening_worker scores on
 #: them). The child records 0 sources of its own and names its parent instead.
+#: Parameters through which a cell names the instrument it TRADES (the specialist families take
+#: `symbol`; the swap and FX-leg readers take the other two).
+TRADED_SYMBOL_KEYS = ("symbol", "input_symbol", "fx_symbol")
+
+
+def retarget_params(params: Mapping[str, Any], old: str, new: str) -> dict[str, Any]:
+    """`params` for a cell moved from instrument `old` to `new`.
+
+    A MOVED CELL MUST NAME THE INSTRUMENT IT NOW TRADES (measured on the box 2026-11-10). Both
+    re-targeting paths copied `params` unchanged under a new row symbol, so a `carry_risk_off`
+    cell minted for USDSGD and moved to ADAUSD was judged on ADAUSD's bars with USDSGD's carry
+    side and swap terms: it builds, it fires, and it tests a rule nobody wrote. A parameter that
+    named the OLD instrument is rewritten to the new one; one that names anything else (a risk
+    proxy, a peer, a factor) is the cell's own second leg and is left alone.
+    """
+    out = dict(params)
+    if not old or not new or old == new:
+        return out
+    for key in TRADED_SYMBOL_KEYS:
+        value = out.get(key)
+        if isinstance(value, str) and value.strip().upper() == old.upper():
+            out[key] = new
+        elif (isinstance(value, list) and len(value) == 1 and isinstance(value[0], str)
+              and value[0].strip().upper() == old.upper()):
+            out[key] = [new]
+    return out
+
+
+#: Families the sealed judge hands the ROW's instrument whatever params say
+#: (`external_gauntlet.build_cell` sets `call_params["symbol"] = sym`): a stale name in their
+#: params is wrong on paper only, so their rows are counted and never rewritten.
+JUDGE_SUPPLIES_SYMBOL = frozenset({"carry", "event_reaction"})
+#: The families whose mismatched rows were LOOKED AT on the box (2026-11-10) and found to be a
+#: moved cell reading its donor's instrument. Only these are rewritten. A mismatch in any other
+#: family is counted `unreviewed_family` and left exactly as stored: it may be a cell that names
+#: a second instrument on purpose, and rewriting that would destroy a valid rule and void honest
+#: verdicts. Adding a family here is a reviewed one-line change after its rows are read.
+#: `event_reaction` is NOT here (audit of 9ce2549d6ea9): the judge sets its `symbol` itself
+#: (`external_gauntlet.build_cell`, the event_reaction branch), exactly as for carry, so its one
+#: mismatched row ran on its own instrument and is wrong on paper only.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow"})
+#: Families that return NO ORDERS unless told which instrument they trade, and that the sealed
+#: judge does not tell (it supplies `symbol` for carry and event_reaction only). A row of one of
+#: these with no `symbol` in params can never fire: box 2026-11-10, 144 carry_risk_off rows from
+#: `local_converter` with `params: {}`, 133 judged UNKNOWN and 11 never reached. Named, not
+#: inferred from signatures: several families take an optional `symbol` and run without it.
+ROW_SYMBOL_FAMILIES = frozenset({"carry_risk_off"})
+MOVED_VOID = HYP / "moved_cell_void.json"
+
+
+def with_row_symbol(family: str, symbol: str, params: Mapping[str, Any] | None) -> dict[str, Any]:
+    """`params` naming the row's own instrument, for a family that cannot run without it."""
+    out = dict(params or {})
+    if str(family) in ROW_SYMBOL_FAMILIES and symbol and not _named(out.get("symbol")):
+        out["symbol"] = str(symbol)
+    return out
+
+
+def _named(value: Any) -> str:
+    if isinstance(value, list) and len(value) == 1:
+        value = value[0]
+    return value.strip().upper() if isinstance(value, str) else ""
+
+
+def repair_moved_cells(rows: list[dict[str, Any]], *,
+                       identity_fn: Callable[[dict[str, Any]], str] | None = None,
+                       now: datetime | None = None, rewrite: bool = True
+                       ) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
+    """Stored cells that still name ANOTHER instrument as the one they trade -> (rows, census,
+    void entries).
+
+    WHY (box read 2026-11-10 16:05Z). Four doors moved a cell to a new instrument with its
+    donor's params untouched; they are fixed, but 7,462 stored rows still carry the old name.
+    For `carry` (6,189) the sealed judge supplies the row's instrument, so nothing ran wrong.
+    For every other family (1,273: entry_conditioned, carry_risk_off, forced_flow,
+    event_reaction) the family was handed the donor's instrument on the new one's bars, and
+    every verdict on those specs is VOID. This pass rewrites `params.symbol` to the row's own
+    instrument (and `input_symbol` / `fx_symbol` only where they repeated that same stale name:
+    an input that names something else is the cell's second leg). The corrected cell has a new
+    identity, so it is preregistered and judged as a NEW trial; the old spec's verdicts stay in
+    the ledger and its trials stay charged -- nothing is deleted, nothing is un-counted. The
+    old spec is returned as a void entry so certificates, clocks and sleeves built on it can be
+    named. A corrected cell identical to one already in the docket is the same executable twice
+    and is merged into it (counted), exactly as the docket's own dedup would.
+
+    SELECTED BY THE MISMATCH, NEVER BY ORIGIN, and the census is by origin and family and by
+    the day each row was first seen: a count that grows for any origin after the four fixes are
+    on the box is a fifth door. Idempotent: a second pass finds nothing to rewrite.
+
+    THE CALLER'S ROWS ARE NEVER MUTATED: a rewritten row is a copy. A caller that fails after
+    this pass can therefore hand back its original rows, and no corrected row is ever stored
+    without its old spec having been named (audit of 72ff7b1e23e0). `rewrite=False` is the
+    count-only reading the revert switch uses."""
+    ident = identity_fn or identity
+    stamp = (now or datetime.now(tz=UTC)).isoformat()
+    census: dict[str, Any] = {"rows": len(rows), "mismatched": 0, "rewritten": 0,
+                              "merged_into_existing": 0, "skipped_judge_supplies_symbol": 0,
+                              "repaired_earlier": 0, "unreviewed_family": 0,
+                              "first_seen_unknown": 0, "rewrite_enabled": bool(rewrite),
+                              "symbol_missing": 0, "symbol_supplied": 0,
+                              "symbol_missing_by_origin": {},
+                              "by_family_origin": {}, "by_first_seen_day": {},
+                              "by_origin_skipped": {}, "unreviewed_by_family_origin": {}}
+    present = {ident(r) for r in rows if isinstance(r, dict)}
+    out: list[dict[str, Any]] = []
+    void: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            out.append(r)
+            continue
+        params = r.get("params")
+        sym = _sym(r)
+        stale = _named(params.get("symbol")) if isinstance(params, dict) else ""
+        if not stale and sym and _fam(r) in ROW_SYMBOL_FAMILIES:
+            # NEVER TOLD ITS INSTRUMENT: it could not fire, so nothing it "tested" is void --
+            # there was no test. The row is completed (a copy) and judged for the first time.
+            census["symbol_missing"] += 1
+            who = str(r.get("origin") or r.get("producer") or r.get("source") or "unknown")
+            census["symbol_missing_by_origin"][who] = (
+                census["symbol_missing_by_origin"].get(who, 0) + 1)
+            done = {k: v for k, v in r.items()
+                    if k not in ("spec_id", "prereg_hash", "prereg_status", "dup_status")}
+            done["params"] = with_row_symbol(_fam(r), sym, params if isinstance(params, dict)
+                                             else {})
+            if rewrite and ident(done) not in present:
+                present.discard(ident(r))
+                present.add(ident(done))
+                done["row_symbol_supplied"] = {"at": stamp, "never_fired_spec_id":
+                                               r.get("spec_id")}
+                census["symbol_supplied"] += 1
+                out.append(done)
+                continue
+            if rewrite:
+                census["merged_into_existing"] += 1
+                continue
+            out.append(r)
+            continue
+        if not stale or not sym or stale == sym.upper():
+            if r.get("moved_cell_repair"):
+                census["repaired_earlier"] += 1
+            out.append(r)
+            continue
+        fam, origin = _fam(r), str(r.get("origin") or r.get("source") or "unknown")
+        census["mismatched"] += 1
+        if fam in JUDGE_SUPPLIES_SYMBOL:
+            census["skipped_judge_supplies_symbol"] += 1
+            census["by_origin_skipped"][origin] = census["by_origin_skipped"].get(origin, 0) + 1
+            out.append(r)
+            continue
+        key = f"{fam}|{origin}"
+        if fam not in MOVED_CELL_FAMILIES:
+            census["unreviewed_family"] += 1
+            census["unreviewed_by_family_origin"][key] = (
+                census["unreviewed_by_family_origin"].get(key, 0) + 1)
+            out.append(r)
+            continue
+        census["by_family_origin"][key] = census["by_family_origin"].get(key, 0) + 1
+        seen = next((str(r[k]) for k in ("first_seen", "available_time", "ingested_time",
+                                         "found_at") if r.get(k)), "")
+        if seen:
+            census["by_first_seen_day"][seen[:10]] = (
+                census["by_first_seen_day"].get(seen[:10], 0) + 1)
+        else:
+            census["first_seen_unknown"] += 1
+        if not rewrite:
+            out.append(r)
+            continue
+        old_identity = ident(r)
+        fixed = dict(params)
+        for k in TRADED_SYMBOL_KEYS:
+            if _named(fixed.get(k)) == stale:
+                fixed[k] = [sym] if isinstance(fixed[k], list) else sym
+        # stamps of the OLD executable are left behind; the writer re-derives them
+        candidate = {k: v for k, v in r.items()
+                     if k not in ("spec_id", "prereg_hash", "prereg_status", "dup_status")}
+        candidate["params"] = fixed
+        new_identity = ident(candidate)
+        void.append({"spec_id": r.get("spec_id"), "symbol": sym, "family": fam,
+                     "named": stale, "origin": origin, "candidate_id": r.get("candidate_id"),
+                     "identity_sha": hashlib.sha256(old_identity.encode()).hexdigest()[:16],
+                     "corrected_identity_sha":
+                         hashlib.sha256(new_identity.encode()).hexdigest()[:16],
+                     "first_recorded": stamp})
+        if new_identity in present:
+            census["merged_into_existing"] += 1
+            continue
+        present.discard(old_identity)
+        present.add(new_identity)
+        candidate["moved_cell_repair"] = {"at": stamp, "named": stale,
+                                          "void_spec_id": r.get("spec_id")}
+        census["rewritten"] += 1
+        out.append(candidate)
+    return out, census, void
+
+
+def record_moved_void(void: list[dict[str, Any]], path: Path | None = None) -> dict[str, Any]:
+    """Add this pass's void specs to the standing list (keyed by the old identity, first
+    recording kept). Never raises; an unwritable file is named, not hidden."""
+    p = path or MOVED_VOID
+    doc = _read(p)
+    known = {str(e.get("identity_sha")): e for e in (doc.get("void") if isinstance(doc, dict)
+                                                     else None) or [] if isinstance(e, dict)}
+    added = 0
+    for e in void:
+        if str(e["identity_sha"]) not in known:
+            known[str(e["identity_sha"])] = e
+            added += 1
+    by_family: dict[str, int] = {}
+    for e in known.values():
+        by_family[str(e.get("family"))] = by_family.get(str(e.get("family")), 0) + 1
+    ok = True
+    if added or not p.exists():
+        ok = _atomic_write(p, json.dumps({
+            "what": "specs judged with another instrument named as the traded one; every "
+                    "verdict, certificate, clock or sleeve resting on one is VOID until its "
+                    "corrected cell is judged. Trials stay charged.",
+            "n": len(known), "by_family": by_family,
+            "void": sorted(known.values(), key=lambda e: str(e.get("identity_sha")))},
+            indent=1, default=str))
+    return {"added": added, "n": len(known), "by_family": by_family, "written": ok}
+
+
+#: Params a family is handed but NEVER READS, per family, each traced in code -- so two rows that
+#: differ only in them are ONE executable. `carry`: `family_carry` has no `input_symbol`
+#: argument and the sealed judge pops it and sets `symbol` to the row's own instrument
+#: (`external_gauntlet.build_cell`, the carry branch). Box 2026-11-10: 43 canon certificates and
+#: 21 forward clocks across 8 pairs are copies of fewer carry rules under different
+#: `input_symbol` names (CHFNOK alone: 15 certificates). A family is added here only after its
+#: unread keys are traced; every other family's executable key is its identity.
+EXECUTABLE_UNREAD: dict[str, frozenset[str]] = {"carry": frozenset({"input_symbol", "symbol"})}
+
+
+def executable_key(symbol: str, family: str, params: Mapping[str, Any] | None,
+                   **dims: Any) -> str:
+    """The CANONICAL EXECUTABLE: instrument, family, the params the family reads, plus any
+    `dims` the store keeps outside params (chart, selector).
+
+    NOT AN IDENTITY AND NEVER A REPLACEMENT FOR ONE. `identity`, `spec_id`, certificate cells
+    and sleeve ids stay exactly as stored -- re-keying them would orphan certificates and
+    forward clocks, which is how certificates were lost before. This key only answers "are
+    these two records the same rule on the same instrument", for refusing a new copy at intake
+    and for counting breadth honestly."""
+    fam = str(family or "").strip()
+    unread = EXECUTABLE_UNREAD.get(fam, frozenset())
+    p = params if isinstance(params, Mapping) else {}
+    return json.dumps({"symbol": str(symbol or "").strip().upper(), "family": fam,
+                       "params": {k: p[k] for k in sorted(p) if k not in unread},
+                       "dims": {k: dims[k] for k in sorted(dims) if dims[k] not in (None, "")}},
+                      sort_keys=True, default=str)
+
+
+def refuse_executable_copies(rows: list[dict[str, Any]], fresh: set[str], *,
+                             identity_fn: Callable[[dict[str, Any]], str] | None = None,
+                             refuse: bool = True
+                             ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """A FRESH row that is a copy of an executable the docket already holds is refused at
+    intake; copies already stored are counted and LEFT (collapsing them is a capital question
+    for the allocator, through the promoter).
+
+    Only families in `EXECUTABLE_UNREAD` are examined. Rows the bank already held claim their
+    key first, so a new copy never displaces an old row; among fresh copies the first is kept.
+    Each copy that was judged was charged as a trial and stays charged; a refused copy is
+    never judged, so it is never charged -- it was never a distinct test. `refuse=False`
+    (QUANT_EXECUTABLE_DEDUP=0) counts and removes nothing.
+
+    THE INTAKE KEY IS THE ROW'S OWN IDENTITY WITH ONLY THE UNREAD PARAMS REMOVED (audit of
+    c6329f7faf93). Anything the docket's identity distinguishes -- a chart, a session, a side,
+    a condition, wherever the writer keeps it -- stays distinct by construction, and only an
+    `input_symbol` / `symbol` alias can collapse. A narrower key would refuse real hypotheses
+    as copies, which is breadth destroyed. The first 50 refused rows are named so a wrong
+    refusal can be seen."""
+    ident = identity_fn or identity
+    out: list[dict[str, Any]] = []
+    held: dict[str, int] = {}
+    report: dict[str, Any] = {"families": sorted(EXECUTABLE_UNREAD), "examined": 0,
+                              "executables": 0, "stored_copies": 0, "fresh_refused": 0,
+                              "refuse_enabled": bool(refuse), "refused_by_origin": {},
+                              "refused_first_50": [],
+                              "stored_copies_by_symbol": {}}
+    keyed: list[tuple[dict[str, Any], str | None, bool]] = []
+    by_key_symbol: dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, dict) or _fam(r) not in EXECUTABLE_UNREAD or not _sym(r):
+            # A row that names no instrument is never keyed: with `symbol` among the unread
+            # params, two such rows for different pairs would share a key.
+            keyed.append((r, None, False))
+            continue
+        report["examined"] += 1
+        unread = EXECUTABLE_UNREAD[_fam(r)]
+        params = r.get("params") if isinstance(r.get("params"), dict) else {}
+        key = ident({**r, "params": {k: v for k, v in params.items() if k not in unread}})
+        is_fresh = ident(r) in fresh
+        keyed.append((r, key, is_fresh))
+        by_key_symbol.setdefault(key, _sym(r).upper())
+        if not is_fresh:
+            held[key] = held.get(key, 0) + 1
+    for key, n in held.items():
+        if n > 1:
+            report["stored_copies"] += n - 1
+            sym = by_key_symbol.get(key, "")
+            report["stored_copies_by_symbol"][sym] = (
+                report["stored_copies_by_symbol"].get(sym, 0) + n - 1)
+    for r, key, is_fresh in keyed:
+        if key is None or not is_fresh:
+            out.append(r)
+            continue
+        if key in held:
+            report["fresh_refused"] += 1
+            who = str(r.get("origin") or r.get("producer") or r.get("source") or "unknown")
+            report["refused_by_origin"][who] = report["refused_by_origin"].get(who, 0) + 1
+            if len(report["refused_first_50"]) < 50:
+                report["refused_first_50"].append({
+                    "symbol": _sym(r), "family": _fam(r), "params": r.get("params"),
+                    "origin": who, "candidate_id": r.get("candidate_id")})
+            if refuse:
+                continue
+            out.append(r)
+            continue
+        held[key] = 1
+        out.append(r)
+    report["executables"] = len(held)
+    return out, report
+
+
+def executable_groups(base: Path | None = None, *, top: int = 40) -> dict[str, Any]:
+    """Certificates, forward clocks and sleeves GROUPED by canonical executable, read-only.
+
+    The published answer to "how many distinct rules does the desk hold": per store, records of
+    the keyed families, distinct executables, and every executable held more than once with
+    each copy's own name and state. Retires nothing. An absent store is UNMEASURED."""
+    root = base or BASE
+
+    def group(records: Iterable[tuple[str, str, str, Any, dict[str, Any], str]]
+              ) -> dict[str, Any]:
+        by: dict[str, list[dict[str, str]]] = {}
+        n = 0
+        for name, sym, fam, params, dims, state in records:
+            if fam not in EXECUTABLE_UNREAD:
+                continue
+            n += 1
+            by.setdefault(executable_key(sym, fam, params, **dims), []).append(
+                {"name": name, "state": state})
+        multi = sorted(((k, v) for k, v in by.items() if len(v) > 1),
+                       key=lambda kv: -len(kv[1]))
+        return {"records": n, "executables": len(by), "surplus_copies": n - len(by),
+                "groups_held_more_than_once": len(multi),
+                "groups": [{"symbol": json.loads(k)["symbol"], "family": json.loads(k)["family"],
+                            "key": hashlib.sha256(k.encode("utf-8")).hexdigest()[:16],
+                            "copies": len(v), "members": v[:25]} for k, v in multi[:top]]}
+
+    certified: dict[str, Any] = {}            # certificate cell -> the params it certifies
+
+    def survivors(rel: str) -> dict[str, Any]:
+        doc = _read(root / rel)
+        surv = doc.get("survivors") if isinstance(doc, dict) else None
+        if not isinstance(surv, dict) or not surv:
+            return {"status": "UNMEASURED", "why": f"{rel} absent or empty on this host"}
+        recs = []
+        for name, row in surv.items():
+            spec = row.get("shadow_spec") if isinstance(row, dict) else None
+            if not isinstance(spec, dict):
+                continue
+            if isinstance(spec.get("params"), dict):
+                certified.setdefault(str(name), spec["params"])
+            recs.append((str(name), str(spec.get("symbol") or row.get("sym") or ""),
+                         str(spec.get("family") or ""), spec.get("params"),
+                         {"chart": spec.get("chart") or spec.get("timeframe"),
+                          "selector": spec.get("selector")}, str(row.get("status") or "")))
+        return group(recs)
+
+    out: dict[str, Any] = {
+        "key": "research/hypothesis_families.executable_key(symbol, family, params, **dims)",
+        "unread_params": {k: sorted(v) for k, v in EXECUTABLE_UNREAD.items()},
+        "canon": survivors("data/UNIVERSAL_SURVIVORS.canon.json"),
+        "reports_survivors": survivors("reports/UNIVERSAL_SURVIVORS.json")}
+    reg = _read(root / "data" / "sleeve_registry.json")
+    rows = reg.get("sleeves") if isinstance(reg, dict) else None
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    if isinstance(rows, list) and rows:
+        out["sleeve_registry"] = group(
+            (str((r.get("identity") or {}).get("sleeve_id") or ""),
+             str((r.get("identity") or {}).get("symbol") or ""),
+             str((r.get("identity") or {}).get("family") or ""),
+             (r.get("identity") or {}).get("params"),
+             {"chart": (r.get("identity") or {}).get("timeframe"),
+              "selector": (r.get("identity") or {}).get("selector"),
+              "direction": (r.get("identity") or {}).get("direction")},
+             str(r.get("status") or "")) for r in rows if isinstance(r, dict))
+    else:
+        out["sleeve_registry"] = {"status": "UNMEASURED", "why": "sleeve_registry.json absent"}
+    # A SLEEVE ROW'S OWN `params` IS NOT THE CERTIFIED PARAMETERIZATION (several rows read
+    # `{"timeframe": "H1"}` under different certificate hashes), so grouping on it would call
+    # distinct rules copies. Each sleeve is keyed by the params of the certificate it names;
+    # one whose certificate cannot be found here is counted `unjoined` and grouped with nothing.
+    sl = _read(root / "data" / "sleeves.json")
+    rows = sl.get("sleeves") if isinstance(sl, dict) else None
+    if isinstance(rows, list) and rows:
+        recs, unjoined = [], 0
+        for r in rows:
+            if not isinstance(r, dict) or str(r.get("family") or "") not in EXECUTABLE_UNREAD:
+                continue
+            cell = str((r.get("certificate") or {}).get("cell") or "") if isinstance(
+                r.get("certificate"), dict) else ""
+            if cell not in certified:
+                unjoined += 1
+                continue
+            recs.append((str(r.get("name") or ""), str(r.get("symbol") or ""),
+                         str(r.get("family") or ""), certified[cell],
+                         {"selector": r.get("selector"), "state": r.get("state")},
+                         f"{r.get('status') or ''} risk_frac={r.get('risk_frac')}"))
+        out["sleeves"] = {**group(recs), "unjoined_to_a_certificate": unjoined}
+    else:
+        out["sleeves"] = {"status": "UNMEASURED", "why": "sleeves.json absent"}
+    return out
+
+
 _SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
          "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart")
 
@@ -1081,7 +1498,8 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
         def make(sym: str, row: dict[str, Any] = row, fam: str = fam,
                  params: dict[str, Any] = params) -> dict[str, Any]:
             c = {k: row[k] for k in _SAFE if k in row}
-            c.update({"symbol": sym, "family": fam, "params": dict(params),
+            c.update({"symbol": sym, "family": fam,
+                      "params": retarget_params(params, _sym(row), sym),
                       "contributing_sources": [], "n_independent_sources": 0})
             return c
 
@@ -1163,6 +1581,8 @@ class Pending:
         self.report_path = report_path
         self.ledger_path = ledger_path
         self.identity_fn = identity_fn
+        self.moved_void: list[dict[str, Any]] = []
+        self.void_path: Path | None = None
 
     def commit(self, written: Iterable[dict[str, Any]], *, publish_report: bool = True
                ) -> dict[str, Any]:
@@ -1175,7 +1595,9 @@ class Pending:
         lines = 0
         if report_ok and durable:
             lines = append_reaim_ledger(durable, self.ledger_path)
-        return {"children": len(self.children), "durable": len(durable),
+        voided = ({"moved_void": record_moved_void(self.moved_void, self.void_path)}
+                  if self.moved_void else {})
+        return {"children": len(self.children), "durable": len(durable), **voided,
                 "report_written": report_ok, "ledger_lines": lines,
                 "why": None if report_ok else "report write failed: ledger NOT written"}
 
@@ -1233,12 +1655,31 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
     if avail is None or avail * 1024 ** 2 * 0.25 > len(rows) * 400:
         _RULE_CACHE = {}
     ledger = (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else REAIM_LEDGER
+    given = rows
     try:
         syms = {_sym(r).upper() for r in rows} - {""}
         clusters, cmeta = load_clusters(
             syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
+        # REPAIR FIRST: the census and the re-aim must see the cell each row actually is.
+        # THE REVERT PATH, like the re-aim's: QUANT_MOVED_CELL_REPAIR=0 keeps the census and
+        # rewrites nothing. `given` is what the caller handed in, returned untouched on a fault.
+        rows, moved, void = repair_moved_cells(
+            given, identity_fn=identity_fn, now=now,
+            rewrite=os.environ.get("QUANT_MOVED_CELL_REPAIR", "1") != "0")
+        # ONE EXECUTABLE, ONE ROW: a fresh copy of a rule the docket already holds is refused
+        # here (QUANT_EXECUTABLE_DEDUP=0 counts and refuses nothing).
+        rows, copies = refuse_executable_copies(
+            rows, fresh, identity_fn=identity_fn,
+            refuse=os.environ.get("QUANT_EXECUTABLE_DEDUP", "1") != "0")
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, done=reaimed_parents(ledger), now=now)
+        rep["moved_cells"] = moved
+        rep["executable_copies"] = copies
+        try:
+            rep["executable_groups"] = executable_groups(
+                hyp_dir.parent.parent if hyp_dir is not None and hyp_dir != HYP else None)
+        except Exception as exc:
+            rep["executable_groups"] = {"status": f"UNMEASURED: {type(exc).__name__}: {exc}"}
         # THE REVERT PATH, not a throttle: QUANT_FAMILY_REAIM=0 keeps the check, the stamps and
         # the census and mints no descendant (the duplicates were never removed either way).
         if os.environ.get("QUANT_FAMILY_REAIM", "1") == "0":
@@ -1250,9 +1691,12 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
             rep["reaim_enabled"] = True
         out = rows + children
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
-        return out, summary(doc), Pending(children, doc, report_path, ledger, identity_fn)
+        pending = Pending(children, doc, report_path, ledger, identity_fn)
+        pending.moved_void = void
+        pending.void_path = (hyp_dir / MOVED_VOID.name) if hyp_dir is not None else MOVED_VOID
+        return out, summary(doc), pending
     except Exception as exc:
-        return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
+        return given, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
     finally:
         _RULE_CACHE = None
 
@@ -1313,7 +1757,7 @@ def summary(doc: Mapping[str, Any]) -> dict[str, Any]:
     out["daily_trend"] = (doc.get("daily") or {}).get("trend")
     out["intake"] = {k: (doc.get("intake") or {}).get(k) for k in
                      ("checked", "by_status", "duplicate_share", "reaimed",
-                      "no_lawful_empty_target")}
+                      "no_lawful_empty_target", "moved_cells", "executable_copies")}
     out["report"] = "desks/mt5/reports/HYPOTHESIS_FAMILIES.json"
     return out
 
