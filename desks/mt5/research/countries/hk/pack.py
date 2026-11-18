@@ -733,7 +733,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "HKEX HSI and HSCEI futures and options open interest",
      "covers": "daily open interest and turnover by contract and expiry month",
      "frequency": "daily", "lag": "same day after the close",
-     "root": "hkex.com.hk", "licence": "free, public",
+     "root": "hkex.com.hk",
+     "licence": "TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                "access; never fetched",
      "note": "The expiry-month distribution of open interest is what tells you whether a "
              "second-last-business-day effect has anything behind it."},
     {"id": "sfc_short_positions",
@@ -747,7 +749,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "CCASS shareholding search",
      "covers": "holdings of every listed security by clearing participant, daily",
      "frequency": "daily", "lag": "one business day",
-     "root": "hkex.com.hk", "licence": "free, public",
+     "root": "hkex.com.hk",
+     "licence": "TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                "access; never fetched",
      "note": "The southbound participant's holdings are visible here by name, which makes "
              "mainland ownership of Hong Kong equity one of the most granular free flow series "
              "in Asia."},
@@ -755,7 +759,9 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
      "name": "Stock Connect southbound turnover and quota",
      "covers": "mainland buying and selling of Hong Kong shares",
      "frequency": "daily", "lag": "same day",
-     "root": "hkex.com.hk", "licence": "free, public",
+     "root": "hkex.com.hk",
+     "licence": "TERMS_BLOCKED: HKEX Terms of Use s5 refuse bots and programmatic "
+                "access; never fetched",
      "note": "Unaffected by the 2024-08-19 northbound disclosure change, which makes the Hong "
              "Kong half of the link the better-instrumented one."},
     {"id": "hkma_monetary_base",
@@ -846,8 +852,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                        "studies the others cannot."),
     source_class("hk_institutional", "HKEX, the TMA, CCASS and the clearing infrastructure",
                  layer="institutional",
-                 roots=("hkex.com.hk", "hkexnews.hk", "tma.org.hk", "hsi.com.hk",
-                        "hkex.com.hk CCASS shareholding search"),
+                 # hkex.com.hk and hkexnews.hk left the roots 2026-11-18: HKEX Terms of Use s5
+                 # refuse bots and programmatic access (libs/data/refused_hosts.py).
+                 roots=("tma.org.hk", "hsi.com.hk"),
                  queries=("香港銀行同業拆息", "港股通 每日額度", "中央結算系統 持股紀錄",
                           "期指未平倉", "恒生 AH股溢價指數", "新股 招股", "沽空 報告",
                           "市場波動調節機制"),
@@ -937,7 +944,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     source_class("hk_archive", "Gazettes, rule-change notices and web archives",
                  layer="archive",
                  roots=("web.archive.org", "gld.gov.hk (公眾假期 gazette)",
-                        "hkex.com.hk historical circulars and trading-calendar notices",
                         "hkma.gov.hk historical press releases and Quarterly Bulletins"),
                  queries=("公眾假期 憲報", "惡劣天氣 交易 安排", "收市競價交易時段 實施",
                           "FINI 新股結算平台", "兌換保證 觸發 紀錄", "市場波動調節機制 推出"),
@@ -970,7 +976,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  layer="source_graph",
                  roots=("github.com topic and dependency graphs for HKEX data packages",
                         "hkimr.org and SSRN citation graphs",
-                        "hkexnews.hk document cross-reference structure",
                         "webb-site.com relationship graph"),
                  queries=("HKEX API", "港交所 數據 下載", "CCASS 爬蟲", "恒指 成份股 歷史",
                           "hkma api 總結餘"),
@@ -1056,7 +1061,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
             pit_feasible=True,
             assets=("HK50", "CHINAH", "USDHKD"),
             mechanism_families=("foreign_flow", "capital_account", "risk_appetite"),
-            how_to_fetch="hkex.com.hk; unaffected by the 2024-08-19 northbound change"),
+            how_to_fetch="TERMS_BLOCKED (HKEX Terms of Use s5), never fetched; "
+                         "was: hkex.com.hk; unaffected by the 2024-08-19 northbound change"),
     dataset("hkex_derivatives_oi",
             source="HKEX daily market report for HSI and HSCEI futures and options",
             coverage="open interest and turnover by contract month",
@@ -1068,7 +1074,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
             pit_feasible=True,
             assets=("HK50", "CHINAH"),
             mechanism_families=("positioning", "expiry", "hedging_flow"),
-            how_to_fetch="hkex.com.hk daily market reports"),
+            how_to_fetch="TERMS_BLOCKED (HKEX Terms of Use s5), never fetched; "
+                         "was: hkex.com.hk daily market reports"),
     dataset("sfc_short_positions",
             source="SFC Aggregated Reportable Short Positions",
             coverage="aggregate short interest in reportable securities",
@@ -1108,7 +1115,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
             pit_feasible=True,
             assets=("USDHKD", "HK50"),
             mechanism_families=("liquidity", "funding", "microstructure_regime"),
-            how_to_fetch="hkexnews.hk. SPLIT AT 2023-11: FINI replaced full prefunding with a "
+            how_to_fetch="TERMS_BLOCKED (HKEX Terms of Use s5), never fetched; "
+                         "was: hkexnews.hk. SPLIT AT 2023-11: FINI replaced full prefunding with a "
                          "pre-committed model and structurally shrank the IPO HIBOR squeeze, so "
                          "an IPO-to-HIBOR estimate pooled across that date is an average of two "
                          "different market designs"),
@@ -1136,7 +1144,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
             pit_feasible=True,
             assets=("HK50", "CHINAH"),
             mechanism_families=("microstructure_regime", "liquidity", "calendar"),
-            how_to_fetch="hkex.com.hk notices. Before 2024-09-23 a signal 8 closed the market "
+            how_to_fetch="TERMS_BLOCKED (HKEX Terms of Use s5), never fetched; "
+                         "was: hkex.com.hk notices. Before 2024-09-23 a signal 8 closed the market "
                          "for the session; since then it does not, and TAIWAN -- which still "
                          "closes for typhoons -- is the natural control for the change"),
     dataset("hk_expiry_calendar",
@@ -1972,7 +1981,7 @@ RELEASE_CLASSES: tuple[dict[str, Any], ...] = (
 INSTITUTIONAL_FLOW_SOURCES: tuple[str, ...] = (
     "HKMA 總結餘 Aggregate Balance and its next-day forecast (daily, hkma.gov.hk)",
     "HKMA Convertibility Undertaking triggerings (event, same-day disclosed with amounts)",
-    "HKEX Stock Connect southbound turnover and quota (daily, hkex.com.hk)",
+    "HKEX Stock Connect southbound turnover and quota (daily; TERMS_BLOCKED, HKEX ToU s5)",
     "CCASS shareholding search (daily holdings by clearing participant)",
     "HKEX HSI and HSCEI futures and options open interest (daily)",
     "SFC Aggregated Reportable Short Positions (weekly, one-week lag)",

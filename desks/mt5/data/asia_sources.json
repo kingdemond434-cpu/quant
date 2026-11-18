@@ -806,25 +806,6 @@
    "why": "179 open datasets, free, no registration and no authentication -- the easiest surface on this entire list for a 24/7 system"
   },
   {
-   "id": "hkex_data",
-   "plane": "hk_sg",
-   "country": "hk",
-   "name": "HKEX market and reference data",
-   "url": "https://www.hkex.com.hk/Market-Data/Statistics",
-   "expect": "any",
-   "access": "public",
-   "cadence": "daily",
-   "pit": {
-    "event_time": "close",
-    "publication_lag_days": 0
-   },
-   "targets": [
-    "HK50",
-    "USDCNH"
-   ],
-   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly"
-  },
-  {
    "id": "mas_api",
    "plane": "hk_sg",
    "country": "sg",

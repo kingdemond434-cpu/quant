@@ -3133,32 +3133,6 @@
    "licence": "CSRC-designated disclosure site"
   },
   {
-   "id": "hkexnews",
-   "name": "HKEXnews listed company announcements",
-   "publisher_type": "exchange",
-   "url": "https://www.hkexnews.hk/",
-   "endpoint": null,
-   "classes": [
-    "corporate_events"
-   ],
-   "region": "HK",
-   "frequency": "daily",
-   "history_start": 1999,
-   "latency_days": 0,
-   "auth": "none",
-   "auth_env": "",
-   "languages": [
-    "zh",
-    "en"
-   ],
-   "instruments": [
-    "HK50",
-    "CHINAH"
-   ],
-   "participant_structure": "mixed",
-   "licence": "HKEX disclosure"
-  },
-  {
    "id": "kap_tr",
    "name": "KAP Public Disclosure Platform",
    "publisher_type": "regulator",
