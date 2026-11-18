@@ -177,6 +177,7 @@ def test_every_family_the_new_sources_emit_has_a_registered_builder() -> None:
     lookup) answers to; indirect children inherit a certified parent's family and are refused
     before donation when it does not resolve (`_parent_signal_returns`)."""
     from mt5desk.executables import resolve_family
+
     from research import paid_substitute_engine as pse
     gains = {}
     for sid in ("jobs_indeed_postings", "sat_s2_crop_green"):
