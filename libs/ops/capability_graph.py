@@ -128,6 +128,11 @@ NODES: tuple[Node, ...] = (
     Node("weak_signal_compiler", "desks/mt5/research/weak_signal_compiler.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/weak_signal_compiler.json"),
          reads=("desks/mt5/reports/universal_gates_external.json", "desks/mt5/data/universe/")),
+    # The unknown-unknown lane (build check row 20): residuals of the desk's own bars after the
+    # market, peer-class and family-exposure factors; recurring patterns donated to the compiler.
+    Node("residual_anomaly_scan", "desks/mt5/research/residual_anomaly_scan.py",
+         writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/UNEXPLAINED_RESIDUALS.json"),
+         reads=("desks/mt5/data/universe/",)),
     Node("fund_playbook", "desks/mt5/research/fund_playbook.py",
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/FUND_PLAYBOOK.json",
                  "desks/mt5/data/hypothesis_graph.jsonl")),
@@ -962,6 +967,7 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/markout.json", "desks/mt5/reports/allocator_attribution.json",
     "desks/mt5/reports/RESURRECTION.json", "desks/mt5/reports/DATA_PROSPECTOR.json",
     "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/reports/factor_residual.json",
+    "desks/mt5/reports/UNEXPLAINED_RESIDUALS.json",
     "desks/mt5/reports/plumbing_miner.json", "desks/mt5/reports/transition_alpha.json",
     "desks/mt5/reports/weak_signal_compiler.json", "desks/mt5/reports/FUND_PLAYBOOK.json",
     "desks/mt5/reports/pf_allocator.json", "desks/mt5/reports/REGIME_COVERAGE.json",
