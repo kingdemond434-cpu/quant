@@ -358,9 +358,9 @@ def test_pruned_sleeve_does_not_hold_the_common_window_short(tmp_path: Path) -> 
     doc_s["sleeves"].append({"name": "late_c", "symbol": "XAUUSD", "status": "LIVE",
                              "risk_frac": 0.01, "forward_start": late.isoformat()})
     paths["sleeves_path"].write_text(json.dumps(doc_s))
-    # one day of rows out of ten: silent, so it is pruned
+    # two days of rows out of ten: silent, so it is pruned
     (paths["shadow_dir"] / RI.ledger_name("late_c")).write_text(
-        json.dumps(_ledger(3, late, n_days=1)))
+        json.dumps(_ledger(3, late, n_days=2)))
     doc = RI.build(NOW, **paths)
     c = next(r for r in doc["sleeves"] if r["sleeve"] == "late_c")
     assert c["status"] == RI.UNMEASURED and "ledger silent" in c["why"]
