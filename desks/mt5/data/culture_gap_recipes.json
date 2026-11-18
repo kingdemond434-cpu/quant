@@ -2368,6 +2368,122 @@
    ],
    "source_id": "banxico_fix",
    "mechanism": "Banco de Mexico informs the FIX, the peso's settlement reference for dollar obligations, from 12:00 Mexico City time; displacement into it reverses after"
+  },
+  {
+   "id": "sg_mas_mps_hour",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "SG",
+    "participant_structure": "any"
+   },
+   "source_culture": "SG/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDSGD",
+    "EURSGD",
+    "SGDJPY",
+    "AUDSGD"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Singapore",
+     "at": "08:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "mas_mps_schedule",
+   "mechanism": "every scheduled MAS Monetary Policy Statement lands at 08:00 SGT and moves the whole SGD basket together (MAS sets a band on the S$NEER, not a rate); displacement built into the release hour reverses once the statement is priced",
+   "note": "fires ONLY on SCHEDULED statement dates (desks/mt5/data/calendars/mas_mps.json, generated from countries/sg/band_state.py MPS_RECORD; off-cycle statements excluded as unknowable in advance), in the hour containing 08:00 Singapore time",
+   "calendar": "mas_mps"
+  },
+  {
+   "id": "sg_neer_band_state",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "SG",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "SG/en",
+   "participant_structure": "policy_driven",
+   "family": "exogenous_conditioner",
+   "symbols": [
+    "USDSGD"
+   ],
+   "pack": "sg_neer_band",
+   "windows": [],
+   "grid": {
+    "transform": [
+     "level_z",
+     "delta_z"
+    ],
+    "threshold": [
+     1.0,
+     1.5
+    ],
+    "side_when_high": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1",
+    "H4",
+    "D1"
+   ],
+   "source_id": "mas_mps_schedule",
+   "mechanism": "the estimated S$NEER position inside MAS's undisclosed policy band (synthetic basket from broker bars, centre anchored at each re-centring, slope from MAS's statements); near an edge MAS leans against the move, so USDSGD behaves differently there than mid-band"
+  },
+  {
+   "id": "hk_hibor_sofr_carry_state",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "HK",
+    "participant_structure": "policy_driven"
+   },
+   "source_culture": "HK/en",
+   "participant_structure": "policy_driven",
+   "family": "exogenous_conditioner",
+   "symbols": [
+    "USDHKD"
+   ],
+   "pack": "hk_hibor_sofr_carry",
+   "windows": [],
+   "grid": {
+    "transform": [
+     "level_z",
+     "delta_z"
+    ],
+    "threshold": [
+     1.0,
+     1.5
+    ],
+    "side_when_high": [
+     1,
+     -1
+    ]
+   },
+   "charts": [
+    "H1",
+    "H4",
+    "D1"
+   ],
+   "source_id": "hkma_open_api",
+   "mechanism": "HIBOR minus SOFR is the carry of the USD/HKD peg: a deep negative carry pushes USDHKD to the 7.85 weak-side undertaking until HKMA intervention drains the Aggregate Balance and HIBOR rises; the spread conditions where USDHKD sits inside its 7.75-7.85 band"
   }
  ]
 }

@@ -173,14 +173,14 @@ CENTRAL_BANK: dict[str, Any] = {
     ),
     "dates": {
         2024: ("2024-01-29", "2024-04-12", "2024-07-26", "2024-10-14"),
-        2025: ("2025-01-24", "2025-04-14", "2025-07-30"),
-        2026: (),
+        2025: ("2025-01-24", "2025-04-14", "2025-07-30", "2025-10-14"),
+        2026: ("2026-01-29", "2026-04-14", "2026-07-27", "2026-10-14"),
     },
-    "dates_status": "2024 is the first full quarterly year and is complete. The 2025 fourth "
-                    "statement and the whole 2026 calendar are UNMEASURED in this pack (L1.28a) "
-                    "and must be read from the MAS media-release calendar before any event study "
-                    "-- an invented date is worse than a missing one, because a missing one is "
-                    "visible",
+    "dates_status": "2024, 2025 and 2026 are complete, read 2026-11-18 from MAS's past "
+                    "monetary policy decisions page. The full record from 2016 (with the "
+                    "off-cycle flags) is countries/sg/band_state.py MPS_RECORD, which generates "
+                    "data/calendars/mas_mps.json for the event cells. 2027 is UNMEASURED: MAS's "
+                    "advance release calendar gives only 'not later than 29 Jan 2027'",
 }
 
 #: The announced band moves. This is Singapore's equivalent of a policy rate history, and it is
@@ -216,6 +216,12 @@ BAND_STATE: tuple[dict[str, str], ...] = (
              "cadence"},
     {"date": "2025-04-14", "action": "EASE", "slope": "reduced slightly", "centre": "unchanged",
      "width": "unchanged", "note": "a second consecutive slope reduction"},
+    {"date": "2026-04-14", "action": "TIGHTEN", "slope": "raised slightly", "centre": "unchanged",
+     "width": "unchanged", "note": "the first increase since the 2022 cycle"},
+    {"date": "2026-07-27", "action": "TIGHTEN", "slope": "raised very slightly",
+     "centre": "unchanged", "width": "unchanged",
+     "note": "a second, smaller increase; the band's estimated position is published as the "
+             "USDSGD state sg_neer_band (countries/sg/band_state.py)"},
 )
 
 # --------------------------------------------------------------------------- fixings, settlement

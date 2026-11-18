@@ -1,0 +1,277 @@
+{
+ "refRates": [
+  {
+   "effectiveDate": "2026-07-09",
+   "type": "SOFR",
+   "percentRate": 4.105,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-07-08",
+   "type": "SOFR",
+   "percentRate": 4.11,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-07-07",
+   "type": "SOFR",
+   "percentRate": 4.115,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-07-06",
+   "type": "SOFR",
+   "percentRate": 4.12,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-07-02",
+   "type": "SOFR",
+   "percentRate": 4.13,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-07-01",
+   "type": "SOFR",
+   "percentRate": 4.135,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-30",
+   "type": "SOFR",
+   "percentRate": 4.14,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-29",
+   "type": "SOFR",
+   "percentRate": 4.145,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-26",
+   "type": "SOFR",
+   "percentRate": 4.15,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-25",
+   "type": "SOFR",
+   "percentRate": 4.155,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-24",
+   "type": "SOFR",
+   "percentRate": 4.16,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-23",
+   "type": "SOFR",
+   "percentRate": 4.165,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-22",
+   "type": "SOFR",
+   "percentRate": 4.17,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-19",
+   "type": "SOFR",
+   "percentRate": 4.175,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-18",
+   "type": "SOFR",
+   "percentRate": 4.18,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-17",
+   "type": "SOFR",
+   "percentRate": 4.185,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-16",
+   "type": "SOFR",
+   "percentRate": 4.19,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-15",
+   "type": "SOFR",
+   "percentRate": 4.195,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-12",
+   "type": "SOFR",
+   "percentRate": 4.2,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-11",
+   "type": "SOFR",
+   "percentRate": 4.205,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-10",
+   "type": "SOFR",
+   "percentRate": 4.21,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-09",
+   "type": "SOFR",
+   "percentRate": 4.215,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-08",
+   "type": "SOFR",
+   "percentRate": 4.22,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-05",
+   "type": "SOFR",
+   "percentRate": 4.225,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-04",
+   "type": "SOFR",
+   "percentRate": 4.23,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-03",
+   "type": "SOFR",
+   "percentRate": 4.235,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-02",
+   "type": "SOFR",
+   "percentRate": 4.24,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-06-01",
+   "type": "SOFR",
+   "percentRate": 4.245,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-29",
+   "type": "SOFR",
+   "percentRate": 4.25,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-28",
+   "type": "SOFR",
+   "percentRate": 4.255,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-27",
+   "type": "SOFR",
+   "percentRate": 4.26,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-26",
+   "type": "SOFR",
+   "percentRate": 4.265,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-25",
+   "type": "SOFR",
+   "percentRate": 4.27,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-22",
+   "type": "SOFR",
+   "percentRate": 4.275,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-21",
+   "type": "SOFR",
+   "percentRate": 4.28,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-20",
+   "type": "SOFR",
+   "percentRate": 4.285,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-19",
+   "type": "SOFR",
+   "percentRate": 4.29,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-18",
+   "type": "SOFR",
+   "percentRate": 4.295,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  },
+  {
+   "effectiveDate": "2026-05-15",
+   "type": "SOFR",
+   "percentRate": 4.3,
+   "percentPercentile1": 4.2,
+   "volumeInBillions": 2600
+  }
+ ]
+}

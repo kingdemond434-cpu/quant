@@ -946,6 +946,28 @@
    "licence": "public page",
    "fact": "PTAX averages four BCB dealer consultations at 10:00, 11:00, 12:00 and 13:00-13:10 Brasilia time and is announced soon after the last one (about 13:15)",
    "verified": "secondary"
+  },
+  {
+   "id": "mas_mps_schedule",
+   "name": "MAS Monetary Policy Statement record (dates, slope, re-centring)",
+   "url": "https://www.mas.gov.sg/monetary-policy",
+   "region": "sg",
+   "language": "en",
+   "jurisdiction": "SG",
+   "participant_structure": "policy_driven",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "quarterly",
+   "licence": "MAS website terms: personal non-commercial use only (TERMS_BLOCKED for fetching; see desks/mt5/research/countries/asia_rv_sources.json row mas_website). The record is transcribed by hand into countries/sg/band_state.py and never fetched by an organ",
+   "fact": "MAS issues its Monetary Policy Statement at 08:00 SGT on scheduled dates (quarterly since 2024) and states the S$NEER band's slope, width and centre in words; off-cycle statements arrive without notice",
+   "verified": "page"
   }
  ]
 }

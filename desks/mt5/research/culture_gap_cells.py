@@ -823,6 +823,19 @@ def render(doc: dict[str, Any]) -> str:
             f"{doc['wall_s']}s")
 
 
+def refresh_states() -> dict[str, Any]:
+    """THE STATES THREE RECIPES READ, REFRESHED FIRST (rows 112/113, 2026-11-18). The HIBOR-SOFR
+    carry (USDHKD) and S$NEER band (USDSGD) series and the MAS statement calendar are rebuilt
+    here so `pack_signals` and `local_clock` see them in this same pass
+    (`research/countries/asia_rv_states.py`, report `reports/ASIA_RV_STATES.json`). A failure
+    is named in this leg's report and never stops the cells."""
+    try:
+        from research.countries import asia_rv_states
+        return asia_rv_states.refresh()
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--once", action="store_true", help="one pass (the only mode)")
@@ -834,7 +847,11 @@ def main(argv: list[str] | None = None) -> int:
     if a.registry is not None:
         from libs.moat import registry as R
         R.set_path(a.registry)
-    doc = run(a.budget_s, dry_run=a.dry_run, year=a.year)
+    t0 = time.monotonic()
+    states = refresh_states() if not a.dry_run else {"skipped": "dry run"}
+    # the states' wall time comes out of this leg's budget, never on top of it
+    doc = run(max(30.0, a.budget_s - (time.monotonic() - t0)), dry_run=a.dry_run, year=a.year)
+    doc["asia_rv_states"] = states
     if not a.dry_run:
         _write(OUT, doc)
     print(render(doc))
