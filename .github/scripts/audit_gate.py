@@ -1026,13 +1026,34 @@ def code_identity(src: str) -> str | None:
     return ast.dump(tree, include_attributes=False)
 
 
+#: An inserted grow-only line: blank, a comment, or one plain path or glob that cannot be read
+#: as an option (#1367 audit SF: no leading "-", "!" or whitespace-separated words).
+_GROW_LINE = re.compile(r"^(?:\s*|\s*#.*|[A-Za-z0-9_.*/][A-Za-z0-9_.*/\-]*)$")
+#: PEP 263: an encoding cookie in a comment on the first two lines (#1367 audit HOLD 3).
+_CODING = re.compile(r"^[ \t\f]*#.*?coding[:=][ \t]*([-\w.]+)")
+
+
 def inserted_only(old: str, new: str) -> bool:
-    """Is `new` exactly `old` with one or more lines inserted (none removed, none reordered)?"""
+    """Is `new` exactly `old` with one or more plain lines inserted (none removed, none
+    reordered), each inserted line blank, a comment, or a single path or glob?"""
     a, b = old.splitlines(), new.splitlines()
     if len(b) <= len(a):
         return False
-    rest = iter(b)
-    return all(any(x == y for y in rest) for x in a)
+    added: list[str] = []
+    i = 0
+    for line in b:
+        if i < len(a) and line == a[i]:
+            i += 1
+        else:
+            added.append(line)
+    return i == len(a) and all(_GROW_LINE.match(x) for x in added)
+
+
+def _decoding(src: str) -> tuple[bool, tuple[str, ...]]:
+    """What decides how the file's bytes become text: a BOM and the encoding cookie lines."""
+    head = src.splitlines()[:2]
+    cookies = tuple(m.group(1).lower() for ln in head if (m := _CODING.match(ln)))
+    return src.startswith("\ufeff"), cookies
 
 
 def tightening_only(
@@ -1060,7 +1081,9 @@ def tightening_only(
         if not name:
             return False, "silent-veto: a file has no name"
         if not (hit(name, pats) or (old and hit(old, pats))):
-            continue
+            # #1367 audit HOLD 1: a root-only PR. Any other file would merge without the
+            # standing path's own checks, so a mixed PR takes the normal paths.
+            return False, f"silent-veto: {name} is not a root file; only root-only PRs qualify"
         rooted += 1
         if hit(name, SILENT_ROOT_LOCKED) or (old and hit(old, SILENT_ROOT_LOCKED)):
             return False, f"silent-veto: {name} is locked; it needs zuck's own line"
@@ -1075,6 +1098,8 @@ def tightening_only(
                 return False, f"silent-veto: {name} is grow-only; this edit removes or moves lines"
         elif name.lower().endswith(".py"):
             a, b = code_identity(before), code_identity(after)
+            if _decoding(before) != _decoding(after):
+                return False, f"silent-veto: {name} changes its encoding cookie or BOM"
             if a is None or b is None or a != b:
                 return False, f"silent-veto: {name} changes code, not only comments or docstrings"
         else:
@@ -1084,13 +1109,16 @@ def tightening_only(
     return True, f"silent-veto: {rooted} root file(s), comments, docstrings or insertions only"
 
 
-def vetoed(comments: Iterable[Mapping[str, Any]], since: str) -> bool:
-    """A trusted comment exactly VETO (any case, any spacing) posted at or after `since`. Any
-    trusted author may veto: stopping is always safe."""
+def vetoed(comments: Iterable[Mapping[str, Any]]) -> bool:
+    """A trusted comment exactly VETO (any case, any spacing) anywhere on the PR, or any edited
+    trusted comment (an edit can hide a VETO). It is never lifted on this path, by a later CLEAR
+    or a new head (#1367 audit HOLD 2): after a VETO the PR needs zuck's own line. Any trusted
+    author may veto: stopping is always safe."""
     for c in comments:
         body = " ".join(str(c.get("body") or "").split()).upper()
         trusted = str(c.get("author_association") or "") in TRUSTED
-        if body == VETO and trusted and str(c.get("created_at") or "") >= since:
+        edited = c.get("updated_at") not in (None, c.get("created_at"))
+        if trusted and (body == VETO or edited):
             return True
     return False
 
@@ -1768,8 +1796,8 @@ def run(
         comments = _flat(
             _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         )
-        if vetoed(comments, clear["at"]):
-            return None, f"silent-veto: `{VETO}` on the PR after the CLEAR stands"
+        if vetoed(comments):
+            return None, f"silent-veto: a `{VETO}` (or an edited comment) on the PR stands"
         fresh, fwhy = up_to_date(base, head)
         if not fresh:
             return None, f"silent-veto: {fwhy}"

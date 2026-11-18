@@ -126,7 +126,31 @@ def test_an_unreadable_side_is_refused() -> None:
 
 def test_a_pr_with_no_root_file_does_not_take_this_path() -> None:
     ok, why = _judge(_files("libs/x.py"), {})
-    assert not ok and "no root" in why
+    assert not ok and "not a root file" in why
+    assert not _judge([], {})[0]
+
+
+def test_a_root_docstring_edit_cannot_carry_a_non_root_file() -> None:
+    # #1367 audit HOLD 1: a docstring edit to a root file plus a sizing change elsewhere
+    table = {("origin/LIVE", PUB): CODE, ("HEAD", PUB): CODE_DOCS}
+    ok, why = _judge(_files(PUB, "desks/mt5/ftmo_executor.py"), table)
+    assert not ok and "only root-only PRs" in why
+
+
+def test_an_encoding_cookie_or_bom_change_is_refused() -> None:
+    # #1367 audit HOLD 3: same AST, different runtime text for every non-ASCII literal
+    for after in ("# -*- coding: latin-1 -*-\n" + CODE, "\ufeff" + CODE):
+        ok, why = _judge(_files(PUB), {("origin/LIVE", PUB): CODE, ("HEAD", PUB): after})
+        assert not ok and "encoding" in why, after[:30]
+
+
+def test_grow_only_insertions_must_be_plain_paths_or_comments() -> None:
+    for line in ("--deselect=tests", "-k foo", "!keep", "a b", "tests/x.py extra"):
+        table = {("origin/LIVE", GROW): "a\n", ("HEAD", GROW): f"a\n{line}\n"}
+        assert not _judge(_files(GROW), table)[0], line
+    for line in ("# why", "", "tests/ops/test_new.py", "desks/*/x_*.py"):
+        table = {("origin/LIVE", GROW): "a\n", ("HEAD", GROW): f"a\n{line}\n"}
+        assert _judge(_files(GROW), table)[0], line
 
 
 def test_a_mixed_pr_is_refused_when_any_root_file_changes_code() -> None:
@@ -139,13 +163,21 @@ def test_a_mixed_pr_is_refused_when_any_root_file_changes_code() -> None:
     assert not _judge(_files(PUB, "ops/release/merger/merge.py"), table)[0]
 
 
-def test_veto_is_any_trusted_veto_after_the_clear() -> None:
-    clear_at = "2026-11-18T18:00:00Z"
-    c = {"body": " veto ", "author_association": "OWNER", "created_at": "2026-11-18T19:00:00Z"}
-    assert ag.vetoed([c], clear_at)
-    assert not ag.vetoed([{**c, "created_at": "2026-11-18T17:00:00Z"}], clear_at)
-    assert not ag.vetoed([{**c, "author_association": "NONE"}], clear_at)
-    assert not ag.vetoed([{**c, "body": "veto this?"}], clear_at)
+def test_a_veto_is_never_lifted_by_a_later_clear() -> None:
+    # #1367 audit HOLD 2: a re-posted CLEAR after zuck's VETO must not erase it
+    at = "2026-11-18T19:00:00Z"
+    veto = {"body": " veto ", "author_association": "OWNER", "created_at": at, "updated_at": at}
+    later_clear = {
+        "body": "AUDIT CLEAR " + "a" * 40,
+        "author_association": "COLLABORATOR",
+        "created_at": "2026-11-18T20:00:00Z",
+        "updated_at": "2026-11-18T20:00:00Z",
+    }
+    assert ag.vetoed([veto, later_clear])
+    assert not ag.vetoed([{**veto, "author_association": "NONE"}])
+    assert not ag.vetoed([{**veto, "body": "veto this?"}])
+    # an edited trusted comment could have hidden a VETO: it counts as one
+    assert ag.vetoed([{**later_clear, "updated_at": "2026-11-18T21:00:00Z"}])
 
 
 def test_the_window_is_72_hours_from_the_delivered_notice(tmp_path: Path) -> None:
