@@ -547,6 +547,15 @@ def judge_resident(name: str, artifact: str, artifact_age: float | None,
                                        "artifact contract and no repetition interval: nothing "
                                        "bounds its output's age -- never green; cure: "
                                        f"{RESIDENT_UNBOUNDED_CURE}"), facts
+    if not artifact and not interval:
+        # No contract and no cadence: the only bound left is a run-length ceiling (often the
+        # scheduler's PT72H default), which says how long one run may last, not how old its
+        # output may grow. Judging the log against it would read a day-old log green, so the
+        # row is reported for what it is -- UNCONTRACTED -- with HUNG still judged above.
+        return "UNCONTRACTED", ("resident instance running with no artifact contract and no "
+                                "repetition interval: only its ExecutionTimeLimit "
+                                f"({lim.get('execution_time_limit')}) bounds it, which is no "
+                                "cadence -- add its output to ops/organ_contract.CONTRACTS"), facts
     bound = ("its ExecutionTimeLimit" if limit is not None else "no ExecutionTimeLimit")
     return "RESIDENT_RUNNING", (f"resident instance running; freshest output "
                                 f"{fresh[0]:.0f} min old, inside {bound}"), facts

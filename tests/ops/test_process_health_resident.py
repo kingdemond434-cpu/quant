@@ -3,7 +3,8 @@
 MEASURED on the trading box: 36 tasks carried last result 0x800710E0, every one in state Running.
 Under MultipleInstances=IgnoreNew that code means "an instance is already running": the task's
 resident or long instance refused a relaunch. None were run-as or logon refusals. These pin the
-reading: such a row is RESIDENT_RUNNING (never refused, never UNCONTRACTED), judged by the
+reading: such a row is RESIDENT_RUNNING (never refused; UNCONTRACTED only when no contract and no
+cadence bound its output -- the run ceiling alone is no cadence), judged by the
 freshest of its artifact and its log. Output older than the task's own ExecutionTimeLimit (for
 example MT5-IndependenceIntake, PT20M, log 96 min old) is HUNG, named, and the headline is RED.
 """
@@ -368,3 +369,54 @@ def test_an_unparseable_execution_limit_is_a_why_and_reads_unmeasured(
     row = _by(doc)["MT5-OddLimit"]
     assert row["verdict"] == "RESIDENT_UNMEASURED" and raw in row["why"]
     assert row["cure"] == ph.RESIDENT_LIMITS_CURE and doc["status"] == "ATTENTION"
+
+
+# --- Auditor on #1309: an uncontracted resident is not judged on its run ceiling ---------------
+
+def _task_no_interval(box: Path, name: str, *, log_age_min: float, limit: str | None) -> None:
+    _task(box, name, log_age_min=log_age_min, limit=limit)
+    xml = (box / "Tasks" / name).read_bytes().decode("utf-16")
+    xml = xml.replace("<Repetition><Interval>PT1H</Interval></Repetition>", "")
+    (box / "Tasks" / name).write_bytes(xml.encode("utf-16"))
+
+
+@pytest.mark.parametrize("limit", [None, "PT72H"])   # absent = the scheduler's PT72H default
+def test_an_uncontracted_resident_with_only_a_run_ceiling_reads_uncontracted(
+    monkeypatch: pytest.MonkeyPatch, box: Path, limit: str | None,
+) -> None:
+    # a day-old log inside a 72h ceiling used to read RESIDENT_RUNNING, i.e. green
+    _task_no_interval(box, "MT5-Longrun", log_age_min=24 * 60, limit=limit)
+    row = _by(_build(monkeypatch, _row("MT5-Longrun")))["MT5-Longrun"]
+    assert row["resident"]["interval_min"] is None
+    assert row["verdict"] == "UNCONTRACTED", row["why"]
+    assert "organ_contract" in row["why"]
+
+
+def test_an_uncontracted_resident_past_its_ceiling_is_still_hung(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    _task_no_interval(box, "MT5-Longrun", log_age_min=73 * 60, limit="PT72H")
+    assert _by(_build(monkeypatch, _row("MT5-Longrun")))["MT5-Longrun"]["verdict"] == "HUNG"
+
+
+def test_never_stale_keeps_uncontracted_residents_on_the_add_a_contract_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    res = {"execution_time_limit_min": 4320.0}
+    doc = {"processes": [
+        {"name": "MT5-NewsDesk", "verdict": "RESIDENT_RUNNING", "resident": res,
+         "artifact": None},
+        {"name": "MT5-Contracted", "verdict": "RESIDENT_RUNNING", "resident": res,
+         "artifact": "x.json"},
+        {"name": "MT5-Hung", "verdict": "HUNG", "resident": res, "artifact": None,
+         "why": "HUNG"},
+        {"name": "MT5-Longrun", "verdict": "UNCONTRACTED", "resident": res, "artifact": None},
+        {"name": "MT5-Plain", "verdict": "UNCONTRACTED", "resident": None},
+    ]}
+    monkeypatch.setattr(ns, "_age_min", lambda p: 5.0)
+    monkeypatch.setattr(ns, "_read", lambda p: doc)
+    monkeypatch.setattr(ns, "_capital_faults", lambda: [])
+    out = ns.run(apply=False)
+    assert sorted(out["uncontracted"]) == ["MT5-Hung", "MT5-Longrun", "MT5-NewsDesk",
+                                           "MT5-Plain"]
+    assert [e["task"] for e in out["escalated"]] == ["MT5-Hung"]

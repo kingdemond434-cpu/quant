@@ -271,6 +271,12 @@ def run(apply: bool) -> dict:
     for row in (doc.get("processes") or []):
         verdict = str(row.get("verdict") or "")
         name = str(row.get("name") or "")
+        # A RESIDENT WITH NO ARTIFACT CONTRACT stays on the "add a contract" list whatever its
+        # verdict: RESIDENT_RUNNING skips below, and a HUNG or RESIDENT_UNMEASURED one is
+        # escalated, but neither is any less unwatched for want of a contract.
+        if name and row.get("resident") is not None and not row.get("artifact") \
+                and verdict != "UNCONTRACTED":
+            uncontracted.append(name)
         # RESIDENT_RUNNING (process_health, 2026-10-29): 0x800710E0 on a Running task is its own
         # resident instance refusing a relaunch, judged fresh by its output -- not a breakage.
         if not name or verdict in ("OK", "RUNNING", "DISABLED", "RESIDENT_RUNNING"):
