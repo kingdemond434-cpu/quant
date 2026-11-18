@@ -1,0 +1,19 @@
+{
+ "floor": 0.0,
+ "measured": 0.0,
+ "status": "OK",
+ "at": "2026-11-18T01:48:12+00:00",
+ "prior_floor": 0.0,
+ "window": 24,
+ "history": [
+  0.0,
+  1.0,
+  0.0,
+  0.0,
+  0.0,
+  1.0,
+  0.0,
+  0.0
+ ],
+ "rule": "the external-URL share of NEW candidates only ratchets up, to the worst of the last 24 passes; a pass below the floor (less a rounding tolerance) is a regression and scripts/check_provenance_floor.py fails on it"
+}

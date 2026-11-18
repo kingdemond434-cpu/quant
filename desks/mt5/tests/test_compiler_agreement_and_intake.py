@@ -106,7 +106,7 @@ def test_unfinished_file_cannot_age_out_of_the_intake_window(
 def test_seats_that_donated_nothing_are_named() -> None:
     seats = mcc.seat_summary({"deepseek": {"rows": 3, "candidates": 1, "deepening": 2}})
     dark = [s for s, st in seats.items() if not st["rows"]]
-    assert dark == ["kimi_k3_deep_forest"]
+    assert dark == ["kimi_k3_deep_forest", "paperclip"]
     src = Path(mcc.__file__).read_text("utf-8")
     assert '"seats_dark": seats_dark' in src and "SEATS DARK" in src
 

@@ -210,5 +210,6 @@ def test_seat_conversion_is_one_block_in_the_compiled_artifact() -> None:
     seats = mcc.seat_summary({"deepseek": {"rows": 12, "candidates": 3, "deepening": 9},
                               "reddit": {"rows": 900, "candidates": 4, "deepening": 896}})
     assert seats == {"deepseek": {"rows": 12, "candidates": 3, "deepening": 9},
-                     "kimi_k3_deep_forest": {"rows": 0, "candidates": 0, "deepening": 0}}
+                     "kimi_k3_deep_forest": {"rows": 0, "candidates": 0, "deepening": 0},
+                     "paperclip": {"rows": 0, "candidates": 0, "deepening": 0}}
     assert '"seats": seats' in Path(mcc.__file__).read_text("utf-8")

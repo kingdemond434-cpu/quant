@@ -1,0 +1,123 @@
+schema: paperclip/v1
+agents:
+  dataset_converter:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role dataset_converter --calls 1 --out out/dataset_converter.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  dead_producer_reviver:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role dead_producer_reviver --calls 1 --out out/dead_producer_reviver.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  graveyard_descendants:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role graveyard_descendants --calls 1 --out out/graveyard_descendants.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  paper_converter:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role paper_converter --calls 1 --out out/paper_converter.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  repo_converter:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role repo_converter --calls 1 --out out/repo_converter.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  cross_asset_proxy:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role cross_asset_proxy --calls 1 --out out/cross_asset_proxy.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  calendar_event_lab:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role calendar_event_lab --calls 1 --out out/calendar_event_lab.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  session_microstructure_lab:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role session_microstructure_lab --calls 1 --out out/session_microstructure_lab.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  world_coverage_lab:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role world_coverage_lab --calls 1 --out out/world_coverage_lab.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  unknown_unknowns:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role unknown_unknowns --calls 1 --out out/unknown_unknowns.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
+  triage_prior:
+    adapter:
+      type: process
+      config:
+        command: python scripts/paperclip_lab_run.py --role triage_prior --calls 1 --out out/triage_prior.json
+        timeoutSec: 600
+        dangerouslySkipPermissions: false
+    runtime:
+      heartbeat:
+        enabled: true
+        intervalSec: 3600
