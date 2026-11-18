@@ -267,3 +267,65 @@ def test_the_bandit_still_writes_a_budget_when_the_credit_is_unavailable() -> No
     assert set(doc["shares"]) == set(bandit.ARMS)
     assert math.isclose(sum(doc["shares"].values()), 1.0, abs_tol=0.01)
     assert "breadth_credit" in doc
+
+
+
+def test_one_bandit_run_reads_the_hypothesis_graph_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The graph is the bandit's biggest input (4.59 GB, 7.31M rows on the box, 2026-11-10).
+    `run` and `breadth_credit` each parsed all of it whole; that step held MT5-Daily for nine
+    hours (2026-11-09, killed at PT10H). One run, one read, and the credit sees the same rows."""
+    calls = {"n": 0}
+    real = bandit.graph_rows
+
+    def counted():  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        return real()
+
+    monkeypatch.setattr(bandit, "graph_rows", counted)
+    doc = bandit.run(seed=0, write=False)
+    assert calls["n"] == 1
+    assert "breadth_credit" in doc
+
+
+def test_breadth_credit_still_reads_the_graph_when_called_alone(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"n": 0}
+
+    def counted():  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        return []
+
+    monkeypatch.setattr(bandit, "graph_rows", counted)
+    bandit.breadth_credit()
+    assert calls["n"] == 1
+    calls["n"] = 0
+    bandit.breadth_credit([])
+    assert calls["n"] == 0
+
+
+def test_the_projected_read_keeps_only_the_named_columns_and_skips_torn_lines(
+        tmp_path: Path) -> None:
+    import json as _json
+
+    from libs.research.hypothesis_graph import Graph
+    led = tmp_path / "graph.jsonl"
+    led.write_text(_json.dumps({"id": "a", "source": "sweep", "fate": "FAILED",
+                                "params": {"big": list(range(50))}}) + "\n"
+                   + "\n" + _json.dumps({"id": "b", "family": "carry", "evidence": "x" * 500})
+                   + "\n" + '{"id": "c", "sou', encoding="utf-8")   # a torn last line
+    rows = Graph(led).projected_rows(bandit.GRAPH_FIELDS)
+    assert rows == [{"id": "a", "source": "sweep", "fate": "FAILED"},
+                    {"id": "b", "family": "carry"}]
+    # the whole-row reader drops everything on that one torn line; the projected one does not
+    assert Graph(led).rows() == []
+
+
+def test_bandit_fields_cover_what_its_readers_use() -> None:
+    """A field the evidence, temperature or cluster readers use but the projection drops would
+    silently read as missing on every row."""
+    import inspect
+    src = "".join(inspect.getsource(f) for f in (bandit.evidence, bandit.temperature_ladder,
+                                                  bandit._cluster_of, bandit.breadth_credit))
+    for key in ("id", "source", "kind", "fate", "at", "ts", "_t", "family", "cell", "name"):
+        if f'"{key}"' in src:
+            assert key in bandit.GRAPH_FIELDS

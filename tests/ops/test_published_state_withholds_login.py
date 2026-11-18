@@ -39,13 +39,19 @@ def _fake_mt5() -> types.ModuleType:
         "initialize": lambda *a, **k: True, "shutdown": lambda *a, **k: None,
         "last_error": lambda *a, **k: (0, "ok"), "account_info": lambda *a, **k: acct,
         "terminal_info": lambda *a, **k: types.SimpleNamespace(
-            name="t", connected=True, build=1),
+            name="t", connected=True, build=1, path=r"C:\T"),
         "history_deals_get": lambda *a, **k: (), "positions_get": lambda *a, **k: (),
         "symbol_info": lambda *a, **k: None, "symbol_info_tick": lambda *a, **k: None,
         "copy_rates_from_pos": lambda *a, **k: None,
     }.items():
         setattr(m, name, value)
     return m
+
+
+def _pin_desk_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fake terminal is the desk's own (the venue pin, 2026-11-11, checks the path)."""
+    from mt5desk import config
+    monkeypatch.setattr(config, "terminal_path", lambda: r"C:\T\terminal64.exe")
 
 
 def _load(name: str, path: Path) -> Any:
@@ -125,6 +131,7 @@ def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, m
 
 def test_cost_truth_snapshot_and_page_withhold_the_login(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "MetaTrader5", _fake_mt5())
+    _pin_desk_terminal(monkeypatch)
     import cost_truth as CT
 
     snap = CT.terminal_snapshot([], budget_s=1.0, bars_cap=1)
@@ -139,6 +146,7 @@ def test_cost_truth_snapshot_and_page_withhold_the_login(monkeypatch: pytest.Mon
 
 def test_spread_tape_snapshot_withholds_the_login(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "MetaTrader5", _fake_mt5())
+    _pin_desk_terminal(monkeypatch)
     import fusion_spread_tape as FST
 
     snap = FST.live_snapshot([])
