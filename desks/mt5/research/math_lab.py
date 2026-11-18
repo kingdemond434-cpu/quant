@@ -43,7 +43,8 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+import traceback
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -60,6 +61,7 @@ from libs.research import set_aside as sa  # noqa: E402
 from research.mathlab import burden as B  # noqa: E402
 from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
+from research.mathlab import hypothesis_router as HR  # noqa: E402
 from research.mathlab import institution as I  # noqa: E402
 from research.mathlab import scientists as S  # noqa: E402
 from research.mathlab.objects import REGISTRY_KIND, MathObject, Panel, Variable  # noqa: E402
@@ -74,6 +76,11 @@ MATHLAB_REPRESENTATIONS = REPRESENTATIONS / "mathlab"
 ALLOCATION = DATA / "math_allocation.json"
 DONATED = DATA / "mathlab_donated.json"
 OUT = DESK / "reports" / "MATH_LAB.json"
+#: The IDEA_QUEUE's [ORIG] rows with their MT5 symbols, mirrored here because the box cannot read
+#: the project's shared folder. Read every pass by `hypothesis_routing`.
+ORIG_IDEAS = DATA / "hypotheses" / "orig_ideas.json"
+#: Quant Guild / Paolucci translator cards (mined 2026-10-06), orig where the mechanism is new.
+QUANT_GUILD_CARDS = DATA / "hypotheses" / "quant_guild_cards.json"
 SOURCE = "mathlab"
 
 #: THE PHYSICS WING (2026-09-22): nineteen physical traditions run beside the twenty-eight
@@ -90,6 +97,16 @@ SEED = 20260917
 #: Compute share floor per tradition. Two-sided above it; never zero, so a tradition that stops
 #: earning can still notice when the market changes back (LAWS 5f: always keep a scout).
 FLOOR_SHARE = 0.02
+#: THE YIELD LADDER (2026-11-13). Compute is EARNED. Shares used to move only on survivors per
+#: compute-hour, and with survivors zero for every tradition the "mean |ROI|" was zero, so every
+#: tradition took the unpriced default and 181 compute-hours in 7 days were split evenly across
+#: traditions that had put about 0.8 cells an hour in front of the Judge between them. The lab now
+#: reads the HIGHEST rung where any tradition has a non-zero count and prices every tradition on
+#: that same rung: survivors, then judged cells, then compiled cells, then donated objects.
+YIELD_LADDER: tuple[str, ...] = ("survivors", "judged", "cells", "donated")
+#: Compute-hours a tradition must have spent before ZERO on every rung counts as evidence. Below
+#: it the tradition is UNPRICED and keeps the default share.
+MIN_EVIDENCE_H = 2.0
 #: Targets per pass. The panel build is the expensive part; the scientists are bounded by budget.
 MAX_TARGETS = 4
 MAX_PEERS = 10
@@ -111,13 +128,37 @@ BYTES_PER_WORKER = 300 * 2 ** 20
 FREE_MEMORY_SHARE = 0.25
 UNMEASURED = "UNMEASURED"
 
-RULE = ("fourteen mathematical traditions attack the world model's residual in parallel; every "
+RULE = ("concrete hypotheses are routed to every tradition whose mathematics fits their "
+        "mechanism while the marginal one still earns, with one residual scout panel kept; every "
         "object carries its own search burden (held-out evidence - MDL - sqrt(2 ln effective "
         "trials)); survivors go to the desk's own gauntlet, never a private one; credit returns "
-        "to the tradition through generator_yield and the compute share moves with it")
+        "to the tradition through generator_yield and judged cells, and the compute share is "
+        "earned on that yield")
 
 
 # ------------------------------------------------------------------------------- plumbing
+def _exc_name(exc: BaseException, where: str) -> str:
+    """The exception's TYPE for the published report; the full text goes to the log only.
+
+    MATH_LAB.json is published from the box (sync_shadow_to_git.ps1), and an exception's message
+    can carry a box path, a host name or a credential fragment (audit MF2 on #1130).
+    """
+    print(f"math_lab: {where}: {type(exc).__name__}: {exc}", file=sys.stderr)
+    return type(exc).__name__
+
+
+def _published_path(path: Any) -> str | None:
+    """A donation path as the report may publish it: repo-relative, else the bare file name
+    (audit MF1 on #1130 -- `proposer_common.INTEL` resolves to an absolute box path)."""
+    if not path:
+        return None
+    p = Path(str(path))
+    try:
+        return p.resolve().relative_to(ROOT.resolve()).as_posix()
+    except (ValueError, OSError):
+        return p.name
+
+
 def now_iso() -> str:
     return datetime.now(tz=UTC).isoformat()
 
@@ -452,13 +493,20 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
         symbol = str(row.get("symbol") or row.get("target") or "")
         if symbol in allowed:
             by_symbol.setdefault(symbol, []).append(row)
-    ranked = sorted(by_symbol, key=lambda s: -len(by_symbol[s]))[:max_targets]
+    residual_ranked = sorted(by_symbol, key=lambda s: -len(by_symbol[s]))
+    # CONCRETE HYPOTHESES FIRST (2026-11-13). The routed hypotheses' targets take the panel
+    # slots ahead of the blind residual ranking; one slot stays with the residual whenever the
+    # store has rows, so the lab keeps a scout on what the world model cannot explain.
+    routing = hypothesis_routing(allowed, max_targets - (1 if residual_ranked else 0))
+    status["routing"] = routing
+    ranked = HR.cap_exotics(list(routing.get("targets") or []) + [
+        s for s in residual_ranked if s not in (routing.get("targets") or [])], max_targets)
     if not ranked:
-        ranked = allowed[:max_targets]
+        ranked = HR.cap_exotics(list(allowed), max_targets)
     status["targets"] = ranked
     status["residual_store"] = {"rows": len(rows), "horizon": horizon, "symbols": len(by_symbol)}
 
-    targets = residual_targets()
+    targets = {**residual_targets(), **(routing.get("top_hypothesis") or {})}
     peer_pool: dict[str, tuple[dict[str, np.ndarray], np.ndarray]] = {}
     for symbol in allowed[:MAX_PEERS + len(ranked)]:
         loaded = bar_frames(symbol)
@@ -504,6 +552,48 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
     status["representations"] = sorted({v.dataset for p in panels for v in p.meta.values()
                                         if v.source == "representation"})
     return panels, status
+
+
+def hypothesis_routing(allowed: list[str], slots: int) -> dict[str, Any]:
+    """The pass's routed hypotheses: targets, tradition -> targets, demand and the log.
+
+    NEVER FATAL. An unreadable registry leaves the lab on the residual sweep it ran before, with
+    the reason named.
+    """
+    out: dict[str, Any] = {"targets": [], "by_tradition": {}, "demand": {}, "log": [],
+                           "top_hypothesis": {}}
+    if slots <= 0:
+        out["status"] = {"status": "SKIPPED", "why": "no panel slot left for hypotheses"}
+        return out
+    try:
+        ideas, idea_status = HR.load_file_ideas(
+            allowed, idea_files=[("idea_queue", ORIG_IDEAS), ("quant_guild", QUANT_GUILD_CARDS)],
+            donation_dirs=[DATA / "intelligence" / "llm_lab", ROOT / "data" / "intelligence"
+                           / "llm_lab"])
+        registry_rows, load_status = HR.load_hypotheses(allowed)
+        roi, roi_detail = tradition_roi()
+        out["roi"] = (roi, roi_detail)
+        seen = {(h["hypothesis_id"], h["target"]) for h in ideas}
+        hypotheses = ideas + [h for h in registry_rows
+                              if (h["hypothesis_id"], h["target"]) not in seen]
+        targets, by_tradition, log, plan_status = HR.plan(
+            hypotheses, S.REGISTRY, slots, yields=roi,
+            zero_yield=roi_detail.get("zero_yield") or ())
+    except Exception as exc:
+        out["status"] = {"status": UNMEASURED, "why": f"router raised {type(exc).__name__}"}
+        return out
+    demand: dict[str, float] = {}
+    top: dict[str, str] = {}
+    for entry in log:
+        if entry["target"] not in targets:
+            continue
+        top.setdefault(entry["target"], entry["hypothesis_id"])
+        for tool in entry["tools"]:
+            demand[tool["tradition"]] = demand.get(tool["tradition"], 0.0) + 1.0
+    out.update(targets=targets, by_tradition=by_tradition, demand=demand, top_hypothesis=top,
+               log=log[:HR.MAX_LOG], status={"registry": load_status, "files": idea_status,
+                                              **plan_status})
+    return out
 
 
 def _epsilon_for(symbol: str, rows: list[dict[str, Any]], times: np.ndarray,
@@ -589,13 +679,70 @@ def department_of(tradition: str) -> str:
     return "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
 
 
-def tradition_roi(traditions: tuple[str, ...] | list[str] | None = None
+def judged_cells_by_tradition(conn: Any = None
+                              ) -> tuple[dict[str, dict[str, int]], dict[str, Any]]:
+    """Per tradition: cells the compiler made from its discoveries, how many the Judge reached,
+    and how many survived, read off `research_candidates` joined to the lab's own discoveries.
+
+    `generator_yield.judged` is never written for `math:*` (only `generated`, `donated` and
+    `compute_s` are), so the Judge's reach has to be read where the Judge writes it: `judged_at`
+    and `survived` on the candidate, traced back to `discoveries.generator = 'math:<tradition>'`
+    through the candidate's `discovery_id`.
+    """
+    status: dict[str, Any] = {"source": "research_candidates JOIN discoveries ON discovery_id"}
+    try:
+        from libs.moat import registry as reg
+        c = conn or reg.connect()
+    except Exception as exc:
+        status.update(status=UNMEASURED, why=f"registry unopenable: {type(exc).__name__}")
+        return {}, status
+    out: dict[str, dict[str, int]] = {}
+    try:
+        cols = {str(r[1]) for r in c.execute("PRAGMA table_info(research_candidates)")}
+        if "discovery_id" not in cols:
+            status.update(status=UNMEASURED, why="research_candidates has no discovery_id column")
+            return {}, status
+        judged_expr = ("SUM(CASE WHEN c.judged_at IS NOT NULL AND c.judged_at <> '' "
+                       "THEN 1 ELSE 0 END)") if "judged_at" in cols else "0"
+        survived_expr = "SUM(CASE WHEN COALESCE(c.survived,0)=1 THEN 1 ELSE 0 END)" \
+            if "survived" in cols else "0"
+        for r in c.execute(
+                f"SELECT d.generator AS g, COUNT(*) AS cells, {judged_expr} AS judged, "  # noqa: S608
+                f"{survived_expr} AS survived FROM research_candidates c "
+                "JOIN discoveries d ON d.discovery_id = c.discovery_id "
+                "WHERE d.generator LIKE 'math:%' GROUP BY d.generator"):
+            row = dict(r) if not isinstance(r, tuple) else dict(zip(("g", "cells", "judged",
+                                                                      "survived"), r, strict=False))
+            name = str(row.get("g") or "")[len("math:"):]
+            out[name] = {"cells": int(row.get("cells") or 0), "judged": int(row.get("judged") or 0),
+                         "survived": int(row.get("survived") or 0)}
+    except Exception as exc:
+        status.update(status=UNMEASURED, why=f"candidates unreadable: {type(exc).__name__}")
+        return {}, status
+    finally:
+        if conn is None:
+            with contextlib.suppress(Exception):
+                c.close()
+    status.update(status="MEASURED", traditions_with_cells=len(out),
+                  linked_cells=sum(v["cells"] for v in out.values()))
+    return out, status
+
+
+def tradition_roi(traditions: tuple[str, ...] | list[str] | None = None, *,
+                  cells: dict[str, dict[str, int]] | None = None,
                   ) -> tuple[dict[str, float | None], dict[str, Any]]:
-    """Per-tradition ROI in `research_roi.scientist_roi`'s own shape, from `generator_yield`."""
+    """Per-tradition yield per compute-hour on the YIELD LADDER, with the zero-yield set.
+
+    Every tradition is priced on the SAME rung: the highest of survivors, judged cells, compiled
+    cells and donated objects on which any tradition has a non-zero count. A tradition with at
+    least MIN_EVIDENCE_H compute-hours and zero on EVERY rung is named in `zero_yield`; one with
+    less is UNPRICED, which is not the same thing.
+    """
     names = tuple(traditions) if traditions is not None else all_traditions()
     out: dict[str, float | None] = dict.fromkeys(names)
-    detail: dict[str, Any] = {"source": "libs/moat/registry.py generator_yield",
-                              "shape": "research_roi.scientist_roi"}
+    detail: dict[str, Any] = {"source": "libs/moat/registry.py generator_yield + "
+                                        "research_candidates", "ladder": list(YIELD_LADDER),
+                              "min_evidence_hours": MIN_EVIDENCE_H, "zero_yield": []}
     try:
         from libs.moat import registry as reg
         rows = {str(r.get("generator")): r for r in reg.generator_yields()}
@@ -603,28 +750,60 @@ def tradition_roi(traditions: tuple[str, ...] | list[str] | None = None
         detail["status"] = UNMEASURED
         detail["why"] = f"registry unreadable: {type(exc).__name__}"
         return out, detail
+    if cells is None:
+        cells, cell_status = judged_cells_by_tradition()
+    else:
+        cell_status = {"status": "MEASURED", "source": "supplied"}
     detail["status"] = "MEASURED"
+    detail["cells"] = cell_status
+    counts: dict[str, dict[str, float]] = {}
+    for tradition in names:
+        row = rows.get(f"math:{tradition}") or {}
+        cell = (cells or {}).get(tradition) or {}
+        counts[tradition] = {
+            "compute_h": float(row.get("compute_s") or 0.0) / 3600.0,
+            "survivors": (float(row.get("independent_survivors") or 0.0)
+                          + float(row.get("survivors") or 0.0)
+                          + max(0.0, float(row.get("delta_elogw") or 0.0))
+                          + float(cell.get("survived") or 0)),
+            "judged": float(cell.get("judged") or 0),
+            "cells": float(cell.get("cells") or 0),
+            "donated": float(row.get("donated") or 0.0)}
+    rung = next((r for r in YIELD_LADDER if any(c[r] > 0 for c in counts.values())), None)
+    detail["rung"] = rung or UNMEASURED
     detail["rows"] = {}
     for tradition in names:
         row = rows.get(f"math:{tradition}") or {}
-        compute_h = float(row.get("compute_s") or 0.0) / 3600.0
-        value = (float(row.get("independent_survivors") or 0.0)
-                 + float(row.get("survivors") or 0.0) + float(row.get("delta_elogw") or 0.0))
-        roi = round(value / compute_h, 6) if compute_h > 0 else None
+        c = counts[tradition]
+        compute_h = c["compute_h"]
+        roi = round(c[rung] / compute_h, 6) if (rung and compute_h > 0) else None
         out[tradition] = roi
+        zero = compute_h >= MIN_EVIDENCE_H and all(c[r] <= 0 for r in YIELD_LADDER)
+        if zero:
+            detail["zero_yield"].append(tradition)
+
+        def per_h(v: float, h: float = compute_h) -> float | None:
+            return round(v / h, 6) if h > 0 else None
         detail["rows"][tradition] = {
             "generated": int(float(row.get("generated") or 0)),
-            "donated": int(float(row.get("donated") or 0)),
-            "judged": int(float(row.get("judged") or 0)),
+            "donated": int(c["donated"]), "cells": int(c["cells"]), "judged": int(c["judged"]),
+            "survivors": round(c["survivors"], 6),
             "independent_survivors": int(float(row.get("independent_survivors") or 0)),
             "delta_elogw": float(row.get("delta_elogw") or 0.0),
-            "compute_hours": round(compute_h, 6), "value": round(value, 8), "roi": roi,
-            "roi_status": "MEASURED" if compute_h > 0 else UNMEASURED}
+            "compute_hours": round(compute_h, 6),
+            "cells_per_compute_hour": per_h(c["cells"]),
+            "cells_to_judge_per_compute_hour": per_h(c["judged"]),
+            "survivors_per_compute_hour": per_h(c["survivors"]),
+            "rung": rung or UNMEASURED, "value": round(c[rung], 8) if rung else 0.0, "roi": roi,
+            "roi_status": "MEASURED" if roi is not None else UNMEASURED,
+            "zero_yield": zero}
     return out, detail
 
 
 def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = None,
-               traditions: tuple[str, ...] | list[str] | None = None) -> dict[str, Any]:
+               traditions: tuple[str, ...] | list[str] | None = None, *,
+               zero_yield: tuple[str, ...] | list[str] | set[str] = (),
+               demand: dict[str, float] | None = None) -> dict[str, Any]:
     """Compute shares per tradition: two-sided, floored at 2%, and never zero.
 
     AN UNPRICED TRADITION KEEPS THE DEFAULT. Pricing the unknown at zero defunds the frontier by
@@ -632,49 +811,90 @@ def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = N
     with measured ROI moves BOTH WAYS around the mean: better than average earns more than the
     default share, worse than average earns less, and the floor stops the worse case reaching
     silence so a tradition can still detect that conditions changed (LAWS 5f).
+
+    COMPUTE IS EARNED (2026-11-13). A tradition in `zero_yield` -- enough compute-hours and zero
+    on every rung of the yield ladder -- keeps only the floor, which is its exploration probe,
+    UNLESS hypotheses were routed to it this pass: its zero was earned on the blind residual
+    sweep, so it gets a hypothesis-driven trial at no more than the default share. `demand` (the
+    number of hypotheses routed to each tradition) also orders the unpriced traditions, so when
+    nothing anywhere has yield yet the compute follows the concrete questions.
     """
     names = tuple(traditions) if traditions is not None else (tuple(roi) or S.TRADITIONS)
     prior = (previous or {}).get("traditions") or {}
-    measured = {k: v for k, v in roi.items() if k in names and isinstance(v, (int, float))}
+    zero = set(zero_yield)
+    measured = {k: v for k, v in roi.items() if k in names and isinstance(v, (int, float))
+                and k not in zero}
     scale = float(np.mean([abs(v) for v in measured.values()])) if measured else 0.0
+    positive_demand = [float(v) for k, v in (demand or {}).items() if k in names and v > 0]
+    mean_demand = float(np.mean(positive_demand)) if positive_demand else 0.0
+
+    def demand_factor(tradition: str) -> float:
+        if mean_demand <= 0:
+            return 1.0
+        return 0.5 + float((demand or {}).get(tradition, 0.0)) / mean_demand
+
     raw: dict[str, float] = {}
     why: dict[str, str] = {}
     for tradition in names:
         value = roi.get(tradition)
-        if value is None or scale <= 0:
-            raw[tradition] = 1.0
+        routed = float((demand or {}).get(tradition, 0.0))
+        if tradition in zero:
+            if routed > 0:
+                raw[tradition] = min(1.0, demand_factor(tradition))
+                why[tradition] = (f"zero yield on the blind residual sweep, but {routed:.0f} "
+                                  f"hypotheses were routed to it this pass: a hypothesis-driven "
+                                  f"trial at no more than the default share")
+            else:
+                raw[tradition] = 0.0
+                why[tradition] = (f"zero yield on every rung after at least {MIN_EVIDENCE_H}h of "
+                                  f"compute and no hypothesis routed to it: the {FLOOR_SHARE:.0%} "
+                                  f"exploration floor only")
+        elif value is None or scale <= 0:
+            raw[tradition] = demand_factor(tradition)
             why[tradition] = (f"ROI {UNMEASURED}: the declared default share -- an unpriced "
-                              f"tradition is not an unproductive one")
+                              f"tradition is not an unproductive one"
+                              + (f"; scaled by {routed:.0f} routed hypotheses"
+                                 if mean_demand > 0 else ""))
         else:
             raw[tradition] = float(max(0.05, 1.0 + value / scale))
             why[tradition] = (f"ROI {value:+.6f} against a mean absolute ROI of {scale:.6f}: "
                               f"two-sided around the default, floored at {FLOOR_SHARE:.0%}")
-    total = sum(raw.values()) or float(len(raw))
+    total = sum(raw.values())
     free = max(0.0, 1.0 - FLOOR_SHARE * len(names))
-    shares = {t: round(FLOOR_SHARE + free * raw[t] / total, 6) for t in names}
+    if total <= 0:
+        # Every tradition is zero-yield with nothing routed: each keeps its floor and the rest
+        # of the budget is RELEASED (not spent), reported below for the hourly plan to reuse.
+        shares = {t: round(FLOOR_SHARE, 6) for t in names}
+    else:
+        shares = {t: round(FLOOR_SHARE + free * raw[t] / total, 6) for t in names}
     return {
         "at": now_iso(), "rule": RULE, "floor": FLOOR_SHARE,
         "traditions": {t: {"share": shares[t], "roi": roi.get(t),
                            "roi_status": "MEASURED" if roi.get(t) is not None else UNMEASURED,
+                           "zero_yield": t in zero,
+                           "hypotheses_routed": int(float((demand or {}).get(t, 0.0))),
                            "lifetime_trials": int((prior.get(t) or {}).get("lifetime_trials", 0)),
                            "department": department_of(t), "why": why[t]}
                        for t in names},
         "sum": round(sum(shares.values()), 6),
-        "two_sided": ("every share moves up AND down with measured ROI; the floor is a floor, "
+        "released_share": round(max(0.0, 1.0 - sum(shares.values())), 6),
+        "two_sided": ("every share moves up AND down with measured yield; the floor is a floor, "
                       "never a target, and no tradition is ever set to zero"),
     }
 
 
 def department_plan(roi: dict[str, float | None], previous: dict[str, Any] | None,
-                    budget_s: float) -> dict[str, Any]:
+                    budget_s: float, *, zero_yield: tuple[str, ...] | list[str] | set[str] = (),
+                    demand: dict[str, float] | None = None) -> dict[str, Any]:
     """Two departments, each allocated by the two-sided rule above, under a department split
     that is itself two-sided by the departments' mean measured ROI with a floor
     (`engines.distributed_science`). Each tradition's `budget_share` is its share of the WHOLE
     pass: department share x share within the department."""
     maths = [t for t in all_traditions() if department_of(t) == "mathematics"]
     physics = [t for t in all_traditions() if department_of(t) == "physics"]
-    plan = allocation(roi, previous, maths)
-    plan_p = allocation(roi, previous, physics) if physics else {"traditions": {}}
+    plan = allocation(roi, previous, maths, zero_yield=zero_yield, demand=demand)
+    plan_p = (allocation(roi, previous, physics, zero_yield=zero_yield, demand=demand)
+              if physics else {"traditions": {}})
     dept_roi: dict[str, float | None] = {}
     for dept, names in (("mathematics", maths), ("physics", physics)):
         measured = [v for t, v in roi.items() if t in names and isinstance(v, (int, float))]
@@ -694,6 +914,9 @@ def department_plan(roi: dict[str, float | None], previous: dict[str, Any] | Non
                            "engines_s": round(budget_s * ENGINE_SHARE, 1),
                            "rule": split.summary.get("two_sided")}
     plan["sum"] = round(sum(v["share"] for v in plan["traditions"].values()), 6)
+    spent = sum(float(v["budget_share"]) for v in plan["traditions"].values())
+    plan["released_budget_s"] = round(max(0.0, budget_s * (1.0 - ENGINE_SHARE) - budget_s * spent),
+                                      1)
     return plan
 
 
@@ -736,6 +959,28 @@ def run_engines(panel: Panel, objects: list[MathObject], budget_s: float
 
 
 # --------------------------------------------------------------------------------- the pass
+def route_panels(chosen: list[str], panels: list[Panel], routing: dict[str, Any]
+                 ) -> dict[str, list[Panel]]:
+    """Which panels each tradition works on this pass.
+
+    A tradition a hypothesis was routed to works on THAT hypothesis's panel. Every other
+    tradition works on the residual scout panel(s) -- the ones no hypothesis claimed -- and on
+    every panel only when there is no scout, so no tradition is ever handed nothing. With no
+    routing at all (an unreadable registry, or an older status) every tradition sees every
+    panel, which is exactly the sweep this replaced.
+    """
+    by_tradition = routing.get("by_tradition") or {}
+    if not by_tradition:
+        return dict.fromkeys(chosen, panels)
+    claimed = set(routing.get("targets") or [])
+    scouts = [p for p in panels if p.target not in claimed] or panels
+    out: dict[str, list[Panel]] = {}
+    for tradition in chosen:
+        mine = [p for p in panels if p.target in set(by_tradition.get(tradition) or [])]
+        out[tradition] = mine or scouts
+    return out
+
+
 def _copy_panel(panel: Panel) -> Panel:
     """A per-tradition view. Column arrays are SHARED; the dict is not, so minting is private."""
     return Panel(target=panel.target, times=panel.times, epsilon=panel.epsilon,
@@ -745,7 +990,7 @@ def _copy_panel(panel: Panel) -> Panel:
 
 
 def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: dict[str, Any],
-                   census: dict[str, int]) -> dict[str, Any]:
+                   census: dict[str, int], deadline: float = float("inf")) -> dict[str, Any]:
     """One tradition over every panel. NEVER RAISES: a failing scientist costs its own leg only."""
     started = time.monotonic()
     result: dict[str, Any] = {"tradition": tradition, "objects": [], "panels": [],
@@ -756,19 +1001,28 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         scientist = S.build(tradition, **kwargs)
     except Exception as exc:
         result["status"] = "FAILED"
-        result["why"] = f"{type(exc).__name__}: {exc}"
+        result["why"] = _exc_name(exc, f"build {tradition}")
         result["compute_s"] = round(time.monotonic() - started, 3)
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
     for panel in panels:
+        # THE SCIENCE DEADLINE REACHES THE SCIENTIST (audit SF5): a panel it cannot start in time
+        # is named UNMEASURED, and one it starts gets no more than the time left, so a thread
+        # the pass stops waiting for is a thread that is already winding down.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            result["unmeasured"].append(f"panel {panel.target}: not started before the science "
+                                        f"deadline")
+            continue
+        per_panel_now = min(per_panel, left)
         view = _copy_panel(panel)
         try:
-            objects = scientist.propose(view, per_panel, np.random.default_rng(
+            objects = scientist.propose(view, per_panel_now, np.random.default_rng(
                 SEED + abs(hash((tradition, panel.target))) % 10_000))
         except Exception as exc:
             result["status"] = "FAILED"
-            result["why"] = f"{type(exc).__name__}: {exc}"
-            result["unmeasured"].append(f"panel {panel.target}: {type(exc).__name__}: {exc}")
+            result["why"] = _exc_name(exc, f"{tradition} on {panel.target}")
+            result["unmeasured"].append(f"panel {panel.target}: {type(exc).__name__}")
             continue
         for obj in objects:
             obj.provenance.residual_target = panel.target
@@ -808,6 +1062,179 @@ def _entry_exit(params: dict[str, Any]) -> dict[str, str]:
                       f"{params['hold_bars']} bars, whichever comes first"),
         "executor": "mt5desk.family_formula (family `formula`), exactly as written",
     }
+
+
+DONATED_LEDGER_VERSION = 2
+
+#: THE SCIENTISTS GET THIS SHARE OF THE WALL CLOCK, MEASURED FROM THE START OF THE PASS.
+#: MEASURED ON THE BOX 2026-10-29 (Desk health): with every core saturated, math_lab and
+#: physics_lab hit their 720 s / 700 s leg caps on every pass since 10-10 -- LEG_TIMEOUT, 0 of
+#: 3 artifacts moved, no donation since 10-10 08:26Z. Each tradition's budget is advisory to a
+#: scientist under CPU contention, and `future.result()` waited on it without limit, so one
+#: slow scientist held the whole pass past the kill. The pass now stops WAITING at this share;
+#: a scientist still running is recorded TIMED_OUT (its objects UNMEASURED, never invented) and
+#: the judge, the donation and the report run on what came back.
+SCIENCE_WALL_SHARE = 0.45
+#: Scientist threads a pass stopped waiting for. Non-daemon pool threads would hold the process
+#: open at exit -- the same kill by another name -- so `main` exits hard once the report is out.
+ABANDONED_THREADS = 0
+
+
+def collect(futures: dict[Any, Future[Any]], deadline: float,
+            failed: Any) -> tuple[dict[Any, Any], list[Any]]:
+    """Each future's result, waiting no later than `deadline` (monotonic) in total.
+
+    `failed(key, status, why)` builds the row for a future that raised or did not finish.
+    Returns (results, timed_out_keys). Never raises.
+    """
+    global ABANDONED_THREADS
+    # ONE clock reading for the whole wait, not one per future.
+    wait(list(futures.values()),
+         timeout=None if deadline == float("inf") else max(0.0, deadline - time.monotonic()))
+    out: dict[Any, Any] = {}
+    late: list[Any] = []
+    for key, fut in futures.items():
+        if not fut.done():
+            fut.cancel()
+            late.append(key)
+            out[key] = failed(key, "TIMED_OUT", "still running at the pass's science deadline; "
+                                                "its objects are UNMEASURED this pass")
+            continue
+        try:
+            out[key] = fut.result()
+        except Exception as exc:
+            out[key] = failed(key, "FAILED", _exc_name(exc, f"pool {key}"))
+    ABANDONED_THREADS += sum(1 for k in late if not futures[k].done())
+    return out, late
+
+
+def unfinished_row(started: float, status: str, why: str, **ids: Any) -> dict[str, Any]:
+    """The row for a scientist that raised or was still running at the science deadline.
+
+    ITS YIELD IS UNMEASURED, NOT ZERO (audit of 1ce440654, MF2). The row used to say evaluated 0,
+    compute_s 0.0 and nothing unmeasured, so the report read a clean empty pass and
+    `record_registry` wrote generated=0 at no cost into `generator_yield` -- a measured-looking
+    zero that moves the tradition's ROI. The reason now lands in `unmeasured` (and from there in
+    the report's own list), `compute_s` is the wall clock the scientist held a thread since the
+    pass began (an upper bound, named as such), and `yield_measured` False tells
+    `record_registry` to leave the tradition's yield row untouched this pass.
+    """
+    return {**ids, "status": status, "why": why, "objects": [], "panels": [], "evaluated": 0,
+            "distinct": set(), "unmeasured": [f"{status}: {why}"],
+            "compute_s": round(time.monotonic() - started, 3),
+            "compute_basis": "wall clock since the pass began (upper bound)",
+            "yield_measured": False}
+
+
+def hard_exit_if_abandoned(code: int) -> int:
+    """Exit now when scientist threads are still running, so they cannot hold the leg open."""
+    if ABANDONED_THREADS:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
+    return code
+
+
+def run_then_exit(body: Any) -> int:
+    """Run `body`, then exit hard if scientist threads are still running -- ALSO when `body`
+    raised (audit SF6): an exception after the pool was abandoned would otherwise leave the
+    non-daemon threads holding the leg open to its cap, the very kill `collect` exists to stop.
+    The traceback is printed first, so the failure is still read as a failure (exit 1)."""
+    try:
+        body()
+    except BaseException:
+        if ABANDONED_THREADS:
+            traceback.print_exc()
+            hard_exit_if_abandoned(1)
+        raise
+    return hard_exit_if_abandoned(0)
+
+
+def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
+               admitted: int, dry_run: bool) -> None:
+    """A partial report the moment the donation has landed, so a kill afterwards still leaves
+    the pass's one load-bearing fact -- what it donated -- on disk. The full report replaces it."""
+    if dry_run:
+        return
+    with contextlib.suppress(OSError):
+        _atomic(path, {"at": now_iso(), "partial": True, "phase": phase, "dry_run": False,
+                       "elapsed_s": round(time.monotonic() - started, 2),
+                       "objects": {"admitted": admitted}, "donation": donation})
+
+
+def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
+    """Object ids already WRITTEN to the intake, and how that was established.
+
+    THE LEDGER USED TO RECORD WHAT WAS OFFERED, NOT WHAT WAS WRITTEN (root cause of the 10-13
+    silence, hourly pass item 26). Every row `proposer_common.donate` refused -- wrong lane,
+    no PIT stamp, blinded -- was still marked donated, so one pass where a door refused rows
+    burned those objects for good, and a deterministic lab that rediscovers the same objects
+    then donates nothing, every pass, with exit 0. A v1 ledger is therefore rebuilt ONCE from
+    the discovery files the source actually wrote; an object found in none is offered again
+    (audit SF8: what is VERIFIED is that the compiler's intake folds a row whose payload equals
+    one it already read in its window -- `libs.data.pit.payload_hash`, miner_candidate_compiler
+    `recent_rows` -- so a re-offer in the same window is one row, not two. Whether a re-offer
+    outside that window charges a trial downstream is the registry's identity rule and is
+    UNMEASURED here; the v1 rebuild happens once, so the exposure is one pass, bounded.)
+    """
+    if not path.exists():
+        return set(), {"ledger": "new"}
+    doc = _read_json(path) or {}
+    if int(doc.get("version") or 1) >= DONATED_LEDGER_VERSION:
+        return set(doc.get("object_ids") or []), {"ledger": "v2"}
+    from research import proposer_common as PC
+    written: set[str] = set()
+    files = 0
+    for f in sorted((PC.INTEL / source).glob("discoveries_*.json")):
+        try:
+            rows = json.loads(f.read_text("utf-8", errors="replace")).get("discoveries") or []
+        except (OSError, ValueError, AttributeError):
+            continue
+        files += 1
+        written |= {str(r["mathlab_object_id"]) for r in rows
+                    if isinstance(r, dict) and r.get("mathlab_object_id")}
+    offered = set(doc.get("object_ids") or [])
+    return written, {"ledger": "v1 rebuilt from writes", "files_read": files,
+                     "offered_v1": len(offered), "written": len(written),
+                     "reoffered": len(offered - written)}
+
+
+def written_rows(donated_path: Path | str | None) -> list[dict[str, Any]]:
+    """The rows `proposer_common.donate` actually WROTE, read back from the file it returned.
+
+    Read from the intake file itself rather than from state inside proposer_common, which is on
+    the money path's import closure: what reached the intake is exactly what that file holds,
+    after every door (blinding, lane, PIT). None or an unreadable file is [] -- nothing marked.
+    """
+    if not donated_path:
+        return []
+    try:
+        doc = json.loads(Path(donated_path).read_text("utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("discoveries") if isinstance(doc, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict)]
+
+
+def mark_donated(path: Path, already: set[str], written: list[dict[str, Any]]) -> None:
+    """Record the ids `donate` WROTE (never the ones it was offered) as a v2 ledger."""
+    ids = already | {str(r["mathlab_object_id"]) for r in written
+                     if r.get("mathlab_object_id")}
+    _atomic(path, {"at": now_iso(), "version": DONATED_LEDGER_VERSION,
+                   "object_ids": sorted(ids),
+                   "rule": "an object WRITTEN to the intake once is never donated again; a row "
+                           "a door refused is not written and is offered again next pass"})
+
+
+def donation_status(rows: int, donated: int, already: int, refused: int) -> str:
+    """Why a pass gave what it gave, in one word the yield report can go RED on."""
+    if donated:
+        return "DONATED"
+    if rows:
+        return "REFUSED_AT_THE_DOOR"
+    if already:
+        return "NOTHING_NEW"
+    return "NOTHING_TRADEABLE" if refused else "NO_SURVIVORS"
 
 
 def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[dict[str, Any]],
@@ -889,7 +1316,8 @@ def representation_manifest(minted: list[tuple[str, Panel, MathObject]], dry_run
         _atomic(MATHLAB_REPRESENTATIONS / "manifest.json",
                 {"at": now_iso(), "rule": RULE, "n": len(rows),
                  "representations": sorted(rows.values(), key=lambda r: str(r["id"]))})
-    return {"minted": len(rows), "ids": sorted(rows), "path": str(MATHLAB_REPRESENTATIONS)}
+    return {"minted": len(rows), "ids": sorted(rows),
+            "path": _published_path(MATHLAB_REPRESENTATIONS)}
 
 
 def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str, Any]],
@@ -965,14 +1393,20 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 except Exception:
                     pass
         for tradition, row in per_tradition.items():
-            try:
-                reg.generator_yield_update(
-                    f"math:{tradition}", generated=int(row.get("proposed", 0)),
-                    donated=int(donated.get(tradition, 0)),
-                    compute_s=float(row.get("compute_s", 0.0)), conn=conn)
-                out["generator_yield"] += 1
-            except Exception:
-                pass
+            if row.get("yield_measured") is False:
+                # A scientist that never returned has no measured yield: writing its 0 would
+                # read as a tried-and-empty tradition (MF2). The chronic-timeout RED owns it.
+                out.setdefault("generator_yield_skipped", []).append(
+                    {"generator": f"math:{tradition}", "status": row.get("status")})
+            else:
+                try:
+                    reg.generator_yield_update(
+                        f"math:{tradition}", generated=int(row.get("proposed", 0)),
+                        donated=int(donated.get(tradition, 0)),
+                        compute_s=float(row.get("compute_s", 0.0)), conn=conn)
+                    out["generator_yield"] += 1
+                except Exception:
+                    pass
             out["trials"].append({
                 "tradition": tradition,
                 **B.record_trials(tradition, distinct_forms=int(row.get("distinct", 0)),
@@ -1023,9 +1457,12 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
     panels, panel_status = build_panels(max_targets)
     workers, memory = max_workers()
-    roi, roi_detail = tradition_roi()
+    routing = panel_status.get("routing") or {}
+    # One registry read per pass: the routing already priced the traditions to rank them.
+    roi, roi_detail = routing.pop("roi", None) or tradition_roi()
     previous = read_allocation()
-    plan = department_plan(roi, previous, budget_s)
+    plan = department_plan(roi, previous, budget_s, zero_yield=roi_detail.get("zero_yield") or (),
+                           demand=routing.get("demand") or None)
 
     if not panels:
         report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
@@ -1038,18 +1475,16 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     census = _operator_census([])
     budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
         "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
-    results: dict[str, dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen)))) as pool:
-        futures = {pool.submit(_run_tradition, t, panels, budgets[t], roi, census): t
-                   for t in chosen}
-        for future, tradition in futures.items():
-            try:
-                results[tradition] = future.result()
-            except Exception as exc:
-                results[tradition] = {"tradition": tradition, "status": "FAILED",
-                                      "why": f"{type(exc).__name__}: {exc}", "objects": [],
-                                      "panels": [], "evaluated": 0, "distinct": set(),
-                                      "unmeasured": [], "minted": [], "compute_s": 0.0}
+    panels_for = route_panels(chosen, panels, routing)
+    pool = ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen))))
+    science_deadline = started + SCIENCE_WALL_SHARE * budget_s
+    futures = {t: pool.submit(_run_tradition, t, panels_for[t], budgets[t], roi, census,
+                              science_deadline)
+               for t in chosen}
+    results, timed_out = collect(
+        futures, science_deadline,
+        lambda t, status, why: unfinished_row(started, status, why, tradition=t, minted=[]))
+    pool.shutdown(wait=not timed_out, cancel_futures=True)
 
     rng = np.random.default_rng(SEED)
     # THE WALL CLOCK GOVERNS THE JUDGE TOO (2026-09-23). `budgets` above bounds the SCIENTISTS;
@@ -1117,7 +1552,10 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             "compute_s": float(result.get("compute_s", 0.0)),
             "panels": result.get("panels") or [],
             "target": (result.get("panels") or [""])[0],
+            "routed_panels": list((routing.get("by_tradition") or {}).get(tradition) or []),
+            "hypotheses_routed": int(float((routing.get("demand") or {}).get(tradition, 0.0))),
             "unmeasured": result.get("unmeasured") or [],
+            "yield_measured": result.get("yield_measured", True),
         }
 
     admitted, dedup_status = dedup(judged)
@@ -1153,7 +1591,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     # first under MAX_DONATIONS, and a disliked one goes when there is room instead of never.
     survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
-    already = set((_read_json(DONATED) or {}).get("object_ids") or [])
+    already, ledger = load_donated(DONATED, SOURCE)
     # THE BATCH BUDGET IS GONE (MAX_DONATIONS = -1). It was 40 against 132 admitted objects, and
     # a budget that binds every pass on a producer whose screen may not gate is the screen wearing
     # a different hat. The `sa.take` call stays so the stage keeps writing its ledger line --
@@ -1173,29 +1611,32 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
-                                    len([o for o in survivors if o.object_id in already])}
+                                    len([o for o in survivors if o.object_id in already]),
+                                "ledger": ledger}
     donated_by_tradition: dict[str, int] = {}
     if rows and not dry_run:
         try:
             from research import proposer_common as PC
             path = PC.donate(SOURCE, rows, tests_run=sum(
                 int(v.get("evaluated", 0)) for v in per_tradition.values()))
-            donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in rows:
+            donation.update({"path": _published_path(path), **PC.donation_counts()})
+            written = written_rows(path)
+            for row in written:
                 tradition = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[tradition] = donated_by_tradition.get(tradition, 0) + 1
             donation["by_tradition"] = dict(donated_by_tradition)
-            _atomic(DONATED, {"at": now_iso(),
-                              "object_ids": sorted(already | {r["mathlab_object_id"]
-                                                              for r in rows}),
-                              "rule": "an object donated once is never donated again; the "
-                                      "compiler's intake is idempotent by object id"})
+            mark_donated(DONATED, already, written)
         except Exception as exc:
-            donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
+            donation["status"] = (f"{UNMEASURED}: donate raised "
+                                  f"{_exc_name(exc, 'donate')}")
     elif rows:
         donation["donated"] = 0
         donation["status"] = "SKIPPED_DRY_RUN"
+    donation.setdefault("status", donation_status(
+        len(rows), int(donation.get("donated") or 0),
+        int(donation["already_donated_in_a_previous_pass"]), len(refused)))
 
+    checkpoint(OUT, started, "donated", donation, len(admitted), dry_run)
     representations = representation_manifest(minted, dry_run)
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run
                 else record_registry(admitted, per_tradition, donated_by_tradition))
@@ -1228,6 +1669,24 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     return report
 
 
+def _trials_per_hypothesis(per_tradition: dict[str, dict[str, Any]],
+                           panel_status: dict[str, Any]) -> dict[str, Any]:
+    """Effective trials charged this pass per routed hypothesis, overall and per tradition."""
+    log = (panel_status.get("routing") or {}).get("log") or []
+    hypotheses = len({(e.get("hypothesis_id"), e.get("target")) for e in log if e.get("tools")})
+    trials = {t: float(row.get("effective_trials") or 0.0) for t, row in per_tradition.items()}
+    routed = {t: int(row.get("hypotheses_routed") or 0) for t, row in per_tradition.items()}
+    return {
+        "hypotheses_routed": hypotheses,
+        "effective_trials": round(sum(trials.values()), 3),
+        "overall": round(sum(trials.values()) / hypotheses, 3) if hypotheses else None,
+        "by_tradition": {t: round(trials[t] / routed[t], 3) if routed[t] else None
+                         for t in per_tradition},
+        "mean_traditions_per_hypothesis": round(
+            sum(len(e.get("tools") or []) for e in log) / len(log), 3) if log else None,
+    }
+
+
 def _report(started: float, chosen: list[str], unknown: list[str], panel_status: dict[str, Any],
             memory: dict[str, Any], plan: dict[str, Any], roi_detail: dict[str, Any],
             per_tradition: dict[str, dict[str, Any]], objects: list[MathObject],
@@ -1252,6 +1711,32 @@ def _report(started: float, chosen: list[str], unknown: list[str], panel_status:
                         **(plan.get("departments") or {})},
         "panel": panel_status, "memory": memory,
         "allocation": plan, "roi": roi_detail,
+        "yield_per_compute_hour": {
+            "rung": roi_detail.get("rung", UNMEASURED),
+            "zero_yield": roi_detail.get("zero_yield") or [],
+            "released_budget_s": plan.get("released_budget_s", 0.0),
+            # THE DEFLATION COST OF BREADTH, next to its yield (audit SF on da1037972). Routing an
+            # idea to every fitting tradition raises the trials each hypothesis pays for.
+            "trials_per_hypothesis": _trials_per_hypothesis(per_tradition, panel_status),
+            "by_tradition": {
+                t: {k: row.get(k) for k in (
+                    "compute_hours", "donated", "cells", "judged", "survivors",
+                    "cells_per_compute_hour", "cells_to_judge_per_compute_hour",
+                    "survivors_per_compute_hour", "roi", "zero_yield")}
+                | {"share": (plan.get("traditions", {}).get(t) or {}).get("share")}
+                for t, row in (roi_detail.get("rows") or {}).items()},
+            "rule": ("compute is earned: every tradition is priced on the highest rung of "
+                     "survivors > judged cells > compiled cells > donated objects any tradition "
+                     "reached; zero on every rung after MIN_EVIDENCE_H compute-hours keeps the "
+                     "exploration floor only, unless hypotheses were routed to it")},
+        "hypothesis_routing": {
+            k: (panel_status.get("routing") or {}).get(k)
+            for k in ("status", "targets", "by_tradition", "demand", "top_hypothesis", "log")},
+        "search_burden": ("every object, routed or not, is judged by burden.judge, queued in the "
+                          "registry with its trials charged (burden.record_trials) and donated "
+                          "to the one compiler, Judge and ten-gate gauntlet; the 90/10 split is "
+                          "held at panel selection and the 2x live-cost bar for exotics stays "
+                          "with the Judge and the promoter"),
         "engines": {k: v.to_row() for k, v in (engines or {}).items()},
         "wiring_proof": wiring or I.wiring_proof(
             {}, {}, chosen, list(MATHLAB_ENGINES)),
@@ -1294,15 +1779,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-targets", type=int, default=MAX_TARGETS)
     a = ap.parse_args(argv)
     chosen = [t.strip() for t in a.traditions.split(",") if t.strip()] or None
-    report = run(budget_s=a.budget_s, dry_run=a.dry_run, traditions=chosen,
-                 max_targets=a.max_targets)
-    print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
-                      "traditions": len(report["traditions_run"]),
-                      "objects": report["objects"]["admitted"],
-                      "passed": report["objects"]["passed_burden"],
-                      "donated": report["donation"].get("donated"),
-                      "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return 0
+
+    def body() -> None:
+        report = run(budget_s=a.budget_s, dry_run=a.dry_run, traditions=chosen,
+                     max_targets=a.max_targets)
+        print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
+                          "traditions": len(report["traditions_run"]),
+                          "objects": report["objects"]["admitted"],
+                          "passed": report["objects"]["passed_burden"],
+                          "donated": report["donation"].get("donated"),
+                          "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
+
+    return run_then_exit(body)
 
 
 if __name__ == "__main__":                                                # pragma: no cover

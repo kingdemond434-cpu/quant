@@ -67,6 +67,24 @@ RESULT_MEANING: dict[int, str] = {
     3221225794: "STATUS_DLL_INIT_FAILED -- usually desktop heap exhaustion in session 0",
 }
 
+#: WHAT A SMALL CODE MEANS FOR ONE ORGAN, keyed (task, code) -- the same idea as never_stale's
+#: TASK_DIAGNOSIS. A bare 2 from python.exe is a missing script, but an organ may also return 2
+#: ON PURPOSE. MT5-TickIntegrity does: 2 is its alarm (FAIL or newly-failed tick days, or no tape
+#: at all). Measured 2026-11-17 22:45Z: the box row read FAILING "file not found" every hour and
+#: was taken for a broken registration. The verdict stays FAILING -- an alarm is not health --
+#: but the words now say which alarm. A contracted organ only reaches FAILING with its artifact
+#: fresh (STALE is judged first), so a fresh TICK_INTEGRITY.json plus code 2 IS the alarm.
+TASK_RESULT_MEANING: dict[tuple[str, int], str] = {
+    ("MT5-TickIntegrity", 2): (
+        "ALARM, not a crash: the integrity audit found FAIL (or newly-failed) tick days, or no "
+        "tape -- read verdicts and paging in desks/mt5/reports/TICK_INTEGRITY.json"),
+}
+
+
+def result_meaning(name: str, code: int) -> str:
+    """The per-organ meaning of `code` when one is written down, else the generic one."""
+    return TASK_RESULT_MEANING.get((name, code)) or RESULT_MEANING.get(code, f"exit code {code}")
+
 
 #: One budget for each scheduler read. The verbose query has been measured hanging past two
 #: minutes on the trading box under load, and the PowerShell cmdlets this used to call first
@@ -443,6 +461,29 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+def claude_settings() -> dict[str, Any]:
+    """Whether the Claude Code settings files that shape the box's Remote Control sessions parse
+    (ops/claude_settings_health.py, read-only, no values). Off Windows it is NOT_APPLICABLE: the
+    files it checks live on the box. A broken file is ATTENTION -- 2026-11-13 the bridge user's
+    settings.json lost its leading brace and the no-prompt mode silently never loaded."""
+    if os.name != "nt":
+        return {"status": "NOT_APPLICABLE", "why": "the settings it checks live on the Windows box"}
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        import claude_settings_health  # type: ignore[import-not-found]
+        rep = claude_settings_health.check()
+        try:
+            claude_settings_health.OUT.parent.mkdir(parents=True, exist_ok=True)
+            claude_settings_health.OUT.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        # only the projection is published: no path, user name, line, column or message
+        return dict(claude_settings_health.publishable(rep))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+
+
 #: Account-key states that are a definite fault: every stamp fails closed until a human restores
 #: the key from backup (libs/ops/provenance.RESTORE_STEP). `absent` is not one: a writer creates it.
 KEY_FAULT_STATES = frozenset({"short", "unreadable"})
@@ -536,7 +577,7 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
         elif code is not None and code not in (0, 267009, 267011) and not _running:
-            verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+            verdict, why = "FAILING", result_meaning(name, code)
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
@@ -553,6 +594,7 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
+                            else result_meaning(name, code) if verdict == "FAILING"
                             else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
@@ -624,7 +666,9 @@ def build() -> dict[str, Any]:
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    settings = claude_settings()
+    settings_fault = settings.get("status") == "BROKEN"
+    if key_fault or backup_fault or settings_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -645,11 +689,14 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(settings_fault),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
         "account_key_backup": backup,
+        # THE CLAUDE CODE SETTINGS FILES (2026-11-13): BROKEN when one does not parse, which means
+        # its permission mode never loaded; the repair is a person's (Repair-ClaudeSettings.ps1).
+        "claude_settings": settings,
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
