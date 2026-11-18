@@ -46,7 +46,8 @@ def desk(tmp_path, monkeypatch):
              "GRAPH": tmp_path / "data" / "hypothesis_graph.jsonl",
              "AXIS_REPORT": tmp_path / "reports" / "AXIS_REGISTRY.json",
              "OUT_REPORT": tmp_path / "reports" / "UNSEEN_FRONTIER.json",
-             "OUT_HISTORY": tmp_path / "data" / "unseen_frontier_history.jsonl"}
+             "OUT_HISTORY": tmp_path / "data" / "unseen_frontier_history.jsonl",
+             "ALIASES": tmp_path / "data" / "vocabulary_aliases.json"}
     for name, path in paths.items():
         monkeypatch.setattr(uf, name, path)
     monkeypatch.setattr(uf, "asset_class_of", _asset_class)
