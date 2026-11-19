@@ -433,7 +433,7 @@ def exempt_scripts(
 INSTALLER_TARGETS = (
     "scripts/run_alerts.py",  # the pager: reads reports and pages; no order, sizing or switch
     "desks/mt5/scripts/stall_watch.ps1",  # the stall watcher: task health and re-enables
-    "scripts/serve_dashboard.py",  # read-only dashboard: web/ allowlist, GET only, no order or switch
+    "scripts/serve_dashboard.py",  # read-only dashboard: web/ allowlist, GET only
 )  # fmt: skip
 #: What an installer may do that DYNAMIC reads as dynamic: the scheduled-task verbs, and finding
 #: the interpreter by name (`(Get-Command python ...).Source`, a property, not `source`-ing).
