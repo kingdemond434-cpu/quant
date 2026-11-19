@@ -7,6 +7,7 @@ Uses YouTube Data API v3 (free tier: 10,000 units/day).
 Falls back to web scraping if no API key available.
 """
 
+import hashlib
 import json
 import time
 import os
@@ -25,6 +26,17 @@ OUT.mkdir(parents=True, exist_ok=True)
 #: The YouTube Data API v3 key (official API; the principal lifted the box's YouTube ban on
 #: 2026-11-19). Read where read_key looks -- the box stores it as YOUTUBE -- never printed.
 KEY_NAMES = ("YOUTUBE_API_KEY", "YOUTUBE")
+
+#: Terms read 2026-11-19 (both pages "Last updated 2026-11-06 UTC").
+YOUTUBE_TERMS = {
+    "tos_url": "https://developers.google.com/youtube/terms/api-services-terms-of-service",
+    "tos_quote": ("only access (or attempt to access) the YouTube API Services to develop and "
+                  "operate your API Client(s) [...] by the means described in the Agreement"),
+    "policy_url": "https://developers.google.com/youtube/terms/developer-policies",
+    "policy_quote": ("You must access data from YouTube API services only according to the means "
+                     "stipulated in the authorized documentation of that YouTube API service."),
+    "checked": "2026-11-19",
+}
 
 
 def _api_key() -> str:
@@ -196,11 +208,12 @@ def run_and_save() -> list[dict]:
     all_discoveries = mine()
     results = []
     for d in all_discoveries:
+        # Derived readings only: YouTube API Data is never stored (Developer Policies III.E:
+        # non-authorized data at most 30 days), so no title, channel or video id is kept --
+        # only what the desk computed from them, and a one-way reference.
         results.append({
             "source": d.source,
-            "title": d.title,
-            "channel": d.channel,
-            "url": d.url,
+            "video_ref": hashlib.sha256(d.url.encode("utf-8")).hexdigest()[:16],
             "published": d.published,
             "symbols": d.symbols_mentioned,
             "timeframes": d.timeframes_mentioned,

@@ -139,3 +139,15 @@ def test_every_substitute_targets_only_recorded_hosts_and_never_the_site_it_repl
 def test_the_runner_entry_survives_pickling_for_the_spawned_miner_process() -> None:
     fn = pickle.loads(pickle.dumps(ls.runner("academic")))  # noqa: S301 -- own bytes
     assert fn.args == ("academic",)
+
+
+def test_youtube_rows_keep_derived_readings_only_never_api_data(monkeypatch, tmp_path) -> None:
+    import youtube_miner as ym
+    d = ym.YTDiscovery(title="XAUUSD london breakout", channel="c", url="https://youtube.com/watch?v=x",
+                       published="2026-11-19", symbols_mentioned=["XAUUSD"])
+    monkeypatch.setattr(ym, "mine", lambda: [d])
+    monkeypatch.setattr(ym, "OUT", tmp_path)
+    rows = ym.run_and_save()
+    assert rows and not {"title", "channel", "url"} & set(rows[0])
+    assert rows[0]["symbols"] == ["XAUUSD"] and len(rows[0]["video_ref"]) == 16
+    assert "api-services-terms" in ym.YOUTUBE_TERMS["tos_url"]

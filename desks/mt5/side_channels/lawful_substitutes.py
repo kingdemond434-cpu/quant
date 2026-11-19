@@ -52,9 +52,11 @@ TIMEOUT_S = 20
 TERMS: dict[str, dict[str, str]] = {
     "api.github.com": {
         "url": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
-        "quote": ("the GitHub REST API is the documented machine interface; the github channel "
-                  "already runs on it under the #773 Auditor CLEAR"),
-        "checked": "2026-11-05"},
+        "quote": ("H. API Terms: All use of the GitHub API is subject to these Terms of Service "
+                  "and the GitHub Privacy Statement. [...] Abuse or excessively frequent "
+                  "requests to GitHub via the API may result in the temporary or permanent "
+                  "suspension of your Account's access to the API. (Effective April 27, 2026)"),
+        "checked": "2026-11-19"},
     "api.gdeltproject.org": {
         "url": "https://gdeltproject.org/about.html",
         "quote": ("all datasets released by the GDELT Project are available for unlimited and "
