@@ -409,8 +409,78 @@ def test_the_self_heal_escapes_unvouch_it(tmp_path: Path, text: str) -> None:
     assert rs.self_heal_problems(_heal(tmp_path, text))
 
 
-def test_the_read_only_dashboard_server_is_a_vouched_target(tmp_path: Path) -> None:
-    text = GOOD.replace("run_alerts.py", "serve_dashboard.py").replace(" --box", " --port 8080")
-    tree = _tree(tmp_path, text, {"scripts/serve_dashboard.py": "print(3)\n"})
-    assert rs.installer_problems(tree, INST) == []
-    assert "scripts/serve_dashboard.py" in rs.INSTALLER_TARGETS
+DASH = "scripts/serve_dashboard.py"
+DASH_GOOD = """
+import subprocess
+from http.server import SimpleHTTPRequestHandler
+PUBLIC_FILES = frozenset({"index.html", "desk.html", "desk_state.json"})
+
+
+def _public_name(p):
+    n = p.lstrip("/")
+    return n if n in PUBLIC_FILES else None
+
+
+class H(SimpleHTTPRequestHandler):
+    def send_head(self):
+        name = _public_name(self.path)
+        if name is None:
+            self.send_error(404, "no")
+            return None
+        return super().send_head()
+
+    def list_directory(self, path):
+        self.send_error(404, "no")
+        return None
+
+    def do_GET(self):
+        super().do_GET()
+
+
+def main():
+    subprocess.run(["build"], check=False)
+"""
+DASH_SET = 'frozenset({"index.html", "desk.html", "desk_state.json"})'
+DASH_POST = (
+    "\nclass H2(SimpleHTTPRequestHandler):\n    def do_POST(self):\n        pass\n"
+    "    def send_head(self):\n        return _public_name(self.path)\n"
+    "    def list_directory(self, p):\n        self.send_error(404)\n"
+)
+DASH_INST = GOOD.replace("run_alerts.py", "serve_dashboard.py").replace(" --box", " --port 8080")
+
+
+def _dash(tmp: Path, src: str) -> Path:
+    return _tree(tmp, DASH_INST, {DASH: src})
+
+
+def test_the_dashboard_server_is_vouched_by_its_content(tmp_path: Path) -> None:
+    assert rs.dashboard_problems(_dash(tmp_path, DASH_GOOD)) == []
+    assert rs.installer_problems(_dash(tmp_path, DASH_GOOD), INST) == []
+
+
+@pytest.mark.parametrize(
+    ("src", "why"),
+    [
+        (DASH_GOOD + DASH_POST, "do_POST"),
+        (DASH_GOOD.replace("    def list_directory", "    def other"), "list_directory"),
+        (DASH_GOOD.replace("name = _public_name(self.path)", "name = self.path"), "send_head"),
+        (DASH_GOOD.replace(DASH_SET, 'frozenset({"a/b.html"})'), "plain page"),
+        (DASH_GOOD.replace(DASH_SET, "frozenset(x)"), "PUBLIC_FILES"),
+        (DASH_GOOD.replace("return n if n in PUBLIC_FILES else None", "return n"), "membership"),
+        (DASH_GOOD.replace("super().do_GET()", "subprocess.run(['x'])"), "subprocess"),
+        (DASH_GOOD + "\nimport os\nos.system('x')\n", "os.system"),
+        ("class H:\n    pass\n", "no request handler"),
+        ("def (", "cannot be parsed"),
+    ],
+)  # fmt: skip
+def test_a_dashboard_server_that_regresses_is_unmeasured(
+    tmp_path: Path, src: str, why: str
+) -> None:
+    got = rs.dashboard_problems(_dash(tmp_path, src))
+    assert got and any(why in g for g in got), got
+    assert rs.installer_problems(_dash(tmp_path, src), INST), "the installer must follow"
+
+
+def test_the_dashboard_is_not_vouched_unconditionally() -> None:
+    assert DASH not in rs.INSTALLER_TARGETS
+    assert rs.CONDITIONAL_TARGETS[DASH] is rs.dashboard_problems

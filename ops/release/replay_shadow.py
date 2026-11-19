@@ -433,7 +433,6 @@ def exempt_scripts(
 INSTALLER_TARGETS = (
     "scripts/run_alerts.py",  # the pager: reads reports and pages; no order, sizing or switch
     "desks/mt5/scripts/stall_watch.ps1",  # the stall watcher: task health and re-enables
-    "scripts/serve_dashboard.py",  # read-only dashboard: web/ allowlist, GET only
 )  # fmt: skip
 #: What an installer may do that DYNAMIC reads as dynamic: the scheduled-task verbs, and finding
 #: the interpreter by name (`(Get-Command python ...).Source`, a property, not `source`-ing).
@@ -1099,7 +1098,105 @@ def self_heal_problems(head: Path) -> list[str]:
 
 
 #: Python targets vouched for only while their rule finds nothing on the PR's tree.
-CONDITIONAL_TARGETS: dict[str, Callable[[Path], list[str]]] = {SELF_HEAL: self_heal_problems}
+DASHBOARD = "scripts/serve_dashboard.py"
+_DASH_VERBS_OK = frozenset({"do_GET", "do_HEAD"})
+_DASH_FILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:html|json|jsonl)")
+
+
+def dashboard_problems(head: Path) -> list[str]:
+    """Why scripts/serve_dashboard.py is not a vouched target on `head`; [] when it is. Static
+    (Audit #1249 MF1): the vouch holds by the file's CONTENT, so a later edit that adds a write
+    verb, serves more than a literal allowlist, lists a directory or runs something per request
+    makes it UNMEASURED again:
+    - every class that subclasses a *HTTPRequestHandler defines no `do_*` other than do_GET and
+      do_HEAD;
+    - module-level `PUBLIC_FILES = frozenset({...})` is bound once, to plain file-name literals;
+    - a handler's `send_head` calls `_public_name`, and `_public_name` tests `in PUBLIC_FILES`;
+    - a handler overrides `list_directory` to answer 404;
+    - no banned call anywhere (os.system, Popen, eval, ...), and `subprocess` is never named
+      inside a handler class (main()'s one startup build may stay)."""
+    src = read(head, DASHBOARD)
+    if src is None:
+        return ["unreadable"]
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return ["cannot be parsed"]
+    why: list[str] = []
+    handlers = [
+        n
+        for n in tree.body
+        if isinstance(n, ast.ClassDef)
+        and any(_dotted(b).endswith("HTTPRequestHandler") for b in n.bases)
+    ]
+    if not handlers:
+        return ["defines no request handler class"]
+    for cls in handlers:
+        methods = {m.name: m for m in cls.body if isinstance(m, ast.FunctionDef)}
+        extra = sorted(m for m in methods if m.startswith("do_") and m not in _DASH_VERBS_OK)
+        if extra:
+            why.append(f"{cls.name} answers {extra}")
+        for node in ast.walk(cls):
+            if isinstance(node, ast.Name) and node.id == "subprocess":
+                why.append(f"{cls.name} uses subprocess")
+                break
+        sh, ld = methods.get("send_head"), methods.get("list_directory")
+        if sh is None or not any(
+            isinstance(c, ast.Call) and _dotted(c.func) == "_public_name" for c in ast.walk(sh)
+        ):
+            why.append(f"{cls.name}.send_head does not route through _public_name")
+        if ld is None or not any(
+            isinstance(c, ast.Call)
+            and _dotted(c.func).endswith("send_error")
+            and c.args
+            and isinstance(c.args[0], ast.Constant)
+            and c.args[0].value == 404
+            for c in ast.walk(ld)
+        ):
+            why.append(f"{cls.name}.list_directory does not answer 404")
+    allow = [
+        n
+        for n in tree.body
+        if isinstance(n, ast.Assign)
+        and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name)
+        and n.targets[0].id == "PUBLIC_FILES"
+    ]
+    names: set[str] | None = None
+    if len(allow) == 1 and isinstance(allow[0].value, ast.Call):
+        call = allow[0].value
+        if _dotted(call.func) == "frozenset" and len(call.args) == 1:
+            names = _literal_strs(call.args[0])
+    if names is None or not names:
+        why.append("PUBLIC_FILES is not one literal frozenset of file names")
+    elif not all(_DASH_FILE.fullmatch(x) for x in names):
+        why.append("PUBLIC_FILES names something that is not a plain page or data file")
+    pub = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_public_name"]
+    if len(pub) != 1 or not any(
+        isinstance(c, ast.Compare)
+        and any(isinstance(o, ast.In) for o in c.ops)
+        and any(isinstance(x, ast.Name) and x.id == "PUBLIC_FILES" for x in c.comparators)
+        for c in ast.walk(pub[0] if pub else tree)
+    ):
+        why.append("_public_name does not test membership in PUBLIC_FILES")
+    for node in ast.walk(tree):
+        name = (
+            _dotted(node.func)
+            if isinstance(node, ast.Call)
+            else _dotted(node)
+            if isinstance(node, ast.Attribute)
+            else ""
+        )
+        if name in _BANNED_CALLS:
+            why.append(f"names {name}")
+            break
+    return list(dict.fromkeys(why))
+
+
+CONDITIONAL_TARGETS: dict[str, Callable[[Path], list[str]]] = {
+    SELF_HEAL: self_heal_problems,
+    DASHBOARD: dashboard_problems,
+}
 
 _INSTALLER_VERBS = re.compile(
     r"(register|set|disable|enable|unregister|start|get|new)-scheduledtask\w*"
