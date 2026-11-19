@@ -2,13 +2,19 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-from research import fill_proven as fp
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK), str(_DESK.parent.parent)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from research import fill_proven as fp  # noqa: E402
 
 
 def _tape(root: Path, sym: str, day: str, hour_spreads: dict[int, float], mid: float = 1.0) -> None:
