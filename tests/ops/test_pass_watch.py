@@ -254,9 +254,34 @@ def test_process_health_carries_the_verdict_off_box(tmp_path: Path, monkeypatch)
     out = tmp_path / "desks/mt5/reports/process_health.json"
     monkeypatch.setattr(process_health, "OUT", out)
     assert process_health._pass_watch()["status"] == "UNMEASURED"
-    _box(tmp_path)
-    pass_watch.run(root=tmp_path, now=NOW)
+    now = datetime.now(UTC)
+    _box(tmp_path, at=now)
+    pass_watch.run(root=tmp_path, now=now)
     carried = process_health._pass_watch()
     assert carried["status"] == "OK" and carried["flag"] is True
     assert carried["reasons"][0].startswith("FIRST_RUN")
-    assert carried["at"] == NOW.isoformat(timespec="seconds")
+    assert carried["at"] == now.isoformat(timespec="seconds")
+
+
+def test_a_stopped_watcher_reads_stale_and_flagged(tmp_path: Path, monkeypatch) -> None:
+    """An old or unreadable `at` never reads as "nothing changed"."""
+    import process_health
+
+    out = tmp_path / "desks/mt5/reports/process_health.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(process_health, "OUT", out)
+    watch = out.parent / "PASS_WATCH.json"
+    now = datetime.now(UTC)
+    for at in ((now - timedelta(days=300)).isoformat(), "not a time", None):
+        watch.write_text(json.dumps({"at": at, "flag": False, "reasons": []}), encoding="utf-8")
+        got = process_health._pass_watch()
+        assert got["status"] == "STALE" and got["flag"] is True, at
+        assert got["reasons"][0].startswith("STALE: PASS_WATCH.json")
+    fresh = (now - timedelta(minutes=30)).isoformat()
+    watch.write_text(json.dumps({"at": fresh, "flag": False, "reasons": []}), encoding="utf-8")
+    assert process_health._pass_watch() == {
+        "status": "OK",
+        "at": fresh,
+        "flag": False,
+        "reasons": [],
+    }
