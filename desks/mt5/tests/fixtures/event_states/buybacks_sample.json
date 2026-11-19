@@ -1,0 +1,6 @@
+{"data":[
+ {"operation_date":"2026-11-12","operation_close_time_est":"02:00 PM","operation_type":"Liquidity Support","total_par_amt_offered":"3224000000.00","max_par_amt_redeemed":"750000000","total_par_amt_accepted":"556000000.00"},
+ {"operation_date":"2026-11-05","operation_close_time_est":"02:00 PM","operation_type":"Liquidity Support","total_par_amt_offered":"47319000000.00","max_par_amt_redeemed":"4000000000","total_par_amt_accepted":"4000000000.00"},
+ {"operation_date":"2026-11-05","operation_close_time_est":"11:00 AM","operation_type":"Cash Management","total_par_amt_offered":"1000000000.00","max_par_amt_redeemed":"500000000","total_par_amt_accepted":"500000000.00"},
+ {"operation_date":"2026-07-09","operation_close_time_est":"bogus","operation_type":"Liquidity Support","total_par_amt_offered":"2000000000.00","max_par_amt_redeemed":"1000000000","total_par_amt_accepted":"null"}
+],"meta":{"count":4}}

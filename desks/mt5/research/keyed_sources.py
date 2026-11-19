@@ -177,6 +177,33 @@ def machine_use_allowed(row: Mapping[str, Any]) -> bool:
     return row.get("machine_use_allowed") is True
 
 
+#: SERIES THE CODE ADDS TO A ROSTER ROW. The roster sits under desks/mt5/data/, a box STATE path:
+#: the box keeps its own copy and its next push reverts an origin edit to it, so a series added by
+#: a PR goes here and is unioned in at load. A series the roster file already names wins (the box
+#: may have tuned it); a row the roster does not carry is not created.
+SERIES_DEFAULTS: dict[str, dict[str, dict[str, Any]]] = {
+    "bls_components": {
+        # Idea N11 (noon CRO 2026-11-17): JOLTS total nonfarm quits rate, SA. Prints about five
+        # weeks after the month at 10:00 ET, so +42 days is after every scheduled date;
+        # research/event_states.py derives its gap to the prior three months. FRED is refused.
+        "jolts_quits_rate": {"code": "JTS000000000000000QUR", "lag_days": 42,
+                             "instruments": {"EURUSD": -1, "USDJPY": 1, "US500": 1,
+                                             "NAS100": 1}},
+    },
+}
+
+
+def with_defaults(row: dict[str, Any]) -> dict[str, Any]:
+    """The row with every code-declared series it does not already name."""
+    add = SERIES_DEFAULTS.get(str(row.get("id")))
+    if not add:
+        return row
+    series = dict(row.get("series") or {})
+    for name, spec in add.items():
+        series.setdefault(name, dict(spec))
+    return {**row, "series": series}
+
+
 def load_roster(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
     doc = _read(path, {})
     out: list[dict[str, Any]] = []
@@ -184,6 +211,7 @@ def load_roster(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
     for r in (doc.get("sources") if isinstance(doc, dict) else None) or []:
         if not isinstance(r, dict):
             continue
+        r = with_defaults(r)
         miss = [k for k in REQUIRED if k not in r]
         if miss:
             bad.append(f"{r.get('id', '<unnamed>')}: missing {', '.join(miss)}")
