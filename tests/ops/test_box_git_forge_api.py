@@ -190,3 +190,12 @@ def test_the_pin_and_the_box_checker_copy_follow_an_authorized_merge(tmp_path) -
     assert doc["t_hash"] == "T1" and doc["history"][-1]["t_hash"] == "T0"
     assert chk.read_text().startswith("aaaa:ops/box_git/trust_check.py")
     assert (tmp_path / "TRUST_SET.json").read_text().startswith("aaaa:ops/box_git/TRUST_SET.json")
+
+
+def test_a_prop_firm_breach_is_refused_even_with_the_owners_authorization(tmp_path) -> None:
+    g = _gate()
+    owner = {"author_association": "OWNER", "created_at": "t", "updated_at": "t",
+             "body": f"AUTHORIZE TRUST {SHA}"}
+    ok, why, _ = g.forge_trust("live", SHA, [], [owner], git=lambda *a: "",
+                               checker=Checker("REFUSE"), pin_path=_pin(tmp_path))
+    assert not ok and why.startswith("refused")

@@ -772,6 +772,8 @@ def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
         head_t = base_t if cls == "ORDINARY" else mod.t_hash(run_git, head)
     except Exception as exc:  # anything unmeasured refuses
         return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
+    if cls == "REFUSE":  # a prop firm's own published limit: nobody overrides it
+        return False, f"refused: {why}", None
     if cls == "ORDINARY":
         return True, f"ordinary change ({why})", None
     if cls == "TIGHTEN":

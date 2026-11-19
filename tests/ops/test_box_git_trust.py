@@ -85,7 +85,8 @@ def _cls(r: Repo, base: str, head: str) -> tuple[str, str]:
 
 def test_ordinary_changes_leave_the_trust_set_alone(tmp_path: Path) -> None:
     r, base = _base(tmp_path)
-    head = r.put({"docs/a.md": "b\n", "gate.py": GATE.replace("json.dumps(x)", "json.dumps(x, indent=1)"),
+    plumbing = GATE.replace("json.dumps(x)", "json.dumps(x, indent=1)")
+    head = r.put({"docs/a.md": "b\n", "gate.py": plumbing,
                   "helpers/rules.py": HELPERS.replace("return c", "return c or None"),
                   "tests/ops/test_new_thing.py": "def test_x():\n    assert True\n"})
     assert _cls(r, base, head)[0] == "ORDINARY"
@@ -158,3 +159,23 @@ def test_the_real_policy_measures_this_repository() -> None:
     m = T.measure(git, "HEAD", pol)
     assert any(k.startswith(".github/scripts/audit_gate.py::run") for k in m)
     assert any(k.startswith("ops/box_git/forge_api.py::Forge") for k in m)
+
+
+def test_risk_limits_are_ordinary_but_a_prop_firm_limit_is_never_exceeded(tmp_path: Path) -> None:
+    caps = {"ops/release/ceilings.json": [["max", "f.py", "DAILY_LOSS_FRAC", 0.05]]}
+    pol = {**POLICY, "files": [f for f in POLICY["files"] if "ceilings" not in f],
+           "hard_caps": caps}
+    r = Repo(tmp_path / "r")
+    doc = {"max": {"f.py": {"DAILY_LOSS_FRAC": 0.04}, "s.py": {"RISK": 0.03}}}
+    base = r.put({"gate.py": GATE, "helpers/__init__.py": "", "helpers/rules.py": HELPERS,
+                  "ops/release/ceilings.json": json.dumps(doc), T.POLICY_PATH: json.dumps(pol)})
+    looser = r.put({"ops/release/ceilings.json": json.dumps(
+        {"max": {"f.py": {"DAILY_LOSS_FRAC": 0.05}, "s.py": {"RISK": 0.06}}})})
+    assert T.classify(r.g, base, looser, [], policy=pol)[0] == "ORDINARY"
+    for bad in ({"max": {"f.py": {"DAILY_LOSS_FRAC": 0.051}}}, {"max": {"s.py": {"RISK": 0.01}}},
+                {"max": {"f.py": {"DAILY_LOSS_FRAC": "0.01"}}}):
+        head = r.put({"ops/release/ceilings.json": json.dumps(bad)})
+        cls, why = T.classify(r.g, base, head, [], policy=pol)
+        assert cls == "REFUSE" and "published limit" in why
+    head = r.put({"ops/release/ceilings.json": "{not json"})
+    assert T.classify(r.g, base, head, [], policy=pol)[0] == "REFUSE"

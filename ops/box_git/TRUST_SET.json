@@ -12,9 +12,6 @@
   "ops/release/risk_invariants.py",
   "ops/release/replay_shadow.py",
   "ops/release/expected_divergence.json",
-  "ops/release/not_money_scripts.txt",
-  "ops/money_closure.txt",
-  "ops/release/ceilings.json",
   "ops/release/protected_paths.txt",
   "ops/release/risk_suites.txt",
   "ops/release/trusted_eval_suites.txt"
@@ -22,8 +19,7 @@
  "grow_only": [
   "ops/release/protected_paths.txt",
   "ops/release/risk_suites.txt",
-  "ops/release/trusted_eval_suites.txt",
-  "ops/money_closure.txt"
+  "ops/release/trusted_eval_suites.txt"
  ],
  "symbols": {
   ".github/scripts/audit_gate.py": [
@@ -82,6 +78,23 @@
   "libs/ops/release.py": [
    "NON_CODE",
    "STATE_PREFIXES"
+  ]
+ },
+ "hard_caps": {
+  "_why": "Prop firms' own published limits (coordinator 2026-11-19 20:39Z: risk limits and money-path lists are autonomous via Auditor CLEAR; prop-firm caps stay hard). A PR whose ceilings.json drops one of these rows or sets it above the cap is REFUSED outright.",
+  "ops/release/ceilings.json": [
+   [
+    "max",
+    "desks/mt5/prop/ftmo_follower.py",
+    "DAILY_LOSS_FRAC",
+    0.05
+   ],
+   [
+    "max",
+    "desks/mt5/prop/ftmo_follower.py",
+    "MAX_LOSS_FRAC",
+    0.1
+   ]
   ]
  }
 }

@@ -24,6 +24,10 @@ CLASSES (classify):
             globs or comments; nothing removed or reordered); TRUST_SET.json gaining entries in
             `files` / `symbols` (more frozen, never less); new test files.
   TRUST     anything else in T, and anything this module cannot measure (fails closed).
+  REFUSE    a file named in `hard_caps` (the prop firms' own published limits) loses a capped row
+            or sets it above its cap. Checked FIRST and never overridable: not by the Auditor, not
+            by the owner's AUTHORIZE TRUST. Everything else in that file (the desk's own risk
+            limits) is ordinary, set autonomously on an Auditor CLEAR (RISK AUTONOMY).
 """
 from __future__ import annotations
 
@@ -261,7 +265,8 @@ def _policy_grows(base: str, head: str) -> bool:
         b, h = json.loads(base), json.loads(head)
     except ValueError:
         return False
-    if set(b) != set(h) or b.get("grow_only") != h.get("grow_only"):
+    if (set(b) != set(h) or b.get("grow_only") != h.get("grow_only")
+            or b.get("hard_caps") != h.get("hard_caps")):
         return False
     for k in b:
         if k == "files":
@@ -276,6 +281,20 @@ def _policy_grows(base: str, head: str) -> bool:
     return True
 
 
+def cap_breaches(text: str | None, caps: list[list[Any]]) -> list[str]:
+    """Rows of a JSON file (section, path, name, cap) that are missing or above their cap."""
+    try:
+        doc = json.loads(text or "")
+    except ValueError:
+        return ["unreadable"]
+    out = []
+    for section, path, name, cap in caps:
+        v = ((doc.get(section) or {}).get(path) or {}).get(name)
+        if isinstance(v, bool) or not isinstance(v, int | float) or v > cap:
+            out.append(f"{path} {name} = {v!r} (published limit {cap})")
+    return out
+
+
 def is_new_test(base: Tree, path: str) -> bool:
     name = path.rsplit("/", 1)[-1]
     return (path.startswith(("tests/", "desks/mt5/tests/")) and name.startswith("test_")
@@ -285,6 +304,15 @@ def is_new_test(base: Tree, path: str) -> bool:
 def classify(git: Git, base: str, head: str, changed: list[str],
              policy: dict[str, Any] | None = None) -> tuple[str, str]:
     pol = policy or load_policy()
+    caps = {k: v for k, v in (pol.get("hard_caps") or {}).items() if not k.startswith("_")}
+    try:
+        head_tree = Tree(git, head)
+        for path, rows in caps.items():
+            bad = cap_breaches(head_tree.text(path), rows)
+            if bad:
+                return "REFUSE", f"over a prop firm's published limit: {'; '.join(bad)}"[:300]
+    except Exception as exc:  # unreadable caps refuse
+        return "REFUSE", f"prop-firm caps unmeasured: {exc}"[:300]
     try:
         mb, mh = measure(git, base, pol), measure(git, head, pol)
     except Exception as exc:  # anything unmeasured is TRUST (Unmeasured included)
