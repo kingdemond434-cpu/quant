@@ -55,7 +55,9 @@
    "authority_clear",
    "patch_id",
    "AUTHORIZE_TRUST",
-   "owner_authorized"
+   "owner_authorized",
+   "FORGE_REQUIRED",
+   "forge_need"
   ],
   "ops/box_git/forge_api.py": [
    "BOX_CI_USER",
@@ -145,7 +147,11 @@
      "SEAL_CARRIERS",
      "SEAL_CARRIER_BRANCH",
      "touches_root",
-     "patch_id"
+     "patch_id",
+     "FORGE_REQUIRED",
+     "forge_need",
+     "RISK_JOB",
+     "REPLAY_JOB"
     ],
     "ops/box_git/forge_api.py": [
      "BOX_CI_USER",

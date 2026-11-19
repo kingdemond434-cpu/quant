@@ -267,6 +267,13 @@ CEILINGS_FILE = "ops/release/ceilings.json"
 #: The job that holds a PR to the ceilings and the firm rules. Required on every merge that rests on
 #: the standing approval, so a prop firm's own limit binds on every autonomous path.
 RISK_JOB = "risk-invariants"
+#: On the box forge there is no owner APPROVE and no host branch protection behind the gate, so
+#: every PR needs the risk invariants AND replay-shadow green at its head (Audit MF-5).
+FORGE_REQUIRED = ("risk-invariants", "replay-shadow")
+
+
+def forge_need(need: tuple[str, ...]) -> tuple[str, ...]:
+    return (*need, *(j for j in FORGE_REQUIRED if j not in need))
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
@@ -1856,6 +1863,8 @@ def run(
         need = required + auto
         if clear.get("standing") and RISK_JOB not in need:
             need = (*need, RISK_JOB)
+        if os.environ.get("QUANT_FORGE_URL"):
+            need = forge_need(need)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break

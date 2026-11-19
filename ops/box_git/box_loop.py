@@ -329,17 +329,24 @@ def pr_tick(cfg: Config) -> str:
         changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
         with worktree(cfg, head) as root:
             sel = impacted.select(root, changed)
-            if sel == []:
-                post(cfg, head, "success", "box CI: no change any test can observe (fast lane)")
+            if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
+                why = "box CI: documents and images only (fast lane)"
+                post(cfg, head, "success", why, (*GATING, "risk-invariants", "replay-shadow"))
                 return f"PR #{p.get('number')}: fast lane"
+            if sel == []:
+                post(cfg, head, "success", "box CI: no change any test can observe")
             ok, n, why = _resources(cfg)
             if not ok:
                 return f"PR #{p.get('number')} waits: {why}"
-            post(cfg, head, "pending", f"box CI running on {n} idle cores")
-            passed, what = run_tests(cfg, root, sel, n)
-            scope = "full suite" if sel == impacted.ALL else f"{len(sel)} impacted test file(s)"
-            post(cfg, head, "success" if passed else "failure",
-                 f"box CI, {scope}: {what}. Full suite runs after merge; release needs it green.")
+            passed, scope = True, "no observable test"
+            if sel != []:
+                post(cfg, head, "pending", f"box CI running on {n} idle cores")
+                passed, what = run_tests(cfg, root, sel, n)
+                scope = ("full suite" if sel == impacted.ALL
+                         else f"{len(sel)} impacted test file(s)")
+                post(cfg, head, "success" if passed else "failure",
+                     f"box CI, {scope}: {what}. Full suite runs after merge; release needs it "
+                     "green.")
             rok, rwhy = risk_job(cfg, root, base, head)
             post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", ("risk-invariants",))
             sok, swhy = replay_job(cfg, base, head, changed)

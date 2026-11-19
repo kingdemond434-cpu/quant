@@ -164,3 +164,22 @@ def test_the_gate_reads_the_pinned_verdict_and_never_writes_the_pin(tmp_path) ->
     assert g.forge_trust("live", SHA, [], [], git=lambda *a: "", pin_path=pin)[0] is False
     assert ft(Checker(), pin_path=str(tmp_path / "none.json"))[0] is False
     assert Path(pin).read_text() == '{"t_hash": "T0"}' and not hasattr(g, "write_pin")
+
+
+def test_on_the_forge_replay_shadow_is_required_for_every_merge() -> None:
+    """Audit MF-5: a CLEAR plus green gating and risk, with replay-shadow red or absent, never
+    merges on the box forge."""
+    g = _gate()
+    need = g.forge_need(g.GATING_JOBS)
+    assert "replay-shadow" in need and "risk-invariants" in need
+
+    def run(name, concl):
+        return {"name": name, "status": "completed", "conclusion": concl, "head_sha": SHA,
+                "app": {"slug": "github-actions"}}
+    green = [run(n, "success") for n in (*g.GATING_JOBS, "risk-invariants")]
+    ok = lambda r: True  # noqa: E731
+    assert g.checks(green, need, ok)[0] == "pending"                        # replay absent
+    assert g.checks([*green, run("replay-shadow", "failure")], need, ok)[0] == "fail"
+    assert g.checks([*green, run("replay-shadow", "success")], need, ok)[0] == "pass"
+    src = (ROOT / ".github/scripts/audit_gate.py").read_text()
+    assert "if os.environ.get(\"QUANT_FORGE_URL\"):\n            need = forge_need(need)" in src
