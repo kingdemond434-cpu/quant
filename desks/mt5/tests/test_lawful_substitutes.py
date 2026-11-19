@@ -169,7 +169,10 @@ def test_aaii_fetches_only_through_the_gate_at_its_crawl_delay(monkeypatch) -> N
     assert "requests.get(" not in src and "Feed()" in src
     assert "www.aaii.com" in ls.TERMS and ls.PACE_S["www.aaii.com"] >= 10
     web = _Web({"www.aaii.com": _Resp(200, "User-agent: *\nDisallow: /sentimentsurvey")}, {})
-    monkeypatch.setattr(ls, "_default_get", lambda: web)
+    import importlib
+    importlib.import_module("side_channels.lawful_substitutes")   # the copy aaii imports
+    for mod in (m for k, m in list(sys.modules.items()) if k.split(".")[-1] == "lawful_substitutes"):
+        monkeypatch.setattr(mod, "_default_get", lambda: web)
     rows = am.mine_aaii()
     assert rows[0]["kind"] == "fetch_error" and "ROBOTS_REFUSED" in rows[0]["error"]
     assert [u for u, _ in web.log] == ["https://www.aaii.com/robots.txt"]
