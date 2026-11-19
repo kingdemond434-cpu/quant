@@ -390,7 +390,8 @@ def growth_score(row: Mapping[str, Any], risk_frac: float = 0.0) -> float | None
 
 
 def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
-           rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+           rows: list[dict[str, Any]] | None = None,
+           days: tuple[list[str], Any] | None = None) -> dict[str, Any]:
     """The book, plus everything refused and why. An absence here is always named (L1.28a)."""
     rows = _load_survivors() if rows is None else rows
     blocked = []
@@ -522,6 +523,26 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
             break
         i += 1
 
+    # THE WORST HISTORICAL DAY, WITH CORRELATIONS, UNDER 60% OF THE 2.5% DAILY LIMIT (prop/stress.py;
+    # CIO review 2026-11-19 move #1). E8's gold lane trades on the same account, so its size is
+    # counted on every day and never cut; the sleeve book gives way, weakest-of-the-worst-family
+    # first, and every cut is a missed-growth line.
+    from prop import stress
+    from prop.e8_guard import DAILY_DRAWDOWN
+    if days is None:
+        days = stress.load_days()
+    try:
+        from mt5desk.kelly_sizing import load_cert_book
+        gold = principal_e8_book(load_cert_book(CERT_BOOK, "e8")).get("gold_asia", 0.0)
+    except Exception:
+        gold = 0.0
+    stressed = stress.cap_book(
+        chosen, risk_of=lambda r: RISK_FRAC, family_of=lambda r: r["family"],
+        daily_limit=DAILY_DRAWDOWN, days=days,
+        col_of=lambda r: f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}",
+        fixed={"gold_asia": gold})
+    chosen = stressed.pop("kept")
+
     fams: dict[str, int] = {}
     for r in chosen:
         fams[r["family"]] = fams.get(r["family"], 0) + 1
@@ -555,6 +576,7 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "n_selected": len(chosen),
         "gross_exposure_if_all_fire": round(len(chosen) * RISK_FRAC, 5),
         "by_mechanism": fams,
+        "stress": stressed,
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),
