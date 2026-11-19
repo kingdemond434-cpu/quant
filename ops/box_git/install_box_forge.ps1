@@ -84,6 +84,9 @@ function Lock-ToOwners([string] $path, [string[]] $extra = @()) {
     foreach ($u in $extra) { & icacls $path /grant:r "${u}:(OI)(CI)M" | Out-Null }
 }
 function Forge([string[]] $a) {
+    # Windows PowerShell 5.1 turns a native program's stderr lines into errors under Stop:
+    # gitea logs to stderr, so judge by the exit code alone.
+    $ErrorActionPreference = 'Continue'
     $out = & $Bin --config $Ini --work-path $Forge @a 2>&1 | Out-String
     return @{ rc = $LASTEXITCODE; out = $out.Trim() }
 }
@@ -224,15 +227,15 @@ LEVEL = Info
     Say "wrote $Ini (HTTPS on $Port, registration off, sign-in required)"
 } else {
     # An earlier app.ini keeps its secrets, but never its exposure: loopback only, Actions off.
-    $ini = Get-Content -LiteralPath $Ini
-    $ini = $ini -replace '^HTTP_ADDR\s*=.*$', 'HTTP_ADDR = 127.0.0.1' -replace '^DOMAIN\s*=.*$', 'DOMAIN = 127.0.0.1' `
+    $iniLines = Get-Content -LiteralPath $Ini
+    $iniLines = $iniLines -replace '^HTTP_ADDR\s*=.*$', 'HTTP_ADDR = 127.0.0.1' -replace '^DOMAIN\s*=.*$', 'DOMAIN = 127.0.0.1' `
                 -replace '^ROOT_URL\s*=.*$', "ROOT_URL = https://127.0.0.1:$Port/"
     $inActions = $false
-    $ini = foreach ($l in $ini) {
+    $iniLines = foreach ($l in $iniLines) {
         if ($l -match '^\[') { $inActions = ($l -eq '[actions]') }
         if ($inActions -and $l -match '^ENABLED\s*=') { 'ENABLED = false' } else { $l }
     }
-    Set-Content -LiteralPath $Ini -Value $ini -Encoding ascii
+    Set-Content -LiteralPath $Ini -Value $iniLines -Encoding ascii
     Say "kept the existing $Ini, forced to 127.0.0.1 with Actions off"
 }
 $r = Forge @("migrate"); if ($r.rc -ne 0) { Stop-Here 4 "database setup failed: $($r.out)" }
@@ -330,9 +333,9 @@ $env:GIT_CONFIG_KEY_1 = 'http.sslCAInfo'; $env:GIT_CONFIG_VALUE_1 = ($cert -repl
 $env:GIT_CONFIG_KEY_2 = 'http.extraHeader'; $env:GIT_CONFIG_VALUE_2 = "Authorization: Basic $adminBasic"
 $seedUrl = "https://127.0.0.1:$Port/quant/quant.git"
 if ($SeedBundle) {
-    & git -C $gate bundle verify $SeedBundle 2>&1 | ForEach-Object { Say "  seed bundle: $_" }
+    & { $ErrorActionPreference = 'Continue'; git -C $gate bundle verify $SeedBundle 2>&1 } | ForEach-Object { Say "  seed bundle: $_" }
     if ($LASTEXITCODE -ne 0) { Stop-Here 6 "the seed bundle does not verify against $gate." }
-    & git -C $gate fetch -q $SeedBundle "refs/heads/${Live}:refs/remotes/origin/$Live" 2>&1 |
+    & { $ErrorActionPreference = 'Continue'; git -C $gate fetch -q $SeedBundle "refs/heads/${Live}:refs/remotes/origin/$Live" 2>&1 } |
         ForEach-Object { Say "  seed bundle: $_" }
     if ($LASTEXITCODE -ne 0) { Stop-Here 6 "the seed bundle's LIVE is not a fast-forward of the gate clone's." }
 }
@@ -341,7 +344,7 @@ foreach ($b in @("production", "master")) {
     & git -C $gate rev-parse -q --verify "refs/remotes/origin/$b" 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) { $refs += "refs/remotes/origin/${b}:refs/heads/$b" }
 }
-& git -C $gate -c "http.sslVerify=true" push -q $seedUrl @refs "refs/tags/release/*:refs/tags/release/*" 2>&1 |
+& { $ErrorActionPreference = 'Continue'; git -C $gate -c "http.sslVerify=true" push -q $seedUrl @refs "refs/tags/release/*:refs/tags/release/*" 2>&1 } |
     ForEach-Object { Say "  seed: $_" }
 $seedRc = $LASTEXITCODE
 $env:GIT_CONFIG_COUNT = '1'; Remove-Item Env:GIT_CONFIG_KEY_1, Env:GIT_CONFIG_VALUE_1, Env:GIT_CONFIG_KEY_2, Env:GIT_CONFIG_VALUE_2 -ErrorAction SilentlyContinue
@@ -385,7 +388,7 @@ if (-not (Test-Path -LiteralPath $pinPath)) {
         Set-Content -LiteralPath $pwSrc -Encoding utf8
     Copy-Item -LiteralPath $pwSrc -Destination (Join-Path $trustDir "pin_writer.py") -Force
     Remove-Item -LiteralPath $pwSrc -Force
-    & $py -I (Join-Path $trustDir "pin_writer.py") --init $srcRepo $boot $seededLive 2>&1 | ForEach-Object { Say "  pin: $_" }
+    & { $ErrorActionPreference = 'Continue'; & $py -I (Join-Path $trustDir "pin_writer.py") --init $srcRepo $boot $seededLive 2>&1 } | ForEach-Object { Say "  pin: $_" }
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $pinPath)) { Stop-Here 7 "could not pin the trust set at the boot head." }
 } else { Say "keeping the existing trust pin $pinPath (the pin writer owns it)" }
 & icacls $trustDir /grant "${SvcUser}:(OI)(CI)RX" | Out-Null
@@ -554,7 +557,7 @@ foreach ($repo in @($gate, $QuantRoot)) {
     & git -c safe.directory=* -C $repo remote set-url origin $localUrl
     & git -c safe.directory=* -C $repo config "http.$forgeUrl/.sslCAInfo" $caFwd
     & git -c safe.directory=* -C $repo config "http.$forgeUrl/.extraHeader" "Authorization: token $gateTok"
-    & git -c safe.directory=* -C $repo fetch -q origin 2>&1 | ForEach-Object { Say "  fetch ${repo}: $_" }
+    & { $ErrorActionPreference = 'Continue'; git -c safe.directory=* -C $repo fetch -q origin 2>&1 } | ForEach-Object { Say "  fetch ${repo}: $_" }
     if ($LASTEXITCODE -ne 0) { Stop-Here 10 "$repo cannot fetch from the forge." }
     Say "$repo now fetches from the forge"
 }
@@ -564,7 +567,7 @@ $gateTok = $null
 & git -c safe.directory=* -C $loopSrc fetch -q $bare "refs/heads/$Live"
 & git -c safe.directory=* -C $loopSrc checkout -q --detach --force FETCH_HEAD
 Push-Location $loopSrc
-try { & $py ops\release\authority\pin_root.py --write C:\opt\audit_registry\ROOT_PIN.json 2>&1 | ForEach-Object { Say "  pin: $_" } }
+try { & { $ErrorActionPreference = 'Continue'; & $py ops\release\authority\pin_root.py --write C:\opt\audit_registry\ROOT_PIN.json 2>&1 } | ForEach-Object { Say "  pin: $_" } }
 finally { Pop-Location }
 if ($LASTEXITCODE -ne 0) { Say "ROOT re-pin did not complete (exit $LASTEXITCODE); the loop still runs" }
 
