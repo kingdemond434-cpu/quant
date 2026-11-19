@@ -1294,6 +1294,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # each one through on its own merits into a floor none of them breaches alone.
         # `row_risk_usd` is the FINAL lot's measured risk here (r7.3), after every multiplier
         # and the ceiling -- the floor is never checked against a pre-multiplier figure.
+        from prop.e8_book import rollover_block
+        if (_roll := rollover_block(s, now)) is not None:
+            row["status"], row["rail"], row["why"] = "RAIL_BLOCKED", "rollover_entry_gate", _roll
+            row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
+            doc["sleeves"].append(row)
+            continue
         if outstanding_usd + committed_usd + row_risk_usd > decision.room_to_daily_floor:
             row["status"] = "WOULD_BREACH_DAILY"
             row["why"] = (f"broker stops and new risks totalling "

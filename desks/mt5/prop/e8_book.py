@@ -219,7 +219,8 @@ def _spec_fingerprint(spec: dict[str, Any]) -> str:
 #: replaces. CERT_BOOK_LIVE.json is box state (libs/ops/release.STATE_PREFIXES), so an origin edit
 #: of its e8 block would be reverted by the box's next push; the lift is therefore read here, in
 #: one place both readers use (this book and prop/e8_executor).
-#: USDJPY_session_range_breakout_asia is NOT lifted: its zero is a lineage quarantine (CERT_BOOK_LIVE `e8_pins`, live_sleeve_policy), not the
+#: USDJPY_session_range_breakout_asia is NOT lifted: its zero is a lineage quarantine
+#: (CERT_BOOK_LIVE `e8_pins`, live_sleeve_policy), not the
 #: gold-only order, and its own route is #1313. REVERT: empty this set.
 SUPERSEDED_E8_ZEROS: frozenset[str] = frozenset({
     "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
@@ -295,6 +296,26 @@ def sleeve_risk(row: Mapping[str, Any]) -> float:
     fp = row.get("fill_proven")
     base = RISK_FRAC * fill_shrink(float(fp["n"])) if fp else RISK_FRAC
     return round(base * (TIER_S_MULT if row.get("tier_s") else 1.0), 6)
+
+
+#: THE ROLLOVER ENTRY GATE (coordinator + hourly pass 2026-11-19 19:24Z, zuck "fix all so all is
+#: ready to reach live"). A fill-proven sleeve's evidence EXCLUDES broker 00:00-01:59 -- the slice
+#: where spreads run 10-1000x and the bid-only record was flattering it -- so the sleeve may not
+#: enter there: its edge was never shown in that slice. A principal-funded key with no fill record
+#: is the principal's and is not gated here. The executor bills each refusal as missed growth.
+ROLLOVER_BROKER_HOURS = frozenset({0, 1})
+
+
+def rollover_block(row: Mapping[str, Any], now_utc: datetime) -> str | None:
+    """The reason this sleeve may not enter now, or None. Broker hour = UTC + E8 server offset."""
+    if not row.get("fill_proven"):
+        return None
+    from prop.e8_guard import server_offset_hours
+    hour = (now_utc.astimezone(UTC).hour + server_offset_hours(now_utc)) % 24
+    if hour in ROLLOVER_BROKER_HOURS:
+        return (f"broker hour {hour:02d} is in the rollover slice its fill evidence excludes "
+                "(reports/FILL_PROVEN.json, outside 00:00-01:59 only)")
+    return None
 
 
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
@@ -609,7 +630,8 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
             break
         i += 1
 
-    # THE WORST HISTORICAL DAY, WITH CORRELATIONS, UNDER 60% OF THE 2.5% DAILY LIMIT (prop/stress.py;
+    # THE WORST HISTORICAL DAY, WITH CORRELATIONS, UNDER 60% OF THE 2.5% DAILY LIMIT
+    # (prop/stress.py;
     # CIO review 2026-11-19 move #1). E8's gold lane trades on the same account, so its size is
     # counted on every day and never cut; the sleeve book gives way, weakest-of-the-worst-family
     # first, and every cut is a missed-growth line.

@@ -198,3 +198,19 @@ def test_missing_protective_stop_refuses_new_risk() -> None:
         _RiskVenue(), [{"tradableInstrumentId": 6102, "side": "buy", "qty": 0.1}], [])
     assert risk is None
     assert "no measurable protective stop" in why
+
+
+def test_rollover_gate_refuses_fill_proven_entries_in_broker_00_to_01() -> None:
+    from datetime import UTC, datetime
+    proven = {"fill_proven": {"n": 20, "adjR": 0.3}}
+    # November: E8 server = UTC+2, so 22:30 UTC is 00:30 broker and 23:59 UTC is 01:59.
+    at_0030 = e8_book.rollover_block(proven, datetime(2026, 11, 19, 22, 30, tzinfo=UTC))
+    at_0159 = e8_book.rollover_block(proven, datetime(2026, 11, 19, 23, 59, tzinfo=UTC))
+    assert at_0030 is not None and "broker hour 00" in at_0030
+    assert at_0159 is not None and "broker hour 01" in at_0159
+    assert e8_book.rollover_block(proven, datetime(2026, 11, 20, 0, 0, tzinfo=UTC)) is None
+    assert e8_book.rollover_block(proven, datetime(2026, 11, 19, 21, 59, tzinfo=UTC)) is None
+    # A principal-funded key with no fill record is the principal's, not gated here.
+    assert e8_book.rollover_block({}, datetime(2026, 11, 19, 22, 30, tzinfo=UTC)) is None
+    # July: server = UTC+3, so 21:15 UTC is 00:15 broker.
+    assert e8_book.rollover_block(proven, datetime(2026, 7, 1, 21, 15, tzinfo=UTC)) is not None
