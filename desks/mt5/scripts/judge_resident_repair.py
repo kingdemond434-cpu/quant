@@ -22,7 +22,8 @@ THE VERDICT, one of four:
   HEALTHY     the heartbeat is at most HEARTBEAT_STALE_S old.
   WEDGED      the heartbeat is older than HEARTBEAT_STALE_S, or further in the future than
               FUTURE_SKEW_S. The heartbeat thread re-stamps every 30 s; its measured age over 491
-              healthy snapshots was p99 1.5 min, max 2.2 min (judge_stall_pager.HEARTBEAT_STALE_MIN).
+              healthy snapshots was p99 1.5 min, max 2.2 min
+              (judge_stall_pager.HEARTBEAT_STALE_MIN).
               A long sweep does NOT stale it -- the thread beat straight through the 18h sweeps --
               so this never ends a legitimate sweep, which a pass-age threshold would.
 
@@ -39,7 +40,8 @@ and prints and never acts: every checkout holds a published copy of JUDGE_RESIDE
 heartbeat is hours old.
 
 Clock: MT5-BoxHeartbeat (every 5 minutes; box_heartbeat.main invokes it as a 40 s-bounded
-subprocess BEFORE the stall pager, so both fit the task's 2-minute limit). Artifact: `desks/mt5/reports/JUDGE_RESIDENT_REPAIR.json`. State
+subprocess BEFORE the stall pager, so both fit the task's 2-minute limit).
+Artifact: `desks/mt5/reports/JUDGE_RESIDENT_REPAIR.json`. State
 (box-local, gitignored): `desks/mt5/logs/judge_resident_repair.json`.
 """
 from __future__ import annotations
