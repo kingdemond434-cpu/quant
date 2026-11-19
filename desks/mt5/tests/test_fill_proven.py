@@ -99,3 +99,28 @@ def test_write_and_main_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert fp.main(["--once"]) == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["schema"] == fp.SCHEMA and doc["sleeves"] == []
+
+
+def test_noise_positives_fail_the_fdr_and_are_not_admitted(tmp_path: Path) -> None:
+    """A barely positive, noisy mean among many tried sleeves is not admitted."""
+    ticks, shadow = tmp_path / "ticks", tmp_path / "shadow"
+    _tape(ticks, "EURUSD", "2026-11-18", {9: 0.0001})
+    noisy = [(9, 1.5), (9, -1.4)] * 6  # mean ~ +0.04R, sd ~ 1.5R, n = 12
+    for i in range(20):
+        _ledger(shadow, f"EURUSD_noise{i}_asia", noisy)
+    _ledger(shadow, "EURUSD_real_asia", [(9, 0.6), (9, 0.4)] * 10)
+    doc = fp.build(shadow, ticks, NOW)
+    assert [s["sleeve"] for s in doc["sleeves"]] == ["EURUSD_real_asia"]
+    assert doc["n_positive_failing_fdr"] == 20
+    assert doc["rule"]["n_tested"] == 21
+
+
+def test_moat_compact_file_without_ts_is_read_from_time_msc(tmp_path: Path) -> None:
+    ticks = tmp_path / "ticks"
+    d = ticks / "AUDCAD"
+    d.mkdir(parents=True)
+    ms = int(pd.Timestamp("2026-11-18 09:00", tz="UTC").timestamp() * 1000)
+    pd.DataFrame({"time_msc": [ms, ms + 1000], "bid": [0.999, 0.999],
+                  "ask": [1.001, 1.001]}).to_parquet(d / "20261118.parquet", index=False)
+    spreads, used = fp.spread_by_hour("AUDCAD", ticks)
+    assert used == 1 and spreads[9] == pytest.approx(0.002, rel=1e-3)

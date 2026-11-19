@@ -10,7 +10,9 @@ n>=10, 80 negative, and the rest too thin to judge.
 
 WHAT IT WRITES. `reports/FILL_PROVEN.json`, each pass:
 
-    sleeves  -- the admitted list, [{sleeve, n_out, adjR_out}], n_out >= MIN_N and adjR_out > 0
+    sleeves  -- the admitted list, [{sleeve, n_out, adjR_out, lcb95_out, p_out}]: n_out >= MIN_N,
+                adjR_out > 0 AND the sleeve survives Benjamini-Hochberg at FDR_Q across every
+                sleeve tested (a positive mean out of ~168 tries is not evidence on its own)
     table    -- every sleeve read, with n/adjR for all trades, outside rollover and inside it,
                 and how many trades had no measured spread (UNMEASURED, never charged zero)
 
@@ -63,6 +65,9 @@ ROLLOVER_HOURS = frozenset({0, 1})
 MIN_N = 10
 #: Most recent tape day files read per symbol for the spread table.
 TAPE_DAYS = 30
+#: False-discovery rate across every sleeve with n_out >= MIN_N (Audit 11-19: 11 positives out of
+#: 168 is about what noise alone gives, so a positive mean is not enough on its own).
+FDR_Q = 0.10
 #: A quote whose spread is above this fraction of mid is a broken print and is dropped.
 MAX_SANE_SPREAD_FRAC = 0.2
 
@@ -106,39 +111,79 @@ def stop_distance(row: dict[str, Any]) -> float | None:
     return None
 
 
-def spread_by_hour(symbol: str, root: Path = TICKS, days: int = TAPE_DAYS) -> dict[int, float]:
-    """{venue hour: median (ask-bid)/mid} from the last `days` tape files. Empty when unread."""
+def tape_files(symbol: str, root: Path = TICKS) -> list[tuple[str, Path]]:
+    """(ISO day, path) oldest first. Both naming conventions; when a day exists in both, the
+    larger file wins (`feed_clock_lab.tape_days` / `moat_series.tape_index`'s rule)."""
     d = root / symbol
+    days: dict[str, Path] = {}
     if not d.is_dir():
-        return {}
-    files: list[tuple[str, Path]] = []
+        return []
     for p in d.glob("*.parquet"):
         stem = p.stem
         if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
-            files.append((stem, p))
+            key = stem
         elif len(stem) == 8 and stem.isdigit():
-            files.append((f"{stem[:4]}-{stem[4:6]}-{stem[6:]}", p))
-    files.sort()
-    by_hour: dict[int, list[float]] = defaultdict(list)
-    import pandas as pd
-    for _day, path in files[-days:]:
+            key = f"{stem[:4]}-{stem[4:6]}-{stem[6:]}"
+        else:
+            continue
         try:
-            df = pd.read_parquet(path, columns=["ts", "bid", "ask"])
-        except Exception:
+            if key in days and p.stat().st_size <= days[key].stat().st_size:
+                continue
+        except OSError:
             continue
-        df = df.dropna()
-        df = df[(df["bid"] > 0) & (df["ask"] > df["bid"])]
-        if df.empty:
+        days[key] = p
+    return sorted(days.items())
+
+
+def _venue_hours(path: Path):
+    """(hours, bid, ask) from one tape day file, or None. The recorder writes `ts` (from
+    time_msc); the moat's compact files carry only `time_msc`. Both are the venue clock."""
+    import pandas as pd
+    import pyarrow.parquet as pq
+    try:
+        names = set(pq.read_schema(path).names)
+    except Exception:
+        return None
+    stamp = "ts" if "ts" in names else ("time_msc" if "time_msc" in names else None)
+    if stamp is None or not {"bid", "ask"} <= names:
+        return None
+    try:
+        df = pd.read_parquet(path, columns=[stamp, "bid", "ask"]).dropna()
+    except Exception:
+        return None
+    if stamp == "time_msc":
+        when = pd.to_datetime(df[stamp].astype("int64"), unit="ms", utc=True)
+    else:
+        when = pd.to_datetime(df[stamp], utc=True)
+    return when.dt.hour, df["bid"], df["ask"]
+
+
+def spread_by_hour(symbol: str, root: Path = TICKS,
+                   days: int = TAPE_DAYS) -> tuple[dict[int, float], int]:
+    """({venue hour: median (ask-bid)/mid}, day files actually read) from the last `days`
+    tape files. A file that cannot be read is not counted, so `days_read` says what was used."""
+    import pandas as pd
+    by_hour: dict[int, list[float]] = defaultdict(list)
+    used = 0
+    for _day, path in tape_files(symbol, root)[-days:]:
+        got = _venue_hours(path)
+        if got is None:
             continue
-        mid = (df["ask"] + df["bid"]) / 2.0
-        frac = (df["ask"] - df["bid"]) / mid
-        hours = pd.to_datetime(df["ts"], utc=True).dt.hour
-        frame = pd.DataFrame({"h": hours, "f": frac})
+        hours, bid, ask = got
+        ok = (bid > 0) & (ask > bid)
+        if not ok.any():
+            continue
+        mid = (ask[ok] + bid[ok]) / 2.0
+        frame = pd.DataFrame({"h": hours[ok].to_numpy(),
+                              "f": ((ask[ok] - bid[ok]) / mid).to_numpy()})
         frame = frame[frame["f"] <= MAX_SANE_SPREAD_FRAC]
+        if frame.empty:
+            continue
+        used += 1
         for h, med in frame.groupby("h")["f"].median().items():
             by_hour[int(h)].append(float(med))
     # The median of the daily medians, so one wild day cannot set the hour.
-    return {h: statistics.median(v) for h, v in by_hour.items() if v}
+    return {h: statistics.median(v) for h, v in by_hour.items() if v}, used
 
 
 def adjusted_trades(rows: list[dict[str, Any]], label: str,
@@ -167,20 +212,51 @@ def _cut(trades: list[dict[str, Any]]) -> tuple[int, float | None]:
     return len(adj), (round(statistics.fmean(adj), 4) if adj else None)
 
 
+def one_sided_p(values: list[float]) -> tuple[float | None, float | None]:
+    """(p for mean <= 0, 95% one-sided lower bound of the mean) by Student t; None under 2."""
+    n = len(values)
+    if n < 2:
+        return None, None
+    from scipy import stats
+    mean, sd = statistics.fmean(values), statistics.stdev(values)
+    if sd <= 0:
+        return (0.0 if mean > 0 else 1.0), mean
+    se = sd / math.sqrt(n)
+    p = float(stats.t.sf(mean / se, n - 1))
+    lcb = mean - float(stats.t.ppf(0.95, n - 1)) * se
+    return p, lcb
+
+
+def bh_pass(pvals: dict[str, float], q: float) -> set[str]:
+    """Benjamini-Hochberg at `q` over every sleeve that was eligible to be tested."""
+    ranked = sorted(pvals.items(), key=lambda kv: kv[1])
+    m, cut = len(ranked), 0
+    for i, (_k, p) in enumerate(ranked, 1):
+        if p <= q * i / m:
+            cut = i
+    return {k for k, _p in ranked[:cut]}
+
+
 def sleeve_row(label: str, trades: list[dict[str, Any]]) -> dict[str, Any]:
     out_t = [t for t in trades if t["hour"] not in ROLLOVER_HOURS]
     roll_t = [t for t in trades if t["hour"] in ROLLOVER_HOURS]
     n_all, a_all = _cut(trades)
     n_out, a_out = _cut(out_t)
     n_roll, a_roll = _cut(roll_t)
-    return {"sleeve": label, "n_all": n_all, "adjR_all": a_all, "n_out": n_out,
+    p_out, lcb_out = one_sided_p([t["adj"] for t in out_t if t["adj"] is not None])
+    return {"p_out": None if p_out is None else round(p_out, 5),
+            "lcb95_out": None if lcb_out is None else round(lcb_out, 4),"sleeve": label, "n_all": n_all, "adjR_all": a_all, "n_out": n_out,
             "adjR_out": a_out, "n_rollover": n_roll, "adjR_rollover": a_roll,
             "n_unmeasured": sum(1 for t in trades if t["adj"] is None)}
 
 
-def admitted(row: dict[str, Any]) -> bool:
+def eligible(row: dict[str, Any]) -> bool:
     a = row.get("adjR_out")
     return int(row.get("n_out") or 0) >= MIN_N and isinstance(a, float) and a > 0
+
+
+def admitted(row: dict[str, Any]) -> bool:
+    return eligible(row) and bool(row.get("fdr_pass"))
 
 
 def build(shadow: Path = SHADOW, ticks: Path = TICKS,
@@ -188,6 +264,7 @@ def build(shadow: Path = SHADOW, ticks: Path = TICKS,
     from libs.research import forward_ledger as fl
     now = now or datetime.now(UTC)
     spread_cache: dict[str, dict[int, float]] = {}
+    days_read: dict[str, int] = {}
     table: list[dict[str, Any]] = []
     unread: list[str] = []
     for path in fl.iter_ledgers(shadow):
@@ -201,19 +278,27 @@ def build(shadow: Path = SHADOW, ticks: Path = TICKS,
             continue
         sym = symbol_of(rows[0] if isinstance(rows[0], dict) else {}, label)
         if sym not in spread_cache:
-            spread_cache[sym] = spread_by_hour(sym, ticks)
+            spread_cache[sym], days_read[sym] = spread_by_hour(sym, ticks)
         trades = adjusted_trades(rows, label, spread_cache[sym])
         if trades:
             row = sleeve_row(label, trades)
             row["symbol"] = sym
             table.append(row)
-    table.sort(key=lambda r: (not admitted(r), -(r["adjR_out"] or -9e9)))
-    sleeves = [{"sleeve": r["sleeve"], "n_out": r["n_out"], "adjR_out": r["adjR_out"]}
+    tested = {r["sleeve"]: r["p_out"] for r in table
+              if int(r["n_out"] or 0) >= MIN_N and r["p_out"] is not None}
+    passed = bh_pass(tested, FDR_Q)
+    for r in table:
+        r["fdr_pass"] = r["sleeve"] in passed
+    table.sort(key=lambda r: (not admitted(r), not eligible(r), -(r["adjR_out"] or -9e9)))
+    sleeves = [{"sleeve": r["sleeve"], "n_out": r["n_out"], "adjR_out": r["adjR_out"],
+                "lcb95_out": r["lcb95_out"], "p_out": r["p_out"]}
                for r in table if admitted(r)]
     return {
         "schema": SCHEMA, "generated_at": now.isoformat(timespec="seconds"),
         "rule": {"rollover_hours_venue": sorted(ROLLOVER_HOURS), "min_n_out": MIN_N,
-                 "adjR_out": "> 0", "tape_days": TAPE_DAYS},
+                 "adjR_out": "> 0", "tape_days": TAPE_DAYS,
+                 "fdr": f"Benjamini-Hochberg q={FDR_Q} on one-sided t over n_out >= {MIN_N}",
+                 "n_tested": len(tested)},
         "method": ("forward-phase ledger R minus the median tape (ask-bid)/mid at the entry hour "
                    "x entry / stop distance, once per round trip; hours on the venue clock"),
         "limitations": [
@@ -222,6 +307,8 @@ def build(shadow: Path = SHADOW, ticks: Path = TICKS,
             "a trade with no measured spread for its hour is UNMEASURED and not counted",
         ],
         "n_sleeves_read": len(table), "n_admitted": len(sleeves),
+        "n_positive_failing_fdr": sum(1 for r in table if eligible(r) and not admitted(r)),
+        "tape_days_read": dict(sorted(days_read.items())),
         "symbols_without_tape": sorted(s for s, v in spread_cache.items() if not v),
         "unreadable_ledgers": unread,
         "sleeves": sleeves, "table": table,
