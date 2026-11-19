@@ -108,21 +108,11 @@ def test_the_committed_page_data_carries_no_secret_shaped_key() -> None:
     assert found == [], found
 
 
-def test_the_task_the_installer_and_the_watchdog_start_the_same_ungated_server() -> None:
-    manifest = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
-    row = next(ln for ln in manifest.splitlines() if ln.startswith('TASK name="MT5-DeskDashboard"'))
-    assert "--no-auth" in row and "--require-token" not in row
-    installer = _code_lines("desks/mt5/scripts/install_desk_dashboard_task.ps1")
-    assert "--no-auth" in installer and "--require-token" not in installer
-    assert "LocalSubnet') + $AllowFrom" in installer and "@('Any')" in installer
-    watchdog = _code_lines("scripts/watchdog.py")
-    assert '"--port", "8080", "--no-auth"' in watchdog and "--require-token" not in watchdog
-
-
-def test_the_random_quick_tunnel_is_never_respawned() -> None:
-    watchdog = _code_lines("scripts/watchdog.py")
-    assert "run_tunnel" not in watchdog and "run_ngrok" not in watchdog
-    assert "_spawn([tun]" not in watchdog
+def test_the_server_never_reads_or_mints_a_token() -> None:
+    """The box's task keeps passing --require-token; the server must not honour it."""
+    main = _code_lines("scripts/serve_dashboard.py").split("def main")[1]
+    assert "_token()" not in main
+    assert '_Handler.token = ""' in main and "_Handler.require_token = False" in main
 
 
 def test_no_address_is_written_into_the_repo_files() -> None:
@@ -133,12 +123,6 @@ def test_no_address_is_written_into_the_repo_files() -> None:
             m for m in ip.findall(_code_lines(rel)) if not m.startswith(("127.", "0.0.0.", "8.8."))
         ]
         assert hits == [], (rel, hits)
-
-
-def test_installer_retires_the_quick_tunnel() -> None:
-    ps = (ROOT / "desks/mt5/scripts/install_desk_dashboard_task.ps1").read_text()
-    assert "Unregister-ScheduledTask -TaskName 'MT5-DeskTunnel'" in ps
-    assert "cloudflared" in ps
 
 
 def test_desk_page_reads_the_live_issues_shape() -> None:

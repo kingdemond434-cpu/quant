@@ -220,8 +220,11 @@ def main() -> None:
         "proxy, whose requests reach this origin as 127.0.0.1",
     )
     args = ap.parse_args()
-    _Handler.token = "" if args.no_auth else _token()
-    _Handler.require_token = bool(args.require_token) and not args.no_auth
+    # THE LOGIN TOKEN IS RETIRED (principal 2026-11-18): the page is read-only, serves an allowlist of
+    # files, and carries no secret. --no-auth and --require-token stay accepted so the box's task
+    # arguments keep parsing, and neither changes anything: no token is read or minted.
+    _Handler.token = ""
+    _Handler.require_token = False
     _WEB.mkdir(parents=True, exist_ok=True)
     # Build once before serving so localhost never opens on a missing/stale state file. The daily
     # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.
@@ -236,7 +239,7 @@ def main() -> None:
         f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
         f"  local   : http://127.0.0.1:{args.port}/desk.html\n"
         f"  network : http://{_lan_ip()}:{args.port}/desk.html\n"
-        f"  auth    : {'DISABLED (--no-auth)' if args.no_auth else 'token required off-loopback; key in ' + str(_TOKEN_FILE)}"
+        "  auth    : none (read-only allowlist)"
     )
     try:
         httpd.serve_forever()

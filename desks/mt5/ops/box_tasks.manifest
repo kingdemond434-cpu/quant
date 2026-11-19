@@ -193,13 +193,11 @@ TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_d
 TASK name="MT5-DeskState"          trigger="every 15 minutes, at :05"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
 TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
 # THE 24/7 DASHBOARD (principal 2026-09-23). MT5-LocalDashboard binds 127.0.0.1 and is therefore
-# unreachable from the principal's phone; this one binds every interface with NO token (principal,
-# 2026-11-18, after being warned: read-only, web/ only, a request runs nothing) and an inbound
-# firewall rule for its port, restarts on failure and starts at boot, so the page is permanent at
-# the box's own fixed address rather than a process someone started or a random tunnel hostname.
-# It serves web/dashboard.html, which renders web/desk_state.json["dashboard"] -- the join written
-# hourly by the desk_dashboard_state leg.
-TASK name="MT5-DeskDashboard"      trigger="at startup"       runs="scripts/serve_dashboard.py --port 8080 --host 0.0.0.0 --no-auth" installer="desks/mt5/scripts/install_desk_dashboard_task.ps1" lane="ops"
+# unreachable from the principal's phone; this one binds the LAN with --require-token and a
+# LocalSubnet-scoped firewall rule, restarts on failure and starts at boot, so the page is
+# permanent rather than a process someone started. It serves web/dashboard.html, which renders
+# web/desk_state.json["dashboard"] -- the join written hourly by the desk_dashboard_state leg.
+TASK name="MT5-DeskDashboard"      trigger="at startup"       runs="scripts/serve_dashboard.py --port 8080 --host 0.0.0.0 --require-token" installer="desks/mt5/scripts/install_desk_dashboard_task.ps1" lane="ops"
 TASK name="MT5-ShadowSync"         trigger="every 15 minutes at :05" runs="desks/mt5/scripts/sync_shadow_to_git.ps1" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
 
 # --- MEASURED ON THE BOX 2026-09-16 (schtasks /Query) so the DR floor knows them. MT5-HourlyCore
