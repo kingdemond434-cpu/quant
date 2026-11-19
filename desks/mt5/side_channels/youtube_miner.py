@@ -22,7 +22,24 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "youtube"
 OUT.mkdir(parents=True, exist_ok=True)
 
-API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+#: The YouTube Data API v3 key (official API; the principal lifted the box's YouTube ban on
+#: 2026-11-19). Read where read_key looks -- the box stores it as YOUTUBE -- never printed.
+KEY_NAMES = ("YOUTUBE_API_KEY", "YOUTUBE")
+
+
+def _api_key() -> str:
+    try:
+        import sys as _sys
+        _root = str(Path(__file__).resolve().parents[3])
+        if _root not in _sys.path:
+            _sys.path.append(_root)
+        from libs.ops.env_keys import read_key
+        return next((v for v in map(read_key, KEY_NAMES) if v), "")
+    except Exception:
+        return next((os.environ[n] for n in KEY_NAMES if os.environ.get(n)), "")
+
+
+API_KEY = _api_key()
 SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # Trading-related search queries
@@ -108,7 +125,8 @@ def _search_api(query: str, max_results: int = 10) -> list[dict]:
         "key": API_KEY,
     }
     try:
-        resp = requests.get(SEARCH_URL, params=params, timeout=15)
+        resp = requests.get(SEARCH_URL, params=params, timeout=15, headers={
+            "User-Agent": "quant-desk-research/1.0 (youtube data api; research)"})
         resp.raise_for_status()
         return resp.json().get("items", [])
     except Exception:

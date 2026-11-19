@@ -1,4 +1,4 @@
-"""Every side channel runs on the box (principal, 2026-11-19) except youtube, by standing rule;
+"""Every side channel runs on the box (principal, 2026-11-19, YouTube ban lifted the same day);
 a channel whose own site may not be fetched runs on its lawful feed, never on that site."""
 from __future__ import annotations
 
@@ -44,7 +44,8 @@ def test_sec_edgar_without_a_declared_user_agent_is_set_aside(monkeypatch) -> No
 
 #: Channels that run their own module: an official API, open data, local computation, or a
 #: host whose robots allows the path and whose terms are silent on automation (aaii).
-OWN_ROUTE = {"cot", "central_bank", "weather", "github", "seasonality", "correlations", "aaii"}
+OWN_ROUTE = {"cot", "central_bank", "weather", "github", "seasonality", "correlations", "aaii",
+             "youtube"}
 
 
 def _allowed() -> set[str]:
@@ -52,10 +53,10 @@ def _allowed() -> set[str]:
     return set(line.split("=", 1)[1].strip('"').split(","))
 
 
-def test_the_box_runner_runs_every_channel_but_youtube() -> None:
+def test_the_box_runner_runs_every_channel() -> None:
     names = {n for n, _ in ram.ALL_MINERS}
     assert len(names) == 25
-    assert _allowed() == names - {"youtube"}
+    assert _allowed() == names
 
 
 def test_every_allowed_channel_runs_its_own_lawful_route_or_its_substitute() -> None:

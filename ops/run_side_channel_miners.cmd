@@ -15,16 +15,16 @@ rem rest; the suite exits 0 when it finished, whatever each channel returned, an
 rem counts land in latest_discoveries.json and PRODUCER_YIELD.
 rem
 rem ALL CHANNELS ON, LAWFULLY (principal, 2026-11-19: all 25 run, none is ever switched off).
-rem 24 channels are allowed. Seven run on their own official API, open data or local computation
-rem (cot, central_bank, weather, github, seasonality, correlations, aaii). The other 17 have a
+rem All 25 channels are allowed. Eight run on their own official API, open data or local
+rem computation (cot, central_bank, weather, github, seasonality, correlations, aaii, and youtube
+rem on the YouTube Data API key: the principal lifted the YouTube ban on 2026-11-19).
+rem The other 17 have a
 rem site that bans automated access or whose terms were not confirmed, so they run on a keyless
 rem official API with its terms on record, in desks\mt5\side_channels\lawful_substitutes.py
 rem (GitHub, GDELT, Wikimedia, arXiv, EDGAR, IMF PortWatch, the faireconomy feed). sec_edgar
-rem and earnings need the EDGAR contact string, read from QUANT_EDGAR_UA or EDGAR_UA. Only
-rem youtube is SET_ASIDE, by the principal's standing rule.
-rem The box never contacts YouTube.
+rem and earnings need the EDGAR contact string, read from QUANT_EDGAR_UA or EDGAR_UA.
 setlocal
-set "QUANT_MINERS_ALLOW=github,mql5_codebase,mql5_articles,mql5_signals,mql5_forum,tradingview,quantconnect,reddit,central_bank,forexfactory,cot,sec_edgar,earnings,aaii,fear_greed,investing,google_trends,academic,correlations,seasonality,weather,shipping,china,korea"
+set "QUANT_MINERS_ALLOW=youtube,github,mql5_codebase,mql5_articles,mql5_signals,mql5_forum,tradingview,quantconnect,reddit,central_bank,forexfactory,cot,sec_edgar,earnings,aaii,fear_greed,investing,google_trends,academic,correlations,seasonality,weather,shipping,china,korea"
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\Quant-SideChannelMiners.log"
 set "PY=C:\Program Files\Python314\python.exe"
