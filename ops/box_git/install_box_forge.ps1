@@ -121,7 +121,7 @@ if ($GiteaVersion -eq "latest") {
     catch { Stop-Here 3 "could not read the latest Gitea version from dl.gitea.com. Nothing was installed." }
     if ($GiteaVersion -notmatch '^\d+\.\d+\.\d+$') { Stop-Here 3 "dl.gitea.com named an odd version '$GiteaVersion'." }
 }
-$url = "https://dl.gitea.com/gitea/$GiteaVersion/gitea-$GiteaVersion-windows-4.0-amd64.exe"
+$url = "https://dl.gitea.com/gitea/$GiteaVersion/gitea-$GiteaVersion-windows-amd64.exe"
 if (-not (Test-Path -LiteralPath $Bin)) {
     Say "downloading $url"
     $tmp = "$Bin.download"
