@@ -8,7 +8,9 @@ is one the replay vouches for; anything else stays UNMEASURED.
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -410,47 +412,11 @@ def test_the_self_heal_escapes_unvouch_it(tmp_path: Path, text: str) -> None:
 
 
 DASH = "scripts/serve_dashboard.py"
-DASH_GOOD = """
-import subprocess
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
-
-_WEB = Path(__file__).resolve().parent.parent / "web"
-PUBLIC_FILES = frozenset({"index.html", "desk.html", "desk_state.json"})
-
-
-def _public_name(p):
-    n = p.lstrip("/")
-    return n if n in PUBLIC_FILES else None
-
-
-class H(SimpleHTTPRequestHandler):
-    def send_head(self):
-        name = _public_name(self.path)
-        if name is None:
-            self.send_error(404, "no")
-            return None
-        return super().send_head()
-
-    def list_directory(self, path):
-        self.send_error(404, "no")
-        return None
-
-    def do_GET(self):
-        super().do_GET()
-
-
-def main():
-    subprocess.run(["build"], check=False)
-    handler = partial(H, directory=str(_WEB))
-    ThreadingHTTPServer(("", 1), handler)
-"""
-DASH_SET = 'frozenset({"index.html", "desk.html", "desk_state.json"})'
-DASH_METHODS = (
-    "    def send_head(self):\n        return _public_name(self.path)\n"
-    "    def list_directory(self, p):\n        self.send_error(404)\n"
+DASH_SRC = (
+    "from http.server import SimpleHTTPRequestHandler\n\n\n"
+    "class H(SimpleHTTPRequestHandler):\n    pass\n"
 )
+DASH_PIN = hashlib.sha256(DASH_SRC.encode("utf-8")).hexdigest()
 DASH_INST = GOOD.replace("run_alerts.py", "serve_dashboard.py").replace(" --box", " --port 8080")
 
 
@@ -458,53 +424,38 @@ def _dash(tmp: Path, src: str) -> Path:
     return _tree(tmp, DASH_INST, {DASH: src})
 
 
-def test_the_dashboard_server_is_vouched_by_its_content(tmp_path: Path) -> None:
-    assert rs.dashboard_problems(_dash(tmp_path, DASH_GOOD)) == []
-    assert rs.installer_problems(_dash(tmp_path, DASH_GOOD), INST) == []
+def test_the_dashboard_server_is_vouched_by_its_pinned_text(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(rs, "DASHBOARD_PINS", frozenset({DASH_PIN}))
+    tree = _dash(tmp_path, DASH_SRC)
+    assert rs.dashboard_problems(tree) == []
+    assert rs.installer_problems(tree, INST) == []
 
 
 @pytest.mark.parametrize(
-    ("src", "why"),
+    "edit",
     [
-        (DASH_GOOD + "\nclass H2(H):\n    def do_POST(self):\n        pass\n", "do_POST"),
-        (DASH_GOOD + "\nclass B(SimpleHTTPRequestHandler):\n    pass\n"
-         + "class H3(B):\n    def do_POST(self):\n        pass\n", "do_POST"),
-        (DASH_GOOD + "\nclass H2(H):\n    async def do_PUT(self):\n        pass\n", "do_PUT"),
-        (DASH_GOOD + "\nclass H2(H):\n    do_POST = print\n", "do_POST"),
-        (DASH_GOOD + "\nclass H2(H):\n    if True:\n        def do_DELETE(self):\n"
-         + "            pass\n", "do_DELETE"),
-        (DASH_GOOD + "\nclass H2(H):\n    def translate_path(self, p):\n        return p\n",
-         "translate_path"),
-        (DASH_GOOD.replace("    def list_directory", "    def other"), "list_directory"),
-        (DASH_GOOD.replace("name = _public_name(self.path)", "name = self.path"), "send_head"),
-        (DASH_GOOD + "\nclass B(SimpleHTTPRequestHandler):\n    pass\n", "send_head"),
-        (DASH_GOOD.replace(DASH_SET, 'frozenset({"a/b.html"})'), "plain page"),
-        (DASH_GOOD.replace(DASH_SET, "frozenset(x)"), "PUBLIC_FILES"),
-        (DASH_GOOD + '\nPUBLIC_FILES |= {"x.json"}\n', "PUBLIC_FILES"),
-        (DASH_GOOD.replace("return n if n in PUBLIC_FILES else None", "return n"), "membership"),
-        (DASH_GOOD.replace("super().do_GET()", "subprocess.run(['x'])"), "subprocess outside"),
-        (DASH_GOOD.replace("def main", "def _r():\n    subprocess.run(['x'])\n\n\ndef main"),
-         "subprocess outside"),
-        (DASH_GOOD.replace("import subprocess", "import subprocess as sp"), "aliases"),
-        (DASH_GOOD.replace("import subprocess", "from subprocess import run"), "from-imports"),
-        (DASH_GOOD.replace('str(_WEB)', 'str(Path("data") / "secrets")'), "directory="),
-        (DASH_GOOD.replace('"web"', '"data"'), "_WEB"),
-        (DASH_GOOD.replace("    def do_GET(self):\n        super().do_GET()",
-                           "    def do_GET(self):\n        self.directory = 'x'"), ".directory"),
-        (DASH_GOOD.replace("super().do_GET()", "open('x').read()"), "opens a file"),
-        (DASH_GOOD + "\nimport os\nos.system('x')\n", "os.system"),
-        ("class H:\n    pass\n", "no request handler"),
-        ("def (", "cannot be parsed"),
+        DASH_SRC + "\n",  # one byte
+        DASH_SRC.replace("pass", "do_POST = print"),  # a verb
+        DASH_SRC.replace("class H", "class H0"),  # a rename
+        "",  # emptied
     ],
-)  # fmt: skip
-def test_a_dashboard_server_that_regresses_is_unmeasured(
-    tmp_path: Path, src: str, why: str
+)
+def test_any_edit_to_the_dashboard_server_is_unmeasured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, edit: str
 ) -> None:
-    got = rs.dashboard_problems(_dash(tmp_path, src))
-    assert got and any(why in g for g in got), got
-    assert rs.installer_problems(_dash(tmp_path, src), INST), "the installer must follow"
+    monkeypatch.setattr(rs, "DASHBOARD_PINS", frozenset({DASH_PIN}))
+    tree = _dash(tmp_path, edit)
+    assert rs.dashboard_problems(tree)
+    assert rs.installer_problems(tree, INST), "the installer must follow"
 
 
-def test_the_dashboard_is_not_vouched_unconditionally() -> None:
+def test_an_absent_dashboard_server_is_unmeasured(tmp_path: Path) -> None:
+    assert rs.dashboard_problems(_tree(tmp_path, DASH_INST)) == ["unreadable"]
+
+
+def test_the_dashboard_pin_is_in_the_harness_and_not_unconditional() -> None:
     assert DASH not in rs.INSTALLER_TARGETS
     assert rs.CONDITIONAL_TARGETS[DASH] is rs.dashboard_problems
+    assert all(re.fullmatch(r"[0-9a-f]{64}", d) for d in rs.DASHBOARD_PINS) and rs.DASHBOARD_PINS
