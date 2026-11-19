@@ -289,6 +289,10 @@ class SessionModel:
     weekday_obs: np.ndarray                 # shape (7,), int -- days observed per weekday
     pooled_weekday: np.ndarray              # shape (1440,), bool -- Mon-Fri pooled
     pooled_obs: int = 0
+    #: THE SAME MASKS PER BROKER CLOCK REGIME (`broker_regime`). `mask_for` reads only these, so a
+    #: day is never judged against a session learned on the other side of a clock change.
+    regime_weekday: dict[tuple[str, int], tuple[np.ndarray, int]] = field(default_factory=dict)
+    regime_pooled: dict[str, tuple[np.ndarray, int]] = field(default_factory=dict)
     #: Longest empty run (minutes) this symbol produced on its own gap-free days, and how many
     #: such days it rests on. 0 / below QUIET_MIN_BASELINE_DAYS means NO quiet allowance.
     quiet_run_cap: int = 0
@@ -303,12 +307,31 @@ class SessionModel:
         (Mon-Fri pooled, PROVISIONAL -- may only ever reach DEGRADED), `none` (UNMEASURED).
         """
         wd = pd.Timestamp(day).weekday()
-        n = int(self.weekday_obs[wd])
+        reg = broker_regime(day)
+        mask, n = self.regime_weekday.get((reg, wd), (np.zeros(1440, dtype=bool), 0))
         if n >= MIN_WEEKDAY_OBS:
-            return self.per_weekday[wd], "weekday", n
-        if wd <= 4 and self.pooled_obs >= MIN_SESSION_DAYS:
-            return self.pooled_weekday, "pooled", self.pooled_obs
+            return mask, "weekday", n
+        pmask, pn = self.regime_pooled.get(reg, (np.zeros(1440, dtype=bool), 0))
+        if wd <= 4 and pn >= MIN_SESSION_DAYS:
+            return pmask, "pooled", pn
         return np.zeros(1440, dtype=bool), "none", n
+
+
+def broker_regime(day: str) -> str:
+    """`dst` or `std`: which side of the US clock change the broker is on that day.
+
+    The broker's server clock follows New York (summer UTC+3, winter UTC+2), so the clock minute
+    at which a venue opens, breaks or closes moves by one hour twice a year even though the venue
+    did not move. A session mask pooled across the change expects summer times on winter days
+    (measured 2026-11-19: AUS200, CHINAH, HK50 breaks one hour early, 4 FAILs that were not data
+    loss). US DST runs from the second Sunday of March to the first Sunday of November.
+    """
+    d = pd.Timestamp(day)
+    first_mar = pd.Timestamp(year=d.year, month=3, day=1)
+    second_sun_mar = first_mar + pd.Timedelta(days=(6 - first_mar.weekday()) % 7 + 7)
+    first_nov = pd.Timestamp(year=d.year, month=11, day=1)
+    first_sun_nov = first_nov + pd.Timedelta(days=(6 - first_nov.weekday()) % 7)
+    return "dst" if second_sun_mar <= d < first_sun_nov else "std"
 
 
 def observed_session(store: TapeStore, symbol: str, days: list[str],
@@ -346,6 +369,26 @@ def observed_session(store: TapeStore, symbol: str, days: list[str],
               if pooled_obs else np.zeros(1440, dtype=bool))
     model = SessionModel(symbol=symbol, per_weekday=per_wd, weekday_obs=obs,
                          pooled_weekday=pooled, pooled_obs=pooled_obs)
+    r_counts: dict[tuple[str, int], np.ndarray] = {}
+    r_obs: dict[tuple[str, int], int] = {}
+    rp_counts: dict[str, np.ndarray] = {}
+    rp_obs: dict[str, int] = {}
+    for day in days:
+        mask = store.minute_mask(symbol, day)
+        if not mask.any():
+            continue
+        wd = pd.Timestamp(day).weekday()
+        reg = broker_regime(day)
+        key = (reg, wd)
+        r_counts[key] = r_counts.get(key, np.zeros(1440, dtype=np.int64)) + mask
+        r_obs[key] = r_obs.get(key, 0) + 1
+        if wd <= 4:
+            rp_counts[reg] = rp_counts.get(reg, np.zeros(1440, dtype=np.int64)) + mask
+            rp_obs[reg] = rp_obs.get(reg, 0) + 1
+    for key, c in r_counts.items():
+        model.regime_weekday[key] = (c >= max(1, int(np.ceil(quorum * r_obs[key]))), r_obs[key])
+    for reg, c in rp_counts.items():
+        model.regime_pooled[reg] = (c >= max(1, int(np.ceil(quorum * rp_obs[reg]))), rp_obs[reg])
     model.quiet_run_cap, model.quiet_baseline_days = _quiet_baseline(store, symbol, days, model)
     distinct = [int(store.minute_mask(symbol, d).sum()) for d in days]
     distinct = [n for n in distinct if n > 0]

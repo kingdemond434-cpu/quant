@@ -576,3 +576,34 @@ def test_a_venue_halt_is_excluded_as_unmeasured_and_listed_never_passed(
     assert "SPACEX" in rep["venue_halt_suspected"]
     tail = [r for r in rep["days"] if r["day"] in days[-3:]]
     assert tail and all(r["verdict"] == ti.UNMEASURED for r in tail)
+
+
+def test_broker_regime_follows_the_us_clock_change() -> None:
+    assert ti.broker_regime("2026-11-01") == "std"      # first Sunday of November
+    assert ti.broker_regime("2026-10-30") == "dst"
+    assert ti.broker_regime("2026-03-08") == "dst"      # second Sunday of March
+    assert ti.broker_regime("2026-03-06") == "std"
+
+
+def test_a_winter_day_is_judged_against_a_winter_session_not_the_summer_break(
+        store: ts.TapeStore) -> None:
+    """The venue break sits at clock minute 360-420 in winter and 420-480 in summer. A mask
+    pooled over both (5 summer weeks, 3 winter weeks) keeps the winter break window as session
+    and fails every winter day for a break that was scheduled."""
+    import pandas as pd
+    winter = [(pd.Timestamp("2026-01-05") + pd.Timedelta(days=i)).date().isoformat()
+              for i in range(21)]
+    summer = [(pd.Timestamp("2026-04-01") + pd.Timedelta(days=i)).date().isoformat()
+              for i in range(35)]
+    for d in winter:
+        store.write_segment("HK50", d, _synth(d, range(0, 360)), POINT, 5)
+        store.write_segment("HK50", d, _synth(d, range(420, 1440)), POINT, 5)
+        store.seal_day("HK50", d)
+    for d in summer:
+        store.write_segment("HK50", d, _synth(d, range(0, 420)), POINT, 5)
+        store.write_segment("HK50", d, _synth(d, range(480, 1440)), POINT, 5)
+        store.seal_day("HK50", d)
+    rep = ti.run(store, ["HK50"], days_back=0)
+    wrows = [r for r in rep["days"] if r["day"] in winter and r["session_basis"] == "weekday"]
+    assert wrows, "winter weekdays must have their own regime session"
+    assert all(r["verdict"] != ti.FAIL and r["unexplained_minutes"] == 0 for r in wrows)
