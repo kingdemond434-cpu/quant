@@ -1254,7 +1254,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
-                        else risk_usd)
+                        else float(s["risk_frac"]) * e8_guard.START_BALANCE
+                        if isinstance(s.get("risk_frac"), (int, float)) else risk_usd)
         # THE E8 CODE CEILING ON THE FINAL, POST-MULTIPLIER RISK (r7.3, coordinator ruling (a)):
         # the book's risk is sized, the twin-fade, leg-balance and macro multipliers scale it
         # (both ways), and only THEN is the entry held to decision_core.E8_CERT_CEILING (0.006)
@@ -1262,7 +1263,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         # The cut is billed CAPPED `e8_cert_ceiling`; a venue minimum over the ceiling is refused
         # and billed RAIL_BLOCKED on the same rail, never lifted over the pin.
         row["book_risk_usd"] = round(row_risk_usd, 2)
-        row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
+        row["risk_source"] = ("cert_book" if _ckey in cert else "book row risk_frac"
+                              if isinstance(s.get("risk_frac"), (int, float)) else "book RISK_FRAC")
         if not row_risk_usd > 0:
             row["risk_usd"] = round(row_risk_usd, 2)
             row["status"] = "STANDS_ASIDE"

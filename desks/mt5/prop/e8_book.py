@@ -237,6 +237,42 @@ FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
     "cross_asset_residual", "macro_conditional", "carry", "pca_residual"})
 
 
+#: FILL-PROVEN SLEEVES (Box read 2026-11-19 19:05Z, reports/hourly_pass/FILL_PROVEN_READ.md): the
+#: sleeve's own forward trades, re-priced at the measured ask-bid for its symbol and entry hour,
+#: outside the 00:00-01:59 broker rollover slice. Written box-side each pass as
+#: {"rows": [{"sleeve": "SYM_family_selector", "n_out": int, "adjR_out": float}, ...]}.
+#: A sleeve's OWN fill evidence outranks its family's average: a fill-proven sleeve of a
+#: forward-failing family is admitted, and every admitted sleeve is sized by how much evidence
+#: it has (`fill_shrink`). Absent or unreadable: no sleeve is fill-proven (fail closed).
+FILL_PROVEN = DESK / "reports" / "FILL_PROVEN.json"
+FILL_MIN_N = 10
+#: Shrinkage prior, in trades: a sleeve with n fill-proven trades is sized at n / (n + N0) of
+#: RISK_FRAC, so a 15-trade edge trades at ~23% of full size and a 500-trade one at ~91%.
+FILL_SHRINK_N0 = 50
+
+
+def load_fill_proven(path: Path | None = None) -> dict[str, dict[str, float]]:
+    """{sleeve: {"n": n_out, "adjR": adjR_out}} for sleeves positive after spread outside the
+    rollover slice with at least FILL_MIN_N trades; {} when the artifact is absent."""
+    try:
+        doc = json.loads((path or FILL_PROVEN).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, dict[str, float]] = {}
+    for r in (doc.get("rows") or []) if isinstance(doc, dict) else []:
+        try:
+            n, adj = int(r["n_out"]), float(r["adjR_out"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if n >= FILL_MIN_N and adj > 0:
+            out[str(r["sleeve"])] = {"n": float(n), "adjR": adj}
+    return out
+
+
+def fill_shrink(n: float) -> float:
+    return n / (n + FILL_SHRINK_N0) if n > 0 else 0.0
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -262,6 +298,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
     principal_book = principal_e8_book(load_cert_book(CERT_BOOK, "e8"))
+    proven = load_fill_proven()
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
     accepted: list[dict[str, Any]] = []
@@ -276,7 +313,8 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         # an unnamed key was refused, which left E8 on gold_asia alone.
         if book_key in principal_book and not principal_book[book_key] > 0:
             reason = "principal zero in the E8 principal book"
-        elif fam in FORWARD_FAILING_FAMILIES and not principal_book.get(book_key, 0) > 0:
+        elif fam in FORWARD_FAILING_FAMILIES and not principal_book.get(book_key, 0) > 0 \
+                and book_key not in proven:
             reason = (f"forward evidence: {fam} keeps its edge on too few clocks forward "
                       "(Judge calibration 2026-11-19); held at zero until it holds up")
         elif book_key in excluded:
@@ -292,6 +330,8 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         if reason:
             blocked.append({"certificate": key, "why": reason})
         else:
+            if book_key in proven:
+                row = {**row, "fill_proven": proven[book_key]}
             accepted.append(row)
     return accepted, blocked
 
@@ -552,8 +592,13 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         gold = principal_e8_book(load_cert_book(CERT_BOOK, "e8")).get("gold_asia", 0.0)
     except Exception:
         gold = 0.0
+    # SIZE BY EVIDENCE: a fill-proven sleeve trades at RISK_FRAC x n/(n+N0); one with no fill
+    # evidence keeps RISK_FRAC (it reached here through every certificate door).
+    for r in chosen:
+        fp = r.get("fill_proven")
+        r["risk_frac"] = round(RISK_FRAC * fill_shrink(fp["n"]), 6) if fp else RISK_FRAC
     stressed = stress.cap_book(
-        chosen, risk_of=lambda r: RISK_FRAC, family_of=lambda r: r["family"],
+        chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
         col_of=lambda r: f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}",
         fixed={"gold_asia": gold})

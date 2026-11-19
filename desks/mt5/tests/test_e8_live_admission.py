@@ -103,6 +103,33 @@ def test_families_failing_forward_are_held_at_zero(
     assert blocked[0]["why"].startswith("forward evidence: cross_asset_residual")
 
 
+def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
+                                  "excluded": {}}), encoding="utf-8")
+    proven = tmp_path / "FILL_PROVEN.json"
+    proven.write_text(json.dumps({"rows": [
+        {"sleeve": "AUDCAD_cross_asset_residual_asia", "n_out": 15, "adjR_out": 1.402},
+        {"sleeve": "GBPAUD_cross_asset_residual_asia", "n_out": 9, "adjR_out": 0.5},
+        {"sleeve": "USDSGD_carry_asia", "n_out": 25, "adjR_out": -0.5}]}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", proven)
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls: _Gate()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    rows = [{"key": k, "symbol": sym, "family": fam, "selector": "asia",
+             "fingerprint": "frozen-spec"}
+            for k, sym, fam in (("proven", "AUDCAD", "cross_asset_residual"),
+                                ("thin", "GBPAUD", "cross_asset_residual"),
+                                ("negative", "USDSGD", "carry"))]
+    accepted, blocked = e8_book.live_admissible(rows)
+    assert [r["key"] for r in accepted] == ["proven"]
+    assert accepted[0]["fill_proven"] == {"n": 15.0, "adjR": 1.402}
+    assert {b["certificate"] for b in blocked} == {"thin", "negative"}
+    assert abs(e8_book.fill_shrink(15) - 15 / 65) < 1e-12 and e8_book.fill_shrink(0) == 0.0
+
+
 def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
     raw = {"gold_asia": 0.006, "USDJPY_session_range_breakout_asia": 0.0,
            "NZDJPY_clock_transition_asia": 0.0, "AUDCHF_overnight_gap_decay_asia": 0.002,
