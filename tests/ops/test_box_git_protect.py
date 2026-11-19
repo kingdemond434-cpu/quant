@@ -28,7 +28,13 @@ def rewrite(_a: str, _b: str) -> bool:
 @pytest.mark.parametrize("ref", [LIVE, "refs/heads/production", "refs/heads/master"])
 def test_a_thread_can_never_move_a_protected_branch(ref: str) -> None:
     v = P.decide(A, B, ref, "thread", ff)
-    assert not v.ok and "only the box merge gate" in v.why
+    assert not v.ok and "is protected" in v.why
+
+
+def test_each_protected_branch_has_one_owner() -> None:
+    assert P.decide(A, B, "refs/heads/production", "authority", ff).ok
+    assert not P.decide(A, B, "refs/heads/production", "gate", ff).ok
+    assert not P.decide(A, B, LIVE, "authority", ff).ok
 
 
 def test_the_live_branch_is_protected_although_its_name_starts_with_claude() -> None:

@@ -13,7 +13,8 @@ refused WHOLE if any one update is refused (git's own pre-receive contract).
   2. NO REWRITE, EVER, of a protected ref: LIVE, production, master, release tags and the merge
      gate's records. A non-fast-forward is refused even for the gate -- GitHub's "no force push"
      with no administrator bypass.
-  3. PROTECTED REFS MOVE ONLY BY THE GATE. A push from the network (a Claude thread, role
+  3. PROTECTED REFS MOVE ONLY BY THEIR OWNER (LIVE: the gate; production, master: the release
+     authority's promote). A push from the network (a Claude thread, role
      `thread`, set by the SSH forced command) may only create or fast-forward `claude/*` work
      branches that are NOT the LIVE branch (LIVE's own name starts with `claude/`). The box merge
      gate runs locally with role `gate` and is the only writer of LIVE and production, exactly as
@@ -34,10 +35,14 @@ from dataclasses import dataclass
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
 ZERO = "0" * 40
 
-PROTECTED_BRANCHES = frozenset({
-    f"refs/heads/{LIVE_BRANCH}", "refs/heads/production", "refs/heads/master",
-    "refs/heads/records",
-})
+#: Protected branch -> the one role that may fast-forward it. LIVE moves by the merge gate (and
+#: its seal commit); production and master move by the release authority's promote, exactly as
+#: ci.yml's promote job moved them on GitHub.
+PROTECTED_OWNER = {
+    f"refs/heads/{LIVE_BRANCH}": "gate", "refs/heads/records": "gate",
+    "refs/heads/production": "authority", "refs/heads/master": "authority",
+}
+PROTECTED_BRANCHES = frozenset(PROTECTED_OWNER)
 RELEASE_TAG_PREFIX = "refs/tags/release/"
 WORK_PREFIX = "refs/heads/claude/"
 ROLES = frozenset({"thread", "gate", "authority"})
@@ -82,11 +87,13 @@ def decide(old: str, new: str, ref: str, role: str,
             return Verdict(False, ref, "release tags are write-once")
         return Verdict(True, ref, "release tag created by the authority")
     if ref in PROTECTED_BRANCHES:
-        if role != "gate":
-            return Verdict(False, ref, f"{ref} is protected: only the box merge gate moves it")
+        owner = PROTECTED_OWNER[ref]
+        if role != owner:
+            who = "the box merge gate" if owner == "gate" else "the release authority"
+            return Verdict(False, ref, f"{ref} is protected: only {who} moves it")
         if not creating and not is_ancestor(old, new):
             return Verdict(False, ref, f"{ref} may only fast-forward: no rewrite, no bypass")
-        return Verdict(True, ref, "gate fast-forward")
+        return Verdict(True, ref, f"{owner} fast-forward")
     if ref.startswith(WORK_PREFIX):
         if role not in ("thread", "gate"):
             return Verdict(False, ref, f"role {role} does not push work branches")
