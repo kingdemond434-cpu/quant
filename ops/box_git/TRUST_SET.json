@@ -21,12 +21,15 @@
   "tox.ini",
   "setup.cfg",
   "pyproject.toml",
-  "ops/box_git/pin_writer.py"
+  "ops/box_git/pin_writer.py",
+  "ops/money_closure.txt",
+  "ops/release/not_money_scripts.txt"
  ],
  "grow_only": [
   "ops/release/protected_paths.txt",
   "ops/release/risk_suites.txt",
-  "ops/release/trusted_eval_suites.txt"
+  "ops/release/trusted_eval_suites.txt",
+  "ops/money_closure.txt"
  ],
  "symbols": {
   ".github/scripts/audit_gate.py": [

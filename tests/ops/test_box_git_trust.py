@@ -185,6 +185,9 @@ def test_mutating_a_frozen_value_anywhere_is_trust(tmp_path: Path) -> None:
     r, base = _base(tmp_path)
     for new in (GATE.replace("def plumbing(x):", "def plumbing(x):\n    TRUSTED.append(x)"),
                 GATE + "\nprint('import-time effect')\n",
+                GATE + "\nTRUSTED.remove('OWNER')\n",
+                GATE + "\nTRUSTED.__iadd__(('X',))\n",
+                GATE.replace("def plumbing(x):", "def plumbing(x):\n    TRUSTED[0] = x"),
                 GATE.replace("from helpers import rules", "from .helpers import rules")):
         head = r.put({"gate.py": new})
         assert _cls(r, base, head)[0] == "TRUST", new[-70:]
