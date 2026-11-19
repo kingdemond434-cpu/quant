@@ -1,5 +1,5 @@
 {
- "at": "2026-11-19T04:14:55+00:00",
+ "at": "2026-11-19T04:57:35+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -10893,13 +10893,13 @@
    "why": "seconds of FIRST-TIME cell building one sweep may spend; cached cells are free and are always all loaded"
   },
   "measured": {
-   "swept_at": "2026-11-18T21:29:59.404319+00:00",
-   "age_h": 6.75,
-   "n_cells": 231882,
-   "n_judged": 219615,
-   "n_unmeasured": 12267,
-   "n_cells_discovered": 1632402,
-   "n_cells_deferred_build_budget": 86863,
+   "swept_at": "2026-11-19T04:25:33.207525+00:00",
+   "age_h": 0.53,
+   "n_cells": 111265,
+   "n_judged": 109428,
+   "n_unmeasured": 1837,
+   "n_cells_discovered": 1594703,
+   "n_cells_deferred_build_budget": 182400,
    "n_cells_deferred_memory_budget": 0,
    "memory_budget_mb": 11520.0,
    "workers": 15,
@@ -11021,16 +11021,16 @@
   "why": "report published before the registry write"
  },
  "core": {
-  "at": "2026-11-19T04:14:55+00:00",
+  "at": "2026-11-19T04:57:35+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
-   "verdicts": 3502,
-   "cells_judged": 2766,
-   "per_hour": 115.25,
-   "passed": 97,
+   "verdicts": 6203,
+   "cells_judged": 5356,
+   "per_hour": 223.167,
+   "passed": 184,
    "ledger": "READ",
-   "measured_at": "2026-11-19T04:14:55+00:00",
+   "measured_at": "2026-11-19T04:57:35+00:00",
    "source": "build_core"
   },
   "re_measured": [

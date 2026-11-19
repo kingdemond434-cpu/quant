@@ -240,7 +240,7 @@
    "why": "sweep pid 32172 died_unrecorded: sweep pid 32172 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 586s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) be. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
   }
  ],
- "last_clear_utc": "2026-11-18T22:06:53+00:00",
+ "last_clear_utc": "2026-11-19T04:57:33+00:00",
  "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
  "status": "CLEAR"
 }
