@@ -137,7 +137,7 @@ def tape_files(symbol: str, root: Path = TICKS) -> list[tuple[str, Path]]:
     return sorted(days.items())
 
 
-def _venue_hours(path: Path):
+def _venue_hours(path: Path) -> tuple[Any, Any, Any] | None:
     """(hours, bid, ask) from one tape day file, or None. The recorder writes `ts` (from
     time_msc); the moat's compact files carry only `time_msc`. Both are the venue clock."""
     import pandas as pd
