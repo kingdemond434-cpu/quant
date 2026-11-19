@@ -485,3 +485,62 @@ def test_a_narrow_pass_keeps_what_it_did_not_visit_and_old_rows_expire() -> None
     assert out["A/2026-11-01"]["fp"] == "new"
     assert out["B/2026-11-01"]["fp"] == "b", "a --symbols A pass must not evict B"
     assert "A/2026-06-01" not in out
+
+
+# ------------------------------------------------------- quiet minutes (thin quotes) --
+def _thin_day(store: ts.TapeStore, sym: str, day: str, holes: list[range]) -> None:
+    keep = [m for m in range(1440) if not any(m in h for h in holes)]
+    runs: list[range] = []
+    start = prev = None
+    for m in keep:
+        if start is None:
+            start = prev = m
+        elif m == prev + 1:
+            prev = m
+        else:
+            runs.append(range(start, prev + 1))
+            start = prev = m
+    if start is not None:
+        runs.append(range(start, prev + 1))
+    for r in runs:
+        store.write_segment(sym, day, _synth(day, r), POINT, 5)
+    store.seal_day(sym, day)
+
+
+def test_short_empty_runs_on_a_thin_symbol_are_quiet_and_do_not_fail(store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    for d in days[:-1]:
+        _thin_day(store, "USDIDR", d, [range(100, 108), range(500, 506)])   # baseline: 8 min
+    bad = days[-1]
+    holes = [range(10 * i + 20, 10 * i + 26) for i in range(0, 100, 1)][:0] + \
+        [range(m, m + 6) for m in range(20, 1400, 24)]                       # 6-min quiet runs
+    _thin_day(store, "USDIDR", bad, holes)
+    row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
+    assert row["quiet_minutes"] >= ti.UNEXPLAINED_FAIL_MIN
+    assert row["unexplained_minutes"] == 0
+    assert row["verdict"] != ti.FAIL
+
+
+def test_a_run_longer_than_the_symbols_own_baseline_still_fails(store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    for d in days[:-1]:
+        _thin_day(store, "USDIDR", d, [range(100, 108)])
+    bad = days[-1]
+    _thin_day(store, "USDIDR", bad, [range(300, 345)])      # one 45-min hole, above the ceiling
+    row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
+    assert row["quiet_minutes"] == 0
+    assert row["unexplained_minutes"] >= 45
+    assert row["verdict"] == ti.FAIL
+
+
+def test_no_baseline_means_no_quiet_allowance(store: ts.TapeStore) -> None:
+    days = _weeks(1)[:5]
+    for d in days:
+        _thin_day(store, "USDIDR", d, [range(range_start, range_start + 5)
+                                       for range_start in range(20, 1400, 20)][:40])
+    rows = ti.run(store, ["USDIDR"], days_back=0)["days"]
+    assert all(r["quiet_minutes"] == 0 for r in rows)
+
+
+def test_quiet_ceiling_sits_below_the_fail_line() -> None:
+    assert ti.QUIET_RUN_CEILING < ti.UNEXPLAINED_FAIL_MIN

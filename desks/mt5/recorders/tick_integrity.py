@@ -154,6 +154,24 @@ COVERAGE_FAIL = 0.80          # below this share of the symbol's own session: FA
 COVERAGE_DEGRADED = 0.95      # below this: DEGRADED
 UNEXPLAINED_FAIL_MIN = 30     # unexplained minutes at or above this: FAIL
 UNEXPLAINED_DEGRADED_MIN = 1  # ANY unexplained minute is at least DEGRADED
+
+#: QUIET MINUTES -- a minute the feed itself leaves empty. A thin instrument (USDIDR, XPBUSD, OJ,
+#: USDHKD) publishes no tick in a minute where its quote did not change; the tape holds exactly
+#: what the venue sent. Judged against a flat 24h session those minutes read as 30-170
+#: "unexplained" a day and FAIL a tape with nothing wrong (measured 2026-11-19: 55 of 72 FAILs,
+#: longest empty runs 3-36 min, tick rhythm identical to the symbol's own PASS days).
+#:
+#: THE ALLOWANCE IS MEASURED, PER SYMBOL, AND BOUNDED. A run of missing session minutes with no
+#: gap row is QUIET only when it is no longer than the longest empty run that symbol produced on
+#: its own gap-free days (the baseline), and never longer than QUIET_RUN_CEILING. The baseline
+#: needs QUIET_MIN_BASELINE_DAYS gap-free days; with fewer there is NO allowance (UNMEASURED
+#: never resolves to a clean verdict, L1.28a). A run longer than the symbol's own baseline stays
+#: unexplained and fails exactly as before. The ceiling sits BELOW UNEXPLAINED_FAIL_MIN so one
+#: unbroken hole at the fail line can never be excused. Quiet minutes are published in full on
+#: every row (`quiet_minutes`, `quiet_run_cap`) and are not credited to the gap ledger. The
+#: FAIL/DEGRADED lines above are unchanged.
+QUIET_MIN_BASELINE_DAYS = 5
+QUIET_RUN_CEILING = 20
 DUP_DEGRADED = 0.05           # >5% duplicate rows: the overlap policy costs more than it should
 CROSSED_DEGRADED = 0.001      # >0.1% crossed quotes: the feed is not behaving as a feed
 
@@ -202,6 +220,11 @@ class DayVerdict:
     missing_minutes: int = 0
     explained_minutes: int = 0
     unexplained_minutes: int = 0
+    #: Missing minutes inside a run no longer than this symbol's own measured quiet baseline.
+    #: Published, never hidden, never credited to the gap ledger.
+    quiet_minutes: int = 0
+    quiet_run_cap: int = 0
+    coverage_frac_effective: float | None = None
     gap_rows: int = 0
     gap_seconds: float = 0.0
     gap_reasons: dict[str, int] = field(default_factory=dict)
@@ -247,6 +270,10 @@ class SessionModel:
     weekday_obs: np.ndarray                 # shape (7,), int -- days observed per weekday
     pooled_weekday: np.ndarray              # shape (1440,), bool -- Mon-Fri pooled
     pooled_obs: int = 0
+    #: Longest empty run (minutes) this symbol produced on its own gap-free days, and how many
+    #: such days it rests on. 0 / below QUIET_MIN_BASELINE_DAYS means NO quiet allowance.
+    quiet_run_cap: int = 0
+    quiet_baseline_days: int = 0
 
     def mask_for(self, day: str) -> tuple[np.ndarray, str, int]:
         """(session mask, basis, observations behind it) for one calendar day.
@@ -296,8 +323,39 @@ def observed_session(store: TapeStore, symbol: str, days: list[str],
             per_wd[wd] = counts[wd] >= max(1, int(np.ceil(quorum * obs[wd])))
     pooled = (pooled_counts >= max(1, int(np.ceil(quorum * pooled_obs)))
               if pooled_obs else np.zeros(1440, dtype=bool))
-    return SessionModel(symbol=symbol, per_weekday=per_wd, weekday_obs=obs,
-                        pooled_weekday=pooled, pooled_obs=pooled_obs)
+    model = SessionModel(symbol=symbol, per_weekday=per_wd, weekday_obs=obs,
+                         pooled_weekday=pooled, pooled_obs=pooled_obs)
+    model.quiet_run_cap, model.quiet_baseline_days = _quiet_baseline(store, symbol, days, model)
+    return model
+
+
+def _runs(flags: np.ndarray) -> list[tuple[int, int]]:
+    """(start, length) of every maximal run of True in a 1-D bool array."""
+    if not flags.any():
+        return []
+    padded = np.concatenate(([False], flags, [False])).astype(np.int8)
+    edges = np.flatnonzero(np.diff(padded))
+    return [(int(a), int(b - a)) for a, b in zip(edges[0::2], edges[1::2], strict=True)]
+
+
+def _quiet_baseline(store: TapeStore, symbol: str, days: list[str],
+                    model: SessionModel) -> tuple[int, int]:
+    """(longest empty run in minutes, gap-free days it rests on) from this symbol's own tape."""
+    longest = 0
+    n = 0
+    for day in days:
+        mask = store.minute_mask(symbol, day)
+        if not mask.any():
+            continue
+        session, basis, _ = model.mask_for(day)
+        if basis != "weekday" or not session.any():
+            continue
+        if _gap_minutes(store, symbol, day)[0].any():
+            continue
+        n += 1
+        runs = _runs(session & ~mask)
+        longest = max([longest] + [ln for _, ln in runs])
+    return min(longest, QUIET_RUN_CEILING), n
 
 
 def claim_window(store: TapeStore, symbol: str, day: str, now_ms: int) -> tuple[int, int]:
@@ -506,7 +564,19 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     missing = session & ~have
     v.missing_minutes = int(np.count_nonzero(missing))
     v.explained_minutes = int(np.count_nonzero(missing & gap_mask))
-    v.unexplained_minutes = int(np.count_nonzero(missing & ~gap_mask))
+    unexplained = missing & ~gap_mask
+    v.quiet_run_cap = int(model.quiet_run_cap) if \
+        model.quiet_baseline_days >= QUIET_MIN_BASELINE_DAYS and basis == "weekday" else 0
+    if v.quiet_run_cap:
+        for start, ln in _runs(missing):
+            # Quiet only if the WHOLE missing run is unexplained and within the baseline; a run
+            # touching a gap row, or longer than the symbol's own longest, stays unexplained.
+            if ln <= v.quiet_run_cap and unexplained[start:start + ln].all():
+                unexplained[start:start + ln] = False
+                v.quiet_minutes += ln
+    v.unexplained_minutes = int(np.count_nonzero(unexplained))
+    v.coverage_frac_effective = round((v.covered_minutes + v.quiet_minutes) / v.session_minutes, 4) \
+        if v.session_minutes else None
 
     v.verdict, v.reasons = _verdict(v)
     return v
@@ -528,8 +598,9 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
     elif v.unexplained_minutes >= UNEXPLAINED_DEGRADED_MIN:
         worst = DEGRADED if worst == OK else worst
         reasons.append(f"{v.unexplained_minutes} session minute(s) absent with no gap row")
-    if v.coverage_frac is not None:
-        if v.coverage_frac < COVERAGE_FAIL:
+    cov = v.coverage_frac_effective if v.coverage_frac_effective is not None else v.coverage_frac
+    if cov is not None:
+        if cov < COVERAGE_FAIL:
             worst = FAIL
             reasons.append(f"coverage {v.coverage_frac:.1%} of this symbol's own session "
                            f"(fail below {COVERAGE_FAIL:.0%})")
@@ -592,7 +663,7 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
 #: least once per `CACHE_REVERIFY_S`, staggered per day so the whole tape never falls due in one
 #: pass. The cache lives beside the tape (`<root>/state/`), not in the repository, and a missing
 #: or unreadable cache only costs time: every day is judged in full.
-CACHE_VERSION = 1
+CACHE_VERSION = 2
 CACHE_REVERIFY_S = 24 * 3600
 CACHE_FILE = "tick_integrity_cache.json"
 
@@ -621,7 +692,8 @@ def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel
         bool(model.pooled_obs >= MIN_SESSION_DAYS),
         [COVERAGE_FAIL, COVERAGE_DEGRADED, UNEXPLAINED_FAIL_MIN, UNEXPLAINED_DEGRADED_MIN,
          DUP_DEGRADED, CROSSED_DEGRADED, STALE_RUN_S, ONE_SIDED_FX, SESSION_QUORUM,
-         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS],
+         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS, QUIET_MIN_BASELINE_DAYS, QUIET_RUN_CEILING],
+        int(model.quiet_run_cap), int(model.quiet_baseline_days),
         asset_class_of(symbol), bool(is_fx(symbol)),
     ]
     h.update(json.dumps(parts, default=str, sort_keys=True).encode("utf-8"))
@@ -765,6 +837,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
         "thresholds": {
             "coverage_fail": COVERAGE_FAIL, "coverage_degraded": COVERAGE_DEGRADED,
             "unexplained_fail_min": UNEXPLAINED_FAIL_MIN,
+            "quiet_min_baseline_days": QUIET_MIN_BASELINE_DAYS,
+            "quiet_run_ceiling": QUIET_RUN_CEILING,
             "unexplained_degraded_min": UNEXPLAINED_DEGRADED_MIN,
             "dup_degraded": DUP_DEGRADED, "crossed_degraded": CROSSED_DEGRADED,
             "session_quorum": SESSION_QUORUM, "min_session_days": MIN_SESSION_DAYS,
@@ -776,6 +850,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "bytes_per_tick": round(total_bytes / total_ticks, 3) if total_ticks else 0.0,
             "bytes_per_symbol_day": round(total_bytes / day_count, 1) if day_count else 0.0,
             "unexplained_minutes": sum(r.unexplained_minutes for r in rows),
+            "quiet_minutes": sum(r.quiet_minutes for r in rows),
             "explained_minutes": sum(r.explained_minutes for r in rows),
             "gap_rows": sum(r.gap_rows for r in rows),
             "corrupt_segments": sum(r.corrupt_segments for r in rows),
