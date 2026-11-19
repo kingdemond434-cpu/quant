@@ -82,7 +82,7 @@ def test_frozen_shared_ledger_is_never_read(tmp_path: Path) -> None:
     _tape(ticks, "GBPAUD", "2026-11-18", {9: 0.0001})
     _ledger(shadow, "GBPAUD_shared_asia", [(9, 1.0)] * 20)
     (shadow / "shared_ledgers.json").write_text(
-        json.dumps({"ledger_GBPAUD_shared_asia.json": ["a", "b"]}), encoding="utf-8")
+        json.dumps({"files": {"ledger_GBPAUD_shared_asia.json": {"members": ["a", "b"]}}}), encoding="utf-8")
     assert fp.build(shadow, ticks, NOW)["sleeves"] == []
 
 
