@@ -4934,7 +4934,8 @@ def publish_paused_reading() -> str:
     reading (EUR 266.01) and could never see a recovery, even after the floor moved to EUR 10.
     Fusion then had no trade from 10-30 and no alert.
 
-    A paused pass now publishes `equity`, `margin_free` and `reading_at` and nothing else.
+    A paused pass now publishes `equity`, `margin_free`, `reading_at` and the open position
+    and order COUNTS, and nothing else.
     `last_reconcile` is untouched, because no management ran, so the rail's stale-gateway clock
     still reads the truth. No rail threshold, verdict or re-arm rule changes: the rail simply
     gets a current number to judge.
@@ -4949,6 +4950,14 @@ def publish_paused_reading() -> str:
     st["margin_free"] = round(float(acc.margin_free), 2)
     st["reading_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     st["reading_source"] = "paused_read_only"
+    # The open book's SIZE, as counts only: the position list stays the last managed pass's,
+    # so a reader can see when the book moved while nothing was managing it (Audit 11-19).
+    for _key, _fn in (("reading_positions_total", "positions_total"),
+                      ("reading_orders_total", "orders_total")):
+        try:
+            st[_key] = int(getattr(mt5, _fn)())
+        except Exception:
+            st[_key] = None
     save_state(st)
     return f"paused reading published: equity {st['equity']:.2f}"
 

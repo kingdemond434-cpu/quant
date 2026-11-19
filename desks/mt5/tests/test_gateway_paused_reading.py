@@ -10,6 +10,11 @@ from types import SimpleNamespace
 
 import pytest
 
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK), str(_DESK.parent.parent)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 # Off the box MetaTrader5 is absent: a stub stands in for the import only and is removed at
 # once, so tests that `importorskip("MetaTrader5")` still skip. Every call below is faked.
 _STUBBED = False
@@ -19,19 +24,26 @@ except ImportError:
     sys.modules["MetaTrader5"] = types.ModuleType("MetaTrader5")
     _STUBBED = True
 try:
-    from mt5desk import gateway
+    from mt5desk import gateway  # noqa: E402
 finally:
     if _STUBBED:
         sys.modules.pop("MetaTrader5", None)
 
 
 class FakeMt5:
-    def __init__(self, acc):
+    def __init__(self, acc, positions=(), orders=()):
         self.acc = acc
+        self.positions, self.orders = list(positions), list(orders)
         self.sent: list = []
 
     def account_info(self):
         return self.acc
+
+    def positions_total(self):
+        return len(self.positions)
+
+    def orders_total(self):
+        return len(self.orders)
 
     def order_send(self, req):  # pragma: no cover - must never be called
         self.sent.append(req)
@@ -51,12 +63,13 @@ def paused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_paused_pass_publishes_equity_but_not_reconcile(paused: Path, monkeypatch) -> None:
-    fake = FakeMt5(SimpleNamespace(equity=812.4, margin_free=800.0))
+    fake = FakeMt5(SimpleNamespace(equity=812.4, margin_free=800.0), positions=[1], orders=[1, 2])
     monkeypatch.setattr(gateway, "mt5", fake)
     gateway.main()
     st = json.loads(paused.read_text(encoding="utf-8"))
     assert st["equity"] == 812.4 and st["margin_free"] == 800.0
     assert st["reading_source"] == "paused_read_only" and st["reading_at"]
+    assert st["reading_positions_total"] == 1 and st["reading_orders_total"] == 2
     # no management ran, so the stale-gateway clock must still read the truth
     assert st["last_reconcile"] == "2026-10-30T20:50:00+00:00"
     assert st["armed"] is True and fake.sent == []
