@@ -507,6 +507,12 @@ def _thin_day(store: ts.TapeStore, sym: str, day: str, holes: list[range]) -> No
     store.seal_day(sym, day)
 
 
+def _fillers(store: ts.TapeStore, days: list[str], n: int = 5) -> None:
+    """Other symbols on the same recorder, quoting every minute: proof the recorder was alive."""
+    for i in range(n):
+        _write_days(store, f"FILL{i}", days)
+
+
 def _scatter(seed: int, width: int, n: int) -> list[range]:
     """n empty runs of `width` minutes at day-specific places, so no minute is chronically empty
     (a chronically empty minute is outside the session model and never reaches this rule)."""
@@ -518,6 +524,7 @@ def _scatter(seed: int, width: int, n: int) -> list[range]:
 
 def test_short_empty_runs_on_a_thin_symbol_are_quiet_and_do_not_fail(store: ts.TapeStore) -> None:
     days = _weeks(4)
+    _fillers(store, days)
     for i, d in enumerate(days[:-1]):
         _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))            # baseline: 8-min runs
     bad = days[-1]
@@ -526,10 +533,56 @@ def test_short_empty_runs_on_a_thin_symbol_are_quiet_and_do_not_fail(store: ts.T
     assert row["quiet_minutes"] >= ti.UNEXPLAINED_FAIL_MIN
     assert row["unexplained_minutes"] == 0
     assert row["verdict"] != ti.FAIL
+    # SF: raw and effective coverage are both published and differ by exactly the quiet minutes.
+    assert row["coverage_frac"] < row["coverage_frac_effective"]
+    assert round((row["covered_minutes"] + row["quiet_minutes"]) / row["session_minutes"], 4) \
+        == row["coverage_frac_effective"]
+
+
+def test_without_proof_the_recorder_was_alive_nothing_is_quiet(store: ts.TapeStore) -> None:
+    """MF1. Same thin symbol, but no other symbol quotes in those minutes: the silence may be the
+    recorder's own, so it earns no allowance and no baseline."""
+    days = _weeks(4)
+    for i, d in enumerate(days[:-1]):
+        _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))
+    bad = days[-1]
+    _thin_day(store, "USDIDR", bad, _scatter(99, 6, 20))
+    row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
+    assert row["quiet_minutes"] == 0 and row["quiet_run_cap"] == 0
+    assert row["verdict"] == ti.FAIL
+
+
+def test_a_stall_where_every_symbol_is_silent_is_not_quiet(store: ts.TapeStore) -> None:
+    """MF1. The other symbols are silent in the same minutes (a recorder stall with no gap row):
+    those minutes are not proven feed silence, so they stay unexplained."""
+    days = _weeks(4)
+    stall = range(300, 306)
+    for i in range(5):
+        for d in days:
+            _thin_day(store, f"FILL{i}", d, [stall] if d == days[-1] else [])
+    for i, d in enumerate(days[:-1]):
+        _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))
+    bad = days[-1]
+    _thin_day(store, "USDIDR", bad, [stall, *_scatter(98, 6, 5)])
+    row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
+    assert row["unexplained_minutes"] >= 6, "the stalled minutes must not be excused"
+
+
+def test_a_quiet_run_at_the_session_edge_is_judged_like_one_in_the_middle(
+        store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    _fillers(store, days)
+    for i, d in enumerate(days[:-1]):
+        _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))
+    bad = days[-1]
+    _thin_day(store, "USDIDR", bad, [range(0, 6), range(1434, 1440)])
+    row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
+    assert row["unexplained_minutes"] == 0 and row["quiet_minutes"] == 12
 
 
 def test_a_run_longer_than_the_symbols_own_baseline_still_fails(store: ts.TapeStore) -> None:
     days = _weeks(4)
+    _fillers(store, days)
     for i, d in enumerate(days[:-1]):
         _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))
     bad = days[-1]
@@ -560,13 +613,14 @@ def test_a_sparse_symbol_is_unmeasured_never_failed_on_a_collapsed_session(
                             POINT, 5)
         store.seal_day("USDRUB", d)
     rep = ti.run(store, ["USDRUB"], days_back=0)
-    assert all(r["verdict"] == ti.UNMEASURED for r in rep["days"])
+    assert all(r["verdict"] == ti.UNMEASURED and r["exclusion"] == "SPARSE" for r in rep["days"])
     assert any("sparse" in x for x in rep["days"][0]["reasons"])
 
 
 def test_a_venue_halt_is_excluded_as_unmeasured_and_listed_never_passed(
         store: ts.TapeStore) -> None:
     days = _weeks(4)
+    _fillers(store, days)
     for d in days[:-3]:
         _write_days(store, "SPACEX", [d])
     for d in days[-3:]:
@@ -575,7 +629,35 @@ def test_a_venue_halt_is_excluded_as_unmeasured_and_listed_never_passed(
     rep = ti.run(store, ["SPACEX"], days_back=0)
     assert "SPACEX" in rep["venue_halt_suspected"]
     tail = [r for r in rep["days"] if r["day"] in days[-3:]]
-    assert tail and all(r["verdict"] == ti.UNMEASURED for r in tail)
+    assert tail and all(r["verdict"] == ti.UNMEASURED and r["exclusion"] == "VENUE_HALT"
+                        for r in tail)
+
+
+def test_one_symbols_dead_subscription_is_not_called_a_venue_halt(store: ts.TapeStore) -> None:
+    """MF3. The same collapse while every other symbol collapses too (a sick recorder) is not
+    a venue halt, and nothing is excluded."""
+    days = _weeks(4)
+    for sym in ("SPACEX", "FILL0", "FILL1", "FILL2", "FILL3", "FILL4"):
+        for d in days[:-3]:
+            _write_days(store, sym, [d])
+        for d in days[-3:]:
+            store.write_segment(sym, d, _synth(d, range(990, 992), per_minute=3), POINT, 5)
+            store.seal_day(sym, d)
+    rep = ti.run(store, ["SPACEX"], days_back=0)
+    assert rep["venue_halt_suspected"] == []
+    assert not any(r["exclusion"] for r in rep["days"])
+
+
+def test_a_venue_halt_never_downgrades_a_fail_with_another_cause() -> None:
+    rows = [ti.DayVerdict(symbol="S", day=f"2026-04-{i + 1:02d}", verdict=ti.OK, n_ticks=1000)
+            for i in range(12)]
+    bad = [ti.DayVerdict(symbol="S", day="2026-04-13", verdict=ti.FAIL, n_ticks=1,
+                         corrupt_segments=1),
+           ti.DayVerdict(symbol="S", day="2026-04-14", verdict=ti.FAIL, n_ticks=1)]
+    healthy = {r.day for r in rows + bad}
+    assert ti.apply_venue_halt(rows + bad, healthy)
+    assert bad[0].verdict == ti.FAIL and not bad[0].exclusion
+    assert bad[1].verdict == ti.UNMEASURED and bad[1].exclusion == "VENUE_HALT"
 
 
 def test_broker_regime_follows_the_us_clock_change() -> None:

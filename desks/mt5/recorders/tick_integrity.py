@@ -172,6 +172,11 @@ UNEXPLAINED_DEGRADED_MIN = 1  # ANY unexplained minute is at least DEGRADED
 #: unbroken hole at the fail line can never be excused. Quiet minutes are published in full on
 #: every row (`quiet_minutes`, `quiet_run_cap`) and are not credited to the gap ledger. The
 #: FAIL/DEGRADED lines above are unchanged.
+#:
+#: PROOF THE RECORDER WAS ALIVE. A minute counts as quiet, and a run enters the baseline, only
+#: where at least QUIET_ALIVE_MIN_SYMBOLS OTHER symbols of the same store have a tick in that same
+#: minute. A recorder stall that wrote no gap row is silence from the recorder and not from the
+#: feed; it must neither be excused nor teach the baseline. No alive proof means no allowance.
 QUIET_MIN_BASELINE_DAYS = 10
 QUIET_BASELINE_PCT = 90
 
@@ -180,6 +185,7 @@ QUIET_BASELINE_PCT = 90
 #: and every other day then fails against it. Minute coverage is meaningless there, so it is
 #: UNMEASURED (never OK, never FAIL) while every other check (corruption, duplicates, crossed
 #: quotes) still runs. Rests on at least SPARSE_MIN_DAYS observed days.
+QUIET_ALIVE_MIN_SYMBOLS = 3
 SPARSE_DISTINCT_MINUTES = 120
 SPARSE_MIN_DAYS = 10
 
@@ -242,6 +248,9 @@ class DayVerdict:
     #: Missing minutes inside a run no longer than this symbol's own measured quiet baseline.
     #: Published, never hidden, never credited to the gap ledger.
     quiet_minutes: int = 0
+    #: `SPARSE`, `VENUE_HALT` or `NO_SESSION` when the day is excluded; consumers must refuse
+    #: these days.
+    exclusion: str = ""
     quiet_run_cap: int = 0
     coverage_frac_effective: float | None = None
     gap_rows: int = 0
@@ -335,7 +344,8 @@ def broker_regime(day: str) -> str:
 
 
 def observed_session(store: TapeStore, symbol: str, days: list[str],
-                     quorum: float = SESSION_QUORUM) -> SessionModel:
+                     quorum: float = SESSION_QUORUM,
+                     alive: dict[str, np.ndarray] | None = None) -> SessionModel:
     """Build the session model from this symbol's own recorded days.
 
     THE MINUTE MASKS ARE CACHED AND THAT IS WHAT MAKES THIS RUNNABLE HOURLY. The denominator
@@ -389,7 +399,8 @@ def observed_session(store: TapeStore, symbol: str, days: list[str],
         model.regime_weekday[key] = (c >= max(1, int(np.ceil(quorum * r_obs[key]))), r_obs[key])
     for reg, c in rp_counts.items():
         model.regime_pooled[reg] = (c >= max(1, int(np.ceil(quorum * rp_obs[reg]))), rp_obs[reg])
-    model.quiet_run_cap, model.quiet_baseline_days = _quiet_baseline(store, symbol, days, model)
+    model.quiet_run_cap, model.quiet_baseline_days = _quiet_baseline(
+        store, symbol, days, model, alive)
     distinct = [int(store.minute_mask(symbol, d).sum()) for d in days]
     distinct = [n for n in distinct if n > 0]
     model.sparse = (len(distinct) >= SPARSE_MIN_DAYS
@@ -406,14 +417,28 @@ def _runs(flags: np.ndarray) -> list[tuple[int, int]]:
     return [(int(a), int(b - a)) for a, b in zip(edges[0::2], edges[1::2], strict=True)]
 
 
-def _quiet_baseline(store: TapeStore, symbol: str, days: list[str],
-                    model: SessionModel) -> tuple[int, int]:
+def alive_by_day(store: TapeStore, symbols: list[str],
+                 days: list[str]) -> dict[str, np.ndarray]:
+    """Per day, the minutes in which at least QUIET_ALIVE_MIN_SYMBOLS symbols have a tick."""
+    out: dict[str, np.ndarray] = {}
+    for day in days:
+        count = np.zeros(1440, dtype=np.int32)
+        for sym in symbols:
+            count += store.minute_mask(sym, day)
+        out[day] = count >= QUIET_ALIVE_MIN_SYMBOLS
+    return out
+
+
+def _quiet_baseline(store: TapeStore, symbol: str, days: list[str], model: SessionModel,
+                    alive: dict[str, np.ndarray] | None = None) -> tuple[int, int]:
     """(longest empty run in minutes, gap-free days it rests on) from this symbol's own tape."""
+    if alive is None:
+        return 0, 0
     per_day: list[int] = []
     n = 0
     for day in days:
         mask = store.minute_mask(symbol, day)
-        if not mask.any():
+        if not mask.any() or day not in alive:
             continue
         session, basis, _ = model.mask_for(day)
         if basis != "weekday" or not session.any():
@@ -421,7 +446,7 @@ def _quiet_baseline(store: TapeStore, symbol: str, days: list[str],
         if _gap_minutes(store, symbol, day)[0].any():
             continue
         n += 1
-        runs = _runs(session & ~mask)
+        runs = _runs(session & ~mask & alive[day])
         per_day.append(max([0] + [ln for _, ln in runs]))
     if not per_day:
         return 0, 0
@@ -481,7 +506,7 @@ def _gap_minutes(store: TapeStore, symbol: str, day: str) -> tuple[np.ndarray, l
 
 
 def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
-              now_ms: int | None = None) -> DayVerdict:
+              now_ms: int | None = None, alive: np.ndarray | None = None) -> DayVerdict:
     """Every claim this tape makes about one symbol-day, with the number behind it."""
     now_ms = int(datetime.now(tz=UTC).timestamp() * 1000) if now_ms is None else int(now_ms)
     session, basis, session_days = model.mask_for(day)
@@ -609,6 +634,7 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
         v.verdict, v.reasons = _verdict(v)          # corruption, duplicates, crossed: still judged
         if v.verdict == OK:
             v.verdict = UNMEASURED
+        v.exclusion = "SPARSE"
         v.reasons.append(
             f"sparse symbol (median under {SPARSE_DISTINCT_MINUTES} tick-minutes a day): minute "
             f"coverage is UNMEASURED rather than judged against a collapsed session (L1.28a)")
@@ -617,6 +643,7 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     # -- COVERAGE, against the symbol's own session, over the window this desk actually claims.
     if not session.any():
         v.verdict = UNMEASURED
+        v.exclusion = "NO_SESSION"
         v.reasons.append(
             f"session for {pd.Timestamp(day).day_name()} not establishable: {session_days} "
             f"observation(s) of this weekday and {model.pooled_obs} pooled weekday(s); need "
@@ -645,13 +672,15 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     v.missing_minutes = int(np.count_nonzero(missing))
     v.explained_minutes = int(np.count_nonzero(missing & gap_mask))
     unexplained = missing & ~gap_mask
-    v.quiet_run_cap = int(model.quiet_run_cap) if \
-        model.quiet_baseline_days >= QUIET_MIN_BASELINE_DAYS and basis == "weekday" else 0
+    v.quiet_run_cap = int(model.quiet_run_cap) if (
+        alive is not None and model.quiet_baseline_days >= QUIET_MIN_BASELINE_DAYS
+        and basis == "weekday") else 0
     if v.quiet_run_cap:
         for start, ln in _runs(missing):
             # Quiet only if the WHOLE missing run is unexplained and within the baseline; a run
             # touching a gap row, or longer than the symbol's own longest, stays unexplained.
-            if ln <= v.quiet_run_cap and unexplained[start:start + ln].all():
+            if (ln <= v.quiet_run_cap and unexplained[start:start + ln].all()
+                    and alive is not None and alive[start:start + ln].all()):
                 unexplained[start:start + ln] = False
                 v.quiet_minutes += ln
     v.unexplained_minutes = int(np.count_nonzero(unexplained))
@@ -663,23 +692,54 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     return v
 
 
-def apply_venue_halt(sym_rows: list[DayVerdict]) -> bool:
-    """Mark the trailing collapsed days of one symbol UNMEASURED. True when it applied."""
+def apply_venue_halt(sym_rows: list[DayVerdict], healthy_days: set[str]) -> bool:
+    """Exclude the trailing collapsed days of one symbol. True when it applied.
+
+    ONLY WHERE THE RECORDER IS DEMONSTRABLY HEALTHY: a day counts when `healthy_days` says the
+    other symbols recorded at normal volume that day, so one symbol's own subscription dying is
+    not read as the venue stopping. A day with a corrupt segment or crossed quotes keeps its
+    verdict; the exclusion never downgrades a FAIL that has another cause.
+    """
     live = [r for r in sorted(sym_rows, key=lambda r: r.day) if r.n_ticks > 0]
     best = None
     for k in range(VENUE_HALT_MIN_PRIOR_DAYS, len(live) - VENUE_HALT_MIN_DAYS + 1):
         floor = VENUE_HALT_FRAC * float(np.median([r.n_ticks for r in live[:k]]))
-        if all(r.n_ticks < floor for r in live[k:]):
+        tail = live[k:]
+        if all(r.n_ticks < floor and r.day in healthy_days for r in tail):
             best = k
             break
     if best is None:
         return False
     med = int(np.median([r.n_ticks for r in live[:best]]))
     for r in live[best:]:
+        if r.corrupt_segments or r.missing_segments or r.crossed_rate > CROSSED_DEGRADED:
+            continue
         r.verdict = UNMEASURED
+        r.exclusion = "VENUE_HALT"
         r.reasons.append(f"venue halt suspected: {r.n_ticks} ticks against an earlier median of "
-                         f"{med}; excluded as UNMEASURED, never a pass")
+                         f"{med} while the other symbols recorded normally; excluded as "
+                         f"UNMEASURED, never a pass")
     return True
+
+
+def healthy_recorder_days(store: TapeStore, symbols: list[str], days: list[str]) -> set[str]:
+    """Days on which the median symbol recorded at least half its own usual tick count.
+
+    Read from the segment manifests (rows written), for EVERY symbol of the store and not only
+    those judged this pass, so a narrow pass cannot manufacture a healthy recorder.
+    """
+    ratios: dict[str, list[float]] = {}
+    for sym in symbols:
+        sym_days = store.days(sym)
+        counts = {d: sum(r.rows for r in store.manifest(sym, d)) for d in sym_days[-120:]}
+        usual = [n for d, n in counts.items() if n > 0 and d not in days]
+        if len(usual) < VENUE_HALT_MIN_PRIOR_DAYS:
+            continue
+        med = float(np.median(usual))
+        for d in days:
+            if d in counts:
+                ratios.setdefault(d, []).append(counts[d] / med)
+    return {d for d, v in ratios.items() if len(v) >= 5 and float(np.median(v)) >= 0.5}
 
 
 def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
@@ -776,7 +836,8 @@ def _stat_sig(path: Path) -> list[Any]:
     return [path.name, st.st_size, st.st_mtime_ns]
 
 
-def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel) -> str:
+def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel,
+                    alive: np.ndarray | None = None) -> str:
     """Everything `judge_day` reads for a sealed past day, reduced to one digest."""
     h = hashlib.sha256()
     d = store.day_dir(symbol, day)
@@ -794,6 +855,7 @@ def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel
          DUP_DEGRADED, CROSSED_DEGRADED, STALE_RUN_S, ONE_SIDED_FX, SESSION_QUORUM,
          MIN_WEEKDAY_OBS, MIN_SESSION_DAYS, QUIET_MIN_BASELINE_DAYS, QUIET_RUN_CEILING,
          QUIET_BASELINE_PCT, SPARSE_DISTINCT_MINUTES, SPARSE_MIN_DAYS],
+        None if alive is None else hashlib.sha256(np.packbits(alive).tobytes()).hexdigest(),
         bool(model.sparse), int(model.quiet_run_cap
             if model.quiet_baseline_days >= QUIET_MIN_BASELINE_DAYS else 0),
         asset_class_of(symbol), bool(is_fx(symbol)),
@@ -868,9 +930,12 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
     halted: list[str] = []
     per_symbol: dict[str, dict[str, Any]] = {}
     now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    every = store.symbols()
+    alive_days = sorted({d for sym in syms for d in store.days(sym)})[-120:]
+    alive = alive_by_day(store, every, alive_days)
     for sym in syms:
         all_days = store.days(sym)
-        model = observed_session(store, sym, all_days[-90:])
+        model = observed_session(store, sym, all_days[-90:], alive=alive)
         judged = [d for d in all_days if (not cutoff or d >= cutoff)]
         if not include_unsealed:
             judged = [d for d in judged if store.seal(sym, d) is not None]
@@ -880,9 +945,9 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             cacheable = use_cache and d < today and store.seal(sym, d) is not None
             if not cacheable:
                 stats["uncacheable"] += 1
-                sym_rows.append(judge_day(store, sym, d, model, now_ms))
+                sym_rows.append(judge_day(store, sym, d, model, now_ms, alive.get(d)))
                 continue
-            fp = day_fingerprint(store, sym, d, model)
+            fp = day_fingerprint(store, sym, d, model, alive.get(d))
             entry = cache.get(key)
             hit = _from_cache(entry, fp)
             if hit is not None and not _reverify_due(key, float(entry.get("at") or 0), now_s):
@@ -893,14 +958,12 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             if hit is not None:
                 stats["reverified"] += 1
             stats["judged"] += 1
-            row = judge_day(store, sym, d, model, now_ms)
+            row = judge_day(store, sym, d, model, now_ms, alive.get(d))
             # Keyed on the files AFTER judging: `reconcile` may recover an orphan into the
             # manifest, and the next pass must see the day as it now stands.
-            fresh[key] = {"fp": day_fingerprint(store, sym, d, model), "at": now_s,
+            fresh[key] = {"fp": day_fingerprint(store, sym, d, model, alive.get(d)), "at": now_s,
                           "row": asdict(row)}
             sym_rows.append(row)
-        if apply_venue_halt(sym_rows):
-            halted.append(sym)
         rows.extend(sym_rows)
         ticks = sum(r.n_ticks for r in sym_rows)
         byts = sum(r.bytes for r in sym_rows)
@@ -924,6 +987,14 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "one_sided_days": sum(1 for r in sym_rows if r.one_sided),
             "verdicts": _tally([r.verdict for r in sym_rows]),
         }
+
+    healthy = healthy_recorder_days(store, every, alive_days[-10:])
+    if _recorder_status().get("state") != "PAUSED":
+        for sym in syms:
+            sym_rs = [r for r in rows if r.symbol == sym]
+            if apply_venue_halt(sym_rs, healthy):
+                halted.append(sym)
+                per_symbol[sym]["verdicts"] = _tally([r.verdict for r in sym_rs])
 
     if use_cache:
         _save_cache(cache_path, _merge_cache(cache, fresh, today))
