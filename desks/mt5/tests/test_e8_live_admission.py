@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,12 @@ from prop import e8_book  # noqa: E402
 from prop import e8_executor  # noqa: E402
 import admission_integrity  # noqa: E402
 import kelly_survival  # noqa: E402
+
+
+def _fresh(age_h: float = 0.5) -> dict[str, str]:
+    """A FILL_PROVEN header the consumer accepts: the organ's schema, written age_h ago."""
+    gen = datetime.now(UTC) - timedelta(hours=age_h)
+    return {"schema": e8_book.FILL_PROVEN_SCHEMA, "generated_at": gen.isoformat(timespec="seconds")}
 
 
 class _Gate:
@@ -66,7 +73,7 @@ def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
         "NZDJPY_clock_transition_asia": 0.0,
         "AUDCHF_overnight_gap_decay_asia": 0.0}, "excluded": {}}), encoding="utf-8")
     proven = tmp_path / "FILL_PROVEN.json"
-    proven.write_text(json.dumps({"sleeves": [
+    proven.write_text(json.dumps({**_fresh(), "sleeves": [
         {"sleeve": s, "n_out": 20, "adjR_out": 0.3} for s in (
             "NAS100_overnight_gap_decay_asia", "EURCHF_formula_asia",
             "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia")]}),
@@ -119,7 +126,7 @@ def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
     config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
                                   "excluded": {}}), encoding="utf-8")
     proven = tmp_path / "FILL_PROVEN.json"
-    proven.write_text(json.dumps({"sleeves": [
+    proven.write_text(json.dumps({**_fresh(), "sleeves": [
         {"sleeve": "AUDCAD_cross_asset_residual_asia", "n_out": 15, "adjR_out": 1.402},
         {"sleeve": "GBPAUD_cross_asset_residual_asia", "n_out": 9, "adjR_out": 0.5},
         {"sleeve": "USDSGD_carry_asia", "n_out": 25, "adjR_out": -0.5}]}), encoding="utf-8")
@@ -214,3 +221,47 @@ def test_rollover_gate_refuses_fill_proven_entries_in_broker_00_to_01() -> None:
     assert e8_book.rollover_block({}, datetime(2026, 11, 19, 22, 30, tzinfo=UTC)) is None
     # July: server = UTC+3, so 21:15 UTC is 00:15 broker.
     assert e8_book.rollover_block(proven, datetime(2026, 7, 1, 21, 15, tzinfo=UTC)) is not None
+
+
+_ROW = {"sleeve": "AUDCAD_cross_asset_residual_asia", "n_out": 15, "adjR_out": 1.4}
+
+
+def test_fill_proven_fresh_file_is_read(tmp_path):
+    p = tmp_path / "FILL_PROVEN.json"
+    p.write_text(json.dumps({**_fresh(), "sleeves": [_ROW]}), encoding="utf-8")
+    assert set(e8_book.load_fill_proven(p)) == {"AUDCAD_cross_asset_residual_asia"}
+
+
+def test_a_stale_fill_proven_file_fails_closed(tmp_path):
+    """Audit HOLD 2026-11-19: if the organ stops, its last verdicts must not keep admitting."""
+    p = tmp_path / "FILL_PROVEN.json"
+    p.write_text(json.dumps({**_fresh(e8_book.FILL_PROVEN_MAX_AGE_H + 0.1), "sleeves": [_ROW]}),
+                 encoding="utf-8")
+    assert e8_book.load_fill_proven(p) == {}
+
+
+@pytest.mark.parametrize("header", [
+    {"schema": "fill-proven/0"},
+    {"generated_at": "2026-11-19T19:00:00+00:00"},
+    {"schema": "fill-proven/1", "generated_at": "not a time"},
+    {"schema": "fill-proven/1", "generated_at": "2026-11-19T19:00:00"},
+    {"schema": "fill-proven/1"},
+])
+def test_a_wrong_schema_or_bad_timestamp_fails_closed(tmp_path, header):
+    p = tmp_path / "FILL_PROVEN.json"
+    p.write_text(json.dumps({**header, "sleeves": [_ROW]}), encoding="utf-8")
+    assert e8_book.load_fill_proven(p) == {}
+
+
+def test_a_future_dated_file_fails_closed(tmp_path):
+    p = tmp_path / "FILL_PROVEN.json"
+    p.write_text(json.dumps({**_fresh(-1.0), "sleeves": [_ROW]}), encoding="utf-8")
+    assert e8_book.load_fill_proven(p) == {}
+
+
+def test_only_the_bh_filtered_sleeves_list_is_read(tmp_path):
+    """The organ writes the BH-filtered rows under "sleeves" only; an unfiltered "rows" list is
+    never a substitute."""
+    p = tmp_path / "FILL_PROVEN.json"
+    p.write_text(json.dumps({**_fresh(), "rows": [_ROW]}), encoding="utf-8")
+    assert e8_book.load_fill_proven(p) == {}

@@ -248,21 +248,40 @@ FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
 #: forward-failing family is admitted, and every admitted sleeve is sized by how much evidence
 #: it has (`fill_shrink`). Absent or unreadable: no sleeve is fill-proven (fail closed).
 FILL_PROVEN = DESK / "reports" / "FILL_PROVEN.json"
+FILL_PROVEN_SCHEMA = "fill-proven/1"
+#: STALE FAILS CLOSED (Audit HOLD 2026-11-19 19:41Z): the organ is an hourly leg, so a file
+#: older than three missed passes means the organ stopped and its verdicts no longer describe
+#: today's fills. Past this bound no sleeve is fill-proven. The wrong schema, a missing or
+#: unparseable generated_at, or one in the future reads the same way.
+FILL_PROVEN_MAX_AGE_H = 3.0
 FILL_MIN_N = 10
 #: Shrinkage prior, in trades: a sleeve with n fill-proven trades is sized at n / (n + N0) of
 #: RISK_FRAC, so a 15-trade edge trades at ~23% of full size and a 500-trade one at ~91%.
 FILL_SHRINK_N0 = 50
 
 
-def load_fill_proven(path: Path | None = None) -> dict[str, dict[str, float]]:
+def load_fill_proven(path: Path | None = None,
+                     now: datetime | None = None) -> dict[str, dict[str, float]]:
     """{sleeve: {"n": n_out, "adjR": adjR_out}} for sleeves positive after spread outside the
-    rollover slice with at least FILL_MIN_N trades; {} when the artifact is absent."""
+    rollover slice with at least FILL_MIN_N trades; {} when the artifact is absent, of another
+    schema, undated, future-dated or older than FILL_PROVEN_MAX_AGE_H (fail closed)."""
     try:
         doc = json.loads((path or FILL_PROVEN).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return {}
+    if not isinstance(doc, dict) or doc.get("schema") != FILL_PROVEN_SCHEMA:
+        return {}
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}
+    if gen.tzinfo is None:
+        return {}
+    age_h = ((now or datetime.now(UTC)) - gen).total_seconds() / 3600.0
+    if not 0.0 <= age_h <= FILL_PROVEN_MAX_AGE_H:
+        return {}
     out: dict[str, dict[str, float]] = {}
-    rows = (doc.get("sleeves") or doc.get("rows") or []) if isinstance(doc, dict) else []
+    rows = doc.get("sleeves") or []
     for r in rows if isinstance(rows, list) else []:
         try:
             n, adj = int(r["n_out"]), float(r["adjR_out"])

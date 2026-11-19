@@ -466,7 +466,9 @@ def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
     from prop import e8_book
     col = "EURUSD_x_asia"
     fp = tmp_path / "FILL_PROVEN.json"
-    fp.write_text(_json.dumps({"sleeves": [] if proven_n is None else [
+    fp.write_text(_json.dumps({"schema": e8_book.FILL_PROVEN_SCHEMA,
+                            "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                            "sleeves": [] if proven_n is None else [
         {"sleeve": col, "n_out": proven_n, "adjR_out": 0.2}]}), encoding="utf-8")
     monkeypatch.setattr(e8_book, "FILL_PROVEN", fp)
     worlds = tmp_path / "worlds.npz"
