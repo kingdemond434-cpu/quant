@@ -412,7 +412,11 @@ def test_the_self_heal_escapes_unvouch_it(tmp_path: Path, text: str) -> None:
 DASH = "scripts/serve_dashboard.py"
 DASH_GOOD = """
 import subprocess
-from http.server import SimpleHTTPRequestHandler
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+_WEB = Path(__file__).resolve().parent.parent / "web"
 PUBLIC_FILES = frozenset({"index.html", "desk.html", "desk_state.json"})
 
 
@@ -439,10 +443,11 @@ class H(SimpleHTTPRequestHandler):
 
 def main():
     subprocess.run(["build"], check=False)
+    handler = partial(H, directory=str(_WEB))
+    ThreadingHTTPServer(("", 1), handler)
 """
 DASH_SET = 'frozenset({"index.html", "desk.html", "desk_state.json"})'
-DASH_POST = (
-    "\nclass H2(SimpleHTTPRequestHandler):\n    def do_POST(self):\n        pass\n"
+DASH_METHODS = (
     "    def send_head(self):\n        return _public_name(self.path)\n"
     "    def list_directory(self, p):\n        self.send_error(404)\n"
 )
@@ -461,13 +466,32 @@ def test_the_dashboard_server_is_vouched_by_its_content(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("src", "why"),
     [
-        (DASH_GOOD + DASH_POST, "do_POST"),
+        (DASH_GOOD + "\nclass H2(H):\n    def do_POST(self):\n        pass\n", "do_POST"),
+        (DASH_GOOD + "\nclass B(SimpleHTTPRequestHandler):\n    pass\n"
+         + "class H3(B):\n    def do_POST(self):\n        pass\n", "do_POST"),
+        (DASH_GOOD + "\nclass H2(H):\n    async def do_PUT(self):\n        pass\n", "do_PUT"),
+        (DASH_GOOD + "\nclass H2(H):\n    do_POST = print\n", "do_POST"),
+        (DASH_GOOD + "\nclass H2(H):\n    if True:\n        def do_DELETE(self):\n"
+         + "            pass\n", "do_DELETE"),
+        (DASH_GOOD + "\nclass H2(H):\n    def translate_path(self, p):\n        return p\n",
+         "translate_path"),
         (DASH_GOOD.replace("    def list_directory", "    def other"), "list_directory"),
         (DASH_GOOD.replace("name = _public_name(self.path)", "name = self.path"), "send_head"),
+        (DASH_GOOD + "\nclass B(SimpleHTTPRequestHandler):\n    pass\n", "send_head"),
         (DASH_GOOD.replace(DASH_SET, 'frozenset({"a/b.html"})'), "plain page"),
         (DASH_GOOD.replace(DASH_SET, "frozenset(x)"), "PUBLIC_FILES"),
+        (DASH_GOOD + '\nPUBLIC_FILES |= {"x.json"}\n', "PUBLIC_FILES"),
         (DASH_GOOD.replace("return n if n in PUBLIC_FILES else None", "return n"), "membership"),
-        (DASH_GOOD.replace("super().do_GET()", "subprocess.run(['x'])"), "subprocess"),
+        (DASH_GOOD.replace("super().do_GET()", "subprocess.run(['x'])"), "subprocess outside"),
+        (DASH_GOOD.replace("def main", "def _r():\n    subprocess.run(['x'])\n\n\ndef main"),
+         "subprocess outside"),
+        (DASH_GOOD.replace("import subprocess", "import subprocess as sp"), "aliases"),
+        (DASH_GOOD.replace("import subprocess", "from subprocess import run"), "from-imports"),
+        (DASH_GOOD.replace('str(_WEB)', 'str(Path("data") / "secrets")'), "directory="),
+        (DASH_GOOD.replace('"web"', '"data"'), "_WEB"),
+        (DASH_GOOD.replace("    def do_GET(self):\n        super().do_GET()",
+                           "    def do_GET(self):\n        self.directory = 'x'"), ".directory"),
+        (DASH_GOOD.replace("super().do_GET()", "open('x').read()"), "opens a file"),
         (DASH_GOOD + "\nimport os\nos.system('x')\n", "os.system"),
         ("class H:\n    pass\n", "no request handler"),
         ("def (", "cannot be parsed"),

@@ -1103,18 +1103,54 @@ _DASH_VERBS_OK = frozenset({"do_GET", "do_HEAD"})
 _DASH_FILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:html|json|jsonl)")
 
 
+def _dash_names(tree: ast.Module) -> tuple[list[ast.ClassDef], set[str]]:
+    """Every class in the module that inherits (transitively, by last name segment) from a
+    *HTTPRequestHandler, and the names of those that inherit one directly (stdlib roots)."""
+    classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+    roots = {
+        c.name
+        for c in classes
+        if any(_dotted(b).rsplit(".", 1)[-1].endswith("HTTPRequestHandler") for b in c.bases)
+    }
+    known = set(roots)
+    grew = True
+    while grew:
+        grew = False
+        for c in classes:
+            if c.name not in known and any(_dotted(b).rsplit(".", 1)[-1] in known for b in c.bases):
+                known.add(c.name)
+                grew = True
+    return [c for c in classes if c.name in known], roots
+
+
+def _dash_binds(cls: ast.ClassDef) -> list[str]:
+    """Every name a handler class binds anywhere in its body, by def, async def, assignment or
+    annotated/augmented assignment (nested blocks included)."""
+    out: list[str] = []
+    for n in ast.walk(cls):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            out.append(n.name)
+        elif isinstance(n, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            tgts = n.targets if isinstance(n, ast.Assign) else [n.target]
+            out.extend(t.id for t in tgts if isinstance(t, ast.Name))
+    return out
+
+
 def dashboard_problems(head: Path) -> list[str]:
     """Why scripts/serve_dashboard.py is not a vouched target on `head`; [] when it is. Static
-    (Audit #1249 MF1): the vouch holds by the file's CONTENT, so a later edit that adds a write
-    verb, serves more than a literal allowlist, lists a directory or runs something per request
-    makes it UNMEASURED again:
-    - every class that subclasses a *HTTPRequestHandler defines no `do_*` other than do_GET and
-      do_HEAD;
-    - module-level `PUBLIC_FILES = frozenset({...})` is bound once, to plain file-name literals;
-    - a handler's `send_head` calls `_public_name`, and `_public_name` tests `in PUBLIC_FILES`;
-    - a handler overrides `list_directory` to answer 404;
-    - no banned call anywhere (os.system, Popen, eval, ...), and `subprocess` is never named
-      inside a handler class (main()'s one startup build may stay)."""
+    (Audit #1249 MF1-3): the vouch holds by the file's CONTENT, so a later edit that adds a verb,
+    serves more than a literal allowlist, lists a directory, repoints the served root or runs
+    something per request makes it UNMEASURED again (fail closed on anything it cannot read):
+    - EVERY class that inherits, however far down, from a *HTTPRequestHandler is a handler. None
+      binds a `do_*` other than do_GET and do_HEAD (by def, async def or assignment, nested or
+      not), defines translate_path, or assigns `.directory`; do_GET/do_HEAD open no file;
+    - every handler that inherits a stdlib handler directly overrides send_head (through
+      `_public_name`) and list_directory (404); a descendant may only redefine them the same way;
+    - module-level `PUBLIC_FILES = frozenset({...})` is bound exactly once, to plain file names,
+      and `_public_name` tests `in PUBLIC_FILES`;
+    - the served root is `_WEB = Path(__file__).resolve().parent.parent / "web"`, bound once,
+      and every `directory=` keyword in the file is `str(_WEB)`;
+    - `subprocess` is imported plainly and named only inside main(); no other process launch."""
     src = read(head, DASHBOARD)
     if src is None:
         return ["unreadable"]
@@ -1123,37 +1159,66 @@ def dashboard_problems(head: Path) -> list[str]:
     except SyntaxError:
         return ["cannot be parsed"]
     why: list[str] = []
-    handlers = [
-        n
-        for n in tree.body
-        if isinstance(n, ast.ClassDef)
-        and any(_dotted(b).endswith("HTTPRequestHandler") for b in n.bases)
-    ]
-    if not handlers:
+    handlers, roots = _dash_names(tree)
+    if not roots:
         return ["defines no request handler class"]
-    for cls in handlers:
-        methods = {m.name: m for m in cls.body if isinstance(m, ast.FunctionDef)}
-        extra = sorted(m for m in methods if m.startswith("do_") and m not in _DASH_VERBS_OK)
-        if extra:
-            why.append(f"{cls.name} answers {extra}")
-        for node in ast.walk(cls):
-            if isinstance(node, ast.Name) and node.id == "subprocess":
-                why.append(f"{cls.name} uses subprocess")
-                break
-        sh, ld = methods.get("send_head"), methods.get("list_directory")
-        if sh is None or not any(
-            isinstance(c, ast.Call) and _dotted(c.func) == "_public_name" for c in ast.walk(sh)
-        ):
-            why.append(f"{cls.name}.send_head does not route through _public_name")
-        if ld is None or not any(
+
+    def compliant_head(m: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        return isinstance(m, ast.FunctionDef) and any(
+            isinstance(c, ast.Call) and _dotted(c.func) == "_public_name" for c in ast.walk(m)
+        )
+
+    def compliant_list(m: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        return isinstance(m, ast.FunctionDef) and any(
             isinstance(c, ast.Call)
             and _dotted(c.func).endswith("send_error")
-            and c.args
+            and bool(c.args)
             and isinstance(c.args[0], ast.Constant)
             and c.args[0].value == 404
-            for c in ast.walk(ld)
-        ):
+            for c in ast.walk(m)
+        )
+
+    for cls in handlers:
+        bound = _dash_binds(cls)
+        extra = sorted({b for b in bound if b.startswith("do_") and b not in _DASH_VERBS_OK})
+        if extra:
+            why.append(f"{cls.name} answers {extra}")
+        if "translate_path" in bound:
+            why.append(f"{cls.name} overrides translate_path")
+        for node in ast.walk(cls):
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr == "directory"
+                and isinstance(node.ctx, ast.Store)
+            ):
+                why.append(f"{cls.name} assigns .directory")
+                break
+        defs = {
+            m.name: m
+            for m in ast.walk(cls)
+            if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        for verb in _DASH_VERBS_OK:
+            m = defs.get(verb)
+            if m is not None and any(
+                (isinstance(c, ast.Name) and c.id in {"open", "Path"})
+                or (isinstance(c, ast.Attribute) and c.attr in {"open", "read_text", "read_bytes"})
+                for c in ast.walk(m)
+            ):
+                why.append(f"{cls.name}.{verb} opens a file itself")
+        sh, ld = defs.get("send_head"), defs.get("list_directory")
+        if sh is not None and not compliant_head(sh):
+            why.append(f"{cls.name}.send_head does not route through _public_name")
+        if ld is not None and not compliant_list(ld):
             why.append(f"{cls.name}.list_directory does not answer 404")
+        if cls.name in roots:
+            if sh is None:
+                why.append(f"{cls.name}.send_head does not route through _public_name")
+            if ld is None:
+                why.append(f"{cls.name}.list_directory does not answer 404")
+    stores = [
+        n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store)
+    ]
     allow = [
         n
         for n in tree.body
@@ -1167,10 +1232,12 @@ def dashboard_problems(head: Path) -> list[str]:
         call = allow[0].value
         if _dotted(call.func) == "frozenset" and len(call.args) == 1:
             names = _literal_strs(call.args[0])
-    if names is None or not names:
-        why.append("PUBLIC_FILES is not one literal frozenset of file names")
+    if names is None or not names or stores.count("PUBLIC_FILES") != 1:
+        why.append("PUBLIC_FILES is not one literal frozenset of file names, bound once")
     elif not all(_DASH_FILE.fullmatch(x) for x in names):
         why.append("PUBLIC_FILES names something that is not a plain page or data file")
+    if any(isinstance(n, ast.Global) and "PUBLIC_FILES" in n.names for n in ast.walk(tree)):
+        why.append("PUBLIC_FILES is rebound through global")
     pub = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_public_name"]
     if len(pub) != 1 or not any(
         isinstance(c, ast.Compare)
@@ -1179,6 +1246,44 @@ def dashboard_problems(head: Path) -> list[str]:
         for c in ast.walk(pub[0] if pub else tree)
     ):
         why.append("_public_name does not test membership in PUBLIC_FILES")
+    web_want = ast.dump(
+        ast.parse('Path(__file__).resolve().parent.parent / "web"', mode="eval").body
+    )
+    web = [
+        n
+        for n in tree.body
+        if isinstance(n, ast.Assign)
+        and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name)
+        and n.targets[0].id == "_WEB"
+    ]
+    if len(web) != 1 or ast.dump(web[0].value) != web_want or stores.count("_WEB") != 1:
+        why.append('_WEB is not exactly Path(__file__).resolve().parent.parent / "web", bound once')
+    str_web = ast.dump(ast.parse("str(_WEB)", mode="eval").body)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            for kw in node.keywords:
+                if kw.arg == "directory" and ast.dump(kw.value) != str_web:
+                    why.append("a directory= keyword is not str(_WEB)")
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Store)
+            and node.attr == "directory"
+        ):
+            why.append("something assigns a .directory")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for al in node.names:
+                if al.name.split(".")[0] == "subprocess" and al.asname:
+                    why.append("aliases subprocess")
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == "subprocess":
+            why.append("from-imports subprocess")
+    mains = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main"]
+    inside = {id(x) for m in mains for x in ast.walk(m)}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id == "subprocess" and id(node) not in inside:
+            why.append("uses subprocess outside main()")
+            break
     for node in ast.walk(tree):
         name = (
             _dotted(node.func)
