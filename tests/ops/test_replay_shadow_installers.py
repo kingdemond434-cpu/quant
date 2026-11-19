@@ -407,3 +407,10 @@ def test_the_harness_pins_the_kill_path() -> None:
 @pytest.mark.parametrize("text", HEAL_ESCAPES)
 def test_the_self_heal_escapes_unvouch_it(tmp_path: Path, text: str) -> None:
     assert rs.self_heal_problems(_heal(tmp_path, text))
+
+
+def test_the_read_only_dashboard_server_is_a_vouched_target(tmp_path: Path) -> None:
+    text = GOOD.replace("run_alerts.py", "serve_dashboard.py").replace(" --box", " --port 8080")
+    tree = _tree(tmp_path, text, {"scripts/serve_dashboard.py": "print(3)\n"})
+    assert rs.installer_problems(tree, INST) == []
+    assert "scripts/serve_dashboard.py" in rs.INSTALLER_TARGETS
