@@ -17,8 +17,10 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "aaii"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+# Honest agent (2026-11-19): aaii.com's robots allows /sentimentsurvey (Crawl-delay 10) and its
+# terms are silent on automated access; section 6 bans copying, so rows carry readings only.
+HEADERS = {"User-Agent": "quant-desk-research/1.0 (aaii sentiment reader; research; "
+                         "honours robots.txt)"}
 AAII_URL = "https://www.aaii.com/sentimentsurvey"
 
 

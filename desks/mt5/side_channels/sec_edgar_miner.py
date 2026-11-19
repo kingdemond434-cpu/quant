@@ -20,7 +20,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 # SEC fair-access policy: a declared User-Agent naming a real contact. The box sets
 # QUANT_EDGAR_UA (or SEC_EDGAR_USER_AGENT / SEC_EDGAR_UA, every name the desk has used for this one
 # contact string, libs/data/credentials.py); run_all_miners sets this channel aside when all are absent.
-EDGAR_UA_NAMES = ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
+EDGAR_UA_NAMES = ("QUANT_EDGAR_UA", "EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
 
 
 def edgar_ua() -> str:
