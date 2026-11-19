@@ -1,0 +1,877 @@
+{
+ "schema": "clear_landing_coverage_baseline/1",
+ "why": "CLEAR files that existed before the registry was born (2026-10-29), each pinned by sha256. Their landing is NOT measured by this fence; a file whose content changes leaves the baseline and needs a registry row.",
+ "cut_utc": "2026-10-29T00:00:00Z",
+ "files": [
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/AUTO_SURVIVAL_v7_BOOKS_v3.md",
+   "sha256": "393daa6d9f7788a1d18f0731eb96a07e0beec727884c36845cca32348d4beaa7"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/AUTO_SURVIVAL_v8_BOOKS_v4.md",
+   "sha256": "58e327c492a26327c5ea2225481175161dc1de825ea19a4995d43859c1d666f5"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/CLOCK_LAW_v4.md",
+   "sha256": "f936149d83099df1d21102c37608475229bc2eec8d302412f3027392fb785a0d"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/DELTAS_351_CLOCK5_383.md",
+   "sha256": "2b637f4a794038602994c64c8721d6853401466629bc971157c5e955d4975a8e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/E8_BOOK_79.md",
+   "sha256": "842821ac4effdf8b00dbe55e11e641ff102549f621a72b6b291dd5eda711ec53"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/E8_ROOM_v2.md",
+   "sha256": "1fff11ff4450c00f5ce8ae1eecc6d13ad7fef89c1b5f93ebf7f192996e50784e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/GD_BATCH_360_356_335_348_337.md",
+   "sha256": "29297dd312f6bc9e3d45ba67ae778355296464e136597925093b0a09a6eb8f54"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/M15_SCOPE_v2.md",
+   "sha256": "465fc3ec7915f77e5247724940fc682f0ff2cb692c572c59a91eedd2aeb77eb0"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/M15_SCOPE_v3.md",
+   "sha256": "68aceb3fc00a33bae1f4d740cd7688a442aca50d164608299dd245934aa7a314"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR331_rebased.md",
+   "sha256": "d6dd262a9211c32f8f26cb4d32856c48925318400a910deb5b06948ffc195997"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR338_a6b94ed6b_sim.md",
+   "sha256": "45b1adea74cbe8d4cc9cefe01b7219651445d8f4e7d7842d6e81916d5eac074a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR338_landing_979791c00.md",
+   "sha256": "5d8d80c407ed04f98fc799759f30ebcab2a4a6e4e8a44f02c5ab4fed5ce72400"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR338_sealed_v3.md",
+   "sha256": "b6255b5a7287b80f459ecb6ee6dd211a48756bab265b035b70d84008c998496a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR354_v5.md",
+   "sha256": "30929cddb9da1677921f668ac23a545b7258f0f901297c2a743357c064db21d5"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR374_v2.md",
+   "sha256": "8d035c0a29402fc47d65080b2ad45ef382589ce6aa3ac6edf537ae82c6e55dac"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-13/PR377_v2.md",
+   "sha256": "28c4905e233119d29cd7a78a0d4f805725a4ce223a02318b454d8f22a0f2b3e3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/ADOPT_BREAK_GLASS_17cd1b695.md",
+   "sha256": "051a461a31862210fe247d711e5ca6c0c12050dfb08bff5bbca5a7403547fdb3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/ANTI_BREAKOUT_M5_AS_TRADED.md",
+   "sha256": "6bcc6dd592dff49a155cbdd5f552dcff7173ccce70a8e9f995aea9efce50cf7c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/AUDCHF_v2_PR397_PRESTART.md",
+   "sha256": "800cbd4a212dfdad1fae30a93b0b938c26bb275eca03f5d35f4240b456a1889c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/AUDCHF_v3_PRESTART_761db18e.md",
+   "sha256": "4320a88539de4efe8157443d812ab923161df45575d2268c2c1e7e88c69c0797"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/AUTO_DEPLOY_V1_d2ecbf7ad.md",
+   "sha256": "a3c9681e300c3bcad5383cde82ef7449d0aec6138429137e2d3eeb2d5bd1000d"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/AUTO_SURVIVAL_MEASURES_v2.md",
+   "sha256": "3a88c993495c891340e9668687f40be19a544b1637ee68e1919df58975824b0e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BARS_STATE_f8167d3e.md",
+   "sha256": "e8bc1754d39a98246ff0d990793b0accdf11cbf19bd9e44505f324b7bc45d347"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BARS_WANTED_BLOCKED_1e7a3440b.md",
+   "sha256": "a6f872c841c554ed451219e56c0e4a931539b8086688ebbd82bee75006fa23be"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BASE_RED_DEEPSEEK_LINT_34396066e.md",
+   "sha256": "dc7c9e2c76e7913c88c59f91630276e69d99e0cdbe99df3874e2827db1585293"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BASE_RED_FIX_54fb85b1e.md",
+   "sha256": "951c36c5c00d00b528a5b384c2da799c9a2c46de5304a58096acfb8073461d3f"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BOX_WATCHERS_CANON_31c7e089.md",
+   "sha256": "a46873059d1c700188942f8b5bf085541e23a4b61c029c7e93a4be4546c13005"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BRIDGE_RO_DISPATCH_fde3b636.md",
+   "sha256": "0243dac8af8f6d15a4440cc02d56373ad7c7ad489f8842dff6cd282672457ced"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/BRIDGE_WATCHDOG_V1_805eb1b3d.md",
+   "sha256": "91769e8749f8222dbe20efbd62ceb4f04991147f270b983e7f277316dc8ef9ce"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CAR_BRACKET_FIX_3b8dd5c97.md",
+   "sha256": "cd8aff65a2c5ba6082235e08f4d921c7fd9bf2ecd24c4ee98bd3b8380e7b2fd2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CERT_BOOK_BOX_PARITY_2eb16cc61.md",
+   "sha256": "d335f1d3c543aa53a81520c8973bb446cd3612698a8bc45295e9a730e6930589"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CERT_LINEAGE_1b89d5176.md",
+   "sha256": "d4dc8f210a424b6aeafc9bcb9f49ffe6b58375fa114c36621432d732924df507"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CHAIN_387_399_REBASE.md",
+   "sha256": "ef41c0624900e54885d65a1bf78a420abb2d865f6dbac905b0ff8a4e0446c7fa"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CLUSTER_JUDGE_47cc73906.md",
+   "sha256": "2937274d29f304d1888e3b1becaeb0d25f572f7546e259d0b72b50dc4224c4c1"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COLLECTOR_EMPTY_PASS_33a99c6bf.md",
+   "sha256": "f2cd894ca01c3a592baa044588721fb09f0cc12e72b94389aea46fc684d15607"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COLLECTOR_EMPTY_PASS_ca8424f3a.md",
+   "sha256": "88f2147818c2f47299b5db93bda9b6c940db2871c0a3db9a04316beb89d41994"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COLLECTOR_FOLLOWUPS_41c739e32.md",
+   "sha256": "355a738eac5f113e2d6411e1271b224db7d07add768cf176abf2c4da92fdbb11"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CONVERTER_MISSING_SURFACE_b57825ed5.md",
+   "sha256": "32f2212e8a0282c9205249f7fd431a7102f1d63d60790df3fa605d83a9fba92a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COST_GUARD_v2.md",
+   "sha256": "dc795ac10f044f741d5d563be6e03e785f39d12affeb2ca1508185b962fbe159"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COT_RELEASE_ENTRY_v2_5152a2dd1.md",
+   "sha256": "29bb98794558c69254bcb061a34438a96bfbe53c3f611c7125a7436fdfb29041"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COVERAGE_MATRIX_v2.md",
+   "sha256": "cdeaec9d99dc718fa825df452c876b4313fd721fa4d5ba7a076d9103a5a848d0"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/COVERAGE_RED_PAGES_0babf17ea.md",
+   "sha256": "15cd13583d065b009fe0731ad5a92ddfc00ec5f4354eca3c6c6e25dd608dfe19"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CROSS_ACCOUNT_OCO_d2298bf41.md",
+   "sha256": "153d4adf4da003e6cd6f70c56f63c1f85ea264e86114ba7c5a1d63056683bc69"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CROSS_ASSET_BAR_BACKFILL_6f7f9f52d.md",
+   "sha256": "2d10ef5aa0ad8cd56be7cf4f2f1d8396d9ed09ceb0e7d682970787fbebfd19ed"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/CRO_MIDNIGHT_REVIVE_PR439.md",
+   "sha256": "5e85519f67d007c9a4f99d824e09a44414f596f47780f70e4646bae0ffdeaae8"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DD_CUSHION_BOCPD_b663bb81d.md",
+   "sha256": "e20f98593e4c4d12adb4d15562a4de8763f8391293dcc94b387ee9517a7d7038"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DECAY_ALLOCATOR_7dc4a0ff0.md",
+   "sha256": "96c09ffe0583112df05d235e2b930571482ef7d2668a4f7f747830ba3d388618"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DECAY_VERDICT_61b2e2408.md",
+   "sha256": "545990241f252c9a4f11059eea6984e17dd6f66334f1f9f94d70c1c69d6fda82"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DEEPSEEK_BASE_RED_981f6434f.md",
+   "sha256": "d08d9f7593b8892b5593b3abc5e8da596abf16ceea86a50fa6d30d966fd5a21b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DESK_HEALTH_RAIL_WATCH_ce0565206.md",
+   "sha256": "9a30cc151d3f56606acca4e057d6591afb852e27f7fbc597cd8e4c7a37e56e3a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/DST_MISMATCH_AUDIT_bf64244c.md",
+   "sha256": "0d043007197e01bdeb0eee6258150d8e9ba387c386e775e4e9d042539474dbb8"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_BOOK_79_v6.md",
+   "sha256": "2fc20df4d6e4ffe4fe59fa91e7819d75e1b59de916106952554891dc4e48e99c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_FILLS_LEDGER_52f3c47aa.md",
+   "sha256": "9d9ee1e6621969d04e7fc875e0e89d0f8252ad1159313dd40077802e788ab10c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_FUSION_STATE_882bc840.md",
+   "sha256": "8eba71acbe89766b250f52cbea7512382fcc1fa7a722a6582649b326e3db9c9a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_GOLD_LOT_CEILING_6f94d45cc.md",
+   "sha256": "c2e1f4f7a80c9336342d6b7d4ad96b5decea7b34bb3c80aea85c5bdc45e32ffd"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_GUARD_URGENT_e0f19f723.md",
+   "sha256": "e5452293b2cf7a6619985d21636ea76befb8610cac6d57a44d2e463c653f6a4e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_PLACEMENT_EVIDENCE_75004b6a.md",
+   "sha256": "373e33c29dca224e6eb8f13f10958f063f46bac33891515968adaa9eecd0ca0e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_SPREADS_NO_KILL_7bd86081.md",
+   "sha256": "57c0d365d2b11ecf97ea676f5a217d7c5d1aff589da1a44036a147ad7e607c6a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/E8_STATE_REPORT_16a496caa.md",
+   "sha256": "62e9e6d1995ac6c9872d64acda89e7faba8884595e5968986ecf4bcc71176dc3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/FORMULA_LIB_v2.md",
+   "sha256": "2c3b8753249d6596d62d45b584457d49080505d7f40a1d9d9832d6ab0a9c0a5c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/FORWARD_LEDGER_TRAIN.md",
+   "sha256": "14fb5ccbaa4d4fa4bb1c5ebf8055fe889ce99e6d3cae0f7f67d81ca060db46cc"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/FUSION_R7_60c115204.md",
+   "sha256": "fae1a0066fe3962d35f8ce6e7ce0bd6e10062ce5741cc39815214bcb34a42f12"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GATEWAY_COMBINED_6c5af93b.md",
+   "sha256": "277531970e3b52ddb2358d2f2b67d570aa4bc1c7b085b7f80ebc5c1d5888100d"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GAUNTLET_ONCE_WATCHDOG_2832cebd1.md",
+   "sha256": "43f35e7dabbcbccdfdbed5e1294728dba3d3deadb13db37a319c7148d6240286"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GAUNTLET_SPEED_FATE_INDEX_2a0ad049.md",
+   "sha256": "95735a56202dfa90c2e7af0fd8b56b80c692947c47f76c3ba366c86ae689162e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GAUNTLET_SPEED_b879ac50.md",
+   "sha256": "39894e0e214395b530def31a0b2d802438804dc4bbd7eb55ed1c253e8e577697"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GAUNTLET_STACK_f70c5147.md",
+   "sha256": "72bf1931214f1dab7e25f566e8196dd008c70336cf7e9ba156faba43dedcadf8"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GAUNTLET_WATCHDOG_V4_1_5d5efbcd22c.md",
+   "sha256": "c2705784cf455f6eb580a7799f946838f731359f5d44a161e384a5f692c55584"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_DELTAS_162_357_360.md",
+   "sha256": "4d30b59aac422ae43aba90f64c4120d021381885791a48d84cc91eef38c9dcdd"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_FOLLOWUPS_QUEUE_ROWS.md",
+   "sha256": "a7c2a489afc27b83d71dca9bfad3142bbc7f642f43c1de77149999adbe24fa00"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_FORMULA_234_REVIVAL_v3.md",
+   "sha256": "a75af27cfde27e85cb1dce19f5e7bd6c43504b08c90a78a4e603055df72de166"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_NOVEL_GEOINT.md",
+   "sha256": "05b15a4eb45287f0663bd0d1ac4fb052158e24f1d328eef3f825172fb8790a80"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_QUEUE_ROWS_fe88e599b.md",
+   "sha256": "b42ffe8bebb22510eaaf64785a187842131763ccd5a9ff76e1d2d59191b7c66a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GD_THREE_HEADS.md",
+   "sha256": "50864c7b2fb566e8d9ef4cf1a2cc3da9df94e02e41dfd8d458d1716fd7cdf4bc"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GEOINT_v2.md",
+   "sha256": "73fe23b68f9cb350fd25d1219282786a54317469ddcebaf7d331d97b98ebcc2c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GEOINT_v4.md",
+   "sha256": "989c549ca70c65e9a45e038746da3413f896efb11a34d1a4a49d664499aa1f2a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/GOLD_BOOK_AS_TRADED_e61eee56.md",
+   "sha256": "d2d9b5af2b1a29ed4309a4f1a46fa437eee9a79dfe2a9688fc0ce31167969952"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/IDEA_PASS_P10_46bcd80b8.md",
+   "sha256": "ef657eb00d38153b03c90adb53e1536294818a5556e208a84e8de185c494478e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/IDEA_PASS_P11_c58af50b9.md",
+   "sha256": "03999d2d6fd2ab3af9a96f76eaa93cda378157883cef29420b26ae833610cb8b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_BLAS_DIFFERENTIAL_5d4d0279f.md",
+   "sha256": "cab0d56044cd3ff37086bc9959440c824f452544fa9fb6caf4a80298d3604d68"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_CACHEWARM_FIX_6ea07bdf2.md",
+   "sha256": "2b5090e5175a215c86a2ce0705c2c7f200243e08e69c2b5ea0b4926ec3e37ec2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_COVERAGE_FAST_c5390bc6a.md",
+   "sha256": "e41e6e58ffa28bba55696ddc2a0bde26a34ee47e22667b1ebe8c888a78bfbe89"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_COVERAGE_STALE_FAILS_cbea9e8d9.md",
+   "sha256": "edbf268ff3ee4a8c8a9f50510421ec51b7cfe9e0a457b2ea6af3f73ee0fb50a9"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_COVERAGE_THROUGHPUT_1bc45209f.md",
+   "sha256": "56614b86d02342252c960b54666061fac2cc515b614f4d4b9ad531e91d5b1e28"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_CPU_FAIR_SHARE_be6a305b7.md",
+   "sha256": "ddf5e2d7ae5f1e6d6f7a8591024b0407247387a07bce4946fa4eee407aa7c807"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_DAILY_SINGLE_LOCK_9a08e48ac.md",
+   "sha256": "d1f12bfccf9ec0d6b25cf2d0d0f5783dde07874825f62a9d6a653bdcf6f22a3c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_DEAD_FAMILIES_b9d37faaa.md",
+   "sha256": "54c0e7f911012420c107d9ccd2e8b27e16e6cf84a6b10e7aea48187576df1af2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_ETA_FENCE.md",
+   "sha256": "67def1f3e61ba4c54b51d9ffbdb29452f8d4e42f3b76b910e0be23e70fa950b7"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FAIL_TO_BUILD_9bf6542be.md",
+   "sha256": "a644e16280b7c410431a8ffbe2d524c91f1dd21c1b62b3aa71cb2b0802533804"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FAMILIES_8628268b6.md",
+   "sha256": "54fe89aef5951db2ab7696d179bbc0953c3805b50a5a468a2551291135ae8008"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FIREABLE_SPECS_c72ecfc53.md",
+   "sha256": "aff489537d4a046c8d34c8482890b9f5f5b43c1a9ddf36c3d226d0bfdc3bcc02"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FIRE_PRESCREEN_5cd25ba12.md",
+   "sha256": "310fd82e59c84dc85b8340a03c86b88edf7903a63cfb5c1e4d32f3923eeb6160"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FLOOR_REACH_v2_ad7d4ac6a.md",
+   "sha256": "4917adfe477b830100cae690c0b61422a11336a9f80606f2ab40c53cf58e679b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_FUNNEL_SHARDS_b94babf39.md",
+   "sha256": "b9ecc9e9234df5611c4c81ed9cb9613b49f6cd00b603b12bb355e488928d3875"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_IMAGE_COMPANIONS_2f28cf7de.md",
+   "sha256": "ed80321a670284df8b560c02410e56961388e51626ecb8b47017d1f1776787da"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_MERGE_DIAGNOSTICS_2f1c5b928.md",
+   "sha256": "12dbf285d738ad166053bf232323559ec278bdae1c0831dea715a24c26309261"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_PRESCREEN_3570928159.md",
+   "sha256": "5960702d69fa229d4d87ea1434d2d9188cfe2da54951359091156d1f71bb985e"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_PREWARM_MEMO_2cf8a3f43.md",
+   "sha256": "cb927b80f168c3de7828c9c14e5321b997ed39373d19c935b1731080e4a7eaed"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_RESIDENT_MEMORY_e80a73a87.md",
+   "sha256": "fd8fb932bb221d182e7479a3e156e14ac3a199534989d6981701a01402d6b63b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_SHARD_PROGRESS_2eb217703.md",
+   "sha256": "e392744d4afa0c75268700ba37aba29f915afd4c5b318d3d0f403afeb1a09595"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_SPEED_TRAIN_a5847f82a.md",
+   "sha256": "a98c7985a8b639d7214098277f5d4f27759787557b084d790c9648fd06be6a47"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_STALL_PAGER_e759c01f6.md",
+   "sha256": "0b04eda59b0fb1958203526312dc282ec66eba856f223f5d7f08194be496aee3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_VECTOR_FAMILIES_27f069de1.md",
+   "sha256": "bd2c692dad88a7abc0032bb7d306c8e908f342ff9621ef2e765519af507db2bb"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_VOLUME_LEVERS_a6cc198d7.md",
+   "sha256": "a94afd0068a561600e80e5b5419f974ea14b2866315ce2b7672674c41cdbf3c4"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGE_ZERO_FRESH_BUILD_3c914be33.md",
+   "sha256": "b1ec1c4af0a516b6c2ed5080b02a93bb239e02ee66a258881216676bacb0d8d2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/JUDGING_RATE_CLOCK_LAW_42a5b556d_f4e7e0ca.md",
+   "sha256": "36b7d2a29c15745e79b0020fa5bc4dd1bebe95f07e1003459a3d5bc6a663fa05"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/KELLY_CNC_v2.md",
+   "sha256": "050ae55f985db3ce65b4c7230ec1d3f8749899f2f27962bce03d8396dd621fbf"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/KELLY_SURVIVAL_REVIVE_93850e563.md",
+   "sha256": "d9afac1a729b3123cb290eb4d3f0bf95795500629af8a356ee419af131c9385b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/LLM_LOOKAHEAD_v3.md",
+   "sha256": "a68a0e9b1a3adfccc8cd8ba26e2df4ffcd67d828973a299582d4956cc16e5aea"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/LOCKBOX_RECERT_8fb308bad.md",
+   "sha256": "6c244d248c7c30f9f437e39307335a351760eb7b5c3d6e16d0a2edc1ad332574"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/LOSS_AUTOPSY_v2.md",
+   "sha256": "e078d30d04334670b5f78910c015c4983348bdc596e6c3c4314eba8378b4ed35"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/MACRO_STATE_PIT_b574b9883.md",
+   "sha256": "20fedff44d2000bd584fc6315b32aed7bf9de42df225c238818cdfac4fed8c91"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PASS6_cf305e3d2_delta.md",
+   "sha256": "b394c6faef172f9e57096af4898dda6fde7fa3783878e097dcd682b19b2d3b40"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PF_ALLOCATOR_HEAVY_4H_2b54ad265d23.md",
+   "sha256": "ddbcbaca892152967530bfa8ef240a6a5868a4c3ecaf837cc92274058db9b3c4"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PLUMBING_ALERTS_018de05c5.md",
+   "sha256": "165d2efd4145e065a4f60ad40cd60e75b21c1346f58d70aff0fde26f784010b5"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR303_merge_458a05c09.md",
+   "sha256": "f25824dba3ab3d54ed91ebcd59da2e4bf49f65b7d1527db1a00f55d21bc56b9d"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR357_b391056d0.md",
+   "sha256": "4456ee769bfad92d19e7a595e5c0c21c5b567e8cdb89c425c3ed2395657518c3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR372_SF_BIRTH_FAMILIES.md",
+   "sha256": "aaa9e37e1999430d463e1436c39b9a666ae11ed6451375b94a2e193b6ffc17f4"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR372_e93eeffb6.md",
+   "sha256": "c06c5541872d141a56df72b2d777cf11500ec0fdb3fd74ae336a1952b24b6798"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR376_fix.md",
+   "sha256": "08255f61e9ea19a0a28ab2b9e17e2e6ae265e8f5df34409594da602357d4f2b3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR376_v2.md",
+   "sha256": "1e6fdc1c682cec7763f5d15e6cabaff445f9e1df2322f4cccd358e9c93d78334"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR377_v4_PR387_v2.md",
+   "sha256": "da2116f9e7c4438f3d7d03afb3db0e8ee2b516f7616274fdf45a048eec722fd7"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR382_v3.md",
+   "sha256": "ccd540f372330563b9f50c811fb01f0a2c7d5e22ac0b82174bad4e3032eadd63"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR382_v4.md",
+   "sha256": "35ce99842dc442fd7f08a6f86bf8a51bad4619c60f77ca3a84078eca1aff2d6b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR382_v5.md",
+   "sha256": "39b2236da2e729b4d2e570a83d504babeb1e31174a8cef323b2be0f42ea9143f"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR382_v6.md",
+   "sha256": "5ba302a3d72a34cf45e50219b25f5969a13e77970463c7d2274294669e6339f1"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR384_28abd6bbd.md",
+   "sha256": "863b2f365c107e870b3306660fa12a04b927fa28e61ce3cd380c59c542fb4244"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR384_390_393.md",
+   "sha256": "bfd3b4b7f15355e924dd025f356edf2928e2bc8e3a3ae9bb5e67229a4938ecaf"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR388_v2_PR394.md",
+   "sha256": "654f292003c222d3ebf2537b2bd1b5f3509534bf0ed5c216bbaa98251fb2ffd6"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR389_v3_4622bfa0e.md",
+   "sha256": "828a9b1f46deaaa942660f386106e0f88750045ef5669e6d0e5437c6753c2963"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR391.md",
+   "sha256": "57392b21080d5b9e3d7f6301d381f2e2a8bd0d66725f81c037b19cd55bb04922"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR391_v3.md",
+   "sha256": "58b69be0b1ec4ef5c2991cfed0fdd8aa419f4c126a7c6bb6b76c57c1bc5235e1"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR392_b5b1dd315.md",
+   "sha256": "bf741db49f6744f885b5559bf24b3553320667287897061cf6c0a9c3a4ab1890"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR392_d221e0d1f.md",
+   "sha256": "3a75868f585c5c3dfd289e46efed63a6a00478e76968627b8bfe536b7b067c97"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR392_v2.md",
+   "sha256": "230ffe394bb93f206732db3c48ac1e7bcafdfa0f98581ec267984bf9ce990fde"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR392_v3_SCREEN_PATCH.md",
+   "sha256": "29a0edc3570db9288f35708205d0441e144ad7ef801c015df0ecf5e7c53160b1"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR394_v12.md",
+   "sha256": "3193eacc792288ed9939c90613ab734a0c93dff9e09f41af21b1aebfbb73fb19"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR395_v2.md",
+   "sha256": "1bde671c171b9c4f7029fe78a75fc29059f2e8c2088cd7a197e443b48d8fa58b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR395_v4.md",
+   "sha256": "57c7ec334c9fcf0bb40ea295106a2a879e5d7ae23121ba3472c04c11a1fdef61"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR396_v2.md",
+   "sha256": "cb217fcee45d07e1ae68ddd3101dfc8569ede06d6ddc5eded3755dcdf506948b"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR398.md",
+   "sha256": "4a9121b3fad0eb2e6f00deed0bbe3329a180d4e811148e1b51727a151487fc04"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR398_5bba9a3f9_delta.md",
+   "sha256": "c44fbd06c021e4e68bb5f5414be5d2a229c10d3112911c64b6d47cd0b171dc78"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR399.md",
+   "sha256": "c87da75057d9f3786606d673e3ff898cde19ab8f525afc1b127747e42710b876"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR400_STANDBY_SPLIT.md",
+   "sha256": "57a60a22559bda5eadc34acb7ff1f8237b10bef242a60aa298abb49f63405424"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR401_COST_STATE.md",
+   "sha256": "794ec46e79802027674bfb3331009c4b449f80e5f4240ef349b83e49341ee503"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR402_LOCAL_SEAT.md",
+   "sha256": "30d724b260f7acb9918835c68499ef4871659a15ba65f2dd7d9b54ddb7143ade"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR419_FUSION_GOLD_FOLLOWER_005b488cc.md",
+   "sha256": "a22a95fb9feb31b70fd8a93bc822f3f2feb42aa8b5a62bde37650f1635c73f73"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR421_E8_TL_429_BACKOFF_71ba35a2.md",
+   "sha256": "4e6cf6853bc723d247ed4195fbcbf43d13263da29caebd24cbc69e068ce45230"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR423_E8_TL_WRITE_NO_RESEND_357bf7ee.md",
+   "sha256": "a2a63063222d0522520d694f93e26cc1ed2a2562bcb91d527fd9b047c996a692"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR431_ALLOCATOR_INPUT_ABLATION_cc12a0b2.md",
+   "sha256": "f2ef0449311ec2df2a448e8d2e33294565f3509b39c0b5dfccdac7538d70077a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR448_ftmo_challenge_allocator.md",
+   "sha256": "d86ec600f06e0fbd56861c1fa3b243397525a6478d7a7a0bc74aee92915592a1"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PR449_coverage_steer.md",
+   "sha256": "fef64f37e902a1f593dba93a35a3ab52844b38797d9d5867b9a1d5f0a85f0a84"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PREPUSH_PORTABLE_STATE_1dbbd7a4e.md",
+   "sha256": "5504fbf6931becbeb3f7a934c24dd97ddb1c66b7d215580878a81e0edbb071fc"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PRINCIPAL_STOP_FENCE_475326bee.md",
+   "sha256": "c504b46d56ad2d9bbf5a6907fe8092f4eab43bcdcee7506ed26c5e13c2920e61"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PROCESS_HEALTH_STAMPS_4854d7289.md",
+   "sha256": "46cd66806fbc49aa254f769e2d7dcf67b0f55470bff8f824307c0c4029af32ac"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/PUBLISH_SYNC_SCHTASKS_55cd0c44a.md",
+   "sha256": "0659905bdd475acd440f2b25595f6ed56015fa4c84a14c475d9799cb80d1a414"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/RAILS_CHAIN_v12.md",
+   "sha256": "ad47c6663c7db0a9a8a91ecc24d288e6b14fd8e0917e9d1abb3a294bf499277f"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/RAILS_COMBINED_RESIGN.md",
+   "sha256": "2bbc668139454c51b436fcca62f5c22e06b3f1c40bf29af979a558edd7cfc8c9"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/REBALANCE_INTERVAL_ca316bde3.md",
+   "sha256": "04240e370b3daaff3547643297052abb9871e93d4a6696b1b7784784967e6724"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/REPLICATION_DOOR_v7_47f7f689f.md",
+   "sha256": "1f8e42903f25630720b55740026490465909d656134a4403661d14e23e4044a2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/REPLICATION_SPEC_BOOK_32b60b759.md",
+   "sha256": "939bf1060db88bb8bc4ccecac7ce4637800fb93111a5acce44a60f10088fecef"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/RESTORE_PIN_d89775fc1.md",
+   "sha256": "3835325c8d41fec4ff54a3a26ebcfd09b1d7108b2611bdcd688d332297746577"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/RESUME_2026-10-20_AUDCHF_BUNDLE.md",
+   "sha256": "293c247ac8ebff67066c8f6fd373e2401898ff1649b554a3c9bb01b0c25067e3"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/ROUTE_COLUMN_READERS.md",
+   "sha256": "89d0ed0c66d56afcc854b51b98075799a3139d78f202c4799d006798c89de714"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/SIGN_TRAIN_patch.md",
+   "sha256": "c93a3f5084f5e8da8adf21ce0bb1f7b11d3947c2d7e75255f2dddbe9947af93a"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/STANDBY_HOLDS_0002_v2_5ee78736.md",
+   "sha256": "dc6e77e03434ecfb37e97a156ef081c8266ca361b308dc0f816e39f02a4680da"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/T8_COMBINED_v2.md",
+   "sha256": "4a399936c43c48857000c947619b0b1125f3f8519f122f8b1f3bf156a1f592e2"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/T8_V3_SPEC_READERS_b9fc945d1.md",
+   "sha256": "2c027a9ef13d82f77e6b25aee89414eb852a4f9d821c53e35092cdcc5211d975"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/TRIAL_COUNT_GUARD_3fb53d104.md",
+   "sha256": "36775e52ca3714bc05071b34b4b7eeec758a441e6c0986454bb7d452c627be77"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/UNKNOWN_CONVERTER_6bcd8c69d.md",
+   "sha256": "3c7961fcacc016a070661b95b32cf48b2ed039c2304c5f07e2b66665f5443186"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/WORLD_CRAWLER_HONEST_UA_1e8cca2ac.md",
+   "sha256": "82e1a8e25369f5767174f432589756ac6ff406dbb6c52f828f3312973946d64c"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/2026-10-14/ZERO_SPREAD_COST_BASIS_1aa4b33f.md",
+   "sha256": "63aa864ff4c0a1ff3ff31623812d31e7641aab8933ae1738f0e559e0d5edc224"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/prior_global_data/PR162_PATCHES_v2.md",
+   "sha256": "4bdf9e56d8b28723c324c8ebe7c32eb99a904f7028cdea2b7f2d9a04e2859757"
+  },
+  {
+   "where": "share",
+   "key": "reports/audit/prior_global_data/PR162_v3.md",
+   "sha256": "e2cca242f5d998527ad20e92d73fda0a28cdc56fadc32b3d1983deed65aec64b"
+  }
+ ]
+}

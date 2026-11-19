@@ -178,6 +178,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # this runs the train's own parser and append-only check so a garbled row or a dropped HOLD
     # fails the push that commits it. A shallow clone reads UNMEASURED and passes.
     ("check_seal_clears.py", ()),
+    # AN AUDITOR CLEAR LANDS (owner rule 23, 2026-10-29). Global data's 10-14 clears sat unlanded
+    # for fifteen days with nothing naming them. context/clear_landing_registry.jsonl lists every
+    # CLEAR item; this checks each sha against the live branch (ancestor or same patch-id) and
+    # reads RED, item by item, past 12h unlanded. REPORT-ONLY here: the remedy is a landing push,
+    # which a red gate would refuse too. A malformed registry row still fails the push that
+    # commits it. No live ref or a shallow clone reads UNMEASURED with the reason.
+    ("check_unlanded_clears.py", ("--report-only",)),
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
     # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
     # a verdict, and the admission rule that collapses a fork storm into one lineage. The
