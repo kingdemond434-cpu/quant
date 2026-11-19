@@ -3,6 +3,8 @@
 One pass every few minutes (scheduled task QuantForge-Loop, IgnoreNew, installed by
 install_box_forge.ps1). Each stage is the GitHub-era stage it replaces, run on the box:
 
+  0. INBOX  packets from cloud threads (ops/box_git/inbox.py), pushed as the `claude` account so
+             the repository hook judges them exactly as a thread's push.
   1. GATE    .github/scripts/audit_gate.py --sweep --box, from a clean checkout of LIVE (trusted
              code, never a PR's), answered by the forge (ops/box_git/forge_api.py), pushing as
              the merge-gate account. Same rules: CLEAR at the exact head, HOLD beats green, gating
@@ -37,7 +39,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE.parents[1]) not in sys.path:
     sys.path.insert(0, str(HERE.parents[1]))
 
-from ops.box_git import box_ci, forge_api, impacted  # noqa: E402
+from ops.box_git import box_ci, forge_api, impacted, inbox  # noqa: E402
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 GATING = ("quality", "mt5-money-path", "coverage-floor")
@@ -53,6 +55,8 @@ class Config:
     ca: Path                  # the forge's certificate
     state: Path               # box CI state JSON
     python: str = sys.executable
+    inbox: Path | None = None # packets from cloud threads (ops/box_git/inbox.py)
+    boot: str | None = None   # the Audit-CLEARed head the installer ran from (see gate_code)
 
     def token(self, account: str) -> str:
         return (self.tokens / f"{account}.token").read_text(encoding="utf-8").strip()
@@ -109,9 +113,10 @@ def _forge(cfg: Config, account: str) -> forge_api.Forge:
     return forge_api.Forge(forge_api.http_transport(env), workflow_of={}, bare=str(cfg.bare))
 
 
-def post(cfg: Config, sha: str, state: str, desc: str) -> None:
+def post(cfg: Config, sha: str, state: str, desc: str,
+         contexts: Sequence[str] = GATING) -> None:
     f = _forge(cfg, forge_api.BOX_CI_USER)
-    for ctx in GATING:
+    for ctx in contexts:
         f.t("POST", f"/repos/{forge_api.FORGE_REPO}/statuses/{sha}",
             {"state": state, "context": ctx, "description": desc[:250]})
 
@@ -139,9 +144,64 @@ def run_tests(cfg: Config, root: Path, tests: Sequence[str] | str,
     return rc == 0, f"pytest rc={rc}: {tail[0][:180]}"
 
 
+def risk_job(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
+    """release-gates.yml `risk-invariants`, on the box: the ceilings, suites and their tests
+    from the BASE, the PR's code, the static invariants then the risk suites."""
+    if _run(["git", "checkout", base, "--", "ops/release"], cwd=root)[0] != 0:
+        return False, "risk-invariants: could not take ops/release from the base"
+    suites_file = root / "ops" / "release" / "risk_suites.txt"
+    try:
+        suites = [ln.strip() for ln in suites_file.read_text(encoding="utf-8").splitlines()
+                  if ln.strip() and not ln.startswith("#")]
+    except OSError:
+        return False, "risk-invariants: risk_suites.txt unreadable"
+    if suites and _run(["git", "checkout", base, "--", *suites], cwd=root)[0] != 0:
+        return False, "risk-invariants: could not take the risk suites from the base"
+    rc, out = _run([cfg.python, "-I", "ops/release/risk_invariants.py", "--head", head,
+                    "--base", base], cwd=root, timeout=1800, idle=True)
+    if rc != 0:
+        return False, f"risk-invariants static rc={rc}: {out.strip()[-160:]}"
+    if suites:
+        rc, out = _run([cfg.python, "-m", "pytest", "-q", "-p", "no:randomly", "-p",
+                        "no:cacheprovider", "--timeout=600", *suites], cwd=root, timeout=3600,
+                       idle=True)
+        if rc != 0:
+            return False, f"risk suites rc={rc}: {out.strip()[-160:]}"
+    return True, f"risk-invariants passed ({len(suites)} suite file(s))"
+
+
+def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tuple[bool, str]:
+    """release-gates.yml `replay-shadow`, on the box: the BASE's harness replays the live E8
+    book on the base and on the PR head; any divergence not declared fails."""
+    with worktree(cfg, base) as b, worktree(cfg, head) as h:
+        lst = cfg.work / f"changed_{head[:12]}.txt"
+        lst.write_text("\n".join(sorted(set(changed))) + "\n", encoding="utf-8")
+        report = cfg.work / f"replay_{head[:12]}.json"
+        env = {**os.environ,
+               "QUANT_EXPECTED_DIVERGENCE": str(b / "ops" / "release" / "expected_divergence.json")}
+        rc, out = _run([cfg.python, "-I", str(b / "ops" / "release" / "replay_shadow.py"),
+                        "--base", str(b), "--head", str(h), "--changed", str(lst),
+                        "--report", str(report)], cwd=cfg.work, env=env, timeout=3600, idle=True)
+        lst.unlink(missing_ok=True)
+        report.unlink(missing_ok=True)
+    return rc == 0, f"replay-shadow rc={rc}: {out.strip()[-160:]}"
+
+
 # ------------------------------------------------------------------------------ the stages
+def gate_code(cfg: Config, live: str) -> str:
+    """The commit whose gate runs. LIVE, once LIVE contains the forge-aware gate. Until the box-git
+    change itself has merged, LIVE's gate only knows GitHub (and fails closed there), so the gate
+    runs from the Audit-CLEARed head the installer ran from: the same rules plus the forge
+    transport, never a PR's own code."""
+    if not cfg.boot or cfg.boot == live:
+        return live
+    rc, _ = _run(["git", "-C", str(cfg.bare), "merge-base", "--is-ancestor", cfg.boot, live],
+                 timeout=120)
+    return live if rc == 0 else cfg.boot
+
+
 def gate_tick(cfg: Config, live: str) -> str:
-    with worktree(cfg, live) as root:
+    with worktree(cfg, gate_code(cfg, live)) as root:
         env = {**os.environ, forge_api.FORGE_URL_ENV: cfg.forge_url,
                forge_api.FORGE_CA_ENV: str(cfg.ca), forge_api.FORGE_BARE_ENV: str(cfg.bare),
                forge_api.FORGE_TOKEN_FILE_ENV: str(cfg.tokens / "merge-gate.token")}
@@ -188,10 +248,15 @@ def pr_tick(cfg: Config) -> str:
                 return f"PR #{p.get('number')} waits: {why}"
             post(cfg, head, "pending", f"box CI running on {n} idle cores")
             passed, what = run_tests(cfg, root, sel, n)
-        scope = "full suite" if sel == impacted.ALL else f"{len(sel)} impacted test file(s)"
-        post(cfg, head, "success" if passed else "failure",
-             f"box CI, {scope}: {what}. Full suite runs after merge; release needs it green.")
-        return f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope})"
+            scope = "full suite" if sel == impacted.ALL else f"{len(sel)} impacted test file(s)"
+            post(cfg, head, "success" if passed else "failure",
+                 f"box CI, {scope}: {what}. Full suite runs after merge; release needs it green.")
+            rok, rwhy = risk_job(cfg, root, base, head)
+            post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", ("risk-invariants",))
+            sok, swhy = replay_job(cfg, base, head, changed)
+            post(cfg, head, "success" if sok else "failure", f"box: {swhy}", ("replay-shadow",))
+        return (f"PR #{p.get('number')}: {'pass' if passed else 'FAIL'} ({scope}); "
+                f"risk {'ok' if rok else 'FAIL'}; replay {'ok' if sok else 'FAIL'}")
     return "no PR waiting for checks"
 
 
@@ -299,9 +364,25 @@ def seal_and_push(cfg: Config, tested: str) -> str | None:
     return None
 
 
+def inbox_tick(cfg: Config) -> str:
+    if cfg.inbox is None:
+        return "no inbox configured"
+
+    def run_git(*args: str, push_as: str | None = None) -> tuple[int, str]:
+        if push_as:
+            _push, head, ref = args
+            return _run(["git", "-C", str(cfg.bare), "push", "-q", cfg.remote(), f"{head}:{ref}"],
+                        env=cfg.git_env(push_as), timeout=600)
+        return _run(["git", "-C", str(cfg.bare), *args], timeout=600)
+
+    rows = inbox.drain(cfg.inbox, git=run_git, api=_forge(cfg, "claude").t)
+    return "; ".join(rows) or "inbox empty"
+
+
 def tick(cfg: Config) -> dict[str, Any]:
     out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
-    for name, fn in (("gate", lambda: gate_tick(cfg, live_head(cfg))),
+    for name, fn in (("inbox", lambda: inbox_tick(cfg)),
+                     ("gate", lambda: gate_tick(cfg, live_head(cfg))),
                      ("pr", lambda: pr_tick(cfg)),
                      ("full", lambda: full_tick(cfg, live_head(cfg))),
                      ("promote", lambda: promote_tick(cfg))):
@@ -324,7 +405,9 @@ def main(argv: list[str] | None = None) -> int:
     raw = json.loads(Path(a.config).read_text(encoding="utf-8"))
     cfg = Config(forge_url=raw["forge_url"], bare=Path(raw["bare"]), work=Path(raw["work"]),
                  tokens=Path(raw["tokens"]), ca=Path(raw["ca"]), state=Path(raw["state"]),
-                 python=raw.get("python") or sys.executable)
+                 python=raw.get("python") or sys.executable,
+                 inbox=Path(raw["inbox"]) if raw.get("inbox") else None,
+                 boot=raw.get("boot") or None)
     doc = tick(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
     box_ci.save_state(report, doc)

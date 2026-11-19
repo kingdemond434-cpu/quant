@@ -191,6 +191,8 @@ PROTECTED = (
     # the box runner of this gate: it sets the authority's key, folder and pin paths, so an AUTO
     # merge of it could point the gate at another key (ops/release/authority/ROOT_POLICY.json)
     "ops/box/workflow_gate.ps1",
+    # the box forge: its branch protection, CI trust anchor and release loop (D-20261119-BOXGIT)
+    "ops/box_git/*",
 )  # fmt: skip
 #: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
 SECRETS = ("data/secrets/*", "*/data/secrets/*")
@@ -705,6 +707,28 @@ def _forge() -> Any:
                            bare=os.environ.get(mod.FORGE_BARE_ENV),
                            approvals_issue=int(issue) if issue and issue.isdigit() else None)
     return _FORGE
+
+
+RULES_LOG_ENV = "QUANT_FORGE_RULES_LOG"
+
+
+def rules_log(pr: int, head: str, files: list[Mapping[str, Any]],
+              clear: Mapping[str, Any]) -> None:
+    """One row per merged change to the gate's own rules or the AI's permissions (a ROOT path),
+    so that history stays visible with no notification and no tap (Simplify rules, 2026-11-19).
+    Never fatal: the merge already happened."""
+    path = os.environ.get(RULES_LOG_ENV)
+    if not path or not touches_root(files):
+        return
+    row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "pr": pr, "head": head,
+           "by": clear.get("by") or "auditor", "verdict_at": clear.get("at"),
+           "files": sorted({str(f.get("filename")) for f in files if f.get("filename")})[:50],
+           "undo": f"git revert -m 1 <merge of #{pr}> (head {head[:12]}), merged by the gate"}
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+    except OSError:
+        pass
 
 
 def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
@@ -1632,6 +1656,12 @@ def run(
                 twhy
             )
         clear, why = cleared(found, head, same_change)
+        if clear is not None and os.environ.get("QUANT_FORGE_URL"):
+            # THE BOX FORGE (principal 2026-11-19 19:56-19:59Z: approvals, paste lines, the silent
+            # veto and ROOT batching retired): the Auditor's CLEAR of the exact head is the whole
+            # approval, ROOT included. Marked standing, so risk-invariants (the ceilings and the
+            # prop firms' own limits) must still pass, exactly as on the standing path.
+            return {**clear, "standing": "yes"}, f"{why}; Auditor CLEAR alone (box forge)"
         if clear is not None:
             ap = _gh(
                 f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
@@ -1843,6 +1873,7 @@ def run(
         },
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
+    rules_log(pr, head, files, clear)
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

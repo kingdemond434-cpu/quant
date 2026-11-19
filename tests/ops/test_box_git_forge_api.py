@@ -108,3 +108,14 @@ def test_the_gate_uses_the_forge_only_when_configured(monkeypatch) -> None:
     monkeypatch.setenv("QUANT_FORGE_URL", "https://127.0.0.1:3443")
     monkeypatch.setattr(g, "_FORGE", Stub())
     assert g._gh("repos/x/y/pulls/1") == {"ok": True} and seen
+
+
+def test_on_the_forge_a_clear_alone_merges_and_rule_changes_are_logged(monkeypatch,
+                                                                       tmp_path) -> None:
+    g = _gate()
+    log = tmp_path / "rules.jsonl"
+    monkeypatch.setenv(g.RULES_LOG_ENV, str(log))
+    g.rules_log(9, SHA, [{"filename": ".github/scripts/audit_gate.py"}], {"at": "t"})
+    g.rules_log(10, SHA, [{"filename": "docs/x.md"}], {"at": "t"})
+    rows = log.read_text().splitlines()
+    assert len(rows) == 1 and '"pr": 9' in rows[0] and "undo" in rows[0]

@@ -19,16 +19,20 @@
          SQLite, registration off, sign-in required to read, Actions on, offline mode, no mail.
       5. Registers and starts the `QuantForge` service as `quantforge`, auto-start.
       6. Creates the forge's users: `quant-admin` (an administrator, random password written for the
-         owner only) and `claude` (no admin), and an access token for `claude` limited to
-         repositories. Creates the repository quant/quant and seeds it from the box gate clone
-         (C:\ProgramData\QuantBox\gate-repo), which holds LIVE and production as last fetched.
+         owner only), `claude` (no admin; its token stays on the box and is used only by the inbox
+         importer), merge-gate, release-authority and box-ci, each with a box-only token. Creates
+         the repository quant/quant and seeds it from the box gate clone
+         (C:\ProgramData\QuantBox\gate-repo), which holds LIVE and production as last fetched;
+         -SeedBundle first fast-forwards that clone's LIVE from a bundle when LIVE moved since.
       7. Protects LIVE, production and master on the forge (no force push, no deletion, pushes
          only by the merge-gate user) and installs ops\box_git\protect.py as the repository's
          pre-receive hook too, so the rules hold even if the forge's own settings are changed.
       8. Opens TCP -Port inbound in Windows Firewall, for this one program only.
-      9. Prints what the owner must do once in Project settings: the address, the certificate
-         fingerprint (public) and the file holding the `claude` token (secret: the owner pastes it
-         into the cloud environment's secrets; it is never printed to a log).
+      9. The release loop (QuantForge-Loop, every 5 minutes) with its inbox
+         (C:\ProgramData\QuantBox\inbox): cloud threads' work arrives there as git bundles carried
+         by the box's Remote Control session (ops/box_git/inbox.py). Nothing in the cloud connects
+         to the box, so no network allowlist and no approval card exist anywhere.
+     10-12. Re-points the gate clone and the live tree's origin at the forge, re-pins ROOT, adopts.
 
     WHAT IT NEVER DOES. It never writes C:\opt\quant (MT5-AdoptRelease stays its only writer), never
     touches MT5, secrets under data\secrets, or any scheduled task of the desk, never weakens a gate
@@ -38,8 +42,14 @@
 #>
 param(
     [string] $GiteaVersion = "latest",
-    [int] $Port = 3443,
+    [int] $Port = 0,
     [string] $Address = "62.171.172.249",
+    # A DNS name for the box with no account anywhere (sslip.io answers <ip-with-dashes>.sslip.io
+    # with that IP): cloud environments allow hostnames only, never bare IPs.
+    [string] $HostName = "62-171-172-249.sslip.io",
+    # Optional git bundle that fast-forwards the gate clone's LIVE before seeding (LIVE moved after
+    # the box last fetched). Never a rewrite: a non-fast-forward stops the installer.
+    [string] $SeedBundle = "",
     [string] $Root = "C:\ProgramData\QuantBox",
     [string] $QuantRoot = "C:\opt\quant"
 )
@@ -52,6 +62,7 @@ $Ini = Join-Path $Forge "custom\conf\app.ini"
 $Data = Join-Path $Forge "data"
 $Repos = Join-Path $Forge "repos"
 $OwnerOnly = Join-Path $Forge "owner-only"
+$Tokens = Join-Path $Forge "box-tokens"
 $Svc = "QuantForge"
 $SvcUser = "quantforge"
 
@@ -92,8 +103,15 @@ $gate = Join-Path $Root "gate-repo"
 if (-not (Test-Path -LiteralPath (Join-Path $gate ".git"))) { Stop-Here 2 "the gate clone $gate is missing; it seeds the forge." }
 Say "elevated; seeding from $gate"
 
+# THE PORT: 443 when nothing listens there (cloud egress proxies reliably carry 443), else 3443.
+if ($Port -eq 0) {
+    $busy443 = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
+    $Port = if ($busy443) { 3443 } else { 443 }
+}
+Say "forge port: $Port, host name: $HostName"
+
 # 2. GITEA, VERIFIED.
-$null = New-Item -ItemType Directory -Force -Path $Forge, $Data, $Repos, $OwnerOnly, (Split-Path $Ini)
+$null = New-Item -ItemType Directory -Force -Path $Forge, $Data, $Repos, $OwnerOnly, $Tokens, (Split-Path $Ini)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 if ($GiteaVersion -eq "latest") {
     try { $GiteaVersion = [string](Invoke-RestMethod -UseBasicParsing -Uri "https://dl.gitea.com/gitea/version.json").latest.version }
@@ -129,6 +147,7 @@ if (-not (Get-LocalUser -Name $SvcUser -ErrorAction SilentlyContinue)) {
 }
 Lock-ToOwners $Forge @($SvcUser)
 Lock-ToOwners $OwnerOnly
+Lock-ToOwners $Tokens
 # Log on as a service, granted through secedit to this one account.
 $inf = Join-Path $env:TEMP "forge_rights.inf"; $db = Join-Path $env:TEMP "forge_rights.sdb"
 & secedit /export /cfg $inf /areas USER_RIGHTS | Out-Null
@@ -147,7 +166,7 @@ $cert = Join-Path $Forge "custom\https\cert.pem"; $key = Join-Path $Forge "custo
 $null = New-Item -ItemType Directory -Force -Path (Split-Path $cert)
 if (-not (Test-Path -LiteralPath $cert)) {
     Push-Location (Split-Path $cert)
-    try { & $Bin cert --host $Address --rsa-bits 3072 --duration 87600h | Out-Null } finally { Pop-Location }
+    try { & $Bin cert --host "$HostName,$Address,127.0.0.1" --rsa-bits 3072 --duration 87600h | Out-Null } finally { Pop-Location }
     if (-not (Test-Path -LiteralPath $cert)) { Stop-Here 4 "could not make the HTTPS certificate." }
 }
 $secretKey = New-Secret 32; $internal = New-Secret 48
@@ -160,10 +179,10 @@ WORK_PATH = $Forge
 
 [server]
 PROTOCOL = https
-DOMAIN = $Address
+DOMAIN = $HostName
 HTTP_ADDR = 0.0.0.0
 HTTP_PORT = $Port
-ROOT_URL = https://${Address}:$Port/
+ROOT_URL = https://${HostName}:$Port/
 CERT_FILE = $cert
 KEY_FILE = $key
 DISABLE_SSH = true
@@ -230,6 +249,8 @@ $adminPass = $null
 $botPass = New-Secret 24
 $r = Forge @("admin", "user", "create", "--username", "claude", "--password", $botPass,
              "--email", "claude@box.invalid", "--must-change-password=false")
+if ($r.rc -ne 0) { $null = Forge @("admin", "user", "change-password", "--username", "claude",
+                                   "--password", $botPass, "--must-change-password=false") }
 $botPass = $null
 # The two box roles the repository hook trusts by the forge's own pusher name (never by anything
 # a client sends): merge-gate moves LIVE/production/master, release-authority creates release tags.
@@ -237,13 +258,16 @@ foreach ($u in @("merge-gate", "release-authority", "box-ci")) {
     $null = Forge @("admin", "user", "create", "--username", $u, "--password", (New-Secret 24),
                     "--email", "$u@box.invalid", "--must-change-password=false")
 }
-$tokFile = Join-Path $OwnerOnly "claude.token.txt"
-if (-not (Test-Path -LiteralPath $tokFile)) {
-    $r = Forge @("admin", "user", "generate-access-token", "--username", "claude",
-                 "--token-name", "cloud-threads-$stamp", "--scopes", "write:repository,read:user",
-                 "--raw")
-    if ($r.rc -ne 0 -or -not $r.out) { Stop-Here 6 "could not make the claude token: $($r.out)" }
-    Set-Content -LiteralPath $tokFile -Value $r.out.Trim()
+# Box-only tokens (never leave the box): the gate, the release authority, box CI and the inbox
+# importer's `claude` (a thread's authority: claude/* work branches and comments, nothing more).
+foreach ($u in @("merge-gate", "release-authority", "box-ci", "claude")) {
+    $tf = Join-Path $Tokens "$u.token"
+    if (-not (Test-Path -LiteralPath $tf)) {
+        $r = Forge @("admin", "user", "generate-access-token", "--username", $u,
+                     "--token-name", "box-$stamp", "--scopes", "write:repository,write:issue,read:user", "--raw")
+        if ($r.rc -ne 0 -or -not $r.out) { Stop-Here 6 "could not make the $u token: $($r.out)" }
+        Set-Content -LiteralPath $tf -Value $r.out.Trim() -NoNewline
+    }
 }
 $r = Forge @("admin", "user", "generate-access-token", "--username", "quant-admin",
              "--token-name", "installer-$stamp", "--scopes", "write:admin,write:repository,write:organization",
@@ -278,6 +302,13 @@ $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
 $env:GIT_CONFIG_KEY_1 = 'http.sslCAInfo'; $env:GIT_CONFIG_VALUE_1 = ($cert -replace '\\', '/')
 $env:GIT_CONFIG_KEY_2 = 'http.extraHeader'; $env:GIT_CONFIG_VALUE_2 = "Authorization: token $adminTok"
 $seedUrl = "https://127.0.0.1:$Port/quant/quant.git"
+if ($SeedBundle) {
+    & git -C $gate bundle verify $SeedBundle 2>&1 | ForEach-Object { Say "  seed bundle: $_" }
+    if ($LASTEXITCODE -ne 0) { Stop-Here 6 "the seed bundle does not verify against $gate." }
+    & git -C $gate fetch -q $SeedBundle "refs/heads/${Live}:refs/remotes/origin/$Live" 2>&1 |
+        ForEach-Object { Say "  seed bundle: $_" }
+    if ($LASTEXITCODE -ne 0) { Stop-Here 6 "the seed bundle's LIVE is not a fast-forward of the gate clone's." }
+}
 $refs = @("refs/remotes/origin/${Live}:refs/heads/$Live")
 foreach ($b in @("production", "master")) {
     & git -C $gate rev-parse -q --verify "refs/remotes/origin/$b" 2>$null | Out-Null
@@ -293,10 +324,12 @@ if ($seedRc -ne 0) { Stop-Here 6 "seeding the forge from $gate failed." }
 Say ("seeded: LIVE at {0}" -f ((& git -C $bare rev-parse "refs/heads/$Live") | Out-String).Trim().Substring(0, 12))
 
 # 7. PROTECTION: the forge's own, AND the repo's hook, so each holds if the other is changed.
+$owners = @{ $Live = "merge-gate"; "production" = "release-authority"; "master" = "release-authority" }
 foreach ($b in @($Live, "production", "master")) {
+    $o = $owners[$b]
     $rule = @{ rule_name = $b; enable_push = $true; enable_push_whitelist = $true
-               push_whitelist_usernames = @("merge-gate"); enable_merge_whitelist = $true
-               merge_whitelist_usernames = @("merge-gate"); block_on_rejected_reviews = $true
+               push_whitelist_usernames = @($o); enable_merge_whitelist = $true
+               merge_whitelist_usernames = @($o); block_on_rejected_reviews = $true
                block_on_outdated_branch = $true; enable_force_push = $false }
     try { Api POST "/repos/quant/quant/branch_protections" $rule | Out-Null; Say "protected $b" }
     catch { Say "protection for $b exists or failed: $($_.Exception.Message)" }
@@ -321,13 +354,78 @@ if (-not (Get-NetFirewallRule -DisplayName "Quant box forge" -ErrorAction Silent
 }
 Say "firewall: inbound TCP $Port for gitea.exe only"
 
-# 9. WHAT THE OWNER DOES ONCE.
+# 9. THE RELEASE LOOP: one scheduled task, its code read from LIVE on every pass.
+$loopSrc = Join-Path $Forge "loop-src"
+$caFwd = ($cert -replace '\\', '/')
+$forgeUrl = "https://127.0.0.1:$Port"
+if (-not (Test-Path -LiteralPath (Join-Path $loopSrc ".git"))) {
+    & git clone -q --reference $bare --no-checkout $bare $loopSrc
+    if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not create the loop's checkout." }
+}
+# THE BOOT HEAD: the Audit-CLEARed commit this installer runs from. Until LIVE contains it, LIVE's
+# own gate only speaks GitHub, so the loop and its gate run from this head (box_loop.gate_code).
+$srcRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$boot = ((& git -c safe.directory=* -C $srcRepo rev-parse HEAD) | Out-String).Trim()
+if ($boot -notmatch '^[0-9a-f]{40}$') { Stop-Here 9 "cannot read the installer's own commit in $srcRepo." }
+& git -c safe.directory=* -C $loopSrc fetch -q $srcRepo $boot
+if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not bring the boot head $boot into the loop's checkout." }
+$inboxDir = Join-Path $Root "inbox"
+$null = New-Item -ItemType Directory -Force -Path $inboxDir
+Lock-ToOwners $inboxDir
+Say "boot head $($boot.Substring(0,12)); inbox $inboxDir"
+$cfg = @{ forge_url = $forgeUrl; bare = $bare; work = (Join-Path $Forge "work")
+          tokens = $Tokens; ca = $cert; state = (Join-Path $Forge "ci\state.json"); python = $py
+          inbox = $inboxDir; boot = $boot }
+$cfgPath = Join-Path $Forge "loop.json"
+$cfg | ConvertTo-Json | Set-Content -LiteralPath $cfgPath -Encoding ascii
+$runner = Join-Path $Forge "run_loop.cmd"
+@"
+@echo off
+rem QuantForge-Loop: refresh the loop's code from LIVE (trusted, gate-merged), then one pass.
+rem Until LIVE contains the boot head (the Audit-CLEARed installer commit), the boot head runs.
+git -c safe.directory=* -C "$loopSrc" fetch -q "$bare" "refs/heads/${Live}"
+git -c safe.directory=* -C "$loopSrc" merge-base --is-ancestor $boot FETCH_HEAD
+if errorlevel 1 (git -c safe.directory=* -C "$loopSrc" checkout -q --detach --force $boot) else (git -c safe.directory=* -C "$loopSrc" checkout -q --detach --force FETCH_HEAD)
+set QUANT_FORGE_RULES_LOG=$Forge\rules_changes.jsonl
+"$py" "$loopSrc\ops\box_git\box_loop.py" --config "$cfgPath" >> "$Forge\log\loop.log" 2>&1
+"@ | Set-Content -LiteralPath $runner -Encoding ascii
+$act = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$runner`""
+$trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
+$set = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 8) -StartWhenAvailable
+Register-ScheduledTask -TaskName "QuantForge-Loop" -Action $act -Trigger $trg -Settings $set `
+    -User "SYSTEM" -RunLevel Highest -Force | Out-Null
+Say "scheduled QuantForge-Loop every 5 minutes (gate, box CI, full suite, seal, promote)"
+
+# 10. ADOPTION READS THE FORGE: origin of the gate clone and of the live tree point at it, with
+# the forge certificate and a box-only token in each repository's own config (never global).
+$originUrl = "https://${HostName}:$Port/quant/quant.git"
+$localUrl = "$forgeUrl/quant/quant.git"
+$gateTok = (Get-Content -LiteralPath (Join-Path $Tokens "merge-gate.token") -Raw).Trim()
+foreach ($repo in @($gate, $QuantRoot)) {
+    & git -c safe.directory=* -C $repo remote set-url origin $localUrl
+    & git -c safe.directory=* -C $repo config "http.$forgeUrl/.sslCAInfo" $caFwd
+    & git -c safe.directory=* -C $repo config "http.$forgeUrl/.extraHeader" "Authorization: token $gateTok"
+    & git -c safe.directory=* -C $repo fetch -q origin 2>&1 | ForEach-Object { Say "  fetch ${repo}: $_" }
+    if ($LASTEXITCODE -ne 0) { Stop-Here 10 "$repo cannot fetch from the forge." }
+    Say "$repo now fetches from the forge"
+}
+$gateTok = $null
+
+# 11. THE ROOT PIN, from a clean LIVE checkout (the publisher and authority refuse until it matches).
+& git -c safe.directory=* -C $loopSrc fetch -q $bare "refs/heads/$Live"
+& git -c safe.directory=* -C $loopSrc checkout -q --detach --force FETCH_HEAD
+Push-Location $loopSrc
+try { & $py ops\release\authority\pin_root.py --write C:\opt\audit_registry\ROOT_PIN.json 2>&1 | ForEach-Object { Say "  pin: $_" } }
+finally { Pop-Location }
+if ($LASTEXITCODE -ne 0) { Say "ROOT re-pin did not complete (exit $LASTEXITCODE); the loop still runs" }
+
+# 12. ADOPT NOW rather than at the next hour.
+& schtasks /Run /TN "MT5-AdoptRelease" | Out-Null
+Say "asked MT5-AdoptRelease to run now"
+
 $fp = (Get-FileHash -Algorithm SHA256 -InputStream ([IO.MemoryStream]::new(
     (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $cert).RawData))).Hash
-Say "DONE. The forge is at https://${Address}:$Port/quant/quant (LIVE seeded, protected)."
-Say "certificate SHA-256 (public, pin this): $fp"
-Say "ONE THING LEFT FOR THE OWNER: open $tokFile, copy the token, and paste it into the project's"
-Say "cloud environment as the secret QUANT_FORGE_TOKEN (with $Address allowed in its network)."
-Say "Then delete $tokFile. Nothing else is needed from you for this step."
+Say "DONE. The forge is at $originUrl (LIVE seeded, protected, looped)."
+Say "certificate SHA-256 (public): $fp"
 Say "log: $log"
 exit 0
