@@ -109,11 +109,15 @@ def test_every_memory_figure_carries_its_host_and_total_physical(
     # box. A figure with no host and no total is ambiguous, so both are always present.
     snap = ph.memory_snapshot()
     assert snap["source"] == "psutil"
-    assert isinstance(snap["host"], str) and snap["host"] and snap["host"] != "UNMEASURED"
     assert "total_phys_mb" in snap and "free_phys_mb" in snap and "commit_charge_mb" in snap
     assert snap["total_phys_mb"] is None or snap["total_phys_mb"] > 0
+    # The host is the host_identity VERDICT, never the hostname: the file is public (#1075).
+    from libs.ops import host_identity
+    assert snap["host"] in (host_identity.TRADING, host_identity.OFF_BOX, host_identity.UNMEASURED)
+    assert snap["host"] == host_identity.identify().verdict
     import socket
-    assert snap["host"] == socket.gethostname()
+    name = socket.gethostname()
+    assert not name or name not in json.dumps(snap)
 
 
 def test_memory_is_read_through_psutil_and_never_cim(monkeypatch: pytest.MonkeyPatch) -> None:

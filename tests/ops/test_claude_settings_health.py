@@ -112,7 +112,8 @@ def test_process_health_carries_the_check_and_is_not_applicable_off_windows() ->
     import process_health
 
     code = (ROOT / "ops" / "process_health.py").read_text(encoding="utf-8")
-    assert '"claude_settings": settings' in code and 'settings.get("status") == "BROKEN"' in code
+    assert '"claude_settings": _path_free(settings)' in code
+    assert 'settings.get("status") == "BROKEN"' in code
     if os.name != "nt":
         assert process_health.claude_settings()["status"] == "NOT_APPLICABLE"
 

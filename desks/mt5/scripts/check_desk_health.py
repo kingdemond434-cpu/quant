@@ -89,6 +89,9 @@ ARTIFACTS: tuple[tuple[str, str, float], ...] = (
     # verdict digest that rides the same publication -- both from the hourly publish_state leg.
     ("reports/BOX_STATE_FLOW.json", "publish_state's delivery meter", 2.0),
     ("reports/GATE_VERDICT_DIGEST.json", "publish_state's gate verdict digest", 2.0),
+    # THE FILL JOIN (CRO noon pass 2026-11-14: stale since 11-11 13:57Z, three days unseen).
+    # The hourly `fill_markout` leg rewrites it; a day plus two hours of slack is a dead join.
+    ("reports/markout.json", "the fill markout leg (intents joined to deals)", 26.0),
 )
 
 
@@ -438,6 +441,43 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+#: The sleeve book and the gateway's pause switch (CRO noon pass 2026-11-14: sleeves.json held 0
+#: LIVE and 26 STANDBY rows, every one demoted on or before 10-28, and data/GATEWAY_PAUSED had
+#: stood since 10-30 -- the desk could not trade and no finding said so).
+SLEEVES = DESK / "data" / "sleeves.json"
+PAUSE = DESK / "data" / "GATEWAY_PAUSED"
+
+
+def check_live_book(sleeves: Path | None = None, pause: Path | None = None) -> None:
+    """CAN THE DESK TRADE AT ALL? A pause switch present, or a sleeve book with no LIVE row, is a
+    PROBLEM: the daily-trading rule says every market day trades. An unreadable book is UNKNOWN."""
+    _section("CAN THE DESK TRADE  (data/GATEWAY_PAUSED, data/sleeves.json)")
+    p, z = sleeves or SLEEVES, pause or PAUSE
+    if z.exists():
+        _bad("data/GATEWAY_PAUSED is present -- the gateway trades nothing on any pass until "
+             "it is lifted")
+    else:
+        _ok("data/GATEWAY_PAUSED is absent -- the gateway is not paused")
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+        rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+        if not isinstance(rows, list):
+            raise ValueError("no sleeve list")
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/sleeves.json could not be read ({_exc_reason(exc)}) -- the LIVE book "
+                 f"is UNMEASURED, not empty")
+        print()
+        return
+    status = [str(r.get("status") or "") for r in rows if isinstance(r, dict)]
+    live, standby = status.count("LIVE"), status.count("STANDBY")
+    if live:
+        _ok(f"data/sleeves.json holds {live} LIVE sleeve(s) ({standby} STANDBY)")
+    else:
+        _bad(f"data/sleeves.json holds 0 LIVE sleeves ({standby} STANDBY) -- no promoted sleeve "
+             f"can reach the gateway; only the gold book's windows can trade")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -503,6 +543,7 @@ def main(argv: list[str] | None = None) -> int:
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
+    check_live_book()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
