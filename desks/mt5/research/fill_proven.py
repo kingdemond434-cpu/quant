@@ -21,7 +21,8 @@ An absent or empty file admits nothing extra, so this organ fails closed.
 
 THE METHOD (the same one as the 11-19 box read).
   * Trades: the clocks' own forward-phase rows in `reports/shadow/ledger_*.json`, walked through
-    `forward_ledger.iter_ledgers`, so a frozen shared legacy file is never read as one clock's series.
+    `forward_ledger.iter_ledgers`, so a frozen shared legacy file is never read as one
+    clock's series.
   * Spread: the median (ask - bid) / mid per symbol and per hour from the box's own tick tape
     (`data/tape/ticks/<SYM>/<day>.parquet`) over the last TAPE_DAYS day files. Tape `ts` comes
     from `time_msc`, which is the VENUE clock, and the ledgers' `entry_time` is the bar stamp,
@@ -113,7 +114,8 @@ def stop_distance(row: dict[str, Any]) -> float | None:
 
 def tape_files(symbol: str, root: Path = TICKS) -> list[tuple[str, Path]]:
     """(ISO day, path) oldest first. Both naming conventions; when a day exists in both, the
-    larger file wins (`feed_clock_lab.tape_days` / `moat_series.tape_index`'s rule)."""
+    larger file wins. Unlike `feed_clock_lab.tape_days`, which unions both writers' files, this
+    picks one file per day; for a median spread per hour one full day file is enough."""
     d = root / symbol
     days: dict[str, Path] = {}
     if not d.is_dir():
@@ -220,7 +222,8 @@ def one_sided_p(values: list[float]) -> tuple[float | None, float | None]:
     from scipy import stats
     mean, sd = statistics.fmean(values), statistics.stdev(values)
     if sd <= 0:
-        return (0.0 if mean > 0 else 1.0), mean
+        # Identical outcomes carry no variance to test against: UNTESTABLE, never a free pass.
+        return None, None
     se = sd / math.sqrt(n)
     p = float(stats.t.sf(mean / se, n - 1))
     lcb = mean - float(stats.t.ppf(0.95, n - 1)) * se
@@ -244,9 +247,10 @@ def sleeve_row(label: str, trades: list[dict[str, Any]]) -> dict[str, Any]:
     n_out, a_out = _cut(out_t)
     n_roll, a_roll = _cut(roll_t)
     p_out, lcb_out = one_sided_p([t["adj"] for t in out_t if t["adj"] is not None])
-    return {"p_out": None if p_out is None else round(p_out, 5),
-            "lcb95_out": None if lcb_out is None else round(lcb_out, 4),"sleeve": label, "n_all": n_all, "adjR_all": a_all, "n_out": n_out,
-            "adjR_out": a_out, "n_rollover": n_roll, "adjR_rollover": a_roll,
+    return {"sleeve": label, "n_all": n_all, "adjR_all": a_all, "n_out": n_out,
+            "adjR_out": a_out, "p_out": None if p_out is None else round(p_out, 5),
+            "lcb95_out": None if lcb_out is None else round(lcb_out, 4),
+            "n_rollover": n_roll, "adjR_rollover": a_roll,
             "n_unmeasured": sum(1 for t in trades if t["adj"] is None)}
 
 

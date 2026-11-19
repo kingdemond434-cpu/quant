@@ -39,7 +39,7 @@ def test_positive_outside_rollover_is_admitted_and_rollover_is_cut(tmp_path: Pat
     ticks, shadow = tmp_path / "ticks", tmp_path / "shadow"
     _tape(ticks, "AUDCAD", "2026-11-18", {0: 0.005, 9: 0.0001})
     # 12 good trades at 09 and 5 rollover trades that look good on bid only.
-    _ledger(shadow, "AUDCAD_x_asia", [(9, 0.5)] * 12 + [(0, 0.3)] * 5)
+    _ledger(shadow, "AUDCAD_x_asia", [(9, 0.6), (9, 0.4)] * 6 + [(0, 0.3)] * 5)
     doc = fp.build(shadow, ticks, NOW)
     row = doc["table"][0]
     assert row["n_out"] == 12 and row["n_rollover"] == 5
@@ -82,7 +82,8 @@ def test_frozen_shared_ledger_is_never_read(tmp_path: Path) -> None:
     _tape(ticks, "GBPAUD", "2026-11-18", {9: 0.0001})
     _ledger(shadow, "GBPAUD_shared_asia", [(9, 1.0)] * 20)
     (shadow / "shared_ledgers.json").write_text(
-        json.dumps({"files": {"ledger_GBPAUD_shared_asia.json": {"members": ["a", "b"]}}}), encoding="utf-8")
+        json.dumps({"files": {"ledger_GBPAUD_shared_asia.json": {"members": ["a", "b"]}}}),
+        encoding="utf-8")
     assert fp.build(shadow, ticks, NOW)["sleeves"] == []
 
 
@@ -94,7 +95,8 @@ def test_stop_distance_falls_back_to_the_trade_outcome() -> None:
 def test_write_and_main_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     out = tmp_path / "FILL_PROVEN.json"
     real_build, real_write = fp.build, fp.write
-    monkeypatch.setattr(fp, "build", lambda: real_build(tmp_path / "shadow", tmp_path / "ticks", NOW))
+    monkeypatch.setattr(fp, "build",
+                        lambda: real_build(tmp_path / "shadow", tmp_path / "ticks", NOW))
     monkeypatch.setattr(fp, "write", lambda doc: real_write(doc, out))
     assert fp.main(["--once"]) == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
@@ -124,3 +126,11 @@ def test_moat_compact_file_without_ts_is_read_from_time_msc(tmp_path: Path) -> N
                   "ask": [1.001, 1.001]}).to_parquet(d / "20261118.parquet", index=False)
     spreads, used = fp.spread_by_hour("AUDCAD", ticks)
     assert used == 1 and spreads[9] == pytest.approx(0.002, rel=1e-3)
+
+
+def test_zero_variance_sleeve_is_untestable_never_a_free_pass(tmp_path: Path) -> None:
+    ticks, shadow = tmp_path / "ticks", tmp_path / "shadow"
+    _tape(ticks, "EURUSD", "2026-11-18", {9: 0.0001})
+    _ledger(shadow, "EURUSD_flat_asia", [(9, 0.5)] * 20)
+    doc = fp.build(shadow, ticks, NOW)
+    assert doc["sleeves"] == [] and doc["table"][0]["p_out"] is None
