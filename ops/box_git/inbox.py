@@ -13,9 +13,12 @@ imports each packet at the start of every pass, exactly as if the thread had pus
   * the bundle must verify against the forge repository and must carry the manifest's branch at
     the manifest's exact head sha; anything else is refused, never guessed.
   * a pull request into LIVE is opened for the branch if none is open, and the manifest's
-    comments (an Auditor's `AUDIT CLEAR <sha>` among them) are posted as `claude`, once each:
-    the same author, association and trust they had on GitHub, where every Claude session
-    posted through the same app. The merge rules stay in the gate.
+    comments are posted as `claude`, once each. An author packet may NOT carry a verdict
+    (`AUDIT CLEAR/HOLD`) or an `AUTHORIZE TRUST` line: it is refused (Audit MF-1). Verdicts come
+    only as VERDICT PACKETS (`verdicts/<id>.json`: {"branch", "line"}) written by the Audit seat,
+    posted by the separate `auditor` forge account, the only account whose CLEAR the gate counts.
+    Honest residual: threads share one file system, so the split is by convention and record,
+    not cryptography -- the same as GitHub, where every session posted through one account.
   * every packet is KEPT (done/ or refused/ with the reason): packets are evidence.
 
 Manifest (`<id>.json`, next to `<id>.bundle`):
@@ -39,6 +42,9 @@ BRANCH = re.compile(r"claude/[A-Za-z0-9._/-]{1,200}")
 MAX_COMMENTS = 20
 MAX_COMMENT = 20000
 MAX_BUNDLE_BYTES = 200 * 1024 * 1024
+#: Lines no author packet may carry: verdicts and owner authorizations come from their own seats.
+RESERVED = re.compile(r"(?m)^\s*(AUDIT (CLEAR|HOLD)|UNCOUNTED CLEAR|AUTHORIZE TRUST)\b")
+VERDICT_LINE = re.compile(r"AUDIT (CLEAR|HOLD) [0-9a-f]{40}(?: (merge|squash))?")
 
 
 @dataclass(frozen=True)
@@ -69,6 +75,9 @@ def parse_manifest(doc: Any) -> tuple[Manifest | None, str]:
     if not isinstance(comments, list) or len(comments) > MAX_COMMENTS or not all(
             isinstance(c, str) and c.strip() and len(c) <= MAX_COMMENT for c in comments):
         return None, f"comments must be up to {MAX_COMMENTS} non-empty texts"
+    if any(RESERVED.search(c) for c in (title, body, *comments)):
+        return None, ("an author packet may not carry a verdict or an AUTHORIZE TRUST line: "
+                      "verdicts come only from the Audit seat's verdict packets")
     return Manifest(branch, head, title[:250], body[:60000], tuple(comments)), "ok"
 
 
@@ -161,4 +170,66 @@ def drain(inbox: Path, *, git: Git, api: Api) -> list[str]:
             ok, why = False, f"ERROR {type(exc).__name__}: {str(exc)[:300]}"
         _file_away(bundle, manifest, inbox / ("done" if ok else "refused"), why)
         out.append(f"{'IMPORTED' if ok else 'REFUSED'} {bundle.name}: {why}")
+    return out
+
+
+def parse_verdict(doc: Any) -> tuple[tuple[str, str] | None, str]:
+    """A verdict packet -> (branch, line), or None and why. Pure."""
+    if not isinstance(doc, Mapping):
+        return None, "verdict packet is not a JSON object"
+    branch, line = doc.get("branch"), doc.get("line")
+    if not isinstance(branch, str) or not BRANCH.fullmatch(branch) or branch == LIVE:
+        return None, f"branch {branch!r} is not a claude/* work branch"
+    if not isinstance(line, str) or not VERDICT_LINE.fullmatch(line.strip()):
+        return None, "line must be exactly `AUDIT CLEAR|HOLD <40-hex> [merge|squash]`"
+    return (branch, line.strip()), "ok"
+
+
+def import_verdict(path: Path, *, api: Api) -> tuple[bool, str]:
+    """Post one verdict line on the branch's open PR, as the `auditor` account (`api`)."""
+    try:
+        v, why = parse_verdict(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as exc:
+        return False, f"unreadable verdict packet: {type(exc).__name__}"
+    if v is None:
+        return False, why
+    branch, line = v
+    prs = api("GET", f"/repos/{REPO}/pulls?state=open&limit=50", None) or []
+    pr = next((p for p in prs if (p.get("head") or {}).get("ref") == branch
+               and (p.get("base") or {}).get("ref") == LIVE), None)
+    if pr is None:
+        return False, f"no open PR for {branch} yet (its packet comes first)"
+    n = int(pr.get("number") or 0)
+    have = {str(c.get("body") or "").strip()
+            for c in api("GET", f"/repos/{REPO}/issues/{n}/comments?limit=50", None) or []}
+    if line not in have:
+        api("POST", f"/repos/{REPO}/issues/{n}/comments", {"body": line})
+    return True, f"{line[:60]} on PR #{n}"
+
+
+def drain_verdicts(folder: Path, *, api: Api) -> list[str]:
+    """Verdict packets wait (stay put) until their PR exists; posted or refused ones are filed."""
+    out = []
+    if not folder.is_dir():
+        return out
+    for path in sorted(folder.glob("*.json")):
+        try:
+            ok, why = import_verdict(path, api=api)
+        except Exception as exc:  # a forge error: the packet stays for the next pass
+            out.append(f"WAITING {path.name}: ERROR {type(exc).__name__}")
+            continue
+        if not ok and why.startswith("no open PR"):
+            out.append(f"WAITING {path.name}: {why}")
+            continue
+        where = folder / ("done" if ok else "refused")
+        where.mkdir(parents=True, exist_ok=True)
+        dest = where / path.name
+        n = 1
+        while dest.exists():
+            dest = where / f"{path.stem}.{n}.json"
+            n += 1
+        path.replace(dest)
+        if not ok:
+            (where / f"{path.stem}.why.txt").write_text(why + "\n", encoding="utf-8")
+        out.append(f"{'POSTED' if ok else 'REFUSED'} {path.name}: {why}")
     return out

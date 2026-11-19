@@ -27,7 +27,8 @@
       7. Protects LIVE, production and master on the forge (no force push, no deletion, pushes
          only by the merge-gate user) and installs ops\box_git\protect.py as the repository's
          pre-receive hook too, so the rules hold even if the forge's own settings are changed.
-      8. Opens TCP -Port inbound in Windows Firewall, for this one program only.
+      8. LOCAL ONLY (Audit MF-3): the forge listens on 127.0.0.1, no inbound firewall rule (one
+         left by an earlier run is removed), forge Actions off. Nothing off the box reaches it.
       9. The release loop (QuantForge-Loop, every 5 minutes) with its inbox
          (C:\ProgramData\QuantBox\inbox): cloud threads' work arrives there as git bundles carried
          by the box's Remote Control session (ops/box_git/inbox.py). Nothing in the cloud connects
@@ -43,10 +44,6 @@
 param(
     [string] $GiteaVersion = "latest",
     [int] $Port = 0,
-    [string] $Address = "62.171.172.249",
-    # A DNS name for the box with no account anywhere (sslip.io answers <ip-with-dashes>.sslip.io
-    # with that IP): cloud environments allow hostnames only, never bare IPs.
-    [string] $HostName = "62-171-172-249.sslip.io",
     # Optional git bundle that fast-forwards the gate clone's LIVE before seeding (LIVE moved after
     # the box last fetched). Never a rewrite: a non-fast-forward stops the installer.
     [string] $SeedBundle = "",
@@ -108,10 +105,16 @@ if ($Port -eq 0) {
     $busy443 = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
     $Port = if ($busy443) { 3443 } else { 443 }
 }
-Say "forge port: $Port, host name: $HostName"
+Say "forge port: $Port on 127.0.0.1 only"
 
 # 2. GITEA, VERIFIED.
-$null = New-Item -ItemType Directory -Force -Path $Forge, $Data, $Repos, $OwnerOnly, $Tokens, (Split-Path $Ini)
+# Governance 2026-11-19: the owner's forge credential is never stored where a session can reach.
+if (Test-Path -LiteralPath $OwnerOnly) {
+    if (Get-ChildItem -LiteralPath $OwnerOnly -Filter "quant-admin*" -ErrorAction SilentlyContinue) {
+        Stop-Here 2 "a quant-admin credential is stored in $OwnerOnly; the owner's credential must never be on the box. Remove it, then run again."
+    }
+}
+$null = New-Item -ItemType Directory -Force -Path $Forge, $Data, $Repos, $Tokens, (Split-Path $Ini)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 if ($GiteaVersion -eq "latest") {
     try { $GiteaVersion = [string](Invoke-RestMethod -UseBasicParsing -Uri "https://dl.gitea.com/gitea/version.json").latest.version }
@@ -146,7 +149,6 @@ if (-not (Get-LocalUser -Name $SvcUser -ErrorAction SilentlyContinue)) {
     Say "reset the password of $SvcUser for the service"
 }
 Lock-ToOwners $Forge @($SvcUser)
-Lock-ToOwners $OwnerOnly
 Lock-ToOwners $Tokens
 # Log on as a service, granted through secedit to this one account.
 $inf = Join-Path $env:TEMP "forge_rights.inf"; $db = Join-Path $env:TEMP "forge_rights.sdb"
@@ -166,7 +168,7 @@ $cert = Join-Path $Forge "custom\https\cert.pem"; $key = Join-Path $Forge "custo
 $null = New-Item -ItemType Directory -Force -Path (Split-Path $cert)
 if (-not (Test-Path -LiteralPath $cert)) {
     Push-Location (Split-Path $cert)
-    try { & $Bin cert --host "$HostName,$Address,127.0.0.1" --rsa-bits 3072 --duration 87600h | Out-Null } finally { Pop-Location }
+    try { & $Bin cert --host "127.0.0.1,localhost" --rsa-bits 3072 --duration 87600h | Out-Null } finally { Pop-Location }
     if (-not (Test-Path -LiteralPath $cert)) { Stop-Here 4 "could not make the HTTPS certificate." }
 }
 $secretKey = New-Secret 32; $internal = New-Secret 48
@@ -179,10 +181,10 @@ WORK_PATH = $Forge
 
 [server]
 PROTOCOL = https
-DOMAIN = $HostName
-HTTP_ADDR = 0.0.0.0
+DOMAIN = 127.0.0.1
+HTTP_ADDR = 127.0.0.1
 HTTP_PORT = $Port
-ROOT_URL = https://${HostName}:$Port/
+ROOT_URL = https://127.0.0.1:$Port/
 CERT_FILE = $cert
 KEY_FILE = $key
 DISABLE_SSH = true
@@ -209,7 +211,7 @@ REQUIRE_SIGNIN_VIEW = true
 DEFAULT_ALLOW_CREATE_ORGANIZATION = false
 
 [actions]
-ENABLED = true
+ENABLED = false
 
 [mailer]
 ENABLED = false
@@ -220,7 +222,19 @@ MODE = file
 LEVEL = Info
 "@ | Set-Content -LiteralPath $Ini -Encoding ascii
     Say "wrote $Ini (HTTPS on $Port, registration off, sign-in required)"
-} else { Say "keeping the existing $Ini" }
+} else {
+    # An earlier app.ini keeps its secrets, but never its exposure: loopback only, Actions off.
+    $ini = Get-Content -LiteralPath $Ini
+    $ini = $ini -replace '^HTTP_ADDR\s*=.*$', 'HTTP_ADDR = 127.0.0.1' -replace '^DOMAIN\s*=.*$', 'DOMAIN = 127.0.0.1' `
+                -replace '^ROOT_URL\s*=.*$', "ROOT_URL = https://127.0.0.1:$Port/"
+    $inActions = $false
+    $ini = foreach ($l in $ini) {
+        if ($l -match '^\[') { $inActions = ($l -eq '[actions]') }
+        if ($inActions -and $l -match '^ENABLED\s*=') { 'ENABLED = false' } else { $l }
+    }
+    Set-Content -LiteralPath $Ini -Value $ini -Encoding ascii
+    Say "kept the existing $Ini, forced to 127.0.0.1 with Actions off"
+}
 $r = Forge @("migrate"); if ($r.rc -ne 0) { Stop-Here 4 "database setup failed: $($r.out)" }
 
 # 5. THE SERVICE.
@@ -241,11 +255,16 @@ Say "service $Svc running as $SvcUser"
 $adminPass = New-Secret 24
 $r = Forge @("admin", "user", "create", "--username", "quant-admin", "--password", $adminPass,
              "--email", "quant-admin@box.invalid", "--admin", "--must-change-password=false")
-if ($r.rc -eq 0) {
-    Set-Content -LiteralPath (Join-Path $OwnerOnly "quant-admin.password.txt") -Value $adminPass
-    Say "created quant-admin; its password is in $OwnerOnly (Administrators only)"
-} else { Say "quant-admin exists already ($($r.out -replace '\s+',' '))" }
-$adminPass = $null
+# Its password is written nowhere (Governance): the owner sets his own, by his own act, only when
+# a trust-set change needs his AUTHORIZE TRUST (gitea admin user change-password, over RDP).
+if ($r.rc -eq 0) { Say "created quant-admin" }
+else {
+    # exists (a re-run): the installer takes a temporary password for this run only
+    $r = Forge @("admin", "user", "change-password", "--username", "quant-admin", "--password", $adminPass,
+                 "--must-change-password=false")
+    if ($r.rc -ne 0) { Stop-Here 6 "could not take quant-admin for this run: $($r.out)" }
+    Say "quant-admin exists; temporary password for this run"
+}
 $botPass = New-Secret 24
 $r = Forge @("admin", "user", "create", "--username", "claude", "--password", $botPass,
              "--email", "claude@box.invalid", "--must-change-password=false")
@@ -254,28 +273,33 @@ if ($r.rc -ne 0) { $null = Forge @("admin", "user", "change-password", "--userna
 $botPass = $null
 # The two box roles the repository hook trusts by the forge's own pusher name (never by anything
 # a client sends): merge-gate moves LIVE/production/master, release-authority creates release tags.
-foreach ($u in @("merge-gate", "release-authority", "box-ci")) {
+# `auditor` posts only the Audit seat's verdict packets: the one account whose CLEAR the gate counts
+# (Audit MF-1). `adopt` reads, for the gate clone and the live tree (Audit MF-4).
+foreach ($u in @("merge-gate", "release-authority", "box-ci", "auditor", "adopt")) {
     $null = Forge @("admin", "user", "create", "--username", $u, "--password", (New-Secret 24),
                     "--email", "$u@box.invalid", "--must-change-password=false")
 }
 # Box-only tokens (never leave the box): the gate, the release authority, box CI and the inbox
 # importer's `claude` (a thread's authority: claude/* work branches and comments, nothing more).
-foreach ($u in @("merge-gate", "release-authority", "box-ci", "claude")) {
+$scopes = @{ "merge-gate" = "write:repository,write:issue,read:user"
+             "release-authority" = "write:repository,write:issue,read:user"
+             "box-ci" = "write:repository,read:user"; "claude" = "write:repository,write:issue,read:user"
+             "auditor" = "read:repository,write:issue,read:user"; "adopt" = "read:repository" }
+foreach ($u in $scopes.Keys) {
     $tf = Join-Path $Tokens "$u.token"
     if (-not (Test-Path -LiteralPath $tf)) {
         $r = Forge @("admin", "user", "generate-access-token", "--username", $u,
-                     "--token-name", "box-$stamp", "--scopes", "write:repository,write:issue,read:user", "--raw")
+                     "--token-name", "box-$stamp", "--scopes", $scopes[$u], "--raw")
         if ($r.rc -ne 0 -or -not $r.out) { Stop-Here 6 "could not make the $u token: $($r.out)" }
         Set-Content -LiteralPath $tf -Value $r.out.Trim() -NoNewline
     }
 }
-$r = Forge @("admin", "user", "generate-access-token", "--username", "quant-admin",
-             "--token-name", "installer-$stamp", "--scopes", "write:admin,write:repository,write:organization",
-             "--raw")
-if ($r.rc -ne 0 -or -not $r.out) { Stop-Here 6 "could not make the installer token: $($r.out)" }
-$adminTok = $r.out.Trim()
+# No owner token is ever made: this run uses the temporary password (basic auth, memory only) and
+# scrambles it at the end, so no credential of the owner's account outlives the installer.
+$adminBasic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("quant-admin:$adminPass"))
+$adminPass = $null
 $api = "https://127.0.0.1:$Port/api/v1"
-$hdr = @{ Authorization = "token $adminTok" }
+$hdr = @{ Authorization = "Basic $adminBasic" }
 # The forge's own self-signed certificate, trusted for this local call only.
 $thumb = (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $cert).Thumbprint
 [Net.ServicePointManager]::ServerCertificateValidationCallback = {
@@ -292,6 +316,9 @@ try { Api PUT "/repos/quant/quant/collaborators/claude" @{ permission = "write" 
 foreach ($u in @("merge-gate", "release-authority", "box-ci")) {
     try { Api PUT "/repos/quant/quant/collaborators/$u" @{ permission = "write" } | Out-Null } catch { }
 }
+foreach ($u in @("auditor", "adopt")) {
+    try { Api PUT "/repos/quant/quant/collaborators/$u" @{ permission = "read" } | Out-Null } catch { }
+}
 
 # Seed from the gate clone through the forge itself (so its database sees every ref), as
 # quant-admin, BEFORE any protection exists: LIVE, production, master and release tags as last fetched.
@@ -300,7 +327,7 @@ $env:GIT_TERMINAL_PROMPT = '0'
 $env:GIT_CONFIG_COUNT = '3'
 $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
 $env:GIT_CONFIG_KEY_1 = 'http.sslCAInfo'; $env:GIT_CONFIG_VALUE_1 = ($cert -replace '\\', '/')
-$env:GIT_CONFIG_KEY_2 = 'http.extraHeader'; $env:GIT_CONFIG_VALUE_2 = "Authorization: token $adminTok"
+$env:GIT_CONFIG_KEY_2 = 'http.extraHeader'; $env:GIT_CONFIG_VALUE_2 = "Authorization: Basic $adminBasic"
 $seedUrl = "https://127.0.0.1:$Port/quant/quant.git"
 if ($SeedBundle) {
     & git -C $gate bundle verify $SeedBundle 2>&1 | ForEach-Object { Say "  seed bundle: $_" }
@@ -347,12 +374,9 @@ exec "$($py -replace '\\','/')" "$(($hookDir -replace '\\','/'))/protect.py"
 "@ | Set-Content -LiteralPath (Join-Path $hookDir "box-protect") -Encoding ascii
 Say "installed the repository hook (pre-receive.d\box-protect)"
 
-# 8. FIREWALL: this one program, this one port.
-if (-not (Get-NetFirewallRule -DisplayName "Quant box forge" -ErrorAction SilentlyContinue)) {
-    New-NetFirewallRule -DisplayName "Quant box forge" -Direction Inbound -Protocol TCP -LocalPort $Port `
-        -Program $Bin -Action Allow | Out-Null
-}
-Say "firewall: inbound TCP $Port for gitea.exe only"
+# 8. NO INBOUND ROUTE (Audit MF-3): the ferry needs none. A rule from an earlier run is removed.
+Get-NetFirewallRule -DisplayName "Quant box forge" -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+Say "no inbound firewall rule: the forge answers on 127.0.0.1 only"
 
 # 9. THE RELEASE LOOP: one scheduled task, its code read from LIVE on every pass.
 $loopSrc = Join-Path $Forge "loop-src"
@@ -373,9 +397,82 @@ $inboxDir = Join-Path $Root "inbox"
 $null = New-Item -ItemType Directory -Force -Path $inboxDir
 Lock-ToOwners $inboxDir
 Say "boot head $($boot.Substring(0,12)); inbox $inboxDir"
-$cfg = @{ forge_url = $forgeUrl; bare = $bare; work = (Join-Path $Forge "work")
+
+# THE TRUST BOUNDARY (zuck 2026-11-19 20:22Z; Governance's policy, D-20261119-TRUSTSET). The checker
+# and its policy are copied ONCE from the installer's own (Audit-CLEARed) commit into a folder only
+# Administrators and SYSTEM can write; the gate loads them from there, never from a checkout. The
+# pin is the trust set's hash at the boot head: this install is the owner's own request, and from
+# here on a trust-set change needs his AUTHORIZE TRUST or the checker's proof that it only tightens.
+$trustDir = Join-Path $Root "trust"
+$null = New-Item -ItemType Directory -Force -Path $trustDir
+Lock-ToOwners $trustDir
+foreach ($n in @("trust_check.py", "TRUST_SET.json")) {
+    $txt = (& git -c safe.directory=* -C $srcRepo show "${boot}:ops/box_git/$n" | Out-String)
+    if ($LASTEXITCODE -ne 0 -or -not $txt) { Stop-Here 9 "the boot head carries no ops/box_git/$n." }
+    Set-Content -LiteralPath (Join-Path $trustDir $n) -Value $txt.TrimEnd() -Encoding utf8
+}
+$pinPath = Join-Path $trustDir "pin.json"
+if (-not (Test-Path -LiteralPath $pinPath)) {
+    $pinPy = @"
+import json, subprocess, sys, importlib.util
+spec = importlib.util.spec_from_file_location('tc', sys.argv[1]); tc = importlib.util.module_from_spec(spec); spec.loader.exec_module(tc)
+git = lambda *a: subprocess.run(['git', '-c', 'safe.directory=*', '-C', sys.argv[2], *a], capture_output=True, text=True, check=True).stdout
+print(tc.t_hash(git, sys.argv[3]))
+"@
+    $tHash = ((& $py -I -c $pinPy (Join-Path $trustDir "trust_check.py") $srcRepo $boot) | Out-String).Trim()
+    if ($tHash -notmatch '^[0-9a-f]{64}$') { Stop-Here 9 "could not measure the trust set at the boot head: $tHash" }
+    @{ t_hash = $tHash; bootstrap_head = $boot; at = (Get-Date).ToUniversalTime().ToString("o")
+       by = "bootstrap: the install the owner requested (2026-11-19 20:22Z)"; history = @() } |
+        ConvertTo-Json | Set-Content -LiteralPath $pinPath -Encoding ascii
+    Say "trust set pinned at the boot head: $($tHash.Substring(0,16))"
+} else { Say "keeping the existing trust pin $pinPath" }
+
+# THE CI WORKER (Audit MF-2): a PR's code never runs as SYSTEM. A local non-admin account runs it,
+# denied the tokens, the trust folder, the inbox and C:\opt\quant (data\secrets included).
+$ciUser = "quantci"
+$ciPass = New-Secret 24
+if (-not (Get-LocalUser -Name $ciUser -ErrorAction SilentlyContinue)) {
+    New-LocalUser -Name $ciUser -Password (ConvertTo-SecureString $ciPass -AsPlainText -Force) `
+        -PasswordNeverExpires -UserMayNotChangePassword -Description "Quant box CI worker (no admin)" | Out-Null
+} else { Set-LocalUser -Name $ciUser -Password (ConvertTo-SecureString $ciPass -AsPlainText -Force) }
+$jobs = Join-Path $Forge "ci-jobs"; $work = Join-Path $Forge "work"
+$null = New-Item -ItemType Directory -Force -Path $jobs, $work
+& icacls $Forge /grant "${ciUser}:(RX)" | Out-Null                 # traverse this folder only
+foreach ($d in @($jobs, $work)) { & icacls $d /grant "${ciUser}:(OI)(CI)M" | Out-Null }
+foreach ($d in @($Repos, $loopSrc)) { & icacls $d /grant "${ciUser}:(OI)(CI)RX" | Out-Null }
+foreach ($d in @($Tokens, $trustDir, $inboxDir, $QuantRoot, (Join-Path $Forge "custom"), $Data)) {
+    & icacls $d /deny "${ciUser}:(OI)(CI)F" | Out-Null
+}
+# Log on as a batch job, for this one account (a scheduled task with a password needs it).
+$inf = Join-Path $env:TEMP "ci_rights.inf"; $db = Join-Path $env:TEMP "ci_rights.sdb"
+& secedit /export /cfg $inf /areas USER_RIGHTS | Out-Null
+$ciSid = (New-Object Security.Principal.NTAccount $ciUser).Translate([Security.Principal.SecurityIdentifier]).Value
+$rights = Get-Content -LiteralPath $inf
+if (-not ($rights -match "SeBatchLogonRight.*\*$ciSid")) {
+    $rights = $rights -replace '^(SeBatchLogonRight\s*=\s*.*)$', "`$1,*$ciSid"
+    if (-not ($rights -match '^SeBatchLogonRight')) { $rights += "SeBatchLogonRight = *$ciSid" }
+    Set-Content -LiteralPath $inf -Value $rights
+    & secedit /configure /db $db /cfg $inf /areas USER_RIGHTS | Out-Null
+}
+Remove-Item -LiteralPath $inf, $db -Force -ErrorAction SilentlyContinue
+$ciRunner = Join-Path $Forge "run_ci_worker.cmd"
+@"
+@echo off
+rem QuantForge-CI: run waiting test jobs as $ciUser (no admin, no tokens). Code from the loop's checkout.
+"$py" "$loopSrc\ops\box_git\box_loop.py" --ci-worker "$jobs"
+"@ | Set-Content -LiteralPath $ciRunner -Encoding ascii
+$cAct = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$ciRunner`""
+$cTrg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
+$cSet = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 7) -StartWhenAvailable -Priority 9
+Register-ScheduledTask -TaskName "QuantForge-CI" -Action $cAct -Trigger $cTrg -Settings $cSet `
+    -User "$env:COMPUTERNAME\$ciUser" -Password $ciPass -RunLevel Limited -Force | Out-Null
+$ciPass = $null
+Say "scheduled QuantForge-CI every minute as $ciUser (no administrator, no token access)"
+
+$cfg = @{ forge_url = $forgeUrl; bare = $bare; work = $work
           tokens = $Tokens; ca = $cert; state = (Join-Path $Forge "ci\state.json"); python = $py
-          inbox = $inboxDir; boot = $boot }
+          inbox = $inboxDir; boot = $boot; ci_jobs = $jobs
+          trust_checker = (Join-Path $trustDir "trust_check.py"); trust_pin = $pinPath }
 $cfgPath = Join-Path $Forge "loop.json"
 $cfg | ConvertTo-Json | Set-Content -LiteralPath $cfgPath -Encoding ascii
 $runner = Join-Path $Forge "run_loop.cmd"
@@ -398,9 +495,10 @@ Say "scheduled QuantForge-Loop every 5 minutes (gate, box CI, full suite, seal, 
 
 # 10. ADOPTION READS THE FORGE: origin of the gate clone and of the live tree point at it, with
 # the forge certificate and a box-only token in each repository's own config (never global).
-$originUrl = "https://${HostName}:$Port/quant/quant.git"
+$originUrl = "https://127.0.0.1:$Port/quant/quant.git"
 $localUrl = "$forgeUrl/quant/quant.git"
-$gateTok = (Get-Content -LiteralPath (Join-Path $Tokens "merge-gate.token") -Raw).Trim()
+# A read-only account (Audit MF-4): the clones fetch, they never hold a token that moves LIVE.
+$gateTok = (Get-Content -LiteralPath (Join-Path $Tokens "adopt.token") -Raw).Trim()
 foreach ($repo in @($gate, $QuantRoot)) {
     & git -c safe.directory=* -C $repo remote set-url origin $localUrl
     & git -c safe.directory=* -C $repo config "http.$forgeUrl/.sslCAInfo" $caFwd
@@ -422,6 +520,12 @@ if ($LASTEXITCODE -ne 0) { Say "ROOT re-pin did not complete (exit $LASTEXITCODE
 # 12. ADOPT NOW rather than at the next hour.
 & schtasks /Run /TN "MT5-AdoptRelease" | Out-Null
 Say "asked MT5-AdoptRelease to run now"
+
+# The owner's account keeps no password anyone holds (Governance): scrambled, never written.
+$null = Forge @("admin", "user", "change-password", "--username", "quant-admin", "--password",
+                (New-Secret 32), "--must-change-password=false")
+$adminBasic = $null; $hdr = $null
+Say "quant-admin scrambled: no stored or known credential for the owner's account"
 
 $fp = (Get-FileHash -Algorithm SHA256 -InputStream ([IO.MemoryStream]::new(
     (New-Object Security.Cryptography.X509Certificates.X509Certificate2 $cert).RawData))).Hash

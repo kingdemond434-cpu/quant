@@ -1,0 +1,87 @@
+{
+ "_why": "The trust set T (zuck 2026-11-19 20:22Z; Governance policy, D-20261119-TRUSTSET). Changes inside T need the owner's own AUTHORIZE TRUST <head sha> on the forge, unless ops/box_git/trust_check.py proves they only tighten. Everything outside T merges on an Auditor CLEAR plus green box CI with no wait and no comment.",
+ "files": [
+  "ops/box_git/trust_check.py",
+  "ops/box_git/protect.py",
+  "tests/ops/test_box_git_trust.py",
+  "ops/release/authority/*",
+  "ops/signing/*",
+  "ops/release_authority.py",
+  "ops/run_release_authority.cmd",
+  ".github/scripts/memecoin_gate.py",
+  "ops/release/risk_invariants.py",
+  "ops/release/replay_shadow.py",
+  "ops/release/expected_divergence.json",
+  "ops/release/not_money_scripts.txt",
+  "ops/money_closure.txt",
+  "ops/release/ceilings.json",
+  "ops/release/protected_paths.txt",
+  "ops/release/risk_suites.txt",
+  "ops/release/trusted_eval_suites.txt"
+ ],
+ "grow_only": [
+  "ops/release/protected_paths.txt",
+  "ops/release/risk_suites.txt",
+  "ops/release/trusted_eval_suites.txt",
+  "ops/money_closure.txt"
+ ],
+ "symbols": {
+  ".github/scripts/audit_gate.py": [
+   "run",
+   "forge_trust",
+   "write_pin",
+   "_trust_checker",
+   "_zuck_typed",
+   "verdicts",
+   "VERDICT",
+   "TRUSTED",
+   "GATING_JOBS",
+   "cleared",
+   "checks",
+   "_from_ci_app",
+   "_forge",
+   "SECRETS",
+   "SEAL_CARRIERS",
+   "SEAL_CARRIER_BRANCH",
+   "PROTECTED",
+   "NEVER_STANDING",
+   "touches_root",
+   "authority_verdicts",
+   "authority_clear",
+   "patch_id",
+   "AUTHORIZE_TRUST"
+  ],
+  "ops/box_git/forge_api.py": [
+   "BOX_CI_USER",
+   "OWNER_USERS",
+   "AUDITOR_USERS",
+   "CI_APP",
+   "_comment",
+   "_status_state",
+   "Forge"
+  ],
+  "ops/box_git/box_loop.py": [
+   "GATING",
+   "post",
+   "gate_code",
+   "risk_job",
+   "replay_job",
+   "pr_tick",
+   "promote_tick",
+   "seal_and_push",
+   "gate_tick"
+  ],
+  "ops/box_git/box_ci.py": [
+   "promotable"
+  ],
+  "ops/box_git/inbox.py": [
+   "BRANCH",
+   "parse_manifest",
+   "import_one"
+  ],
+  "libs/ops/release.py": [
+   "NON_CODE",
+   "STATE_PREFIXES"
+  ]
+ }
+}

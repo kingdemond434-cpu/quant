@@ -709,6 +709,102 @@ def _forge() -> Any:
     return _FORGE
 
 
+#: THE TRUST BOUNDARY ON THE BOX FORGE (zuck 2026-11-19 20:22Z; Governance's policy,
+#: D-20261119-TRUSTSET). ops/box_git/trust_check.py and TRUST_SET.json are loaded from a box-local
+#: folder only Administrators and SYSTEM can write, never from this checkout or a PR. The pin
+#: beside them is the hash of the trust set T as last authorized. ORDINARY changes merge on the
+#: Auditor's CLEAR and green box CI; TIGHTEN (proven grow-only) merges too and moves the pin; a
+#: TRUST change needs the owner's own, unedited, non-app `AUTHORIZE TRUST <head sha>`.
+TRUST_CHECKER_ENV = "QUANT_TRUST_CHECKER"
+TRUST_PIN_ENV = "QUANT_TRUST_PIN"
+AUTHORIZE_TRUST = re.compile(r"AUTHORIZE TRUST ([0-9a-f]{40})")
+_TRUST_MOD: Any = None
+
+
+def _trust_checker() -> Any:
+    global _TRUST_MOD
+    if _TRUST_MOD is None:
+        import importlib.util
+
+        path = os.environ.get(TRUST_CHECKER_ENV) or ""
+        spec = importlib.util.spec_from_file_location("_box_trust_check", path) if path else None
+        if spec is None or spec.loader is None:
+            raise RuntimeError("no pinned trust checker on this box")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _TRUST_MOD = mod
+    return _TRUST_MOD
+
+
+def owner_authorized(comments: Iterable[Mapping[str, Any]], head: str) -> bool:
+    """The owner typed exactly `AUTHORIZE TRUST <head>` (no app, never edited)."""
+    for c in comments:
+        m = AUTHORIZE_TRUST.fullmatch(str(c.get("body") or "").strip())
+        if m and m.group(1) == head and _zuck_typed(c):
+            return True
+    return False
+
+
+def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
+                comments: Iterable[Mapping[str, Any]], git: Callable[..., str] | None = None,
+                checker: Any = None, pin_path: str | None = None) -> tuple[bool, str, str | None]:
+    """(may merge, why, the new pin when T moves). FAILS CLOSED: no checker, no pin, a LIVE whose
+    T is not the pin, or any error refuses."""
+    try:
+        mod = checker or _trust_checker()
+        run_git = git or _git
+        pp = pin_path if pin_path is not None else os.environ.get(TRUST_PIN_ENV) or ""
+        pin_doc = json.loads(Path(pp).read_text(encoding="utf-8"))
+        pinned = str(pin_doc["t_hash"])
+        if head == pin_doc.get("bootstrap_head"):
+            # the install the owner requested: the boot head's own trust set IS the pin
+            if mod.t_hash(run_git, head) == pinned:
+                return True, f"the bootstrap install the owner requested ({head[:12]})", None
+            return False, "the bootstrap head no longer measures to its pin", None
+        base_t = mod.t_hash(run_git, base)
+        if base_t != pinned:
+            return False, (f"LIVE's trust set {base_t[:12]} is not the pinned {pinned[:12]}: "
+                           "every merge waits"), None
+        changed = sorted({str(f.get("filename")) for f in files if f.get("filename")} |
+                         {str(f.get("previous_filename")) for f in files
+                          if f.get("previous_filename")})
+        cls, why = mod.classify(run_git, base, head, changed)
+        head_t = base_t if cls == "ORDINARY" else mod.t_hash(run_git, head)
+    except Exception as exc:  # anything unmeasured refuses
+        return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
+    if cls == "ORDINARY":
+        return True, f"ordinary change ({why})", None
+    if cls == "TIGHTEN":
+        return True, f"proven tightening ({why})", head_t
+    if owner_authorized(comments, head):
+        return True, f"trust change authorized by the owner at {head[:12]} ({why})", head_t
+    return False, f"trust change ({why}): needs the owner's AUTHORIZE TRUST {head}", None
+
+
+def write_pin(new_t: str, pr: int, head: str, pin_path: str | None = None,
+              checker_path: str | None = None, read: Callable[[str, str], str] | None = None
+              ) -> None:
+    """After an authorized or proven T change merges, the pin and the box-local checker copy follow
+    the merged head; the previous pin is kept in its history."""
+    pp = pin_path if pin_path is not None else os.environ.get(TRUST_PIN_ENV) or ""
+    cp = checker_path if checker_path is not None else os.environ.get(TRUST_CHECKER_ENV) or ""
+    rd = read or (lambda ref, path: _git("show", f"{ref}:{path}"))
+    try:
+        doc = json.loads(Path(pp).read_text(encoding="utf-8"))
+        if cp:
+            for name in ("trust_check.py", "TRUST_SET.json"):
+                Path(cp).with_name(name).write_text(rd(head, f"ops/box_git/{name}") + "\n",
+                                                    encoding="utf-8")
+        hist = [*(doc.get("history") or []), {k: doc.get(k) for k in ("t_hash", "by", "at")}]
+        doc = {"t_hash": new_t, "by": f"gate: #{pr} at {head[:12]}",
+               "at": datetime.now(UTC).isoformat(timespec="seconds"), "history": hist[-200:]}
+        tmp = Path(pp + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, pp)
+    except (OSError, ValueError, KeyError, subprocess.CalledProcessError):
+        pass  # a pin left behind makes every later merge wait: fails closed, never open
+
+
 RULES_LOG_ENV = "QUANT_FORGE_RULES_LOG"
 
 
@@ -1657,11 +1753,18 @@ def run(
             )
         clear, why = cleared(found, head, same_change)
         if clear is not None and os.environ.get("QUANT_FORGE_URL"):
-            # THE BOX FORGE (principal 2026-11-19 19:56-19:59Z: approvals, paste lines, the silent
-            # veto and ROOT batching retired): the Auditor's CLEAR of the exact head is the whole
-            # approval, ROOT included. Marked standing, so risk-invariants (the ceilings and the
-            # prop firms' own limits) must still pass, exactly as on the standing path.
-            return {**clear, "standing": "yes"}, f"{why}; Auditor CLEAR alone (box forge)"
+            # THE BOX FORGE (principal 2026-11-19 19:56-19:59Z and 20:22Z): no paste, no wait, no
+            # comment from zuck. The Auditor's CLEAR of the exact head plus green box CI merges
+            # every change outside the trust set T; inside T only what the pinned checker proves
+            # is a tightening, or what the owner himself pinned. Marked standing, so
+            # risk-invariants (the ceilings and the prop firms' own limits) must still pass.
+            ok_t, twhy_t, new_pin = forge_trust(
+                base, head, files,
+                _flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
+                          "--slurp")))
+            if not ok_t:
+                return None, f"{why}; {twhy_t}"
+            return {**clear, "standing": "yes", "pin": new_pin or ""}, f"{why}; {twhy_t}"
         if clear is not None:
             ap = _gh(
                 f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
@@ -1874,6 +1977,8 @@ def run(
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
     rules_log(pr, head, files, clear)
+    if clear.get("pin"):
+        write_pin(str(clear["pin"]), pr, head)
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

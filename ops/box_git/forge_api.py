@@ -16,6 +16,10 @@ TRUST, WHICH IS THE WHOLE POINT, IS RE-ANCHORED EXPLICITLY:
   * zuck's own words. GitHub told the gate a comment came through an App (a Claude session). Here
     every comment by a non-owner account is marked as App-posted, and only the forge OWNER
     accounts (OWNER_USERS) read as OWNER. The `claude` account is a COLLABORATOR, never the owner.
+  * THE AUDITOR'S CLEAR (Audit MF-1, 2026-11-19). A CLEAR counts only from the `auditor` account
+    (AUDITOR_USERS), which posts nothing but verdict packets from the Audit seat, or from the
+    owner. An `AUDIT CLEAR` line from any other account is rewritten to `UNCOUNTED CLEAR` before
+    the gate reads it, so it can never match; HOLD lines from anyone still count (fail closed).
   * Anything the shim cannot answer truthfully RAISES (RuntimeError), which the gate already
     treats as "not this sweep" for that PR: it fails closed, never open.
 """
@@ -39,6 +43,8 @@ FORGE_BARE_ENV = "QUANT_FORGE_BARE"        # the forge repo's bare path, for com
 FORGE_REPO = "quant/quant"
 BOX_CI_USER = "box-ci"
 OWNER_USERS = frozenset({"quant-admin"})
+AUDITOR_USERS = frozenset({"auditor"})
+_CLEAR_LINE = re.compile(r"(?m)^AUDIT CLEAR")
 CI_APP = "github-actions"
 
 Transport = Callable[[str, str, Any], Any]
@@ -59,7 +65,10 @@ def _status_state(state: str) -> tuple[str, str | None]:
 def _comment(c: Mapping[str, Any]) -> dict[str, Any]:
     login = str((c.get("user") or {}).get("login") or "")
     owner = login in OWNER_USERS
-    return {**c, "author_association": "OWNER" if owner else "COLLABORATOR",
+    body = str(c.get("body") or "")
+    if not owner and login not in AUDITOR_USERS:
+        body = _CLEAR_LINE.sub("UNCOUNTED CLEAR", body)
+    return {**c, "body": body, "author_association": "OWNER" if owner else "COLLABORATOR",
             "performed_via_github_app": None if owner else {"slug": f"forge:{login}"}}
 
 

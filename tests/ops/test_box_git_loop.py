@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -58,3 +59,37 @@ def test_resources_unmeasured_start_nothing(tmp_path: Path, monkeypatch) -> None
     monkeypatch.setattr(L, "_resources", lambda cfg: (False, 0, "no idle cores right now"))
     assert "waits" in L.full_tick(cfg, "h1")
     assert box_ci.load_state(cfg.state).get("full_running") is None
+
+
+def test_only_an_auditor_clear_of_the_exact_head_lets_pr_code_run() -> None:
+    h = "a" * 40
+    assert L.audited_clear([{"body": f"AUDIT CLEAR {h} merge"}], h)
+    assert not L.audited_clear([{"body": f"UNCOUNTED CLEAR {h} merge"}], h)
+    assert not L.audited_clear([{"body": f"AUDIT CLEAR {h}"}, {"body": f"AUDIT HOLD {h}"}], h)
+    assert not L.audited_clear([{"body": f"AUDIT CLEAR {'b' * 40}"}], h)
+    assert not L.audited_clear([], h)
+
+
+def test_pr_code_runs_through_the_worker_folder_never_in_the_loop(tmp_path: Path) -> None:
+    import threading
+    cfg = L.Config(**{**_cfg(tmp_path).__dict__, "ci_jobs": tmp_path / "jobs"})
+    L.JOB_POLL_S = 0.05
+    stop = threading.Event()
+
+    def worker() -> None:
+        while not stop.is_set():
+            L.worker_pass(tmp_path / "jobs")
+            stop.wait(0.05)
+    t = threading.Thread(target=worker)
+    t.start()
+    probe = [sys.executable, "-c", "import os; print(os.environ.get('SECRET_X'))"]
+    os.environ["SECRET_X"] = "leak"
+    try:
+        rc, out = L._run_untrusted(cfg, probe, cwd=tmp_path, extra_env={"A": "1"}, timeout=60)
+    finally:
+        os.environ.pop("SECRET_X", None)
+        stop.set()
+        t.join()
+    assert rc == 0 and out.strip() == "None"  # the loop's environment does not leak to the job
+    assert not list((tmp_path / "jobs" / "pending").glob("*"))
+    assert not list((tmp_path / "jobs" / "done").glob("*"))

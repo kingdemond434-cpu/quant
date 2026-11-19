@@ -119,3 +119,74 @@ def test_on_the_forge_a_clear_alone_merges_and_rule_changes_are_logged(monkeypat
     g.rules_log(10, SHA, [{"filename": "docs/x.md"}], {"at": "t"})
     rows = log.read_text().splitlines()
     assert len(rows) == 1 and '"pr": 9' in rows[0] and "undo" in rows[0]
+
+
+def test_only_the_auditor_or_the_owner_can_clear_and_anyone_can_hold() -> None:
+    g = _gate()
+    rows = [F._comment({"user": {"login": who}, "body": f"AUDIT {v} {SHA}",
+                        "created_at": "t", "updated_at": "t"})
+            for who, v in (("claude", "CLEAR"), ("auditor", "CLEAR"), ("claude", "HOLD"),
+                           ("quant-admin", "CLEAR"))]
+    assert rows[0]["body"].startswith("UNCOUNTED CLEAR") and g.verdicts([rows[0]]) == []
+    assert [v["verdict"] for v in g.verdicts(rows[1:])] == ["CLEAR", "HOLD", "CLEAR"]
+
+
+class Checker:
+    def __init__(self, cls="ORDINARY", t=None):
+        self.cls, self.t = cls, t or {}
+
+    def t_hash(self, git, ref):
+        return self.t.get(ref, "T0")
+
+    def classify(self, git, base, head, changed):
+        return self.cls, "fake"
+
+
+def _pin(tmp_path, t="T0", boot=None):
+    p = tmp_path / "pin.json"
+    p.write_text(__import__("json").dumps({"t_hash": t, "bootstrap_head": boot}))
+    return str(p)
+
+
+def test_the_trust_boundary_decides_every_forge_merge(tmp_path) -> None:
+    g = _gate()
+    owner = {"author_association": "OWNER", "created_at": "t", "updated_at": "t",
+             "body": f"AUTHORIZE TRUST {SHA}"}
+    pin = _pin(tmp_path)
+
+    def ft(chk, comments=(), pin_path=pin):
+        return g.forge_trust("live", SHA, [{"filename": "x"}], list(comments), git=lambda *a: "",
+                             checker=chk, pin_path=pin_path)
+    assert ft(Checker())[0] is True and ft(Checker())[2] is None
+    ok, why, new = ft(Checker("TIGHTEN", {SHA: "T1"}))
+    assert ok and new == "T1"
+    ok, why, _ = ft(Checker("TRUST", {SHA: "T1"}))
+    assert not ok and f"AUTHORIZE TRUST {SHA}" in why
+    assert ft(Checker("TRUST", {SHA: "T1"}), [owner]) == (True, ft(Checker("TRUST", {SHA: "T1"}),
+                                                                   [owner])[1], "T1")
+    for bad in ({**owner, "performed_via_github_app": {"slug": "forge:claude"}},
+                {**owner, "updated_at": "later"}, {**owner, "author_association": "COLLABORATOR"},
+                {**owner, "body": f"AUTHORIZE TRUST {'b' * 40}"}):
+        assert ft(Checker("TRUST", {SHA: "T1"}), [bad])[0] is False
+    # LIVE no longer matches the pin: every merge waits, even an ordinary one
+    assert ft(Checker(t={"live": "TX"}))[0] is False
+    # no checker / no pin: fail closed
+    assert g.forge_trust("live", SHA, [], [], git=lambda *a: "", pin_path=pin)[0] is False
+    assert ft(Checker(), pin_path=str(tmp_path / "none.json"))[0] is False
+    # the bootstrap install the owner requested
+    boot = _pin(tmp_path, "TB", boot=SHA)
+    assert ft(Checker(t={SHA: "TB", "live": "unmeasurable"}), pin_path=boot)[0] is True
+    assert ft(Checker(t={SHA: "TZ"}), pin_path=boot)[0] is False
+
+
+def test_the_pin_and_the_box_checker_copy_follow_an_authorized_merge(tmp_path) -> None:
+    g = _gate()
+    pin = _pin(tmp_path)
+    chk = tmp_path / "trust_check.py"
+    chk.write_text("old")
+    g.write_pin("T1", 5, SHA, pin_path=pin, checker_path=str(chk),
+                read=lambda ref, path: f"{ref[:4]}:{path}")
+    doc = __import__("json").loads(Path(pin).read_text())
+    assert doc["t_hash"] == "T1" and doc["history"][-1]["t_hash"] == "T0"
+    assert chk.read_text().startswith("aaaa:ops/box_git/trust_check.py")
+    assert (tmp_path / "TRUST_SET.json").read_text().startswith("aaaa:ops/box_git/TRUST_SET.json")

@@ -26,6 +26,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -57,6 +58,9 @@ class Config:
     python: str = sys.executable
     inbox: Path | None = None # packets from cloud threads (ops/box_git/inbox.py)
     boot: str | None = None   # the Audit-CLEARed head the installer ran from (see gate_code)
+    ci_jobs: Path | None = None  # hand-off folder to the unprivileged CI worker (Audit MF-2)
+    trust_checker: Path | None = None  # box-local pinned trust checker (D-20261119-TRUSTSET)
+    trust_pin: Path | None = None
 
     def token(self, account: str) -> str:
         return (self.tokens / f"{account}.token").read_text(encoding="utf-8").strip()
@@ -135,11 +139,77 @@ def _resources(cfg: Config) -> tuple[bool, int, str]:
     return ok, n, why
 
 
+# ------------------------------------------------------------------ untrusted code (Audit MF-2)
+#: A PR's own code (its tests, conftest, strategies under replay) never runs as SYSTEM. The loop
+#: hands each such command to the CI WORKER: a scheduled task running as the local non-admin
+#: account `quantci`, denied the token folder, the trust folder, data\secrets and C:\opt\quant.
+#: The loop reads back only the exit code and the output tail, and posts statuses itself.
+JOB_ENV_KEEP = ("PATH", "SYSTEMROOT", "PATHEXT", "COMSPEC", "NUMBER_OF_PROCESSORS", "PYTHONUTF8")
+JOB_POLL_S = 5.0
+
+
+def _run_untrusted(cfg: Config, argv: Sequence[str], *, cwd: Path,
+                   extra_env: Mapping[str, str] | None = None,
+                   timeout: float = 3600) -> tuple[int, str]:
+    if cfg.ci_jobs is None:  # development and tests only: the installer always sets ci_jobs
+        return _run(argv, cwd=cwd, env={**os.environ, **(extra_env or {})}, timeout=timeout,
+                    idle=True)
+    import time
+    import uuid
+    jid = uuid.uuid4().hex
+    pending, done = cfg.ci_jobs / "pending", cfg.ci_jobs / "done"
+    pending.mkdir(parents=True, exist_ok=True)
+    done.mkdir(parents=True, exist_ok=True)
+    env = {k: os.environ[k] for k in JOB_ENV_KEEP if k in os.environ}
+    # the worktrees belong to SYSTEM; the worker's git must read them (no token, no remote)
+    env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "safe.directory",
+                "GIT_CONFIG_VALUE_0": "*", "GIT_TERMINAL_PROMPT": "0"})
+    job = {"id": jid, "argv": list(argv), "cwd": str(cwd), "env": {**env, **(extra_env or {})},
+           "timeout": timeout}
+    tmp = pending / f"{jid}.tmp"
+    tmp.write_text(json.dumps(job), encoding="utf-8")
+    os.replace(tmp, pending / f"{jid}.json")
+    deadline = time.monotonic() + timeout + 900
+    result = done / f"{jid}.json"
+    while time.monotonic() < deadline:
+        if result.exists():
+            try:
+                doc = json.loads(result.read_text(encoding="utf-8"))
+                result.unlink(missing_ok=True)
+                return int(doc.get("rc", 1)), str(doc.get("out", ""))[-4000:]
+            except (OSError, ValueError):
+                pass  # the worker is still writing it
+        time.sleep(JOB_POLL_S)
+    (pending / f"{jid}.json").unlink(missing_ok=True)
+    return 124, "the CI worker did not answer in time"
+
+
+def worker_pass(jobs: Path) -> int:
+    """One pass of the unprivileged CI worker: run every pending job, write its result."""
+    pending, done = jobs / "pending", jobs / "done"
+    n = 0
+    for f in sorted(pending.glob("*.json")) if pending.is_dir() else []:
+        try:
+            job = json.loads(f.read_text(encoding="utf-8"))
+            f.unlink()
+        except (OSError, ValueError):
+            continue
+        rc, out = _run([str(a) for a in job.get("argv") or []], cwd=Path(job["cwd"]),
+                       env={str(k): str(v) for k, v in (job.get("env") or {}).items()},
+                       timeout=float(job.get("timeout") or 3600), idle=True)
+        tmp = done / f"{job['id']}.tmp"
+        done.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps({"rc": rc, "out": out}), encoding="utf-8")
+        os.replace(tmp, done / f"{job['id']}.json")
+        n += 1
+    return n
+
+
 def run_tests(cfg: Config, root: Path, tests: Sequence[str] | str,
               workers: int) -> tuple[bool, str]:
     junit = root / "box-junit.xml"
-    rc, out = _run(box_ci.pytest_argv(cfg.python, tests, workers, junit), cwd=root,
-                   timeout=6 * 3600, idle=True)
+    rc, out = _run_untrusted(cfg, box_ci.pytest_argv(cfg.python, tests, workers, junit),
+                             cwd=root, timeout=6 * 3600)
     tail = out.strip().splitlines()[-1:] or [""]
     return rc == 0, f"pytest rc={rc}: {tail[0][:180]}"
 
@@ -157,14 +227,14 @@ def risk_job(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
         return False, "risk-invariants: risk_suites.txt unreadable"
     if suites and _run(["git", "checkout", base, "--", *suites], cwd=root)[0] != 0:
         return False, "risk-invariants: could not take the risk suites from the base"
-    rc, out = _run([cfg.python, "-I", "ops/release/risk_invariants.py", "--head", head,
-                    "--base", base], cwd=root, timeout=1800, idle=True)
+    rc, out = _run_untrusted(cfg, [cfg.python, "-I", "ops/release/risk_invariants.py",
+                                   "--head", head, "--base", base], cwd=root, timeout=1800)
     if rc != 0:
         return False, f"risk-invariants static rc={rc}: {out.strip()[-160:]}"
     if suites:
-        rc, out = _run([cfg.python, "-m", "pytest", "-q", "-p", "no:randomly", "-p",
-                        "no:cacheprovider", "--timeout=600", *suites], cwd=root, timeout=3600,
-                       idle=True)
+        rc, out = _run_untrusted(cfg, [cfg.python, "-m", "pytest", "-q", "-p", "no:randomly",
+                                       "-p", "no:cacheprovider", "--timeout=600", *suites],
+                                 cwd=root, timeout=3600)
         if rc != 0:
             return False, f"risk suites rc={rc}: {out.strip()[-160:]}"
     return True, f"risk-invariants passed ({len(suites)} suite file(s))"
@@ -177,11 +247,13 @@ def replay_job(cfg: Config, base: str, head: str, changed: Sequence[str]) -> tup
         lst = cfg.work / f"changed_{head[:12]}.txt"
         lst.write_text("\n".join(sorted(set(changed))) + "\n", encoding="utf-8")
         report = cfg.work / f"replay_{head[:12]}.json"
-        env = {**os.environ,
-               "QUANT_EXPECTED_DIVERGENCE": str(b / "ops" / "release" / "expected_divergence.json")}
-        rc, out = _run([cfg.python, "-I", str(b / "ops" / "release" / "replay_shadow.py"),
-                        "--base", str(b), "--head", str(h), "--changed", str(lst),
-                        "--report", str(report)], cwd=cfg.work, env=env, timeout=3600, idle=True)
+        extra = {"QUANT_EXPECTED_DIVERGENCE":
+                 str(b / "ops" / "release" / "expected_divergence.json")}
+        rc, out = _run_untrusted(cfg, [cfg.python, "-I",
+                                       str(b / "ops" / "release" / "replay_shadow.py"),
+                                       "--base", str(b), "--head", str(h), "--changed", str(lst),
+                                       "--report", str(report)],
+                                 cwd=cfg.work, extra_env=extra, timeout=3600)
         lst.unlink(missing_ok=True)
         report.unlink(missing_ok=True)
     return rc == 0, f"replay-shadow rc={rc}: {out.strip()[-160:]}"
@@ -204,7 +276,9 @@ def gate_tick(cfg: Config, live: str) -> str:
     with worktree(cfg, gate_code(cfg, live)) as root:
         env = {**os.environ, forge_api.FORGE_URL_ENV: cfg.forge_url,
                forge_api.FORGE_CA_ENV: str(cfg.ca), forge_api.FORGE_BARE_ENV: str(cfg.bare),
-               forge_api.FORGE_TOKEN_FILE_ENV: str(cfg.tokens / "merge-gate.token")}
+               forge_api.FORGE_TOKEN_FILE_ENV: str(cfg.tokens / "merge-gate.token"),
+               "QUANT_TRUST_CHECKER": str(cfg.trust_checker or ""),
+               "QUANT_TRUST_PIN": str(cfg.trust_pin or "")}
         rc, out = _run([cfg.python, ".github/scripts/audit_gate.py", "--repo",
                         forge_api.FORGE_REPO, "--sweep", "--box"], cwd=root, env=env, timeout=1800)
     return f"gate rc={rc}: {out.strip().splitlines()[-1][:200] if out.strip() else ''}"
@@ -229,6 +303,19 @@ def checked(runs: Sequence[Mapping[str, Any]], now: datetime | None = None) -> b
     return False
 
 
+_VERDICT = re.compile(r"^AUDIT (CLEAR|HOLD) ([0-9a-f]{40})(?: (merge|squash))?[ \t]*$", re.M)
+
+
+def audited_clear(comments: Sequence[Mapping[str, Any]], head: str) -> bool:
+    """The latest verdict line (as the forge adapter shows it: only the auditor's or the owner's
+    CLEAR survives) is a CLEAR of exactly `head`. No reviewed CLEAR, no PR code on the box."""
+    last = None
+    for c in comments:
+        for m in _VERDICT.finditer(str(c.get("body") or "")):
+            last = (m.group(1), m.group(2))
+    return last == ("CLEAR", head)
+
+
 def pr_tick(cfg: Config) -> str:
     f = _forge(cfg, forge_api.BOX_CI_USER)
     prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
@@ -236,6 +323,8 @@ def pr_tick(cfg: Config) -> str:
         head = str((p.get("head") or {}).get("sha") or "")
         if not head or checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue
+        if not audited_clear(f.gh(f"repos/x/y/issues/{p.get('number')}/comments"), head):
+            continue  # Audit MF-2: unreviewed code never runs on the trading box
         base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
         changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
         with worktree(cfg, head) as root:
@@ -376,6 +465,7 @@ def inbox_tick(cfg: Config) -> str:
         return _run(["git", "-C", str(cfg.bare), *args], timeout=600)
 
     rows = inbox.drain(cfg.inbox, git=run_git, api=_forge(cfg, "claude").t)
+    rows += inbox.drain_verdicts(cfg.inbox / "verdicts", api=_forge(cfg, "auditor").t)
     return "; ".join(rows) or "inbox empty"
 
 
@@ -400,14 +490,23 @@ def live_head(cfg: Config) -> str:
 def main(argv: list[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--config", required=True, help="JSON with the Config fields")
+    ap.add_argument("--config", help="JSON with the Config fields")
+    ap.add_argument("--ci-worker", metavar="JOBS", help="run as the unprivileged CI worker")
     a = ap.parse_args(argv)
+    if a.ci_worker:
+        print(f"ci worker ran {worker_pass(Path(a.ci_worker))} job(s)")
+        return 0
+    if not a.config:
+        ap.error("--config is required")
     raw = json.loads(Path(a.config).read_text(encoding="utf-8"))
     cfg = Config(forge_url=raw["forge_url"], bare=Path(raw["bare"]), work=Path(raw["work"]),
                  tokens=Path(raw["tokens"]), ca=Path(raw["ca"]), state=Path(raw["state"]),
                  python=raw.get("python") or sys.executable,
                  inbox=Path(raw["inbox"]) if raw.get("inbox") else None,
-                 boot=raw.get("boot") or None)
+                 boot=raw.get("boot") or None,
+                 ci_jobs=Path(raw["ci_jobs"]) if raw.get("ci_jobs") else None,
+                 trust_checker=Path(raw["trust_checker"]) if raw.get("trust_checker") else None,
+                 trust_pin=Path(raw["trust_pin"]) if raw.get("trust_pin") else None)
     doc = tick(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
     box_ci.save_state(report, doc)
