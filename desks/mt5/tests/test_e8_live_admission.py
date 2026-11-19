@@ -55,6 +55,48 @@ def test_e8_admission_requires_replication_and_honours_principal_exclusions(
         "excluded": "principal exclusion: Reddit-only lineage"}
 
 
+def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """zuck 2026-11-19: all certified strategies flow into E8. An unnamed key is admitted (sized
+    by RISK_FRAC), an explicit zero still stands aside, and the gold-only zeros are lifted."""
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {
+        "gold_asia": 0.006,
+        "EURCHF_formula_asia": 0.0,
+        "NZDJPY_clock_transition_asia": 0.0,
+        "AUDCHF_overnight_gap_decay_asia": 0.0}, "excluded": {}}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls: _Gate()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    rows = [
+        {"key": "unnamed", "symbol": "NAS100", "family": "overnight_gap_decay",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "paused", "symbol": "EURCHF", "family": "formula",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "lifted_nzd", "symbol": "NZDJPY", "family": "clock_transition",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "lifted_aud", "symbol": "AUDCHF", "family": "overnight_gap_decay",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+    ]
+    accepted, blocked = e8_book.live_admissible(rows)
+    assert [r["key"] for r in accepted] == ["unnamed", "lifted_nzd", "lifted_aud"]
+    assert blocked == [{"certificate": "paused",
+                        "why": "principal zero in the E8 principal book"}]
+
+
+def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
+    raw = {"gold_asia": 0.006, "USDJPY_session_range_breakout_asia": 0.0,
+           "NZDJPY_clock_transition_asia": 0.0, "AUDCHF_overnight_gap_decay_asia": 0.002,
+           "flag": True}
+    assert e8_book.principal_e8_book(raw) == {
+        "gold_asia": 0.006, "USDJPY_session_range_breakout_asia": 0.0,
+        "AUDCHF_overnight_gap_decay_asia": 0.002}
+    assert e8_book.principal_e8_book(None) == {}
+    lifted = frozenset({"NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
+    assert lifted == e8_book.SUPERSEDED_E8_ZEROS
+
+
 def test_missing_exclusion_authority_refuses_to_build(tmp_path: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(e8_book, "CERT_BOOK", tmp_path / "missing.json")

@@ -211,6 +211,33 @@ def _spec_fingerprint(spec: dict[str, Any]) -> str:
                             spec.get("selector"), spec.get("side"), spec.get("params"))
 
 
+#: ZEROS IN THE E8 PRINCIPAL BOOK THAT THE PRINCIPAL HAS SINCE LIFTED (zuck 2026-11-19 12:15Z: "all
+#: the strategies [should] flow into [E8] ... because we want both accounts to pass with high
+#: probability and speed"). They were written by the 2026-10-20 21:52Z order "trade only gold asia"
+#: and its 17:02Z companion ("USDJPY, NZDJPY and AUDCHF stay at 0.0"), which the 11-19 order
+#: replaces. CERT_BOOK_LIVE.json is box state (libs/ops/release.STATE_PREFIXES), so an origin edit
+#: of its e8 block would be reverted by the box's next push; the lift is therefore read here, in
+#: one place both readers use (this book and prop/e8_executor).
+#: USDJPY_session_range_breakout_asia is NOT lifted: its zero is a lineage quarantine (CERT_BOOK_LIVE `e8_pins`, live_sleeve_policy), not the
+#: gold-only order, and its own route is #1313. REVERT: empty this set.
+SUPERSEDED_E8_ZEROS: frozenset[str] = frozenset({
+    "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
+
+
+def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
+    """The E8 principal book as it stands today: the cert block, less the zeros the principal
+    lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
+    block does not name is sized by the book's RISK_FRAC."""
+    out: dict[str, float] = {}
+    for k, v in (raw or {}).items():
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            continue
+        if k in SUPERSEDED_E8_ZEROS and not v > 0:
+            continue
+        out[str(k)] = float(v)
+    return out
+
+
 def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """Apply the existing replication and principal exclusion doors before ranking E8 risk."""
     from admission_integrity import IntegrityGate, REPLICATED
@@ -221,7 +248,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     if not isinstance(excluded, dict):
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
-    authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
+    principal_book = principal_e8_book(load_cert_book(CERT_BOOK, "e8"))
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
     accepted: list[dict[str, Any]] = []
@@ -231,8 +258,11 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
-        if not (authorized_book.get(book_key, 0) > 0):
-            reason = "not named with positive risk in the E8 principal book"
+        # EVERY CERTIFIED SLEEVE FLOWS INTO E8 (zuck 2026-11-19 12:15Z). Only an explicit zero in
+        # the principal book stands a key aside; an unnamed key is sized by RISK_FRAC. Before this
+        # an unnamed key was refused, which left E8 on gold_asia alone.
+        if book_key in principal_book and not principal_book[book_key] > 0:
+            reason = "principal zero in the E8 principal book"
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:

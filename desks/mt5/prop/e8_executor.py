@@ -948,7 +948,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     # 2026-10-07), keyed the allocator's way: SYMBOL_family_selector. Every other sleeve keeps the
     # book's RISK_FRAC. Absent, disabled or invalid -> None, and nothing changes.
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
-    cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
+    from prop.e8_book import principal_e8_book
+
+    cert = principal_e8_book(load_cert_book(CERT_BOOK_FILE, "e8"))
     doc["cert_book"] = cert or None
     committed_usd = 0.0
     try:
