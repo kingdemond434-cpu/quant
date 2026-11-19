@@ -507,14 +507,21 @@ def _thin_day(store: ts.TapeStore, sym: str, day: str, holes: list[range]) -> No
     store.seal_day(sym, day)
 
 
+def _scatter(seed: int, width: int, n: int) -> list[range]:
+    """n empty runs of `width` minutes at day-specific places, so no minute is chronically empty
+    (a chronically empty minute is outside the session model and never reaches this rule)."""
+    rng = np.random.default_rng(seed)
+    starts = sorted(int(x) for x in rng.choice(np.arange(10, 1400 // (width + 2)), n,
+                                               replace=False) * (width + 2))
+    return [range(m, m + width) for m in starts]
+
+
 def test_short_empty_runs_on_a_thin_symbol_are_quiet_and_do_not_fail(store: ts.TapeStore) -> None:
     days = _weeks(4)
-    for d in days[:-1]:
-        _thin_day(store, "USDIDR", d, [range(100, 108), range(500, 506)])   # baseline: 8 min
+    for i, d in enumerate(days[:-1]):
+        _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))            # baseline: 8-min runs
     bad = days[-1]
-    holes = [range(10 * i + 20, 10 * i + 26) for i in range(0, 100, 1)][:0] + \
-        [range(m, m + 6) for m in range(20, 1400, 24)]                       # 6-min quiet runs
-    _thin_day(store, "USDIDR", bad, holes)
+    _thin_day(store, "USDIDR", bad, _scatter(99, 6, 20))            # 120 min in 6-min runs
     row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
     assert row["quiet_minutes"] >= ti.UNEXPLAINED_FAIL_MIN
     assert row["unexplained_minutes"] == 0
@@ -523,8 +530,8 @@ def test_short_empty_runs_on_a_thin_symbol_are_quiet_and_do_not_fail(store: ts.T
 
 def test_a_run_longer_than_the_symbols_own_baseline_still_fails(store: ts.TapeStore) -> None:
     days = _weeks(4)
-    for d in days[:-1]:
-        _thin_day(store, "USDIDR", d, [range(100, 108)])
+    for i, d in enumerate(days[:-1]):
+        _thin_day(store, "USDIDR", d, _scatter(i, 8, 6))
     bad = days[-1]
     _thin_day(store, "USDIDR", bad, [range(300, 345)])      # one 45-min hole, above the ceiling
     row = next(r for r in ti.run(store, ["USDIDR"], days_back=0)["days"] if r["day"] == bad)
@@ -535,12 +542,37 @@ def test_a_run_longer_than_the_symbols_own_baseline_still_fails(store: ts.TapeSt
 
 def test_no_baseline_means_no_quiet_allowance(store: ts.TapeStore) -> None:
     days = _weeks(1)[:5]
-    for d in days:
-        _thin_day(store, "USDIDR", d, [range(range_start, range_start + 5)
-                                       for range_start in range(20, 1400, 20)][:40])
+    for i, d in enumerate(days):
+        _thin_day(store, "USDIDR", d, _scatter(i, 5, 20))
     rows = ti.run(store, ["USDIDR"], days_back=0)["days"]
     assert all(r["quiet_minutes"] == 0 for r in rows)
 
 
 def test_quiet_ceiling_sits_below_the_fail_line() -> None:
     assert ti.QUIET_RUN_CEILING < ti.UNEXPLAINED_FAIL_MIN
+
+
+def test_a_sparse_symbol_is_unmeasured_never_failed_on_a_collapsed_session(
+        store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    for i, d in enumerate(days):
+        store.write_segment("USDRUB", d, _synth(d, range(300 + i, 340 + i), per_minute=2),
+                            POINT, 5)
+        store.seal_day("USDRUB", d)
+    rep = ti.run(store, ["USDRUB"], days_back=0)
+    assert all(r["verdict"] == ti.UNMEASURED for r in rep["days"])
+    assert any("sparse" in x for x in rep["days"][0]["reasons"])
+
+
+def test_a_venue_halt_is_excluded_as_unmeasured_and_listed_never_passed(
+        store: ts.TapeStore) -> None:
+    days = _weeks(4)
+    for d in days[:-3]:
+        _write_days(store, "SPACEX", [d])
+    for d in days[-3:]:
+        store.write_segment("SPACEX", d, _synth(d, range(990, 992), per_minute=3), POINT, 5)
+        store.seal_day("SPACEX", d)
+    rep = ti.run(store, ["SPACEX"], days_back=0)
+    assert "SPACEX" in rep["venue_halt_suspected"]
+    tail = [r for r in rep["days"] if r["day"] in days[-3:]]
+    assert tail and all(r["verdict"] == ti.UNMEASURED for r in tail)

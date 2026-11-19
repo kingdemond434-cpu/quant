@@ -163,14 +163,33 @@ UNEXPLAINED_DEGRADED_MIN = 1  # ANY unexplained minute is at least DEGRADED
 #:
 #: THE ALLOWANCE IS MEASURED, PER SYMBOL, AND BOUNDED. A run of missing session minutes with no
 #: gap row is QUIET only when it is no longer than the longest empty run that symbol produced on
-#: its own gap-free days (the baseline), and never longer than QUIET_RUN_CEILING. The baseline
-#: needs QUIET_MIN_BASELINE_DAYS gap-free days; with fewer there is NO allowance (UNMEASURED
+#: its own gap-free days (the baseline: the 90th percentile of the per-day longest empty run, so
+#: a single hole day cannot widen its own allowance), and never longer than QUIET_RUN_CEILING.
+#: The baseline needs QUIET_MIN_BASELINE_DAYS gap-free days; with fewer there is NO allowance
+#: (UNMEASURED
 #: never resolves to a clean verdict, L1.28a). A run longer than the symbol's own baseline stays
 #: unexplained and fails exactly as before. The ceiling sits BELOW UNEXPLAINED_FAIL_MIN so one
 #: unbroken hole at the fail line can never be excused. Quiet minutes are published in full on
 #: every row (`quiet_minutes`, `quiet_run_cap`) and are not credited to the gap ledger. The
 #: FAIL/DEGRADED lines above are unchanged.
-QUIET_MIN_BASELINE_DAYS = 5
+QUIET_MIN_BASELINE_DAYS = 10
+QUIET_BASELINE_PCT = 90
+
+#: SPARSE SYMBOLS. An instrument that prints 40-160 ticks a DAY (USDRUB measured 2026-11-19) has
+#: no minute-level session: the quorum mask collapses to a couple of minutes ("2 min session")
+#: and every other day then fails against it. Minute coverage is meaningless there, so it is
+#: UNMEASURED (never OK, never FAIL) while every other check (corruption, duplicates, crossed
+#: quotes) still runs. Rests on at least SPARSE_MIN_DAYS observed days.
+SPARSE_DISTINCT_MINUTES = 120
+SPARSE_MIN_DAYS = 10
+
+#: VENUE HALT. The newest consecutive days (at least VENUE_HALT_MIN_DAYS) carrying under
+#: VENUE_HALT_FRAC of the symbol's own earlier median tick count. Not a pass: the days become
+#: UNMEASURED, are listed in `venue_halt_suspected` and stay visible. Recorder death is the
+#: other cause and is judged by the gap ledger and the recorder status, not hidden here.
+VENUE_HALT_FRAC = 0.05
+VENUE_HALT_MIN_DAYS = 2
+VENUE_HALT_MIN_PRIOR_DAYS = 10
 QUIET_RUN_CEILING = 20
 DUP_DEGRADED = 0.05           # >5% duplicate rows: the overlap policy costs more than it should
 CROSSED_DEGRADED = 0.001      # >0.1% crossed quotes: the feed is not behaving as a feed
@@ -274,6 +293,8 @@ class SessionModel:
     #: such days it rests on. 0 / below QUIET_MIN_BASELINE_DAYS means NO quiet allowance.
     quiet_run_cap: int = 0
     quiet_baseline_days: int = 0
+    #: Median distinct tick-minutes per day under SPARSE_DISTINCT_MINUTES (see above).
+    sparse: bool = False
 
     def mask_for(self, day: str) -> tuple[np.ndarray, str, int]:
         """(session mask, basis, observations behind it) for one calendar day.
@@ -326,6 +347,10 @@ def observed_session(store: TapeStore, symbol: str, days: list[str],
     model = SessionModel(symbol=symbol, per_weekday=per_wd, weekday_obs=obs,
                          pooled_weekday=pooled, pooled_obs=pooled_obs)
     model.quiet_run_cap, model.quiet_baseline_days = _quiet_baseline(store, symbol, days, model)
+    distinct = [int(store.minute_mask(symbol, d).sum()) for d in days]
+    distinct = [n for n in distinct if n > 0]
+    model.sparse = (len(distinct) >= SPARSE_MIN_DAYS
+                    and float(np.median(distinct)) < SPARSE_DISTINCT_MINUTES)
     return model
 
 
@@ -341,7 +366,7 @@ def _runs(flags: np.ndarray) -> list[tuple[int, int]]:
 def _quiet_baseline(store: TapeStore, symbol: str, days: list[str],
                     model: SessionModel) -> tuple[int, int]:
     """(longest empty run in minutes, gap-free days it rests on) from this symbol's own tape."""
-    longest = 0
+    per_day: list[int] = []
     n = 0
     for day in days:
         mask = store.minute_mask(symbol, day)
@@ -354,8 +379,11 @@ def _quiet_baseline(store: TapeStore, symbol: str, days: list[str],
             continue
         n += 1
         runs = _runs(session & ~mask)
-        longest = max([longest] + [ln for _, ln in runs])
-    return min(longest, QUIET_RUN_CEILING), n
+        per_day.append(max([0] + [ln for _, ln in runs]))
+    if not per_day:
+        return 0, 0
+    cap = int(np.percentile(per_day, QUIET_BASELINE_PCT, method="lower"))
+    return min(cap, QUIET_RUN_CEILING), n
 
 
 def claim_window(store: TapeStore, symbol: str, day: str, now_ms: int) -> tuple[int, int]:
@@ -534,6 +562,15 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     v.longest_stale_s = round(float(run_s.max()) if run_s.size else 0.0, 1)
     del run_id
 
+    if model.sparse:
+        v.verdict, v.reasons = _verdict(v)          # corruption, duplicates, crossed: still judged
+        if v.verdict == OK:
+            v.verdict = UNMEASURED
+        v.reasons.append(
+            f"sparse symbol (median under {SPARSE_DISTINCT_MINUTES} tick-minutes a day): minute "
+            f"coverage is UNMEASURED rather than judged against a collapsed session (L1.28a)")
+        return v
+
     # -- COVERAGE, against the symbol's own session, over the window this desk actually claims.
     if not session.any():
         v.verdict = UNMEASURED
@@ -575,11 +612,31 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
                 unexplained[start:start + ln] = False
                 v.quiet_minutes += ln
     v.unexplained_minutes = int(np.count_nonzero(unexplained))
-    v.coverage_frac_effective = round((v.covered_minutes + v.quiet_minutes) / v.session_minutes, 4) \
-        if v.session_minutes else None
+    v.coverage_frac_effective = (
+        round((v.covered_minutes + v.quiet_minutes) / v.session_minutes, 4)
+        if v.session_minutes else None)
 
     v.verdict, v.reasons = _verdict(v)
     return v
+
+
+def apply_venue_halt(sym_rows: list[DayVerdict]) -> bool:
+    """Mark the trailing collapsed days of one symbol UNMEASURED. True when it applied."""
+    live = [r for r in sorted(sym_rows, key=lambda r: r.day) if r.n_ticks > 0]
+    best = None
+    for k in range(VENUE_HALT_MIN_PRIOR_DAYS, len(live) - VENUE_HALT_MIN_DAYS + 1):
+        floor = VENUE_HALT_FRAC * float(np.median([r.n_ticks for r in live[:k]]))
+        if all(r.n_ticks < floor for r in live[k:]):
+            best = k
+            break
+    if best is None:
+        return False
+    med = int(np.median([r.n_ticks for r in live[:best]]))
+    for r in live[best:]:
+        r.verdict = UNMEASURED
+        r.reasons.append(f"venue halt suspected: {r.n_ticks} ticks against an earlier median of "
+                         f"{med}; excluded as UNMEASURED, never a pass")
+    return True
 
 
 def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
@@ -602,11 +659,11 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
     if cov is not None:
         if cov < COVERAGE_FAIL:
             worst = FAIL
-            reasons.append(f"coverage {v.coverage_frac:.1%} of this symbol's own session "
+            reasons.append(f"coverage {cov:.1%} of this symbol's own session "
                            f"(fail below {COVERAGE_FAIL:.0%})")
-        elif v.coverage_frac < COVERAGE_DEGRADED:
+        elif cov < COVERAGE_DEGRADED:
             worst = DEGRADED if worst == OK else worst
-            reasons.append(f"coverage {v.coverage_frac:.1%} (degraded below "
+            reasons.append(f"coverage {cov:.1%} (degraded below "
                            f"{COVERAGE_DEGRADED:.0%})")
     if v.dup_rate > DUP_DEGRADED:
         worst = DEGRADED if worst == OK else worst
@@ -692,8 +749,10 @@ def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel
         bool(model.pooled_obs >= MIN_SESSION_DAYS),
         [COVERAGE_FAIL, COVERAGE_DEGRADED, UNEXPLAINED_FAIL_MIN, UNEXPLAINED_DEGRADED_MIN,
          DUP_DEGRADED, CROSSED_DEGRADED, STALE_RUN_S, ONE_SIDED_FX, SESSION_QUORUM,
-         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS, QUIET_MIN_BASELINE_DAYS, QUIET_RUN_CEILING],
-        int(model.quiet_run_cap), int(model.quiet_baseline_days),
+         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS, QUIET_MIN_BASELINE_DAYS, QUIET_RUN_CEILING,
+         QUIET_BASELINE_PCT, SPARSE_DISTINCT_MINUTES, SPARSE_MIN_DAYS],
+        bool(model.sparse), int(model.quiet_run_cap
+            if model.quiet_baseline_days >= QUIET_MIN_BASELINE_DAYS else 0),
         asset_class_of(symbol), bool(is_fx(symbol)),
     ]
     h.update(json.dumps(parts, default=str, sort_keys=True).encode("utf-8"))
@@ -763,6 +822,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
     if days_back:
         cutoff = (datetime.now(tz=UTC).date() - timedelta(days=int(days_back))).isoformat()
     rows: list[DayVerdict] = []
+    halted: list[str] = []
     per_symbol: dict[str, dict[str, Any]] = {}
     now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
     for sym in syms:
@@ -796,6 +856,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             fresh[key] = {"fp": day_fingerprint(store, sym, d, model), "at": now_s,
                           "row": asdict(row)}
             sym_rows.append(row)
+        if apply_venue_halt(sym_rows):
+            halted.append(sym)
         rows.extend(sym_rows)
         ticks = sum(r.n_ticks for r in sym_rows)
         byts = sum(r.bytes for r in sym_rows)
@@ -888,6 +950,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
                        "median_spread_pts": r.median_spread_pts,
                        "sided_counts": r.sided_counts}
                       for r in sorted(rows, key=lambda r: -r.locked_rate) if r.one_sided][:200],
+        "venue_halt_suspected": halted,
         "days": [asdict(r) for r in rows],
     }
 
