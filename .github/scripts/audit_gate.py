@@ -681,7 +681,38 @@ def newest_run_id(
 GH_TIMEOUT_S = 120
 
 
+_FORGE: Any = None
+
+
+def _forge() -> Any:
+    """The box forge's answer to `_gh` (ops/box_git/forge_api.py), when QUANT_FORGE_URL is set.
+
+    THE BOX IS THE SOURCE OF TRUTH (principal 2026-11-19, D-20261119-BOXGIT). The rules in this
+    file are unchanged; only where their facts come from moves. The forge module is read from
+    THIS checkout (the base's), like every other part of the gate."""
+    global _FORGE
+    if _FORGE is None:
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[2] / "ops" / "box_git" / "forge_api.py"
+        spec = importlib.util.spec_from_file_location("_gate_forge_api", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("the forge adapter is missing from this checkout")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        issue = os.environ.get("QUANT_FORGE_APPROVALS_ISSUE")
+        _FORGE = mod.Forge(mod.http_transport(), workflow_of=WORKFLOW_OF,
+                           bare=os.environ.get(mod.FORGE_BARE_ENV),
+                           approvals_issue=int(issue) if issue and issue.isdigit() else None)
+    return _FORGE
+
+
 def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
+    if os.environ.get("QUANT_FORGE_URL"):
+        try:
+            return _forge().gh(*args, data=data)
+        except (OSError, ValueError, KeyError) as exc:
+            raise RuntimeError(f"forge {' '.join(args)}: {type(exc).__name__}: {exc}") from exc
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]

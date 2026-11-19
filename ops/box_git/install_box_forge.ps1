@@ -233,7 +233,7 @@ $r = Forge @("admin", "user", "create", "--username", "claude", "--password", $b
 $botPass = $null
 # The two box roles the repository hook trusts by the forge's own pusher name (never by anything
 # a client sends): merge-gate moves LIVE/production/master, release-authority creates release tags.
-foreach ($u in @("merge-gate", "release-authority")) {
+foreach ($u in @("merge-gate", "release-authority", "box-ci")) {
     $null = Forge @("admin", "user", "create", "--username", $u, "--password", (New-Secret 24),
                     "--email", "$u@box.invalid", "--must-change-password=false")
 }
@@ -265,7 +265,7 @@ function Api([string] $method, [string] $path, $body = $null) {
 try { Api POST "/orgs" @{ username = "quant"; visibility = "private" } | Out-Null; Say "created org quant" } catch { Say "org quant exists" }
 try { Api POST "/orgs/quant/repos" @{ name = "quant"; private = $true; default_branch = $Live } | Out-Null; Say "created quant/quant" } catch { Say "repo quant/quant exists" }
 try { Api PUT "/repos/quant/quant/collaborators/claude" @{ permission = "write" } | Out-Null } catch { }
-foreach ($u in @("merge-gate", "release-authority")) {
+foreach ($u in @("merge-gate", "release-authority", "box-ci")) {
     try { Api PUT "/repos/quant/quant/collaborators/$u" @{ permission = "write" } | Out-Null } catch { }
 }
 
