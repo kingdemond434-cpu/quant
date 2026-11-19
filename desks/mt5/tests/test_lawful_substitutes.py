@@ -146,8 +146,34 @@ def test_youtube_rows_keep_derived_readings_only_never_api_data(monkeypatch, tmp
     d = ym.YTDiscovery(title="XAUUSD london breakout", channel="c", url="https://youtube.com/watch?v=x",
                        published="2026-11-19", symbols_mentioned=["XAUUSD"])
     monkeypatch.setattr(ym, "mine", lambda: [d])
+    monkeypatch.setattr(ym, "API_KEY", "k")
     monkeypatch.setattr(ym, "OUT", tmp_path)
     rows = ym.run_and_save()
     assert rows and not {"title", "channel", "url"} & set(rows[0])
     assert rows[0]["symbols"] == ["XAUUSD"] and len(rows[0]["video_ref"]) == 16
     assert "api-services-terms" in ym.YOUTUBE_TERMS["tos_url"]
+
+
+def test_youtube_without_a_key_is_unconfigured_and_never_scrapes(monkeypatch) -> None:
+    import pytest
+    import youtube_miner as ym
+    monkeypatch.setattr(ym, "API_KEY", "")
+    monkeypatch.setattr(ym, "mine", lambda: (_ for _ in ()).throw(AssertionError("searched")))
+    with pytest.raises(RuntimeError, match="UNCONFIGURED"):
+        ym.run_and_save()
+
+
+def test_aaii_fetches_only_through_the_gate_at_its_crawl_delay(monkeypatch) -> None:
+    import aaii_sentiment_miner as am
+    src = Path(am.__file__).read_text("utf-8")
+    assert "requests.get(" not in src and "Feed()" in src
+    assert "www.aaii.com" in ls.TERMS and ls.PACE_S["www.aaii.com"] >= 10
+    web = _Web({"www.aaii.com": _Resp(200, "User-agent: *\nDisallow: /sentimentsurvey")}, {})
+    monkeypatch.setattr(ls, "_default_get", lambda: web)
+    rows = am.mine_aaii()
+    assert rows[0]["kind"] == "fetch_error" and "ROBOTS_REFUSED" in rows[0]["error"]
+    assert [u for u, _ in web.log] == ["https://www.aaii.com/robots.txt"]
+
+
+def test_no_feed_reaches_an_unread_calendar_host() -> None:
+    assert "nfs.faireconomy.media" not in ls.TERMS

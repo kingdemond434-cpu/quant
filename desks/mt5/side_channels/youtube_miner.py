@@ -3,8 +3,8 @@
 Scrapes YouTube for recent trading strategy videos, extracts mentioned
 symbols/timeframes/patterns, and outputs structured alpha candidates.
 
-Uses YouTube Data API v3 (free tier: 10,000 units/day).
-Falls back to web scraping if no API key available.
+Uses the YouTube Data API v3 only (free tier: 10,000 units/day). With no key the channel reports
+UNCONFIGURED and makes no request; nothing ever scrapes YouTube.
 """
 
 import hashlib
@@ -171,7 +171,7 @@ def mine(query: str = None, max_per_query: int = 10) -> list[YTDiscovery]:
             print(f"youtube: budget reached, stopping after {len(discoveries)} discovery(ies) "
                   f"from {queries.index(q)} of {len(queries)} queries")
             break
-        items = _search_api(q) if API_KEY else _search_web(q)
+        items = _search_api(q)
         for item in items:
             snippet = item.get("snippet", {})
             title = snippet.get("title", "")
@@ -205,6 +205,8 @@ def mine(query: str = None, max_per_query: int = 10) -> list[YTDiscovery]:
 
 def run_and_save() -> list[dict]:
     """Mine all queries and save results."""
+    if not API_KEY:
+        raise RuntimeError("UNCONFIGURED: no YouTube Data API key (YOUTUBE_API_KEY or YOUTUBE)")
     all_discoveries = mine()
     results = []
     for d in all_discoveries:

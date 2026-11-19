@@ -28,9 +28,16 @@ def mine_aaii() -> list[dict]:
     """Fetch AAII sentiment survey data."""
     discoveries = []
     try:
-        resp = requests.get(AAII_URL, headers=HEADERS, timeout=15)
-        resp.raise_for_status()
-        text = resp.text
+        # Through the lawful-feed gate (Auditor MF1, 2026-11-19): terms on record, robots read at
+        # fetch time and failing closed, Crawl-delay 10 honoured, 401/403/429/451 a hard stop.
+        try:
+            from side_channels.lawful_substitutes import Feed
+        except ModuleNotFoundError:
+            from lawful_substitutes import Feed
+        feed = Feed()
+        text = feed.text(AAII_URL)
+        if text is None:
+            raise RuntimeError(f"not fetched: {feed.refused or feed.errors}")
 
         # Extract sentiment percentages
         bullish = re.search(r'bullish.*?(\d+\.?\d*)%', text, re.IGNORECASE)

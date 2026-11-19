@@ -82,11 +82,12 @@ TERMS: dict[str, dict[str, str]] = {
         "quote": ("Current max request rate: 10 requests/second; robots.txt: "
                   "Allow: /Archives/edgar/data"),
         "checked": "2026-11-19"},
-    "nfs.faireconomy.media": {
-        "url": "https://nfs.faireconomy.media/robots.txt",
-        "quote": ("robots.txt 'User-agent: * / Disallow:' (nothing disallowed); registered "
-                  "machine_use_allowed in desks/mt5/data/event_consensus_sources.json "
-                  "(ff_calendar_thisweek) since 2026-09-30"),
+    "www.aaii.com": {
+        "url": "https://www.aaii.com/privacy/tos",
+        "quote": ("no clause on automated access, robots or scraping (silent); section 6: "
+                  "\"No part of the contents of the website or newsletter may be copied or "
+                  "forwarded to anyone else;\" -- rows carry readings only. robots.txt: "
+                  "Crawl-delay: 10 (undated page)"),
         "checked": "2026-11-19"},
     "services9.arcgis.com": {
         "url": "https://www.imf.org/external/terms.htm",
@@ -111,6 +112,11 @@ PATTERNS = ("breakout", "mean reversion", "momentum", "trend following", "grid",
             "carry", "session", "london open", "asia range", "order block", "liquidity",
             "pairs trading", "statistical arbitrage", "cointegration", "seasonality",
             "volatility", "news", "sentiment", "regime")
+
+#: Seconds between requests to one host: arXiv's terms (3s), aaii's and PortWatch's robots
+#: Crawl-delay (10s, 60s); everyone else 1s, which keeps EDGAR far under its 10 requests/second.
+PACE_S: dict[str, float] = {"export.arxiv.org": 3.0, "www.aaii.com": 10.0,
+                            "services9.arcgis.com": 60.0}
 
 Getter = Callable[..., Any]
 
@@ -188,7 +194,7 @@ class Feed:
         self._last: dict[str, float] = {}
 
     def _pace(self, host: str) -> None:
-        gap = self.pace_s if self.pace_s is not None else (3.0 if "arxiv" in host else 1.0)
+        gap = self.pace_s if self.pace_s is not None else PACE_S.get(host, 1.0)
         wait = self._last.get(host, 0.0) + gap - time.monotonic()
         if wait > 0:
             time.sleep(wait)
@@ -353,22 +359,6 @@ def arxiv_papers(feed: Feed, channel: str, queries: tuple[str, ...]) -> list[dic
     return rows
 
 
-def faireconomy_calendar(feed: Feed, channel: str) -> list[dict[str, Any]]:
-    """This week's macro calendar with forecasts: the public feed the desk already registers."""
-    got = feed.json("https://nfs.faireconomy.media/ff_calendar_thisweek.json")
-    rows: list[dict[str, Any]] = []
-    for ev in got if isinstance(got, list) else []:
-        if not isinstance(ev, dict) or str(ev.get("impact", "")).lower() not in ("high", "medium"):
-            continue
-        rows.append({"source": channel, "feed": "faireconomy_calendar",
-                     "title": f"{ev.get('country', '')} {ev.get('title', '')}",
-                     "country": ev.get("country", ""), "event_time": ev.get("date", ""),
-                     "impact": ev.get("impact", ""), "forecast": ev.get("forecast", ""),
-                     "previous": ev.get("previous", ""), "symbols": [],
-                     "patterns": ["news"], "discovered_at": _now()})
-    return rows
-
-
 #: The large 13F filers the sec_edgar miner tracked, read through data.sec.gov (robots-allowed,
 #: fair-access UA) instead of /cgi-bin/browse-edgar, which sec.gov's robots.txt disallows.
 FUND_CIKS = {"Bridgewater": "0001350694", "Renaissance": "0001037389",
@@ -477,8 +467,10 @@ SUBSTITUTES: dict[str, tuple[str, str, Callable[[Feed, str], list[dict[str, Any]
                                   "S&P_500": ("US500",), "Nasdaq-100": ("NAS100",),
                                   "Petroleum": ("XTIUSD",), "Silver": ("XAGUSD",)}),
         "reddit terms unconfirmed and its API needs an account; Wikipedia attention instead"),
-    "forexfactory": ("forexfactory", "www.forexfactory.com", faireconomy_calendar,
-                     "the forexfactory site's terms are unconfirmed; its own published feed"),
+    "forexfactory": ("forexfactory", "www.forexfactory.com", functools.partial(
+        gdelt_news, queries=('"nonfarm payrolls"', '"CPI" inflation data',
+                             '"rate decision" central bank', '"PMI" manufacturing')),
+        "Forex Factory's and faireconomy.media's terms could not be read; GDELT release news"),
     "sec_edgar": ("sec_edgar", "www.sec.gov/cgi-bin", functools.partial(
         sec_filings, forms=("13F-HR", "13F-HR/A", "SC 13G", "SC 13D")),
         "sec.gov robots disallows /cgi-bin; the EDGAR submissions API is the documented route"),

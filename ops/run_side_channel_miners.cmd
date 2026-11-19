@@ -21,7 +21,7 @@ rem on the YouTube Data API key: the principal lifted the YouTube ban on 2026-11
 rem The other 17 have a
 rem site that bans automated access or whose terms were not confirmed, so they run on a keyless
 rem official API with its terms on record, in desks\mt5\side_channels\lawful_substitutes.py
-rem (GitHub, GDELT, Wikimedia, arXiv, EDGAR, IMF PortWatch, the faireconomy feed). sec_edgar
+rem (GitHub, GDELT, Wikimedia, arXiv, EDGAR, IMF PortWatch). aaii also goes through its gate. sec_edgar
 rem and earnings need the EDGAR contact string, read from QUANT_EDGAR_UA or EDGAR_UA.
 setlocal
 set "QUANT_MINERS_ALLOW=youtube,github,mql5_codebase,mql5_articles,mql5_signals,mql5_forum,tradingview,quantconnect,reddit,central_bank,forexfactory,cot,sec_edgar,earnings,aaii,fear_greed,investing,google_trends,academic,correlations,seasonality,weather,shipping,china,korea"
