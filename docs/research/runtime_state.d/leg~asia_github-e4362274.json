@@ -1,0 +1,35 @@
+{
+ "organ": "leg:asia_github",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/research/asia_github_miner.py"
+ ],
+ "clock": "hourly_cycle:asia_github",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "UNMEASURED",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/ASIA_GITHUB.json",
+ "artifact_declared": "desks/mt5/reports/ASIA_GITHUB.json",
+ "artifact_resolved_by": "declared",
+ "artifact_declared_n": 1,
+ "artifact_age_s": 54,
+ "artifact_bytes": 2492,
+ "artifact_sha256": "cb0e37218ad1d2e6a7c8f50170f1b8921a123298a42cc8da164d8ce1c2337c58",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "desks/mt5/research/miner_candidate_compiler.py reads data/intelligence/asia_gith",
+ "measured_on": "vm",
+ "measured_on_machine_id": "02c0ff32d11f4f6ea20de4b2a2924cdc",
+ "measured_at": "2026-11-18T02:18:07+00:00",
+ "only_missing": {
+  "at": "2026-11-18T02:18:07+00:00",
+  "host": "vm",
+  "machine_id": "02c0ff32d11f4f6ea20de4b2a2924cdc",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

@@ -3962,6 +3962,13 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # THE FIRM ROLE MAP (zuck 2026-11-18): a human-readable view of libs/research/
+    # firm_lanes_roster.json. Terminal: the roster JSON is the declaration, and the hourly leg
+    # `firm_lanes` measures every lane in desks/mt5/reports/FIRM_LANES.json, so the table cannot
+    # rot unseen -- a lane that stops running shows there, not here.
+    "docs/research/FIRM_ROLE_MAP.md":
+        "VIEW OF libs/research/firm_lanes_roster.json; live verdicts are FIRM_LANES.json (leg "
+        "firm_lanes)",
     # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
     # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
     # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL
