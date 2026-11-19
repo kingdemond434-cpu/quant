@@ -85,6 +85,24 @@ def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
                         "why": "principal zero in the E8 principal book"}]
 
 
+def test_families_failing_forward_are_held_at_zero(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
+                                  "excluded": {}}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls: _Gate()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    rows = [{"key": k, "symbol": "EURUSD", "family": f, "selector": "asia",
+             "fingerprint": "frozen-spec"}
+            for k, f in (("held", "cross_asset_residual"), ("ok", "formula"))]
+    accepted, blocked = e8_book.live_admissible(rows)
+    assert [r["key"] for r in accepted] == ["ok"]
+    assert blocked[0]["certificate"] == "held"
+    assert blocked[0]["why"].startswith("forward evidence: cross_asset_residual")
+
+
 def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
     raw = {"gold_asia": 0.006, "USDJPY_session_range_breakout_asia": 0.0,
            "NZDJPY_clock_transition_asia": 0.0, "AUDCHF_overnight_gap_decay_asia": 0.002,

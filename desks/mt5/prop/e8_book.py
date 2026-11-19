@@ -224,6 +224,19 @@ SUPERSEDED_E8_ZEROS: frozenset[str] = frozenset({
     "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia"})
 
 
+#: FAMILIES HELD AT ZERO UNTIL THEY HOLD UP FORWARD (Judge forward calibration 2026-11-19,
+#: reports/judging/FORWARD_CALIBRATION_2026-11-19.md; coordinator 17:00Z; zuck 17:02Z "all of them
+#: ... through allocator" = every PROMOTABLE strategy, certified AND holding forward). Over 798
+#: certified clocks with 30+ days and 10+ forward trades, these families kept their edge on 14-41%
+#: of clocks at a negative trade-weighted mean R (cross_asset_residual 24% / -0.237R,
+#: macro_conditional 14% / -0.192R, carry 41% / -0.180R, pca_residual 33% / -0.086R), most likely
+#: from look-ahead in their outside-data joins. The price-only families held 95-100%. A family
+#: leaves this set when the Judge's point-in-time fix lands and its forward hit rate holds; the
+#: refusal is billed by name in E8_BOOK.json. REVERT: empty this set.
+FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
+    "cross_asset_residual", "macro_conditional", "carry", "pca_residual"})
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -263,6 +276,9 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         # an unnamed key was refused, which left E8 on gold_asia alone.
         if book_key in principal_book and not principal_book[book_key] > 0:
             reason = "principal zero in the E8 principal book"
+        elif fam in FORWARD_FAILING_FAMILIES and not principal_book.get(book_key, 0) > 0:
+            reason = (f"forward evidence: {fam} keeps its edge on too few clocks forward "
+                      "(Judge calibration 2026-11-19); held at zero until it holds up")
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
