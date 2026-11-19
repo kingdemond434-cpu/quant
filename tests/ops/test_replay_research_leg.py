@@ -38,9 +38,9 @@ day = pd.Timestamp(sc["day"], tz="UTC")
 now = day + pd.Timedelta(hours=23.9)
 mode = sys.argv[2]
 seen = []
-if mode == "lag":  # a macro publication lag two days longer than the tree's
+if mode == "lag":  # a macro publication floor past every declared fred_macro lag (6 days at most)
     from research import orthogonal_sweep as osw
-    osw.MACRO_PUBLICATION_LAG_D += 2
+    osw.MACRO_PUBLICATION_LAG_D += 6
 if mode == "as_of":  # a factor model that cuts at `as_of`, as #249's does, three days of lag
     from libs.portfolio import leg_factors as lf
     plain = lf._macro_changes
@@ -102,8 +102,11 @@ def test_the_leg_is_not_vacuous_and_is_deterministic(tmp_path: Path) -> None:
 
 
 def test_a_longer_macro_lag_changes_the_macro_cell(tmp_path: Path) -> None:
-    """Agreement only means something if the leg can disagree: two more days of publication lag
-    must move the macro_conditional input the leg compares."""
+    """Agreement only means something if the leg can disagree: a publication floor longer than
+    every declared fred_macro lag must move the macro_conditional input the leg compares. (Two
+    more days no longer binds once the series are rule-timed through the bitemporal store: over
+    the Columbus Day weekend the declared US release calendar already holds the print back that
+    long, which is the stricter alignment Tier S AC3 asks for.)"""
     plain, lagged = _run(tmp_path / "a"), _run(tmp_path / "b", "lag")
     assert lagged["macro_conditional"]["input"] != plain["macro_conditional"]["input"]
 
