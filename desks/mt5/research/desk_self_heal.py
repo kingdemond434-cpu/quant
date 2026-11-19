@@ -54,6 +54,11 @@ SHADOW_STALE_H = 3.0
 #: blip and two is a pattern.
 DAILY_STALE_D = 2.0
 
+#: Hours before QQUANT_GATES.json is stale. MT5-QQuantGatesCertify runs EVERY HOUR at :27
+#: (box_tasks.manifest); the old two-day limit let certification sit stalled for 27 hours on
+#: 2026-11-18 while this check read PASS. Six missed runs is a stall, not a blip.
+CERT_STALE_H = 6.0
+
 #: The files sync_shadow_to_git.ps1 carries. Absent, the other desk sees a
 #: frozen snapshot and cannot tell it from a live one.
 PUBLISHED = (
@@ -179,9 +184,10 @@ def check_certification(root: Path, now: datetime) -> Finding:
                        "the survivor channel to Aurum carries only negatives -- "
                        "which can cost that desk an edge but never give it one.")
     age = _age_h(f, now)
-    if age is not None and age > DAILY_STALE_D * 24:
+    if age is not None and age > CERT_STALE_H:
         return Finding("certification", False,
-                       f"last written {age / 24:.1f}d ago against a daily task",
+                       f"last written {age:.1f}h ago against an hourly task "
+                       f"(limit {CERT_STALE_H:.0f}h)",
                        fixable=True)
     try:
         d = json.loads(f.read_text(encoding="utf-8"))
@@ -330,6 +336,71 @@ def check_research_cadence(root: Path, now: datetime) -> Finding:
     return Finding("cadence", False, "; ".join(stale), fixable=True)
 
 
+#: JUDGE_STALL.json incidents (scripts/judge_stall_pager.py, on MT5-BoxHeartbeat's 5-minute
+#: clock) that RE-RUNNING THE GAUNTLET TASK can cure: the judge is dead, overdue or producing
+#: nothing. MT5-Gauntlet is IgnoreNew, so a run while a sweep is alive is a no-op, never a stack.
+#: `host_unreadable` and `inputs_unmeasured` are measurement faults no task run can cure.
+JUDGE_RERUN_INCIDENTS = ("resident_dead", "sweep_dead", "sweep_overdue", "no_verdict",
+                         "zero_judged_sweep")
+#: The pager rewrites JUDGE_STALL.json every five minutes; older than this, it is not running.
+JUDGE_STALL_REPORT_MAX_H = 1.0
+
+
+def check_judge_stall(root: Path, now: datetime) -> Finding:
+    """Is the judge -- the step every certificate passes through -- stalled right now?
+
+    The pager already DETECTS this; nothing acted on it. A stall that a page names and nobody
+    cures is the 2026-11-18 shape: certification stalled for a day with the alarm on the board.
+    """
+    f = root / "desks/mt5/reports/JUDGE_STALL.json"
+    if not f.exists():
+        return _absent("judge stall", "desks/mt5/reports", root,
+                       "JUDGE_STALL.json absent: the judge stall pager has never run here",
+                       fixable=False)
+    age = _age_h(f, now)
+    if age is not None and age > JUDGE_STALL_REPORT_MAX_H:
+        return Finding("judge stall", False,
+                       f"JUDGE_STALL.json is {age:.1f}h old against a 5-minute pager: the "
+                       f"pager (MT5-BoxHeartbeat) is not running, so a stall is unseen",
+                       fixable=False)
+    try:
+        inc = (json.loads(f.read_text(encoding="utf-8")).get("incidents") or {})
+    except (OSError, ValueError) as exc:
+        return Finding("judge stall", False, f"JUDGE_STALL.json unreadable ({exc})")
+    open_ = {k: v for k, v in inc.items() if isinstance(v, dict) and v.get("open") is True}
+    if not open_:
+        return Finding("judge stall", True, f"{len(inc)} incident(s) watched, none open")
+    curable = [k for k in open_ if k in JUDGE_RERUN_INCIDENTS]
+    detail = "; ".join(f"{k}: {str(v.get('why') or '')[:160]}" for k, v in open_.items())
+    return Finding("judge stall", False, detail, fixable=bool(curable))
+
+
+def check_tape(root: Path, now: datetime) -> Finding:
+    """Is the tick recorder -- the feed under every tape feature and cost -- advancing?"""
+    f = root / "desks/mt5/reports/TAPE_FRESHNESS.json"
+    if not f.exists():
+        return _absent("tape", "desks/mt5/reports", root,
+                       "TAPE_FRESHNESS.json absent: tape freshness is not measured here",
+                       fixable=False)
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return Finding("tape", False, f"TAPE_FRESHNESS.json unreadable ({exc})")
+    age = _age_h(f, now)
+    if age is not None and age > SHADOW_STALE_H:
+        return Finding("tape", False,
+                       f"TAPE_FRESHNESS.json itself is {age:.1f}h old: the freshness check "
+                       f"(MT5-TickIntegrity) is not running", fixable=False)
+    if str(d.get("status") or "").upper() != "RED":
+        return Finding("tape", True, f"tape {d.get('status')}")
+    cause = str(d.get("cause") or "")
+    # Only the recorder-not-advancing cause is a re-run's to cure. A terminal link that is down
+    # or a recorder that reports itself PAUSED is a different fault; a re-run there is a guess.
+    curable = "not running or not advancing" in cause
+    return Finding("tape", False, f"{d.get('n_red')} tape(s) RED: {cause[:200]}",
+                   fixable=curable)
+
+
 def audit(root: Path, now: datetime | None = None) -> list[Finding]:
     now = now or datetime.now(UTC)
     return [check_shadow_freshness(root, now),
@@ -341,7 +412,11 @@ def audit(root: Path, now: datetime | None = None) -> list[Finding]:
             # existing check still reading PASS. Resource before artifact, cadence before
             # freshness: both name causes the other five can only show as symptoms.
             check_disk_headroom(root, now),
-            check_research_cadence(root, now)]
+            check_research_cadence(root, now),
+            # ADDED 2026-11-19 (principal: stall watchdog). The pager names a stalled judge and
+            # the tape check names a stopped recorder; neither was ever cured by anything.
+            check_judge_stall(root, now),
+            check_tape(root, now)]
 
 
 # --------------------------------------------------------------------------
@@ -377,6 +452,9 @@ def plan(findings: Sequence[Finding], *,
         # task that already owns it. `disk` is deliberately absent -- no task can reclaim space,
         # so it escalates rather than pretending a remedy exists.
         "cadence": "MT5-Gauntlet",
+        "judge stall": "MT5-Gauntlet",
+        # The recorder's own keep-alive task: a running singleton makes the start a no-op.
+        "tape": "MT5-TickRecorder",
     }
     for f in findings:
         if f.ok:

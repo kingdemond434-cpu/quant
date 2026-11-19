@@ -120,6 +120,7 @@ ESCALATION_S: dict[str, int] = {
     "path_pair": 24 * 3600,
     "orphan_artifact_path": 24 * 3600,
     "fence_ran": 24 * 3600,
+    "account_not_traded": 6 * 3600,
 }
 DEFAULT_ESCALATION_S = 24 * 3600
 
@@ -424,6 +425,105 @@ def check_adoption_lag(root: Path | None = None,
                            "the refusal is the defect: read desks/mt5/scripts/GitWriterMutex.ps1",
                            severity="CRITICAL"))
     return rows, facts
+
+
+# ------------------------------------------- 2a. the code-drift REPAIR: re-run the one adopter
+#: THE ONLY WRITER OF THE LIVE TREE IS THE ADOPTION TASK, so the repair for a box behind the
+#: shipped branch is to run THAT task now instead of waiting for its next hour -- never a fetch,
+#: checkout or copy of our own. Bounded so a refusing adopter is retried, not hammered: one run
+#: per READOPT_MIN_GAP_S, at most READOPT_MAX_PER_DAY a day. A box with data/BOX_RETIRED (the
+#: retired 8 GB box, stall_watch's sentinel) is never touched.
+READOPT_STATE = DESK / "data" / "readopt_state.json"
+READOPT_MIN_GAP_S = 2 * 3600
+READOPT_MAX_PER_DAY = 6
+
+
+def readopt_actuator() -> Any:
+    from libs.ops.control_plane import actuators as act
+    return act.Actuator(
+        name="readopt", argv=("schtasks", "/Run", "/TN", ADOPT_TASK), window_s=90, timeout_s=60,
+        postconditions=(act.OUTPUT_CHANGED,), output=str(ADOPTION_STATE),
+        task=ADOPT_TASK, component_id=COMPONENT,
+        notes=("proof is ADOPTION_STATE.json rewritten (the adopter writes it on every pass, "
+               "refusal or not); whether the tree then caught up is the NEXT pass's "
+               "adoption_lag measurement, never this return code"))
+
+
+def readopt_due(state: Mapping[str, Any], now: datetime) -> tuple[bool, str]:
+    """May the adopter be re-run now? Pure: the bound is a test, not a hope."""
+    runs = [t for t in (_parse_iso(x) for x in (state.get("runs") or [])) if t is not None]
+    recent = [t for t in runs if (now - t).total_seconds() < 86400]
+    if len(recent) >= READOPT_MAX_PER_DAY:
+        return False, f"{len(recent)} re-adoption(s) in 24h already (cap {READOPT_MAX_PER_DAY})"
+    if recent and (now - max(recent)).total_seconds() < READOPT_MIN_GAP_S:
+        return False, (f"last re-adoption {max(recent).isoformat(timespec='seconds')}, inside "
+                       f"the {READOPT_MIN_GAP_S // 3600}h gap")
+    return True, "due"
+
+
+def repair_code_drift(rows: Sequence[Mapping[str, Any]], *, apply: bool, now: datetime,
+                      runner: Any = None, state_path: Path | None = None,
+                      root: Path | None = None) -> dict[str, Any] | None:
+    """On a CRITICAL adoption_lag row (HEAD behind the branch), run MT5-AdoptRelease, bounded."""
+    if not any(r.get("check") == "adoption_lag" and r.get("severity") == "CRITICAL"
+               for r in rows):
+        return None
+    if ((root or ROOT) / "desks" / "mt5" / "data" / "BOX_RETIRED").exists():
+        return {"name": "readopt", "result": "SKIPPED", "why": "data/BOX_RETIRED present"}
+    sp = state_path or READOPT_STATE
+    state = _read_json(sp) or {}
+    ok, why = readopt_due(state if isinstance(state, dict) else {}, now)
+    if not ok:
+        return {"name": "readopt", "result": "BOUNDED", "why": why}
+    if not apply:
+        return {"name": "readopt", "result": "DRY_RUN", "why": "observe only"}
+    from libs.ops.control_plane import actuators as act
+    rec = act.run_actuator(readopt_actuator(), {"component_id": COMPONENT}, apply=True,
+                           runner=runner)
+    runs = [str(x) for x in ((state or {}).get("runs") or [])][-20:]
+    _write_json(sp, {"runs": [*runs, now.isoformat(timespec="seconds")],
+                     "last": {k: rec.get(k) for k in ("result", "repaired", "why")}})
+    return {"name": "readopt", **{k: rec.get(k) for k in ("result", "repaired", "why")}}
+
+
+# ------------------------------------------ 2c. did every account trade on the last market day
+def _may_be_trading() -> bool:
+    try:
+        from libs.ops import host_identity
+        return bool(host_identity.identify().may_be_trading)
+    except Exception:  # an unreadable identity is not the trading box's licence to stay quiet
+        return False
+
+
+def check_accounts_traded(root: Path | None = None, now: datetime | None = None, *,
+                          on_box: bool | None = None, adoption: Mapping[str, Any] | None = None,
+                          reader: Any = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """E8, FTMO and Fusion each placed at least one order on the last completed market day.
+
+    A miss is a defect carrying its diagnosis (`accounts_traded.diagnose`). The one known
+    automatic fix -- the box running old code -- is the adoption_lag repair above; nothing here
+    arms, sizes or forces a trade.
+    """
+    from research import accounts_traded as at  # DESK is on sys.path (top of this file)
+    box = _may_be_trading() if on_box is None else on_box
+    if not box:
+        return [], {"applicable": False,
+                    "why": "not the trading box: the lane journals here are a published copy"}
+    base = root or ROOT
+    m = at.measure(base / "desks" / "mt5", now or _now(), reader=reader)
+    rows: list[dict[str, Any]] = []
+    for acct, f in m["accounts"].items():
+        if f.get("placed"):
+            continue
+        rows.append(defect(
+            "account_not_traded", f"account:{acct}",
+            f"{acct.upper()} placed no order on market day {m['market_day']}. "
+            + at.diagnose(acct, f, adoption),
+            "if the box is behind the branch, the adoption repair runs on this pass; otherwise "
+            "the commonest refusal above is the cause to fix in code (never by arming, sizing "
+            "or loosening a rail from here)",
+            severity="CRITICAL", key=f"account_not_traded:{acct}:{m['market_day']}"))
+    return rows, {"applicable": True, **m}
 
 
 # -------------------------------------------- 2b. the adoption that RUNS and still lands nothing
@@ -1278,6 +1378,9 @@ def run(*, budget_s: float = 180.0, apply: bool = False, root: Path | None = Non
                                           first_run_grace_s=PAGER_FIRST_RUN_GRACE_S)),
         ("adoption_lag", lambda: check_adoption_lag(base)),
         ("adoption_partial", lambda: check_adoption_partial(base, t)),
+        ("accounts_traded", lambda: check_accounts_traded(
+            base, t, adoption=facts.get("adoption_lag") if isinstance(
+                facts.get("adoption_lag"), dict) else None)),
         ("git_writer_lock", lambda: check_git_writer_lock(base)),
         ("processes", check_processes),
         ("declared_tasks", check_declared_tasks),
@@ -1324,6 +1427,12 @@ def run(*, budget_s: float = 180.0, apply: bool = False, root: Path | None = Non
                  "producer writes. A label is never evidence."),
     }
     doc["control_plane"] = _raise_through_control_plane(aged, apply=apply)
+    try:
+        readopt = repair_code_drift(aged, apply=apply and write, now=t, root=base)
+    except Exception as exc:  # a repair that cannot run may never take the watchdog with it
+        readopt = {"name": "readopt", "result": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+    if readopt is not None:
+        doc["control_plane"].setdefault("actuators", []).append(readopt)
     if write:
         _write_json(state_path or DEFECT_STATE,
                     {"at": doc["at"], "defects": ledger})
