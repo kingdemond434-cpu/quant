@@ -361,16 +361,43 @@ foreach ($b in @($Live, "production", "master")) {
     try { Api POST "/repos/quant/quant/branch_protections" $rule | Out-Null; Say "protected $b" }
     catch { Say "protection for $b exists or failed: $($_.Exception.Message)" }
 }
-$hookDir = Join-Path $bare "hooks\pre-receive.d"
-$null = New-Item -ItemType Directory -Force -Path $hookDir
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot "protect.py") -Destination (Join-Path $hookDir "protect.py") -Force
 $py = (Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $py) { Stop-Here 7 "python is not on PATH, so the repository hook cannot run." }
+# THE BOOT HEAD: the Audit-CLEARed commit this installer runs from.
+$srcRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$boot = ((& git -c safe.directory=* -C $srcRepo rev-parse HEAD) | Out-String).Trim()
+if ($boot -notmatch '^[0-9a-f]{40}$') { Stop-Here 7 "cannot read the installer's own commit in $srcRepo." }
+$seededLive = ((& git -C $bare rev-parse "refs/heads/$Live") | Out-String).Trim()
+
+# THE TRUST BOUNDARY (zuck 2026-11-19 20:22Z; Governance, D-20261119-TRUSTSET). The checker, its
+# policy, the pin writer, the door (protect.py) and the pinned contract suites live in a folder
+# only Administrators and SYSTEM can write; the forge service and the gate's account may only read
+# it. The one bootstrap pin is the trust set at the boot head: this install is the owner's own
+# request. From here on only the SYSTEM pin writer moves the pin, after its own verdict.
+$trustDir = Join-Path $Root "trust"
+$null = New-Item -ItemType Directory -Force -Path $trustDir
+Lock-ToOwners $trustDir
+$gateUser = "quantgate"
+$pinPath = Join-Path $trustDir "pin.json"
+if (-not (Test-Path -LiteralPath $pinPath)) {
+    $pwSrc = Join-Path $env:TEMP "pin_writer_boot_$stamp.py"
+    (& git -c safe.directory=* -C $srcRepo show "${boot}:ops/box_git/pin_writer.py" | Out-String) |
+        Set-Content -LiteralPath $pwSrc -Encoding utf8
+    Copy-Item -LiteralPath $pwSrc -Destination (Join-Path $trustDir "pin_writer.py") -Force
+    Remove-Item -LiteralPath $pwSrc -Force
+    & $py -I (Join-Path $trustDir "pin_writer.py") --init $srcRepo $boot $seededLive 2>&1 | ForEach-Object { Say "  pin: $_" }
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $pinPath)) { Stop-Here 7 "could not pin the trust set at the boot head." }
+} else { Say "keeping the existing trust pin $pinPath (the pin writer owns it)" }
+& icacls $trustDir /grant "${SvcUser}:(OI)(CI)RX" | Out-Null
+
+$hookDir = Join-Path $bare "hooks\pre-receive.d"
+$null = New-Item -ItemType Directory -Force -Path $hookDir
+$tFwd = ($trustDir -replace '\\','/')
 @"
 #!/bin/sh
-# Box branch protection (ops/box_git/protect.py). Pushes through the forge's web or API run as
-# the forge itself; the gate sets QUANT_BOX_GIT_ROLE for its own local pushes.
-exec "$($py -replace '\\','/')" "$(($hookDir -replace '\\','/'))/protect.py"
+# Box door (protect.py, PINNED copy in the trust folder): roles, fast-forward only, and every LIVE
+# move judged by the pinned trust checker. Refreshed only by the pin writer.
+exec "$($py -replace '\\','/')" "$tFwd/protect.py" --trust-dir "$tFwd"
 "@ | Set-Content -LiteralPath (Join-Path $hookDir "box-protect") -Encoding ascii
 Say "installed the repository hook (pre-receive.d\box-protect)"
 
@@ -386,46 +413,38 @@ if (-not (Test-Path -LiteralPath (Join-Path $loopSrc ".git"))) {
     & git clone -q --reference $bare --no-checkout $bare $loopSrc
     if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not create the loop's checkout." }
 }
-# THE BOOT HEAD: the Audit-CLEARed commit this installer runs from. Until LIVE contains it, LIVE's
-# own gate only speaks GitHub, so the loop and its gate run from this head (box_loop.gate_code).
-$srcRepo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$boot = ((& git -c safe.directory=* -C $srcRepo rev-parse HEAD) | Out-String).Trim()
-if ($boot -notmatch '^[0-9a-f]{40}$') { Stop-Here 9 "cannot read the installer's own commit in $srcRepo." }
+# Until LIVE contains the boot head, LIVE's own gate only speaks GitHub, so the loop and its gate
+# run from the boot head (box_loop.gate_code).
 & git -c safe.directory=* -C $loopSrc fetch -q $srcRepo $boot
 if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not bring the boot head $boot into the loop's checkout." }
 $inboxDir = Join-Path $Root "inbox"
 $null = New-Item -ItemType Directory -Force -Path $inboxDir
 Lock-ToOwners $inboxDir
 Say "boot head $($boot.Substring(0,12)); inbox $inboxDir"
-
-# THE TRUST BOUNDARY (zuck 2026-11-19 20:22Z; Governance's policy, D-20261119-TRUSTSET). The checker
-# and its policy are copied ONCE from the installer's own (Audit-CLEARed) commit into a folder only
-# Administrators and SYSTEM can write; the gate loads them from there, never from a checkout. The
-# pin is the trust set's hash at the boot head: this install is the owner's own request, and from
-# here on a trust-set change needs his AUTHORIZE TRUST or the checker's proof that it only tightens.
-$trustDir = Join-Path $Root "trust"
-$null = New-Item -ItemType Directory -Force -Path $trustDir
-Lock-ToOwners $trustDir
-foreach ($n in @("trust_check.py", "TRUST_SET.json")) {
-    $txt = (& git -c safe.directory=* -C $srcRepo show "${boot}:ops/box_git/$n" | Out-String)
-    if ($LASTEXITCODE -ne 0 -or -not $txt) { Stop-Here 9 "the boot head carries no ops/box_git/$n." }
-    Set-Content -LiteralPath (Join-Path $trustDir $n) -Value $txt.TrimEnd() -Encoding utf8
+# The loop works in its OWN mirror (worktrees, bundle fetches), synced from the forge each pass:
+# its account only reads the forge's repository, so nothing it runs can write a ref there.
+$mirror = Join-Path $Forge "mirror.git"
+if (-not (Test-Path -LiteralPath $mirror)) {
+    & git clone -q --mirror $bare $mirror
+    if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not create the loop's mirror." }
 }
-$pinPath = Join-Path $trustDir "pin.json"
-if (-not (Test-Path -LiteralPath $pinPath)) {
-    $pinPy = @"
-import json, subprocess, sys, importlib.util
-spec = importlib.util.spec_from_file_location('tc', sys.argv[1]); tc = importlib.util.module_from_spec(spec); spec.loader.exec_module(tc)
-git = lambda *a: subprocess.run(['git', '-c', 'safe.directory=*', '-C', sys.argv[2], *a], capture_output=True, text=True, check=True).stdout
-print(tc.t_hash(git, sys.argv[3]))
-"@
-    $tHash = ((& $py -I -c $pinPy (Join-Path $trustDir "trust_check.py") $srcRepo $boot) | Out-String).Trim()
-    if ($tHash -notmatch '^[0-9a-f]{64}$') { Stop-Here 9 "could not measure the trust set at the boot head: $tHash" }
-    @{ t_hash = $tHash; bootstrap_head = $boot; at = (Get-Date).ToUniversalTime().ToString("o")
-       by = "bootstrap: the install the owner requested (2026-11-19 20:22Z)"; history = @() } |
-        ConvertTo-Json | Set-Content -LiteralPath $pinPath -Encoding ascii
-    Say "trust set pinned at the boot head: $($tHash.Substring(0,16))"
-} else { Say "keeping the existing trust pin $pinPath" }
+& git -c safe.directory=* -C $mirror fetch -q $srcRepo $boot
+
+# THE GATE'S ACCOUNT (Governance finding 1): the loop -- gate sweep, inbox, box CI hand-off, seal,
+# promote -- runs as the local non-admin `quantgate`. It reads the box tokens and the trust folder,
+# writes only its own folders, and can never write the pin, the checker or the forge's repository.
+$gatePass = New-Secret 24
+if (-not (Get-LocalUser -Name $gateUser -ErrorAction SilentlyContinue)) {
+    New-LocalUser -Name $gateUser -Password (ConvertTo-SecureString $gatePass -AsPlainText -Force) `
+        -PasswordNeverExpires -UserMayNotChangePassword -Description "Quant box merge gate (no admin)" | Out-Null
+} else { Set-LocalUser -Name $gateUser -Password (ConvertTo-SecureString $gatePass -AsPlainText -Force) }
+$logDirF = Join-Path $Forge "log"; $ciDir = Join-Path $Forge "ci"
+$null = New-Item -ItemType Directory -Force -Path $logDirF, $ciDir
+& icacls $Forge /grant "${gateUser}:(RX)" | Out-Null
+foreach ($d in @($Tokens, $trustDir, $Repos)) { & icacls $d /grant "${gateUser}:(OI)(CI)RX" | Out-Null }
+foreach ($d in @($loopSrc, $mirror, $inboxDir, $logDirF, $ciDir)) { & icacls $d /grant "${gateUser}:(OI)(CI)M" | Out-Null }
+& icacls (Join-Path $Forge "custom") /grant "${gateUser}:(RX)" | Out-Null
+& icacls $cert /grant "${gateUser}:(R)" | Out-Null
 
 # THE CI WORKER (Audit MF-2): a PR's code never runs as SYSTEM. A local non-admin account runs it,
 # denied the tokens, the trust folder, the inbox and C:\opt\quant (data\secrets included).
@@ -469,9 +488,10 @@ Register-ScheduledTask -TaskName "QuantForge-CI" -Action $cAct -Trigger $cTrg -S
 $ciPass = $null
 Say "scheduled QuantForge-CI every minute as $ciUser (no administrator, no token access)"
 
-$cfg = @{ forge_url = $forgeUrl; bare = $bare; work = $work
-          tokens = $Tokens; ca = $cert; state = (Join-Path $Forge "ci\state.json"); python = $py
-          inbox = $inboxDir; boot = $boot; ci_jobs = $jobs
+foreach ($d in @($work, $jobs)) { & icacls $d /grant "${gateUser}:(OI)(CI)M" | Out-Null }
+$cfg = @{ forge_url = $forgeUrl; bare = $mirror; forge_bare = $bare; work = $work
+          tokens = $Tokens; ca = $cert; state = (Join-Path $ciDir "state.json"); python = $py
+          inbox = $inboxDir; boot = $boot; ci_jobs = $jobs; rules_log = (Join-Path $logDirF "rules_changes.jsonl")
           trust_checker = (Join-Path $trustDir "trust_check.py"); trust_pin = $pinPath }
 $cfgPath = Join-Path $Forge "loop.json"
 $cfg | ConvertTo-Json | Set-Content -LiteralPath $cfgPath -Encoding ascii
@@ -483,15 +503,46 @@ rem Until LIVE contains the boot head (the Audit-CLEARed installer commit), the 
 git -c safe.directory=* -C "$loopSrc" fetch -q "$bare" "refs/heads/${Live}"
 git -c safe.directory=* -C "$loopSrc" merge-base --is-ancestor $boot FETCH_HEAD
 if errorlevel 1 (git -c safe.directory=* -C "$loopSrc" checkout -q --detach --force $boot) else (git -c safe.directory=* -C "$loopSrc" checkout -q --detach --force FETCH_HEAD)
-set QUANT_FORGE_RULES_LOG=$Forge\rules_changes.jsonl
+git -c safe.directory=* -C "$mirror" fetch -q --prune origin "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
+set QUANT_FORGE_RULES_LOG=$logDirF\rules_changes.jsonl
 "$py" "$loopSrc\ops\box_git\box_loop.py" --config "$cfgPath" >> "$Forge\log\loop.log" 2>&1
 "@ | Set-Content -LiteralPath $runner -Encoding ascii
 $act = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$runner`""
 $trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $set = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 8) -StartWhenAvailable
+# Log on as a batch job for the gate's account too.
+$inf = Join-Path $env:TEMP "gate_rights.inf"; $db = Join-Path $env:TEMP "gate_rights.sdb"
+& secedit /export /cfg $inf /areas USER_RIGHTS | Out-Null
+$gSid = (New-Object Security.Principal.NTAccount $gateUser).Translate([Security.Principal.SecurityIdentifier]).Value
+$rights = Get-Content -LiteralPath $inf
+if (-not ($rights -match "SeBatchLogonRight.*\*$gSid")) {
+    $rights = $rights -replace '^(SeBatchLogonRight\s*=\s*.*)$', "`$1,*$gSid"
+    if (-not ($rights -match '^SeBatchLogonRight')) { $rights += "SeBatchLogonRight = *$gSid" }
+    Set-Content -LiteralPath $inf -Value $rights
+    & secedit /configure /db $db /cfg $inf /areas USER_RIGHTS | Out-Null
+}
+Remove-Item -LiteralPath $inf, $db -Force -ErrorAction SilentlyContinue
 Register-ScheduledTask -TaskName "QuantForge-Loop" -Action $act -Trigger $trg -Settings $set `
+    -User "$env:COMPUTERNAME\$gateUser" -Password $gatePass -RunLevel Limited -Force | Out-Null
+$gatePass = $null
+Say "scheduled QuantForge-Loop every 5 minutes as $gateUser (no administrator)"
+
+# THE PIN WRITER: SYSTEM, its code from the trust folder only. Tamper restore, pin moves, recorded
+# contract passes and owner authorizations. Nothing else writes the pin.
+$pAct = New-ScheduledTaskAction -Execute $py -Argument "-I `"$(Join-Path $trustDir 'pin_writer.py')`" --config `"$cfgPath`""
+$pTrg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5)
+$pSet = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 3) -StartWhenAvailable
+Register-ScheduledTask -TaskName "QuantForge-Pin" -Action $pAct -Trigger $pTrg -Settings $pSet `
     -User "SYSTEM" -RunLevel Highest -Force | Out-Null
-Say "scheduled QuantForge-Loop every 5 minutes (gate, box CI, full suite, seal, promote)"
+Say "scheduled QuantForge-Pin every 5 minutes (SYSTEM, pinned code)"
+
+# ASSERT THE SEPARATION (Governance finding 1): refuse to finish if a non-admin account can write
+# the trust folder.
+$acl = (Get-Acl -LiteralPath $trustDir).Access | Where-Object {
+    $_.IdentityReference -match "($gateUser|$ciUser|$SvcUser|Users|Everyone|Authenticated)" -and
+    $_.AccessControlType -eq "Allow" -and ($_.FileSystemRights -match "Write|Modify|FullControl") }
+if ($acl) { Stop-Here 9 "the trust folder is writable by a non-admin account: $($acl.IdentityReference -join ', ')" }
+Say "trust folder: Administrators and SYSTEM write; $gateUser and $SvcUser read only"
 
 # 10. ADOPTION READS THE FORGE: origin of the gate clone and of the live tree point at it, with
 # the forge certificate and a box-only token in each repository's own config (never global).

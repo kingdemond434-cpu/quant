@@ -14,7 +14,14 @@
   "ops/release/expected_divergence.json",
   "ops/release/protected_paths.txt",
   "ops/release/risk_suites.txt",
-  "ops/release/trusted_eval_suites.txt"
+  "ops/release/trusted_eval_suites.txt",
+  "conftest.py",
+  "*/conftest.py",
+  "pytest.ini",
+  "tox.ini",
+  "setup.cfg",
+  "pyproject.toml",
+  "ops/box_git/pin_writer.py"
  ],
  "grow_only": [
   "ops/release/protected_paths.txt",
@@ -25,7 +32,6 @@
   ".github/scripts/audit_gate.py": [
    "run",
    "forge_trust",
-   "write_pin",
    "_trust_checker",
    "_zuck_typed",
    "verdicts",
@@ -45,7 +51,8 @@
    "authority_verdicts",
    "authority_clear",
    "patch_id",
-   "AUTHORIZE_TRUST"
+   "AUTHORIZE_TRUST",
+   "owner_authorized"
   ],
   "ops/box_git/forge_api.py": [
    "BOX_CI_USER",
@@ -78,6 +85,10 @@
   "libs/ops/release.py": [
    "NON_CODE",
    "STATE_PREFIXES"
+  ],
+  "ops/box_git/impacted.py": [
+   "select",
+   "ALL"
   ]
  },
  "hard_caps": {
@@ -96,5 +107,101 @@
     0.1
    ]
   ]
+ },
+ "contracts": {
+  "_why": "CONTRACT class (Governance standing policy 2026-11-19 21:00Z): enforcement code of an area may change without the owner when that area's authority constants are AST-identical and its contract suite, pinned in the trust folder and run against the head, passes. Never the checker or the pin writer.",
+  "gate": {
+   "modules": [
+    ".github/scripts/audit_gate.py",
+    "ops/box_git/box_loop.py",
+    "ops/box_git/forge_api.py",
+    "ops/box_git/inbox.py",
+    "ops/box_git/box_ci.py",
+    "ops/box_git/impacted.py"
+   ],
+   "authority": {
+    ".github/scripts/audit_gate.py": [
+     "VERDICT",
+     "TRUSTED",
+     "GATING_JOBS",
+     "AUTHORIZE_TRUST",
+     "_zuck_typed",
+     "verdicts",
+     "cleared",
+     "checks",
+     "_from_ci_app",
+     "SECRETS",
+     "PROTECTED",
+     "NEVER_STANDING",
+     "tier",
+     "standing",
+     "approved",
+     "approval_covers",
+     "forge_trust",
+     "owner_authorized",
+     "SEAL_CARRIERS",
+     "SEAL_CARRIER_BRANCH",
+     "touches_root",
+     "patch_id"
+    ],
+    "ops/box_git/forge_api.py": [
+     "BOX_CI_USER",
+     "OWNER_USERS",
+     "AUDITOR_USERS",
+     "CI_APP",
+     "_comment",
+     "_status_state"
+    ],
+    "ops/box_git/box_loop.py": [
+     "GATING",
+     "audited_clear",
+     "gate_code",
+     "_run_untrusted",
+     "worker_pass"
+    ],
+    "ops/box_git/box_ci.py": [
+     "promotable"
+    ],
+    "ops/box_git/inbox.py": [
+     "BRANCH",
+     "RESERVED",
+     "VERDICT_LINE",
+     "parse_manifest",
+     "parse_verdict"
+    ],
+    "ops/box_git/impacted.py": [
+     "select"
+    ]
+   },
+   "suite": [
+    "tests/ops/test_audit_gate.py",
+    "tests/ops/test_box_git_forge_api.py",
+    "tests/ops/test_box_git_loop.py",
+    "tests/ops/test_box_git_inbox.py",
+    "tests/ops/test_box_git_impacted.py",
+    "tests/ops/test_box_git_ci.py"
+   ]
+  },
+  "memecoin": {
+   "modules": [
+    ".github/scripts/memecoin_gate.py"
+   ],
+   "authority": {
+    ".github/scripts/memecoin_gate.py": [
+     "REPO",
+     "BASE",
+     "LIVE_PATHS",
+     "LIVE_WORDS",
+     "NAME_ONLY_EXEMPT",
+     "DOC_PATHS",
+     "REQUIRED_JOBS",
+     "DISABLE_FILE",
+     "fenced"
+    ]
+   },
+   "suite": [
+    "tests/ops/test_memecoin_gate.py"
+   ]
+  }
  }
 }

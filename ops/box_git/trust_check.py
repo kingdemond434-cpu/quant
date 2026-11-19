@@ -44,7 +44,11 @@ POLICY_PATH = "ops/box_git/TRUST_SET.json"
 HAZARD_CALLS = frozenset({"setattr", "delattr", "globals", "exec", "eval", "__import__",
                           "compile", "vars"})
 HAZARD_MODULES = frozenset({"importlib"})
-PLAIN_LINE = re.compile(r"[A-Za-z0-9_./*?\[\]{},@+-]+")
+PLAIN_LINE = re.compile(r"[A-Za-z0-9_./*?\[\]{},@+][A-Za-z0-9_./*?\[\]{},@+-]*")
+MUTATORS = frozenset({"append", "extend", "insert", "remove", "pop", "clear", "update", "add",
+                      "discard", "setdefault", "popitem", "sort", "reverse", "__setitem__",
+                      "__delitem__", "__setattr__", "__iadd__", "difference_update",
+                      "intersection_update", "symmetric_difference_update"})
 
 #: git(*args) -> stdout; raises on failure (the gate's own _git).
 Git = Callable[..., str]
@@ -163,9 +167,90 @@ def _hazards(mod: ast.Module) -> list[ast.AST]:
     return found
 
 
+def _unsafe_imports(mod: ast.Module, path: str) -> None:
+    for n in ast.walk(mod):
+        if isinstance(n, ast.ImportFrom) and (n.level or any(a.name == "*" for a in n.names)):
+            raise Unmeasured(f"{path}: star or relative import (line {n.lineno})")
+
+
+def _toplevel_effects(mod: ast.Module) -> list[ast.AST]:
+    """Module-level statements that are not a def, class, assignment or import: calls, if/try
+    blocks and the like can change a frozen value at import time."""
+    plain = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Assign, ast.AnnAssign,
+             ast.Import, ast.ImportFrom)
+    return [st for st in mod.body if not isinstance(st, plain)
+            and not (isinstance(st, ast.Expr) and isinstance(st.value, ast.Constant))]
+
+
+def _mutations(mod: ast.Module, names: set[str]) -> list[ast.AST]:
+    """Every store, delete, augmented assignment or mutating call on a frozen name, anywhere in
+    the file (inside functions too): `GATING.remove(x)`, `FROZEN[k] = v`, `del OWNERS[0]`."""
+    found: list[ast.AST] = []
+
+    def base(n: ast.AST) -> str | None:
+        while isinstance(n, ast.Attribute | ast.Subscript):
+            n = n.value
+        return n.id if isinstance(n, ast.Name) else None
+    for n in ast.walk(mod):
+        if isinstance(n, ast.Assign | ast.AugAssign | ast.AnnAssign | ast.Delete):
+            targets = (n.targets if isinstance(n, ast.Assign | ast.Delete) else [n.target])
+            for t in targets:
+                deep = isinstance(t, ast.Attribute | ast.Subscript) and base(t) in names
+                aug = isinstance(n, ast.AugAssign) and isinstance(t, ast.Name) and t.id in names
+                if deep or aug:
+                    found.append(n)
+        elif (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+              and n.func.attr in MUTATORS and base(n.func.value) in names):
+            found.append(n)
+    return found
+
+
+def foreign_stores(mod: ast.Module, frozen: dict[str, set[str]], tree: Tree) -> list[str]:
+    """In any module: `audit_gate.TRUSTED = ...`, setattr(mod, ...) or a mutating call on a frozen
+    name reached through an imported frozen-symbol module."""
+    imps = _imports(mod)
+    by_local: dict[str, set[str]] = {}
+    for local, (m, attr) in imps.items():
+        target = tree.module_path(f"{m}.{attr}" if attr else m)
+        if target in frozen:
+            by_local[local] = frozen[target]
+    if not by_local:
+        return []
+    out = []
+    for n in ast.walk(mod):
+        if (isinstance(n, ast.Attribute) and isinstance(n.ctx, ast.Store | ast.Del)
+                and isinstance(n.value, ast.Name) and n.value.id in by_local):
+            out.append(f"stores {n.value.id}.{n.attr}")
+        elif isinstance(n, ast.Call):
+            f = n.func
+            if (isinstance(f, ast.Name) and f.id in ("setattr", "delattr") and n.args
+                    and isinstance(n.args[0], ast.Name) and n.args[0].id in by_local):
+                out.append(f"{f.id} on {n.args[0].id}")
+            elif (isinstance(f, ast.Attribute) and f.attr in MUTATORS
+                  and isinstance(f.value, ast.Attribute) and isinstance(f.value.value, ast.Name)
+                  and f.value.value.id in by_local
+                  and f.value.attr in by_local[f.value.value.id]):
+                out.append(f"mutates {f.value.value.id}.{f.value.attr}")
+    return out
+
+
+def _strip_docstrings(node: ast.AST) -> ast.AST:
+    """A copy with docstrings removed: a doc edit is SAME-CODE, never trust."""
+    import copy
+    n = copy.deepcopy(node)
+    for x in ast.walk(n):
+        body = getattr(x, "body", None)
+        doc = (isinstance(body, list) and body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+               and isinstance(body[0].value.value, str))
+        scoped = isinstance(x, ast.Module | ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
+        if scoped and doc:
+            x.body = body[1:] or [ast.Pass()]
+    return n
+
+
 def _dump(nodes: Iterable[ast.AST]) -> str:
-    return hashlib.sha256("\n".join(ast.dump(n, include_attributes=False) for n in nodes)
-                          .encode()).hexdigest()
+    return hashlib.sha256("\n".join(ast.dump(_strip_docstrings(n), include_attributes=False)
+                                    for n in nodes).encode()).hexdigest()
 
 
 def closure(tree: Tree, roots: dict[str, list[str]]) -> dict[str, str]:
@@ -186,7 +271,10 @@ def closure(tree: Tree, roots: dict[str, list[str]]) -> dict[str, str]:
         nodes = binds[name]
         out[f"{path}::{name}"] = _dump(nodes)
         if f"{path}::__hazards__" not in out:
+            _unsafe_imports(mod, path)
             out[f"{path}::__hazards__"] = _dump(_hazards(mod))
+            out[f"{path}::__toplevel__"] = _dump(_toplevel_effects(mod))
+            out[f"{path}::__mutations__"] = _dump(_mutations(mod, set(binds)))
         imps = _imports(mod)
         for node in nodes:
             if isinstance(node, ast.Import | ast.ImportFrom):
@@ -234,6 +322,13 @@ def measure(git: Git, ref: str, policy: dict[str, Any]) -> dict[str, str]:
         if path == POLICY_PATH or any(fnmatch.fnmatchcase(path, g) for g in policy["files"]):
             out[f"{path}::*"] = hashlib.sha256((tree.text(path) or "").encode()).hexdigest()
     roots = {p: list(v) for p, v in policy["symbols"].items() if tree.has(p)}
+    for key in list(out):
+        path = key.partition("::")[0]
+        if path.endswith(".py") and path != POLICY_PATH and "/tests/" not in f"/{path}":
+            names = [n for n in _top_bindings(tree.module(path))
+                     if not isinstance(_top_bindings(tree.module(path))[n][0],
+                                       ast.Import | ast.ImportFrom)]
+            roots[path] = sorted({*roots.get(path, []), *names})
     missing = [p for p in policy["symbols"] if not tree.has(p)]
     if missing:
         raise Unmeasured(f"frozen symbol files missing at {ref}: {missing}")
@@ -301,39 +396,142 @@ def is_new_test(base: Tree, path: str) -> bool:
             and name.endswith(".py") and not base.has(path))
 
 
-def classify(git: Git, base: str, head: str, changed: list[str],
-             policy: dict[str, Any] | None = None) -> tuple[str, str]:
-    pol = policy or load_policy()
+NEVER_CONTRACT = ("ops/box_git/trust_check.py", "ops/box_git/pin_writer.py",
+                  "ops/box_git/protect.py", POLICY_PATH)
+
+
+def _areas_for(path: str, contracts: dict[str, Any]) -> list[str]:
+    if path in NEVER_CONTRACT:
+        return []
+    return [a for a, spec in contracts.items() if not a.startswith("_")
+            and any(fnmatch.fnmatchcase(path, g) for g in spec.get("modules", []))]
+
+
+def authority(git: Git, ref: str, spec: dict[str, Any]) -> str:
+    """Hash of one area's authority constants (their static closure) at `ref`."""
+    tree = Tree(git, ref)
+    roots = {p: list(v) for p, v in (spec.get("authority") or {}).items()}
+    for p in roots:
+        if not tree.has(p):
+            raise Unmeasured(f"authority file {p} missing at {ref}")
+    return hashlib.sha256(json.dumps(closure(tree, roots), sort_keys=True).encode()).hexdigest()
+
+
+def classify_full(git: Git, base: str, head: str, changed: list[str],
+                  pol: dict[str, Any]) -> tuple[str, str, dict[str, str], list[str]]:
+    """(class, why, T measured at head, contract areas). Measures each commit once."""
+    try:
+        changed = sorted({*changed, *git("diff", "--name-only", base, head).split()})
+    except Exception as exc:  # an unreadable diff is unmeasured
+        return "TRUST", f"unmeasured diff: {exc}"[:300], {}, []
     caps = {k: v for k, v in (pol.get("hard_caps") or {}).items() if not k.startswith("_")}
     try:
         head_tree = Tree(git, head)
         for path, rows in caps.items():
             bad = cap_breaches(head_tree.text(path), rows)
             if bad:
-                return "REFUSE", f"over a prop firm's published limit: {'; '.join(bad)}"[:300]
+                return ("REFUSE", f"over a prop firm's published limit: {'; '.join(bad)}"[:300],
+                        {}, [])
     except Exception as exc:  # unreadable caps refuse
-        return "REFUSE", f"prop-firm caps unmeasured: {exc}"[:300]
+        return "REFUSE", f"prop-firm caps unmeasured: {exc}"[:300], {}, []
     try:
         mb, mh = measure(git, base, pol), measure(git, head, pol)
     except Exception as exc:  # anything unmeasured is TRUST (Unmeasured included)
-        return "TRUST", f"unmeasured: {exc}"[:300]
+        return "TRUST", f"unmeasured: {exc}"[:300], {}, []
     moved = sorted(k for k in set(mb) | set(mh) if mb.get(k) != mh.get(k))
+    try:  # another module reaching into a frozen one (`audit_gate.TRUSTED = ...`)
+        frozen = {p: set(v) for p, v in pol["symbols"].items()}
+        for k in mh:
+            p, _, n = k.partition("::")
+            if p.endswith(".py") and not n.startswith("__"):
+                frozen.setdefault(p, set()).add(n)
+        for path in changed:
+            if path.endswith(".py") and head_tree.has(path):
+                bad = foreign_stores(head_tree.module(path), frozen, head_tree)
+                if bad:
+                    return ("TRUST", f"{path} reaches into frozen code: {', '.join(bad)[:200]}",
+                            mh, [])
+    except Exception as exc:  # anything unmeasured is TRUST (Unmeasured included)
+        return "TRUST", f"unmeasured: {exc}"[:300], mh, []
     if not moved:
-        return "ORDINARY", "the trust set is unchanged"
-    tb, th = Tree(git, base), Tree(git, head)
+        return "ORDINARY", "the trust set is unchanged", mh, []
+    tb = Tree(git, base)
+    contracts = pol.get("contracts") or {}
+    code_moves: list[str] = []
     for key in moved:
         path, _, what = key.partition("::")
-        if what != "*":
-            return "TRUST", f"{path}: frozen code {what} changed"
-        old, new = tb.text(path), th.text(path)
-        if old is None and new is not None and is_new_test(tb, path):
-            continue
-        if old is None or new is None:
-            return "TRUST", f"{path} added or removed inside the trust set"
-        if path in pol["grow_only"] and _grows(old, new):
-            continue
-        if path == POLICY_PATH and _policy_grows(old, new):
-            continue
-        return "TRUST", f"{path} changed inside the trust set"
-    return "TIGHTEN", "only grow-only additions inside the trust set: " + ", ".join(
-        sorted({k.partition("::")[0] for k in moved}))[:250]
+        if what == "*":
+            old, new = tb.text(path), head_tree.text(path)
+            if old is None and new is not None and is_new_test(tb, path):
+                continue
+            if old is not None and new is not None:
+                if path in pol["grow_only"] and _grows(old, new):
+                    continue
+                if path == POLICY_PATH and _policy_grows(old, new):
+                    continue
+        code_moves.append(key)
+    if not code_moves:
+        return "TIGHTEN", "only grow-only additions inside the trust set: " + ", ".join(
+            sorted({k.partition("::")[0] for k in moved}))[:250], mh, []
+    areas: set[str] = set()
+    for key in code_moves:
+        path = key.partition("::")[0]
+        hit = _areas_for(path, contracts) if path.endswith(".py") else []
+        if not hit:
+            return "TRUST", f"{key} changed inside the trust set", mh, []
+        areas.update(hit)
+    try:
+        for a in sorted(areas):
+            if authority(git, base, contracts[a]) != authority(git, head, contracts[a]):
+                return "TRUST", f"area {a}: an authority constant changed", mh, []
+    except Exception as exc:
+        return "TRUST", f"unmeasured authority: {exc}"[:300], mh, []
+    return ("CONTRACT", f"enforcement code of {', '.join(sorted(areas))} changed; authority "
+            "constants identical; the pinned contract suites must pass", mh, sorted(areas))
+
+
+def classify(git: Git, base: str, head: str, changed: list[str],
+             policy: dict[str, Any] | None = None) -> tuple[str, str]:
+    cls, why, _m, _a = classify_full(git, base, head, changed, policy or load_policy())
+    return cls, why
+
+
+def digest(m: dict[str, str]) -> str:
+    return hashlib.sha256(json.dumps(m, sort_keys=True).encode()).hexdigest()
+
+
+def verdict(git: Git, base: str, head: str, pin: dict[str, Any],
+            policy: dict[str, Any] | None = None, changed: list[str] | None = None
+            ) -> tuple[bool, str, str, str | None]:
+    """THE ONE DECISION, used by the gate, the forge hook and the pin writer alike:
+    (allowed, class, why, T hash at head). Owner authorizations and passed contract suites are
+    read from the PIN (written only by the SYSTEM pin writer), keyed by the T hash they cover."""
+    pol = policy or load_policy()
+    pinned = str(pin.get("t_hash") or "")
+    try:
+        boot = pin.get("bootstrap_head") and head == pin["bootstrap_head"]
+        boot_merge = pin.get("bootstrap_base") and base == pin["bootstrap_base"]
+        if boot or boot_merge:
+            ht = digest(measure(git, head, pol))
+            if ht == pinned:
+                return True, "BOOTSTRAP", "the install the owner requested", ht
+        base_t = digest(measure(git, base, pol))
+    except Exception as exc:
+        return False, "TRUST", f"unmeasured: {exc}"[:300], None
+    if base_t != pinned:
+        return (False, "TRUST", f"the base's trust set {base_t[:12]} is not the pin "
+                f"{pinned[:12]}", None)
+    cls, why, mh, areas = classify_full(git, base, head, changed or [], pol)
+    ht = digest(mh) if mh else None
+    if cls == "REFUSE":
+        return False, cls, why, ht
+    if cls in ("ORDINARY", "TIGHTEN"):
+        return True, cls, why, ht
+    history = {str(h.get("t_hash")) for h in pin.get("history") or []}
+    if ht and ht in history:
+        return True, "RESTORE", f"returns to an already-pinned trust set {ht[:12]}", ht
+    if cls == "CONTRACT" and ht and set(areas) <= set((pin.get("contract_ok") or {}).get(ht, [])):
+        return True, cls, why + " (pinned suites passed)", ht
+    if ht and ht in (pin.get("authorized") or {}):
+        return True, "AUTHORIZED", f"the owner's AUTHORIZE TRUST covers {ht[:12]}", ht
+    return False, cls, why, ht

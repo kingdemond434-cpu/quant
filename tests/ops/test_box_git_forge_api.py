@@ -132,70 +132,35 @@ def test_only_the_auditor_or_the_owner_can_clear_and_anyone_can_hold() -> None:
 
 
 class Checker:
-    def __init__(self, cls="ORDINARY", t=None):
-        self.cls, self.t = cls, t or {}
+    def __init__(self, ok=True, cls="ORDINARY"):
+        self.ok, self.cls = ok, cls
 
-    def t_hash(self, git, ref):
-        return self.t.get(ref, "T0")
-
-    def classify(self, git, base, head, changed):
-        return self.cls, "fake"
+    def verdict(self, git, base, head, pin, changed=None):
+        return self.ok, self.cls, "fake", "T1"
 
 
-def _pin(tmp_path, t="T0", boot=None):
+def _pin(tmp_path):
     p = tmp_path / "pin.json"
-    p.write_text(__import__("json").dumps({"t_hash": t, "bootstrap_head": boot}))
+    p.write_text('{"t_hash": "T0"}')
     return str(p)
 
 
-def test_the_trust_boundary_decides_every_forge_merge(tmp_path) -> None:
+def test_the_gate_reads_the_pinned_verdict_and_never_writes_the_pin(tmp_path) -> None:
     g = _gate()
+    pin = _pin(tmp_path)
     owner = {"author_association": "OWNER", "created_at": "t", "updated_at": "t",
              "body": f"AUTHORIZE TRUST {SHA}"}
-    pin = _pin(tmp_path)
 
     def ft(chk, comments=(), pin_path=pin):
         return g.forge_trust("live", SHA, [{"filename": "x"}], list(comments), git=lambda *a: "",
                              checker=chk, pin_path=pin_path)
-    assert ft(Checker())[0] is True and ft(Checker())[2] is None
-    ok, why, new = ft(Checker("TIGHTEN", {SHA: "T1"}))
-    assert ok and new == "T1"
-    ok, why, _ = ft(Checker("TRUST", {SHA: "T1"}))
+    assert ft(Checker())[0] is True
+    ok, why, _ = ft(Checker(False, "TRUST"))
     assert not ok and f"AUTHORIZE TRUST {SHA}" in why
-    assert ft(Checker("TRUST", {SHA: "T1"}), [owner]) == (True, ft(Checker("TRUST", {SHA: "T1"}),
-                                                                   [owner])[1], "T1")
-    for bad in ({**owner, "performed_via_github_app": {"slug": "forge:claude"}},
-                {**owner, "updated_at": "later"}, {**owner, "author_association": "COLLABORATOR"},
-                {**owner, "body": f"AUTHORIZE TRUST {'b' * 40}"}):
-        assert ft(Checker("TRUST", {SHA: "T1"}), [bad])[0] is False
-    # LIVE no longer matches the pin: every merge waits, even an ordinary one
-    assert ft(Checker(t={"live": "TX"}))[0] is False
-    # no checker / no pin: fail closed
+    ok, why, _ = ft(Checker(False, "TRUST"), [owner])
+    assert not ok and "pin writer records" in why  # the owner's line alone never merges here
+    ok, why, _ = ft(Checker(False, "REFUSE"), [owner])
+    assert not ok and why.startswith("refused")
     assert g.forge_trust("live", SHA, [], [], git=lambda *a: "", pin_path=pin)[0] is False
     assert ft(Checker(), pin_path=str(tmp_path / "none.json"))[0] is False
-    # the bootstrap install the owner requested
-    boot = _pin(tmp_path, "TB", boot=SHA)
-    assert ft(Checker(t={SHA: "TB", "live": "unmeasurable"}), pin_path=boot)[0] is True
-    assert ft(Checker(t={SHA: "TZ"}), pin_path=boot)[0] is False
-
-
-def test_the_pin_and_the_box_checker_copy_follow_an_authorized_merge(tmp_path) -> None:
-    g = _gate()
-    pin = _pin(tmp_path)
-    chk = tmp_path / "trust_check.py"
-    chk.write_text("old")
-    g.write_pin("T1", 5, SHA, pin_path=pin, checker_path=str(chk),
-                read=lambda ref, path: f"{ref[:4]}:{path}")
-    doc = __import__("json").loads(Path(pin).read_text())
-    assert doc["t_hash"] == "T1" and doc["history"][-1]["t_hash"] == "T0"
-    assert chk.read_text().startswith("aaaa:ops/box_git/trust_check.py")
-    assert (tmp_path / "TRUST_SET.json").read_text().startswith("aaaa:ops/box_git/TRUST_SET.json")
-
-
-def test_a_prop_firm_breach_is_refused_even_with_the_owners_authorization(tmp_path) -> None:
-    g = _gate()
-    owner = {"author_association": "OWNER", "created_at": "t", "updated_at": "t",
-             "body": f"AUTHORIZE TRUST {SHA}"}
-    ok, why, _ = g.forge_trust("live", SHA, [], [owner], git=lambda *a: "",
-                               checker=Checker("REFUSE"), pin_path=_pin(tmp_path))
-    assert not ok and why.startswith("refused")
+    assert Path(pin).read_text() == '{"t_hash": "T0"}' and not hasattr(g, "write_pin")

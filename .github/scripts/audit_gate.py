@@ -747,64 +747,29 @@ def owner_authorized(comments: Iterable[Mapping[str, Any]], head: str) -> bool:
 
 def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
                 comments: Iterable[Mapping[str, Any]], git: Callable[..., str] | None = None,
-                checker: Any = None, pin_path: str | None = None) -> tuple[bool, str, str | None]:
-    """(may merge, why, the new pin when T moves). FAILS CLOSED: no checker, no pin, a LIVE whose
-    T is not the pin, or any error refuses."""
+                checker: Any = None, pin_path: str | None = None) -> tuple[bool, str, None]:
+    """(may merge, why, None). The pinned checker's one `verdict`, read-only: the gate never
+    writes the pin (Governance 2026-11-19: only the SYSTEM pin writer does). FAILS CLOSED: no
+    checker, no pin, or any error refuses. A trust change the owner has typed AUTHORIZE TRUST for
+    waits until the pin writer has verified and recorded it."""
     try:
         mod = checker or _trust_checker()
-        run_git = git or _git
         pp = pin_path if pin_path is not None else os.environ.get(TRUST_PIN_ENV) or ""
-        pin_doc = json.loads(Path(pp).read_text(encoding="utf-8"))
-        pinned = str(pin_doc["t_hash"])
-        if head == pin_doc.get("bootstrap_head"):
-            # the install the owner requested: the boot head's own trust set IS the pin
-            if mod.t_hash(run_git, head) == pinned:
-                return True, f"the bootstrap install the owner requested ({head[:12]})", None
-            return False, "the bootstrap head no longer measures to its pin", None
-        base_t = mod.t_hash(run_git, base)
-        if base_t != pinned:
-            return False, (f"LIVE's trust set {base_t[:12]} is not the pinned {pinned[:12]}: "
-                           "every merge waits"), None
+        pin = json.loads(Path(pp).read_text(encoding="utf-8"))
         changed = sorted({str(f.get("filename")) for f in files if f.get("filename")} |
                          {str(f.get("previous_filename")) for f in files
                           if f.get("previous_filename")})
-        cls, why = mod.classify(run_git, base, head, changed)
-        head_t = base_t if cls == "ORDINARY" else mod.t_hash(run_git, head)
+        ok, cls, why, _t = mod.verdict(git or _git, base, head, pin, changed=changed)
     except Exception as exc:  # anything unmeasured refuses
         return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
+    if ok:
+        return True, f"{cls}: {why}", None
     if cls == "REFUSE":  # a prop firm's own published limit: nobody overrides it
         return False, f"refused: {why}", None
-    if cls == "ORDINARY":
-        return True, f"ordinary change ({why})", None
-    if cls == "TIGHTEN":
-        return True, f"proven tightening ({why})", head_t
-    if owner_authorized(comments, head):
-        return True, f"trust change authorized by the owner at {head[:12]} ({why})", head_t
-    return False, f"trust change ({why}): needs the owner's AUTHORIZE TRUST {head}", None
-
-
-def write_pin(new_t: str, pr: int, head: str, pin_path: str | None = None,
-              checker_path: str | None = None, read: Callable[[str, str], str] | None = None
-              ) -> None:
-    """After an authorized or proven T change merges, the pin and the box-local checker copy follow
-    the merged head; the previous pin is kept in its history."""
-    pp = pin_path if pin_path is not None else os.environ.get(TRUST_PIN_ENV) or ""
-    cp = checker_path if checker_path is not None else os.environ.get(TRUST_CHECKER_ENV) or ""
-    rd = read or (lambda ref, path: _git("show", f"{ref}:{path}"))
-    try:
-        doc = json.loads(Path(pp).read_text(encoding="utf-8"))
-        if cp:
-            for name in ("trust_check.py", "TRUST_SET.json"):
-                Path(cp).with_name(name).write_text(rd(head, f"ops/box_git/{name}") + "\n",
-                                                    encoding="utf-8")
-        hist = [*(doc.get("history") or []), {k: doc.get(k) for k in ("t_hash", "by", "at")}]
-        doc = {"t_hash": new_t, "by": f"gate: #{pr} at {head[:12]}",
-               "at": datetime.now(UTC).isoformat(timespec="seconds"), "history": hist[-200:]}
-        tmp = Path(pp + ".tmp")
-        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-        os.replace(tmp, pp)
-    except (OSError, ValueError, KeyError, subprocess.CalledProcessError):
-        pass  # a pin left behind makes every later merge wait: fails closed, never open
+    hint = (" (the owner has authorized it; the pin writer records that within minutes)"
+            if owner_authorized(comments, head) else
+            f": needs the owner's AUTHORIZE TRUST {head}" if cls == "TRUST" else "")
+    return False, f"{cls}: {why}{hint}", None
 
 
 RULES_LOG_ENV = "QUANT_FORGE_RULES_LOG"
@@ -1760,13 +1725,13 @@ def run(
             # every change outside the trust set T; inside T only what the pinned checker proves
             # is a tightening, or what the owner himself pinned. Marked standing, so
             # risk-invariants (the ceilings and the prop firms' own limits) must still pass.
-            ok_t, twhy_t, new_pin = forge_trust(
+            ok_t, twhy_t, _ = forge_trust(
                 base, head, files,
                 _flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
                           "--slurp")))
             if not ok_t:
                 return None, f"{why}; {twhy_t}"
-            return {**clear, "standing": "yes", "pin": new_pin or ""}, f"{why}; {twhy_t}"
+            return {**clear, "standing": "yes"}, f"{why}; {twhy_t}"
         if clear is not None:
             ap = _gh(
                 f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
@@ -1979,8 +1944,6 @@ def run(
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
     rules_log(pr, head, files, clear)
-    if clear.get("pin"):
-        write_pin(str(clear["pin"]), pr, head)
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

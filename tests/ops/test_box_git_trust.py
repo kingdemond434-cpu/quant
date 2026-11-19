@@ -179,3 +179,40 @@ def test_risk_limits_are_ordinary_but_a_prop_firm_limit_is_never_exceeded(tmp_pa
         assert cls == "REFUSE" and "published limit" in why
     head = r.put({"ops/release/ceilings.json": "{not json"})
     assert T.classify(r.g, base, head, [], policy=pol)[0] == "REFUSE"
+
+
+def test_mutating_a_frozen_value_anywhere_is_trust(tmp_path: Path) -> None:
+    r, base = _base(tmp_path)
+    for new in (GATE.replace("def plumbing(x):", "def plumbing(x):\n    TRUSTED.append(x)"),
+                GATE + "\nprint('import-time effect')\n",
+                GATE.replace("from helpers import rules", "from .helpers import rules")):
+        head = r.put({"gate.py": new})
+        assert _cls(r, base, head)[0] == "TRUST", new[-70:]
+        r.put({"gate.py": GATE})
+    head = r.put({"docs/x.py": "import gate\ngate.TRUSTED = ('ANY',)\n"})
+    assert _cls(r, base, head)[0] == "TRUST"
+
+
+def test_a_dash_line_never_tightens_a_suite_list(tmp_path: Path) -> None:
+    r, base = _base(tmp_path)
+    for flag in ("--co", "-x", "--lf"):
+        head = r.put({"ops/release/protected_paths.txt":
+                      f"# protected\n.github/*\nops/release/*\n{flag}\n"})
+        assert _cls(r, base, head)[0] == "TRUST"
+
+
+def test_the_one_verdict_restores_and_records(tmp_path: Path) -> None:
+    r, base = _base(tmp_path)
+    t0 = T.t_hash(r.g, base, POLICY)
+    pin = {"t_hash": t0, "history": []}
+    ok, cls, _w, _t = T.verdict(r.g, base, r.put({"docs/a.md": "z\n"}), pin, POLICY)
+    assert ok and cls == "ORDINARY"
+    trust = r.put({"ops/signing/allowed_signers": "evil\n"})
+    ok, cls, _w, ht = T.verdict(r.g, base, trust, pin, POLICY)
+    assert not ok and cls == "TRUST"
+    assert T.verdict(r.g, base, trust, {**pin, "authorized": {ht: {}}}, POLICY)[:2] == (
+        True, "AUTHORIZED")
+    back = r.put({"ops/signing/allowed_signers": "zuck key\n"})
+    assert T.verdict(r.g, trust, back, {"t_hash": ht, "history": [{"t_hash": t0}]},
+                     POLICY)[:2] == (True, "RESTORE")
+    assert T.verdict(r.g, trust, back, {"t_hash": "other"}, POLICY)[0] is False

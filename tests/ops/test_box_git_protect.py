@@ -123,3 +123,11 @@ def test_the_hook_refuses_a_force_push_to_live_in_a_real_repo(tmp_path: Path) ->
     _git(work, "commit", "-qam", "three")
     r = _git(work, "push", "-f", str(bare), "HEAD:refs/heads/claude/w")
     assert r.returncode != 0 and "no force push" in r.stderr
+
+
+def test_the_door_refuses_live_moves_without_a_pinned_checker(tmp_path) -> None:
+    from ops.box_git import protect as P
+    live = f"refs/heads/{P.LIVE_BRANCH}"
+    out = P.trust_refusals([("a" * 40, "b" * 40, live)], str(tmp_path / "missing"))
+    assert out and not out[0].ok and "unavailable" in out[0].why
+    assert P.trust_refusals([("a" * 40, "b" * 40, "refs/heads/claude/x")], "nope") == []

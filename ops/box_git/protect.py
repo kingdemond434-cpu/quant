@@ -23,6 +23,12 @@ refused WHOLE if any one update is refused (git's own pre-receive contract).
   5. ANY OTHER REF IS REFUSED. An unknown namespace is not a permission.
 
 An unknown or missing role is `thread`: the least authority, never the most.
+
+  6. THE TRUST BOUNDARY AT THE DOOR (Governance 2026-11-19, D-20261119-TRUSTSET). Installed with
+     `--trust-dir`, every move of LIVE is also judged by the PINNED checker in that folder
+     (trust_check.verdict against pin.json, both writable only by Administrators and SYSTEM): a
+     move the checker does not allow is refused here, whatever account pushes it and whatever the
+     gate's own code says. A missing folder, pin or checker refuses (fail closed).
 """
 from __future__ import annotations
 
@@ -116,8 +122,51 @@ def _git_is_ancestor(a: str, b: str) -> bool:
         return False  # unmeasured ancestry refuses: fail closed
 
 
-def main(stdin: Iterable[str] | None = None, env: dict[str, str] | None = None) -> int:
+def trust_refusals(updates: Iterable[tuple[str, str, str]], trust_dir: str,
+                   git: Callable[..., str] | None = None) -> list[Verdict]:
+    """Rule 6: the pinned checker's verdict on every LIVE move."""
+    import importlib.util
+    import json
+    from pathlib import Path
+    live = [(o, n, r) for o, n, r in updates if r == f"refs/heads/{LIVE_BRANCH}" and n != ZERO]
+    if not live:
+        return []
+    try:
+        folder = Path(trust_dir)
+        spec = importlib.util.spec_from_file_location("_door_trust_check",
+                                                      folder / "trust_check.py")
+        if spec is None or spec.loader is None:
+            raise RuntimeError("no checker")
+        tc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tc)
+        pin = json.loads((folder / "pin.json").read_text(encoding="utf-8"))
+        policy = tc.load_policy((folder / "TRUST_SET.json").read_text(encoding="utf-8"))
+    except Exception as exc:  # no pinned checker: nothing moves LIVE
+        return [Verdict(False, r, f"trust boundary unavailable ({type(exc).__name__})")
+                for _o, _n, r in live]
+
+    def run_git(*a: str) -> str:
+        return subprocess.run(["git", *a], capture_output=True, text=True, check=True,
+                              timeout=300).stdout
+    out = []
+    for o, n, r in live:
+        if o == ZERO:
+            out.append(Verdict(False, r, "LIVE is never created through the door"))
+            continue
+        try:
+            ok, cls, why, _t = tc.verdict(git or run_git, o, n, pin, policy)
+        except Exception as exc:
+            ok, cls, why = False, "TRUST", f"unmeasured ({type(exc).__name__})"
+        if not ok:
+            out.append(Verdict(False, r, f"trust boundary: {cls}: {why}"[:300]))
+    return out
+
+
+def main(stdin: Iterable[str] | None = None, env: dict[str, str] | None = None,
+         argv: list[str] | None = None) -> int:
     """git pre-receive: `<old> <new> <ref>` per line on stdin. Exit 0 accepts the whole push."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    trust_dir = args[args.index("--trust-dir") + 1] if "--trust-dir" in args else None
     updates = []
     for line in stdin if stdin is not None else sys.stdin:
         parts = line.split()
@@ -126,6 +175,8 @@ def main(stdin: Iterable[str] | None = None, env: dict[str, str] | None = None) 
     role = role_from_env(env)
     verdicts = decide_push(updates, role, _git_is_ancestor)
     bad = [v for v in verdicts if not v.ok]
+    if not bad and trust_dir:
+        bad = trust_refusals(updates, trust_dir)
     for v in bad:
         print(f"box-git: REFUSED {v.ref}: {v.why}", file=sys.stderr)
     return 1 if bad or not updates else 0
