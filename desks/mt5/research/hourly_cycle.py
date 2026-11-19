@@ -1240,7 +1240,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # into the compiler intake, the online-FDR replay of the certificates, shadow pod stops and
     # the weekly careers scout. Artifact reads and a bounded donation; seconds when no page is due.
     "firm_lanes",
-    "fill_recorder", "cost_surfaces",
+    "fill_recorder", "cost_surfaces", "fill_proven",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1468,7 +1468,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "fill_proven",
+                     "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -6292,6 +6293,11 @@ def main() -> None:
     # API, and COST_SURFACES.json lists the consumers that have NOT adopted it yet. ~0.1 s.
     csf = _costed("cost_surfaces", lambda: _producer(
         "cost_surfaces", "research/cost_surfaces.py", "--once"))
+    # FILL-PROVEN SLEEVES (2026-11-19). Forward R after the tape's own spread at the entry hour,
+    # outside the venue's 00-01 rollover hours; the one-pipe roster admits only what this lists.
+    # Reads ledgers and tape only, no terminal attach.
+    fpv = _costed("fill_proven", lambda: _producer(
+        "fill_proven", "research/fill_proven.py", "--once"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -6729,6 +6735,7 @@ def main() -> None:
                     "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "fill_proven": fpv,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
