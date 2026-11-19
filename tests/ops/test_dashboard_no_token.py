@@ -108,11 +108,13 @@ def test_the_committed_page_data_carries_no_secret_shaped_key() -> None:
     assert found == [], found
 
 
-def test_the_server_never_reads_or_mints_a_token() -> None:
-    """The box's task keeps passing --require-token; the server must not honour it."""
+def test_the_token_handling_is_unchanged_until_the_tunnel_is_retired() -> None:
+    """Audit HOLD: dropping the token while a quick tunnel (which arrives as loopback) is live
+    would publish the page. This PR keeps --require-token honoured; the drop ships with the
+    tunnel retirement."""
     main = _code_lines("scripts/serve_dashboard.py").split("def main")[1]
-    assert "_token()" not in main
-    assert '_Handler.token = ""' in main and "_Handler.require_token = False" in main
+    assert '_Handler.token = "" if args.no_auth else _token()' in main
+    assert "bool(args.require_token) and not args.no_auth" in main
 
 
 def test_no_address_is_written_into_the_repo_files() -> None:

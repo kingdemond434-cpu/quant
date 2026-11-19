@@ -27,9 +27,9 @@ from typing import BinaryIO
 from urllib.parse import parse_qs, unquote, urlsplit
 
 _WEB = Path(__file__).resolve().parent.parent / "web"
-#: The dashboard shows live equity, P&L and open positions. By the principal's 2026-11-18 decision
-#: the box serves it with --no-auth on its fixed address (read-only, allowlisted files only); the
-#: token below applies only when the server is started without --no-auth. Generated once, 0600, never printed by any tool (CLAUDE.md:
+#: The dashboard shows live equity, P&L and open positions. The moment this server is reachable
+#: from anything but loopback that is a financial disclosure surface, so a token is REQUIRED on
+#: every non-loopback request. Generated once, 0600, never printed by any tool (CLAUDE.md:
 #: data/secrets/** never leaves the box) -- read it on the box when you need to enrol a device.
 _TOKEN_FILE = Path(__file__).resolve().parent.parent / "data" / "secrets" / "dashboard_token.txt"
 
@@ -220,11 +220,8 @@ def main() -> None:
         "proxy, whose requests reach this origin as 127.0.0.1",
     )
     args = ap.parse_args()
-    # THE LOGIN TOKEN IS RETIRED (principal 2026-11-18): the page is read-only, serves an allowlist of
-    # files, and carries no secret. --no-auth and --require-token stay accepted so the box's task
-    # arguments keep parsing, and neither changes anything: no token is read or minted.
-    _Handler.token = ""
-    _Handler.require_token = False
+    _Handler.token = "" if args.no_auth else _token()
+    _Handler.require_token = bool(args.require_token) and not args.no_auth
     _WEB.mkdir(parents=True, exist_ok=True)
     # Build once before serving so localhost never opens on a missing/stale state file. The daily
     # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.
@@ -239,7 +236,7 @@ def main() -> None:
         f"dashboard serving {_WEB} on {args.host}:{args.port}\n"
         f"  local   : http://127.0.0.1:{args.port}/desk.html\n"
         f"  network : http://{_lan_ip()}:{args.port}/desk.html\n"
-        "  auth    : none (read-only allowlist)"
+        f"  auth    : {'DISABLED (--no-auth)' if args.no_auth else 'token required off-loopback; key in ' + str(_TOKEN_FILE)}"
     )
     try:
         httpd.serve_forever()
