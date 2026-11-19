@@ -492,3 +492,16 @@ def test_a_position_certified_with_no_time_exit_is_not_paged(world) -> None:
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert not [a for a in doc["alerts"] if "#56" in a]
     assert doc["manage_stop_target_only"] == ["AUDNZD #56"]
+
+
+def test_a_sleeve_never_enters_in_the_rollover_slice_its_fill_evidence_excludes(
+        world, monkeypatch) -> None:
+    """Every executor sleeve is admitted on fill evidence outside broker 00:00-01:59. The fixture's
+    broker clock reads 04:xx, so the gate is pointed at that hour to prove the wiring."""
+    assert fx._ROLLOVER_HOURS == frozenset({0, 1})
+    monkeypatch.setattr(fx, "_ROLLOVER_HOURS", frozenset({SERVER.hour}))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    row = doc["sleeves"][0]
+    assert row["status"] == "RAIL_BLOCKED" and row["rail"] == "rollover_entry_gate"
+    assert row["missed_growth_risk_usd"] > 0
