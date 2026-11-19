@@ -254,12 +254,43 @@ def _judge_stall(out: Path = OUT) -> dict[str, Any]:
     return rec
 
 
+#: THE JUDGE RESIDENT REPAIR RIDES THIS CLOCK TOO (2026-11-19). The pager says a resident is
+#: wedged; `judge_resident_repair.py` ends and re-runs MT5-Gauntlet when its heartbeat is stale
+#: past 10 minutes (rate limited to once an hour, held by the operator stop file). It runs FIRST,
+#: bounded at 40 s, so the repair and the 60 s pager both fit the task's 2-minute limit.
+RESIDENT_REPAIR = BASE / "scripts" / "judge_resident_repair.py"
+RESIDENT_REPAIR_TIMEOUT_S = 40.0
+
+
+def _resident_repair(out: Path = OUT) -> dict[str, Any]:
+    """Run the resident repair, bounded, and record its exit in this heartbeat's report.
+    Never raises; its outcome is its own (JUDGE_RESIDENT_REPAIR.json)."""
+    import subprocess
+    at = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        r = subprocess.run([sys.executable, "-W", "ignore", str(RESIDENT_REPAIR)], cwd=str(ROOT),
+                           capture_output=True, timeout=RESIDENT_REPAIR_TIMEOUT_S, check=False)
+        rec: dict[str, Any] = {"at": at, "rc": r.returncode, "ok": r.returncode == 0}
+    except subprocess.TimeoutExpired:
+        rec = {"at": at, "rc": "TIMEOUT", "ok": False}
+    except Exception as exc:
+        rec = {"at": at, "rc": f"ERROR {type(exc).__name__}", "ok": False}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        doc = json.loads(out.read_text("utf-8"))
+        doc["judge_resident_repair"] = rec
+        tmp = out.with_name(f"{out.name}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        tmp.replace(out)
+    return rec
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     doc = run(dry_run=a.dry_run)
     if not a.dry_run:
+        _resident_repair()
         _judge_stall()
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))

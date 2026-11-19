@@ -984,6 +984,23 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="optional", resource_budget={"budget_s": 60},
             schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
             notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
+        # THE JUDGE RESIDENT REPAIR (2026-11-19) rides the same clock, before the pager: a
+        # resident heartbeat stale past 10 min is ended and re-run (schtasks /End then /Run
+        # MT5-Gauntlet), once an hour at most; RESIDENT_STOP or a STOPPED resident is HELD.
+        ComponentSpec(
+            component_id="exe:desks/mt5/scripts/judge_resident_repair.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/scripts/judge_resident_repair.py",),
+            inputs=("desks/mt5/reports/JUDGE_RESIDENT.json",
+                    "desks/mt5/data/RESIDENT_STOP"),
+            outputs=("desks/mt5/reports/JUDGE_RESIDENT_REPAIR.json",),
+            cadence_s=300, timeout_s=40, progress_metric=UNMEASURED,
+            expected_artifact_schema="desks/mt5/reports/JUDGE_RESIDENT_REPAIR.json",
+            owner="lane:ops", restart_action="restart:task:MT5-BoxHeartbeat",
+            criticality="optional", resource_budget={"budget_s": 40},
+            schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
+            notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat before the stall pager; "
+                  "ends then re-runs MT5-Gauntlet when the resident heartbeat is stale"),
     ]
 
 
