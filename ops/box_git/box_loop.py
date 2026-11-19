@@ -483,6 +483,30 @@ def tick(cfg: Config) -> dict[str, Any]:
     return out
 
 
+def trust_status(cfg: Config) -> str:
+    """LIVE's trust hash against the pin (Audit follow-up 3): a mismatch makes every merge wait,
+    so it is reported every pass, never a silent stall. Read only."""
+    if not cfg.trust_checker or not cfg.trust_pin:
+        return "no trust boundary configured"
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_loop_trust", cfg.trust_checker)
+        assert spec is not None and spec.loader is not None
+        tc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tc)
+        pin = json.loads(cfg.trust_pin.read_text(encoding="utf-8"))
+        live = live_head(cfg)
+        def raw(*a: str) -> str:
+            return subprocess.run(["git", "-C", str(cfg.bare), *a], capture_output=True,
+                                  text=True, check=True, timeout=300).stdout
+        t = tc.t_hash(raw, live)
+        return (f"LIVE {live[:12]} trust {t[:12]} == pin" if t == pin.get("t_hash") else
+                f"MISMATCH: LIVE {live[:12]} trust {t[:12]} != pin {str(pin.get('t_hash'))[:12]}"
+                ": every merge waits")
+    except Exception as exc:
+        return f"trust status unmeasured ({type(exc).__name__}: {str(exc)[:120]})"
+
+
 def live_head(cfg: Config) -> str:
     return git(cfg, "rev-parse", f"refs/heads/{LIVE}")
 
@@ -508,6 +532,7 @@ def main(argv: list[str] | None = None) -> int:
                  trust_checker=Path(raw["trust_checker"]) if raw.get("trust_checker") else None,
                  trust_pin=Path(raw["trust_pin"]) if raw.get("trust_pin") else None)
     doc = tick(cfg)
+    doc["trust"] = trust_status(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
     box_ci.save_state(report, doc)
     print(json.dumps(doc))

@@ -240,7 +240,8 @@ def _strip_docstrings(node: ast.AST) -> ast.AST:
     n = copy.deepcopy(node)
     for x in ast.walk(n):
         body = getattr(x, "body", None)
-        doc = (isinstance(body, list) and body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+        doc = (isinstance(body, list) and bool(body) and isinstance(body[0], ast.Expr)
+               and isinstance(body[0].value, ast.Constant)
                and isinstance(body[0].value.value, str))
         scoped = isinstance(x, ast.Module | ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
         if scoped and doc:
