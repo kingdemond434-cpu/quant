@@ -38,6 +38,10 @@ FLAGS (a reason string each; `flag` is true when any is present):
                     LIVE merged into queued PRs). Who did it still needs GitHub, so the pass checks.
     PR_SURGE        open PRs rose by PR_STEP or more since the last run (same reason).
 
+WHERE THE PASS READS IT. PASS_WATCH.json itself stays on the box (the state sync's publish list
+is money path for replay-shadow). ops/process_health.py copies {at, flag, reasons} into the
+already-published process_health.json as `pass_watch`, one run behind.
+
 Read-only everywhere except its own report. It never restarts, pages, merges or cancels.
 """
 

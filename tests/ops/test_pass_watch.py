@@ -245,3 +245,18 @@ def test_stale_feed_and_missed_task_are_health_flags(tmp_path: Path) -> None:
         "HEALTH_NEW: MT5-CertHygiene NOT_SCHEDULED, MT5-FrontierAudit (x) NO_ARTIFACT, "
         "MT5-Universe STALE"
     )
+
+
+def test_process_health_carries_the_verdict_off_box(tmp_path: Path, monkeypatch) -> None:
+    """PASS_WATCH.json stays on the box; process_health.json (already published) carries it."""
+    import process_health
+
+    out = tmp_path / "desks/mt5/reports/process_health.json"
+    monkeypatch.setattr(process_health, "OUT", out)
+    assert process_health._pass_watch()["status"] == "UNMEASURED"
+    _box(tmp_path)
+    pass_watch.run(root=tmp_path, now=NOW)
+    carried = process_health._pass_watch()
+    assert carried["status"] == "OK" and carried["flag"] is True
+    assert carried["reasons"][0].startswith("FIRST_RUN")
+    assert carried["at"] == NOW.isoformat(timespec="seconds")

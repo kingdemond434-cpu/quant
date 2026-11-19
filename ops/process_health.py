@@ -702,7 +702,24 @@ def build() -> dict[str, Any]:
         "scheduler_timeouts": list(TIMEOUTS),
         "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
         "processes": rows,
+        # PASS WATCH (2026-11-18): ops/pass_watch.py's last verdict, carried on this already-
+        # published report so the hourly pass reads one file off-box and goes deeper only when
+        # `flag` is set. It runs right after this script (run_process_health.cmd), so it is up to
+        # one run (30 min) behind; its own `at` says how old.
+        "pass_watch": _pass_watch(),
     }
+
+
+def _pass_watch() -> dict[str, Any]:
+    """{at, flag, reasons} from desks/mt5/reports/PASS_WATCH.json; UNMEASURED when unreadable."""
+    try:
+        doc = json.loads((OUT.parent / "PASS_WATCH.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+    if not isinstance(doc, dict):
+        return {"status": "UNMEASURED", "why": "not an object"}
+    reasons = [str(r)[:300] for r in (doc.get("reasons") or [])][:20]
+    return {"status": "OK", "at": doc.get("at"), "flag": bool(doc.get("flag")), "reasons": reasons}
 
 
 def _rank(doc: dict[str, Any] | None) -> int:
