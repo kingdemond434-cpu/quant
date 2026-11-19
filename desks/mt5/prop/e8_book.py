@@ -240,7 +240,8 @@ FORWARD_FAILING_FAMILIES: frozenset[str] = frozenset({
 #: FILL-PROVEN SLEEVES (Box read 2026-11-19 19:05Z, reports/hourly_pass/FILL_PROVEN_READ.md): the
 #: sleeve's own forward trades, re-priced at the measured ask-bid for its symbol and entry hour,
 #: outside the 00:00-01:59 broker rollover slice. Written box-side each pass as
-#: {"rows": [{"sleeve": "SYM_family_selector", "n_out": int, "adjR_out": float}, ...]}.
+#: {"sleeves": [{"sleeve": "SYM_family_selector", "n_out": int, "adjR_out": float}, ...]}
+#: (research/fill_proven.py, hourly leg "fill_proven"; `sleeve` is the forward ledger's label).
 #: A sleeve's OWN fill evidence outranks its family's average: a fill-proven sleeve of a
 #: forward-failing family is admitted, and every admitted sleeve is sized by how much evidence
 #: it has (`fill_shrink`). Absent or unreadable: no sleeve is fill-proven (fail closed).
@@ -259,7 +260,8 @@ def load_fill_proven(path: Path | None = None) -> dict[str, dict[str, float]]:
     except (OSError, ValueError):
         return {}
     out: dict[str, dict[str, float]] = {}
-    for r in (doc.get("rows") or []) if isinstance(doc, dict) else []:
+    rows = (doc.get("sleeves") or doc.get("rows") or []) if isinstance(doc, dict) else []
+    for r in rows if isinstance(rows, list) else []:
         try:
             n, adj = int(r["n_out"]), float(r["adjR_out"])
         except (KeyError, TypeError, ValueError):

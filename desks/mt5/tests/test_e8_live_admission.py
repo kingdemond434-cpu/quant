@@ -109,7 +109,7 @@ def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
     config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
                                   "excluded": {}}), encoding="utf-8")
     proven = tmp_path / "FILL_PROVEN.json"
-    proven.write_text(json.dumps({"rows": [
+    proven.write_text(json.dumps({"sleeves": [
         {"sleeve": "AUDCAD_cross_asset_residual_asia", "n_out": 15, "adjR_out": 1.402},
         {"sleeve": "GBPAUD_cross_asset_residual_asia", "n_out": 9, "adjR_out": 0.5},
         {"sleeve": "USDSGD_carry_asia", "n_out": 25, "adjR_out": -0.5}]}), encoding="utf-8")
