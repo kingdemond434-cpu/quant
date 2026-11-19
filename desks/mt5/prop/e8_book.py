@@ -196,6 +196,7 @@ def _load_survivors() -> list[dict[str, Any]]:
             "lockbox": ((val.get("gates") or {}).get("lockbox") or {}).get("lockbox_sharpe"),
             "days": val.get("days"),
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
+            "tier_s": _is_tier_s((val.get("gates") or {}).get("deflated_sharpe") or {}),
             # PRIVATE-USE LINEAGE IS NEVER IN THE E8 BOOK (coordinator ruling, 2026-10-07).
             # J-Quants is permitted for the registered individual's private use only; E8 trades
             # the prop firm's capital, so a cell derived from it is e8_ineligible. Fusion (the
@@ -275,6 +276,27 @@ def fill_shrink(n: float) -> float:
     return n / (n + FILL_SHRINK_N0) if n > 0 else 0.0
 
 
+#: TIER S IS A SIZE MULTIPLIER, NOT A GATE (zuck 2026-11-19 19:23Z: "ur bigger size one is the
+#: right approach not block"). A certificate whose deflated Sharpe passed at or over DSR_BAR
+#: carries the stronger statistical evidence, so its fill-proven size is raised by this factor;
+#: the executor's E8_CERT_CEILING and the worst-day stress cap still bound the result.
+TIER_S_DSR_BAR = 0.95
+TIER_S_MULT = 1.5
+
+
+def _is_tier_s(gate: Mapping[str, Any]) -> bool:
+    dsr = gate.get("dsr")
+    return gate.get("passed") is True and isinstance(dsr, (int, float)) and dsr >= TIER_S_DSR_BAR
+
+
+def sleeve_risk(row: Mapping[str, Any]) -> float:
+    """RISK_FRAC x n/(n+N0) for the sleeve's fill-proven depth, x TIER_S_MULT when Tier S. A
+    sleeve admitted on a principal-funded key alone (no fill record) keeps RISK_FRAC."""
+    fp = row.get("fill_proven")
+    base = RISK_FRAC * fill_shrink(float(fp["n"])) if fp else RISK_FRAC
+    return round(base * (TIER_S_MULT if row.get("tier_s") else 1.0), 6)
+
+
 def principal_e8_book(raw: Mapping[str, Any] | None) -> dict[str, float]:
     """The E8 principal book as it stands today: the cert block, less the zeros the principal
     lifted. A positive value sizes its key; an explicit zero is the principal's pause; a key the
@@ -315,10 +337,16 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         # an unnamed key was refused, which left E8 on gold_asia alone.
         if book_key in principal_book and not principal_book[book_key] > 0:
             reason = "principal zero in the E8 principal book"
-        elif fam in FORWARD_FAILING_FAMILIES and not principal_book.get(book_key, 0) > 0 \
-                and book_key not in proven:
-            reason = (f"forward evidence: {fam} keeps its edge on too few clocks forward "
-                      "(Judge calibration 2026-11-19); held at zero until it holds up")
+        elif book_key not in proven and not principal_book.get(book_key, 0) > 0:
+            # WHAT IS PROFITABLE TRADES, AND PROFITABLE MEANS ON REAL FILLS (zuck 2026-11-19
+            # 19:23Z): positive after the measured ask-bid, outside the 00:00-01:59 broker
+            # rollover, n >= FILL_MIN_N. A certificate alone no longer admits (the bid-only
+            # backtests and clocks flattered rollover entries, box read 19:05Z); Tier S is a
+            # size multiplier, never a gate.
+            reason = ("not fill-proven: no positive after-spread forward record outside the "
+                      f"rollover with n >= {FILL_MIN_N} (reports/FILL_PROVEN.json)"
+                      + (f"; {fam} also fails forward as a family (Judge calibration "
+                         "2026-11-19)" if fam in FORWARD_FAILING_FAMILIES else ""))
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
@@ -594,11 +622,9 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         gold = principal_e8_book(load_cert_book(CERT_BOOK, "e8")).get("gold_asia", 0.0)
     except Exception:
         gold = 0.0
-    # SIZE BY EVIDENCE: a fill-proven sleeve trades at RISK_FRAC x n/(n+N0); one with no fill
-    # evidence keeps RISK_FRAC (it reached here through every certificate door).
+    # SIZE BY EVIDENCE (`sleeve_risk`): fill-proven depth, then Tier S as a multiplier.
     for r in chosen:
-        fp = r.get("fill_proven")
-        r["risk_frac"] = round(RISK_FRAC * fill_shrink(fp["n"]), 6) if fp else RISK_FRAC
+        r["risk_frac"] = sleeve_risk(r)
     stressed = stress.cap_book(
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,

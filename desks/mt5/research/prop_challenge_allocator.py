@@ -597,6 +597,11 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
+def _max_risk() -> float:
+    from mt5desk.sizing import MAX_RISK_FRAC
+    return float(MAX_RISK_FRAC)
+
+
 def _forward_failing() -> frozenset[str]:
     """prop/e8_book.FORWARD_FAILING_FAMILIES: one set for both prop accounts."""
     from prop.e8_book import FORWARD_FAILING_FAMILIES
@@ -672,6 +677,8 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    from prop.e8_book import load_fill_proven
+    proven = load_fill_proven()
     door_blocked: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
@@ -691,11 +698,14 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif _family_of(col) in _forward_failing():
-            # SIZE BY FORWARD EVIDENCE (Judge calibration 2026-11-19, zuck 17:02Z): the families
-            # whose certificates mostly fail forward are held at zero, the same set E8 holds.
-            reason = (f"forward evidence: {_family_of(col)} keeps its edge on too few clocks "
-                      "forward (Judge calibration 2026-11-19); held at zero until it holds up")
+        elif col not in proven:
+            # WHAT IS PROFITABLE ON REAL FILLS TRADES (zuck 2026-11-19 19:23Z), the same door E8
+            # uses (prop/e8_book.load_fill_proven): positive after the measured ask-bid, outside
+            # the rollover, n >= 10, through the organ's BH q=0.10. Tier S sizes, never gates.
+            reason = ("not fill-proven: no after-spread forward record passing "
+                      "reports/FILL_PROVEN.json"
+                      + (f"; {_family_of(col)} also fails forward as a family"
+                         if _family_of(col) in _forward_failing() else ""))
         else:
             door = door_block(cert_key)
             if door:
@@ -711,6 +721,13 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
         if columns[col].get("admitted"):
             columns[col]["tier_s"] = col in tier_s
+            # SIZE BY EVIDENCE: the column's ceiling is MAX_RISK_FRAC x n/(n+N0) of its
+            # fill-proven depth, x the Tier S multiplier; the solve sizes inside it.
+            from prop import e8_book as _eb
+            mult = _eb.TIER_S_MULT if col in tier_s else 1.0
+            caps[col] = min(1.0, _eb.fill_shrink(proven[col]["n"]) * mult) * _max_risk()
+            columns[col]["fill_proven"] = proven[col]
+            columns[col]["evidence_cap"] = round(caps[col], 6)
             spec, swhy = sleeve_spec(cert_key)
             if spec is not None:
                 specs[col] = spec

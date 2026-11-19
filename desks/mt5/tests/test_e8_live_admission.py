@@ -57,15 +57,22 @@ def test_e8_admission_requires_replication_and_honours_principal_exclusions(
 
 def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """zuck 2026-11-19: all certified strategies flow into E8. An unnamed key is admitted (sized
-    by RISK_FRAC), an explicit zero still stands aside, and the gold-only zeros are lifted."""
+    """zuck 2026-11-19: every profitable (fill-proven) strategy flows into E8. An unnamed key is
+    admitted, an explicit zero still stands aside, and the gold-only zeros are lifted."""
     config = tmp_path / "CERT_BOOK_LIVE.json"
     config.write_text(json.dumps({"enabled": True, "e8": {
         "gold_asia": 0.006,
         "EURCHF_formula_asia": 0.0,
         "NZDJPY_clock_transition_asia": 0.0,
         "AUDCHF_overnight_gap_decay_asia": 0.0}, "excluded": {}}), encoding="utf-8")
+    proven = tmp_path / "FILL_PROVEN.json"
+    proven.write_text(json.dumps({"sleeves": [
+        {"sleeve": s, "n_out": 20, "adjR_out": 0.3} for s in (
+            "NAS100_overnight_gap_decay_asia", "EURCHF_formula_asia",
+            "NZDJPY_clock_transition_asia", "AUDCHF_overnight_gap_decay_asia")]}),
+        encoding="utf-8")
     monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", proven)
     monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
                         classmethod(lambda cls: _Gate()))
     monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
@@ -85,12 +92,13 @@ def test_every_certified_sleeve_flows_into_e8_unless_the_principal_zeroes_it(
                         "why": "principal zero in the E8 principal book"}]
 
 
-def test_families_failing_forward_are_held_at_zero(
+def test_a_certificate_alone_no_longer_admits_without_fills(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     config = tmp_path / "CERT_BOOK_LIVE.json"
     config.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006},
                                   "excluded": {}}), encoding="utf-8")
     monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", tmp_path / "absent.json")
     monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
                         classmethod(lambda cls: _Gate()))
     monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
@@ -98,9 +106,11 @@ def test_families_failing_forward_are_held_at_zero(
              "fingerprint": "frozen-spec"}
             for k, f in (("held", "cross_asset_residual"), ("ok", "formula"))]
     accepted, blocked = e8_book.live_admissible(rows)
-    assert [r["key"] for r in accepted] == ["ok"]
-    assert blocked[0]["certificate"] == "held"
-    assert blocked[0]["why"].startswith("forward evidence: cross_asset_residual")
+    assert accepted == []
+    why = {b["certificate"]: b["why"] for b in blocked}
+    assert why["ok"].startswith("not fill-proven")
+    assert why["held"].startswith("not fill-proven") and "cross_asset_residual also fails" \
+        in why["held"]
 
 
 def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
@@ -128,6 +138,13 @@ def test_a_fill_proven_sleeve_outranks_its_familys_forward_hold(
     assert accepted[0]["fill_proven"] == {"n": 15.0, "adjR": 1.402}
     assert {b["certificate"] for b in blocked} == {"thin", "negative"}
     assert abs(e8_book.fill_shrink(15) - 15 / 65) < 1e-12 and e8_book.fill_shrink(0) == 0.0
+
+
+def test_size_scales_with_fill_depth_and_tier_s_multiplies() -> None:
+    r = e8_book.RISK_FRAC
+    assert e8_book.sleeve_risk({"fill_proven": {"n": 50}}) == round(r * 0.5, 6)
+    assert e8_book.sleeve_risk({"fill_proven": {"n": 50}, "tier_s": True}) == round(r * 0.75, 6)
+    assert e8_book.sleeve_risk({}) == r
 
 
 def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
