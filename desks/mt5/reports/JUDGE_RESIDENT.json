@@ -16,7 +16,7 @@
  "last_sweep_s": 53407.8,
  "uptime_s": 186359.8,
  "last_sweep_ended_utc": "2026-11-18T22:07:00+00:00",
- "heartbeat_utc": "2026-11-19T00:04:54+00:00",
+ "heartbeat_utc": "2026-11-19T00:19:56+00:00",
  "sweep_phase": {
   "pid": 14816,
   "sweep_started_utc": "2026-11-18T22:07:07+00:00",
@@ -87,20 +87,25 @@
      }
     },
     "prewarm": {
-     "samples": 582,
+     "samples": 654,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 570,
-       "share": 0.979
+       "n": 639,
+       "share": 0.977
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 9,
+       "n": 10,
        "share": 0.015
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
+       "n": 2,
+       "share": 0.003
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:87 < process.py:submit:797 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2093",
        "n": 1,
        "share": 0.002
       },
@@ -108,21 +113,16 @@
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 1,
        "share": 0.002
-      },
-      {
-       "stack": "threading.py:__init__:301 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
-       "n": 1,
-       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 887.9,
-      "page_faults": 56701164.0,
-      "read_bytes": 25124703.0,
-      "write_bytes": 64746284865.0,
-      "sampled_s": 5810.0,
+      "cpu_s": 973.5,
+      "page_faults": 61926655.0,
+      "read_bytes": 27535355.0,
+      "write_bytes": 70948381762.0,
+      "sampled_s": 6530.0,
       "rss_mb_max": 3438.6,
-      "cpu_share_of_wall": 0.153
+      "cpu_share_of_wall": 0.149
      }
     }
    }
