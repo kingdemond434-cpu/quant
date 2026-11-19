@@ -15,6 +15,18 @@ for _p in (str(_DESK), str(_DESK / "side_channels"), str(_DESK.parent.parent)):
 import lawful_substitutes as ls  # noqa: E402
 
 
+def _desk_youtube_miner():
+    """This desk's youtube_miner by path: a same-named module elsewhere on sys.path must not
+    stand in for it when the whole suite runs."""
+    import importlib.util
+    path = _DESK / "side_channels" / "youtube_miner.py"
+    spec = importlib.util.spec_from_file_location("desk_side_channels_youtube_miner", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 class _Resp:
     def __init__(self, status: int, body: Any = "") -> None:
         self.status_code = status
@@ -142,7 +154,7 @@ def test_the_runner_entry_survives_pickling_for_the_spawned_miner_process() -> N
 
 
 def test_youtube_rows_keep_derived_readings_only_never_api_data(monkeypatch, tmp_path) -> None:
-    import youtube_miner as ym
+    ym = _desk_youtube_miner()
     d = ym.YTDiscovery(title="XAUUSD london breakout", channel="c", url="https://youtube.com/watch?v=x",
                        published="2026-11-19", symbols_mentioned=["XAUUSD"])
     monkeypatch.setattr(ym, "mine", lambda: [d])
@@ -156,7 +168,7 @@ def test_youtube_rows_keep_derived_readings_only_never_api_data(monkeypatch, tmp
 
 def test_youtube_without_a_key_is_unconfigured_and_never_scrapes(monkeypatch) -> None:
     import pytest
-    import youtube_miner as ym
+    ym = _desk_youtube_miner()
     monkeypatch.setattr(ym, "API_KEY", "")
     monkeypatch.setattr(ym, "mine", lambda: (_ for _ in ()).throw(AssertionError("searched")))
     with pytest.raises(RuntimeError, match="UNCONFIGURED"):

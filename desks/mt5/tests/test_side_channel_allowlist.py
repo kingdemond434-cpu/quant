@@ -8,6 +8,8 @@ import stat
 import sys
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 for _p in (str(_DESK), str(_DESK / "side_channels"), str(_DESK.parent.parent)):
     if _p not in sys.path:
@@ -71,7 +73,9 @@ def test_every_allowed_channel_runs_its_own_lawful_route_or_its_substitute() -> 
             assert isinstance(fn, functools.partial) and fn.args == (name,), name
 
 
-def test_the_box_key_name_edgar_ua_configures_sec_edgar_and_earnings(monkeypatch) -> None:
+@pytest.mark.parametrize("key", ["QUANT_EDGAR_UA", "EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                 "SEC_EDGAR_UA"])
+def test_every_edgar_key_name_configures_sec_edgar_and_earnings(monkeypatch, key) -> None:
     import sec_edgar_miner
     _fake(monkeypatch, ["sec_edgar", "earnings"])
     monkeypatch.delenv("QUANT_MINERS_ALLOW", raising=False)
@@ -81,7 +85,7 @@ def test_the_box_key_name_edgar_ua_configures_sec_edgar_and_earnings(monkeypatch
                         raising=False)
     r = ram.run_all_miners()
     assert r["sec_edgar"]["status"] == "SET_ASIDE" and r["earnings"]["status"] == "SET_ASIDE"
-    monkeypatch.setenv("EDGAR_UA", "desk research contact@example.org")
+    monkeypatch.setenv(key, "desk research contact@example.org")
     r = ram.run_all_miners()
     assert r["sec_edgar"]["count"] == 1 and r["earnings"]["count"] == 1
 
