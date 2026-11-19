@@ -47,8 +47,8 @@ def test_positive_outside_rollover_is_admitted_and_rollover_is_cut(tmp_path: Pat
     assert row["adjR_out"] == pytest.approx(0.49, abs=1e-3)
     # 00: 0.005 / 0.01 = 0.5R charged, so the bid-only +0.3 becomes -0.2
     assert row["adjR_rollover"] == pytest.approx(-0.2, abs=1e-3)
-    assert doc["sleeves"] == [{"sleeve": "AUDCAD_x_asia", "n_out": 12,
-                               "adjR_out": row["adjR_out"]}]
+    assert [(s["sleeve"], s["n_out"], s["adjR_out"]) for s in doc["sleeves"]] == [
+        ("AUDCAD_x_asia", 12, row["adjR_out"])]
 
 
 def test_thin_or_negative_sleeves_are_not_admitted(tmp_path: Path) -> None:
