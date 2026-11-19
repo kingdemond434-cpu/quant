@@ -24,7 +24,7 @@ except ImportError:
     sys.modules["MetaTrader5"] = types.ModuleType("MetaTrader5")
     _STUBBED = True
 try:
-    from mt5desk import gateway  # noqa: E402
+    from mt5desk import gateway
 finally:
     if _STUBBED:
         sys.modules.pop("MetaTrader5", None)
