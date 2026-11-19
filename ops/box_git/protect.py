@@ -42,6 +42,11 @@ RELEASE_TAG_PREFIX = "refs/tags/release/"
 WORK_PREFIX = "refs/heads/claude/"
 ROLES = frozenset({"thread", "gate", "authority"})
 ROLE_ENV = "QUANT_BOX_GIT_ROLE"
+#: The forge (Gitea) runs repository hooks with the AUTHENTICATED pusher's name in this variable,
+#: set by the server, never by the client. The two box accounts below are the only roles above
+#: `thread`; every other pusher, the `claude` account included, is a thread.
+PUSHER_ENV = "GITEA_PUSHER_NAME"
+FORGE_ROLES = {"merge-gate": "gate", "release-authority": "authority"}
 
 
 @dataclass(frozen=True)
@@ -52,7 +57,14 @@ class Verdict:
 
 
 def role_from_env(env: dict[str, str] | None = None) -> str:
-    r = (env if env is not None else os.environ).get(ROLE_ENV, "").strip().lower()
+    """The pusher's role. Through the forge: the server's own pusher name decides, and the
+    role variable is ignored (a client must never name its own authority). Outside the forge (a
+    local push on the box, by an administrator) the role variable is read."""
+    e = env if env is not None else os.environ
+    pusher = e.get(PUSHER_ENV)
+    if pusher is not None:
+        return FORGE_ROLES.get(pusher.strip().lower(), "thread")
+    r = e.get(ROLE_ENV, "").strip().lower()
     return r if r in ROLES else "thread"
 
 

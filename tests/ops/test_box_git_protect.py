@@ -69,6 +69,13 @@ def test_unknown_refs_and_roles_get_the_least_authority() -> None:
     assert P.role_from_env({P.ROLE_ENV: "GATE"}) == "gate"
 
 
+def test_through_the_forge_the_server_named_pusher_decides_never_the_client() -> None:
+    assert P.role_from_env({P.PUSHER_ENV: "merge-gate"}) == "gate"
+    assert P.role_from_env({P.PUSHER_ENV: "release-authority"}) == "authority"
+    assert P.role_from_env({P.PUSHER_ENV: "claude", P.ROLE_ENV: "gate"}) == "thread"
+    assert P.role_from_env({P.PUSHER_ENV: "quant-admin"}) == "thread"
+
+
 def test_one_refused_update_refuses_the_whole_push() -> None:
     lines = [f"{P.ZERO} {B} refs/heads/claude/ok\n", f"{A} {B} {LIVE}\n"]
     assert P.main(lines, {}) == 1
