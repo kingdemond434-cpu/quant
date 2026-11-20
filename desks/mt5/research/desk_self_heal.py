@@ -39,6 +39,7 @@ prohibition is enforced by a test walking this module's AST, not by intent.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -458,6 +459,13 @@ LANES: tuple[tuple[str, str, float, str | None], ...] = (
      26.0, "MT5-ScientistTournament"),
 )
 LANES_FILE = "desks/mt5/data/throughput_lanes.json"
+#: The ONLY tasks a lane may re-run: the research tasks named in LANES above. A lanes file can add
+#: a lane to WATCH, but it can never point a re-run at anything else -- above all not a live
+#: executor, the follower, the gateway or the release adopter, which may be stopped on purpose
+#: (Audit MF-1 2026-11-20). A lane in the file naming any other task is kept as report-only.
+RESEARCH_TASKS: frozenset[str] = frozenset(t for *_, t in LANES if t)
+RESEARCH_TASK_PREFIXES: tuple[str, ...] = ("MT5-Dept-", "MT5-Forest-", "MT5-Lab-", "MT5-Miner-")
+_LIVE_TASK = re.compile(r"(?i)executor|follower|gateway|adopt|release|bridge|e8|ftmo|fusion|live")
 
 
 def _ts(raw: Any) -> datetime | None:
@@ -544,10 +552,11 @@ def _lanes(root: Path) -> list[tuple[str, str, float, str | None]]:
             continue
         name, path, age = row.get("lane"), row.get("path"), _num(row.get("max_age_h"))
         task = row.get("task")
-        if (isinstance(name, str) and isinstance(path, str) and age and age > 0
-                and ".." not in path and (task is None or (isinstance(task, str)
-                                                           and task.startswith("MT5-")))):
-            lanes.append((name, path, age, task))
+        if isinstance(name, str) and isinstance(path, str) and age and age > 0 \
+                and ".." not in path:
+            safe = (isinstance(task, str) and not _LIVE_TASK.search(task)
+                    and (task in RESEARCH_TASKS or task.startswith(RESEARCH_TASK_PREFIXES)))
+            lanes.append((name, path, age, task if safe else None))
     return lanes
 
 

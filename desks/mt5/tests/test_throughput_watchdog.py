@@ -94,7 +94,8 @@ def test_idle_lane_with_task_is_rerun_and_box_lanes_extend(tmp_path, monkeypatch
         {"lane": "not ours", "path": "desks/mt5/reports/y.json", "max_age_h": 1,
          "task": "evil-task"}])
     found = {f.check: f for f in heal.check_lanes_idle(tmp_path, NOW)}
-    assert "lane math lab" in found and "lane bad" not in found and "lane not ours" not in found
+    assert "lane math lab" in found and "lane bad" not in found
+    assert found["lane not ours"].task is None          # watched, never re-run
     assert found["lane llm budget census"].ok
     stale = [found["lane cn model ensemble"], found["lane math lab"]]
     assert not any(f.ok for f in stale)
@@ -107,3 +108,23 @@ def test_idle_lane_with_task_is_rerun_and_box_lanes_extend(tmp_path, monkeypatch
 def test_audit_includes_throughput_checks(tmp_path):
     names = {f.check for f in heal.audit(tmp_path, NOW)}
     assert {"judge throughput", "llm throughput"} <= names
+
+
+def test_a_lanes_file_can_never_rerun_a_live_or_release_task(tmp_path, monkeypatch):
+    """Audit MF-1: a lanes file must not turn self-heal into a way to start a live executor,
+    the follower, the gateway or the release adopter (any of which may be stopped on purpose)."""
+    monkeypatch.setattr(heal, "_is_producing_host", lambda root, rel: True)
+    live = ["MT5-E8-Executor", "MT5-AdoptRelease", "MT5-FTMO-Executor", "MT5-Follower",
+            "MT5-Gateway", "MT5-Dept-LiveBridge", "MT5-Forest-E8"]
+    rows = []
+    for i, task in enumerate(live):
+        rel = f"desks/mt5/reports/L{i}.json"
+        _write(tmp_path, rel, {}, age_h=9)
+        rows.append({"lane": f"l{i}", "path": rel, "max_age_h": 1, "task": task})
+    _write(tmp_path, heal.LANES_FILE, rows)
+    found = [f for f in heal.check_lanes_idle(tmp_path, NOW) if f.check[len("lane l"):].isdigit()]
+    assert len(found) == len(live) and not any(f.ok for f in found)
+    assert all(f.task is None for f in found)
+    remedies, _ = heal.plan(found, run_task=lambda t: True)
+    assert not any(any(t in r.action for t in live) for r in remedies)
+    assert not any(heal._LIVE_TASK.search(t) for t in heal.RESEARCH_TASKS)
