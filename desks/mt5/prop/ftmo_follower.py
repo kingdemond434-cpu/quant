@@ -301,16 +301,25 @@ def entry_order_kind(side: str, level: float, bid: float, ask: float) -> str:
 #: distance from the actual entry (so the risk in money is the same). DERIVATION: entering x R
 #: late with the same stop and target turns a payoff of RR into (RR - x) / (1 + x); at x = 0.10
 #: and RR 2 that is 1.73, a 14% cut of the win against the 100% cut of not trading -- positive
-#: E[log W] at any win rate that made the certificate. Past the bound the old limit at the level
-#: stands (a pullback can still fill it), so the bound only ever adds trades the limit would miss.
+#: E[log W] at any win rate that made the certificate.
 LATE_ENTRY_MAX_R = 0.10
+#: PAST THE BOUND, NO PULLBACK LIMIT (2026-11-20; FTMO gold_asia n=8 at -0.073R against E8's
+#: +0.164R on the same signal). A limit resting back at E8's level after E8's breakout has run
+#: fills ONLY when the price returns to the trigger. That is a failed breakout far more often than
+#: a winner, which by definition kept going: adverse selection by construction, so the copy keeps
+#: E8's losers and misses its runners. Past LATE_ENTRY_MAX_R the follow is therefore SKIPPED
+#: (billed as missed growth, reason `late_beyond_bound`), and a refused market follow falls back
+#: only to a stop still resting AHEAD of the price, never to a limit behind it. True restores the
+#: old behaviour (one constant, reversible).
+PULLBACK_LIMIT = False
 
 
 def entry_plan(side: str, level: float, sl: float, bid: float, ask: float,
                max_late_r: float = LATE_ENTRY_MAX_R) -> tuple[str, float]:
     """(order kind, entry price for sizing). A stop while the price is short of E8's level; a
     MARKET order at the touch while it is through the level by at most `max_late_r` of E8's stop
-    distance; a limit at the level beyond that (a pullback may still fill it)."""
+    distance; beyond that "skip_late" (no pullback limit, see PULLBACK_LIMIT), or the old limit
+    at the level when PULLBACK_LIMIT is set."""
     kind = entry_order_kind(side, level, bid, ask)
     if not kind.endswith("_limit"):
         return kind, level
@@ -319,7 +328,7 @@ def entry_plan(side: str, level: float, sl: float, bid: float, ask: float,
     late = (touch - level) if side == "long" else (level - touch)
     if dist > 0 and 0 <= late <= max_late_r * dist:
         return ("buy_market" if side == "long" else "sell_market"), touch
-    return kind, level
+    return (kind if PULLBACK_LIMIT else "skip_late"), level
 
 
 def lot_for(frac: float, equity: float, dist: float, contract: float, *, vmin: float,
@@ -1285,6 +1294,19 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         return
     kind, entry = entry_plan(side, float(sig["price"]), float(sig["sl"]), float(tick.bid),
                              float(tick.ask))
+    if kind == "skip_late":
+        touch = float(tick.ask if side == "long" else tick.bid)
+        _skip(doc, st, "late_beyond_bound",
+              (f"the price {touch:.2f} is past E8's level {float(sig['price']):.2f} by more than "
+               f"{LATE_ENTRY_MAX_R:g}R of its stop; a limit back at the level fills only on a "
+               f"pullback (adverse selection), so no order"),
+              today=today, now=now, missed_usd=float(frac) * equity)
+        return
+    frac, div = _divergence_frac(float(frac))
+    doc["divergence"] = div
+    if not frac > 0:
+        _skip(doc, st, "divergence_cut", str(div.get("why")), today=today, now=now)
+        return
     dist = abs(entry - float(sig["sl"]))
     want_usd = float(frac) * equity
     lot = lot_for(float(frac), equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
@@ -1430,6 +1452,9 @@ def _fallback_pending(mt5: Any, side: str, sig: dict[str, Any], tick: Any, *, fr
     {"req", "kind", "risk"} or {"req": None, "why"}. Same sizing, cap and loss guard."""
     level, sl = float(sig["price"]), float(sig["sl"])
     kind = entry_order_kind(side, level, float(tick.bid), float(tick.ask))
+    if kind.endswith("_limit") and not PULLBACK_LIMIT:
+        return {"req": None, "why": ("the price is through E8's level, and a limit back at it "
+                                     "fills only on a pullback (adverse selection)")}
     dist = abs(level - sl)
     lot = lot_for(frac, equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
     if lot > cap:
@@ -1446,6 +1471,18 @@ def _fallback_pending(mt5: Any, side: str, sig: dict[str, Any], tick: Any, *, fr
                     "type": types[kind], "price": level, "sl": sl, "tp": float(sig["tp"]),
                     "deviation": 20, "magic": MAGIC, "comment": COMMENT,
                     "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}}
+
+
+def _divergence_frac(frac: float) -> tuple[float, dict[str, Any]]:
+    """`frac` x the cross-account divergence multiplier of FTMO's gold_asia copy against E8's own
+    fills of the same signal (mt5desk.account_divergence). Never raises: a failed read keeps
+    `frac` and says why (the allocator's fraction is already survival-bounded)."""
+    try:
+        from mt5desk import account_divergence as _ad
+        mult, why = _ad.copy_multiplier(account=LANE, sleeve=CERT_KEY)
+    except Exception as exc:                                    # pragma: no cover - defensive
+        return frac, {"multiplier": 1.0, "why": f"divergence unreadable ({type(exc).__name__})"}
+    return frac * mult, {"multiplier": mult, "why": why, "frac_in": frac}
 
 
 def _atomic_write(path: Path, text: str) -> None:

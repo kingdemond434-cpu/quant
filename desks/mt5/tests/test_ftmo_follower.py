@@ -114,6 +114,9 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
                                 "initial_balance": 100_000.0, "account_type": "2-step"}),
                     "utf-8")
     monkeypatch.setattr(ff, "ACCOUNT_FILE", acct)
+    from mt5desk import account_divergence as _ad
+    monkeypatch.setattr(_ad, "LEDGERS", (tmp_path / "prop_ledger.jsonl",
+                                         tmp_path / "live_ledger.jsonl"))
     marker = tmp_path / "FTMO_FOLLOWER_ARMED"
     marker.write_text("", "utf-8")
     monkeypatch.setattr(ff, "ARMED_MARKER", marker)
@@ -165,11 +168,37 @@ def test_an_e8_long_fill_is_followed_by_exactly_one_long_order(world) -> None:
     assert len(sent) == 1 and sent[0]["side"] == "long"
 
 
-def test_a_price_already_through_the_level_rests_a_limit_at_it_never_a_chase(world) -> None:
+def test_a_price_far_through_the_level_places_nothing_never_a_pullback_limit(world) -> None:
+    """2026-11-20: a limit back at E8's level fills only when the breakout fails and returns --
+    adverse selection (FTMO -0.073R over 8 vs E8 +0.164R). Past the late bound: no order, billed."""
+    mt5 = _MT5(bid=4344.8, ask=4345.0)                 # 5.0 through a 20-point stop = 0.25 R
+    _pass(mt5)
+    assert not _entries(mt5) and not mt5.sent
+    (row,) = [r for r in _rows() if r.get("reason") == "late_beyond_bound"]
+    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == 900.0
+
+
+def test_the_old_pullback_limit_is_one_reversible_constant(world, monkeypatch) -> None:
+    monkeypatch.setattr(ff, "PULLBACK_LIMIT", True)
     mt5 = _MT5(bid=4344.8, ask=4345.0)
     _pass(mt5)
     (req,) = _entries(mt5)
     assert req["type"] == mt5.ORDER_TYPE_BUY_LIMIT and req["price"] == 4340.0
+
+
+def test_a_diverged_copy_is_sized_down_by_its_own_fills(world) -> None:
+    """FTMO's own gold_asia fills against E8's on the same signal: n=8 at -0.073R vs 30 at
+    +0.164R shrinks to +0.059R, x0.36 of the allocator's fraction."""
+    ftmo = [{"book": "ftmo", "sleeve": "gold_asia", "r_multiple": -0.073}] * 8
+    e8 = [{"book": "e8", "sleeve": "gold_asia", "r_multiple": 0.164}] * 30
+    (world.tmp / "prop_ledger.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in ftmo + e8) + "\n", "utf-8")
+    mt5 = _MT5(bid=4340.8, ask=4341.0)
+    doc = _pass(mt5)
+    (req,) = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    # 0.009 x 0.3587 x 100k / (21 x 100) = 0.1537 -> 0.15
+    assert req["volume"] == pytest.approx(0.15)
+    assert doc["divergence"]["multiplier"] == pytest.approx(0.3587, abs=1e-3)
 
 
 def test_a_follow_just_through_the_level_enters_at_market_with_e8s_stop_and_target(
@@ -197,9 +226,22 @@ class _RequotingMT5(_MT5):
         return super().order_send(req)
 
 
-def test_a_rejected_market_follow_falls_back_to_the_limit_the_old_path_placed(world) -> None:
-    """Auditor HOLD on #746: a requoted market follow must never lose the trade the old limit
-    at E8's level would have kept -- same pass, same write-ahead, sized on E8's distance."""
+def test_a_rejected_market_follow_never_falls_back_to_a_pullback_limit(world) -> None:
+    """A requoted market follow with the price through E8's level would fall back to a limit
+    behind the price -- the adversely selected order this change removes. Nothing rests."""
+    mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    assert not _entries(mt5)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "REJECTED" and "pullback" in row["why"]
+    assert row["market_attempt"]["retcode"] == 10004
+
+
+def test_a_rejected_market_follow_falls_back_to_the_limit_when_pullback_limit_is_on(
+        world, monkeypatch) -> None:
+    """Auditor HOLD on #746 (the old behaviour, behind PULLBACK_LIMIT): same pass, same
+    write-ahead, sized on E8's distance."""
+    monkeypatch.setattr(ff, "PULLBACK_LIMIT", True)
     mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
     _pass(mt5)
     deal, pend = (r for r in mt5.sent if r["action"] in (mt5.TRADE_ACTION_DEAL,
@@ -238,9 +280,9 @@ def test_a_partly_filled_market_follow_is_a_fill_and_places_no_limit(world) -> N
 def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
     assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
     assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)
-    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("buy_limit", 4340.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("skip_late", 4340.0)
     assert ff.entry_plan("short", 4300.0, 4320.0, 4299.0, 4299.2) == ("sell_market", 4299.0)
-    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("sell_limit", 4300.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("skip_late", 4300.0)
 
 
 def test_gold_is_selected_into_market_watch_before_the_tick_is_read(world) -> None:
