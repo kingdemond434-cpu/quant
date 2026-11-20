@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [string] $RepoRoot = "C:\opt\quant",
-    [string] $Python   = "C:\Program Files\Python314\python.exe",
+    [string] $Python   = "C:\Program Files\Python314\pythonw.exe",  # no console flash every minute
     [string] $InteractiveUser = "Administrator"
 )
 $ErrorActionPreference = "Stop"
