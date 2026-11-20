@@ -2479,6 +2479,14 @@ ORTHOGONAL_FAMILIES["exit_operated"] = family_exit_operated
 FAMILY_INPUTS["exit_operated"] = ("price only; rebuilds its base family from bars and params",
                                   "data/universe/*_H1.parquet")
 
+# THE RULE BUILDER (2026-11-20): StrategyQuant / Adaptrade-style cells -- 1-3 entry blocks ANDed,
+# 0-2 filters, ATR stop/target/time exit -- proposed by `research/strategy_builder.py`'s genetic
+# search, which charges every genome it evaluated. Price (and tick volume) only.
+from mt5desk.family_rule_builder import family_rule_builder  # noqa: E402
+
+ORTHOGONAL_FAMILIES["rule_builder"] = family_rule_builder
+FAMILY_INPUTS["rule_builder"] = ("price and tick volume only", "data/universe/*_H1.parquet")
+
 # THE NAME THAT WAS BEING MINTED UNDER AND DID NOT EXIST (measured 2026-09-24). `pack_cells` has
 # minted 432 registry cells under `exogenous_conditioner`, each naming a lake series, a column and
 # a transform, and no generator implemented the name -- so every one of them exited

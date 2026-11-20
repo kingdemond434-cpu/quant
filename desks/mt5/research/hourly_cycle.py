@@ -1410,6 +1410,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "conversion_maximiser", "conversion_funnel", "trend_core",
                      # the anchor/exit grid and the empty-cluster forcer: both mint cells
                      "htf_anchor", "empty_cluster_forcer",
+                     # the genetic rule builder (entries x filters x exits, 2026-11-20)
+                     "strategy_builder", "generator_coverage",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
@@ -2425,6 +2427,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
     "htf_anchor": 900,
+    # THE GENETIC RULE BUILDER evolves inside its own --budget-s (bandit-scaled, base 240 s) and
+    # then donates a judge-sized slice; the cap leaves room for the slice's registry write.
+    "strategy_builder": 900,
+    # The generator coverage map reads a few report mtimes; seconds.
+    "generator_coverage": 120,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
@@ -4715,6 +4722,17 @@ def main() -> None:
     # nothing ever ran it, so the grid (every hypothesis-lane instrument x H1/H4/D1, plus M15/M30
     # wherever those bars exist) sat at its first slice: III.16. Discovery, beside descendants.
     htf = _costed("htf_anchor", lambda: _producer("htf_anchor", "research/htf_anchor_proposer.py"))
+    # THE GENETIC RULE BUILDER (zuck 2026-11-20): StrategyQuant-style entries x filters x exits,
+    # one persisted population per (symbol, chart), least-searched cells first, donating only what
+    # the judge's measured drain can take. Its seconds are bandit-scaled like alpha_evolution's.
+    _sbd_s, _sbd_rec = _bandit_budget("strategy_builder", 240)
+    sbd = _costed("strategy_builder", lambda: _producer("strategy_builder",
+                                                         "research/strategy_builder.py",
+                                                         "--budget-s", str(_sbd_s)))
+    _bandit_observe("strategy_builder", _sbd_rec)
+    # Every known generator method against what ran this day: LIVE / PARTIAL / MISSING.
+    gcv = _costed("generator_coverage", lambda: _producer("generator_coverage",
+                                                           "research/generator_coverage.py"))
     # THE EMPTY-CLUSTER FORCER (2026-09-30): mints a rotating, least-judged window of cells for a
     # cluster that a buildable family reaches and nobody mints, and names the sealed-gauntlet
     # branch a cluster needs when every family it has is unbuildable. It had no caller either.
@@ -6600,7 +6618,8 @@ def main() -> None:
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
-                    "htf_anchor": htf, "empty_cluster_forcer": ecf,
+                    "htf_anchor": htf, "empty_cluster_forcer": ecf, "strategy_builder": sbd,
+                    "generator_coverage": gcv,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
