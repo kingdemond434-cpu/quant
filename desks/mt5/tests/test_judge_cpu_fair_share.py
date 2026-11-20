@@ -36,6 +36,16 @@ BN, N, IDLE, AN, HIGH = jp.BELOW_NORMAL, jp.NORMAL, jp.IDLE, jp.ABOVE_NORMAL, jp
 R = jp.CLASS_RANK
 
 
+@pytest.fixture(autouse=True)
+def _legacy_rule_under_the_revert_switch(tmp_path, monkeypatch, request):
+    """THE 2026-10-20 RULE IS PINNED UNDER ITS REVERT SWITCH. Since 2026-11-20 the default is the
+    judge's reserved cores (test_judge_reserved_cores.py); every test here runs with
+    JUDGE_RESERVED_CORES.json = {"enabled": false}, which restores the old rule exactly."""
+    sw = tmp_path / "JUDGE_RESERVED_CORES.json"
+    sw.write_text(json.dumps({"enabled": False}), "utf-8")
+    monkeypatch.setattr(jp, "RESERVED_CORES_SWITCH", sw)
+
+
 def _p(pid, ppid, name, cmd, nice, created=None):
     # start time follows pid in the fixtures: a parent (lower pid) always predates its child
     return {

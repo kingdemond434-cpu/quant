@@ -2790,6 +2790,16 @@ def _equalise_self() -> dict[str, Any]:
         rows = [r for r in c["rows"] if int(r.get("pid") or 0) == me]
         for r in rows:
             r["cls"] = "judge"            # this process IS the judge whatever its argv says
+        # THE RESERVED CORES (judge_priority.RESERVED_CORES_SWITCH): the class above the miners
+        # is only ever taken TOGETHER with the affinity that confines the judge to its cores.
+        # Confine first; if it does not hold, the class falls back to equal-to-the-miners.
+        cpus = t.get("cpus") or []
+        if cpus:
+            out["affinity"] = jp.confine(me, list(cpus))
+            if not out["affinity"].get("applied"):
+                t = {**t, "rank": jp.CLASS_RANK[jp.BELOW_NORMAL], "class": "BELOW_NORMAL",
+                     "bound": "reserved cores NOT confined: no raise", "cpus": []}
+                out["target"] = t
         out["changes"] = jp.equalise(rows, t["rank"], apply=True)
         # GROWTH GOVERNANCE: an applied change (raise or lower) publishes its missed-growth
         # line, carried into MISSED_GROWTH.json by research/missed_growth.py. If the line cannot
