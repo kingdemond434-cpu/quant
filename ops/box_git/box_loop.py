@@ -353,17 +353,55 @@ def gate_tick(cfg: Config, live: str) -> str:
 STALE_PENDING_S = 6 * 3600
 
 
+#: A red caused by the BOX, not the code: git unable to read the repo (exit 128), a run that
+#: outlived its limit, a worker that never answered. Box 11-20: PR #17's first CI went 5/5 red
+#: on exactly these, and a completed red was final, so the head could never be re-run after the
+#: cause was fixed. Such a red is re-run, at most ENV_RERUNS times, each ENV_RERUN_AFTER_S apart.
+#: A red that names anything else (a failing test, a refused invariant) stays final.
+_ENV_RED = re.compile(r"exit status 128|\+\+\+ Timeout \+\+\+|did not answer in time"
+                      r"|timed out after|resources UNMEASURED|No space left")
+ENV_RERUNS = 2
+ENV_RERUN_AFTER_S = 3600
+
+
+def _at(r: Mapping[str, Any]) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(r.get("started_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _env_red(r: Mapping[str, Any]) -> bool:
+    out = r.get("output") if isinstance(r.get("output"), Mapping) else {}
+    return (r.get("status") == "completed" and r.get("conclusion") == "failure"
+            and bool(_ENV_RED.search(str(out.get("summary") or ""))))
+
+
 def checked(runs: Sequence[Mapping[str, Any]], now: datetime | None = None) -> bool:
     """Has box CI already answered (or is it plausibly still answering) for this head?"""
     t = now or datetime.now(UTC)
-    for r in runs:
-        if r.get("status") == "completed":
+    done = [r for r in runs if r.get("status") == "completed"]
+    if done:
+        latest: dict[str, Mapping[str, Any]] = {}
+        for r in sorted(done, key=lambda r: (_at(r) or datetime.min.replace(tzinfo=UTC),
+                                             int(r.get("id") or 0))):
+            latest[str(r.get("name") or "")] = r
+        reds = [r for r in latest.values() if _env_red(r)]
+        rounds = max((sum(1 for r in done if r.get("name") == n and _env_red(r))
+                      for n in latest), default=0)
+        newest = max((a for r in reds if (a := _at(r)) is not None), default=None)
+        code_red = any(r.get("conclusion") == "failure" and not _env_red(r)
+                       for r in latest.values())
+        if code_red or not reds or rounds > ENV_RERUNS or newest is None:
             return True
-        try:
-            at = datetime.fromisoformat(str(r.get("started_at") or "").replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if (t - at).total_seconds() < STALE_PENDING_S:
+        rerun = [r for r in runs if r.get("status") != "completed"
+                 and (a := _at(r)) is not None and a > newest]
+        if not rerun:
+            return (t - newest).total_seconds() < ENV_RERUN_AFTER_S
+        runs = rerun                           # a re-run in flight: judged like any pending
+    for r in runs:
+        at = _at(r)
+        if at is not None and (t - at).total_seconds() < STALE_PENDING_S:
             return True
     return False
 

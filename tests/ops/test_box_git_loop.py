@@ -93,3 +93,35 @@ def test_pr_code_runs_through_the_worker_folder_never_in_the_loop(tmp_path: Path
     assert rc == 0 and out.strip() == "None"  # the loop's environment does not leak to the job
     assert not list((tmp_path / "jobs" / "pending").glob("*"))
     assert not list((tmp_path / "jobs" / "done").glob("*"))
+
+
+def _run(name: str, concl: str, summary: str, hours_ago: float, rid: int,
+         status: str = "completed") -> dict:
+    return {"id": rid, "name": name, "status": status, "conclusion": concl,
+            "started_at": (NOW - timedelta(hours=hours_ago)).isoformat(),
+            "output": {"summary": summary}}
+
+
+def test_a_red_the_box_caused_is_rerun_a_bounded_number_of_times() -> None:
+    """Box 11-20: PR #17 went 5/5 red on git exit 128 and a timeout; a completed red was final."""
+    env = "box: risk-invariants: ... returned non-zero exit status 128"
+    t_out = "box CI, 141 impacted test file(s): pytest rc=1: +++ Timeout +++"
+    first = [_run("quality", "failure", t_out, 2, 1), _run("risk-invariants", "failure", env, 2, 2)]
+    assert not L.checked(first, NOW)                          # an hour later: re-run
+    assert L.checked([_run("quality", "failure", t_out, 0.5, 1)], NOW)   # not yet
+    # a re-run in flight is judged like any pending
+    inflight = [*first, _run("quality", "", "running", 0.2, 3, status="in_progress")]
+    assert L.checked(inflight, NOW)
+    # the re-run's green answers the head
+    assert L.checked([*first, _run("quality", "success", "ok", 0.1, 4),
+                      _run("risk-invariants", "success", "ok", 0.1, 5)], NOW)
+    # three environmental reds in a row: final
+    three = [_run("quality", "failure", t_out, h, i) for i, h in enumerate((9, 6, 3))]
+    assert L.checked(three, NOW)
+
+
+def test_a_red_the_code_caused_stays_final() -> None:
+    red = [_run("quality", "failure", "box CI: pytest rc=1: 1 failed; FAILED tests/a.py::t", 5, 1)]
+    assert L.checked(red, NOW)
+    mixed = [*red, _run("risk-invariants", "failure", "exit status 128", 5, 2)]
+    assert L.checked(mixed, NOW)              # a real red decides the head; no re-run
