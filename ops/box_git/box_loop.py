@@ -29,7 +29,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -101,7 +100,7 @@ def git(cfg: Config, *args: str) -> str:
 @contextlib.contextmanager
 def worktree(cfg: Config, sha: str) -> Iterator[Path]:
     cfg.work.mkdir(parents=True, exist_ok=True)
-    d = Path(tempfile.mkdtemp(prefix="wt_", dir=cfg.work))
+    d = box_ci.shared_dir(cfg.work, "wt_")
     git(cfg, "worktree", "add", "-q", "--detach", str(d), sha)
     try:
         yield d

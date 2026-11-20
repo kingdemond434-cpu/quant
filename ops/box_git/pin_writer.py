@@ -30,7 +30,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import time
 import urllib.request
 import uuid
@@ -161,7 +160,8 @@ def run_suites(cfg: Mapping[str, Any], folder: Path, head: str, areas: list[str]
     bare = str(cfg.get("forge_bare") or cfg["bare"])
     work = Path(cfg["work"])
     work.mkdir(parents=True, exist_ok=True)
-    wt = Path(tempfile.mkdtemp(prefix="contract_", dir=work))
+    wt = work / f"contract_{uuid.uuid4().hex[:10]}"  # inherits work's ACL: the CI worker reads it
+    wt.mkdir()  # (tempfile.mkdtemp is owner-only on Windows with Python 3.13+)
     subprocess.run(["git", "-c", "safe.directory=*", "-C", bare, "worktree", "add", "-q",
                     "--detach", str(wt), head], check=True, capture_output=True, timeout=600)
     try:

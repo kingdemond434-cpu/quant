@@ -61,3 +61,13 @@ def test_pytest_runs_the_selection_or_everything(tmp_path: Path) -> None:
     assert C.pytest_argv("py", ["tests/a.py"], 1, j)[-1] == "tests/a.py"
     full = C.pytest_argv("py", ALL, 4, j)
     assert "-n" in full and not any(a.startswith("tests/") for a in full)
+
+
+def test_ci_directories_inherit_the_parent_acl_never_mkdtemp(tmp_path) -> None:
+    """Defect 9 (box 2026-11-20): mkdtemp is owner-only on Windows (Python 3.13+), so the CI
+    worker could not read the worktrees. Shared directories come from shared_dir only."""
+    a, b = C.shared_dir(tmp_path, "wt_"), C.shared_dir(tmp_path, "wt_")
+    assert a != b and a.is_dir() and a.parent == tmp_path and a.name.startswith("wt_")
+    root = Path(__file__).resolve().parents[2] / "ops" / "box_git"
+    for f in ("box_loop.py", "pin_writer.py"):
+        assert "mkdtemp(" not in (root / f).read_text(encoding="utf-8"), f

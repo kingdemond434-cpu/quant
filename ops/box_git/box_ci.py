@@ -143,3 +143,18 @@ def save_state(path: Path, state: Mapping[str, Any]) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
     os.replace(tmp, path)
+
+
+def shared_dir(parent: Path, prefix: str) -> Path:
+    """A fresh directory that INHERITS `parent`'s ACL, so the CI worker account can read it.
+    tempfile.mkdtemp gives Python 3.13+ on Windows an owner-only ACL (box 2026-11-20: every
+    worktree was unreadable to quantci and pytest died on pyproject.toml)."""
+    import uuid
+    for _ in range(100):
+        d = parent / f"{prefix}{uuid.uuid4().hex[:10]}"
+        try:
+            os.mkdir(d)  # no mode argument: Windows applies the inherited ACL
+            return d
+        except FileExistsError:
+            continue
+    raise OSError(f"no free directory name under {parent}")
