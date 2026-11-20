@@ -145,9 +145,7 @@ def trust_refusals(updates: Iterable[tuple[str, str, str]], trust_dir: str,
         return [Verdict(False, r, f"trust boundary unavailable ({type(exc).__name__})")
                 for _o, _n, r in live]
 
-    def run_git(*a: str) -> str:
-        return subprocess.run(["git", *a], capture_output=True, text=True, check=True,
-                              encoding="utf-8", errors="replace", timeout=300).stdout
+    run_git = tc.strict_git("git")
     out = []
     for o, n, r in live:
         if o == ZERO:

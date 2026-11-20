@@ -503,11 +503,7 @@ def trust_status(cfg: Config) -> str:
         spec.loader.exec_module(tc)
         pin = json.loads(cfg.trust_pin.read_text(encoding="utf-8"))
         live = live_head(cfg)
-        def raw(*a: str) -> str:
-            return subprocess.run(["git", "-C", str(cfg.bare), *a], capture_output=True,
-                                  text=True, encoding="utf-8", errors="replace",
-                                  check=True, timeout=300).stdout
-        t = tc.t_hash(raw, live)
+        t = tc.t_hash(tc.strict_git("git", "-C", str(cfg.bare)), live)
         return (f"LIVE {live[:12]} trust {t[:12]} == pin" if t == pin.get("t_hash") else
                 f"MISMATCH: LIVE {live[:12]} trust {t[:12]} != pin {str(pin.get('t_hash'))[:12]}"
                 ": every merge waits")

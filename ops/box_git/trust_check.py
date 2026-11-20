@@ -36,6 +36,7 @@ import fnmatch
 import hashlib
 import json
 import re
+import subprocess
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,21 @@ Git = Callable[..., str]
 
 class Unmeasured(Exception):
     """Anything the checker cannot measure: the caller treats it as TRUST / refuses."""
+
+
+def strict_git(*prefix: str, timeout: float = 300) -> Callable[..., str]:
+    """The only git reader for trust measurements: bytes in, strict UTF-8 out. A failed command,
+    a missing stdout or one undecodable byte raises Unmeasured (callers treat it as TRUST), never a
+    replacement character or a truncated read (the Windows box once pinned cp1252 output)."""
+    def run(*a: str) -> str:
+        p = subprocess.run([*prefix, *a], capture_output=True, timeout=timeout, check=False)
+        if p.returncode != 0 or p.stdout is None:
+            raise Unmeasured(f"git {' '.join(a[:2])} failed (exit {p.returncode})")
+        try:
+            return p.stdout.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise Unmeasured(f"git {' '.join(a[:2])}: not UTF-8 at byte {exc.start}") from exc
+    return run
 
 
 def load_policy(text: str | None = None) -> dict[str, Any]:

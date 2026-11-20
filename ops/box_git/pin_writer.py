@@ -123,14 +123,14 @@ def restore(folder: Path, pin: Mapping[str, Any]) -> list[str]:
 def refresh(folder: Path, git: Callable[..., str], ref: str, policy: Mapping[str, Any]) -> None:
     """Checker files and every contract suite from `ref` (an allowed LIVE head)."""
     for n in CHECKER_FILES:
-        (folder / n).write_text(git("show", f"{ref}:ops/box_git/{n}"), encoding="utf-8")
+        (folder / n).write_bytes(git("show", f"{ref}:ops/box_git/{n}").encode("utf-8"))
     for area, spec in (policy.get("contracts") or {}).items():
         if area.startswith("_"):
             continue
         for t in spec.get("suite", []):
             dest = folder / "contracts" / area / t
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(git("show", f"{ref}:{t}"), encoding="utf-8")
+            dest.write_bytes(git("show", f"{ref}:{t}").encode("utf-8"))
 
 
 # ------------------------------------------------------------------------- the forge (read only)
@@ -221,10 +221,7 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
     policy = tc.load_policy((folder / "TRUST_SET.json").read_text(encoding="utf-8"))
     bare = str(cfg.get("forge_bare") or cfg["bare"])
 
-    def git(*a: str) -> str:
-        return subprocess.run(["git", "-c", "safe.directory=*", "-C", bare, *a],
-                              capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              check=True, timeout=300).stdout
+    git = tc.strict_git("git", "-c", "safe.directory=*", "-C", bare)
     live = git("rev-parse", f"refs/heads/{LIVE}").strip()
     if pin.get("live") and pin["live"] != live:
         ok, cls, why, ht = tc.verdict(git, pin["live"], live, pin, policy)
@@ -280,13 +277,13 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
 def init(folder: Path, src: str, ref: str, live: str) -> dict[str, Any]:
     """The one bootstrap (the install the owner requested): copy the checker and the contract
     suites from `ref` (the Audit-CLEARed installer commit), measure T there, and write the pin."""
-    def git(*a: str) -> str:
-        return subprocess.run(["git", "-c", "safe.directory=*", "-C", src, *a],
-                              capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              check=True, timeout=300).stdout
-    for n in CHECKER_FILES:
-        (folder / n).write_text(git("show", f"{ref}:ops/box_git/{n}"), encoding="utf-8")
+    pre = ("git", "-c", "safe.directory=*", "-C", src)
+    for n in CHECKER_FILES:  # exact bytes: no code page, no newline translation
+        (folder / n).write_bytes(subprocess.run([*pre, "show", f"{ref}:ops/box_git/{n}"],
+                                                capture_output=True, check=True,
+                                                timeout=300).stdout)
     tc = _load_checker(folder)
+    git = tc.strict_git(*pre)
     policy = tc.load_policy((folder / "TRUST_SET.json").read_text(encoding="utf-8"))
     refresh(folder, git, ref, policy)
     t = tc.t_hash(git, ref, policy)
