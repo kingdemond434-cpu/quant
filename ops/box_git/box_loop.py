@@ -40,7 +40,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE.parents[1]) not in sys.path:
     sys.path.insert(0, str(HERE.parents[1]))
 
-from ops.box_git import box_ci, forge_api, impacted, inbox  # noqa: E402
+from ops.box_git import box_ci, drop_pull, forge_api, impacted, inbox  # noqa: E402
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 GATING = ("quality", "mt5-money-path", "coverage-floor")
@@ -61,6 +61,7 @@ class Config:
     ci_jobs: Path | None = None  # hand-off folder to the unprivileged CI worker (Audit MF-2)
     trust_checker: Path | None = None  # box-local pinned trust checker (D-20261119-TRUSTSET)
     trust_pin: Path | None = None
+    drop: drop_pull.Drop | None = None  # private drop repo the box pulls by itself
 
     def token(self, account: str) -> str:
         return (self.tokens / f"{account}.token").read_text(encoding="utf-8").strip()
@@ -485,9 +486,17 @@ def inbox_tick(cfg: Config) -> str:
     return "; ".join(rows) or "inbox empty"
 
 
+def drop_tick(cfg: Config) -> str:
+    """Pull new packets from the drop repository into the inbox (ops/box_git/drop_pull.py)."""
+    if cfg.drop is None or cfg.inbox is None:
+        return "no drop configured"
+    return drop_pull.pull(cfg.drop, cfg.inbox, cfg.state.parent)
+
+
 def tick(cfg: Config) -> dict[str, Any]:
     out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
-    for name, fn in (("inbox", lambda: inbox_tick(cfg)),
+    for name, fn in (("drop", lambda: drop_tick(cfg)),
+                     ("inbox", lambda: inbox_tick(cfg)),
                      ("gate", lambda: gate_tick(cfg, live_head(cfg))),
                      ("pr", lambda: pr_tick(cfg)),
                      ("full", lambda: full_tick(cfg, live_head(cfg))),
@@ -543,7 +552,11 @@ def main(argv: list[str] | None = None) -> int:
                  boot=raw.get("boot") or None,
                  ci_jobs=Path(raw["ci_jobs"]) if raw.get("ci_jobs") else None,
                  trust_checker=Path(raw["trust_checker"]) if raw.get("trust_checker") else None,
-                 trust_pin=Path(raw["trust_pin"]) if raw.get("trust_pin") else None)
+                 trust_pin=Path(raw["trust_pin"]) if raw.get("trust_pin") else None,
+                 drop=drop_pull.Drop(url=raw["drop"]["url"], key=Path(raw["drop"]["key"]),
+                                     checkout=Path(raw["drop"]["checkout"]),
+                                     branch=raw["drop"].get("branch") or "main")
+                 if raw.get("drop") else None)
     doc = tick(cfg)
     doc["trust"] = trust_status(cfg)
     report = cfg.state.with_name("LOOP_LAST.json")
