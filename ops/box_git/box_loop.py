@@ -27,6 +27,7 @@ import contextlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from collections.abc import Iterator, Mapping, Sequence
@@ -100,6 +101,15 @@ def git(cfg: Config, *args: str) -> str:
 @contextlib.contextmanager
 def worktree(cfg: Config, sha: str) -> Iterator[Path]:
     cfg.work.mkdir(parents=True, exist_ok=True)
+    # A checkout is a full tree: never make one below the disk floor (box 2026-11-20: CI
+    # checkouts helped push the desk volume under its own 5 GB floor).
+    ok, why = box_ci.disk_ok(shutil.disk_usage(cfg.work).free / 1024 ** 3)
+    if not ok:
+        raise RuntimeError(f"no checkout: {why}")
+    for stale in cfg.work.glob("wt_*"):  # a pass that died left its checkout behind
+        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(stale)],
+             timeout=300)
+        box_ci.prune(stale)
     d = box_ci.shared_dir(cfg.work, "wt_")
     git(cfg, "worktree", "add", "-q", "--detach", str(d), sha)
     try:
