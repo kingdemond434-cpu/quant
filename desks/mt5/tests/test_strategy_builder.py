@@ -197,3 +197,68 @@ def test_generator_coverage_marks_built_not_live(tmp_path):
     sbr = next(r for r in gc.build(tmp_path)["methods"] if r["method"].startswith("rule-strategy"))
     assert sbr["status"] == "LIVE" and sbr["cells_per_1k_tests"] == 6.0
     assert doc["counts"]["MISSING"] >= 1
+
+
+def _one_survivor(monkeypatch):
+    """Make every lineage 'find' one validated row so the donation path is exercised."""
+    def harvest(self):
+        a = {"g": sb.random_genome(random.Random(3)), "fit": 1.0}  # noqa: S311
+        return [self._row(a, np.full(30, 0.2), 0.99, 0.001, 50, max(self.evaluated_total, 1))]
+    monkeypatch.setattr(sb.Lineage, "harvest", harvest)
+
+
+def test_no_donation_when_trial_registration_fails(tmp_path, monkeypatch):
+    """Audit MF-1: an uncharged search never reaches the judge."""
+    import proposer_common
+
+    from libs.research import claim_selection
+    _one_survivor(monkeypatch)
+    calls = []
+    monkeypatch.setattr(proposer_common, "donate", lambda *a, **k: calls.append(a) or tmp_path)
+
+    def boom(rows):
+        raise OSError("disk full")
+    monkeypatch.setattr(claim_selection, "register_grid", boom)
+    monkeypatch.setattr(sb, "JUDGING_RATE", tmp_path / "absent.json")
+    monkeypatch.setattr(sb, "REPORT", tmp_path / "rep.json")
+    monkeypatch.setattr(sb, "POP", 8)
+    loader = lambda s, c: _bars(5000, seed=5)  # noqa: E731
+    rep = sb.run(budget_s=60, symbols=["EURUSD"], chart="H1", state_dir=tmp_path, loader=loader,
+                 meta={"symbols": META}, seed=1, max_generations=1)
+    assert calls == [] and rep["donated"] == 0
+    assert str(rep["lineage_registration"]["status"]).startswith("FAILED")
+    st = json.loads((tmp_path / "EURUSD_H1.json").read_text())
+    assert st["proposed"] == []
+
+    # And when registration succeeds the same pass donates.
+    monkeypatch.setattr(claim_selection, "register_grid",
+                        lambda rows: {"claim_families": {r["claim_family"]: {} for r in rows}})
+    rep = sb.run(budget_s=60, symbols=["EURUSD"], chart="H1", state_dir=tmp_path, loader=loader,
+                 meta={"symbols": META}, seed=2, max_generations=1)
+    assert len(calls) == 1 and rep["donated"] == 1
+
+
+def test_corrupt_state_skips_the_lineage_and_leaves_the_file(tmp_path, monkeypatch):
+    """Audit MF-2: a torn state file never resets the lifetime trial count."""
+    monkeypatch.setattr(sb, "JUDGING_RATE", tmp_path / "absent.json")
+    monkeypatch.setattr(sb, "REPORT", tmp_path / "rep.json")
+    bad = tmp_path / "EURUSD_H1.json"
+    bad.write_text('{"evaluated_total": 90000, "pop": [')
+    before = bad.read_bytes()
+    loader = lambda s, c: _bars(5000, seed=5)  # noqa: E731
+    rep = sb.run(budget_s=30, symbols=["EURUSD"], chart="H1", state_dir=tmp_path, loader=loader,
+                 meta={"symbols": META}, seed=1, max_generations=1)
+    assert "unreadable" in rep["cells"]["EURUSD|H1"]["skipped"]
+    assert rep["survivors"] == 0 and bad.read_bytes() == before
+
+
+def test_trial_count_is_floored_at_the_claim_ledger(tmp_path, monkeypatch):
+    from mt5desk.engine import Costs
+
+    from libs.research import claim_selection
+    lin_id = claim_selection.claim_family_id(sb.SEAT, f"EURUSD|H1|{sb.FAMILY}")
+    monkeypatch.setattr(claim_selection, "read_ledger",
+                        lambda path=None: {"families": {lin_id: {"selection_trials": 12345}}})
+    lin = sb.Lineage("EURUSD", "H1", _bars(4000), Costs.from_symbol(META["EURUSD"], mult=2.0),
+                     seed=1, state_dir=tmp_path)
+    assert lin.evaluated_total == 12345

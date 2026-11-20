@@ -286,16 +286,36 @@ class Lineage:
         self._load()
 
     def _load(self) -> None:
-        try:
-            st = json.loads(self.path.read_text("utf-8"))
-        except (OSError, ValueError):
-            st = {}
+        """Load the persisted population. FAIL CLOSED ON A TORN FILE (Audit MF-2): a state file
+        that exists but cannot be read sets `unreadable`, and `run` then skips this lineage --
+        no evolve, no harvest, no save -- so a reset trial count can never be written back."""
+        self.unreadable: str | None = None
+        st: Any = {}
+        if self.path.exists():
+            try:
+                st = json.loads(self.path.read_text("utf-8"))
+            except (OSError, ValueError) as exc:
+                self.unreadable = f"state unreadable: {type(exc).__name__}: {exc}"
+                return
+            if not isinstance(st, dict):
+                self.unreadable = "state is not a JSON object"
+                return
         self.pop = [g for g in st.get("pop", []) if isinstance(g, dict)]
         self.archive = [a for a in st.get("archive", []) if isinstance(a, dict)]
-        self.evaluated_total = int(st.get("evaluated_total") or 0)
+        self.evaluated_total = max(int(st.get("evaluated_total") or 0), self._ledger_floor())
         self.proposed = set(st.get("proposed") or [])
         while len(self.pop) < POP:
             self.pop.append(random_genome(self.rng))
+
+    def _ledger_floor(self) -> int:
+        """The lineage's charge already recorded in the lifetime claim ledger: the trial count
+        never falls below what the desk has been charged for it, whatever the state file says."""
+        try:
+            from libs.research.claim_selection import read_ledger
+            fam = read_ledger()["families"].get(self.claim_family) or {}
+            return int(fam.get("selection_trials") or 0)
+        except Exception:
+            return 0
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -686,6 +706,9 @@ def run(budget_s: float = 240.0, n_symbols: int = 6, chart: str | None = None,
     stats: dict[str, Any] = {}
     for sym, ch, d, costs in cells:
         lin = Lineage(sym, ch, d, costs, seed=seed, state_dir=state_dir)
+        if lin.unreadable:
+            stats[f"{sym}|{ch}"] = {"skipped": lin.unreadable}
+            continue
         gens = lin.evolve(time.monotonic() + per, max_generations)
         rows = lin.harvest()
         lineages[(sym, ch)] = lin
@@ -706,15 +729,26 @@ def run(budget_s: float = 240.0, n_symbols: int = 6, chart: str | None = None,
     donated = None
     lineage_reg: Any = None
     if donate_rows and not dry_run:
+        # NO CHARGE, NO DONATION (Audit MF-1). The search's trials reach the ledger through
+        # register_grid; a pass whose registration failed or missed a donated row's lineage
+        # donates nothing, and its survivors wait ranked in the archive for the next pass.
+        registered = False
         try:
             from libs.research.claim_selection import register_grid
             lineage_reg = register_grid(found)
+            have = set((lineage_reg or {}).get("claim_families") or {})
+            need = {r["claim_family"] for r in donate_rows}
+            registered = need <= have
+            if not registered:
+                lineage_reg = {**(lineage_reg or {}),
+                               "status": f"INCOMPLETE: {len(need - have)} lineage(s) unregistered"}
         except Exception as exc:
             lineage_reg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
-        from proposer_common import donate
-        tests = sum(int(s.get("evaluated_pass") or 0) for s in stats.values()
-                    if isinstance(s, dict))
-        donated = donate(SEAT, donate_rows, tests_run=tests)
+        if registered:
+            from proposer_common import donate
+            tests = sum(int(s.get("evaluated_pass") or 0) for s in stats.values()
+                        if isinstance(s, dict))
+            donated = donate(SEAT, donate_rows, tests_run=tests)
         if donated is not None:
             for r in donate_rows:
                 lineages[(r["symbol"], r["params"]["timeframe"])].proposed.add(
