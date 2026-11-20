@@ -348,8 +348,16 @@ def test_no_miner_spawn_site_or_installer_is_lowered_or_capped() -> None:
         "research/moat_swarms.py",
     ):
         assert "BELOW_NORMAL_PRIORITY_CLASS" in (DESK / f).read_text("utf-8")
+    # AN AFFINITY IS SET ONLY ON THE JUDGE ITSELF (2026-11-20 reserved cores): inside
+    # `judge_priority.confine`, which the sweep child calls on its OWN pid alone. No miner is
+    # ever confined.
     jp_src = (DESK / "scripts" / "judge_priority.py").read_text("utf-8")
-    assert "cpu_affinity(" not in jp_src
+    confine_body = jp_src[jp_src.index("def confine("):]
+    confine_body = confine_body[:confine_body.index("\ndef ")]
+    assert jp_src.count("cpu_affinity(") == confine_body.count("cpu_affinity(")
+    rsg_src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
+    assert "cpu_affinity(" not in rsg_src
+    assert re.findall(r"jp\.confine\(([^,]+),", rsg_src) == ["me"]
     for ps1 in (DESK / "scripts").glob("*.ps1"):
         text = ps1.read_text("utf-8", errors="replace")
         assert not re.search(r"MT5-Gauntlet.*AboveNormal|AboveNormal.*MT5-Gauntlet", text), ps1
