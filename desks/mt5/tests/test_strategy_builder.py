@@ -87,8 +87,11 @@ def test_noise_is_not_proposed_and_trials_accumulate(tmp_path, monkeypatch):
     """Pure random walk: the search will find in-sample winners; none may survive harvest."""
     monkeypatch.setattr(sb, "POP", 16)
     loader = lambda s, c: _bars(6000, seed=11)  # noqa: E731
-    rep = sb.run(budget_s=12, symbols=["EURUSD"], chart="H1", dry_run=True, state_dir=tmp_path,
-                 loader=loader, meta={"symbols": META})
+    # Pinned seed and generation count: the outcome is deterministic, not a race against the
+    # wall clock (a time-seeded run could, rarely, see a noise genome clear the bar).
+    monkeypatch.setattr(sb, "JUDGING_RATE", tmp_path / "absent.json")
+    rep = sb.run(budget_s=600, symbols=["EURUSD"], chart="H1", dry_run=True, state_dir=tmp_path,
+                 loader=loader, meta={"symbols": META}, seed=7, max_generations=3)
     st = rep["cells"]["EURUSD|H1"]
     assert st["evaluated_pass"] > 0
     assert rep["survivors"] == 0
@@ -99,7 +102,11 @@ def test_population_persists_and_trial_count_ratchets(tmp_path, monkeypatch):
     loader = lambda s, c: _bars(5000, seed=5)  # noqa: E731
     monkeypatch.setattr(sb, "REPORT", tmp_path / "rep.json")
     import proposer_common
+
+    from libs.research import claim_selection
     monkeypatch.setattr(proposer_common, "donate", lambda *a, **k: None)
+    monkeypatch.setattr(claim_selection, "register_grid", lambda rows: {"stub": len(list(rows))})
+    monkeypatch.setattr(sb, "JUDGING_RATE", tmp_path / "absent.json")
     sb.run(budget_s=6, symbols=["EURUSD"], chart="H1", state_dir=tmp_path, loader=loader,
            meta={"symbols": META})
     first = json.loads((tmp_path / "EURUSD_H1.json").read_text())

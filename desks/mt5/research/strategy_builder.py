@@ -256,11 +256,13 @@ def mutate(rng: random.Random, g: dict) -> dict:
 class Lineage:
     """One persisted population for one (symbol, chart)."""
 
-    def __init__(self, sym: str, chart: str, d: pd.DataFrame, costs: Any, seed: int = 0,
-                 state_dir: Path = STATE):
+    def __init__(self, sym: str, chart: str, d: pd.DataFrame, costs: Any,
+                 seed: int | None = None, state_dir: Path = STATE):
         self.sym, self.chart = sym, chart
         self.path = Path(state_dir) / f"{sym}_{chart}.json"
-        self.rng = random.Random(f"{sym}|{chart}|{seed}|{time.time_ns()}")  # noqa: S311 (search, not crypto)
+        # A fresh stream every pass in production; a fixed one when a caller (a test) pins it.
+        salt = time.time_ns() if seed is None else seed
+        self.rng = random.Random(f"{sym}|{chart}|{salt}")  # noqa: S311 (search, not crypto)
         n = len(d)
         cut = int(n * (1 - RESERVE_FRAC))
         self.visible = d.iloc[:cut]                       # rail 1: the tail is never read
@@ -357,9 +359,10 @@ class Lineage:
     def _tour(self, scored):
         return max(self.rng.sample(scored, min(TOURNAMENT, len(scored))), key=lambda x: x[0])[1]
 
-    def evolve(self, deadline: float) -> int:
+    def evolve(self, deadline: float, max_generations: int | None = None) -> int:
         gens = 0
-        while time.monotonic() < deadline:
+        while time.monotonic() < deadline and (max_generations is None
+                                               or gens < max_generations):
             scored = [(self.fitness(g), g) for g in self.pop]
             scored.sort(key=lambda x: -x[0])
             self._archive(scored)
@@ -489,8 +492,9 @@ class Lineage:
 
 
 # --------------------------------------------------------------------------- volume
-def intake_budget(path: Path = JUDGING_RATE) -> dict[str, Any]:
+def intake_budget(path: Path | None = None) -> dict[str, Any]:
     """Rows this pass may donate, from the judge's own measured rate. Fail closed to the floor."""
+    path = JUDGING_RATE if path is None else path
     try:
         rate = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
@@ -660,7 +664,8 @@ def allocate_donations(rows: list[dict], cap: int, cov: dict,
 
 def run(budget_s: float = 240.0, n_symbols: int = 6, chart: str | None = None,
         dry_run: bool = False, symbols: list[str] | None = None, state_dir: Path = STATE,
-        loader=None, meta: dict | None = None) -> dict[str, Any]:
+        loader=None, meta: dict | None = None, seed: int | None = None,
+        max_generations: int | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     if meta is None:
         try:
@@ -680,8 +685,8 @@ def run(budget_s: float = 240.0, n_symbols: int = 6, chart: str | None = None,
     lineages: dict[tuple[str, str], Lineage] = {}
     stats: dict[str, Any] = {}
     for sym, ch, d, costs in cells:
-        lin = Lineage(sym, ch, d, costs, state_dir=state_dir)
-        gens = lin.evolve(time.monotonic() + per)
+        lin = Lineage(sym, ch, d, costs, seed=seed, state_dir=state_dir)
+        gens = lin.evolve(time.monotonic() + per, max_generations)
         rows = lin.harvest()
         lineages[(sym, ch)] = lin
         found += rows
