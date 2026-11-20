@@ -768,8 +768,22 @@ def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
                           if f.get("previous_filename")})
         # the checker's own strict reader: the gate's _git strips and replaces, so it measured a
         # different T than the pin writer and no forge merge could ever pass (Audit MF-7)
-        ok, cls, why, _t = mod.verdict(git or mod.strict_git("git"), base, head, pin,
-                                       changed=changed)
+        g = git or mod.strict_git("git")
+        # What LIVE would become, as the door measures the pushed merge: a branch older than the
+        # trust set's own files would otherwise read as deleting them (2026-11-20 box). A
+        # conflict or any odd output is unmeasured and refuses. The bootstrap head is pinned
+        # exactly, so it is measured as itself.
+        sha40 = re.compile(r"[0-9a-f]{40}")
+        tip = g("rev-parse", "--verify", f"{base}^{{commit}}").strip()  # the sha the pin names
+        if not sha40.fullmatch(tip):
+            raise RuntimeError("the base could not be resolved")
+        target = head
+        if head != pin.get("bootstrap_head"):
+            out = g("merge-tree", "--write-tree", tip, head).split()
+            if not out or not sha40.fullmatch(out[0]):
+                raise RuntimeError("the merge result could not be measured")
+            target = out[0]
+        ok, cls, why, _t = mod.verdict(g, tip, target, pin, changed=changed)
     except Exception as exc:  # anything unmeasured refuses
         return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
     if ok:

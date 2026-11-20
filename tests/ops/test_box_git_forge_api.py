@@ -152,8 +152,8 @@ def test_the_gate_reads_the_pinned_verdict_and_never_writes_the_pin(tmp_path) ->
              "body": f"AUTHORIZE TRUST {SHA}"}
 
     def ft(chk, comments=(), pin_path=pin):
-        return g.forge_trust("live", SHA, [{"filename": "x"}], list(comments), git=lambda *a: "",
-                             checker=chk, pin_path=pin_path)
+        return g.forge_trust("live", SHA, [{"filename": "x"}], list(comments),
+                             git=lambda *a: "a" * 40, checker=chk, pin_path=pin_path)
     assert ft(Checker())[0] is True
     ok, why, _ = ft(Checker(False, "TRUST"))
     assert not ok and f"AUTHORIZE TRUST {SHA}" in why
@@ -161,7 +161,7 @@ def test_the_gate_reads_the_pinned_verdict_and_never_writes_the_pin(tmp_path) ->
     assert not ok and "pin writer records" in why  # the owner's line alone never merges here
     ok, why, _ = ft(Checker(False, "REFUSE"), [owner])
     assert not ok and why.startswith("refused")
-    assert g.forge_trust("live", SHA, [], [], git=lambda *a: "", pin_path=pin)[0] is False
+    assert g.forge_trust("live", SHA, [], [], git=lambda *a: "a" * 40, pin_path=pin)[0] is False
     assert ft(Checker(), pin_path=str(tmp_path / "none.json"))[0] is False
     assert Path(pin).read_text() == '{"t_hash": "T0"}' and not hasattr(g, "write_pin")
 
@@ -230,3 +230,65 @@ def test_the_gate_and_the_pin_writer_measure_the_same_trust_set(tmp_path, monkey
     ok, why, _ = gate.forge_trust(base, head, [{"filename": "docs.md"}], [], checker=chk,
                                   pin_path=str(pin))
     assert ok, why
+
+
+def test_an_older_branch_is_measured_as_the_merge_it_would_make(tmp_path, monkeypatch) -> None:
+    """A CLEARed branch forked before the trust set's own files existed is measured as LIVE plus
+    the branch (what the door sees), not as a deletion of those files; a conflict refuses."""
+    import json
+    import subprocess
+    import types
+
+    from ops.box_git import trust_check as T
+
+    repo = tmp_path / "r"
+    repo.mkdir()
+
+    def g(*a: str) -> str:
+        return subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True,
+                              text=True, encoding="utf-8").stdout.strip()
+    g("init", "-q", "-b", "main")
+    g("config", "user.email", "t@x")
+    g("config", "user.name", "t")
+    (repo / "docs.md").write_text("a\n")
+    g("add", "docs.md")
+    g("commit", "-q", "-m", "old")
+    old = g("rev-parse", "HEAD")
+    pol = {"files": [], "grow_only": [], "symbols": {"gate.py": ["decide"]}}
+    (repo / "gate.py").write_text("def decide(c):\n    return c == 'OWNER'\n")
+    (repo / T.POLICY_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (repo / T.POLICY_PATH).write_text(json.dumps(pol))
+    g("add", "-A")
+    g("commit", "-q", "-m", "trust set")
+    live = g("rev-parse", "HEAD")
+    g("checkout", "-q", "-b", "work", old)
+    (repo / "miner.py").write_text("x = 1\n")
+    g("add", "miner.py")
+    g("commit", "-q", "-m", "work")
+    head = g("rev-parse", "HEAD")
+    g("checkout", "-q", "-b", "clash", old)
+    (repo / "docs.md").write_text("clash\n")
+    g("commit", "-q", "-am", "clash")
+    g("checkout", "-q", "main")
+    (repo / "docs.md").write_text("b\n")
+    g("commit", "-q", "-am", "live edit")
+    live2 = g("rev-parse", "HEAD")
+    clash = g("rev-parse", "clash")
+    reader = T.strict_git("git", "-C", str(repo))
+    pin = tmp_path / "pin.json"
+    pin.write_text(json.dumps({"t_hash": T.t_hash(reader, live, pol), "history": []}))
+
+    def verdict(git, b, h, p, changed=()):
+        return T.verdict(git, b, h, p, pol, changed=changed)
+    chk = types.SimpleNamespace(verdict=verdict, strict_git=T.strict_git)
+    monkeypatch.chdir(repo)
+    gate = _gate()
+    with pytest.raises(T.Unmeasured):
+        T.t_hash(reader, head, pol)  # the branch alone lacks the trust set's files
+    ok, why, _ = gate.forge_trust(live, head, [{"filename": "miner.py"}], [], checker=chk,
+                                  pin_path=str(pin))
+    assert ok and "ORDINARY" in why, why
+    pin.write_text(json.dumps({"t_hash": T.t_hash(reader, live2, pol), "history": []}))
+    ok, why, _ = gate.forge_trust(live2, clash, [{"filename": "docs.md"}], [], checker=chk,
+                                  pin_path=str(pin))
+    assert not ok and "unavailable" in why

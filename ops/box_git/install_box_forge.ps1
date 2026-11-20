@@ -297,7 +297,7 @@ foreach ($u in @("merge-gate", "release-authority", "box-ci", "auditor", "adopt"
 # importer's `claude` (a thread's authority: claude/* work branches and comments, nothing more).
 $scopes = @{ "merge-gate" = "write:repository,write:issue,read:user"
              "release-authority" = "write:repository,write:issue,read:user"
-             "box-ci" = "write:repository,read:user"; "claude" = "write:repository,write:issue,read:user"
+             "box-ci" = "write:repository,read:issue,read:user"; "claude" = "write:repository,write:issue,read:user"
              "auditor" = "read:repository,write:issue,read:user"; "adopt" = "read:repository" }
 foreach ($u in $scopes.Keys) {
     $tf = Join-Path $Tokens "$u.token"

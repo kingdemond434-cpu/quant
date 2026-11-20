@@ -35,6 +35,10 @@ DISK_FLOOR_GB = 25.0
 RESERVE_CORES = 2
 MAX_WORKERS = 8
 IDLE_THRESHOLD_PCT = 20.0
+#: One worker always runs at IDLE priority even on a saturated box: it takes only cycles no other
+#: process wants, so research never slows, and merges never wait forever (box 2026-11-20: the
+#: research load held every core and CI never started).
+FLOOR_WORKERS = 1
 KEEP_RESULTS = 500
 
 FULL = "full"
@@ -50,12 +54,14 @@ def disk_ok(free_gb: float | None, floor_gb: float = DISK_FLOOR_GB) -> tuple[boo
 
 
 def idle_workers(per_core_pct: Sequence[float] | None, *, reserve: int = RESERVE_CORES,
-                 cap: int = MAX_WORKERS, idle_pct: float = IDLE_THRESHOLD_PCT) -> int:
-    """Workers CI may use now: cores under `idle_pct` busy, minus `reserve`, at most `cap`."""
+                 cap: int = MAX_WORKERS, idle_pct: float = IDLE_THRESHOLD_PCT,
+                 floor: int = FLOOR_WORKERS) -> int:
+    """Workers CI may use now: cores under `idle_pct` busy, minus `reserve`, at most `cap`, and
+    never under `floor` (idle priority). Unmeasured cores start nothing."""
     if not per_core_pct:
         return 0
     idle = sum(1 for p in per_core_pct if p < idle_pct)
-    return max(0, min(cap, idle - reserve))
+    return max(floor, min(cap, idle - reserve))
 
 
 @dataclass(frozen=True)
