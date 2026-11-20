@@ -47,3 +47,11 @@ def test_the_report_flags_every_diverged_account(tmp_path, monkeypatch) -> None:
     assert row["diverged"] and doc["diverged"] == ["ftmo/gold_asia"]
     assert ad.copy_multiplier(account="ftmo", sleeve="gold_asia")[0] < 1.0
     assert ad.copy_multiplier(account="ftmo", sleeve="none")[0] == 1.0
+
+
+def test_a_row_named_only_by_its_lane_or_provenance_still_maps_to_its_account() -> None:
+    assert ad._account({"server": "GooeyTrade-Live", "lane": "e8_gold"}) == "e8"
+    assert ad._account({"server": "Fusion-Live"}) == "fusion-live"
+    assert ad._account({"lane": "e8_gold", "sleeve": "gold_asia"}) == "e8"
+    assert ad._account({"provenance": "e8_gold:tradelocker"}) == "e8"
+    assert ad._account({"lane": "gateway"}) is None

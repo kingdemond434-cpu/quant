@@ -1308,3 +1308,47 @@ def test_an_own_fill_cancels_its_own_opposite_leg(bracket_world) -> None:
     doc = _pass(mt5, now=NOW + timedelta(minutes=1))
     assert not mt5.orders                      # the sell stop is gone
     assert any(a.get("act") == "cancel" and a.get("ok") for a in doc["actions"])
+
+
+def test_a_native_leg_never_outlives_its_ttl_while_e8_holds_its_fill(bracket_world) -> None:
+    """Audit HOLD MF-1 on 28916fc26: the session/TTL check runs before the native-bracket keep, so
+    an untriggered FTMO leg is cancelled at its TTL even while E8 holds its fill ("follow")."""
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    _pass(mt5)
+    assert len(mt5.orders) == 2
+    # E8's buy stop fills and E8 holds it: the day is long, FTMO's sell stop goes, its buy rests.
+    bracket_world.report.write_text(json.dumps(_e8_report()), "utf-8")
+    oco.publish_lane("e8", bracket_world.e8_key,
+                     positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}],
+                     orders=[], date=DAY)
+    assert oco.claim_fill("e8", bracket_world.e8_key, "buy", date=DAY)["won"]
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert [o.type for o in mt5.orders] == [mt5.ORDER_TYPE_BUY_STOP]
+    later = NOW + timedelta(hours=ff.BRACKET_TTL_HOURS + 0.1)
+    mt5.tick = int((later + timedelta(hours=3)).timestamp())
+    bracket_world.report.write_text(json.dumps(_e8_report(at=later)), "utf-8")
+    oco.publish_lane("e8", bracket_world.e8_key,
+                     positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}],
+                     orders=[], date=DAY, now=later)
+    doc = _pass(mt5, now=later)
+    assert not mt5.orders
+    assert any(a.get("why") == "the asia window's session is over" and a.get("ok")
+               for a in doc["actions"])
+
+
+def test_bracket_fit_guards_the_sum_of_both_legs_not_the_larger_one() -> None:
+    """Audit HOLD MF-2 on 28916fc26: both legs can fill and stop out in one spike, so their SUM
+    (each with the measured slip) must fit FTMO's daily limit; a plan whose larger leg fits but
+    whose sum does not is SHRUNK, both legs alike."""
+    plan = [{"side": "long", "price": 4340.0, "sl": 4320.0, "tp": 4380.0, "lot": 1.5},
+            {"side": "short", "price": 4300.0, "sl": 4320.0, "tp": 4260.0, "lot": 1.5}]
+    one = ff.trade_risk(1.5, 20.0, 100.0)                  # 44.13 x 150 = 6,619.50
+    assert ff.loss_guard(100_000.0, 100_000.0, 100_000.0, one, daily_frac=0.10)[0]
+    assert not ff.loss_guard(100_000.0, 100_000.0, 100_000.0, 2 * one, daily_frac=0.10)[0]
+    fit, ok, why = ff.bracket_fit(plan, initial=100_000.0, start=100_000.0, equity=100_000.0,
+                                  contract=100.0, vmin=0.01, vstep=0.01, daily_frac=0.10)
+    assert ok and "shrunk" in why
+    assert fit[0]["lot"] == fit[1]["lot"] < 1.5
+    assert sum(x["risk"] for x in fit) < 10_000.0
+    assert ff.bracket_fit(plan, initial=100_000.0, start=100_000.0, equity=100_000.0,
+                          contract=100.0, vmin=1.49, vstep=0.01, daily_frac=0.10)[1] is False

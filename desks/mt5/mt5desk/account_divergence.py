@@ -71,11 +71,19 @@ def multiplier(acc_rs: list[float], ref_rs: list[float], *, prior_n: int = PRIOR
 
 
 def _account(row: dict[str, Any]) -> str | None:
-    for k in ("book", "account", "lane_account", "server"):
-        v = row.get(k)
-        if isinstance(v, str) and v.strip():
-            v = v.strip().lower()
-            return "e8" if v.startswith("e8") else "ftmo" if v.startswith("ftmo") else v
+    """The account a ledger row belongs to. A known account ("e8", "ftmo") named by ANY of its
+    fields wins (audit condition on f7a4222bd: E8 gateway rows may carry a server string that does
+    not start with "e8" while their lane or provenance names it); else the first account field."""
+    keys = ("book", "account", "lane_account", "server", "lane", "provenance")
+    vals = [(k, row.get(k).strip().lower()) for k in keys
+            if isinstance(row.get(k), str) and row.get(k).strip()]
+    for _k, v in vals:
+        for known in ("e8", "ftmo"):
+            if v.startswith(known):
+                return known
+    for k, v in vals:
+        if k not in ("lane", "provenance"):
+            return v
     return None
 
 

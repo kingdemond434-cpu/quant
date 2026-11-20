@@ -1048,6 +1048,11 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         why_cancel = None
         if withdraw is not None:
             why_cancel = withdraw
+        elif hour >= CANCEL_HOUR or (end is not None and hour >= end) or \
+                hour - float(w.get("placed_hour") or hour) >= BRACKET_TTL_HOURS:
+            # FIRST, before any keep (audit HOLD MF-1 on 28916fc26): no leg outlives its session
+            # or its TTL, a native bracket leg included, whatever E8 holds.
+            why_cancel = "the asia window's session is over"
         elif own_pos and _side_of_type(int(getattr(o, "type", -1))) not in \
                 {_side_of_type(int(getattr(p, "type", -1))) for p in own_pos}:
             why_cancel = "this account's own leg filled the other way (own OCO)"
@@ -1059,9 +1064,6 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             pass                    # our own native bracket leg: it rests while E8's does
         elif action != "follow":
             why_cancel = f"E8 shows no live filled asia trade now ({fwhy})"
-        elif hour >= CANCEL_HOUR or (end is not None and hour >= end) or \
-                hour - float(w.get("placed_hour") or hour) >= BRACKET_TTL_HOURS:
-            why_cancel = "the asia window's session is over"
         elif sig is not None and _side_of_type(int(getattr(o, "type", -1))) != sig["side"]:
             why_cancel = "it is against E8's direction"
         if why_cancel is None:
@@ -1509,6 +1511,33 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
 
 
+def bracket_fit(plan: list[dict[str, Any]], *, initial: float, start: float, equity: float,
+                contract: float, vmin: float, vstep: float,
+                daily_frac: float = DAILY_LOSS_FRAC) -> tuple[list[dict[str, Any]], bool, str]:
+    """(plan, ok, why): the SUM of every leg's risk (stop + SLIP_ALLOWANCE_PTS each) against
+    FTMO's daily and maximum loss (`loss_guard`), as E8's bracket prices it (prop/e8_gold.py,
+    "A TWO-LEGGED BRACKET IS BUDGETED AGAINST TODAY'S FLOOR"). A plan that does not fit is SHRUNK,
+    every leg by the same factor floored to the volume step, until it does; a leg under the venue
+    minimum fails the whole bracket (both legs or none: a one-legged bracket is a directional bet
+    the signal never made). Pure."""
+    def total(p: list[dict[str, Any]]) -> float:
+        return sum(trade_risk(x["lot"], abs(x["price"] - x["sl"]), contract) for x in p)
+    ok, why = loss_guard(initial, start, equity, total(plan), daily_frac=daily_frac)
+    if ok or not plan or not vstep > 0:
+        return plan, ok, why
+    for i in range(1, 200):
+        k = 0.97 ** i
+        shrunk = [{**x, "lot": round(int(x["lot"] * k / vstep + 1e-9) * vstep, 8)} for x in plan]
+        if any(not x["lot"] >= vmin for x in shrunk):
+            return plan, False, f"{why}; shrinking both legs alike reaches the minimum lot first"
+        ok, swhy = loss_guard(initial, start, equity, total(shrunk), daily_frac=daily_frac)
+        if ok:
+            for x in shrunk:
+                x["risk"] = trade_risk(x["lot"], abs(x["price"] - x["sl"]), contract)
+            return shrunk, True, f"shrunk x{k:.3f} to fit both legs: {swhy}"
+    return plan, False, why
+
+
 def _place_bracket(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
                    legs: list[dict[str, Any]], *, key: str, decl: dict[str, Any], armed: bool,
                    today: str, now: datetime, hour: float, cet: str, cet_midnight: datetime,
@@ -1516,8 +1545,10 @@ def _place_bracket(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
     """E8's two asia stop legs, rested natively on FTMO (see `bracket_decision`). Same doors as
     the follow: adopt hold, a readable book, the session, the gap guard, the placement lock, the
     gold OCO gate per leg, the cert fraction x the divergence multiplier, the lot cap and the loss
-    guard (on the larger leg: the two are one-cancels-other, so at most one is the day's risk).
-    A leg the price has already passed is NOT placed (no limit behind the price, ever)."""
+    guard on BOTH legs' risk, each with the measured slip (`bracket_fit`, as E8's audited
+    bracket: this lane's OCO is a one-minute pass, so in a spike both legs can fill and stop out
+    before it sees the first), shrinking both legs alike until it fits. A leg the price has
+    already passed is NOT placed (no limit behind the price, ever)."""
     from libs.ops import new_risk_hold as _nrh
     if (_hold := _nrh.reason()) is not None:
         _skip(doc, st, "adopt_hold", _hold, today=today, now=now, alert=True)
@@ -1612,9 +1643,10 @@ def _place_bracket_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
               today=today, now=now, missed_usd=want_usd)
         return
-    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity,
-                          max(p["risk"] for p in plan),
-                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
+    plan, ok, gwhy = bracket_fit(plan, initial=float(decl["initial_balance"]), start=start,
+                                 equity=equity, contract=contract, vmin=vmin, vstep=vstep,
+                                 daily_frac=float(decl.get("daily_loss_frac")
+                                                  or DAILY_LOSS_FRAC))
     doc["loss_guard"] = gwhy
     if not ok:
         _skip(doc, st, "loss_guard", gwhy, today=today, now=now, missed_usd=want_usd)
