@@ -24,7 +24,7 @@ if ($DropUrl -notmatch '^git@gitlab\.com:[A-Za-z0-9._/-]+\.git$') {
 }
 $Forge = Join-Path $Root "forge"
 $cfgPath = Join-Path $Forge "loop.json"
-if (-not (Test-Path -LiteralPath $cfgPath)) { throw "no $cfgPath: install the forge first" }
+if (-not (Test-Path -LiteralPath $cfgPath)) { throw "no ${cfgPath}: install the forge first" }
 
 $keyDir = Join-Path $Forge "drop-key"
 $checkout = Join-Path $Forge "drop"

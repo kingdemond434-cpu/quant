@@ -107,10 +107,6 @@ def worktree(cfg: Config, sha: str) -> Iterator[Path]:
     ok, why = box_ci.disk_ok(shutil.disk_usage(cfg.work).free / 1024 ** 3)
     if not ok:
         raise RuntimeError(f"no checkout: {why}")
-    for stale in cfg.work.glob("wt_*"):  # a pass that died left its checkout behind
-        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(stale)],
-             timeout=300)
-        box_ci.prune(stale)
     d = box_ci.shared_dir(cfg.work, "wt_")
     git(cfg, "worktree", "add", "-q", "--detach", str(d), sha)
     try:
@@ -119,6 +115,23 @@ def worktree(cfg: Config, sha: str) -> Iterator[Path]:
         _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(d)], timeout=300)
         box_ci.prune(d)
         _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+
+
+def sweep_stale(cfg: Config) -> int:
+    """Remove checkouts a pass that died left behind. Called ONCE at the start of a pass, before
+    any checkout exists (Audit MF-1: worktree() nests, so sweeping inside it would delete the
+    outer checkout). Passes never overlap (the task does not start a second instance)."""
+    if not cfg.work.is_dir():
+        return 0
+    n = 0
+    for stale in cfg.work.glob("wt_*"):
+        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(stale)],
+             timeout=300)
+        box_ci.prune(stale)
+        n += 1
+    if n:
+        _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+    return n
 
 
 def _forge(cfg: Config, account: str) -> forge_api.Forge:
@@ -495,6 +508,10 @@ def drop_tick(cfg: Config) -> str:
 
 def tick(cfg: Config) -> dict[str, Any]:
     out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds")}
+    try:
+        out["swept"] = sweep_stale(cfg)
+    except Exception as exc:
+        out["swept"] = f"ERROR {type(exc).__name__}: {str(exc)[:200]}"
     for name, fn in (("drop", lambda: drop_tick(cfg)),
                      ("inbox", lambda: inbox_tick(cfg)),
                      ("gate", lambda: gate_tick(cfg, live_head(cfg))),
