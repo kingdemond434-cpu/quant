@@ -183,3 +183,50 @@ def test_on_the_forge_replay_shadow_is_required_for_every_merge() -> None:
     assert g.checks([*green, run("replay-shadow", "success")], need, ok)[0] == "pass"
     src = (ROOT / ".github/scripts/audit_gate.py").read_text()
     assert "if os.environ.get(\"QUANT_FORGE_URL\"):\n            need = forge_need(need)" in src
+
+
+def test_the_gate_and_the_pin_writer_measure_the_same_trust_set(tmp_path, monkeypatch) -> None:
+    """Audit MF-7: the gate's default reader is the checker's strict one, so a whole-file entry
+    ending in a newline measures the same T the pin writer pinned, and an ordinary change merges."""
+    import json
+    import subprocess
+    import types
+
+    from ops.box_git import trust_check as T
+
+    repo = tmp_path / "r"
+    repo.mkdir()
+
+    def g(*a: str) -> str:
+        return subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True,
+                              text=True, encoding="utf-8").stdout.strip()
+    g("init", "-q", "-b", "main")
+    g("config", "user.email", "t@x")
+    g("config", "user.name", "t")
+    (repo / "keys").mkdir()
+    (repo / "keys" / "signers").write_text("zuck key\n\n")
+    (repo / T.POLICY_PATH).parent.mkdir(parents=True, exist_ok=True)
+    pol = {"files": ["keys/*"], "grow_only": [], "symbols": {}}
+    (repo / T.POLICY_PATH).write_text(json.dumps(pol))
+    g("add", "-A")
+    g("commit", "-q", "-m", "base")
+    base = g("rev-parse", "HEAD")
+    (repo / "docs.md").write_text("d\n")
+    g("add", "docs.md")
+    g("commit", "-q", "-m", "docs")
+    head = g("rev-parse", "HEAD")
+    pinned = T.t_hash(T.strict_git("git", "-C", str(repo)), base, pol)  # what pin_writer pins
+    pin = tmp_path / "pin.json"
+    pin.write_text(json.dumps({"t_hash": pinned, "history": []}))
+    monkeypatch.chdir(repo)
+    gate = _gate()
+    assert T.t_hash(gate._git, base, pol) != pinned  # the old reader would never have matched
+    seen = []
+
+    def verdict(git, b, h, p, changed=()):
+        seen.append(git)
+        return T.verdict(git, b, h, p, pol, changed=changed)
+    chk = types.SimpleNamespace(verdict=verdict, strict_git=T.strict_git)
+    ok, why, _ = gate.forge_trust(base, head, [{"filename": "docs.md"}], [], checker=chk,
+                                  pin_path=str(pin))
+    assert ok, why

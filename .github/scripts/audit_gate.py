@@ -766,7 +766,10 @@ def forge_trust(base: str, head: str, files: list[Mapping[str, Any]],
         changed = sorted({str(f.get("filename")) for f in files if f.get("filename")} |
                          {str(f.get("previous_filename")) for f in files
                           if f.get("previous_filename")})
-        ok, cls, why, _t = mod.verdict(git or _git, base, head, pin, changed=changed)
+        # the checker's own strict reader: the gate's _git strips and replaces, so it measured a
+        # different T than the pin writer and no forge merge could ever pass (Audit MF-7)
+        ok, cls, why, _t = mod.verdict(git or mod.strict_git("git"), base, head, pin,
+                                       changed=changed)
     except Exception as exc:  # anything unmeasured refuses
         return False, f"trust check unavailable ({type(exc).__name__}: {str(exc)[:160]})", None
     if ok:
