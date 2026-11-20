@@ -43,6 +43,15 @@ LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 CHECKER_FILES = ("trust_check.py", "TRUST_SET.json", "pin_writer.py", "protect.py")
 AUTHORIZE = re.compile(r"AUTHORIZE TRUST ([0-9a-f]{40})")
 OWNER_LOGIN = "quant-admin"
+#: THE STANDING VETO WINDOW (zuck 2026-11-20 11:10-11:11Z: "It shouldn't need me to update" and
+#: "It should be automatic ... same day not 3 days later"; journal D-20261120-SAMEDAYVETO). A
+#: TRUST or CONTRACT change with the Auditor's CLEAR at its exact head is authorized once
+#: VETO_HOURS pass from its first sighting with no owner `VETO TRUST <head>`. Never for a change
+#: that touches the signers (the owner's keys stay his) and never past a REFUSE (prop-firm limits).
+VETO_HOURS = 4.0
+AUDITOR_LOGINS = ("auditor",)
+VETO = re.compile(r"VETO TRUST ([0-9a-f]{40})")
+NEVER_BY_WINDOW = ("ops/signing/",)
 
 
 def _load_checker(folder: Path) -> Any:
@@ -144,6 +153,28 @@ def forge_get(cfg: Mapping[str, Any], path: str) -> Any:
         return json.loads(r.read() or b"null")
 
 
+def auditor_cleared(comments: list[Mapping[str, Any]], head: str) -> bool:
+    for c in comments:
+        body = str(c.get("body") or "").strip()
+        if (str((c.get("user") or {}).get("login")) in AUDITOR_LOGINS
+                and re.fullmatch(rf"AUDIT CLEAR {head}(?: (merge|squash))?", body)):
+            return True
+    return False
+
+
+def owner_vetoed(comments: list[Mapping[str, Any]], head: str) -> bool:
+    return any((m := VETO.fullmatch(str(c.get("body") or "").strip())) and m.group(1) == head
+               and str((c.get("user") or {}).get("login")) == OWNER_LOGIN for c in comments)
+
+
+def window_open(pin: dict[str, Any], ht: str, head: str, now: datetime) -> float:
+    """Hours left on this T hash's veto window (its clock starts at first sighting)."""
+    clock = pin.setdefault("veto_clock", {})
+    first = clock.setdefault(ht, {"head": head, "since": now.isoformat()})
+    since = datetime.fromisoformat(str(first["since"]))
+    return VETO_HOURS - (now - since).total_seconds() / 3600
+
+
 def owner_typed(comments: list[Mapping[str, Any]], head: str) -> Mapping[str, Any] | None:
     for c in comments:
         m = AUTHORIZE.fullmatch(str(c.get("body") or "").strip())
@@ -208,7 +239,8 @@ def run_suites(cfg: Mapping[str, Any], folder: Path, head: str, areas: list[str]
 # ------------------------------------------------------------------------- one pass
 def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
              forge: Callable[[str], Any] | None = None,
-             suites: Callable[..., tuple[bool, str]] | None = None) -> list[str]:
+             suites: Callable[..., tuple[bool, str]] | None = None,
+             now: datetime | None = None) -> list[str]:
     pin_path = folder / "pin.json"
     rlog = Path(cfg["rules_log"]) if cfg.get("rules_log") else None
     pin = json.loads(pin_path.read_text(encoding="utf-8"))
@@ -250,12 +282,16 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
         if (p.get("base") or {}).get("ref") != LIVE:
             continue
         head = str((p.get("head") or {}).get("sha") or "")
-        ok, cls, why, ht = tc.verdict(git, live, head, pin, policy)
+        try:  # what LIVE would become: the same tree the gate and the door measure
+            target = git("merge-tree", "--write-tree", live, head).split()[0]
+        except Exception:  # a conflict or an unreadable head: nothing to authorize yet
+            continue
+        ok, cls, why, ht = tc.verdict(git, live, target, pin, policy)
         if ok or not ht:
             continue
         n = p.get("number")
         if cls == "CONTRACT" and ht not in (pin.get("contract_tried") or {}):
-            _c, _w, _m, areas = tc.classify_full(git, live, head, [], policy)
+            _c, _w, _m, areas = tc.classify_full(git, live, target, [], policy)
             passed, what = (suites or run_suites)(cfg, folder, head, areas, policy)
             pin.setdefault("contract_tried", {})[ht] = {"head": head, "ok": passed, "at": _now()}
             if passed:
@@ -270,6 +306,22 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
                                                         "comment": c.get("id"), "at": _now()}
                 out.append(f"PR #{n} AUTHORIZED by the owner at {head[:12]}")
                 log(rlog, {"class": "AUTHORIZED", "pr": n, "head": head, "t_hash": ht})
+                continue
+            comments = forge(f"/repos/quant/quant/issues/{n}/comments?limit=50") or []
+            touched = git("diff", "--name-only", live, head).split()
+            if (not auditor_cleared(comments, head) or owner_vetoed(comments, head)
+                    or any(t.startswith(NEVER_BY_WINDOW) for t in touched)):
+                continue
+            left = window_open(pin, ht, head, now or datetime.now(UTC))
+            if left > 0:
+                out.append(f"PR #{n} {cls}: veto window, {left:.1f} h left")
+                continue
+            pin.setdefault("authorized", {})[ht] = {"head": head, "pr": n, "at": _now(),
+                                                    "by": f"standing veto window {VETO_HOURS:g} h"}
+            out.append(f"PR #{n} AUTHORIZED by the standing veto window at {head[:12]}")
+            log(rlog, {"class": "AUTHORIZED", "pr": n, "head": head, "t_hash": ht,
+                       "why": f"Auditor CLEAR + {VETO_HOURS:g} h, no owner veto",
+                       "undo": f"owner types VETO TRUST {head} before the window; or revert"})
     save_pin(pin_path, pin)
     return out
 
