@@ -596,7 +596,8 @@ LATEST_FN = [
     "if ($t.Count -ne 1 -or -not $t[0]) { return $false }",
     "$tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))",
     "if ((Split-Path -Parent $tp) -ne $ld) { return $false }",
-    "if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\\d{8}_\\d{6}\\.log$') { return $false }",
+    "if ((Split-Path -Leaf $tp) -cnotmatch "
+    "'^rc_debug_\\d{8}_\\d{6}(-cse_[A-Za-z0-9]{1,64})?\\.log$') { return $false }",
     "$f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop",
     "if ($f.PSIsContainer) { return $false }",
     "if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }",
@@ -648,6 +649,11 @@ function Case([string] $label, [string] $target, [string] $name = 'latest') {
     New-Item -ItemType Directory -Path (Join-Path $base 'elsewhere') -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $ld 'rc_debug_20261028_134611.log') -Value x
     Set-Content -LiteralPath (Join-Path $ld 'notes.txt') -Value x
+    foreach ($f in @('rc_debug_20261120_101500-cse_abc123.log', 'rc_debug_20261120_101500-cse_.log',
+                     'rc_debug_20261120_101500-cse_a.b.log',
+                     'rc_debug_20261120_101500-x_abc.log')) {
+        Set-Content -LiteralPath (Join-Path $ld $f) -Value x
+    }
     Set-Content -LiteralPath (Join-Path $ld 'sub/rc_debug_20261028_134611.log') -Value x
     Set-Content -LiteralPath (Join-Path $base 'elsewhere/rc_debug_20261028_134611.log') -Value x
     New-Item -ItemType Directory -Path (Join-Path $ld 'rc_debug_20261028_000000.log') | Out-Null
@@ -667,6 +673,10 @@ Case 'not_rc_debug' (Join-Path $ld 'notes.txt')
 Case 'dir_target' (Join-Path $ld 'rc_debug_20261028_000000.log')
 Case 'link_target' (Join-Path $ld 'rc_debug_20261028_111111.log')
 Case 'dangling' (Join-Path $ld 'rc_debug_20261028_222222.log')
+Case 'session' (Join-Path $ld 'rc_debug_20261120_101500-cse_abc123.log')
+Case 'session_empty' (Join-Path $ld 'rc_debug_20261120_101500-cse_.log')
+Case 'session_dot' (Join-Path $ld 'rc_debug_20261120_101500-cse_a.b.log')
+Case 'other_suffix' (Join-Path $ld 'rc_debug_20261120_101500-x_abc.log')
 Remove-Item -LiteralPath $base -Recurse -Force
 $out | ConvertTo-Json -Compress
 """
@@ -696,6 +706,10 @@ def test_the_latest_link_exemption_accepts_one_shape_and_refuses_the_rest() -> N
         "dir_target": False,
         "link_target": False,
         "dangling": False,
+        "session": True,
+        "session_empty": False,
+        "session_dot": False,
+        "other_suffix": False,
     }
 
 
