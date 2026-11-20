@@ -350,7 +350,10 @@ def judge_target(
         }
     res = reserved_cores() if reserved == "READ" else (reserved or {})
     if (res.get("enabled") and not unreadable and isinstance(reg, int)
-            and reg >= CLASS_RANK[NORMAL] and miners[-1] < CLASS_RANK[NORMAL]):
+            and reg >= CLASS_RANK[NORMAL] and lives and lives[0] >= CLASS_RANK[NORMAL]
+            and miners[-1] < CLASS_RANK[NORMAL]):
+        # Never above ANY observed live process (terminal64, gateway, E8): equal is the most
+        # the judge takes, and no observed live process at all means no raise (Audit MF-1).
         # THE RESERVATION (see RESERVED_CORES_SWITCH): one class above every miner, never above
         # NORMAL nor above the registered live class, and only together with the affinity that
         # keeps the judge off every other core. Fails closed exactly as the old rule does.

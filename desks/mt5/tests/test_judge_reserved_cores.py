@@ -64,7 +64,7 @@ RES = {"enabled": True, "cpus": [8, 9, 10, 11, 12, 13], "why": "test"}
 
 
 def test_the_judge_goes_one_class_above_the_miners_and_carries_its_cores() -> None:
-    t = jp.judge_target([BN, BN], [BN, N], registered_live=N, reserved=RES)
+    t = jp.judge_target([BN, BN], [N, N], registered_live=N, reserved=RES)
     assert t["rank"] == N and t["above_any_miner"] and t["cpus"] == RES["cpus"]
 
 
@@ -76,6 +76,13 @@ def test_the_judge_goes_one_class_above_the_miners_and_carries_its_cores() -> No
 def test_the_reservation_fails_closed_like_the_old_rule(kw) -> None:
     args = {"registered_live": N, **kw}
     t = jp.judge_target([BN], [N], reserved=RES, **args)
+    assert t["rank"] == BN and "cpus" not in t
+
+
+@pytest.mark.parametrize("lives", [[BN], [BN, N], []])
+def test_never_above_an_observed_live_process_and_none_observed_is_no_raise(lives) -> None:
+    # terminal64 measured BELOW_NORMAL with E8 registered NORMAL: no raise; nothing observed: none
+    t = jp.judge_target([BN], lives, registered_live=N, reserved=RES)
     assert t["rank"] == BN and "cpus" not in t
 
 
