@@ -49,3 +49,39 @@ def test_checkout_refused_below_disk_floor(tmp_path, monkeypatch):
             raise AssertionError("checkout made below the floor")
     except RuntimeError as exc:
         assert "no checkout" in str(exc)
+
+
+def test_checkout_gets_the_long_limit_and_a_failed_add_leaves_nothing(tmp_path, monkeypatch):
+    """Box 11-20 19:55Z: a ~50k-file checkout outran the 300 s bare-repo limit, so CI never
+    started. Checkouts get WORKTREE_ADD_TIMEOUT; a failed add is cleaned up at once."""
+    monkeypatch.setattr(box_ci, "disk_ok", lambda free: (True, "ok"))
+    cfg = _cfg(tmp_path)
+    head = box_loop.git(cfg, "rev-parse", "HEAD")
+    seen: list[tuple[list[str], float]] = []
+    real = box_loop._run
+
+    def spy(argv, **kw):
+        seen.append((list(argv), kw.get("timeout", 3600)))
+        return real(argv, **kw)
+
+    monkeypatch.setattr(box_loop, "_run", spy)
+    with box_loop.worktree(cfg, head) as d:
+        assert (d / "f.txt").is_file()
+    adds = [(a, t) for a, t in seen if "add" in a and "worktree" in a]
+    assert adds and adds[0][1] == box_loop.WORKTREE_ADD_TIMEOUT > 300
+    assert "checkout.workers=0" in adds[0][0]
+
+    def slow(argv, **kw):
+        if "add" in argv and "worktree" in argv:
+            real(argv, **kw)               # leaves a full checkout behind, then "times out"
+            return 124, "timed out after 1800s"
+        return real(argv, **kw)
+
+    monkeypatch.setattr(box_loop, "_run", slow)
+    try:
+        with box_loop.worktree(cfg, head):
+            raise AssertionError("a timed-out checkout was used")
+    except RuntimeError as exc:
+        assert "timed out" in str(exc)
+    assert not list(cfg.work.glob("wt_*"))
+    assert box_loop.git(cfg, "worktree", "list").count("\n") == 0

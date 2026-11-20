@@ -92,8 +92,17 @@ def _run(argv: Sequence[str], *, cwd: Path | None = None, env: Mapping[str, str]
     return p.returncode, (p.stdout + p.stderr)[-4000:]
 
 
-def git(cfg: Config, *args: str) -> str:
-    rc, out = _run(["git", "-C", str(cfg.bare), *args], timeout=300)
+#: A full checkout of this tree is ~50k files; on the box (Windows, real-time scanning on) one
+#: took over 300 s while the disk was busy (11-20 19:55Z: gate and pr both "worktree add timed
+#: out after 300s", so CI never started on any PR). Checkouts get their own, longer limit and
+#: git's parallel checkout; every other bare-repo command keeps the 300 s limit.
+WORKTREE_ADD_TIMEOUT = 1800
+_FAST_CHECKOUT = ("-c", "checkout.workers=0", "-c", "core.fscache=true",
+                  "-c", "core.preloadindex=true")
+
+
+def git(cfg: Config, *args: str, timeout: float = 300) -> str:
+    rc, out = _run(["git", "-C", str(cfg.bare), *args], timeout=timeout)
     if rc != 0:
         raise RuntimeError(f"git {' '.join(args)}: {out.strip()[-300:]}")
     return out.strip()
@@ -108,7 +117,15 @@ def worktree(cfg: Config, sha: str) -> Iterator[Path]:
     if not ok:
         raise RuntimeError(f"no checkout: {why}")
     d = box_ci.shared_dir(cfg.work, "wt_")
-    git(cfg, "worktree", "add", "-q", "--detach", str(d), sha)
+    try:
+        git(cfg, *_FAST_CHECKOUT, "worktree", "add", "-q", "--detach", str(d), sha,
+            timeout=WORKTREE_ADD_TIMEOUT)
+    except RuntimeError:
+        # a half-made checkout must not wait for the next pass's sweep to give its disk back
+        _run(["git", "-C", str(cfg.bare), "worktree", "remove", "--force", str(d)], timeout=300)
+        box_ci.prune(d)
+        _run(["git", "-C", str(cfg.bare), "worktree", "prune"], timeout=120)
+        raise
     try:
         yield d
     finally:
