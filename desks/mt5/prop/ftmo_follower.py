@@ -283,6 +283,50 @@ def follow_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | 
                       "e8_position_id": pid}, f"E8's gold_asia filled {side}"
 
 
+#: SAME ORDERS, SAME MOMENT (zuck 2026-11-20: "we shouldn't be copying. It should just get the
+#: same orders"). With GOLD_OCO_MODE "oco" for this lane, FTMO no longer waits for E8's FILL: the
+#: moment E8's asia bracket rests, FTMO rests the SAME two stop legs (E8's levels, stops and
+#: targets) natively on its own terminal, so FTMO's breakout fills when E8's does, on the same
+#: tick, instead of minutes later. The day's first fill on either account sets the direction and
+#: every opposite leg is cancelled (gold_oco rule 7, `gate`'s bracket clause). In "fallback" mode
+#: (the default) nothing here runs and the follow below is unchanged.
+def bracket_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | None, *,
+                     today: str, now: datetime) -> tuple[list[dict[str, Any]] | None, str]:
+    """(legs, why): E8's two resting asia legs while E8 has no fill and no direction is set,
+    else (None, why). Each leg {"side", "price", "sl", "tp"}. Pure."""
+    if not isinstance(e8_doc, dict) or e8_doc.get("status") != "OK":
+        return None, "E8's pass report is absent or not OK"
+    at = _iso(e8_doc.get("at"))
+    if at is None or not -60.0 <= (now - at).total_seconds() <= e8_stale_limit_s()[0]:
+        return None, "E8's pass report is stale or unstamped"
+    gd = e8_doc.get("guard_decision")
+    if bool(e8_doc.get("guard")) or (isinstance(gd, dict) and gd.get("may_open") is False):
+        return None, "E8 stands down"
+    state = e8_doc.get("state")
+    if not isinstance(state, dict) or str(state.get("date")) != str(today):
+        return None, "E8's state is not today's"
+    if entry_why is not None or entry is not None:
+        return None, "the day's direction is set or unreadable: the follow decides"
+    w = (state.get("windows") or {}).get(WINDOW)
+    if not isinstance(w, dict) or w.get("position_id") is not None or w.get("shadow") \
+            or w.get("closed"):
+        return None, "E8's asia bracket is not resting (absent, filled, shadow or closed)"
+    legs = []
+    for name, side in (("buy_stop", "long"), ("sell_stop", "short")):
+        leg = (w.get("orders") or {}).get(name)
+        try:
+            price, sl, tp = float(leg["price"]), float(leg["sl"]), float(leg["tp"])
+        except (KeyError, TypeError, ValueError):
+            return None, f"E8's {name} leg is unreadable"
+        sign = 1.0 if side == "long" else -1.0
+        if not (sign * (price - sl) > 0 and sign * (tp - price) > 0):
+            return None, f"E8's {name} leg has its stop or target on the wrong side"
+        legs.append({"side": side, "price": price, "sl": sl, "tp": tp})
+    if not legs[0]["price"] > legs[1]["price"]:
+        return None, "E8's buy stop is not above its sell stop"
+    return legs, "E8's asia bracket rests: the same two legs, natively"
+
+
 def entry_order_kind(side: str, level: float, bid: float, ask: float) -> str:
     """The resting order that enters at `level`: a stop while the price is short of it, a limit
     once it is through (FTMO's entry is E8's level, never a chase)."""
@@ -971,6 +1015,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     action, sig, fwhy = follow_decision(e8_doc, entry, entry_why, e8_lane, lane_why,
                                         today=today, now=now)
     doc["follow"] = {"action": action, "why": fwhy, "signal": sig}
+    native = _oco.configured_mode(LANE) == "oco"
+    legs, bwhy = (bracket_decision(e8_doc, entry, entry_why, today=today, now=now)
+                  if native else (None, "fallback mode: FTMO follows E8's fill"))
+    doc["bracket"] = {"native": native, "legs": legs, "why": bwhy}
     doc["planned_usd"] = _planned_usd(mt5)
 
     positions = mt5.positions_get(symbol=SYMBOL)
@@ -1000,6 +1048,15 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         why_cancel = None
         if withdraw is not None:
             why_cancel = withdraw
+        elif own_pos and _side_of_type(int(getattr(o, "type", -1))) not in \
+                {_side_of_type(int(getattr(p, "type", -1))) for p in own_pos}:
+            why_cancel = "this account's own leg filled the other way (own OCO)"
+        elif entry is not None and entry_why is None and \
+                _side_of_type(int(getattr(o, "type", -1))) != _oco.side_of(entry.get("direction")):
+            why_cancel = f"it is against the day's gold direction ({entry.get('direction')})"
+        elif native and w.get("bracket") and (legs is not None or entry is not None) \
+                and action not in ("stand_aside", "e8_stale", "unreadable"):
+            pass                    # our own native bracket leg: it rests while E8's does
         elif action != "follow":
             why_cancel = f"E8 shows no live filled asia trade now ({fwhy})"
         elif hour >= CANCEL_HOUR or (end is not None and hour >= end) or \
@@ -1182,6 +1239,14 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     placed_today = WINDOW in st["windows"]
     if placed_today or own_ord or own_pos:
         pass
+    elif legs is not None and action == "wait":
+        if (spent := history_spent(mt5, today, now))[0] is not False:
+            _skip(doc, st, "history_unreadable" if spent[0] is None else "already_followed",
+                  spent[1], today=today, now=now)
+        else:
+            _place_bracket(mt5, st, doc, legs, key=key, decl=decl, armed=armed, today=today,
+                           now=now, hour=hour, cet=cet, cet_midnight=cet_midnight,
+                           book_ok=book_ok, tick=tick)
     elif action != "follow" or sig is None:
         _skip(doc, st, "wait" if action == "wait" else action, fwhy, today=today, now=now)
     elif str(sig["e8_position_id"]) in st["followed"]:
@@ -1441,6 +1506,167 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     # The resting order is in this lane's published gold state before the lock is released.
     after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
                            holder="ftmo_follower:sent")
+    doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
+
+
+def _place_bracket(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
+                   legs: list[dict[str, Any]], *, key: str, decl: dict[str, Any], armed: bool,
+                   today: str, now: datetime, hour: float, cet: str, cet_midnight: datetime,
+                   book_ok: bool, tick: Any) -> None:
+    """E8's two asia stop legs, rested natively on FTMO (see `bracket_decision`). Same doors as
+    the follow: adopt hold, a readable book, the session, the gap guard, the placement lock, the
+    gold OCO gate per leg, the cert fraction x the divergence multiplier, the lot cap and the loss
+    guard (on the larger leg: the two are one-cancels-other, so at most one is the day's risk).
+    A leg the price has already passed is NOT placed (no limit behind the price, ever)."""
+    from libs.ops import new_risk_hold as _nrh
+    if (_hold := _nrh.reason()) is not None:
+        _skip(doc, st, "adopt_hold", _hold, today=today, now=now, alert=True)
+        return
+    if not book_ok:
+        _skip(doc, st, "book_unreadable", "the FTMO terminal did not answer positions/orders",
+              today=today, now=now)
+        return
+    end = window_end_hour(WINDOW)
+    if hour >= CANCEL_HOUR or (end is not None and hour >= end):
+        _skip(doc, st, "session_over", "the asia window's session is over", today=today, now=now)
+        return
+    if near_market_close(now):
+        _skip(doc, st, "gap_guard", f"within {GAP_GUARD_H:g}h of gold's market close (FTMO: no "
+                                    f"gap trading)", today=today, now=now)
+        return
+    with _xa.placement_lock(f"ftmo_follower:{WINDOW}:bracket") as locked:
+        if not locked:
+            _skip(doc, st, "gold_oco", "gold OCO: the placement lock is held by another lane; "
+                                       "fail closed (retried next pass)", today=today, now=now)
+            return
+        _place_bracket_locked(mt5, st, doc, legs, key=key, decl=decl, armed=armed, today=today,
+                              now=now, hour=hour, cet=cet, cet_midnight=cet_midnight)
+
+
+def _place_bracket_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
+                          legs: list[dict[str, Any]], *, key: str, decl: dict[str, Any],
+                          armed: bool, today: str, now: datetime, hour: float, cet: str,
+                          cet_midnight: datetime) -> None:
+    live_pos, live_ord = mt5.positions_get(symbol=SYMBOL), mt5.orders_get(symbol=SYMBOL)
+    if live_pos is None or live_ord is None:
+        _skip(doc, st, "book_unreadable", "the FTMO terminal did not answer positions/orders "
+                                          "under the placement lock", today=today, now=now)
+        return
+    if list(live_pos) or list(live_ord):
+        _skip(doc, st, "foreign_exposure", ("FTMO already holds or rests gold from another source; "
+                                            "the native bracket rests only on a flat book"),
+              today=today, now=now, alert=True)
+        return
+    resync = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
+                            holder="ftmo_follower:bracket")
+    if not resync.get("published"):
+        _skip(doc, st, "gold_oco", f"gold OCO: this lane's gold state was not republished under "
+                                   f"the lock ({resync.get('why')}); fail closed",
+              today=today, now=now)
+        return
+    for leg in legs:
+        v = _oco.gate(LANE, leg["side"], key=key, date=today)
+        if not v.allowed:
+            _skip(doc, st, "gold_oco", v.why, today=today, now=now)
+            return
+    frac = (load_cert_book(CERT_BOOK_FILE, "ftmo") or {}).get(CERT_KEY)
+    if not frac or not frac > 0:
+        _skip(doc, st, "cert_void", ("the ftmo block of CERT_BOOK_LIVE.json is absent, disabled, "
+                                     "void or funds gold_asia at 0"), today=today, now=now)
+        return
+    frac, div = _divergence_frac(float(frac))
+    doc["divergence"] = div
+    if not frac > 0:
+        _skip(doc, st, "divergence_cut", str(div.get("why")), today=today, now=now)
+        return
+    acc, info, tick = mt5.account_info(), mt5.symbol_info(SYMBOL), mt5.symbol_info_tick(SYMBOL)
+    try:
+        equity, balance = float(acc.equity), float(acc.balance)
+        contract = float(info.trade_contract_size)
+        vmin, vstep = float(info.volume_min), float(info.volume_step)
+        vmax = float(getattr(info, "volume_max", 0.0) or 0.0)
+        bid, ask = float(tick.bid), float(tick.ask)
+    except (AttributeError, TypeError, ValueError):
+        _skip(doc, st, "account_unreadable", "equity, balance, the contract or the tick is "
+                                             "unreadable", today=today, now=now)
+        return
+    want_usd = frac * equity
+    cap, cap_why = lot_cap(equity, max(leg["price"] for leg in legs), contract, vstep=vstep,
+                           declared=decl.get("max_lot"))
+    plan = []
+    for leg in legs:
+        if entry_order_kind(leg["side"], leg["price"], bid, ask) not in ("buy_stop", "sell_stop"):
+            continue                       # the price is through this level: never a limit
+        dist = abs(leg["price"] - leg["sl"])
+        lot = min(lot_for(frac, equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax), cap)
+        if lot >= vmin and lot > 0:
+            plan.append({**leg, "lot": round(lot, 8), "risk": trade_risk(lot, dist, contract)})
+    if not plan:
+        _skip(doc, st, "unsizeable", (f"no bracket leg is placeable (price through the level, or "
+                                      f"below the minimum lot; cap {cap_why})"),
+              today=today, now=now, missed_usd=want_usd)
+        return
+    try:
+        start = day_start_balance(mt5, balance, cet_midnight, now, server_epoch=float(tick.time))
+    except Exception as exc:
+        _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
+              today=today, now=now, missed_usd=want_usd)
+        return
+    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity,
+                          max(p["risk"] for p in plan),
+                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
+    doc["loss_guard"] = gwhy
+    if not ok:
+        _skip(doc, st, "loss_guard", gwhy, today=today, now=now, missed_usd=want_usd)
+        return
+    at = now.isoformat(timespec="seconds")
+    if not armed:
+        for p in plan:
+            row = {"at": at, "window": WINDOW, "lane": LANE, "status": "WOULD_PLACE",
+                   "bracket": True, "side": p["side"], "kind": _LEG[p["side"]] + "_stop",
+                   "price": p["price"], "sl": p["sl"], "tp": p["tp"], "lot": p["lot"],
+                   "risk_frac": frac, "risk_usd_with_slip": round(p["risk"], 2), "armed": False}
+            _record(row)
+            doc["placed"].append({**row, "shadow": True})
+        return
+    # WRITE-AHEAD, as the follow: the window is spent BEFORE any send.
+    st["windows"][WINDOW] = {"placed_at": at, "placed_hour": hour, "bracket": True,
+                             "legs": [{k: p[k] for k in ("side", "price", "lot")} for p in plan],
+                             "status": "SENDING"}
+    try:
+        _atomic_write(STATE, json.dumps(st, indent=1, default=str))
+    except OSError as exc:
+        _record({"at": at, "window": WINDOW, "lane": LANE, "status": "REJECTED", "bracket": True,
+                 "why": f"state write-ahead failed ({exc}); not sent"})
+        return
+    types = {"long": mt5.ORDER_TYPE_BUY_STOP, "short": mt5.ORDER_TYPE_SELL_STOP}
+    sent = []
+    for p in plan:
+        req = {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": p["lot"],
+               "type": types[p["side"]], "price": p["price"], "sl": p["sl"], "tp": p["tp"],
+               "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+               "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
+        row = {"at": at, "window": WINDOW, "lane": LANE, "bracket": True, "side": p["side"],
+               "kind": _LEG[p["side"]] + "_stop", "price": p["price"], "sl": p["sl"],
+               "tp": p["tp"], "lot": p["lot"], "risk_frac": frac,
+               "risk_usd_with_slip": round(p["risk"], 2), "armed": True}
+        try:
+            res = _send(mt5, st, req, cet=cet)
+        except Exception as exc:
+            res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
+        code = getattr(res, "retcode", None)
+        row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED", "retcode": code,
+                    "order_id": getattr(res, "order", None)})
+        _record(row)
+        doc["placed"].append(row)
+        sent.append(row)
+        log(f"[{WINDOW}] bracket {row['status']} {row['kind']} {p['lot']} {SYMBOL} @ "
+            f"{p['price']:.2f} -> {code}")
+    st["windows"][WINDOW].update({"status": "SENT" if any(r["status"] == "SENT" for r in sent)
+                                  else "REJECTED",
+                                  "order_ids": [r["order_id"] for r in sent]})
+    after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
+                           holder="ftmo_follower:bracket_sent")
     doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
 
 

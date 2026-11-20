@@ -1235,3 +1235,76 @@ def test_the_clock_is_read_off_the_freshest_liquid_tick() -> None:
     # and still count; the freshest tick gives +3 and the same answer, with no hour's shift
     assert ff.day_start_balance(mt5, 98_000.0, midnight, NOW, server_epoch=stale) == \
         pytest.approx(100_000.0)
+
+
+# ------------------------------------------------------------------ the native bracket (11-20)
+
+@pytest.fixture
+def bracket_world(world):
+    """E8's asia bracket RESTS (both stops, no fill), no direction is set, and FTMO is in "oco"
+    mode: the same two legs, natively, at the same moment (zuck 2026-11-20)."""
+    oco.direction_path().unlink()                 # no fill anywhere yet: no direction
+    world.report.write_text(json.dumps(_e8_report(position_id=None)), "utf-8")
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback", "ftmo": "oco"}}))
+    oco.publish_lane("e8", world.e8_key, positions=[],
+                     orders=[{"id": 501, "side": "buy"}, {"id": 502, "side": "sell"}], date=DAY)
+    return world
+
+
+def _pending(mt5: _MT5) -> list[dict]:
+    return [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_PENDING]
+
+
+def test_bracket_decision_reads_e8s_two_resting_legs() -> None:
+    legs, _why = ff.bracket_decision(_e8_report(position_id=None), None, None, today=DAY, now=NOW)
+    assert [(lg["side"], lg["price"], lg["sl"], lg["tp"]) for lg in legs] == [
+        ("long", 4340.0, 4320.0, 4380.0), ("short", 4300.0, 4320.0, 4260.0)]
+    assert ff.bracket_decision(_e8_report(), None, None, today=DAY, now=NOW)[0] is None
+    assert ff.bracket_decision(_e8_report(position_id=None), {"direction": "buy"}, None,
+                               today=DAY, now=NOW)[0] is None
+    assert ff.bracket_decision(_e8_report(position_id=None, guard="halt"), None, None,
+                               today=DAY, now=NOW)[0] is None
+
+
+def test_the_native_bracket_rests_e8s_two_stops_on_ftmo_before_any_fill(bracket_world) -> None:
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    doc = _pass(mt5)
+    buy, sell = _pending(mt5)
+    assert (buy["type"], buy["price"], buy["sl"], buy["tp"]) == (
+        mt5.ORDER_TYPE_BUY_STOP, 4340.0, 4320.0, 4380.0)
+    assert (sell["type"], sell["price"], sell["sl"], sell["tp"]) == (
+        mt5.ORDER_TYPE_SELL_STOP, 4300.0, 4320.0, 4260.0)
+    assert buy["volume"] == pytest.approx(0.45) and sell["volume"] == pytest.approx(0.45)
+    assert doc["bracket"]["native"] and len(doc["placed"]) == 2
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_pending(mt5)) == 2 and len(mt5.orders) == 2    # rests, never re-sent
+
+
+def test_fallback_mode_keeps_the_follow_and_places_no_bracket(bracket_world) -> None:
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback", "ftmo": "fallback"}}))
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    doc = _pass(mt5)
+    assert not _pending(mt5) and not doc["bracket"]["native"]
+
+
+def test_a_leg_the_price_has_passed_is_not_placed_never_a_limit(bracket_world) -> None:
+    mt5 = _MT5(bid=4299.0, ask=4299.2)          # already below the sell stop's level
+    _pass(mt5)
+    (only,) = _pending(mt5)
+    assert only["type"] == mt5.ORDER_TYPE_BUY_STOP
+
+
+def test_an_own_fill_cancels_its_own_opposite_leg(bracket_world) -> None:
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    _pass(mt5)
+    buy = next(o for o in mt5.orders if o.type == mt5.ORDER_TYPE_BUY_STOP)
+    mt5.orders.remove(buy)
+    mt5.positions.append(SimpleNamespace(ticket=buy.ticket, symbol="XAUUSD", type=0,
+                                         magic=ff.MAGIC, volume=0.45, price_open=4340.0,
+                                         sl=4320.0, tp=4380.0, time=TICK))
+    mt5.bid, mt5.ask = 4341.0, 4341.2
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert not mt5.orders                      # the sell stop is gone
+    assert any(a.get("act") == "cancel" and a.get("ok") for a in doc["actions"])
