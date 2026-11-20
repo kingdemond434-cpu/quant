@@ -19,7 +19,8 @@ WHAT THE REPOSITORY SAYS THE CLASSES RUN AT (read 2026-10-20, every installer an
             BELOW_NORMAL; a child of a BELOW_NORMAL parent inherits BELOW_NORMAL on Windows.
     audit   MT5-FrontierAudit: SYSTEM, scheduler default Priority 7 = BELOW_NORMAL.
     live    E8-Executor / E8-Gold Priority 4 = NORMAL (install_e8_tasks.ps1). terminal64.exe was
-            measured BELOW_NORMAL on 2026-09-24 and is nobody's to change from here.
+            measured BELOW_NORMAL on 2026-09-24; since 2026-11-20
+            scripts/live_priority.py keeps every live process at ABOVE_NORMAL.
 
 So on paper the judge is ALREADY level with the miners, and a single-threaded merge competing
 with ~60 runnable equal-priority threads on 18 cores gets 18/60 ~= 0.3 of a core -- which is
@@ -200,8 +201,11 @@ def registered_live_rank(path: Path | None = None) -> int | None:
 _JUDGE_SCRIPTS = frozenset({"external_gauntlet.py", "run_sharded_gauntlet.py", "rungauntlet.cmd"})
 _WARM_SCRIPTS = frozenset({"warm_gauntlet_cache.py"})
 _AUDIT_MARK = "run_frontier_audit.cmd"
+# The FTMO executor, follower and venue reader are live lanes too (registered Priority 4 =
+# NORMAL): read as miners, a NORMAL one blocked every raise as "a miner already at NORMAL".
 _LIVE_SCRIPTS = frozenset(
-    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py"}
+    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py",
+     "ftmo_executor.py", "ftmo_follower.py", "ftmo_venue_reader.py"}
 )
 _LIVE_NAMES = frozenset({"terminal64.exe"})
 
