@@ -110,10 +110,19 @@ def record(state: dict[str, Any], *, head: str, kind: str, ok: bool, why: str,
     return state
 
 
+#: Per-test limit for box CI. The repo's 300 s (pyproject) assumes a normal-priority runner;
+#: box CI runs at IDLE priority on whatever cycles research leaves, so the same test can take
+#: several times as long in wall time. Box 11-20 22:20Z: PR #17's 141 impacted files on one
+#: starved core ended "+++ Timeout +++" with no failing assertion. A test that is truly stuck
+#: still dies, at 1200 s; the full suite's own 6 h job limit still bounds the run.
+BOX_TEST_TIMEOUT_S = 1200
+
+
 def pytest_argv(python: str, tests: Sequence[str] | str, workers: int,
                 junit: Path) -> list[str]:
     from ops.box_git.impacted import ALL
-    argv = [python, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={junit}"]
+    argv = [python, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={junit}",
+            "-o", f"timeout={BOX_TEST_TIMEOUT_S}"]
     if workers > 1:
         argv += ["-n", str(workers), "--dist", "loadfile"]
     if tests != ALL:

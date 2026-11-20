@@ -245,13 +245,38 @@ def worker_pass(jobs: Path) -> int:
     return n
 
 
+CI_LOGS = "ci_logs"
+KEEP_CI_LOGS = 200
+
+
+def keep_log(cfg: Config, name: str, out: str) -> Path | None:
+    """The run's output tail, kept next to the CI state: the forge status holds one line, and
+    a red with no log cannot be diagnosed (box 11-20: PR #17 red on '+++ Timeout +++', no test
+    named). Oldest logs beyond KEEP_CI_LOGS are dropped. Never raises."""
+    try:
+        d = cfg.state.parent / CI_LOGS
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / f"{name}.log"
+        f.write_text(out, encoding="utf-8")
+        for old in sorted(d.glob("*.log"), key=lambda p: p.stat().st_mtime)[:-KEEP_CI_LOGS]:
+            old.unlink(missing_ok=True)
+        return f
+    except OSError:
+        return None
+
+
 def run_tests(cfg: Config, root: Path, tests: Sequence[str] | str,
-              workers: int) -> tuple[bool, str]:
+              workers: int, name: str = "") -> tuple[bool, str]:
     junit = root / "box-junit.xml"
     rc, out = _run_untrusted(cfg, box_ci.pytest_argv(cfg.python, tests, workers, junit),
                              cwd=root, timeout=6 * 3600)
-    tail = out.strip().splitlines()[-1:] or [""]
-    return rc == 0, f"pytest rc={rc}: {tail[0][:180]}"
+    if name:
+        keep_log(cfg, name, out)
+    lines = out.strip().splitlines()
+    failed = [ln for ln in lines if ln.startswith(("FAILED ", "ERROR "))][:3]
+    tail = lines[-1:] or [""]
+    named = ("; " + "; ".join(f[:90] for f in failed)) if failed else ""
+    return rc == 0, f"pytest rc={rc}: {tail[0][:180]}{named}"[:240]
 
 
 def risk_job(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
@@ -383,7 +408,7 @@ def pr_tick(cfg: Config) -> str:
             passed, scope = True, "no observable test"
             if sel != []:
                 post(cfg, head, "pending", f"box CI running on {n} idle cores")
-                passed, what = run_tests(cfg, root, sel, n)
+                passed, what = run_tests(cfg, root, sel, n, f"pr{p.get('number')}_{head[:12]}")
                 scope = ("full suite" if sel == impacted.ALL
                          else f"{len(sel)} impacted test file(s)")
                 post(cfg, head, "success" if passed else "failure",
@@ -416,7 +441,7 @@ def full_tick(cfg: Config, live: str) -> str:
         with worktree(cfg, plan.start) as root:
             law_rc, _law = _run([cfg.python, "scripts/run_law_gate.py", "--laws-only"], cwd=root,
                                 timeout=3600, idle=True)
-            passed, what = run_tests(cfg, root, impacted.ALL, n)
+            passed, what = run_tests(cfg, root, impacted.ALL, n, f"full_{plan.start[:12]}")
             passed = passed and law_rc == 0
             why = f"law gate rc={law_rc}; {what}"
     finally:

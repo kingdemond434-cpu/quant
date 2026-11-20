@@ -102,3 +102,26 @@ def test_pr_checks_go_oldest_first(monkeypatch):
     monkeypatch.setattr(box_loop, "checked", lambda runs: True)
     assert box_loop.pr_tick(None) == "no PR waiting for checks"   # type: ignore[arg-type]
     assert asked == ["h1", "h9", "h17"]
+
+
+def test_box_ci_scales_the_per_test_limit_and_keeps_a_named_log(tmp_path, monkeypatch):
+    """Box 11-20 22:20Z: PR #17 red on '+++ Timeout +++' with no test named and no log kept."""
+    argv = box_ci.pytest_argv("py", ["tests/a.py"], 1, tmp_path / "j.xml")
+    assert f"timeout={box_ci.BOX_TEST_TIMEOUT_S}" in argv and box_ci.BOX_TEST_TIMEOUT_S > 300
+    cfg = _cfg(tmp_path)
+    out = "x\nFAILED tests/a.py::test_one - boom\n1 failed, 3 passed in 9.0s\n"
+    monkeypatch.setattr(box_loop, "_run_untrusted", lambda *a, **k: (1, out))
+    ok, why = box_loop.run_tests(cfg, tmp_path, ["tests/a.py"], 1, "pr17_abc")
+    assert not ok and "tests/a.py::test_one" in why and "1 failed" in why
+    assert (cfg.state.parent / box_loop.CI_LOGS / "pr17_abc.log").read_text(
+        encoding="utf-8") == out
+
+
+def test_ci_account_can_read_the_mirror_that_holds_worktree_gitdirs():
+    """Box 11-20 22:20Z: quantci had no read on mirror.git, so every CI git call exited 128."""
+    src = (Path(__file__).resolve().parents[2] / "ops/box_git/install_box_forge.ps1").read_text(
+        encoding="utf-8")
+    line = next(ln for ln in src.splitlines() if '"${ciUser}:(OI)(CI)RX"' in ln)
+    assert "$mirror" in line and "$Repos" in line
+    assert '"${ciUser}:(OI)(CI)M"' not in next(ln for ln in src.splitlines() if "$mirror" in ln
+                                              and "ciUser" in ln)

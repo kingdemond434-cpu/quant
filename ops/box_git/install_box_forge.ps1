@@ -485,7 +485,10 @@ $jobs = Join-Path $Forge "ci-jobs"; $work = Join-Path $Forge "work"
 $null = New-Item -ItemType Directory -Force -Path $jobs, $work
 & icacls $Forge /grant "${ciUser}:(RX)" | Out-Null                 # traverse this folder only
 foreach ($d in @($jobs, $work)) { & icacls $d /grant "${ciUser}:(OI)(CI)M" | Out-Null }
-foreach ($d in @($Repos, $loopSrc)) { & icacls $d /grant "${ciUser}:(OI)(CI)RX" | Out-Null }
+# The loop's worktrees keep their gitdir in the MIRROR (mirror.git\worktrees\<wt>): without read
+# there, every git call a CI job makes exits 128 (box 11-20 22:20Z: PR #17 risk-invariants failed
+# on `git diff`, and its pytest run ended in a timeout). Read only; the mirror holds no credential.
+foreach ($d in @($Repos, $loopSrc, $mirror)) { & icacls $d /grant "${ciUser}:(OI)(CI)RX" | Out-Null }
 foreach ($d in @($Tokens, $trustDir, $inboxDir, $QuantRoot, (Join-Path $Forge "custom"), $Data)) {
     & icacls $d /deny "${ciUser}:(OI)(CI)F" | Out-Null
 }
