@@ -52,6 +52,7 @@ def _isolate_from_the_live_box(monkeypatch, tmp_path):
     """
     monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "llm_free_ceiling.json")
     monkeypatch.setattr(llm_seat, "SPEND_LEDGER", tmp_path / "llm_spend.jsonl")
+    monkeypatch.setattr(llm_seat, "LANE_RESERVE_FILE", tmp_path / "llm_lane_reserve.json")
 
 
 def test_free_tier_is_on_by_default(monkeypatch) -> None:
