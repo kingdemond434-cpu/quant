@@ -638,15 +638,24 @@ def allocate_donations(rows: list[dict], cap: int, cov: dict,
                                family=f"{FAMILY}:{r.get('mechanism_class')}", producer=SEAT,
                                base_score=float(r["evidence"]["valid_dsr"]),
                                corr_to_book=r.get("corr_to_book"),
-                               cost_bps=cost_bps.get(f"{r['symbol']}|{tf}")))
+                               cost_bps=cost_bps.get(f"{r['symbol']}|{tf}"),
+                               # base_score is a validation DSR, i.e. performance: ranking on
+                               # it is a search, so every candidate is charged (Audit MF-1).
+                               performance_scored=True))
     donated = cov.get("donated") or {}
     coverage = {tuple(k.split("|", 2)): int(v) for k, v in donated.items() if k.count("|") == 2}
     dec = allocate(cands, Limits(budget=cap), coverage=coverage)
     why: dict[str, int] = {}
     for _, reason in dec.deferred:
         why[reason] = why.get(reason, 0) + 1
-    return [by_id[c.cell_id] for c in dec.selected], {"allocator": "libs.ops.breadth_allocator",
-                                                       "deferred_by_reason": why}
+    # EVERY CHARGED CANDIDATE IS ALREADY CHARGED: `run` registers the whole harvest (`found`,
+    # a superset of `dec.charged`) through claim_selection.register_grid, and each row carries
+    # its lineage's lifetime trial count. The count is reported so a reader can check that.
+    charged = getattr(dec, "charged", None)
+    return [by_id[c.cell_id] for c in dec.selected], {
+        "allocator": "libs.ops.breadth_allocator", "deferred_by_reason": why,
+        "charged": len(charged) if charged is not None else len(rows),
+        "charged_basis": "whole harvest registered via claim_selection.register_grid"}
 
 
 def run(budget_s: float = 240.0, n_symbols: int = 6, chart: str | None = None,

@@ -173,6 +173,7 @@ def test_donations_go_through_the_shared_breadth_allocator():
     assert info["allocator"] == "libs.ops.breadth_allocator"
     assert {"XAUUSD", "USDJPY"} <= {r["symbol"] for r in out}
     assert sum(r["symbol"] == "EURUSD" for r in out) < len(out)
+    assert info["charged"] == len(rows)          # performance-ranked: every candidate charged
 
 
 def test_generator_coverage_marks_built_not_live(tmp_path):
