@@ -507,6 +507,8 @@ $ciRunner = Join-Path $Forge "run_ci_worker.cmd"
 rem QuantForge-CI: run waiting test jobs as $ciUser (no admin, no tokens). Code from the loop's checkout.
 "$py" "$loopSrc\ops\box_git\box_loop.py" --ci-worker "$jobs"
 "@ | Set-Content -LiteralPath $ciRunner -Encoding ascii
+# forge\ grants traverse only (no inheritance), so the file its account runs is granted by name.
+& icacls $ciRunner /grant "${ciUser}:(R)" | Out-Null
 $cAct = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$ciRunner`""
 $cTrg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $cSet = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 7) -StartWhenAvailable -Priority 9
@@ -534,6 +536,7 @@ git -c safe.directory=* -C "$mirror" fetch -q --prune origin "+refs/heads/*:refs
 set QUANT_FORGE_RULES_LOG=$logDirF\rules_changes.jsonl
 "$py" "$loopSrc\ops\box_git\box_loop.py" --config "$cfgPath" >> "$Forge\log\loop.log" 2>&1
 "@ | Set-Content -LiteralPath $runner -Encoding ascii
+foreach ($f in @($runner, $cfgPath)) { & icacls $f /grant "${gateUser}:(R)" | Out-Null }
 $act = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$runner`""
 $trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $set = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 8) -StartWhenAvailable
