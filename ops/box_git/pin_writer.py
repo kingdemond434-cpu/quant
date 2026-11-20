@@ -223,7 +223,8 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
 
     def git(*a: str) -> str:
         return subprocess.run(["git", "-c", "safe.directory=*", "-C", bare, *a],
-                              capture_output=True, text=True, check=True, timeout=300).stdout
+                              capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              check=True, timeout=300).stdout
     live = git("rev-parse", f"refs/heads/{LIVE}").strip()
     if pin.get("live") and pin["live"] != live:
         ok, cls, why, ht = tc.verdict(git, pin["live"], live, pin, policy)
@@ -281,7 +282,8 @@ def init(folder: Path, src: str, ref: str, live: str) -> dict[str, Any]:
     suites from `ref` (the Audit-CLEARed installer commit), measure T there, and write the pin."""
     def git(*a: str) -> str:
         return subprocess.run(["git", "-c", "safe.directory=*", "-C", src, *a],
-                              capture_output=True, text=True, check=True, timeout=300).stdout
+                              capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              check=True, timeout=300).stdout
     for n in CHECKER_FILES:
         (folder / n).write_text(git("show", f"{ref}:ops/box_git/{n}"), encoding="utf-8")
     tc = _load_checker(folder)

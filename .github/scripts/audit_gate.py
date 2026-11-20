@@ -1136,7 +1136,7 @@ def gate_root_digest() -> str | None:
         # file must never change what is pinned
         names = subprocess.run(
             ["git", "-C", str(top), "ls-tree", "-r", "--name-only", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, check=True, encoding="utf-8", errors="replace",
         ).stdout.splitlines()  # fmt: skip
 
         def read(n: str) -> bytes | None:

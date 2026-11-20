@@ -88,7 +88,7 @@ class Forge:
         if not self.bare:
             raise RuntimeError("forge: no bare repository configured for git questions")
         p = subprocess.run(["git", "-C", self.bare, *args], capture_output=True, text=True,
-                           timeout=60, check=False)
+                           encoding="utf-8", errors="replace", timeout=60, check=False)
         if p.returncode != 0:
             raise RuntimeError(f"forge git {' '.join(args)}: {p.stderr.strip()[:200]}")
         return p.stdout.strip()

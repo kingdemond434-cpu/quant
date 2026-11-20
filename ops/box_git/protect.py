@@ -147,7 +147,7 @@ def trust_refusals(updates: Iterable[tuple[str, str, str]], trust_dir: str,
 
     def run_git(*a: str) -> str:
         return subprocess.run(["git", *a], capture_output=True, text=True, check=True,
-                              timeout=300).stdout
+                              encoding="utf-8", errors="replace", timeout=300).stdout
     out = []
     for o, n, r in live:
         if o == ZERO:

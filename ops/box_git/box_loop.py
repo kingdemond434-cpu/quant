@@ -505,7 +505,8 @@ def trust_status(cfg: Config) -> str:
         live = live_head(cfg)
         def raw(*a: str) -> str:
             return subprocess.run(["git", "-C", str(cfg.bare), *a], capture_output=True,
-                                  text=True, check=True, timeout=300).stdout
+                                  text=True, encoding="utf-8", errors="replace",
+                                  check=True, timeout=300).stdout
         t = tc.t_hash(raw, live)
         return (f"LIVE {live[:12]} trust {t[:12]} == pin" if t == pin.get("t_hash") else
                 f"MISMATCH: LIVE {live[:12]} trust {t[:12]} != pin {str(pin.get('t_hash'))[:12]}"

@@ -86,9 +86,15 @@ function Lock-ToOwners([string] $path, [string[]] $extra = @()) {
 function Forge([string[]] $a) {
     # Windows PowerShell 5.1 turns a native program's stderr lines into errors under Stop:
     # gitea logs to stderr, so judge by the exit code alone.
+    # Stdout and stderr stay apart: a value read from stdout (a --raw token) must never carry a
+    # stderr warning (it did once: a multi-line token broke every http.extraHeader).
     $ErrorActionPreference = 'Continue'
-    $out = & $Bin --config $Ini --work-path $Forge @a 2>&1 | Out-String
-    return @{ rc = $LASTEXITCODE; out = $out.Trim() }
+    $all = @(& $Bin --config $Ini --work-path $Forge @a 2>&1)
+    $rc = $LASTEXITCODE
+    $so = ($all | Where-Object { $_ -isnot [Management.Automation.ErrorRecord] } | Out-String).Trim()
+    $se = ($all | Where-Object { $_ -is [Management.Automation.ErrorRecord] } | Out-String).Trim()
+    if ($rc -ne 0) { $so = ("$so`n$se").Trim() }
+    return @{ rc = $rc; out = $so }
 }
 
 # 1. ELEVATED, AND NOT A RETIRED BOX.
@@ -104,6 +110,11 @@ if (-not (Test-Path -LiteralPath (Join-Path $gate ".git"))) { Stop-Here 2 "the g
 Say "elevated; seeding from $gate"
 
 # THE PORT: 443 when nothing listens there (cloud egress proxies reliably carry 443), else 3443.
+if ($Port -eq 0 -and (Test-Path -LiteralPath $Ini)) {
+    # A re-run keeps the port the forge already serves (443 is then busy with our own forge).
+    $kept = Select-String -LiteralPath $Ini -Pattern '^HTTP_PORT\s*=\s*(\d+)' | Select-Object -First 1
+    if ($kept) { $Port = [int]$kept.Matches[0].Groups[1].Value }
+}
 if ($Port -eq 0) {
     $busy443 = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
     $Port = if ($busy443) { 3443 } else { 443 }
@@ -293,7 +304,8 @@ foreach ($u in $scopes.Keys) {
     if (-not (Test-Path -LiteralPath $tf)) {
         $r = Forge @("admin", "user", "generate-access-token", "--username", $u,
                      "--token-name", "box-$stamp", "--scopes", $scopes[$u], "--raw")
-        if ($r.rc -ne 0 -or -not $r.out) { Stop-Here 6 "could not make the $u token: $($r.out)" }
+        if ($r.rc -ne 0 -or $r.out -notmatch '^[0-9a-f]{40}$') {
+            Stop-Here 6 "could not make the $u token (exit $($r.rc); not one 40-hex line)." }
         Set-Content -LiteralPath $tf -Value $r.out.Trim() -NoNewline
     }
 }
@@ -412,6 +424,15 @@ Say "no inbound firewall rule: the forge answers on 127.0.0.1 only"
 $loopSrc = Join-Path $Forge "loop-src"
 $caFwd = ($cert -replace '\\', '/')
 $forgeUrl = "https://127.0.0.1:$Port"
+# The forge's repositories belong to quantforge; git refuses a local fetch from another owner's
+# repository unless safe.directory is set in protected (system) config: `-c` does not reach
+# upload-pack. Name exactly these two, never `*`.
+foreach ($sd in @($bare, (Join-Path $Forge "mirror.git"))) {
+    $sdF = $sd -replace '\\', '/'
+    $have = (& git config --system --get-all safe.directory 2>$null) -contains $sdF
+    if (-not $have) { & git config --system --add safe.directory $sdF }
+    if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not mark $sdF as a safe directory." }
+}
 if (-not (Test-Path -LiteralPath (Join-Path $loopSrc ".git"))) {
     & git clone -q --reference $bare --no-checkout $bare $loopSrc
     if ($LASTEXITCODE -ne 0) { Stop-Here 9 "could not create the loop's checkout." }
