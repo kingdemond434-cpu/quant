@@ -35,10 +35,13 @@ DISK_FLOOR_GB = 25.0
 RESERVE_CORES = 2
 MAX_WORKERS = 8
 IDLE_THRESHOLD_PCT = 20.0
-#: One worker always runs at IDLE priority even on a saturated box: it takes only cycles no other
+#: Workers always run at IDLE priority even on a saturated box: they take only cycles no other
 #: process wants, so research never slows, and merges never wait forever (box 2026-11-20: the
-#: research load held every core and CI never started).
-FLOOR_WORKERS = 1
+#: research load held every core and CI never started). FOUR, not one (box 11-20 22:05Z): one
+#: idle worker got ~0.6 of a core and took over 48 min on one PR, with 17 CLEARed PRs queued
+#: behind it -- a queue measured in a day. Idle class cannot take a cycle research wants, so more
+#: idle workers only collect more of the leftovers.
+FLOOR_WORKERS = 4
 KEEP_RESULTS = 500
 
 FULL = "full"

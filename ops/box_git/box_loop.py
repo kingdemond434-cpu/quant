@@ -359,7 +359,9 @@ def audited_clear(comments: Sequence[Mapping[str, Any]], head: str) -> bool:
 def pr_tick(cfg: Config) -> str:
     f = _forge(cfg, forge_api.BOX_CI_USER)
     prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
-    for p in prs or []:
+    # OLDEST FIRST: the forge lists newest first, so a steady inflow of new packets would keep
+    # the first-queued fix (11-20: the drop pull, PR #1) waiting behind every later one.
+    for p in sorted(prs or [], key=lambda p: int(p.get("number") or 0)):
         head = str((p.get("head") or {}).get("sha") or "")
         if not head or checked(f.gh(f"repos/x/y/commits/{head}/check-runs")["check_runs"]):
             continue

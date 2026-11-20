@@ -26,8 +26,9 @@ def test_ci_stops_first_when_disk_runs_short() -> None:
 
 def test_only_idle_cores_minus_a_reserve() -> None:
     busy = [95.0] * 14 + [3.0] * 4
-    assert C.idle_workers(busy) == 2
-    assert C.idle_workers([95.0] * 18) == C.FLOOR_WORKERS == 1  # one idle-priority worker
+    assert C.idle_workers(busy) == C.FLOOR_WORKERS        # 4 idle - 2 reserve, floored
+    assert C.idle_workers([3.0] * 9 + [95.0] * 9) == 7
+    assert C.idle_workers([95.0] * 18) == C.FLOOR_WORKERS == 4  # idle-priority workers
     assert C.idle_workers([95.0] * 18, floor=0) == 0
     assert C.idle_workers([0.0] * 32) == C.MAX_WORKERS
     assert C.idle_workers(None) == 0

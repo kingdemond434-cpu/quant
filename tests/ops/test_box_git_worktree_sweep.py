@@ -85,3 +85,20 @@ def test_checkout_gets_the_long_limit_and_a_failed_add_leaves_nothing(tmp_path, 
         assert "timed out" in str(exc)
     assert not list(cfg.work.glob("wt_*"))
     assert box_loop.git(cfg, "worktree", "list").count("\n") == 0
+
+
+def test_pr_checks_go_oldest_first(monkeypatch):
+    """The forge lists newest first; the first-queued fix must not wait behind later ones."""
+    asked: list[str] = []
+
+    class F:
+        def gh(self, path):
+            if "/pulls?" in path:
+                return [{"number": n, "head": {"sha": f"h{n}"}} for n in (17, 1, 9)]
+            asked.append(path.split("/commits/")[1].split("/")[0])
+            return {"check_runs": []}
+
+    monkeypatch.setattr(box_loop, "_forge", lambda cfg, account: F())
+    monkeypatch.setattr(box_loop, "checked", lambda runs: True)
+    assert box_loop.pr_tick(None) == "no PR waiting for checks"   # type: ignore[arg-type]
+    assert asked == ["h1", "h9", "h17"]
