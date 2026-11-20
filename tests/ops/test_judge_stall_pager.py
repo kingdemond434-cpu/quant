@@ -985,3 +985,30 @@ def test_cores_idle_reads_the_judge_with_the_throughput_organs_definition(jsp, m
     monkeypatch.setattr(iu, "spec_from_file_location", fake)
     out = jsp._measure_cpu()
     assert "busy_judge_cores" in out or out.get("cpu_source") == "UNMEASURED"
+
+
+# ---------------------------------------------------- first verdicts per day (2026-11-20)
+def _rate(tmp_path: Path, n: object, at: datetime) -> Path:
+    p = tmp_path / "JUDGING_THROUGHPUT.json"
+    p.write_text(json.dumps({"rate": {"at": at.isoformat(), "verdicts": {
+        "first_terminal_counts": {"24h": n}}}}))
+    return p
+
+
+@pytest.mark.parametrize("n,open_", [(1552, True), (99_999, True), (100_000, False),
+                                     (250_000, False)])
+def test_first_verdicts_under_the_floor_open_the_incident(jsp: ModuleType, tmp_path: Path,
+                                                          n: int, open_: bool) -> None:
+    r = jsp._first_verdicts(NOW, _rate(tmp_path, n, NOW - timedelta(hours=1)))
+    assert r["open"] is open_ and r["floor"] == 100_000
+
+
+@pytest.mark.parametrize("n,age_h", [(None, 1), ("5", 1), (True, 1), (500_000, 7)])
+def test_an_absent_or_stale_first_verdict_rate_is_unmeasured(jsp: ModuleType, tmp_path: Path,
+                                                             n: object, age_h: float) -> None:
+    r = jsp._first_verdicts(NOW, _rate(tmp_path, n, NOW - timedelta(hours=age_h)))
+    assert r["open"] is None
+
+
+def test_first_verdicts_low_is_a_tracked_incident(jsp: ModuleType) -> None:
+    assert "first_verdicts_low" in jsp.INCIDENTS
