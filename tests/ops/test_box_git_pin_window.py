@@ -61,7 +61,8 @@ def _forge(head: str, comments: list[dict]):
     def get(path: str):
         if "/pulls" in path:
             return [{"number": 3, "head": {"sha": head}, "base": {"ref": P.LIVE}}]
-        return comments
+        page = int(path.rsplit("page=", 1)[1]) if "page=" in path else 1
+        return comments[(page - 1) * P.PAGE: page * P.PAGE]
     return get
 
 
@@ -90,12 +91,23 @@ def test_no_clear_an_owner_veto_or_the_signers_never_pass_by_window(tmp_path: Pa
     repo, folder, _base, heads = _world(tmp_path)
     later = T0 + timedelta(hours=P.VETO_HOURS * 10)
     h = heads["ceil"]
-    for comments in ([], [_clear(h), {"user": {"login": "quant-admin"},
-                                      "body": f"VETO TRUST {h}"}],
-                     [{"user": {"login": "claude"}, "body": f"AUDIT CLEAR {h} merge"}]):
+    filler = [{"user": {"login": "claude"}, "body": "note"}] * 50
+    hold = {"user": {"login": "auditor"}, "body": f"AUDIT HOLD {h}"}
+    edited = {**_clear(h), "created_at": "a", "updated_at": "b"}
+    for comments in ([], [_clear(h), {"user": {"login": "claude"}, "body": f"VETO TRUST {h}"}],
+                     [{"user": {"login": "claude"}, "body": f"AUDIT CLEAR {h} merge"}],
+                     [_clear(h), hold], [edited], [_clear(h), *filler, hold],
+                     [_clear(h), *filler, {"user": {"login": "x"}, "body": f"VETO TRUST {h}"}]):
         _pass(repo, folder, _forge(h, comments), T0)
         _pass(repo, folder, _forge(h, comments), later)
     k = heads["keys"]
     _pass(repo, folder, _forge(k, [_clear(k)]), T0)
     _pass(repo, folder, _forge(k, [_clear(k)]), later)
     assert not json.loads((folder / "pin.json").read_text()).get("authorized")
+
+
+def test_the_inbox_carries_a_veto_line() -> None:
+    from ops.box_git import inbox as I
+    m, _why = I.parse_manifest({"branch": "claude/x", "head": "a" * 40,
+                                "comments": ["VETO TRUST " + "b" * 40]})
+    assert m is not None and m.comments == ("VETO TRUST " + "b" * 40,)

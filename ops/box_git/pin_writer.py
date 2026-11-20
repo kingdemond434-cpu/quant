@@ -51,7 +51,10 @@ OWNER_LOGIN = "quant-admin"
 VETO_HOURS = 4.0
 AUDITOR_LOGINS = ("auditor",)
 VETO = re.compile(r"VETO TRUST ([0-9a-f]{40})")
-NEVER_BY_WINDOW = ("ops/signing/",)
+#: The owner's keys and the release authority's trust root never pass by window.
+NEVER_BY_WINDOW = ("ops/signing/", "ops/release/authority/", "ops/release_authority.py")
+PAGE = 50
+MAX_PAGES = 40
 
 
 def _load_checker(folder: Path) -> Any:
@@ -153,18 +156,38 @@ def forge_get(cfg: Mapping[str, Any], path: str) -> Any:
         return json.loads(r.read() or b"null")
 
 
+def all_comments(forge: Callable[[str], Any], n: Any) -> list[Mapping[str, Any]]:
+    """Every comment on PR `n`, every page; an unreadable page raises (the caller authorizes
+    nothing on an error)."""
+    out: list[Mapping[str, Any]] = []
+    for page in range(1, MAX_PAGES + 1):
+        batch = forge(f"/repos/quant/quant/issues/{n}/comments?limit={PAGE}&page={page}")
+        if not isinstance(batch, list):
+            raise RuntimeError(f"comments page {page} of PR #{n} unreadable")
+        out.extend(batch)
+        if len(batch) < PAGE:
+            return out
+    raise RuntimeError(f"PR #{n} has more than {PAGE * MAX_PAGES} comments")
+
+
 def auditor_cleared(comments: list[Mapping[str, Any]], head: str) -> bool:
+    """The Auditor's LATEST verdict line on this exact head is an unedited CLEAR (a later HOLD,
+    or any edit of the verdict, stops the window)."""
+    last = None
     for c in comments:
         body = str(c.get("body") or "").strip()
         if (str((c.get("user") or {}).get("login")) in AUDITOR_LOGINS
-                and re.fullmatch(rf"AUDIT CLEAR {head}(?: (merge|squash))?", body)):
-            return True
-    return False
+                and re.fullmatch(rf"AUDIT (CLEAR|HOLD) {head}(?: (merge|squash))?", body)):
+            last = c
+    return bool(last and str(last.get("body") or "").strip().startswith("AUDIT CLEAR")
+                and last.get("updated_at") in (None, last.get("created_at")))
 
 
-def owner_vetoed(comments: list[Mapping[str, Any]], head: str) -> bool:
+def vetoed(comments: list[Mapping[str, Any]], head: str) -> bool:
+    """`VETO TRUST <head>` from ANY account stops the window: a veto only ever fails closed, so
+    the owner can veto by telling any thread (the inbox carries the line as `claude`)."""
     return any((m := VETO.fullmatch(str(c.get("body") or "").strip())) and m.group(1) == head
-               and str((c.get("user") or {}).get("login")) == OWNER_LOGIN for c in comments)
+               for c in comments)
 
 
 def window_open(pin: dict[str, Any], ht: str, head: str, now: datetime) -> float:
@@ -307,9 +330,13 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
                 out.append(f"PR #{n} AUTHORIZED by the owner at {head[:12]}")
                 log(rlog, {"class": "AUTHORIZED", "pr": n, "head": head, "t_hash": ht})
                 continue
-            comments = forge(f"/repos/quant/quant/issues/{n}/comments?limit=50") or []
+            try:
+                comments = all_comments(forge, n)
+            except Exception as exc:  # unreadable: authorize nothing this pass
+                out.append(f"PR #{n} {cls}: comments unreadable ({type(exc).__name__})")
+                continue
             touched = git("diff", "--name-only", live, head).split()
-            if (not auditor_cleared(comments, head) or owner_vetoed(comments, head)
+            if (not auditor_cleared(comments, head) or vetoed(comments, head)
                     or any(t.startswith(NEVER_BY_WINDOW) for t in touched)):
                 continue
             left = window_open(pin, ht, head, now or datetime.now(UTC))
@@ -321,7 +348,7 @@ def one_pass(cfg: Mapping[str, Any], folder: Path = HERE,
             out.append(f"PR #{n} AUTHORIZED by the standing veto window at {head[:12]}")
             log(rlog, {"class": "AUTHORIZED", "pr": n, "head": head, "t_hash": ht,
                        "why": f"Auditor CLEAR + {VETO_HOURS:g} h, no owner veto",
-                       "undo": f"owner types VETO TRUST {head} before the window; or revert"})
+                       "undo": f"VETO TRUST {head} before the window; or revert"})
     save_pin(pin_path, pin)
     return out
 
