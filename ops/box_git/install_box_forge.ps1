@@ -338,6 +338,9 @@ foreach ($u in @("auditor", "adopt")) {
 # Seed from the gate clone through the forge itself (so its database sees every ref), as
 # quant-admin, BEFORE any protection exists: LIVE, production, master and release tags as last fetched.
 $bare = Join-Path $Repos "quant\quant.git"
+# A re-run: step 10 left the read-only adopt token as the gate clone's forge header, which would
+# make this seed push authenticate as `adopt` (403). Step 10 sets it again.
+& git -c safe.directory=* -C $gate config --unset-all "http.https://127.0.0.1:$Port/.extraHeader" 2>$null
 $env:GIT_TERMINAL_PROMPT = '0'
 $env:GIT_CONFIG_COUNT = '3'
 $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
