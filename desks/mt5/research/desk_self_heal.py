@@ -43,6 +43,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DESK_SELF_HEAL_VERSION = "deskheal-2026-08-28-a"
 
@@ -75,6 +76,7 @@ class Finding:
     ok: bool
     detail: str
     fixable: bool = False
+    task: str | None = None   # the producer task that cures it, when the check names one
 
     @property
     def line(self) -> str:
@@ -401,6 +403,175 @@ def check_tape(root: Path, now: datetime) -> Finding:
                    fixable=curable)
 
 
+# --------------------------------------------------------------------------
+# THROUGHPUT, not just liveness (principal 2026-11-20 19:47Z: "They're supposed to do 24 hrs bro
+# nonstop n the weak isn't supposed to be weak"). Measured that evening: every task read Running,
+# yet the judge had made no verdict for 8.5h and ran 1.7k first verdicts a day against a 100k
+# target, and the model seat made 237 completions against a 670/day baseline. A lane that is
+# alive and weak passed every check above. These compare OUTPUT against a floor.
+# --------------------------------------------------------------------------
+
+#: Judge: first-time verdicts per day (the only number that drains the backlog) and the longest
+#: tolerable gap between verdicts. A gap is curable by re-running the gauntlet task; a low rate
+#: with fresh verdicts is a capacity fault and escalates with the numbers.
+JUDGE_FIRST_PER_DAY_FLOOR = 100_000.0
+JUDGE_VERDICT_GAP_H = 1.0
+#: Model seat: completions per day at the 2026-11-07..09 baseline (676/696/657), pro-rated over
+#: the UTC day so far. Below PACE_TOLERANCE of that pace is weak.
+LLM_COMPLETIONS_PER_DAY_FLOOR = 670.0
+PACE_TOLERANCE = 0.7
+#: Lanes that must never sit idle: (name, report path, max age in hours, task that produces it or
+#: None when no task re-run can cure it). Extended on the box without a code change by
+#: desks/mt5/data/throughput_lanes.json: [{"lane", "path", "max_age_h", "task"}].
+#: Measured from the box task inventory 2026-11-20 19:5xZ: each research lane, its report, and a
+#: limit of a few cadences. Five forest regions were 5h+ stale that evening while their tasks read
+#: Running; a lane whose report is older than this is idle whatever its task says.
+LANES: tuple[tuple[str, str, float, str | None], ...] = (
+    ("cn model ensemble", "desks/mt5/reports/CN_MODEL_ENSEMBLE.json", 1.5, "MT5-DeepSeek"),
+    ("deepseek research", "desks/mt5/reports/DEEPSEEK_RESEARCH.json", 1.5, "MT5-DeepSeek"),
+    ("llm budget census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 1.5, None),
+    ("judging throughput", "desks/mt5/reports/JUDGING_THROUGHPUT.json", 1.5, None),
+    ("deepening queue", "desks/mt5/data/hypotheses/miner_deepening_queue.json",
+     1.0, "MT5-Deepening"),
+    ("forest frontier", "desks/mt5/data/deep_forest_frontier.json", 3.0, "MT5-Frontier"),
+    ("forest africa", "desks/mt5/reports/FOREST_AFRICA.json", 2.0, "MT5-Forest-Africa"),
+    ("forest asean", "desks/mt5/reports/FOREST_ASEAN.json", 2.0, "MT5-Forest-Asean"),
+    ("forest china", "desks/mt5/reports/FOREST_CHINA.json", 2.0, "MT5-Forest-China"),
+    ("forest europe", "desks/mt5/reports/FOREST_EUROPE.json", 2.0, "MT5-Forest-Europe"),
+    ("forest korea", "desks/mt5/reports/FOREST_KOREA.json", 2.0, "MT5-Forest-Korea"),
+    ("forest latam", "desks/mt5/reports/FOREST_LATAM.json", 2.0, "MT5-Forest-Latam"),
+    ("forest mena", "desks/mt5/reports/FOREST_MENA.json", 2.0, "MT5-Forest-Mena"),
+    ("forest oceania", "desks/mt5/reports/FOREST_OCEANIA.json", 2.0, "MT5-Forest-Oceania"),
+    ("forest russia cis", "desks/mt5/reports/FOREST_RUSSIA_CIS.json", 2.0, "MT5-Forest-RussiaCis"),
+    ("axis ingest", "desks/mt5/reports/AXIS_INGEST.json", 3.0, "MT5-AxisIngest"),
+    ("ceo docket", "desks/mt5/reports/CEO_DOCKET.json", 3.0, "MT5-CEODocket"),
+    ("moat swarms", "desks/mt5/reports/MOAT_SWARMS.json", 1.0, None),
+    ("moat capture", "desks/mt5/reports/MOAT_CAPTURE.json", 2.0, "MT5-MoatCapture"),
+    ("universal gate", "desks/mt5/reports/UNIVERSAL_GATE_CANDIDATES.json",
+     3.0, "MT5-UniversalGate"),
+    ("shadow discovery", "desks/mt5/reports/SHADOW_DISCOVERY.json", 3.0, "MT5-Shadow"),
+    ("video cells", "desks/mt5/reports/VIDEO_CELLS.json", 3.0, "MT5-VideoCells"),
+    ("independence intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json",
+     1.0, "MT5-IndependenceIntake"),
+    ("state vector", "desks/mt5/data/state_vector.json", 2.0, "MT5-StateVector"),
+    ("scientist tournament", "desks/mt5/reports/SCIENTIST_TOURNAMENT.json",
+     26.0, "MT5-ScientistTournament"),
+)
+LANES_FILE = "desks/mt5/data/throughput_lanes.json"
+
+
+def _ts(raw: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _num(raw: Any) -> float | None:
+    return float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else None
+
+
+def check_judge_throughput(root: Path, now: datetime) -> Finding:
+    """First verdicts per day against the floor, and the gap since the last verdict."""
+    f = root / "desks/mt5/reports/JUDGING_THROUGHPUT.json"
+    if not f.exists():
+        return _absent("judge throughput", "desks/mt5/reports", root,
+                       "JUDGING_THROUGHPUT.json absent: the judge's output is not measured",
+                       fixable=False)
+    try:
+        doc = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return Finding("judge throughput", False,
+                       f"JUDGING_THROUGHPUT.json unreadable ({type(exc).__name__}): the judge's "
+                       f"output is UNMEASURED, not healthy")
+    rate = doc.get("rate") if isinstance(doc.get("rate"), dict) else doc
+    first = _num(rate.get("first_judged_per_day"))
+    verdicts = rate.get("verdicts") if isinstance(rate.get("verdicts"), dict) else {}
+    last = _ts(verdicts.get("last_verdict_at") or rate.get("last_verdict_at"))
+    gap = (now - last).total_seconds() / 3600.0 if last else None
+    parts = [f"first verdicts/day {first:,.0f}" if first is not None
+             else "first verdicts/day UNMEASURED",
+             f"last verdict {gap:.1f}h ago" if gap is not None else "last verdict UNMEASURED"]
+    stalled = gap is None or gap > JUDGE_VERDICT_GAP_H
+    weak = first is None or first < JUDGE_FIRST_PER_DAY_FLOOR
+    if not stalled and not weak:
+        return Finding("judge throughput", True, "; ".join(parts))
+    if weak:
+        parts.append(f"floor {JUDGE_FIRST_PER_DAY_FLOOR:,.0f}/day")
+    # Only a stall is a re-run's to cure (MT5-Gauntlet is IgnoreNew: no stacking). A weak but
+    # flowing judge is a capacity fault the report names for a person or a code change.
+    return Finding("judge throughput", False, "; ".join(parts), fixable=stalled)
+
+
+def check_llm_throughput(root: Path, now: datetime) -> Finding:
+    """Model-seat completions today against the baseline, pro-rated over the UTC day."""
+    f = root / "desks/mt5/reports/LLM_BUDGET_CENSUS.json"
+    if not f.exists():
+        return _absent("llm throughput", "desks/mt5/reports", root,
+                       "LLM_BUDGET_CENSUS.json absent: the model seat's output is not measured",
+                       fixable=False)
+    try:
+        doc = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return Finding("llm throughput", False,
+                       f"LLM_BUDGET_CENSUS.json unreadable ({type(exc).__name__})")
+    at = _ts(doc.get("at")) or now
+    today = doc.get("today") if isinstance(doc.get("today"), dict) else {}
+    done = _num(today.get("desk_completions"))
+    if done is None:
+        return Finding("llm throughput", False,
+                       f"model seat {doc.get('status') or 'UNMEASURED'}: no completion count")
+    hours = max(1.0, at.hour + at.minute / 60.0)
+    pace = LLM_COMPLETIONS_PER_DAY_FLOOR * hours / 24.0
+    waste = today.get("waste_rate")
+    detail = (f"{done:.0f} completions by {at.strftime('%H:%M')}Z against a pace of {pace:.0f} "
+              f"({LLM_COMPLETIONS_PER_DAY_FLOOR:.0f}/day)"
+              + (f"; waste {waste}" if waste is not None else ""))
+    if done >= PACE_TOLERANCE * pace:
+        return Finding("llm throughput", True, detail)
+    return Finding("llm throughput", False, detail, fixable=False)
+
+
+def _lanes(root: Path) -> list[tuple[str, str, float, str | None]]:
+    lanes = list(LANES)
+    try:
+        extra = json.loads((root / LANES_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        extra = []
+    for row in extra if isinstance(extra, list) else []:
+        if not isinstance(row, dict):
+            continue
+        name, path, age = row.get("lane"), row.get("path"), _num(row.get("max_age_h"))
+        task = row.get("task")
+        if (isinstance(name, str) and isinstance(path, str) and age and age > 0
+                and ".." not in path and (task is None or (isinstance(task, str)
+                                                           and task.startswith("MT5-")))):
+            lanes.append((name, path, age, task))
+    return lanes
+
+
+def check_lanes_idle(root: Path, now: datetime) -> list[Finding]:
+    """Every lane's report must be newer than its limit; an idle lane is re-run when a task owns
+    it. Missing on a host that does not produce it is not a fault (see _absent)."""
+    out: list[Finding] = []
+    for name, rel, limit, task in _lanes(root):
+        p = root / rel
+        if not p.exists():
+            out.append(_absent(f"lane {name}", rel.rsplit("/", 1)[0], root,
+                               f"{rel} absent: this lane has never written here",
+                               fixable=False))
+            continue
+        age = _age_h(p, now)
+        if age is not None and age <= limit:
+            out.append(Finding(f"lane {name}", True, f"{age:.1f}h old (limit {limit:.1f}h)"))
+        else:
+            out.append(Finding(f"lane {name}", False,
+                               f"idle: {rel} is {age if age is None else round(age, 1)}h old "
+                               f"(limit {limit:.1f}h)", fixable=task is not None, task=task))
+    return out
+
+
 def audit(root: Path, now: datetime | None = None) -> list[Finding]:
     now = now or datetime.now(UTC)
     return [check_shadow_freshness(root, now),
@@ -416,7 +587,11 @@ def audit(root: Path, now: datetime | None = None) -> list[Finding]:
             # ADDED 2026-11-19 (principal: stall watchdog). The pager names a stalled judge and
             # the tape check names a stopped recorder; neither was ever cured by anything.
             check_judge_stall(root, now),
-            check_tape(root, now)]
+            check_tape(root, now),
+            # ADDED 2026-11-20 (principal: 24/7 at full strength): output against floors.
+            check_judge_throughput(root, now),
+            check_llm_throughput(root, now),
+            *check_lanes_idle(root, now)]
 
 
 # --------------------------------------------------------------------------
@@ -455,11 +630,12 @@ def plan(findings: Sequence[Finding], *,
         "judge stall": "MT5-Gauntlet",
         # The recorder's own keep-alive task: a running singleton makes the start a no-op.
         "tape": "MT5-TickRecorder",
+        "judge throughput": "MT5-Gauntlet",
     }
     for f in findings:
         if f.ok:
             continue
-        task = task_for.get(f.check) if f.fixable else None
+        task = (f.task or task_for.get(f.check)) if f.fixable else None
         if task and run_task is not None:
             remedies.append(Remedy(
                 f.check, f"run {task}",
