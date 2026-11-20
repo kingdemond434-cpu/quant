@@ -70,8 +70,9 @@ def test_ftmo_lanes_are_live_not_miners() -> None:
 
 def test_raised_live_lets_the_judge_take_its_reserved_cores() -> None:
     res = {"enabled": True, "cpus": [8, 9, 10, 11, 12, 13], "why": "t"}
-    before = jp.judge_target([BN], [BN, N], registered_live=N, reserved=res)
-    after = jp.judge_target([BN], [AN, AN], registered_live=N, reserved=res)
+    r = jp.CLASS_RANK
+    before = jp.judge_target([r[BN]], [r[BN], r[N]], registered_live=r[N], reserved=res)
+    after = jp.judge_target([r[BN]], [r[AN], r[AN]], registered_live=r[N], reserved=res)
     assert "cpus" not in before and after["rank"] == jp.CLASS_RANK[N] and after["cpus"]
 
 
