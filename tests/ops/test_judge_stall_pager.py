@@ -56,7 +56,8 @@ def _alive(pid: object, started: datetime | None) -> bool | None:
 
 def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 0.5,
            status: str = "SWEEPING", phase: str | None = "plan", phase_h: float = 1.0,
-           ended_h: float = 2.0, cells: int | None = 7, resident: dict | None = None) -> dict:
+           ended_h: float = 2.0, cells: int | None = 7, resident: dict | None = None,
+           first_verdicts: int | None = 150_000) -> dict:
     ledger = tmp / "gate_verdict_ledger.jsonl"
     ledger.write_text("".join(json.dumps({"cell": f"c{i}", "at": _iso(now - timedelta(
         hours=verdict_h + i))}) + "\n" for i in range(3, -1, -1)), "utf-8")
@@ -78,7 +79,13 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
                                     indent=2), "utf-8")
     elif sweep.exists():
         sweep.unlink()
-    return {"ledger": ledger, "resident": res, "throughput": tmp / "absent.json",
+    # a healthy judge's published rate: first verdicts above the floor, an hour old
+    tp = tmp / "absent.json"
+    if first_verdicts is not None:
+        tp = tmp / "rate_only_throughput.json"
+        tp.write_text(json.dumps({"rate": {"at": _iso(now - timedelta(hours=1)), "verdicts": {
+            "first_terminal_counts": {"24h": first_verdicts}}}}), "utf-8")
+    return {"ledger": ledger, "resident": res, "throughput": tp,
             "sweep_result": sweep, "env_file": tmp / "absent.env.json",
             "cpu_reader": _cpu(8.0)}
 
