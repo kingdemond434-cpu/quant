@@ -4047,7 +4047,7 @@ def _read_robots(robots_url: str) -> tuple[int, str]:
 def robots_allows(url: str, *, reader: Callable[[str], tuple[int, str]] | None = None
                   ) -> tuple[bool, str]:
     """Whether robots.txt on `url`'s host admits UA for `url`, and why. Fails closed."""
-    from urllib.robotparser import RobotFileParser
+    from libs.data.robots_body import robots_rules_or_refusal
     parts = urllib.parse.urlsplit(url)
     host = f"{parts.scheme}://{parts.netloc}"
     hit = _ROBOTS_CACHE.get(host) if reader is None else None
@@ -4057,21 +4057,12 @@ def robots_allows(url: str, *, reader: Callable[[str], tuple[int, str]] | None =
         try:
             code, text = (reader or _read_robots)(f"{host}/robots.txt")
         except Exception as exc:
-            code, text = -1, f"{type(exc).__name__}"
-        if code == 200 and text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
-            verdict = "robots.txt is an HTML page: host not fetched this pass (fail closed)"
-        elif code == 200:
-            rp = RobotFileParser()
-            try:
-                rp.parse(text.splitlines())
-                verdict = rp
-            except Exception as exc:
-                verdict = f"robots.txt did not parse ({type(exc).__name__}): host not fetched"
-        elif 400 <= code < 500 and code not in ROBOTS_HARD_STOP:
-            verdict = True
-        else:
-            verdict = (f"robots.txt unreadable ({'HTTP ' + str(code) if code > 0 else text}): "
-                       "host not fetched this pass (fail closed, retried next pass)")
+            code, text = 0, f"{type(exc).__name__}"
+        # One reader for every robots read (libs.data.robots_body): only 404/410 mean no
+        # rules; 401/403/429/451 hard stop; an HTML page or any other status is unread.
+        got = robots_rules_or_refusal(code, None, text if code == 200 else "")
+        verdict = (f"{got}: host not fetched this pass (fail closed, retried next pass)"
+                   if isinstance(got, str) else got)
         if reader is None:
             _ROBOTS_CACHE[host] = (time.monotonic(), verdict)
     if verdict is True:
