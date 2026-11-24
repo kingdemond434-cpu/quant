@@ -30,8 +30,12 @@ only numbers that will ever attach.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
+import os
+import re
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -135,6 +139,11 @@ READY: dict[str, dict] = {
                "with every directional family by construction rather than by measurement",
         "pairs": (("EURUSD", "GBPUSD"), ("AUDUSD", "NZDUSD"), ("USDCHF", "EURCHF"),
                   ("XAUUSD", "XAGUSD"), ("USDCAD", "XTIUSD"), ("EURJPY", "GBPJPY")),
+        # WIDENED 2026-11-24 (docket supply): every same-peer-class pair of instruments the
+        # sweep holds bars for (`class_pairs`), after the six named ones. A residual between two
+        # members of ONE class (two USD legs, two indices, two crypto CFDs) is the family's own
+        # construction; across classes it is cross_asset_residual's job, so none are minted.
+        "class_pairs": True,
         "grid": [{"lookback": lb, "entry_z": z, "rr": 1.5, "ttl_bars": 48}
                  for lb in (96, 240) for z in (2.0, 2.5)],
     },
@@ -164,7 +173,11 @@ BLOCKED: dict[str, str] = {}
 #: have H1 bars on disk, because a cell with no bars is UNMEASURED rather than tested.
 CORE = ("XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
         "NZDUSD", "EURJPY", "GBPJPY", "EURGBP", "AUDJPY", "XTIUSD", "NAS100", "US500",
-        "US30", "GER40", "UK100", "JPN225", "BTCUSD", "ETHUSD", "USDZAR", "USDMXN")
+        "US30", "GER40", "UK100", "JPN225", "BTCUSD", "ETHUSD")
+#: EXOTIC FX IS BANNED (principal, 2026-11-24: no mining, judging or trading of exotic FX). USDZAR
+#: and USDMXN left CORE that day, and `_with_bars` drops every symbol MetaTrader's registry classes
+#: as an exotic (`exotic_cost_bar.exotic_symbols`' rule: the class name, never a hand list), so the
+#: hypothesis-lane extras and every pair/factor leg below are exotic-free too.
 
 
 #: EVERY CHART THE DESK HOLDS BARS FOR (principal 2026-09-16: "all breadth, all charts, all
@@ -182,7 +195,14 @@ NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional"})
 #: How many new cells one run may merge, most intraday first: the sweep is idempotent, so a
 #: docket of every family on every chart in every session fills over a few hourly runs rather
 #: than in one write the gauntlet then has to load whole.
-MAX_NEW_PER_RUN = 40_000
+#:
+#: MEASURED AGAINST THE SUPPLY TARGET, 2026-11-24 (reports/research/DOCKET_SUPPLY_CAPS): 40,000 an
+#: hour is 960,000 a day -- 9.6x the 100k/day first-verdict target and above the judge's measured
+#: ~420k/day build capacity -- so it is NOT what holds supply down; the exhausted grid was. It is
+#: kept as the drain rate of the widened grid below (the docket every reader loads grows at most
+#: this much an hour) and every cell it defers is billed as a missed-growth line in
+#: BREADTH_SWEEP.json. `BREADTH_MAX_NEW_PER_RUN` overrides it on a box that measures otherwise.
+MAX_NEW_PER_RUN = int(os.environ.get("BREADTH_MAX_NEW_PER_RUN", "40000") or 40000)
 
 
 def _with_bars() -> list[str]:
@@ -190,14 +210,38 @@ def _with_bars() -> list[str]:
     has H1 bars on disk -- the same breadth the discovery hunt had (principal 2026-09-16), now
     spent on the families that are not banned."""
     have = {p.name.split("_")[0].upper() for p in UNIVERSE.glob("*_H1.parquet")}
-    out = [s for s in CORE if s in have]
+    out = [s for s in CORE if s in have and not is_exotic(s)]
     try:
         from research.universe_policy import may_hypothesise
-        extra = sorted(s for s in have if s not in out and may_hypothesise(s))
+        extra = sorted(s for s in have
+                       if s not in out and may_hypothesise(s) and not is_exotic(s))
         out.extend(extra)
     except Exception:
         pass
     return out
+
+
+def is_exotic(symbol: str) -> bool:
+    """True when MetaTrader's registry classes `symbol` as an exotic (the class name, read through
+    `universe_policy.asset_class_of`, never a symbol list). An unreadable registry answers False
+    here, and such a symbol is still UNCLASSIFIED to `may_hypothesise`, so it is swept only when
+    it is literally in CORE -- which holds no exotic."""
+    try:
+        from research.universe_policy import asset_class_of
+        return "exotic" in str(asset_class_of(symbol) or "").lower()
+    except Exception:
+        return False
+
+
+def _equities_with_bars() -> list[str]:
+    """Share CFDs with H1 bars: hypothesis-eligible ONLY for the cross-sectional class books
+    (`universe_policy.CROSS_SECTIONAL_FAMILIES`, principal amendment 2026-09-30)."""
+    have = {p.name.split("_")[0].upper() for p in UNIVERSE.glob("*_H1.parquet")}
+    try:
+        from research.universe_policy import is_equity
+        return sorted(s for s in have if is_equity(s))
+    except Exception:
+        return []
 
 
 def _charts_for(sym: str) -> list[str]:
@@ -300,12 +344,46 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
     13 would build cells whose input is None and fail them for a reason that says nothing).
     """
     if spec.get("pairs"):
-        return [(a, {"peer_symbol": b}) for a, b in spec["pairs"] if a in syms]
+        pairs = list(spec["pairs"])
+        if spec.get("class_pairs"):
+            pairs += [p for p in class_pairs(syms) if p not in pairs]
+        return [(a, {"peer_symbol": b}) for a, b in pairs
+                if a in syms and not is_exotic(a) and not is_exotic(b)]
     if spec.get("factor_sets"):
-        return [(a, {"factor_symbols": list(f)}) for a, f in spec["factor_sets"] if a in syms]
+        return [(a, {"factor_symbols": list(f)}) for a, f in spec["factor_sets"]
+                if a in syms and not is_exotic(a) and not any(is_exotic(x) for x in f)]
     allowed = spec.get("symbols")
     pool = [s for s in syms if (not allowed or s in allowed)]
     return [(s, {}) for s in pool]
+
+
+#: Peer classes whose members are paired for `relative_value` (universe_policy.peer_class). The
+#: `equity` class is absent: relative_value is not one of the cross-sectional families a share
+#: CFD may be hunted in.
+PAIR_CLASSES = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto")
+
+
+def class_pairs(syms: list[str]) -> list[tuple[str, str]]:
+    """Every (a, b), a < b, of two non-exotic `syms` in the same peer class, sorted."""
+    try:
+        from research.universe_policy import peer_class
+    except Exception:
+        return []
+    by: dict[str, list[str]] = {}
+    for sym in syms:
+        if is_exotic(sym):
+            continue
+        try:
+            klass = peer_class(sym)
+        except Exception:
+            klass = None
+        if klass in PAIR_CLASSES:
+            by.setdefault(str(klass), []).append(sym)
+    out: list[tuple[str, str]] = []
+    for klass in PAIR_CLASSES:
+        members = sorted(set(by.get(klass, [])))
+        out += [(a, b) for i, a in enumerate(members) for b in members[i + 1:]]
+    return out
 
 
 #: What the last `cells()` call set aside as UNTESTABLE, by `family|chart|verdict`, and why. A
@@ -427,7 +505,272 @@ def cells(only: str | None = None) -> list[dict]:
     return out
 
 
-def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None) -> dict:
+# =============================================================================================
+# THE PARAMETER-VARIANT AXIS (2026-11-24, docket supply >= 100k new cells a day).
+#
+# THE DEFECT. Every default family above is swept at ONE parameter point per (symbol, chart,
+# session). That grid is finite and was minted out within days of 2026-09-16, so on every later
+# pass this sweep added ~0 cells: the judge could build 300-420k cells a day and received ~6.3k
+# never-judged ones (JUDGE_100K_ROOT_CAUSE_2026-11-24). The supply was bounded by the grid, not by
+# MAX_NEW_PER_RUN.
+#
+# THE WIDENING, STRUCTURE-PRESERVING BY CONSTRUCTION. A variant never moves one knob against the
+# others (a fast EMA past its slow one, an oversold above its overbought). It applies two joint
+# moves, read off the family's OWN signature defaults:
+#   * TIME SCALE: every length parameter (lookbacks, windows, holds, ttl, lags) scaled together by
+#     one factor -- the same rule run faster or slower, every ordering between lengths kept;
+#   * PAYOFF: the reward:risk `rr` scaled -- the same entry with a nearer or farther target.
+# Hours, minutes, weekdays, sides, signs, modes, quantiles and multipliers are never touched: they
+# are calendar or categorical, and scaling them is not a variant of the rule, it is another rule.
+#
+# EVERY VARIANT IS BUILDABLE OR IT IS NOT MINTED: `_testable` (gauntlet_buildability.cell_verdict,
+# the sealed build_cell's own lookups, its chart refusals and its required-parameter check) runs
+# on every cell, a chart with no bars on disk is never offered, and a variant only ever carries
+# keys that are in the family's signature, so the judge's call binds exactly as it does at the
+# defaults. NO GATE MOVES: the trial charge is the fixed 597 (`gate_policy`), FDR is untouched,
+# and nothing here screens on performance.
+# =============================================================================================
+
+#: Joint time-scale factors for a family's length parameters.
+TIME_SCALES: tuple[float, ...] = (0.5, 0.75, 1.5, 2.0)
+#: Factors for the reward:risk target.
+RR_SCALES: tuple[float, ...] = (0.6, 1.5)
+#: A length parameter, by name.
+_LENGTH = re.compile(r"(^n$|_n$|lookback|window|_bars$|^bars$|_d$|_days$|period|channel|ema|"
+                     r"fast|slow|^norm$|^lag$|_lag$|stride|^z_obs$|cooldown|^mom_n$)")
+#: Never a length, whatever else the name says: calendar, categorical or a multiplier.
+_NOT_LENGTH = re.compile(r"(hour|minute|_min$|start|end|dow|side|sign|direction|mode|seed|"
+                         r"decision|stale|skip|quantile|mult|_pct$|_q$)")
+#: Where the walk resumes next pass, so each pass mints NEW cells and never re-walks the minted.
+VARIANT_CURSOR = DESK / "data" / "hypotheses" / "breadth_variant_cursor.json"
+#: THE WALK'S PACE, sized off two measured numbers rather than a round one. The widened grid is a
+#: STOCK of ~1.4M never-judged cells on the box (88 non-exotic hypothesis instruments x 65 families
+#: x their variant points x charts x sessions; DOCKET_SUPPLY_CAPS_2026-11-24), not a flow. Drained
+#: at MAX_NEW_PER_RUN it would land in ~36 h and double a docket every reader loads whole; paced at
+#: twice the 100k/day first-verdict target (SUPPLY_TARGET_PER_DAY) it stays inside the judge's
+#: measured 300-420k/day build capacity, so every cell minted can be judged the day it lands, and
+#: the stock lasts about a week. When the pace binds, the cells it leaves are a missed-growth line.
+SUPPLY_TARGET_PER_DAY = 100_000
+VARIANT_PER_RUN = int(os.environ.get("BREADTH_VARIANT_PER_RUN", "")
+                      or -(-2 * SUPPLY_TARGET_PER_DAY // 24))
+#: Wall clock the walk may spend: half of the leg's 720 s (hourly_cycle SEARCH_BUDGET_SEC), so the
+#: docket write and the report always land inside the leg. A stop moves the cursor, never a cell.
+VARIANT_BUDGET_S = float(os.environ.get("BREADTH_VARIANT_BUDGET_S", "360") or 360)
+
+
+def _is_length(name: str, default: Any) -> bool:
+    return (isinstance(default, int) and not isinstance(default, bool) and default >= 1
+            and bool(_LENGTH.search(name)) and not _NOT_LENGTH.search(name))
+
+
+def _family_defaults(family: str) -> dict[str, Any]:
+    """The family's own keyword defaults beyond the bars and the side; {} when unreadable."""
+    try:
+        from research.gauntlet_buildability import _family_table
+        fn = _family_table().get(family)
+        params = list(inspect.signature(fn).parameters.values())[1:] if fn else []
+    except Exception:
+        return {}
+    return {p.name: p.default for p in params
+            if p.default is not inspect.Parameter.empty and p.name != "side"
+            and p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)}
+
+
+def _scale_length(v: int, k: float) -> int:
+    return max(2 if v >= 2 else 1, round(v * k))
+
+
+def param_variants(family: str, defaults: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """The family's variant points, each as ONLY the keys that differ from its defaults.
+
+    Rank 0 is the default point itself ({}). Deterministic; duplicates (a scale that rounds back
+    to the defaults) collapse."""
+    d = _family_defaults(family) if defaults is None else dict(defaults)
+    lengths = {k: v for k, v in d.items() if _is_length(k, v)}
+    rr = d.get("rr")
+    has_rr = isinstance(rr, (int, float)) and not isinstance(rr, bool) and rr > 0
+    out: list[dict[str, Any]] = [{}]
+    seen = {"{}"}
+    for k_t in (1.0, *TIME_SCALES):
+        for k_r in (1.0, *RR_SCALES):
+            if (k_t != 1.0 and not lengths) or (k_r != 1.0 and not has_rr):
+                continue
+            v: dict[str, Any] = {}
+            if k_t != 1.0:
+                for name, val in lengths.items():
+                    new = _scale_length(int(val), k_t)
+                    if new != val:
+                        v[name] = new
+            if k_r != 1.0 and has_rr:
+                new_rr = round(float(rr) * k_r, 2)
+                if new_rr != rr:
+                    v["rr"] = new_rr
+            key = json.dumps(v, sort_keys=True)
+            if key not in seen:
+                seen.add(key)
+                out.append(v)
+    return out
+
+
+def _read_cursor(path: Path | None = None) -> int:
+    try:
+        doc = json.loads((path or VARIANT_CURSOR).read_text("utf-8"))
+        return max(0, int(doc.get("next", 0)))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 0
+
+
+def write_cursor(state: dict[str, Any], path: Path | None = None) -> None:
+    target = path or VARIANT_CURSOR
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(state, indent=1), encoding="utf-8")
+        tmp.replace(target)
+    except OSError:
+        pass
+
+
+class VariantWalk:
+    """Mints never-seen variant cells in a fixed order, resuming at a durable cursor.
+
+    The order is (variant rank, chart tier, chart, family, symbol): every family's first variant
+    on every instrument before anyone's second, intraday charts first within a rank -- so any
+    prefix a capped pass reaches is family- and instrument-balanced. Called with the docket's own
+    identity set and the room left under MAX_NEW_PER_RUN; it adds what it mints to that set."""
+
+    def __init__(self, families: list[str], syms: list[str], *,
+                 equities: list[str] | None = None, cursor: int | None = None,
+                 budget_s: float | None = None, per_run: int | None = None) -> None:
+        self.per_run = VARIANT_PER_RUN if per_run is None else int(per_run)
+        self.variants = {f: param_variants(f) for f in sorted(families)}
+        self.syms = list(syms)
+        self.equities = list(equities or [])
+        self.start = _read_cursor() if cursor is None else int(cursor)
+        self.budget_s = VARIANT_BUDGET_S if budget_s is None else float(budget_s)
+        self.next = self.start
+        self.stats: dict[str, Any] = {"minted": 0, "already_in_docket": 0, "set_aside": 0,
+                                      "wrapped": False, "budget_hit": False, "room": 0,
+                                      "positions": 0}
+        self._charts: dict[str, list[str]] = {}
+
+    def _targets(self, family: str) -> list[str]:
+        try:
+            from research.universe_policy import CROSS_SECTIONAL_FAMILIES
+        except Exception:
+            return self.syms
+        return self.syms + self.equities if family in CROSS_SECTIONAL_FAMILIES else self.syms
+
+    def _charts_of(self, sym: str) -> list[str]:
+        if sym not in self._charts:
+            self._charts[sym] = _charts_for(sym) or ["H1"]
+        return self._charts[sym]
+
+    def positions(self) -> list[tuple[int, str, str, str]]:
+        """(rank, chart, family, symbol), in walk order. Rank 0 (defaults) is walked too: it is
+        the only door a share CFD's class book has into this sweep, and for every other symbol
+        `cells()` already minted it, so the docket identity skips it at no stamping cost."""
+        charts = sorted(CHARTS, key=lambda tf: (_tf_rank(tf), CHARTS.index(tf)))
+        top = max((len(v) for v in self.variants.values()), default=0)
+        out = []
+        for rank in range(top):
+            for tf in charts:
+                for fam, vs in self.variants.items():
+                    if rank >= len(vs):
+                        continue
+                    for sym in self._targets(fam):
+                        out.append((rank, tf, fam, sym))
+        return out
+
+    def __call__(self, seen: set[str], room: int, key: Any) -> list[dict]:
+        room = min(int(room), max(0, int(self.per_run)))
+        self.stats["room"] = int(room)
+        if room <= 0 or not self.variants:
+            return []
+        pos = self.positions()
+        self.stats["positions"] = len(pos)
+        if not pos:
+            return []
+        now = datetime.now(tz=UTC).isoformat()
+        t0 = time.monotonic()
+        out: list[dict] = []
+        n = len(pos)
+        i = self.start % n
+        for step in range(n):
+            if len(out) >= room:
+                break
+            if time.monotonic() - t0 > self.budget_s:
+                self.stats["budget_hit"] = True
+                break
+            rank, tf, fam, sym = pos[(i + step) % n]
+            if (i + step) % n == n - 1:
+                self.stats["wrapped"] = True
+            self.next = (i + step + 1) % n
+            if tf not in self._charts_of(sym):
+                continue
+            base = dict(self.variants[fam][rank])
+            if tf != "H1":
+                base["timeframe"] = tf
+            spec = {"why": (f"every family at its parameter variant {rank} "
+                            f"(joint time-scale / reward:risk move off its own defaults)")}
+            for p, remap in _session_slots(fam, base, tf, sym):
+                row = {"symbol": sym, "family": fam, "params": p}
+                ident = key(row)
+                if ident in seen:
+                    self.stats["already_in_docket"] += 1
+                    continue
+                if not _testable(fam, p):
+                    self.stats["set_aside"] += 1
+                    continue
+                cell = _remapped(_cell(sym, fam, p, spec, now), remap)
+                cell["variant_rank"] = rank
+                seen.add(ident)
+                out.append(cell)
+                if len(out) >= room:
+                    break
+        self.stats["minted"] = len(out)
+        return out
+
+    def state(self) -> dict[str, Any]:
+        return {"next": int(self.next), "start": int(self.start),
+                "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                "families": len(self.variants),
+                "variant_points": sum(len(v) for v in self.variants.values()),
+                "instruments": len(self.syms), "equities": len(self.equities),
+                **self.stats}
+
+
+def supply_missed_growth(walk_state: dict[str, Any] | None, added: int | None,
+                         max_new: int) -> list[dict[str, Any]]:
+    """The cap's missed-growth line (GROWTH GOVERNANCE: no cap without one). When the pass filled
+    MAX_NEW_PER_RUN, the cells it left for the next pass are deferred research in their own units
+    -- never dropped, the cursor holds their place -- and the E[log W] price is UNMEASURED."""
+    now = datetime.now(tz=UTC)
+    out: list[dict[str, Any]] = []
+    ws = walk_state or {}
+    if ws.get("room") and int(ws.get("minted") or 0) >= int(ws["room"]) and not ws.get("wrapped"):
+        out.append({"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+                    "rail": "breadth_sweep.VARIANT_PER_RUN", "kind": "opportunity_cost",
+                    "value": None, "verdict": "UNMEASURED",
+                    "units": "variant cells deferred to the next pass",
+                    "cap": int(ws["room"]), "added": int(ws.get("minted") or 0),
+                    "cursor_next": ws.get("next"), "positions": ws.get("positions"),
+                    "why": ("the variant walk minted its pace for this pass (2x the 100k/day "
+                            "target, inside the judge's measured capacity); the rest of the "
+                            "never-minted stock waits at the cursor, nothing is dropped")})
+    if added is None or added < max_new:
+        return out
+    return [*out, {"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+             "rail": "breadth_sweep.MAX_NEW_PER_RUN", "kind": "opportunity_cost",
+             "value": None, "verdict": "UNMEASURED", "units": "cells deferred to the next pass",
+             "cap": int(max_new), "added": int(added),
+             "cursor_next": (walk_state or {}).get("next"),
+             "why": (f"the pass merged its cap of {max_new} new cell(s); the walk's remaining "
+                     "never-minted cells wait at the cursor for the next hourly pass")}]
+
+
+def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None,
+                 variants: dict[str, Any] | None = None) -> dict:
     """reports/BREADTH_SWEEP.json: what this pass minted, over what, and what it set aside.
 
     The sweep writes the docket directly rather than donating through the intake, so without
@@ -449,11 +792,20 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "exotics_excluded": "principal 2026-11-24: registry class 'exotic' never swept",
+        "variant_walk": variants,
         "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
                  "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
                  "minted to be judged as a market 'no' the market never gave"),
     }
+    try:
+        prev = json.loads(REPORT.read_text("utf-8"))
+        lines = list(prev.get("missed_growth") or []) if isinstance(prev, dict) else []
+    except (OSError, ValueError):
+        lines = []
+    lines += supply_missed_growth(variants, added, MAX_NEW_PER_RUN)
+    doc["missed_growth"] = lines[-50:]
     try:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         tmp = REPORT.with_suffix(".json.tmp")
@@ -534,19 +886,23 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
     }, "breadth_sweep", now=datetime.fromisoformat(now))
 
 
-def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
+def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN,
+          extra: Any = None) -> tuple[int, int]:
     """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
     most-intraday-first), so a daily clock cannot grow the docket without bound and one run
-    never hands the gauntlet a docket it has to load whole."""
+    never hands the gauntlet a docket it has to load whole.
+
+    `extra(seen, room, key)` (the VariantWalk) fills whatever room `new` leaves, against the
+    same docket identity set, so its cells are never-seen by construction."""
     from research.job_lock import exclusive_job
 
     with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
         if not owned:
             raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        return _apply_locked(new, max_new)
+        return _apply_locked(new, max_new, extra)
 
 
-def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
+def _apply_locked(new: list[dict], max_new: int, extra: Any = None) -> tuple[int, int]:
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -565,6 +921,8 @@ def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
         if ident not in seen and len(add) < max(0, int(max_new)):
             add.append(row)
             seen.add(ident)
+    if extra is not None and len(add) < max(0, int(max_new)):
+        add.extend(extra(seen, max(0, int(max_new)) - len(add), key))
     if add:
         from libs.data.pit import stamp_or_refuse
         from research.merge_hypotheses import _write_docket_atomically
@@ -615,12 +973,24 @@ def main(argv: list[str] | None = None) -> int:
         n_aside = sum(int(r["cells"]) for r in LAST_SET_ASIDE.values())
         print(f"  SET ASIDE UNTESTABLE {n_aside} cell(s) over {len(LAST_SET_ASIDE)} "
               f"(family, chart) pair(s) -- see {REPORT.name}")
+    walk = None
+    if not a.family:
+        walk = VariantWalk(list(sweepable), syms, equities=_equities_with_bars())
+        print(f"  VARIANTS {sum(len(v) for v in walk.variants.values())} parameter point(s) "
+              f"over {len(walk.variants)} famil(ies), resuming at cursor {walk.start}")
     if not a.apply:
-        write_report(new, syms, None, None)
+        write_report(new, syms, None, None, walk.state() if walk else None)
         print("  --apply not given; nothing written to the docket")
         return 0
-    added, total = apply(new)
-    write_report(new, syms, added, total)
+    added, total = apply(new, extra=walk)
+    state = walk.state() if walk else None
+    if walk is not None and state is not None:
+        write_cursor(state)
+        print(f"  variant walk: {state['minted']} new variant cell(s), "
+              f"{state['already_in_docket']} already in the docket, {state['set_aside']} set "
+              f"aside untestable; cursor {state['start']} -> {state['next']} of "
+              f"{state['positions']}{' (budget hit)' if state['budget_hit'] else ''}")
+    write_report(new, syms, added, total, state)
     print(f"  merged {added} new cell(s); docket now {total} row(s)")
     if not added:
         print("  (all already present -- the sweep is idempotent on the executable spec)")
