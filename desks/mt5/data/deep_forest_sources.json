@@ -7737,6 +7737,188 @@
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): PTAX averages four BCB dealer consultations at 10:00, 11:00, 12:00 and 13:00-13:10 Brasilia time and is announced soon after the last one (about 13:15)",
    "url": "https://www.cmegroup.com/rulebook/files/S_5886.pdf"
+  },
+  {
+   "name": "vn.py 社区论坛",
+   "region": "cn",
+   "language": "zh",
+   "route": "http",
+   "kind": "community",
+   "weight": 1.5,
+   "why": "CN retail/small-shop CTA developers share strategies, factor and data-source notes (cloud add 2026-11-18)",
+   "url": "https://www.vnpy.com/forum/",
+   "alt": [
+    "https://www.vnpy.com/"
+   ]
+  },
+  {
+   "name": "Tradetron strategy marketplace",
+   "region": "in",
+   "language": "en",
+   "route": "http",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "Indian retail algo strategies with stated rules (cloud add 2026-11-18)",
+   "url": "https://tradetron.tech/strategies?page=1",
+   "alt": [
+    "https://tradetron.tech/"
+   ]
+  },
+  {
+   "name": "fx-on システムトレード",
+   "region": "jp",
+   "language": "ja",
+   "route": "http",
+   "kind": "community",
+   "weight": 1.0,
+   "why": "JP retail EA marketplace and columns; ドル円 system logic (cloud add 2026-11-18)",
+   "url": "https://www.gogojungle.co.jp/",
+   "alt": [
+    "https://www.fx-on.com/"
+   ]
+  },
+  {
+   "name": "PSA Philippine Statistics Authority",
+   "region": "ph",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://psa.gov.ph/",
+   "alt": []
+  },
+  {
+   "name": "Pakistan Bureau of Statistics",
+   "region": "pk",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.pbs.gov.pk/",
+   "alt": []
+  },
+  {
+   "name": "CAPMAS Egypt statistics",
+   "region": "eg",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.capmas.gov.eg/",
+   "alt": []
+  },
+  {
+   "name": "Colombo Stock Exchange",
+   "region": "lk",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.cse.lk/",
+   "alt": []
+  },
+  {
+   "name": "DANE Colombia",
+   "region": "co",
+   "language": "es",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.dane.gov.co/",
+   "alt": []
+  },
+  {
+   "name": "GASTAT Saudi statistics",
+   "region": "sa",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.stats.gov.sa/en",
+   "alt": []
+  },
+  {
+   "name": "Dubai Financial Market",
+   "region": "ae",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.dfm.ae/",
+   "alt": []
+  },
+  {
+   "name": "ISTAT",
+   "region": "it",
+   "language": "it",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.istat.it/en/",
+   "alt": []
+  },
+  {
+   "name": "BCRP Banco Central de Reserva del Peru",
+   "region": "pe",
+   "language": "es",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.bcrp.gob.pe/",
+   "alt": []
+  },
+  {
+   "name": "INEI Peru",
+   "region": "pe",
+   "language": "es",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.inei.gob.pe/",
+   "alt": []
+  },
+  {
+   "name": "KOSTAT 통계청",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://kostat.go.kr/anse/",
+   "alt": []
+  },
+  {
+   "name": "CZSO Czech statistics",
+   "region": "cz",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.czso.cz/csu/czso/home",
+   "alt": []
+  },
+  {
+   "name": "KSH Hungarian statistics",
+   "region": "hu",
+   "language": "en",
+   "route": "http",
+   "kind": "official",
+   "weight": 1.0,
+   "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
+   "url": "https://www.ksh.hu/?lang=en",
+   "alt": []
   }
  ],
  "engines": [
