@@ -56,7 +56,7 @@ _OUT = _ROOT / "data/miner_runway.json"
 # Credentials: EITHER path arms every claude organ (brain_env walks the chain), so this is an
 # any-of check. Values are never read -- existence only.
 _CRED_ANY = ("data/secrets/claude_oauth_token", "data/secrets/anthropic_api_key")
-_CRED_HOME = Path.home() / ".claude/.credentials.json"
+_CRED_HOME = Path(os.path.expanduser("~")) / ".claude/.credentials.json"
 
 # seat -> (prompt, runner, log glob, max_age_h).
 #

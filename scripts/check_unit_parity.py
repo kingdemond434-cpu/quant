@@ -43,7 +43,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OPS = ROOT / "ops"
-USER_UNITS = Path.home() / ".config" / "systemd" / "user"
+USER_UNITS = Path(os.path.expanduser("~")) / ".config" / "systemd" / "user"
 OUT = ROOT / "data" / "unit_parity.json"
 
 #: Units belonging to other projects on this box. Named, never silently skipped.

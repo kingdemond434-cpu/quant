@@ -643,7 +643,7 @@ def check_stub_deaths(defects) -> None:
                         f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
 
 
-_DEATH_DROPIN = Path.home() / ".config/systemd/user/service.d/10-death-visibility.conf"
+_DEATH_DROPIN = Path(os.path.expanduser("~")) / ".config/systemd/user/service.d/10-death-visibility.conf"
 
 
 def check_unit_deaths(defects) -> None:

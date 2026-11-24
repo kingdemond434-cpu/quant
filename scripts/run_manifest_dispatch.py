@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -34,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "ops" / "crontab.manifest"
 STATE = ROOT / "data" / "manifest_dispatch_state.json"
 OUTCOMES = ROOT / "data" / "fence_outcomes.jsonl"
-USER_UNITS = Path.home() / ".config" / "systemd" / "user"
+USER_UNITS = Path(os.path.expanduser("~")) / ".config" / "systemd" / "user"
 CATCHUP_CAP_MIN = 20
 
 #: script token -> why this row is resurrected. Tokens are matched against the manifest at
