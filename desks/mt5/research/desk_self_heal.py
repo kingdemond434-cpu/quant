@@ -348,6 +348,9 @@ JUDGE_RERUN_INCIDENTS = ("resident_dead", "sweep_dead", "sweep_overdue", "no_ver
                          "zero_judged_sweep")
 #: The pager rewrites JUDGE_STALL.json every five minutes; older than this, it is not running.
 JUDGE_STALL_REPORT_MAX_H = 1.0
+#: The pager incidents that mean the judge is HUNG, not slow: its heartbeat is stale, its sweep
+#: child is dead, or a sweep phase ran past its measured limit (judge_stall_pager.PHASE_LIMIT_H).
+JUDGE_HUNG_INCIDENTS = frozenset({"resident_dead", "sweep_dead", "phase_overrun"})
 
 
 def check_judge_stall(root: Path, now: datetime) -> Finding:
@@ -368,15 +371,23 @@ def check_judge_stall(root: Path, now: datetime) -> Finding:
                        f"pager (MT5-BoxHeartbeat) is not running, so a stall is unseen",
                        fixable=False)
     try:
-        inc = (json.loads(f.read_text(encoding="utf-8")).get("incidents") or {})
-    except (OSError, ValueError) as exc:
+        doc = json.loads(f.read_text(encoding="utf-8"))
+        inc = doc.get("incidents") or {}
+    except (OSError, ValueError, AttributeError) as exc:
         return Finding("judge stall", False, f"JUDGE_STALL.json unreadable ({exc})")
     open_ = {k: v for k, v in inc.items() if isinstance(v, dict) and v.get("open") is True}
     if not open_:
         return Finding("judge stall", True, f"{len(inc)} incident(s) watched, none open")
     curable = [k for k in open_ if k in JUDGE_RERUN_INCIDENTS]
     detail = "; ".join(f"{k}: {str(v.get('why') or '')[:160]}" for k, v in open_.items())
-    return Finding("judge stall", False, detail, fixable=bool(curable))
+    # HUNG only on the pager's own liveness signals, read from a reading whose `at` is fresh
+    # (Audit HOLD 11-24): a verdict gap alone is never hung -- the ledger appends only when a
+    # verdict changes -- and merge_and_publish inside its limit is never phase_overrun.
+    at = _ts(doc.get("at"))
+    fresh = at is not None and 0 <= (now - at).total_seconds() <= JUDGE_STALL_REPORT_MAX_H * 3600
+    hung = fresh and any(k in open_ for k in JUDGE_HUNG_INCIDENTS)
+    return Finding("judge stall", False, detail, fixable=bool(curable) or hung,
+                   task=JUDGE_TASK if hung else None, hung=hung)
 
 
 def check_tape(root: Path, now: datetime) -> Finding:
@@ -418,9 +429,6 @@ def check_tape(root: Path, now: datetime) -> Finding:
 #: with fresh verdicts is a capacity fault and escalates with the numbers.
 JUDGE_FIRST_PER_DAY_FLOOR = 100_000.0
 JUDGE_VERDICT_GAP_H = 1.0
-#: No verdict for this multiple of the gap while MT5-Gauntlet reads Running: the judge is HUNG,
-#: not between sweeps; the actuator ends it and runs it again (same bounds as every re-run).
-JUDGE_HUNG_FACTOR = 3.0
 #: Model seat: completions per day at the 2026-11-07..09 baseline (676/696/657), pro-rated over
 #: the UTC day so far. Below PACE_TOLERANCE of that pace is weak.
 LLM_COMPLETIONS_PER_DAY_FLOOR = 670.0
@@ -529,9 +537,7 @@ def check_judge_throughput(root: Path, now: datetime) -> Finding:
         parts.append(f"floor {JUDGE_FIRST_PER_DAY_FLOOR:,.0f}/day")
     # Only a stall is a re-run's to cure (MT5-Gauntlet is IgnoreNew: no stacking). A weak but
     # flowing judge is a capacity fault the report names for a person or a code change.
-    hung = gap is not None and gap > JUDGE_HUNG_FACTOR * JUDGE_VERDICT_GAP_H
-    return Finding("judge throughput", False, "; ".join(parts), fixable=stalled,
-                   task=JUDGE_TASK if hung else None, hung=hung)
+    return Finding("judge throughput", False, "; ".join(parts), fixable=stalled)
 
 
 def check_llm_throughput(root: Path, now: datetime) -> Finding:

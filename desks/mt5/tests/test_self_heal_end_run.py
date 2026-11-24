@@ -118,29 +118,67 @@ def test_a_lanes_file_cannot_make_a_live_task_hung_and_ended(tmp_path, monkeypat
     assert not any(t == "MT5-E8-Executor" for _, t in calls)
 
 
-def _judge(root: Path, last_h: float) -> None:
+
+def _stall(root: Path, incidents: dict, *, at_h: float = 0.05) -> None:
+    p = root / "desks/mt5/reports/JUDGE_STALL.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"at": (NOW - timedelta(hours=at_h)).isoformat(),
+                             "incidents": incidents}), encoding="utf-8")
+    t = (NOW - timedelta(hours=min(at_h, 0.05))).timestamp()
+    os.utime(p, (t, t))
+
+
+def _throughput(root: Path, gap_h: float) -> None:
     p = root / "desks/mt5/reports/JUDGING_THROUGHPUT.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps({"rate": {"first_judged_per_day": 6734.0, "verdicts": {
-        "last_verdict_at": (NOW - timedelta(hours=last_h)).isoformat()}}}), encoding="utf-8")
+        "last_verdict_at": (NOW - timedelta(hours=gap_h)).isoformat()}}}), encoding="utf-8")
 
 
 def _gauntlet(calls):
     return [c for c in calls if c[1] == heal.JUDGE_TASK]
 
 
-def test_a_hung_judge_is_ended_then_run(tmp_path):
-    """Box 11-24: MT5-Gauntlet read Running with no verdict for 7.5h; every trigger refused."""
-    _judge(tmp_path, 7.5)
+def _ends(calls):
+    return [c for c in _gauntlet(calls) if c[0] == "end"]
+
+
+def test_a_5h_verdict_gap_with_a_healthy_heartbeat_is_never_ended(tmp_path):
+    """Audit MF-1: the ledger appends only when a verdict changes; healthy gaps ran 5.5-31h."""
+    _throughput(tmp_path, 5.0)
+    _stall(tmp_path, {"no_verdict": {"open": True, "why": "no new verdict for 5.0h"},
+                      "resident_dead": {"open": False}, "sweep_dead": {"open": False},
+                      "phase_overrun": {"open": False, "phase": "build_shards"}})
+    _, calls = _run(tmp_path, running=True)
+    assert not _ends(calls) and ("run", "MT5-Gauntlet") in calls
+
+
+def test_a_stale_heartbeat_is_ended_then_run(tmp_path):
+    _stall(tmp_path, {"resident_dead": {"open": True, "why": "heartbeat 42 min old"}})
     doc, calls = _run(tmp_path, running=True)
     assert _gauntlet(calls) == [("end", "MT5-Gauntlet"), ("run", "MT5-Gauntlet")]
     assert any(r["task"] == "MT5-Gauntlet" for r in doc["ended"])
 
 
-def test_a_judge_between_sweeps_is_only_run(tmp_path):
-    _judge(tmp_path, 2.0)                       # stalled (>1h) but not hung (<3h)
+def test_a_stale_reading_never_ends_anything(tmp_path):
+    """Audit MF-2: every input the End reads carries a fresh `at`, or nothing is ended."""
+    _throughput(tmp_path, 40.0)
+    _stall(tmp_path, {"resident_dead": {"open": True}}, at_h=3.0)
     _, calls = _run(tmp_path, running=True)
-    assert _gauntlet(calls) == [("run", "MT5-Gauntlet")]
+    assert not _ends(calls)
+
+
+def test_merge_and_publish_inside_its_limit_is_never_ended(tmp_path):
+    """Audit MF-3: 10-18 the resident died mid merge_and_publish; only an overrun is hung."""
+    _stall(tmp_path, {"phase_overrun": {"open": False, "phase": "merge_and_publish",
+                                        "hours": 2.0}})
+    _, calls = _run(tmp_path, running=True)
+    assert not _ends(calls)
+    over = tmp_path / "overrun"
+    _stall(over, {"phase_overrun": {"open": True, "phase": "merge_and_publish",
+                                    "hours": 3.5}})
+    _, calls = _run(over, running=True)
+    assert _ends(calls) == [("end", "MT5-Gauntlet")]
 
 
 def test_the_judge_is_research_and_never_live_shaped():
