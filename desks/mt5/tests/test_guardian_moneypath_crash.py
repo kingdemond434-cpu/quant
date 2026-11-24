@@ -61,26 +61,82 @@ def test_a_frozen_gateway_reading_is_named(tmp_path: Path) -> None:
     assert heal.check_gateway_publication(tmp_path, NOW).ok
 
 
-def _chain(tmp_path: Path, steps: dict, quiet_h: float) -> None:
-    _w(tmp_path, "desks/mt5/research/daily_cycle.py",
-       'STEPS = (("weekly_hunt_refresh", _w),\n         ("research_gap_map", _r),\n'
-       '         ("refresh_bars", _b))\n\nX = 1\n')
-    _w(tmp_path, "desks/mt5/data/daily_cycle_state.json",
-       {"last_run": NOW.date().isoformat(), "steps": steps,
-        "last_progress": {"at": (NOW - timedelta(hours=quiet_h)).isoformat()}})
+STEPS = heal._step_names()
+
+
+def _chain(tmp_path: Path, steps: dict, *, stamp_quiet_h: float | None = None,
+           owner_quiet_h: float | None = None) -> None:
+    """The box's real shapes: the stamp, and the lock's owner sidecar whose `last_progress` is
+    a bare iso string (research/daily_cycle.py ChainLock._write_owner)."""
+    doc: dict = {"last_run": NOW.date().isoformat(), "steps": steps}
+    if stamp_quiet_h is not None:
+        doc["last_progress"] = {"at": (NOW - timedelta(hours=stamp_quiet_h)).isoformat(),
+                                "pid": 1}
+    _w(tmp_path, "desks/mt5/data/daily_cycle_state.json", doc)
+    if owner_quiet_h is not None:
+        _w(tmp_path, "desks/mt5/data/.job_locks/daily_cycle.owner.json",
+           {"pid": 1, "create_time": 1.0, "at": (NOW - timedelta(hours=9)).isoformat(),
+            "last_progress": (NOW - timedelta(hours=owner_quiet_h)).isoformat(
+                timespec="seconds")})
+
+
+def test_the_step_list_is_imported_from_daily_cycle() -> None:
+    assert len(STEPS) > 10 and STEPS[0] == "weekly_hunt_refresh"
 
 
 def test_a_chain_that_stamps_the_day_then_stops_is_named(tmp_path: Path) -> None:
-    _chain(tmp_path, {"weekly_hunt_refresh": {"ok": False, "error": "AttributeError: gone"},
-                      "research_gap_map": {"ok": True}}, quiet_h=5)
+    _chain(tmp_path, {STEPS[0]: {"ok": False, "error": "AttributeError: gone"},
+                      STEPS[1]: {"ok": True}}, stamp_quiet_h=5, owner_quiet_h=5)
     f = heal.check_daily_chain(tmp_path, NOW)
-    assert not f.ok and "2 of 3" in f.detail and "refresh_bars" in f.detail
-    assert "weekly_hunt_refresh: AttributeError: gone" in f.detail
+    assert not f.ok and f"2 of {len(STEPS)}" in f.detail and STEPS[2] in f.detail
+    assert f"{STEPS[0]}: AttributeError: gone" in f.detail and "quiet 5.0h" in f.detail
 
 
-def test_a_chain_still_progressing_is_not_stalled(tmp_path: Path) -> None:
-    _chain(tmp_path, {"weekly_hunt_refresh": {"ok": True}}, quiet_h=0.5)
+def test_a_healthy_mid_run_chain_reads_ok_from_the_owner_sidecar(tmp_path: Path) -> None:
+    """Audit HOLD: the stamp's progress is old (no step finished for hours, one long step) but
+    the sidecar heartbeat is fresh -- a healthy chain at 18:00 UTC must not page."""
+    _chain(tmp_path, {STEPS[0]: {"ok": True}}, stamp_quiet_h=6, owner_quiet_h=0.5)
+    f = heal.check_daily_chain(tmp_path, NOW)
+    assert f.ok, f.detail
+
+
+def test_a_sidecar_only_box_still_measures_progress(tmp_path: Path) -> None:
+    _chain(tmp_path, {STEPS[0]: {"ok": True}}, owner_quiet_h=0.2)
     assert heal.check_daily_chain(tmp_path, NOW).ok
+    _chain(tmp_path, {STEPS[0]: {"ok": True}}, owner_quiet_h=4)
+    f = heal.check_daily_chain(tmp_path, NOW)
+    assert not f.ok and "quiet 4.0h" in f.detail
+
+
+def test_no_progress_anywhere_is_unmeasured_and_stalled(tmp_path: Path) -> None:
+    _chain(tmp_path, {STEPS[0]: {"ok": True}})
+    f = heal.check_daily_chain(tmp_path, NOW)
+    assert not f.ok and "UNMEASURED" in f.detail
+
+
+def test_a_paused_gateway_is_not_a_crash(tmp_path: Path) -> None:
+    """Principal 18:02Z: Fusion at 0 is a correct halt -- no alert spam while equity is 0."""
+    _w(tmp_path, "desks/mt5/data/gateway_state.json", {"equity": 266.01}, age_h=25 * 24)
+    _w(tmp_path, "desks/mt5/data/GATEWAY_PAUSED", "deadman")
+    f = heal.check_gateway_publication(tmp_path, NOW)
+    assert f.ok and "paused by the Fusion deadman" in f.detail
+
+
+def test_a_standing_fault_pages_once_then_again_after_a_day(tmp_path: Path) -> None:
+    _w(tmp_path, "desks/mt5/data/gateway_state.json", {"equity": 0}, age_h=48)
+
+    def run(at: datetime) -> dict:
+        return rheal.run(root=tmp_path, apply=True, out=tmp_path / "out.json",
+                         ledger_path=tmp_path / "l.json", run_task=lambda _t: True, now=at,
+                         task_running=lambda _t: False, end_task=lambda _t: True)
+
+    t0 = datetime.now(UTC)
+    assert "moneypath gateway" in run(t0)["moneypath_paged"]
+    assert "moneypath gateway" not in run(t0 + timedelta(minutes=15))["moneypath_paged"]
+    assert "moneypath gateway" in run(t0 + timedelta(hours=25))["moneypath_paged"]
+    ev = (tmp_path / "desks/mt5/data/events.jsonl").read_text("utf-8").splitlines()
+    gw = [r for r in map(json.loads, ev) if r.get("organ") == "moneypath gateway"]
+    assert len(gw) == 2
 
 
 def test_an_applied_pass_writes_one_event_per_moneypath_alert(tmp_path: Path) -> None:

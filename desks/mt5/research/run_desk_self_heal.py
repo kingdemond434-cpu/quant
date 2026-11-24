@@ -108,6 +108,10 @@ def _run_task(name: str) -> bool:
     return proc.returncode == 0
 
 
+#: A money-path organ still failing is paged again after this long (Audit should-fix: page on
+#: change, not every pass; a day keeps a standing fault from going silent).
+MONEYPATH_REPAGE_H = 24.0
+
 def run(*, root: Path = ROOT, apply: bool = False,
         out: Path = REPORT, ledger_path: Path = RERUN_LEDGER,
         run_task: Any = None, now: datetime | None = None,
@@ -169,13 +173,39 @@ def run(*, root: Path = ROOT, apply: bool = False,
     # Claude reads. Only on an applied pass, so a dry run never pages; the writer never raises.
     alerts = [f for f in findings if not f.ok and f.check.startswith("moneypath ")]
     doc["moneypath_alerts"] = [{"organ": f.check, "detail": f.detail} for f in alerts]
-    if apply and alerts:
+    # PAGE ON CHANGE (Audit should-fix on 45d647ac7): an organ pages when it newly fails and again
+    # every MONEYPATH_REPAGE_H while it stays failed -- never once per 15-minute pass. The
+    # memory is the organs paged and when, beside the event log.
+    seen_p = root / "desks" / "mt5" / "data" / "moneypath_alerts_paged.json"
+    try:
+        seen = json.loads(seen_p.read_text("utf-8"))
+        seen = seen if isinstance(seen, dict) else {}
+    except (OSError, ValueError):
+        seen = {}
+    due = []
+    for f in alerts:
+        try:
+            last = datetime.fromisoformat(str(seen.get(f.check)))
+        except ValueError:
+            last = None
+        if last is None or (t_now - last).total_seconds() >= MONEYPATH_REPAGE_H * 3600:
+            due.append(f)
+    doc["moneypath_paged"] = [f.check for f in due]
+    if apply:
+        paged = {f.check: seen[f.check] for f in alerts if f.check in seen}
+        paged |= {f.check: t_now.isoformat() for f in due}
+        try:
+            seen_p.parent.mkdir(parents=True, exist_ok=True)
+            seen_p.write_text(json.dumps(paged, indent=1), "utf-8")
+        except OSError as exc:
+            doc["moneypath_paged_error"] = f"{type(exc).__name__}: {exc}"
+    if apply and due:
         try:
             import sys as _sys
             if str(root) not in _sys.path:
                 _sys.path.insert(0, str(root))
             from libs.ops import events as _ev
-            for f in alerts:
+            for f in due:
                 _ev.emit("PLUMBING_DEFECT", root / "desks" / "mt5" / "data" / "events.jsonl",
                      organ=f.check, defect="MONEYPATH_CRASH",
                          detail=f.detail[:600], producer="desk_self_heal", priority=2)

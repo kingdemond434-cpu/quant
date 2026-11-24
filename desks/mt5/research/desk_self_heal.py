@@ -42,7 +42,7 @@ import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -581,7 +581,24 @@ ALLOCATION_CADENCE_H = 1.0
 GATEWAY_STATE_MAX_MIN = 90.0
 DAILY_CHAIN_STALL_H = 3.0
 MONEYPATH_STALE_FACTOR = 2.0
-_STEP_NAME = re.compile(r'\("(\w+)",\s*_\w+\)')
+
+
+def _step_names() -> list[str]:
+    """daily_cycle.STEPS, imported (it imports the stdlib only at module scope). [] when the
+    module cannot be imported: the chain is then UNMEASURED, never read as complete."""
+    try:
+        from daily_cycle import STEPS
+    except Exception:
+        try:
+            from research.daily_cycle import STEPS
+        except Exception:
+            return []
+    return [str(n) for n, _ in STEPS]
+
+
+def _progress_at(v: Any) -> datetime | None:
+    """A progress time in either shape: {"at": iso, ...} (the stamp) or a bare iso string."""
+    return _ts(v.get("at")) if isinstance(v, dict) else _ts(v) if isinstance(v, str) else None
 
 
 def _read_json(p: Path) -> Any:
@@ -628,6 +645,16 @@ def check_gateway_publication(root: Path, now: datetime) -> Finding:
     age_min = None if age_h is None else age_h * 60.0
     if age_min is not None and age_min <= GATEWAY_STATE_MAX_MIN:
         return Finding("moneypath gateway", True, f"reading {age_min:.0f}min old")
+    # A GATEWAY THE DEADMAN PAUSED IS NOT A CRASH (Audit should-fix on 45d647ac7; principal
+    # 2026-11-24 18:02Z: Fusion is at 0 because he withdrew, so the halt is correct -- no alert
+    # spam while equity is 0). Its reading is frozen by design until fusion-paused-reading
+    # publishes while paused or a deposit re-arms it; the finding says so and does not page.
+    paused = root / "desks/mt5/data/GATEWAY_PAUSED"
+    if paused.exists():
+        return Finding("moneypath gateway", True,
+                       f"paused by the Fusion deadman (GATEWAY_PAUSED); reading "
+                       f"{'UNMEASURED' if age_min is None else f'{age_min / 60.0:.1f}h'} old by "
+                       f"design until a paused reading or a deposit re-arms it")
     doc = _read_json(st)
     last = doc.get("last_reconcile") if isinstance(doc, dict) else None
     eq = doc.get("equity") if isinstance(doc, dict) else None
@@ -643,14 +670,7 @@ def check_daily_chain(root: Path, now: datetime) -> Finding:
     """The daily research chain must reach its steps: a chain that stamps the day and then stops
     (killed by its task limit, or hung on one step) starves every miner behind it."""
     stamp = _read_json(root / "desks/mt5/data/daily_cycle_state.json")
-    src = root / "desks/mt5/research/daily_cycle.py"
-    try:
-        text = src.read_text(encoding="utf-8")
-        block = text[text.index("STEPS = ("):]
-        block = block[:block.index("\n\n")]
-        names = _STEP_NAME.findall(block)
-    except (OSError, ValueError):
-        names = []
+    names = _step_names()
     if not isinstance(stamp, dict):
         return _absent("moneypath daily chain", "desks/mt5/data", root,
                        "daily_cycle_state.json absent or unreadable", fixable=False)
@@ -659,8 +679,16 @@ def check_daily_chain(root: Path, now: datetime) -> Finding:
     ran = steps if stamp.get("last_run") == today else {}
     failed = {n: str((r or {}).get("error") or "")[:160] for n, r in ran.items()
               if isinstance(r, dict) and r.get("ok") is False}
-    prog = _ts((stamp.get("last_progress") or {}).get("at")) \
-        if isinstance(stamp.get("last_progress"), dict) else None
+    # PROGRESS, FROM EVERY PLACE THE CHAIN WRITES IT (Audit HOLD on 45d647ac7): the stamp's
+    # `last_progress` {"at": iso} and the lock's owner sidecar `.job_locks/daily_cycle.owner.json`
+    # (`last_progress` as a bare iso string, `at` when the holder took the lock). The box's
+    # daily_cycle writes the sidecar on every heartbeat; the newest time wins.
+    owner = _read_json(root / "desks/mt5/data/.job_locks/daily_cycle.owner.json")
+    times = [_progress_at(stamp.get("last_progress"))]
+    if isinstance(owner, dict):
+        times += [_progress_at(owner.get("last_progress")), _progress_at(owner.get("at"))]
+    live = [t for t in times if t is not None and t <= now + timedelta(minutes=5)]
+    prog = max(live) if live else None
     quiet_h = (now - prog).total_seconds() / 3600.0 if prog else None
     hours_in = now.hour + now.minute / 60.0
     missing = [n for n in names if n not in ran]
