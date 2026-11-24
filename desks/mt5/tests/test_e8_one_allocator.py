@@ -39,10 +39,10 @@ def test_stale_foreign_or_undeployable_solves_change_nothing(tmp_path):
     assert e8_book.e8_solved_book(tmp_path / "absent.json", NOW)[0] == {}
 
 
-def test_a_solve_fraction_above_the_venue_cap_is_capped(tmp_path):
-    from mt5desk.sizing import MAX_RISK_FRAC
+def test_a_solve_fraction_above_the_e8_ceiling_is_clipped_to_it(tmp_path):
+    from mt5desk.decision_core import E8_CERT_CEILING
     p = _solve(tmp_path, executable={"EURUSD_srb_london": 1.0})
-    assert e8_book.e8_solved_book(p, NOW)[0]["EURUSD_srb_london"] == MAX_RISK_FRAC
+    assert e8_book.e8_solved_book(p, NOW)[0]["EURUSD_srb_london"] == E8_CERT_CEILING
 
 
 def test_the_solve_sizes_up_down_and_to_zero_and_leaves_unpriced_rows_alone():
@@ -108,16 +108,25 @@ def test_one_venue_failing_does_not_cost_the_other(monkeypatch):
     assert pca.main([]) == 1 and seen == ["e8"]
 
 
-def test_a_doubted_row_is_capped_by_its_evidence_multiple():
-    """Audit MF-2: the solve may not lift a placebo-alarm or replication-miss sleeve to full."""
-    from mt5desk.sizing import MAX_RISK_FRAC
+def test_a_doubted_row_is_capped_by_its_evidence_multiple_of_the_e8_ceiling():
+    """Audit MF-2b: the cap is evidence_mult x E8_CERT_CEILING, so a doubted row stays below it."""
+    from mt5desk.decision_core import E8_CERT_CEILING
     rows = [{"symbol": "EURUSD", "family": "srb", "selector": "london", "risk_frac": 0.0005,
              "evidence_mult": 0.25, "doubt_codes": ["placebo_alarm"]},
             {"symbol": "GBPUSD", "family": "srb", "selector": "london", "risk_frac": 0.0005,
              "evidence_mult": 1.0}]
-    kept, _ = e8_book.apply_solved(rows, {"EURUSD_srb_london": MAX_RISK_FRAC,
-                                          "GBPUSD_srb_london": 0.5 * MAX_RISK_FRAC})
+    kept, _ = e8_book.apply_solved(rows, {"EURUSD_srb_london": E8_CERT_CEILING,
+                                          "GBPUSD_srb_london": 0.01})
     by = {r["symbol"]: r for r in kept}
-    assert by["EURUSD"]["risk_frac"] == round(0.25 * MAX_RISK_FRAC, 6)
-    assert by["EURUSD"]["evidence_capped_from"] == MAX_RISK_FRAC
-    assert by["GBPUSD"]["risk_frac"] == round(0.5 * MAX_RISK_FRAC, 6)
+    assert by["EURUSD"]["risk_frac"] == round(0.25 * E8_CERT_CEILING, 6) < E8_CERT_CEILING
+    assert by["EURUSD"]["evidence_capped_from"] == E8_CERT_CEILING
+    assert by["GBPUSD"]["risk_frac"] == E8_CERT_CEILING
+
+
+def test_a_principal_funded_row_keeps_its_size_and_journals_the_solve():
+    """Audit MF-3: a solve zero never drops a principal-funded key."""
+    rows = [{"symbol": "USDJPY", "family": "daily", "selector": "asia", "risk_frac": 0.004,
+             "principal_funded": True}]
+    kept, zeroed = e8_book.apply_solved(rows, {"USDJPY_daily_asia": 0.0})
+    assert kept[0]["risk_frac"] == 0.004 and kept[0]["solve_risk_frac"] == 0.0
+    assert zeroed == []

@@ -384,6 +384,16 @@ E8_ALLOCATOR = DESK / "reports" / "E8_ALLOCATOR.json"
 E8_ALLOCATOR_MAX_AGE_S = 2 * 3600
 
 
+def _e8_ceiling() -> float:
+    """E8's per-sleeve risk ceiling (mt5desk.decision_core.E8_CERT_CEILING, the executor's cap);
+    0.006 if that module cannot be read, so the clip never loosens on an import failure."""
+    try:
+        from mt5desk.decision_core import E8_CERT_CEILING
+        return float(min(E8_CERT_CEILING, 0.006))
+    except Exception:
+        return 0.006
+
+
 def e8_solved_book(path: Path | None = None, now: datetime | None = None
                    ) -> tuple[dict[str, float], str]:
     """{column: equity fraction} for EVERY column E8's solve priced (0.0 where it chose not to
@@ -409,12 +419,12 @@ def e8_solved_book(path: Path | None = None, now: datetime | None = None
     cols, ex = doc.get("solved_columns"), doc.get("executable")
     if not isinstance(cols, list) or not isinstance(ex, dict):
         return {}, f"{p.name} carries no solved_columns/executable: evidence rule"
-    from mt5desk.sizing import MAX_RISK_FRAC
+    ceiling = _e8_ceiling()
     out: dict[str, float] = {}
     for c in cols:
         v = ex.get(c, 0.0)
         if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
-            out[str(c)] = float(min(max(v, 0.0), MAX_RISK_FRAC))
+            out[str(c)] = float(min(max(v, 0.0), ceiling))
     return out, f"{p.name} {age:.0f}s old: {sum(1 for v in out.values() if v > 0)} funded"
 
 
@@ -422,19 +432,25 @@ def apply_solved(chosen: list[dict[str, Any]], solved: Mapping[str, float]
                  ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Size each chosen row by the solve where it priced the row's column; drop the rows it
     zeroed (sovereignty: zero sends no order). Returns (kept rows, zeroed columns)."""
-    from mt5desk.sizing import MAX_RISK_FRAC
+    ceiling = _e8_ceiling()
     zeroed: list[dict[str, Any]] = []
     for r in chosen:
         col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        if col in solved and r.get("principal_funded"):
+            # THE PRINCIPAL'S NUMBER STANDS (Audit MF-3 on eb3134ee2): a principal-funded key is
+            # sized by the principal; the solve's view is journaled beside it, never applied.
+            r["solve_risk_frac"] = round(float(solved[col]), 6)
+            continue
         if col in solved:
             before = float(r.get("risk_frac") or 0.0)
-            frac = float(solved[col])
-            # THE DOUBTS STAY PRICED (Audit MF-2 on 832f8aeae): the solve prices returns, not a
-            # placebo alarm or a replication miss. A row the admission door sized by
-            # `evidence_mult` is capped at that multiple of the venue cap -- FTMO's evidence_cap
-            # rule -- so a doubted sleeve can never be lifted to full size by the solve.
+            frac = min(float(solved[col]), ceiling)
+            # THE DOUBTS STAY PRICED (Audit MF-2/MF-2b): the solve prices returns, not a placebo
+            # alarm, a replication miss or thin fills. A row the admission door sized by
+            # `evidence_mult` is capped at that multiple of E8's per-sleeve ceiling
+            # (E8_CERT_CEILING, the executor's own cap), so the solve can never lift a doubted
+            # sleeve to the full ceiling.
             if "evidence_mult" in r:
-                cap = float(r["evidence_mult"]) * MAX_RISK_FRAC
+                cap = float(r["evidence_mult"]) * ceiling
                 if frac > cap:
                     r["evidence_capped_from"] = round(frac, 6)
                     frac = cap
@@ -560,6 +576,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
                 row = {**row, "doubt_codes": codes}
             if principal_book.get(book_key, 0) > 0:
                 # The principal's own number sizes it; a doubt is journaled, never applied.
+                row = {**row, "principal_funded": True}
                 if doubts:
                     row = {**row, "evidence_notes": [f"{d} (journaled; principal-funded)"
                                                      for d in doubts]}
