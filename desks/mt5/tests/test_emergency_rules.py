@@ -61,7 +61,7 @@ def test_a_duplicate_send_keeps_the_oldest_only() -> None:
 
 
 def test_a_stopless_position_is_closed_after_the_grace() -> None:
-    res = _a([_p(1, sl=0.0, t=T0 - 600), _p(2, sl=0.0, t=T0 - 30)])
+    res = _a([_p(1, sl=0.0, t=T0 - 600), _p(2, sym="GBPUSD", sl=0.0, t=T0 - 30)])
     assert [(t, r) for t, r, _ in res.closes] == [(1, er.UNPROTECTED)]
 
 

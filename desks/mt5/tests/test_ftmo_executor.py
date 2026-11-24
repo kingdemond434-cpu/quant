@@ -184,12 +184,25 @@ def test_an_unreadable_fusion_book_fails_closed(world) -> None:
     assert _rows()[-1]["rail"] == "cross_account_opposite"
 
 
-def test_the_daily_loss_rail_counts_the_whole_book(world) -> None:
-    # $4,800 already lost today against a $5,000 daily limit: a $300 trade would cross it
+def test_the_daily_loss_rail_counts_the_whole_book(world, monkeypatch) -> None:
+    # $4,800 already lost today against a $5,000 daily limit: a $300 trade would cross it.
+    # The emergency stand-down (below) fires first at this equity; switched off here so the
+    # loss rail is still proven on its own.
+    from prop import emergency_rules
+    monkeypatch.setattr(emergency_rules, "EMERGENCY_ROOM_FRAC", 0.0)
+    monkeypatch.setattr(emergency_rules.limit_rule, "__defaults__", (0.0,))
     world.mt5.acc = SimpleNamespace(equity=95_200.0, balance=95_200.0)
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert world.mt5.sent == []
     assert doc["sleeves"][0]["rail"] == "ftmo_loss_guard"
+
+
+def test_near_the_daily_floor_the_emergency_rules_stand_the_lane_down(world) -> None:
+    # $200 of room left to a $5,000 daily limit (<= 20%): flatten, no new risk today
+    world.mt5.acc = SimpleNamespace(equity=95_200.0, balance=95_200.0)
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == [] and doc["status"] == "EMERGENCY_STAND_DOWN"
+    assert doc["emergency"]["rule"] == "NEAR_DAILY_LIMIT"
 
 
 def test_a_position_without_a_stop_refuses_new_risk(world) -> None:
