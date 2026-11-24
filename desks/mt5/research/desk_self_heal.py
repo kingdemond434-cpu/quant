@@ -569,6 +569,116 @@ def check_llm_throughput(root: Path, now: datetime) -> Finding:
     return Finding("llm throughput", False, detail, fixable=False)
 
 
+# --------------------------------------------------------------------------
+# MONEYPATH_CRASH (principal 2026-11-24 18:14Z, after the allocator crashed 440 times from 11-21
+# to 11-24 and nothing said so): a money-path organ that keeps failing, or whose output is older
+# than twice its cadence, is named with its ROOT CAUSE -- the exception it last died on -- so the
+# alert carries the fix's starting point, not just "stale". These are code or terminal faults a
+# re-run cannot cure, so they are never fixable here: the finding is the alert.
+# --------------------------------------------------------------------------
+
+ALLOCATION_CADENCE_H = 1.0
+GATEWAY_STATE_MAX_MIN = 90.0
+DAILY_CHAIN_STALL_H = 3.0
+MONEYPATH_STALE_FACTOR = 2.0
+_STEP_NAME = re.compile(r'\("(\w+)",\s*_\w+\)')
+
+
+def _read_json(p: Path) -> Any:
+    try:
+        return json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+
+
+def check_allocator_crash(root: Path, now: datetime) -> Finding:
+    """The allocator's book must be younger than 2x its cadence; a FAILED pass is named."""
+    rep = root / "desks/mt5/reports"
+    alloc = rep / "pf_allocation.json"
+    if not alloc.exists():
+        return _absent("moneypath allocator", "desks/mt5/reports", root,
+                       "pf_allocation.json absent: no book has ever been published here",
+                       fixable=False)
+    doc = _read_json(alloc)
+    at = _ts((doc or {}).get("generated_utc")) if isinstance(doc, dict) else None
+    age = (now - at).total_seconds() / 3600.0 if at else _age_h(alloc, now)
+    sd = _read_json(rep / "ALLOCATOR_STANDDOWN.json")
+    failed = isinstance(sd, dict) and str(sd.get("reason") or "").upper() == "FAILED" \
+        and str(sd.get("status") or "").upper() == "STOOD_DOWN"
+    limit = MONEYPATH_STALE_FACTOR * ALLOCATION_CADENCE_H
+    if age is not None and age <= limit and not failed:
+        return Finding("moneypath allocator", True, f"book {age:.1f}h old (limit {limit:.1f}h)")
+    parts = [f"MONEYPATH_CRASH: allocator book is "
+             f"{'UNMEASURED' if age is None else f'{age:.1f}h'} old (limit {limit:.1f}h)"]
+    if failed:
+        parts.append(f"last pass FAILED at {sd.get('at')}: {sd.get('why')} -- the previous book "
+                     f"stands and every sleeve keeps its stale verdict until this is fixed")
+    return Finding("moneypath allocator", False, "; ".join(parts), fixable=False)
+
+
+def check_gateway_publication(root: Path, now: datetime) -> Finding:
+    """The gateway's account reading (equity, book, reconcile) must be current: every rail and
+    the Fusion deadman judge on it, and a frozen file reads exactly like a live account."""
+    st = root / "desks/mt5/data/gateway_state.json"
+    if not st.exists():
+        return _absent("moneypath gateway", "desks/mt5/data", root,
+                       "gateway_state.json absent: the gateway has never published here",
+                       fixable=False)
+    age_h = _age_h(st, now)
+    age_min = None if age_h is None else age_h * 60.0
+    if age_min is not None and age_min <= GATEWAY_STATE_MAX_MIN:
+        return Finding("moneypath gateway", True, f"reading {age_min:.0f}min old")
+    doc = _read_json(st)
+    last = doc.get("last_reconcile") if isinstance(doc, dict) else None
+    eq = doc.get("equity") if isinstance(doc, dict) else None
+    return Finding("moneypath gateway", False,
+                   f"MONEYPATH_CRASH: gateway_state.json is "
+                   f"{'UNMEASURED' if age_min is None else f'{age_min / 60.0:.1f}h'} old "
+                   f"(limit {GATEWAY_STATE_MAX_MIN:.0f}min); last_reconcile {last}, equity {eq} -- "
+                   f"every rail and the Fusion deadman are judging a frozen number",
+                   fixable=False)
+
+
+def check_daily_chain(root: Path, now: datetime) -> Finding:
+    """The daily research chain must reach its steps: a chain that stamps the day and then stops
+    (killed by its task limit, or hung on one step) starves every miner behind it."""
+    stamp = _read_json(root / "desks/mt5/data/daily_cycle_state.json")
+    src = root / "desks/mt5/research/daily_cycle.py"
+    try:
+        text = src.read_text(encoding="utf-8")
+        block = text[text.index("STEPS = ("):]
+        block = block[:block.index("\n\n")]
+        names = _STEP_NAME.findall(block)
+    except (OSError, ValueError):
+        names = []
+    if not isinstance(stamp, dict):
+        return _absent("moneypath daily chain", "desks/mt5/data", root,
+                       "daily_cycle_state.json absent or unreadable", fixable=False)
+    today = now.date().isoformat()
+    steps = stamp.get("steps") if isinstance(stamp.get("steps"), dict) else {}
+    ran = steps if stamp.get("last_run") == today else {}
+    failed = {n: str((r or {}).get("error") or "")[:160] for n, r in ran.items()
+              if isinstance(r, dict) and r.get("ok") is False}
+    prog = _ts((stamp.get("last_progress") or {}).get("at")) \
+        if isinstance(stamp.get("last_progress"), dict) else None
+    quiet_h = (now - prog).total_seconds() / 3600.0 if prog else None
+    hours_in = now.hour + now.minute / 60.0
+    missing = [n for n in names if n not in ran]
+    stalled = bool(missing) and hours_in >= DAILY_CHAIN_STALL_H and \
+        (quiet_h is None or quiet_h > DAILY_CHAIN_STALL_H)
+    if not stalled and not failed:
+        return Finding("moneypath daily chain", True,
+                       f"{len(ran)} of {len(names) or '?'} step(s) ran today")
+    parts = []
+    if stalled:
+        parts.append(f"MONEYPATH_CRASH: daily chain stalled -- {len(ran)} of {len(names)} step(s) "
+                     f"ran today, quiet {'UNMEASURED' if quiet_h is None else f'{quiet_h:.1f}h'}; "
+                     f"next unrun: {', '.join(missing[:3])}")
+    if failed:
+        parts.append("failed: " + "; ".join(f"{n}: {e}" for n, e in list(failed.items())[:4]))
+    return Finding("moneypath daily chain", False, " | ".join(parts), fixable=False)
+
+
 def _lanes(root: Path) -> list[tuple[str, str, float, str | None]]:
     lanes = list(LANES)
     try:
@@ -628,6 +738,11 @@ def audit(root: Path, now: datetime | None = None) -> list[Finding]:
             # ADDED 2026-11-20 (principal: 24/7 at full strength): output against floors.
             check_judge_throughput(root, now),
             check_llm_throughput(root, now),
+            # ADDED 2026-11-24 (principal: MONEYPATH_CRASH -- the allocator died 440 times
+            # unseen). Each names its root cause; none is a re-run's to cure.
+            check_allocator_crash(root, now),
+            check_gateway_publication(root, now),
+            check_daily_chain(root, now),
             *check_lanes_idle(root, now)]
 
 

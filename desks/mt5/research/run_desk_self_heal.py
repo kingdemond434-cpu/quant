@@ -164,6 +164,23 @@ def run(*, root: Path = ROOT, apply: bool = False,
         "boundary": ("research evidence producers may be re-run; promotion, capital, gates, "
                      "deadman state and orders are outside this actuator"),
     }
+    # MONEYPATH_CRASH ALERTS (principal 2026-11-24 18:14Z): each failing money-path organ lands
+    # on the event log as a PLUMBING_DEFECT with its root cause, the surface the alert relay to
+    # Claude reads. Only on an applied pass, so a dry run never pages; the writer never raises.
+    alerts = [f for f in findings if not f.ok and f.check.startswith("moneypath ")]
+    doc["moneypath_alerts"] = [{"organ": f.check, "detail": f.detail} for f in alerts]
+    if apply and alerts:
+        try:
+            import sys as _sys
+            if str(root) not in _sys.path:
+                _sys.path.insert(0, str(root))
+            from libs.ops import events as _ev
+            for f in alerts:
+                _ev.emit("PLUMBING_DEFECT", root / "desks" / "mt5" / "data" / "events.jsonl",
+                     organ=f.check, defect="MONEYPATH_CRASH",
+                         detail=f.detail[:600], producer="desk_self_heal", priority=2)
+        except Exception as exc:  # the report still names every alert
+            doc["moneypath_alert_error"] = f"{type(exc).__name__}: {exc}"
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(out.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", "utf-8")
