@@ -23,13 +23,17 @@
   "pyproject.toml",
   "ops/box_git/pin_writer.py",
   "ops/money_closure.txt",
-  "ops/release/not_money_scripts.txt"
+  "ops/release/not_money_scripts.txt",
+  "scripts/sign_train.py",
+  "scripts/check_immutable_evaluator.py",
+  "desks/mt5/data/SEAL_CLEARS.jsonl"
  ],
  "grow_only": [
   "ops/release/protected_paths.txt",
   "ops/release/risk_suites.txt",
   "ops/release/trusted_eval_suites.txt",
-  "ops/money_closure.txt"
+  "ops/money_closure.txt",
+  "desks/mt5/data/SEAL_CLEARS.jsonl"
  ],
  "symbols": {
   ".github/scripts/audit_gate.py": [
@@ -77,7 +81,12 @@
    "pr_tick",
    "promote_tick",
    "seal_and_push",
-   "gate_tick"
+   "gate_tick",
+   "sign_tick",
+   "sign_diff_problems",
+   "SIGNED_PATHS",
+   "SIGN_TRIGGERS",
+   "SIGN_TRAIN"
   ],
   "ops/box_git/box_ci.py": [
    "promotable"
@@ -166,7 +175,12 @@
      "audited_clear",
      "gate_code",
      "_run_untrusted",
-     "worker_pass"
+     "worker_pass",
+     "sign_tick",
+     "sign_diff_problems",
+     "SIGNED_PATHS",
+     "SIGN_TRIGGERS",
+     "SIGN_TRAIN"
     ],
     "ops/box_git/box_ci.py": [
      "promotable"

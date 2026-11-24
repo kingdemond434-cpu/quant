@@ -26,6 +26,7 @@ Disk floor and idle cores (box_ci) bind every test stage. Nothing here writes C:
 from __future__ import annotations
 
 import contextlib
+import difflib
 import json
 import os
 import re
@@ -586,6 +587,49 @@ SIGN_TRIGGERS = ("desks/mt5/data/SEAL_CLEARS.jsonl", "desks/mt5/scripts/external
                  "libs/portfolio/rails.py")
 
 
+_SIGN_LINE = re.compile(r'^\s*"(to|signed_by)": "[^"]*",$')
+_SIGN_TOP = frozenset({"files", "signed_utc", "signed_by"})
+
+
+def sign_diff_problems(old_manifest: str, new_manifest: str, old_qb: str, new_qb: str,
+                       clears: str) -> list[str]:
+    """What the train's commit may change, checked by the box itself before it pushes (Audit
+    should-fix on 389704797): the manifest's file hashes ONLY for paths whose new hash has a CLEAR
+    row in SEAL_CLEARS.jsonl at LIVE, its signer stamp, and nothing else -- the record wall, the
+    rules and the rotation signers byte-identical -- and in quantbench.py only rotation "to" and
+    "signed_by" lines. [] when the commit is exactly a sign."""
+    out: list[str] = []
+    try:
+        old, new = json.loads(old_manifest), json.loads(new_manifest)
+    except ValueError as exc:
+        return [f"manifest unreadable: {exc}"]
+    if not (isinstance(old, dict) and isinstance(new, dict)):
+        return ["manifest is not an object"]
+    for k in sorted((set(old) | set(new)) - _SIGN_TOP):
+        if json.dumps(old.get(k), sort_keys=True) != json.dumps(new.get(k), sort_keys=True):
+            out.append(f"manifest key {k!r} changed (record wall, rules and signers are fixed)")
+    of, nf = old.get("files") or {}, new.get("files") or {}
+    if set(of) != set(nf):
+        out.append(f"sealed file set changed: {sorted(set(of) ^ set(nf))}")
+    cleared: dict[str, set[str]] = {}
+    for line in clears.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("verdict") == "CLEAR":
+            cleared.setdefault(str(row.get("path")), set()).add(str(row.get("sha256")))
+    for path in sorted(p for p in set(of) & set(nf) if of[p] != nf[p]):
+        if not any(str(s).startswith(str(nf[path])) for s in cleared.get(path, ())):
+            out.append(f"{path} re-signed to {nf[path]} with no CLEAR row for it")
+    for line in difflib.unified_diff(old_qb.splitlines(), new_qb.splitlines(), lineterm="", n=0):
+        if line.startswith(("---", "+++", "@@")):
+            continue
+        if not _SIGN_LINE.match(line[1:]):
+            out.append(f"quantbench.py line outside a rotation's to/signed_by: {line[:120]}")
+    return out
+
+
 def sign_tick(cfg: Config, live: str) -> str:
     state = box_ci.load_state(cfg.state)
     last = str(state.get("sign_checked") or "")
@@ -619,6 +663,19 @@ def sign_tick(cfg: Config, live: str) -> str:
         if parent != live or not files or files - set(SIGNED_PATHS):
             return (f"REFUSED to push the sign at {head[:12]}: parent {parent[:12]}, "
                     f"files {sorted(files)}")
+
+        def show(rev: str, path: str) -> str:
+            # Whole file (_run keeps only the tail); an unreadable blob reads "" and fails the
+            # check closed rather than passing it.
+            p = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=root, capture_output=True,
+                               text=True, encoding="utf-8", errors="replace", check=False,
+                               timeout=300)
+            return p.stdout if p.returncode == 0 else ""
+        man, qb = SIGNED_PATHS
+        bad = sign_diff_problems(show(live, man), show("HEAD", man), show(live, qb),
+                                 show("HEAD", qb), show(live, SIGN_TRIGGERS[0]))
+        if bad:
+            return f"REFUSED to push the sign at {head[:12]}: " + "; ".join(bad[:4])
         if _run(["git", "push", "-q", cfg.remote(), f"{head}:refs/heads/{LIVE}"], cwd=root,
                 env=env)[0] != 0:
             return f"signed {head[:12]} on {live[:12]} but the push was refused; next pass retries"

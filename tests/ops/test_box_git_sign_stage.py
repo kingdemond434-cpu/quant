@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import sys
 from pathlib import Path
 
@@ -22,7 +23,7 @@ def _cfg(tmp: Path) -> L.Config:
 
 
 def _fake(monkeypatch, tmp: Path, *, train_rc=0, train_out="", moves=True, parent=LIVE,
-          files=" ".join(L.SIGNED_PATHS), push_rc=0, trigger_diff="x"):
+          files=" ".join(L.SIGNED_PATHS), push_rc=0, trigger_diff="x", diff_problems=()):
     wt = tmp / "wt"
     (wt / "scripts").mkdir(parents=True)
     (wt / L.SIGN_TRAIN).write_text("", "utf-8")
@@ -51,7 +52,19 @@ def _fake(monkeypatch, tmp: Path, *, train_rc=0, train_out="", moves=True, paren
         return 0, ""
     monkeypatch.setattr(L, "worktree", worktree)
     monkeypatch.setattr(L, "_run", run)
+    monkeypatch.setattr(L, "sign_diff_problems", lambda *a: list(diff_problems))
+    monkeypatch.setattr(L.subprocess, "run", lambda *a, **k: type(
+        "P", (), {"returncode": 0, "stdout": ""})())
     return calls
+
+
+def test_a_sign_whose_diff_is_not_exactly_a_sign_is_never_pushed(tmp_path, monkeypatch) -> None:
+    cfg = _cfg(tmp_path)
+    calls = _fake(monkeypatch, tmp_path, train_out="signed",
+                  diff_problems=["manifest key 'append_only' changed"])
+    out = L.sign_tick(cfg, LIVE)
+    assert out.startswith("REFUSED") and "append_only" in out
+    assert not [c for c in calls if c[:2] == ["git", "push"]]
 
 
 def test_a_signed_commit_on_live_is_fast_forwarded(tmp_path: Path, monkeypatch) -> None:
@@ -98,3 +111,64 @@ def test_no_checkout_when_nothing_sealed_moved_since_the_last_check(tmp_path, mo
     assert "nothing to sign" in L.sign_tick(cfg, LIVE)
     assert not [c for c in calls if c[0] == "worktree"]
     assert box_ci.load_state(cfg.state)["sign_checked"] == LIVE
+
+
+# --------------------------------------------------- Audit HOLD on 389704797: trust + diff check
+def test_the_signers_and_the_stage_are_in_the_trust_set() -> None:
+    """An ORDINARY edit to the train, the evaluator, the CLEAR rows or the stage would otherwise be
+    run by the box and pushed straight to LIVE."""
+    pol = json.loads((Path(__file__).resolve().parents[2] / "ops/box_git/TRUST_SET.json")
+                     .read_text("utf-8"))
+    for f in ("scripts/sign_train.py", "scripts/check_immutable_evaluator.py",
+              "desks/mt5/data/SEAL_CLEARS.jsonl"):
+        assert f in pol["files"], f
+    assert "desks/mt5/data/SEAL_CLEARS.jsonl" in pol["grow_only"]
+    names = {"sign_tick", "sign_diff_problems", "SIGNED_PATHS", "SIGN_TRIGGERS", "SIGN_TRAIN"}
+    assert names <= set(pol["symbols"]["ops/box_git/box_loop.py"])
+    assert names <= set(pol["contracts"]["gate"]["authority"]["ops/box_git/box_loop.py"])
+
+
+_SHA = "ab" * 32
+_MAN = {"signed_utc": "t0", "signed_by": "a", "files": {"x.py": "1111111111111111",
+                                                       "y.py": "2222222222222222"},
+        "append_only": {"l.jsonl": {"n": 3}}, "record_rule": "r", "rotation_signers": {"x": "s"}}
+_QB = 'X_SEAL_ROTATION = {\n    "path": "x.py",\n    "from": "f",\n    "to": "old",\n' \
+      '    "signed_by": "principal",\n}\n'
+_ROW = json.dumps({"path": "x.py", "sha256": _SHA, "verdict": "CLEAR"})
+
+
+def _signed(**over) -> dict:
+    return {**_MAN, "signed_utc": "t1", "signed_by": "auditor-clear",
+            "files": {**_MAN["files"], "x.py": _SHA[:16]}, **over}
+
+
+def _qb_signed() -> str:
+    return _QB.replace('"to": "old"', f'"to": "{_SHA}"').replace("principal", "auditor-clear")
+
+
+def test_an_exact_sign_passes() -> None:
+    assert L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, _qb_signed(),
+                                   _ROW) == []
+
+
+def test_a_re_sign_without_a_clear_row_is_refused() -> None:
+    bad = L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, _qb_signed(),
+                                  json.dumps({"path": "x.py", "sha256": "cd" * 32,
+                                              "verdict": "CLEAR"}))
+    assert any("no CLEAR row" in b for b in bad)
+
+
+def test_the_record_wall_and_signers_must_be_byte_identical() -> None:
+    wall = _signed(append_only={"l.jsonl": {"n": 2}})
+    assert any("append_only" in b for b in L.sign_diff_problems(
+        json.dumps(_MAN), json.dumps(wall), _QB, _qb_signed(), _ROW))
+    rot = _signed(rotation_signers={"x": "someone"})
+    assert any("rotation_signers" in b for b in L.sign_diff_problems(
+        json.dumps(_MAN), json.dumps(rot), _QB, _qb_signed(), _ROW))
+
+
+def test_quantbench_may_change_only_rotation_to_and_signed_by_lines() -> None:
+    worse = _qb_signed().replace('"from": "f"', '"from": "g"')
+    bad = L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, worse, _ROW)
+    assert any("outside a rotation" in b for b in bad)
+    assert L.sign_diff_problems("", json.dumps(_signed()), _QB, _qb_signed(), _ROW)
