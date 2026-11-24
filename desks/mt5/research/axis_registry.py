@@ -210,7 +210,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
-                                          " session_range_breakout",
+                                          " session_range_breakout session_exit_overlay",
     "breakout_liquidity price_only limit": "failed_breakout",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
