@@ -116,3 +116,33 @@ def test_a_lanes_file_cannot_make_a_live_task_hung_and_ended(tmp_path, monkeypat
          "task": "MT5-E8-Executor"}]), encoding="utf-8")
     _, calls = _run(tmp_path, running=True)
     assert not any(t == "MT5-E8-Executor" for _, t in calls)
+
+
+def _judge(root: Path, last_h: float) -> None:
+    p = root / "desks/mt5/reports/JUDGING_THROUGHPUT.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"rate": {"first_judged_per_day": 6734.0, "verdicts": {
+        "last_verdict_at": (NOW - timedelta(hours=last_h)).isoformat()}}}), encoding="utf-8")
+
+
+def _gauntlet(calls):
+    return [c for c in calls if c[1] == heal.JUDGE_TASK]
+
+
+def test_a_hung_judge_is_ended_then_run(tmp_path):
+    """Box 11-24: MT5-Gauntlet read Running with no verdict for 7.5h; every trigger refused."""
+    _judge(tmp_path, 7.5)
+    doc, calls = _run(tmp_path, running=True)
+    assert _gauntlet(calls) == [("end", "MT5-Gauntlet"), ("run", "MT5-Gauntlet")]
+    assert any(r["task"] == "MT5-Gauntlet" for r in doc["ended"])
+
+
+def test_a_judge_between_sweeps_is_only_run(tmp_path):
+    _judge(tmp_path, 2.0)                       # stalled (>1h) but not hung (<3h)
+    _, calls = _run(tmp_path, running=True)
+    assert _gauntlet(calls) == [("run", "MT5-Gauntlet")]
+
+
+def test_the_judge_is_research_and_never_live_shaped():
+    assert heal.research_task("MT5-Gauntlet")
+    assert not heal._LIVE_TASK.search("MT5-Gauntlet")

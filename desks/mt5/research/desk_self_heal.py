@@ -418,6 +418,9 @@ def check_tape(root: Path, now: datetime) -> Finding:
 #: with fresh verdicts is a capacity fault and escalates with the numbers.
 JUDGE_FIRST_PER_DAY_FLOOR = 100_000.0
 JUDGE_VERDICT_GAP_H = 1.0
+#: No verdict for this multiple of the gap while MT5-Gauntlet reads Running: the judge is HUNG,
+#: not between sweeps; the actuator ends it and runs it again (same bounds as every re-run).
+JUDGE_HUNG_FACTOR = 3.0
 #: Model seat: completions per day at the 2026-11-07..09 baseline (676/696/657), pro-rated over
 #: the UTC day so far. Below PACE_TOLERANCE of that pace is weak.
 LLM_COMPLETIONS_PER_DAY_FLOOR = 670.0
@@ -471,7 +474,10 @@ LANES_FILE = "desks/mt5/data/throughput_lanes.json"
 #: a lane to WATCH, but it can never point a re-run at anything else -- above all not a live
 #: executor, the follower, the gateway or the release adopter, which may be stopped on purpose
 #: (Audit MF-1 2026-11-20). A lane in the file naming any other task is kept as report-only.
-RESEARCH_TASKS: frozenset[str] = frozenset(t for *_, t in LANES if t)
+#: The judge (MT5-Gauntlet) is research too: box 11-24 it read Running with no verdict for 7.5h
+#: while every trigger was refused (0x800710E0), so a hung judge is ended and run like a lane.
+JUDGE_TASK = "MT5-Gauntlet"
+RESEARCH_TASKS: frozenset[str] = frozenset(t for *_, t in LANES if t) | {JUDGE_TASK}
 RESEARCH_TASK_PREFIXES: tuple[str, ...] = ("MT5-Dept-", "MT5-Forest-", "MT5-Lab-", "MT5-Miner-")
 _LIVE_TASK = re.compile(r"(?i)executor|follower|gateway|adopt|release|bridge|e8|ftmo|fusion|live")
 
@@ -523,7 +529,9 @@ def check_judge_throughput(root: Path, now: datetime) -> Finding:
         parts.append(f"floor {JUDGE_FIRST_PER_DAY_FLOOR:,.0f}/day")
     # Only a stall is a re-run's to cure (MT5-Gauntlet is IgnoreNew: no stacking). A weak but
     # flowing judge is a capacity fault the report names for a person or a code change.
-    return Finding("judge throughput", False, "; ".join(parts), fixable=stalled)
+    hung = gap is not None and gap > JUDGE_HUNG_FACTOR * JUDGE_VERDICT_GAP_H
+    return Finding("judge throughput", False, "; ".join(parts), fixable=stalled,
+                   task=JUDGE_TASK if hung else None, hung=hung)
 
 
 def check_llm_throughput(root: Path, now: datetime) -> Finding:
