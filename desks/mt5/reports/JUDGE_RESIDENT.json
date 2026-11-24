@@ -16,15 +16,16 @@
  "last_sweep_s": 59058.1,
  "uptime_s": 59058.1,
  "last_sweep_ended_utc": "2026-11-24T10:35:20+00:00",
- "heartbeat_utc": "2026-11-24T23:20:10+00:00",
+ "heartbeat_utc": "2026-11-24T23:35:12+00:00",
  "sweep_phase": {
   "pid": 15964,
   "sweep_started_utc": "2026-11-24T10:35:39+00:00",
   "phases": {
-   "plan": 3767.5
+   "plan": 3767.5,
+   "prewarm": 42398.2
   },
-  "phase": "prewarm",
-  "phase_started_utc": "2026-11-24T11:38:26+00:00",
+  "phase": "plan_handoff",
+  "phase_started_utc": "2026-11-24T23:25:04+00:00",
   "plan_steps": {
    "lane_and_docket": 67.5,
    "docket_grouping": 82.1,
@@ -32,16 +33,17 @@
    "preflight": 160.8,
    "cache_prune": 3158.7,
    "order": 153.2,
-   "yield_allocation": 44.1
+   "yield_allocation": 44.1,
+   "prewarm": 42398.2
   },
-  "plan_step": "prewarm",
-  "plan_step_started_utc": "2026-11-24T11:38:26+00:00",
+  "plan_step": "plan_handoff",
+  "plan_step_started_utc": "2026-11-24T23:25:04+00:00",
   "plan_counts": {
    "docket_rows": 1709181,
    "unique_cells": 1708767,
    "gate0_advance": 1697811
   },
-  "plan_last_marker": "  docket order: 5096 never-judged cell(s) first, then 380310 in symbol-rotation order",
+  "plan_last_marker": "PRE-WARM: 15 worker(s) warmed 186856 cell(s) in 42396s (16644 already cached, 822 failed, 181084 not reached before the build budget); failures by kind {'NOT_RUN_BUILD_FAILED': 822}",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
@@ -87,17 +89,17 @@
      }
     },
     "prewarm": {
-     "samples": 2921,
+     "samples": 2960,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
        "n": 2672,
-       "share": 0.915
+       "share": 0.903
       },
       {
        "stack": "threading.py:join:1132 < process.py:shutdown:865 < _base.py:__exit__:667 < external_gauntlet.py:_prewarm_cache:2070 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
        "n": 134,
-       "share": 0.046
+       "share": 0.045
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
@@ -105,25 +107,36 @@
        "share": 0.015
       },
       {
+       "stack": "external_gauntlet.py:<genexpr>:2120 < external_gauntlet.py:_prewarm_cache:2120 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 45,
+       "share": 0.015
+      },
+      {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 26,
        "share": 0.009
-      },
-      {
-       "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 13,
-       "share": 0.004
       }
      ],
      "process": {
-      "cpu_s": 3052.9,
-      "page_faults": 116020552.0,
+      "cpu_s": 3056.9,
+      "page_faults": 116085190.0,
       "read_bytes": 49536889.0,
-      "write_bytes": 125633735031.0,
-      "sampled_s": 29200.0,
+      "write_bytes": 125633764274.0,
+      "sampled_s": 29590.0,
       "rss_mb_max": 3703.6,
-      "cpu_share_of_wall": 0.105
+      "cpu_share_of_wall": 0.103
      }
+    },
+    "plan_handoff": {
+     "samples": 1,
+     "top": [
+      {
+       "stack": "external_gauntlet.py:main:3840 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601 < run_sharded_gauntlet.py:<module>:3748",
+       "n": 1,
+       "share": 1.0
+      }
+     ],
+     "process": {}
     }
    }
   }
