@@ -256,7 +256,8 @@ def profile(rows: list[Row], spot: float, mult: float) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------------- sources
-_MON = {m: i for i, m in enumerate("JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split(), 1)}
+_MONTHS = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+_MON = {m: i for i, m in enumerate(_MONTHS, 1)}
 
 
 def hkex_expiry(mon: str) -> dt.date:
@@ -537,8 +538,9 @@ def run(*, dry_run: bool = False, series_dir: Path = SERIES_DIR, out: Path = REP
     ready = [c for c in cells if c["history_days"] >= MIN_HISTORY_DAYS]
     grid: dict[str, Any] = {"tests": [], "n_trials": 0, "verdict": "UNMEASURED"}
     if ready:
-        from libs.research import nlp_gain_test as gt
         from nlp_social_cells import daily_closes  # type: ignore[import-not-found]
+
+        from libs.research import nlp_gain_test as gt
         closes = {sym: c for sym in sorted({c["symbol"] for c in ready})
                   if (c := daily_closes(sym)) is not None}
         rp = [(i, s) for i, s in pairs if any(c["index"] == i for c in ready)]

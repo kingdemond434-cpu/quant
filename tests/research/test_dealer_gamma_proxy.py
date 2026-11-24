@@ -42,6 +42,8 @@ def _getter(routes: dict[str, _Resp], seen: list[str]):
 
 @pytest.fixture
 def terms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stand-in host with terms on record: the real Deribit host is refused by its terms."""
+    monkeypatch.delitem(dg.REFUSED_HOSTS, "www.deribit.com", raising=False)
     monkeypatch.setitem(dg.TERMS, "www.deribit.com",
                         {"url": "https://example.invalid/terms", "quote": "test", "checked": "x"})
 
@@ -148,3 +150,10 @@ def test_cells_wait_for_history(tmp_path: Path) -> None:
     assert rep["cells_proposed"] == 0
     assert rep["cells_declared"] == len(dg.CELLS) * len({b[1] for b in dg.BOOKS})
     assert all(w["needs"] == dg.MIN_HISTORY_DAYS for w in rep["cells_waiting_for_history"])
+
+
+def test_every_book_host_has_a_terms_verdict() -> None:
+    """No book points at a host with neither terms on record nor a recorded refusal."""
+    for book, _sym, host, _eod, _pull in dg.BOOKS:
+        assert host in dg.TERMS or host in dg.REFUSED_HOSTS, book
+        assert not (host in dg.TERMS and host in dg.REFUSED_HOSTS), book
