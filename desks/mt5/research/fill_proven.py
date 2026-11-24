@@ -12,8 +12,8 @@ WHAT IT WRITES. `reports/FILL_PROVEN.json`, each pass:
 
     sleeves  -- the admitted list, [{sleeve, n_out, adjR_out, lcb95_out, p_out}]: n_out >= MIN_N,
                 adjR_out > 0 and a testable (non-degenerate) series. Benjamini-Hochberg at FDR_Q
-                is REPORTED per sleeve (fdr_pass), never a gate: the sleeves are already
-                gauntlet-certified at 597 trials, and the consumer sizes by n/(n+50)
+                is REPORTED per sleeve (fdr_pass), never a gate: the consumer also requires a
+                gauntlet certificate (597 trials) and sizes by n/(n+50)
     table    -- every sleeve read, with n/adjR for all trades, outside rollover and inside it,
                 and how many trades had no measured spread (UNMEASURED, never charged zero)
 
@@ -262,8 +262,8 @@ def eligible(row: dict[str, Any]) -> bool:
 
 def admitted(row: dict[str, Any]) -> bool:
     """Eligible and testable. FDR is reported, not gated (zuck 11-19: Tier S is not a gate;
-    size n/(n+50)). Every sleeve read here already holds a gauntlet certificate charged at 597
-    trials, so a second multiple-testing gate on the cost check double-charges the same search
+    size n/(n+50)). The consumer admits only sleeves that also hold a gauntlet certificate charged
+    at 597 trials, so a second multiple-testing gate on this cost check double-charges one search
     (zuck 11-24 18:14Z: gates that cost more than they save go). The consumer sizes by n."""
     return eligible(row) and row.get("p_out") is not None
 
