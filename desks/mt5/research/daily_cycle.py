@@ -93,6 +93,40 @@ def run_step(name: str, fn) -> dict:
     return out
 
 
+#: A WALL BUDGET FOR THE STEPS THAT HAVE HUNG (box 2026-11-22..24). The chain runs in one process
+#: under a 10 h task limit, so one step that never returns takes every step behind it down with
+#: it: research_bandit ran 9 h on 11-23 (76 min the night before) and futures_curves 5 h 20 min on
+#: 11-22, the task limit killed the chain both nights, and 37 of 39 steps never ran. A budgeted
+#: step runs as its own `--step` child; past its budget the child is stopped, the step is recorded
+#: as FAILED with TIMEOUT, and the chain goes on. Unbudgeted steps run in process exactly as before.
+STEP_WALL_S: dict[str, float] = {"research_bandit": 2 * 3600.0, "futures_curves": 90 * 60.0,
+                                 "curve_strategies": 90 * 60.0}
+
+
+def run_step_isolated(name: str, wall_s: float) -> dict:
+    """Run step `name` as `daily_cycle.py --step NAME` under a wall budget."""
+    import subprocess
+    started = datetime.now(UTC)
+    cmd = [sys.executable, str(Path(__file__).resolve()), "--step", name]
+    try:
+        proc = subprocess.run(cmd, cwd=str(BASE), timeout=wall_s, check=False,
+                              capture_output=True, text=True)
+        out = {"ok": proc.returncode == 0}
+        if not out["ok"]:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:] or [""]
+            out["error"] = f"child exited {proc.returncode}: {tail[0][:300]}"
+    except subprocess.TimeoutExpired:
+        out = {"ok": False, "error": f"TIMEOUT: still running after {wall_s:.0f}s; stopped so "
+                                     f"the rest of the chain runs"}
+    except OSError as exc:
+        out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+    out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
+    out["isolated"] = True
+    dlog(f"{name}: {'ok' if out['ok'] else 'FAILED -- ' + str(out.get('error'))} "
+         f"(own process, budget {wall_s:.0f}s)")
+    return out
+
+
 def _woe_before(name: str) -> dict:
     """Stat step `name`'s DECLARED artifact(s) before it runs. Never fails the step."""
     try:
@@ -210,7 +244,7 @@ def _weekly_hunt_refresh() -> None:
         # list; the daily step's own --step flag must never become a hunt argument.
         try:
             result = _job(module)()
-        except Exception as exc:  # noqa: BLE001 -- named below, and the step still fails
+        except Exception as exc:  # named below, and the step still fails
             dlog(f"weekly hunt: {module} FAILED ({type(exc).__name__}: {exc}); the rest still run")
             failed.append(f"{module} ({type(exc).__name__})")
             continue
@@ -1713,7 +1747,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
                     continue
             if not lock.held:
                 lock.unlocked_steps.append(name)
-        results[name] = run_step(name, fn)
+        results[name] = (run_step_isolated(name, STEP_WALL_S[name]) if name in STEP_WALL_S
+                         else run_step(name, fn))
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
