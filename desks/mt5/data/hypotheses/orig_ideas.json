@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-14T08:36:00Z",
+ "updated_at": "2026-11-14T09:45:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -562,6 +562,57 @@
     "a common futures driver already in US500's pre-open move"
    ],
    "separating_test": "out-of-sample regression of US500's first-15-minute return on the BTCUSD 13:00-13:30 UTC return and imbalance, with US500 pre-open move and gap as controls",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-763",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "traditions": [
+    "change_point",
+    "stochastic_processes"
+   ],
+   "mechanism": "When the 1h EURUSD-XAUUSD tick-return correlation falls below its own 20-day 5th percentile, the gold residual (XAUUSD move unexplained by EURUSD) may revert over the next 4h: idiosyncratic gold flow decouples temporarily. Separating test: residual reversion against matched random windows, net of both spreads, with a gold-news window check; a new driver shows persistence, not reversion. Own broker ticks only",
+   "falsifier": "the gold residual after a correlation break does not revert over 4h more than in matched random windows, net of both spreads",
+   "competing_explanations": [
+    "idiosyncratic gold flow that reverts",
+    "a new persistent driver"
+   ],
+   "separating_test": "4h reversion of the gold residual after a sub-5th-percentile correlation break versus matched random windows, net of both spreads, with a gold-news check",
+   "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
+  },
+  {
+   "id": "IQ-764",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "EURGBP",
+    "EURJPY",
+    "GBPJPY"
+   ],
+   "traditions": [
+    "information_theory",
+    "causal"
+   ],
+   "mechanism": "Outside scheduled-news windows, a 3x jump in the quoted spread on one FX major may lead volatility and direction in its crosses over 1-60 seconds: liquidity providers pull quotes ahead of informed flow. Separating test: the lead-lag must beat the cross's spread cost out of sample; mechanical widening that follows volatility shows no lead. Own broker quote tape only",
+   "falsifier": "the major's spread jump carries no out-of-sample lead on its crosses' 1-60s volatility or direction that beats the cross's spread cost",
+   "competing_explanations": [
+    "LPs pull quotes ahead of informed flow",
+    "mechanical widening that follows volatility"
+   ],
+   "separating_test": "out-of-sample 1-60s lead-lag from a major's 3x spread jump to its crosses' vol and direction, net of the cross spread, news windows excluded",
    "data_gate": "own tick tape needs 66 days of history; earliest test 2026-11-17, and every lookback tried counts as a trial"
   }
  ]
