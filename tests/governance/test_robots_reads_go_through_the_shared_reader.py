@@ -28,8 +28,6 @@ _URL = re.compile(r"(?:https?://\S*)?/robots\.txt")
 ALLOWLIST: dict[str, str] = {
     "desks/mt5/research/deep_forest_miner.py":
         "already fail-closed (the model reader); open PRs #1320/#1181/#1168/#1038 change it",
-    "desks/mt5/research/asia_collector.py":
-        "already fail-closed (HTML refused, 401/403/429/451 stop); open PR #942 changes it",
 }
 
 

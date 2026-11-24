@@ -62,6 +62,14 @@ def _wire(monkeypatch: pytest.MonkeyPatch, *, body: str = "", status: int = 200,
     return opened
 
 
+@pytest.fixture(autouse=True)
+def _robots_ledger_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stopped fetch is billed by the desk's robots gate; no test writes the real ledger."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", tmp_path / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", tmp_path / "ROBOTS_SET_ASIDE.json")
+
+
 def _sensor() -> Any:
     return si.Sensor(sensor_id="checked_sensor", latent="global_risk_appetite", what="x",
                      fetch_class="public_endpoint", source="x", cadence="daily",
@@ -86,6 +94,8 @@ def test_a_robots_no_sends_no_data_request(monkeypatch: pytest.MonkeyPatch, tmp_
     assert opened == ["https://h.example/robots.txt"]
     assert guard.robots_refused == [{"sensor": "checked_sensor", "why": why}]
     assert guard.refused == []
+    (row,) = guard.set_aside
+    assert row["status"] == "SET_ASIDE" and row["billed"] is True and row["reopen"]
 
 
 def test_a_transport_failure_on_robots_is_unread_and_stops(

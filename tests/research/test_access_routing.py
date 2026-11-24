@@ -222,15 +222,58 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 def test_the_shared_fetch_path_obeys_robots_and_fails_closed() -> None:
     """STRUCTURAL, as before, but inverted by Governance with the Auditor (2026-11-13): our own
     crawling OBEYS robots.txt. `asia_collector.collect_one` (called by `event_surprise` and
-    `data_acquisition_scientist`) must return ROBOTS_REFUSED before its fetch, and the sampler
-    must not fetch past a refusal either. Labels still route use and weight (LAWS 5e)."""
+    `data_acquisition_scientist`) must return ROBOTS_STATUS before its fetch, and the sampler
+    must not fetch past a refusal either. Labels still route use and weight (LAWS 5e).
+    The status is BLOCKED_BY_ROBOTS since the one robots gate (PR #819); which robots answer
+    stopped the fetch is the row's `access_label` (ROBOTS_REFUSED is one of them)."""
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
     acol = (repo / "desks/mt5/research/asia_collector.py").read_text("utf-8")
     assert 'rec.update({"status": ROBOTS_STATUS' in acol
-    fetch_at = acol.index("urllib.request.urlopen(req, timeout=timeout")
+    # the LAST such call is the page fetch; the first is the robots.txt read (`_robots_open`)
+    fetch_at = acol.rindex("urllib.request.urlopen(req, timeout=timeout")
     assert acol.index("allowed, why_robots = _robots_allows(url)") < fetch_at
     das = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
-    assert '"status": "ROBOTS_REFUSED"' in das
+    assert '"status": "BLOCKED_BY_ROBOTS"' in das
     assert "never a skip (LAWS 5e)" not in das
+
+
+def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
+    """A STRUCTURAL test, because the shared fetch helper is reached from three organs.
+
+    HISTORY. Until 2026-09-23 `asia_collector` set BLOCKED_BY_ROBOTS and returned, leaving no
+    trace beyond the status. From then until 2026-11-10 this test asserted that status was never
+    assigned: a Disallow was a label and the page was fetched. The ruling of 2026-11-10 (PR #819)
+    reverses the fetch and keeps what the label taught: a Disallow on the exact path stops the
+    fetch, AND the refusal is never silent -- it goes through `robots_gate.refuse`, which builds
+    the set-aside row (reopen, two-sided missed-growth line) and counts it per day.
+
+    So what must never return now is EITHER half alone: a collector that fetches past a
+    Disallow, or one that refuses without billing the refusal.
+
+    WHICH LABELS STOP is the gate's alone (`robots_gate.stops`, Governance ruling 2026-11-10
+    20:08Z: a Disallow, a 401/403 on robots.txt, an unreachable robots.txt). A collector that
+    keeps its own list of labels drifts from that ruling, and this test fails it; a site that
+    serves no robots.txt is fetched and counted (`robots_gate.note_absent`).
+    """
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[2]
+    for rel in ("desks/mt5/research/asia_collector.py",
+                "desks/mt5/research/data_acquisition_scientist.py",
+                "desks/mt5/research/shadow_institutional.py"):
+        src = (repo / rel).read_text("utf-8")
+        assert "robots_gate" in src and ".refuse(" in src, f"{rel}: refuses without billing"
+        assert "recorded as a REDISTRIBUTION label, mined" not in src, rel
+        assert "never a skip (LAWS 5e)" not in src, rel
+    for rel in ("desks/mt5/research/asia_collector.py",
+                "desks/mt5/research/data_acquisition_scientist.py"):
+        src = (repo / rel).read_text("utf-8")
+        assert ".note_absent(" in src, f"{rel}: a fetch with no robots.txt is not counted"
+        assert "RG.stops(label)" in src, f"{rel}: decides on its own list of labels"
+        assert 'label == "DISALLOWED":' not in src, f"{rel}: stops on a Disallow only"
+    gate = (repo / "desks/mt5/research/robots_gate.py").read_text("utf-8")
+    for needle in ("def refuse(", "def note_absent(", "def stops(", "missed_growth_pair",
+                   "def daily_counts(", "REOPEN"):
+        assert needle in gate, needle
