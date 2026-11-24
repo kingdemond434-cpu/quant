@@ -1107,6 +1107,8 @@ def main() -> int:
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
+        print(f"   families: start on {len(rows_out)} row(s) at "
+              f"{datetime.now(UTC).isoformat(timespec='seconds')}", flush=True)
         rows_out, families, families_pending = _hf.apply(
             rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
             identity_fn=_identity, now=now, hyp_dir=HYP,
@@ -1404,7 +1406,86 @@ def run_cli() -> int:
         if not acquired:
             print("merge_hypotheses: DEFERRED -- canonical writer or memory admission unavailable")
             return 75  # transient deferral must not read as a completed publication
-        return main()
+        stop = start_watchdog()
+        try:
+            return main()
+        finally:
+            stop()
+
+
+#: THE MERGE MAY NOT HOLD THE WRITER LANE FOREVER (2026-11-24). Measured on the box: the run
+#: started 11-23 18:14Z went silent after the study-bank stage at 19:37Z and held the lane 23h
+#: at ~2.5% of one core while every 30-minute trigger was refused (0x800710E0), so for a day no
+#: producer except breadth_sweep's side door reached the judge. Nothing on the box could say
+#: WHERE it was: stdout to a redirected log is block-buffered, and there was no stack.
+#: The watchdog fixes both: stdout becomes line-buffered, every MERGE_DOCKET_STACK_EVERY_S the
+#: stacks of every thread are appended to reports/MERGE_DOCKET_STACKS.log, and past
+#: MERGE_DOCKET_MAX_S it dumps once more and exits 124. The docket is only ever replaced by one
+#: atomic rename at the end, so an exit mid-run leaves yesterday's docket standing, never a torn
+#: one; the lane's lock is reclaimed by pid liveness, so the next trigger runs.
+MERGE_DOCKET_MAX_S = float(os.environ.get("MERGE_DOCKET_MAX_S", str(6 * 3600)))
+MERGE_DOCKET_STACK_EVERY_S = float(os.environ.get("MERGE_DOCKET_STACK_EVERY_S", "1800"))
+STACKS_LOG = BASE / "reports" / "MERGE_DOCKET_STACKS.log"
+
+
+def start_watchdog(max_s: float | None = None, every_s: float | None = None,
+                   log_path: Path | None = None,
+                   exit_fn: Any = None) -> Any:
+    """Arm the stack dumps and the hard ceiling; return a function that disarms both."""
+    import faulthandler
+    import sys
+    import threading
+
+    max_s = MERGE_DOCKET_MAX_S if max_s is None else max_s
+    every_s = MERGE_DOCKET_STACK_EVERY_S if every_s is None else every_s
+    log_path = STACKS_LOG if log_path is None else log_path
+    exit_fn = exit_fn or (lambda: os._exit(124))
+    try:
+        sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+    fh = None
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        fh = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 - held for the run
+        fh.write(f"=== merge_hypotheses pid {os.getpid()} armed "
+                 f"{datetime.now(UTC).isoformat(timespec='seconds')} max {max_s:.0f}s\n")
+        fh.flush()
+        if every_s > 0:
+            faulthandler.dump_traceback_later(every_s, repeat=True, file=fh)
+    except Exception:
+        fh = None
+
+    def ceiling() -> None:
+        msg = (f"merge_hypotheses: WATCHDOG -- {max_s:.0f}s ceiling reached; dumping stacks to "
+               f"{log_path} and exiting 124 (docket unchanged, lane released)")
+        print(msg, flush=True)
+        if fh is not None:
+            try:
+                fh.write(f"=== CEILING {datetime.now(UTC).isoformat(timespec='seconds')}\n")
+                faulthandler.dump_traceback(file=fh, all_threads=True)
+                fh.flush()
+            except Exception:
+                pass
+        exit_fn()
+
+    timer = threading.Timer(max_s, ceiling)
+    timer.daemon = True
+    timer.start()
+
+    def stop() -> None:
+        timer.cancel()
+        try:
+            faulthandler.cancel_dump_traceback_later()
+        except Exception:
+            pass
+        if fh is not None:
+            try:
+                fh.close()
+            except Exception:
+                pass
+
+    return stop
 
 
 if __name__ == "__main__":
