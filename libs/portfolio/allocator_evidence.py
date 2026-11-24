@@ -578,6 +578,85 @@ def tier_s_factors(doc: Mapping[str, Any] | None = None, *, now: datetime | None
                  f"{sum(1 for v in out.values() if abs(v - 1.0) > 1e-9)} tilted off 1.0")
 
 
+#: FILL-PROVEN TILT (one signal, every account; 2026-11-24). E8 and FTMO admit and size from
+#: reports/FILL_PROVEN.json (research/fill_proven.py: forward R after the tape's real spread,
+#: outside the venue's 00-01 rollover hours, BH q=0.10). Fusion admits on the ten-gate
+#: certificate (AUTOMATIC PROMOTION, a standing order), so here the same file is a two-sided,
+#: heat-neutral TILT, never a gate: a fill-proven sleeve leans UP, a sleeve whose own forward
+#: trades are negative after the spread with n_out >= MIN_N leans DOWN, both shrunk by how much
+#: evidence there is (n / (n + N0)); a sleeve the table does not judge reads 1.0. The factors are
+#: then rescaled to mean 1.0 over the book, so they reallocate and never lever.
+FILL_PROVEN_REL = ("desks", "mt5", "reports", "FILL_PROVEN.json")
+FILL_PROVEN_SCHEMA = "fill-proven/1"
+FILL_PROVEN_MAX_AGE_S = 3 * 3600
+FILL_MIN_N = 10
+FILL_N0 = 50.0
+FILL_SWING = 0.5
+
+
+def _fill_label(name: str, labels: Mapping[str, Any]) -> str | None:
+    if name in labels:
+        return name
+    if len(name) >= 27:
+        hits = [k for k in labels if k[:27] == name[:27]]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
+def fill_proven_factors(names: Sequence[str], doc: Mapping[str, Any] | None = None, *,
+                        now: datetime | None = None) -> tuple[dict[str, float], str]:
+    """{book name: tilt} from FILL_PROVEN.json, heat-neutral over `names`, or {} with the reason.
+    Absent, foreign-schema, undated, future-dated or stale (> 3h) reads as NOTHING (1.0)."""
+    if doc is None:
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[2].joinpath(*FILL_PROVEN_REL)
+        try:
+            doc = json.loads(path.read_text("utf-8-sig"))
+        except (OSError, ValueError) as exc:
+            return {}, f"FILL_PROVEN.json unreadable ({type(exc).__name__}): neutral"
+    if not isinstance(doc, Mapping) or doc.get("schema") != FILL_PROVEN_SCHEMA:
+        return {}, f"FILL_PROVEN.json is not {FILL_PROVEN_SCHEMA}: neutral"
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}, "FILL_PROVEN.json undated: neutral"
+    if gen.tzinfo is None:
+        return {}, "FILL_PROVEN.json has a naive generated_at: neutral"
+    age = ((now or datetime.now(UTC)) - gen).total_seconds()
+    if not 0 <= age <= FILL_PROVEN_MAX_AGE_S:
+        return {}, "FILL_PROVEN.json is stale or future-dated: neutral"
+    proven = {str(r.get("sleeve")) for r in doc.get("sleeves") or [] if isinstance(r, Mapping)}
+    table: dict[str, Mapping[str, Any]] = {
+        str(r["sleeve"]): r for r in doc.get("table") or []
+        if isinstance(r, Mapping) and r.get("sleeve")}
+    raw: dict[str, float] = {}
+    for name in names:
+        label = _fill_label(name, table)
+        if label is None:
+            continue
+        r = table[label]
+        try:
+            n, adj = int(r.get("n_out") or 0), float(r.get("adjR_out") or "nan")
+        except (TypeError, ValueError):
+            continue
+        if n < FILL_MIN_N or not math.isfinite(adj):
+            continue
+        w = n / (n + FILL_N0)
+        if label in proven and adj > 0:
+            raw[name] = 1.0 + FILL_SWING * w
+        elif adj < 0:
+            raw[name] = 1.0 - FILL_SWING * w
+    if not raw or not names:
+        return {}, f"FILL_PROVEN.json read: 0 of {len(names)} book sleeve(s) judged: neutral"
+    mean = (sum(raw.values()) + (len(names) - len(raw))) / len(names)
+    out = {k: float(min(TILT_HI, max(TILT_LO, v / mean))) for k, v in raw.items()}
+    up = sum(1 for v in raw.values() if v > 1)
+    return out, (f"FILL_PROVEN.json read: {len(raw)} of {len(names)} book sleeve(s) judged, "
+                 f"{up} proven up, {len(raw) - up} negative after spread down; heat-neutral")
+
+
 def net_capacity_rows(doc: Mapping[str, Any] | None) -> dict[str, dict[str, Any]]:
     """Per-sleeve CAPACITY -- the size at which net edge decays to zero -- for the bundle.
 
