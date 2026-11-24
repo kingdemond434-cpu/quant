@@ -222,15 +222,17 @@ def _with_bars() -> list[str]:
 
 
 def is_exotic(symbol: str) -> bool:
-    """True when MetaTrader's registry classes `symbol` as an exotic (the class name, read through
-    `universe_policy.asset_class_of`, never a symbol list). An unreadable registry answers False
-    here, and such a symbol is still UNCLASSIFIED to `may_hypothesise`, so it is swept only when
-    it is literally in CORE -- which holds no exotic."""
+    """The desk's ONE exotic definition, `universe_policy.is_exotic_symbol`: the registry class
+    names an exotic, OR the symbol is an FX pair of two known fiat legs with one outside the eight
+    majors -- so a NOK/SEK pair the registry files as plain forex is still dropped, and a crypto
+    CFD or a metal never is. An unimportable policy answers False here, and such a symbol is still
+    UNCLASSIFIED to `may_hypothesise`, so it is swept only when it is literally in CORE -- which
+    holds no exotic."""
     try:
-        from research.universe_policy import asset_class_of
-        return "exotic" in str(asset_class_of(symbol) or "").lower()
+        from research.universe_policy import is_exotic_symbol
     except Exception:
         return False
+    return bool(is_exotic_symbol(symbol))
 
 
 def _equities_with_bars() -> list[str]:
@@ -631,6 +633,18 @@ def write_cursor(state: dict[str, Any], path: Path | None = None) -> None:
         pass
 
 
+def variant_of(symbol: str, family: str, tf: str) -> str:
+    """The rank-0 sibling's identity: the same family, symbol and chart at the family's OWN
+    default params (no session slot, no variant knob), named by the judge's own docket identity
+    `frontier_identity.docket_cell_id` (the key its verdict ledger uses), so cert_duplicates and
+    n_eff can count a family's variants as one cluster. Rank-0 rows carry no stamp. A STAMP only:
+    it changes no gate, trial count or FDR charge."""
+    from research.frontier_identity import docket_cell_id
+
+    params: dict[str, Any] = {} if tf == "H1" else {"timeframe": tf}
+    return docket_cell_id({"symbol": symbol, "family": family, "params": params})
+
+
 class VariantWalk:
     """Mints never-seen variant cells in a fixed order, resuming at a durable cursor.
 
@@ -727,6 +741,8 @@ class VariantWalk:
                     continue
                 cell = _remapped(_cell(sym, fam, p, spec, now), remap)
                 cell["variant_rank"] = rank
+                if rank > 0:
+                    cell["variant_of"] = variant_of(sym, fam, tf)
                 seen.add(ident)
                 out.append(cell)
                 if len(out) >= room:
