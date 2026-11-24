@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message:MessageGroup xmlns:message="http://www.SDMX.org/resources/SDMXML/schemas/v1_0/message" xmlns:frb="http://www.federalreserve.gov/structure/compact/common" xmlns:kf="http://www.federalreserve.gov/structure/compact/SLOOS_SLOOS">
+ <frb:DataSet id="SLOOS">
+  <kf:Series SERIES_NAME="SUBLPDCILS_N.Q" FREQ="162" UNIT="Percent">
+   <frb:Obs TIME_PERIOD="2025-01-01" OBS_VALUE="6.2" OBS_STATUS="A"/>
+   <frb:Obs TIME_PERIOD="2025-04-01" OBS_VALUE="18.0" OBS_STATUS="A"/>
+   <frb:Obs TIME_PERIOD="2025Q3" OBS_VALUE="-1.5" OBS_STATUS="A"/>
+   <frb:Obs TIME_PERIOD="2025-10-01" OBS_VALUE="ND" OBS_STATUS="ND"/>
+  </kf:Series>
+  <kf:Series SERIES_NAME="SUBLPDCISS_N.Q" FREQ="162">
+   <frb:Obs TIME_PERIOD="2025-01-01" OBS_VALUE="99.0"/>
+  </kf:Series>
+ </frb:DataSet>
+</message:MessageGroup>
