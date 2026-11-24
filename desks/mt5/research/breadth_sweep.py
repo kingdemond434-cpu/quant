@@ -643,7 +643,10 @@ class VariantWalk:
                  equities: list[str] | None = None, cursor: int | None = None,
                  budget_s: float | None = None, per_run: int | None = None) -> None:
         self.per_run = VARIANT_PER_RUN if per_run is None else int(per_run)
-        self.variants = {f: param_variants(f) for f in sorted(families)}
+        # READY families need a named partner leg or input (peer, factors, COT symbols) that only
+        # their own grid supplies; walked bare they would build on the fallback, not the
+        # mechanism, so they never enter the walk.
+        self.variants = {f: param_variants(f) for f in sorted(families) if f not in READY}
         self.syms = list(syms)
         self.equities = list(equities or [])
         self.start = _read_cursor() if cursor is None else int(cursor)

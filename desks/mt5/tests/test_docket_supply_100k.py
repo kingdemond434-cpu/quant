@@ -92,7 +92,11 @@ def test_every_minted_variant_binds_the_judges_call_exactly_as_its_defaults_do()
             assert gb.cell_verdict(fam, v)[0] == base, (fam, v)
             if base != gb.BUILDABLE:
                 continue
-            sig.bind(None, side=1, **v)                      # raises on any unbound name
+            # The judge calls fn(h1, side=1, **p) and falls back to fn(h1, **p) on TypeError.
+            try:
+                sig.bind(None, side=1, **v)
+            except TypeError:
+                sig.bind(None, **v)                          # raises on any unbound name
 
 
 def test_variants_never_raise_where_the_defaults_build() -> None:
@@ -109,14 +113,22 @@ def test_variants_never_raise_where_the_defaults_build() -> None:
         if gb.cell_verdict(fam, {})[0] != gb.BUILDABLE:
             continue
         fn = table[fam]
+
+        def call(_fn=fn, **p):
+            try:
+                return _fn(bars, side=1, **p)
+            except TypeError as exc:                         # the judge's own fallback
+                if "side" not in str(exc):
+                    raise
+                return _fn(bars, **p)
         try:
-            fn(bars, side=1)
+            call()
         except Exception:
             continue                                         # not buildable here at defaults
         for v in bs.param_variants(fam)[1:]:
-            fn(bars, side=1, **v)
+            call(**v)
         checked += 1
-    assert checked >= 20, checked
+    assert checked >= 40, checked
 
 
 # ------------------------------------------------------------------ the exotic ban
