@@ -191,3 +191,26 @@ def test_dry_run_changes_nothing_and_cli_writes_out(world, tmp_path):
         ["--drop", str(world["drop"]), "--repo", str(world["spot"]), "--out", str(out), "--dry-run"]
     )
     assert rc == 0 and json.loads(out.read_text())["dry_run"] is True
+
+
+def test_a_failed_revert_aborts_and_never_restarts(world, monkeypatch):
+    run(world["origin"], "checkout", "-q", "feat/b")
+    (world["origin"] / "src" / "main.py").write_text("raise SystemExit(9)\n")
+    run(world["origin"], "add", ".")
+    run(world["origin"], "commit", "-q", "-m", "breaks import")
+    head = run(world["origin"], "rev-parse", "HEAD")
+    run(world["origin"], "checkout", "-q", "main")
+    run(world["origin"], "bundle", "create", str(world["mc"] / "pb.bundle"), "main..feat/b")
+    (world["mc"] / "pb.json").write_text(json.dumps({"branch": "feat/b", "head": head}))
+    (world["mc"] / "verdicts" / "pb.json").write_text(json.dumps({"line": f"AUDIT CLEAR {head}"}))
+    real = subprocess.run
+
+    def fake(cmd, *a, **k):
+        if "revert" in cmd and "--abort" not in cmd:
+            return subprocess.CompletedProcess(cmd, 1, "", "conflict")
+        return real(cmd, *a, **k)
+
+    monkeypatch.setattr(ma.subprocess, "run", fake)
+    r = _apply(world)
+    assert "needs a person" in r["refused"] and r["restart"] is None
+    assert not world["log"].exists()

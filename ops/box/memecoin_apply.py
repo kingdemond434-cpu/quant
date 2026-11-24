@@ -287,7 +287,17 @@ def apply(
                     timeout=900,
                 )
                 record["reverted"].append({"merge": item["merge"], "rc": proc.returncode})
-        record["restart"] = restart(task, schtasks)
+                if proc.returncode != 0:
+                    # Never leave the spot checkout mid-revert, and never restart spot
+                    # on a tree that is half undone: stop and hand it to a person.
+                    git(repo, "revert", "--abort", check=False)
+                    record["refused"] = (
+                        f"revert of {item['merge'][:9]} failed: needs a person "
+                        f"({(proc.stdout + proc.stderr).strip()[-300:]})"
+                    )
+                    break
+        if not (record["reverted"] and record["reverted"][-1]["rc"] != 0):
+            record["restart"] = restart(task, schtasks)
     try:
         record["after"] = git(repo, "rev-parse", "HEAD")
     except Refused:
