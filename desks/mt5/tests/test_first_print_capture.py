@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -15,7 +16,13 @@ from pathlib import Path
 
 import pytest
 
-from research import first_print_capture as fpc
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from research import first_print_capture as fpc  # noqa: E402
 
 
 def _bls_body(values: dict[str, dict[tuple[int, int], float]]) -> bytes:
