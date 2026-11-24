@@ -57,6 +57,14 @@ def test_a_balance_already_inside_the_band_is_no_emergency() -> None:
     assert not res.flatten and res.closes == []
 
 
+def test_open_loss_inside_the_band_flattens_before_the_real_floor() -> None:
+    """Audit follow-up on f2e18ae73: balance 91,500 holds 1,500 above the 90,000 floor; open
+    loss down to <= 300 of room flattens (no stand-down), short of it does not."""
+    res = _a([_p(1)], equity=90_300.0, start=91_500.0, balance=91_500.0)
+    assert res.rule == er.NEAR_MAX_LOSS and res.flatten and not res.stand_down
+    assert not _a([_p(1)], equity=90_301.0, start=91_500.0, balance=91_500.0).flatten
+
+
 def test_unreadable_inputs_never_flatten_on_a_guess() -> None:
     res = _a([_p(1)], equity=None)
     assert not res.flatten and res.notes

@@ -84,6 +84,15 @@ def limit_rule(*, equity: float | None, day_start: float | None, initial: float,
     static_floor = initial * (1.0 - max_frac)
     band = room_frac * max_frac * initial
     closed_outside = balance is not None and balance - static_floor > band
+    if (balance is not None and not closed_outside and balance > static_floor
+            and equity - static_floor <= room_frac * (balance - static_floor)):
+        # RELATIVE BAND (Audit follow-up on f2e18ae73): the closed balance is already inside the
+        # band, so open loss is judged against the room the balance still has. Flatten, no
+        # stand-down: trading continues, and a breach can never come from open loss.
+        return NEAR_MAX_LOSS, (f"equity {equity:,.2f} has given back over "
+                               f"{1 - room_frac:.0%} of the {balance - static_floor:,.2f} the "
+                               f"closed balance {balance:,.2f} holds above the max-loss floor "
+                               f"{static_floor:,.2f}")
     if equity - static_floor <= band and closed_outside:
         return NEAR_MAX_LOSS, (f"equity {equity:,.2f} is {equity - static_floor:,.2f} above the "
                                f"max-loss floor {static_floor:,.2f} (<= {room_frac:.0%} of the "
