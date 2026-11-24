@@ -1168,6 +1168,26 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # BREADTH FENCE (research/breadth_fence.py, principal 2026-11-20): the family-balanced,
+    # keff-ordered prefix may still be one symbol or one asset class (98% of certificates were
+    # FX on 2026-11-19). Every producer's rows pass here, so this one call hooks them all. It
+    # re-orders inside the judge's window only; no row leaves, and a fault costs the order.
+    breadth_fence: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.breadth_fence import fence as _fence
+        rows_out, breadth_fence = _fence(rows_out)
+        if breadth_fence.get("status") == "APPLIED":
+            _b, _a = breadth_fence["before"], breadth_fence["after"]
+            print(f"   breadth fence: {breadth_fence['moved']} position(s) changed in the first "
+                  f"{breadth_fence['window']}; top class {_b.get('top_class')} "
+                  f"{_b.get('top_class_share')} -> {_a.get('top_class_share')}, effective "
+                  f"symbols {_b.get('effective_symbols')} -> {_a.get('effective_symbols')}")
+    except Exception as exc:
+        breadth_fence = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   breadth fence unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
     # Every docket row -- fresh, carried over or already judged -- whose own words say its result
     # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
@@ -1329,6 +1349,7 @@ def main() -> int:
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "breadth_fence": breadth_fence,
         "hypothesis_families": families,
         "coverage_steer": steer_block,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
