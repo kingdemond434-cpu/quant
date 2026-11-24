@@ -1,52 +1,52 @@
 {
- "at": "2026-11-19T04:38:30+00:00",
+ "at": "2026-11-24T20:02:35+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1756791,
+  "rows_total": 1887039,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-19T04:35:29+00:00",
+  "last_verdict_at": "2026-11-24T10:14:12+00:00",
   "counts": {
-   "1h": 2701,
-   "24h": 6203,
-   "7d": 152201
+   "1h": 0,
+   "24h": 15450,
+   "7d": 140977
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 966,
-   "24h": 1162,
-   "7d": 76202
+   "1h": 0,
+   "24h": 6734,
+   "7d": 75196
   },
-  "first_terminal_cells": 796873,
+  "first_terminal_cells": 869551,
   "first_terminal_per_hour": {
-   "1h": 966.0,
-   "24h": 48.417,
-   "7d": 453.583
+   "1h": 0.0,
+   "24h": 280.583,
+   "7d": 447.595
   },
   "per_hour": {
-   "1h": 2701.0,
-   "24h": 258.458,
-   "7d": 905.958
+   "1h": 0.0,
+   "24h": 643.75,
+   "7d": 839.149
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 6983,
-   "7d": 184797
+   "24h": 5956,
+   "7d": 126047
   },
   "per_hour": {
-   "24h": 290.958,
-   "7d": 1099.982
+   "24h": 248.167,
+   "7d": 750.28
   }
  },
- "verdicts_per_hour": 258.458,
- "verdicts_per_day": 6203.0,
+ "verdicts_per_hour": 643.75,
+ "verdicts_per_day": 15450.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 1162.0,
+ "first_judged_per_day": 6734.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 6983.0,
+ "created_per_day": 5956.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,7 +58,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-19T04:38:07+00:00",
-  "pid": 14576
+  "started_at": "2026-11-24T19:59:36+00:00",
+  "pid": 23336
  }
 }
