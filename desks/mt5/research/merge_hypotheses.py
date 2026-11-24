@@ -711,6 +711,59 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
     return judged, off_lane, by_lane, by_symbol
 
 
+def _unbuildable_path() -> Path:
+    from research.judge_build_preflight import SET_ASIDE_NAME
+    return HYP / SET_ASIDE_NAME
+
+
+def _reoffer_unbuildable() -> list[dict[str, Any]]:
+    """The rows the last merge set aside as unbuildable, stamps removed. Never raises."""
+    try:
+        from research.judge_build_preflight import read_set_aside
+        rows = read_set_aside(_unbuildable_path())
+    except Exception as exc:
+        print(f"   unbuildable set-aside unreadable ({type(exc).__name__}: {exc}); not re-offered")
+        return []
+    if rows:
+        print(f"   unbuildable set-aside: {len(rows)} row(s) re-offered to this merge")
+    return rows
+
+
+def _set_aside_unbuildable(rows: list[dict[str, Any]], stamp: str
+                           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """`(docket rows, set-aside rows, report)`. Fails open: a fault keeps every row."""
+    try:
+        from research import judge_build_preflight as _jbp
+        if not _jbp.enabled():
+            return rows, [], {"status": f"DISABLED by {_jbp.SWITCH.name}", "set_aside": 0}
+        keep, aside, report = _jbp.split_unbuildable(rows, stamp)
+    except Exception as exc:
+        return rows, [], {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300], "set_aside": 0}
+    report["path"] = str(_unbuildable_path())
+    if aside:
+        print(f"   unbuildable: {len(aside)} row(s) the sealed judge cannot call (missing required "
+              f"arguments) set aside, kept -> {_unbuildable_path().name}: "
+              f"{ {f: v['rows'] for f, v in report['by_family'].items()} }")
+    return keep, aside, report
+
+
+def _bank_unbuildable(rows: list[dict[str, Any]], report: dict[str, Any]) -> bool:
+    """Write the set-aside bank (also when empty, so re-admitted rows leave it). Never raises.
+
+    A filter that did not run (DISABLED / FAILED) re-offered its bank into the docket just
+    written, so the bank is emptied then too; an unmeasured run keeps whatever is there."""
+    status = str(report.get("status") or "")
+    if not (status == "APPLIED" or status.startswith("DISABLED")):
+        return False
+    try:
+        from research.judge_build_preflight import write_set_aside
+        write_set_aside(_unbuildable_path(), rows)
+        return True
+    except Exception as exc:
+        print(f"   unbuildable set-aside unwritten ({type(exc).__name__}: {exc})")
+        return False
+
+
 def _ack(path: Path) -> None:
     """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the merge names every source docket it
     read by that docket's producer run id, so `compile_candidates -> merge_docket` is an observed
@@ -944,6 +997,14 @@ def main() -> int:
     # deduped by executable identity. `first_seen` is preserved so no stale row can ever be
     # counted as a fresh discovery; freshness still governs provenance, never capacity.
     banked = _read(TARGET)
+    # THE UNBUILDABLE SET-ASIDE IS RE-OFFERED EVERY RUN (judge fix G, 2026-11-24). A row set aside
+    # for lacking an argument the sealed judge's call requires is banked beside the docket, not
+    # deleted; it re-enters here with the docket bank, passes every door again, and is set aside
+    # again just before ordering only if it still cannot bind. A family that gains a default, or
+    # the revert switch, returns it to the docket on the next merge.
+    _aside_offer = _reoffer_unbuildable()
+    if _aside_offer:
+        banked = (banked if isinstance(banked, list) else []) + _aside_offer
     readmitted = 0
     # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
     # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
@@ -1130,6 +1191,14 @@ def main() -> int:
     # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
+    # THE JUDGE'S OWN BINDING CHECK, AT THE DOOR (judge fix G, 2026-11-24). Every sweep's pre-warm
+    # failed `seasonal_window` and `mass_screen_*` rows with TypeError "missing ... required
+    # keyword-only arguments" -- deterministic, never stamped seen, so re-fronted every sweep.
+    # `research/judge_build_preflight` applies exactly that check (the family's required
+    # arguments against the call `build_cell` makes); a failing row is set aside with its reason
+    # into `unbuildable_set_aside.json`, never dropped. Runs after every row-minting step above so
+    # a re-aimed descendant is checked too, and before ordering. A fault costs the filter only.
+    rows_out, unbuildable, unbuildable_report = _set_aside_unbuildable(rows_out, stamp)
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
@@ -1257,6 +1326,8 @@ def main() -> int:
         prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
+    # Only after the docket is durable: the set-aside rows are then held in exactly one place.
+    unbuildable_report["written"] = _bank_unbuildable(unbuildable, unbuildable_report)
     _lease(TARGET)
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
@@ -1324,6 +1395,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "unbuildable_set_aside": unbuildable_report,
         "preregistration": prereg,
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",
