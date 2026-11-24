@@ -18,6 +18,7 @@ moving. The daily "did every account trade" check must not depend on that link.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
 import shutil
@@ -39,7 +40,8 @@ SCRUB = re.compile(r"(?i)pass|token|secret|api_?key|private|hmac|cookie|auth|log
 #: Value pass (Audit MF-1): an IP literal anywhere in a string is redacted, and an `account`
 #: value is replaced by "[id]" unless it is a short desk label (E8, FTMO, Fusion ...).
 _IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-_IPV6 = re.compile(r"\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b")
+#: IPv6 candidates are checked with `ipaddress`, so a clock time ("17:10:08") never matches.
+_IPV6 = re.compile(r"(?<![\w:.])[0-9A-Fa-f]{0,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?![\w:])")
 _LABEL = re.compile(r"(?!.*\d{3})[A-Za-z][A-Za-z0-9_-]{0,15}")   # E8, FTMO-2; never a login
 _ACCOUNT_KEY = re.compile(r"(?i)^account$|^acct$|^account_name$")
 MAX_FILE = 2 * 1024 * 1024
@@ -64,8 +66,16 @@ class Status:
                               branch=STATUS_BRANCH, host_key=self.host_key)
 
 
+def _v6(m: re.Match[str]) -> str:
+    try:
+        ipaddress.IPv6Address(m.group(0))
+    except ValueError:
+        return m.group(0)
+    return "[ip]"
+
+
 def _redact(s: str) -> str:
-    return _IPV6.sub("[ip]", _IPV4.sub("[ip]", s))
+    return _IPV6.sub(_v6, _IPV4.sub("[ip]", s))
 
 
 def _norm(url: str) -> str:

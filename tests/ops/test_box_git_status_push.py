@@ -115,3 +115,9 @@ def test_status_never_goes_to_the_drop_project(tmp_path):
 def test_account_label_never_passes_a_login_with_a_letter_prefix():
     assert S.scrub({"account": "a51234567"}) == {"account": "[id]"}
     assert S.scrub({"account": "Fusion"}) == {"account": "Fusion"}
+
+
+def test_clock_times_survive_and_short_ipv6_is_redacted():
+    assert S.scrub({"t": "2026-11-24 17:10:08"}) == {"t": "2026-11-24 17:10:08"}
+    assert S.scrub({"n": "via fe80::1 and ::1 and 2001:db8:0:0:1:0:0:1"}) == {
+        "n": "via [ip] and [ip] and [ip]"}
