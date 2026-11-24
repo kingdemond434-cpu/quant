@@ -23,7 +23,7 @@ WHERE IT LANDS. Every ingest writes:
   desks/mt5/data/lake/series/dealer_gamma_<SYM>.parquet   the PIT series (`available_time` UTC)
                                                    that `family_exogenous_conditioner` reads
 
-HKEX serves about two days of daily reports and Deribit only the present book, so the history
+HKEX serves about two days of daily reports and live books only the present, so the history
 is SELF-RECORDED: the box must run the ingest every day or the days are lost for good. That is
 why it is on the organs battery (hourly rotation, idempotent per day) and not a weekly job.
 
@@ -86,17 +86,13 @@ REFUSED_HOSTS: dict[str, str] = {
     "cdn.cboe.com": "Cboe: refused desk-wide (refused_hosts); cdn-api answered 403 2026-11-24",
     "cdn-api.cboe.com": "Cboe: answered 403 on 2026-11-24; refused, never retried",
     "www.cboe.com": "Cboe: refused desk-wide (refused_hosts)",
-    # Read 2026-11-24 (/mnt/project-files/terms/gamma_sources_terms_2026-11-24.md). Each host's
+    # Read 2026-11-24 (/mnt/project-files/terms/gamma_sources_terms_2026-11-24.md; the crypto
+    # option venues read the same day refuse too and are named only there). Each host's
     # own terms ban automated collection or non-personal reuse; robots allows the paths on most.
     "www.hkex.com.hk": "HKEX Terms of Use (19 Aug 2025): 'not permitted to conduct ... any text "
                        "or data mining or web scraping'; no 'programmatic ... means'",
-    "www.deribit.com": "Deribit Terms 27.1(i) (26 Jan 2026): no 'systematic or automated data "
-                       "collection'; 2.10 market data 'for personal use only'",
     "www.cmegroup.com": "CME Data Terms (7 Sep 2023): 'personal use for non-commercial purposes'; "
                         "harvesting 'strictly prohibited'",
-    "www.okx.com": "OKX API Agreement (28 Jul 2026): Market Data 'solely for your own personal, "
-                   "non-commercial trading', unauthenticated endpoints included",
-    "api.bybit.com": "Bybit T&C 6.3(k) (16 Oct 2026): no 'robot, spider ... automatic device'",
     "www.jpx.co.jp": "JPX Terms (29 Jul 2026): 'refrain from automatic information retrieval'",
     "www.nseindia.com": "NSE Terms cl. 9 (29 Oct 2025): no 'systematic or automated data "
                         "collection'",
@@ -310,41 +306,10 @@ def parse_hkex(text: str, day: dt.date, mult: float) -> dict[str, Any] | None:
     return out
 
 
-def parse_deribit(payload: Any, now: dt.datetime) -> dict[str, Any] | None:
-    """Deribit's public option book summary -> profile at the book's own underlying price."""
-    res = payload.get("result") if isinstance(payload, dict) else None
-    if not isinstance(res, list):
-        return None
-    rows: list[Row] = []
-    spot = None
-    for r in res:
-        try:
-            _, exp, k, cp = str(r["instrument_name"]).split("-")
-            expiry = dt.datetime.strptime(exp, "%d%b%y").replace(hour=8, tzinfo=dt.UTC)
-            t = max((expiry - now).total_seconds(), 3600.0) / 31_536_000.0
-            oi, iv = float(r.get("open_interest") or 0), float(r.get("mark_iv") or 0) / 100
-            spot = spot or float(r["underlying_price"])
-        except (KeyError, ValueError, TypeError):
-            continue
-        if oi > 0 and iv > 0:
-            rows.append((float(k), t, iv, oi, cp == "C"))
-    if not rows or not spot:
-        return None
-    return profile(rows, spot, 1.0)
-
-
 def _hkex_puller(code: str, mult: float) -> Callable[[Feed, dt.date, dt.datetime], Any]:
     def pull(feed: Feed, day: dt.date, now: dt.datetime) -> dict[str, Any] | None:
         text = feed.fetch(f"https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/{code}{day:%y%m%d}.htm")
         return parse_hkex(text, day, mult) if text else None
-    return pull
-
-
-def _deribit_puller(cur: str) -> Callable[[Feed, dt.date, dt.datetime], Any]:
-    def pull(feed: Feed, day: dt.date, now: dt.datetime) -> dict[str, Any] | None:
-        payload = feed.fetch("https://www.deribit.com/api/v2/public/get_book_summary_by_currency"
-                             f"?currency={cur}&kind=option", as_json=True)
-        return parse_deribit(payload, now) if payload else None
     return pull
 
 
@@ -353,8 +318,6 @@ def _deribit_puller(cur: str) -> Callable[[Feed, dt.date, dt.datetime], Any]:
 BOOKS: tuple[tuple[str, str, str, bool, Callable[[Feed, dt.date, dt.datetime], Any]], ...] = (
     ("hkex_hsio", "HK50", "www.hkex.com.hk", True, _hkex_puller("hsio", 50.0)),
     ("hkex_hhio", "CHINAH", "www.hkex.com.hk", True, _hkex_puller("hhio", 50.0)),
-    ("deribit_btc", "BTCUSD", "www.deribit.com", False, _deribit_puller("BTC")),
-    ("deribit_eth", "ETHUSD", "www.deribit.com", False, _deribit_puller("ETH")),
 )
 EOD_LOOKBACK_DAYS = 4
 

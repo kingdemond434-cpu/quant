@@ -16,6 +16,9 @@ for _p in (str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")
 
 import dealer_gamma_proxy as dg  # noqa: E402
 
+HOST = "options.example.test"
+URL = f"https://{HOST}/book"
+
 
 class _Resp:
     def __init__(self, status: int, text: str = "", payload: object = None) -> None:
@@ -42,19 +45,20 @@ def _getter(routes: dict[str, _Resp], seen: list[str]):
 
 @pytest.fixture
 def terms(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A stand-in host with terms on record: the real Deribit host is refused by its terms."""
-    monkeypatch.delitem(dg.REFUSED_HOSTS, "www.deribit.com", raising=False)
-    monkeypatch.setitem(dg.TERMS, "www.deribit.com",
+    """A stand-in host with terms on record."""
+    monkeypatch.setitem(dg.TERMS, HOST,
                         {"url": "https://example.invalid/terms", "quote": "test", "checked": "x"})
 
 
-def _deribit_payload() -> dict[str, object]:
-    rows = []
-    for k, cp, oi in ((90.0, "P", 500.0), (100.0, "C", 100.0), (100.0, "P", 100.0),
-                      (110.0, "C", 50.0)):
-        rows.append({"instrument_name": f"BTC-26DEC30-{int(k)}-{cp}", "open_interest": oi,
-                     "mark_iv": 60.0, "underlying_price": 100.0})
-    return {"result": rows}
+def _rows() -> list[tuple[float, float, float, float, bool]]:
+    t = 30 / 365
+    return [(90.0, t, 0.6, 500.0, False), (100.0, t, 0.6, 100.0, True),
+            (100.0, t, 0.6, 100.0, False), (110.0, t, 0.6, 50.0, True)]
+
+
+def _stand_in_book(feed, day, now):
+    payload = feed.fetch(URL, as_json=True)
+    return dg.profile(_rows(), 100.0, 1.0) if payload else None
 
 
 def test_unknown_host_is_never_fetched() -> None:
@@ -80,20 +84,18 @@ def test_refused_host_is_never_fetched(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_robots_fails_closed(terms: None, robots: _Resp) -> None:
     seen: list[str] = []
     feed = dg.Feed(_getter({"robots.txt": robots}, seen), pace_s=0.0)
-    url = "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC"
-    assert feed.fetch(url, as_json=True) is None
-    assert seen == ["https://www.deribit.com/robots.txt"]
-    assert feed.refused["www.deribit.com"].startswith("ROBOTS_REFUSED")
+    assert feed.fetch(URL, as_json=True) is None
+    assert seen == [f"https://{HOST}/robots.txt"]
+    assert feed.refused[HOST].startswith("ROBOTS_REFUSED")
 
 
 def test_hard_stop_is_not_retried(terms: None) -> None:
     seen: list[str] = []
-    feed = dg.Feed(_getter({"get_book": _Resp(429)}, seen), pace_s=0.0)
-    url = "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC"
-    assert feed.fetch(url, as_json=True) is None
-    assert feed.fetch(url, as_json=True) is None
-    assert sum("get_book" in u for u in seen) == 1
-    assert feed.refused["www.deribit.com"] == "HARD_STOP: HTTP 429"
+    feed = dg.Feed(_getter({"/book": _Resp(429)}, seen), pace_s=0.0)
+    assert feed.fetch(URL, as_json=True) is None
+    assert feed.fetch(URL, as_json=True) is None
+    assert sum(u.endswith("/book") for u in seen) == 1
+    assert feed.refused[HOST] == "HARD_STOP: HTTP 429"
 
 
 def test_profile_sign_and_flip() -> None:
@@ -117,19 +119,19 @@ def test_hkex_expiry_is_second_last_business_day() -> None:
 def test_ingest_self_records_and_publishes_pit_series(tmp_path: Path, terms: None,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("pyarrow")
-    monkeypatch.setattr(dg, "BOOKS", tuple(b for b in dg.BOOKS if b[0] == "deribit_btc"))
+    monkeypatch.setattr(dg, "BOOKS", (("stand_in", "US500", HOST, False, _stand_in_book),))
     seen: list[str] = []
     get = _getter({"robots.txt": _Resp(404),
-                   "get_book": _Resp(200, payload=_deribit_payload())}, seen)
+                   "/book": _Resp(200, payload={"ok": 1})}, seen)
     now = dt.datetime(2026, 11, 24, 12, 0, tzinfo=dt.UTC)
     snap = dg.ingest(get=get, now=now, data_dir=tmp_path, pace_s=0.0)
-    assert snap["new_rows"] == 1 and snap["books"]["deribit_btc"]["state"] == "LIVE"
+    assert snap["new_rows"] == 1 and snap["books"]["stand_in"]["state"] == "LIVE"
     again = dg.ingest(get=get, now=now, data_dir=tmp_path, pace_s=0.0)
     assert again["new_rows"] == 0                           # one row per (book, day)
     hist = (tmp_path / "dealer_gamma" / "history.jsonl").read_text().splitlines()
-    assert len(hist) == 1 and json.loads(hist[0])["symbol"] == "BTCUSD"
+    assert len(hist) == 1 and json.loads(hist[0])["symbol"] == "US500"
     import pandas as pd
-    frame = pd.read_parquet(tmp_path / "lake" / "series" / "dealer_gamma_BTCUSD.parquet")
+    frame = pd.read_parquet(tmp_path / "lake" / "series" / "dealer_gamma_US500.parquet")
     assert "available_time" in frame.columns and "net_gex_norm" in frame.columns
     assert json.loads((tmp_path / "dealer_gamma_proxy.json").read_text())["history_rows"] == 1
 
