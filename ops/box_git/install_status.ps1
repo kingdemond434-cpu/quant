@@ -5,17 +5,18 @@
 .DESCRIPTION
   Desk health B13 (11-24): with the box's Claude link down nobody could see whether E8, FTMO and
   Fusion traded. This makes a box-native hourly task that pushes allow-listed, scrubbed reports
-  to the `status` branch of the drop project. Claude is not in the path.
+  to the `status` branch of a SEPARATE, PRIVATE, status-only GitLab project (never the drop
+  project, whose CLEAR binds "box key = read-only"; Audit MF-2). Claude is not in the path.
     1. Makes the box's own ed25519 STATUS key in <forge>\status-key (Administrators and SYSTEM
        only). It is a different key from the read-only drop key; the private key never leaves.
     2. Adds "status" to <forge>\loop.json (every other field kept).
     3. Registers QuantForge-Status (SYSTEM, hourly, runs the loop's gate-merged checkout).
-    4. Prints the PUBLIC key: register it on the drop project as a deploy key WITH write access,
-       and keep `main` protected so no deploy key may push there (status goes to `status` only).
+    4. Prints the PUBLIC key: register it, WITH write access, on the status-only project only.
+       That project holds equity and positions: keep it private and never mirror it.
   Idempotent. Run as Administrator.
 #>
 param(
-    [Parameter(Mandatory = $true)] [string] $StatusUrl,   # git@gitlab.com:<owner>/<drop>.git
+    [Parameter(Mandatory = $true)] [string] $StatusUrl,   # git@gitlab.com:<owner>/<status>.git
     [string] $Root = "C:\ProgramData\QuantBox",
     [string] $Desk = "C:\opt\quant"
 )
@@ -45,6 +46,9 @@ $files = @(
     "desks/mt5/reports/LLM_BUDGET_CENSUS.json", "desks/mt5/reports/CN_MODEL_ENSEMBLE.json",
     "desks/mt5/data/RELEASE.json")
 $cfg = Get-Content -LiteralPath $cfgPath -Raw | ConvertFrom-Json
+if ($cfg.drop -and ($cfg.drop.url.TrimEnd('/') -replace '\.git$', '') -ieq ($StatusUrl.TrimEnd('/') -replace '\.git$', '')) {
+    throw "StatusUrl equals the drop url: the box never writes to the drop project"
+}
 $status = [pscustomobject]@{ url = $StatusUrl; key = $key; checkout = (Join-Path $Forge "status-co")
                              root = $Desk; files = $files }
 if ($cfg.PSObject.Properties.Name -contains "status") { $cfg.status = $status }

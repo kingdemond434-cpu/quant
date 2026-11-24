@@ -79,3 +79,39 @@ def test_installer_uses_its_own_key_and_never_the_drop_key():
         encoding="utf-8")
     assert "status_ed25519" in src and "drop_ed25519" not in src
     assert "QuantForge-Status" in src and "branch=status" in src
+
+
+def test_scrub_redacts_ips_hosts_and_raw_account_ids():
+    """Audit MF-1: key names alone missed {'account': 51234567, 'host': ..., 'ip': ...}."""
+    doc = {"account": 51234567, "host": "10.1.2.3", "ip": "1.2.3.4",
+           "note": "connected to 62.0.0.1 ok", "rows": [{"account": "E8", "r": 0.4},
+                                                       {"account": "FTMO-2", "r": -1.0},
+                                                       {"account": "51234567", "r": 1}],
+           "terminal_path": "C:/x", "endpoint": "https://a", "v6": "fe80:0:0:0:1:2:3:4"}
+    assert S.scrub(doc) == {"account": "[id]", "note": "connected to [ip] ok",
+                            "rows": [{"account": "E8", "r": 0.4},
+                                     {"account": "FTMO-2", "r": -1.0},
+                                     {"account": "[id]", "r": 1}],
+                            "v6": "[ip]"}
+
+
+def test_status_never_goes_to_the_drop_project(tmp_path):
+    """Audit MF-2: a write-capable box key never sits on the drop project."""
+    cfg = tmp_path / "loop.json"
+    cfg.write_text(json.dumps({"state": str(tmp_path / "s.json"),
+                               "drop": {"url": "git@gitlab.com:o/drop.git"},
+                               "status": {"url": "git@gitlab.com:O/drop", "key": "k",
+                                          "checkout": "c", "root": "r"}}), encoding="utf-8")
+    try:
+        S.from_config(cfg)
+        raise AssertionError("status url equal to the drop url was accepted")
+    except ValueError as exc:
+        assert "drop" in str(exc)
+    src = (Path(__file__).resolve().parents[2] / "ops/box_git/install_status.ps1").read_text(
+        encoding="utf-8")
+    assert "StatusUrl equals the drop url" in src
+
+
+def test_account_label_never_passes_a_login_with_a_letter_prefix():
+    assert S.scrub({"account": "a51234567"}) == {"account": "[id]"}
+    assert S.scrub({"account": "Fusion"}) == {"account": "Fusion"}

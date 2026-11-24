@@ -8,10 +8,10 @@ moving. The daily "did every account trade" check must not depend on that link.
     the desk root) are published, each scrubbed of any key that names a credential or an account
     identity (`SCRUB`), plus a small summary (disk free, the loop's last row, file ages). Nothing
     else on the box is read for publishing. A file over MAX_FILE is replaced by a note.
-  * A SEPARATE KEY AND BRANCH: the box pushes with its own status key (not the read-only drop
-    key) to the `status` branch only. The drop project protects `main` so a deploy key can never
-    push there, and the drop pull reads `main` only, so nothing the box publishes can ever come
-    back to it as a packet.
+  * A SEPARATE PRIVATE PROJECT AND KEY (Audit MF-2): the box pushes with its own status key to
+    a status-only GitLab project, never to the drop project (whose CLEAR binds "box key =
+    read-only"). `from_config` and the installer refuse a status url equal to the drop url. The
+    status project holds equity and positions: it stays private and is never mirrored.
   * The branch carries one commit (an orphan, force-pushed each time): history lives in the
     reports themselves, not in an ever-growing repository.
   * Never raises into the loop; a failed push says why and the next pass tries again.
@@ -34,7 +34,14 @@ if str(Path(__file__).resolve().parents[2]) not in sys.path:   # run as a script
 from ops.box_git import drop_pull
 
 SCRUB = re.compile(r"(?i)pass|token|secret|api_?key|private|hmac|cookie|auth|login|server"
-                   r"|account_?(?:id|no|number)|email|phone|address|iban|wallet")
+                   r"|account_?(?:id|no|number)|email|phone|address|iban|wallet|host|\bip\b"
+                   r"|^ip_|_ip$|endpoint|url|path|terminal")
+#: Value pass (Audit MF-1): an IP literal anywhere in a string is redacted, and an `account`
+#: value is replaced by "[id]" unless it is a short desk label (E8, FTMO, Fusion ...).
+_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_IPV6 = re.compile(r"\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b")
+_LABEL = re.compile(r"(?!.*\d{3})[A-Za-z][A-Za-z0-9_-]{0,15}")   # E8, FTMO-2; never a login
+_ACCOUNT_KEY = re.compile(r"(?i)^account$|^acct$|^account_name$")
 MAX_FILE = 2 * 1024 * 1024
 STATUS_BRANCH = "status"
 EVERY_S = 3600
@@ -45,7 +52,7 @@ Run = Callable[[Sequence[str]], tuple[int, str]]
 
 @dataclass(frozen=True)
 class Status:
-    url: str                    # git@gitlab.com:<owner>/<drop>.git (same project, status branch)
+    url: str                    # git@gitlab.com:<owner>/<status-only project>.git
     key: Path                   # the box's status WRITE key (not the drop's read-only key)
     checkout: Path              # scratch folder, rebuilt each push
     root: Path                  # the desk tree the files are read from (C:\opt\quant)
@@ -57,12 +64,32 @@ class Status:
                               branch=STATUS_BRANCH, host_key=self.host_key)
 
 
+def _redact(s: str) -> str:
+    return _IPV6.sub("[ip]", _IPV4.sub("[ip]", s))
+
+
+def _norm(url: str) -> str:
+    return url.strip().lower().removesuffix(".git").rstrip("/")
+
+
 def scrub(obj: Any) -> Any:
-    """Drop every key that names a credential or an identity, at any depth. Pure."""
+    """Drop every key that names a credential, an identity or a location; redact IP literals in
+    every string; keep an `account` value only when it is a short desk label. Pure."""
     if isinstance(obj, dict):
-        return {k: scrub(v) for k, v in obj.items() if not SCRUB.search(str(k))}
+        out: dict[str, Any] = {}
+        for k, v in obj.items():
+            if SCRUB.search(str(k)):
+                continue
+            if _ACCOUNT_KEY.search(str(k)):
+                out[_redact(str(k))] = (v if isinstance(v, str) and _LABEL.fullmatch(v)
+                                        else "[id]")
+                continue
+            out[_redact(str(k))] = scrub(v)
+        return out
     if isinstance(obj, list):
         return [scrub(v) for v in obj]
+    if isinstance(obj, str):
+        return _redact(obj)
     return obj
 
 
@@ -139,6 +166,9 @@ def push(st: Status, state_dir: Path, now: datetime | None = None,
 def from_config(path: Path) -> tuple[Status, Path]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     s = raw["status"]
+    drop_url = str((raw.get("drop") or {}).get("url") or "")
+    if _norm(s["url"]) == _norm(drop_url):
+        raise ValueError("status url equals the drop url: the box never writes to the drop")
     return (Status(url=s["url"], key=Path(s["key"]), checkout=Path(s["checkout"]),
                    root=Path(s["root"]), files=tuple(str(f) for f in s.get("files") or ())),
             Path(raw["state"]).parent)
