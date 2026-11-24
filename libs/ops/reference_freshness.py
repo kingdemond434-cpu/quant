@@ -860,6 +860,24 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "refuses the unreconstructible branch outright.",
     ),
     DestructivePath(
+        path_id="shadow_forward.one_clock_per_cell",
+        module="desks/mt5/research/shadow_forward.py",
+        function="_one_clock_per_cell",
+        removes="a certified row from THIS pass's enrolment when another enrolled row runs the "
+                "same executable cell (the dropped clock is then retired RETIRED_ORPHAN by "
+                "forward_reconcile.orphan_clocks, evidence kept, alias_of naming the survivor)",
+        reference="cell_equivalence.canonical_fingerprint of both rows (IGNORED_INPUTS pinned "
+                  "against the real build_cell by tests/test_cell_identity.py) and the survivor's "
+                  "forward_start in reports/shadow/shadow_state.json",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (alias ruling 2026-11-04): a row leaves enrolment only when "
+             "a SURVIVOR proven to run the identical cell stays enrolled; a row whose fingerprint "
+             "cannot be computed (None) is never merged, and an unreadable state file only "
+             "changes which twin survives, never whether one does. Nothing is retired here and "
+             "no row is written. The clear() the scan sees empties the in-memory alias map this "
+             "same pass rebuilds, not evidence.",
+    ),
+    DestructivePath(
         path_id="clock_retirement.accept",
         module="libs/research/clock_retirement.py",
         function="accept",

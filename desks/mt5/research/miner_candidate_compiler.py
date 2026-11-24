@@ -724,6 +724,26 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
     return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
 
 
+#: (family:key) -> cells refused this pass for minting a param the family never reads.
+UNDECLARED_REFUSED: dict[str, int] = {}
+
+
+def _undeclared(candidate: dict) -> list[str]:
+    """Param keys the candidate's family neither names nor consumes ([] when it cannot say)."""
+    try:
+        from research.cell_equivalence import undeclared_keys
+    except ImportError:
+        try:
+            from cell_equivalence import undeclared_keys  # type: ignore[no-redef]
+        except ImportError:
+            return []
+    try:
+        return undeclared_keys(str(candidate.get("family") or ""),
+                               dict(candidate.get("params") or {})) or []
+    except Exception:  # an unreadable family is the gauntlet's to refuse, not the mint's
+        return []
+
+
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
     """One compiled candidate, carrying the donor row's CULTURE PROVENANCE (principal
@@ -1366,7 +1386,9 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     if source_l == "broker_swaps" and symbols and (
             kind in {"contract_terms", "swap_terms"}
             or row.get("swap_long") is not None or row.get("swap_short") is not None):
-        return ([_candidate(s, "carry", {"input_symbol": s}, source, row,
+        # `{}`, never `{"input_symbol": s}`: carry reads the cell's own symbol, so the key was an
+        # alias spelling of the bare cell (cell_equivalence.IGNORED_INPUTS) and is refused below.
+        return ([_candidate(s, "carry", {}, source, row,
                             "broker-native swap differential is a directly measured carry premium")
                  for s in symbols], "STRUCTURED_CARRY")
 
@@ -1623,6 +1645,7 @@ def _graph_snapshot(path: Path | None = None):
 
 def main() -> int:
     now = datetime.now(tz=UTC)
+    UNDECLARED_REFUSED.clear()
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
@@ -1714,6 +1737,7 @@ def main() -> int:
         if recovered_for_row:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
         row_reached_docket = False
+        alias_refused = 0
         for candidate in produced:
             lacking = [name for name, ok in (
                 ("symbol", bool(str(candidate.get("symbol") or "").strip())),
@@ -1732,6 +1756,24 @@ def main() -> int:
                     bank.record("SPEC_INVALID", "lacks " + ", ".join(lacking),
                                 source=source, symbol=candidate.get("symbol"),
                                 family=candidate.get("family"))
+                continue
+            # A PARAMETER THE FAMILY NEVER READS MINTS AN ALIAS (Auditor ruling 2026-11-04).
+            # `CHFNOK.carry` under input_symbol eBay, GBPJPY and none was one trade wearing three
+            # certificates, three clocks and three trial charges. A key the family neither names
+            # nor consumes (`cell_equivalence.undeclared_keys`) is refused here, by name, before
+            # it costs a cell id; the row is a named refusal when nothing else it produced lands.
+            undeclared = _undeclared(candidate)
+            if undeclared:
+                alias_refused += 1
+                stats["undeclared_param_cells"] = int(stats.get("undeclared_param_cells") or 0) + 1
+                for key in undeclared:
+                    tag = f"{candidate.get('family')}:{key}"
+                    UNDECLARED_REFUSED[tag] = UNDECLARED_REFUSED.get(tag, 0) + 1
+                if bank is not None:
+                    bank.record("SPEC_UNDECLARED_PARAMS",
+                                "params the family neither names nor consumes: "
+                                + ", ".join(undeclared), source=source,
+                                symbol=candidate.get("symbol"), family=candidate.get("family"))
                 continue
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
@@ -1755,6 +1797,11 @@ def main() -> int:
                 stats["candidates"] = int(stats["candidates"]) + 1
         if produced and row_reached_docket:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
+        elif produced and alias_refused == len(produced) and not refusal:
+            # Every cell the row produced was an alias spelling: a NAMED refusal, never a
+            # convertible row that silently emitted nothing.
+            stats["convertible_rows"] = int(stats["convertible_rows"]) - 1
+            stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
         if not produced and not terminal_refusal and not impossible:
@@ -2054,6 +2101,7 @@ def main() -> int:
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
+        "undeclared_params_refused": dict(sorted(UNDECLARED_REFUSED.items())),
         "deepening_tasks": len(deepening),
         "conversion_contract": {
             "convertible_rows": convertible_total,
