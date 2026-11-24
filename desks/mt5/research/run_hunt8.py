@@ -32,10 +32,10 @@ UNI = BASE / "data" / "universe"
 LOG = open(BASE / "logs" / "hunt8_console.txt", "w", encoding="utf-8")
 
 COT_FAMILIES = [
-    ("cot_net_fade", families.family2_cot_net_fade, dict()),
-    ("cot_change_fade", families.family2_cot_change_fade, dict()),
-    ("cot_change_momentum", families.family2_cot_change_momentum, dict()),
-    ("cot_comm_follow", families.family2_cot_comm_follow, dict()),
+    ("cot_net_fade", families.family_cot_net_fade, dict()),
+    ("cot_change_fade", families.family_cot_change_fade, dict()),
+    ("cot_change_momentum", families.family_cot_change_momentum, dict()),
+    ("cot_comm_follow", families.family_cot_comm_follow, dict()),
 ]
 
 
