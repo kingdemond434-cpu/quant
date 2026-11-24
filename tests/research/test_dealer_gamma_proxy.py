@@ -201,7 +201,7 @@ def test_price_proxy_publishes_and_its_cells_reach_the_grid(tmp_path: Path) -> N
     out = dg.publish_price_proxy(tmp_path, bars_for=lambda s: _synthetic_bars(-1.0)
                                  if s == "XAUUSD" else None)
     assert isinstance(out["XAUUSD"], int) and out["US500"].startswith("UNMEASURED")
-    indices, pairs, cells = dg.declared(tmp_path)
+    _indices, pairs, cells = dg.declared(tmp_path)
     assert ("gamma_price:XAUUSD.pin_score", "XAUUSD") in pairs
     xau = [c for c in cells if c["symbol"] == "XAUUSD" and c["index"].startswith("gamma_price")]
     assert {c["cell_name"] for c in xau} == {c[0] for c in dg.PRICE_CELLS}
