@@ -60,6 +60,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.data.refused_hosts import refusal  # noqa: E402 -- no list, no module: fail closed
+from libs.data.robots_body import robots_rules_or_refusal  # noqa: E402
 
 AXIS = "usd_liquidity"
 OUT = DESK / "data" / "axes" / f"{AXIS}.json"
@@ -375,22 +376,16 @@ class Door:
             except Exception as exc:
                 self.robots[key] = f"robots.txt unreadable ({type(exc).__name__})"
                 return self.robots[key]
-            rp = urllib.robotparser.RobotFileParser()
             if code in HARD_STOP:
                 self.stopped[host] = f"robots.txt answered HTTP {code}"
                 raise Stop(STATUS_HARD_STOP, self.stopped[host])
-            if code in (404, 410):
-                rp.parse([])
-            elif 200 <= code < 300:
-                text = body.decode("utf-8", "replace")
-                if _looks_like_html(text):
-                    # A page in place of rules parses as allow-all: that is unread, not a yes.
-                    self.robots[key] = "robots.txt answered HTML"
-                    return self.robots[key]
-                rp.parse(text.splitlines())
-            else:
-                self.robots[key] = f"robots.txt unreadable (HTTP {code})"
+            # One reader for every robots read (libs.data.robots_body): 404/410 = no rules,
+            # an HTML page or non-text body = unread, any other non-2xx = unread.
+            got = robots_rules_or_refusal(code, _ct, body)
+            if isinstance(got, str):
+                self.robots[key] = got
                 return self.robots[key]
+            rp = got
             self.robots[key] = rp
         return self.robots[key]
 
