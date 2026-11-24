@@ -81,6 +81,14 @@ def _promoted() -> set[str]:
     return {p for p in SESSION_EXIT_POLICIES if FAMILY in names and p in names}
 
 
+def _parity(policy: str) -> str | None:
+    try:
+        from mt5desk.live_policy import exit_parity_refusal
+    except Exception as exc:
+        return f"UNMEASURED: live_policy unavailable ({type(exc).__name__})"
+    return exit_parity_refusal({"family": FAMILY, "params": {"exit_policy": policy}})
+
+
 def screen(meta: dict[str, Any] | None = None) -> dict[str, Any]:
     """In-sample R per trade for the parent and every policy, through the gauntlet's own cell
     builder and the desk's engine, so costs are the ones the judge charges."""
@@ -135,6 +143,9 @@ def publish(now: datetime | None = None) -> dict[str, Any]:
                                 else None),
             "dlogw_vs_live": (round(lw - live, 5) if lw is not None and live is not None
                               else None),
+            # Whether a survivor on this policy may hold live capital (Audit HOLD MF1 on #628):
+            # None = the live gateway executes its exit; else the refusal, by name.
+            "live_parity_refusal": _parity(p),
         })
     doc = {
         "at": t.isoformat(timespec="seconds"),

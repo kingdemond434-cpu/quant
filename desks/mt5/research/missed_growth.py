@@ -1163,6 +1163,71 @@ def _verdict_from_samples(samples: list[float]) -> tuple[str, dict[str, Any]]:
                "t": round(t, 2), "annualised_logw": round(float(arr.mean()) * 252.0, 6)}
 
 
+#: EXIT-POLICY LIVE PARITY (Audit HOLD MF1 on #628, 2026-11-24). `mt5desk.live_policy` refuses
+#: live capital, by name, to an exit policy whose mechanics the live gateway cannot execute
+#: (bank_frac partials, reversal and liquidity exits); the trials keep running as research. Like
+#: the stop-geometry gate it registers no rail (the register is sealed), so its line is PUBLISHED
+#: here beside the rails, read from the artifacts that already hold its effect.
+SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+
+
+def exit_parity_line(alloc: dict[str, Any] | None = None) -> dict[str, Any]:
+    """What the exit-policy parity refusal withholds, two-sided, as a published line.
+
+    COST: every ten-gate survivor whose certified exit the live gateway cannot execute is held out
+    of the book. Where the allocator's admission scan priced the column (`delta_elogw_per_day`)
+    that figure is the bill; otherwise the cost is UNMEASURED with the survivor named -- never a
+    zero. SAVING: the lookalike the account would have traded (the ratchet alone, under a
+    certificate earned by another exit) has an E[log W] nobody measured, so the saving is
+    UNMEASURED too. With no such survivor and no such row the refusal is NOT_BINDING. It lifts by
+    itself the day the mechanic is implemented live (`live_policy.LIVE_EXIT_MECHANICS`)."""
+    try:
+        from mt5desk.live_policy import EXIT_PARITY_TAG, exit_parity_refusal
+    except Exception as exc:                                   # pragma: no cover - import guard
+        return {"verdict": UNMEASURED, "why": f"live_policy unavailable: {type(exc).__name__}"}
+    doc = _json(SURVIVORS)
+    if not doc:
+        return {"verdict": UNMEASURED,
+                "why": "reports/UNIVERSAL_SURVIVORS.json absent or unreadable on this host"}
+    held: dict[str, dict[str, Any]] = {}
+    for key, val in (doc.get("survivors") or {}).items():
+        if not isinstance(val, dict):
+            continue
+        why = exit_parity_refusal(val)
+        if why:
+            gates = val.get("gates") if isinstance(val.get("gates"), dict) else {}
+            held[str(key)] = {"why": why,
+                              "ev": ((gates.get("expected_value") or {}).get("ev")),
+                              "exp_x3": ((gates.get("stress_costs") or {}).get("exp_x3"))}
+    rows: list[Any] = []
+    try:
+        rows = json.loads(SLEEVES.read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    retired = sorted(str(r.get("name")) for r in rows if isinstance(r, dict)
+                     and EXIT_PARITY_TAG in str(r.get("retire_reason") or ""))
+    if not held and not retired:
+        return {"verdict": NOT_BINDING, "n": 0, "source": "reports/UNIVERSAL_SURVIVORS.json"}
+    adm = (alloc or {}).get("admission") if isinstance((alloc or {}).get("admission"), dict) \
+        else {}
+    cands = adm.get("candidates") if isinstance(adm.get("candidates"), dict) else {}
+    priced = {k: d for k in list(held) + retired
+              if (d := _num((cands.get(k) or {}).get("delta_elogw_per_day"))) is not None}
+    return {"verdict": UNMEASURED, "n": len(held), "n_rows_retired": len(retired),
+            "source": "reports/UNIVERSAL_SURVIVORS.json + data/sleeves.json",
+            "held": held, "rows_retired": retired,
+            "cost": {"value_logw_per_day": (round(-sum(max(0.0, v) for v in priced.values()), 12)
+                                            if priced else None),
+                     "priced": priced,
+                     "note": "certified survivors held out of the book; a survivor the "
+                             "admission scan never priced is UNMEASURED, not free"},
+            "saving": {"verdict": UNMEASURED,
+                       "why": "the ratchet-only lookalike was never traded or replayed, so what "
+                              "refusing it spared is unknown in sign and size"},
+            "lift": "implement the mechanic live with an engine-vs-live parity test, then add it "
+                    "to live_policy.LIVE_EXIT_MECHANICS"}
+
+
 def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     alloc = _json(ALLOC)
     fv = _veto_evidence()
@@ -1272,7 +1337,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
-                                    "e8_gold_rails": published_e8_gold_lines()},
+                                    "e8_gold_rails": published_e8_gold_lines(),
+                                    "exit_policy_live_parity": exit_parity_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

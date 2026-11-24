@@ -878,8 +878,15 @@ def family_session_exit_overlay(
     that it raises growth, and the desk's only judge of such a claim is the gauntlet. Registering
     the overlay puts each policy in front of the judge as one charged trial, on exactly the entries
     `session_range_breakout` makes with the same defaults the live roster uses (asia range to
-    07:00 broker, rr 2.0, ATR 20). Nothing here reaches an order: a survivor is a certificate the
-    allocator may weigh, and the live ratchet stays what it is until one beats it forward.
+    07:00 broker, rr 2.0, ATR 20). A survivor is a certificate the allocator may weigh, and the
+    live ratchet stays what it is until one beats it forward.
+
+    LIVE PARITY (Audit HOLD MF1, 2026-11-24). The live gateway executes the stop, the target,
+    the ttl and the trail only. `partial_1r`, `partial_2r`, `regime`, `reversal` and `liquidity`
+    need bank_frac partials or the reversal/liquidity exits, which it does not run, so a
+    survivor on one of them is refused live capital BY NAME (`mt5desk.live_policy.
+    exit_parity_refusal`, read by the promoter, the gateway, the allocator and the E8 book) and
+    stays a research trial; `ratchet`, `time_4` and `time_8` enrol like any other certificate.
     """
     if exit_policy not in SESSION_EXIT_POLICIES:
         raise ValueError(f"exit_policy must be one of {SESSION_EXIT_POLICIES}, got {exit_policy!r}")

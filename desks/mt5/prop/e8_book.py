@@ -221,6 +221,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     if not isinstance(excluded, dict):
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
+    from mt5desk.live_policy import exit_parity_refusal
     authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
@@ -231,7 +232,12 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
-        if not (authorized_book.get(book_key, 0) > 0):
+        # EXIT-POLICY LIVE PARITY (Audit HOLD MF1 on #628): a certificate earned with an exit the
+        # live executors cannot run is a research trial, never an E8 sleeve. Named, never silent.
+        parity = exit_parity_refusal(row)
+        if parity:
+            reason = parity
+        elif not (authorized_book.get(book_key, 0) > 0):
             reason = "not named with positive risk in the E8 principal book"
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
