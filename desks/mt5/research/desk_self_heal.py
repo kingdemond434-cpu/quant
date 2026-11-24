@@ -209,6 +209,21 @@ def check_export(root: Path, now: datetime) -> Finding:
     return Finding("export", True, f"written {(_age_h(f, now) or 0):.1f}h ago")
 
 
+def check_lifted_rules(root: Path, now: datetime) -> Finding:
+    """RULES THE PRINCIPAL REMOVED STAY REMOVED (zuck 2026-11-24 18:31Z: the E8 gold-only rule he
+    had removed came back through a stale CERT_BOOK_LIVE.json). Fails, loudly and every pass,
+    when a lifted name is zeroed again by a code pin or the live cert book. Not fixable by a
+    task: the fix is code (decision_core.SUPERSEDED_CERT_ZEROS), so it pages."""
+    try:
+        from mt5desk.decision_core import lifted_rule_breaches
+        breaches = lifted_rule_breaches()
+    except Exception as exc:                      # the check itself must not go quiet
+        return Finding("lifted_rules", False, f"check failed: {exc!r}", fixable=False)
+    if breaches:
+        return Finding("lifted_rules", False, "; ".join(breaches), fixable=False)
+    return Finding("lifted_rules", True, "every principal-lifted rule stays lifted")
+
+
 def check_universe_data(root: Path, now: datetime,
                         max_age_d: float = 3.0) -> Finding:
     """Do the bars reach the present?
@@ -332,7 +347,8 @@ def check_research_cadence(root: Path, now: datetime) -> Finding:
 
 def audit(root: Path, now: datetime | None = None) -> list[Finding]:
     now = now or datetime.now(UTC)
-    return [check_shadow_freshness(root, now),
+    return [check_lifted_rules(root, now),
+            check_shadow_freshness(root, now),
             check_published_state(root, now),
             check_certification(root, now),
             check_export(root, now),

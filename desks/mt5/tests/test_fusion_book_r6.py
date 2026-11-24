@@ -64,6 +64,22 @@ def _hermetic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "ALLOCATOR_SOVEREIGN.json")
     monkeypatch.setattr(dc, "MIN_LOT_FILE", tmp_path / "MIN_LOT.json")
     monkeypatch.setattr(xa, "_ABANDONED", set())
+    _repin_gold_for_the_mechanism_tests(monkeypatch)
+
+
+def _repin_gold_for_the_mechanism_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The principal lifted the gold-asia-only order (2026-11-24 18:31Z / 18:34Z), so the shipped
+    GOLD_ASIA_ONLY_ZERO is empty (tests/test_e8_ftmo_no_blockers.py pins that). These tests prove
+    the PIN MACHINERY -- a principal zero fails closed through a void book, every version and
+    case, both paths -- so they re-pin the old pair as a stand-in principal zero."""
+    from prop import e8_book
+    pinned = frozenset(GOLD_PINNED)
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_ZERO", pinned)
+    monkeypatch.setattr(dc, "PRINCIPAL_ZERO", {
+        k: (v | pinned if k in ("fusion", "e8") else v) for k, v in dc.PRINCIPAL_ZERO.items()})
+    monkeypatch.setattr(dc, "SUPERSEDED_CERT_ZEROS", {
+        k: v - pinned for k, v in dc.SUPERSEDED_CERT_ZEROS.items()})
+    monkeypatch.setattr(e8_book, "SUPERSEDED_E8_ZEROS", e8_book.SUPERSEDED_E8_ZEROS - pinned)
 
 
 def _revert(tmp_path: Path) -> None:
@@ -337,33 +353,31 @@ def test_fresh_kelly_under_a_void_cert_book_sends_nothing_on_any_window(
                and r["missed_growth_risk_usd"] > 0 for r in void_rows)
 
 
-def test_an_enabled_book_missing_london_am_sends_nothing_even_with_the_pin_lifted(
+def test_an_enabled_book_missing_london_am_now_trades_once_the_pin_is_lifted(
         monkeypatch, tmp_path) -> None:
-    """Pass 15: absent from an ENABLED book is 0.0, never RISK_FRAC or the Kelly value -- proven
-    with the code pin lifted, so the absence rule alone is what holds it."""
+    """Principal 2026-11-24 18:34Z ("no blockers for anything. Only exotics"): an enabled book is
+    no longer a whitelist. A window it does not name is sized by the solve, like any unnamed E8
+    key; only an explicit zero, a principal pin or a void book stands it aside."""
     cert = {"enabled": True, "e8": {"gold_asia": 0.006}}
     doc, intents = _e8(monkeypatch, tmp_path, hour=LONDON_H, kelly=FRESH_KELLY, cert=cert,
                        principal=False)
-    assert "london_am" not in _placed(doc)
-    assert doc["sizing_source"]["london_am"] == "cert_book_absent"
-    (row,) = [r for r in intents if r.get("window") == "london_am"]
-    assert row["rail"] == "cert_book_absent_window" and row["missed_growth_risk_usd"] > 0
-    # With the pin in place too, it is still nothing (and labelled the pin).
+    assert "london_am" in _placed(doc)
+    assert doc["sizing_source"]["london_am"] not in ("cert_book_absent", "cert_book_void")
+    assert not [r for r in intents if r.get("rail") == "cert_book_absent_window"]
+    # A principal pin still binds (the machinery, re-pinned by the fixture).
     (tmp_path / "p").mkdir()
     doc, _ = _e8(monkeypatch, tmp_path / "p", hour=LONDON_H, kelly=FRESH_KELLY, cert=cert)
     assert doc["placed"] == [] and doc["sizing_source"]["london_am"] == "pinned_zero"
 
 
-def test_an_enabled_book_missing_asia_stands_asia_aside_with_a_missed_growth_line(
-        monkeypatch, tmp_path) -> None:
+def test_an_enabled_book_missing_asia_now_trades_asia(monkeypatch, tmp_path) -> None:
     cert = {"enabled": True, "e8": {"gold_london_am": 0.0, "gold_afternoon": 0.0,
                                     "XAUUSD_twin_fade_x": 0.004}}
     doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=FRESH_KELLY, cert=cert)
-    assert doc["placed"] == [] and doc["sizing_source"]["asia"] == "cert_book_absent"
-    assert any("absent from the enabled cert book" in str(s.get("why")) for s in doc["skipped"])
-    (row,) = [r for r in intents if r.get("window") == "asia"]
-    assert row["rail"] == "cert_book_absent_window" and row["status"] == "RAIL_BLOCKED"
-    assert row["missed_growth_risk_usd"] == round(100_000.0 * dc.E8_CERT_CEILING, 2)   # r7.1
+    assert "asia" in _placed(doc) and doc["sizing_source"]["asia"] != "cert_book_absent"
+    assert not any("absent from the enabled cert book" in str(s.get("why"))
+                   for s in doc["skipped"])
+    assert not [r for r in intents if r.get("rail") == "cert_book_absent_window"]
 
 
 def test_window_sources_name_the_real_source_per_window() -> None:
@@ -1256,9 +1270,7 @@ def test_a_cert_book_zero_on_gold_asia_writes_its_missed_growth_line(monkeypatch
     assert any("sets gold_asia to 0.0" in str(s.get("why")) for s in doc["skipped"])
 
 
-@pytest.mark.parametrize("cert,rail", [(None, "cert_book_void"),
-                                       ({"enabled": True, "e8": {"gold_london_am": 0.0}},
-                                        "cert_book_absent_window")])
+@pytest.mark.parametrize("cert,rail", [(None, "cert_book_void")])
 def test_void_and_absent_windows_bill_at_the_last_certified_0006(monkeypatch, tmp_path, cert,
                                                                  rail) -> None:
     """r7.1 item 5: billed at E8_CERT_CEILING (0.006), not RISK_FRAC (0.005)."""

@@ -505,3 +505,28 @@ def test_a_sleeve_never_enters_in_the_rollover_slice_its_fill_evidence_excludes(
     row = doc["sleeves"][0]
     assert row["status"] == "RAIL_BLOCKED" and row["rail"] == "rollover_entry_gate"
     assert row["missed_growth_risk_usd"] > 0
+
+
+def test_a_replication_miss_halves_the_order_instead_of_refusing_it(world, monkeypatch) -> None:
+    """Principal 2026-11-24 18:34Z, no blockers but exotics: a replication MISMATCH and the
+    certifier alarm each halve the sleeve's risk; the order is still sent."""
+    import admission_integrity
+    gate = SimpleNamespace(alarm={"blocks": True, "why": "placebo"},
+                           replication=lambda k, f: ("MISMATCH", "rebuild disagrees"))
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(lambda c: gate))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["status"] == "OK", doc
+    (req,) = world.mt5.sent
+    # 0.003 / 4 x 100k = $75 at $306/lot -> 0.24 lot (was 0.98 undoubted)
+    assert req["volume"] == pytest.approx(0.24)
+    row = _rows()[-1]
+    assert row["status"] == "SENT" and len(row["doubts"]) == 2
+
+
+def test_the_tier_s_door_is_journaled_not_a_refusal(world, monkeypatch) -> None:
+    from libs.tiers import promotion_authority
+    monkeypatch.setattr(promotion_authority, "block", lambda k: "not Tier S")
+    fx.run(world.mt5, armed=True, now=NOW)
+    (req,) = world.mt5.sent
+    assert req["volume"] == pytest.approx(0.98)
+    assert "not Tier S" in _rows()[-1]["tier_s_door"]

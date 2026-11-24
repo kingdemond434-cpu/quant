@@ -2233,12 +2233,12 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
     _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
-    cert = cert_gold_windows(_cert_raw)
+    from mt5desk.decision_core import SUPERSEDED_CERT_ZEROS
+    cert = cert_gold_windows({k: v for k, v in (_cert_raw or {}).items()
+                              if not (k in SUPERSEDED_CERT_ZEROS["e8"] and not v > 0)})
     if cert:
         kelly = {**(kelly or {}), **cert}
-    # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
-    # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
-    # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
+    # (The enabled book is no longer a whitelist: see the 2026-11-24 note below.)
     # A VOID BOOK SIZES EVERY WINDOW AT 0 (audit r6 MUST-FIX 1, ruling): absent, torn, disabled
     # or one value out of range names no window -- Fix B's own rule -- so no KELLY_SURVIVAL solve
     # (its grid reaches 0.015) and no RISK_FRAC (not a certified number) may size E8 instead.
@@ -2251,12 +2251,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         "e8 block missing or a value out of range); stands aside at 0 -- no "
                         "Kelly or RISK_FRAC fallback on E8")
         kelly = {**(kelly or {}), **dict.fromkeys(void, 0.0)}
-    else:
-        for _w, _h, _r in GOLD_WINDOWS:
-            if _w not in cert:
-                absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
-                              f"gold_{_w}); stands aside")
-        kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
+    # A WINDOW THE BOOK DOES NOT NAME NOW TRADES (principal 2026-11-24 18:31Z / 18:34Z: the
+    # gold-only rule is gone, "no blockers for anything"): it is sized by the solve or RISK_FRAC
+    # like any unnamed E8 key. Only an explicit zero in the book, or a void book, stands aside.
     # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
     # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
     # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.

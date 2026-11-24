@@ -677,42 +677,39 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
-    from prop.e8_book import load_fill_proven
+    from prop.e8_book import load_fill_losers, load_fill_proven
     proven = load_fill_proven()
+    losers = load_fill_losers()
     door_blocked: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
             cert_of.setdefault(str(row["column"]), str(row["certificate"]))
+    from prop import e8_book as _eb
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
+        doubts: list[str] = []
         if col in columns:
             continue
         cert_key = tier_s.get(col) or cert_of.get(col)
         if not cert_key:
             reason = "no certificate in the store's screen for this column"
+        elif _eb.is_exotic_pair(sym):
+            reason = "exotic FX pair: exotics are banned (principal 2026-11-24 18:04Z)"
         elif sym not in listing:
             reason = f"NOT_LISTED on the FTMO terminal ({listing_src})"
         elif sym in quarantine:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif col not in proven:
-            # WHAT IS PROFITABLE ON REAL FILLS TRADES (zuck 2026-11-19 19:23Z), the same door E8
-            # uses (prop/e8_book.load_fill_proven): positive after the measured ask-bid, outside
-            # the rollover, n >= 10, through the organ's BH q=0.10. Tier S sizes, never gates.
-            reason = ("not fill-proven: no after-spread forward record passing "
-                      "reports/FILL_PROVEN.json"
-                      + (f"; {_family_of(col)} also fails forward as a family"
-                         if _family_of(col) in _forward_failing() else ""))
         else:
+            # NO BLOCKERS BUT EXOTICS (zuck 2026-11-24 18:34Z): fill evidence, a forward-failing
+            # family and the Tier S door SIZE the column (prop/e8_book.evidence_mult); none of
+            # them refuses it. The door's verdict is still published per column.
             door = door_block(cert_key)
             if door:
-                # THE EXECUTOR'S OWN DOOR, APPLIED BEFORE THE SOLVE (Auditor SF1, #769): a column
-                # the sleeve executor would refuse as TIER_S_BLOCKED must not take solve heat that
-                # never trades -- the deployed book would be quietly short (Rule 2).
-                reason = f"TIER_S_BLOCKED at the executor's door: {door}"
+                doubts.append(f"Tier S door: {door}")
                 door_blocked.append(col)
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
@@ -723,10 +720,14 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             columns[col]["tier_s"] = col in tier_s
             # SIZE BY EVIDENCE: the column's ceiling is MAX_RISK_FRAC x n/(n+N0) of its
             # fill-proven depth, x the Tier S multiplier; the solve sizes inside it.
-            from prop import e8_book as _eb
             mult = _eb.TIER_S_MULT if col in tier_s else 1.0
-            caps[col] = min(1.0, _eb.fill_shrink(proven[col]["n"]) * mult) * _max_risk()
-            columns[col]["fill_proven"] = proven[col]
+            ev_mult, ev_notes = _eb.evidence_mult(proven.get(col), _family_of(col), doubts,
+                                                  losers.get(col))
+            caps[col] = min(1.0, ev_mult * mult) * _max_risk()
+            if col in proven:
+                columns[col]["fill_proven"] = proven[col]
+            if ev_notes:
+                columns[col]["evidence_notes"] = ev_notes
             columns[col]["evidence_cap"] = round(caps[col], 6)
             spec, swhy = sleeve_spec(cert_key)
             if spec is not None:

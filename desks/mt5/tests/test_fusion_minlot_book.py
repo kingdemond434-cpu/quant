@@ -518,6 +518,27 @@ def _gold_row(name: str, h: object = 0.0) -> dict:
             "risk_frac": h}
 
 
+@pytest.fixture
+def _gold_repinned(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The principal lifted the gold-only order 2026-11-24 (decision_core.SUPERSEDED_CERT_ZEROS),
+    so the box file's two gold zeros no longer bind. These tests prove the cert-book-zero
+    MACHINERY, so they restore the file's zeros as binding."""
+    pinned = frozenset(ZEROED)
+    monkeypatch.setattr(dc, "SUPERSEDED_CERT_ZEROS", {
+        k: v - pinned for k, v in dc.SUPERSEDED_CERT_ZEROS.items()})
+    monkeypatch.setattr(dc, "PRINCIPAL_ZERO", {
+        k: (v | pinned if k in ("fusion", "e8") else v) for k, v in dc.PRINCIPAL_ZERO.items()})
+
+
+def test_the_box_cert_book_gold_zeros_are_lifted_in_code() -> None:
+    from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+    fusion = load_cert_book(CERT_BOOK_FILE, "fusion")
+    assert fusion is not None and all(fusion[k] == 0.0 for k in ZEROED)
+    assert not {n for n in GOLDS if dc.cert_book_zero(n)}
+    assert not {n for n in GOLDS if dc.cert_book_zero(n, "e8")}
+
+
+@pytest.mark.usefixtures("_gold_repinned")
 def test_the_committed_cert_book_pins_exactly_the_two_dropped_gold_windows() -> None:
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
     fusion = load_cert_book(CERT_BOOK_FILE, "fusion")
@@ -527,6 +548,7 @@ def test_the_committed_cert_book_pins_exactly_the_two_dropped_gold_windows() -> 
     assert not dc.cert_book_zero(None) and not dc.cert_book_zero("")
 
 
+@pytest.mark.usefixtures("_gold_repinned")
 def test_a_cert_book_zero_sends_nothing_on_either_path(tmp_path, monkeypatch) -> None:
     """THE REVERT PATH MUST NOT UN-ZERO GOLD (audit round 4 on c07dd71d). With
     ALLOCATOR_SOVEREIGN.json {"enabled": false}, gold_book_lot lifts an ALLOCATOR zero to the
