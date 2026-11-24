@@ -75,26 +75,19 @@ def _robots_allows(url: str) -> None:
     non-2xx, an unreadable file or a disallow raises: unread robots are not permission."""
     import urllib.error
     import urllib.parse
-    import urllib.robotparser
     parts = urllib.parse.urlsplit(url)
     key = f"{parts.scheme}://{parts.netloc.lower()}"
     if key not in _ROBOTS:
-        rp = urllib.robotparser.RobotFileParser()
+        from libs.data.robots_body import robots_rules_or_refusal
         try:
             req = urllib.request.Request(f"{key}/robots.txt", headers=UA)
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-                text = r.read().decode("utf-8", "replace")
-            if _looks_like_html(text):
-                _ROBOTS[key] = "robots.txt answered HTML"   # a page parses as allow-all
-            else:
-                rp.parse(text.splitlines())
-                _ROBOTS[key] = rp
+                hdrs = getattr(r, "headers", None)
+                _ROBOTS[key] = robots_rules_or_refusal(
+                    getattr(r, "status", 200), hdrs.get("Content-Type") if hdrs else None,
+                    r.read())
         except urllib.error.HTTPError as e:
-            if e.code in (404, 410):
-                rp.parse([])
-                _ROBOTS[key] = rp
-            else:
-                _ROBOTS[key] = f"robots.txt answered HTTP {e.code}"
+            _ROBOTS[key] = robots_rules_or_refusal(e.code, None, "")
         except Exception as e:  # any failure to read is a refusal
             _ROBOTS[key] = f"robots.txt unreadable ({type(e).__name__})"
     rules = _ROBOTS[key]
