@@ -23,7 +23,7 @@ def _cost(bias: float = 0.02) -> dict:
 
 def _spreads(median_bps: float, n: int = 12, live: bool = True, age_h: float = 1.0) -> dict:
     return {"generated_utc": (NOW - timedelta(hours=age_h)).isoformat(),
-            "by_hour": {"EURUSD": {"1": {"n": n, "median": median_bps}}},
+            "by_hour": {"EURUSD": {"23": {"n": n, "median": median_bps}}},
             "liveness": {"EURUSD": {"usable_as_cost": live}},
             "mid": {"EURUSD": 1.0}}
 
@@ -66,3 +66,19 @@ def test_the_solve_draws_its_worlds_after_the_e8_cost_move() -> None:
 def test_the_sampler_publishes_mids() -> None:
     src = (DESK / "prop" / "e8_spread_sampler.py").read_text("utf-8")
     assert '"mid": dict(mids)' in src
+
+
+def test_the_broker_hour_is_converted_to_the_samplers_utc_hour() -> None:
+    """Audit MF1 on 1fcb05470: broker 01 is UTC 23 in winter and UTC 22 in summer."""
+    winter = NOW  # 2026-11-24: E8 server UTC+2
+    summer = datetime(2026, 7, 14, 22, 0, tzinfo=UTC)  # E8 server UTC+3
+    doc = _spreads(3.0)
+    d, src = pca.e8_cost_overlay([COL], _cost(), doc, now=winter)
+    assert COL in d and "broker h01 = UTC h23" in src[COL]
+    doc_s = _spreads(3.0)
+    doc_s["generated_utc"] = (summer - timedelta(hours=1)).isoformat()
+    d, src = pca.e8_cost_overlay([COL], _cost(), doc_s, now=summer)
+    assert d == {} and "broker h01 = UTC h22" in src[COL]  # the 23 cell is not read in summer
+    doc_s["by_hour"]["EURUSD"] = {"22": {"n": 12, "median": 3.0}}
+    d, src = pca.e8_cost_overlay([COL], _cost(), doc_s, now=summer)
+    assert COL in d and "broker h01 = UTC h22" in src[COL]

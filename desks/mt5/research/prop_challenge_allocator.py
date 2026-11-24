@@ -551,8 +551,19 @@ def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] 
     sampler published that symbol's mid (to turn bps into price) and the file is under a week old;
     otherwise the FTMO cost stands and the source says why. Only the RATIO method is re-priced
     (E8's columns are non-gold; the stop-measured method is gold's), with the same BASE_COST_R and
-    MAX_RATIO the FTMO bias used, so the two are like for like."""
+    MAX_RATIO the FTMO bias used, so the two are like for like.
+
+    HOUR BASIS (Audit MF1 on 1fcb05470): a column's `hour` is the BROKER hour (NY+7, the basis of
+    fill_hour and the FTMO/Fusion surfaces); the E8 sampler keys `by_hour` on the UTC hour. The
+    lookup converts, utc = (broker - E8 server offset) % 24 with the offset derived for `now`
+    (prop/e8_guard.server_offset_hours: +3 summer, +2 winter), and stamps both hours."""
     from libs.portfolio.execution_cost import BASE_COST_R, MAX_RATIO
+    when = now or datetime.now(tz=UTC)
+    try:
+        from prop.e8_guard import server_offset_hours
+        offset: int | None = int(server_offset_hours(when))
+    except Exception:
+        offset = None
     if doc is None:
         doc = _read_json(E8_SPREADS) or {}
     deltas: dict[str, float] = {}
@@ -561,7 +572,7 @@ def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] 
     try:
         gen = datetime.fromisoformat(str(doc["generated_utc"]))
         if gen.tzinfo is not None:
-            age = ((now or datetime.now(tz=UTC)) - gen).total_seconds()
+            age = (when - gen).total_seconds()
             age_ok = -300 <= age <= E8_SPREADS_MAX_AGE_S
             age_why = f"E8_SPREADS.json {age / 3600:.0f}h old"
         else:
@@ -583,14 +594,20 @@ def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] 
         if not str(cost.get("method") or "").startswith("RATIO"):
             source[col] = f"FTMO_PROXY (method {cost.get('method')})"
             continue
-        cell = (by_hour.get(sym) or {}).get(str(cost.get("hour"))) or {}
+        if offset is None or not isinstance(cost.get("hour"), int):
+            source[col] = "FTMO_PROXY (broker-to-UTC hour conversion unavailable)"
+            continue
+        broker_h = int(cost["hour"])
+        utc_h = (broker_h - offset) % 24
+        hb = f"broker h{broker_h:02d} = UTC h{utc_h:02d}"
+        cell = (by_hour.get(sym) or {}).get(str(utc_h)) or {}
         n = int(cell.get("n") or 0)
         mid = mids.get(sym)
         if not (live.get(sym) or {}).get("usable_as_cost"):
             source[col] = f"FTMO_PROXY (E8 {sym} quote not live)"
             continue
         if n < E8_COST_MIN_N or not isinstance(cell.get("median"), (int, float)):
-            source[col] = f"FTMO_PROXY (E8 {sym} h{cost.get('hour')} n={n} < {E8_COST_MIN_N})"
+            source[col] = f"FTMO_PROXY (E8 {sym} {hb} n={n} < {E8_COST_MIN_N})"
             continue
         if not isinstance(mid, (int, float)) or not mid > 0:
             source[col] = f"FTMO_PROXY (E8 {sym} mid unpublished)"
@@ -603,7 +620,7 @@ def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] 
         e8_bias = BASE_COST_R * max(min(e8_px / charged, MAX_RATIO) - 1.0, 0.0)
         deltas[col] = round(e8_bias - float(cost.get("bias_r_per_trade") or 0.0), 6)
         ftmo_bias = float(cost.get("bias_r_per_trade") or 0.0)
-        source[col] = (f"E8_MEASURED (h{cost.get('hour')} n={n}, {cell['median']} bps, "
+        source[col] = (f"E8_MEASURED ({hb}, n={n}, {cell['median']} bps, "
                        f"bias {e8_bias:+.4f}R vs FTMO {ftmo_bias:+.4f}R)")
     return deltas, source
 
