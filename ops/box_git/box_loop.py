@@ -589,6 +589,7 @@ SIGN_TRIGGERS = ("desks/mt5/data/SEAL_CLEARS.jsonl", "desks/mt5/scripts/external
 
 _SIGN_LINE = re.compile(r'^\s*"(to|signed_by)": "[^"]*",$')
 _SIGN_TOP = frozenset({"files", "signed_utc", "signed_by"})
+_HASH16 = re.compile(r"[0-9a-f]{16}")
 
 
 def sign_diff_problems(old_manifest: str, new_manifest: str, old_qb: str, new_qb: str,
@@ -620,13 +621,26 @@ def sign_diff_problems(old_manifest: str, new_manifest: str, old_qb: str, new_qb
         if isinstance(row, dict) and row.get("verdict") == "CLEAR":
             cleared.setdefault(str(row.get("path")), set()).add(str(row.get("sha256")))
     for path in sorted(p for p in set(of) & set(nf) if of[p] != nf[p]):
-        if not any(str(s).startswith(str(nf[path])) for s in cleared.get(path, ())):
-            out.append(f"{path} re-signed to {nf[path]} with no CLEAR row for it")
-    for line in difflib.unified_diff(old_qb.splitlines(), new_qb.splitlines(), lineterm="", n=0):
-        if line.startswith(("---", "+++", "@@")):
+        h = str(nf[path])
+        if not _HASH16.fullmatch(h):
+            out.append(f"{path} re-signed to {h!r}, not 16 lower-case hex")
+        elif not any(str(s).startswith(h) for s in cleared.get(path, ())):
+            out.append(f"{path} re-signed to {h} with no CLEAR row for it")
+    # Only REPLACEMENTS of existing rotation lines, pairwise: each changed old line is a
+    # to/signed_by line and is replaced by a line of the same key; nothing added or removed.
+    sm = difflib.SequenceMatcher(a=old_qb.splitlines(), b=new_qb.splitlines(), autojunk=False)
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op == "equal":
             continue
-        if not _SIGN_LINE.match(line[1:]):
-            out.append(f"quantbench.py line outside a rotation's to/signed_by: {line[:120]}")
+        olds, news = sm.a[i1:i2], sm.b[j1:j2]
+        if op != "replace" or len(olds) != len(news):
+            out.append(f"quantbench.py {op} of {i2 - i1} line(s) for {j2 - j1}: only paired "
+                       f"to/signed_by replacements are a sign")
+            continue
+        for o, n in zip(olds, news, strict=True):
+            mo, mn = _SIGN_LINE.match(o), _SIGN_LINE.match(n)
+            if not (mo and mn and mo.group(1) == mn.group(1)):
+                out.append(f"quantbench.py line outside a rotation's to/signed_by: {n[:120]}")
     return out
 
 

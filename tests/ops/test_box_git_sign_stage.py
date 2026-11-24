@@ -172,3 +172,22 @@ def test_quantbench_may_change_only_rotation_to_and_signed_by_lines() -> None:
     bad = L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, worse, _ROW)
     assert any("outside a rotation" in b for b in bad)
     assert L.sign_diff_problems("", json.dumps(_signed()), _QB, _qb_signed(), _ROW)
+
+
+def test_an_empty_or_malformed_hash_is_never_a_sign() -> None:
+    """Audit should-fix 1 on 2086b0dd6: startswith("") is always true."""
+    for h in ("", "ABABABABABABABAB", _SHA[:15], _SHA[:17]):
+        bad = L.sign_diff_problems(json.dumps(_MAN),
+                                   json.dumps(_signed(files={**_MAN["files"], "x.py": h})),
+                                   _QB, _qb_signed(), _ROW)
+        assert any("not 16 lower-case hex" in b for b in bad), h
+
+
+def test_an_added_to_line_is_not_a_replacement() -> None:
+    """Audit should-fix 2: only paired -/+ replacements of existing to/signed_by lines."""
+    added = _qb_signed().replace('    "signed_by"', '    "to": "x",\n    "signed_by"', 1)
+    bad = L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, added, _ROW)
+    assert any("only paired" in b for b in bad)
+    swapped = _qb_signed().replace(f'"to": "{_SHA}"', '"signed_by": "x"')
+    bad = L.sign_diff_problems(json.dumps(_MAN), json.dumps(_signed()), _QB, swapped, _ROW)
+    assert any("outside a rotation" in b for b in bad)
