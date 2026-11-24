@@ -2487,6 +2487,21 @@ from mt5desk.family_rule_builder import family_rule_builder  # noqa: E402
 ORTHOGONAL_FAMILIES["rule_builder"] = family_rule_builder
 FAMILY_INPUTS["rule_builder"] = ("price and tick volume only", "data/universe/*_H1.parquet")
 
+# THE FOUR GENERATED MODEL FAMILIES (2026-11-24): analog/kNN, time-series learning-to-rank,
+# NEAT networks and grammatical-evolution strategies, proposed by `research/hypgen_engine.py`.
+# Price and tick volume only; the two fitted ones refit causally inside the cell.
+from mt5desk.family_hypgen_models import (  # noqa: E402
+    family_analog_knn,
+    family_ge_strategy,
+    family_neural_policy,
+    family_ranked_linear,
+)
+
+for _name, _fn in (("analog_knn", family_analog_knn), ("ranked_linear", family_ranked_linear),
+                   ("neural_policy", family_neural_policy), ("ge_strategy", family_ge_strategy)):
+    ORTHOGONAL_FAMILIES[_name] = _fn
+    FAMILY_INPUTS[_name] = ("price and tick volume only", "data/universe/*_H1.parquet")
+
 # THE NAME THAT WAS BEING MINTED UNDER AND DID NOT EXIST (measured 2026-09-24). `pack_cells` has
 # minted 432 registry cells under `exogenous_conditioner`, each naming a lake series, a column and
 # a transform, and no generator implemented the name -- so every one of them exited

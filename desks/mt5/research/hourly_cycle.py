@@ -1412,6 +1412,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the genetic rule builder (entries x filters x exits, 2026-11-20)
                      "strategy_builder", "generator_coverage",
+                     # the four model generators (2026-11-24)
+                     "hypgen_knn_analog", "hypgen_rank_learner", "hypgen_neat_evolver",
+                     "hypgen_ge_builder",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
@@ -2430,6 +2433,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE GENETIC RULE BUILDER evolves inside its own --budget-s (bandit-scaled, base 240 s) and
     # then donates a judge-sized slice; the cap leaves room for the slice's registry write.
     "strategy_builder": 900,
+    # THE FOUR MODEL GENERATORS (hypgen_engine), each inside its own --budget-s (base 180 s).
+    "hypgen_knn_analog": 600, "hypgen_rank_learner": 600, "hypgen_neat_evolver": 600,
+    "hypgen_ge_builder": 600,
     # The generator coverage map reads a few report mtimes; seconds.
     "generator_coverage": 120,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
@@ -4730,6 +4736,15 @@ def main() -> None:
                                                          "research/strategy_builder.py",
                                                          "--budget-s", str(_sbd_s)))
     _bandit_observe("strategy_builder", _sbd_rec)
+    # THE FOUR MODEL GENERATORS (2026-11-24): analog/kNN, learning-to-rank, NEAT, grammatical
+    # evolution -- the strategy builder's rails via `hypgen_engine`, bandit-scaled seconds each.
+    hyp = {}
+    for _seat in ("knn_analog", "rank_learner", "neat_evolver", "ge_builder"):
+        _leg = f"hypgen_{_seat}"
+        _hs, _hrec = _bandit_budget(_leg, 180)
+        hyp[_leg] = _costed(_leg, lambda _seat=_seat, _leg=_leg, _hs=_hs: _producer(
+            _leg, "research/hypgen_engine.py", "--space", _seat, "--budget-s", str(_hs)))
+        _bandit_observe(_leg, _hrec)
     # Every known generator method against what ran this day: LIVE / PARTIAL / MISSING.
     gcv = _costed("generator_coverage", lambda: _producer("generator_coverage",
                                                            "research/generator_coverage.py"))
@@ -6619,7 +6634,7 @@ def main() -> None:
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf, "strategy_builder": sbd,
-                    "generator_coverage": gcv,
+                    "generator_coverage": gcv, **hyp,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
