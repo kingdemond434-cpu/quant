@@ -489,6 +489,66 @@
    ],
    "market": "CH",
    "grounds": 2
+  },
+  "uz": {
+   "name": "Uzbekistan",
+   "cluster": "central_asia",
+   "languages": [
+    "ru",
+    "uz",
+    "en"
+   ],
+   "market": "UZ",
+   "grounds": 2
+  },
+  "kw": {
+   "name": "Kuwait",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "KW",
+   "grounds": 1
+  },
+  "gr": {
+   "name": "Greece",
+   "cluster": "eu",
+   "languages": [
+    "el",
+    "en"
+   ],
+   "market": "GR",
+   "grounds": 1
+  },
+  "tz": {
+   "name": "Tanzania",
+   "cluster": "africa",
+   "languages": [
+    "sw",
+    "en"
+   ],
+   "market": "TZ",
+   "grounds": 1
+  },
+  "et": {
+   "name": "Ethiopia",
+   "cluster": "africa",
+   "languages": [
+    "en",
+    "am"
+   ],
+   "market": "ET",
+   "grounds": 2
+  },
+  "ci": {
+   "name": "Cote d'Ivoire and WAEMU",
+   "cluster": "africa",
+   "languages": [
+    "fr"
+   ],
+   "market": "CI",
+   "grounds": 1
   }
  },
  "grounds": [
@@ -7737,6 +7797,86 @@
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): PTAX averages four BCB dealer consultations at 10:00, 11:00, 12:00 and 13:00-13:10 Brasilia time and is announced soon after the last one (about 13:15)",
    "url": "https://www.cmegroup.com/rulebook/files/S_5886.pdf"
+  },
+  {
+   "name": "Central Bank of Uzbekistan news",
+   "region": "uz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "sum policy, FX auction and gold-reserve sales -- a central-bank gold seller and a managed currency; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://cbu.uz/en/press_center/news/"
+  },
+  {
+   "name": "Tashkent Stock Exchange news",
+   "region": "uz",
+   "language": "ru",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "frontier exchange mechanics and listing flow; footer asks for a link back to uzse.uz when material is used; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://uzse.uz/boards/news/list/"
+  },
+  {
+   "name": "Boursa Kuwait press releases",
+   "region": "kw",
+   "language": "ar",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "Gulf index inclusion, market-making and foreign-flow rules (MSCI/FTSE upgrade flows into Gulf equities, oil-linked); robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.boursakuwait.com.kw/ar/resources/news-room/press-release"
+  },
+  {
+   "name": "Bank of Greece press office",
+   "region": "gr",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "euro-area periphery bank and sovereign spread commentary; terms allow reuse when cited accurately; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.bankofgreece.gr/en/news-and-media/press-office/news-list"
+  },
+  {
+   "name": "JamiiForums Biashara na Uchumi",
+   "region": "tz",
+   "language": "sw",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "Swahili business and economy board, public threads -- East African retail views on USD scarcity, gold and forex; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.jamiiforums.com/forums/jukwaa-la-biashara-na-uchumi.84/"
+  },
+  {
+   "name": "National Bank of Ethiopia news",
+   "region": "et",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "birr float and FX-auction regime change since 2024 -- a live devaluation-mechanics case; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://nbe.gov.et/news/"
+  },
+  {
+   "name": "Ethiopian Securities Exchange news",
+   "region": "et",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "a brand-new exchange's market structure, documented as it is built; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://esx.et/news-and-media/latest-news/"
+  },
+  {
+   "name": "BCEAO communiques",
+   "region": "ci",
+   "language": "fr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "the CFA franc's EUR peg and WAEMU policy -- a hard-peg mechanism with EURUSD read-through; mentions legales: users peuvent disposer librement des informations; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.bceao.int/fr/communique-presse"
   }
  ],
  "engines": [
