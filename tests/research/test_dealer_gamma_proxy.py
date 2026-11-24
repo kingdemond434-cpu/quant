@@ -80,7 +80,7 @@ def test_refused_host_is_never_fetched(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize("robots", [_Resp(500), _Resp(200, "<!DOCTYPE html><html>"),
-                                    _Resp(200, "User-agent: *\nDisallow: /api/\n")])
+                                    _Resp(200, "User-agent: *\nDisallow: /book\n")])
 def test_robots_fails_closed(terms: None, robots: _Resp) -> None:
     seen: list[str] = []
     feed = dg.Feed(_getter({"robots.txt": robots}, seen), pace_s=0.0)
