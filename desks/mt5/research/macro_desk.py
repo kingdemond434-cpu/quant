@@ -164,7 +164,7 @@ def series_state(series_id: str, now: datetime | None = None,
             series_id, reason="UNMEASURED: no route declared for this id")
     src = got.entry()
     if not got.data:
-        return {"series": series_id, "ok": False, "source": src,
+        return {"series": series_id, "ok": False, "source": src, "status": got.status,
                 "reason": f"{got.status}: {got.reason}"}
     s = pd.Series(got.data).sort_index()
     s.index = pd.to_datetime(s.index)
