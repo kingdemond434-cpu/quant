@@ -28,7 +28,8 @@ def _doc(age_h: float = 0.5, schema: str = "fill-proven/1") -> dict[str, Any]:
              {"sleeve": "N_negative_asia", "n_out": 50, "adjR_out": -0.3},
              {"sleeve": "T_thin_asia", "n_out": 5, "adjR_out": 2.0}]
     return {"schema": schema, "generated_at": (NOW - timedelta(hours=age_h)).isoformat(),
-            "sleeves": [{"sleeve": "P_proven_asia", "n_out": 50, "adjR_out": 0.4}],
+            "sleeves": [{"sleeve": "P_proven_asia", "n_out": 50, "adjR_out": 0.4,
+                         "fdr_pass": True}],
             "table": table}
 
 
@@ -67,3 +68,10 @@ def test_the_tilt_reaches_the_solve_inputs(monkeypatch: Any):
     assert meta["fill_proven"] == "test" and meta["n_fill_proven_tilted"] == 2
     assert after["A"] > before["A"] and after["B"] < before["B"]
     assert meta["by_sleeve"]["A"]["fill_proven_factor"] == 1.3
+
+
+def test_a_listed_sleeve_without_fdr_pass_is_not_raised():
+    d = _doc()
+    d["sleeves"][0]["fdr_pass"] = False
+    f, _ = ae.fill_proven_factors(NAMES, d, now=NOW)
+    assert "P_proven_asia" not in f and f["N_negative_asia"] < 1.0

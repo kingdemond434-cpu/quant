@@ -627,7 +627,11 @@ def fill_proven_factors(names: Sequence[str], doc: Mapping[str, Any] | None = No
     age = ((now or datetime.now(UTC)) - gen).total_seconds()
     if not 0 <= age <= FILL_PROVEN_MAX_AGE_S:
         return {}, "FILL_PROVEN.json is stale or future-dated: neutral"
-    proven = {str(r.get("sleeve")) for r in doc.get("sleeves") or [] if isinstance(r, Mapping)}
+    # UP ONLY ON fdr_pass (Audit binding 2026-11-24 18:37Z): the organ lists every positive,
+    # testable sleeve under "sleeves" and reports Benjamini-Hochberg per row; only a row that
+    # passed it may lean a sleeve up. The down-lean needs no FDR: it only moves capital away.
+    proven = {str(r.get("sleeve")) for r in doc.get("sleeves") or []
+              if isinstance(r, Mapping) and r.get("fdr_pass") is True}
     table: dict[str, Mapping[str, Any]] = {
         str(r["sleeve"]): r for r in doc.get("table") or []
         if isinstance(r, Mapping) and r.get("sleeve")}
