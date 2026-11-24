@@ -1498,6 +1498,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # THE ALL-PRODUCER BREADTH CONTROLLER (rules-compliance row 13): every
+                     # producer's docket share, class/exotic split, saturation and frontier,
+                     # and the advisory steer producers read -- measurement, so meta.
+                     "breadth_controller",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -2421,6 +2425,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
+    # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
+    # cap sits a minute above so both of its files are written rather than cut.
+    "breadth_controller": 540,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -2527,6 +2535,8 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # never kill them before they publish -- which is how GAUNTLET_BACKPRESSURE went a week stale.
     "gauntlet_backpressure": 540,
     "global_coverage_tensor": 600,
+    # The breadth controller stops itself at --budget-s 420; a minute above it for the writes.
+    "breadth_controller": 480,
 }
 
 
@@ -6517,6 +6527,13 @@ def main() -> None:
     # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
     pbr = _costed("producer_breadth", lambda: _producer(
         "producer_breadth", "research/producer_breadth.py"))
+    # THE ALL-PRODUCER BREADTH CONTROLLER (rules-compliance row 13, zuck 2026-11-19/20). Streams
+    # the docket once and writes reports/BREADTH_CONTROLLER.json -- per producer: cells 24h/7d,
+    # share, class and symbol split, exotic share, verdict CONTRIBUTING/NARROW/DEAD/UNMEASURED;
+    # desk: the 90/10 exotic fence, saturated families, the never-sampled frontier -- and the
+    # ADVISORY data/breadth_controller_steer.json. Changes no producer, gate or trial count.
+    bcl = _costed("breadth_controller", lambda: _producer(
+        "breadth_controller", "research/breadth_controller.py", "--budget-s", "420"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -6748,6 +6765,7 @@ def main() -> None:
                     "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "breadth_controller": bcl,
                     "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
