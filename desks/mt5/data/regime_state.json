@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-24T21:45:03.115335+00:00",
+  "swept_at": "2026-11-24T22:00:03.313588+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 60,
-      "shadow_exp_r": 0.389,
+      "shadow_n": 87,
+      "shadow_exp_r": -0.2148,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_asia": {
@@ -328,7 +328,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3252,
+      "shadow_exp_r": -0.3216,
       "woke_on_shadow": false
     },
     "CHFNOK|clock_transition_asia": {
@@ -361,7 +361,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0535,
+      "shadow_exp_r": 0.0485,
       "woke_on_shadow": false
     },
     "CHFNOK|spread_state_asia": {
@@ -394,7 +394,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1966,
+      "shadow_exp_r": -0.2007,
       "woke_on_shadow": false
     },
     "CHFSGD|overnight_gap_decay_asia": {
@@ -878,7 +878,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5678,
+      "shadow_exp_r": -0.569,
       "woke_on_shadow": false
     },
     "GBPMXN|clock_transition_asia": {
@@ -922,7 +922,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 23,
-      "shadow_exp_r": -1.3011,
+      "shadow_exp_r": -1.3012,
       "woke_on_shadow": false
     },
     "GBPMXN|spread_state_asia": {
@@ -1251,8 +1251,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 53,
-      "shadow_exp_r": -0.2297,
+      "shadow_n": 77,
+      "shadow_exp_r": -0.0312,
       "woke_on_shadow": false
     },
     "NZDJPY|macro_conditional_asia": {
@@ -1263,7 +1263,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1708,
+      "shadow_exp_r": -0.1571,
       "woke_on_shadow": false
     },
     "NZDSGD|clock_transition_asia": {
@@ -1758,7 +1758,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2419,
+      "shadow_exp_r": 0.2438,
       "woke_on_shadow": false
     },
     "XAUEUR|cross_asset_residual_asia": {
@@ -1824,7 +1824,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.3446,
+      "shadow_exp_r": 0.3502,
       "woke_on_shadow": false
     },
     "XAUUSD|range_reversion_asia": {
