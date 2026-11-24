@@ -471,6 +471,54 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
         _record({"status": "CLOSE", **act}, now, armed)
 
 
+def emergency(mt5: Any, st: dict[str, Any], doc: dict[str, Any], decl: dict[str, Any], *,
+              cet: str, cet_midnight: datetime, armed: bool, now: datetime,
+              server_epoch: float) -> None:
+    """THE EMERGENCY KILL RULES on the FTMO account (prop/emergency_rules.py; zuck 2026-11-24
+    23:15Z): near the daily or max-loss floor every desk position (this lane's and the gold
+    follower's) is closed and new risk stands down for FTMO's day; a duplicate or a stop-less
+    position is closed. Closes only. Every close is logged with its rule and reason."""
+    from prop import emergency_rules as _er
+    positions = mt5.positions_get()
+    if positions is None:
+        doc["emergency"] = {"skipped": "the terminal did not answer positions"}
+        return
+    acc = mt5.account_info()
+    try:
+        equity: float | None = float(acc.equity)
+        balance = float(acc.balance)
+    except (AttributeError, TypeError, ValueError):
+        equity, balance = None, 0.0
+    try:
+        start: float | None = (_fw.day_start_balance(mt5, balance, cet_midnight, now,
+                                                     server_epoch=server_epoch)
+                               if equity is not None else None)
+    except Exception:
+        start = None
+    res = _er.assess(list(positions), desk_magics=(MAGIC, _fw.MAGIC),
+                     now_epoch=float(server_epoch or 0.0), equity=equity, day_start=start,
+                     initial=float(decl.get("initial_balance") or 0.0),
+                     daily_frac=float(decl.get("daily_loss_frac") or _fw.DAILY_LOSS_FRAC),
+                     max_frac=float(decl.get("max_loss_frac") or _fw.MAX_LOSS_FRAC))
+    doc["emergency"] = res.as_dict()
+    if res.stand_down:
+        st["emergency_stand_down"] = cet
+    by_ticket = {int(p.ticket): p for p in positions}
+    for ticket, rule, why in res.closes:
+        p = by_ticket.get(ticket)
+        if p is None:
+            continue
+        act = _close(mt5, st, p, cet=cet, armed=armed, why=f"EMERGENCY {rule}: {why}")
+        act["emergency_rule"] = rule
+        doc["actions"].append(act)
+        doc["alerts"].append(f"FTMO EMERGENCY {rule}: closed {p.symbol} #{ticket} ({why})"[:300])
+        _record({"status": "EMERGENCY_CLOSE", **act}, now, armed)
+        _er.log_close(account="ftmo", ticket=ticket, symbol=str(p.symbol), rule=rule, why=why,
+                      ok=bool(act.get("ok")), armed=armed, now=now,
+                      volume=float(getattr(p, "volume", 0.0) or 0.0),
+                      magic=int(getattr(p, "magic", 0) or 0))
+
+
 def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[str, Any]:
     """One pass against the FTMO terminal under `mt5` (already attached)."""
     from mt5desk import order_door as _door
@@ -501,6 +549,11 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         manage(mt5, st, doc, own, cet=cet, armed=armed, now=now, server_epoch=server_epoch)
     except Exception as exc:                        # management never takes the pass down
         doc["manage_error"] = f"{type(exc).__name__}: {exc}"[:200]
+    try:
+        emergency(mt5, st, doc, decl, cet=cet, cet_midnight=cet_midnight, armed=armed, now=now,
+                  server_epoch=server_epoch)
+    except Exception as exc:                        # the rules never take the pass down
+        doc["emergency_error"] = f"{type(exc).__name__}: {exc}"[:200]
     # THE FTMO BOOK, FOR THE OTHER LANES' FENCE (zuck 2026-10-29: no account opposite another).
     # Published every pass, armed or not, from a reading taken under the lock; a failure is
     # recorded and the readers fail closed on its age while this lane is armed.
@@ -521,6 +574,13 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                         if isinstance(v, (int, float)) and v > 0 and k not in _FOLLOWER_KEYS)
         if funded:
             _veto(doc, now, armed, sleeves=funded)
+        _write_out(doc, st)
+        return doc
+    if st.get("emergency_stand_down") == cet:
+        doc.update(status="EMERGENCY_STAND_DOWN",
+                   why=f"the emergency rules flattened the account today ({cet}); no new risk "
+                       "until FTMO's day rolls")
+        _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         _write_out(doc, st)
         return doc
     if not server_epoch:
