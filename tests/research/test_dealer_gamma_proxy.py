@@ -148,7 +148,8 @@ def test_ingest_records_refusals_without_writing_rows(tmp_path: Path) -> None:
 def test_cells_wait_for_history(tmp_path: Path) -> None:
     rep = dg.run(dry_run=True, series_dir=tmp_path)
     assert rep["cells_proposed"] == 0
-    assert rep["cells_declared"] == len(dg.CELLS) * len({b[1] for b in dg.BOOKS})
+    assert rep["cells_declared"] == (len(dg.CELLS) * len({b[1] for b in dg.BOOKS})
+                                     + len(dg.PRICE_CELLS) * len(dg.PRICE_SYMBOLS))
     assert all(w["needs"] == dg.MIN_HISTORY_DAYS for w in rep["cells_waiting_for_history"])
 
 
@@ -157,3 +158,51 @@ def test_every_book_host_has_a_terms_verdict() -> None:
     for book, _sym, host, _eod, _pull in dg.BOOKS:
         assert host in dg.TERMS or host in dg.REFUSED_HOSTS, book
         assert not (host in dg.TERMS and host in dg.REFUSED_HOSTS), book
+
+
+def _synthetic_bars(sign: float, days: int = 80, seed: int = 7):
+    import numpy as np
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2026-01-05", periods=days * 24, freq="h", tz="UTC")
+    eps = rng.normal(0, 0.002, len(idx))
+    r = np.zeros(len(idx))
+    for i in range(1, len(idx)):
+        r[i] = sign * 0.6 * r[i - 1] + eps[i]
+    close = 100.0 * np.exp(np.cumsum(r))
+    return pd.DataFrame({"high": close * 1.0005, "low": close * 0.9995, "close": close},
+                        index=idx)
+
+
+def test_price_proxy_reads_pinning_and_chasing() -> None:
+    pinned = dg.price_proxy_frame(_synthetic_bars(-1.0), 1.0)
+    chasing = dg.price_proxy_frame(_synthetic_bars(1.0), 1.0)
+    assert pinned is not None and chasing is not None
+    assert pinned["pin_score"].dropna().mean() > 0.3
+    assert chasing["pin_score"].dropna().mean() < -0.3
+    assert chasing["range_rv"].dropna().mean() > pinned["range_rv"].dropna().mean()
+
+
+def test_price_proxy_has_no_lookahead() -> None:
+    bars = _synthetic_bars(1.0)
+    full = dg.price_proxy_frame(bars, 1.0)
+    cut = dg.price_proxy_frame(bars.iloc[: 50 * 24], 1.0)
+    common = cut["day"]
+    a = full.set_index("day").loc[common, ["pin_score", "range_rv", "volvol"]]
+    b = cut.set_index("day")[["pin_score", "range_rv", "volvol"]]
+    assert ((a - b).abs().fillna(0) < 1e-12).all().all()
+    stamp = full["available_time"].dt.tz_convert(None)
+    import pandas as pd
+    assert (stamp > pd.to_datetime(full["day"])).all()
+
+
+def test_price_proxy_publishes_and_its_cells_reach_the_grid(tmp_path: Path) -> None:
+    pytest.importorskip("pyarrow")
+    out = dg.publish_price_proxy(tmp_path, bars_for=lambda s: _synthetic_bars(-1.0)
+                                 if s == "XAUUSD" else None)
+    assert isinstance(out["XAUUSD"], int) and out["US500"].startswith("UNMEASURED")
+    indices, pairs, cells = dg.declared(tmp_path)
+    assert ("gamma_price:XAUUSD.pin_score", "XAUUSD") in pairs
+    xau = [c for c in cells if c["symbol"] == "XAUUSD" and c["index"].startswith("gamma_price")]
+    assert {c["cell_name"] for c in xau} == {c[0] for c in dg.PRICE_CELLS}
+    assert all(c["params"]["source"] == "gamma_price_XAUUSD" for c in xau)

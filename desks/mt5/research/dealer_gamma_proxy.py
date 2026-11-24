@@ -425,6 +425,10 @@ def ingest(*, get: Getter | None = None, now: dt.datetime | None = None,
                 fh.write(json.dumps(row, sort_keys=True) + "\n")
     allrows = history + new
     published = publish_series(allrows, sdir)
+    try:
+        price_proxy = publish_price_proxy(sdir)
+    except Exception as exc:                            # the OI half never waits on this one
+        price_proxy = {"state": "FAILED", "error": f"{type(exc).__name__}: {exc}"}
     latest: dict[str, dict[str, Any]] = {}
     for r in allrows:
         b = str(r.get("book"))
@@ -432,7 +436,7 @@ def ingest(*, get: Getter | None = None, now: dt.datetime | None = None,
             latest[b] = r
     snap = {"generated_at": now.isoformat(timespec="seconds"), "source": SOURCE,
             "books": census, "latest": latest, "history_rows": len(allrows),
-            "new_rows": len(new), "series": published,
+            "new_rows": len(new), "series": published, "price_proxy": price_proxy,
             "history_days": {b: sum(1 for r in allrows if r.get("book") == b) for b in census}}
     snap_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = snap_path.with_suffix(".tmp")
@@ -470,6 +474,120 @@ def publish_series(rows: list[dict[str, Any]], series_dir: Path) -> dict[str, in
     return out
 
 
+# ------------------------------------------------------------------- price-implied gamma proxy
+#: THE LAWFUL SUBSTITUTE (2026-11-24). Every free option book read so far bans automated use, so
+#: the dealer-gamma regime is ALSO read from the footprint hedging leaves on our own MT5 bars --
+#: no third-party data at all. Long-gamma dealers sell rallies and buy dips, which pins price
+#: (negative short-horizon autocorrelation, small range for the realised variance); short-gamma
+#: dealers chase (positive autocorrelation, range stretched against realised vol). It is a
+#: proxy for the OI book, not a measurement of it, and its cells say so.
+PRICE_SYMBOLS: dict[str, float] = {
+    # symbol -> the round-strike step options cluster their OI on (for the pin distance)
+    "US500": 50.0, "NAS100": 100.0, "HK50": 200.0, "JPN225": 250.0, "XAUUSD": 25.0,
+    "BTCUSD": 1000.0,
+}
+PRICE_SIGNALS = ("pin_score", "range_rv", "volvol", "pin_dist", "ac1")
+ROLL_DAYS = 20
+MIN_BARS_PER_DAY = 6
+GIT_BARS = DESK / "universe"
+
+
+def _bars(symbol: str) -> Any:
+    """H1 bars from the box's bar store, else the copy in git; None when neither has them."""
+    import pandas as pd
+
+    frame = None
+    try:
+        from research import proposer_common as pc
+        frame = pc.bars(symbol)
+    except Exception:
+        frame = None
+    if frame is None:
+        path = GIT_BARS / f"{symbol}_H1.parquet"
+        if not path.exists():
+            return None
+        try:
+            frame = pd.read_parquet(path)
+        except (OSError, ValueError, ImportError):
+            return None
+        frame.index = pd.DatetimeIndex(pd.to_datetime(frame.index, utc=True, errors="coerce"))
+    need = {"high", "low", "close"}
+    return frame if frame is not None and need <= set(frame.columns) and len(frame) else None
+
+
+def price_proxy_frame(bars: Any, step: float) -> Any:
+    """Daily price-implied gamma readings from H1 bars, one row per bar-clock day.
+
+    pin_score  -(lag-1 autocorrelation of hourly log returns over ROLL_DAYS days): high = pinned
+    range_rv   log(day's high-low range / day's realised vol), ROLL_DAYS mean: high = chasing
+    volvol     std of log daily realised vol over ROLL_DAYS days: high = hedging demand
+    pin_dist   |close - nearest round strike| in units of the day's realised move
+    ac1        the raw autocorrelation, kept for audit
+    Every value uses only bars of its own day and earlier.
+    """
+    import numpy as np
+    import pandas as pd
+
+    b = bars[["high", "low", "close"]].astype(float).dropna().sort_index()
+    b = b[~b.index.duplicated(keep="last")]
+    r = np.log(b["close"]).diff()
+    day = pd.DatetimeIndex(b.index).normalize()
+    same_day = pd.Series(day, index=b.index).eq(pd.Series(day, index=b.index).shift(1))
+    rr = r.where(same_day)
+    lag = rr.shift(1).where(same_day)
+    g = pd.DataFrame({"sxy": rr * lag, "sxx": rr * rr, "n": rr.notna().astype(int),
+                      "hi": b["high"], "lo": b["low"], "close": b["close"]}, index=b.index)
+    d = g.groupby(day).agg(sxy=("sxy", "sum"), sxx=("sxx", "sum"), n=("n", "sum"),
+                           hi=("hi", "max"), lo=("lo", "min"), close=("close", "last"))
+    d = d[d["n"] >= MIN_BARS_PER_DAY]
+    if d.empty:
+        return None
+    rv = np.sqrt(d["sxx"])
+    ac1 = (d["sxy"].rolling(ROLL_DAYS, min_periods=ROLL_DAYS).sum()
+           / d["sxx"].rolling(ROLL_DAYS, min_periods=ROLL_DAYS).sum().replace(0.0, np.nan))
+    ratio = np.log((np.log(d["hi"] / d["lo"])) / rv.replace(0.0, np.nan))
+    out = pd.DataFrame({
+        "ac1": ac1,
+        "pin_score": -ac1,
+        "range_rv": ratio.rolling(ROLL_DAYS, min_periods=ROLL_DAYS).mean(),
+        "volvol": np.log(rv.replace(0.0, np.nan)).rolling(ROLL_DAYS,
+                                                           min_periods=ROLL_DAYS).std(ddof=0),
+        "pin_dist": (d["close"] - (d["close"] / step).round() * step).abs()
+                    / (d["close"] * rv).replace(0.0, np.nan),
+    }).replace([np.inf, -np.inf], np.nan)
+    out.index = pd.DatetimeIndex(out.index).tz_localize(None)
+    out = out.dropna(subset=["pin_score", "range_rv", "volvol"], how="all")
+    if out.empty:
+        return None
+    out.insert(0, "day", out.index.strftime("%Y-%m-%d"))
+    # Stamped at the close of the bar-clock day as UTC: the bar clock runs two to three hours
+    # AHEAD of UTC, so this is later than the true availability, never earlier.
+    out.insert(1, "available_time",
+               pd.to_datetime(out.index + pd.Timedelta(days=1)).tz_localize("UTC"))
+    out.insert(2, "source_id", "mt5_bars")
+    return out.reset_index(drop=True)
+
+
+def publish_price_proxy(series_dir: Path,
+                        bars_for: Callable[[str], Any] | None = None) -> dict[str, Any]:
+    """One lake frame per symbol, `gamma_price_<SYM>`; a symbol with no bars is UNMEASURED."""
+    load = bars_for or _bars
+    out: dict[str, Any] = {}
+    for sym, step in PRICE_SYMBOLS.items():
+        bars = load(sym)
+        frame = price_proxy_frame(bars, step) if bars is not None else None
+        if frame is None:
+            out[sym] = "UNMEASURED: no H1 bars"
+            continue
+        series_dir.mkdir(parents=True, exist_ok=True)
+        path = series_dir / f"gamma_price_{sym}.parquet"
+        tmp = path.with_suffix(".tmp")
+        frame.to_parquet(tmp, index=False)
+        os.replace(tmp, path)
+        out[sym] = len(frame)
+    return out
+
+
 # ---------------------------------------------------------------------------------------- cells
 #: (cell, signal, threshold, side_when_high, ttl_bars, mechanism, payer). Signs are declared here,
 #: before any data, and never re-signed by a result.
@@ -489,10 +607,30 @@ CELLS: tuple[tuple[str, str, float, int, int, str, str], ...] = (
 )
 
 
-def _series_index(sym: str, col: str, series_dir: Path) -> Any:
+#: The same three cell shapes on the price-implied proxy. Signs declared here, before any data:
+#: pinned (long-gamma) -> long drift; range stretched against realised vol (short-gamma, the
+#: below-the-flip side) -> short; extreme vol-of-vol (hedging demand) -> fade it, long.
+PRICE_CELLS: tuple[tuple[str, str, float, int, int, str, str], ...] = (
+    ("price_gamma_regime_drift", "pin_score", 1.0, 1, 24,
+     "returns that mean-revert hour to hour are the footprint of long-gamma dealers selling "
+     "rallies and buying dips (vol suppressed, positive drift); chasing returns are the "
+     "short-gamma footprint, where hedgers sell into falls",
+     "option dealers delta-hedging, read from their footprint on price"),
+    ("price_gamma_flip_proxy", "range_rv", 1.0, -1, 24,
+     "a day's range stretched against its realised vol is directional chasing -- the short-gamma "
+     "side of the flip, where downside extends; a compressed range is the pinned side",
+     "option dealers delta-hedging, read from their footprint on price"),
+    ("price_gamma_tilt", "volvol", 1.5, 1, 48,
+     "extreme vol-of-vol is hedging demand at an extreme; the protection is priced and its "
+     "decay pays the side that faded the fear",
+     "hedgers paying for protection at an extreme, read from realised vol's own volatility"),
+)
+
+
+def _series_index(sym: str, col: str, series_dir: Path, prefix: str = "dealer_gamma") -> Any:
     import pandas as pd
 
-    path = series_dir / f"dealer_gamma_{sym}.parquet"
+    path = series_dir / f"{prefix}_{sym}.parquet"
     if not path.exists():
         return None
     try:
@@ -512,22 +650,25 @@ def declared(series_dir: Path = SERIES_DIR) -> tuple[dict[str, Any], list[tuple[
     indices: dict[str, Any] = {}
     pairs: list[tuple[str, str]] = []
     cells: list[dict[str, Any]] = []
-    for sym in sorted({b[1] for b in BOOKS}):
-        for name, col, thr, side, ttl, mech, payer in CELLS:
-            idx = f"gamma:{sym}.{col}"
-            s = _series_index(sym, col, series_dir)
-            n = 0 if s is None else len(s)
-            if s is not None:
-                indices[idx] = s
-                pairs.append((idx, sym))
-            cells.append({
-                "cell_name": name, "symbol": sym, "index": idx, "history_days": n,
-                "params": {"source": f"dealer_gamma_{sym}", "signal": col,
-                           "transform": "level_z", "threshold": thr, "side_when_high": side,
-                           "ttl_bars": ttl, "lag_hours": 24},
-                "mechanism": f"{mech} ({sym})", "payer": payer,
-                "economic_actor": "hedging_dealer", "information_source": "options_book",
-                "constraint": "dealers must re-hedge delta as spot moves through their gamma"})
+    lanes = ((sorted({b[1] for b in BOOKS}), CELLS, "dealer_gamma", "gamma", "options_book"),
+             (sorted(PRICE_SYMBOLS), PRICE_CELLS, "gamma_price", "gamma_price", "price"))
+    for symbols, shapes, prefix, tag, info in lanes:
+        for sym in symbols:
+            for name, col, thr, side, ttl, mech, payer in shapes:
+                idx = f"{tag}:{sym}.{col}"
+                s = _series_index(sym, col, series_dir, prefix)
+                n = 0 if s is None else len(s)
+                if s is not None:
+                    indices[idx] = s
+                    pairs.append((idx, sym))
+                cells.append({
+                    "cell_name": name, "symbol": sym, "index": idx, "history_days": n,
+                    "params": {"source": f"{prefix}_{sym}", "signal": col,
+                               "transform": "level_z", "threshold": thr,
+                               "side_when_high": side, "ttl_bars": ttl, "lag_hours": 24},
+                    "mechanism": f"{mech} ({sym})", "payer": payer,
+                    "economic_actor": "hedging_dealer", "information_source": info,
+                    "constraint": "dealers must re-hedge delta as spot moves through their gamma"})
     return indices, sorted(set(pairs)), cells
 
 
@@ -552,6 +693,10 @@ def run(*, dry_run: bool = False, series_dir: Path = SERIES_DIR, out: Path = REP
     rep: dict[str, Any] = {
         "generated_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "verdict": grid.get("verdict"), "n_trials": grid.get("n_trials", 0),
+        "tests_run": int(grid.get("n_trials", 0)) + len(donate),
+        "gain_tests": [{k: t.get(k) for k in ("index", "instrument", "horizon", "n_obs", "ic",
+                                              "p_placebo", "q_bh", "ci90", "gain")}
+                       for t in grid.get("tests") or [] if t.get("state") == "MEASURED"],
         "cells_declared": len(cells), "cells_proposed": len(donate),
         "cells_waiting_for_history": [{"cell": c["cell_name"], "symbol": c["symbol"],
                                        "history_days": c["history_days"],
