@@ -168,14 +168,14 @@
    "grounds": 8
   },
   "ae": {
-   "name": "UAE and Qatar",
+   "name": "UAE, Qatar and Kuwait",
    "cluster": "mena",
    "languages": [
     "ar",
     "en"
    ],
    "market": "AE",
-   "grounds": 5
+   "grounds": 6
   },
   "tr": {
    "name": "Turkey",
@@ -225,14 +225,14 @@
    "grounds": 5
   },
   "ke": {
-   "name": "Kenya",
+   "name": "Kenya and Tanzania",
    "cluster": "africa",
    "languages": [
     "en",
     "sw"
    ],
    "market": "KE",
-   "grounds": 5
+   "grounds": 6
   },
   "ma": {
    "name": "Morocco",
@@ -477,7 +477,7 @@
     "en"
    ],
    "market": "EA",
-   "grounds": 2
+   "grounds": 3
   },
   "ch": {
    "name": "Switzerland",
@@ -501,36 +501,6 @@
    "market": "UZ",
    "grounds": 2
   },
-  "kw": {
-   "name": "Kuwait",
-   "cluster": "mena",
-   "languages": [
-    "ar",
-    "en"
-   ],
-   "market": "KW",
-   "grounds": 1
-  },
-  "gr": {
-   "name": "Greece",
-   "cluster": "eu",
-   "languages": [
-    "el",
-    "en"
-   ],
-   "market": "GR",
-   "grounds": 1
-  },
-  "tz": {
-   "name": "Tanzania",
-   "cluster": "africa",
-   "languages": [
-    "sw",
-    "en"
-   ],
-   "market": "TZ",
-   "grounds": 1
-  },
   "et": {
    "name": "Ethiopia",
    "cluster": "africa",
@@ -540,15 +510,6 @@
    ],
    "market": "ET",
    "grounds": 2
-  },
-  "ci": {
-   "name": "Cote d'Ivoire and WAEMU",
-   "cluster": "africa",
-   "languages": [
-    "fr"
-   ],
-   "market": "CI",
-   "grounds": 1
   }
  },
  "grounds": [
@@ -7820,33 +7781,36 @@
   },
   {
    "name": "Boursa Kuwait press releases",
-   "region": "kw",
+   "region": "ae",
    "language": "ar",
    "route": "http",
    "kind": "local_market_mechanics",
    "weight": 0.5,
    "why": "Gulf index inclusion, market-making and foreign-flow rules (MSCI/FTSE upgrade flows into Gulf equities, oil-linked); robots allows the path, terms silent, no wall (read 2026-11-24)",
-   "url": "https://www.boursakuwait.com.kw/ar/resources/news-room/press-release"
+   "url": "https://www.boursakuwait.com.kw/ar/resources/news-room/press-release",
+   "market": "KW"
   },
   {
    "name": "Bank of Greece press office",
-   "region": "gr",
+   "region": "ea",
    "language": "en",
    "route": "http",
    "kind": "macro",
    "weight": 0.5,
    "why": "euro-area periphery bank and sovereign spread commentary; terms allow reuse when cited accurately; robots allows the path, terms silent, no wall (read 2026-11-24)",
-   "url": "https://www.bankofgreece.gr/en/news-and-media/press-office/news-list"
+   "url": "https://www.bankofgreece.gr/en/news-and-media/press-office/news-list",
+   "market": "GR"
   },
   {
    "name": "JamiiForums Biashara na Uchumi",
-   "region": "tz",
+   "region": "ke",
    "language": "sw",
    "route": "http",
    "kind": "forum",
    "weight": 0.5,
    "why": "Swahili business and economy board, public threads -- East African retail views on USD scarcity, gold and forex; robots allows the path, terms silent, no wall (read 2026-11-24)",
-   "url": "https://www.jamiiforums.com/forums/jukwaa-la-biashara-na-uchumi.84/"
+   "url": "https://www.jamiiforums.com/forums/jukwaa-la-biashara-na-uchumi.84/",
+   "market": "TZ"
   },
   {
    "name": "National Bank of Ethiopia news",
@@ -7867,16 +7831,6 @@
    "weight": 0.5,
    "why": "a brand-new exchange's market structure, documented as it is built; robots allows the path, terms silent, no wall (read 2026-11-24)",
    "url": "https://esx.et/news-and-media/latest-news/"
-  },
-  {
-   "name": "BCEAO communiques",
-   "region": "ci",
-   "language": "fr",
-   "route": "http",
-   "kind": "macro",
-   "weight": 0.5,
-   "why": "the CFA franc's EUR peg and WAEMU policy -- a hard-peg mechanism with EURUSD read-through; mentions legales: users peuvent disposer librement des informations; robots allows the path, terms silent, no wall (read 2026-11-24)",
-   "url": "https://www.bceao.int/fr/communique-presse"
   }
  ],
  "engines": [
