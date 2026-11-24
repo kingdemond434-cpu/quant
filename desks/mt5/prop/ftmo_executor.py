@@ -497,6 +497,7 @@ def emergency(mt5: Any, st: dict[str, Any], doc: dict[str, Any], decl: dict[str,
         start = None
     res = _er.assess(list(positions), desk_magics=(MAGIC, _fw.MAGIC),
                      now_epoch=float(server_epoch or 0.0), equity=equity, day_start=start,
+                     balance=balance if equity is not None else None,
                      initial=float(decl.get("initial_balance") or 0.0),
                      daily_frac=float(decl.get("daily_loss_frac") or _fw.DAILY_LOSS_FRAC),
                      max_frac=float(decl.get("max_loss_frac") or _fw.MAX_LOSS_FRAC))

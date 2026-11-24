@@ -11,10 +11,15 @@ THE RULES (pure; `assess` returns what to close and why, the caller sends):
                     and stand down new risk for the firm's day. A daily breach loses the account;
                     E8's own stand-down measured that a floor inside the firm's takes breaches to
                     zero and costs nothing in time (prop/e8_guard.py, research/prop_barrier.py).
-  NEAR_MAX_LOSS     the same against the firm's static maximum-loss floor.
-  DUPLICATE         two or more desk positions with the same symbol, side, magic and comment (one
-                    sleeve, one bar): every one but the oldest is closed. A duplicate is a runaway
-                    send, never a sized decision.
+  NEAR_MAX_LOSS     FLOATING loss has driven equity within EMERGENCY_ROOM_FRAC of the static
+                    maximum-loss floor while the CLOSED balance is still outside that band: flatten,
+                    with NO stand-down (Audit MF1 on c3953b552). A balance already inside the band
+                    is not an emergency: new risk stays with survival sizing against the room
+                    left, so an account 8% down still trades and can recover.
+  DUPLICATE         two or more desk positions with the same symbol, side, magic and an
+                    UNTRUNCATED comment (shorter than COMMENT_MAX, so it names one sleeve and slot;
+                    Audit MF2 on c3953b552): every one but the oldest is closed. A truncated comment
+                    can be two sleeves sharing a prefix and is never read as a duplicate.
   UNPROTECTED       a desk position with no broker-side stop older than UNPROTECTED_GRACE_S (the
                     entry attaches one and stop management never removes it): closed, because its
                     risk is unbounded and the book's risk is unmeasurable while it stands.
@@ -39,6 +44,8 @@ LOG = DESK / "data" / "emergency_closes.jsonl"
 EMERGENCY_ROOM_FRAC = 0.20
 #: A position with no stop is given this long for the entry's stop to land before it is closed.
 UNPROTECTED_GRACE_S = 120.0
+#: MT5's comment field: a comment this long may have been cut, so it cannot prove a duplicate.
+COMMENT_MAX = 31
 
 NEAR_DAILY_LIMIT, NEAR_MAX_LOSS = "NEAR_DAILY_LIMIT", "NEAR_MAX_LOSS"
 DUPLICATE, UNPROTECTED = "DUPLICATE", "UNPROTECTED"
@@ -66,7 +73,7 @@ def _side(p: Any) -> str:
 
 
 def limit_rule(*, equity: float | None, day_start: float | None, initial: float,
-               daily_frac: float, max_frac: float,
+               daily_frac: float, max_frac: float, balance: float | None = None,
                room_frac: float | None = None) -> tuple[str | None, str]:
     """(rule, why) when equity is within `room_frac` (default EMERGENCY_ROOM_FRAC) of a firm
     floor, else (None, why)."""
@@ -75,7 +82,9 @@ def limit_rule(*, equity: float | None, day_start: float | None, initial: float,
     if equity is None or not initial > 0:
         return None, "equity or initial balance unreadable: limit rules skipped"
     static_floor = initial * (1.0 - max_frac)
-    if equity - static_floor <= room_frac * max_frac * initial:
+    band = room_frac * max_frac * initial
+    closed_outside = balance is not None and balance - static_floor > band
+    if equity - static_floor <= band and closed_outside:
         return NEAR_MAX_LOSS, (f"equity {equity:,.2f} is {equity - static_floor:,.2f} above the "
                                f"max-loss floor {static_floor:,.2f} (<= {room_frac:.0%} of the "
                                f"{max_frac:.0%} limit)")
@@ -92,24 +101,27 @@ def limit_rule(*, equity: float | None, day_start: float | None, initial: float,
 
 def assess(positions: Iterable[Any], *, desk_magics: Sequence[int], now_epoch: float,
            equity: float | None, day_start: float | None, initial: float,
-           daily_frac: float, max_frac: float) -> Assessment:
+           daily_frac: float, max_frac: float, balance: float | None = None) -> Assessment:
     """What the emergency rules close this pass. Pure: reads position-like objects
     (ticket, symbol, type, magic, comment, sl, time) and numbers; sends nothing."""
     desk = [p for p in positions if int(getattr(p, "magic", 0) or 0) in set(desk_magics)]
     out = Assessment()
     rule, why = limit_rule(equity=equity, day_start=day_start, initial=initial,
-                           daily_frac=daily_frac, max_frac=max_frac)
+                           daily_frac=daily_frac, max_frac=max_frac, balance=balance)
     if rule is None and why != "within limits":
         out.notes.append(why)
     if rule is not None:
-        out.flatten = out.stand_down = True
+        out.flatten = True
+        out.stand_down = rule == NEAR_DAILY_LIMIT    # the daily latch rolls with the firm day
         out.rule, out.why = rule, why
         out.closes = [(int(p.ticket), rule, why) for p in desk]
         return out
     groups: dict[tuple[str, str, int, str], list[Any]] = {}
     for p in desk:
-        key = (str(p.symbol), _side(p), int(getattr(p, "magic", 0) or 0),
-               str(getattr(p, "comment", "") or ""))
+        comment = str(getattr(p, "comment", "") or "")
+        if not comment or len(comment) >= COMMENT_MAX:
+            continue                     # possibly cut: cannot prove one sleeve and slot
+        key = (str(p.symbol), _side(p), int(getattr(p, "magic", 0) or 0), comment)
         groups.setdefault(key, []).append(p)
     closing: set[int] = set()
     for (sym, side, magic, comment), ps in groups.items():

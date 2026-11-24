@@ -22,9 +22,10 @@ def _p(ticket, sym="EURUSD", typ=0, magic=341956, comment="FX12", sl=1.0, t=T0 -
                            sl=sl, time=t, volume=0.1)
 
 
-def _a(ps, equity=100_000.0, start=100_000.0):
+def _a(ps, equity=100_000.0, start=100_000.0, balance=None):
     return er.assess(ps, desk_magics=DESKM, now_epoch=T0, equity=equity, day_start=start,
-                     initial=100_000.0, daily_frac=0.05, max_frac=0.10)
+                     initial=100_000.0, daily_frac=0.05, max_frac=0.10,
+                     balance=start if balance is None else balance)
 
 
 def test_within_limits_closes_nothing() -> None:
@@ -41,10 +42,19 @@ def test_near_the_daily_floor_flattens_every_desk_position_and_stands_down() -> 
     assert not _a(ps, equity=96_001.0).flatten
 
 
-def test_near_the_max_loss_floor_flattens() -> None:
-    # static floor 90,000; 20% of 10,000 = 2,000 -> flatten at <= 92,000 even on a fresh day
-    res = _a([_p(1)], equity=92_000.0, start=92_000.0)
-    assert res.rule == er.NEAR_MAX_LOSS and res.flatten
+def test_floating_loss_into_the_max_loss_band_flattens_without_a_stand_down() -> None:
+    # static floor 90,000; 20% of 10,000 = 2,000. Closed balance 93,000 (outside the band),
+    # equity 92,000 on floating loss: flatten, no stand-down.
+    res = _a([_p(1)], equity=92_000.0, start=93_000.0, balance=93_000.0)
+    assert res.rule == er.NEAR_MAX_LOSS and res.flatten and not res.stand_down
+
+
+def test_a_balance_already_inside_the_band_is_no_emergency() -> None:
+    """Audit MF1 on c3953b552: 8.5% down and flat still trades (survival sizing sizes it)."""
+    res = _a([], equity=91_500.0, start=91_500.0, balance=91_500.0)
+    assert not res.flatten and not res.stand_down and res.closes == []
+    res = _a([_p(1)], equity=91_400.0, start=91_500.0, balance=91_500.0)
+    assert not res.flatten and res.closes == []
 
 
 def test_unreadable_inputs_never_flatten_on_a_guess() -> None:
@@ -58,6 +68,13 @@ def test_a_duplicate_send_keeps_the_oldest_only() -> None:
     ps = [_p(5, t=T0 - 100), _p(4, t=T0 - 200), _p(6, t=T0 - 50, typ=1)]
     res = _a(ps)
     assert [(t, r) for t, r, _ in res.closes] == [(5, er.DUPLICATE)]
+
+
+def test_a_truncated_comment_never_proves_a_duplicate() -> None:
+    """Audit MF2 on c3953b552: two sleeves sharing a 31-char cut comment are not a duplicate."""
+    cut = "FX12EURUSD_session_range_brea"[:31].ljust(31, "x")
+    res = _a([_p(1, comment=cut, t=T0 - 200), _p(2, comment=cut, t=T0 - 100)])
+    assert res.closes == []
 
 
 def test_a_stopless_position_is_closed_after_the_grace() -> None:
