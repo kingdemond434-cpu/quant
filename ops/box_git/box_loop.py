@@ -13,6 +13,8 @@ install_box_forge.ps1). Each stage is the GitHub-era stage it replaces, run on t
              (ops/box_git/impacted.py) on idle cores, statuses posted as the box-ci account under
              the gating names (quality, mt5-money-path, coverage-floor), each saying exactly what
              ran. Fast lane: a change no test can see posts green with that reason.
+  2b. SIGN   scripts/sign_train.py at LIVE's head when a CLEAR row or sealed file moved
+             (sign_tick): the audit-signed re-sign of a sealed judge file, fast-forwarded.
   3. FULL    LIVE's head, coalesced (box_ci.plan_full_run): law gate + the whole suite.
   4. SEAL + PROMOTE  at the newest fully green head only (box_ci.promotable): RELEASE.json sealed
              and pushed to LIVE exactly as ci.yml's seal job did, then scripts/release_promotion.py
@@ -565,6 +567,66 @@ def seal_and_push(cfg: Config, tested: str) -> str | None:
     return None
 
 
+#: THE SIGN TRAIN ON THE BOX (guardian gap 7, 2026-11-24). A sealed judge file (the gauntlet,
+#: the promoter, the rails) may move only with a re-signed IMMUTABLE_MANIFEST and a QB-002
+#: re-pin, and since D-20261027-003 the AUDIT signs: scripts/sign_train.py signs a moved file
+#: only when a CLEAR row for its exact sha256 is committed in SEAL_CLEARS.jsonl. Its only clock
+#: was ops/box/sign_train_leg.ps1, which pushes to GitHub -- gone with the suspension -- and a
+#: cloud clone is shallow, which the train refuses. So no sealed change could ever be signed,
+#: and a merged one would hold every release red. This stage runs the SAME train at LIVE's head,
+#: in a clean checkout of the forge's full history, and fast-forwards LIVE by the train's one
+#: commit. It adds no signing rule of its own: every refusal of the train stands, and the stage
+#: pushes only a commit that sits directly on LIVE and touches only the two files the train
+#: writes. Checked once per LIVE head; a checkout is made only when SEAL_CLEARS.jsonl or a
+#: sealed file moved since the last head it checked.
+SIGN_TRAIN = "scripts/sign_train.py"
+SIGNED_PATHS = ("desks/mt5/data/IMMUTABLE_MANIFEST.json", "desks/mt5/research/quantbench.py")
+SIGN_TRIGGERS = ("desks/mt5/data/SEAL_CLEARS.jsonl", "desks/mt5/scripts/external_gauntlet.py",
+                 "desks/mt5/research/promoter.py", "libs/portfolio/allocator_proof.py",
+                 "libs/portfolio/rails.py")
+
+
+def sign_tick(cfg: Config, live: str) -> str:
+    state = box_ci.load_state(cfg.state)
+    last = str(state.get("sign_checked") or "")
+    if last == live:
+        return f"LIVE {live[:12]} already checked for a sign"
+    if last:
+        rc, moved = _run(["git", "-C", str(cfg.bare), "diff", "--name-only", last, live, "--",
+                          *SIGN_TRIGGERS], timeout=300)
+        if rc == 0 and not moved.strip():
+            state["sign_checked"] = live
+            box_ci.save_state(cfg.state, state)
+            return f"LIVE {live[:12]}: no CLEAR row or sealed file moved; nothing to sign"
+    who = {"GIT_AUTHOR_NAME": "box-sign", "GIT_AUTHOR_EMAIL": "box-sign@box.invalid",
+           "GIT_COMMITTER_NAME": "box-sign", "GIT_COMMITTER_EMAIL": "box-sign@box.invalid"}
+    env = {**cfg.git_env("merge-gate"), **who}
+    with worktree(cfg, live) as root:
+        if not (root / SIGN_TRAIN).exists():
+            state["sign_checked"] = live
+            box_ci.save_state(cfg.state, state)
+            return f"LIVE {live[:12]} has no {SIGN_TRAIN}"
+        rc, out = _run([cfg.python, SIGN_TRAIN, "--target", live], cwd=root,
+                       env={**os.environ, **who}, timeout=1800)
+        said = (out.strip().splitlines() or [""])[-1][:200]
+        head = _run(["git", "rev-parse", "HEAD"], cwd=root)[1].strip()
+        if rc != 0 or head == live:
+            state["sign_checked"] = live
+            box_ci.save_state(cfg.state, state)
+            return f"sign train at {live[:12]}: rc {rc}: {said}"
+        parent = _run(["git", "rev-parse", "HEAD~1"], cwd=root)[1].strip()
+        files = set(_run(["git", "diff", "--name-only", live, "HEAD"], cwd=root)[1].split())
+        if parent != live or not files or files - set(SIGNED_PATHS):
+            return (f"REFUSED to push the sign at {head[:12]}: parent {parent[:12]}, "
+                    f"files {sorted(files)}")
+        if _run(["git", "push", "-q", cfg.remote(), f"{head}:refs/heads/{LIVE}"], cwd=root,
+                env=env)[0] != 0:
+            return f"signed {head[:12]} on {live[:12]} but the push was refused; next pass retries"
+    state["sign_checked"] = head
+    box_ci.save_state(cfg.state, state)
+    return f"SIGNED: {said} -> {head[:12]} on {LIVE}"
+
+
 def inbox_tick(cfg: Config) -> str:
     if cfg.inbox is None:
         return "no inbox configured"
@@ -597,6 +659,7 @@ def tick(cfg: Config) -> dict[str, Any]:
     for name, fn in (("drop", lambda: drop_tick(cfg)),
                      ("inbox", lambda: inbox_tick(cfg)),
                      ("gate", lambda: gate_tick(cfg, live_head(cfg))),
+                     ("sign", lambda: sign_tick(cfg, live_head(cfg))),
                      ("pr", lambda: pr_tick(cfg)),
                      ("full", lambda: full_tick(cfg, live_head(cfg))),
                      ("promote", lambda: promote_tick(cfg))):
