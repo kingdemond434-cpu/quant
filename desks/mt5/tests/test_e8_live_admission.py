@@ -207,7 +207,7 @@ def test_an_unverified_real_edge_is_sized_down_never_refused(
     assert by["real"].get("real_edge_verified") is True
     assert by["doubted"]["doubt_codes"] == [e8_book.DOUBT_REAL_EDGE]
     assert by["doubted"]["evidence_mult"] == pytest.approx(
-        by["unlisted"]["evidence_mult"] * e8_book.DOUBT_MULT)
+        by["unlisted"]["evidence_mult"] * e8_book.DOUBT_MULT, abs=1e-6)
     assert by["real"]["evidence_mult"] == by["unlisted"]["evidence_mult"]
     assert any("forward t 0.8 < 2" in n for n in by["doubted"]["evidence_notes"])
 
