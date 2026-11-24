@@ -2863,6 +2863,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                         fenced[side] = xwhy
                         doc["skipped"].append({"window": name, "side": side, "why": xwhy})
                         log(f"[{name}] {side} fenced: {xwhy}")
+                        if fusion_book is None:
+                            # FENCE UNREADABLE, NOT OPPOSED (box 11-13, 11-17): the other
+                            # account's book could not be read (terminal on another account, or
+                            # the lock held), so the window earns the same one extra pass a venue
+                            # fault does (`window_grace`). Still fail closed THIS pass.
+                            _deferred = state.setdefault("deferred", [])
+                            if name not in _deferred:
+                                _deferred.append(name)
                         # One missed-growth line per window and leg per day (the rail is
                         # re-checked every five minutes; the bill is one forgone leg).
                         _seen = state.setdefault("xacct_logged", {})
