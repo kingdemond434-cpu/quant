@@ -81,6 +81,16 @@ OPERATORS = UNARY + WINDOWED + BINARY + BINARY_WINDOWED
 #: everywhere else -- the grammar's standing rule for a series it cannot compute.
 PANEL = ("xrank", "xzscore")
 ALL_OPERATORS = OPERATORS + PANEL
+#: THE PUBLISHED FORMULA LIBRARIES (2026-10-13): `["lib", key]` evaluates one GTJA-191 / Qlib
+#: Alpha158 / Alpha360 formula EXACTLY as published, by `libs.research.formula_ops` with the
+#: publication's own operators (`libs.research.formula_catalog` holds the texts). One node, no
+#: children: the formula is the recipe, so there is nothing to mutate and nothing to sample --
+#: like PANEL it is deliberately NOT in `OPERATORS` or `ALL_OPERATORS`, so no generator, mutation
+#: or crossover can ever offer it. Its output is a pure number (every library formula is read as
+#: a signal and z-scored by the executor), so it is typed Z and unit-free. A formula that ranks
+#: ACROSS instruments (GTJA RANK) evaluates only where the caller seeded the memo with the panel
+#: result under the node's own key -- the same contract as PANEL -- and is NaN everywhere else.
+_LIBRARY = ("lib",)
 WINDOWS = (2, 3, 5, 8, 12, 24, 48, 120, 240)
 MAX_DEPTH = 5
 #: Bars of log return that `vol` is measured over. One trading day on H1, so the terminal means
@@ -471,6 +481,8 @@ def _eval(expr: Expr, frames: dict[str, pd.Series], idx: pd.Index,
             return pd.concat([a, b], axis=1).max(axis=1)
         if op == "min2":
             return pd.concat([a, b], axis=1).min(axis=1)
+    if op in _LIBRARY:
+        return _eval_library(str(expr[1]), frames, idx)
     if op in BINARY_WINDOWED:
         a, b = evaluate(expr[1], frames, memo), evaluate(expr[2], frames, memo)
         w = int(expr[3])
@@ -736,6 +748,8 @@ def type_of(expr: Expr) -> str:
     if op in PANEL:
         t = type_of(expr[1]) if len(expr) > 1 else INVALID
         return INVALID if t == INVALID else ("RANK" if op == "xrank" else "Z")
+    if op in _LIBRARY:
+        return "Z" if _library_formula(library_key(expr)) is not None else INVALID
     return INVALID
 
 
@@ -862,6 +876,8 @@ def dimension_of(expr: Expr) -> Dimension | None:
     if op in PANEL:
         a = dimension_of(expr[1]) if len(expr) > 1 else None
         return None if a is None else DIMENSIONLESS             # a rank or a z across peers
+    if op in _LIBRARY:
+        return DIMENSIONLESS if _library_formula(library_key(expr)) is not None else None
     return None
 
 
@@ -1030,6 +1046,8 @@ def unit_of(expr: Expr) -> Unit | None:
     if op in PANEL:
         a = unit_of(expr[1]) if len(expr) > 1 else None
         return None if a is None else NO_UNIT                   # a rank or a z across peers
+    if op in _LIBRARY:
+        return NO_UNIT if _library_formula(library_key(expr)) is not None else None
     return None
 
 
@@ -1044,10 +1062,72 @@ def well_formed(expr: Expr) -> bool:
     return well_typed(expr) and unit_of(expr) is not None
 
 
+# --------------------------------------------------------------------------- library nodes
+#: Library field -> the grammar terminal that carries it. VOLUME is the broker's tick count.
+_LIBRARY_TERMINAL = {"open": "open", "high": "high", "low": "low", "close": "close",
+                     "volume": "activity"}
+
+
+def _library_formula(key: Any) -> Any:
+    """The TESTABLE catalogue entry for `key`, or None. Imported lazily: the catalogue is data
+    the grammar reads, never a dependency of the grammar's own operators."""
+    if not isinstance(key, str):
+        return None
+    try:
+        from libs.research import formula_catalog
+    except Exception:                                   # pragma: no cover - import guard
+        return None
+    f = formula_catalog.get(key)
+    return f if f is not None and f.status == "TESTABLE" else None
+
+
+def library_key(expr: Expr) -> str | None:
+    """`key` for a well-formed `["lib", key]` node, else None."""
+    if isinstance(expr, (list, tuple)) and len(expr) == 2 and expr[0] in _LIBRARY \
+            and isinstance(expr[1], str):
+        return str(expr[1])
+    return None
+
+
+def has_library(expr: Expr) -> bool:
+    """True when any node of the tree is a library formula (never mutable, never sampled)."""
+    if not isinstance(expr, (list, tuple)) or not expr:
+        return False
+    if expr[0] in _LIBRARY:
+        return True
+    return any(has_library(c) for c in expr[1:])
+
+
+def library_terminals(key: str) -> set[str]:
+    """The grammar terminals a library formula reads (empty for an unknown key)."""
+    f = _library_formula(key)
+    return set() if f is None else {_LIBRARY_TERMINAL[x] for x in f.fields()
+                                    if x in _LIBRARY_TERMINAL}
+
+
+def _eval_library(key: str, frames: dict[str, pd.Series], idx: pd.Index) -> pd.Series:
+    f = _library_formula(key)
+    if f is None or f.needs_panel:
+        return _nan(idx)
+    fields: dict[str, pd.DataFrame] = {}
+    for name, term in _LIBRARY_TERMINAL.items():
+        if term in frames:
+            fields[name] = frames[term].to_frame("x")
+    try:
+        from libs.research import formula_catalog
+        out = formula_catalog.evaluate(key, fields)
+    except Exception:
+        return _nan(idx)
+    return out["x"].reindex(idx)
+
+
 # --------------------------------------------------------------------------- structure
 def terminals_in(expr: Expr) -> set[str]:
     if isinstance(expr, str):
         return {expr}
+    key = library_key(expr)
+    if key is not None:
+        return library_terminals(key)
     out: set[str] = set()
     for c in (expr[1:] if isinstance(expr, (list, tuple)) else []):
         if isinstance(c, (str, list, tuple)):
@@ -1205,6 +1285,11 @@ def _structurally_valid(expr: Expr, allow_drivers: bool = True,
                 and isinstance(expr[3], int) and expr[3] in WINDOWS)
     if op in PANEL:
         return len(expr) == 2 and _structurally_valid(expr[1], allow_drivers, terminals)
+    if op in _LIBRARY:
+        key = library_key(expr)
+        if key is None or _library_formula(key) is None:
+            return False
+        return terminals is None or library_terminals(key) <= set(terminals)
     return False
 
 
@@ -1352,7 +1437,9 @@ def describe(expr: Expr, side_mode: str = "follow") -> str:
                 _walk(c)
     _walk(expr)
     terms = sorted(terminals_in(expr))
-    if ops & set(PANEL):
+    if ops & set(_LIBRARY):
+        shape = "a published library formula (evaluated exactly as published)"
+    elif ops & set(PANEL):
         shape = "an extremeness measure AGAINST THE PEERS IN THE CELL'S BASKET"
     elif ops & {"group_rank", "group_zscore"}:
         shape = "an extremeness measure AGAINST BARS IN THE SAME STATE"
