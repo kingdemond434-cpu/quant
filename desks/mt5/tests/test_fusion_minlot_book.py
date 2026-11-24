@@ -396,8 +396,10 @@ def test_gap_decay_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Pa
         {"name": "USDJPY.asia#rr=1.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
     ]
     kept, notes = dc.load_sleeves_verbose(_sleeves_file(tmp_path, live))
-    assert kept == [], [r["name"] for r in kept]
-    assert len(notes) == len(live)
+    # AUDCHF's gap-decay row was lifted 2026-11-24 (principal: no blockers but exotics); the ZAR
+    # rows are exotic and stay refused.
+    assert [r["name"] for r in kept] == [GAP_DECAY[0]]
+    assert len(notes) == len(live) - 1
     # ... and none of them can be appended by the override either.
     got, _ = dc.minlot_override_rows(_sleeves_file(tmp_path, live), frozenset(FOUR))
     assert got == []

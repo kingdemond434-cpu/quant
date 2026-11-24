@@ -91,6 +91,10 @@ ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disa
 DEFAULT_LIVE_SLEEVES: dict[str, frozenset[str]] = {}
 
 
+#: Quarantined sleeve names the principal has since lifted (see `load`).
+LIFTED_QUARANTINE: frozenset[str] = frozenset({
+    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"})
+
 @dataclass(frozen=True)
 class Policy:
     live_symbols: frozenset[str] = DEFAULT_LIVE_SYMBOLS
@@ -164,6 +168,11 @@ def policy(path: Path | None = None) -> Policy:
                 live_sl[str(sym).upper()] = frozenset(str(n) for n in names)
     quar = doc.get("quarantined_sleeves")
     quarantined = frozenset(str(n) for n in quar) if isinstance(quar, list) else frozenset()
+    # LIFTED IN CODE (principal 2026-11-24 18:34Z, "no blockers for anything. Only exotics"):
+    # this file is box state, re-pushed by the box, so a lift written into it would be reverted.
+    # Audit should-fix 2 on 9dc6bbfe4: AUDCHF's gap_decay_stop row is lifted with its
+    # decision_core zero; the two ZAR rows stay (exotic).
+    quarantined -= LIFTED_QUARANTINE
     bar, exo, passed, stale = _exotic_bar(doc.get("exotic_cost_bar"))
     return Policy(live, banned_tf, banned_fam, banned_exec, live_sl,
                   quarantined_sleeves=quarantined, exotic_bar=bar, exotic_symbols=exo,

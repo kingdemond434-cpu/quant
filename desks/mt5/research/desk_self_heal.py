@@ -221,7 +221,22 @@ def check_lifted_rules(root: Path, now: datetime) -> Finding:
         return Finding("lifted_rules", False, f"check failed: {exc!r}", fixable=False)
     if breaches:
         return Finding("lifted_rules", False, "; ".join(breaches), fixable=False)
-    return Finding("lifted_rules", True, "every principal-lifted rule stays lifted")
+    # THE RAW FILE, NAMED (Audit should-fix 1 on 9dc6bbfe4): cert_book_zero filters lifted names
+    # by design, so the box's own CERT_BOOK_LIVE.json zeros for them are read raw and reported --
+    # harmless while the code lift holds, and the evidence if a reader ever bypasses it.
+    raw: list[str] = []
+    try:
+        from mt5desk.decision_core import SUPERSEDED_CERT_ZEROS
+        from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
+        for venue, names in SUPERSEDED_CERT_ZEROS.items():
+            book = load_cert_book(CERT_BOOK_FILE, venue) or {}
+            raw += [f"{venue}:{n}" for n in sorted(names) if book.get(n) == 0.0]
+    except Exception as exc:
+        raw = [f"raw read failed ({type(exc).__name__})"]
+    return Finding("lifted_rules", True,
+                   "every principal-lifted rule stays lifted"
+                   + (f"; the cert book file still writes {len(raw)} lifted zero(s), ignored in "
+                      f"code: {', '.join(raw[:8])}" if raw else ""))
 
 
 def check_universe_data(root: Path, now: datetime,

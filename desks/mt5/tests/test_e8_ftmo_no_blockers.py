@@ -146,9 +146,50 @@ def test_the_e8_executor_sizes_doubts_and_never_refuses_them() -> None:
                                      door=_Door("not Tier S"))
     assert status == "" and len(doubts) == 3 and mult == d ** 3
     # A doubt the book already priced is not charged twice.
+    _, _, _, mult = _doors(gate=_Gate(verdict="MISMATCH"), notes=[e8_book.DOUBT_REPLICATION])
+    assert mult == 1.0
+    # A note that merely mentions the words is not a priced code (Audit should-fix 4).
     _, _, _, mult = _doors(gate=_Gate(verdict="MISMATCH"),
                            notes=["replication MISMATCH: fixture: x0.5"])
-    assert mult == 1.0
+    assert mult == d
     # The principal's own number funds it: journaled, not sized.
     _, _, doubts, mult = _doors(cert={"EURUSD_x_asia": 0.004}, gate=_Gate(verdict="MISMATCH"))
     assert doubts and mult == 1.0
+
+
+def test_the_book_writes_structured_doubt_codes(tmp_path, monkeypatch) -> None:
+    import admission_integrity
+    import kelly_survival
+
+    class _G:
+        def __init__(self) -> None:
+            self.alarm = {"blocks": True, "why": "placebo"}
+
+        def replication(self, cert, fp):
+            return "MISMATCH", "fixture"
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {}, "excluded": {}}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(e8_book, "FILL_PROVEN", tmp_path / "absent.json")
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(lambda c: _G()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    (row,), _ = e8_book.live_admissible([{"key": "k", "symbol": "EURUSD", "family": "x",
+                                          "selector": "asia", "fingerprint": "fp"}])
+    assert row["doubt_codes"] == [e8_book.DOUBT_PLACEBO, e8_book.DOUBT_REPLICATION]
+    from prop.e8_executor import entry_doors
+    *_, mult = entry_doors("EURUSD", "EURUSD_x_asia", {}, {}, _G(), _Door(), "k", "fp",
+                           row["doubt_codes"])
+    assert mult == 1.0
+
+
+def test_audchf_gap_decay_quarantine_is_lifted_in_code(tmp_path) -> None:
+    """Audit should-fix 2: the box's live_sleeve_policy.json still quarantines the AUDCHF
+    gap-decay row (box state, re-pushed); the lift lives in code. The ZAR rows stay."""
+    from mt5desk import live_policy
+    p = tmp_path / "live_sleeve_policy.json"
+    aud = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    zar = "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    p.write_text(json.dumps({"live_symbols": ["*"], "quarantined_sleeves": [aud, zar]}),
+                 encoding="utf-8")
+    pol = live_policy.policy(p)
+    assert aud not in pol.quarantined_sleeves and zar in pol.quarantined_sleeves

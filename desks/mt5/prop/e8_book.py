@@ -338,6 +338,9 @@ def fill_shrink(n: float) -> float:
 #: the whole book. Exotics stay refused (`is_exotic_pair`).
 CERT_PRIOR_N = 10
 DOUBT_MULT = 0.5
+#: Structured doubt codes (Audit should-fix 4 on 9dc6bbfe4): a door that already priced a doubt
+#: writes its code on the row (`doubt_codes`) and the next door never charges it twice.
+DOUBT_PLACEBO, DOUBT_REPLICATION, DOUBT_TIER_S = "placebo_alarm", "replication", "tier_s_door"
 _MAJORS = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
 
 
@@ -459,6 +462,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
         doubts: list[str] = []
+        codes: list[str] = []
         # EVERY PROMOTED SLEEVE FLOWS INTO E8 AND FTMO; ONLY EXOTICS ARE BLOCKED (zuck 2026-11-19
         # 12:15Z, 2026-11-24 18:34Z). An explicit zero the principal wrote in the book and his
         # named exclusions still stand (his own words, per sleeve); the terms fence stands (the
@@ -475,14 +479,18 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         else:
             if gate.alarm.get("blocks"):
                 doubts.append(f"placebo alarm ({gate.alarm.get('why') or 'placebo gate'})")
+                codes.append(DOUBT_PLACEBO)
             verdict, why = gate.replication(key, str(row.get("fingerprint") or ""))
             if verdict != REPLICATED:
                 doubts.append(f"replication {verdict}: {why}")
+                codes.append(DOUBT_REPLICATION)
         if reason:
             blocked.append({"certificate": key, "why": reason})
         else:
             if book_key in proven:
                 row = {**row, "fill_proven": proven[book_key]}
+            if codes:
+                row = {**row, "doubt_codes": codes}
             if principal_book.get(book_key, 0) > 0:
                 # The principal's own number sizes it; a doubt is journaled, never applied.
                 if doubts:

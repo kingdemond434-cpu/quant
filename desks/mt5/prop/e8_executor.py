@@ -853,7 +853,7 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 
 def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
                 exclusions: Mapping[str, Any], integrity: Any, authority: Any, cert_id: str,
-                fingerprint: str, evidence_notes: Any = (), replicated: str = "REPLICATED",
+                fingerprint: str, priced: Any = (), replicated: str = "REPLICATED",
                 ) -> tuple[str, str, list[str], float]:
     """(refusal status or "", why, doubts, size multiplier) for one certified sleeve.
 
@@ -863,9 +863,16 @@ def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
     by its book row (prop/e8_book.sleeve_risk). Only an exotic pair, an explicit zero the
     principal wrote, and his named exclusions he has not lifted stand a sleeve aside. The
     certifier alarm, a replication miss and the Tier S door SIZE it -- x DOUBT_MULT each, unless
-    the book already priced that doubt in (`evidence_notes`) or the principal's own number funds
+    the book already priced that doubt in (its `doubt_codes`) or the principal's own number funds
     it -- and never refuse it."""
-    from prop.e8_book import DOUBT_MULT, SUPERSEDED_EXCLUSIONS, is_exotic_pair
+    from prop.e8_book import (
+        DOUBT_MULT,
+        DOUBT_PLACEBO,
+        DOUBT_REPLICATION,
+        DOUBT_TIER_S,
+        SUPERSEDED_EXCLUSIONS,
+        is_exotic_pair,
+    )
     if is_exotic_pair(sym):
         return ("EXOTIC_BANNED", "exotic FX pair: exotics are banned (principal 2026-11-24 "
                 "18:04Z)", [], 0.0)
@@ -873,22 +880,23 @@ def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
         return "PRINCIPAL_ZERO", "principal zero in the E8 certified book", [], 0.0
     if book_key in exclusions and book_key not in SUPERSEDED_EXCLUSIONS:
         return "PRINCIPAL_EXCLUDED", str(exclusions[book_key]), [], 0.0
-    doubts: list[str] = []
+    doubts: list[tuple[str, str]] = []
     if integrity.alarm.get("blocks"):
-        doubts.append(f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})")
+        doubts.append((DOUBT_PLACEBO,
+                       f"placebo alarm ({integrity.alarm.get('why') or 'placebo gate'})"))
     verdict, why = integrity.replication(cert_id, fingerprint)
     if verdict != replicated:
-        doubts.append(f"replication {verdict}: {why}")
+        doubts.append((DOUBT_REPLICATION, f"replication {verdict}: {why}"))
     try:
         tier_reason = authority.block(cert_id)
     except Exception as exc:
         tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
     if tier_reason:
-        doubts.append(f"Tier S door: {tier_reason}")
-    priced = " ".join(str(n) for n in evidence_notes or ())
-    fresh = [d for d in doubts if d.split(":")[0].split(" (")[0] not in priced]
+        doubts.append((DOUBT_TIER_S, f"Tier S door: {tier_reason}"))
+    done = {str(c) for c in priced or ()}
+    fresh = [c for c, _ in doubts if c not in done]
     mult = 1.0 if cert.get(book_key, 0) > 0 else DOUBT_MULT ** len(fresh)
-    return "", "", doubts, mult
+    return "", "", [t for _, t in doubts], mult
 
 
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
@@ -1126,7 +1134,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         status, why, doubts, doubt_mult = entry_doors(
             sym, book_key, cert, exclusions, integrity, promotion_authority, cert_id,
-            str(s.get("fingerprint") or ""), s.get("evidence_notes") or (), REPLICATED)
+            str(s.get("fingerprint") or ""), s.get("doubt_codes") or (), REPLICATED)
         if status:
             row.update(status=status, why=why)
             doc["sleeves"].append(row)

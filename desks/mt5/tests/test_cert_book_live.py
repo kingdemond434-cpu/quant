@@ -156,8 +156,9 @@ def test_live_policy_admits_the_book_and_quarantines_chfnok() -> None:
     assert pol.live_symbols == {"*"}
     assert "discovered" in pol.banned_families
     assert "M15" in pol.banned_timeframes["XAUUSD"]
-    # The three gap_decay principals are refused at the door (BOOKS_PATCH v5).
-    for sym in ("AUDCHF", "EURZAR", "USDZAR"):
+    # The two ZAR gap_decay principals are refused at the door (BOOKS_PATCH v5); AUDCHF's was
+    # lifted 2026-11-24 (principal: no blockers but exotics; live_policy.LIFTED_QUARANTINE).
+    for sym in ("EURZAR", "USDZAR"):
         name = f"{sym.lower()}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
         row = {"symbol": sym, "family": "overnight_gap_decay", "exec": "family_market",
                "name": name}
