@@ -62,6 +62,41 @@ def _save_ledger(path: Path, ledger: dict[str, Any]) -> None:
         pass
 
 
+#: END+RUN (Audit 11-20 conditions): a research task whose lane is HUNG (output older than
+#: HUNG_FACTOR x its limit) while the scheduler still reads it Running is ended with
+#: `schtasks /End` on that task only -- never a pid or image kill -- and then run again. Same
+#: bounds as a re-run; every End is logged under END_KEY in the ledger. A live task can never be
+#: ended: research_task() refuses anything executor-, follower-, gateway-, release- or
+#: account-shaped, and only built-in research tasks or research prefixes qualify.
+END_KEY = "_ends"
+END_SETTLE_S = 15
+
+
+def _task_running(name: str) -> bool:
+    if os.name != "nt":
+        return False
+    try:
+        proc = subprocess.run(["schtasks", "/Query", "/TN", name, "/FO", "CSV", "/NH"],
+                              capture_output=True, text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return proc.returncode == 0 and '"Running"' in proc.stdout
+
+
+def _end_task(name: str) -> bool:
+    if not heal.research_task(name) or os.name != "nt":
+        return False
+    try:
+        proc = subprocess.run(["schtasks", "/End", "/TN", name], capture_output=True,
+                              text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if proc.returncode == 0:
+        import time
+        time.sleep(END_SETTLE_S)
+    return proc.returncode == 0
+
+
 def _run_task(name: str) -> bool:
     if os.name != "nt":
         return False
@@ -75,13 +110,19 @@ def _run_task(name: str) -> bool:
 
 def run(*, root: Path = ROOT, apply: bool = False,
         out: Path = REPORT, ledger_path: Path = RERUN_LEDGER,
-        run_task: Any = None, now: datetime | None = None) -> dict[str, Any]:
+        run_task: Any = None, now: datetime | None = None,
+        task_running: Any = None, end_task: Any = None) -> dict[str, Any]:
     t_now = now or datetime.now(tz=UTC)
     findings = heal.audit(root, t_now)
     ledger = _load_ledger(ledger_path)
     bounded: list[dict[str, str]] = []
     launch = run_task or _run_task
+    is_running = task_running or _task_running
+    end = end_task or _end_task
     ran_this_pass: set[str] = set()
+    hung = {f.task for f in findings
+            if not f.ok and f.hung and f.task and heal.research_task(f.task)}
+    ended: list[dict[str, Any]] = []
 
     def _bounded_run(task: str) -> bool:
         # Two faults owned by one task (cadence and judge stall both -> MT5-Gauntlet) are one run.
@@ -94,6 +135,13 @@ def run(*, root: Path = ROOT, apply: bool = False,
         ran_this_pass.add(task)
         ledger[task] = [*[str(x) for x in (ledger.get(task) or [])][-10:],
                         t_now.isoformat(timespec="seconds")]
+        if task in hung and heal.research_task(task) and is_running(task):
+            ok_end = bool(end(task))
+            row = {"task": task, "at": t_now.isoformat(timespec="seconds"), "ended": ok_end}
+            ended.append(row)
+            ledger[END_KEY] = [*(ledger.get(END_KEY) or [])[-50:], row]
+            if not ok_end:
+                return False
         return bool(launch(task))
 
     remedies, escalations = heal.plan(findings, run_task=_bounded_run if apply else None)
@@ -111,6 +159,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
         "repairs": [{"action": action, "ok": ok} for action, ok in outcomes],
         "unrepaired": [{"check": f.check, "detail": f.detail} for f in escalations],
         "bounded": bounded,
+        "ended": ended,
         "bounds": {"min_gap_s": RERUN_MIN_GAP_S, "max_per_day": RERUN_MAX_PER_DAY},
         "boundary": ("research evidence producers may be re-run; promotion, capital, gates, "
                      "deadman state and orders are outside this actuator"),

@@ -78,6 +78,7 @@ class Finding:
     detail: str
     fixable: bool = False
     task: str | None = None   # the producer task that cures it, when the check names one
+    hung: bool = False        # output older than HUNG_FACTOR x its limit: a running copy is stuck
 
     @property
     def line(self) -> str:
@@ -457,7 +458,14 @@ LANES: tuple[tuple[str, str, float, str | None], ...] = (
     ("state vector", "desks/mt5/data/state_vector.json", 2.0, "MT5-StateVector"),
     ("scientist tournament", "desks/mt5/reports/SCIENTIST_TOURNAMENT.json",
      26.0, "MT5-ScientistTournament"),
+    # Box 11-24: merge_hypotheses hung 22 h after its study-bank step holding the job lock, and
+    # every 30-min trigger was refused (0x800710E0), so only direct appends reached the judge.
+    ("merge docket", "desks/mt5/data/hypotheses/external_survivors.json", 3.0,
+     "MT5-MergeDocket"),
 )
+#: A lane whose output is older than this multiple of its limit while its task still reads
+#: Running is HUNG: the actuator may end that one research task and start it again (Audit 11-20).
+HUNG_FACTOR = 2.0
 LANES_FILE = "desks/mt5/data/throughput_lanes.json"
 #: The ONLY tasks a lane may re-run: the research tasks named in LANES above. A lanes file can add
 #: a lane to WATCH, but it can never point a re-run at anything else -- above all not a live
@@ -466,6 +474,12 @@ LANES_FILE = "desks/mt5/data/throughput_lanes.json"
 RESEARCH_TASKS: frozenset[str] = frozenset(t for *_, t in LANES if t)
 RESEARCH_TASK_PREFIXES: tuple[str, ...] = ("MT5-Dept-", "MT5-Forest-", "MT5-Lab-", "MT5-Miner-")
 _LIVE_TASK = re.compile(r"(?i)executor|follower|gateway|adopt|release|bridge|e8|ftmo|fusion|live")
+
+
+def research_task(task: object) -> bool:
+    """A task self-heal may re-run (and, when hung, end and re-run): research only, never live."""
+    return (isinstance(task, str) and not _LIVE_TASK.search(task)
+            and (task in RESEARCH_TASKS or task.startswith(RESEARCH_TASK_PREFIXES)))
 
 
 def _ts(raw: Any) -> datetime | None:
@@ -554,8 +568,7 @@ def _lanes(root: Path) -> list[tuple[str, str, float, str | None]]:
         task = row.get("task")
         if isinstance(name, str) and isinstance(path, str) and age and age > 0 \
                 and ".." not in path:
-            safe = (isinstance(task, str) and not _LIVE_TASK.search(task)
-                    and (task in RESEARCH_TASKS or task.startswith(RESEARCH_TASK_PREFIXES)))
+            safe = research_task(task)
             lanes.append((name, path, age, task if safe else None))
     return lanes
 
@@ -577,7 +590,8 @@ def check_lanes_idle(root: Path, now: datetime) -> list[Finding]:
         else:
             out.append(Finding(f"lane {name}", False,
                                f"idle: {rel} is {age if age is None else round(age, 1)}h old "
-                               f"(limit {limit:.1f}h)", fixable=task is not None, task=task))
+                               f"(limit {limit:.1f}h)", fixable=task is not None, task=task,
+                               hung=age is not None and age > HUNG_FACTOR * limit))
     return out
 
 
