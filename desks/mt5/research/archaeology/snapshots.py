@@ -28,7 +28,9 @@ policy nobody could read silenced the ground forever. `may_fetch` refuses exactl
 a reason naming something the desk would have to DEFEAT (`BOUNDARY_MARKERS` -- a login, a
 paywall, an antibot challenge, an access control). The desk's measured walls
 (`side_channels/seed_miners.SOURCE_WALLS`) are READ here rather than restated, so a host the desk
-already found walled labels this table automatically and one ledger owns the boundary.
+already found walled labels this table automatically and one ledger owns the boundary. AND A
+ROBOTS "NO" STOPS THE PAGE FETCH (Auditor ruling 2026-11-18, #1335): `snapshot` reads each host's
+robots.txt once (`robots_refusal`) and skips a disallowed, unread or hard-stopped page.
 
     python -c "from archaeology import snapshots; print(snapshots.summary())"
 """
@@ -580,6 +582,9 @@ def may_fetch(p: Platform, *, probe: bool = False) -> tuple[bool, str]:
     prohibition. They are deleted: `machine_use()` still computes the verdict, it is returned as
     a LABEL, and only an access control, a login, a paywall or an antibot challenge refuses --
     because reading those would mean defeating them (hard-boundary acts 1 and 2).
+
+    THIS IS NOT THE WHOLE DOOR (Auditor ruling 2026-11-18, #1335): `snapshot` also runs every
+    page through `robots_refusal`, and a robots "no" stops that fetch.
     """
     verdict, why = machine_use(p)
     hit = boundary_hit(f"{why} {p.note}")
@@ -588,9 +593,45 @@ def may_fetch(p: Platform, *, probe: bool = False) -> tuple[bool, str]:
                        f"an access control -- {why}")
     label = f"{verdict}: {why}" if verdict != ALLOWED else why
     if probe and mc.robots_still_disallows(p.host):
-        label = (f"{label}; live robots probe: {p.host}/robots.txt names this agent -- RECORDED "
-                 f"AS A LABEL and fetched anyway (LAWS 5e)")
+        label = (f"{label}; live robots probe: {p.host}/robots.txt names this agent -- "
+                 f"`snapshot` does not fetch it (Auditor ruling 2026-11-18)")
     return True, label
+
+
+#: robots.txt per scheme://host, read once and reused: rules, or a refusal string (robots_body).
+_ROBOTS_CACHE: dict[str, Any] = {}
+
+
+def clear_robots_cache() -> None:
+    """Forget every robots reading; `civilization.run` calls it at the start of each pass."""
+    _ROBOTS_CACHE.clear()
+
+
+def robots_refusal(url: str) -> str:
+    """Why an automated fetch of `url` must NOT happen, or "" when robots allows it.
+
+    Auditor ruling 2026-11-18 (#1335): a robots "no" STOPS an automated fetch, whatever LAWS 5e's
+    routing-label text says. The host's robots.txt is read once (cached) through
+    `libs.data.robots_body`, so 404/410 is "no file" (allowed), 401/403/429/451 a hard stop, and
+    an HTML body, a 5xx or a transport failure UNREAD -- and unread is not permission. Then the
+    path is checked against the rules for `dfm.ROBOTS_AGENT`, then the desk's measured bars."""
+    from urllib.parse import urlsplit
+
+    from libs.data.robots_body import robots_rules_or_refusal
+    parts = urlsplit(url)
+    if not parts.netloc:
+        return f"refused by robots: no host in {url!r}, so no robots.txt to read"
+    root = f"{parts.scheme or 'https'}://{parts.netloc.lower()}"
+    if root not in _ROBOTS_CACHE:
+        body, status, _err = mc.fetch_text(f"{root}/robots.txt")
+        _ROBOTS_CACHE[root] = robots_rules_or_refusal(status or (200 if body else 0), None, body)
+    got = _ROBOTS_CACHE[root]
+    if isinstance(got, str):
+        return f"refused by robots: {got} ({root})"
+    if not got.can_fetch(dfm.ROBOTS_AGENT, url):
+        return f"refused by robots: {root}/robots.txt disallows {parts.path or '/'}"
+    barred = mc.robots_barred(url)
+    return f"refused by robots (measured): {barred}" if barred else ""
 
 
 # --------------------------------------------------------------------------- the parsers
@@ -818,6 +859,15 @@ def snapshot(platform: Platform | str, budget_s: float = 60.0, *, fetch: bool = 
         if not allowed:
             out["refused"] = why
             out["unmeasured"].append(f"{p.name}: {why}")
+            out["seconds"] = round(time.monotonic() - started, 3)
+            return out
+        # A robots "no" for THIS page STOPS the fetch (Auditor ruling 2026-11-18, #1335).
+        stop = robots_refusal(p.root)
+        if not stop and probe and mc.robots_still_disallows(p.host):
+            stop = f"refused by robots: live probe -- {p.host}/robots.txt names this agent"
+        if stop:
+            out["refused"] = out["robots_refused"] = stop
+            out["unmeasured"].append(f"{p.name}: {stop}")
             out["seconds"] = round(time.monotonic() - started, 3)
             return out
         body, status, err = mc.fetch_text(p.root, p.language)
