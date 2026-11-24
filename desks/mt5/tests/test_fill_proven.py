@@ -109,8 +109,8 @@ def test_write_and_main_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert doc["schema"] == fp.SCHEMA and doc["sleeves"] == []
 
 
-def test_noise_positives_fail_the_fdr_and_are_not_admitted(tmp_path: Path) -> None:
-    """A barely positive, noisy mean among many tried sleeves is not admitted."""
+def test_noise_positives_are_admitted_and_flagged_never_gated(tmp_path: Path) -> None:
+    """FDR is reported per sleeve, not a gate: certified sleeves are sized by n downstream."""
     ticks, shadow = tmp_path / "ticks", tmp_path / "shadow"
     _tape(ticks, "EURUSD", "2026-11-18", {9: 0.0001})
     noisy = [(9, 1.5), (9, -1.4)] * 6  # mean ~ +0.04R, sd ~ 1.5R, n = 12
@@ -118,7 +118,10 @@ def test_noise_positives_fail_the_fdr_and_are_not_admitted(tmp_path: Path) -> No
         _ledger(shadow, f"EURUSD_noise{i}_asia", noisy)
     _ledger(shadow, "EURUSD_real_asia", [(9, 0.6), (9, 0.4)] * 10)
     doc = fp.build(shadow, ticks, NOW)
-    assert [s["sleeve"] for s in doc["sleeves"]] == ["EURUSD_real_asia"]
+    assert doc["sleeves"][0]["sleeve"] == "EURUSD_real_asia"
+    assert doc["sleeves"][0]["fdr_pass"] is True
+    assert len(doc["sleeves"]) == 21
+    assert sum(1 for s in doc["sleeves"] if not s["fdr_pass"]) == 20
     assert doc["n_positive_failing_fdr"] == 20
     assert doc["rule"]["n_tested"] == 21
 
