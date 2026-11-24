@@ -3753,6 +3753,10 @@ def main(argv: list[str] | None = None) -> int:
                                           waits=MT5_RETRY_WAITS_S[1:])
             if ok:
                 doc = run(venue, mt5, armed=armed)
+        # THE E8 FILLS LEDGER (box 11-24): read-only, after the pass, never on the order path.
+        with contextlib.suppress(Exception):
+            from prop import e8_fills
+            doc["fills_ledger"] = e8_fills.observe(venue)
     finally:
         mt5.shutdown()
         # Queued alert work (v5.6) is drained AFTER the pass, bounded, so a short-lived process
