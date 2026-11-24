@@ -239,6 +239,10 @@ ORGANS: tuple[Entry, ...] = (
     # half of the same file is on daily_cycle's proposer list.
     _e("desks/mt5/research/nlp_social_cells.py", "text -> event/policy factors and Asian retail "
        "attention/mood deltas, fetched and published", "--ingest"),
+    # DEALER GAMMA (2026-11-24): HKEX keeps ~2 days of index-option reports and Deribit only
+    # the present book, so the history is self-recorded -- a day this does not run is lost.
+    _e("desks/mt5/research/dealer_gamma_proxy.py", "option books -> dealer gamma, flip, OI and "
+       "ATM vol as PIT series, fetched and published", "--ingest"),
     # THE DESK'S OWN COSTS AND THE OPERATOR'S ALERT LOAD (ARCH-28, 2026-10-07): model spend and
     # broker charges from the desk's ledgers, the hurdle over them, and how much of the alert
     # traffic deserves a person. It ran only in the VPS daily cycle, which the box never sees.
