@@ -16,7 +16,7 @@
  "last_sweep_s": 59058.1,
  "uptime_s": 59058.1,
  "last_sweep_ended_utc": "2026-11-24T10:35:20+00:00",
- "heartbeat_utc": "2026-11-24T20:50:09+00:00",
+ "heartbeat_utc": "2026-11-24T21:04:46+00:00",
  "sweep_phase": {
   "pid": 15964,
   "sweep_started_utc": "2026-11-24T10:35:39+00:00",
@@ -87,22 +87,22 @@
      }
     },
     "prewarm": {
-     "samples": 2033,
+     "samples": 2117,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 1924,
-       "share": 0.946
+       "n": 2008,
+       "share": 0.949
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 45,
-       "share": 0.022
+       "share": 0.021
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 26,
-       "share": 0.013
+       "share": 0.012
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
@@ -116,13 +116,13 @@
       }
      ],
      "process": {
-      "cpu_s": 3040.5,
-      "page_faults": 115579905.0,
-      "read_bytes": 49473420.0,
-      "write_bytes": 125485599292.0,
-      "sampled_s": 20320.0,
+      "cpu_s": 3042.0,
+      "page_faults": 115621651.0,
+      "read_bytes": 49479894.0,
+      "write_bytes": 125501636869.0,
+      "sampled_s": 21160.0,
       "rss_mb_max": 3703.6,
-      "cpu_share_of_wall": 0.15
+      "cpu_share_of_wall": 0.144
      }
     }
    }
