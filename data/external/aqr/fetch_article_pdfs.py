@@ -96,7 +96,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 PDF_DIR = HERE / "pdfs"
 TXT_DIR = HERE / "pdftext"
 OUT = HERE / "article_pdf_text.json"
-UA = "ClaudeBot/1.0 (+quant desk research; contact via site owner)"
+UA = "quant-desk-research/1.0 (automated research; honours robots.txt)"
 BASE = "https://www.aqr.com"
 DELAY_S = 2.0
 
