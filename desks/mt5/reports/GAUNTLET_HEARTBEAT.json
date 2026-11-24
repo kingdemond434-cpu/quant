@@ -3,12 +3,12 @@
  "create_time": 1795516531.3132753,
  "status": "RUNNING",
  "started_utc": "2026-11-24T10:35:31+00:00",
- "beat_utc": "2026-11-24T22:34:49+00:00",
- "beats": 1010,
+ "beat_utc": "2026-11-24T22:50:02+00:00",
+ "beats": 1040,
  "beat_every_s": 30.0,
  "phase": "prewarm",
  "phase_started_utc": "2026-11-24T11:38:26+00:00",
- "phase_elapsed_s": 39383.4,
+ "phase_elapsed_s": 40295.6,
  "phases_done": {
   "plan": 3767.5
  },
@@ -26,11 +26,11 @@
  "shards": {},
  "tree": {
   "procs": 16,
-  "rss_mb": 1601.0,
-  "cpu_s": 89936.1
+  "rss_mb": 1590.1,
+  "cpu_s": 93319.4
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-24T22:34:49+00:00",
+ "last_progress_utc": "2026-11-24T22:50:02+00:00",
  "idle_s": 0.0,
  "progress_gaps": 8
 }
