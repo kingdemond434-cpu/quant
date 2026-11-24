@@ -76,10 +76,13 @@ def archive(tmp_path, monkeypatch):
     """The whole store pointed at `tmp_path`, and the network door replaced by a recorder."""
     monkeypatch.setattr(mc, "MOAT", tmp_path / "moat")
     monkeypatch.setattr(snap, "POPULATION", tmp_path / "archaeology" / "population.jsonl")
+    monkeypatch.setattr(snap, "_ROBOTS_CACHE", {})
     calls: list[str] = []
 
     def _fetch(url: str, lang: str = "") -> tuple[str, int, str]:
         calls.append(url)
+        if url.endswith("/robots.txt"):  # every wire fetch reads robots first (2026-11-18)
+            return "User-agent: *\nDisallow: /private\n", 200, ""
         if "signals" in url:
             return SIGNALS_PAGE, 200, ""
         return "", 0, "fixture has no body for this url"
@@ -187,14 +190,16 @@ def test_unknown_access_is_a_label_and_the_ground_is_fetched(archive):
     ok, why = snap.may_fetch(unknown)
     assert ok is True and "unknown" in why
     got = snap.snapshot(unknown, 30.0, fetch=True, at="2026-09-01")
-    assert got["fetched"] == 1 and archive["calls"] == [unknown.root]
+    assert got["fetched"] == 1
+    assert archive["calls"] == ["https://collective2.com/robots.txt", unknown.root]
     assert got["refused"] == ""
     assert got["machine_use_allowed"] == snap.UNKNOWN
 
 
 def test_an_allowed_platform_reaches_the_fetch_door(archive):
     got = snap.snapshot(_platform("mql5_signals"), 30.0, fetch=True, at="2026-09-01")
-    assert archive["calls"] == ["https://www.mql5.com/en/signals"]
+    assert archive["calls"] == ["https://www.mql5.com/robots.txt",
+                                "https://www.mql5.com/en/signals"]
     assert got["fetched"] == 1 and got["n"] == 3
 
 

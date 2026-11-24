@@ -258,6 +258,8 @@ def _fake_get(calls: list[str]) -> Any:
                 return _Resp(url, 200, _fx("eastmoney_stock.json"))
             return _Resp(url, 200, _fx("eastmoney_industry.jsonp"))
         if u.netloc == "finance.naver.com":
+            if u.path == "/robots.txt":    # a real rules file: an HTML page here now refuses
+                return _Resp(url, 200, "User-agent: *\nAllow: /\n")
             if "company_list" in u.path:
                 return _Resp(url, 200, _fx("naver_company_list.html"))
             if "industry_list" in u.path:
