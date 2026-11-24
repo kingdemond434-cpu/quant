@@ -39,7 +39,8 @@ def _world(tmp: Path) -> tuple[Path, Path]:
         "dlogw_per_day": {"mean": 0.0007}})
     _w(rep, "E8_BOOK.json", {"risk_frac": 0.0015, "sleeves": [
         {"key": "gold_asia", "symbol": "XAUUSD", "family": "gold", "selector": "asia"}]})
-    _w(rep, "E8_GUARD.json", {"equity": 100000.0, "room_to_daily_floor": 2000.0})
+    _w(rep, "E8_GUARD.json", {"generated_utc": NOW.isoformat(), "account": {},
+                              "decision": {"equity": 100000.0, "room_to_daily_floor": 2000.0}})
     _w(rep, "FTMO_ALLOCATOR.json", {"executable": {"EURUSD_srb_london": 0.004}})
     _w(rep, "FTMO_ACCOUNT_STATE.json", {"equity": 100000.0, "initial_balance": 100000.0,
                                         "day_start_balance": 100000.0})

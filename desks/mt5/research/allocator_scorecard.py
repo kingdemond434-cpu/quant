@@ -315,7 +315,9 @@ def build(now: datetime | None = None, reports: Path = REPORTS, data: Path = DAT
     prop_corr = _m("UNMEASURED", "the prop solve borrows Fusion's worlds; no prop-side "
                                  "realised-vs-modelled correlation exists yet")
     guard = _read(reports / "E8_GUARD.json")
-    gd = guard if isinstance(guard, dict) else {}
+    # prop/e8_guard.write_report's shape: {generated_utc, account, decision{equity, ...}}.
+    gd = guard.get("decision") if isinstance(guard, dict) else None
+    gd = gd if isinstance(gd, dict) and not gd.get("equity_from_balance") else {}
     idle, ev = idle_proven("e8", w["e8"], proven, proven_state, w["e8_alias"],
                            blocked=venues.get("e8_blocked"))
     events += ev
