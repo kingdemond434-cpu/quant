@@ -185,19 +185,46 @@ def is_exotic_class(klass: str) -> bool:
     return "exotic" in str(klass or "").lower()
 
 
+#: The eight majors (the e8_book.is_exotic_pair basis): an FX pair with any other leg is exotic.
+#: Inline so the ban holds on a tree without live_policy.is_exotic; G10 alone misses NOK/SEK.
+MAJORS8 = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
+_METALS = ("XAU", "XAG", "XPT", "XPD")
+#: Non-major FIAT legs an MT5 FX pair can carry. The other leg must be one of these for the pair
+#: to read exotic, so a crypto CFD (BTCUSD, ETHUSD: allowed, not exotic) never trips the check.
+EXOTIC_FIAT = frozenset({
+    "NOK", "SEK", "DKK", "PLN", "HUF", "CZK", "TRY", "ZAR", "MXN", "SGD", "HKD", "CNH", "CNY",
+    "ILS", "RUB", "THB", "INR", "KRW", "TWD", "BRL", "CLP", "COP", "PEN", "ARS", "IDR", "MYR",
+    "PHP", "AED", "SAR", "QAR", "KWD", "BHD", "OMR", "EGP", "NGN", "KES", "GHS", "MAD", "RON",
+    "BGN", "HRK", "ISK", "UAH", "KZT", "VND", "PKR", "LKR", "BDT", "JOD", "TND"})
+
+
+def _majors_exotic(sym: str) -> bool:
+    core = "".join(ch for ch in str(sym).upper() if "A" <= ch <= "Z")[:6]
+    if len(core) != 6 or core.startswith(_METALS):
+        return False
+    a, b = core[:3], core[3:]
+    known = MAJORS8 | EXOTIC_FIAT
+    if a not in known or b not in known:
+        return False  # not an FX pair (an index, energy, a crypto CFD): the registry decides
+    return a in EXOTIC_FIAT or b in EXOTIC_FIAT
+
+
 def _name_exotic(sym: str) -> bool:
-    """The desk's other exotic tests, by symbol: `mt5desk.live_policy.is_exotic` where the tree
-    carries it, and `mathlab.hypothesis_router.is_exotic` (an FX pair with a non-G10 leg). Either
-    saying exotic is enough: under a ban the union is the safe side."""
-    for mod, attr in (("mt5desk.live_policy", "is_exotic"),
-                      ("research.mathlab.hypothesis_router", "is_exotic")):
-        try:
-            fn = getattr(__import__(mod, fromlist=[attr]), attr, None)
-            if fn is not None and fn(sym):
-                return True
-        except Exception:
-            continue
-    return False
+    """The desk's other exotic tests, by symbol: the inline eight-majors check above, and
+    `mt5desk.live_policy.is_exotic` where the tree carries it. Either saying exotic is enough:
+    under a ban the union is the safe side. `mathlab.hypothesis_router.is_exotic` is NOT used: it
+    reads any 6-letter pair with one G10 leg as FX, so it calls BTCUSD/ETHUSD exotic, and crypto
+    CFDs are a target class under the ban, not a banned one."""
+    if _majors_exotic(sym):
+        return True
+    try:
+        from mt5desk.live_policy import is_exotic as lp_is_exotic  # type: ignore[attr-defined]
+    except Exception:
+        return False
+    try:
+        return bool(lp_is_exotic(sym))
+    except Exception:
+        return False
 
 
 def is_exotic_symbol(sym: str, klass: str) -> bool:

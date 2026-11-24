@@ -191,6 +191,12 @@ def test_symbol_test_catches_an_exotic_the_registry_does_not_class(tmp_path: Pat
     assert bc.is_exotic_symbol("USDMXN", "forex")
     assert not bc.is_exotic_symbol("EURUSD", "forex")
     assert not bc.is_exotic_symbol("XAUUSD", "commodities")
+    # NOK/SEK are G10 but not majors: the inline eight-majors check bans them (Audit SF)
+    assert bc.is_exotic_symbol("USDNOK", "forex") and bc.is_exotic_symbol("EURSEK", "forex")
+    assert not bc.is_exotic_symbol("AUDNZD", "forex")
+    assert not bc.is_exotic_symbol("US500", "indices")
+    assert not bc.is_exotic_symbol("USOIL", "energy")
+    assert not bc.is_exotic_symbol("BTCUSD", "crypto")  # crypto CFDs are not exotic FX
     rows = [*_standard_rows(), _row("miner:mx", "USDMXN", "carry", 1)]
     doc, steer = _build(tmp_path, _docket(tmp_path, rows))
     assert doc["exotic_fence"]["verdict"] == "BREACH"
