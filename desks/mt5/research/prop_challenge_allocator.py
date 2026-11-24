@@ -115,6 +115,11 @@ OUT = BASE / "reports" / "FTMO_ALLOCATOR.json"
 E8_OUT = BASE / "reports" / "E8_ALLOCATOR.json"
 E8_GUARD = BASE / "reports" / "E8_GUARD.json"
 E8_BOOK_REPORT = BASE / "reports" / "E8_BOOK.json"
+#: E8's own spread sample (prop/e8_spread_sampler.py): per symbol, per UTC hour, in bps of price.
+E8_SPREADS = BASE / "reports" / "E8_SPREADS.json"
+#: A cell prices E8's cost only on this many live samples; below it the FTMO cost stands.
+E8_COST_MIN_N = 10
+E8_SPREADS_MAX_AGE_S = 7 * 24 * 3600
 OUT_BY_VENUE = {"ftmo": OUT, "e8": E8_OUT}
 ACCOUNT_STATE = BASE / "reports" / "FTMO_ACCOUNT_STATE.json"
 FTMO_REGISTRY = BASE / "data" / "ftmo_registry.json"
@@ -533,6 +538,74 @@ def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
             "ftmo_spread_px": round(f_px, 8), "charged_spread_px": round(charged_px, 8),
             "ratio": round(ratio, 3), "ratio_raw": round(ratio_raw, 3),
             "bias_r_per_trade": round(bias, 4)}
+
+
+def e8_cost_overlay(cols: list[str], costs: dict[str, Any], doc: dict[str, Any] | None = None,
+                    *, now: datetime | None = None) -> tuple[dict[str, float], dict[str, str]]:
+    """({column: delta R per trade}, {column: cost source}) that move E8's solve off FTMO's cost
+    onto E8's OWN measured spread, where E8 has measured it.
+
+    TWO-SIDED: delta = E8 bias - FTMO bias, so a column that is cheaper at E8 than at FTMO gains
+    mean and a dearer one loses it. A cell prices only when it is LIVE (`usable_as_cost`, not a
+    frozen weekend quote), holds n >= E8_COST_MIN_N samples at the column's fill hour, the
+    sampler published that symbol's mid (to turn bps into price) and the file is under a week old;
+    otherwise the FTMO cost stands and the source says why. Only the RATIO method is re-priced
+    (E8's columns are non-gold; the stop-measured method is gold's), with the same BASE_COST_R and
+    MAX_RATIO the FTMO bias used, so the two are like for like."""
+    from libs.portfolio.execution_cost import BASE_COST_R, MAX_RATIO
+    if doc is None:
+        doc = _read_json(E8_SPREADS) or {}
+    deltas: dict[str, float] = {}
+    source: dict[str, str] = {}
+    age_ok, age_why = False, "E8_SPREADS.json absent or unreadable"
+    try:
+        gen = datetime.fromisoformat(str(doc["generated_utc"]))
+        if gen.tzinfo is not None:
+            age = ((now or datetime.now(tz=UTC)) - gen).total_seconds()
+            age_ok = -300 <= age <= E8_SPREADS_MAX_AGE_S
+            age_why = f"E8_SPREADS.json {age / 3600:.0f}h old"
+        else:
+            age_why = "E8_SPREADS.json stamp is naive"
+    except (KeyError, TypeError, ValueError):
+        pass
+    by_hour = doc.get("by_hour") or {}
+    live = doc.get("liveness") or {}
+    mids = doc.get("mid") or {}
+    for col in cols:
+        cost = costs.get(col) or {}
+        sym = _symbol_of(col)
+        if cost.get("status") != "PRICED":
+            source[col] = "UNPRICED"
+            continue
+        if not age_ok:
+            source[col] = f"FTMO_PROXY ({age_why})"
+            continue
+        if not str(cost.get("method") or "").startswith("RATIO"):
+            source[col] = f"FTMO_PROXY (method {cost.get('method')})"
+            continue
+        cell = (by_hour.get(sym) or {}).get(str(cost.get("hour"))) or {}
+        n = int(cell.get("n") or 0)
+        mid = mids.get(sym)
+        if not (live.get(sym) or {}).get("usable_as_cost"):
+            source[col] = f"FTMO_PROXY (E8 {sym} quote not live)"
+            continue
+        if n < E8_COST_MIN_N or not isinstance(cell.get("median"), (int, float)):
+            source[col] = f"FTMO_PROXY (E8 {sym} h{cost.get('hour')} n={n} < {E8_COST_MIN_N})"
+            continue
+        if not isinstance(mid, (int, float)) or not mid > 0:
+            source[col] = f"FTMO_PROXY (E8 {sym} mid unpublished)"
+            continue
+        charged = float(cost.get("charged_spread_px") or 0.0)
+        if not charged > 0:
+            source[col] = "FTMO_PROXY (charged spread unknown)"
+            continue
+        e8_px = float(cell["median"]) * float(mid) / 1e4
+        e8_bias = BASE_COST_R * max(min(e8_px / charged, MAX_RATIO) - 1.0, 0.0)
+        deltas[col] = round(e8_bias - float(cost.get("bias_r_per_trade") or 0.0), 6)
+        ftmo_bias = float(cost.get("bias_r_per_trade") or 0.0)
+        source[col] = (f"E8_MEASURED (h{cost.get('hour')} n={n}, {cell['median']} bps, "
+                       f"bias {e8_bias:+.4f}R vs FTMO {ftmo_bias:+.4f}R)")
+    return deltas, source
 
 
 def ftmo_commissions() -> dict[str, float]:
@@ -999,7 +1072,6 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
     all_cols, r = uni["cols"], uni["r"]
-    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
     # THE DEPLOYED BOOK IS SOLVED OVER WHAT CAN BE SENT, AND NOTHING ELSE (audit #489 MF1). A joint
     # solve over every admitted column lets the optimiser move risk from a column that trades to a
     # correlated one with no executor, so the traded size would fall by side effect, never by
@@ -1016,8 +1088,21 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         runnable = {c for c in runnable if c not in FTMO_EXECUTABLE
                     and str((specs.get(c) or {}).get("symbol") or _symbol_of(c)).upper()
                     not in blocked}
-        doc["venue_note"] = ("E8 columns: certified non-gold specs E8 lists; costs are the "
-                             "universe's FTMO-measured hour costs until an E8 cost surface exists")
+        # E8 IS SIZED ON ITS OWN COSTS WHERE IT HAS MEASURED THEM (e8_cost_overlay): each column's
+        # trades move by E8's bias minus FTMO's, two-sided; every column's source is stamped.
+        deltas, cost_source = e8_cost_overlay([c for c in all_cols if c in runnable],
+                                              uni.get("costs") or {}, now=now)
+        for k, c in enumerate(all_cols):
+            if c in deltas and deltas[c]:
+                r[:, :, k] = r[:, :, k] - deltas[c] * (r[:, :, k] != 0)
+        doc["cost_source"] = cost_source
+        doc["e8_cost_delta_r"] = deltas
+        n_own = sum(1 for v in cost_source.values() if v.startswith("E8_MEASURED"))
+        doc["venue_note"] = (f"E8 columns: certified non-gold specs E8 lists; {n_own} of "
+                             f"{len(cost_source)} priced on E8's own measured spread, the rest on "
+                             "the universe's FTMO-measured hour costs (cost_source says why)")
+    # The worlds are drawn AFTER E8's own-cost move, so the solve and its validation both see it.
+    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
     exec_idx = [k for k, c in enumerate(all_cols) if c in runnable]
     if not exec_idx:
         doc["status"] = "NO_EXECUTABLE_SLEEVE"
