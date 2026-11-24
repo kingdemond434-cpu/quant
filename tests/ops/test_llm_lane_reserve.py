@@ -95,3 +95,17 @@ def test_run_lists_the_extra_provider_without_its_key(tmp_path: Path) -> None:
                  quotas={"acme": 1})
     assert rep["providers"]["acme"]["lit"] is True
     assert "sekret" not in json.dumps(rep)
+
+
+def test_openrouter_lane_never_uses_minimax() -> None:
+    """Principal 2026-11-24: 'on openrouter use alternative fr minimax'."""
+    from libs.research import free_panel
+    listed = ["minimax/minimax-m3:free", "qwen/qwen3-235b-a22b:free", "z-ai/glm-5.2:free"]
+    seat = cn.seat_for(cn.PROVIDERS[0], {"OPENROUTER_API_KEY": "k"}, lambda b, k: listed)
+    assert seat.lit and not any("minimax" in m for m in seat.models)
+    forced = cn.seat_for(cn.PROVIDERS[0], {"OPENROUTER_API_KEY": "k",
+                                           "CN_ENSEMBLE_OPENROUTER_MODELS": "minimax/x:free"})
+    assert not forced.lit
+    assert not any("minimax" in m for m in cn.OPENROUTER_CN_MODELS)
+    for tier in (free_panel.HEAVY, free_panel.LIGHT, free_panel.DEEP):
+        assert not any("minimax" in m for m in tier)

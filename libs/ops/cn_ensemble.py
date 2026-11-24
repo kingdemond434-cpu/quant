@@ -52,10 +52,13 @@ OPENROUTER_CN_MODELS: tuple[str, ...] = (
     "deepseek/deepseek-r1:free",
     "qwen/qwen3-235b-a22b:free",
     "moonshotai/kimi-k2:free",
-    "minimax/minimax-m3:free",
     "z-ai/glm-4.5-air:free",
     "z-ai/glm-5.2:free",
 )
+
+#: Families the principal took OFF the OpenRouter lane (2026-11-24: "on openrouter use alternative
+#: fr minimax"). Their turns go to the other live free Chinese-lab ids; relays are unaffected.
+OPENROUTER_EXCLUDED = re.compile(r"(?i)minimax|abab")
 
 #: Model-family words that mark an id as Chinese-lab on a relay's /models list.
 CN_FAMILY = re.compile(
@@ -245,7 +248,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
         if not models:
             return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
     if not p.relay:
-        models = [m for m in models if m.endswith(":free")]     # no paid id, ever
+        models = [m for m in models if m.endswith(":free")     # no paid id, ever
+                  and not OPENROUTER_EXCLUDED.search(m)]
         if not models:
             return Seat(p, base, "", why="DARK: no :free model configured")
     return Seat(p, base, key, tuple(dict.fromkeys(models)), lit=True)
