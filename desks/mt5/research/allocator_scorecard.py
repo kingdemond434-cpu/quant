@@ -146,20 +146,48 @@ def weights(reports: Path = REPORTS) -> dict[str, dict[str, float] | None]:
 
 # ----------------------------------------------------------------------------- measures
 
+def _symbol(label: str) -> str:
+    return label.split("_", 1)[0].upper()
+
+
+def tradeable(reports: Path = REPORTS, data: Path = DATA) -> dict[str, set[str] | None]:
+    """{account: symbols its venue lists} -- None means the account allows every symbol it was
+    given (Fusion's universe is the hunt universe) or the listing is unreadable (then nothing is
+    filtered and the reason is the account's own measure)."""
+    out: dict[str, set[str] | None] = {"fusion": None}
+    e8 = _read(reports / "E8_BOOK.json")
+    blocked = set(e8.get("blocked_by_venue") or []) if isinstance(e8, dict) else set()
+    out["e8_blocked"] = {str(x).upper() for x in blocked}
+    reg = _read(data / "ftmo_registry.json")
+    syms = reg.get("symbols") if isinstance(reg, dict) else None
+    out["ftmo"] = {str(k).upper() for k in syms} if isinstance(syms, dict) and syms else None
+    return out
+
+
 def idle_proven(account: str, w: dict[str, float] | None, proven: list[dict[str, Any]],
-                proven_state: str, alias: dict[str, float] | None = None
-                ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+                proven_state: str, alias: dict[str, float] | None = None,
+                listed: set[str] | None = None, blocked: set[str] | None = None,
+                live: bool = True) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not proven_state.startswith("MEASURED"):
         return _m("UNMEASURED", proven_state), []
     if w is None:
         return _m("UNMEASURED", f"{account} book unreadable"), []
+    if not live:
+        return _m("UNMEASURED", f"{account} holds no live book this pass (halted or zero heat)"
+                  ), []
     names = {**(alias or {}), **w}
-    idle = [r for r in proven if _match(str(r["sleeve"]), names) <= 0]
+    allowed = [r for r in proven
+               if (listed is None or _symbol(str(r["sleeve"])) in listed)
+               and _symbol(str(r["sleeve"])) not in (blocked or set())]
+    not_allowed = [r["sleeve"] for r in proven if r not in allowed]
+    idle = [r for r in allowed if _match(str(r["sleeve"]), names) <= 0]
     events = [{"kind": "IDLE_PROVEN_SLEEVE", "account": account, "sleeve": r["sleeve"],
                "n_out": r.get("n_out"), "adjR_out": r.get("adjR_out")} for r in idle]
     status = "OK" if not idle else "UNMET"
-    return _m(status, f"{len(idle)} of {len(proven)} fill-proven sleeve(s) hold zero weight",
-              n_proven=len(proven), n_idle=len(idle),
+    return _m(status, f"{len(idle)} of {len(allowed)} fill-proven sleeve(s) the venue lists "
+                      "hold zero weight",
+              n_proven=len(proven), n_allowed=len(allowed), n_idle=len(idle),
+              not_allowed_by_venue=not_allowed[:50],
               idle=[r["sleeve"] for r in idle][:50]), events
 
 
@@ -182,9 +210,13 @@ def fusion_growth(attr: Any) -> tuple[dict[str, Any], dict[str, Any]]:
                f"realised minus forecast edge {edge:+.6f}", terms=vals, dlogw_per_day=dl,
                dlogw_mean=mean)
     corr = _num(vals.get("correlation"))
+    # HEURISTIC, DECLARED: the dispersion term (growth lost to correlation the allocator did not
+    # model) is called WEAK when it is larger in size than the edge miss itself. A realised-vs-
+    # modelled pairwise correlation comparison replaces this when one is published.
     c = (_m("UNMEASURED", "the correlation term is UNMEASURED") if corr is None else
          _m("OK" if abs(corr) <= max(abs(edge or 0.0), 1e-9) else "WEAK",
-            f"correlation (dispersion) term {corr:+.6f}", value=corr))
+            f"correlation (dispersion) term {corr:+.6f}", value=corr,
+            basis="heuristic: |dispersion term| vs |edge miss|; not realised-vs-modelled corr"))
     return g, c
 
 
@@ -266,12 +298,15 @@ def build(now: datetime | None = None, reports: Path = REPORTS, data: Path = DAT
     now = now or datetime.now(UTC)
     proven, proven_state = fill_proven(now, reports / "FILL_PROVEN.json")
     w = weights(reports)
+    venues = tradeable(reports, data)
     events: list[dict[str, Any]] = []
     accounts: dict[str, dict[str, Any]] = {}
 
     pf = _read(reports / "pf_allocation.json")
     g, c = fusion_growth(_read(reports / "allocator_attribution.json"))
-    idle, ev = idle_proven("fusion", w["fusion"], proven, proven_state)
+    heat = (pf.get("heat") or {}) if isinstance(pf, dict) else {}
+    fusion_live = bool(w["fusion"]) and (_num(heat.get("total")) or 0.0) > 0
+    idle, ev = idle_proven("fusion", w["fusion"], proven, proven_state, live=fusion_live)
     events += ev
     accounts["fusion"] = {"growth_vs_kelly": g, "risk_utilisation": fusion_util(pf),
                           "idle_proven": idle, "corr_fit": c}
@@ -281,7 +316,8 @@ def build(now: datetime | None = None, reports: Path = REPORTS, data: Path = DAT
                                  "realised-vs-modelled correlation exists yet")
     guard = _read(reports / "E8_GUARD.json")
     gd = guard if isinstance(guard, dict) else {}
-    idle, ev = idle_proven("e8", w["e8"], proven, proven_state, w["e8_alias"])
+    idle, ev = idle_proven("e8", w["e8"], proven, proven_state, w["e8_alias"],
+                           blocked=venues.get("e8_blocked"))
     events += ev
     accounts["e8"] = {"growth_vs_kelly": prop_growth("e8", ledger, now),
                       "risk_utilisation": prop_util("e8", w["e8"],
@@ -295,7 +331,7 @@ def build(now: datetime | None = None, reports: Path = REPORTS, data: Path = DAT
                        _num(sd.get("day_start_balance")))
     room = (min(eq - (start - FTMO_DAILY * init), eq - (1 - FTMO_MAX) * init)
             if eq is not None and init is not None and start is not None else None)
-    idle, ev = idle_proven("ftmo", w["ftmo"], proven, proven_state)
+    idle, ev = idle_proven("ftmo", w["ftmo"], proven, proven_state, listed=venues.get("ftmo"))
     events += ev
     accounts["ftmo"] = {"growth_vs_kelly": prop_growth("ftmo", ledger, now),
                         "risk_utilisation": prop_util("ftmo", w["ftmo"], room, eq,
@@ -313,15 +349,31 @@ def build(now: datetime | None = None, reports: Path = REPORTS, data: Path = DAT
             "rule": "weakest = first UNMET, else WEAK, else UNMEASURED; reports only"}
 
 
+def changes(doc: dict[str, Any], prev: Any) -> list[dict[str, Any]]:
+    """Events only on a CHANGE against the last report: a sleeve newly idle on an account
+    (IDLE_PROVEN_SLEEVE) or newly funded (IDLE_PROVEN_CLEARED). A first report emits every idle."""
+    now_idle = {(e["account"], e["sleeve"]): e for e in doc.get("events") or []}
+    before: set[tuple[str, str]] = set()
+    if isinstance(prev, dict):
+        before = {(str(e.get("account")), str(e.get("sleeve")))
+                  for e in prev.get("events") or [] if isinstance(e, dict)}
+    out = [e for k, e in now_idle.items() if k not in before]
+    out += [{"kind": "IDLE_PROVEN_CLEARED", "account": a, "sleeve": sl}
+            for a, sl in sorted(before - set(now_idle))]
+    return out
+
+
 def write(doc: dict[str, Any], out: Path = OUT, events: Path = EVENTS) -> None:
+    delta = changes(doc, _read(out))
+    doc["n_event_changes"] = len(delta)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     os.replace(tmp, out)
-    if doc.get("events"):
+    if delta:
         events.parent.mkdir(parents=True, exist_ok=True)
         with events.open("a", encoding="utf-8") as f:
-            for e in doc["events"]:
+            for e in delta:
                 f.write(json.dumps({"at": doc["generated_at"], **e}, default=str) + "\n")
 
 

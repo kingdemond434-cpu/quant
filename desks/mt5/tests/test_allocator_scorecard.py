@@ -117,4 +117,31 @@ def test_write_appends_events_and_replaces_the_report(tmp_path):
     sc.write(doc, out, ev)
     sc.write(doc, out, ev)
     assert json.loads(out.read_text())["schema"] == sc.SCHEMA
-    assert len(ev.read_text().splitlines()) == 2 * len(doc["events"])
+    # events only on a change: the second identical pass appends nothing
+    assert len(ev.read_text().splitlines()) == len(doc["events"])
+    _w(rep, "FTMO_ALLOCATOR.json", {"executable": {"EURUSD_srb_london": 0.004,
+                                                   "AUDCAD_carry_asia": 0.003}})
+    sc.write(sc.build(NOW, rep, data), out, ev)
+    last = json.loads(ev.read_text().splitlines()[-1])
+    assert last["kind"] == "IDLE_PROVEN_CLEARED" and last["account"] == "ftmo"
+
+
+def test_only_sleeves_the_venue_lists_can_be_idle(tmp_path):
+    rep, data = _world(tmp_path)
+    _w(data, "ftmo_registry.json", {"symbols": {"EURUSD": {}}})
+    _w(rep, "E8_BOOK.json", {"risk_frac": 0.0015, "blocked_by_venue": ["AUDCAD"], "sleeves": [
+        {"key": "gold_asia", "symbol": "XAUUSD", "family": "gold", "selector": "asia"}]})
+    doc = sc.build(NOW, rep, data)
+    idle = {(e["account"], e["sleeve"]) for e in doc["events"]}
+    assert ("ftmo", "AUDCAD_carry_asia") not in idle
+    assert ("e8", "AUDCAD_carry_asia") not in idle and ("e8", "EURUSD_srb_london") in idle
+    assert doc["accounts"]["ftmo"]["idle_proven"]["status"] == "OK"
+    assert doc["accounts"]["ftmo"]["idle_proven"]["not_allowed_by_venue"] == ["AUDCAD_carry_asia"]
+
+
+def test_a_halted_fusion_book_is_not_scored_idle(tmp_path):
+    rep, data = _world(tmp_path)
+    _w(rep, "pf_allocation.json", {"book": {}, "heat": {"total": 0.0, "resolved": 0.0}})
+    doc = sc.build(NOW, rep, data)
+    assert doc["accounts"]["fusion"]["idle_proven"]["status"] == "UNMEASURED"
+    assert not any(e["account"] == "fusion" for e in doc["events"])
