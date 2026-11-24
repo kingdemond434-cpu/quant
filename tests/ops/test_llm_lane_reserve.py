@@ -109,3 +109,9 @@ def test_openrouter_lane_never_uses_minimax() -> None:
     assert not any("minimax" in m for m in cn.OPENROUTER_CN_MODELS)
     for tier in (free_panel.HEAVY, free_panel.LIGHT, free_panel.DEEP):
         assert not any("minimax" in m for m in tier)
+
+
+def test_breadth_expander_pool_has_no_minimax() -> None:
+    src = (Path(__file__).resolve().parents[2] / "scripts/breadth_expander.py").read_text("utf-8")
+    pool = src.split("DIVERSITY_POOL = [", 1)[1].split("]", 1)[0]
+    assert "minimax" not in pool.split("#")[0] and "tencent/hy3" in pool
