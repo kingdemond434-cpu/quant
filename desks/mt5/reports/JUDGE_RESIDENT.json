@@ -16,7 +16,7 @@
  "last_sweep_s": 59058.1,
  "uptime_s": 59058.1,
  "last_sweep_ended_utc": "2026-11-24T10:35:20+00:00",
- "heartbeat_utc": "2026-11-24T23:05:00+00:00",
+ "heartbeat_utc": "2026-11-24T23:20:10+00:00",
  "sweep_phase": {
   "pid": 15964,
   "sweep_started_utc": "2026-11-24T10:35:39+00:00",
@@ -87,22 +87,22 @@
      }
     },
     "prewarm": {
-     "samples": 2837,
+     "samples": 2921,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
        "n": 2672,
-       "share": 0.942
+       "share": 0.915
       },
       {
        "stack": "threading.py:join:1132 < process.py:shutdown:865 < _base.py:__exit__:667 < external_gauntlet.py:_prewarm_cache:2070 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 56,
-       "share": 0.02
+       "n": 134,
+       "share": 0.046
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 45,
-       "share": 0.016
+       "share": 0.015
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
@@ -112,17 +112,17 @@
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 13,
-       "share": 0.005
+       "share": 0.004
       }
      ],
      "process": {
-      "cpu_s": 3051.1,
-      "page_faults": 115984346.0,
+      "cpu_s": 3052.9,
+      "page_faults": 116020552.0,
       "read_bytes": 49536889.0,
-      "write_bytes": 125633679178.0,
-      "sampled_s": 28360.0,
+      "write_bytes": 125633735031.0,
+      "sampled_s": 29200.0,
       "rss_mb_max": 3703.6,
-      "cpu_share_of_wall": 0.108
+      "cpu_share_of_wall": 0.105
      }
     }
    }
