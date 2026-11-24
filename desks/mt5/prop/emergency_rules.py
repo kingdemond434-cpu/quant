@@ -67,8 +67,11 @@ def _side(p: Any) -> str:
 
 def limit_rule(*, equity: float | None, day_start: float | None, initial: float,
                daily_frac: float, max_frac: float,
-               room_frac: float = EMERGENCY_ROOM_FRAC) -> tuple[str | None, str]:
-    """(rule, why) when equity is within `room_frac` of a firm floor, else (None, why)."""
+               room_frac: float | None = None) -> tuple[str | None, str]:
+    """(rule, why) when equity is within `room_frac` (default EMERGENCY_ROOM_FRAC) of a firm
+    floor, else (None, why)."""
+    if room_frac is None:
+        room_frac = EMERGENCY_ROOM_FRAC
     if equity is None or not initial > 0:
         return None, "equity or initial balance unreadable: limit rules skipped"
     static_floor = initial * (1.0 - max_frac)

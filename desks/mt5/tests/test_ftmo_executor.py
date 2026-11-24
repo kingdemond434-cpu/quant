@@ -190,7 +190,6 @@ def test_the_daily_loss_rail_counts_the_whole_book(world, monkeypatch) -> None:
     # loss rail is still proven on its own.
     from prop import emergency_rules
     monkeypatch.setattr(emergency_rules, "EMERGENCY_ROOM_FRAC", 0.0)
-    monkeypatch.setattr(emergency_rules.limit_rule, "__defaults__", (0.0,))
     world.mt5.acc = SimpleNamespace(equity=95_200.0, balance=95_200.0)
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert world.mt5.sent == []
