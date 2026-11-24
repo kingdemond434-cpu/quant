@@ -145,3 +145,13 @@ def test_a_halted_fusion_book_is_not_scored_idle(tmp_path):
     doc = sc.build(NOW, rep, data)
     assert doc["accounts"]["fusion"]["idle_proven"]["status"] == "UNMEASURED"
     assert not any(e["account"] == "fusion" for e in doc["events"])
+
+
+def test_a_stale_pass_carries_the_idle_set_instead_of_clearing_it(tmp_path):
+    rep, data = _world(tmp_path)
+    out, ev = tmp_path / "ALLOCATOR_SCORECARD.json", tmp_path / "events.jsonl"
+    sc.write(sc.build(NOW, rep, data), out, ev)
+    n = len(ev.read_text().splitlines())
+    sc.write(sc.build(NOW + timedelta(hours=5), rep, data), out, ev)
+    sc.write(sc.build(NOW, rep, data), out, ev)
+    assert len(ev.read_text().splitlines()) == n

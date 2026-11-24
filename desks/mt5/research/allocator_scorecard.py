@@ -364,7 +364,13 @@ def changes(doc: dict[str, Any], prev: Any) -> list[dict[str, Any]]:
 
 
 def write(doc: dict[str, Any], out: Path = OUT, events: Path = EVENTS) -> None:
-    delta = changes(doc, _read(out))
+    prev = _read(out)
+    if not str(doc.get("fill_proven", "")).startswith("MEASURED") and isinstance(prev, dict):
+        # A stale or absent FILL_PROVEN measures nothing; it is not evidence that every idle
+        # sleeve was funded. Carry the last measured idle set so the diff does not flap.
+        doc["events"] = list(prev.get("events") or [])
+        doc["events_carried_from"] = prev.get("generated_at")
+    delta = changes(doc, prev)
     doc["n_event_changes"] = len(delta)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".json.tmp")
