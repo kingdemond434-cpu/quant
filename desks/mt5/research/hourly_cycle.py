@@ -1240,7 +1240,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # into the compiler intake, the online-FDR replay of the certificates, shadow pod stops and
     # the weekly careers scout. Artifact reads and a bounded donation; seconds when no page is due.
     "firm_lanes",
-    "fill_recorder", "cost_surfaces",
+    "fill_recorder", "cost_surfaces", "allocator_scorecard",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1471,7 +1471,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator", "allocator_scorecard",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
@@ -6292,6 +6292,12 @@ def main() -> None:
     # API, and COST_SURFACES.json lists the consumers that have NOT adopted it yet. ~0.1 s.
     csf = _costed("cost_surfaces", lambda: _producer(
         "cost_surfaces", "research/cost_surfaces.py", "--once"))
+    # ALLOCATOR SCORECARD (zuck 2026-11-24, PERMANENT: one unified allocator, always evolving).
+    # Growth vs Kelly, risk utilisation, idle proven sleeves and correlation fit for Fusion, E8
+    # and FTMO from the artifacts they already write; each pass's one improvement targets the
+    # weakest. Reports only, artifact reads, ~0.1 s.
+    asc = _costed("allocator_scorecard", lambda: _producer(
+        "allocator_scorecard", "research/allocator_scorecard.py", "--once"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -6729,6 +6735,7 @@ def main() -> None:
                     "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "allocator_scorecard": asc,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
