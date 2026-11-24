@@ -125,8 +125,9 @@ def _held(answer: RobotsAnswer | None, code: int | None, agent: str,
             return (ROBOTS_REFUSED, f"{got}: a refusal aimed at our agent, not fetched and never "
                                     f"worked around")
         cause = f"{got}{f' ({transport})' if transport else ''}"
-        return (ROBOTS_UNREACHABLE, f"robots.txt unreadable ({cause}): not fetched this pass, "
-                                    f"asked again next pass")
+        return (ROBOTS_UNREACHABLE, f"robots.txt unreadable ({cause}) -- UNMEASURED, and unread "
+                                    f"robots are not permission: not fetched this pass, asked "
+                                    f"again next pass")
     if int(code or 0) in rb.NO_FILE_STATUSES:
         return (ROBOTS_ABSENT, f"no robots.txt (HTTP {code}): no rules, fetched")
     text = body.decode("utf-8", errors="replace") if isinstance(body, bytes) else str(body)
