@@ -741,6 +741,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         if row.get("column") and not row.get("excluded"):
             cert_of.setdefault(str(row["column"]), str(row["certificate"]))
     from prop import e8_book as _eb
+    # THE REOPEN JUDGE PRICES, IT NEVER REFUSES (research/real_edge.py; Audit MF2 on #1211).
+    import real_edge
+    edges, edges_status = real_edge.load()
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
@@ -766,6 +769,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             if door:
                 doubts.append(f"Tier S door: {door}")
                 door_blocked.append(col)
+            edge_doubt = real_edge.doubt(cert_key, edges)
+            if edge_doubt:
+                doubts.append(edge_doubt)
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
@@ -798,7 +804,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps, "door_blocked": door_blocked,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
-                "listing": listing, "tier_s": tier_s}
+                "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
     r = np.stack(slices, axis=2)
     # Live evidence moves each column's mean exactly as the Fusion book solve does.
     post: dict[str, Any] = {}
@@ -812,7 +818,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
             "caps": caps, "specs": specs, "door_blocked": door_blocked,
             "costs": costs, "posterior": post, "listing_source": listing_src,
-            "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
+            "unpriced": unpriced, "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
 
 
 # ===================================================================== the solve
