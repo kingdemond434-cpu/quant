@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-24T20:40:07+00:00",
+  "at": "2026-11-24T21:12:10+00:00",
   "status": "RED",
   "red": [
-    "WATCH_BLIND: gh api repos/kingdemond434-cpu/quant/pulls?state=open&base=claude/llm-auto-upgrade-verify-gcjac3&per_page=100&page=1: gh: The owner of this application has been marked as spammy. (HTTP 403)"
+    "WATCH_BLIND: gh api repos/kingdemond434-cpu/quant/commits/2b04c10f900542cdb8a3750d1790d4708d6955c9/check-runs?per_page=100: timed out after 45.0s"
   ]
 }
