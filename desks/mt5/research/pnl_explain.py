@@ -221,10 +221,20 @@ class RateBook:
             return None
         import pandas as pd
         idx = d.index
-        # the bar index is broker time (UTC+2/+3); the bar containing `when` in either season
-        # opened at or before when+3h, so take the last close at or before when+2h -- within an
-        # hour of the entry, never a close from after the entry in either season
-        t = pd.Timestamp(when + timedelta(hours=2))
+        # Strictly point-in-time: the LAST BAR THAT HAD CLOSED at or before the entry, never the
+        # bar containing it. The index is the venue's stamp clock under a UTC label (New York + 7h:
+        # UTC+3 on US daylight time, UTC+2 otherwise; libs.regime.session_clock). An H1 bar stamped
+        # B closes at stamp B+1h, so it had closed by the entry iff B <= stamp(entry) - 1h. A
+        # mid-bar entry therefore reads the PREVIOUS bar's close. (Until 2026-11-24 this took the
+        # last bar stamped at or before when+2h, which in winter is the bar CONTAINING the entry,
+        # whose close is up to 1h after it: Audit SF1 on #1204.) If the venue clock cannot be read
+        # the offset falls back to 2, the smaller one, which can only pick an earlier bar.
+        try:
+            from libs.regime.session_clock import utc_offset_h
+            off = int(utc_offset_h(when))
+        except Exception:
+            off = 2
+        t = pd.Timestamp(when + timedelta(hours=off - 1))
         pos = int(idx.searchsorted(t, side="right")) - 1
         if pos < 0:
             return None
@@ -247,8 +257,8 @@ class RateBook:
             if sym in self.meta:
                 c = self._close_at(sym, when)
                 if c:
-                    return (c, f"{sym} H1 close at entry") if sym == direct else \
-                        (1.0 / c, f"{sym} H1 close at entry (inverted)")
+                    return (c, f"{sym} last closed H1 bar at entry") if sym == direct else \
+                        (1.0 / c, f"{sym} last closed H1 bar at entry (inverted)")
         return None, f"no {direct}/{inverse} bars at entry on this host"
 
 

@@ -210,3 +210,38 @@ def test_amount_bearing_outputs_are_gitignored():
     for rel in ("desks/mt5/data/pnl_explain_daily.jsonl", "desks/mt5/reports/PNL_EXPLAIN.json"):
         rc = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT).returncode
         assert rc == 0, f"{rel} carries account amounts and must stay on the box"
+
+
+def test_a_mid_bar_entry_reads_the_previous_closed_bar_never_the_bar_containing_it():
+    """Audit SF1 on #1204: the rate is strictly point-in-time. The bars carry the venue stamp
+    (New York + 7h: UTC+2 in winter, UTC+3 in summer) under a UTC label, and an H1 bar stamped B
+    closes at stamp B+1h. A mid-bar entry must read the last bar that had CLOSED by the entry."""
+    from datetime import timedelta
+    # each bar's close is its own stamp hour, so the chosen bar is readable from the rate
+    winter = pd.date_range("2026-11-12 00:00", periods=24, freq="h", tz="UTC")
+    summer = pd.date_range("2026-07-15 00:00", periods=24, freq="h", tz="UTC")
+    book_w = P.RateBook(meta={"EURUSD": {}},
+                        bars=lambda s: pd.DataFrame({"close": [1.0 + h / 100 for h in range(24)]},
+                                                    index=winter))
+    book_s = P.RateBook(meta={"EURUSD": {}},
+                        bars=lambda s: pd.DataFrame({"close": [1.0 + h / 100 for h in range(24)]},
+                                                    index=summer))
+    # winter, entry 08:30 UTC = stamp 10:30. The bar stamped 10:00 CONTAINS it and closes at
+    # 09:00 UTC, after the entry; the one stamped 09:00 closed at 08:00 UTC.
+    w = datetime(2026, 11, 12, 8, 30, tzinfo=UTC)
+    rate, how = book_w.rate("USD", "EUR", w)
+    assert rate == pytest.approx(1 / 1.09) and "last closed" in how
+    # summer, entry 08:30 UTC = stamp 11:30: the bar stamped 10:00 closed at 08:00 UTC
+    s = datetime(2026, 7, 15, 8, 30, tzinfo=UTC)
+    assert book_s._close_at("EURUSD", s) == pytest.approx(1.10)
+    # whatever the season, the chosen bar had closed at or before the entry, in real UTC
+    from libs.regime.session_clock import server_to_utc
+    for book, when, idx in ((book_w, w, winter), (book_s, s, summer)):
+        c = book._close_at("EURUSD", when)
+        stamp = idx[round((c - 1.0) * 100)]
+        closed_utc = server_to_utc(pd.DatetimeIndex([stamp]))[0] + pd.Timedelta(hours=1)
+        assert closed_utc <= pd.Timestamp(when)
+        assert closed_utc > pd.Timestamp(when) - timedelta(hours=1)
+    # an entry exactly on a bar boundary reads the bar that closed at that instant
+    edge = datetime(2026, 11, 12, 8, 0, tzinfo=UTC)          # stamp 10:00
+    assert book_w._close_at("EURUSD", edge) == pytest.approx(1.09)
