@@ -2427,7 +2427,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "producer_breadth": 300,
     # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
     # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
-    # cap sits a minute above so both of its files are written rather than cut.
+    # cap sits above so both of its files are written rather than cut. A priced-down cap reaches
+    # it as QUANT_LEG_BUDGET_S, and it stops a minute inside that too (no floor entry needed).
     "breadth_controller": 540,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
@@ -2535,8 +2536,6 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # never kill them before they publish -- which is how GAUNTLET_BACKPRESSURE went a week stale.
     "gauntlet_backpressure": 540,
     "global_coverage_tensor": 600,
-    # The breadth controller stops itself at --budget-s 420; a minute above it for the writes.
-    "breadth_controller": 480,
 }
 
 

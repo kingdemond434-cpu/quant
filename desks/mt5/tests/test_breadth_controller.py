@@ -285,7 +285,8 @@ def test_the_leg_is_on_a_clock_in_a_department_a_layer_and_the_results() -> None
     assert hc.department_of("breadth_controller") == "meta"
     assert LEG_LAYER["breadth_controller"] == "meta"
     assert hc.LEG_BUDGET_SEC["breadth_controller"] > 420
-    assert hc.LEG_BUDGET_FLOOR_SEC["breadth_controller"] > 420
+    # no floor of its own (the floor set is pinned): it self-stops under QUANT_LEG_BUDGET_S instead
+    assert "breadth_controller" not in hc.LEG_BUDGET_FLOOR_SEC
     src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert ('_producer(\n        "breadth_controller", "research/breadth_controller.py", '
             '"--budget-s", "420")') in src
