@@ -1,5 +1,5 @@
 """The all-producer breadth controller (rules-compliance row 13): per-producer docket shares, the
-90/10 exotic fence, saturation, the frontier, the advisory steer, and the leg's wiring.
+exotic ban (ceiling 0), saturation, the frontier, the advisory steer, and the leg's wiring.
 
 Every input is synthetic and lives in `tmp_path`; nothing here reads or writes box state.
 """
@@ -146,12 +146,56 @@ def test_a_roster_producer_with_no_docket_row_is_dead(tmp_path: Path) -> None:
 
 
 # ------------------------------------------------------------------ the 90/10 exotic fence
-def test_exotic_fence_pass(tmp_path: Path) -> None:
+def test_exotic_fence_pass_only_with_zero_exotic_cells(tmp_path: Path) -> None:
+    doc, steer = _build(tmp_path, _docket(tmp_path, _standard_rows()))
+    f = doc["exotic_fence"]
+    assert bc.EXOTIC_CEILING == 0.0
+    assert f["verdict"] == "PASS" and f["exotic_share_7d"] == 0.0
+    assert steer["exotic_fence"] == "PASS"
+
+
+def test_one_exotic_cell_is_a_breach_and_steered_away(tmp_path: Path) -> None:
+    # the ban (zuck 2026-11-24 18:06Z): a single exotic cell breaches, and the producer that
+    # minted it is told to move away, with the ban as the missed-growth reason
     rows = [*_standard_rows(), _row("miner:x", "USDTRY", "carry", 1)]
     doc, steer = _build(tmp_path, _docket(tmp_path, rows))
-    f = doc["exotic_fence"]
-    assert f["verdict"] == "PASS" and f["exotic_share_7d"] == round(1 / 48, 4)
-    assert steer["exotic_fence"] == "PASS"
+    assert doc["exotic_fence"]["verdict"] == "BREACH"
+    assert steer["exotic_fence"] == "BREACH"
+    away = steer["producers"]["x"]["away"]["classes"]
+    assert [a["class"] for a in away] == ["forex exotics"]
+    assert "banned" in away[0]["missed_growth"]["why"]
+    assert steer["desk"]["away"]["exotic"]["classes"] == ["forex exotics"]
+
+
+def test_exotics_are_never_steered_toward_anywhere(tmp_path: Path) -> None:
+    # USDTRY/USDZAR are never sampled, under-sampled and on the lane: before the ban they led the
+    # frontier. Now no toward list, frontier field or frontier cell may name an exotic.
+    doc, steer = _build(tmp_path, _docket(tmp_path, _standard_rows()))
+    exotic = {"USDTRY", "USDZAR"}
+    fr = doc["frontier"]
+    assert sorted(fr["exotic_symbols_excluded"]["symbols"]) == sorted(exotic)
+    assert not exotic & set(fr["symbols_never_sampled"])
+    assert all(c["symbol"] not in exotic and "exotic" not in c["class"] for c in fr["sample"])
+    t = steer["desk"]["toward"]
+    assert not exotic & set(t["symbols"])
+    assert all("exotic" not in c for c in t["classes"])
+    assert all(c["symbol"] not in exotic for c in t["cells_frontier_first"])
+    for prod in steer["producers"].values():
+        assert not exotic & set(prod["toward"]["symbols"])
+        assert all("exotic" not in c for c in prod["toward"]["classes"])
+
+
+def test_symbol_test_catches_an_exotic_the_registry_does_not_class(tmp_path: Path) -> None:
+    # USDMXN has a non-G10 leg; the injected registry does not class it as exotic, the symbol test
+    # (live_policy / hypothesis_router) still bans it
+    assert bc.is_exotic_symbol("USDMXN", "forex")
+    assert not bc.is_exotic_symbol("EURUSD", "forex")
+    assert not bc.is_exotic_symbol("XAUUSD", "commodities")
+    rows = [*_standard_rows(), _row("miner:mx", "USDMXN", "carry", 1)]
+    doc, steer = _build(tmp_path, _docket(tmp_path, rows))
+    assert doc["exotic_fence"]["verdict"] == "BREACH"
+    syms = steer["producers"]["mx"]["away"]["symbols"]
+    assert [a["symbol"] for a in syms] == ["USDMXN"]
 
 
 def test_exotic_fence_breach_steers_the_exotic_producer_away(tmp_path: Path) -> None:
@@ -249,15 +293,15 @@ def test_frontier_names_never_sampled_cells_first(tmp_path: Path) -> None:
     fr = doc["frontier"]
     assert fr["status"] == "MEASURED"
     assert fr["families_never_sampled"] == ["mean_reversion"]
-    assert "USDTRY" in fr["symbols_never_sampled"]
-    assert fr["space_cells"] == 3 * 2 * len(CLASSES)
+    assert "USDTRY" not in fr["symbols_never_sampled"]  # banned: never a frontier
+    assert fr["space_cells"] == 3 * 2 * (len(CLASSES) - 2)
     assert fr["sample"][0]["family"] == "mean_reversion"
     sampled = {(r["symbol"], r["params"]["timeframe"], r["family"]) for r in _standard_rows()}
     assert all((c["symbol"], c["timeframe"], c["family"]) not in sampled for c in fr["sample"])
     assert "H4" in fr["timeframes_never_sampled"]
     t = steer["producers"]["breadth_sweep"]["toward"]
     assert t["families_frontier"] == ["mean_reversion"]
-    assert "USDTRY" in t["symbols"]
+    assert "USDTRY" not in t["symbols"]
     assert steer["desk"]["toward"]["cells_frontier_first"][0]["family"] == "mean_reversion"
 
 

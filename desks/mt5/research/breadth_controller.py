@@ -79,10 +79,14 @@ PRODUCER_BREADTH = BASE / "reports" / "PRODUCER_BREADTH.json"
 PRODUCER_YIELD = BASE / "reports" / "PRODUCER_YIELD.json"
 GENERATOR_COVERAGE = BASE / "reports" / "GENERATOR_COVERAGE.json"
 
-#: THE 90/10 RULE (zuck): at least 90% of research compute on non-exotic instruments. A docket
-#: cell is the unit the judge spends a build on, so the share of CELLS is the compute share this
-#: leg can measure; the fence reads the 7-day window (a day is too few cells for some producers).
-EXOTIC_CEILING = 0.10
+#: THE EXOTIC BAN (zuck, 2026-11-24 18:04Z/18:06Z, PERMANENT): exotics are banned from mining,
+#: judging and trading, which supersedes the earlier 90/10 rule. The ceiling is therefore ZERO:
+#: one exotic docket cell is a BREACH, an exotic is never steered toward (not as a class, a
+#: symbol or a frontier cell), and every producer minting one is steered away from it. A docket
+#: cell is the unit the judge spends a build on, so the share of CELLS is the compute share.
+EXOTIC_CEILING = 0.0
+EXOTIC_RULE = ("zuck 2026-11-24 18:06Z: exotics banned from mining, judging and trading "
+               "(supersedes 90/10); ceiling 0")
 #: A merge that has not rewritten the docket for this long cannot say what anyone minted today.
 DOCKET_STALE_H = 6.0
 #: The newest cell in the docket older than this means NO producer reached it for a day -- on
@@ -179,6 +183,26 @@ def is_exotic_class(klass: str) -> bool:
     """The registry's own word: MetaTrader classes exotics as `Forex Exotics` (see
     `research/exotic_cost_bar.exotic_symbols`, which reads the same field the same way)."""
     return "exotic" in str(klass or "").lower()
+
+
+def _name_exotic(sym: str) -> bool:
+    """The desk's other exotic tests, by symbol: `mt5desk.live_policy.is_exotic` where the tree
+    carries it, and `mathlab.hypothesis_router.is_exotic` (an FX pair with a non-G10 leg). Either
+    saying exotic is enough: under a ban the union is the safe side."""
+    for mod, attr in (("mt5desk.live_policy", "is_exotic"),
+                      ("research.mathlab.hypothesis_router", "is_exotic")):
+        try:
+            fn = getattr(__import__(mod, fromlist=[attr]), attr, None)
+            if fn is not None and fn(sym):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def is_exotic_symbol(sym: str, klass: str) -> bool:
+    """Exotic by the registry's class OR by the symbol tests above."""
+    return is_exotic_class(klass) or (bool(sym) and _name_exotic(sym))
 
 
 def lane_symbols() -> tuple[list[str], str]:
@@ -340,7 +364,7 @@ class Tally:
 
     def add(self, at: datetime | None, now: datetime, sym: str, klass: str, fam: str, tf: str,
             lane: str) -> None:
-        exo = is_exotic_class(klass)
+        exo = is_exotic_symbol(sym, klass)
         self.stock += 1
         self.cls_stock[klass] += 1
         self.exo_stock += exo
@@ -681,20 +705,26 @@ def _steer_for(t: Tally | None, verdict: str, why: str, desk_ctx: dict[str, Any]
                                      (f"cells moved off {s} forgo its survivors; a symbol "
                                       f"above {NARROW_SYMBOL_SHARE:.0%} of one producer adds "
                                       f"cells, not independent bets"))})
-    if desk_ctx["exotic_verdict"] == "BREACH" and t is not None and t.n7 \
-            and t.exo7 / t.n7 > EXOTIC_CEILING:
+    if t is not None and (t.exo7 or t.exo_stock):
+        # THE BAN: any exotic cell, in the window or (window unmeasured) in the stock, is away.
+        cls_ref, n_ref = (t.cls7, t.n7) if t.exo7 else (t.cls_stock, t.stock)
+        exo_n = t.exo7 or t.exo_stock
+        ban_growth = ("exotics are banned from trading (zuck 2026-11-24 18:06Z), so an exotic "
+                      "cell can mint no tradable survivor: the growth forgone by moving it to "
+                      "majors/metals/indices/energy is zero by the ban, not measured")
         already = {a["class"] for a in away_classes}
-        for k in [c for c in t.cls7 if is_exotic_class(c) and c not in already]:
+        for k in [c for c in cls_ref if is_exotic_class(c) and c not in already]:
             away_classes.append({
-                "class": k, "share_7d": round(t.cls7[k] / t.n7, 4),
-                "why": (f"desk exotic share above the {EXOTIC_CEILING:.0%} ceiling and this "
-                        f"producer is at {t.exo7 / t.n7:.0%}"),
-                "missed_growth": _missed_growth(
-                    "class", k,
-                    ("exotic cells moved out forgo exotic survivors; under the strict exotic "
-                     "cost bar (research/exotic_cost_bar.py) an exotic must still pay at 2x its "
-                     "costs to trade, so the forgone growth is bounded by that bar's pass rate, "
-                     "UNMEASURED here"))})
+                "class": k, "share_7d": round(cls_ref[k] / n_ref, 4) if n_ref else 0.0,
+                "why": f"{EXOTIC_RULE}; this producer minted {exo_n} exotic cell(s)",
+                "missed_growth": _missed_growth("class", k, ban_growth)})
+        have = {a["symbol"] for a in away_symbols}
+        for s, sn in t.sym7.most_common():
+            if s not in have and is_exotic_symbol(s, desk_ctx["class_of"](s)) \
+                    and not is_exotic_class(desk_ctx["class_of"](s)):
+                away_symbols.append({"symbol": s, "share_7d": round(sn / t.n7, 4),
+                                     "why": f"{EXOTIC_RULE}; exotic by symbol test",
+                                     "missed_growth": _missed_growth("symbol", s, ban_growth)})
     return {
         "verdict": verdict, "why": why,
         "toward": {
@@ -758,15 +788,15 @@ def build(now: datetime | None = None, *, budget_s: float = DEFAULT_BUDGET_S,
     }
     if windows_ok and tot7 > 0:
         exo_share: float | str = round(desk.exo7 / tot7, 4)
-        exo_verdict = "PASS" if exo_share <= EXOTIC_CEILING else "BREACH"
-        exo_why = f"{desk.exo7} of {tot7} 7d cells on registry-classed exotics"
+        exo_verdict = "PASS" if desk.exo7 == 0 else "BREACH"
+        exo_why = f"{desk.exo7} of {tot7} 7d cells on exotics (ceiling 0: banned)"
     else:
         exo_share, exo_verdict = UNMEASURED, UNMEASURED
         exo_why = why_unmeasured if not windows_ok else "0 cells in 7d: no share to measure"
     exotic_fence = {
-        "rule": (f"90/10: at least {1 - EXOTIC_CEILING:.0%} of research compute on non-exotic "
-                 f"instruments; measured as the share of docket cells (one judge build each) on "
-                 f"symbols MetaTrader classes as exotic"),
+        "rule": (f"{EXOTIC_RULE}; measured as the share of docket cells (one judge build each) "
+                 f"on exotic symbols (registry class or live_policy/hypothesis_router test); any "
+                 f"exotic cell is a BREACH"),
         "ceiling": EXOTIC_CEILING, "basis": "7d docket cells",
         "exotic_share_7d": exo_share,
         "exotic_share_24h": _share(desk.exo24, tot24) if windows_ok else UNMEASURED,
@@ -790,9 +820,14 @@ def build(now: datetime | None = None, *, budget_s: float = DEFAULT_BUDGET_S,
         sat["status"] = "MEASURED" if scan["rows"] else UNMEASURED
     # ---- frontier
     syms, sym_why = symbols if symbols is not None else lane_symbols()
+    # THE BAN: no exotic symbol is part of the frontier grid, so nothing can steer toward one.
+    exotic_excluded = sorted(s for s in syms if is_exotic_symbol(s, class_of(s)))
+    syms = [s for s in syms if s not in set(exotic_excluded)]
     fams, fam_why = families if families is not None else buildable_families()
     front = frontier(scan["sampled"], syms, sym_why, fams, fam_why, class_of, tf_of) \
         if scan["rows"] else {"status": UNMEASURED, "why": f"docket {scan['status']}"}
+    front["exotic_symbols_excluded"] = {"n": len(exotic_excluded), "symbols": exotic_excluded,
+                                        "why": EXOTIC_RULE}
     if scan["status"] == "PARTIAL" and front.get("status") == "MEASURED":
         front["status"] = "PARTIAL"
         front["why"] = "docket stream cut by the budget: some 'never sampled' cells may be sampled"
@@ -807,14 +842,14 @@ def build(now: datetime | None = None, *, budget_s: float = DEFAULT_BUDGET_S,
         if sym_share > 0:
             ratios.append((cell_share / sym_share, k))
     ratios.sort()
-    undersampled = [k for r, k in ratios if r < 1.0
-                    and (not is_exotic_class(k) or exo_verdict == "PASS")]
+    undersampled = [k for r, k in ratios if r < 1.0 and not is_exotic_class(k)]
     class_balance = [{"class": k, "cell_share_over_symbol_share": round(r, 4)} for r, k in ratios]
     desk_ctx = {
         "saturated": sat.get("saturated") or [],
         "undersampled_classes": undersampled,
         "desk_fam": fam_cells,
         "exotic_verdict": exo_verdict,
+        "class_of": class_of,
         "frontier_symbols": front.get("symbols_never_sampled") or [],
         "frontier_families": front.get("families_never_sampled") or [],
         "frontier_sample": front.get("sample") or [],
@@ -871,8 +906,9 @@ def build(now: datetime | None = None, *, budget_s: float = DEFAULT_BUDGET_S,
         "schema": SCHEMA, "generated_at": gen,
         "rule": ("per producer that donates docket cells: cells in 24h/7d, share, class and "
                  "symbol split, exotic share, saturated families it mints, and a verdict "
-                 "(CONTRIBUTING / NARROW / DEAD / UNMEASURED); whole desk: the 90/10 exotic "
-                 "fence, the class split, saturated families and the never-sampled frontier. "
+                 "(CONTRIBUTING / NARROW / DEAD / UNMEASURED); whole desk: the exotic "
+                 "ban fence (ceiling 0), the class split, saturated families and the never-sampled "
+                 "frontier. "
                  "Absent input is UNMEASURED, never zero (L1.28a). Advisory: it changes no "
                  "producer, gate, threshold or trial count."),
         "constants": {"exotic_ceiling": EXOTIC_CEILING, "docket_stale_h": DOCKET_STALE_H,
@@ -921,7 +957,12 @@ def build(now: datetime | None = None, *, budget_s: float = DEFAULT_BUDGET_S,
                             "families": desk_ctx["frontier_families"][:STEER_LIST],
                             "timeframes": front.get("timeframes_never_sampled") or [],
                             "cells_frontier_first": desk_ctx["frontier_sample"][:STEER_LIST * 2]},
-                 "away": {"families": [
+                 "away": {"exotic": {"rule": EXOTIC_RULE, "verdict": exo_verdict,
+                                     "classes": sorted({k for k in (desk.cls7 if windows_ok
+                                                                    else desk.cls_stock)
+                                                        if is_exotic_class(k)}),
+                                     "symbols_excluded_from_frontier": exotic_excluded},
+                          "families": [
                      {"family": r["family"], "share": r["share"], "why": r["why"],
                       "floor_share": floor,
                       "missed_growth": _missed_growth(
