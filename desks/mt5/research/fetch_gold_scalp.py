@@ -41,7 +41,9 @@ def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[n
 def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
     import MetaTrader5 as mt5
     from mt5_session import attach_or_initialize
-    if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+    # require_path: these bars are written per venue, so the terminal that answers must be the
+    # one asked for -- MT5's bridge otherwise serves whichever holds the machine's IPC pipe.
+    if not attach_or_initialize(mt5, path=terminal, timeout=15_000, require_path=True):
         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
     try:
         account = mt5.account_info()
