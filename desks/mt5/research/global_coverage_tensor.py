@@ -471,6 +471,22 @@ class Absent:
 
 
 # ============================================================================ the vocabularies
+def _country_census() -> dict[str, Any]:
+    """The per-country census, with its ratchet against the last published pass."""
+    try:
+        from libs.research import country_census as cc
+    except ImportError as e:
+        return {"status": "UNMEASURED", "why": f"libs.research.country_census: {e}"}
+    now = cc.current()
+    prev = _read_json(OUT)
+    before = prev.get("countries") if isinstance(prev, dict) else None
+    breach = cc.check_ratchet(now, before if isinstance(before, dict) else None)
+    if breach:
+        now["ratchet_breach"] = breach
+    return {k: v for k, v in now.items() if k != "rows"} | {
+        "rows": [r for r in now.get("rows", []) if r.get("status") != "COVERED"]}
+
+
 def mechanism_actor() -> dict[str, str]:
     """mechanism -> the payer, from `axis_registry` (the desk's one declared table)."""
     try:
@@ -2002,6 +2018,9 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, now: datetime | 
             "observations": {"registered": obs_reg, "evidence": obs_ev, "mining_133": obs_133,
                              "book": obs_book},
             "by_region": dict(sorted(by_region.items())),
+            # THE COUNTRY CENSUS (principal 2026-11-25: "every bit of the earth"): each ISO
+            # 3166-1 entry against the forest grounds; `missing` may only fall.
+            "countries": _country_census(),
             "by_source_class": dict(sorted(by_class.items())),
             "judging_vs_creation": jvc, "throttle": thr,
             "missed_growth": thr.get("missed_growth") or [],
