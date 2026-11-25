@@ -2115,8 +2115,10 @@ PREWARM_CELL_TIMEOUT_FLOOR_S = 600.0
 PREWARM_CELL_TIMEOUT_CEIL_S = 3600.0
 PREWARM_CELL_TIMEOUT_MULT = 20.0
 PREWARM_CELL_TIMEOUT_MIN_N = 20
-#: No future completed for this long (or the cell timeout, whichever is longer) while futures are
-#: pending: the pool is HUNG. It is torn down and the sweep proceeds with what was warmed.
+#: No future completed for this long while futures are pending: the pool is HUNG (with WORKERS
+#: in flight at seconds a cell, half an hour without ONE completion is never a healthy pool). It
+#: is torn down and the sweep proceeds; the shards build what it did not reach, inside the same
+#: build budget, exactly as they always have.
 PREWARM_HUNG_POOL_S = float(os.environ.get("GAUNTLET_PREWARM_HUNG_POOL_S", "1800"))
 #: Past the deadline, cells already running get at most this long (and never longer than the
 #: cell timeout) before the pool is shut down without waiting and its workers terminated.
@@ -2303,7 +2305,7 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                     _submit_next()
             if not pending:
                 break
-            if mono - last_done > max(PREWARM_HUNG_POOL_S, cell_timeout):
+            if mono - last_done > PREWARM_HUNG_POOL_S:
                 # HUNG POOL: futures pending, none completing. Tear it down and proceed.
                 summary["pool_hung"] = True
                 summary["ended"] = "pool_hung"
