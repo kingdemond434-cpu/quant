@@ -272,6 +272,9 @@ RISK_JOB = "risk-invariants"
 FORGE_REQUIRED = ("risk-invariants", "replay-shadow")
 
 
+FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
+
+
 def forge_need(need: tuple[str, ...]) -> tuple[str, ...]:
     return (*need, *(j for j in FORGE_REQUIRED if j not in need))
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
@@ -1882,6 +1885,11 @@ def run(
             need = (*need, RISK_JOB)
         if os.environ.get("QUANT_FORGE_URL"):
             need = forge_need(need)
+            # THE FAST PATH (zuck 2026-11-25 18:53Z, Audit design check 18:53Z): on the box forge
+            # an Auditor CLEAR at the exact head plus the money-path risk suites decide; quality,
+            # coverage and replay-shadow are informational. QUANT_FORGE_FULL_GATING=1 restores all.
+            if os.environ.get(FULL_GATING_ENV, "").strip() not in {"1", "true", "yes"}:
+                need = (RISK_JOB,)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break

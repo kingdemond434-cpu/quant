@@ -1,6 +1,6 @@
-"""The standing same-day veto window (zuck 2026-11-20, D-20261120-SAMEDAYVETO): a TRUST change with
-the Auditor's CLEAR at its exact head is authorized by the pin writer once VETO_HOURS pass with no
-owner veto; never for the signers, never without the CLEAR, never against an owner VETO."""
+"""The fast path (zuck 2026-11-25 18:53Z: AUTHORIZE TRUST and the 4h window removed): a TRUST change
+with the Auditor's CLEAR at its exact head is authorized by the pin writer at once, the signers
+included; never without the CLEAR, never against a HOLD or an owner VETO."""
 from __future__ import annotations
 
 import json
@@ -74,22 +74,20 @@ def _clear(head: str) -> dict:
     return {"user": {"login": "auditor"}, "body": f"AUDIT CLEAR {head} merge"}
 
 
-def test_a_cleared_trust_change_is_authorized_after_the_window(tmp_path: Path) -> None:
+def test_a_cleared_trust_change_is_authorized_at_once(tmp_path: Path) -> None:
+    assert P.VETO_HOURS == 0 and P.NEVER_BY_WINDOW == ()
     repo, folder, _base, heads = _world(tmp_path)
-    h = heads["ceil"]
-    forge = _forge(h, [_clear(h)])
-    assert any("h left" in r for r in _pass(repo, folder, forge, T0))
-    assert not (json.loads((folder / "pin.json").read_text()).get("authorized"))
-    assert any("h left" in r for r in _pass(repo, folder, forge, T0 + timedelta(hours=3)))
-    rows = _pass(repo, folder, forge, T0 + timedelta(hours=P.VETO_HOURS, minutes=1))
-    assert any("standing veto window" in r for r in rows), rows
-    pin = json.loads((folder / "pin.json").read_text())
-    assert any(v["head"] == h for v in pin["authorized"].values())
+    for name in ("ceil", "keys"):          # the signers too: no owner line any more
+        h = heads[name]
+        rows = _pass(repo, folder, _forge(h, [_clear(h)]), T0)
+        assert not any("h left" in r for r in rows), rows
+        pin = json.loads((folder / "pin.json").read_text())
+        assert any(v["head"] == h for v in pin["authorized"].values()), rows
 
 
-def test_no_clear_an_owner_veto_or_the_signers_never_pass_by_window(tmp_path: Path) -> None:
+def test_no_clear_a_hold_or_an_owner_veto_never_authorizes(tmp_path: Path) -> None:
     repo, folder, _base, heads = _world(tmp_path)
-    later = T0 + timedelta(hours=P.VETO_HOURS * 10)
+    later = T0 + timedelta(hours=40)
     h = heads["ceil"]
     filler = [{"user": {"login": "claude"}, "body": "note"}] * 50
     hold = {"user": {"login": "auditor"}, "body": f"AUDIT HOLD {h}"}
@@ -100,9 +98,6 @@ def test_no_clear_an_owner_veto_or_the_signers_never_pass_by_window(tmp_path: Pa
                      [_clear(h), *filler, {"user": {"login": "x"}, "body": f"VETO TRUST {h}"}]):
         _pass(repo, folder, _forge(h, comments), T0)
         _pass(repo, folder, _forge(h, comments), later)
-    k = heads["keys"]
-    _pass(repo, folder, _forge(k, [_clear(k)]), T0)
-    _pass(repo, folder, _forge(k, [_clear(k)]), later)
     assert not json.loads((folder / "pin.json").read_text()).get("authorized")
 
 

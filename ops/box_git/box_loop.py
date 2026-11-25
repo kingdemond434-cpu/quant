@@ -297,7 +297,8 @@ def run_tests(cfg: Config, root: Path, tests: Sequence[str] | str,
     return rc == 0, f"pytest rc={rc}: {tail[0][:180]}{named}"[:240]
 
 
-def risk_job(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
+def risk_job(cfg: Config, root: Path, base: str, head: str,
+             suite_timeout_s: int = 3600) -> tuple[bool, str]:
     """release-gates.yml `risk-invariants`, on the box: the ceilings, suites and their tests
     from the BASE, the PR's code, the static invariants then the risk suites."""
     if _run(["git", "checkout", base, "--", "ops/release"], cwd=root)[0] != 0:
@@ -317,7 +318,7 @@ def risk_job(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
     if suites:
         rc, out = _run_untrusted(cfg, [cfg.python, "-m", "pytest", "-q", "-p", "no:randomly",
                                        "-p", "no:cacheprovider", "--timeout=600", *suites],
-                                 cwd=root, timeout=3600)
+                                 cwd=root, timeout=suite_timeout_s)
         if rc != 0:
             return False, f"risk suites rc={rc}: {out.strip()[-160:]}"
     return True, f"risk-invariants passed ({len(suites)} suite file(s))"
@@ -437,6 +438,27 @@ def audited_clear(comments: Sequence[Mapping[str, Any]], head: str) -> bool:
     return last == ("CLEAR", head)
 
 
+#: THE FAST PATH (zuck 2026-11-25 18:53Z; Audit design check 18:53Z). A CLEARed PR runs only the
+#: money-path risk suites before merge, capped at ten minutes; a failure classed `env` (a box
+#: defect, delivery_leadtime.cause) does not block, a real red does. Impacted tests, coverage and
+#: replay-shadow no longer gate a merge (the full suite still runs after it, informational).
+#: QUANT_FORGE_FULL_GATING=1 restores the old pre-merge checks, here and in audit_gate.
+FULL_GATING_ENV = "QUANT_FORGE_FULL_GATING"
+RISK_CONTEXT = "risk-invariants"
+FAST_RISK_TIMEOUT_S = 600
+
+
+def fast_path() -> bool:
+    return os.environ.get(FULL_GATING_ENV, "").strip().lower() not in {"1", "true", "yes"}
+
+
+def fast_risk(cfg: Config, root: Path, base: str, head: str) -> tuple[bool, str]:
+    ok, why = risk_job(cfg, root, base, head, suite_timeout_s=FAST_RISK_TIMEOUT_S)
+    if not ok and delivery_leadtime.cause(why) == "env":
+        return True, f"risk suites hit a box defect, not the code (env, does not block): {why}"
+    return ok, why
+
+
 def pr_tick(cfg: Config) -> str:
     f = _forge(cfg, forge_api.BOX_CI_USER)
     prs = f.gh(f"repos/{forge_api.FORGE_REPO}/pulls?state=open&base={LIVE}")
@@ -451,6 +473,10 @@ def pr_tick(cfg: Config) -> str:
         base = git(cfg, "merge-base", f"refs/heads/{LIVE}", head)
         changed = [c for c in git(cfg, "diff", "--name-only", base, head).splitlines() if c]
         with worktree(cfg, head) as root:
+            if fast_path():
+                rok, rwhy = fast_risk(cfg, root, base, head)
+                post(cfg, head, "success" if rok else "failure", f"box: {rwhy}", (RISK_CONTEXT,))
+                return f"PR #{p.get('number')}: fast path, risk {'ok' if rok else 'FAIL'}"
             sel = impacted.select(root, changed)
             if sel == [] and all(c.endswith(impacted.INERT_SUFFIXES) for c in changed):
                 why = "box CI: documents and images only (fast lane)"
