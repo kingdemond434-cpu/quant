@@ -149,7 +149,21 @@ def main(argv: list[str] | None = None) -> int:
         tmp = REPORT.with_name(f"{REPORT.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, REPORT)
+    # THE JUDGE'S ELASTIC CORES (owner, 2026-11-25), AFTER live is raised and in the same minute:
+    # the judge borrows idle cores above its reserved floor and sheds them on live load. Its own
+    # report (reports/JUDGE_ELASTIC_CORES.json); a failure there can never cost this pass.
+    elastic_pass(dry_run=a.dry_run or not sw["enabled"], write=not a.no_write)
     return 0
+
+
+def elastic_pass(*, dry_run: bool, write: bool) -> dict[str, Any]:
+    """Run `judge_elastic_cores.run_pass`; never raises, whatever it does."""
+    try:
+        from scripts import judge_elastic_cores as je
+
+        return je.run_pass(apply=not dry_run, write=write)
+    except Exception as exc:
+        return {"status": jp.UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
 
 
 if __name__ == "__main__":
