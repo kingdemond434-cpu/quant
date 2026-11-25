@@ -143,8 +143,8 @@ def allocate(
     taken: set[str] = set()
 
     def blocked(c: Candidate) -> str | None:
-        dims = {"cell": c.key, "symbol": c.symbol,
-                "family": c.family, "timeframe": c.timeframe}
+        dims: dict[str, str | tuple[str, str, str]] = {
+            "cell": c.key, "symbol": c.symbol, "family": c.family, "timeframe": c.timeframe}
         for dim, val in dims.items():
             if used[dim][val] >= caps[dim]:
                 return f"{dim}_cap"
