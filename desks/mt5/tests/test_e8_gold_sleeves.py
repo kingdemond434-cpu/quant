@@ -187,3 +187,128 @@ def test_a_banned_xau_sleeve_closes_nothing_by_instrument(monkeypatch: pytest.Mo
     assert rows and rows[0]["status"] == "BANNED_FAMILY"
     assert rows[0]["closed_positions"] == [] and "alert" in rows[0]
     assert venue.closes == []
+
+
+def _run_to_the_fence(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sym: str,
+                      fusion_why: str | None, gold_why: str | None = None
+                      ) -> tuple[list[dict[str, Any]], list[Any]]:
+    """e8_executor.run driven to the placement lock with one certified sleeve on `sym`.
+    Everything before the fence is stubbed to pass; the venue records any send."""
+    import contextlib
+    import json
+
+    import pandas as pd
+    import real_edge
+    from mt5desk import cross_account as xa
+    from mt5desk import families, kelly_sizing, order_door
+
+    from libs.ops import new_risk_hold
+    from prop import e8_book
+
+    class Decision:
+        flatten, may_open = False, True
+        verdict = SimpleNamespace(value="OK")
+        why = "ok"
+        room_to_daily_floor = 2_500.0
+
+        def as_dict(self) -> dict[str, Any]:
+            return {"equity": 100_000.0}
+
+    class Live:
+        def __init__(self) -> None:
+            self._by_key = {sym: IID}
+            self._raw_api = object()
+            self.sent: list[Any] = []
+
+        def account(self) -> dict[str, float]:
+            return {"equity": 100_000.0}
+
+        def positions(self) -> list[dict[str, Any]]:
+            return []
+
+        def orders(self) -> list[dict[str, Any]]:
+            return []
+
+        def instrument_id(self, s: str) -> int:
+            return IID
+
+        def quote(self, s: str) -> tuple[float, float]:
+            return 1.0000, 1.0001
+
+        def place(self, *a: Any, **k: Any) -> int:
+            self.sent.append(a)
+            return 1
+
+    idx = pd.date_range(end=NOW, periods=80, freq="h", tz="UTC")
+    frame = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}, index=idx)
+    sig = SimpleNamespace(time=idx[-2], side=1, stop=0.99, target=1.02)
+    book = tmp_path / "E8_BOOK.json"
+    book.write_text(json.dumps({"generated_utc": NOW.isoformat(), "risk_frac": 0.0015,
+                                "sleeves": [{"symbol": sym, "family": "fam", "key": "k",
+                                             "risk_frac": 0.0015}]}), encoding="utf-8")
+    cert_book = tmp_path / "CERT_BOOK_LIVE.json"
+    cert_book.write_text(json.dumps({"excluded": {}}), encoding="utf-8")
+    rows: list[dict[str, Any]] = []
+    import admission_integrity
+    monkeypatch.setattr(ex, "BOOK", book)
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", cert_book)
+    monkeypatch.setattr(kelly_sizing, "load_cert_book", lambda *a, **k: {})
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls, *a, **k: None))
+    monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
+    monkeypatch.setattr(ex, "manage_breakeven", lambda *a, **k: [])
+    monkeypatch.setattr(ex, "_record", lambda row, *a, **k: rows.append(dict(row)))
+    monkeypatch.setattr(ex, "outstanding_stop_risk", lambda *a, **k: (0.0, ""))
+    monkeypatch.setattr(ex, "entry_doors", lambda *a, **k: ("", "", [], 1.0))
+    monkeypatch.setattr(ex, "_frame", lambda *a, **k: frame)
+    monkeypatch.setattr(ex, "_call_params", lambda *a, **k: {})
+    from mt5desk import family_call
+    monkeypatch.setattr(family_call, "certified_session_filter", lambda sigs, s: sigs)
+    monkeypatch.setattr(family_call, "signal_reference_price",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("stub")))
+    monkeypatch.setattr(ex, "size_certified_entry",
+                        lambda *a, **k: (0.1, "test", 150.0, None))
+    monkeypatch.setattr(e8_book, "rollover_block", lambda *a, **k: None)
+    monkeypatch.setattr(new_risk_hold, "reason", lambda *a, **k: None)
+    monkeypatch.setattr(families, "get_family_func", lambda fam: (lambda f, **k: [sig]))
+    monkeypatch.setattr(real_edge, "load", lambda *a, **k: ({}, "ok"))
+    monkeypatch.setattr(real_edge, "doubt", lambda *a, **k: None)
+    monkeypatch.setattr(order_door, "guard_venue", lambda venue, **k: venue)
+    monkeypatch.setattr(xa, "publish_under_lock", lambda *a, **k: None)
+    monkeypatch.setattr(xa, "publish_tradelocker", lambda *a, **k: None)
+    monkeypatch.setattr(xa, "placement_lock",
+                        lambda *a, **k: contextlib.nullcontext(True))
+    monkeypatch.setattr(xa, "read_book", lambda acct, **k: ({}, None))
+    monkeypatch.setattr(xa, "opposite_block", lambda *a, **k: fusion_why)
+    monkeypatch.setattr(xa, "ftmo_block", lambda *a, **k: None)
+    monkeypatch.setattr(ex, "_gold_sleeve_refusal",
+                        lambda *a, **k: (gold_why, ("tl:key", "2026-11-25")))
+    monkeypatch.setattr(ex, "_gold_republish", lambda *a, **k: {"published": True})
+    venue = Live()
+    doc = ex.run(venue, armed=True, now=NOW, entry_enabled=True)
+    return [r for r in doc["sleeves"] if r.get("symbol") == sym], venue.sent
+
+
+def test_a_non_gold_fenced_row_carries_the_cross_account_rail(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Audit r3: the non-gold fence row is RAIL_BLOCKED on cross_account_opposite, nothing sent."""
+    rows, sent = _run_to_the_fence(monkeypatch, tmp_path, "EURUSD",
+                                   "fusion holds the opposite side of EURUSD")
+    assert rows and rows[0]["status"] == "RAIL_BLOCKED", rows
+    assert rows[0]["rail"] == "cross_account_opposite"
+    assert rows[0]["missed_growth_risk_usd"] > 0 and sent == []
+
+
+def test_a_gold_lock_refusal_carries_the_gold_rail(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    rows, sent = _run_to_the_fence(monkeypatch, tmp_path, "XAUUSD", None,
+                                   gold_why="gold OCO: refused")
+    assert rows and rows[0]["status"] == "RAIL_BLOCKED", rows
+    assert rows[0]["rail"] == oco.RAIL and sent == []
+
+
+def test_an_unfenced_gold_sleeve_is_sent_and_marks_the_instrument_open(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    rows, sent = _run_to_the_fence(monkeypatch, tmp_path, "XAUUSD", None)
+    assert rows and rows[0]["status"] == "SENT", rows
+    assert len(sent) == 1 and rows[0]["gold_oco_republish"] == {"published": True}

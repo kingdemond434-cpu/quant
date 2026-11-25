@@ -1507,7 +1507,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                             venue, _gold_ctx, holder=f"e8_executor:{row.get('sleeve') or sym}")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
-                row.setdefault("rail", "cross_account_opposite")
+                if "rail" not in row: row["rail"] = "cross_account_opposite"
                 row["why"] = _xwhy
                 row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
                 doc["sleeves"].append(row)

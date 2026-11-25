@@ -1004,7 +1004,7 @@ def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
     i = src.index("_xa.placement_lock(f\"e8_executor:")
     block = src[i:i + 3400]
     assert '_xa.read_book("fusion")' in block and "opposite_block" in block
-    assert 'row["rail"] = "cross_account_opposite"' in block
+    assert 'if "rail" not in row: row["rail"] = "cross_account_opposite"' in block
     assert "missed_growth_risk_usd" in block
     assert '_xa.publish_tradelocker(venue, source="e8_executor")' in block
 
