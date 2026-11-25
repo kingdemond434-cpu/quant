@@ -1,16 +1,16 @@
 {
- "generated_utc": "2026-11-25T23:05:28+00:00",
+ "generated_utc": "2026-11-25T23:28:17+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 9,
   "vectors_named": 6580,
-  "vectors_attempted_this_week": 1926,
-  "vectors_never_attempted": 4654,
+  "vectors_attempted_this_week": 1934,
+  "vectors_never_attempted": 4646,
   "vectors_by_outcome": {
-   "EMPTY": 819,
+   "EMPTY": 823,
    "YIELDED": 25,
-   "BLOCKED": 1082,
-   "NAMED_ONLY": 4654
+   "BLOCKED": 1086,
+   "NAMED_ONLY": 4646
   }
  },
  "platforms": {
@@ -239,14 +239,14 @@
  "vectors": {
   "named": 6580,
   "by_outcome": {
-   "EMPTY": 819,
+   "EMPTY": 823,
    "YIELDED": 25,
-   "BLOCKED": 1082,
-   "NAMED_ONLY": 4654
+   "BLOCKED": 1086,
+   "NAMED_ONLY": 4646
   },
-  "never_attempted": 4654,
-  "attempted_this_week": 1926,
-  "attempted_this_week_share": 0.2927,
+  "never_attempted": 4646,
+  "attempted_this_week": 1934,
+  "attempted_this_week_share": 0.2939,
   "rows_by_vector": {
    "5ch 株板 / 先物板": {
     "outcome": "EMPTY",
@@ -28209,14 +28209,14 @@
     "region": "global"
    },
    "paidsub|credit|global|hi|academic_replication|data.gov.in": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (111914 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (112822 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (15275 bytes)",
+    "last_attempt": "2026-11-25T23:27:54.411447+00:00",
     "language": "hi",
     "region": "global"
    },
@@ -28245,14 +28245,14 @@
     "region": "global"
    },
    "paidsub|credit|global|hi|github|github.com": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (110546 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (111914 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (15279 bytes)",
+    "last_attempt": "2026-11-25T23:27:41.895284+00:00",
     "language": "hi",
     "region": "global"
    },
@@ -28269,26 +28269,26 @@
     "region": "global"
    },
    "paidsub|credit|global|hi|public_web|web": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (110502 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (110666 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (15320 bytes)",
+    "last_attempt": "2026-11-25T23:27:57.872121+00:00",
     "language": "hi",
     "region": "global"
    },
    "paidsub|credit|global|hi|regulator|sebi.gov.in": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (112426 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (110892 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (15275 bytes)",
+    "last_attempt": "2026-11-25T23:28:05.853162+00:00",
     "language": "hi",
     "region": "global"
    },
@@ -29205,38 +29205,38 @@
     "region": "eu"
    },
    "paidsub|energy_power|EU|en|gov_open_data|data.europa.eu": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "EMPTY",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (99403 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_attempt": "2026-11-25T23:28:00.100000+00:00",
     "language": "en",
     "region": "eu"
    },
    "paidsub|energy_power|EU|en|gov_open_data|data.gov": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "EMPTY",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (98422 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (15293 bytes)",
+    "last_attempt": "2026-11-25T23:28:01.237213+00:00",
     "language": "en",
     "region": "eu"
    },
    "paidsub|energy_power|EU|en|gov_open_data|data.gov.uk": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "EMPTY",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "bing: bing returned no parseable results (127517 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "",
+    "last_attempt": "2026-11-25T23:27:56.184924+00:00",
     "language": "en",
     "region": "eu"
    },
@@ -29349,14 +29349,14 @@
     "region": "eu"
    },
    "paidsub|energy_power|EU|en|statistics_office|census.gov": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "EMPTY",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "",
+    "last_attempt": "2026-11-25T23:28:04.385628+00:00",
     "language": "en",
     "region": "eu"
    },
@@ -79225,16 +79225,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 180,
-   "fetches": 5931,
-   "ok": 3729,
+   "runs": 181,
+   "fetches": 5956,
+   "ok": 3754,
    "http_errors": 123,
    "transport_errors": 2079,
-   "seconds": 12034.8,
+   "seconds": 12105.8,
    "rows": 146,
-   "last_run": "2026-11-25T21:10:11+00:00",
-   "fetches_per_s": 0.4928,
-   "success_rate": 0.6287,
+   "last_run": "2026-11-25T23:28:17+00:00",
+   "fetches_per_s": 0.492,
+   "success_rate": 0.6303,
    "wall_s_24h": 134.2,
    "cpu_s_24h": 14.4
   },
@@ -79291,8 +79291,8 @@
    "last_run": "2026-11-25T23:05:28+00:00",
    "fetches_per_s": 0.611,
    "success_rate": 0.7584,
-   "wall_s_24h": 7973.8,
-   "cpu_s_24h": 296.8
+   "wall_s_24h": 8684.0,
+   "cpu_s_24h": 570.9
   },
   "forest_global_academic_code": {
    "runs": 20,
@@ -79365,16 +79365,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 26,
-   "fetches": 2501,
-   "ok": 1604,
+   "runs": 25,
+   "fetches": 2417,
+   "ok": 1520,
    "http_errors": 28,
    "transport_errors": 869,
-   "seconds": 7211.2,
-   "rows": 334,
+   "seconds": 6864.5,
+   "rows": 322,
    "last_run": "2026-11-25T20:57:39+00:00",
-   "fetches_per_s": 0.3468,
-   "success_rate": 0.6413,
+   "fetches_per_s": 0.3521,
+   "success_rate": 0.6289,
    "wall_s_24h": 3852.9,
    "cpu_s_24h": 281.2
   },
@@ -79421,16 +79421,16 @@
    "cpu_s_24h": 338.8
   },
   "forest_oceania": {
-   "runs": 26,
-   "fetches": 1395,
-   "ok": 737,
-   "http_errors": 363,
-   "transport_errors": 295,
-   "seconds": 5360.2,
-   "rows": 228,
+   "runs": 25,
+   "fetches": 1345,
+   "ok": 705,
+   "http_errors": 349,
+   "transport_errors": 291,
+   "seconds": 4904.7,
+   "rows": 221,
    "last_run": "2026-11-25T21:01:55+00:00",
-   "fetches_per_s": 0.2603,
-   "success_rate": 0.5283,
+   "fetches_per_s": 0.2742,
+   "success_rate": 0.5242,
    "wall_s_24h": 6057.1,
    "cpu_s_24h": 240.0
   },
