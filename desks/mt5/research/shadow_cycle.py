@@ -470,20 +470,30 @@ def run() -> tuple[dict, int]:
     # The stamp is applied HERE -- by the orchestrator that owns these files -- so every engine,
     # present and future, is covered by one code path instead of each reimplementing it (the
     # one-pipeline law). First-seen-now is the only defensible stamp; backdating is fabrication.
-    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
-        _p = BASE / "reports" / "shadow" / _sf
-        _d = _read(_p)
-        _stamped = 0
+    # READ FRESH UNDER THE LEDGER LOCK (2026-11-25, invariant I1): this used to read the file,
+    # stamp, and replace it whole, so a clock another writer opened in between was dropped.
+    import ledger_lock
+
+    def _stamp_forward_start(_d: dict) -> int:
+        _n = 0
         for _row in list(_d.values()) + list((_d.get("sleeves") or {}).values()):
             if (isinstance(_row, dict) and ("status" in _row or "n" in _row)
                     and not _terminal_status(_row.get("status"))
                     and not _row.get("forward_start")):
                 _row["forward_start"] = datetime.now(UTC).isoformat()
-                _stamped += 1
+                _n += 1
+        return _n
+
+    for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
+        _p = BASE / "reports" / "shadow" / _sf
+        if not _p.exists():
+            continue
+        try:
+            _stamped = ledger_lock.update(_p, _stamp_forward_start)
+        except OSError as _exc:
+            print(f"forward_start stamp not written to {_sf} ({type(_exc).__name__}: {_exc})")
+            continue
         if _stamped:
-            # Same Windows sharing-violation class as the census writes above: shadow_forward and
-            # the sync publisher hold these files open, so a bare overwrite raised Errno 13.
-            _resilient_writers().write_text_resilient(_p, json.dumps(_d, indent=2))
             print(f"stamped forward_start on {_stamped} row(s) in {_sf}")
 
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")

@@ -75,6 +75,8 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 
+import ledger_lock  # noqa: E402  (the one lock on the forward ledgers, invariant I1)
+
 SHADOW = BASE / "reports" / "shadow"
 CERTS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
@@ -896,6 +898,7 @@ def main() -> int:
         data = _read(path)
         if not data:
             continue
+        base_snapshot = ledger_lock.snapshot(data)     # this pass's merge base (invariant I1)
         changed = False
         # BOTH LAYERS. scalp_shadow keeps its rows under a `sleeves` sub-dict; iterating only
         # data.items() left four live scalp clocks INVISIBLE to this reconciler while the
@@ -1052,7 +1055,10 @@ def main() -> int:
                 actions.append({"key": key, "action": "RETIRED_UNRECONSTRUCTIBLE"})
                 changed = True
         if changed:
-            path.write_text(json.dumps(data, indent=2), "utf-8")
+            # THREE-WAY MERGE UNDER THE LEDGER LOCK (2026-11-25, invariant I1): only the rows
+            # this pass changed are applied to the file as it is now, so a clock another writer
+            # opened while this pass ran is never dropped by a whole-file replace.
+            ledger_lock.merge_write(path, base_snapshot, data)
 
     # --- certify or retire the reconstructible ones -------------------------------------------
     verdicts = gauntlet(to_gauntlet)
@@ -1066,6 +1072,7 @@ def main() -> int:
             v = verdicts.get(key)
             path = SHADOW / spec["file"]
             data = _read(path)
+            base_snapshot = ledger_lock.snapshot(data)
             row = data.get(key)
             if v is None:
                 continue
@@ -1093,7 +1100,7 @@ def main() -> int:
                         f"forward slot.")
                 actions.append({"key": key, "action": "RETIRED_GATE_FAIL", "failed": failed})
             if isinstance(row, dict):
-                path.write_text(json.dumps(data, indent=2), "utf-8")
+                ledger_lock.merge_write(path, base_snapshot, data)
         if len(survivors) > n_before:
             # THE HEADER IS NEVER FLIPPED OVER ROWS THIS PASS DID NOT JUDGE (2026-11-13). This
             # line used to write `gate_policy: ATTESTATION` over the whole store whenever it added

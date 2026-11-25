@@ -89,6 +89,7 @@ def main() -> int:
     cleared = 0
     if SHADOW_STATE.exists():
         state = json.loads(SHADOW_STATE.read_text(encoding="utf-8"))
+        merge_base = json.loads(json.dumps(state))    # three-way merge base (invariant I1)
         for key in retired:
             st = state.get(key)
             if isinstance(st, dict) and st.get("forward_start"):
@@ -96,7 +97,8 @@ def main() -> int:
                 st["forward_start_reset_why"] = REASON
                 st["forward_start_reset_at"] = now
                 cleared += 1
-        SHADOW_STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        import ledger_lock  # the one lock on the forward ledgers (invariant I1)
+        ledger_lock.merge_write(SHADOW_STATE, merge_base, state)
 
     print(f"retired {len(retired)} legacy identity row(s) to archived_identities; "
           f"cleared {cleared} forward_start stamp(s) -- the next shadow run freezes a venue-shaped "

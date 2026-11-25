@@ -21,7 +21,6 @@ import os
 import stat
 import sys
 import time
-import time as _wall  # the state lock's clock: tests replace `time` with a fake monotonic
 import traceback
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -76,50 +75,19 @@ def new_clock_record(stamp: str, hold: str = "") -> dict:
     return row
 
 
-@contextlib.contextmanager
-def state_lock(path: Path, timeout_s: float = 30.0, stale_s: float = 300.0) -> Iterator[bool]:
+def state_lock(path: Path, timeout_s: float = 30.0, stale_s: float = 300.0):
     """One writer at a time on a forward ledger's read-merge-write (2026-11-25, invariant I1).
 
-    The certification transaction and the coverage backfill ADD clock rows to shadow_state.json
-    while this engine may be mid-pass; `_persist_state` merges on write, but a read taken before
-    another organ's write and replaced after it would drop that organ's rows. Both sides take
-    this lock around read-merge-write only (never around a replay). Yields whether it was
-    acquired: a lock that cannot be had in `timeout_s` is logged and the write proceeds, because
-    an unwritten state file froze the forward book before (a lost row is re-opened by the
-    hourly backfill and shows RED on CLOCK_COVERAGE.json until it is). A lock older than
-    `stale_s` belongs to a dead writer and is broken."""
-    lock = path.with_name(f".{path.name}.lock")
-    lock.parent.mkdir(parents=True, exist_ok=True)
-    deadline = _wall.monotonic() + timeout_s
-    fd: int | None = None
-    while True:
-        try:
-            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.write(fd, f"{os.getpid()} {datetime.now(UTC).isoformat()}".encode())
-            break
-        except FileExistsError:
-            try:
-                age = _wall.time() - lock.stat().st_mtime
-            except OSError:
-                continue                  # released between the two calls: try again
-            if age > stale_s:
-                with contextlib.suppress(OSError):
-                    lock.unlink()
-                continue
-            if _wall.monotonic() >= deadline:
-                slog(f"state lock {lock.name} not acquired in {timeout_s:.0f}s; writing unlocked")
-                break
-            _wall.sleep(0.05)
-        except OSError as exc:
-            slog(f"state lock {lock.name} unavailable ({type(exc).__name__}); writing unlocked")
-            break
+    THE ONE LOCK, now owned by `research/ledger_lock.py` so every writer of the three forward
+    ledgers -- engines, reconciler, evacuator, stamper, repair scripts -- takes the same lock
+    without importing this engine. This name stays because the engine's own writes and
+    `clock_coverage` call it. Yields whether the lock was acquired; see `ledger_lock.state_lock`.
+    """
     try:
-        yield fd is not None
-    finally:
-        if fd is not None:
-            os.close(fd)
-            with contextlib.suppress(OSError):
-                lock.unlink()
+        from ledger_lock import state_lock as _lock
+    except ImportError:
+        from research.ledger_lock import state_lock as _lock  # type: ignore[no-redef]
+    return _lock(path, timeout_s=timeout_s, stale_s=stale_s)
 
 
 def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:

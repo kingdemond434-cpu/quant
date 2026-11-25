@@ -7,6 +7,7 @@ REG = r"data\sleeve_registry.json"
 STP = r"reports\shadow\shadow_state.json"
 rows = json.load(open(REG))["sleeves"]
 st = json.load(open(STP))
+merge_base = json.loads(json.dumps(st))    # three-way merge base (invariant I1)
 sl = st.get("sleeves") or st
 
 cleared, kept = [], []
@@ -33,7 +34,8 @@ for k, v in sl.items():
     cleared.append(k)
 
 if cleared:
-    json.dump(st, open(STP, "w"), indent=2)
+    import ledger_lock  # the one lock on the forward ledgers (invariant I1)
+    ledger_lock.merge_write(STP, merge_base, st)
 print("  cleared (registry LIVE + behaviour matches):", len(cleared))
 print("  kept broken (genuine or unverifiable):", len(kept))
 for k, why in kept[:5]:

@@ -232,34 +232,48 @@ def evacuate(base: Path | None = None, now: str | None = None,
                                     f"({'/'.join(RETIREMENT_PREFIXES)}) and the row leaves the "
                                     "live clock store for an append-only ledger; nothing is "
                                     "retired here and nothing is destroyed")}
+    try:
+        import ledger_lock
+    except ImportError:
+        from research import ledger_lock  # type: ignore[no-redef]
     for rel in stores:
         p = root / rel
         if not p.exists():
             continue
-        doc = _read(p)
-        if doc is None:
-            out["unreadable"].append(rel)          # unreadable is never "nothing to move"
-            continue
         name = p.stem
         moved: list[dict[str, Any]] = []
-        for container, _label in _containers(doc):
-            for key in [k for k, v in list(container.items())
-                        if isinstance(v, dict) and "status" in v and is_retired(v.get("status"))]:
-                row = container.pop(key)
-                moved.append(ledger_row(name, str(key), row, stamp))
-        if not moved:
+
+        def _evacuate(doc: dict[str, Any], name: str = name,
+                      moved: list[dict[str, Any]] = moved) -> int:
+            for container, _label in _containers(doc):
+                for key in [k for k, v in list(container.items())
+                            if isinstance(v, dict) and "status" in v
+                            and is_retired(v.get("status"))]:
+                    row = container.pop(key)
+                    moved.append(ledger_row(name, str(key), row, stamp))
+            if not moved:
+                return 0
+            append(root, moved)
+            stones = doc.setdefault(TOMBSTONE, {})
+            if not isinstance(stones, dict):
+                stones = {}
+                doc[TOMBSTONE] = stones
+            for r in moved:
+                stones[r["key"]] = {"at": stamp, "status": r["status"], "reason": r["reason"],
+                                    "accrued_days": r["accrued_days"],
+                                    "accrued_trades": r["accrued_trades"], "ledger": LEDGER}
+            doc["retired_clocks_moved_at"] = stamp
+            return len(moved)
+
+        # READ FRESH UNDER THE LEDGER LOCK (2026-11-25, invariant I1): a whole-file replace from
+        # an earlier read dropped any clock another writer opened in between. Append first,
+        # remove second, both inside the lock.
+        n = ledger_lock.update(p, _evacuate, indent=1)
+        if n is None:
+            out["unreadable"].append(rel)          # unreadable is never "nothing to move"
             continue
-        append(root, moved)
-        stones = doc.setdefault(TOMBSTONE, {})
-        if not isinstance(stones, dict):
-            stones = {}
-            doc[TOMBSTONE] = stones
-        for r in moved:
-            stones[r["key"]] = {"at": stamp, "status": r["status"], "reason": r["reason"],
-                                "accrued_days": r["accrued_days"],
-                                "accrued_trades": r["accrued_trades"], "ledger": LEDGER}
-        doc["retired_clocks_moved_at"] = stamp
-        _atomic(p, doc)
+        if not n:
+            continue
         out["moved"] += len(moved)
         out["by_store"][name] = len(moved)
         out["wrote"].append(rel)
