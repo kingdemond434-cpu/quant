@@ -148,8 +148,9 @@ def test_a_banned_xau_sleeve_closes_nothing_by_instrument(monkeypatch: pytest.Mo
             return {"equity": 100_000.0}
 
     class Live:
-        _by_key = {"XAUUSD": IID}
-        closes: list[int] = []
+        def __init__(self) -> None:
+            self._by_key = {"XAUUSD": IID}
+            self.closes: list[int] = []
 
         def account(self) -> dict[str, float]:
             return {"equity": 100_000.0}
@@ -168,9 +169,9 @@ def test_a_banned_xau_sleeve_closes_nothing_by_instrument(monkeypatch: pytest.Mo
     book.write_text(json.dumps({"generated_utc": NOW.isoformat(), "risk_frac": 0.0015,
                                 "sleeves": [{"symbol": "XAUUSD", "family": "discovered"}]}),
                     encoding="utf-8")
+    import real_edge
     from mt5desk import cross_account as xa
     from mt5desk import order_door
-    import real_edge
     monkeypatch.setattr(ex, "BOOK", book)
     monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
     monkeypatch.setattr(ex, "manage_breakeven", lambda *a, **k: [])
