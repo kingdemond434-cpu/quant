@@ -95,26 +95,129 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
-def _proposer_counts() -> tuple[int, dict[str, int]]:
-    """`tests_run` on every discovery file, attributed to the families it proposed."""
+def _intel_roots() -> tuple[Path, Path]:
+    """Both intelligence roots the compiler reads and `scripts/disk_guard.INTEL_DIRS` rolls up.
+    Derived from DESK at call time, so a caller (or test) that points DESK elsewhere moves both."""
+    return DESK / "data" / "intelligence", DESK.parent.parent / "data" / "intelligence"
+
+
+def _doc_key(doc: dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":"),
+                                     default=str).encode("utf-8")).hexdigest()
+
+
+def _discovery_docs(stats: dict[str, Any] | None = None) -> Any:
+    """(seat, document, origin) for every proposer contract that carries a `tests_run`: the live
+    `discoveries_*.json` files AND the `rollup_<day>.jsonl.gz` archives `disk_guard.rollup`
+    compacts them into after RETAIN_DAYS (one document per line, the originals deleted).
+    `origin` names where the charge was read (`<seat>/<file stem>` or `<seat>/rollup_<day>#<line>`).
+
+    THE UNDER-COUNT THIS ENDS (audit 2026-10-14). Reading only the live files meant every rolled
+    contract's `tests_run` silently left the lifetime count.
+
+    EVERY OCCURRENCE IS A CHARGE; ONLY A TRUE RE-READ IS DROPPED (Audit MF1). Distinct charges
+    can be byte-identical -- committee_ensembles writes `{"kind":"trial_charge","tests_run":k,...}`
+    with no time or nonce, its uniqueness living only in the file NAME -- so content is never a
+    dedup key on its own. Two re-reads are removed, each exactly:
+      * the SAME FILE reached twice (the two roots overlapping, a symlinked seat): deduped by the
+        resolved path, never by content;
+      * a live file AND its rollup line (disk_guard wrote the line, then the unlink failed):
+        disk_guard rolls a file into `rollup_<D>` of its own seat directory only when the
+        file's stem day is D, so a rollup line is skipped only against a live file of the SAME
+        resolved seat directory, the SAME day D and the same canonical-JSON sha256, and at most
+        once per such live document. A live file of any other day is never matched, and the
+        live file itself is always counted, so the result is never below the live-only count.
+    A document is the unit disk_guard writes, so a live list file is read element by element
+    exactly as its rollup lines will be (its count is the same before and after)."""
+    import gzip
+    import zlib
+    from collections import Counter
+
+    st = stats if stats is not None else {}
+    st.update({"live_documents": 0, "rollup_documents": 0, "same_path_skipped": 0,
+               "rollup_lines_matched_to_live": 0, "matched_by_rollup": {}, "torn_archives": []})
+    seen_paths: set[str] = set()
+    live_unmatched: Counter[tuple[str, str, str]] = Counter()
+
+    def _first_visit(f: str, primary: bool) -> bool:
+        # The desk root is read hit-for-hit exactly as before this change (never fewer charges
+        # than the live-only count); only a SECOND-root path that resolves to one already read
+        # is the same file twice.
+        rp = os.path.realpath(f)
+        if rp in seen_paths and not primary:
+            st["same_path_skipped"] += 1
+            return False
+        seen_paths.add(rp)
+        return True
+
+    def _charge(doc: Any) -> bool:
+        return isinstance(doc, dict) and isinstance(doc.get("tests_run"), (int, float))
+
+    roots = list(dict.fromkeys(_intel_roots()))
+    for i, base in enumerate(roots):
+        for f in sorted(glob.glob(str(base / "*" / "discoveries_*.json"))):
+            if not _first_visit(f, i == 0):
+                continue
+            p = Path(f)
+            try:
+                raw = json.loads(p.read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            seat_dir = os.path.realpath(p.parent)
+            day = p.stem.replace("discoveries_", "")[:8]   # disk_guard.rollup's own stamp
+            for doc in (raw if isinstance(raw, list) else [raw]):
+                if _charge(doc):
+                    live_unmatched[(seat_dir, day, _doc_key(doc))] += 1
+                    st["live_documents"] += 1
+                    yield p.parent.name, doc, f"{p.parent.name}/{p.stem}"
+    for i, base in enumerate(roots):
+        for f in sorted(glob.glob(str(base / "*" / "rollup_*.jsonl.gz"))):
+            if not _first_visit(f, i == 0):
+                continue
+            p = Path(f)
+            seat = p.parent.name
+            seat_dir = os.path.realpath(p.parent)
+            day = p.name[len("rollup_"):].split(".", 1)[0]
+            tag = f"{seat}/rollup_{day}"
+            try:
+                with gzip.open(f, "rt", encoding="utf-8") as fh:
+                    for lineno, ln in enumerate(fh, 1):
+                        if '"tests_run"' not in ln:
+                            continue
+                        try:
+                            doc = json.loads(ln)
+                        except ValueError:
+                            continue
+                        if not _charge(doc):
+                            continue
+                        k = (seat_dir, day, _doc_key(doc))
+                        if live_unmatched[k] > 0:
+                            live_unmatched[k] -= 1
+                            st["rollup_lines_matched_to_live"] += 1
+                            st["matched_by_rollup"][tag] = st["matched_by_rollup"].get(tag, 0) + 1
+                            continue
+                        st["rollup_documents"] += 1
+                        yield seat, doc, f"{tag}#{lineno}"
+            except (OSError, EOFError, zlib.error):
+                # a torn archive keeps every line read before the tear: never a smaller count
+                # than what was readable
+                st["torn_archives"].append(tag)
+                continue
+
+
+def _proposer_counts(stats: dict[str, Any] | None = None) -> tuple[int, dict[str, int]]:
+    """`tests_run` on every discovery contract (live files and disk_guard rollups), attributed
+    to the families it proposed. `stats`, when given, receives `_discovery_docs`' diagnostics."""
     total = 0
     by_fam: dict[str, int] = {}
-    intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
     # The learned miners re-run the SAME grid x symbols x thresholds every day, so their daily
     # discovery files repeat one charge; they are reconciled below against the trial ledger.
     learned_files: dict[str, tuple[int, set[str]]] = {}
-    for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
-        try:
-            doc = json.loads(Path(f).read_text("utf-8"))
-        except (OSError, ValueError):
-            continue
-        if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
-            continue
+    for seat, doc, _origin in _discovery_docs(stats):
         n = int(doc["tests_run"])
         fams = {str(r.get("family")) for r in (doc.get("discoveries") or [])
                 if isinstance(r, dict) and r.get("family")}
-        seat = Path(f).parent.name
         if seat.startswith("learned_"):
             prev_n, prev_f = learned_files.get(seat, (0, set()))
             learned_files[seat] = (max(prev_n, n), prev_f | fams)
@@ -290,7 +393,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in k_fam.items():
         g_fam[fam] = g_fam.get(fam, 0) + k
     g_total += k_total
-    p_total, p_fam = _proposer_counts()
+    p_stats: dict[str, Any] = {}
+    p_total, p_fam = _proposer_counts(p_stats)
     m_total, m_fam = _mass_screen_counts()
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
@@ -304,6 +408,14 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total, "prescreen_killed_cells": k_total,
+           "proposer_sources": {
+               "live_documents": p_stats.get("live_documents", 0),
+               "rollup_documents": p_stats.get("rollup_documents", 0),
+               "same_path_skipped": p_stats.get("same_path_skipped", 0),
+               "rollup_lines_matched_to_live": p_stats.get("rollup_lines_matched_to_live", 0),
+               "matched_by_rollup": dict(sorted((p_stats.get("matched_by_rollup") or {})
+                                                .items())[:50]),
+               "torn_archives": (p_stats.get("torn_archives") or [])[:50]},
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph, plus each standing pre-build "
                     "prescreen kill as the one fate the judge would have recorded) + "
