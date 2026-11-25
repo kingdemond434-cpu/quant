@@ -218,7 +218,8 @@ def _hunt12_resident_health() -> dict:
         cpu = proc.cpu_times()
         if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
                 or proc.children() or proc.open_files()):
-            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+            return {**result,
+                    "note": "stopped resident requires review; active ownership preserved"}
         proc.resume()
         after = proc.status()
         return {**result, "alive": after != psutil.STATUS_STOPPED,
@@ -1509,7 +1510,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
-                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep",
+                     "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -1633,7 +1635,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     "forest_japan": "japan",
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
-    # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
+    # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident,
+    # and since 2026-11-25 its own RESERVED SLOT (department_resident.RESERVED_DEPTS): measured on
+    # the box it ran ~2 passes a day queued FIFO behind every department for three shared slots.
     **dict.fromkeys(("math_lab", "expression_factory", "formula_library", "physics_lab",
                      "coevolution"), "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
