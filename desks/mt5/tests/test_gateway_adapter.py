@@ -1350,6 +1350,12 @@ class _Terminal:
     def orders_get(self, symbol=None):
         return list(self.pending)
 
+    def positions_total(self):
+        return len(self.positions)
+
+    def orders_total(self):
+        return len(self.pending)
+
     def order_send(self, req):
         self.sent.append(req)
         return SimpleNamespace(retcode=10009, order=len(self.sent), comment="done")
@@ -1452,22 +1458,39 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
                   "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
                   "gold_one_at_risk", "cancel_gold_against_direction",
                   "flatten_gold_against_direction", "_missed_usd", "gold_follow_state",
-                  "gold_follow_grace_min", "_iso_utc"), ns)
+                  "gold_follow_grace_min", "_iso_utc", "publish_paused_reading"), ns)
 
 
-def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
+def test_main_with_the_pause_file_present_sends_nothing_and_writes_only_the_reading(
         tmp_path, monkeypatch) -> None:
-    """The pause is consulted before the terminal is touched: no connect, no read, no order,
-    no state file, one log line saying why."""
+    """A paused pass trades nothing: no order, no decision, no intent. Since 2026-11-19 it
+    publishes a READ-ONLY account reading (`publish_paused_reading`) so the ruin rail can
+    re-measure equity instead of judging a frozen number forever (Fusion halted on 10-30's EUR
+    266.01 for 270 passes). The write touches exactly the reading's keys; every other key,
+    `last_reconcile` included, is byte-for-byte what it was."""
     rows = _gold_rows()
     mt5 = _Terminal(rows, *_quote(rows))
-    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=None)
+    mt5.positions = [SimpleNamespace(ticket=7, symbol="XAUUSD")]
+    before_state = {"armed": True, "equity": 266.01, "last_reconcile": "2026-10-30T19:50:00+00:00",
+                    "brackets": {"gold_asia": {"date": "2026-10-30"}}}
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=before_state)
+    before = json.loads(ns["_state_file"].read_text("utf-8"))
     assert _cfg.gateway_paused() is True
     ns["main"]()
-    assert mt5.sent == [] and ns["_calls"] == []
-    assert not ns["_state_file"].exists()
-    assert ns["_decisions"] == [] and ns["_intents"] == []
-    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
+    assert mt5.sent == [] and ns["_decisions"] == [] and ns["_intents"] == []
+    assert ns["_calls"] == ["connect"]
+    after = json.loads(ns["_state_file"].read_text("utf-8"))
+    reading = {"equity", "margin_free", "reading_at", "reading_source",
+               "reading_positions_total", "reading_orders_total"}
+    assert set(after) - set(before) <= reading
+    assert {k: v for k, v in after.items() if k not in reading} == \
+        {k: v for k, v in before.items() if k not in reading}
+    assert after["equity"] == 10_000.0 and after["margin_free"] == 9_000.0
+    assert after["reading_source"] == "paused_read_only"
+    assert after["reading_at"] == _WHEN_UTC.astimezone(UTC).isoformat(timespec="seconds")
+    assert after["reading_positions_total"] == 1 and after["reading_orders_total"] == 0
+    assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass",
+                           "paused reading published: equity 10000.00"]
 
 
 def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_sends_nothing(

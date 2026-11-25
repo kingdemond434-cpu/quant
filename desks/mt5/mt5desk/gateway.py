@@ -4930,9 +4930,50 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
+def publish_paused_reading() -> str:
+    """READ-ONLY ACCOUNT READING WHILE PAUSED (2026-11-19). No order, no cancel, no close.
+
+    THE DEADLOCK THIS ENDS. The ruin rail (`proposals/fusion_deadman.py`) judges equity from
+    `gateway_state.json`, and this gateway is the only writer of that file. While paused, the
+    gateway returned before it read the account, so the rail kept judging the frozen 2026-10-30
+    reading (EUR 266.01) and could never see a recovery, even after the floor moved to EUR 10.
+    Fusion then had no trade from 10-30 and no alert.
+
+    A paused pass now publishes `equity`, `margin_free`, `reading_at` and the open position
+    and order COUNTS, and nothing else.
+    `last_reconcile` is untouched, because no management ran, so the rail's stale-gateway clock
+    still reads the truth. No rail threshold, verdict or re-arm rule changes: the rail simply
+    gets a current number to judge.
+    """
+    if not connect():
+        return "paused reading UNMEASURED: terminal not connected"
+    acc = mt5.account_info()
+    if acc is None:
+        return "paused reading UNMEASURED: account_info() returned None"
+    st = load_state()
+    st["equity"] = round(float(acc.equity), 2)
+    st["margin_free"] = round(float(acc.margin_free), 2)
+    st["reading_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    st["reading_source"] = "paused_read_only"
+    # The open book's SIZE, as counts only: the position list stays the last managed pass's,
+    # so a reader can see when the book moved while nothing was managing it (Audit 11-19).
+    for _key, _fn in (("reading_positions_total", "positions_total"),
+                      ("reading_orders_total", "orders_total")):
+        try:
+            st[_key] = int(getattr(mt5, _fn)())
+        except Exception:
+            st[_key] = None
+    save_state(st)
+    return f"paused reading published: equity {st['equity']:.2f}"
+
+
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
+        try:
+            log(publish_paused_reading())
+        except Exception as exc:
+            log(f"paused reading FAILED ({type(exc).__name__}: {exc}); no trading either way")
         return
     if not connect():
         return
