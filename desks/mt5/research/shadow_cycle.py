@@ -610,6 +610,13 @@ def run() -> tuple[dict, int]:
         # desk owes a clock; these say what was set aside, how many, and why.
         "certified_canon_total": None if census is None else census["all"],
         "certified_excluded": None if census is None else census["excluded"],
+        # Exact-policy ten-gate certificates on NON-EXOTIC symbols (universe_policy.
+        # is_exotic_symbol, the desk's one exotic definition), for the off-box rule checks.
+        # Banned-family certificates on non-exotic symbols are counted here: it is a count of
+        # certificates by symbol class, not of clocks owed.
+        "certified_non_exotic_total": (None if census is None
+                                       else census["all"] - census["excluded"].get(
+                                           "exotic", {}).get("n", 0)),
         "clock_rotation": _clock_rotation_summary(),
         # INVARIANT I1's verdict (research/clock_coverage.py, hourly in `forward_enrolment`):
         # certified non-exotic specs minus clocked specs, which must be 0.

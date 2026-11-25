@@ -862,6 +862,9 @@ $reportPaths = @(
     # and the priors and gate moves it proposes to the sealed judge (before/after values)
     "desks/mt5/reports/JUDGE_CALIBRATION.json",
     "desks/mt5/data/JUDGE_CALIBRATION_PROPOSALS.json",
+    # where the judge's time goes and the verdict floor ladder (research/judge_efficiency.py),
+    # read by the off-box rule checks (judge P0, 2026-11-25)
+    "desks/mt5/reports/JUDGE_EFFICIENCY.json",
     # The formula family's two producers: the published libraries' per-pass donation, and the
     # expression factory's phase file (how far its last pass got; its full report stays local).
     "desks/mt5/reports/FORMULA_LIBRARY.json",
