@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+import types
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
@@ -34,16 +35,18 @@ def _fresh(shadow_dir: Path) -> dict:
 def test_a_spent_budget_stops_cleanly_and_the_next_pass_resumes_at_the_cursor(
         tmp_path: Path, monkeypatch) -> None:
     calls: list[str] = []
-    slow = {"on": True}
+    clock = {"t": 0.0, "step": 10.0}
 
     def fetch(sym: str, timeframe: str = "H1"):
         calls.append(sym)
-        if slow["on"]:
-            time.sleep(0.3)
+        clock["t"] += clock["step"]             # each symbol's work costs 10 fake seconds
         return _bars()
 
     shadow_dir = _wire(monkeypatch, tmp_path, ["AUDUSD", "EURUSD", "GBPUSD"], fetch)
-    shadow_forward.main(budget_s=0.45)
+    # A FAKE WALL CLOCK for this module only, so the cut is deterministic (no sleeps).
+    monkeypatch.setattr(shadow_forward, "time",
+                        types.SimpleNamespace(monotonic=lambda: clock["t"], sleep=time.sleep))
+    shadow_forward.main(budget_s=15)
     st = _state(shadow_dir)
     assert calls == ["AUDUSD", "EURUSD"], f"the budget did not stop the pass: {calls}"
     assert st["engine_pass"]["complete"] is False and st["engine_pass"]["budget_exhausted"]
@@ -55,7 +58,6 @@ def test_a_spent_budget_stops_cleanly_and_the_next_pass_resumes_at_the_cursor(
     assert fresh["clocks"]["GBPUSD.asia"]["reached_this_pass"] is False
 
     calls.clear()
-    slow["on"] = False
     shadow_forward.main(budget_s=600)
     assert calls[0] == "GBPUSD", f"the next pass did not resume at the cursor: {calls}"
     assert _state(shadow_dir)["engine_pass"]["complete"] is True
