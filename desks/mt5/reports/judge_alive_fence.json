@@ -1,24 +1,24 @@
 {
- "generated_utc": "2026-11-25T04:16:41+00:00",
+ "generated_utc": "2026-11-25T05:25:53+00:00",
  "fence": "judge_alive",
  "verdict": "FAIL",
  "state": "FAIL",
- "why": "the judge STALLED (no_progress) at 2026-11-25T04:09:30+00:00 in phase merge_and_publish, 1 consecutive; no sweep has finished since: the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing)",
+ "why": "the judge STALLED (resident_kill) at 2026-11-25T04:18:46+00:00 in phase None, 2 consecutive; no sweep has finished since: sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident",
  "checks": [
   {
    "metric": "judge_alive",
    "state": "FAIL",
    "stall": {
-    "reason": "no_progress",
-    "detail": "the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing)",
-    "stalled_utc": "2026-11-25T04:09:30+00:00",
-    "phase": "merge_and_publish",
+    "reason": "resident_kill",
+    "detail": "sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident",
+    "stalled_utc": "2026-11-25T04:18:46+00:00",
+    "phase": null,
     "shard": null,
-    "consecutive": 1,
-    "pid": 15964,
-    "lost_s": 63235.4
+    "consecutive": 2,
+    "pid": 18464,
+    "lost_s": 63786.8
    },
-   "why": "the judge STALLED (no_progress) at 2026-11-25T04:09:30+00:00 in phase merge_and_publish, 1 consecutive; no sweep has finished since: the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing)"
+   "why": "the judge STALLED (resident_kill) at 2026-11-25T04:18:46+00:00 in phase None, 2 consecutive; no sweep has finished since: sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident"
   },
   {
    "metric": "judge_stop",
