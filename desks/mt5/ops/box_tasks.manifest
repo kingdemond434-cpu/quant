@@ -398,4 +398,4 @@ TASK name="MT5-DeepForestRegions"  trigger="hourly (repeating; 58-minute limit; 
 # box alerts go to Claude"): ops/alert_feed.py reads the ntfy topic back into
 # desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl, then run_desk_self_heal --apply acts on the
 # process board. SYSTEM, independent of the hourly cycle. Never re-runs or ends a money task.
-TASK name="MT5-Guardian"           trigger="every 15 minutes (repeating; 12-minute limit; SYSTEM, RunLevel Highest)" runs="ops/run_guardian.cmd" installer="desks/mt5/scripts/install_guardian_task.ps1" lane="ops" also_runs="ops/alert_feed.py,desks/mt5/research/box_headroom.py,desks/mt5/research/box_pass.py,scripts/delivery_guard.py,scripts/output_watch.py"
+TASK name="MT5-Guardian"           trigger="every 15 minutes (repeating; 12-minute limit; SYSTEM, RunLevel Highest)" runs="ops/run_guardian.cmd" installer="desks/mt5/scripts/install_guardian_task.ps1" lane="ops" also_runs="ops/alert_feed.py,desks/mt5/research/box_headroom.py,desks/mt5/research/box_pass.py,scripts/delivery_guard.py,scripts/output_watch.py,scripts/backup_watch.py,scripts/guardian_sweep.py"
