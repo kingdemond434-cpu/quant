@@ -1278,6 +1278,27 @@ def main() -> int:
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
+    # SUCCESSOR PRODUCERS (research/producer_loop.extend_docket, principal 2026-11-25): a producer
+    # parked after its failed remedies, or a yield laggard, has a successor DESIGN on file; its
+    # rows are minted here by a deterministic transform of the parent's latest rows (or, for a
+    # fresh design, of rows the paper miners and the brain already produced), tagged with the
+    # successor's name and the lineage's one trial-ledger group. They are minted BEFORE
+    # order_docket so they pass the same intake (unrunnable bank, judge_prescreen.intake) as every
+    # row, then the weights below. Appends only; a fault costs the successor rows, never a row.
+    successors: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.producer_loop import extend_docket as _extend
+        rows_out, successors = _extend(rows_out, coverage=judged)
+        successors["status"] = "APPLIED"
+        if successors.get("minted"):
+            print(f"   successor producers: {successors['minted']} row(s) minted by "
+                  f"{len(successors.get('by_successor') or {})} successor(s), 0 removed")
+    except Exception as exc:
+        successors = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   successor producers unavailable ({type(exc).__name__}: {exc})")
     coverage: dict[str, Any] = {}
     try:
         # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
@@ -1522,6 +1543,7 @@ def main() -> int:
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "producer_successors": successors,
         "breadth_fence": breadth_fence,
         "hypothesis_families": families,
         "coverage_steer": steer_block,

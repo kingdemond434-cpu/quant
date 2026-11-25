@@ -376,3 +376,242 @@ def test_the_leg_is_wired_registered_and_contracted() -> None:
     assert '"desks/mt5/reports/PRODUCER_LOOP.json", 180' in oc
     merge = (_DESK / "research" / "merge_hypotheses.py").read_text("utf-8")
     assert "from research.producer_loop import reweight_rows" in merge
+
+
+# ------------------------------------------------------------------------- successor producers
+
+def _row(name: str, status: str = "HEALTHY", *, score: Any = 1.0, judged: Any = 1000,
+         hist: Any = None, weight: float = 1.0) -> dict[str, Any]:
+    return {"producer": name, "status": status, "score": score, "cells_judged": judged,
+            "kill_class_histogram": hist if hist is not None else {pl.COSTS: 9, pl.NO_OOS_EDGE: 2},
+            "weight": weight, "yield": {"edges_per_cpu_hour": 0.0}}
+
+
+def test_a_parked_producer_spawns_exactly_one_successor_on_its_kill_class_axis() -> None:
+    by = {"dud": _row("dud", "PARKED", weight=pl.WEIGHT_MIN), "good": _row("good")}
+    d, rep, _ = pl.plan_successors(by, {}, now=NOW, pooled_yield=None, zero_cert=[])
+    assert list(d) == ["dud~s1"]
+    s1 = d["dud~s1"]
+    assert s1["axis"] == pl.AXES_BY_KILL_CLASS[pl.COSTS][0] == pl.LOW_TURNOVER
+    assert s1["parent"] == "dud" and s1["root"] == "dud" and s1["status"] == "LIVE"
+    assert rep[0]["successor"] == "dud~s1" and rep[0]["parent_weight"] >= pl.WEIGHT_MIN
+    # a second pass with the parent still parked does not spawn a duplicate
+    by["dud~s1"] = _row("dud~s1", "UNMEASURED", score=pl.UNMEASURED, judged=pl.UNMEASURED)
+    d2, _, _ = pl.plan_successors(by, d, now=NOW + timedelta(days=1), pooled_yield=None,
+                                  zero_cert=[])
+    assert sorted(d2) == ["dud~s1"] and d2["dud~s1"]["status"] == "LIVE"
+
+
+def test_a_parked_successor_hands_the_lineage_the_next_untried_axis() -> None:
+    by = {"dud": _row("dud", "PARKED"), "dud~s1": _row("dud~s1", "PARKED")}
+    d = {"dud~s1": {"root": "dud", "parent": "dud", "generation": 1, "axis": pl.LOW_TURNOVER,
+                    "status": "LIVE"}}
+    d2, _, _ = pl.plan_successors(by, d, now=NOW, pooled_yield=None, zero_cert=[])
+    assert d2["dud~s1"]["status"] == "PARKED"                      # closed, still a seed
+    assert d2["dud~s2"]["parent"] == "dud~s1" and d2["dud~s2"]["generation"] == 2
+    assert d2["dud~s2"]["axis"] == pl.AXES_BY_KILL_CLASS[pl.COSTS][1]      # next untried
+    assert sum(1 for v in d2.values() if v["status"] == "LIVE") == 1        # one live per lineage
+    # two failed close variants in a row: the next slot is a FRESH design
+    by["dud~s2"] = _row("dud~s2", "PARKED")
+    d3, _, _ = pl.plan_successors(by, d2, now=NOW, pooled_yield=None, zero_cert=[])
+    assert d3["dud~s3"]["axis"] == pl.FRESH_DESIGN
+
+
+def test_successor_rows_are_tagged_non_exotic_executable_and_never_touch_the_parent(
+        monkeypatch: Any) -> None:
+    import copy
+    monkeypatch.setattr(pl, "_tradable", lambda s, f: True)
+    monkeypatch.setattr(pl, "_peers", lambda s: ["AUDUSD", "USDZAR", "GBPUSD"])
+    monkeypatch.setattr(pl, "_is_exotic", lambda s: s.upper() in ("USDZAR", "USDTRY"))
+    parents = [{"symbol": "EURUSD", "family": "carry", "params": {"timeframe": "H1", "hold": 4},
+                "producer": "dud", "id": "x1", "prejudge": {"flags": ["f"]}},
+               {"symbol": "USDTRY", "family": "carry", "params": {"timeframe": "H1"},
+                "producer": "dud"}]
+    snap = copy.deepcopy(parents)
+    for axis in (pl.LOW_TURNOVER, pl.WIDER_UNIVERSE, pl.REGIME_CONDITIONED,
+                 pl.NON_EXOTIC_REMAP):
+        kids = pl.successor_rows(parents, {"name": "dud~s1", "root": "dud", "parent": "dud",
+                                           "generation": 1, "axis": axis},
+                                 existing={pl.row_identity(r) for r in parents})
+        assert kids, axis
+        assert len(kids) <= pl.MAX_SUCCESSOR_ROWS
+        for k in kids:
+            assert k["producer"] == "dud~s1" and k["successor_of"] == "dud"
+            assert k["design_axis"] == axis and k["origin"] == pl.SUCCESSOR_ORIGIN
+            assert k["claim_family"] == k["breadth_unit"] == "lineage:dud"
+            assert k["family"] == "carry" and isinstance(k["params"], dict)
+            assert k["symbol"] not in ("USDZAR", "USDTRY")             # exotics stay banned
+            assert "id" not in k and "prejudge" not in k               # the parent's identity
+            assert pl.row_identity(k) not in {pl.row_identity(r) for r in parents}
+            assert pl.row_producer(k) == "dud~s1"
+    reg = pl.successor_rows(parents, {"name": "dud~s1", "root": "dud",
+                                      "axis": pl.REGIME_CONDITIONED})
+    assert {k["params"]["regime"] for k in reg} <= {"high_vol", "low_vol"}  # cell_modifiers
+    assert parents == snap                                         # never removed or altered
+    assert pl.successor_rows(parents, {"name": "d", "root": "d",
+                                       "axis": pl.DATA_SOURCE_SWAP}) == []
+
+
+def test_the_fresh_design_takes_another_under_covered_family_and_keeps_the_lineage(
+        monkeypatch: Any) -> None:
+    monkeypatch.setattr(pl, "_tradable", lambda s, f: True)
+    monkeypatch.setattr(pl, "_all_symbols", lambda: {})
+    parents = [{"symbol": "EURUSD", "family": "carry", "params": {}, "producer": "miner_x"}]
+    pool = [
+        *parents,
+        {"symbol": "XAUUSD", "family": "session_range_breakout", "params": {"a": 1},
+         "producer": "alpha_registry", "source_id": "src:paper:ssrn"},
+        {"symbol": "GBPUSD", "family": "trend", "params": {"b": 2}, "producer": "brain"},
+        {"symbol": "GBPUSD", "family": "lonely", "params": {}, "producer": "some_miner"}]
+    kids = pl.successor_rows(parents, {"name": "miner_x~s1", "root": "miner_x",
+                                       "parent": "miner_x", "generation": 1,
+                                       "axis": pl.FRESH_DESIGN},
+                             pool=pool, coverage={"session_range_breakout": 50, "trend": 3},
+                             existing={pl.row_identity(r) for r in pool})
+    assert kids and {k["family"] for k in kids} == {"trend"}        # least judged, from the brain
+    assert all(k["design_axis"] == pl.FRESH_DESIGN and k["symbol"] == "EURUSD" for k in kids)
+    assert all(k["claim_family"] == "lineage:miner_x" for k in kids)
+    assert pl.next_axis(None, [], "miner_x", 1, [])[0] == pl.FRESH_DESIGN    # its hashed slot
+
+
+def test_a_lineage_is_one_trial_group_and_its_count_only_goes_up() -> None:
+    from libs.research import trial_ledger as tl
+    parent = [{"symbol": s, "family": f, "params": {"lookback": n}, "producer": "dud",
+               "timeframe": "H1"}
+              for s, f, n in (("EURUSD", "carry", 10), ("EURUSD", "trend", 20),
+                              ("GBPUSD", "carry", 30))]
+    plain = [dict(r) for r in parent]
+    for r in parent:
+        pl.stamp_lineage(r, "dud")
+    g1 = [{**r, "params": {**r["params"], "regime": "high_vol"}, "producer": "dud~s1"}
+          for r in parent]
+    g2 = [{**r, "symbol": "AUDUSD", "producer": "dud~s2"} for r in g1]
+    groups = {tl.trial_from_record(r).group for r in parent + g1 + g2}
+    assert groups == {"lineage:dud"}
+    # grouping the lineage never lowers the charge: same nominal, effective >= unstamped
+    unstamped = plain + [{k: v for k, v in r.items() if k not in ("claim_family", "breadth_unit")}
+                         for r in g1 + g2]
+    a = tl.effective_independent_tests(parent + g1 + g2)
+    b = tl.effective_independent_tests(unstamped)
+    assert a.n_nominal == b.n_nominal and a.n_effective >= b.n_effective - 1e-9
+    # lineage_trials: cumulative over parent + successors, ratcheted
+    by = {"dud": _row("dud", judged=500), "dud~s1": _row("dud~s1", judged=300)}
+    d = {"dud~s1": {"root": "dud", "parent": "dud", "generation": 1, "axis": pl.LOW_TURNOVER,
+                    "status": "LIVE"}}
+    _, _, t1 = pl.plan_successors(by, d, now=NOW, pooled_yield=None, zero_cert=[])
+    assert t1["dud"]["lineage_trials"] == 800
+    by["dud~s1"]["cells_judged"] = pl.UNMEASURED
+    _, _, t2 = pl.plan_successors(by, d, now=NOW, pooled_yield=None, zero_cert=[],
+                                  prev_trials=t1)
+    assert t2["dud"]["lineage_trials"] == 800                      # never subtracted
+
+
+def test_extend_docket_appends_successor_rows_and_merge_runs_it_before_the_intake(
+        monkeypatch: Any) -> None:
+    monkeypatch.setattr(pl, "_tradable", lambda s, f: True)
+    monkeypatch.setattr(pl, "certificates_by_producer", lambda: {})
+    rows = [{"symbol": "EURUSD", "family": "carry", "params": {"timeframe": "H1"},
+             "producer": "dud"},
+            {"symbol": "GBPUSD", "family": "trend", "params": {}, "producer": "other"}]
+    d = {"dud~s1": {"root": "dud", "parent": "dud", "generation": 1,
+                    "axis": pl.REGIME_CONDITIONED, "status": "LIVE"}}
+    out, rep = pl.extend_docket(list(rows), designs=d)
+    assert out[:2] == rows and rep["minted"] == 2 == len(out) - 2
+    assert rows[0]["claim_family"] == "lineage:dud"                # the parent joins its lineage
+    assert "claim_family" not in rows[1]
+    merge = (_DESK / "research" / "merge_hypotheses.py").read_text("utf-8")
+    i_ext = merge.index("_extend(rows_out, coverage=judged)")
+    assert i_ext < merge.index("order_docket(rows_out") < merge.index("_reweight(rows_out)") \
+        < merge.index("_pj.demote_flagged(")
+
+
+def test_weights_follow_the_staged_score_and_never_fall_below_the_floor() -> None:
+    from libs.research import live_yield as lv
+    b = lv.blend_stages({
+        "parent": {"certs_odds": 0.1, "expected_live": 0.1, "realised_elog": -0.5,
+                   "n_forward": 40, "n_live_trades": 60},
+        "succ": {"certs_odds": 1.0, "expected_live": 1.0, "realised_elog": 0.4,
+                 "n_forward": 40, "n_live_trades": 60},
+        "fresh": {"certs_odds": None, "expected_live": None, "realised_elog": None}})
+    assert b["succ"]["relative"] > b["parent"]["relative"]
+    assert b["parent"]["relative"] < 0                     # a negative realised Elog bites ...
+    w = min(pl.WEIGHT_MAX, max(pl.WEIGHT_MIN, b["parent"]["relative"]))
+    assert w == pl.WEIGHT_MIN                              # ... but never below the floor
+    assert b["fresh"]["relative"] is None                  # unmeasured -> par in build
+    assert lv.stage_weight(30, "realised_elog") == 1.0 and lv.stage_weight(10, "realised_elog") \
+        == 10 / 40
+
+
+def test_live_yield_shrinks_to_the_pool_credits_independence_and_reads_decay() -> None:
+    from libs.research import live_yield as lv
+    prior = {"p_cert_to_kept": 0.5, "p_kept_to_live": 0.2}
+    few = lv.expected_one(10.0, 1, 0, 0, prior)
+    assert 0.5 < few["stage_rates"]["p_cert_to_kept"] < 1.0           # shrunk, not 1/1
+    many = lv.expected_one(10.0, 40, 10, 0, prior)
+    assert many["stage_rates"]["p_cert_to_kept"] == 0.8                # own rate at n >= min
+    assert lv.expected_one(10.0, 40, 10, 5, prior)["expected_live"] >= 5   # realised dominates
+    assert lv.expected_one(10.0, None, None, None, prior)["expected_live"] == lv.UNMEASURED
+    book = {("EURUSD", "carry", "fx_usd")}
+    dup = lv.independence_credit({("EURUSD", "carry", "fx_usd")}, book | {("EURUSD", "carry",
+                                                                           "fx_usd")})
+    new = lv.independence_credit({("XAUUSD", "trend", "commodity")}, book)
+    assert new["credit"] > 0.5 and new["basis"].startswith("PROXY")
+    assert dup["credit"] <= new["credit"]
+    dec = lv.read_decay({"verdicts": {"a": {"verdict": "FADE"},
+                                      "b": {"verdict": "HEALTHY", "half_life_days": 40.0}}})
+    assert dec is not None and dec["a"]["decaying"] and dec["b"]["half_life_days"] == 40.0
+    assert lv.half_life(["b"], dec) == (40.0, "measured")
+    assert lv.half_life(["a"], dec) == (lv.DEFAULT_HALF_LIFE_D, "default")
+    el = lv.realised_elog({"s": {"risk_frac": 0.01}}, half_life_d=90.0, now=NOW,
+                          trades_of=lambda n: [{"r_multiple": -1.0, "time": NOW.isoformat(),
+                                                "risk_quote": 100.0, "commission": -1.0}])
+    assert el["elog"] < 0 and el["n_trades"] == 1
+    assert pl._spawn_trigger({"status": "HEALTHY", "score": 2.0,
+                              "yield": {"decaying_live_edges": ["a"]}})
+
+
+def test_two_sandbox_systems_are_two_producers(tmp_path: Path, monkeypatch: Any) -> None:
+    reg_row = {"producer": "alpha_registry", "generator": "sandbox:qlib", "family": "f"}
+    assert pl.row_producer(reg_row) == "sandbox:qlib"
+    assert pl.row_producer({"producer": "alpha_registry", "source_id": "sandbox:rd_agent"}) \
+        == "sandbox:rd_agent"
+    out, _ = pl.reweight_rows([{**reg_row, "i": 0},
+                               {"producer": "alpha_registry", "generator": "sandbox:alpha101",
+                                "family": "f", "i": 1}],
+                              {"sandbox:alpha101": 4.0, "sandbox:qlib": 0.25})
+    assert [r["i"] for r in out] == [1, 0]                 # each system its own weight
+    _sandbox(tmp_path, monkeypatch, conversion=_conv(**{"sandbox:qlib": (1000, 900, 9),
+                                                        "sandbox:alpha101": (1000, 900, 0)}))
+    monkeypatch.setattr(pl, "SANDBOX_STATE", tmp_path / "data" / "sandbox_runner_state.json")
+    doc = pl.build(now=NOW, apply=False)
+    fed = {x["producer"]: x for x in doc["federation"]}
+    assert {"sandbox:qlib", "sandbox:alpha101", "sandbox:rd_agent"} <= set(fed)
+    assert fed["sandbox:qlib"]["cpu_source"] == pl.UNMEASURED    # no compute clock given
+    assert [x["rank"] for x in doc["federation"]] == list(range(1, len(doc["federation"]) + 1))
+
+
+def test_every_producer_gets_a_gap_target_and_gap_coverage(tmp_path: Path,
+                                                         monkeypatch: Any) -> None:
+    _sandbox(tmp_path, monkeypatch, conversion=_conv(a=(1000, 900, 1)))
+    monkeypatch.setattr(pl, "_all_symbols", lambda: {"fx_usd": ["EURUSD"],
+                                                     "commodity": ["XAUUSD"]})
+    diag = {"available": True, "at": NOW.isoformat(), "producers": {"a": {
+        "histogram": {pl.PASSED: 1, pl.NO_OOS_EDGE: 40},
+        "buckets": {"class:fx_usd": [41, 1], "class:commodity": [40, 0], "tf:H1": [81, 1]},
+        "combos": {"fx_usd|H1||carry": [41, 1], "commodity|H1||trend": [40, 0]},
+        "families": ["carry", "trend"], "passed_cells": [["EURUSD", "carry", "fx_usd", "H1", ""]],
+        "exotic_share": 0.0}}}
+    pl.STATE.parent.mkdir(parents=True, exist_ok=True)
+    pl.STATE.write_text(json.dumps({"diagnosis": diag}), "utf-8")
+    doc = pl.write(pl.build(now=NOW, apply=False))
+    assert doc["zero_cert_classes"] == ["class:commodity"]
+    pr = doc["producers"][0]["pass_rate"]
+    assert pr["class:fx_usd"]["pass_rate"] == round(1 / 41, 6)
+    gaps = doc["coverage_gaps"]
+    assert "commodity" in gaps["classes"] and "families" in gaps
+    gt = json.loads(pl.PRESCRIPTIONS.read_text())["gap_target"]["a"]
+    assert gt["gap_share"] == pl.GAP_SHARE and "commodity" in gt["classes"]
+    assert "families" in gt
+    gc = doc["gap_coverage"]["a"]
+    assert gc["gap_row_share"] > 0 and "independence_credit" in gc
+    assert doc["producers"][0]["failed_volume_share"] == round(899 / 900, 6)
