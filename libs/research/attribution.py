@@ -201,7 +201,8 @@ NON_REGIONAL_PREFIXES: tuple[str, ...] = (
 #: produce cells from other producers' evidence and belong to no region themselves.
 NON_REGIONAL_NAMES: frozenset[str] = frozenset({
     "discovery_compiler", "pack_cells", "pack_cells.world", "sandbox_runner",
-    "independence_intake", "rank_recovery", "timeframe_fanout", "coverage_tensor",
+    "independence_intake", "rank_recovery", "timeframe_fanout", "exotic_transplant",
+    "coverage_tensor",
     "cross_sectional_breadth", "specialist_cell", "residual_search", "alt_equity_handoff",
     # the global coverage tensor's missions: desk machinery naming a hole, not a regional ground
     "global_coverage", "global_coverage_tensor",
