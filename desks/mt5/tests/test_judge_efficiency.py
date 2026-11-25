@@ -143,6 +143,185 @@ def test_the_docket_order_restatement_reorders_only_once_the_sealed_file_does() 
     assert census["keep_never_judged"] == sum(1 for x in plain if x["_never_judged"])
 
 
+# ------------------------------------------------------------------ H3: never-judged exemption
+def _backlog() -> list[dict]:
+    """A large never-judged backlog in one low-yield family, re-judges in the others."""
+    out = []
+    for fam, n, n_new in (("discovered", 400, 300), ("carry", 40, 0), ("pca_residual", 60, 10)):
+        for i in range(n):
+            out.append({"sym": f"S{i % 7}", "family": fam, "params": {"i": i},
+                        "_never_judged": i < n_new})
+    return sorted(out, key=lambda sp: (not sp["_never_judged"], sp["sym"], sp["params"]["i"]))
+
+
+def _is_nj(sp: dict) -> bool:
+    return sp["_never_judged"] is True
+
+
+def _trim(tmp_path, monkeypatch, before: list[dict]) -> list[dict]:
+    g = _gauntlet()
+    monkeypatch.setattr(g, "_family_yield", lambda root=None: {"carry": 0.05})
+    monkeypatch.setattr(g, "REPORTS", tmp_path)
+    keep, _ = g.allocate_by_yield(before)
+    return keep
+
+
+def test_the_exemption_keeps_never_judged_first_inside_the_same_budget(tmp_path,
+                                                                        monkeypatch) -> None:
+    before = _backlog()
+    snapshot = json.dumps(before, sort_keys=True)
+    keep = _trim(tmp_path, monkeypatch, before)
+    budget = len(keep)
+    waiting = [sp for sp in before if _is_nj(sp) and all(sp is not k for k in keep)]
+    assert waiting, "the fixture must reproduce the cut: never-judged cells left outside"
+    got, rec = je.exempt_never_judged(before, keep, _is_nj)
+    # THE BUDGET: never above the trim's own cell count, exactly equal here.
+    assert len(got) == budget == rec["budget_cells"] == rec["kept_cells"]
+    assert len({id(sp) for sp in got}) == budget, "no cell kept twice"
+    # NEVER-JUDGED BEFORE RE-JUDGES, in the helper's order and after H2's global reorder.
+    for order in (got, je.reorder_keep(before, got)):
+        flags = [_is_nj(sp) for sp in order]
+        assert flags == sorted(flags, reverse=True)
+    # THE CENSUS: the count reported is the count that moved, one re-judge out per cell in.
+    n = rec[je.EXEMPT_KEY]
+    nj_before, nj_after = sum(map(_is_nj, keep)), sum(map(_is_nj, got))
+    assert n > 0 and n == nj_after - nj_before == rec["displaced_rejudges"]
+    assert n == min(len(waiting), budget - nj_before)
+    assert sum(rec["by_family"].values()) == n == sum(rec["displaced_by_family"].values())
+    assert rec["never_judged_still_outside"] == len(waiting) - n
+    assert sum(rec["kept_by_family"].values()) == budget
+    # The admitted cells are the earliest waiting in the sweep's order; the displaced re-judges
+    # are the ones the sweep ranks last.
+    pos = {id(sp): i for i, sp in enumerate(before)}
+    got_ids = {id(sp) for sp in got}
+    assert [sp for sp in waiting if id(sp) in got_ids] == waiting[:n]
+    kept_old = [pos[id(sp)] for sp in got if not _is_nj(sp)]
+    gone_old = [pos[id(sp)] for sp in keep if not _is_nj(sp) and id(sp) not in got_ids]
+    assert not kept_old or not gone_old or max(kept_old) < min(gone_old)
+    # EVERY CELL IS CHARGED LIKE ANY OTHER: nothing about a spec changes, nothing is tagged.
+    assert json.dumps(before, sort_keys=True) == snapshot
+
+
+def test_the_exemption_never_displaces_a_protected_cell_and_fails_closed(tmp_path,
+                                                                          monkeypatch) -> None:
+    before = _backlog()
+    keep = _trim(tmp_path, monkeypatch, before)
+    pos = {id(sp): i for i, sp in enumerate(before)}
+    last_old = max((sp for sp in keep if not _is_nj(sp)), key=lambda sp: pos[id(sp)])
+    got, rec = je.exempt_never_judged(before, keep, _is_nj, protect=lambda sp: sp is last_old)
+    assert any(sp is last_old for sp in got) and rec["rejudges_protected"] == 1
+    assert len(got) == len(keep)
+    # An is_new that raises exempts nothing; a protect that raises displaces nothing.
+    boom = lambda sp: (_ for _ in ()).throw(RuntimeError("x"))  # noqa: E731
+    same, r1 = je.exempt_never_judged(before, keep, boom)
+    assert r1[je.EXEMPT_KEY] == 0 and sorted(map(id, same)) == sorted(map(id, keep))
+    same, r2 = je.exempt_never_judged(before, keep, _is_nj, protect=boom)
+    assert r2[je.EXEMPT_KEY] == 0 and sorted(map(id, same)) == sorted(map(id, keep))
+    # More waiting than re-judges: every re-judge goes, the budget still holds.
+    tiny = [sp for sp in keep if _is_nj(sp)] + [sp for sp in keep if not _is_nj(sp)][:3]
+    got, rec = je.exempt_never_judged(before, tiny, _is_nj)
+    assert len(got) == len(tiny) and all(map(_is_nj, got)) and rec[je.EXEMPT_KEY] == 3
+    assert je.exempt_never_judged([], [], _is_nj)[1][je.EXEMPT_KEY] == 0
+
+
+def test_every_kept_cell_is_judged_and_charged_in_n_trials(tmp_path, monkeypatch) -> None:
+    """The audit's first condition, end to end on the real `run_gauntlet`: an exempted cell is a
+    column of the matrix like any other, and every verdict carries the same campaign charge."""
+    from conftest import write_measured_dsr_inputs
+    from libs.research import dsr_inputs
+
+    monkeypatch.setattr(dsr_inputs, "REPORT", write_measured_dsr_inputs(tmp_path / "dsr"))
+    monkeypatch.setattr("research.cost_to_edge.verdict",
+                        lambda *a, **k: (False, "", {"measured": False, "why": "no terminal"}))
+    cells = _cells()
+    new = {"EURUSD", "USDJPY"}
+    keep = [cells[1], cells[3]]                                      # the trim kept two re-judges
+    got, rec = je.exempt_never_judged(cells, keep, lambda c: c["sym"] in new)
+    assert rec[je.EXEMPT_KEY] == 2 and {c["sym"] for c in got} == new
+    g = _gauntlet()
+    out = g.run_gauntlet([dict(c) for c in got], "judge_efficiency_exempt", _META)
+    assert out["n_cells"] == len(got) == len(keep)
+    ids = {str(g.cell_id({"sym": c["sym"], "family": c["family"], "params": c["params"]}))
+           for c in got}
+    ruled = {str(v.get("cell")): v for v in out["verdicts"]}
+    assert set(ruled) == ids, "every kept cell is ruled"
+    for v in ruled.values():
+        ds = (v.get("stages") or {}).get("deflated_sharpe") or {}
+        assert ds.get("campaign_trials") == out["n_trials"] and out["n_trials"] > 0
+
+
+def test_the_docket_order_restatement_exempts_only_once_the_sealed_file_does() -> None:
+    import judge_docket_order as O
+
+    class G:
+        YIELD_ALLOCATION_STRENGTH, YIELD_MAX_SHARE, YIELD_MIN_SHARE = 0.7, 0.45, 0.15
+
+        @staticmethod
+        def _family_yield():
+            return {"carry": 0.05}
+
+        @staticmethod
+        def _explore_unmeasured_axes(specs, keep):
+            return [], {}
+
+        @staticmethod
+        def _orthogonality_floor(specs, keep):
+            return [], {}
+
+    before = _backlog()
+    plain = O.allocate(G, before)
+    O_order, O_drop, O_stamp, O_ban = O.order, O.drop_redundant, O.stamp_new, O.drop_banned
+    try:
+        O.drop_banned = lambda s: (s, 0)                            # type: ignore[assignment]
+        O.order = lambda _G, s: s                                   # type: ignore[assignment]
+        O.drop_redundant = lambda _G, s: (s, 0)                     # type: ignore[assignment]
+        O.stamp_new = lambda _G, s: sum(1 for x in s if x["_never_judged"])  # type: ignore
+        keep_off, census_off = O.sealed_keep(G, before, novelty=False)
+        G.JUDGE_NEVER_JUDGED_EXEMPT = True  # type: ignore[attr-defined]
+        G.JUDGE_KEEP_REORDER = True  # type: ignore[attr-defined]
+        keep, census = O.sealed_keep(G, before, novelty=False)
+    finally:
+        O.order, O.drop_redundant, O.stamp_new, O.drop_banned = O_order, O_drop, O_stamp, O_ban
+    assert [id(x) for x in keep_off] == [id(x) for x in plain]
+    assert census_off["exempted_never_judged"] == 0
+    want, rec = je.exempt_never_judged(before, plain, _is_nj)
+    assert keep == je.reorder_keep(before, want)
+    assert len(keep) == len(plain)
+    assert census["exempted_never_judged"] == rec[je.EXEMPT_KEY] > 0
+    assert census["keep_never_judged"] == sum(map(_is_nj, plain)) + rec[je.EXEMPT_KEY]
+
+
+def test_the_sealed_hunk_matches_the_restatement_and_publishes_the_count(tmp_path,
+                                                                         monkeypatch) -> None:
+    """Runs fully once the SEAL_CLEAR H3 patch is applied (the scratch-copy run); before that it
+    pins that the sealed file is untouched and the restatement dormant."""
+    import judge_docket_order as O
+
+    g = _gauntlet()
+    monkeypatch.setattr(g, "_family_yield", lambda root=None: {"carry": 0.05})
+    monkeypatch.setattr(g, "REPORTS", tmp_path)
+    monkeypatch.setattr(g, "_explore_unmeasured_axes", lambda specs, keep: ([], {}))
+    monkeypatch.setattr(g, "_orthogonality_floor", lambda specs, keep: ([], {}))
+    before = _backlog()
+    plain, _ = g.allocate_by_yield(before)
+    if not hasattr(g, "JUDGE_NEVER_JUDGED_EXEMPT"):
+        assert O.allocate(g, before, is_new=_is_nj) == plain, "dormant until the seal lands"
+        return
+    keep, report = g.allocate_by_yield(before, is_new=_is_nj)
+    assert len(keep) == len(plain), "inside the same budget"
+    rec: dict = {}
+    assert [id(x) for x in O.allocate(g, before, is_new=_is_nj, record=rec)] == \
+        [id(x) for x in keep]
+    doc = json.loads((tmp_path / "RESEARCH_ALLOCATION.json").read_text("utf-8"))
+    assert doc["exempted_never_judged"] == rec[je.EXEMPT_KEY] > 0
+    assert doc["built_this_sweep"] == len(keep)
+    assert sum(r["exempted_never_judged"] for r in report.values()) == rec[je.EXEMPT_KEY]
+    assert sum(r["built_this_sweep"] for r in report.values()) == len(keep)
+    # Without is_new (every other caller) the sealed trim is exactly what it was.
+    again, _ = g.allocate_by_yield(before)
+    assert [id(x) for x in again] == [id(x) for x in plain]
+
+
 # ------------------------------------------------------------------ VERDICTS ARE IDENTICAL
 _META = {s: {"median_spread_pts": 10.0, "tick_size": 1e-5, "tick_value": 0.9,
              "contract_size": 1e5, "swap_long": -3.0, "swap_short": 1.0}

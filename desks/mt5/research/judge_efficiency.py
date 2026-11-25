@@ -21,7 +21,8 @@ EVERY NUMBER CARRIES ITS SOURCE, AND AN ABSENT INPUT IS UNMEASURED, NEVER ZERO (
 "after" figures are ESTIMATES and say so: each names the measured input it scales and the rule
 it applies. Nothing here touches a gate, a trial charge, a cell or a verdict.
 
-TWO HELPERS THE SEALED SWEEP'S SEAL_CLEAR PATCH CALLS (`prune_cache`, `reorder_keep`) live here
+THE HELPERS THE SEALED SWEEP'S SEAL_CLEAR PATCHES CALL (`prune_cache`, `reorder_keep`, and
+`exempt_never_judged` for H3) live here
 so the restatement in `judge_docket_order` and the tests read the same code the sweep would.
 """
 from __future__ import annotations
@@ -99,6 +100,109 @@ def reorder_keep(before: list[dict], keep: list[dict]) -> list[dict]:
     tail = len(pos)
     return [sp for _, sp in sorted(enumerate(keep),
                                    key=lambda t: (pos.get(id(t[1]), tail), t[0]))]
+
+
+#: SEAL_CLEAR judge-efficiency H3 (Audit ruling 2026-11-25): what the exemption is called in the
+#: reports, so the sealed writer, the warmer's census and the tests read one name.
+EXEMPT_KEY = "exempted_never_judged"
+
+
+def exempt_never_judged(specs: list[dict], keep: list[dict], is_new: Any,
+                        protect: Any = None) -> tuple[list[dict], dict[str, Any]]:
+    """Exempt never-judged cells from the yield trim's per-family cut, INSIDE the same budget.
+
+    `allocate_by_yield` keeps `want = max(share x docket, YIELD_MIN_SHARE x family, 1)` cells of
+    each family. A family whose never-judged backlog is larger than that keeps only its first
+    `want` -- about 15% of a large backlog -- while every other family's RE-JUDGES are kept. A
+    re-judge cannot move the first-verdict ladder; a never-judged cell is the only cell that can.
+
+    THE RULE (Audit ruling 2026-11-25, its three conditions):
+      * the BUDGET is the trim's own cell count, `len(keep)`, and it does not change: each
+        never-judged cell the cut left out displaces exactly one kept re-judge, so the result has
+        `len(keep)` cells, never more (no budget raise rides on the exemption);
+      * the displaced re-judges are the ones the sweep's own order ranks LAST (`specs` is that
+        order), and a cell `protect` names (the re-mint certificate cells, which the sweep puts
+        back at the front whatever the trim says) is never displaced -- so the exemption cannot
+        push the final docket over the budget through the re-mint door either;
+      * the admitted never-judged cells are taken in the sweep's own order;
+      * nothing about a cell changes: no key is added to a spec, nothing is tagged, so every cell
+        the judge rules is charged in n_trials exactly as any other (`run_gauntlet` charges the
+        matrix's columns, and an exempted cell is one more column like any other).
+
+    Returns `(keep', record)`. `keep'` is never-judged first (kept, then admitted), then the kept
+    re-judges, each tier in its incoming order; `reorder_keep` (H2) then restores the sweep's
+    global order, which is never-judged first as well. `record[EXEMPT_KEY]` is the census count.
+    `is_new(spec)` is the sealed `_is_new(spec) == 0`; one that raises reads NOT new (no
+    exemption), and a `protect` that raises reads protected (no displacement): both fail closed
+    to the trim as it was. Never raises on a well-formed list.
+    """
+    def _flag(fn: Any, sp: dict, on_error: bool) -> bool:
+        try:
+            return bool(fn(sp))
+        except Exception:
+            return on_error
+
+    budget = len(keep)
+    new_of: dict[int, bool] = {}
+    for sp in specs:
+        if id(sp) not in new_of:
+            new_of[id(sp)] = _flag(is_new, sp, False)
+    for sp in keep:
+        if id(sp) not in new_of:
+            new_of[id(sp)] = _flag(is_new, sp, False)
+    kept_ids = {id(sp) for sp in keep}
+    waiting: list[dict] = []
+    seen_ids: set[int] = set()
+    for sp in specs:
+        if id(sp) in kept_ids or id(sp) in seen_ids or not new_of[id(sp)]:
+            continue
+        seen_ids.add(id(sp))
+        waiting.append(sp)
+    pos = {id(sp): i for i, sp in enumerate(specs)}
+    tail = len(pos)
+    rejudge_idx = [i for i, sp in enumerate(keep) if not new_of[id(sp)]]
+    displaceable = [i for i in rejudge_idx
+                    if protect is None or not _flag(protect, keep[i], True)]
+    n = min(len(waiting), len(displaceable))
+    # The re-judges the sweep's order ranks last go first.
+    by_rank = sorted(displaceable, key=lambda i: (pos.get(id(keep[i]), tail), i))
+    out = set(by_rank[len(by_rank) - n:]) if n else set()
+    admitted = waiting[:n]
+    kept_new = [sp for i, sp in enumerate(keep) if i not in out and new_of[id(sp)]]
+    kept_old = [sp for i, sp in enumerate(keep) if i not in out and not new_of[id(sp)]]
+    result = kept_new + admitted + kept_old
+    assert len(result) == budget, "the exemption never changes the trim's budget"
+    by_family: dict[str, int] = {}
+    for sp in admitted:
+        f = str(sp.get("family") or "?")
+        by_family[f] = by_family.get(f, 0) + 1
+    displaced_by_family: dict[str, int] = {}
+    for i in out:
+        f = str(keep[i].get("family") or "?")
+        displaced_by_family[f] = displaced_by_family.get(f, 0) + 1
+    kept_by_family: dict[str, int] = {}
+    for sp in result:
+        f = str(sp.get("family") or "?")
+        kept_by_family[f] = kept_by_family.get(f, 0) + 1
+    return result, {
+        EXEMPT_KEY: n,
+        "displaced_rejudges": n,
+        "budget_cells": budget,
+        "kept_cells": len(result),
+        "never_judged_kept_by_trim": len(kept_new),
+        "never_judged_waiting_outside_trim": len(waiting),
+        "never_judged_still_outside": len(waiting) - n,
+        "rejudges_kept_by_trim": len(rejudge_idx),
+        "rejudges_protected": len(rejudge_idx) - len(displaceable),
+        "by_family": dict(sorted(by_family.items())),
+        "displaced_by_family": dict(sorted(displaced_by_family.items())),
+        "kept_by_family": dict(sorted(kept_by_family.items())),
+        "rule": ("never-judged cells are exempt from the YIELD_MIN_SHARE cut: each one the cut "
+                 "left out displaces one kept re-judge (the sweep's last-ranked first, re-mint "
+                 "cells never), so the trim keeps exactly its own cell count; every judged cell "
+                 "is charged in n_trials as before (SEAL_CLEAR judge-efficiency H3, Audit "
+                 "ruling 2026-11-25)"),
+    }
 
 
 # ---------------------------------------------------------------- measurement
