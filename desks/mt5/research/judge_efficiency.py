@@ -1,7 +1,9 @@
 """WHERE THE JUDGE'S TIME GOES, WHAT A VERDICT COSTS, AND THE FLOOR LADDER (owner, 2026-11-25).
 
-    from research import judge_efficiency; judge_efficiency.publish()   # hourly, inside the
-                                                                          # judging_throughput leg
+    from research import judge_efficiency; judge_efficiency.publish()
+
+A LIBRARY, NOT A CLOCKED ORGAN: it runs hourly inside the `judging_throughput` leg (whose run()
+calls `publish` after its own report is written), so it has that leg's clock and no entry point.
 
 THE OWNER'S TARGET. At least 100,000 first verdicts a day, then 200,000-300,000 judged cells a
 day on a RATCHETING FLOOR LADDER: 100k, then 200k, raised again each time the measured rate
@@ -381,7 +383,3 @@ def publish(*, reports: Path | None = None, ladder_path: Path | None = None,
                 doc.setdefault("write_errors", []).append(f"{path.name}: {exc}")
     return doc
 
-
-if __name__ == "__main__":
-    import sys
-    print(json.dumps(publish(write="--no-write" not in sys.argv)["ladder"], indent=1))

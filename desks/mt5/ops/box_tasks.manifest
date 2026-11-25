@@ -372,5 +372,8 @@ TASK name="MT5-RotateLogs" trigger="daily 03:40" runs="ops/rotate_logs.py" insta
 # installer but no manifest line, so check_birth_obligations read it as an executable with no
 # clock. The trigger below is the installer's own (-RepetitionInterval 1 minute, 1-minute limit,
 # Interactive principal at Highest so it can raise the MT5 terminals). It only RAISES live
-# processes to ABOVE_NORMAL, never lowers, never past it.
-TASK name="MT5-LivePriority"       trigger="every 1 minute (repeating; 1-minute limit; interactive session, RunLevel Highest)" runs="desks/mt5/scripts/live_priority.py" installer="desks/mt5/scripts/install_live_priority_task.ps1" lane="ops"
+# processes to ABOVE_NORMAL, never lowers, never past it. Since 2026-11-25 the same minute pass then
+# runs judge_elastic_cores.run_pass (live_priority.elastic_pass): the judge's affinity grows from
+# its reserved six into measured-idle cores up to the 75% research cap and sheds to the six on live
+# load or memory pressure. Affinity only; reports/JUDGE_ELASTIC_CORES.json.
+TASK name="MT5-LivePriority"       trigger="every 1 minute (repeating; 1-minute limit; interactive session, RunLevel Highest)" runs="desks/mt5/scripts/live_priority.py" installer="desks/mt5/scripts/install_live_priority_task.ps1" lane="ops" also_runs="desks/mt5/scripts/judge_elastic_cores.py"
