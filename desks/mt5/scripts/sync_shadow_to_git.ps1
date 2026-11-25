@@ -855,6 +855,21 @@ $reportPaths = @(
     # the math lab's per-tradition yield per compute-hour and its hypothesis -> tradition
     # routing log (2026-11-13): the evidence the lab's compute shares are earned on
     "desks/mt5/reports/MATH_LAB.json",
+    # the in-process report steps (2026-11-14, hourly_cycle.REPORT_STEPS): the prop book's
+    # headroom/stress/joint breach, the counterparty haircut, the fill-side spread z and
+    # illiquidity, the PIT rates axis, the task digest, the written specs and the USDJPY study.
+    # Fractions, R and verdicts only: no amount of money, no path, no credential
+    "desks/mt5/reports/E8_HEADROOM.json",
+    "desks/mt5/reports/COMBINED_PROP_RISK.json",
+    "desks/mt5/reports/PROP_TAIL_STRESS.json",
+    "desks/mt5/reports/PROP_JOINT_BREACH.json",
+    "desks/mt5/reports/counterparty_register.json",
+    "desks/mt5/reports/bar_spread_z.json",
+    "desks/mt5/reports/BAR_ILLIQUIDITY.json",
+    "desks/mt5/reports/RATES_INDEX_STATE.json",
+    "desks/mt5/reports/TASK_FAILURE_DIGEST.json",
+    "desks/mt5/reports/REPLICATION_SPEC_ENTRIES.json",
+    "desks/mt5/reports/USDJPY_ASIA_BREAKOUT_STUDY.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     # order-sensitive decay verdicts per LIVE sleeve and forward clock (leg decay_verdicts,
     # 2026-10-14): a demote/shrink input whose readers off the box had nothing to read

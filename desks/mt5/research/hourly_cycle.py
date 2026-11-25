@@ -1346,6 +1346,17 @@ FOREST_DEPARTMENTS: tuple[str, ...] = ("korea", "china", "russia_cis", "south_as
 GLOBAL_FOREST_LEGS: tuple[str, ...] = ("forest_global_web", "forest_global_academic_code",
                                        "forest_global_physical_data", "forest_global_market_data")
 
+#: THE IN-PROCESS REPORT STEPS (2026-11-14, six orphan idea-pass bundles). Each is a small
+#: report-only module under research/ whose `main()` writes ONE artifact under reports/ from files
+#: already on disk, in seconds. They carry NO script entry guard -- the birth-obligation law fails
+#: a new runnable file until the box's runtime attestation names it -- so the cycle imports each
+#: and calls `main()` here (`_report_step`), the way it already runs `deepen` in-process.
+REPORT_STEPS_EXECUTION: tuple[str, ...] = (
+    "e8_headroom", "combined_prop_risk", "prop_tail_stress", "prop_joint_breach",
+    "counterparty_register", "bar_spread_z", "bar_illiquidity")
+REPORT_STEPS: tuple[str, ...] = (*REPORT_STEPS_EXECUTION, "rates_index_state",
+                                 "task_failure_digest", "replication_spec_entries",
+                                 "usdjpy_asia_breakout_study")
 DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery", "validate",
                                 "macro", "execution",
                                 "forward", "meta", "rest", "mathlab", *FOREST_DEPARTMENTS)
@@ -1477,6 +1488,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_capture"), "macro"),
     # the global-macro forest rides the macro resident (`forests.RIDES`)
     "forest_global_macro": "macro",
+    # macro: the point-in-time rates axis from the primary publishers, terms-gated (2026-11-14)
+    "rates_index_state": "macro",
+    # validate: the written replication specs' own validity and drift, and the pre-registered
+    # USDJPY asia breakout re-costing study (both report-only, 2026-11-14)
+    "replication_spec_entries": "validate", "usdjpy_asia_breakout_study": "validate",
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1484,7 +1500,12 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "fill_proven",
-                     "trade_pathology"),
+                     "trade_pathology",
+                     # the in-process report steps on the prop and fill books (2026-11-14):
+                     # E8 all-fire headroom, the E8/FTMO/Fusion joint worst case, the tail
+                     # stress and joint-breach replays, the counterparty haircut, the M1-bar
+                     # spread z and the bar illiquidity census
+                     *REPORT_STEPS_EXECUTION),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator", "allocator_scorecard",
@@ -1554,7 +1575,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "six_event_trace",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
-                     "unknown_census"), "meta"),
+                     "unknown_census",
+                     # which box tasks fail, go stale or sit disabled, digested (2026-11-14)
+                     "task_failure_digest"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # the Japan forest rides the Japan resident (`forests.RIDES`), beside the Japan division
@@ -2117,6 +2140,33 @@ def _producer(name: str, script: str,
         else:
             flat.append(str(a))
     return _producer_impl(name, script, tuple(flat))
+
+
+def _report_step(name: str, *args: str) -> dict:
+    """Run report module `research/<name>.py` IN-PROCESS: import it and call `main(args)`.
+
+    For the cheap report-only organs in `REPORT_STEPS` only -- each reads files already on disk
+    and writes one artifact under reports/ in seconds, so an interpreter start would cost more
+    than the work. FAIL-SOFT: an exception is returned as a FAILED leg naming its TYPE (never its
+    text, which can carry a path), so the next leg still runs. A SystemExit raised by the step's
+    own argument parser is the step refusing, not someone stopping the pass, so it is recorded
+    as the step's exit code rather than re-raised; KeyboardInterrupt still propagates.
+    """
+    at = datetime.now(UTC).isoformat(timespec="seconds")
+    if name not in REPORT_STEPS:
+        return {"exit_code": None, "status": "MISSING", "at": at,
+                "why": f"{name} is not a declared in-process report step"}
+    try:
+        import importlib
+        rc = importlib.import_module(f"research.{name}").main(list(args))
+    except SystemExit as exc:
+        rc = exc.code if isinstance(exc.code, int) else 2
+    except Exception as exc:
+        return {"exit_code": None, "status": "FAILED", "error": type(exc).__name__, "at": at,
+                "in_process": True}
+    code = rc if isinstance(rc, int) else 0
+    return {"exit_code": code, "status": "OK" if code == 0 else "FAILED", "at": at,
+            "in_process": True}
 
 
 #: Legs whose job is to CLOSE A GAP rather than search, and how long each may take.
@@ -6580,6 +6630,31 @@ def main() -> None:
     # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
     fta = _costed("prop_challenge_allocator", lambda: _producer(
         "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
+    # THE PROP BOOK'S OWN RISK, MEASURED (2026-11-14; idea passes 10/17/19/20, report-only, each
+    # in-process and seconds long, see REPORT_STEPS). E8 all-fire headroom against the 2.5% daily
+    # floor; the gold_asia joint worst case across E8, FTMO and Fusion; the tail-scenario stress
+    # and the joint-breach replay; the counterparty haircut on withdrawable profit. None sizes,
+    # vetoes or places anything, and every one publishes fractions, never an amount of money.
+    e8h = _costed("e8_headroom", lambda: _report_step("e8_headroom"))
+    cpr = _costed("combined_prop_risk", lambda: _report_step("combined_prop_risk"))
+    pts = _costed("prop_tail_stress", lambda: _report_step("prop_tail_stress"))
+    pjb = _costed("prop_joint_breach", lambda: _report_step("prop_joint_breach"))
+    cpty = _costed("counterparty_register", lambda: _report_step("counterparty_register"))
+    # THE FILL SIDE (passes 18/19): the M1 bars' own quoted spread as a minute-of-week z, joined
+    # to the live gold legs, and the bar-derived illiquidity (Corwin-Schultz, Amihud, Kyle) census.
+    bsz = _costed("bar_spread_z", lambda: _report_step("bar_spread_z", "--time-budget-s", "120"))
+    bil = _costed("bar_illiquidity", lambda: _report_step("bar_illiquidity"))
+    # The point-in-time rates axis (pass 17): primary publishers only, every URL terms-gated
+    # against the desk's own ledger first; a HELD publisher is never contacted and reads
+    # UNMEASURED. The terms-refused aggregator is never a source.
+    ris = _costed("rates_index_state", lambda: _report_step("rates_index_state"))
+    # Which box tasks fail, go stale or sit disabled, digested from process_health (pass 18).
+    tfd = _costed("task_failure_digest", lambda: _report_step("task_failure_digest"))
+    # The four written replication specs still validate, and which implementation drifted
+    # (pass 10); and the pre-registered USDJPY asia breakout re-costing study, report-only.
+    rse = _costed("replication_spec_entries", lambda: _report_step("replication_spec_entries"))
+    uab = _costed("usdjpy_asia_breakout_study",
+                  lambda: _report_step("usdjpy_asia_breakout_study"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6893,6 +6968,11 @@ def main() -> None:
                     "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "e8_headroom": e8h, "combined_prop_risk": cpr, "prop_tail_stress": pts,
+                    "prop_joint_breach": pjb, "counterparty_register": cpty,
+                    "bar_spread_z": bsz, "bar_illiquidity": bil, "rates_index_state": ris,
+                    "task_failure_digest": tfd, "replication_spec_entries": rse,
+                    "usdjpy_asia_breakout_study": uab,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "pnl_explain": pnx,

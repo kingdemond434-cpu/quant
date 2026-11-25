@@ -720,6 +720,19 @@ LEG_LAYER: dict[str, str] = {
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
     "six_event_trace": "meta",
+    # THE IN-PROCESS REPORT STEPS (2026-11-14, hourly_cycle.REPORT_STEPS), each placed by what it
+    # produces. The prop book's worst case against its own floors -- E8 all-fire headroom, the
+    # E8/FTMO/Fusion joint worst case, the tail stress and the joint-breach replay -- measures what
+    # the SIZES do to survival, beside `kelly_survival`: sizing. Withdraw-now versus hold on the
+    # counterparty haircut is wealth-level allocation: portfolio. The bars' quoted spread z and the
+    # bar illiquidity census are the fill side: execution. The PIT rates axis is information; the
+    # task digest and the written specs' validity are the machine checking itself: meta. The
+    # pre-registered USDJPY re-costing study is a claim about returns: prediction.
+    "e8_headroom": "sizing", "combined_prop_risk": "sizing", "prop_tail_stress": "sizing",
+    "prop_joint_breach": "sizing", "counterparty_register": "portfolio",
+    "bar_spread_z": "execution", "bar_illiquidity": "execution",
+    "rates_index_state": "information", "task_failure_digest": "meta",
+    "replication_spec_entries": "meta", "usdjpy_asia_breakout_study": "prediction",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')
