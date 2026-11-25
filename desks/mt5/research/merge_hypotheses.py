@@ -1294,7 +1294,7 @@ def main() -> int:
             rows_out = breadth_order(rows_out, judged)
     # THE PRODUCER LOOP'S TWO-SIDED WEIGHTS (research/producer_loop.py, 2026-11-25): inside each
     # family's own slots, rows go by their producer's measured yield weight (independent,
-    # non-exotic, forward-kept edges per CPU-hour; par when unmeasured, 0 when retired). Same
+    # non-exotic, forward-kept edges per CPU-hour; par when unmeasured, the floor when parked). Same
     # rows, same family interleave, so the sealed judge's family shares and exploration floor are
     # untouched. Weight now OVERRIDES order_docket's within-family order except on ties (the sort
     # is stable). It runs BEFORE the pre-judge screen, and reweight_rows itself sorts by

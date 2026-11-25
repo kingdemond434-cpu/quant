@@ -71,10 +71,12 @@ THE RAILS.
   R6 never touches prop rules, rails or live sizing: this module writes only its own files.
   R7 before/after: every evaluated remedy is published with both rates and the controls'.
 
-RETIREMENT. After MAX_ATTEMPTS failed remedies the producer is RETIRED: weight 0 (its rows go to
-the back of their family slots, none is removed), its funnel history and attempts are archived
-to `data/producer_loop_archive/<producer>.json` (never deleted), and a re-test date is set a
-quarter ahead; on that date its attempt count restarts.
+NO PRODUCER IS EVER CUT (principal 2026-11-25: every producer kept, breadth kept and growing,
+every producer pushed to full depth). After MAX_ATTEMPTS failed remedies the producer is PARKED:
+it keeps producing at the WEIGHT_MIN floor share (never 0, so it is still judged and can earn its
+way back), remedy rounds pause so the loop cannot overfit it, its funnel history and attempts are
+archived to `data/producer_loop_archive/<producer>.json` (never deleted), and a re-test date is
+set RETEST_AFTER_DAYS ahead; on that date its attempt count restarts.
 
 A MISSING INPUT IS UNMEASURED, NEVER ZERO (L1.28a).
 
@@ -124,7 +126,7 @@ YIELD_SCRIPT = ROOT / "scripts" / "check_producer_yield.py"
 
 UNMEASURED = "UNMEASURED"
 
-#: Failed remedies before a producer is retired; also the cap on attempts per cycle.
+#: Failed remedies before a producer is parked; also the cap on attempts per cycle.
 MAX_ATTEMPTS = 3
 #: THE MINIMUM SAMPLE. A remedy is read on the candidates judged AFTER it; below about two hundred
 #: judged cells a certificate rate of the desk's order (~1e-3 to 1e-2) cannot tell "the fix did
@@ -134,8 +136,8 @@ MIN_JUDGED_SINCE_TWEAK = 200
 MIN_DAYS_BETWEEN_ATTEMPTS = 7.0
 #: The diagnosis scan is recomputed at most daily.
 DIAGNOSIS_MAX_AGE_H = 24.0
-#: Retired producers are re-tested a quarter later.
-RETEST_AFTER_DAYS = 91
+#: Parked producers get fresh remedy rounds a month later.
+RETEST_AFTER_DAYS = 30
 #: A laggard sits below this fraction of the desk's pooled certificates per candidate.
 LAGGARD_FRACTION = 0.25
 #: Below this many candidates a rate is not a measurement.
@@ -381,12 +383,12 @@ def attempt_gate(producer: str, *, judged_now: int | None, now: datetime | None 
     now = now or _now()
     rt = _parse(retest_at)
     if rt is not None and now < rt:
-        return False, f"retired: re-test date {retest_at} not reached"
+        return False, f"parked: re-test date {retest_at} not reached"
     prior = _cycle((history if history is not None else attempts()).get(producer, []),
                    retest_at)
     if len(prior) >= MAX_ATTEMPTS:
         return False, (f"{len(prior)} of MAX_ATTEMPTS={MAX_ATTEMPTS} attempts used: tuning has "
-                       f"stopped; the producer is retired until its re-test date")
+                       f"paused; the producer is parked at the floor weight until its re-test date")
     if not prior:
         return True, "first attempt"
     last = prior[-1]
@@ -1013,17 +1015,17 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
             r["replacement"] = rx["replacement"]
         retest = ret.get("retest_at")
         if retest and _parse(retest) and now < _parse(retest):   # type: ignore[operator]
-            status = "RETIRED"
+            status = "PARKED"
             r["retest_at"] = retest
             r["archive"] = ret.get("archive")
         elif len(failed) >= MAX_ATTEMPTS:
-            status = "RETIRED"
+            status = "PARKED"
             retest = _iso(now + timedelta(days=RETEST_AFTER_DAYS))
             arch = _archive(name, {**r, "generated_at": _iso(now)}, prior, evals, retest)
             retired[name] = {"retired_at": _iso(now), "retest_at": retest, "archive": arch}
             prescriptions.pop(name, None)
             r.update({"retest_at": retest, "archive": arch,
-                      "reason": f"{len(failed)} failed remedies: retired, evidence archived, "
+                      "reason": f"{len(failed)} failed remedies: parked at the floor weight, evidence archived, "
                                 f"re-test {retest[:10]}"})
         elif not c and not av:
             status = UNMEASURED
@@ -1067,7 +1069,7 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
         r["status"] = status
         rows.append(r)
 
-    # R4: TWO-SIDED weights from measured yield; unmeasured is par, retired is zero.
+    # R4: TWO-SIDED weights from measured yield; unmeasured is par, parked is the floor (never 0).
     measured = [x["yield"]["edges_per_cpu_hour"] for x in rows
                 if isinstance(x["yield"]["edges_per_cpu_hour"], float)]
     med = statistics.median([y for y in measured if y > 0]) if any(y > 0 for y in measured) \
@@ -1075,8 +1077,8 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
     weights: dict[str, Any] = {}
     for x in rows:
         y = x["yield"]["edges_per_cpu_hour"]
-        if x["status"] == "RETIRED":
-            w = 0.0
+        if x["status"] == "PARKED":
+            w = WEIGHT_MIN
         elif isinstance(y, float) and med:
             w = min(WEIGHT_MAX, max(WEIGHT_MIN, y / med))
         elif isinstance(y, float) and measured:
@@ -1104,7 +1106,7 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
                 "is measured, the stage where it dies is named, and it gets a remedy from a "
                 "fixed menu -- never a parameter tweak; remedies are charged to the lifetime "
                 "trial ledger, judged held-out or forward only, one at a time against untouched "
-                f"controls, reverted when worse, and retired after {MAX_ATTEMPTS} failures. "
+                f"controls, reverted when worse, and parked at the floor weight after {MAX_ATTEMPTS} failures. "
                 "Compute weight follows independent, non-exotic, forward-kept edges per "
                 "CPU-hour, two-sided. A missing input is UNMEASURED, never zero."),
         "cadence": {"detection": "every pass",
@@ -1140,12 +1142,12 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
         # funnel is measured and does not die, and the desk's independent forward-kept edges.
         "summary": {"n_producers": len(ranked), "n_healthy": census.get("HEALTHY", 0),
                     "n_with_remedy": sum(1 for x in ranked if x["remedy"]),
-                    "n_retired": census.get("RETIRED", 0),
+                    "n_parked": census.get("PARKED", 0),
                     "k_eff_edges_window": round(sum(
                         x["yield"]["k_eff_edges"] for x in ranked
                         if isinstance(x["yield"]["k_eff_edges"], float)), 4)},
         "laggards": [x["producer"] for x in ranked if x["status"] in (
-            "DIAGNOSING", "FIX_QUEUED", "CODE_FIX_NEEDED", "RETIRED")],
+            "DIAGNOSING", "FIX_QUEUED", "CODE_FIX_NEEDED", "PARKED")],
         "producers": ranked,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
     }
@@ -1172,7 +1174,7 @@ def write(doc: dict[str, Any], *, out: Path | None = None) -> dict[str, Any]:
     _atomic(out or OUT, doc)
     _atomic(WEIGHTS, {"generated_at": doc["generated_at"],
                       "rule": ("two-sided producer weights from measured yield (par 1.0 when "
-                               "unmeasured, 0 when retired); read by merge_hypotheses "
+                               "unmeasured, the floor when parked); read by merge_hypotheses "
                                "reweight_rows inside each family's own docket slots -- no row "
                                "removed, the judge's exploration floor untouched"),
                       "producers": weights})

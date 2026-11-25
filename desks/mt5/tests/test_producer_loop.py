@@ -259,7 +259,7 @@ def test_the_fourth_attempt_is_refused_and_every_attempt_is_charged_as_trials(
     assert el._loop_attempt_counts(pl.ATTEMPTS) == pl.loop_trial_counts()
 
 
-def test_retirement_after_max_failed_remedies_archives_and_sets_a_retest_date(
+def test_parking_after_max_failed_remedies_keeps_the_producer_at_the_floor(
         tmp_path: Path, monkeypatch: Any) -> None:
     _sandbox(tmp_path, monkeypatch, conversion=_conv(
         good=(1000, 900, 20), dud=(1000, 1000 + pl.MAX_ATTEMPTS * pl.MIN_JUDGED_SINCE_TWEAK, 0)))
@@ -274,7 +274,7 @@ def test_retirement_after_max_failed_remedies_archives_and_sets_a_retest_date(
     pl.ATTEMPTS.write_text("\n".join(json.dumps(r) for r in rows), "utf-8")
     doc = pl.write(pl.build(now=NOW, apply=False))
     dud = {x["producer"]: x for x in doc["producers"]}["dud"]
-    assert dud["status"] == "RETIRED" and dud["weight"] == 0.0
+    assert dud["status"] == "PARKED" and dud["weight"] == pl.WEIGHT_MIN > 0   # never cut
     assert len(dud["remedies_evaluated"]) == pl.MAX_ATTEMPTS
     assert all(o["outcome"].startswith("FAILED") for o in dud["remedies_evaluated"])
     assert "before_certs_per_judged" in dud["remedies_evaluated"][0]      # R7
@@ -282,10 +282,10 @@ def test_retirement_after_max_failed_remedies_archives_and_sets_a_retest_date(
     arch = json.loads((tmp_path / dud["archive"]).read_text())
     assert arch["retirements"][0]["attempts"] and arch["retirements"][0]["retest_at"]
     w = json.loads(pl.WEIGHTS.read_text())
-    assert w["producers"]["dud"]["weight"] == 0.0
-    # a later pass keeps it retired until the re-test date, and refuses a remedy meanwhile
+    assert w["producers"]["dud"]["weight"] == pl.WEIGHT_MIN
+    # a later pass keeps it parked until the re-test date, and refuses a remedy meanwhile
     doc2 = pl.build(now=NOW + timedelta(days=1), apply=False)
-    assert {x["producer"]: x for x in doc2["producers"]}["dud"]["status"] == "RETIRED"
+    assert {x["producer"]: x for x in doc2["producers"]}["dud"]["status"] == "PARKED"
     state = json.loads(pl.STATE.read_text())
     r = pl.record_attempt("dud", pl.GRID_WIDEN, ["t9"], "held_out", judged_now=10_000,
                           certificates_now=0, now=NOW + timedelta(days=1),
