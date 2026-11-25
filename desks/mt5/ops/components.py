@@ -150,6 +150,16 @@ def _producer_calls() -> dict[str, tuple[str, tuple[str, ...]]]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
             continue
+        # `_report_step("<name>", *args)` runs `research/<name>.py` IN-PROCESS as the leg of the
+        # same name (hourly_cycle.REPORT_STEPS). Reading only `_producer(...)` left eleven report
+        # organs on a real hourly clock counted as executables with NO clock (train 1b, 2026-11-25).
+        if node.func.id == "_report_step" and node.args:
+            step = node.args[0]
+            if isinstance(step, ast.Constant) and isinstance(step.value, str):
+                rargs = tuple(a.value for a in node.args[1:]
+                              if isinstance(a, ast.Constant) and isinstance(a.value, str))
+                out.setdefault(step.value, (f"research/{step.value}.py", rargs))
+            continue
         if node.func.id != "_producer" or len(node.args) < 2:
             continue
         name, script = node.args[0], node.args[1]
