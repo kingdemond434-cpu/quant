@@ -470,6 +470,8 @@ def _paper_rows(rows: dict[str, dict[str, Any]], path: Path | None = None) -> in
             continue
         sid = f"src:paper:{name}"
         terms = str(h.get("terms") or "unrecorded")
+        if terms == "open" and h.get("terms_page_read") is not True:
+            terms = "unread"            # `open` on a page nobody read is not open (Audit MF-1)
         rows[sid] = _row(
             sid, name=name, kind="scholarly", region=h.get("region"),
             language=h.get("language"), route=str(h.get("route") or "oai_pmh"),

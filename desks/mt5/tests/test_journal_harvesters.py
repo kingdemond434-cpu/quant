@@ -68,7 +68,8 @@ class Net:
 def H(**kw):
     base = {"name": "kci", "region": "kr", "language": "ko", "route": "oai_pmh",
             "protocol": "oai_pmh", "base": "https://open.kci.go.kr/oai/request",
-            "sets": ["ARTI"], "granularity": "day", "terms": "open", "max_requests": 4}
+            "sets": ["ARTI"], "granularity": "day", "terms": "open", "terms_page_read": True,
+            "max_requests": 4}
     return {**base, **kw}
 
 
@@ -250,6 +251,33 @@ def test_a_source_whose_terms_are_not_open_is_never_fetched():
     assert net.urls == []
 
 
+def test_open_on_terms_nobody_read_fails_closed_in_the_reader_and_the_registry(tmp_path):
+    net = Net()
+    st: dict = {}
+    for unread in (False, None, "true", 1):
+        assert jh.harvest(st, net, row, allow, config=[H(terms_page_read=unread)],
+                          today=DAY) == []
+        assert st["jh_status"]["kci"]["status"] == "closed"
+        assert "never read" in st["jh_status"]["kci"]["why"]
+    assert net.urls == []
+    p = tmp_path / "feeds.json"
+    p.write_text(json.dumps({"harvesters": [H(terms_page_read=False), H(name="ok")]}))
+    rows: dict = {}
+    sr._paper_rows(rows, p)
+    assert rows["src:paper:kci"]["licence_note"].startswith("CLOSED (terms unread)")
+    assert rows["src:paper:kci"]["paper_terms"] == "unread"
+    assert rows["src:paper:ok"]["paper_terms"] == "open"
+
+
+def test_no_shipped_harvester_is_open_without_a_terms_page_that_was_read():
+    for h in jh.load_harvesters():
+        if h["terms"] == "open":
+            assert h["terms_page_read"] is True, h["name"]
+            assert jh.is_open(h), h["name"]
+        else:
+            assert not jh.is_open(h), h["name"]
+
+
 def test_a_robots_stop_makes_no_fetch_and_a_bot_wall_is_not_parsed_or_retried():
     net = Net()
     st: dict = {}
@@ -324,7 +352,9 @@ def test_every_shipped_harvester_is_complete_and_a_refusal_carries_its_clause():
             assert h["terms_page_read"] is True, h["name"]      # a refusal is never a guess
         assert "api_key" not in json.dumps(h) and "mailto" not in json.dumps(h)
     closed = {h["name"] for h in hs if h["terms"] != "open"}
-    assert closed == {"hal", "cyberleninka", "jstage"}
+    assert closed == {"hal", "cyberleninka", "jstage", "kci"}
+    kci = next(h for h in hs if h["name"] == "kci")
+    assert kci["terms"] == "unrecorded" and "NOT READ" in kci["terms_note"]
 
 
 def test_each_harvester_is_a_registry_row_the_compiler_stamp_resolves_to():

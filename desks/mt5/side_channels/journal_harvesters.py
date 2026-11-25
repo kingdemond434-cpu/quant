@@ -27,9 +27,11 @@ opened):
   * SciELO: CC-BY is the network standard, commercial reuse included. OPEN per country node;
     each node's own robots.txt still decides on the box (Chile and Peru disallow, Brazil sits
     behind a bot wall -- none is worked around).
-  * KCI: an OAI-PMH endpoint published for harvesting, no key. OPEN on that basis.
+  * KCI: an OAI-PMH endpoint published for harvesting, no key -- but its licence text was NOT
+    read (the page sits on www.kci.go.kr, whose robots.txt disallows our agent). UNRECORDED,
+    so CLOSED: unread terms are not open. Korean work is read through openalex_ko.
 A CLOSED row is registered, costs nothing and is never fetched; it opens by editing its `terms`
-with the evidence, never by code.
+with the evidence, never by code. `open` counts only with `terms_page_read: true` (is_open).
 
 LEGITIMACY, PER FETCH. Terms are necessary, not sufficient: every URL goes through the desk's
 one robots gate (research/robots_gate.py) under the honest client name, a Disallow or an unread
@@ -125,7 +127,8 @@ MARKET_RE = re.compile(
     r"|tipo de cambio|tasa de (?:cambio|inter[eé]s)|taxa de (?:c[aâ]mbio|juros)|cambiari|divisas"
     r"|mercados? (?:de valores|financier|burs[aá]til|cambiario|de capitales|de capitais"
     r"|de divisas|accionario|de futuros|de a[cç][oõ]es|de acciones)|bolsa de valor|burs[aá]til"
-    r"|pre[cç]os? d[ae]s? a[cç][oõ]es|precio de las acciones|volatilidad|volatilidade|volatilit[eéà]"
+    r"|pre[cç]os? d[ae]s? a[cç][oõ]es|precio de las acciones|volatilidad|volatilidade"
+    r"|volatilit[eéà]"
     r"|inflaci[oó]n|infla[cç][aã]o|pol[ií]tica monet|banco central|precio del oro|pre[cç]o do ouro"
     r"|petr[oó]leo|taux de change|taux d.int[eé]r[eê]t|march[eé]s? financ|bours(?:e|ier)"
     r"|politique mon[eé]taire|banque centrale|prix d[eu] l?.?(?:or|p[eé]trole)\b|tasso di cambio"
@@ -380,6 +383,13 @@ def parse_openalex(body: str) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------ the walk
+def is_open(h: dict[str, Any]) -> bool:
+    """A harvester is fetched only on a permitting verdict that rests on a terms page somebody
+    READ (Audit MF-1, 2026-11-25). `open` with `terms_page_read` not true is a guess, and a guess
+    fails closed here and in source_registry, whatever the row says."""
+    return h.get("terms") in OPEN_TERMS and h.get("terms_page_read") is True
+
+
 def load_harvesters(path: Path | None = None) -> list[dict[str, Any]]:
     doc = json.loads((path or FEEDS_CONFIG).read_text("utf-8"))
     return [h for h in doc.get("harvesters") or [] if isinstance(h, dict) and h.get("name")]
@@ -476,10 +486,14 @@ def harvest(st: dict[str, Any], get_text: Callable[[str], str], row: RowFn, gate
     for h in cfg:
         name, base = str(h["name"]), str(h.get("base") or "")
         host = (urllib.parse.urlsplit(base).hostname or "").lower()
-        if h.get("terms") not in OPEN_TERMS:
+        if not is_open(h):
+            unread = h.get("terms") in OPEN_TERMS
             status[name] = {"at": rdm._now(), "status": "closed", "url": base,
-                            "why": f"terms {h.get('terms') or 'unrecorded'}: "
-                                   f"{str(h.get('terms_note') or 'no verdict recorded')[:240]}"}
+                            "why": ("terms marked open but the terms page was never read "
+                                    "(terms_page_read is not true): unread is not open"
+                                    if unread else
+                                    f"terms {h.get('terms') or 'unrecorded'}: "
+                                    f"{str(h.get('terms_note') or 'no verdict recorded')[:240]}")}
             continue
         if clock() - t0 > deadline_s:
             status[name] = {"at": rdm._now(), "status": "deferred", "url": base,
