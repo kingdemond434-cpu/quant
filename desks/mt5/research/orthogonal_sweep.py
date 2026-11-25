@@ -595,6 +595,16 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The world-practice methods (mt5desk/family_global_methods.py): the class LambdaRank
+    # learner, the intraday realised-moment class book, the market-profile value-area rules and
+    # the Korean volatility breakout.
+    # research/global_methods enumerates (symbol x params) once, exotics excluded, and charges
+    # every cell through family_donation; sweeping them here would charge the same trials twice.
+    **dict.fromkeys(("cross_sectional_class_ltr", "cross_sectional_class_hf_moment",
+                     "value_area_rule", "volatility_breakout_kr"),
+                    "research/global_methods enumerates the symbol x params grid once (exotics "
+                    "excluded), and charges every cell through family_donation; sweeping it here "
+                    "would charge the same trials twice"),
     # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
     # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
     # entry filter's conditions are named by research/residual_search from the book's residual.
@@ -808,7 +818,7 @@ def sweep(budget_s: float | None = None) -> dict:
     # eight M1 frames (sixty bars per H1 bar each) in a cache budgeted for ten hourly ones, which
     # is precisely the memory the ladder had to be designed around. Computed once, from the same
     # declaration the family loop enforces, so the two can never disagree.
-    _PEER_FAMS = ("relative_value", "correlation_regime")
+    _PEER_FAMS = ("relative_value", "correlation_regime", "coint_pairs")
     _FACTOR_FAMS = ("cross_asset_residual", "pca_residual")
     peer_charts = {t for t in _LADDER
                    if any(timeframe_refusal(f, t) is None for f in _PEER_FAMS)}
@@ -857,6 +867,9 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"symbol": sym},
             "relative_value": {"peer": peer_df},
             "correlation_regime": {"peer": peer_df},
+            # The Engle-Granger pair reads its peer frame as `peer_bars` (the name the sealed
+            # gauntlet's peer branch does not claim, so it builds there from `peer_symbol`).
+            "coint_pairs": {"peer_bars": peer_df},
             "cross_asset_residual": {"factors": factor_dfs},
             # NEVER PASSED BEFORE. Absent from this map, `pca_residual` ran with factors=None,
             # hit its own `len(factors) < 4` refusal and returned [] on every symbol in the
@@ -882,6 +895,7 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"input_symbol": sym},
             "relative_value": {"peer_symbol": peer_sym} if peer_sym else {},
             "correlation_regime": {"peer_symbol": peer_sym} if peer_sym else {},
+            "coint_pairs": {"peer_symbol": peer_sym} if peer_sym else {},
             "cross_asset_residual": {"factor_symbols": factor_names},
             "pca_residual": {"factor_symbols": factor_names},
             "liquidity_regime": {"input_source": "fusion_tick_tape"},

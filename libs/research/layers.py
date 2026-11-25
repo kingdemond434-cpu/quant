@@ -348,6 +348,11 @@ LEG_LAYER: dict[str, str] = {
     # rules: prediction, like alpha_evolution. The generator census measures which
     # generator methods ran this day, not any strategy: meta.
     "strategy_builder": "prediction", "generator_coverage": "meta",
+    # THE WORLD-PRACTICE METHODS (2026-11-25): each mints claims about returns (a class rank
+    # learned by LambdaRank, an intraday-moment rank, a value-area rule, a volatility
+    # breakout) -- prediction.
+    "global_xs_ltr": "prediction", "global_hf_moment": "prediction",
+    "global_value_area": "prediction", "global_vol_breakout": "prediction",
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
