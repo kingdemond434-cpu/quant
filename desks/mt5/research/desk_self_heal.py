@@ -944,11 +944,17 @@ def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[
         if not isinstance(row, dict):
             continue
         name, verdict = str(row.get("name") or ""), str(row.get("verdict") or "")
-        if name and _refused(row.get("last_result_code")) and verdict not in BOARD_RERUN:
+        # A refused launch while an instance is RUNNING is the IgnoreNew overlap of a resident
+        # (box RC 2026-11-25 03:45Z: all Dept-*, Forest-*, Moat-* -- event 322, never 332/329):
+        # the work is being done, so it is not a refusal to page on.
+        resident = str(row.get("state") or "").lower() == "running"
+        if (name and _refused(row.get("last_result_code")) and verdict not in BOARD_RERUN
+                and not resident):
             # TASK_REFUSED (red team 2026-11-25: 33 tasks read UNCONTRACTED while every run
-            # returned 0x800710E0). The scheduler refused to start the run, so no re-run can
-            # cure it: the cause is the task's own settings (an IgnoreNew overlap with a hung
-            # instance, a logon type with no session). It pages whatever its verdict says.
+            # returned 0x800710E0). The scheduler refused to start the run and nothing of the
+            # task is running, so no re-run can cure it: the cause is the task's own settings
+            # (a logon type with no session, a dead instance holding IgnoreNew). It pages
+            # whatever its verdict says.
             census["refused"] = int(census.get("refused") or 0) + 1
             out.append(Finding(f"{'moneypath ' if name in MONEY_PATH_TASKS else ''}board {name}",
                                False, f"TASK_REFUSED: last run 0x800710E0 (the scheduler "

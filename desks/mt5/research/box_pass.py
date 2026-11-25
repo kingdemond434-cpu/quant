@@ -106,7 +106,8 @@ def board_rows(root: Path) -> list[dict[str, Any]]:
         code = p.get("last_result_code")
         if name in INTENDED_OFF and verdict == "DISABLED":
             status, fault = "OFF_BY_DESIGN", INTENDED_OFF[name]
-        elif verdict == "UNCONTRACTED" and code not in OK_CODES:
+        elif (verdict == "UNCONTRACTED" and code not in OK_CODES
+              and str(p.get("state") or "").lower() != "running"):
             status, verdict = "BROKEN", "UNCONTRACTED+FAILED"
             fault = f"no artifact contract AND last run failed: {p.get('last_result')} " \
                     f"(code {code})"

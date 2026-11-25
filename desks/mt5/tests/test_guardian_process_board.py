@@ -184,3 +184,10 @@ def test_a_refused_task_pages_whatever_its_verdict_and_is_never_rerun(tmp_path):
     doc, calls = _run(tmp_path)
     assert calls == [] and {a["organ"] for a in doc["moneypath_alerts"]} >= {
         "board MT5-Dept-Macro"}
+
+
+def test_a_refused_launch_beside_a_running_resident_is_not_a_page(tmp_path):
+    _board(tmp_path, [_row("MT5-Dept-Data", "UNCONTRACTED", code=2147946720, state="Running")])
+    found, census = heal.check_process_board(tmp_path, NOW)
+    assert not [f for f in found if f.detail.startswith("TASK_REFUSED")]
+    assert not census.get("refused")
