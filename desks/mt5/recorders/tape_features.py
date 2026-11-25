@@ -347,7 +347,9 @@ def _failed_days() -> tuple[dict[str, str], str]:
         return {}, f"{INTEGRITY.name} is unreadable; built without a verdict"
     out: dict[str, str] = {}
     for row in (doc.get("days") or []):
-        if row.get("verdict") == "FAIL":
+        # UNMEASURED is not a pass: a sparse symbol or a suspected venue halt is excluded, and
+        # the exclusion is refused here as a FAIL is (audit 2026-11-19 MF2).
+        if row.get("verdict") == "FAIL" or row.get("exclusion"):
             out[f"{row.get('symbol')}/{row.get('day')}"] = "; ".join(row.get("reasons") or [])
     return out, (f"{INTEGRITY.name} at {doc.get('generated_utc')}: verdict "
                  f"{doc.get('verdict')}, {len(out)} symbol-day(s) refused")
