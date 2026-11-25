@@ -413,7 +413,44 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(LL, "minlot_scope", lambda: (frozenset(), None))
     monkeypatch.setattr(LL, "FUSION_LEDGER", tmp_path / "live_ledger.jsonl")
     monkeypatch.setattr(LL, "PROP_LEDGER", tmp_path / "prop.jsonl")
-    monkeypatch.setattr(LL, "_graph_state", lambda: (set(), {}, "stub"))
+    monkeypatch.setattr(LL, "_graph_state", lambda _f=None: (set(), {}, "stub"))
     rep = LL.run(dry_run=True)
     assert rep["books"]["e8"].startswith("UNMEASURED")
     assert list(tmp_path.iterdir()) == []
+
+
+def test_the_graph_is_streamed_for_live_families_only(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import survivor_distiller as sd
+    g = tmp_path / "graph.jsonl"
+    g.write_text("\n".join(json.dumps(r) for r in [
+        {"id": "a", "family": "breakout", "params": {"rr": 1.5, "ttl_bars": 8}},
+        {"id": "b", "family": "breakout", "params": {"rr": 2.0}},
+        {"id": "c", "family": "carry", "params": {"rr": 9.0}},
+        {"id": "d", "family": "x", "note": "mentions \"breakout\" in prose"},
+    ]) + "\nnot json\n", "utf-8")
+    monkeypatch.setattr(sd, "GRAPH", g)
+    existing, grid, note = LL._graph_state({"breakout"})
+    assert existing == {"a", "b"}
+    assert grid == {"breakout": {"rr": [1.5, 2.0], "ttl_bars": [8.0]}}
+    assert note.startswith("5 graph rows streamed, 2 parsed")
+    assert LL._graph_state(set())[0] == set()
+
+
+def test_streamed_graph_state_equals_the_full_load_for_a_family(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research.hypothesis_graph import Graph
+    from research import survivor_distiller as sd
+    rows = [{"id": f"n{i}", "family": fam, "params": {"rr": 1.0 + i % 4, "stop_atr": 0.5 * i}}
+            for i, fam in enumerate(["breakout", "carry", "breakout", "\u00e9t\u00e9", "breakout"])]
+    g = tmp_path / "graph.jsonl"
+    # the non-ASCII family is written raw (ensure_ascii=False), the rest escaped
+    g.write_text("\n".join(json.dumps(r, ensure_ascii=(i != 3)) for i, r in enumerate(rows))
+                 + "\n", "utf-8")
+    monkeypatch.setattr(sd, "GRAPH", g)
+    full = Graph(g).rows()
+    for fam in ("breakout", "\u00e9t\u00e9"):
+        mine = [r for r in full if r.get("family") == fam]
+        existing, grid, _ = LL._graph_state({fam})
+        assert existing == set(sd._current(mine))
+        assert grid == sd.grid_values(mine)

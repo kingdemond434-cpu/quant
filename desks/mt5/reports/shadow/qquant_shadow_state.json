@@ -1,19 +1,7 @@
 {
-  "updated_at": "2026-11-13T11:55:03.767350+00:00",
   "source_gate_policy_valid": true,
+  "updated_at": "2026-11-25T10:34:12.270288+00:00",
   "certified_qquant_sleeves": 0,
   "processed_qquant_sleeves": 0,
-  "identity_stamped_at": "2026-09-23T17:51:23+00:00",
-  "retired_clocks": {
-    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
-      "at": "2026-09-23T20:27:52+00:00",
-      "status": "RETIRED_UNRECONSTRUCTIBLE",
-      "reason": "running without a ten-gate certificate, and its exact parameters cannot be reconstructed from the cell name. Guessing them is forbidden -- a gauntlet run on guessed parameters certifies a strategy nobody is trading.",
-      "accrued_days": 19,
-      "accrued_trades": 3,
-      "ledger": "data/retired_clocks.jsonl"
-    }
-  },
-  "retired_clocks_moved_at": "2026-09-23T20:27:52+00:00",
   "integrity_held": []
 }

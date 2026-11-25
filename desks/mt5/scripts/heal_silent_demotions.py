@@ -44,7 +44,16 @@ SLEEVES = ROOT / "desks" / "mt5" / "data" / "sleeves.json"
 #: Fields any organ demoting for cause is expected to leave behind. If none carries text, the
 #: demotion recorded nothing and this fixer treats it as an accident rather than a decision.
 REASON_FIELDS = ("retire_reason", "status_reason", "reason", "why", "demoted_reason",
-                 "retired_reason", "gate_reason", "demote_reason")
+                 "retired_reason", "gate_reason", "demote_reason", "standby_reason")
+
+#: THE FIXER UNDID A STOP ORDER (measured 2026-10-14). The 2026-10-13 21:30Z stop-the-bleed set
+#: the AUDCHF/EURZAR/USDZAR gap-decay principals to STANDBY with `standby_reason` naming the
+#: principal's order -- a field this list did not carry. So the three read as "demoted with no
+#: reason" and were lifted back to LIVE at 0.10 within four hours (EURZAR 21:50Z, USDZAR 23:50Z,
+#: AUDCHF 01:50Z). A fixed list of names is the defect class: any other `*_reason` spelling
+#: repeats it. So ANY non-empty `<something>_reason` field counts as a recorded reason, except
+#: the restorers' own stamps, which say why a row came BACK, not why it left.
+_NOT_A_DEMOTION_REASON = ("restore_reason", "restored_reason")
 
 
 def _admission_reason(row: dict) -> str:
@@ -74,6 +83,10 @@ def _reason(row: dict) -> str:
     for f in REASON_FIELDS:
         v = row.get(f)
         if isinstance(v, str) and v.strip():
+            return v.strip()
+    for f, v in row.items():
+        if (isinstance(f, str) and f.endswith("_reason") and f not in _NOT_A_DEMOTION_REASON
+                and isinstance(v, str) and v.strip()):
             return v.strip()
     return _admission_reason(row)
 

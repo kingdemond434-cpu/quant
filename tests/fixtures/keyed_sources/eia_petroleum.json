@@ -1,0 +1,6 @@
+{"response": {"total": "4", "dateFormat": "YYYY-MM-DD", "frequency": "weekly", "data": [
+ {"period": "2026-09-18", "duoarea": "NUS", "product": "EPC0", "series": "WCESTUS1", "series-description": "U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)", "value": "415432", "units": "MBBL"},
+ {"period": "2026-09-11", "duoarea": "NUS", "product": "EPC0", "series": "WCESTUS1", "value": "417201", "units": "MBBL"},
+ {"period": "2026-09-18", "duoarea": "YCUOK", "product": "EPC0", "series": "W_EPC0_SAX_YCUOK_MBBL", "value": "23111", "units": "MBBL"},
+ {"period": "2026-09-18", "duoarea": "NUS", "product": "EPM0", "series": "WGTSTUS1", "value": null, "units": "MBBL"}
+]}, "request": {"command": "/v2/petroleum/stoc/wstk/data/"}, "apiVersion": "2.1.8"}
