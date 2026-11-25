@@ -198,6 +198,28 @@ def check_certification(root: Path, now: datetime) -> Finding:
         passed = [v for v in d.get("verdicts", []) if v.get("passed") is True]
     except Exception as e:
         return Finding("certification", False, f"unreadable ({e})")
+    # THE FILE'S MTIME IS NOT THE SWEEP'S AGE (2026-11-25). A git checkout, an adoption or a state
+    # sync rewrites the file and refreshes its mtime while the content stays the last real sweep:
+    # the box carried swept_at 2026-09-12 under a fresh mtime and this check read PASS. qquant_gates
+    # stamps swept_at on every run it writes, so swept_at is the age; absent or unparseable is
+    # UNMEASURED, never fresh.
+    swept = d.get("swept_at") if isinstance(d, dict) else None
+    try:
+        sw = datetime.fromisoformat(str(swept).replace("Z", "+00:00"))
+        if sw.tzinfo is None:
+            sw = sw.replace(tzinfo=UTC)
+        swept_age = (now - sw).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        return Finding("certification", False,
+                       f"swept_at unreadable ({swept!r}): the sweep's age is UNMEASURED, "
+                       "and a fresh mtime is not a fresh sweep", fixable=True)
+    if swept_age > CERT_STALE_H:
+        return Finding("certification", False,
+                       f"swept_at {swept} is {swept_age:.1f}h old (limit {CERT_STALE_H:.0f}h) "
+                       f"although the file was written {age if age is not None else -1:.1f}h "
+                       "ago: the certifier is not sweeping (DEFERRED on the lane, or "
+                       "UNANSWERED with no hunt report) and something re-saves the old result",
+                       fixable=True)
     return Finding("certification", True,
                    f"{len(passed)} of {len(d.get('verdicts', []))} cells cleared "
                    f"the battery")
