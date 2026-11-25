@@ -68,7 +68,16 @@ def test_chat_skips_with_a_named_reason_when_the_lane_is_held(monkeypatch) -> No
     assert text == "" and err and "lane budget held" in err
 
 
-def test_extra_provider_plugs_in_from_the_box_file(tmp_path: Path) -> None:
+def _rule_acme_allowed(monkeypatch) -> None:
+    """Box-file plug-ins are relays, and a relay is lit only under an ALLOWED terms ruling
+    (ops/relay_terms_rulings.json); the gate is fail-closed, so these tests grant `acme` one."""
+    real = cn.relay_ruling
+    monkeypatch.setattr(cn, "relay_ruling",
+                        lambda name: "ALLOWED" if name == "acme" else real(name))
+
+
+def test_extra_provider_plugs_in_from_the_box_file(tmp_path: Path, monkeypatch) -> None:
+    _rule_acme_allowed(monkeypatch)
     (tmp_path / "data" / "secrets").mkdir(parents=True)
     (tmp_path / cn.EXTRA_PROVIDERS_FILE).write_text(json.dumps([
         {"name": "acme", "base_url": "https://api.acme.cn/v1", "key": "sekret",
@@ -86,7 +95,8 @@ def test_extra_provider_plugs_in_from_the_box_file(tmp_path: Path) -> None:
     assert overlay["CN_EXTRA_ENVKEY_KEY"] == "fromenv"
 
 
-def test_run_lists_the_extra_provider_without_its_key(tmp_path: Path) -> None:
+def test_run_lists_the_extra_provider_without_its_key(tmp_path: Path, monkeypatch) -> None:
+    _rule_acme_allowed(monkeypatch)
     (tmp_path / "data" / "secrets").mkdir(parents=True)
     (tmp_path / cn.EXTRA_PROVIDERS_FILE).write_text(json.dumps([
         {"name": "acme", "base_url": "https://api.acme.cn/v1", "key": "sekret",
@@ -95,6 +105,24 @@ def test_run_lists_the_extra_provider_without_its_key(tmp_path: Path) -> None:
                  quotas={"acme": 1})
     assert rep["providers"]["acme"]["lit"] is True
     assert "sekret" not in json.dumps(rep)
+
+
+def test_box_file_plug_in_without_a_terms_ruling_is_dark(tmp_path: Path) -> None:
+    """The fail-closed gate holds for plug-ins: no ALLOWED ruling, no seat, however good the key."""
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    (tmp_path / cn.EXTRA_PROVIDERS_FILE).write_text(json.dumps([
+        {"name": "acme", "base_url": "https://api.acme.cn/v1", "key": "sekret",
+         "models": ["qwen-max"]}]), "utf-8")
+    extras, overlay = cn.extra_providers(tmp_path, {})
+    assert [p.name for p in extras] == ["acme"] and extras[0].relay
+    assert cn.relay_ruling("acme") == "ABSENT"
+    seat = cn.seat_for(extras[0], overlay)
+    assert not seat.lit
+    assert "DARK" in seat.why and "ops/relay_terms_rulings.json" in seat.why
+    assert cn.RULINGS == "ops/relay_terms_rulings.json"
+    assert "sekret" not in seat.why
+    rep = cn.run(NOON, root=tmp_path, env={}, chat=lambda *a: ("[]", None), quotas={"acme": 1})
+    assert rep["providers"]["acme"]["lit"] is False
 
 
 def test_openrouter_lane_never_uses_minimax() -> None:

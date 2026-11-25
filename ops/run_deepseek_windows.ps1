@@ -43,9 +43,9 @@ $rc = $LASTEXITCODE
 $out -split "`r?`n" | Where-Object { $_ } | Select-Object -Last 4
 
 # CHINESE-MODEL ENSEMBLE (libs/ops/cn_ensemble.py): the same hour's research questions put to
-# every free Chinese model reachable (OpenRouter free ids, plus hcnsec / AgentRouter once their
-# keys exist). Public prompts only, propose-only, always exits 0, so the DeepSeek exit code
-# above stays the task's result.
+# every free Chinese model reachable (OpenRouter free ids, plus the hcnsec / AgentRouter / YJS
+# relays once the principal's keys exist; ops/relay_terms_rulings.json). Public prompts only,
+# propose-only, always exits 0, so the DeepSeek exit code above stays the task's result.
 [System.IO.File]::AppendAllText($Log, "=== cn ensemble $stamp ===`r`n", $utf8)
 $cn = & py -3 scripts\run_cn_ensemble.py 2>&1 | Out-String
 [System.IO.File]::AppendAllText($Log, $cn, $utf8)
