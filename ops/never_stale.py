@@ -217,6 +217,73 @@ def _start(task: str) -> tuple[bool, str]:
         return False, f"{type(exc).__name__}: {exc}"
 
 
+def _task_state(task: str) -> str | None:
+    """The scheduler's own state word for one task ("Running", "Ready", ...), or None when the
+    query fails or cannot be read -- None keeps today's behaviour (start it)."""
+    try:
+        r = subprocess.run(["schtasks", "/query", "/tn", task, "/fo", "csv", "/nh"],
+                           capture_output=True, text=True, timeout=60)
+        if r.returncode != 0:
+            return None
+        for line in (r.stdout or "").splitlines():
+            cells = [c.strip().strip('"') for c in line.split('","')]
+            if len(cells) >= 3 and cells[0].lstrip("\\").lower().endswith(task.lower()):
+                return cells[2].strip() or None
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return None
+
+
+class _Starts:
+    """ONE START REQUEST PER TASK PER PASS (2026-11-25).
+
+    About thirty organ-contract rows map onto the single task MT5-FrontierAudit, so one request
+    per stale ROW fired that task ~8 times a quarter hour; Task Scheduler refused each (event
+    322, MultipleInstances=IgnoreNew) while an instance ran. The first row asks; every later row
+    for the same task is coalesced into that request and counted, so the board still lists every
+    stale row. A task already Running is not asked at all. If the state query fails the request
+    is made exactly as before.
+    """
+
+    def __init__(self, starter: Any = None, state_of: Any = None) -> None:
+        self._start = starter or _start
+        self._state_of = state_of or _task_state
+        self.results: dict[str, tuple[bool, str]] = {}
+        self.rows: dict[str, int] = {}
+        self.requested: dict[str, bool] = {}
+        self.skipped: dict[str, str] = {}
+
+    def start(self, task: str) -> tuple[bool, str, bool]:
+        """(ok, detail, coalesced). coalesced is True when no new request was issued."""
+        self.rows[task] = self.rows.get(task, 0) + 1
+        if task in self.results:
+            ok, msg = self.results[task]
+            return ok, msg, True
+        try:
+            state = self._state_of(task)
+        except Exception:
+            state = None
+        if state is not None and str(state).strip().lower() == "running":
+            msg = "not requested: the task is already Running (a /Run would be refused)"
+            self.requested[task] = False
+            self.skipped[task] = msg
+            self.results[task] = (True, msg)
+            return True, msg, False
+        ok, msg = self._start(task)
+        self.requested[task] = True
+        self.results[task] = (ok, msg)
+        return ok, msg, False
+
+    def report(self) -> dict[str, dict]:
+        out: dict[str, dict] = {}
+        for t, n in sorted(self.rows.items()):
+            out[t] = {"rows": n, "requests_issued": 1 if self.requested.get(t) else 0,
+                      "coalesced": n - 1}
+            if t in self.skipped:
+                out[t]["skipped"] = self.skipped[t]
+        return out
+
+
 def _capital_faults() -> list[dict]:
     """LIVE sleeves that cannot actually trade. The capital half of "never stale".
 
@@ -311,7 +378,8 @@ def _safe(fn, fam: str) -> bool:
         return False
 
 
-def run(apply: bool) -> dict:
+def run(apply: bool, *, starts: "_Starts | None" = None) -> dict:
+    starts = starts or _Starts()
     age = _age_min(HEALTH)
     doc = _read(HEALTH)
     if doc is None or age is None:
@@ -361,9 +429,11 @@ def run(apply: bool) -> dict:
                 continue
             # A contract row may be an ASPECT of a task ("MT5-FrontierAudit (orthogonality)");
             # the scheduler only knows the owning task, so that is what is started.
-            ok, msg = _start(str(row.get("task") or name.split(" (", 1)[0].strip() or name))
+            ok, msg, merged = starts.start(
+                str(row.get("task") or name.split(" (", 1)[0].strip() or name))
             acted.append({"task": name, "verdict": verdict,
-                          "action": "started" if ok else "start FAILED",
+                          "action": ("coalesced into this pass's one request" if merged
+                                     else "started" if ok else "start FAILED"),
                           "detail": msg, "why": row.get("why")})
             continue
 
@@ -383,9 +453,10 @@ def run(apply: bool) -> dict:
                     acted.append({"task": name, "verdict": verdict, "code": code,
                                   "action": "would re-run", "why": row.get("why")})
                     continue
-                ok, msg = _start(task)
+                ok, msg, merged = starts.start(task)
                 if ok:
-                    reruns.setdefault(task, []).append(now.isoformat(timespec="seconds"))
+                    if not merged and starts.requested.get(task):
+                        reruns.setdefault(task, []).append(now.isoformat(timespec="seconds"))
                     acted.append({"task": name, "verdict": verdict, "code": code,
                                   "action": "JOURNAL re-run (FAILING, no standing diagnosis)",
                                   "detail": msg, "why": row.get("why")})
@@ -441,6 +512,7 @@ def run(apply: bool) -> dict:
         "n_acted": len(acted), "n_escalated": len(escalated),
         "applied": bool(apply),
         "acted": acted, "escalated": escalated,
+        "task_requests": starts.report(),
         "capital_faults": capital,
         "uncontracted": uncontracted,
         "uncontracted_note": ("these run but have no artifact contract, so nothing would notice "
