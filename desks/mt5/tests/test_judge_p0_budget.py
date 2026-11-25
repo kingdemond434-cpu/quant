@@ -57,8 +57,8 @@ def test_one_pathological_merge_does_not_set_the_bound_for_good(_times) -> None:
                     "collect_and_cut": [900.0] * 5, "rule_shards": [90.0] * 5,
                     "merge_and_publish": [4000.0, 4200.0, 51198.0, 4100.0, 3900.0]})
     cap, basis = jt.build_cap_s()
-    assert basis["phases"]["merge_and_publish"]["s"] == 4000.0       # the median
-    assert cap == jt.E10_SWEEP_WINDOW_S - (600 + 300 + 900 + 90 + 4000)
+    assert basis["phases"]["merge_and_publish"]["s"] == 4100.0       # the median
+    assert cap == jt.E10_SWEEP_WINDOW_S - (600 + 300 + 900 + 90 + 4100)
 
 
 def test_an_over_cap_budget_is_clamped_on_the_next_read_and_the_env_follows(_times) -> None:
@@ -79,20 +79,20 @@ def test_a_floored_clamp_still_overwrites_the_stale_machine_value() -> None:
 
 
 def test_a_trial_must_beat_the_best_rate_any_smaller_budget_measured(_times) -> None:
-    """The box's own history, 11-18..11-21: holds at 19,440 s collapsed to 321 and 247 v/h, the
-    29,160 s trial measured 468 v/h -- above that baseline, far below 8,640 s's 3,255 -- and was
-    KEPT, stepping to 43,200 s. It is now REVERTED."""
-    _write(_times, {p: [100.0] for p in jt.NON_BUILD_PHASES})          # cap above 29,160 s
-    hist = [{"budget_s": 8640.0, "verdicts_per_hour": 3255.0},
-            {"budget_s": 12960.0, "verdicts_per_hour": 1202.0},
-            {"budget_s": 19440.0, "verdicts_per_hour": 321.0},
-            {"budget_s": 19440.0, "verdicts_per_hour": 247.0}]
-    st = {"budget_s": 29160.0, "prev_budget_s": 19440.0, "phase": "trial",
-          "baseline_vph": 247.0, "changed_at": T0.isoformat(), "regime_start": T0.isoformat(),
-          "sweep_ends": [(T0 + 12 * H).isoformat(), (T0 + 26.4 * H).isoformat()],
+    """The box's own history, 11-12..11-13: a hold at 8,640 s collapsed to 261 v/h (stalls), the
+    12,960 s trial measured 1,202 v/h -- above that baseline, far below the 2,932-3,255 v/h that
+    8,640 s had delivered -- and was KEPT; the same pattern then walked 19,440 -> 29,160 ->
+    43,200 s. It is now REVERTED."""
+    _write(_times, {p: [100.0] for p in jt.NON_BUILD_PHASES})          # cap 21,100 s
+    hist = [{"budget_s": 8640.0, "verdicts_per_hour": 2932.0},
+            {"budget_s": 8640.0, "verdicts_per_hour": 3255.0},
+            {"budget_s": 8640.0, "verdicts_per_hour": 261.0}]
+    st = {"budget_s": 12960.0, "prev_budget_s": 8640.0, "phase": "trial",
+          "baseline_vph": 261.0, "changed_at": T0.isoformat(), "regime_start": T0.isoformat(),
+          "sweep_ends": [(T0 + 12 * H).isoformat(), (T0 + 24.5 * H).isoformat()],
           "history": hist}
-    st, b, why = jt.step_build_budget(st, T0 + 27 * H, 29160.0, int(468 * 26.4))
-    assert "REVERTED" in why and b == 19440.0 and st["phase"] == "hold"
+    st, b, why = jt.step_build_budget(st, T0 + 25 * H, 12960.0, int(1202 * 24.5))
+    assert "REVERTED" in why and b == 8640.0 and st["phase"] == "hold"
     # and a trial that genuinely beats every smaller budget is still KEPT (two-sided)
     st = {"budget_s": 12960.0, "prev_budget_s": 8640.0, "phase": "trial",
           "baseline_vph": 3000.0, "changed_at": T0.isoformat(), "regime_start": T0.isoformat(),
