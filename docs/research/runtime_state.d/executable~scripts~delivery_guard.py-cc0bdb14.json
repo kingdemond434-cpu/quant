@@ -1,0 +1,36 @@
+{
+ "organ": "executable:scripts/delivery_guard.py",
+ "kind": "executable",
+ "code": [
+  "scripts/delivery_guard.py",
+  "libs/ops/delivery_guard.py"
+ ],
+ "clock": "box_task:MT5-Guardian",
+ "cadence_s": 900,
+ "max_silence_s": 3600,
+ "state": "NEVER",
+ "why": "appended for a new MT5-Guardian leg (rule E34, 2026-11-25); appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: not yet run on the attesting host",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/DELIVERY_LEADTIME.json",
+ "artifact_declared": "desks/mt5/reports/DELIVERY_LEADTIME.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "max_clear_to_live_h",
+ "consumer": "reports/hourly_pass rule_enforce E34 (6h pass) and the guardian's own repairs/pages",
+ "measured_on": "vm",
+ "measured_at": "2026-11-25T21:45:09+00:00",
+ "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+ "only_missing": {
+  "at": "2026-11-25T21:45:09+00:00",
+  "host": "vm",
+  "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

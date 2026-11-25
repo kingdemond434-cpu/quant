@@ -1,8 +1,8 @@
 {
- "signed_utc": "2026-11-14T02:20:20.470283+00:00",
- "signed_by": "auditor-clear",
+ "signed_utc": "2026-11-25T21:45:37.795255+00:00",
+ "signed_by": "audit-clear-dc708f593",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
+  "desks/mt5/scripts/external_gauntlet.py": "7decffc17e77e50b",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
