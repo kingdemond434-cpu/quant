@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-11-25T17:55:51+00:00",
-  "configured_sleeves": 627,
-  "represented_sleeves": 627,
+  "updated_at": "2026-11-25T19:45:54+00:00",
+  "configured_sleeves": 626,
+  "represented_sleeves": 626,
   "certified_sleeves_total": 13452,
-  "forward_clocks_total": 627,
+  "forward_clocks_total": 626,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 208,
   "n_mechanisms": 12,
-  "retired_shadow_sleeves": 393,
+  "retired_shadow_sleeves": 394,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 581,
+  "sleeves_with_forward_trades": 580,
   "zero_trade_clocks": {
     "count": 46,
     "by_status": {
@@ -17,7 +17,7 @@
       "IDENTITY_BROKEN": 8
     },
     "age_measured": 46,
-    "median_age_days": 50.893,
+    "median_age_days": 50.969,
     "mature_14d_without_trade": 46,
     "fresh_attempts": 38,
     "naturally_inactive": 37,
@@ -39,26 +39,24 @@
   "missing_sleeves": [
     "12432 certified sleeve(s)"
   ],
-  "errors": {
-    "scalp_bar_refresh": "RuntimeError: no MT5 history source: C:/Program Files/Fusion Markets MetaTrader 5/terminal64.exe: initialize failed: (1, 'Success') | C:\\Program Files\\Fusion Markets MetaTrader 5\\terminal64.exe: initialize failed: (1, 'Success')"
-  },
-  "seconds": 7245.415,
+  "errors": {},
+  "seconds": 3338.052,
   "stage_seconds": {
-    "scalp_bar_refresh": 179.1,
-    "external_state_reconcile": 1.2,
-    "legacy_shadow": 7015.2,
-    "scalp_shadow": 10.9,
-    "qquant_shadow": 1.6,
-    "promoter": 34.4
+    "scalp_bar_refresh": 0.0,
+    "external_state_reconcile": 1.9,
+    "legacy_shadow": 3289.8,
+    "scalp_shadow": 11.7,
+    "qquant_shadow": 1.8,
+    "promoter": 31.5
   },
   "engine_profile": {
-    "seconds": 7013.9,
+    "seconds": 3287.1,
     "rows_timed": 1018,
     "phase_seconds": {
-      "backtest": 218.1,
-      "fetch": 5390.0,
-      "resolve": 108.7,
-      "signals": 833.8
+      "backtest": 217.8,
+      "fetch": 1773.1,
+      "resolve": 89.4,
+      "signals": 676.1
     },
     "phase_calls": {
       "backtest": 946,
@@ -71,84 +69,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "carry": 3055.3,
-      "cross_asset_residual": 1917.4,
-      "macro_conditional": 737.0,
-      "clock_transition": 428.2,
-      "overnight_gap_decay": 349.1,
-      "formula": 291.1,
-      "pca_residual": 109.2,
-      "session_range_breakout": 102.6,
-      "spread_state": 7.8,
-      "range_reversion": 3.3,
-      "overnight_drift": 0.5
+      "cross_asset_residual": 1268.3,
+      "carry": 692.6,
+      "macro_conditional": 653.3,
+      "clock_transition": 259.6,
+      "overnight_gap_decay": 116.0,
+      "pca_residual": 83.7,
+      "session_range_breakout": 78.7,
+      "formula": 73.3,
+      "range_reversion": 34.4,
+      "spread_state": 9.0,
+      "overnight_drift": 0.7
     },
     "chart_seconds": {
-      "M5": 3200.6,
-      "M15": 1787.0,
-      "H1": 1277.0,
-      "M30": 736.8
+      "M15": 1323.1,
+      "M5": 1073.1,
+      "M30": 537.4,
+      "H1": 336.0
     },
     "slowest_rows": [
       {
-        "key": "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny",
-        "seconds": 1372.71
+        "key": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+        "seconds": 119.17
+      },
+      {
+        "key": "GBPAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=asia_side_mode=revert_ttl_bars=144",
+        "seconds": 85.08
+      },
+      {
+        "key": "CHFNOK.carry.asia@M30#input_symbol=CHFNOK_session=ny",
+        "seconds": 62.58
+      },
+      {
+        "key": "GBPAUD.asia#regime=month_end",
+        "seconds": 62.39
+      },
+      {
+        "key": "XAGEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+        "seconds": 61.44
+      },
+      {
+        "key": "CHFDKK.carry.asia@M15#input_symbol=CHFDKK_require_quiet=False_session=ny",
+        "seconds": 55.89
+      },
+      {
+        "key": "USCOCOA.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 55.25
+      },
+      {
+        "key": "EURCHF.carry.asia@M15#require_quiet=False_session=asia",
+        "seconds": 47.11
+      },
+      {
+        "key": "GBPCHF.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
+        "seconds": 39.17
+      },
+      {
+        "key": "XAUEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 38.59
+      },
+      {
+        "key": "AUDCAD.cross_asset_residual.asia@M15#factor_symbols=['BTCUSD']_session=asia",
+        "seconds": 38.51
       },
       {
         "key": "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny",
-        "seconds": 508.19
+        "seconds": 38.48
       },
       {
-        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-        "seconds": 405.58
+        "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+        "seconds": 35.26
       },
       {
-        "key": "NZDCAD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
-        "seconds": 127.44
+        "key": "AUDSGD.carry.asia@M15#input_symbol=AUDSGD_session=asia",
+        "seconds": 35.14
       },
       {
-        "key": "USDNOK.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
-        "seconds": 114.47
-      },
-      {
-        "key": "GBPNOK.carry.asia@M15#input_symbol=GBPNOK_session=ny",
-        "seconds": 109.97
-      },
-      {
-        "key": "NZDSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=london_side_mode=revert_ttl_bars=8",
-        "seconds": 104.82
-      },
-      {
-        "key": "USDSEK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-        "seconds": 104.36
-      },
-      {
-        "key": "USDZAR.cross_asset_residual.asia#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
-        "seconds": 104.12
-      },
-      {
-        "key": "XAUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-        "seconds": 103.88
-      },
-      {
-        "key": "EURMXN.overnight_gap_decay.asia#regime=low_vol",
-        "seconds": 100.69
-      },
-      {
-        "key": "GBPCAD.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
-        "seconds": 100.44
-      },
-      {
-        "key": "XAGEUR.cross_asset_residual.asia@M5#beta_win=120_entry_z=2.0_factor_symbols=['US500']_lookback=120_side_mode=revert_ttl_bars=48",
-        "seconds": 99.69
-      },
-      {
-        "key": "GBPAUD.macro_conditional.asia@M5",
-        "seconds": 93.57
-      },
-      {
-        "key": "EURSGD.overnight_gap_decay.asia#regime=low_vol",
-        "seconds": 90.03
+        "key": "USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny",
+        "seconds": 34.36
       }
     ]
   },
@@ -156,5 +154,5 @@
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
   "live_exposure_aliases": {},
-  "status": "FAILED"
+  "status": "ENROLMENT_GAP"
 }
