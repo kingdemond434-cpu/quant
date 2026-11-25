@@ -511,10 +511,17 @@ def producer_weights(path: Path | None = None) -> dict[str, float]:
     return out
 
 
+def _flagged(r: Any) -> bool:
+    """True when the row carries Tier-S pre-judge flags (libs/tiers/prejudge_screen tags it)."""
+    v = r.get("prejudge") if isinstance(r, dict) else None
+    return bool(isinstance(v, dict) and v.get("flags"))
+
+
 def reweight_rows(rows: list[dict[str, Any]], weights: dict[str, float] | None = None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Family-slot preserving reorder by producer weight (the prejudge_screen rule): each family
-    keeps the SAME docket positions; within them rows go by weight, highest first, stably. The
+    keeps the SAME docket positions; within them clean rows precede pre-judge-flagged rows, and
+    inside each group rows go by weight, highest first, stably. The
     docket's length, membership and family interleave are unchanged; no row is removed, so the
     sealed judge's per-family shares and exploration floor are untouched."""
     w = weights if weights is not None else producer_weights()
@@ -537,7 +544,9 @@ def reweight_rows(rows: list[dict[str, Any]], weights: dict[str, float] | None =
     out = list(rows)
     moved = 0
     for idxs in slots.values():
-        order = sorted(idxs, key=lambda i: -ws[i])
+        # (flagged, -weight): a row the Tier-S pre-judge screen flagged stays behind every clean
+        # row of its family whatever its producer's weight (layers 9/21 are never undone).
+        order = sorted(idxs, key=lambda i: (_flagged(rows[i]), -ws[i]))
         for slot, src in zip(idxs, order, strict=True):
             out[slot] = rows[src]
             moved += int(slot != src)

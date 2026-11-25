@@ -183,6 +183,24 @@ def test_reweight_rows_moves_inside_family_slots_and_removes_nothing() -> None:
     assert sorted(r["i"] for r in out) == [0, 1, 2, 3] and rep["moved"] == 3
 
 
+
+def test_a_flagged_high_weight_row_never_jumps_ahead_of_a_clean_par_row() -> None:
+    """Audit HOLD 2026-11-25: the Tier-S pre-judge demotion (layers 9/21) survives the weights."""
+    flagged = {"family": "a", "producer": "high", "i": 0, "prejudge": {"flags": ["rq_defender"]}}
+    clean = {"family": "a", "producer": "par", "i": 1}
+    out, _ = pl.reweight_rows([flagged, clean], {"high": 4.0})
+    assert [r["i"] for r in out] == [1, 0]
+    # and in the merge's real order (reweight, then demote_flagged), the clean row stays ahead
+    sys.path.insert(0, str(_ROOT))
+    from libs.tiers import prejudge_screen as pj
+    rows = [{"family": "a", "producer": "high", "i": 0}, {"family": "a", "producer": "par", "i": 1}]
+    verdicts = {pj.identity(rows[0]): {"flags": ["invented_test"]}}
+    out, _ = pl.reweight_rows(rows, {"high": 4.0})
+    out, _ = pj.demote_flagged(out, verdicts)
+    assert [r["i"] for r in out] == [1, 0]
+    merge = (_DESK / "research" / "merge_hypotheses.py").read_text("utf-8")
+    assert merge.index("_reweight(rows_out)") < merge.index("_pj.demote_flagged(")
+
 # ----------------------------------------------------------------------------- the rails
 
 def test_record_attempt_refuses_a_non_held_out_attempt_and_a_parameter_tweak(
