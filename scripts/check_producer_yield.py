@@ -184,6 +184,31 @@ REPLACEMENTS: dict[str, str] = {
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
+    # THE NINE SIDE-CHANNEL SEATS MEASURED DEAD ON THE BOX's 2026-11-24 21:40Z census (board I11).
+    # Cause, read from the code: the box ran the 2026-11-05 Quant-SideChannelMiners runner, whose
+    # QUANT_MINERS_ALLOW was cot,central_bank,weather,github,seasonality,correlations,sec_edgar, so
+    # these channels were SET_ASIDE by name. sec_edgar was in the list but that build read only
+    # QUANT_EDGAR_UA, and the box's key is EDGAR_UA, which 2f4e838e50 (2026-11-11) accepts. The
+    # 2026-11-19 runner (ecc4ca488b, 64c8eb4426) runs every channel, each scraper on its keyless
+    # official feed in side_channels/lawful_substitutes.py. Each inheritor below is a channel the
+    # old allow-list ran, so a seat that dies again has a living heir on the same ground.
+    "aaii": "cot -- CFTC positioning, the official crowd-positioning series; aaii.com refused "
+            "the box (Incapsula 403, 2026-11-04) and a 403 is a hard stop",
+    "fear_greed": "cot -- positioning extremes are the sentiment reading; the lawful feed is "
+                  "GDELT news tone",
+    "investing": "cot -- retail positioning has no lawful free feed; CFTC non-commercials stand "
+                 "in, and investing.com bans automated access (Terms 10(c))",
+    "google_trends": "cot -- crowd positioning; attention itself runs on Wikimedia pageviews "
+                     "(trends.google.com robots disallows /trends/explore?)",
+    "earnings": "seasonality -- the earnings-season calendar effect; the lawful feed is EDGAR's "
+                "daily 8-K index",
+    "sec_edgar": "cot -- institutional positioning from the official CFTC series; EDGAR "
+                 "submissions API is this seat's own route",
+    "shipping": "weather -- the physical-supply ground (NOAA, Drought Monitor); the lawful feed "
+                "is IMF PortWatch chokepoint transits",
+    "tradingview": "github -- published Pine strategies live on GitHub, the lawful route",
+    "youtube": "github -- the practitioner-code ground; video cells also arrive through "
+               "Quant-VideoCells from transcripts captured off the box",
 }
 
 
