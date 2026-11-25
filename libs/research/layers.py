@@ -344,6 +344,10 @@ LEG_LAYER: dict[str, str] = {
     # THE PUBLISHED FORMULA LIBRARIES: GTJA-191 / Alpha158 cells, each a claim about returns from
     # a published formula on the desk's own bars -- prediction, like the factory.
     "formula_library": "prediction",
+    # The genetic rule builder (entries x filters x exits per symbol and chart) proposes
+    # rules: prediction, like alpha_evolution. The generator census measures which
+    # generator methods ran this day, not any strategy: meta.
+    "strategy_builder": "prediction", "generator_coverage": "meta",
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
