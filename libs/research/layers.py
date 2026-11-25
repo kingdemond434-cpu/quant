@@ -649,6 +649,7 @@ LEG_LAYER: dict[str, str] = {
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
     "fill_proven": "execution",
+    "allocator_scorecard": "meta",
     # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
