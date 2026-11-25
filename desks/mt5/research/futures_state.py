@@ -132,9 +132,65 @@ class FetchError(Exception):
         self.code, self.url = code, url
 
 
+class RobotsBlocked(FetchError):
+    """The host's robots.txt disallows the path, or could not be read: no request was made."""
+
+    def __init__(self, url: str, why: str):
+        super().__init__(None, url, f"BLOCKED_BY_ROBOTS: {why}")
+        self.why = why
+
+
+#: The robots refusals of this pass, counted into the report by `build` (reset per pass).
+ROBOTS_BLOCKED: list[dict[str, Any]] = []
+
+ROBOTS_MISSED_GROWTH = {
+    "mechanism": "futures_state_robots_refusal",
+    "what_is_lost": ("this pass's update of the source's futures/commodity/FX state series; "
+                     "held rows stay, new rows wait"),
+    "size": "UNMEASURED",
+    "reopens_when": "the host's robots.txt is readable and allows the path (re-read each pass)",
+}
+
+
+def _robots_blocked(url: str, why: str, source: str | None = None) -> dict[str, Any]:
+    row = {"source": source, "url": url, "status": "BLOCKED_BY_ROBOTS", "why": why,
+           "missed_growth": ROBOTS_MISSED_GROWTH}
+    ROBOTS_BLOCKED.append(row)
+    return row
+
+
+def robots_refusal(url: str) -> str | None:
+    """None when robots.txt allows `url`, else why not. FAILS CLOSED (Governance ruling
+    2026-11-10, #819): a Disallow stops the fetch and an unreadable robots.txt is never
+    permission. Reuses index_discovery's helper (one cached robots read per host per process);
+    when that helper cannot even be loaded, the answer is a refusal, never a yes."""
+    if urllib.parse.urlsplit(url).path == "/robots.txt":
+        return None
+    try:
+        try:
+            from research import index_discovery as idx
+        except ImportError:
+            import index_discovery as idx  # type: ignore[no-redef]
+        why = idx.robots_refusal(url)
+        if why:
+            return why
+        parts = urllib.parse.urlsplit(url)
+        rules = idx._robots_for(parts.scheme, parts.netloc)   # cached: no second request
+        if not isinstance(rules, str) and not rules.can_fetch(UA, url):
+            return "robots.txt disallows this path for our agent"
+        return None
+    except Exception as exc:
+        return f"robots gate unavailable ({type(exc).__name__}): not fetched (fail closed)"
+
+
 #: Spacing, retries and stats come from the desk's one polite fetcher. Retries are OFF: a 429
-#: here is the server asking us to stop, and it becomes a hard stop, never a retry.
+#: here is the server asking us to stop, and it becomes a hard stop, never a retry. robots.txt
+#: is asked FIRST, for every URL: a disallowed or unreadable answer means no request is made.
 def _polite(url: str, accept: str, timeout: float) -> str:
+    refused = robots_refusal(url)
+    if refused:
+        _robots_blocked(url, refused)
+        raise RobotsBlocked(url, refused)
     from libs.data import polite_fetch
     r = polite_fetch.get(url, headers={"User-Agent": UA, "Accept": accept}, timeout=timeout,
                          retries=0, leg="futures_state")
@@ -449,6 +505,8 @@ def cftc_market(market: Mapping[str, Any], sources: Mapping[str, Mapping[str, An
                     state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
                     info["sets"][sid] = f"HARD_STOP {hs.code}"
                     continue
+                except RobotsBlocked as rb:
+                    info["sets"][sid] = f"BLOCKED_BY_ROBOTS ({rb.why})"
                 except Exception as exc:
                     info["sets"][sid] = f"ERROR {type(exc).__name__}"
             if df.empty or "report_date_as_yyyy_mm_dd" not in df.columns:
@@ -856,6 +914,10 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
         body = get_text(f"{p.scheme}://{p.netloc}/robots.txt")
     except (urllib.error.HTTPError, FetchError) as exc:
         got = robots_rules_or_refusal(getattr(exc, "code", None), None, "")
+    except HardStop:
+        raise
+    except Exception:
+        return False                       # unreadable is never a yes
     else:
         # An HTML page in place of rules is unread, never a yes (libs.data.robots_body).
         got = robots_rules_or_refusal(200, None, body)
@@ -979,7 +1041,7 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
             sid not in state.get("hard_stops", {}):
         try:
             if not robots_allow(str(src["csv_url"]), get_text):
-                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+                notes.append(_robots_blocked(str(src["csv_url"]), "robots disallows", sid))
             else:
                 text = get_text(str(src["csv_url"]))
                 if mof_days(text)[1]:
@@ -1138,7 +1200,7 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
                 return got_
 
             if not all(robots_allow(url, robots_text) for _k, url, _u in jobs):
-                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+                notes.append(_robots_blocked(str(src.get("rate_url")), "robots disallows", sid))
                 jobs = []
             for key, url, unit in jobs:
                 try:
@@ -1557,6 +1619,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         def bars(sym: str) -> pd.DataFrame | None:
             return None
     now = datetime.now(UTC)
+    ROBOTS_BLOCKED.clear()
     built, frames, notes = build_market_series(
         registry, get=None if offline else fetch_json, state=state, bars=bars,
         get_text=None if offline else fetch_text, now=now,
@@ -1586,6 +1649,8 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         "n_series": len(built),
         "cells": cells,
         "hard_stops": state.get("hard_stops", {}),
+        "blocked_by_robots": {"n": len(ROBOTS_BLOCKED), "rows": list(ROBOTS_BLOCKED),
+                              "missed_growth": ROBOTS_MISSED_GROWTH},
         "gaps": gaps(registry, built, notes),
         "notes": notes,
         "seconds": round(time.monotonic() - t0, 1),

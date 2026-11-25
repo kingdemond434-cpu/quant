@@ -90,7 +90,9 @@ ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations", "expect": "any"},
     {"name": "gld_holdings",
      "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
-     "expect": "binary"},
+     "expect": "binary", "terms": "REFUSED", "terms_why": (
+         "spdrgoldshares.com terms: personal, non-commercial use only; no access other than "
+         "the website's navigational structure (re-read 2026-11-17)")},
     {"name": "yahoo_chart",
      "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json",
      "terms": "REFUSED"},
@@ -112,6 +114,14 @@ MIN_BODY_BYTES = 64
 
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
+    if str(route.get("terms") or "").upper() == "REFUSED":
+        # A route probe is still an automated contact: a terms-REFUSED route is never requested.
+        return {"name": str(route.get("name")), "url": str(route.get("url")),
+                "expect": str(route.get("expect") or "any"), "status": "BLOCKED_ON_TERMS",
+                "why": f"BLOCKED_ON_TERMS: {route.get('terms_why') or 'terms REFUSED'}",
+                "missed_growth": {"mechanism": f"{route.get('name')}_terms_refusal",
+                                  "lost": "the hourly MOVED/OK shape check for this route",
+                                  "verdict": "a gap, not a zero"}}
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}

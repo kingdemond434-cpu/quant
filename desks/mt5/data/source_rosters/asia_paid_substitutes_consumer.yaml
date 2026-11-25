@@ -664,7 +664,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu,imf_portwatch_ports
+  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=kr_mof_container_teu
   terms: to_confirm
   mechanism: 'Busan is the world''s second transhipment hub: its monthly boxes are North Asian trade volume
     counted at the quay, the AIS/satellite port panel''s output as an official number'
@@ -679,10 +679,6 @@ sources:
   substituted_by: []
   substitute_candidates:
   - substitute: kr_mof_container_teu
-    verdict: UNVERIFIED
-    corr: UNMEASURED
-    n: UNMEASURED
-  - substitute: imf_portwatch_ports
     verdict: UNVERIFIED
     corr: UNMEASURED
     n: UNMEASURED
@@ -740,7 +736,7 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=imf_portwatch_ports
+  status: BLOCKED_ON_TERMS:to_confirm
   terms: to_confirm
   mechanism: 'the transport ministry''s weekly national port tally is China''s trade volume a month before
     customs: the port-activity reading a satellite panel sells'
@@ -752,12 +748,6 @@ sources:
   - policy_driven
   failure_mode_hypothesis: fails around Spring Festival and typhoon port closures
   crowding_prior: low
-  substituted_by: []
-  substitute_candidates:
-  - substitute: imf_portwatch_ports
-    verdict: UNVERIFIED
-    corr: UNMEASURED
-    n: UNMEASURED
   substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
   fetcher: owned
   owner: asia_gap_thread
