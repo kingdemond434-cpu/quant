@@ -499,6 +499,30 @@ def is_text_only(pkt: ExternalResearchPacket) -> bool:
     return bool(rows) and all(str(r.get("kind")) in ROUTE_KINDS for r in rows)
 
 
+#: research/conversion_lanes.py's translator reads this queue (one JSON row per set-aside rule);
+#: kept bounded so a flood of prose cannot grow it without limit.
+TRANSLATE_QUEUE = DESK / "data" / "conversion_lanes" / "translate_queue.jsonl"
+TRANSLATE_QUEUE_MAX_BYTES = 32 * 1024 * 1024
+
+
+def queue_for_translation(family: str, symbols: list[str], params: dict[str, Any], text: str,
+                          system_id: str, path: Path | None = None) -> bool:
+    """Hand a rule the family cannot execute as written to the free-model translator, which may
+    only set what the rule's own text states. Never raises; False when not queued."""
+    p = path or TRANSLATE_QUEUE
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        if p.exists() and p.stat().st_size > TRANSLATE_QUEUE_MAX_BYTES:
+            return False
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": now(), "family": family, "symbols": list(symbols)[:8],
+                                 "params": dict(params), "text": text[:2000],
+                                 "source_id": f"sandbox:{system_id}"}, default=str) + "\n")
+        return True
+    except OSError:
+        return False
+
+
 def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: Any,
            apply: bool) -> dict[str, Any]:
     out: dict[str, Any] = {"candidates": 0, "created": 0, "existing": 0, "unregistered": 0,
@@ -542,6 +566,9 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
                     {"symbol": sym, "horizon": horizon, "mechanism": plan.system_id,
                      "method": plan.system_id}, dict(raw_params),
                     max(1, pkt.trials_charged // n_c)))
+            if apply and spec["status"] in (FS.PROSE_ONLY, FS.DEFAULTS_ONLY,
+                                            FS.UNHONOURED_VARIANT) and text.strip():
+                queue_for_translation(family, symbols, raw_params, text, plan.system_id)
             if spec["status"] in (FS.UNREGISTERED_FAMILY, FS.NO_SYMBOLS):
                 out["unregistered"] += 1
             out["not_executable"] += n_rows

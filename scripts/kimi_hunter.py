@@ -28,6 +28,7 @@ public sources only -- no paid data APIs, no institutional terminals.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -835,6 +836,13 @@ def main() -> None:
             _alt = ac.prompt_block(ALT_ORGAN, cat=alt_cat)
             if _alt:
                 user += f"\n\n{_alt}"
+            # JUDGE FEEDBACK (research/conversion_lanes.py): what became of this seat's earlier
+            # rows, as deterministic aggregates -- no cell, metric or held-out gate is named.
+            with contextlib.suppress(Exception):
+                from research import conversion_lanes as _cl
+                _fb = _cl.feedback_block(ALT_ORGAN)
+                if _fb:
+                    user += f"\n\n{_fb}"
         print(f"  WAVE {w} -- {name}")
         # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends

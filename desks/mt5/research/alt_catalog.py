@@ -229,7 +229,10 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
             refused[stem] = "no numeric signal column"
             continue
         specs: list[str] = []
-        for c in cols[:6]:
+        # PIT z columns FIRST (2026-11-25): a keyed_sources frame writes value, z, chg, chg_z
+        # beside first_seen_at / pit_quality, and the column order is the reader's, so a capped
+        # slice could drop chg_z -- the one spec keyed_sources itself mints -- off the end.
+        for c in sorted(cols, key=lambda c: (not _pit_z(stem, c), cols.index(c)))[:6]:
             if _is_z(c):
                 thr: float | None = 0.0 if _pit_z(stem, c) else None
             else:

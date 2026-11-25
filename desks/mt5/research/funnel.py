@@ -660,6 +660,31 @@ def alt_block(paths: Paths, rows: list[Mapping[str, Any]] | None,
     return cov
 
 
+def lane_block(paths: Paths, rows: list[Mapping[str, Any]] | None, seen: list[Any] | None,
+               certs: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """`by_lane`: per free-model job in data/free_model_jobs.json (research/conversion_lanes),
+    inputs -> outputs -> testable -> judged -> certified -> live, with its registry weight.
+    Rows are attributed by their `lane` tag; an unreadable stage is UNMEASURED, never 0."""
+    from research import alt_catalog as ac
+    from research import conversion_lanes as cl
+
+    jobs_path = paths.out.parents[1] / "data" / "free_model_jobs.json"
+    jobs, _refused = cl.load_jobs(jobs_path)
+    ledger = _read(paths.out.parents[1] / "data" / "conversion_lanes" / "ledger.json")
+    live = ({str(r["cell"]) for r in certs if r["stages"].get("LIVE")}
+            if certs is not None and all(r["stages"].get("LIVE") is not None for r in certs)
+            else None)
+    out = cl.by_lane(rows, seen={str(c) for c in seen} if seen is not None else None,
+                     certified=ac.read_certified(paths.provenance), live=live, jobs=jobs,
+                     ledger=ledger)
+    exp = ac.read_exposure(paths.alt_exposure) if paths.alt_exposure \
+        and paths.alt_exposure.exists() else None
+    if exp is not None and "alt_generation" in out:
+        out["alt_generation"]["inputs"] = sum(int((v or {}).get("prompts") or 0)
+                                              for v in (exp.get("organs") or {}).values())
+    return out
+
+
 def build(paths: Paths | None = None, *, now: datetime | None = None,
           budget_s: float | None = None, is_exotic: Callable[[str], bool] | None = None,
           trades_of: Callable[[str], list[dict[str, Any]]] | None = None) -> dict[str, Any]:
@@ -912,6 +937,11 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
         by_alt = alt_block(paths, comp.get("rows") if comp.get("available") else None, seen)
     except Exception as exc:                       # a report section never costs the funnel
         by_alt = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        by_lane = lane_block(paths, comp.get("rows") if comp.get("available") else None, seen,
+                             chain.get("certs"))
+    except Exception as exc:                       # a report section never costs the funnel
+        by_lane = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -944,6 +974,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                     "live_profit": d["stages"]["LIVE_PROFIT"]},
         "producers": rows_p, "asset_classes": rows_c, "families": rows_f,
         "by_alt_source": by_alt,
+        "by_lane": by_lane,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,

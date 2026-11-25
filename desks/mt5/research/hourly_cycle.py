@@ -1220,6 +1220,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # non-exotic -> clocked -> promoted -> fill-proven -> live -> live profit, per producer,
     # class and family, with depth, the weakest stage and ratcheting floors. Artifact joins.
     "funnel",
+    # THE FREE-MODEL CONVERSION LANES (2026-11-25): translator / judge feedback / near-miss /
+    # redundancy critic, each a job in data/free_model_jobs.json weighted by the funnel's by_lane.
+    "conversion_lanes",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
     # and dead-replacement RED checks, and the weights the free panel spends its calls by.
@@ -1442,7 +1445,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
                      "intake_catchup", "compile_candidates", "merge_docket",
-                     "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
+                     "deepen", "conversion_lanes",
+                     "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
@@ -2600,6 +2604,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE END-TO-END FUNNEL: artifact joins plus one bounded stream of the compiler's rows
     # (~3 s per 70 MB measured in a cloud container), under 80% of its --budget-s 240.
     "funnel": 300,
+    # THE CONVERSION LANES: one compiler stream plus at most CONVERSION_LANES_CALLS free-model
+    # calls, under 85% of its --budget-s 300.
+    "conversion_lanes": 360,
     # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
     # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
     # cap sits above so both of its files are written rather than cut. A priced-down cap reaches
@@ -7007,6 +7014,13 @@ def main() -> None:
     # family, the desk's attack order and ratcheting floors (data/funnel_floors.json).
     fnl = _costed("funnel", lambda: _producer(
         "funnel", "research/funnel.py", "--once", "--budget-s", "240"))
+    # THE FREE-MODEL CONVERSION LANES (owner 2026-11-25: "use the free models for conversion"):
+    # prose rows translated into exact settings with no invented number, a deterministic judge
+    # feedback block for kimi/deepseek, lineage-charged near-miss mutants, and the redundancy
+    # critic; every lane a job in data/free_model_jobs.json, re-weighted from the funnel's
+    # by_lane just written. Donates through data/intelligence/conversion_<lane>/.
+    cvl = _costed("conversion_lanes", lambda: _producer(
+        "conversion_lanes", "research/conversion_lanes.py", "--once", "--budget-s", "300"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -7259,6 +7273,7 @@ def main() -> None:
                     "producer_loop": plp,
                     "judge_reach": jrc,
                     "funnel": fnl,
+                    "conversion_lanes": cvl,
                     "breadth_controller": bcl,
                     "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,

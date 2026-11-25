@@ -113,6 +113,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's emitted > received > judged, and whether its judged rows carried its own
     # rule (research/judge_reach.py): the machine auditing its own handoffs -- meta.
     "judge_reach": "meta",
+    # research/conversion_lanes.py: free models turn held prose and near-misses into exact,
+    # judge-testable cells -- the conversion half of prediction, beside `deepen`.
+    "conversion_lanes": "prediction",
     # Every conversion from raw info to live profit per producer, class and family, its depth,
     # weakest stage and ratcheting floors (research/funnel.py): measurement -- meta.
     "funnel": "meta",

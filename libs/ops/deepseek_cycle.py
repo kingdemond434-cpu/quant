@@ -749,6 +749,18 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                  '"conditioner" field of the finding (with its "family" and "symbols"), '
                  "instead of an ALT_CELL line; null when the finding is not alt-conditioned.")
 
+    # JUDGE FEEDBACK (research/conversion_lanes.py): deterministic aggregates of what became of
+    # this seat's earlier rows -- graveyard evidence, never a held-out gate (Tier S layer 4).
+    fb_block = ""
+    try:
+        if alt_ac is not None:
+            from research import conversion_lanes as _cl
+            fb_block = _cl.feedback_block("deepseek")
+    except Exception:  # blind-except intentional (BLE001): feedback never costs the cycle
+        fb_block = ""
+    if fb_block:
+        user += "\n\n" + fb_block
+
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
                             key=resolve_key(e)[0], model=model)
