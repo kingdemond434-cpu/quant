@@ -43,7 +43,8 @@ def test_each_blocker_in_merge_path_order() -> None:
     assert c(NOW, _pr(), _clear(sha="b" * 40), _green(), None)["blocker"] == "AUDIT_STALE"
     assert c(NOW, _pr(), _clear(), ("failed", ["quality"]), None)["blocker"] == "CI_FAILED"
     assert c(NOW, _pr(), _clear(), ("pending", ["quality"]), None)["blocker"] == "CI_PENDING"
-    assert c(NOW, _pr(), _clear(hours_ago=3), _green(), None)["blocker"] == "VETO_WINDOW"
+    # the veto wait is 0 h now (021fa4cee1): a fresh CLEAR is mergeable at once
+    assert c(NOW, _pr(), _clear(hours_ago=0), _green(), None)["blocker"] == "READY"
     off = {
         "description": "registry: authority: LIVE's root digest is not the pinned one, "
         "so the path is off"

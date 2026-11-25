@@ -1,4 +1,5 @@
-"""Adopt-And-Seal step 1c disables retired ghost tasks, never unregisters them, on two conditions."""
+"""Adopt-And-Seal step 1c disables retired ghost tasks (never unregisters them), on two
+conditions."""
 from __future__ import annotations
 
 import json

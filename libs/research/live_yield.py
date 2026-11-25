@@ -69,7 +69,7 @@ def _read(p: Path) -> Any:
 
 def _exotic(symbol: str) -> bool:
     try:
-        from research.universe_policy import is_exotic_symbol
+        from research.universe_policy import is_exotic_symbol  # type: ignore[import-not-found]
         return bool(is_exotic_symbol(symbol))
     except Exception:
         return False
@@ -208,7 +208,8 @@ def realised_elog(sleeves: Mapping[str, Mapping[str, Any]], *, half_life_d: floa
     from datetime import UTC, datetime
     if trades_of is None:
         try:
-            from research.decay_monitor import sleeve_trades as trades_of
+            from research import decay_monitor  # type: ignore[import-not-found]
+            trades_of = decay_monitor.sleeve_trades
         except Exception as exc:
             return {"elog": UNMEASURED, "n_trades": 0,
                     "why": f"trade reader unavailable ({type(exc).__name__})"}
@@ -333,14 +334,14 @@ def stage_counts(arm_of: Callable[[Mapping[str, Any]], str | None], *,
                 if isinstance(v, int) and not isinstance(v, bool):
                     x[k] = (x[k] or 0) + v
     for rec in certs or []:
-        arm = arm_of(rec)
+        arm = arm_of(rec)  # type: ignore[arg-type]
         if not arm:
             continue
         x = row(arm)
-        cell = str(rec["cell"])
+        cell = str(rec["cell"])  # type: ignore[index]
         sym, fam = symbol_of(cell), family_of(cell)
         x["certs"] += 1
-        st = fwd.get((sym, fam)) if fwd is not None else None
+        st = fwd.get((sym, fam)) if fwd is not None else None  # type: ignore[union-attr]
         if fwd is not None:
             x["forward_kept"] += st == "KEPT"
             x["forward_killed"] += st == "KILLED"
@@ -407,7 +408,7 @@ def expected_one(certs_eff: float | None, kept: int | None, killed: int | None,
         if v is None:
             unm.append(name)
     real = float(live_credit if live_credit is not None else (live or 0))
-    exp = (max(real, float(certs_eff) * p1 * p2)  # type: ignore[operator]
+    exp = (max(real, float(certs_eff) * p1 * p2)  # type: ignore[operator, arg-type]
            if not unm else None)
     return {"realised_live": live if live is not None else UNMEASURED,
             "expected_live": round(exp, 8) if exp is not None else UNMEASURED,
