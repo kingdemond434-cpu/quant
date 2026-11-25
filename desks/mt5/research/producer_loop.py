@@ -1926,7 +1926,8 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
     # R4: TWO-SIDED weights from the STAGED live-yield score (live_yield.blend_stages: certs x
     # odds -> expected live edges -> realised live log-growth, each per CPU-hour, each taking over
     # at its own minimum sample); unmeasured is par, parked is the floor -- never 0, never cut.
-    blend = lv.blend_stages({x["producer"]: x.pop("_stages") for x in rows})
+    blend = lv.blend_stages({x["producer"]: x.get("_stages") for x in rows})
+    rows = [{k: v for k, v in x.items() if k != "_stages"} for x in rows]  # scratch key only
     weights: dict[str, Any] = {}
     for x in rows:
         b = blend.get(x["producer"]) or {}
