@@ -25,6 +25,11 @@ from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from math import ceil, inf
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # numpy stays a lazy import at run time
+    import numpy as np
+    import numpy.typing as npt
 
 # Round-trip cost budget in basis points of price by timeframe: a strategy on a
 # slower timeframe carries a larger per-trade move, so it tolerates wider costs.
@@ -133,7 +138,7 @@ def allocate(
         "family": limits.cap(limits.family_share, n_distinct("family")),
         "timeframe": limits.cap(limits.timeframe_share, n_distinct("timeframe")),
     }
-    used: dict[str, Counter] = {k: Counter() for k in caps}
+    used: dict[str, Counter[str | tuple[str, str, str]]] = {k: Counter() for k in caps}
     selected: list[Candidate] = []
     taken: set[str] = set()
 
@@ -195,11 +200,11 @@ def allocate(
     )
 
 
-def coverage_report(keys: Iterable[tuple[str, str, str]]) -> dict:
+def coverage_report(keys: Iterable[tuple[str, str, str]]) -> dict[str, Any]:
     """Spread metrics for the coverage map: per dimension the share of the top
     value and the effective number of values (1 / Herfindahl)."""
     ks = list(keys)
-    out: dict = {"n": len(ks)}
+    out: dict[str, Any] = {"n": len(ks)}
     if not ks:
         return out
     dims = {"symbol": 0, "timeframe": 1, "family": 2}
@@ -247,7 +252,8 @@ def yield_multipliers(
     return out
 
 
-def evolve_limits(limits: Limits, history: list[dict]) -> tuple[Limits, list[str]]:
+def evolve_limits(limits: Limits,
+                  history: list[dict[str, Any]]) -> tuple[Limits, list[str]]:
     """Adjust caps and quotas from recent passes; returns (new limits, journal).
 
     history rows: {"effective_n_cells": float, "orth_edges": int, "trials": int,
@@ -309,7 +315,7 @@ def evolve_limits(limits: Limits, history: list[dict]) -> tuple[Limits, list[str
 HARD_POOL_CORR = 0.70
 
 
-def residualise(returns, factors):
+def residualise(returns: npt.ArrayLike, factors: npt.ArrayLike) -> npt.NDArray[np.float64]:
     """OLS residual of a return series on common factors (T x K), with intercept
     kept in the residual so alpha is not removed."""
     import numpy as np
@@ -320,10 +326,11 @@ def residualise(returns, factors):
         f = f[:, None]
     x = np.column_stack([np.ones(len(y)), f])
     beta, *_ = np.linalg.lstsq(x, y, rcond=None)
-    return y - x[:, 1:] @ beta[1:]
+    resid: npt.NDArray[np.float64] = y - x[:, 1:] @ beta[1:]
+    return resid
 
 
-def max_pool_corr(residual, pool_residuals) -> float:
+def max_pool_corr(residual: npt.ArrayLike, pool_residuals: Iterable[npt.ArrayLike]) -> float:
     """Max |corr| of a residual series to any residual series in the pool."""
     import numpy as np
 
@@ -337,7 +344,7 @@ def max_pool_corr(residual, pool_residuals) -> float:
     return best
 
 
-def appraisal_ratio(candidate, book) -> float:
+def appraisal_ratio(candidate: npt.ArrayLike, book: npt.ArrayLike) -> float:
     """Per-period appraisal ratio of candidate vs the book's return series."""
     import numpy as np
 
@@ -346,18 +353,18 @@ def appraisal_ratio(candidate, book) -> float:
     x = np.column_stack([np.ones(len(y)), b])
     beta, *_ = np.linalg.lstsq(x, y, rcond=None)
     resid = y - x @ beta
-    sd = resid.std(ddof=2) if len(y) > 2 else 0.0
+    sd = float(resid.std(ddof=2)) if len(y) > 2 else 0.0
     return float(beta[0] / sd) if sd > 0 else 0.0
 
 
 def novelty(
-    candidate_returns,
+    candidate_returns: npt.ArrayLike,
     *,
-    factors=None,
-    pool_residuals=(),
-    book_returns=None,
+    factors: npt.ArrayLike | None = None,
+    pool_residuals: Iterable[npt.ArrayLike] = (),
+    book_returns: npt.ArrayLike | None = None,
     hard_corr: float = HARD_POOL_CORR,
-) -> dict:
+) -> dict[str, Any]:
     """Intake novelty verdict for one candidate with a return history.
 
     Returns {"reject", "pool_corr", "marginal", "charge"}. reject is

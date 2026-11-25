@@ -338,6 +338,44 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
         "exit": "stop", "holding": "multiday", "capacity": "depth_bound",
         "decay_risk": "composite"},
+    # THE FIVE GENERATED FAMILIES (2026-11-24): `rule_builder` (mt5desk/family_rule_builder.py)
+    # and the four in mt5desk/family_hypgen_models.py. Each is a SEARCH METHOD over closed H1
+    # price and tick volume, not an economic claim: the generator chooses the condition, so the
+    # actor, constraint and catalyst are `composite` exactly as `joint_genome` declares them,
+    # and what each family does claim is its observable. All five enter on the next open after a
+    # closed-bar signal and exit on an ATR stop, an rr x stop target or a time stop of 6-48 bars
+    # (`hf.emit` / the builder's own exit), so the holding is multiday with a time_stop exit.
+    # A fitted model's edge decays when the state it learned stops recurring: regime_shift.
+    "rule_builder": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "conjunction_of_entry_blocks_and_filters", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "analog_knn": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "nearest_past_feature_states", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "ranked_linear": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "rolling_rank_fitted_linear_score", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "neural_policy": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "evolved_network_on_causal_features", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
+    "ge_strategy": {
+        "actor": "composite", "constraint": "composite",
+        "observable": "grammar_evolved_block_rule", "trigger": "price_pattern",
+        "catalyst": "composite", "transmission": "behavioural", "entry": "market_on_signal",
+        "exit": "time_stop", "holding": "multiday", "capacity": "depth_bound",
+        "decay_risk": "regime_shift"},
 }
 
 
