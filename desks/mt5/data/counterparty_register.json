@@ -1,0 +1,167 @@
+{
+ "schema": "counterparty-register/1",
+ "idea_row": 227,
+ "as_of": "2026-10-21",
+ "purpose": "Report-only register of the firms that hold the desk's withdrawable money. Read by desks/mt5/research/counterparty_register.py. Not an allocator input until a principal wires it; nothing here sizes a trade.",
+ "no_account_identifiers": "This file names firms and account LABELS only. It never carries an account number, login or server login; the reader drops any login-shaped key it meets.",
+ "p_default_prior": {
+  "assumption": true,
+  "unit": "probability the firm fails to pay a requested, eligible withdrawal within one year (annual hazard, converted to a per-day hazard as -ln(1-p)/365)",
+  "basis": "Judgement prior, NOT a measurement. No default-rate dataset for prop firms or retail CFD brokers is held. Values are ordered by the public trust evidence below (regulator, review grade, recent rule churn, restriction events) and are meant to be overridden with --p-default FIRM=VALUE.",
+  "values": {
+   "E8 Markets": 0.15,
+   "FTMO": 0.03,
+   "Fusion Markets": 0.01
+  },
+  "rationale": {
+   "E8 Markets": "Unregulated prop evaluation firm; TrustPilot profile restricted 2026-08-22 and PropFirmMap safety grade cut A+ to D on 2026-08-23 (trust 2.9/10); payout count and size capped by the E8 Zero terms. Prior set high on purpose.",
+   "FTMO": "Unregulated prop evaluation firm with the longest public payout record of the three; A+ grade, 4.8 on about 54k reviews. Rule rewrites in April 2026 are churn, not a default signal.",
+   "Fusion Markets": "ASIC-regulated broker (Pty Ltd); client money is the client's own balance, not a discretionary payout. 24/7 withdrawals since 2026-06-05."
+  }
+ },
+ "firms": {
+  "E8 Markets": {
+   "kind": "prop_firm",
+   "entity": "E8 Markets (legal entity name not recorded here; UNVERIFIED)",
+   "regulator": "none (proprietary evaluation firm, not a licensed broker)",
+   "payout": {
+    "per_payout_cap": 3000,
+    "per_payout_cap_unit": "USD",
+    "per_payout_cap_basis": "E8 Zero, 50k account",
+    "max_payouts_per_account": 5,
+    "payout_interval_days": 14,
+    "payout_interval_assumption": true,
+    "rules": [
+     "E8 Zero terms (2026-07-07): each account is capped at 5 payouts.",
+     "E8 Zero terms (2026-07-07): per-payout cap of 3,000 USD on a 50k account.",
+     "Profit above the remaining cap schedule is treated by the report as not withdrawable (value 0)."
+    ],
+    "source": {
+     "url": "https://www.financemagnates.com/",
+     "date": "2026-07-07",
+     "note": "Finance Magnates article on the E8 Zero terms; exact article URL not recorded in IDEA_QUEUE row 227."
+    }
+   },
+   "last_rule_change": {
+    "date": "2026-07-07",
+    "url": "https://www.financemagnates.com/",
+    "what": "E8 Zero terms published (payout count and per-payout caps)."
+   },
+   "trust_events": [
+    {
+     "date": "2026-08-22",
+     "event": "TrustPilot profile restricted for a guideline breach",
+     "url": "https://propfirmmap.com/trust-check/e8markets"
+    },
+    {
+     "date": "2026-08-23",
+     "event": "PropFirmMap safety grade cut from A+ to D; trust score 2.9 of 10",
+     "url": "https://propfirmmap.com/trust-check/e8markets"
+    }
+   ]
+  },
+  "FTMO": {
+   "kind": "prop_firm",
+   "entity": "FTMO (FTMO s.r.o., Czech Republic)",
+   "regulator": "none (proprietary evaluation firm, not a licensed broker)",
+   "payout": {
+    "per_payout_cap": null,
+    "per_payout_cap_unit": "USD",
+    "per_payout_cap_basis": "no per-payout cap recorded in this register (UNVERIFIED, not a claim that none exists)",
+    "max_payouts_per_account": null,
+    "payout_interval_days": 14,
+    "payout_interval_assumption": true,
+    "rules": [
+     "Rules rewritten 2026-04-15 and 2026-04-22 (PropFirmMap timeline). Current payout terms not transcribed here."
+    ],
+    "source": {
+     "url": "https://propfirmmap.com/trust-check/ftmo",
+     "date": "2026-04-22",
+     "note": "Rule-change dates from the PropFirmMap trust timeline."
+    }
+   },
+   "last_rule_change": {
+    "date": "2026-04-22",
+    "url": "https://propfirmmap.com/trust-check/ftmo",
+    "what": "Rules rewritten (second of two rewrites, after 2026-04-15)."
+   },
+   "trust_events": [
+    {
+     "date": "2026-04-15",
+     "event": "Rules rewritten",
+     "url": "https://propfirmmap.com/trust-check/ftmo"
+    },
+    {
+     "date": "2026-04-22",
+     "event": "Rules rewritten again",
+     "url": "https://propfirmmap.com/trust-check/ftmo"
+    },
+    {
+     "date": "2026-10-21",
+     "event": "PropFirmMap grade A+; 4.8 on about 54k reviews (reading as of this register's date)",
+     "url": "https://propfirmmap.com/trust-check/ftmo"
+    }
+   ]
+  },
+  "Fusion Markets": {
+   "kind": "broker",
+   "entity": "Fusion Markets Pty Ltd",
+   "regulator": "ASIC (Australia)",
+   "payout": {
+    "per_payout_cap": null,
+    "per_payout_cap_unit": "USD",
+    "per_payout_cap_basis": "broker account: the balance is the client's own money, no payout cap",
+    "max_payouts_per_account": null,
+    "payout_interval_days": 0,
+    "payout_interval_assumption": false,
+    "rules": [
+     "Withdrawals processed 24/7 since 2026-06-05."
+    ],
+    "source": {
+     "url": "https://tradersunion.com/",
+     "date": "2026-06-08",
+     "note": "Traders Union report on Fusion 24/7 withdrawals; exact article URL not recorded in IDEA_QUEUE row 227."
+    }
+   },
+   "last_rule_change": {
+    "date": "2026-06-05",
+    "url": "https://tradersunion.com/",
+    "what": "Moved to 24/7 withdrawals."
+   },
+   "trust_events": [
+    {
+     "date": "2026-06-05",
+     "event": "24/7 withdrawals introduced (reported 2026-06-08)",
+     "url": "https://tradersunion.com/"
+    }
+   ]
+  }
+ },
+ "owner": {
+  "other_wealth_usd": null,
+  "other_wealth_note": "Owner wealth outside these accounts, needed for E[log W]. null = UNMEASURED; supply it only in the gitignored operator file (--accounts, default desks/mt5/data/counterparty_accounts.local.json). Every *_usd field in this tracked file stays null: a non-null one makes the reader refuse the whole register. Never read from live sizing."
+ },
+ "accounts": [
+  {
+   "label": "e8_zero_50k",
+   "firm": "E8 Markets",
+   "withdrawable_usd": null,
+   "payouts_taken": null,
+   "hold_gain_usd": null
+  },
+  {
+   "label": "ftmo",
+   "firm": "FTMO",
+   "withdrawable_usd": null,
+   "payouts_taken": null,
+   "hold_gain_usd": null
+  },
+  {
+   "label": "fusion_live",
+   "firm": "Fusion Markets",
+   "withdrawable_usd": null,
+   "payouts_taken": null,
+   "hold_gain_usd": null
+  }
+ ]
+}

@@ -544,6 +544,19 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/FORMULA_LIBRARY.json
 !desks/mt5/reports/EXPRESSION_FACTORY_STATUS.json
 !desks/mt5/reports/MATH_LAB.json
+# the in-process report steps (2026-11-14, hourly_cycle.REPORT_STEPS): fractions, R and
+# verdicts only -- no amount of money, no absolute path, no exception text
+!desks/mt5/reports/E8_HEADROOM.json
+!desks/mt5/reports/COMBINED_PROP_RISK.json
+!desks/mt5/reports/PROP_TAIL_STRESS.json
+!desks/mt5/reports/PROP_JOINT_BREACH.json
+!desks/mt5/reports/counterparty_register.json
+!desks/mt5/reports/bar_spread_z.json
+!desks/mt5/reports/BAR_ILLIQUIDITY.json
+!desks/mt5/reports/RATES_INDEX_STATE.json
+!desks/mt5/reports/TASK_FAILURE_DIGEST.json
+!desks/mt5/reports/REPLICATION_SPEC_ENTRIES.json
+!desks/mt5/reports/USDJPY_ASIA_BREAKOUT_STUDY.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
@@ -651,3 +664,13 @@ desks/mt5/data/donation_ledgers/
 desks/mt5/data/pnl_explain_daily.jsonl
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# Operator-entered money and account state read by report organs (Auditor MF3/MF4, 2026-11-14).
+# Hand-entered FTMO balance/equity (research/combined_prop_risk.py) and the counterparty
+# register's owner/accounts file (research/counterparty_register.py), plus every temp or backup
+# sibling of either. Last in the file on purpose: no later negation may re-include them.
+desks/mt5/data/ftmo_manual_state.json
+desks/mt5/data/ftmo_manual_state.json*
+desks/mt5/data/ftmo_manual_state*.tmp
+desks/mt5/data/counterparty_accounts.local.json
+desks/mt5/data/counterparty_accounts.local.json*
+desks/mt5/data/counterparty_accounts.local*.tmp

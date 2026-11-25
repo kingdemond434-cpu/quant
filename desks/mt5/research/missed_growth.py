@@ -905,6 +905,8 @@ CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 #: its two-sided line is published on the artifact (ruling of 2026-11-10, PR #819).
 ROBOTS_SET_ASIDE = BASE / "reports" / "ROBOTS_SET_ASIDE.json"
 GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
+#: rates_index_state fails closed on unreadable robots.txt and publishes that cost here.
+RATES_INDEX_STATE = BASE / "reports" / "RATES_INDEX_STATE.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1276,6 +1278,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         ROBOTS_SET_ASIDE),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
+                                    "rates_robots_gate": organ_published_lines(
+                                        RATES_INDEX_STATE),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
                                     "e8_gold_rails": published_e8_gold_lines()},
            "aggression_verdict": aggression.get("verdict"),
