@@ -56,6 +56,7 @@ MIN_TRADE_DAYS counts TRADING DAYS, which is chart-independent by construction.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from collections import OrderedDict
@@ -206,31 +207,133 @@ def _resample_rule(timeframe: str) -> str:
     return f"{timeframe_minutes(timeframe)}min"
 
 
-@lru_cache(maxsize=1)
-def _ticks(symbol: str):
-    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+#: Day-partitions one symbol's tape reader will take, newest first by DATE. This was a hardcoded
+#: 30, which is thirty daily observations of the spread and the flow, and the judge needs sixty
+#: before `liquidity_regime` / `orderflow_imbalance` can fire at all (measured on 013f0b3f76:
+#: 3,772 and 3,721 cells came back UNKNOWN never_fires). 400 is more than a year of sessions: it
+#: is a bound, not a target -- whatever the recorder has written is read, to this many days.
+#: Memory is NOT what this bounds: each day is folded to one-minute partials the moment it is read
+#: (see `_tape_minutes`), so 400 days of one symbol is ~576k small rows, never 400 days of ticks.
+TAPE_MAX_FILES = max(1, int(os.environ.get("QUANT_TAPE_MAX_FILES", "400") or 400))
+#: Distinct tape days below which a tape cannot support the judge's daily observation count. A
+#: short tape is still served (the sweep never refused one) but is NAMED, so a caller can surface
+#: `short_tape` instead of reading a silent empty verdict as "the spec never fires".
+TAPE_MIN_DAYS = 60
 
-    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
-    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
-    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
-    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
-    symbol's charts before moving on and a tick frame is far larger than a bar frame.
+TAPE_OK = "ok"
+TAPE_NO_DIR = "no_tape_dir"
+TAPE_NO_READABLE = "no_readable_tape_files"
+TAPE_SHORT = "short_tape"
+#: symbol -> the last status `_tape_minutes` measured. Cleared with the cache.
+_TAPE_STATUS: dict[str, dict] = {}
+
+
+def _tape_day_key(stem: str) -> str | None:
+    """`2026-10-29` and `20261029` are one day written by two writers. Normalise, or None."""
+    s = stem.replace("-", "")
+    if len(s) != 8 or not s.isdigit():
+        return None
+    try:
+        from datetime import date
+        return date(int(s[:4]), int(s[4:6]), int(s[6:])).isoformat()
+    except ValueError:
+        return None
+
+
+def _tape_files(d) -> list:
+    """One file per DAY, oldest -> newest by date, at most the newest TAPE_MAX_FILES days.
+
+    Days are ordered as DATES (a dashed and a compact name for one day are one day, and string
+    order puts every compact name after every dashed one). Where both writers hold a day the
+    dashed file wins: it is the one that carries `ts`.
     """
+    by_day: dict[str, list] = {}
+    for f in d.glob("*.parquet"):
+        k = _tape_day_key(f.stem)
+        if k is not None:
+            by_day.setdefault(k, []).append(f)
+    keys = sorted(by_day)[-TAPE_MAX_FILES:]
+    return [sorted(by_day[k], key=lambda p: ("-" not in p.stem, p.name))[0] for k in keys]
+
+
+def _read_tape_file(f):
+    """`ts` (UTC), `bid`, `ask` for one day file, or None. Falls back to `time_msc` for `ts`."""
     import pandas as pd
+    try:
+        t = pd.read_parquet(f, columns=["ts", "bid", "ask"])
+        t["ts"] = pd.to_datetime(t["ts"], utc=True)
+        return t
+    except Exception:
+        pass
+    try:
+        t = pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
+        t["ts"] = pd.to_datetime(pd.to_numeric(t["time_msc"], errors="coerce"), unit="ms",
+                                 utc=True)
+        return t[["ts", "bid", "ask"]]
+    except Exception:
+        return None
+
+
+@lru_cache(maxsize=1)
+def _tape_minutes(symbol: str):
+    """This symbol's tape folded to ONE-MINUTE partials, or None. ONE symbol resident.
+
+    Columns: `spread_sum`, `n` (ticks), `flow_sum` (net sign of mid changes). Any chart's mean
+    spread is `sum(spread_sum) / sum(n)` over its bins and its flow is `sum(flow_sum)`, which is
+    EXACTLY what resampling the raw ticks gives, so the daily file is read once, folded, and
+    dropped: peak memory is one day of ticks, however many days the window holds. The previous
+    reader concatenated every tick of 30 files (and would have concatenated 400).
+
+    The previous mid carries across the day boundary so the first tick of a day is not a free
+    zero in the flow. The status of the read is left in `_TAPE_STATUS[symbol]`.
+    """
+    import numpy as np
+    import pandas as pd
+    st = {"symbol": symbol, "days_found": 0, "days_read": 0, "reason": TAPE_NO_DIR}
+    _TAPE_STATUS[symbol] = st
     d = TAPE / symbol
     if not d.exists():
         return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
-        try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-        except Exception:
+    files = _tape_files(d)
+    st["days_found"] = len(files)
+    parts = []
+    prev_mid = None
+    for f in files:
+        t = _read_tape_file(f)
+        if t is None:
             continue
-    if not frames:
+        t = t.dropna(subset=["ts", "bid", "ask"]).sort_values("ts")
+        if t.empty:
+            continue
+        bid = t["bid"].to_numpy(dtype=float)
+        ask = t["ask"].to_numpy(dtype=float)
+        mid = (ask + bid) / 2.0
+        step = np.sign(np.diff(mid, prepend=mid[0] if prev_mid is None else prev_mid))
+        prev_mid = float(mid[-1])
+        g = pd.DataFrame({"spread_sum": ask - bid, "n": 1.0, "flow_sum": step},
+                         index=t["ts"].dt.floor("min"))
+        parts.append(g.groupby(level=0).sum())
+        st["days_read"] += 1
+    if not parts:
+        st["reason"] = TAPE_NO_READABLE
         return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    out = pd.concat(parts).groupby(level=0).sum().sort_index()
+    st["reason"] = TAPE_OK if st["days_read"] >= TAPE_MIN_DAYS else TAPE_SHORT
+    return out
+
+
+def tape_status(symbol: str) -> dict:
+    """What the tape reader found for `symbol`: `reason` is ok / no_tape_dir /
+    no_readable_tape_files / short_tape, with `days_found`, `days_read` and `min_days`.
+
+    A caller that gets (None, None) from `_tape_series` asks this WHY, instead of reporting a
+    silent empty input as a spec that never fires.
+    """
+    _tape_minutes(symbol)
+    st = dict(_TAPE_STATUS.get(symbol) or {"symbol": symbol, "days_found": 0, "days_read": 0,
+                                           "reason": TAPE_NO_DIR})
+    st["min_days"] = TAPE_MIN_DAYS
+    return st
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
@@ -242,17 +345,19 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     family's own z-score, dressed as a measurement of the M5 book. The whole thesis of
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
+
+    WHY (None, None) IS NOW ASKABLE: `tape_status(symbol)["reason"]` names the cause, and a tape
+    shorter than TAPE_MIN_DAYS is served but reported `short_tape`.
     """
-    t = _ticks(symbol)
-    if t is None:
+    m = _tape_minutes(symbol)
+    if m is None:
         return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
+    n = m["n"].resample(rule).sum()
+    spread = (m["spread_sum"].resample(rule).sum() / n.where(n > 0)).where(n > 0)
     # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
     # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
+    flow = m["flow_sum"].resample(rule).sum()
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 

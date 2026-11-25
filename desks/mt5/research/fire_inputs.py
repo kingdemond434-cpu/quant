@@ -50,7 +50,7 @@ NEEDS_DATA = "NEEDS_DATA"
 UNMEASURED = "UNMEASURED"
 
 #: The families this module can probe exactly. Every other family is UNMEASURED.
-PROBED = ("cot_positioning", "event_reaction")
+PROBED = ("cot_positioning", "event_reaction", "liquidity_regime", "orderflow_imbalance")
 
 
 def _paths() -> None:
@@ -94,6 +94,35 @@ def _probe_cot(sym: str) -> dict[str, Any]:
                         "is on disk), so family_cot_positioning returns [] on its input guard"),
                 "stamp": "absent"}
     return {"status": UNMEASURED, "why": "the family answered without reading a bar"}
+
+
+def _probe_tape(sym: str, family: str) -> dict[str, Any]:
+    """The tick tape the judge hands `liquidity_regime` / `orderflow_imbalance`, by name.
+
+    Both families return [] on a missing series (their first guard), and `build_cell` hands them
+    `None` exactly when `orthogonal_sweep._tape_series` finds no readable tape for the symbol --
+    which was filed as a spec that never fires. NEEDS_DATA only on that provable case, and only
+    when this host HAS a tick root at all (a host that never recorded ticks says nothing about
+    the box that did: UNMEASURED, fail open). A SHORT tape (under `TAPE_MIN_DAYS` days) is
+    PRESENT with the shortfall named: the family can fire on it, so nothing is parked.
+    """
+    from research import orthogonal_sweep as inputs
+    if not inputs.TAPE.exists():
+        return {"status": UNMEASURED, "why": f"no tick root at {inputs.TAPE} on this host"}
+    st = inputs.tape_status(sym)
+    reason = st.get("reason")
+    if reason in (inputs.TAPE_NO_DIR, inputs.TAPE_NO_READABLE):
+        return {"status": NEEDS_DATA, "missing_input": f"tape_series:{sym}",
+                "why": (f"orthogonal_sweep._tape_series({sym!r}) finds {reason} "
+                        f"({st.get('days_read')}/{st.get('days_found')} days read), so "
+                        f"{family} gets a None series and returns [] on its first guard"),
+                "stamp": "absent"}
+    out: dict[str, Any] = {"status": PRESENT, "input": f"tape_series:{sym}",
+                           "tape_days": st.get("days_read")}
+    if reason == inputs.TAPE_SHORT:
+        out["warning"] = (f"short_tape: {st.get('days_read')} days read, the judge needs "
+                          f"{st.get('min_days')} daily observations")
+    return out
 
 
 def _probe_event(sym: str) -> dict[str, Any]:
@@ -169,7 +198,12 @@ def probe(sym: str, family: str, params: dict[str, Any] | None = None,
         return memo[key]
     try:
         _paths()
-        out = _probe_cot(sym) if family == "cot_positioning" else _probe_event(sym)
+        if family == "cot_positioning":
+            out = _probe_cot(sym)
+        elif family in ("liquidity_regime", "orderflow_imbalance"):
+            out = _probe_tape(sym, family)
+        else:
+            out = _probe_event(sym)
     except Exception as exc:
         out = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
     if memo is not None:
