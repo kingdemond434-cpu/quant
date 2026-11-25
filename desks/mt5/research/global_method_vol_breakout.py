@@ -1,4 +1,5 @@
-"""The hourly leg `global_vol_breakout`: one pass of `research/global_methods.py --method vol_breakout`.
+"""The hourly leg `global_vol_breakout`: one pass of
+`research/global_methods.py --method vol_breakout`.
 
 A file of its own so the leg's clock, its producer and its artifact are one declaration each
 (`desks/mt5/ops/components.own_artifact` reads REPORT below, unimported). All the logic is in
