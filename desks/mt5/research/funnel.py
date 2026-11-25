@@ -746,6 +746,15 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
     else:
         notes.append(f"{UNMEASURED}: certificate_provenance unreadable; CERTIFIED onward")
 
+    # A class or family the compiler / the judge never named is a MEASURED zero there once the
+    # input was read (an equity class with no compiled row, a family the judge never saw).
+    for c in (*classes.values(), *families.values()):
+        for s, ok, basis in (("ROWS", comp.get("available"), "compiler:rows"),
+                             ("TESTABLE", comp.get("available"), "compiler:family_spec"),
+                             ("JUDGED", seen is not None, "judge:gauntlet_seen_cells")):
+            if ok and c.n[s] is None:
+                c.add(s, 0, basis)
+
     cert_ok = certs is not None
     rows_p = [{"producer": k, **finish(v, cert_measured=cert_ok)}
               for k, v in sorted(producers.items())]

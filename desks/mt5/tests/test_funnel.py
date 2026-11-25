@@ -48,7 +48,8 @@ def _desk(tmp: Path, *, conversion: bool = True, provenance: bool = True,
             + [_hyp("miner:gamma", "GBPUSD", {}, prose="buy when it feels right")])
     _w(p.compiler, {"hypotheses": hyps, "per_source": {"gamma": {"rows": 20,
                                                                  "candidates": 10}}})
-    _w(p.seen, {"EURUSD.trend_ma_cross.p=1": "t", "GBPUSD.trend_ma_cross.p=2": "t"})
+    _w(p.seen, {"EURUSD.trend_ma_cross.p=1": "t", "GBPUSD.trend_ma_cross.p=2": "t",
+                "XAUUSD.carry.p=9": "t"})
     if provenance:
         _w(p.provenance, {"records": {
             c: {"cell": c, "producer": "alpha", "in_canon": True} for c in (
@@ -100,6 +101,8 @@ def test_stage_counts_join_from_every_input(tmp_path: Path) -> None:
     assert gamma["JUDGED"] == fn.UNMEASURED and gamma["CERTIFIED"] == 0
     fam = _row(doc["families"], "family", "trend_ma_cross")["stages"]
     assert fam["ROWS"] == 10 and fam["JUDGED"] == 2 and fam["RAW"] == fn.UNMEASURED
+    carry = _row(doc["families"], "family", "carry")["stages"]
+    assert carry["ROWS"] == 0 and carry["TESTABLE"] == 0 and carry["JUDGED"] == 1
     rate = {t["transition"]: t["rate"] for t in doc["desk"]["transitions"]}
     assert rate["CERTIFIED->NON_EXOTIC_CERTIFIED"] == round(2 / 3, 6)
     assert rate["LIVE->LIVE_PROFIT"] == 1.0
@@ -122,7 +125,7 @@ def test_an_unreadable_input_is_unmeasured_never_zero(tmp_path: Path) -> None:
     doc = _build(_desk(tmp_path, provenance=False, conversion=False))
     st = doc["desk"]["stages"]
     assert all(st[s] == fn.UNMEASURED for s in fn.CERT_STAGES)
-    assert st["JUDGED"] == 2                        # falls back to the judge's seen cells
+    assert st["JUDGED"] == 3                        # falls back to the judge's seen cells
     assert doc["inputs"]["producer_conversion"] == fn.UNMEASURED
     doc = _build(_desk(tmp_path / "b", sleeves=False))
     st = doc["desk"]["stages"]
