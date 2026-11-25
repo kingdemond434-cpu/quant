@@ -168,14 +168,14 @@
    "grounds": 8
   },
   "ae": {
-   "name": "UAE and Qatar",
+   "name": "UAE, Qatar and Kuwait",
    "cluster": "mena",
    "languages": [
     "ar",
     "en"
    ],
    "market": "AE",
-   "grounds": 5
+   "grounds": 6
   },
   "tr": {
    "name": "Turkey",
@@ -225,14 +225,14 @@
    "grounds": 5
   },
   "ke": {
-   "name": "Kenya",
+   "name": "Kenya and Tanzania",
    "cluster": "africa",
    "languages": [
     "en",
     "sw"
    ],
    "market": "KE",
-   "grounds": 5
+   "grounds": 6
   },
   "ma": {
    "name": "Morocco",
@@ -477,7 +477,7 @@
     "en"
    ],
    "market": "EA",
-   "grounds": 2
+   "grounds": 3
   },
   "ch": {
    "name": "Switzerland",
@@ -488,6 +488,27 @@
     "en"
    ],
    "market": "CH",
+   "grounds": 2
+  },
+  "uz": {
+   "name": "Uzbekistan",
+   "cluster": "central_asia",
+   "languages": [
+    "ru",
+    "uz",
+    "en"
+   ],
+   "market": "UZ",
+   "grounds": 2
+  },
+  "et": {
+   "name": "Ethiopia",
+   "cluster": "africa",
+   "languages": [
+    "en",
+    "am"
+   ],
+   "market": "ET",
    "grounds": 2
   }
  },
@@ -7919,6 +7940,79 @@
    "why": "replacement ground for a refusal-only region; robots allows (cloud add 2026-11-18)",
    "url": "https://www.ksh.hu/?lang=en",
    "alt": []
+  },
+  {
+   "name": "Central Bank of Uzbekistan news",
+   "region": "uz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "sum policy, FX auction and gold-reserve sales -- a central-bank gold seller and a managed currency; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://cbu.uz/en/press_center/news/"
+  },
+  {
+   "name": "Tashkent Stock Exchange news",
+   "region": "uz",
+   "language": "ru",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "frontier exchange mechanics and listing flow; footer asks for a link back to uzse.uz when material is used; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://uzse.uz/boards/news/list/"
+  },
+  {
+   "name": "Boursa Kuwait press releases",
+   "region": "ae",
+   "language": "ar",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "Gulf index inclusion, market-making and foreign-flow rules (MSCI/FTSE upgrade flows into Gulf equities, oil-linked); robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.boursakuwait.com.kw/ar/resources/news-room/press-release",
+   "market": "KW"
+  },
+  {
+   "name": "Bank of Greece press office",
+   "region": "ea",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "euro-area periphery bank and sovereign spread commentary; terms allow reuse when cited accurately; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.bankofgreece.gr/en/news-and-media/press-office/news-list",
+   "market": "GR"
+  },
+  {
+   "name": "JamiiForums Biashara na Uchumi",
+   "region": "ke",
+   "language": "sw",
+   "route": "http",
+   "kind": "forum",
+   "weight": 0.5,
+   "why": "Swahili business and economy board, public threads -- East African retail views on USD scarcity, gold and forex; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://www.jamiiforums.com/forums/jukwaa-la-biashara-na-uchumi.84/",
+   "market": "TZ"
+  },
+  {
+   "name": "National Bank of Ethiopia news",
+   "region": "et",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.5,
+   "why": "birr float and FX-auction regime change since 2024 -- a live devaluation-mechanics case; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://nbe.gov.et/news/"
+  },
+  {
+   "name": "Ethiopian Securities Exchange news",
+   "region": "et",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 0.5,
+   "why": "a brand-new exchange's market structure, documented as it is built; robots allows the path, terms silent, no wall (read 2026-11-24)",
+   "url": "https://esx.et/news-and-media/latest-news/"
   }
  ],
  "engines": [
