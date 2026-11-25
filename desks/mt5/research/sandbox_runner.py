@@ -524,7 +524,7 @@ def queue_for_translation(family: str, symbols: list[str], params: dict[str, Any
 
 
 def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: Any,
-           apply: bool) -> dict[str, Any]:
+           apply: bool, queue_path: Path | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"candidates": 0, "created": 0, "existing": 0, "unregistered": 0,
                            "not_executable": 0, "not_executable_by_reason": {},
                            "not_executable_examples": [], "discoveries": 0, "trials": [],
@@ -566,9 +566,10 @@ def ingest(pkt: ExternalResearchPacket, plan: Plan, *, compute_s: float, conn: A
                     {"symbol": sym, "horizon": horizon, "mechanism": plan.system_id,
                      "method": plan.system_id}, dict(raw_params),
                     max(1, pkt.trials_charged // n_c)))
-            if apply and spec["status"] in (FS.PROSE_ONLY, FS.DEFAULTS_ONLY,
-                                            FS.UNHONOURED_VARIANT) and text.strip():
-                queue_for_translation(family, symbols, raw_params, text, plan.system_id)
+            if apply and queue_path is not None and text.strip() and spec["status"] in (
+                    FS.PROSE_ONLY, FS.DEFAULTS_ONLY, FS.UNHONOURED_VARIANT):
+                queue_for_translation(family, symbols, raw_params, text, plan.system_id,
+                                      path=queue_path)
             if spec["status"] in (FS.UNREGISTERED_FAMILY, FS.NO_SYMBOLS):
                 out["unregistered"] += 1
             out["not_executable"] += n_rows
@@ -833,7 +834,9 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
             else:
                 pkt, meta = run_in_process(plan, run_bundle, root=root, ctx=ctx)
             seconds = float(meta.get("seconds") or 0.0)
-            ing = ingest(pkt, plan, compute_s=seconds, conn=conn, apply=not dry_run)
+            ing = ingest(pkt, plan, compute_s=seconds, conn=conn, apply=not dry_run,
+                         queue_path=state_path.parent / "conversion_lanes"
+                         / TRANSLATE_QUEUE.name)
             all_trials.extend(ing.pop("trials"))
             enqueued_cells = set(ing.pop("cells", []) or [])
             for k in totals:
