@@ -1244,6 +1244,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "firm_lanes",
     "fill_recorder", "cost_surfaces", "fill_proven",
     "allocator_scorecard",
+    # ZERO LIVE ON A MARKET DAY IS A MONEY-PATH PAGE (pass rule I2, 2026-11-25): each account's
+    # own book read, a page to Claude when a funded account trades nothing. Reads only, ~0.1 s.
+    "zero_live_page",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1515,6 +1518,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator", "allocator_scorecard",
+                     "zero_live_page",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
@@ -6616,6 +6620,8 @@ def main() -> None:
     # weakest. Reports only, artifact reads, ~0.1 s.
     asc = _costed("allocator_scorecard", lambda: _producer(
         "allocator_scorecard", "research/allocator_scorecard.py", "--once"))
+    zlp = _costed("zero_live_page", lambda: _producer(
+        "zero_live_page", "prop/zero_live_page.py"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -7093,7 +7099,7 @@ def main() -> None:
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "fill_proven": fpv,
-                    "allocator_scorecard": asc,
+                    "allocator_scorecard": asc, "zero_live_page": zlp,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
