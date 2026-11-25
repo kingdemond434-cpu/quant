@@ -718,6 +718,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     if doc.get("status") == "UNMEASURED":
         print(f"representation discovery: UNMEASURED -- {doc.get('why')}")
+        if a.apply:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            print(f"-> {OUT}  (UNMEASURED written, L1.28a: absence is an answer)")
         return 0
     print(f"representation discovery: {doc['status']}   {doc['n_symbols']} symbol(s), "
           f"{doc['composite_trials_total']} composite trial(s) charged")
