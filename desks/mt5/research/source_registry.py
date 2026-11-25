@@ -90,7 +90,7 @@ for _names, _kind in (
     (("amarkets broker_swaps collective2 darwinex duplitrade equiti_copy fbs_tape fxblue "
       "followme_cn fxmerge hfm_pamm instaforex_copy litefinance mylivefx_br myfxbook_outlook "
       "octa_masters roboforex_copyfx share4you swap_table"), "broker"),
-    ("academic arxiv_qfin literature research_feeds", "scholarly"),
+    ("academic arxiv_qfin global_journals literature research_feeds", "scholarly"),
     ("bis_speeches central_banks sec_edgar cot ff_calendar_vintage", "official"),
     (("github github_topics quantconnect mql5 mql5_catalog mql5_prospector mql5_signals "
       "mql5_reputation mql5_survivors tradingview_scripts"), "code"),
@@ -115,6 +115,9 @@ ROUTE_COST: dict[str, float | None] = {
     "http": 1.0, "rss": 0.8, "foreign": 1.0, "juejin": 1.0, "gitee": 1.0, "reddit": 1.2,
     "telegram": 1.2, "wayback": 1.3, "papers": 1.4, "nitter": 1.5, "search": 1.6, "sogou": 1.6,
     "youtube": 2.0, "bilibili": 2.0, "render": 2.5, "unreachable": None,
+    # A harvesting protocol or a documented API returns structured records, like a feed, but a
+    # walk pages (resumption tokens, cursors): priced a little above `rss`, below an HTML GET.
+    "oai_pmh": 0.9, "api": 0.9,
 }
 #: Which organ crawls which ground, read off the run wiring: the hourly cycle carries legs
 #: `deep_forest`, `world_crawler`, `mine`; `repo_miner` runs from the daily cycle only.
@@ -434,11 +437,12 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
 
 def _paper_rows(rows: dict[str, dict[str, Any]], path: Path | None = None) -> int:
     """THE PUBLISHED-PAPER MINERS AS REGISTRY ROWS (coordinator/Data, 2026-11-25): every feed in
-    side_channels/research_feeds.json and the arXiv q-fin block gets its own row with its own
-    route, kind and REGION, so the yield rule and its per-region floor see each one. A paper miner
-    that runs outside this registry bypasses the rule. Feeds are fetched by the box task
-    Quant-ResearchFeeds; each donated row carries `feed=<name>`, aliased here. A closed feed
-    (terms not `open`) is registered with its terms state and costs nothing. Returns the count."""
+    side_channels/research_feeds.json, every harvester there and the arXiv q-fin block gets its
+    own row with its own route, kind and REGION, so the yield rule and its per-region floor see
+    each one. A paper miner that runs outside this registry bypasses the rule. Feeds are fetched
+    by the box task Quant-ResearchFeeds; each donated row carries `feed=<name>`, aliased here. A
+    closed feed (terms not `open`) is registered with its terms state and costs nothing. Returns
+    the count."""
     doc = _read_json(path or PAPER_FEEDS, {}) or {}
     n = 0
     for f in doc.get("feeds") or []:
@@ -455,6 +459,25 @@ def _paper_rows(rows: dict[str, dict[str, Any]], path: Path | None = None) -> in
             licence_note=(f"terms {terms}: {f.get('terms_note') or 'no note'}"
                           if terms == "open" else f"CLOSED (terms {terms}) -- not fetched"),
             aliases=[name, f"research_feeds:{name}"])
+        rows[sid]["paper_terms"] = terms
+        n += 1
+    # THE NON-ENGLISH READERS (side_channels/journal_harvesters.py, 2026-11-25): OAI-PMH
+    # repositories and official APIs. Each donated row's `source` IS the harvester's name, so
+    # `miner:<name>` resolves here and a certification is credited to this row, not a pool.
+    for h in doc.get("harvesters") or []:
+        name = str(h.get("name") or "").strip()
+        if not name:
+            continue
+        sid = f"src:paper:{name}"
+        terms = str(h.get("terms") or "unrecorded")
+        rows[sid] = _row(
+            sid, name=name, kind="scholarly", region=h.get("region"),
+            language=h.get("language"), route=str(h.get("route") or "oai_pmh"),
+            url=h.get("base"), ground=f"{h.get('institution') or name} ({PAPER_FEEDS.name})",
+            arm_source=name, fetch_clock=CLOCK_PAPERS,
+            licence_note=(f"terms {terms}: {h.get('terms_note') or 'no note'}"
+                          if terms == "open" else f"CLOSED (terms {terms}) -- not fetched"),
+            aliases=[name, f"miner:{name}", f"global_journals:{name}"])
         rows[sid]["paper_terms"] = terms
         n += 1
     ax = doc.get("arxiv")
@@ -914,7 +937,8 @@ def language_map(rows: dict[str, dict[str, Any]]) -> tuple[dict[str, int], list[
     for r in rows.values():
         lang = str(r.get("language") or "UNDECLARED")
         by_lang[lang] = by_lang.get(lang, 0) + 1
-        if r.get("ground") and r.get("language"):
+        # A paper source whose terms bar the desk is on file but never read: it closes no gap.
+        if r.get("ground") and r.get("language") and r.get("paper_terms", "open") == "open":
             with_ground.add(lang.split("-")[0].lower())
     return (dict(sorted(by_lang.items(), key=lambda t: -t[1])),
             [lang for lang in NATIVE_LANGUAGES if lang not in with_ground])

@@ -371,7 +371,7 @@ TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scrip
 # local computation. Scrapers and youtube are SET_ASIDE by name; the box never contacts YouTube.
 TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run_side_channel_miners.cmd" installer="scripts/install_side_channel_miners_task.ps1" lane="research" also_runs="desks/mt5/side_channels/run_all_miners.py"
 # THE PAPER CLOCK (2026-11-25): seed_miners research_feeds + arxiv_qfin + bis_speeches had only the retired VPS timer (ops/crontab.manifest quant-seed-miners.timer).
-TASK name="Quant-ResearchFeeds" trigger="every 6 hours at :55" runs="ops/run_research_feeds.cmd" installer="scripts/install_research_feeds_task.ps1" lane="research" also_runs="desks/mt5/side_channels/seed_miners.py,desks/mt5/side_channels/research_depth_miners.py"
+TASK name="Quant-ResearchFeeds" trigger="every 6 hours at :55" runs="ops/run_research_feeds.cmd" installer="scripts/install_research_feeds_task.ps1" lane="research" also_runs="desks/mt5/side_channels/seed_miners.py,desks/mt5/side_channels/research_depth_miners.py,desks/mt5/side_channels/journal_harvesters.py"
 
 # Desk log rotation (ops/rotate_logs.py): whole-file gzip archive, verified, never discards (2026-11-13).
 TASK name="MT5-RotateLogs" trigger="daily 03:40" runs="ops/rotate_logs.py" installer="desks/mt5/scripts/install_rotate_logs_task.ps1" lane="ops"
