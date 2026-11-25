@@ -34,6 +34,9 @@ REFUSED_HOSTS: dict[str, str] = {
     "comtradeplus.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "comtradeapi.un.org": "UN Comtrade: terms refuse automated use (ruling 2026-11-13)",
     "theice.com": "ICE: terms refuse automated collection of its data",
+    "spdrgoldshares.com": ("SPDR Gold Shares terms: personal, non-commercial use only; no "
+                           "access other than the website's navigational structure "
+                           "(re-read 2026-11-17)"),
 }
 
 

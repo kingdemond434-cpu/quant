@@ -681,3 +681,12 @@ desks/mt5/data/ftmo_manual_state*.tmp
 desks/mt5/data/counterparty_accounts.local.json
 desks/mt5/data/counterparty_accounts.local.json*
 desks/mt5/data/counterparty_accounts.local*.tmp
+# Box alerts reach Claude (2026-11-25): the alert feed, its status and the guardian's report ride
+# the box-state sync (sync_shadow_to_git.ps1 $relPaths).
+!desks/mt5/reports/alerts/
+!desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl
+!desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json
+!desks/mt5/reports/DISK_HEADROOM.json
+!desks/mt5/reports/BOX_HEADROOM.json
+!desks/mt5/reports/PASS_FINDINGS.json
+!desks/mt5/reports/DESK_SELF_HEAL.json

@@ -180,6 +180,14 @@ NON_CODE: frozenset[str] = frozenset({
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
+    # box alerts reach Claude (2026-11-25): MT5-Guardian's alert feed, its status and the
+    # guardian's own report ride the box-state sync. State, never code.
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
+    "desks/mt5/reports/PASS_FINDINGS.json",
+    "desks/mt5/reports/DESK_SELF_HEAL.json",
     # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
     "desks/mt5/reports/BACKUP_STATE.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared

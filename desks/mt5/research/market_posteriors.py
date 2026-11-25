@@ -573,6 +573,10 @@ def main(argv: list[str] | None = None) -> int:
     doc = build()
     if doc.get("status") == "UNMEASURED":
         print(f"world model: UNMEASURED -- {doc.get('why')}")
+        if a.apply:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+            print(f"-> {OUT}  (UNMEASURED written, L1.28a: absence is an answer)")
         return 0
     print(f"world model: {doc['status']}   {doc['n_symbols']} symbol(s), "
           f"{doc['n_contested']} contested axis-reading(s)")

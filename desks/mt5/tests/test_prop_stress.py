@@ -58,3 +58,50 @@ def test_kill_criterion_and_revert_switch(monkeypatch) -> None:
     big = stress.cap_book(rows, risk_of=lambda r: 0.05, family_of=lambda r: r["f"],
                           daily_limit=0.025, days=days, col_of=lambda r: r["c"])
     assert big["kept"] == rows and not big["cuts"]
+
+
+def _set(r: dict, v: float) -> None:
+    r["risk"] = v
+
+
+def test_the_cap_scales_every_sleeve_to_fit_instead_of_zeroing() -> None:
+    # Gold 0.6% plus three 0.3% sleeves that lose together: 1.5% against a 1.2% cap.
+    days = _days(["a", "b", "c", "gold_asia"], [[-1.0, -1.0, -1.0, -1.0], [1.0, 1.0, 1.0, 1.0]])
+    rows = [{"c": k, "f": "F", "risk": 0.003} for k in ("a", "b", "c")]
+    out = stress.cap_book(rows, risk_of=lambda r: r["risk"], family_of=lambda r: r["f"],
+                          daily_limit=0.02, days=days, col_of=lambda r: r["c"],
+                          fixed={"gold_asia": 0.006}, set_risk=_set)
+    assert out["mode"] == "scale" and [r["c"] for r in out["kept"]] == ["a", "b", "c"]
+    assert abs(out["scale"] - 2.0 / 3.0) < 1e-9          # 0.6% + k*0.9% = 1.2%
+    assert all(abs(r["risk"] - 0.002) < 1e-9 for r in rows)
+    assert out["after"]["loss"] <= 0.6 * 0.02 + 1e-12
+    assert abs(sum(c["missed_growth_risk_frac"] for c in out["cuts"]) - 0.003) < 1e-7
+    assert not out["fixed_breach"]
+
+
+def test_a_fixed_lane_breaching_alone_is_reported_not_hidden() -> None:
+    days = _days(["s", "gold_asia"], [[-1.0, -1.0]])
+    rows = [{"c": "s", "f": "S", "risk": 0.002}]
+    out = stress.cap_book(rows, risk_of=lambda r: r["risk"], family_of=lambda r: r["f"],
+                          daily_limit=0.005, days=days, col_of=lambda r: r["c"],
+                          fixed={"gold_asia": 0.006}, set_risk=_set)
+    assert out["fixed_breach"] and out["scale"] == 0.0 and out["kept"] == []
+    assert out["cuts"][0]["missed_growth_risk_frac"] == 0.002
+
+
+def test_a_book_under_the_cap_is_untouched_in_scale_mode() -> None:
+    days = _days(["a"], [[-1.0]])
+    rows = [{"c": "a", "f": "A", "risk": 0.001}]
+    out = stress.cap_book(rows, risk_of=lambda r: r["risk"], family_of=lambda r: r["f"],
+                          daily_limit=0.025, days=days, col_of=lambda r: r["c"], set_risk=_set)
+    assert out["scale"] is None and not out["cuts"] and rows[0]["risk"] == 0.001
+
+
+def test_the_cut_mode_is_the_revert(monkeypatch) -> None:
+    monkeypatch.setattr(stress, "STRESS_MODE", "cut")
+    days = _days(["x1", "x2", "y1"], [[-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]])
+    rows = [{"c": "x1", "f": "X", "risk": 0.006}, {"c": "x2", "f": "X", "risk": 0.006},
+            {"c": "y1", "f": "Y", "risk": 0.006}]
+    out = stress.cap_book(rows, risk_of=lambda r: r["risk"], family_of=lambda r: r["f"],
+                          daily_limit=0.025, days=days, col_of=lambda r: r["c"], set_risk=_set)
+    assert [r["c"] for r in out["kept"]] == ["x1", "y1"] and all(r["risk"] == 0.006 for r in rows)

@@ -24,6 +24,7 @@ so migration happens on evidence rather than after an outage.
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import shutil
 import subprocess
@@ -170,8 +171,44 @@ def free_gb() -> float:
     return shutil.disk_usage("/").free / 1e9
 
 
+def _canonical_sha(doc: Any) -> str:
+    """The canonical sha `libs.research.experiment_ledger._doc_key` reads a document by."""
+    return hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":"),
+                                     default=str).encode("utf-8")).hexdigest()
+
+
+def _rolled_rows(roll: Path) -> dict[str, set[tuple[int, str]]]:
+    """(row, sha) already in a rollup, per src stem, from its STAMPED lines. Raises on a torn
+    archive: nothing is appended onto one (lines after a tear could never be read back)."""
+    have: dict[str, set[tuple[int, str]]] = {}
+    if not roll.exists():
+        return have
+    with gzip.open(roll, "rt", encoding="utf-8") as fh:
+        for ln in fh:
+            if not ln.startswith('{"src"'):
+                continue
+            try:
+                obj = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(obj, dict) and isinstance(obj.get("src"), str):
+                row = obj.get("i")
+                have.setdefault(obj["src"], set()).add((row if isinstance(row, int) else -1,
+                                                        str(obj.get("sha"))))
+    return have
+
+
 def rollup(src_dir: Path, cutoff: str, actions: list[str]) -> int:
-    """Compact one source's aged discovery files into a single gz per day. Content preserved."""
+    """Compact one source's aged discovery files into a single gz per day. Content preserved.
+
+    EVERY LINE IS STAMPED and THE APPEND IS IDEMPOTENT (Audit ruling C, ledger-rollups
+    5a7ba77eb). Each line is {"src": <file stem>, "i": <row in the file>, "sha": <canonical
+    sha of the row>, "doc": <the row>}. A (src, row, sha) already in the rollup is never
+    written again, and a failed unlink no longer aborts the day: the file is left live, the
+    failure is reported, and the next pass finds its rows already rolled and only retries the
+    unlink. Before this, an unlink failure re-appended the whole day batch on the next pass,
+    which is where the doubled legacy rollups come from (their lines stay charged; the trial
+    ledger reports them as `legacy_rollup_suspected_reappends` and never subtracts them)."""
     by_day: dict[str, list[Path]] = {}
     for f in src_dir.glob("discoveries_*.json"):
         stamp = f.stem.replace("discoveries_", "")[:8]
@@ -183,17 +220,40 @@ def rollup(src_dir: Path, cutoff: str, actions: list[str]) -> int:
             continue
         roll = src_dir / f"rollup_{day}.jsonl.gz"
         try:
+            have = _rolled_rows(roll)
+        except (OSError, EOFError, ValueError) as exc:
+            actions.append(f"rollup skipped {src_dir.name}/{day}: unreadable archive ({exc})")
+            continue
+        rolled = skipped = 0
+        try:
             with gzip.open(roll, "at", encoding="utf-8") as out:
-                for f in files:
+                for f in sorted(files):
                     try:
+                        size = f.stat().st_size
                         rows = json.loads(f.read_text("utf-8"))
                     except (OSError, ValueError):
                         continue
-                    for r in (rows if isinstance(rows, list) else [rows]):
-                        out.write(json.dumps(r, separators=(",", ":"), default=str) + "\n")
-                    freed += f.stat().st_size
-                    f.unlink()
-            actions.append(f"rolled {len(files)} files -> {roll.name}")
+                    done = have.setdefault(f.stem, set())
+                    for i, r in enumerate(rows if isinstance(rows, list) else [rows]):
+                        sha = _canonical_sha(r)
+                        if (i, sha) in done:
+                            skipped += 1
+                            continue
+                        out.write(json.dumps({"src": f.stem, "i": i, "sha": sha, "doc": r},
+                                             separators=(",", ":"), default=str) + "\n")
+                        done.add((i, sha))
+                    out.flush()
+                    try:
+                        f.unlink()
+                    except OSError as exc:
+                        actions.append(f"unlink failed {src_dir.name}/{f.name}: {exc} "
+                                       "(rows rolled; the next pass only retries the unlink)")
+                        continue
+                    freed += size
+                    rolled += 1
+            actions.append(f"rolled {rolled} files -> {roll.name}"
+                           + (f" ({skipped} rows already present, not re-appended)"
+                              if skipped else ""))
         except OSError as exc:
             actions.append(f"rollup failed {src_dir.name}/{day}: {exc}")
     return freed
