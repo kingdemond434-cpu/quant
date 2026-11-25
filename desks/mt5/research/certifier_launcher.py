@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -33,13 +34,35 @@ def main(argv: list[str] | None = None) -> int:
                  "NUMEXPR_NUM_THREADS"):
         env[name] = "1"
 
-    with exclusive_job("certification_lane", need_mb=0) as acquired:
-        if not acquired:
-            print("qquant_gates: DEFERRED -- another canonical certifier owns the lane", flush=True)
-            return 0
-        command = [sys.executable, "-u", "-W", "ignore",
-                   str(BASE / "research" / "qquant_gates.py"), *args]
-        return subprocess.run(command, cwd=BASE, env=env, check=False).returncode
+    # TAKE A TURN, DON'T TRY ONCE (research/lane_turn.py, 2026-11-25). The resident judge holds
+    # the lane sweep after sweep with zero cadence, so one try found it held every hour and
+    # QQUANT_GATES starved. A held lane now posts a waiter record and retries; the judge yields
+    # at its next sweep boundary.
+    from research import lane_turn
+
+    deadline = time.monotonic() + lane_turn.CERT_WAIT_S
+    announced = False
+    try:
+        while True:
+            with exclusive_job("certification_lane", need_mb=0) as acquired:
+                if acquired:
+                    if announced:
+                        print("qquant_gates: took the lane after waiting for the judge's sweep "
+                              "boundary", flush=True)
+                    command = [sys.executable, "-u", "-W", "ignore",
+                               str(BASE / "research" / "qquant_gates.py"), *args]
+                    return subprocess.run(command, cwd=BASE, env=env, check=False).returncode
+            if time.monotonic() >= deadline:
+                print("qquant_gates: DEFERRED -- another canonical certifier owns the lane "
+                      f"(waited {lane_turn.CERT_WAIT_S // 60} min for a turn)", flush=True)
+                return 0
+            if not announced:
+                lane_turn.announce("qquant_gates")
+                announced = True
+            time.sleep(lane_turn.CERT_RETRY_S)
+    finally:
+        if announced:
+            lane_turn.clear()
 
 
 if __name__ == "__main__":

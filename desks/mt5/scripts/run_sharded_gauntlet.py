@@ -2851,7 +2851,7 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     finally:
         stop.set()
         beat.join(timeout=5)
-        if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF"):
+        if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF", "YIELDING"):
             # Anything that ends the loop without naming why (an exception, an interrupt) still
             # leaves an EXITED record rather than a SWEEPING one.
             state["status"], state["why"] = "EXITED", "the resident loop ended unexpectedly"
@@ -3062,6 +3062,29 @@ def _read_state() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+def _yield_to_certifier(sleep: Callable[[float], Any], clock: Callable[[], float],
+                        state: dict[str, Any]) -> dict[str, Any] | None:
+    """Hold off the next sweep while a certifier waits for the lane. Never raises."""
+    try:
+        from research import lane_turn
+        if lane_turn.waiting() is None:
+            return None
+        state.update(status="YIELDING", yielding_since_utc=datetime.now(UTC).isoformat(
+            timespec="seconds"))
+        _write_state(state)
+        turn = lane_turn.yield_to_waiter(sleep=sleep, clock=clock)
+    except Exception as exc:
+        state["yield_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        return None
+    if turn is not None:
+        state["certifier_turns"] = int(state.get("certifier_turns") or 0) + 1
+        state["certifier_yield_s"] = round(float(state.get("certifier_yield_s") or 0.0)
+                                           + float(turn.get("held_s") or 0.0), 1)
+        state["last_certifier_turn"] = {**turn, "at_utc": datetime.now(UTC).isoformat(
+            timespec="seconds")}
+    return turn
+
+
 def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
                    sleep: Callable[[float], Any], clock: Callable[[], float], started: float,
                    limit_s: float | None, max_sweeps: int | None) -> int:
@@ -3083,6 +3106,11 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
         if max_sweeps is not None and n >= max_sweeps:
             state["status"], state["why"] = "DONE", f"max_sweeps={max_sweeps}"
             break
+        # A WAITING CERTIFIER GETS THE LANE AT THE SWEEP BOUNDARY (research/lane_turn.py). With
+        # zero cadence the lane was free for milliseconds between sweeps and QQuant's hourly
+        # certifier never landed in that gap. Bounded (lane_turn.YIELD_MAX_S); a dead or stale
+        # waiter is ignored; no sweep is ever interrupted for one.
+        _yield_to_certifier(sleep, clock, state)
         t0 = clock()
         state.update(status="SWEEPING", sweep_started_utc=datetime.now(UTC).isoformat(
             timespec="seconds"))
