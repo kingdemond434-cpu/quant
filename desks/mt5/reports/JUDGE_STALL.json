@@ -1,19 +1,19 @@
 {
- "at": "2026-11-25T00:16:03+00:00",
+ "at": "2026-11-25T00:26:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 14.03,
-   "why": "no new verdict for 14.0h (last 2026-11-24T10:14:12+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 14.2,
+   "why": "no new verdict for 14.2h (last 2026-11-24T10:14:12+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": false,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 8.6,
-   "busy_other_cores": 8.35,
-   "why": "judge tree at 8.60 cores (others 8.35) with a docket pending (resident SWEEPING, queue depth None); floor 4"
+   "busy_judge_cores": 9.73,
+   "busy_other_cores": 6.49,
+   "why": "judge tree at 9.73 cores (others 6.49) with a docket pending (resident SWEEPING, queue depth None); floor 4"
   },
   "resident_dead": {
    "open": false,
@@ -23,9 +23,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 13.68,
+   "hours": 13.85,
    "limit_h": 25.59,
-   "why": "13.7h since the last sweep ended (2026-11-24T10:35:20+00:00), status SWEEPING; limit 25.59h"
+   "why": "13.8h since the last sweep ended (2026-11-24T10:35:20+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -42,9 +42,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "build_shards",
-   "hours": 0.08,
+   "hours": 0.25,
    "known_phase": true,
-   "why": "sweep phase build_shards has run 0.1h since 2026-11-25T00:11:12+00:00 (limit 18h)"
+   "why": "sweep phase build_shards has run 0.2h since 2026-11-25T00:11:12+00:00 (limit 18h)"
   },
   "host_unreadable": {
    "open": false,
@@ -89,21 +89,16 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 11904,
-  "heartbeat_utc": "2026-11-25T00:15:50+00:00",
+  "heartbeat_utc": "2026-11-25T00:25:52+00:00",
   "last_sweep_ended_utc": "2026-11-24T10:35:20+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": true,
+  "sent": false,
   "open": [],
   "opened": [],
   "reminded": [],
-  "resolved": [
-   "cores_idle"
-  ],
-  "title": "JUDGE STALL RESOLVED: cores_idle",
-  "armed": 0,
-  "delivered": 0
+  "resolved": []
  }
 }
