@@ -254,8 +254,9 @@ def certify_with_clocks(surv_path: Path, doc: dict, *, fresh: Iterable[str] | No
     result: dict[str, Any] = {"at": _now(), "canon": str(surv_path.name)}
     rows: dict[str, tuple] = {}
     try:
-        from shadow_admission import runs_from_canon
-        engine_rows = sf.certified_sleeves(runs=runs_from_canon(doc))
+        from shadow_admission import _evicted_keys, runs_from_canon
+        engine_rows = sf.certified_sleeves(
+            runs=runs_from_canon(doc, evicted=_evicted_keys(sf.BASE)))
         disp = dict(sf.CERT_DISPOSITION)
         if fresh is None:
             try:

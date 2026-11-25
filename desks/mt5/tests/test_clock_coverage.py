@@ -180,7 +180,7 @@ def test_an_unreadable_canon_is_unmeasured_never_green(desk) -> None:
     assert doc["status"] == "UNMEASURED"
 
 
-def test_a_stale_certified_clock_goes_first_in_the_rotation() -> None:
+def test_a_stale_certified_clock_goes_ahead_of_every_fresh_clock() -> None:
     now = datetime.now(UTC)
     rows = _rows("AUDUSD", "EURUSD", "GBPUSD")
     state = {
@@ -190,10 +190,11 @@ def test_a_stale_certified_clock_goes_first_in_the_rotation() -> None:
                         "last_attempt_at": (now - timedelta(hours=48)).isoformat()},
     }
     order = [r[0] for r in shadow_forward._stalest_symbols_first(rows, state)]
-    assert order == ["GBPUSD", "EURUSD", "AUDUSD"], order
-    state["GBPUSD.asia"]["status"] = "KILL"            # decided, so never "stale"
+    # never-evaluated first (no evidence at all), then the STALE clock ahead of the fresh one
+    assert order == ["EURUSD", "GBPUSD", "AUDUSD"], order
+    state["EURUSD.asia"]["last_attempt_at"] = now.isoformat()     # now every clock is evaluated
     order = [r[0] for r in shadow_forward._stalest_symbols_first(rows, state)]
-    assert order[0] == "EURUSD", order
+    assert order[0] == "GBPUSD", f"the stale certified clock was not first: {order}"
 
 
 def test_every_new_clock_has_the_engines_one_shape() -> None:

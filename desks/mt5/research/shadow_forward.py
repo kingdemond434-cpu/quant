@@ -1277,17 +1277,20 @@ def _stalest_symbols_first(enrolled: list, state: dict,
     now = datetime.now(UTC)
 
     def _tier(rows: list) -> int:
-        """0: holds a STALE certified clock (repair first); 1: holds a never-evaluated clock;
-        2: everything else. Terminal rows are decided, never stale."""
+        """0: holds a never-evaluated clock (no evidence at all -- the stalest there is, and
+        pinned first by test_shadow_forward_checkpoints); 1: holds a STALE certified clock
+        (repaired by going ahead of every fresh clock); 2: everything else. Terminal rows are
+        decided, never stale. The never-evaluated tier drains (a reached row is stamped), so a
+        backlog of new clocks delays a stale one by at most that backlog, never for ever."""
         tier = 2
         for row in rows:
             st = state.get(_row_key(row) or "")
             st = st if isinstance(st, dict) else {}
             if _is_terminal(st.get("status")):
                 continue
-            if _clock_is_stale(st, now):
-                return 0
             if not st.get("last_attempt_at"):
+                return 0
+            if _clock_is_stale(st, now):
                 tier = 1
         return tier
 
@@ -1298,9 +1301,8 @@ def _stalest_symbols_first(enrolled: list, state: dict,
 
 #: A certified clock not reached for this many hours is STALE (2026-11-25, invariant I1: every
 #: certified survivor on a FRESH forward clock). A stale clock is REPAIRED BY ORDER: its symbol
-#: goes first in the next pass's rotation, ahead of never-evaluated clocks, so a backlog of new
-#: certificates can never starve a running clock past the threshold. A never-evaluated clock
-#: ages from its `enrolled_at`, so the reverse starvation cannot happen either.
+#: goes ahead of every fresh clock in the next pass's rotation, behind only never-evaluated
+#: clocks (which hold no evidence at all). CLOCK_COVERAGE.json lists every stale clock.
 CLOCK_STALE_H = float(os.environ.get("QUANT_CLOCK_STALE_H", "24") or 24.0)
 
 

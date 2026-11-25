@@ -497,7 +497,9 @@ def _canon(base: Path) -> tuple[dict, str]:
 
 
 def authorized_runs(base: Path = BASE,
-                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
+                    lanes: tuple[str, ...] = ("h1", "scalp"), *,
+                    canon: dict | None = None,
+                    evicted: set[str] | frozenset[str] | None = None) -> list[dict]:
     """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
 
     EVERY ROW THIS RETURNS HOLDS A TEN-GATE CERTIFICATE IN THE CANONICAL STORE. That is now the
@@ -528,23 +530,17 @@ def authorized_runs(base: Path = BASE,
     # Cleared BEFORE the policy early-return, not after: a pass that refuses the whole canon on a
     # policy mismatch must not leave the previous pass's drops standing as if they were this
     # pass's findings. This list always describes the run that just happened, never a backlog.
+    # `canon` (2026-11-25, invariant I1): a canon document already IN MEMORY, read instead of
+    # the one on disk -- the certification transaction (`clock_coverage.certify_with_clocks`)
+    # derives the clocks a canon it is ABOUT TO WRITE owes, through this same door.
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
-    universal, _canon_from = _canon(base)
-    evicted = _evicted_keys(base)
-    return runs_from_canon(universal, evicted=evicted, lanes=lanes)
-
-
-def runs_from_canon(universal: dict, *, evicted: set[str] | frozenset[str] = frozenset(),
-                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
-    """`authorized_runs` over a canon document already IN MEMORY (2026-11-25, invariant I1).
-
-    The body of `authorized_runs`, unchanged, split out so the certification transaction
-    (`research/clock_coverage.certify_with_clocks`) can derive the clocks a canon it is ABOUT TO
-    WRITE owes, before the write, from the same door the engine walks through. One derivation:
-    a second reading of the canon is how two organs came to disagree about which clock is which.
-    The caller owns clearing `DROPPED_CERTIFICATES` / `EVICTED_CERTIFICATES`.
-    """
+    if canon is None:
+        universal, _canon_from = _canon(base)
+    else:
+        universal = canon
+    if evicted is None:
+        evicted = _evicted_keys(base) if canon is None else set()
     if not is_exact_policy(universal.get("gate_policy")):
         # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
         # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk
@@ -692,3 +688,10 @@ def run_key(run: dict) -> str:
     return sleeve_key(run["symbol"], run["selector"], run.get("params") or {},
                       run.get("family") or "session_range_breakout",
                       run.get("side") or "LONG")
+
+
+def runs_from_canon(universal: dict, *, evicted: set[str] | frozenset[str] = frozenset(),
+                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
+    """`authorized_runs` over a canon document already in memory (invariant I1, 2026-11-25).
+    One door, two inputs: the body is `authorized_runs`' own, never a copy."""
+    return authorized_runs(BASE, lanes, canon=universal, evicted=set(evicted))
