@@ -854,6 +854,7 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
                 exclusions: Mapping[str, Any], integrity: Any, authority: Any, cert_id: str,
                 fingerprint: str, priced: Any = (), replicated: str = "REPLICATED",
+                edge_doubt: str | None = None,
                 ) -> tuple[str, str, list[str], float]:
     """(refusal status or "", why, doubts, size multiplier) for one certified sleeve.
 
@@ -868,6 +869,7 @@ def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
     from prop.e8_book import (
         DOUBT_MULT,
         DOUBT_PLACEBO,
+        DOUBT_REAL_EDGE,
         DOUBT_REPLICATION,
         DOUBT_TIER_S,
         SUPERSEDED_EXCLUSIONS,
@@ -893,6 +895,9 @@ def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
         tier_reason = f"Tier S door error ({type(exc).__name__}: {exc})"
     if tier_reason:
         doubts.append((DOUBT_TIER_S, f"Tier S door: {tier_reason}"))
+    if edge_doubt:
+        # The reopen judge lists it unverified (research/real_edge.py): sized, never refused.
+        doubts.append((DOUBT_REAL_EDGE, edge_doubt))
     done = {str(c) for c in priced or ()}
     fresh = [c for c, _ in doubts if c not in done]
     mult = 1.0 if cert.get(book_key, 0) > 0 else DOUBT_MULT ** len(fresh)
@@ -1004,6 +1009,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
 
     cert = principal_e8_book(load_cert_book(CERT_BOOK_FILE, "e8"))
     doc["cert_book"] = cert or None
+    # THE REOPEN JUDGE, re-read at the door so a verdict that turned since the book was written is
+    # priced here too (research/real_edge.py). It sizes; it never refuses.
+    import real_edge as _real_edge
+    edges, doc["real_edge"] = _real_edge.load()
     committed_usd = 0.0
     try:
         resting_orders = venue.orders()
@@ -1134,7 +1143,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         status, why, doubts, doubt_mult = entry_doors(
             sym, book_key, cert, exclusions, integrity, promotion_authority, cert_id,
-            str(s.get("fingerprint") or ""), s.get("doubt_codes") or (), REPLICATED)
+            str(s.get("fingerprint") or ""), s.get("doubt_codes") or (), REPLICATED,
+            _real_edge.doubt(cert_id, edges))
         if status:
             row.update(status=status, why=why)
             doc["sleeves"].append(row)

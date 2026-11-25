@@ -283,6 +283,16 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         mt5.shutdown()
     log(f"ftmo venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
+    # THE EVENT TRIGGER FOR EVERY ALLOCATOR (research/allocator_triggers.py): rides this 5-minute
+    # clock. It only starts the allocators' own registered tasks early; it never sizes or sends.
+    try:
+        sys.path.insert(0, str(DESK / "research"))
+        import allocator_triggers
+        trig = allocator_triggers.run()
+        log(f"allocator triggers: {trig.get('status')} "
+            f"{ {k: v.get('action') for k, v in (trig.get('subscribers') or {}).items()} }")
+    except Exception as exc:
+        log(f"allocator triggers failed: {type(exc).__name__}: {exc}")
     return 0
 
 

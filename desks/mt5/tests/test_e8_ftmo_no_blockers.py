@@ -193,3 +193,15 @@ def test_audchf_gap_decay_quarantine_is_lifted_in_code(tmp_path) -> None:
                  encoding="utf-8")
     pol = live_policy.policy(p)
     assert aud not in pol.quarantined_sleeves and zar in pol.quarantined_sleeves
+
+
+def test_an_unverified_real_edge_sizes_at_the_e8_door_and_never_refuses() -> None:
+    """Audit MF2 on #1211: the reopen judge's doubt is x DOUBT_MULT at the door, charged once."""
+    from prop.e8_book import DOUBT_MULT, DOUBT_REAL_EDGE
+    from prop.e8_executor import entry_doors
+    status, _, doubts, mult = entry_doors("EURUSD", "EURUSD_x_asia", {}, {}, _Gate(), _Door(),
+                                          "c1", "fp", (), "REPLICATED", "unverified real edge: t")
+    assert status == "" and mult == DOUBT_MULT and doubts == ["unverified real edge: t"]
+    *_, mult = entry_doors("EURUSD", "EURUSD_x_asia", {}, {}, _Gate(), _Door(), "c1", "fp",
+                           (DOUBT_REAL_EDGE,), "REPLICATED", "unverified real edge: t")
+    assert mult == 1.0

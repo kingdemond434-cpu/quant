@@ -71,6 +71,7 @@ desks/mt5/mt5desk/universe.py
 desks/mt5/mt5desk/universe_registry.py
 desks/mt5/prop/__init__.py
 desks/mt5/prop/e8_book.py
+desks/mt5/prop/stress.py
 desks/mt5/prop/e8_evidence.py
 desks/mt5/prop/e8_executor.py
 desks/mt5/prop/e8_gold.py
@@ -349,6 +350,7 @@ desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
 desks/mt5/research/decay_regime.py
+desks/mt5/research/real_edge.py
 desks/mt5/research/input_ablation.py
 libs/portfolio/input_arms.py
 libs/ops/env_keys.py

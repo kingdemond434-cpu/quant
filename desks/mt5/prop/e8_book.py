@@ -341,6 +341,9 @@ DOUBT_MULT = 0.5
 #: Structured doubt codes (Audit should-fix 4 on 9dc6bbfe4): a door that already priced a doubt
 #: writes its code on the row (`doubt_codes`) and the next door never charges it twice.
 DOUBT_PLACEBO, DOUBT_REPLICATION, DOUBT_TIER_S = "placebo_alarm", "replication", "tier_s_door"
+#: The reopen judge (research/real_edge.py) lists the certificate and does not verify it: a doubt
+#: that SIZES the sleeve, never refuses it (Audit MF2 on #1211; zuck 2026-11-24 18:34Z).
+DOUBT_REAL_EDGE = "real_edge_unverified"
 _MAJORS = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
 
 
@@ -537,6 +540,11 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     losers = load_fill_losers()
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
+    # THE REOPEN JUDGE (research/real_edge.py) PRICES, IT NEVER REFUSES: a certificate it lists
+    # unverified carries doubt code DOUBT_REAL_EDGE and is sized x DOUBT_MULT; a verified one is
+    # marked `real_edge_verified`. A verdict that cannot be read changes nothing.
+    import real_edge
+    edges, _edges_status = real_edge.load()
     accepted: list[dict[str, Any]] = []
     blocked: list[dict[str, str]] = []
     for row in rows:
@@ -567,6 +575,12 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
             if verdict != REPLICATED:
                 doubts.append(f"replication {verdict}: {why}")
                 codes.append(DOUBT_REPLICATION)
+            edge_doubt = real_edge.doubt(key, edges)
+            if edge_doubt:
+                doubts.append(edge_doubt)
+                codes.append(DOUBT_REAL_EDGE)
+            elif real_edge.verified(key, edges):
+                row = {**row, "real_edge_verified": True}
         if reason:
             blocked.append({"certificate": key, "why": reason})
         else:

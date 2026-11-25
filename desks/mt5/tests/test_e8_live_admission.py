@@ -174,6 +174,44 @@ def test_principal_e8_book_lifts_only_the_superseded_zeros() -> None:
     assert lifted == e8_book.SUPERSEDED_E8_ZEROS
 
 
+def test_an_unverified_real_edge_is_sized_down_never_refused(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit MF2 on #1211: the reopen judge prices a doubt; it never refuses a promoted sleeve."""
+    import real_edge
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {}, "excluded": {}}), encoding="utf-8")
+    verdict = tmp_path / "REOPEN_VERIFICATION.json"
+    verdict.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(), "rows": {
+        "c1": {"certificate": "real", "verified": True, "why_not": []},
+        "c2": {"certificate": "doubted", "verified": False,
+               "why_not": ["forward t 0.8 < 2"]}}}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(real_edge, "VERDICT", verdict)
+    monkeypatch.setattr(e8_book, "load_fill_proven", lambda: {})
+    monkeypatch.setattr(e8_book, "load_fill_losers", lambda: {})
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls: _Gate()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    rows = [
+        {"key": "real", "symbol": "GBPUSD", "family": "session_range_breakout",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "doubted", "symbol": "EURUSD", "family": "session_range_breakout",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "unlisted", "symbol": "NZDUSD", "family": "session_range_breakout",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+    ]
+    accepted, blocked = e8_book.live_admissible(rows)
+    assert blocked == []
+    by = {r["key"]: r for r in accepted}
+    assert set(by) == {"real", "doubted", "unlisted"}
+    assert by["real"].get("real_edge_verified") is True
+    assert by["doubted"]["doubt_codes"] == [e8_book.DOUBT_REAL_EDGE]
+    assert by["doubted"]["evidence_mult"] == pytest.approx(
+        by["unlisted"]["evidence_mult"] * e8_book.DOUBT_MULT, abs=1e-6)
+    assert by["real"]["evidence_mult"] == by["unlisted"]["evidence_mult"]
+    assert any("forward t 0.8 < 2" in n for n in by["doubted"]["evidence_notes"])
+
+
 def test_missing_exclusion_authority_refuses_to_build(tmp_path: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(e8_book, "CERT_BOOK", tmp_path / "missing.json")
