@@ -38,7 +38,8 @@ INTEL_DOC = {
     "source": "factor_residual", "generated_at": "2026-09-17T00:00:00+00:00", "tests_run": 8780,
     "discoveries": [
         {"kind": "factor_residual", "symbol": "EURUSD", "family": "asia_momentum",
-         "params": {"rr": 1.8, "ttl_bars": 12, "session": "asia", "timeframe": "H1"},
+         "params": {"rr": 1.8, "ttl_bars": 12, "session": "asia", "timeframe": "H1",
+                    "mom_thresh": 0.5},
          "mechanism": "asia session handover: risk carried out of tokyo is repriced in london",
          "title": "EURUSD asia handover"},
         {"kind": "anomaly", "symbol": "XAUUSD", "family": "level_breakout",
@@ -132,7 +133,7 @@ def test_unexecutable_descendant_is_disposed_before_donation(ctx):
 
 
 def test_executable_descendant_keeps_the_same_door(ctx):
-    cell = _child(params={"regime": "high_vol"})
+    cell = _child(params={"regime": "high_vol", "mom_thresh": 0.5})
     ok, why = dc._dispose(cell, ctx, coverage={}, hashes=set(), redundant=set(), conn=None)
     assert ok, why
 
@@ -451,7 +452,8 @@ CULTURE_DOC = {
     "source": "followme_cn", "generated_at": "2026-09-30T00:00:00+00:00", "tests_run": 10,
     "discoveries": [
         {"kind": "copy_trader", "symbol": "EURUSD", "family": "asia_momentum",
-         "params": {"rr": 1.8, "ttl_bars": 12, "session": "asia", "timeframe": "H1"},
+         "params": {"rr": 1.8, "ttl_bars": 12, "session": "asia", "timeframe": "H1",
+                    "mom_thresh": 0.5},
          "url": "https://www.followme.cn/trader/123",
          "mechanism": "散户 chase the asia session handover: risk carried out of tokyo is "
                       "repriced in london",
@@ -489,3 +491,119 @@ def test_a_row_with_no_evidence_carries_unmeasured_never_a_guess():
     assert prov["source_culture"] == "UNMEASURED"
     assert prov["culture_derivation"]["source_culture"] == "UNMEASURED"
     assert "source_url" not in prov and "source_seat" not in prov
+
+
+# --------------------------------------------------------------------------- real settings
+# THE DEFECT (funnel, 2026-11-25): 24,711 of this compiler's 26,008 docket rows were
+# DEFAULTS_ONLY -- a family at its defaults with a session / regime / conditioner variant -- and
+# only 132 were testable. A stated setting never reached the family's own keyword, and a child
+# with none was donated anyway, to be judged as the family's defaults.
+from research import family_spec as FS  # noqa: E402
+
+
+def test_stated_params_reads_structured_and_rule_text_settings():
+    row = {"symbol": "EURUSD", "parameters": {"lookback": 40},
+           "exact_rule": "fade the range when RSI(9) < oversold=25; hold_bars: 6"}
+    got = dc.stated_params(row)
+    assert got == {"lookback": 40, "rsi_n": 9, "oversold": 25, "hold_bars": 6}
+    # structured wins over text, and a sandbox row's evidence.parameters is read too
+    assert dc.stated_params({"params": {"rsi_n": 14}, "exact_rule": "rsi_n=9"}) == {"rsi_n": 14}
+    assert dc.stated_params({"evidence": {"parameters": {"w": 30}}}) == {"w": 30}
+    assert dc.stated_params({"mechanism": "a 20-day drift, nothing named"}) == {}
+
+
+def test_a_child_with_stated_numbers_becomes_executable_under_the_familys_names():
+    child = _child(family="range_reversion",
+                   params={"lookback": 40, "session": "asia", "regime": "high_vol",
+                           "mechanism_genome": {"actor": "x"}})
+    out = dc.translate_params(child)
+    assert out["spec_status"] == FS.EXECUTABLE
+    assert out["params"] == {"range_n": 40, "session": "asia", "regime": "high_vol"}
+    assert out["params_mapped"] == {"lookback": "range_n"}
+    assert out["params_unread"] == ["mechanism_genome"]
+    assert out["content_hash"] != child["content_hash"]
+    assert FS.judged_quality("range_reversion", out["params"]) == FS.EXECUTABLE
+    ok, why = dc.gate_spec(out)
+    assert ok and why == "spec:executable"
+
+
+def test_a_child_with_only_variant_keys_is_refused_by_name():
+    for params in ({"session": "asia", "conditioner": "carry"}, {"rr": 1.0, "ttl_bars": 6},
+                   {}):
+        out = dc.translate_params(_child(params=params), prose="asia handover")
+        ok, why = dc.gate_spec(out)
+        assert not ok
+        assert why.startswith(("spec:defaults_only", "spec:prose_only")), why
+
+
+def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
+    """End to end: a parent that STATES its setting in its rule text yields donated rows that
+    carry it under the family's keyword; a parent with nothing executable yields no donation
+    and a named, counted `spec:` reason -- and every closure member is still disposed."""
+    _write(desk["paths"]["INTEL"] / "seat" / "discoveries_20261125_0000.json", {
+        "source": "seat", "discoveries": [
+            {"kind": "lead", "symbol": "EURUSD", "family": "asia_momentum",
+             "params": {"timeframe": "H1", "session": "asia"},
+             "exact_rule": "go with the asia drift when mom_thresh=0.6",
+             "mechanism": "asia session handover: risk carried out of tokyo is repriced"},
+            {"kind": "lead", "symbol": "XAUUSD", "family": "level_breakout",
+             "params": {"timeframe": "H1", "session": "london"},
+             "mechanism": "a breakout through the level runs the resting stops beyond it"}]})
+    report = dc.run(budget_s=60, max_discoveries=20, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert desk["donated"], "the stated rule produced nothing"
+    for row in desk["donated"]:
+        assert FS.judged_quality(row["family"], row["params"]) == FS.EXECUTABLE, row
+    stated = [r for r in desk["donated"] if r["symbol"] == "EURUSD"
+              and r["family"] == "asia_momentum"]
+    assert stated and all(r["params"].get("mom_thresh") == 0.6 for r in stated)
+    assert not any(r["family"] == "level_breakout" for r in desk["donated"])
+    reasons = report["blocked"]["by_reason"]
+    assert reasons.get("spec:defaults_only", 0) > 0
+    assert report["compiled"] + report["blocked"]["n"] == report["possible_cells"]
+    assert report["conversion_debt"]["unexplained_missing_cells"] == 0
+    assert R.memories(kind="blocked_cell")
+
+
+def test_the_moat_exchange_donates_only_executable_claims_and_marks_the_rest(
+        tmp_path, monkeypatch):
+    """moat_factory (0 of 608 docket rows testable, 2026-11-25) forwards the registry's queue,
+    which holds the compiler's older defaults-only variants. A claim with no real setting is
+    counted by verdict and marked `not_executable` with its reason -- never donated, never left
+    to be re-claimed; one with a stated setting is donated under the family's keyword."""
+    pytest.importorskip("pandas")
+    import moat_candidate_compiler as mcc
+
+    from libs.ops import throughput
+    from research import proposer_common as pc
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(throughput, "SAMPLES", tmp_path / "throughput_samples.jsonl")
+    monkeypatch.setattr(pc, "_preregister", lambda _s, _c: {
+        "preregistered": 0, "failed": 0, "already": 0, "reasons": {}, "failures": []})
+    conn = R.connect()
+    try:
+        bare, _ = R.enqueue_candidate(
+            family="range_reversion", symbol="AUDCAD", status="queued", origin="DESK",
+            params={"representation": "external_engine", "session": "asia"},
+            mechanism="m" * 20, conn=conn)
+        real, _ = R.enqueue_candidate(
+            family="range_reversion", symbol="AUDCAD", status="queued", origin="DESK",
+            params={"lookback": 40, "session": "asia"}, mechanism="m" * 20, conn=conn)
+        out = mcc.claim_and_donate(conn, per_department=50)
+        assert out["status"] == "CLAIMED", out
+        assert out["not_executable"]["rows"] == 1
+        assert out["not_executable"]["by_reason"] == {FS.DEFAULTS_ONLY: 1}
+        files = list((tmp_path / "intel" / mcc.SOURCE).glob("discoveries_*.json"))
+        rows = json.loads(files[0].read_text("utf-8"))["discoveries"]
+        assert [r["params"] for r in rows] == [{"range_n": 40, "session": "asia"}]
+        got = {r["id"]: (r["status"], r["rejection_reason"]) for r in conn.execute(
+            "SELECT id, status, rejection_reason FROM research_candidates WHERE id IN (?, ?)",
+            (bare, real))}
+        assert got[bare][0] == mcc.NOT_EXECUTABLE_STATUS
+        assert str(got[bare][1]).startswith("spec:defaults_only")
+        assert got[real][0] != mcc.NOT_EXECUTABLE_STATUS
+    finally:
+        conn.close()
+        R.set_path(None)

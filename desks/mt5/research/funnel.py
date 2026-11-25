@@ -26,7 +26,9 @@ THE STAGES, AND WHERE EACH COUNT COMES FROM
                           denominator -- neither testable nor waste.
     JUDGED                has a gate verdict: PRODUCER_CONVERSION `judged` (the verdict ledger by
                           exact cell identity); by class / family the judge's own seen-cell set
-                          (data/hypotheses/gauntlet_seen_cells.json).
+                          (data/hypotheses/gauntlet_seen_cells.json); by family the larger of
+                          that and the newest sweep in reports/GATE_VERDICT_DIGEST.json (a family
+                          neither names, while the seen set is stale, is UNMEASURED).
     CERTIFIED             data/certificate_provenance.json records in the canon.
     NON_EXOTIC_CERTIFIED  ... whose symbol research/universe_policy does not call exotic
                           (fail CLOSED: an unreadable policy calls every symbol exotic).
@@ -282,6 +284,7 @@ class Paths:
     source_registry: Path
     floors: Path
     out: Path
+    digest: Path | None = None
 
     @classmethod
     def at(cls, desk: Path) -> Paths:
@@ -296,7 +299,8 @@ class Paths:
                    fills=desk / "data" / "fill_corpus.jsonl",
                    source_registry=desk / "data" / "source_registry.json",
                    floors=desk / "data" / "funnel_floors.json",
-                   out=desk / "reports" / "FUNNEL.json")
+                   out=desk / "reports" / "FUNNEL.json",
+                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json")
 
 
 def _blank() -> dict[str, Any]:
@@ -333,6 +337,30 @@ def compiler_lane(paths: Paths, *, deadline: float | None) -> dict[str, Any]:
     rows = list(iter_list(paths.compiler, "hypotheses", deadline=deadline))
     return {"available": True, "per_source": per, "rows": rows,
             "partial": bool(getattr(iter_list, "cut", False))}
+
+
+def judged_by_family(path: Path | None) -> dict[str, Any] | None:
+    """family -> cells the newest sweep judged, from the committed GATE_VERDICT_DIGEST.json
+    (`latest_sweep.terminal_gates_by_family`, the per-family terminal gates of that sweep's
+    REJECTED verdicts -- a LOWER bound: the digest does not split passes by family). None when
+    the digest is unreadable.
+
+    WHY (2026-11-25). The family cut read JUDGED only from `gauntlet_seen_cells.json`, and the
+    copy this tree holds was last stamped 2026-09-12 -- seven weeks before `exit_operated` and
+    `htf_anchor_trend` were registered (2026-10-30). Both read "0 judged" while the digest
+    published the same day recorded 6,848 and 4,362 of their cells judged in the newest sweep
+    and 26,154 / 19,250 verdict changes in the ledger. A stale store read as a measured zero."""
+    doc = _read(path) if path is not None else None
+    sweep = doc.get("latest_sweep") if isinstance(doc, dict) else None
+    fams = sweep.get("terminal_gates_by_family") if isinstance(sweep, dict) else None
+    if not isinstance(fams, dict):
+        return None
+    out: dict[str, int] = {}
+    for fam, gates in fams.items():
+        if isinstance(gates, dict):
+            out[str(fam)] = sum(int(_int(v) or 0) for v in gates.values())
+    return {"families": out, "omitted": int(_int(sweep.get("families_omitted")) or 0),
+            "swept_at": str(sweep.get("swept_at") or "")}
 
 
 def row_quality(row: Mapping[str, Any]) -> str:
@@ -711,6 +739,24 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
             for c in (cut(classes, klass_of(sym)), cut(families, fam)):
                 c.add("JUDGED", 1, "judge:gauntlet_seen_cells")
                 c.units["JUDGED"].add(f"{sym}|{fam}")
+    # ---- JUDGED by family from the digest's newest sweep, where the seen-cell set is behind it.
+    # The two are lower bounds of the same count, so the family reads the larger and names both.
+    dig = judged_by_family(paths.digest)
+    seen_newest = (max((str(v) for v in seen_doc.values()), default="")
+                   if isinstance(seen_doc, dict) else "")
+    seen_stale = bool(dig and dig["swept_at"] and seen_newest
+                      and seen_newest[:19] < dig["swept_at"][:19])
+    if dig is not None:
+        for fam, n in dig["families"].items():
+            c = cut(families, fam)
+            if n > int(c.n["JUDGED"] or 0):
+                c.n["JUDGED"] = n
+                c.basis["JUDGED"].append("judge:gate_verdict_digest.latest_sweep (lower bound)")
+        if seen_stale:
+            notes.append(f"gauntlet_seen_cells newest stamp {seen_newest[:19]} predates the "
+                         f"digest's sweep {dig['swept_at'][:19]}: family JUDGED reads the "
+                         f"larger of the two; a family neither names is UNMEASURED while the "
+                         f"digest omits {dig['omitted']} famil(ies)")
     tot = (conv_doc or {}).get("totals") if isinstance(conv_doc, dict) else None
     if isinstance(tot, dict) and _int(tot.get("judged")) is not None:
         desk.add("JUDGED", _int(tot.get("judged")), "registry:totals.judged")
@@ -748,10 +794,17 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
 
     # A class or family the compiler / the judge never named is a MEASURED zero there once the
     # input was read (an equity class with no compiled row, a family the judge never saw).
-    for c in (*classes.values(), *families.values()):
+    # A family the stale seen set never names AND the digest left out of its top list is
+    # UNMEASURED at JUDGED, not zero: neither store can say it was never judged.
+    blind_judged = {k for k in families
+                    if seen_stale and dig and dig["omitted"] and k not in dig["families"]}
+    for k, c in (*((("class", k), v) for k, v in classes.items()),
+                 *((("family", k), v) for k, v in families.items())):
         for s, ok, basis in (("ROWS", comp.get("available"), "compiler:rows"),
                              ("TESTABLE", comp.get("available"), "compiler:family_spec"),
-                             ("JUDGED", seen is not None, "judge:gauntlet_seen_cells")):
+                             ("JUDGED", seen is not None and not (k[0] == "family"
+                                                                  and k[1] in blind_judged),
+                              "judge:gauntlet_seen_cells")):
             if ok and c.n[s] is None:
                 c.add(s, 0, basis)
 
@@ -837,6 +890,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                    "compiler": ("READ" if comp.get("available") else UNMEASURED)
                    + (" (partial)" if comp.get("partial") else ""),
                    "gauntlet_seen_cells": "READ" if seen is not None else UNMEASURED,
+                   "gate_verdict_digest": "READ" if dig is not None else UNMEASURED,
                    **chain["inputs"]},
         "desk": {**d, "floors": verdicts, "violated": violated, "attack_order": attack,
                  "raw_sources": raw_sources},
@@ -856,7 +910,8 @@ STAGE_DEFINITIONS = {
     "ROWS": "compiler candidates per source + registry candidates; compiler rows by instrument",
     "TESTABLE": "family_spec EXECUTABLE (compiler rows exact; registry lane estimated from the "
                 "judge_reach judged-row sample); DEFAULTS_ONLY / PROSE_ONLY are waste",
-    "JUDGED": "registry judged by exact cell identity; the judge's seen cells by instrument",
+    "JUDGED": "registry judged by exact cell identity; the judge's seen cells by instrument; "
+              "by family the larger of the seen cells and the verdict digest's newest sweep",
     "CERTIFIED": "certificate_provenance records in the canon",
     "NON_EXOTIC_CERTIFIED": "... not universe_policy.is_exotic_symbol (fail closed)",
     "FORWARD_CLOCKED": "... with a forward clock in reports/shadow/*_state.json",

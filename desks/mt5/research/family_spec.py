@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import re
 from functools import lru_cache
 from typing import Any
 
@@ -61,6 +62,15 @@ ALIASES: dict[str, dict[str, str]] = {
     "drawdown_conditional": {"window": "lookback"},
     "overnight_drift": {"hold": "hold_bars"},
 }
+#: A single-window family's own window IS its lookback (and a Bollinger "period" is its window):
+#: added 2026-11-25 for the discovery compiler's parents, whose seats name a window `lookback`.
+#: `volatility_squeeze` is left out on purpose -- it has TWO windows (bands, squeeze history) and
+#: a bare lookback does not say which.
+for _fam, _target in (("mean_reversion_bollinger", "bb_n"), ("range_reversion", "range_n"),
+                      ("volume_spike", "vol_lookback"), ("mean_reversion_rsi", "rsi_n"),
+                      ("pca_residual", "window")):
+    ALIASES.setdefault(_fam, {}).setdefault("lookback", _target)
+ALIASES["mean_reversion_bollinger"].setdefault("period", "bb_n")
 
 #: Keywords every family takes for risk geometry; restating only these is not a rule.
 GEOMETRY_ONLY: frozenset[str] = frozenset({"atr_n", "rr", "ttl_bars", "stop_atr"})
@@ -198,3 +208,70 @@ def judged_quality(family: Any, params_json: Any, prose: Any = "") -> str:
     if st in (SIGNATURE_UNREADABLE, UNREGISTERED_FAMILY):
         return "UNMEASURED"
     return st
+
+
+def carried_keys() -> frozenset[str]:
+    """Keys a cell carries that are NOT the family's rule and must survive a translation: the
+    transformation miners' variant keys (applied around the family by `cell_modifiers`) and the
+    identity keys that name an input or a chart (`family_inputs.IDENTITY_KEYS`)."""
+    try:
+        from mt5desk.cell_modifiers import MODIFIER_KEYS
+        from mt5desk.family_inputs import IDENTITY_KEYS
+    except Exception:
+        return frozenset({"session", "timeframe", "regime", "side_mode", "conditioner",
+                          "representation", "residual", "residual_tag", "entry_timing",
+                          "execution_style", "macro_axis", "macro_state", "peer_symbol",
+                          "factor_symbols", "input_symbol", "input_source", "cost_aware"})
+    return frozenset(MODIFIER_KEYS | IDENTITY_KEYS)
+
+
+def translate(family: str, params: Any, *, prose: str = "") -> dict[str, Any]:
+    """`to_executable` plus the cell's CALL params: the family's own keywords (producer names
+    renamed through ALIASES) with the variant and identity keys carried unchanged. A key that is
+    neither is dropped from the call and named in `unread` -- the gauntlet refuses an unknown
+    keyword as NOT_RUN, so carrying it would only spend a judge slot to learn that.
+
+    Returns the `to_executable` dict with `call` added. On an unreadable signature `call` is the
+    params exactly as given: nothing is renamed or dropped on a host that cannot read the family."""
+    src = dict(params) if isinstance(params, dict) else {}
+    sig = signature(family)
+    if sig is None:
+        got = to_executable(family, src, prose=prose)
+        got["call"] = src
+        return got
+    keep = carried_keys()
+    # A keyword the family itself reads stays in the rule even when it is also a variant key
+    # (`side_mode` is an argument of cross_asset_residual): the family, not this module, owns it.
+    rule = {k: v for k, v in src.items() if k in sig or k not in keep}
+    got = to_executable(family, rule, prose=prose)
+    if src and not rule and got["status"] in (PROSE_ONLY, DEFAULTS_ONLY):
+        # Params WERE emitted, just none of the family's: DEFAULTS_ONLY, as `to_executable`
+        # reads the same row (the funnel's verdict), whatever prose rides beside it.
+        got.update(status=DEFAULTS_ONLY,
+                   reason=f"only variant / identity keys {sorted(src)} were emitted, so the "
+                          "family would run at its defaults")
+    call = dict(got["params"])
+    call.update({k: v for k, v in src.items() if k in keep and k not in rule})
+    got["call"] = call
+    return got
+
+
+#: `name=value` / `name: value` stated in a rule's text, and the indicator-call forms whose
+#: argument IS a named window (`RSI(14)` is rsi_n=14). Nothing else in prose is read as a number:
+#: "20-day" says nothing about which argument it sets, and a guessed mapping would judge a rule
+#: nobody proposed.
+_KV = re.compile(r"\b([a-z][a-z0-9_]{0,31})\s*[=:]\s*(-?\d+(?:\.\d+)?)(?![\w.])")
+_CALL = {"rsi": "rsi_n", "bollinger": "bb_n", "bb": "bb_n", "atr": "atr_n"}
+_CALL_RE = re.compile(r"\b(rsi|bollinger|bb|atr)\s*\(\s*(\d+)\s*[,)]", re.IGNORECASE)
+
+
+def stated_numbers(text: Any) -> dict[str, Any]:
+    """The parameters a rule's text STATES by name, as {name: number}; {} when it states none."""
+    out: dict[str, Any] = {}
+    s = str(text or "")
+    for name, num in _CALL_RE.findall(s):
+        out.setdefault(_CALL[name.lower()], int(num))
+    for name, num in _KV.findall(s):
+        val: Any = float(num) if "." in num else int(num)
+        out.setdefault(name, val)
+    return out

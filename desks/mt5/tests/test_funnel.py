@@ -227,3 +227,55 @@ def test_the_leg_is_wired_on_the_hourly_clock() -> None:
     assert '"desks/mt5/reports/FUNNEL.json", 180' in oc
     sync = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
     assert '"desks/mt5/reports/FUNNEL.json"' in sync
+
+
+def test_a_family_newer_than_the_stale_seen_set_reads_the_digest_not_zero(
+        tmp_path: Path) -> None:
+    """THE FINDING (2026-11-25): `exit_operated` (16,385 rows) and `htf_anchor_trend` (9,135)
+    read 0 JUDGED because the family cut read only `gauntlet_seen_cells.json`, whose committed
+    copy was last stamped 2026-09-12 -- seven weeks before either family was registered -- while
+    the committed GATE_VERDICT_DIGEST's newest sweep had judged 6,848 and 4,362 of their cells.
+    Not a routing gap: an identity join against a stale store, read as a measured zero."""
+    p = _desk(tmp_path)
+    _w(p.seen, {"EURUSD.trend_ma_cross.p=1": "2026-09-12T11:02:31+00:00",
+                "GBPUSD.trend_ma_cross.p=2": "2026-09-12T11:02:31+00:00",
+                "XAUUSD.carry.p=9": "2026-09-12T11:02:31+00:00"})
+    assert p.digest is not None
+    _w(p.digest, {"latest_sweep": {
+        "swept_at": "2026-11-24T08:16:22.509611+00:00", "families_omitted": 3,
+        "terminal_gates_by_family": {
+            "exit_operated": {"UNKNOWN": 6848},
+            "htf_anchor_trend": {"UNKNOWN": 4292, "in_sample_screen": 70},
+            "trend_ma_cross": {"in_sample_screen": 1}}}})
+    hyps = json.loads(p.compiler.read_text("utf-8"))
+    hyps["hypotheses"].append({"symbol": "EURUSD", "family": "jump", "params": {"jump_k": 3.0},
+                               "source": "miner:gamma"})
+    _w(p.compiler, hyps)
+    doc = _build(p)
+    fam = {r["family"]: r for r in doc["families"]}
+    assert fam["exit_operated"]["stages"]["JUDGED"] == 6848
+    assert fam["htf_anchor_trend"]["stages"]["JUDGED"] == 4362
+    assert "judge:gate_verdict_digest.latest_sweep (lower bound)" in \
+        fam["htf_anchor_trend"]["basis"]["JUDGED"]
+    assert fam["trend_ma_cross"]["stages"]["JUDGED"] == 2          # the larger lower bound
+    assert fam["carry"]["stages"]["JUDGED"] == 1                   # the seen set still counts
+    # a family neither store names, while the seen set is stale and the digest omits some,
+    # cannot be called never-judged
+    assert fam["jump"]["stages"]["JUDGED"] == fn.UNMEASURED
+    assert doc["inputs"]["gate_verdict_digest"] == "READ"
+    assert any("predates the digest's sweep" in n for n in doc["notes"])
+    assert doc["desk"]["stages"]["JUDGED"] == 55   # the desk total is the registry's, untouched
+
+
+def test_a_fresh_seen_set_keeps_a_measured_zero(tmp_path: Path) -> None:
+    p = _desk(tmp_path)
+    assert p.digest is not None
+    _w(p.seen, {"EURUSD.trend_ma_cross.p=1": "2026-11-25T00:00:00+00:00"})
+    _w(p.digest, {"latest_sweep": {"swept_at": "2026-11-24T08:16:22+00:00",
+                                   "families_omitted": 3, "terminal_gates_by_family": {}}})
+    hyps = json.loads(p.compiler.read_text("utf-8"))
+    hyps["hypotheses"].append({"symbol": "EURUSD", "family": "jump", "params": {"jump_k": 3.0},
+                               "source": "miner:gamma"})
+    _w(p.compiler, hyps)
+    fam = {r["family"]: r for r in _build(p)["families"]}
+    assert fam["jump"]["stages"]["JUDGED"] == 0
