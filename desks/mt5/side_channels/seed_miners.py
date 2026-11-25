@@ -814,8 +814,12 @@ def sweep_order(cursor: int) -> list[str]:
     return names[k:] + names[:k]
 
 
-def run_and_save(budget_s: float | None = None) -> dict:
+def run_and_save(budget_s: float | None = None, only: list[str] | None = None) -> dict:
     """One sweep. With `budget_s`, a ROTATING sweep inside that wall budget.
+
+    `only` names the miners to run (the paper clock, ops/run_research_feeds.cmd, passes
+    research_feeds,arxiv_qfin,bis_speeches). A named pass does not touch the rotation cursor,
+    so it never steals a slot from the full sweep; an unknown name is refused, not ignored.
 
     WHY ROTATION (measured 2026-11-10). On the box this module is run by the hourly cycle's
     scout_swarm as one beat among ~20 sharing a 600 s pass, under a hard subprocess timeout of
@@ -835,6 +839,11 @@ def run_and_save(budget_s: float | None = None) -> dict:
     seconds: dict = dict(st.get("miner_seconds", {}))
     cursor = int(st.get("sweep_cursor", 0))
     order = sweep_order(cursor)
+    if only:
+        unknown = [n for n in only if n not in MINERS]
+        if unknown:
+            raise SystemExit(f"seed_miners: unknown miner(s) {unknown}; known: {sorted(MINERS)}")
+        order = [n for n in order if n in only]
     ran: list[str] = []
     deferred: list[str] = []
     for i, name in enumerate(order):
@@ -842,8 +851,9 @@ def run_and_save(budget_s: float | None = None) -> dict:
         if budget_s is not None and time.monotonic() - t0 > LAUNCH_SHARE * budget_s:
             deferred = order[i:]
             break
-        cursor = (list(MINERS).index(name) + 1) % len(MINERS)
-        _merge_state({"sweep_cursor": cursor})
+        if not only:
+            cursor = (list(MINERS).index(name) + 1) % len(MINERS)
+            _merge_state({"sweep_cursor": cursor})
         ran.append(name)
         t_m = time.monotonic()
         try:
@@ -987,4 +997,8 @@ if __name__ == "__main__":
     _ap = argparse.ArgumentParser(description="seed miner sweep")
     _ap.add_argument("--budget-s", type=float, default=None,
                      help="wall budget for a rotating sweep (the caller's slice)")
-    run_and_save(_ap.parse_args().budget_s)
+    _ap.add_argument("--only", default=None,
+                     help="comma-separated miner names to run alone (no cursor change)")
+    _a = _ap.parse_args()
+    run_and_save(_a.budget_s, [x.strip() for x in _a.only.split(",") if x.strip()]
+                 if _a.only else None)
