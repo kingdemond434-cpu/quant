@@ -1218,8 +1218,10 @@ def _stalest_symbols_first(enrolled: list, state: dict,
 #: Wall-clock seconds one production pass may spend on rows; <= 0 disables the budget.
 PASS_BUDGET_S = float(os.environ.get("QUANT_SHADOW_PASS_BUDGET_S", "600") or 0.0)
 _UNRANKED = 10 ** 9
-SLOT_RANKER_FILE = BASE / "reports" / "FORWARD_SLOT_RANKER.json"
-CLOCK_FRESHNESS_FILE = SHADOW_DIR / "CLOCK_FRESHNESS.json"
+#: Both resolved from SHADOW_DIR AT CALL TIME (reports/shadow -> reports), so a test that points
+#: SHADOW_DIR at a tmp tree never reads the box's ranking or writes the box's freshness table.
+SLOT_RANKER_NAME = "FORWARD_SLOT_RANKER.json"
+CLOCK_FRESHNESS_NAME = "CLOCK_FRESHNESS.json"
 EXOTIC_EXCLUSION_WHY = ("exotic FX is banned from mining, judging and trading (zuck 2026-11-24 "
                         "18:06Z); universe_policy.is_exotic_symbol, the desk's one exotic "
                         "definition")
@@ -1250,7 +1252,7 @@ def split_exotic(enrolled: list) -> tuple[list, list]:
 def slot_ranks(path: Path | None = None) -> tuple[dict[str, int], str]:
     """(clock key -> 0-based rank, source) from the forward slot ranker's `running` table, which
     it publishes already sorted best first. Absent or unreadable -> ({}, why)."""
-    p = path or SLOT_RANKER_FILE
+    p = path or (SHADOW_DIR.parent / SLOT_RANKER_NAME)
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -2211,7 +2213,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json",
                 exotic=exotic,
                 next_cursor=(enrolled[rows_reached][0] if budget_cut
                              and rows_reached < len(enrolled) else None))
-            _atomic_write_text(CLOCK_FRESHNESS_FILE, json.dumps(doc, indent=1, default=str))
+            _atomic_write_text(SHADOW_DIR / CLOCK_FRESHNESS_NAME,
+                               json.dumps(doc, indent=1, default=str))
         except Exception as exc:          # a report never fails the pass
             slog(f"CLOCK_FRESHNESS.json not written ({type(exc).__name__}: {exc})")
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
