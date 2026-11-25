@@ -480,6 +480,11 @@ def _proposers() -> None:
                  # placebo, then the pre-declared exogenous_conditioner cells through the donor
                  # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
                  "nlp_social_cells",
+                 # DEALER GAMMA (2026-11-24): HKEX index-option and Deribit option books ->
+                 # dealer gamma, flip distance, put/call OI as PIT lake series; the pre-declared
+                 # exogenous_conditioner cells, gain-tested against a shuffled-date placebo.
+                 # The fetch half is on the organs battery. Writes DEALER_GAMMA_CELLS.json.
+                 "dealer_gamma_proxy",
                  # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
                  # intel. Daily, on their own budget, so no hourly organ's share shrinks.
                  "learned_miners",
