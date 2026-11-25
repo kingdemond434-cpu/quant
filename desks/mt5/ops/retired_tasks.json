@@ -1,0 +1,13 @@
+{
+  "_doc": "Scheduled tasks the repo has retired. Adopt-And-Seal.ps1 step 1c DISABLES (never unregisters) a listed task only when its action target script no longer exists in the tree. Machine-readable twin of the RETIRED prose in box_tasks.manifest.",
+  "retired": [
+    {
+      "task": "MT5-DeepenUniverse",
+      "retired_on": "2026-09-30",
+      "manifest": "desks/mt5/ops/box_tasks.manifest",
+      "manifest_lines": "310-314",
+      "replaced_by": "daily_cycle:deepen_bars (MT5-Daily)",
+      "removed_target": "ops/run_deepen_universe.cmd"
+    }
+  ]
+}
