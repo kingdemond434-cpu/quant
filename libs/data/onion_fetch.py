@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
 
+from libs.data.robots_body import robots_rules_or_refusal
+
 __all__ = [
     "ATTACHMENT_MAX_BYTES", "DEFAULT_PORTS", "HARD_STOP", "MIN_INTERVAL_S", "ROBOTS_AGENT",
     "SOCKS_ABSENT", "TOR_ABSENT", "TOR_PRESENT", "UA", "FetchResult", "OnionFetcher",
@@ -304,16 +306,14 @@ class OnionFetcher:
         if rp is None:
             scheme = urlsplit(url).scheme
             got = self._get(f"{scheme}://{host}/robots.txt", host)
-            if got.status in (404, 410):
-                parser = urllib.robotparser.RobotFileParser()
-                parser.parse([])
-                rp = parser
-            elif got.ok:
-                parser = urllib.robotparser.RobotFileParser()
-                parser.parse(got.text.splitlines())
-                rp = parser
-            else:
+            if got.status is None or (300 <= got.status < 400):
+                # Never reached, or a redirect we do not follow: unread, so fail closed.
                 rp = f"robots.txt unreadable ({got.verdict} {got.status}): fail closed"
+            else:
+                # The shared reader: 404/410 = no rules, an HTML body or a hard-stop status is a
+                # refusal, so an onion host's robots.txt is judged exactly as a clearnet one is.
+                read = robots_rules_or_refusal(got.status, got.content_type or None, got.body)
+                rp = f"{read}: fail closed" if isinstance(read, str) else read
             self._robots[host] = rp
         if isinstance(rp, str):
             return rp
