@@ -48,6 +48,11 @@ $shipRef = "refs/remotes/intel-ship/send"
 # Do not let transport spawn detached maintenance after this pre-lock phase.  Such a child no
 # longer participates in the named writer mutex and can collide with either this checkout or the
 # canonical adopter's later commit.
+# The VPS shipper was retired 2026-11-03, so the transport branch may be gone. ls-remote
+# --exit-code returns 2 for "no matching ref" and other non-zero codes for transport failure,
+# which keeps the existing failure exit below.
+& git ls-remote --exit-code --heads origin intel-ship/send 2>&1 | Out-Null
+if ($LASTEXITCODE -eq 2) { Log "transport branch intel-ship/send absent on origin (shipper retired); nothing to adopt"; exit 0 }
 & git -c maintenance.auto=false -c gc.auto=0 fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
 
