@@ -26,7 +26,7 @@ def _csv(path: Path, cols: str, n: int = 12, *, stamped: bool = True) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     head = (HEAD if stamped else "event_time,") + cols
     k = len(cols.split(","))
-    rows = [f"2026-01-{i + 1:02d}," + ("2026-01-{:02d}T00:00:00Z,".format(i + 2) if stamped
+    rows = [f"2026-01-{i + 1:02d}," + (f"2026-01-{i + 2:02d}T00:00:00Z," if stamped
                                        else "") + ",".join(str(i + j) for j in range(k))
             for i in range(n)]
     path.write_text("\n".join([head, *rows]) + "\n", "utf-8")
