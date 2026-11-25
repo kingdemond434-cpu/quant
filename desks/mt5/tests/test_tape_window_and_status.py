@@ -69,7 +69,10 @@ def test_folded_partials_equal_the_raw_tick_resample(tmp_path, monkeypatch) -> N
     flow_raw = step.resample("15min").sum()
     idx = spread_raw.index
     spread, flow = osw._tape_series("EURUSD", idx, "M15")
-    assert np.allclose(spread.dropna(), spread_raw.reindex(spread.dropna().index), atol=1e-12)
+    live = spread_raw.dropna().index
+    assert len(live) > 10
+    assert np.allclose(spread.reindex(live).to_numpy(), spread_raw.reindex(live).to_numpy(),
+                       atol=1e-12)
     # raw flow treats each day's first tick as diff vs the previous day's last: so does the fold
     assert np.allclose(flow.to_numpy(), flow_raw.reindex(idx).ffill().to_numpy())
 
