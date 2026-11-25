@@ -136,7 +136,7 @@ def test_a_native_language_search_statement_is_charged_too() -> None:
     """The deep forest writes in zh/ja/ko/ru; its stated searches are trials like English ones."""
     from libs.research.claim_selection import selection_trials as st
     assert st("我们从200组参数中选出最优的一组") == 200
-    assert st("回测了1,500组组合，夏普2.1") == 1500
+    assert st("回测了1,500组组合\uff0c夏普2.1") == 1500
     assert st("200通りの中から最も良い設定を選んだ") == 200
     assert st("500가지 전략을 테스트했다") == 500
     assert st("выбрал лучший из 300 вариантов") == 300
