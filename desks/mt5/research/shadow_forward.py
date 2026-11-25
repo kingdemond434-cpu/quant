@@ -1154,13 +1154,18 @@ def _row_key(row) -> str | None:
         return None
 
 
-def _stalest_symbols_first(enrolled: list, state: dict) -> list:
+def _stalest_symbols_first(enrolled: list, state: dict,
+                           ranks: dict[str, int] | None = None) -> list:
     """Reorder whole SYMBOL groups so the least-recently evaluated symbol comes first.
 
     The order inside a symbol is kept (it is what lets one bar fetch serve every variant), and
     ties keep the alphabetical order, so a pass that finishes does exactly the work it did
     before. Only a pass that is cut behaves differently: it has spent its time on the rows that
     waited longest instead of on the same prefix as last time.
+
+    `ranks` (clock key -> 0-based slot rank, best first) breaks a tie in staleness by the best
+    rank a symbol's clocks hold -- in practice the never-evaluated groups, which all tie at "".
+    Absent, every group ties at the same rank and the order is exactly the one above.
     """
     groups: dict[str, list] = {}
     for row in enrolled:
@@ -1174,12 +1179,151 @@ def _stalest_symbols_first(enrolled: list, state: dict) -> list:
                           if isinstance(st, dict) else "")
         return min(stamps) if stamps else ""
 
-    order = sorted(groups, key=lambda sym: (_age(groups[sym]), sym))
+    def _best(rows: list) -> int:
+        if not ranks:
+            return 0
+        return min((ranks.get(_row_key(row) or "", _UNRANKED) for row in rows),
+                   default=_UNRANKED)
+
+    order = sorted(groups, key=lambda sym: (_age(groups[sym]), _best(groups[sym]), sym))
     return [row for sym in order for row in groups[sym]]
 
 
+# ---------------------------------------------------------------------------------------------
+# THE ROTATION BUDGET (2026-11-25, invariant I1: every certified survivor on a fresh forward
+# clock). Measured on the box 2026-11-24: one legacy pass took 2,849 s for ~1,018 rows (1,876 s
+# on an earlier read) inside a 15-minute MT5-Shadow slot, and the 2026-11-13 change that gives
+# EVERY certificate a paper clock (replication now holds promotion, not the clock) takes the
+# non-exotic book to roughly six thousand clocks once the box adopts it. An unbounded pass of that
+# size outlives its slot, is killed before `promoter` runs, and the stage after it never happens.
+#
+# So the pass is BUDGETED, and the three properties that make a budget safe are stated here:
+#   * DETERMINISTIC ORDER: stalest symbol first (`_stalest_symbols_first`), never-evaluated first
+#     of all, ties broken by `research/forward_slot_ranker.py`'s published rank -- slot value =
+#     P(certify) x dE[log W] x diversification / days to maturity, the existing organ that prices
+#     independence and growth. An absent or unreadable ranking breaks no tie (UNMEASURED, said in
+#     the artifact), it never reorders on a guess.
+#   * A CURSOR: `last_attempt_at` on every row IS the cursor. A row the pass reached is stamped,
+#     a row it did not keep its old stamp and is therefore older than every reached row, so the
+#     next pass starts exactly where this one stopped and successive passes cover every clock.
+#   * NOTHING IS LOST BY WAITING: every pass replays a clock from SHADOW_START, so a clock visited
+#     every k-th pass carries the same record as one visited every pass, only refreshed later.
+# A forward clock deploys no capital: the budget moves no risk and changes no gate, trial count,
+# certificate or verdict rule. Its whole effect is published per clock in CLOCK_FRESHNESS.json.
+#
+# EXOTICS ARE A NAMED EXCLUSION (zuck 2026-11-24 18:06Z: no mining, judging or trading of exotic
+# FX). They get no new clock and existing exotic rows are left as they are, marked UNMEASURED with
+# the reason, never deleted -- the ban can be lifted without losing a record.
+# ---------------------------------------------------------------------------------------------
+#: Wall-clock seconds one production pass may spend on rows; <= 0 disables the budget.
+PASS_BUDGET_S = float(os.environ.get("QUANT_SHADOW_PASS_BUDGET_S", "600") or 0.0)
+_UNRANKED = 10 ** 9
+SLOT_RANKER_FILE = BASE / "reports" / "FORWARD_SLOT_RANKER.json"
+CLOCK_FRESHNESS_FILE = SHADOW_DIR / "CLOCK_FRESHNESS.json"
+EXOTIC_EXCLUSION_WHY = ("exotic FX is banned from mining, judging and trading (zuck 2026-11-24 "
+                        "18:06Z); universe_policy.is_exotic_symbol, the desk's one exotic "
+                        "definition")
 
-def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
+
+def _is_exotic(symbol: str) -> bool:
+    try:
+        from universe_policy import is_exotic_symbol
+    except ImportError:
+        try:
+            from research.universe_policy import is_exotic_symbol  # type: ignore[no-redef]
+        except Exception:
+            return False
+    try:
+        return bool(is_exotic_symbol(str(symbol)))
+    except Exception:
+        return False
+
+
+def split_exotic(enrolled: list) -> tuple[list, list]:
+    """(rows the desk owes a clock, exotic rows set aside by name)."""
+    keep, exo = [], []
+    for row in enrolled:
+        (exo if _is_exotic(row[0]) else keep).append(row)
+    return keep, exo
+
+
+def slot_ranks(path: Path | None = None) -> tuple[dict[str, int], str]:
+    """(clock key -> 0-based rank, source) from the forward slot ranker's `running` table, which
+    it publishes already sorted best first. Absent or unreadable -> ({}, why)."""
+    p = path or SLOT_RANKER_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"UNMEASURED: {p.name} unreadable ({type(exc).__name__})"
+    rows = doc.get("running") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {}, f"UNMEASURED: {p.name} carries no `running` table"
+    ranks: dict[str, int] = {}
+    for i, e in enumerate(rows):
+        if isinstance(e, dict) and e.get("clock") is not None:
+            ranks.setdefault(str(e["clock"]), i)
+    return ranks, f"{p.name} at {doc.get('at')} ({len(ranks)} ranked clocks)"
+
+
+def _age_h(stamp: object, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return round((now - t).total_seconds() / 3600.0, 3)
+
+
+def clock_freshness(enrolled: list, state: dict, *, reached: set[str], rows_reached: int,
+                    complete: bool, budget_s: float | None, elapsed_s: float,
+                    ranks: dict[str, int], rank_source: str, exotic: list,
+                    next_cursor: str | None, now: datetime | None = None) -> dict:
+    """The per-clock freshness table and its summary (the health board reads `summary`)."""
+    now = now or datetime.now(UTC)
+    clocks: dict[str, dict] = {}
+    ages: list[float] = []
+    never = 0
+    for row in enrolled:
+        key = _row_key(row)
+        if not key or key in clocks:
+            continue
+        st = state.get(key) if isinstance(state.get(key), dict) else {}
+        age = _age_h(st.get("last_attempt_at"), now)
+        if age is None:
+            never += 1
+        else:
+            ages.append(age)
+        clocks[key] = {"symbol": row[0], "family": row[3] if len(row) > 3 else
+                       "session_range_breakout", "status": st.get("status"), "n": st.get("n"),
+                       "last_attempt_at": st.get("last_attempt_at"), "age_h": age,
+                       "reached_this_pass": key in reached,
+                       "slot_rank": ranks.get(key)}
+    ages.sort()
+    n = len(clocks)
+    per_pass = max(len(reached), 1)
+    summary = {
+        "at": now.isoformat(timespec="seconds"),
+        "n_clocks": n, "reached_this_pass": len(reached), "rows_reached": rows_reached,
+        "pass_complete": complete, "never_evaluated": never,
+        "budget_s": budget_s, "elapsed_s": round(elapsed_s, 1),
+        "est_passes_per_full_rotation": -(-n // per_pass) if n else 0,
+        "oldest_age_h": ages[-1] if ages else None,
+        "median_age_h": ages[len(ages) // 2] if ages else None,
+        "next_cursor_symbol": next_cursor,
+        "priority_source": rank_source,
+        "excluded": {"exotic": {"n": len({_row_key(r) for r in exotic}),
+                                "why": EXOTIC_EXCLUSION_WHY}},
+        "rule": ("stalest symbol first, never-evaluated first of all, ties by forward_slot_ranker "
+                 "rank; `last_attempt_at` is the cursor, so successive budgeted passes cover "
+                 "every clock; a clock deploys no capital and no gate is touched"),
+    }
+    return {"summary": summary, "clocks": clocks}
+
+
+
+def main(rows: list | None = None, ledger: str = "shadow_state.json",
+         budget_s: float | None = None) -> None:
     """Evaluate a set of forward rows and write their ledger.
 
     PARAMETERISED SO THE PRE-CERTIFICATION LANE REUSES THIS ENGINE RATHER THAN COPYING IT. The
@@ -1214,7 +1358,30 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # of a symbol together is what keeps one fetch serving all of them.
     enrolled.sort(key=lambda row: (row[0], timeframe_of(row[2]), row[1], row[3],
                                    repr(sorted(row[2].items()))))
-    enrolled = _stalest_symbols_first(enrolled, state)
+    # THE PRODUCTION PASS IS BUDGETED AND ROTATES (see PASS_BUDGET_S). A caller that hands its own
+    # rows (the pre-certification lane, tests) keeps the unbudgeted, unfiltered pass it always had
+    # unless it asks for a budget.
+    production = rows is None
+    exotic: list = []
+    if production:
+        enrolled, exotic = split_exotic(enrolled)
+        if budget_s is None:
+            budget_s = PASS_BUDGET_S
+        for _row in exotic:
+            _k = _row_key(_row)
+            if _k and isinstance(state.get(_k), dict) and \
+                    (state[_k].get("forward_evidence") or {}).get("why") != EXOTIC_EXCLUSION_WHY:
+                _st = state[_k]
+                _unmeasured(_st, EXOTIC_EXCLUSION_WHY)
+                state[_k] = _st
+        if exotic:
+            slog(f"EXCLUDED_EXOTIC {len(exotic)} certified clock(s): {EXOTIC_EXCLUSION_WHY}")
+    budget = float(budget_s) if budget_s and float(budget_s) > 0 else None
+    ranks, rank_source = slot_ranks() if production else ({}, "not a production pass")
+    enrolled = _stalest_symbols_first(enrolled, state, ranks)
+    pass_t0 = time.monotonic()
+    rows_reached = len(enrolled)
+    budget_cut = False
     pass_started = datetime.now(UTC).isoformat(timespec="seconds")
     last_save = time.monotonic()
     cached_symbol: str | None = None
@@ -1243,6 +1410,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         shared_ledgers = {n: {"members": m} for n, m in _fl.collisions(_all_keys).items()}
     seen: set[str] = set()
     for i_row, row in enumerate(enrolled):
+        if budget is not None and time.monotonic() - pass_t0 >= budget:
+            # THE BUDGET IS SPENT: stop cleanly so the state is written and the stages after
+            # this one (scalp, qquant, promoter) run inside the slot. Unreached rows keep their
+            # older `last_attempt_at`, so the next pass starts with them.
+            rows_reached, budget_cut = i_row, True
+            slog(f"ROTATION BUDGET {budget:.0f}s spent after {i_row} of {len(enrolled)} rows; "
+                 f"the next pass resumes at {row[0]}")
+            break
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
             state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
             state["engine_pass"] = {"started_at": pass_started, "rows_reached": i_row,
@@ -2021,11 +2196,24 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
-    state["engine_pass"] = {"started_at": pass_started, "rows_reached": len(enrolled),
-                            "rows": len(enrolled), "complete": True,
+    state["engine_pass"] = {"started_at": pass_started, "rows_reached": rows_reached,
+                            "rows": len(enrolled), "complete": not budget_cut,
+                            "budget_s": budget, "budget_exhausted": budget_cut,
                             "finished_at": state["updated_at"],
                             "profile": prof.report()}
     _persist_state(state_path, state, final=True)
+    if production:
+        try:
+            doc = clock_freshness(
+                enrolled, state, reached=seen, rows_reached=rows_reached,
+                complete=not budget_cut, budget_s=budget,
+                elapsed_s=time.monotonic() - pass_t0, ranks=ranks, rank_source=rank_source,
+                exotic=exotic,
+                next_cursor=(enrolled[rows_reached][0] if budget_cut
+                             and rows_reached < len(enrolled) else None))
+            _atomic_write_text(CLOCK_FRESHNESS_FILE, json.dumps(doc, indent=1, default=str))
+        except Exception as exc:          # a report never fails the pass
+            slog(f"CLOCK_FRESHNESS.json not written ({type(exc).__name__}: {exc})")
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)

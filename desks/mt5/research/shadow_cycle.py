@@ -209,8 +209,53 @@ def _read(path: Path) -> dict:
         return {}
 
 
-def _canonical_certificate_count() -> int | None:
-    """Count only exact-policy ten-gate certificates from the single canonical store."""
+#: NAMED EXCLUSIONS FROM THE ENROLMENT CENSUS (2026-11-25). A certificate the desk is FORBIDDEN to
+#: clock is not a missing clock. Exotic FX is banned outright (zuck 2026-11-24 18:06Z: no mining,
+#: judging or trading of exotic FX), and a family in data/banned_families.json never gets a clock
+#: (`shadow_forward` refuses it by name). Counting either as "missing" made ENROLMENT_GAP -- and
+#: MT5-Shadow's exit 3 -- permanent: measured on the box 2026-11-24, 13,452 certificates against
+#: 627 clocks, with the exotic share of the clock book alone at ~60%. The exclusions are COUNTED
+#: and REASONED on the health row, never dropped silently, and no gate, certificate or trial
+#: count is touched: this changes which number is called a deficiency, not what passed.
+EXCLUSION_REASONS = {
+    "exotic": ("exotic FX is banned from mining, judging and trading (zuck 2026-11-24 18:06Z); "
+               "universe_policy.is_exotic_symbol, the desk's one exotic definition"),
+    "banned_family": "family banned by the principal (data/banned_families.json); no clock is owed",
+}
+
+
+def _symbol_of_cert(name: str, row: dict) -> str:
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    return str(spec.get("symbol") or row.get("sym") or row.get("symbol") or "").upper()
+
+
+def _family_of_cert(row: dict) -> str:
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    return str(spec.get("family") or row.get("family") or "")
+
+
+def _exclusion_of(symbol: str, family: str) -> str | None:
+    """'exotic' / 'banned_family' / None. Never raises: an unreadable policy excludes nothing,
+    so an outage can only make the census LOUDER (more reported missing), never quieter."""
+    if symbol:
+        try:
+            from universe_policy import is_exotic_symbol
+            if is_exotic_symbol(symbol):
+                return "exotic"
+        except Exception:
+            pass
+    if family:
+        try:
+            from family_policy import family_banned
+            if family_banned(family):
+                return "banned_family"
+        except Exception:
+            pass
+    return None
+
+
+def _canonical_certificate_census() -> dict | None:
+    """{all, eligible, excluded: {reason: {n, why}}} over the exact-policy canon, or None."""
     try:
         from gate_policy import all_ten_pass, is_exact_policy
         doc = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json")
@@ -218,11 +263,35 @@ def _canonical_certificate_count() -> int | None:
             return None
         rows = doc.get("survivors")
         if not isinstance(rows, dict):
-            return 0
-        return sum(isinstance(row, dict) and all_ten_pass(row.get("gates"))
-                   for row in rows.values())
+            rows = {}
+        n_all = 0
+        excluded: dict[str, int] = {}
+        for name, row in rows.items():
+            if not (isinstance(row, dict) and all_ten_pass(row.get("gates"))):
+                continue
+            n_all += 1
+            why = _exclusion_of(_symbol_of_cert(str(name), row), _family_of_cert(row))
+            if why:
+                excluded[why] = excluded.get(why, 0) + 1
+        return {"all": n_all, "eligible": n_all - sum(excluded.values()),
+                "excluded": {k: {"n": v, "why": EXCLUSION_REASONS[k]}
+                             for k, v in sorted(excluded.items())}}
     except (ImportError, OSError, ValueError, TypeError):
         return None
+
+
+def _canonical_certificate_count() -> int | None:
+    """Exact-policy ten-gate certificates the desk OWES a clock: the canon minus the named
+    exclusions above (see `_canonical_certificate_census` for the excluded counts)."""
+    census = _canonical_certificate_census()
+    return None if census is None else int(census["eligible"])
+
+
+def _clock_row_excluded(key: str, row: dict) -> bool:
+    """A clock row on an excluded symbol or family, so the census compares like with like."""
+    k = str(key)
+    sym = str(row.get("symbol") or (k.split(".", 1)[0] if "." in k else "")).upper()
+    return _exclusion_of(sym, _family_of_key(k)) is not None
 
 
 def _family_of_key(key: str) -> str:
@@ -346,6 +415,14 @@ def _zero_trade_diagnostics(rows: list[dict], now: datetime) -> dict[str, object
     }
 
 
+def _clock_rotation_summary() -> dict | None:
+    """The forward engine's rotation summary (reports/shadow/CLOCK_FRESHNESS.json `summary`), so
+    the health board shows how fresh every clock is without reading the per-clock table."""
+    doc = _read(BASE / "reports" / "shadow" / "CLOCK_FRESHNESS.json")
+    summ = doc.get("summary") if isinstance(doc, dict) else None
+    return summ if isinstance(summ, dict) else None
+
+
 def run() -> tuple[dict, int]:
     import external_shadow
     import promoter
@@ -464,8 +541,14 @@ def run() -> tuple[dict, int]:
     _n_mechs = len({_family_of_key(k) for k in _active_keys if _family_of_key(k)})
     _n_hashes = len({_hash_of_key(k) for k in _active_keys if _hash_of_key(k)})
     terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
-    certified = _canonical_certificate_count()
-    recorded = len(rows)
+    census = _canonical_certificate_census()
+    certified = None if census is None else int(census["eligible"])
+    # Like with like: a clock row on an excluded symbol or family is not counted against the
+    # certificates the desk owes a clock (those exclude the same rows).
+    _keyed = ([(k, legacy[k]) for k in represented_legacy]
+              + [(k, (scalp.get("sleeves") or {})[k]) for k in represented_scalp]
+              + [(k, qquant[k]) for k in represented_qquant])
+    recorded = sum(1 for k, r in _keyed if not _clock_row_excluded(k, r))
     if certified is None:
         errors["certificate_census"] = "canonical exact-policy certificate store is unmeasured"
         missing = []
@@ -502,6 +585,11 @@ def run() -> tuple[dict, int]:
         "configured_sleeves": len(active_rows),
         "represented_sleeves": len(active_rows),
         "certified_sleeves_total": certified,
+        # THE CANON AND ITS NAMED EXCLUSIONS (2026-11-25): `certified_sleeves_total` is what the
+        # desk owes a clock; these say what was set aside, how many, and why.
+        "certified_canon_total": None if census is None else census["all"],
+        "certified_excluded": None if census is None else census["excluded"],
+        "clock_rotation": _clock_rotation_summary(),
         "forward_clocks_total": len(active_rows),
         "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
         # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
