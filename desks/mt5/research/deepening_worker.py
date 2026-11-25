@@ -2358,14 +2358,22 @@ def _work(argv: list[str] | None = None) -> int:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prior = read_prior_candidates(OUT)
+    run_doc = {
+        "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "candidates": (prior or []) + recovered,
+        "recovered_this_run": len(recovered),
+        "dispositions": counts,
+        **({"memory_guard": mem_stop} if mem_stop else {}),
+    }
     if prior is not None:
-        write_candidates_atomic(OUT, {
-            "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "candidates": prior + recovered,
-            "recovered_this_run": len(recovered),
-            "dispositions": counts,
-            **({"memory_guard": mem_stop} if mem_stop else {}),
-        })
+        write_candidates_atomic(OUT, run_doc)
+    else:
+        # THIS RUN'S WORK IS KEPT TOO (Audit follow-up, 2026-11-25): the history could not be
+        # moved aside, so OUT is left untouched and the run's own rows go to a side file a later
+        # run or a human merges, rather than vanishing with the skipped write.
+        side = OUT.with_name(f"{OUT.stem}.pending-{datetime.now(tz=UTC):%Y%m%dT%H%M%SZ}.json")
+        write_candidates_atomic(side, run_doc)
+        dlog(f"this run's {len(recovered)} candidate(s) spilled to {side.name}")
     publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)

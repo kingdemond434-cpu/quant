@@ -81,3 +81,9 @@ def test_a_history_that_cannot_be_moved_aside_is_left_byte_identical(
     assert out.read_bytes() == raw
     src = (DESK / "research" / "deepening_worker.py").read_text("utf-8")
     assert "if prior is not None:\n        write_candidates_atomic(OUT" in src
+
+
+def test_the_skip_path_spills_the_runs_own_rows_to_a_side_file() -> None:
+    src = (DESK / "research" / "deepening_worker.py").read_text("utf-8")
+    skip = src.split("if prior is not None:\n        write_candidates_atomic(OUT, run_doc)")[1]
+    assert ".pending-" in skip.split("\n\n")[0] and "write_candidates_atomic(side, run_doc)" in skip
