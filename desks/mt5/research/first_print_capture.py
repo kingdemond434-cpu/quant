@@ -93,22 +93,23 @@ def robots_refusal(url: str, agent: str = UA, get: Getter | None = None) -> str 
     """None when robots.txt allows `url` for `agent`, else why not. FAIL CLOSED (Governance
     2026-11-10): 404/410 means no rules; 401/403/429/451, a 5xx, an unreadable or HTML body, or
     any transport error refuses the pass."""
-    import urllib.robotparser
+    from libs.data.robots_body import robots_rules_or_refusal
     parts = urllib.parse.urlsplit(url)
     req = urllib.request.Request(f"{parts.scheme}://{parts.netloc}/robots.txt",
                                  headers={"User-Agent": agent})
     try:
-        body = (get or _http)(req).decode("utf-8", errors="replace")
+        got = robots_rules_or_refusal(200, None, (get or _http)(req))
     except urllib.error.HTTPError as e:
         code = int(e.code)
         e.close()
-        return None if code in (404, 410) else f"robots.txt HTTP {code}"
+        got = robots_rules_or_refusal(code, None, b"")
     except Exception as e:
         return f"robots.txt unreadable ({type(e).__name__})"
-    if body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
-        return "robots.txt answered HTML"
-    rp = urllib.robotparser.RobotFileParser()
-    rp.parse(body.splitlines())
+    # One reader for every robots read (libs.data.robots_body): 404/410 = no rules; any markup
+    # or non-text body is unread; every other status refuses the pass.
+    if isinstance(got, str):
+        return got
+    rp = got
     return None if rp.can_fetch(agent, url) else "robots.txt disallows this path"
 
 
