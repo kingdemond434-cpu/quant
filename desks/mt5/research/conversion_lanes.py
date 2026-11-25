@@ -294,7 +294,9 @@ def rescore(jobs: list[dict[str, Any]], by_lane: Mapping[str, Any] | None,
                 t + PRIOR_STRENGTH)
             w = min(WEIGHT_MAX, max(WEIGHT_MIN, own / pooled))
             why = f"yield {own:.4g} vs pooled {pooled:.4g} on {t} testable outputs"
-            if t >= MIN_PARK_N and k == 0:
+            added0 = _parse(j.get("added_at"))
+            young = added0 is not None and now - added0 < timedelta(days=EXPLORE_DAYS)
+            if t >= MIN_PARK_N and k == 0 and not young:     # a new job is explored first
                 j.update(status="PARKED", parked_at=_iso(now),
                          retest_at=_iso(now + timedelta(days=RETEST_AFTER_DAYS)))
                 w = WEIGHT_MIN
