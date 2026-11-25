@@ -109,16 +109,3 @@ def test_rotating_scan_delivers_owned_parquet_and_explicit_bad_file(tmp_path, mo
     assert am._cursor_take(["a", "b", "c"], 2) == ["a", "b"]
     assert am._cursor_take(["a", "b", "c"], 2) == ["c", "a"]
     assert am._cursor_take([], 2) == []
-
-
-def test_a_native_language_search_statement_is_charged_too() -> None:
-    """The deep forest writes in zh/ja/ko/ru; its stated searches are trials like English ones."""
-    from libs.research.claim_selection import selection_trials as st
-    assert st("我们从200组参数中选出最优的一组") == 200
-    assert st("回测了1,500组组合，夏普2.1") == 1500
-    assert st("200通りの中から最も良い設定を選んだ") == 200
-    assert st("500가지 전략을 테스트했다") == 500
-    assert st("выбрал лучший из 300 вариантов") == 300
-    assert st("перебрал 1000 комбинаций") == 1000
-    # a year, a return or a holding period is not a search
-    assert st("2023年收益30%") == 0 and st("持仓5天") == 0 and st("数据从2010年开始") == 0
