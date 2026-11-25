@@ -193,7 +193,8 @@ def test_a_flagged_high_weight_row_never_jumps_ahead_of_a_clean_par_row() -> Non
     # and in the merge's real order (reweight, then demote_flagged), the clean row stays ahead
     sys.path.insert(0, str(_ROOT))
     from libs.tiers import prejudge_screen as pj
-    rows = [{"family": "a", "producer": "high", "i": 0}, {"family": "a", "producer": "par", "i": 1}]
+    rows = [{"family": "a", "symbol": "XAUUSD", "producer": "high", "i": 0},
+            {"family": "a", "symbol": "EURUSD", "producer": "par", "i": 1}]
     verdicts = {pj.identity(rows[0]): {"flags": ["invented_test"]}}
     out, _ = pl.reweight_rows(rows, {"high": 4.0})
     out, _ = pj.demote_flagged(out, verdicts)
