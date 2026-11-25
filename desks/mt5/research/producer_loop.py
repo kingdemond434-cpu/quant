@@ -370,7 +370,7 @@ def _is_exotic(symbol: str) -> bool:
         from research.universe_policy import is_exotic_symbol
         return bool(is_exotic_symbol(symbol))
     except Exception:
-        return False
+        return True       # fail CLOSED: an unreadable policy never lets an exotic through
 
 
 def _tradable(symbol: str, family: str) -> bool:
