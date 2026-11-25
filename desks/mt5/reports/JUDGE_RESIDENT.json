@@ -2,22 +2,22 @@
  "pid": 11904,
  "started_utc": "2026-11-23T18:11:02+00:00",
  "task_limit_s": 0.0,
- "sweeps": 1,
- "failures": 0,
- "lane_held": 0,
- "hung_kills": 3,
- "busy_seconds": 59058.1,
- "status": "SWEEPING",
+ "sweeps": 3,
+ "failures": 1,
+ "lane_held": 1,
+ "hung_kills": 4,
+ "busy_seconds": 122939.0,
+ "status": "BACKOFF",
  "longest_sweep_s": 110509.5,
- "consecutive_hangs": 0,
- "sweep_started_utc": "2026-11-24T10:35:20+00:00",
+ "consecutive_hangs": 1,
+ "sweep_started_utc": "2026-11-25T04:19:02+00:00",
  "hang_limit_s": 172800.0,
- "last_rc": 0,
- "last_sweep_s": 59058.1,
- "uptime_s": 59058.1,
- "last_sweep_ended_utc": "2026-11-24T10:35:20+00:00",
- "heartbeat_utc": "2026-11-25T04:04:57+00:00",
- "sweep_phase": {
+ "last_rc": 75,
+ "last_sweep_s": 74.0,
+ "uptime_s": 122954.5,
+ "last_sweep_ended_utc": "2026-11-25T04:20:16+00:00",
+ "last_hung_utc": "2026-11-25T04:18:46+00:00",
+ "killed_in_phase": {
   "pid": 15964,
   "sweep_started_utc": "2026-11-24T10:35:39+00:00",
   "phases": {
@@ -245,17 +245,17 @@
      }
     },
     "merge_and_publish": {
-     "samples": 1021,
+     "samples": 1045,
      "top": [
       {
        "stack": "preregistration.py:spec_index:286 < hypothesis_graph.py:record_gauntlet_verdicts:837 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170 < external_gauntlet.py:main:3960 < external_gauntlet.py:run_sharded:4844",
        "n": 679,
-       "share": 0.665
+       "share": 0.65
       },
       {
        "stack": "preregistration.py:spec_index:304 < hypothesis_graph.py:record_gauntlet_verdicts:837 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170 < external_gauntlet.py:main:3960 < external_gauntlet.py:run_sharded:4844",
-       "n": 253,
-       "share": 0.248
+       "n": 276,
+       "share": 0.264
       },
       {
        "stack": "decoder.py:raw_decode:361 < decoder.py:decode:345 < __init__.py:loads:346 < preregistration.py:spec_index:290 < hypothesis_graph.py:record_gauntlet_verdicts:837 < external_gauntlet.py:<lambda>:3960",
@@ -274,13 +274,13 @@
       }
      ],
      "process": {
-      "cpu_s": 903.6,
-      "page_faults": 26005019.0,
+      "cpu_s": 905.1,
+      "page_faults": 26023901.0,
       "read_bytes": 3888909361.0,
-      "write_bytes": 687156252.0,
-      "sampled_s": 10200.0,
+      "write_bytes": 687201840.0,
+      "sampled_s": 10440.0,
       "rss_mb_max": 6689.4,
-      "cpu_share_of_wall": 0.089
+      "cpu_share_of_wall": 0.087
      }
     }
    }
@@ -401,5 +401,7 @@
     }
    }
   }
- }
+ },
+ "backoff_s": 15,
+ "heartbeat_utc": "2026-11-25T04:20:16+00:00"
 }

@@ -1,42 +1,23 @@
 {
- "reason": "died_unrecorded",
- "detail": "sweep pid 13792 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 1344s old in phase merge_and_publish: it was killed from outside (OOM, reboot, hand kill) before it could record why",
- "stalled_utc": "2026-11-23T18:11:09+00:00",
- "pid": 13792,
- "phase": "merge_and_publish",
+ "status": "STALLED",
+ "reason": "resident_kill",
+ "detail": "sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident",
+ "stalled_utc": "2026-11-25T04:18:46+00:00",
+ "pid": 18464,
+ "phase": null,
  "shard": null,
- "last_progress": {
-  "beat_utc": "2026-11-23T17:48:45+00:00",
-  "phase": "merge_and_publish",
-  "phase_elapsed_s": 13571.5,
-  "shards": {
-   "phase": "rule",
-   "total": 15,
-   "done": 15,
-   "failed": 0,
-   "running": 0,
-   "stalled": 0,
-   "slow": 0,
-   "retrying": 0,
-   "shard_slow_s": 1800.0,
-   "shard_idle_kill_s": 1800.0,
-   "wave_started_utc": "2026-11-23T13:54:55+00:00"
-  },
-  "tree": {
-   "procs": 1,
-   "rss_mb": 4308.2,
-   "cpu_s": 8069.6
-  },
-  "last_progress_utc": "2026-11-23T17:48:45+00:00",
-  "idle_s": 0.0
+ "last_progress": {},
+ "counts_toward_widening": true,
+ "lost_s": 63786.8,
+ "kill": {
+  "killed": 2,
+  "orphans": [],
+  "wall_s": 5.29
  },
- "counts_toward_widening": false,
- "lost_s": 64309.0,
- "kill": null,
  "restored_from_merge_snapshot": [],
  "lock": "LOCKED",
  "unlocked_writes": 0,
- "consecutive": 0,
+ "consecutive": 2,
  "history": [
   {
    "kind": "SLOW",
@@ -320,6 +301,66 @@
    "lost_s": 64309.0,
    "kill": null,
    "restored_from_merge_snapshot": []
+  },
+  {
+   "status": "STALLED",
+   "reason": "no_progress",
+   "detail": "the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing)",
+   "stalled_utc": "2026-11-25T04:09:30+00:00",
+   "pid": 15964,
+   "phase": "merge_and_publish",
+   "shard": null,
+   "last_progress": {
+    "beat_utc": "2026-11-25T04:09:06+00:00",
+    "phase": "merge_and_publish",
+    "phase_elapsed_s": 10787.2,
+    "shards": {
+     "phase": "rule",
+     "total": 15,
+     "done": 15,
+     "failed": 0,
+     "running": 0,
+     "stalled": 0,
+     "slow": 0,
+     "retrying": 0,
+     "shard_slow_s": 1800.0,
+     "shard_idle_kill_s": 1800.0,
+     "wave_started_utc": "2026-11-25T01:07:49+00:00"
+    },
+    "tree": {
+     "procs": 1,
+     "rss_mb": 120.6,
+     "cpu_s": 5268.1
+    },
+    "last_progress_utc": "2026-11-25T03:38:39+00:00",
+    "idle_s": 1826.7
+   },
+   "counts_toward_widening": true,
+   "lost_s": 63235.4,
+   "kill": {
+    "killed": 0,
+    "orphans": [],
+    "wall_s": 1.09
+   },
+   "restored_from_merge_snapshot": []
+  },
+  {
+   "status": "STALLED",
+   "reason": "resident_kill",
+   "detail": "sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident",
+   "stalled_utc": "2026-11-25T04:18:46+00:00",
+   "pid": 18464,
+   "phase": null,
+   "shard": null,
+   "last_progress": {},
+   "counts_toward_widening": true,
+   "lost_s": 63786.8,
+   "kill": {
+    "killed": 2,
+    "orphans": [],
+    "wall_s": 5.29
+   },
+   "restored_from_merge_snapshot": []
   }
  ],
  "missed_growth": [
@@ -418,9 +459,32 @@
    "reason": "died_unrecorded",
    "lost_s": 64309.0,
    "why": "sweep pid 13792 died_unrecorded: sweep pid 13792 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 1344s old in phase merge_and_publish: it was killed from outside (OOM, reboot, hand ki. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  },
+  {
+   "day": "2026-11-25",
+   "at": "2026-11-25T04:09:30+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "no_progress",
+   "lost_s": 63235.4,
+   "why": "sweep pid 15964 no_progress: the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing). Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
+  },
+  {
+   "day": "2026-11-25",
+   "at": "2026-11-25T04:18:46+00:00",
+   "rail": "gauntlet_watchdog",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "judge wall-seconds discarded",
+   "reason": "resident_kill",
+   "lost_s": 63786.8,
+   "why": "sweep pid 18464 resident_kill: sweep pid 18464: its whole tree burned < 0.02 core for 2406s (> 2400s), measured by the resident. Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
   }
  ],
  "last_clear_utc": "2026-11-24T10:34:44+00:00",
- "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
- "status": "CLEAR"
+ "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged"
 }
