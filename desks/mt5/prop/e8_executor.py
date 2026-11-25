@@ -74,10 +74,11 @@ TAG = "E8"
 #: CERTIFIED XAUUSD SLEEVES TRADE HERE (2026-11-25, the approved order: every standby sleeve
 #: trades on FTMO and E8). Until now every XAUUSD sleeve was refused as OWNED_BY_GOLD_LANE, so
 #: 18 certified gold sleeves (session_range_breakout, cross_asset_residual, macro_conditional,
-#: range_reversion) had no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS stay E8-Gold's: a sleeve
-#: leg is placed only under the cross-account gold direction lock (mt5desk.gold_oco), never while
-#: this account rests a gold entry on the other side (a window bracket that would fill against it),
-#: and never beside an open XAU position (ONE POSITION PER INSTRUMENT, below). False is the revert.
+#: range_reversion) had no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS
+#: stay E8-Gold's: a sleeve leg is placed only under the cross-account gold direction lock
+#: (mt5desk.gold_oco), never while this account rests any gold entry (a window bracket keeps its
+#: slot) or holds any XAU position in the locked reading (ONE POSITION PER INSTRUMENT), and a
+#: banned XAU sleeve never closes by instrument (E8-Gold's positions share it). False reverts.
 GOLD_SLEEVES = True
 
 #: Per-position basis for the break-even floor: initial stop distance, and the high-water mark.
@@ -940,18 +941,27 @@ def _gold_sleeve_refusal(venue: Any, side: str, *, now: datetime, holder: str
     def rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         pos, ords = _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
                                                venue.instrument_id(_oco.SYMBOL))
-        seen["entries"] = ords
+        seen["positions"], seen["entries"] = pos, ords
         return pos, ords
 
     sync = _oco.sync_lane("e8", key, rows, date=date, holder=holder)
     if not sync.get("published") or "entries" not in seen:
         return (f"gold OCO: this account's gold state was not republished under the lock "
                 f"({sync.get('why')}); fail closed"), (key, date)
-    against = [o for o in seen["entries"] if _oco.side_of(o.get("side")) != want]
-    if want is None or against:
-        ids = ", ".join(str(o.get("id")) for o in against) or "?"
-        return (f"this E8 account rests a gold entry on the other side ({ids}): E8-Gold's window "
-                f"bracket keeps the slot, a {side} sleeve leg would fill against it"), (key, date)
+    if want is None:
+        return f"gold OCO: unreadable leg side {side!r}; fail closed", (key, date)
+    # FRESH, UNDER THE LOCK (audit MF2): an E8-Gold fill or another sleeve's send since the pass
+    # began is an open XAU position the pass-start snapshot does not show.
+    if seen.get("positions"):
+        ids = ", ".join(str(p.get("id")) for p in seen["positions"])
+        return (f"this E8 account already holds XAU ({ids}) in the locked reading: one position "
+                f"per instrument"), (key, date)
+    # ANY RESTING GOLD ENTRY KEEPS THE WINDOW'S SLOT (audit SF1): an opposite leg would fill
+    # against the sleeve and a same-side leg would stack beside it.
+    if seen["entries"]:
+        ids = ", ".join(str(o.get("id")) for o in seen["entries"])
+        return (f"this E8 account rests a gold entry ({ids}): E8-Gold's window bracket keeps the "
+                f"slot until it fills or is cancelled"), (key, date)
     v = _oco.gate("e8", side, key=key, date=date)
     return (None if v.allowed else v.why), (key, date)
 
@@ -1163,6 +1173,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["status"] = "BANNED_FAMILY"
             row["why"] = _ban_reason(fam)
             closed: list[int] = []
+            if str(sym).upper() == "XAUUSD":
+                # E8-GOLD'S POSITIONS SHARE THIS INSTRUMENT (audit MF1 on 4cf2c82fa): a close by
+                # instrument would flatten the gold windows' book, which is not this sleeve's.
+                # An alert row only; nothing is closed here.
+                row["why"] += ("; XAUUSD is shared with E8-Gold, so no position is closed by "
+                               "instrument here (alert only)")
+                row["alert"] = "banned XAU sleeve: review any position it may still hold"
+                row["closed_positions"] = closed
+                doc["sleeves"].append(row)
+                _record(row, now, armed)
+                continue
             for p in open_positions:
                 _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
                 if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
@@ -1467,6 +1488,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["acked_at"] = datetime.now(tz=UTC).isoformat()
                         row["latency_send_to_ack_ms"] = round(
                             (time.perf_counter() - _t0) * 1000.0, 3)
+                        # ONE POSITION PER INSTRUMENT HOLDS WITHIN THE PASS (audit MF2): the
+                        # next sleeve on this instrument reads ALREADY_OPEN.
+                        open_keys.add((int(iid), side))
                         _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
                                               + (1.0 if side == "buy" else -1.0) * float(lot))
                     except Exception as exc:
