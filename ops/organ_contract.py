@@ -207,6 +207,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "which slice of the 245-symbol moat the miner last profiled"),
     "MT5-MoatSilver":     ("desks/mt5/logs/MT5-MoatSilver.log", 180,
                            "bronze -> silver day-file conversion for the moat tape"),
+    # 6h pass red team 2026-11-25: hourly at :38, credited nothing anywhere. Aged on its OWN
+    # report's `last_decided_utc`, which moves only on a run that decided a queue row.
+    "MT5-ConvertSwarm":   ("desks/mt5/reports/CONVERT_SWARM.json", 360,
+                           "deepening-queue rows the free-model swarm actually decided"),
     "MT5-QQuantGatesCertify": ("desks/mt5/reports/QQUANT_GATES.json", 180,
                                "the qquant lane's gate verdicts"),
     "MT5-QQuantShadow":   ("desks/mt5/reports/shadow/qquant_shadow_state.json", 180,
@@ -437,6 +441,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+    "desks/mt5/reports/CONVERT_SWARM.json": "last_decided_utc",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.

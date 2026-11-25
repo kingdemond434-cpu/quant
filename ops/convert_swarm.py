@@ -30,12 +30,64 @@ import os
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
 PANEL = ROOT / "data" / "secrets" / "llm_panel.json"
 WORKER = DESK / "research" / "deepening_worker.py"
+CANDIDATES = DESK / "data" / "hypotheses" / "deepened_candidates.json"
+REPORT = DESK / "reports" / "CONVERT_SWARM.json"
+
+
+def _snapshot(path: Path = CANDIDATES) -> dict:
+    """Candidates held and rows decided so far, from the worker's own output. None = unreadable."""
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"candidates": None, "decided": None}
+    disp = d.get("dispositions") if isinstance(d, dict) else None
+    decided = (sum(int(v) for v in disp.values() if isinstance(v, (int, float)))
+               if isinstance(disp, dict) else None)
+    return {"candidates": len(d.get("candidates") or []), "decided": decided}
+
+
+def write_report(before: dict, after: dict, lanes: list[dict], *, path: Path = REPORT,
+                 now: str | None = None) -> dict:
+    """THE SWARM'S OWN CONTRACT ARTIFACT (6h pass red team, 2026-11-25: MT5-ConvertSwarm ran
+    hourly while PRODUCER_YIELD credited it 0 compute and 0 cells, because its work lands in the
+    deepening worker's files under the worker's name). Exit code 0 proved only that lanes ran.
+    `last_decided_utc` advances ONLY on a run that decided at least one queue row, and it is the
+    stamp ops/organ_contract.py ages, so a swarm that runs and converts nothing goes stale and
+    says so. Unmeasurable before/after is UNMEASURED, never 0."""
+    stamp = now or datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        prev = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prev = {}
+    def _delta(k: str) -> int | str:
+        a, b = before.get(k), after.get(k)
+        return (b - a) if isinstance(a, int) and isinstance(b, int) else "UNMEASURED"
+    decided, gained = _delta("decided"), _delta("candidates")
+    doc = {"schema": "convert_swarm/1", "at_utc": stamp, "lanes": lanes,
+           "lanes_ok": sum(1 for x in lanes if x.get("rc") == 0),
+           "lanes_killed": sum(1 for x in lanes if x.get("killed")),
+           "before": before, "after": after, "rows_decided": decided,
+           "candidates_gained": gained,
+           "last_decided_utc": (stamp if isinstance(decided, int) and decided > 0
+                                else (prev.get("last_decided_utc") if isinstance(prev, dict)
+                                      else None)),
+           "verdict": ("CONVERTING" if isinstance(decided, int) and decided > 0
+                       else "UNMEASURED" if decided == "UNMEASURED" else "IDLE")}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        pass
+    return doc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -60,6 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     for m in models:
         print(f"   {m}")
 
+    before = _snapshot()
     procs: list[tuple[str, subprocess.Popen]] = []
     for model in models:
         env = dict(os.environ)
@@ -81,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nlaunched {len(procs)} lanes; budget {a.budget_sec}s each")
     started = time.time()
     done: list[tuple[str, int]] = []
+    killed: list[str] = []
     while procs:
         for model, p in list(procs):
             rc = p.poll()
@@ -91,12 +145,17 @@ def main(argv: list[str] | None = None) -> int:
         if time.time() - started > a.budget_sec + 300:
             for model, p in procs:
                 p.kill()
+                killed.append(model)
                 print(f"  lane KILLED (over budget) {model}")
             break
         time.sleep(5)
 
     ok = sum(1 for _, rc in done if rc == 0)
     print(f"\nlanes complete: {len(done)}  rc=0: {ok}")
+    lanes = ([{"model": m, "rc": rc} for m, rc in done]
+             + [{"model": m, "rc": None, "killed": True} for m in killed])
+    rep = write_report(before, _snapshot(), lanes)
+    print(f"rows decided this run: {rep['rows_decided']}  verdict: {rep['verdict']}")
     out = DESK / "data" / "hypotheses" / "deepened_candidates.json"
     if out.exists():
         try:
