@@ -188,6 +188,12 @@ def _resources(cfg: Config) -> tuple[bool, int, str]:
 #: account `quantci`, denied the token folder, the trust folder, data\secrets and C:\opt\quant.
 #: The loop reads back only the exit code and the output tail, and posts statuses itself.
 JOB_ENV_KEEP = ("PATH", "SYSTEMROOT", "PATHEXT", "COMSPEC", "NUMBER_OF_PROCESSORS", "PYTHONUTF8")
+#: The CI WORKER's own profile, never the loop's: Path.home() needs these on Windows, and 38-48
+#: test modules failed collection ("Could not determine home directory") while the job carried
+#: none of them (box 2026-11-24). The worker adds its own values; whatever a job file says about
+#: them is ignored, so the loop can never point a job at another account's profile.
+WORKER_OWN_ENV = ("USERPROFILE", "HOMEDRIVE", "HOMEPATH", "APPDATA", "LOCALAPPDATA", "TEMP",
+                  "TMP")
 JOB_POLL_S = 5.0
 
 
@@ -237,9 +243,11 @@ def worker_pass(jobs: Path) -> int:
             f.unlink()
         except (OSError, ValueError):
             continue
+        env = {str(k): str(v) for k, v in (job.get("env") or {}).items()
+               if str(k).upper() not in WORKER_OWN_ENV}
+        env.update({k: os.environ[k] for k in WORKER_OWN_ENV if k in os.environ})
         rc, out = _run([str(a) for a in job.get("argv") or []], cwd=Path(job["cwd"]),
-                       env={str(k): str(v) for k, v in (job.get("env") or {}).items()},
-                       timeout=float(job.get("timeout") or 3600), idle=True)
+                       env=env, timeout=float(job.get("timeout") or 3600), idle=True)
         tmp = done / f"{job['id']}.tmp"
         done.mkdir(parents=True, exist_ok=True)
         tmp.write_text(json.dumps({"rc": rc, "out": out}), encoding="utf-8")

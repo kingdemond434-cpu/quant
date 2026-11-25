@@ -125,3 +125,30 @@ def test_a_red_the_code_caused_stays_final() -> None:
     assert L.checked(red, NOW)
     mixed = [*red, _run("risk-invariants", "failure", "exit status 128", 5, 2)]
     assert L.checked(mixed, NOW)              # a real red decides the head; no re-run
+
+
+def test_a_job_gets_the_workers_own_home_and_never_one_the_job_file_names(tmp_path: Path) -> None:
+    """Box 2026-11-24: Path.home() raised at import in 38-48 modules because a job carried no
+    profile variables. The worker supplies its OWN; a job file cannot choose them."""
+    import json
+    jobs = tmp_path / "jobs"
+    (jobs / "pending").mkdir(parents=True)
+    probe = [sys.executable, "-c",
+             "import os; print(os.environ.get('USERPROFILE'), os.environ.get('TEMP'))"]
+    doc = {"id": "j1", "argv": probe, "cwd": str(tmp_path), "timeout": 60,
+           "env": {"PATH": os.environ.get("PATH", ""), "USERPROFILE": "C:/Users/quantgate",
+                   "SYSTEMROOT": os.environ.get("SYSTEMROOT", "")}}
+    (jobs / "pending" / "j1.json").write_text(json.dumps(doc), encoding="utf-8")
+    saved = {k: os.environ.get(k) for k in ("USERPROFILE", "TEMP")}
+    os.environ["USERPROFILE"], os.environ["TEMP"] = str(tmp_path / "worker"), str(tmp_path)
+    try:
+        assert L.worker_pass(jobs) == 1
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    out = json.loads((jobs / "done" / "j1.json").read_text(encoding="utf-8"))
+    assert out["rc"] == 0, out
+    assert out["out"].split() == [str(tmp_path / "worker"), str(tmp_path)]
