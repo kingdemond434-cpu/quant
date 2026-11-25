@@ -3546,7 +3546,8 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
     elif now_cpu < float(then_cpu):
         reasons.append("the tree's CPU total fell since the last beat (processes exited): "
                        "activity, not idleness")
-    elif (now_cpu - float(then_cpu)) / age >= NO_PROGRESS_CORES:
+    elif (now_cpu - float(then_cpu)) / age >= _TreeProgress(0.0).threshold(
+            int((first or {}).get("procs") or 1)):
         reasons.append(f"the tree burned {now_cpu - float(then_cpu):.0f} cpu-s since its last "
                        f"beat {age:.0f}s ago: it is progressing")
     else:
