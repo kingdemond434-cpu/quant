@@ -430,6 +430,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no translated dataset has a lake series under its prefixes, so every mapping stays MAPPED_AWAITING_SERIES and the translator mints nothing for the gauntlet to judge"
    }
+  },
+  "conversion_lanes": {
+   "hypothesis": "Using the free models to CONVERT rows the desk already holds -- prose conditioners and sandbox rules translated into exact settings with no invented number, lineage-charged near-miss mutants, a deterministic judge-feedback block for the generators, deduplicated before donation -- raises the number of judge-testable cells and, through them, certified and live edges, without changing a gate, a trial charge or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.donated",
+    "better": "up",
+    "organ": "report:CONVERSION_LANES.json"
+   },
+   "falsifier": {
+    "metric": "summary.donated",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: the lanes donated no testable row, so the free-model calls converted nothing the judge could test"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

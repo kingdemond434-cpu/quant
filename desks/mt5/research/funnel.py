@@ -286,7 +286,11 @@ class Paths:
     source_registry: Path
     floors: Path
     out: Path
+    lake: Path | None = None
+    alt_exposure: Path | None = None
     digest: Path | None = None
+    #: Seat output roots holding `data_source_proposals.json` (research/data_discovery.py).
+    intelligence: tuple[Path, ...] | None = None
 
     @classmethod
     def at(cls, desk: Path) -> Paths:
@@ -302,7 +306,12 @@ class Paths:
                    source_registry=desk / "data" / "source_registry.json",
                    floors=desk / "data" / "funnel_floors.json",
                    out=desk / "reports" / "FUNNEL.json",
-                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json")
+                   lake=desk / "data" / "lake" / "series",
+                   alt_exposure=desk / "data" / "alt_catalog" / "exposure.json",
+                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json",
+                   intelligence=((ROOT / "data" / "intelligence",
+                                  desk / "data" / "intelligence") if desk == DESK
+                                 else (desk / "data" / "intelligence",)))
 
 
 def _blank() -> dict[str, Any]:
@@ -627,6 +636,91 @@ def merge_up(disk: Mapping[str, Any], new: Mapping[str, Any]) -> dict[str, Any]:
 
 # ------------------------------------------------------------------------------------- the build
 
+def alt_block(paths: Paths, rows: list[Mapping[str, Any]] | None,
+              seen: list[Any] | None) -> dict[str, Any]:
+    """`by_alt_source`: per executable lake series, which generators were shown it, how many
+    compiled rows carry it as an `alt:` conditioner, how many are testable, judged and certified;
+    and the series and sources with no testable row (producer_loop's alt gap targets). Every
+    count whose input is unreadable is UNMEASURED, never 0."""
+    from research import alt_catalog as ac
+
+    cat = ac.catalog(paths.lake or ac.LAKE)
+    exposure = ac.read_exposure(paths.alt_exposure) if paths.alt_exposure \
+        and paths.alt_exposure.exists() else None
+    cov = ac.coverage(cat, rows if rows is not None else [],
+                      judged={str(c) for c in seen} if seen is not None else None,
+                      certified=ac.read_certified(paths.provenance), exposure=exposure)
+    if rows is None:
+        for e in cov["series"].values():
+            e["rows"] = e["testable_rows"] = UNMEASURED
+        cov["n_series_with_testable_rows"] = UNMEASURED
+        cov["zero_coverage_series"] = cov["zero_coverage_sources"] = UNMEASURED
+        cov["why_rows"] = f"{UNMEASURED}: compiler rows unreadable"
+    if exposure is None:
+        for e in cov["series"].values():
+            e["generators_seeing"] = UNMEASURED
+        cov["why_generators"] = (f"{UNMEASURED}: no exposure log yet (research/alt_catalog "
+                                 "record_exposure writes it when a generator is shown a slice)")
+    cov["refused_series"] = cat.get("refused") or {}
+    return cov
+
+
+def lane_block(paths: Paths, rows: list[Mapping[str, Any]] | None, seen: list[Any] | None,
+               certs: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """`by_lane`: per free-model job in data/free_model_jobs.json (research/conversion_lanes),
+    inputs -> outputs -> testable -> judged -> certified -> live, with its registry weight.
+    Rows are attributed by their `lane` tag; an unreadable stage is UNMEASURED, never 0."""
+    from research import alt_catalog as ac
+    from research import conversion_lanes as cl
+
+    jobs_path = paths.out.parents[1] / "data" / "free_model_jobs.json"
+    jobs, _refused = cl.load_jobs(jobs_path)
+    ledger = _read(paths.out.parents[1] / "data" / "conversion_lanes" / "ledger.json")
+    live = ({str(r["cell"]) for r in certs if r["stages"].get("LIVE")}
+            if certs is not None and all(r["stages"].get("LIVE") is not None for r in certs)
+            else None)
+    out = cl.by_lane(rows, seen={str(c) for c in seen} if seen is not None else None,
+                     certified=ac.read_certified(paths.provenance), live=live, jobs=jobs,
+                     ledger=ledger)
+    exp = ac.read_exposure(paths.alt_exposure) if paths.alt_exposure \
+        and paths.alt_exposure.exists() else None
+    if exp is not None and "alt_generation" in out:
+        out["alt_generation"]["inputs"] = sum(int((v or {}).get("prompts") or 0)
+                                              for v in (exp.get("organs") or {}).values())
+    return out
+def _discovery_into_lane(by_lane: Any, by_method: Any) -> None:
+    """The `data_discovery` job's stages in `by_lane` come from `by_method` (proposals -> accepted
+    -> landed -> offered, then the rows on its series): its rows carry the series, not only the
+    lane tag. A stage `by_method` cannot read stays as `by_lane` had it."""
+    if not isinstance(by_lane, dict) or not isinstance(by_method, dict):
+        return
+    lane, view = by_lane.get("data_discovery"), by_method.get("llm_data_discovery")
+    if not isinstance(lane, dict) or not isinstance(view, dict):
+        return
+    for dst, src in (("inputs", "proposals"), ("outputs", "accepted"), ("landed", "landed"),
+                     ("offered", "offered"), ("testable", "testable"), ("judged", "judged"),
+                     ("certified", "certified")):
+        if isinstance(view.get(src), int):
+            lane[dst] = view[src]
+
+
+def method_block(paths: Paths, by_alt: Mapping[str, Any]) -> dict[str, Any]:
+    """`by_method`: the alt series' funnel split by HOW the data reached the lake -- proposed by
+    a free model (`llm_data_discovery`, per discovering organ: proposals -> accepted -> landed ->
+    offered -> rows -> testable -> judged -> certified) beside every registered source. Each
+    discovered series in `by_alt_source.series` is also tagged with its `discovered_by`."""
+    from research import data_discovery as dd
+
+    roots = paths.intelligence if paths.intelligence is not None else ()
+    ser = by_alt.get("series") if isinstance(by_alt, Mapping) else None
+    if isinstance(ser, dict):
+        for name, tag in dd.provenance(roots).items():
+            if isinstance(ser.get(name), dict):
+                ser[name].update(tag)
+    return dd.method_view(by_alt if isinstance(ser, dict) else None, roots=roots,
+                          lake=paths.lake)
+
+
 def build(paths: Paths | None = None, *, now: datetime | None = None,
           budget_s: float | None = None, is_exotic: Callable[[str], bool] | None = None,
           trades_of: Callable[[str], list[dict[str, Any]]] | None = None) -> dict[str, Any]:
@@ -875,6 +969,20 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                           else {"status": UNMEASURED})
     violated = sorted(k for k, v in verdicts.items()
                       if "VIOLATED" in (v.get("count_status"), v.get("rate_status")))
+    try:
+        by_alt = alt_block(paths, comp.get("rows") if comp.get("available") else None, seen)
+    except Exception as exc:                       # a report section never costs the funnel
+        by_alt = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        by_lane = lane_block(paths, comp.get("rows") if comp.get("available") else None, seen,
+                             chain.get("certs"))
+    except Exception as exc:                       # a report section never costs the funnel
+        by_lane = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        by_method = method_block(paths, by_alt)
+    except Exception as exc:                       # a report section never costs the funnel
+        by_method = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    _discovery_into_lane(by_lane, by_method)
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -906,6 +1014,9 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                     "weakest_transition": d["weakest_stage"].get("transition"),
                     "live_profit": d["stages"]["LIVE_PROFIT"]},
         "producers": rows_p, "asset_classes": rows_c, "families": rows_f,
+        "by_alt_source": by_alt,
+        "by_lane": by_lane,
+        "by_method": by_method,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,
