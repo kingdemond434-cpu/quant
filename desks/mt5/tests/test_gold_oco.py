@@ -1262,3 +1262,63 @@ def test_an_oco_lane_keeps_the_late_rule(monkeypatch, tmp_path) -> None:
     ns = _late_main(tmp_path, monkeypatch, mt5)
     assert mt5.sent == []
     assert any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+def test_a_fence_that_cannot_read_fusions_book_defers_the_window_one_pass(
+        monkeypatch, tmp_path) -> None:
+    """Box 11-13 and 11-17: the terminal sat on another account at the asia signal, the fence
+    failed closed, and the window then missed its 10-min grace by a minute. An UNREADABLE fence
+    (not an opposed one) earns the same one extra pass as a venue fault; this pass still places
+    nothing."""
+    import test_e8_gold_guard_and_open_risk as h
+
+    _world("oco")
+
+    class _V(h._Venue):
+        _by_key: ClassVar[dict[str, int]] = {"XAUUSD": 6102}
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.placed: list[tuple] = []
+            self._raw_api = SimpleNamespace(acc_id=E8_LOGIN,
+                                            _credentials={"server": E8_SERVER})
+
+        def place_stop(self, symbol, side, lot, *, price, stop, take_profit):
+            self.placed.append((side, lot))
+            return 500 + len(self.placed)
+
+    class _Other(h._MT5):                      # the terminal is on some other account
+        def account_info(self):
+            return SimpleNamespace(login=99887766, server="Other-Server", trade_mode=2)
+
+        def positions_get(self, symbol=None):
+            return ()
+
+        def orders_get(self, symbol=None):
+            return ()
+
+    h._sandbox(monkeypatch, tmp_path)
+    monkeypatch.setattr(oco, "tradelocker_oco_key", REAL_TL_KEY)
+    monkeypatch.setattr(oco, "mt5_oco_key", REAL_MT5_KEY)
+    monkeypatch.setattr(xa, "mt5_book_checked", lambda mt5, account="fusion": (
+        None, "the terminal is not on the declared fusion account; its book is not that "
+              "account's"))
+    venue = _V()
+    doc = h.g.run(venue, _Other(), armed=True)
+    assert venue.placed == []
+    state = json.loads(Path(h.g.STATE).read_text("utf-8"))
+    fenced = {s["window"] for s in doc["skipped"] if "not on the declared" in s.get("why", "")}
+    assert fenced and fenced <= set(state.get("deferred") or [])
+    for w in fenced:
+        assert h.g.window_grace(w, state) == h.g.e8_grace() + h.g.E8_DEFER_EXTRA_MIN
+
+
+def test_an_opposed_fence_is_not_deferred(monkeypatch, tmp_path) -> None:
+    """A readable Fusion book that really opposes the leg is a refusal, never an extra pass."""
+    _world("oco")
+    pos = [SimpleNamespace(ticket=7, symbol="XAUUSD", type=1, volume=0.1, price_open=2000.0,
+                           sl=2010.0, tp=0.0, time=0, magic=0, comment="")]
+    doc, _venue, _intents, h = _e8_harness(monkeypatch, tmp_path, fusion_positions=pos)
+    assert any("holds or rests" in s.get("why", "") for s in doc["skipped"])
+    state = json.loads(Path(h.g.STATE).read_text("utf-8"))
+    assert not (state.get("deferred") or [])
