@@ -397,6 +397,12 @@ def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True) -> tuple[lis
     if novelty:
         ordered, n_redundant = drop_redundant(G, ordered)
     keep = allocate(G, ordered)
+    # THE SEALED SWEEP'S GLOBAL ORDER, RESTORED AFTER THE TRIM -- only once the sealed file does it
+    # too (its SEAL_CLEAR patch sets `JUDGE_KEEP_REORDER`), so the warmer never reads an order the
+    # judge does not walk. A permutation of `keep` (research/judge_efficiency.reorder_keep).
+    if getattr(G, "JUDGE_KEEP_REORDER", False) is True:
+        from research.judge_efficiency import reorder_keep
+        keep = reorder_keep(ordered, keep)
     return keep, {"eligible": len(specs), "never_judged": n_new, "banned_set_aside": n_banned,
                   "novelty_set_aside": n_redundant, "keep": len(keep),
                   "keep_never_judged": sum(1 for sp in keep if sp.get("_never_judged")),
