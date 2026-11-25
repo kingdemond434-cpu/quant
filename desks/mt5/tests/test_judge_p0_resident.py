@@ -41,7 +41,7 @@ def _isolated(monkeypatch, tmp_path):
 
 # ------------------------------------------------------------------ the idle threshold
 def _tree(n: int, cpu_each: float) -> dict:
-    return {"cpu": {p: cpu_each for p in range(1, n + 1)}, "rss_mb": 1.0, "procs": n}
+    return {"cpu": dict.fromkeys(range(1, n + 1), cpu_each), "rss_mb": 1.0, "procs": n}
 
 
 def test_an_idle_sixteen_process_tree_at_the_flat_threshold_now_reads_idle() -> None:
@@ -61,7 +61,7 @@ def test_a_one_process_tree_reads_exactly_as_before() -> None:
 def test_real_work_in_a_big_tree_is_always_progress() -> None:
     tr = runner._TreeProgress(0.0)
     tr.update(_tree(19, 0.0), 1.0)
-    one_core = {"cpu": {**{p: 0.0 for p in range(2, 20)}, 1: 5.0}, "rss_mb": 1.0, "procs": 19}
+    one_core = {"cpu": {**dict.fromkeys(range(2, 20), 0.0), 1: 5.0}, "rss_mb": 1.0, "procs": 19}
     assert tr.update(one_core, 6.0) is True                # a busy merge among idle workers
     assert tr.threshold(10_000) == runner.NO_PROGRESS_TREE_CAP_CORES
 
