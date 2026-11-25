@@ -152,3 +152,21 @@ def test_a_proposer_seat_is_read_from_its_source_constant(tmp_path: Path) -> Non
     assert live == {"plumbing_miner": "plumbing", "microstructure_miner": "microstructure",
                     "style_premia_sweep": "style_premia", "tail_alpha_search": "tail_alpha",
                     "weak_signal_compiler": "weak_signal_ensemble"}
+
+
+# ------------------------------------------------------------------------- the soft deadline
+def test_a_ledger_read_stops_at_the_soft_deadline(tmp_path: Path, monkeypatch) -> None:
+    import time
+
+    from research import axis_registry as ar
+    p = tmp_path / "gate_verdict_ledger.jsonl"
+    p.write_text("".join(json.dumps({"cell": f"x{i}"}) + "\n" for i in range(12_000)),
+                 encoding="utf-8")
+    note: dict[str, str] = {}
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    monkeypatch.delenv("QUANT_LEG_DEADLINE_TS", raising=False)
+    assert len(ar._read_jsonl(p, note)) == 12_000 and note[p.name] == "READ"
+    monkeypatch.setenv("QUANT_LEG_DEADLINE_TS", str(time.time() + 10))   # inside the margin
+    note = {}
+    rows = ar._read_jsonl(p, note)
+    assert len(rows) == 5_000 and note[p.name] == "DEADLINE_TRUNCATED(5000)"
