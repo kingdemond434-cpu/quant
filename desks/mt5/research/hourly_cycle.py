@@ -1234,6 +1234,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # The exotic certificates' exact specs re-minted on the tradable instruments sharing their
+    # driver (exotic ban, 2026-11-24): a plan walk and a docket stream, bounded per pass.
+    "exotic_transplant",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -2230,6 +2233,10 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The exotic transplant stops itself at --budget-s 300; declared here (300 + 15%) so the core
+    # plan's kill margin can yield it -- an undeclared leg has cap 0 and is never yielded (Audit
+    # HOLD 8044d9b16, 2026-11-25: the core pass was killed at its limit on 5 of 5 runs).
+    "exotic_transplant": 345,
     # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
     # margin, when priced lower) and saves its state after every symbol turn.
     "tape_deepen": 420,
@@ -6599,6 +6606,14 @@ def main() -> None:
     # strong docket family on M1/M5/M15/H1/H4 and charges the multiplicity through trial_ledger.
     tff = _costed("timeframe_fanout", lambda: _producer(
         "timeframe_fanout", "research/timeframe_fanout.py", "--once", "--budget-s", "240"))
+    # THE EXOTIC CERTIFICATES, RE-EXPRESSED (exotic ban, zuck 2026-11-24). 12,730 of the box's
+    # 13,452 certificates sit on exotics the book may never hold. This mints each exotic spec's
+    # exact family + params on the tradable instruments that share its driver (declared mapping:
+    # major leg, swap, macro series, formula driver terminals) through the same registry door,
+    # deduped against the docket, a per-pass cell budget and a cursor. Each cell is a NEW
+    # hypothesis the sealed judge charges as a trial; the certificate is provenance only.
+    xtp = _costed("exotic_transplant", lambda: _producer(
+        "exotic_transplant", "research/exotic_transplant.py", "--once", "--budget-s", "300"))
     # THE LIVE ACCOUNT'S FILLS (principal 2026-09-23). `matched_fills` read 0 everywhere because
     # nothing had ever written the intent/deal join down; thirty real fills were on disk. This
     # records quote, ask, fill, latency, volume, spread and slippage (points and R) into the
@@ -7105,7 +7120,8 @@ def main() -> None:
                     "culture_gap_cells": cgc, "firm_lanes": flanes, "asia_github": agh,
                     "futures_state": fst,
                     "ground_depth": gdp,
-                    "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "timeframe_fanout": tff, "exotic_transplant": xtp,
+                    "fill_recorder": flr, "cost_surfaces": csf,
                     "fill_proven": fpv,
                     "allocator_scorecard": asc, "zero_live_page": zlp,
                     "actor_pressure": apr, "destroyer_pool": dpo,
