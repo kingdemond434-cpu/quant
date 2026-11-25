@@ -107,7 +107,10 @@ _INSTALLER_NAME_EXEMPT = frozenset({"MT5-Hourly"})
 #: first time the box lacks it; `-IfMissing` never touches a registered task. Opt-in keeps the
 #: rule narrow: an installer that needs a desktop session, a secret or an argument does not
 #: declare the switch and stays a person's step, named in `ensure_skipped`.
-ENSURE_PREFIXES = ("desks/mt5/scripts/", "desks/mt5/recorders/", "ops/box/")
+#: `scripts/install_` (2026-11-25): the repo-root installers for the research feeds and the side
+#: channel miners (Quant-SideChannelMiners) -- only files named install_*, never the rest of
+#: scripts/.
+ENSURE_PREFIXES = ("desks/mt5/scripts/", "desks/mt5/recorders/", "ops/box/", "scripts/install_")
 #: Never registered by the adopter, whatever their installer says: the adopter itself (it is the
 #: caller), the signer (trust is a person's act), and the mirror that must not run on this box.
 ENSURE_NEVER = frozenset({"MT5-AdoptRelease", "Quant-SignTrain", "MT5-DashMirror"})

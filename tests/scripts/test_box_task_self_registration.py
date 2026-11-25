@@ -52,6 +52,21 @@ def test_the_guardian_registers_itself() -> None:
     assert early < src.index("Set-ScheduledTask") and early < src.index("Register-ScheduledTask")
 
 
+def test_the_paper_miners_register_themselves() -> None:
+    """Quant-SideChannelMiners' only installer is repo-root scripts/install_*.ps1."""
+    rows = dict(cbt.ensure_rows()[0])
+    assert rows.get("Quant-SideChannelMiners") == "scripts/install_side_channel_miners_task.ps1"
+
+
+def test_root_scripts_only_through_install_files(tmp_path: Path) -> None:
+    body = "param([switch]$IfMissing)\n$TaskName = '{n}'\n"
+    rows = [("Quant-Ok", "scripts/install_ok_task.ps1"), ("Quant-Run", "scripts/run_thing.ps1")]
+    _manifest(tmp_path, rows)
+    for n, rel in rows:
+        _installer(tmp_path, rel, body.format(n=n))
+    assert cbt.ensure_rows(tmp_path)[0] == [("Quant-Ok", "scripts/install_ok_task.ps1")]
+
+
 def test_the_lane_floor_is_still_covered() -> None:
     names = {n for n, _ in cbt.ensure_rows()[0]}
     assert {"MT5-Compiler", "MT5-TapeRecord", "MT5-TierS", "MT5-Replication"} <= names
