@@ -68,10 +68,11 @@ import json
 import os
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import suppress
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Iterator
 from typing import Any
 
 import numpy as np
@@ -1288,6 +1289,13 @@ class TickRecorder:
                     print(f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} HUNG: no cycle "
                           f"completed in {hang_s:.0f}s -- exiting so the scheduler restarts a "
                           f"fresh recorder", flush=True)
+                    # NAME THE FRAME (box 2026-11-25: 16 HUNG exits in 4 h, tape dark, and no
+                    # stack -- py-spy cannot read 3.14). Every thread's stack goes to the log
+                    # before the exit, so the call that never returned is on record.
+                    with suppress(Exception):
+                        import faulthandler
+                        faulthandler.dump_traceback(file=sys.stdout, all_threads=True)
+                        sys.stdout.flush()
                     quit_(EXIT_HUNG)
                     return
 
