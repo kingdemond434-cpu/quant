@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-25T09:04:55.587080+00:00",
+ "generated_utc": "2026-11-25T10:59:00.433552+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -128,8 +128,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -139,8 +139,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -150,8 +150,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -183,8 +183,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -194,8 +194,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -205,8 +205,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -216,8 +216,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19810,8 +19810,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19821,8 +19821,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19832,8 +19832,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19843,8 +19843,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19854,8 +19854,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19909,8 +19909,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -19920,8 +19920,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -25493,8 +25493,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -25504,8 +25504,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -42202,8 +42202,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -42213,8 +42213,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -54324,8 +54324,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -86427,8 +86427,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -86584,8 +86584,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -102676,8 +102676,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -111737,8 +111737,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -111748,8 +111748,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -114754,8 +114754,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -131603,8 +131603,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146354,8 +146354,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146365,8 +146365,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146376,8 +146376,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146387,8 +146387,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146398,8 +146398,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146409,8 +146409,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146420,8 +146420,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
@@ -146431,8 +146431,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.7677,
-    "sd": 0.0594,
+    "confidence": 0.6465,
+    "sd": 0.0673,
     "status": "SUPPORTED"
    }
   },
