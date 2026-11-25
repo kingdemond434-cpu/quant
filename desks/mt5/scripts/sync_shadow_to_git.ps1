@@ -862,6 +862,11 @@ $reportPaths = @(
     # producer, class and family, the weakest stage and the floors; and the floors themselves
     "desks/mt5/reports/FUNNEL.json",
     "desks/mt5/data/funnel_floors.json",
+    # the free-model conversion lanes (research/conversion_lanes.py, leg conversion_lanes): the
+    # pass report, the generators' judge-feedback block and the job registry with its weights
+    "desks/mt5/reports/CONVERSION_LANES.json",
+    "desks/mt5/reports/JUDGE_FEEDBACK.json",
+    "desks/mt5/data/free_model_jobs.json",
     # the judge calibration loop (LOOP_COVERAGE L2): the judge against matured forward clocks,
     # and the priors and gate moves it proposes to the sealed judge (before/after values)
     "desks/mt5/reports/JUDGE_CALIBRATION.json",

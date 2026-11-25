@@ -1252,7 +1252,7 @@ def run_pass(*, now: datetime | None = None, budget_s: float = DEFAULT_BUDGET_S,
         if write:
             _atomic(feedback_path or FEEDBACK, fb)
         n_blocks = sum(1 for s in fb["seats"].values() if s["block"])
-        tally("judge_feedback", inputs=len(fb["seats"]))
+        tally("judge_feedback", inputs=len(fb["seats"]), outputs=n_blocks)
         report["lanes"]["judge_feedback"] = {"seats": {k: v["summary"]
                                                        for k, v in fb["seats"].items()},
                                              "blocks_written": n_blocks}
