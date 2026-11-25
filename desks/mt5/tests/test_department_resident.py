@@ -1,8 +1,8 @@
 """The department resident: singleton, one pass under the department plan, the cycle floor."""
 from __future__ import annotations
 
-import sys
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -136,3 +136,29 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
+
+
+def test_a_reserved_department_never_queues_behind_the_shared_slots(monkeypatch, tmp_path):
+    """mathlab ran ~2 passes a day on the box, waiting in the FIFO for three shared slots."""
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "RESERVED_DEPTS", frozenset({"mathlab"}))
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)
+    held = [dr.claim_capacity_slot(2), dr.claim_capacity_slot(2)]
+    assert all(h is not None for h in held)
+    older = dr._wait_ticket("discovery")                 # an older waiter is ahead in the FIFO
+    t0 = time.monotonic()
+    handle = dr.admit("mathlab", slots=2, poll_s=1)
+    assert handle is not None and time.monotonic() - t0 < 1.0
+    # one pass at a time: a second holder of the reserved slot is refused while it is held
+    assert dr.claim_reserved_slot("mathlab") is None
+    handle.close()
+    again = dr.claim_reserved_slot("mathlab")
+    assert again is not None
+    again.close()
+    # a department that is not reserved still waits its turn
+    assert "intel" not in dr.RESERVED_DEPTS
+    assert dr.claim_capacity_slot(2) is None
+    older.unlink()
+    for h in held:
+        h.close()
