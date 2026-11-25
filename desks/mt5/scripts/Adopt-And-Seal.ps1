@@ -274,6 +274,9 @@ $script:GuardScript = Join-Path $RepoRoot "scripts\adopt_guard.py"
 $script:GuardRootArgs = @()
 $script:GuardHead = $null
 $script:DeciderRoot = $RepoRoot
+# THE RELEASE AUTHORITY (zuck 2026-11-25 18:53Z): audit_clear unless QUANT_ADOPT_AUTHORITY=release.
+# Read once, here, so the guard-root block below takes nothing from the environment.
+$script:AdoptAuthority = if ($env:QUANT_ADOPT_AUTHORITY -eq "release") { "release" } else { "audit_clear" }
 if ($GuardRoot) {
     $guardDir = $null
     try { $guardDir = (Resolve-Path -LiteralPath $GuardRoot -ErrorAction Stop).Path } catch { }
@@ -293,7 +296,7 @@ if ($GuardRoot) {
     # AUDIT-CLEAR AUTHORITY (zuck 2026-11-25 18:53Z): the guard root must be inside the LIVE
     # branch, where only Audit-CLEAR heads merge; the CI `production` pointer no longer gates.
     # QUANT_ADOPT_AUTHORITY=release restores the production rule.
-    $guardRef = if ($env:QUANT_ADOPT_AUTHORITY -eq "release") { "refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }
+    $guardRef = if ($script:AdoptAuthority -eq "release") { "refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }
     & git -C $guardDir merge-base --is-ancestor $script:GuardHead $guardRef 2>$null
     if ($LASTEXITCODE -ne 0) {
         Log ("GUARD ROOT head {0} is not inside {1} in {2}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardRef, $guardDir)
