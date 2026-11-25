@@ -90,8 +90,8 @@ def test_rotation_spreads_calls_over_every_lit_route(tmp_path: Path,
     monkeypatch.setattr(fc, "_call", call)
     chain = [_route("a"), _route("b"), _route("c")]
     for _ in range(6):
-        text, who, err = fc.ask("job_x", "public", "public", chain=chain, root=tmp_path,
-                                now=NOW)
+        text, _who, err = fc.ask("job_x", "public", "public", chain=chain, root=tmp_path,
+                                 now=NOW)
         assert err is None and text == "ok"
     assert set(served) == {"a", "b", "c"} and all(served.count(n) == 2 for n in "abc")
 
@@ -128,11 +128,11 @@ def test_a_relay_never_sees_a_private_prompt(tmp_path: Path,
     monkeypatch.setattr(fc, "_call", lambda r, m, s, u, **k: (served.append(r.name) or "ok",
                                                               m, None))
     relay_only = [_route("hcn", relay=True, kind="cn")]
-    text, who, err = fc.ask("j", "system", "see desks/mt5/data", chain=relay_only,
-                            root=tmp_path, now=NOW)
+    text, _who, err = fc.ask("j", "system", "see desks/mt5/data", chain=relay_only,
+                             root=tmp_path, now=NOW)
     assert text == "" and err and served == []
-    text, who, err = fc.ask("j", "public", "public", chain=relay_only, root=tmp_path,
-                            now=NOW, public=False)
+    text, _who, err = fc.ask("j", "public", "public", chain=relay_only, root=tmp_path,
+                             now=NOW, public=False)
     assert text == "" and served == []                 # an explicit private flag holds too
     both = [_route("hcn", relay=True, kind="cn"), _route("own")]
     for _ in range(3):
@@ -165,8 +165,8 @@ def test_a_weekly_credit_cap_reads_capped_and_the_chain_fails_over(
     monkeypatch.setattr(fc, "_call", lambda r, m, s, u, **k: (served.append(r.name) or "ok",
                                                               m, None))
     for _ in range(3):
-        text, who, err = fc.ask("j", "public", "public", chain=[hcn, _route("own")],
-                                root=tmp_path, now=NOW)
+        _t, _w, err = fc.ask("j", "public", "public", chain=[hcn, _route("own")],
+                             root=tmp_path, now=NOW)
         assert err is None
     assert served == ["own"] * 3
     # the generic mechanism: any provider declaring weekly_cap / weekly_env, env-overridable
