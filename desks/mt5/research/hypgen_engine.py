@@ -5,6 +5,7 @@ MISSING; this engine runs all four, each as its own seat with its own persisted 
 
     knn_analog       analog / nearest-neighbour pattern matching        -> family analog_knn
     rank_learner     time-series learning-to-rank (pairwise RankNet)     -> family ranked_linear
+    gbm_learner      gradient-boosted trees, feature -> label (numpy)    -> family gbm_classifier
     neat_evolver     NEAT-style neuroevolution of topology + weights     -> family neural_policy
     ge_builder       grammatical evolution over a full strategy BNF      -> family ge_strategy
                      (AND / OR / NOT over entry blocks, filters, and an exit with partial take,
@@ -137,6 +138,15 @@ class RankSpace(Space):
     grid: ClassVar[dict[str, list]] = {
         "h": [4, 8, 12, 24, 48], "window": [1000, 2000, 4000], "refit": [100, 250, 500],
         "q": [0.8, 0.9, 0.95]}
+
+
+class GbmSpace(Space):
+    """Gradient-boosted shallow trees (LightGBM / XGBoost style, numpy only): the genome is the
+    feature set and the boosting hyperparameters; the cell refits walk-forward by itself."""
+    seat, family = "gbm_learner", "gbm_classifier"
+    grid: ClassVar[dict[str, list]] = {
+        "h": [4, 8, 12, 24, 48], "window": [1000, 2000, 4000], "refit": [100, 250, 500],
+        "thr": [0.55, 0.6, 0.65], "n_trees": [25, 50, 100], "depth": [1, 2, 3]}
 
 
 class NeatSpace(Space):
@@ -336,7 +346,8 @@ class GeSpace(Space):
                 f"trail {p['runner_trail_k']}")
 
 
-SPACES: dict[str, Space] = {s.seat: s for s in (KnnSpace(), RankSpace(), NeatSpace(), GeSpace())}
+SPACES: dict[str, Space] = {s.seat: s for s in (KnnSpace(), RankSpace(), GbmSpace(), NeatSpace(),
+                                                 GeSpace())}
 
 
 # --------------------------------------------------------------------------- lineage

@@ -93,7 +93,12 @@ METHODS: list[tuple[str, str, tuple[str, ...], str | None, str | None, str | Non
     ("sparse dynamics discovery (SINDy)", "academic", ("libs/research/adapters/pysindy.py",),
      None, None, None),
     ("cointegration / statistical-arbitrage pair search", "institutional",
-     ("desks/mt5/research/cross_asset_graph.py",), None, None, None),
+     ("desks/mt5/mt5desk/family_coint_pairs.py",), "desks/mt5/reports/BREADTH_SWEEP.json",
+     "cells_built", "families.coint_pairs"),
+    ("gradient-boosted trees feature-to-label (LightGBM/XGBoost style, numpy)",
+     "retail+institutional",
+     ("desks/mt5/research/hypgen_engine.py", "desks/mt5/mt5desk/family_hypgen_models.py"),
+     "desks/mt5/reports/HYPGEN_GBM_LEARNER.json", "tests_run", "donated"),
     ("learning-to-rank, time series (pairwise RankNet, rolling refit)", "institutional",
      ("desks/mt5/research/hypgen_engine.py", "desks/mt5/mt5desk/family_hypgen_models.py"),
      "desks/mt5/reports/HYPGEN_RANK_LEARNER.json", "tests_run", "donated"),
@@ -123,10 +128,14 @@ def _age_h(path: Path) -> float | None:
 
 
 def _num(doc: Any, key: str | None) -> float | None:
+    """A number off the report; a dotted key reads one level down (`families.coint_pairs`), so a
+    method minted by a shared producer is credited with its own family's cells only."""
     if not key or not isinstance(doc, dict):
         return None
-    v = doc.get(key)
-    return float(v) if isinstance(v, (int, float)) else None
+    v: Any = doc
+    for part in key.split("."):
+        v = v.get(part) if isinstance(v, dict) else None
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 
 def build(root: Path = ROOT) -> dict[str, Any]:

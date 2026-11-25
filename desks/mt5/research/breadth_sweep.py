@@ -150,6 +150,21 @@ READY: dict[str, dict] = {
         "grid": [{"lookback": lb, "entry_z": z, "rr": 1.5, "ttl_bars": 48}
                  for lb in (96, 240) for z in (2.0, 2.5)],
     },
+    # THE COINTEGRATION TEST relative_value never ran (2026-11-25): the same pairs and class
+    # pairs, but a trade only while an Engle-Granger ADF on the trailing OLS residual rejects a
+    # unit root and the AR(1) half-life sits inside [hl_min, hl_max]. The family loads the peer
+    # named by `peer_symbol` itself (the sealed build passes it through), so no build branch.
+    "coint_pairs": {
+        "why": "a spread that is TESTED stationary on the trailing window before it is faded -- "
+               "relative_value fades a ratio whether or not it reverts; this refuses a pair the "
+               "moment the test stops holding, so its failure regime is a broken relationship "
+               "it has already stepped away from",
+        "pairs": (("EURUSD", "GBPUSD"), ("AUDUSD", "NZDUSD"), ("USDCHF", "EURCHF"),
+                  ("XAUUSD", "XAGUSD"), ("USDCAD", "XTIUSD"), ("EURJPY", "GBPJPY")),
+        "class_pairs": True,
+        "grid": [{"lookback": lb, "entry_z": z, "exit_z": 0.5, "hl_min": 2.0, "hl_max": hm}
+                 for lb in (250, 500) for z in (2.0, 2.5) for hm in (48.0, 120.0)],
+    },
     # Same loader, more legs: the build path pops `factor_symbols` and hands over a list.
     "cross_asset_residual": {
         "why": "metals against FX against index after the common factor -- what is left when the "

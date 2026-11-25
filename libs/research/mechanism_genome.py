@@ -267,6 +267,13 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
         "transmission": "valuation", "entry": "limit_on_reversal", "exit": "target",
         "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
+    # The Engle-Granger tested pair: the same desks and spread as relative_value, triggered only
+    # while the residual is measured stationary and exited on a half-life time stop.
+    "coint_pairs": {
+        "actor": "relative_value_desks", "constraint": "balance_sheet",
+        "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
+        "transmission": "valuation", "entry": "limit_on_reversal", "exit": "time_stop",
+        "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
     "pca_residual": {
         "actor": "factor_investors", "constraint": "factor_mandate",
         "observable": "principal_component_residual", "trigger": "valuation_gap",

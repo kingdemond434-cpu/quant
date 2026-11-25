@@ -2516,15 +2516,32 @@ FAMILY_INPUTS["rule_builder"] = ("price and tick volume only", "data/universe/*_
 # Price and tick volume only; the two fitted ones refit causally inside the cell.
 from mt5desk.family_hypgen_models import (  # noqa: E402
     family_analog_knn,
+    family_gbm_classifier,
     family_ge_strategy,
     family_neural_policy,
     family_ranked_linear,
 )
 
 for _name, _fn in (("analog_knn", family_analog_knn), ("ranked_linear", family_ranked_linear),
-                   ("neural_policy", family_neural_policy), ("ge_strategy", family_ge_strategy)):
+                   ("neural_policy", family_neural_policy), ("ge_strategy", family_ge_strategy),
+                   ("gbm_classifier", family_gbm_classifier)):
     ORTHOGONAL_FAMILIES[_name] = _fn
     FAMILY_INPUTS[_name] = ("price and tick volume only", "data/universe/*_H1.parquet")
+
+# COINTEGRATION PAIRS (2026-11-25): the Engle-Granger tested pair relative_value is not -- an OLS
+# hedge ratio, an ADF test on its residual and an AR(1) half-life, all on a trailing window, and a
+# trade only while the pair is cointegrated now. Single-leg proxy; the peer is named by
+# `peer_symbol` exactly as relative_value's, minted by `research/breadth_sweep.py`.
+from mt5desk.family_coint_pairs import family_coint_pairs  # noqa: E402
+
+ORTHOGONAL_FAMILIES["coint_pairs"] = family_coint_pairs
+FAMILY_INPUTS["coint_pairs"] = ("a peer instrument, on this cell's own chart",
+                                "data/universe/<PEER>_<TF>.parquet")
+FAMILY_TIMEFRAMES["coint_pairs"] = (
+    ("H1", "H4", "D1"),
+    "the same bar-for-bar join as relative_value: below the hour an inner join of two "
+    "instruments with different quoting hours measures the asynchrony, and an ADF test on that "
+    "residual tests the quoting calendar rather than a common stochastic trend")
 
 # THE NAME THAT WAS BEING MINTED UNDER AND DID NOT EXIST (measured 2026-09-24). `pack_cells` has
 # minted 432 registry cells under `exogenous_conditioner`, each naming a lake series, a column and
