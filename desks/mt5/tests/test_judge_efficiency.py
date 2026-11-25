@@ -67,8 +67,17 @@ def test_the_scandir_prune_deletes_exactly_the_files_the_sealed_prune_deletes(tm
     _sealed_prune(a, now)
     got = je.prune_cache(b, now=now)
     assert sorted(p.name for p in a.iterdir()) == sorted(p.name for p in b.iterdir())
-    assert got == {"seen": 6, "removed": 3}
-    assert je.prune_cache(tmp_path / "absent", now=now) == {"seen": 0, "removed": 0}
+    assert (got["seen"], got["removed"], got["removed_bytes"]) == (6, 3, 3)
+    assert sorted(got["removed_names"]) == ["k2.npz", "k3.npz", "k5.npz"]   # recorded, by name
+    assert je.prune_cache(tmp_path / "absent", now=now) == {
+        "seen": 0, "removed": 0, "removed_bytes": 0, "removed_names": []}
+
+
+def test_prune_cache_is_a_declared_positive_destructive_path() -> None:
+    from libs.ops import reference_freshness as rf
+    row = next(p for p in rf.DESTRUCTIVE_PATHS if p.path_id == "judge_efficiency.prune_cache")
+    assert (row.module, row.function, row.status) == (
+        "desks/mt5/research/judge_efficiency.py", "prune_cache", "positive")
 
 
 # ------------------------------------------------------------------ H2: the order, same cells

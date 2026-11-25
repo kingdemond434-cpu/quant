@@ -1223,6 +1223,23 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
              "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
     ),
+    DestructivePath(
+        path_id="judge_efficiency.prune_cache",
+        module="desks/mt5/research/judge_efficiency.py",
+        function="prune_cache",
+        removes="the judge's own gauntlet_cache/*.npz build-cache files older than "
+                "CACHE_PRUNE_AGE_S (3 days); never a verdict, certificate, ledger or docket row",
+        reference="each file's own mtime, read from the directory listing in the same pass "
+                  "(os.scandir DirEntry.stat)",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a file goes only on a READ mtime older than the age; an "
+             "unreadable directory deletes nothing and a file whose stat or unlink fails is "
+             "skipped, so an absence never removes. The cache is rebuildable by construction -- "
+             "a missing key is a cache miss the next sweep rebuilds. Returns what it removed "
+             "(count, bytes, the first names) so every prune is recorded. The sealed rule it "
+             "restates is external_gauntlet.main's `> 3 * 86400` prune (judge-efficiency H1). "
+             "Declared 2026-11-25 (Audit, train 2 wip 3d35ff03f fence).",
+    ),
 )
 
 

@@ -47,6 +47,8 @@ FLOOR_CORES = 6
 RESEARCH_CAP_SHARE = 0.75
 #: The sealed prune's age (`external_gauntlet.main`: `> 3 * 86400`).
 CACHE_PRUNE_AGE_S = 3 * 86400
+#: How many removed file names a prune's record keeps (the count and bytes are always whole).
+PRUNE_NAMES_KEPT = 20
 
 
 # ---------------------------------------------------------------- helpers the sealed patch uses
@@ -61,12 +63,15 @@ def prune_cache(cache_dir: Path, max_age_s: float = CACHE_PRUNE_AGE_S,
     further call. Measured on the box (JUDGE_RESIDENT.json wall profile, 2026-11-24): the plan
     phase ran 3,767 s, `cache_prune` 3,159 s of it, and 63.4% of the plan's samples sat in
     `stat` at external_gauntlet.py:3613 (7.1% in `unlink` at :3614).
-    Never raises; an unreadable directory deletes nothing.
+    Never raises; an unreadable directory deletes nothing. RECORDS WHAT IT REMOVES: the count,
+    the bytes and the first PRUNE_NAMES_KEPT names (a declared destructive path,
+    libs/ops/reference_freshness `judge_efficiency.prune_cache`).
     """
     import time as _t
 
     now = _t.time() if now is None else now
-    seen = removed = 0
+    seen = removed = removed_bytes = 0
+    names: list[str] = []
     try:
         with os.scandir(cache_dir) as it:
             for e in it:
@@ -74,14 +79,19 @@ def prune_cache(cache_dir: Path, max_age_s: float = CACHE_PRUNE_AGE_S,
                     continue
                 seen += 1
                 try:
-                    if now - e.stat().st_mtime > max_age_s:
+                    st = e.stat()
+                    if now - st.st_mtime > max_age_s:
                         os.unlink(e.path)
                         removed += 1
+                        removed_bytes += int(st.st_size)
+                        if len(names) < PRUNE_NAMES_KEPT:
+                            names.append(e.name)
                 except OSError:
                     continue
     except OSError:
         pass
-    return {"seen": seen, "removed": removed}
+    return {"seen": seen, "removed": removed, "removed_bytes": removed_bytes,
+            "removed_names": names}
 
 
 def reorder_keep(before: list[dict], keep: list[dict]) -> list[dict]:
