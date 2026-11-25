@@ -289,10 +289,15 @@ def _read(name: str, env: Mapping[str, str] | None) -> str:
 #: unofficial key-resale relays never serve this desk, whatever key or ruling exists for them.
 #: Matched on the provider NAME and on the base URL's host, so a plug-in entry in
 #: data/secrets/cn_providers.json or a FREE_LLM_<NAME> env key cannot route around it.
+#: hcnsec and yjs are "new-api" resale gateways of the same kind as AgentRouter, so they are denied
+#: under the same ruling (coordinator 2026-11-25 21:56Z). Their keys stay stored on the box, unused:
+#: reversing this is deleting the two names here (and their hosts), nothing else.
 DENIED_RELAY_NAMES: frozenset[str] = frozenset({"agentrouter", "freegg", "codex_relay",
-                                                "codexrelay", "telegram", "tg_bot", "tgbot"})
+                                                "codexrelay", "telegram", "tg_bot", "tgbot",
+                                                "hcnsec", "yjs"})
 DENIED_RELAY_HOSTS: tuple[str, ...] = ("agentrouter.", "freegg", "codex-relay", "codexrelay",
-                                       "t.me", "telegram.", "api.telegram")
+                                       "t.me", "telegram.", "api.telegram", "hcnsec.",
+                                       "yjs.im")
 
 
 def denied(name: str, base_url: str = "") -> str | None:

@@ -10,6 +10,18 @@ import pytest
 from libs.ops import cn_ensemble as cn
 from libs.ops import llm_seat
 
+
+@pytest.fixture(autouse=True)
+def _relay_mechanics_on_an_undenied_gateway(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the RELAY MECHANICS (rulings, caps, ledgers, public-only) on hcnsec and
+    yjs as the example gateways. Both are denied in production (coordinator 2026-11-25 21:56Z);
+    the denial itself is pinned by its own test below, so here it is lifted for the two names."""
+    from libs.ops import cn_ensemble as _cn
+    monkeypatch.setattr(_cn, "DENIED_RELAY_NAMES", _cn.DENIED_RELAY_NAMES - {"hcnsec", "yjs"})
+    monkeypatch.setattr(_cn, "DENIED_RELAY_HOSTS",
+                        tuple(h for h in _cn.DENIED_RELAY_HOSTS if h not in ("hcnsec.", "yjs.im")))
+
+
 NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
 OR, HC, AR, YJ, GQ, CF, SF = cn.PROVIDERS
 
@@ -566,14 +578,20 @@ def test_siliconflow_tries_com_then_cn_and_uses_free_models_only() -> None:
     assert not cn.seat_for(SF, {"SILICONFLOW": "k"}, _no_list).lit
 
 
-def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling() -> None:
+def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     """OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25): AgentRouter and its kind stay dark even
-    with a key set and an ALLOWED ruling; official relays (hcnsec) are untouched by the list."""
+    with a key set and an ALLOWED ruling; hcnsec and yjs (new-api resale gateways) are denied too.
+    """
     from libs.ops import cn_ensemble as cn
     ar = next(p for p in cn.PROVIDERS if p.name == "agentrouter")
     seat = cn.seat_for(ar, {"AGENTROUTER": "sk-test-not-a-key"})
     assert not seat.lit and "DENIED" in seat.why
     assert cn.denied("freegg") and cn.denied("codex-relay") and cn.denied("tg_quantbot")
     assert cn.denied("acme", "https://api.agentrouter.org/v1")
-    assert cn.denied("hcnsec", "https://api.hcnsec.cn/v1") is None
+    assert cn.denied("groq", "https://api.groq.com/openai/v1") is None
+    monkeypatch.undo()                     # the production list: hcnsec and yjs are denied too
+    for p in (HC, YJ):
+        assert not cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"]).lit
+        assert "DENIED" in cn.seat_for(p, {p.key_env: "k"}, _no_list).why
     assert cn.denied("groq", "https://api.groq.com/openai/v1") is None

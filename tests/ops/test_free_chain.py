@@ -14,6 +14,18 @@ import pytest
 from libs.ops import cn_ensemble as cn
 from libs.ops import free_chain as fc
 
+
+@pytest.fixture(autouse=True)
+def _relay_mechanics_on_an_undenied_gateway(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the RELAY MECHANICS (rulings, caps, ledgers, public-only) on hcnsec and
+    yjs as the example gateways. Both are denied in production (coordinator 2026-11-25 21:56Z);
+    the denial itself is pinned by its own test below, so here it is lifted for the two names."""
+    from libs.ops import cn_ensemble as _cn
+    monkeypatch.setattr(_cn, "DENIED_RELAY_NAMES", _cn.DENIED_RELAY_NAMES - {"hcnsec", "yjs"})
+    monkeypatch.setattr(_cn, "DENIED_RELAY_HOSTS",
+                        tuple(h for h in _cn.DENIED_RELAY_HOSTS if h not in ("hcnsec.", "yjs.im")))
+
+
 NOW = datetime(2026, 11, 25, 12, 0, tzinfo=UTC)
 FAKE = "sk-fake-DO-NOT-LEAK-7f3a9c"
 
