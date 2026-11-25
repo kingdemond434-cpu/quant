@@ -21,6 +21,10 @@ WHAT IT WRITES: desks/mt5/reports/DELIVERY_LEADTIME.json --
     forge                   the release loop's own DELIVERY_LEADTIME.json, when it exists
     breach                  "CLEAR_NOT_LIVE_1H" / "LIVE_24H_BEHIND" / none
 
+WAIVERS AND MAINTENANCE (Audit should-fixes 1-2): a committed row in DELIVERY_WAIVED.jsonl
+withdraws a CLEAR that can never be live; DELIVERY_MAINTENANCE.json names tasks stopped on purpose
+(honoured for at most 6h ahead), which the guard then does not restart.
+
 WHAT IT DOES ON A BREACH (bounded, never the money path): starts MT5-AdoptRelease and
 QuantForge-Loop when they are not running (Start only; IgnoreNew makes a running one a no-op), at
 most once per 30 min each; names a release loop that is not connected to the drop; and pages
@@ -46,6 +50,14 @@ REPAIR_EVERY = timedelta(minutes=30)
 #: a breach that persists is paged again this often (a page read once and lost is not enough)
 REPAGE_EVERY = timedelta(hours=6)
 REPAIR_TASKS = ("MT5-AdoptRelease", "QuantForge-Loop")
+#: A CLEAR that can never be live (recut, abandoned, superseded under another branch name, another
+#: repository's sha) is WITHDRAWN by a committed row {"sha", "why", "by"}: governed, so a waiver
+#: is reviewed like code and never written by the guard itself (Audit should-fix 1).
+WAIVED_REL = "desks/mt5/data/DELIVERY_WAIVED.jsonl"
+#: A task stopped ON PURPOSE (a boot move): {"tasks": [...], "until": iso, "why": ...}. Honoured
+#: for at most MAINT_MAX from now, so a marker left behind cannot silence the guard for long.
+MAINT_REL = "desks/mt5/data/DELIVERY_MAINTENANCE.json"
+MAINT_MAX = timedelta(hours=6)
 _LINE = re.compile(r"^\s*AUDIT (CLEAR|HOLD) ([0-9a-f]{40})\b")
 
 Git = Callable[[Sequence[str]], tuple[int, str]]
@@ -109,7 +121,8 @@ def assess(clears: Sequence[Mapping[str, Any]], *, has: Callable[[str], bool],
             continue
         pending.append({"sha": c["sha"], "branch": c["branch"], "clear_at": c["at"].isoformat(),
                         "age_h": round((now - c["at"]).total_seconds() / 3600, 2),
-                        "object_on_box": known})
+                        "object_on_box": known,
+                        "stage": "adopt" if known else "deliver"})
     oldest = max((p["age_h"] for p in pending), default=0.0)
     # live code is behind by the age of the oldest CLEAR it still lacks: a quiet day followed by
     # a fresh CLEAR is not "24h behind" (that CLEAR is minutes old), a CLEAR missing for a day is
@@ -118,7 +131,42 @@ def assess(clears: Sequence[Mapping[str, Any]], *, has: Callable[[str], bool],
                                ("LIVE_24H_BEHIND", behind > BEHIND_LIMIT_H)) if hit]
     return {"max_clear_to_live_h": oldest, "behind_newest_clear_h": behind,
             "clears_owed": len(clears), "live": len(live_at), "pending_n": len(pending),
+            # NOT ON THE BOX: the drop/forge never delivered it. ON THE BOX, NOT LIVE: the
+            # adopter has not taken it. Different repairs, so counted apart.
+            "pending_not_on_box": sum(not p["object_on_box"] for p in pending),
+            "pending_not_adopted": sum(bool(p["object_on_box"]) for p in pending),
             "pending": sorted(pending, key=lambda p: -p["age_h"])[:50], "breach": breach}
+
+
+def waived(root: Path) -> dict[str, str]:
+    """{sha: why} from the committed waiver rows; malformed rows are ignored."""
+    out: dict[str, str] = {}
+    try:
+        text = (root / WAIVED_REL).read_text(encoding="utf-8")
+    except OSError:
+        return out
+    for ln in text.splitlines():
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue
+        if (isinstance(d, dict) and re.fullmatch(r"[0-9a-f]{40}", str(d.get("sha")))
+                and str(d.get("why") or "").strip()):
+            out[str(d["sha"])] = str(d["why"])
+    return out
+
+
+def in_maintenance(root: Path, now: datetime) -> set[str]:
+    """The tasks a maintenance marker says were stopped on purpose, while it holds."""
+    d = _read(root / MAINT_REL)
+    try:
+        until = datetime.fromisoformat(str(d.get("until")))
+        until = until if until.tzinfo else until.replace(tzinfo=UTC)
+    except (ValueError, TypeError):
+        return set()
+    if not now < until <= now + MAINT_MAX:
+        return set()
+    return {str(t) for t in d.get("tasks") or [] if isinstance(t, str)}
 
 
 def _git(root: Path) -> Git:
@@ -153,16 +201,21 @@ def task_start(name: str) -> bool:
 
 
 def repairs(breach: Sequence[str], state: Mapping[str, Any], now: datetime, *,
-            running: Callable[[str], bool | None]) -> list[str]:
-    """The tasks to start now. Pure given `running`."""
+            running: Callable[[str], bool | None],
+            paused: Iterable[str] = ()) -> list[str]:
+    """The tasks to start now. Pure given `running`. A task under maintenance is left alone."""
     if not breach:
         return []
     out = []
+    skip = set(paused)
+    started = state.get("started")
     for t in REPAIR_TASKS:
-        last = state.get("started", {}).get(t)
+        if t in skip:
+            continue
+        last = started.get(t) if isinstance(started, dict) else None
         try:
-            recent = last and now - datetime.fromisoformat(last) < REPAIR_EVERY
-        except ValueError:
+            recent = bool(last) and now - datetime.fromisoformat(str(last)) < REPAIR_EVERY
+        except (ValueError, TypeError):
             recent = False
         if not recent and running(t) is False:
             out.append(t)
@@ -188,8 +241,10 @@ def run_once(root: Path, *, quantbox: Path = QUANTBOX, now: datetime | None = No
         doc: dict[str, Any] = {"schema": SCHEMA, "at": now.isoformat(), "error": "no HEAD",
                                "breach": ["UNMEASURED"]}
     else:
-        clears = owed(read_verdicts(verdict_dirs(quantbox)))
+        w = waived(root)
+        clears = [c for c in owed(read_verdicts(verdict_dirs(quantbox))) if c["sha"] not in w]
         doc = {"schema": SCHEMA, "at": now.isoformat(), "head": head,
+               "waived": len(w),
                **assess(clears, has=lambda s: g(["cat-file", "-e", f"{s}^{{commit}}"])[0] == 0,
                         live=lambda s: g(["merge-base", "--is-ancestor", s, head])[0] == 0,
                         now=now)}
@@ -202,7 +257,9 @@ def run_once(root: Path, *, quantbox: Path = QUANTBOX, now: datetime | None = No
     doc["adopted_by"] = _read(root / "desks/mt5/data/release_identity.json").get("adopted_by")
     st_path = root / STATE_REL
     state = _read(st_path)
-    todo = repairs(doc.get("breach") or [], state, now, running=running)
+    paused = in_maintenance(root, now)
+    doc["maintenance"] = sorted(paused)
+    todo = repairs(doc.get("breach") or [], state, now, running=running, paused=paused)
     done = {t: start(t) for t in todo}
     if done:
         state.setdefault("started", {}).update({t: now.isoformat() for t in done})
@@ -214,7 +271,9 @@ def run_once(root: Path, *, quantbox: Path = QUANTBOX, now: datetime | None = No
         stale = True
     if shape and page is not None and (shape != state.get("paged_shape") or stale):
         oldest = (doc.get("pending") or [{}])[0]
-        page(f"DELIVERY GUARD: {shape}: {doc.get('pending_n', '?')} Audit CLEAR(s) not live, "
+        page(f"DELIVERY GUARD: {shape}: {doc.get('pending_n', '?')} Audit CLEAR(s) not live "
+             f"({doc.get('pending_not_on_box', '?')} never reached the box, "
+             f"{doc.get('pending_not_adopted', '?')} on the box but not adopted), "
              f"oldest {doc.get('max_clear_to_live_h')}h ({str(oldest.get('sha', ''))[:12]} "
              f"{oldest.get('branch', '')}); live {doc.get('behind_newest_clear_h')}h behind the "
              f"newest CLEAR; drop connected={doc['drop_connected']}; "

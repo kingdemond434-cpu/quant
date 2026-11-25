@@ -154,7 +154,8 @@ def _canary(root: Path) -> int:
             ag.page(root, f"no canary send on {str(hold.get('release_id'))[:12]} by its deadline; "
                           + ("lifted into the post-adoption watch" if lifted
                              else "the canary hold could NOT be lifted; every lane held"))
-            return _emit(root, "canary", ag.GO if lifted else ag.ROLLBACK_FAILED,
+            # not 12: there is nothing to roll back to, only a hold that would not come down
+            return _emit(root, "canary", ag.GO if lifted else ag.ERROR,
                          {"decision": "CANARY_EXPIRED_WATCH" if lifted
                           else "CANARY_EXPIRED_LIFT_FAILED", **v})
         return _emit(root, "canary", ag.GO, {"decision": "CANARY_WAIT", **v})
