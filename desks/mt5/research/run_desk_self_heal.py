@@ -84,7 +84,7 @@ def _task_running(name: str) -> bool:
 
 
 def _end_task(name: str) -> bool:
-    if not heal.research_task(name) or os.name != "nt":
+    if not (heal.research_task(name) or heal.board_rerunnable(name)) or os.name != "nt":
         return False
     try:
         proc = subprocess.run(["schtasks", "/End", "/TN", name], capture_output=True,
@@ -111,6 +111,25 @@ def _run_task(name: str) -> bool:
 #: A money-path organ still failing is paged again after this long (Audit should-fix: page on
 #: change, not every pass; a day keeps a standing fault from going silent).
 MONEYPATH_REPAGE_H = 24.0
+#: A board task re-run this many times in 24h and still faulted is PAGED (principal 2026-11-25:
+#: "End+Run, alert Claude if still bad after 2 tries"). The re-run bounds above still apply.
+BOARD_GIVE_UP_RUNS = 2
+
+
+def _may_end(task: str) -> bool:
+    return heal.research_task(task) or heal.board_rerunnable(task)
+
+
+def _runs_24h(ledger: dict[str, Any], task: str, now: datetime) -> int:
+    n = 0
+    for x in ledger.get(task) or []:
+        try:
+            t = datetime.fromisoformat(str(x))
+        except ValueError:
+            continue
+        t = t if t.tzinfo else t.replace(tzinfo=UTC)
+        n += (now - t).total_seconds() < 86400
+    return n
 
 def run(*, root: Path = ROOT, apply: bool = False,
         out: Path = REPORT, ledger_path: Path = RERUN_LEDGER,
@@ -125,7 +144,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
     end = end_task or _end_task
     ran_this_pass: set[str] = set()
     hung = {f.task for f in findings
-            if not f.ok and f.hung and f.task and heal.research_task(f.task)}
+            if not f.ok and f.hung and f.task and _may_end(f.task)}
     ended: list[dict[str, Any]] = []
 
     def _bounded_run(task: str) -> bool:
@@ -139,7 +158,7 @@ def run(*, root: Path = ROOT, apply: bool = False,
         ran_this_pass.add(task)
         ledger[task] = [*[str(x) for x in (ledger.get(task) or [])][-10:],
                         t_now.isoformat(timespec="seconds")]
-        if task in hung and heal.research_task(task) and is_running(task):
+        if task in hung and _may_end(task) and is_running(task):
             ok_end = bool(end(task))
             row = {"task": task, "at": t_now.isoformat(timespec="seconds"), "ended": ok_end}
             ended.append(row)
@@ -171,7 +190,21 @@ def run(*, root: Path = ROOT, apply: bool = False,
     # MONEYPATH_CRASH ALERTS (principal 2026-11-24 18:14Z): each failing money-path organ lands
     # on the event log as a PLUMBING_DEFECT with its root cause, the surface the alert relay to
     # Claude reads. Only on an applied pass, so a dry run never pages; the writer never raises.
-    alerts = [f for f in findings if not f.ok and f.check.startswith("moneypath ")]
+    # THE BOARD PAGES TOO (2026-11-25): a board fault no re-run can cure (alert-only verdicts,
+    # STALE_OUTPUT on a task we may not touch) pages at once; a re-runnable one pages once it
+    # has had BOARD_GIVE_UP_RUNS re-runs in 24h and is still faulted.
+    def _board_due(f: Any) -> bool:
+        if f.ok or not f.check.startswith("board "):
+            return False
+        return (not f.fixable or not f.task
+                or _runs_24h(ledger, f.task, t_now) >= BOARD_GIVE_UP_RUNS)
+    alerts = [f for f in findings if not f.ok
+              and (f.check.startswith(("moneypath ", "invariant ")) or _board_due(f))]
+    _, census = heal.check_process_board(root, t_now)
+    doc["board"] = census
+    doc["invariants"] = [{"invariant": f.check.split(" ", 1)[1], "holds": f.ok,
+                          "detail": f.detail} for f in findings
+                         if f.check.startswith("invariant ")]
     doc["moneypath_alerts"] = [{"organ": f.check, "detail": f.detail} for f in alerts]
     # PAGE ON CHANGE (Audit should-fix on 45d647ac7): an organ pages when it newly fails and again
     # every MONEYPATH_REPAGE_H while it stays failed -- never once per 15-minute pass. The
@@ -206,8 +239,13 @@ def run(*, root: Path = ROOT, apply: bool = False,
                 _sys.path.insert(0, str(root))
             from libs.ops import events as _ev
             for f in due:
+                defect = ("MONEYPATH_CRASH" if f.check.startswith("moneypath ")
+                          and "board " not in f.check
+                          else "INVARIANT_" + f.check.split(" ", 1)[1]
+                          if f.check.startswith("invariant ")
+                          else "BOARD_" + f.detail.split(":", 1)[0].strip())
                 _ev.emit("PLUMBING_DEFECT", root / "desks" / "mt5" / "data" / "events.jsonl",
-                     organ=f.check, defect="MONEYPATH_CRASH",
+                     organ=f.check, defect=defect,
                          detail=f.detail[:600], producer="desk_self_heal", priority=2)
         except Exception as exc:  # the report still names every alert
             doc["moneypath_alert_error"] = f"{type(exc).__name__}: {exc}"
