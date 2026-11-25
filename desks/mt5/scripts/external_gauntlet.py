@@ -8,6 +8,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import inspect
 import json
@@ -1982,6 +1983,72 @@ def cache_save(key: str, ds1, ds3) -> None:
             print(f"  CACHE SAVE FAILING ({type(exc).__name__}: {exc}) -- sweeps will run at "
                   f"cold speed until this is fixed; reporting once, not per cell")
 
+#: Seconds one sweep's cache prune may take; the walk resumes where it stopped next sweep.
+#: MEASURED 2026-11-25: the unbounded glob + stat prune took 10,120 s of a 10,838 s plan -- inside
+#: the build budget's own clock (`_build_t0` is set before it) -- and the cache only grows.
+CACHE_PRUNE_BUDGET_S = float(os.environ.get("GAUNTLET_CACHE_PRUNE_BUDGET_S", "600"))
+#: Where the bounded prune keeps its resume point (not `*.npz`, so it is never pruned itself).
+CACHE_PRUNE_CURSOR = CACHE_DIR / "_prune_cursor.json"
+
+
+def _bounded_cache_prune(budget_s: float | None = None) -> dict:
+    """Prune `CACHE_DIR` under CACHE_PRUNE_BUDGET_S, resuming from the last sweep's cursor.
+
+    THE RULE IS THE SEALED ONE, UNCHANGED: `*.npz` older than three days by mtime (the
+    stall_watch disk tier mirrors it by AST). Only the time it may spend is bounded. The walk is
+    `os.scandir` (a DirEntry's stat is served from the directory record on Windows, where
+    `Path.stat()` re-opened every file), it skips every name at or before the cursor without a
+    stat, and when the budget runs out it saves the last name examined; NTFS lists a directory in
+    name order, so the next sweep resumes exactly there. A complete walk clears the cursor.
+    Nothing younger than three days is ever removed however the walk is cut. Prints the
+    `CACHE PRUNE:` line the plan tracker ends the `cache_prune` step on. Never raises."""
+    import time as _t
+    budget = CACHE_PRUNE_BUDGET_S if budget_s is None else float(budget_s)
+    resume = None
+    try:
+        resume = json.loads(CACHE_PRUNE_CURSOR.read_text("utf-8")).get("cursor") or None
+    except (OSError, ValueError, AttributeError):
+        resume = None
+    t0 = _t.monotonic()
+    seen = removed = 0
+    complete, cursor = True, None
+    try:
+        with os.scandir(CACHE_DIR) as _it:
+            for _e in _it:
+                if not _e.name.endswith(".npz"):
+                    continue
+                if _t.monotonic() - t0 > budget:
+                    complete = False
+                    break
+                if resume is not None and _e.name <= str(resume):
+                    continue
+                cursor = _e.name
+                seen += 1
+                try:
+                    if _t.time() - _e.stat().st_mtime > 3 * 86400:
+                        Path(_e.path).unlink(missing_ok=True)
+                        removed += 1
+                except OSError:
+                    continue
+    except OSError:
+        pass
+    got = {"seen": seen, "removed": removed, "complete": complete,
+           "cursor": None if complete else (cursor or resume),
+           "seconds": round(_t.monotonic() - t0, 1), "budget_s": budget}
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = CACHE_PRUNE_CURSOR.with_name(f"{CACHE_PRUNE_CURSOR.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({**got, "at": datetime.now(UTC).isoformat(timespec="seconds")}),
+                       encoding="utf-8")
+        os.replace(tmp, CACHE_PRUNE_CURSOR)
+    except OSError:
+        pass
+    print(f"CACHE PRUNE: removed {removed} of {seen} examined in {got['seconds']}s "
+          f"(budget {budget:.0f}s, {'complete' if complete else 'resumes next sweep'})",
+          flush=True)
+    return got
+
+
 def _warm_one(spec: dict, meta: dict) -> dict:
     """Build ONE cell's series pair into the on-disk cache. Runs in a worker process.
 
@@ -2008,6 +2075,7 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         last_day = frame.index[-1].normalize()
         ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
         out["ckey"] = ckey
+        out["data_day"] = str(last_day.date())
         if cache_load(ckey) is not None:
             out["status"] = "HIT"
             return out
@@ -2032,6 +2100,102 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         return out
 
 
+#: A PRE-WARM CELL MAY NOT RUN FOREVER, AND NEITHER MAY THE POOL (judge P0, 2026-11-25). Sweep
+#: pid 18528 sat in `wait(list(pending), timeout=5)` from 07:27Z with its whole tree idle: the
+#: loop had no notion of a cell that never returns, honoured the deadline only by refusing NEW
+#: work, and its `with ProcessPoolExecutor` block ended in `shutdown(wait=True)`, which waits on
+#: exactly the cells that never finish. One wedged worker set could therefore hold the judge
+#: (and every verdict behind it) for as long as the box stayed up.
+#:
+#: A cell running longer than the CELL TIMEOUT is abandoned and counted failed as CELL_TIMEOUT.
+#: The timeout is DERIVED from this run's measured seconds per completed cell (times
+#: PREWARM_CELL_TIMEOUT_MULT), clamped to [FLOOR, CEIL]; until PREWARM_CELL_TIMEOUT_MIN_N cells
+#: have completed it is the CEIL. GAUNTLET_PREWARM_CELL_TIMEOUT_S overrides the derivation.
+PREWARM_CELL_TIMEOUT_FLOOR_S = 600.0
+PREWARM_CELL_TIMEOUT_CEIL_S = 3600.0
+PREWARM_CELL_TIMEOUT_MULT = 20.0
+PREWARM_CELL_TIMEOUT_MIN_N = 20
+#: No future completed for this long (or the cell timeout, whichever is longer) while futures are
+#: pending: the pool is HUNG. It is torn down and the sweep proceeds with what was warmed.
+PREWARM_HUNG_POOL_S = float(os.environ.get("GAUNTLET_PREWARM_HUNG_POOL_S", "1800"))
+#: Past the deadline, cells already running get at most this long (and never longer than the
+#: cell timeout) before the pool is shut down without waiting and its workers terminated.
+PREWARM_DEADLINE_GRACE_S = float(os.environ.get("GAUNTLET_PREWARM_DEADLINE_GRACE_S", "300"))
+#: How often the pool loop wakes to read the clock when nothing completes.
+PREWARM_POLL_S = 5.0
+
+
+#: THE PLAN'S DATA-DAY PER (symbol, chart), as the pre-warm keyed it (judge P0, 2026-11-25).
+#: The cache key carries the cell's data-day (`last_day`, the last bar of its parquet). The
+#: 11-24 sweep pre-warmed for 11.8 h and its shards started at 00:11Z: every parquet refreshed
+#: past midnight now ended a day later, so every shard's key missed the cell the pool had just
+#: built, the build budget was already spent, and the pre-warm's work was deferred unjudged.
+#: A cache miss on today's key now tries the key the PLAN warmed; a hit there is the exact
+#: series built from the frame ending on that planned day (the cell carries that day as its
+#: `_last_day`), so nothing is judged on data it was not built from. Set by `main` after the
+#: pool, carried in `plan.pkl`, restored by `shard_worker`.
+_PLAN_DATA_DAYS: dict[str, str] = {}
+
+
+def _data_day_key(sym: str, tf: str) -> str:
+    return f"{sym}|{str(tf).upper()}"
+
+
+def _planned_cache_hit(sym: str, family: str, params: dict, tf: str, today: str):
+    """(ckey, ds1, ds3, day) from the plan's data-day when today's key missed, else None."""
+    day = _PLAN_DATA_DAYS.get(_data_day_key(sym, tf))
+    if not day or day == today:
+        return None
+    ckey = _cache_key(sym, family, params, day, tf)
+    got = cache_load(ckey)
+    if got is None:
+        return None
+    return ckey, got[0], got[1], day
+
+
+def _prewarm_cell_timeout_s(cell_seconds: list) -> float:
+    """The per-cell timeout: MULT x the measured mean seconds per completed cell, in [FLOOR, CEIL].
+
+    Unmeasured (fewer than MIN_N completions) is the CEIL, never the floor: a slow-but-healthy
+    first cell is not abandoned on a guess."""
+    forced = os.environ.get("GAUNTLET_PREWARM_CELL_TIMEOUT_S")
+    if forced:
+        try:
+            if float(forced) > 0:
+                return float(forced)
+        except ValueError:
+            pass
+    if len(cell_seconds) < PREWARM_CELL_TIMEOUT_MIN_N:
+        return PREWARM_CELL_TIMEOUT_CEIL_S
+    mean = sum(cell_seconds) / len(cell_seconds)
+    return float(min(PREWARM_CELL_TIMEOUT_CEIL_S,
+                     max(PREWARM_CELL_TIMEOUT_FLOOR_S, PREWARM_CELL_TIMEOUT_MULT * mean)))
+
+
+def _abandon_pool(pool) -> dict:
+    """Shut `pool` down WITHOUT waiting, cancel its queue and terminate its worker processes.
+
+    `shutdown(wait=True)` -- what leaving a `with ProcessPoolExecutor` block does -- waits on the
+    very cells that never return. Workers are terminated on every platform (on Windows there is
+    no other way to stop one); a terminated worker also unblocks the executor's own management
+    thread, which would otherwise be joined at interpreter exit. Never raises."""
+    procs = []
+    with contextlib.suppress(Exception):
+        procs = list((getattr(pool, "_processes", None) or {}).values())
+    with contextlib.suppress(Exception):
+        pool.shutdown(wait=False, cancel_futures=True)
+    terminated = 0
+    for p in procs:
+        with contextlib.suppress(Exception):
+            if p.is_alive():
+                p.terminate()
+                terminated += 1
+    for p in procs:
+        with contextlib.suppress(Exception):
+            p.join(timeout=5)
+    return {"terminated": terminated, "workers": len(procs)}
+
+
 def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
 
@@ -2046,6 +2210,13 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     loop that follows finds the budget spent and defers what the pool did not reach, exactly as
     it defers today. The hourly cadence is unchanged: this makes the 45 minutes worth WORKERS
     times more cells, it does not make them longer.
+
+    AND IT CAN NEVER HANG (judge P0, 2026-11-25; see PREWARM_CELL_TIMEOUT_FLOOR_S). A cell past
+    the cell timeout is abandoned as CELL_TIMEOUT (failed); a pool with no completion for the
+    hung window is torn down (its running cells failed as POOL_HUNG, its queue unreached); at the
+    deadline the queue is cancelled, running cells get a bounded grace, and the pool is shut down
+    WITHOUT waiting and its workers terminated (those cells unreached, the budget's reason). In
+    every case the sweep proceeds to its gates with what was warmed; nothing is marked judged.
     """
     from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 
@@ -2060,14 +2231,28 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
                "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
-               "built_symbols": set()}
+               "built_symbols": set(), "timed_out": 0, "pool_hung": False,
+               "abandoned_at_deadline": 0, "cell_timeout_s": None, "ended": "drained",
+               "data_days": {}}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
     #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
     #: symbol it just built. `pending` is popped before the result is read.
     pending_spec: dict = {}
-    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+    #: future -> when it was first seen RUNNING (monotonic). The cell timeout counts from here.
+    started: dict = {}
+    #: measured seconds of completed cells, from first-seen-running to done: the timeout's input.
+    cell_seconds: list = []
+
+    def _fail(st: str, why: str) -> None:
+        summary["failed"] += 1
+        summary["failures"][st] = summary["failures"].get(st, 0) + 1
+        reasons = summary["failure_reasons"]
+        reasons[why[:300]] = reasons.get(why[:300], 0) + 1
+
+    pool = ProcessPoolExecutor(max_workers=WORKERS)
+    try:
         def _submit_next() -> bool:
             sp = next(it, None)
             if sp is None:
@@ -2081,23 +2266,71 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
         for _ in range(2 * WORKERS):
             if not _submit_next():
                 break
+        last_done = time.monotonic()
+        grace_until: float | None = None
         while pending:
+            mono = time.monotonic()
+            for f in pending:
+                if f not in started and f.running():
+                    started[f] = mono
+            cell_timeout = _prewarm_cell_timeout_s(cell_seconds)
+            summary["cell_timeout_s"] = round(cell_timeout, 1)
             if time.time() > deadline:
-                # Stop handing out work. Cells already running finish (one cell each); cells
-                # not yet started are cancelled and counted as unreached -- the main loop then
-                # records them DEFERRED with the budget as the reason, as it always has.
+                # Stop handing out work. Cells not yet started are cancelled and counted as
+                # unreached -- the main loop then records them DEFERRED with the budget as the
+                # reason, as it always has. Cells already running get a BOUNDED grace.
                 for f in list(pending):
                     if f.cancel():
                         summary["unreached"] += 1
                         pending.pop(f)
-            done, _ = wait(list(pending), timeout=5, return_when=FIRST_COMPLETED)
+                if grace_until is None:
+                    grace_until = mono + min(PREWARM_DEADLINE_GRACE_S, cell_timeout)
+                if pending and mono > grace_until:
+                    summary["abandoned_at_deadline"] = len(pending)
+                    summary["unreached"] += len(pending)
+                    summary["ended"] = "deadline_grace_spent"
+                    pending.clear()
+                    break
+            # A CELL PAST THE CELL TIMEOUT is abandoned: failed, by name. Its worker may stay
+            # wedged; if they all do, nothing completes and the hung-pool rule below acts.
+            for f in [f for f in pending if f in started and mono - started[f] > cell_timeout]:
+                pending.pop(f)
+                summary["timed_out"] += 1
+                _sp = pending_spec.get(f) or {}
+                _fail("CELL_TIMEOUT", f"CELL_TIMEOUT: {_sp.get('sym')} {_sp.get('family')} ran "
+                                      f"past the {cell_timeout:.0f}s cell timeout; abandoned")
+                if time.time() <= deadline:
+                    _submit_next()
+            if not pending:
+                break
+            if mono - last_done > max(PREWARM_HUNG_POOL_S, cell_timeout):
+                # HUNG POOL: futures pending, none completing. Tear it down and proceed.
+                summary["pool_hung"] = True
+                summary["ended"] = "pool_hung"
+                for f in list(pending):
+                    if f in started:
+                        _fail("POOL_HUNG", f"POOL_HUNG: no pre-warm cell completed for "
+                                           f"{mono - last_done:.0f}s; pool torn down")
+                    else:
+                        summary["unreached"] += 1
+                pending.clear()
+                break
+            done, _ = wait(list(pending), timeout=PREWARM_POLL_S, return_when=FIRST_COMPLETED)
+            if done:
+                last_done = time.monotonic()
             for f in done:
                 pending.pop(f, None)
+                if f in started:
+                    cell_seconds.append(last_done - started[f])
                 try:
                     r = f.result()
                 except Exception as exc:
                     r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
                 st = str(r.get("status") or "ERROR")
+                if r.get("data_day") and st in ("WARMED", "HIT"):
+                    summary["data_days"].setdefault(
+                        _data_day_key(str(r.get("sym") or ""), str(r.get("tf") or "")),
+                        str(r["data_day"]))
                 if st == "WARMED":
                     summary["warmed"] += 1
                     # WARMED only, never HIT: the cursor records when a symbol's cells were last
@@ -2110,19 +2343,20 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 elif st == "HIT":
                     summary["hit"] += 1
                 else:
-                    summary["failed"] += 1
-                    summary["failures"][st] = summary["failures"].get(st, 0) + 1
-                    reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
-                    reasons = summary["failure_reasons"]
-                    reasons[reason] = reasons.get(reason, 0) + 1
+                    _fail(st, str(r.get("why") or f"UNMEASURED: {st}"))
                 if time.time() <= deadline:
                     _submit_next()
+    finally:
+        # NEVER `shutdown(wait=True)`: a clean drain has nothing left to wait on, and anything
+        # else must not be waited on. Workers are terminated either way.
+        summary["pool_teardown"] = _abandon_pool(pool)
     summary["unreached"] += sum(1 for _ in it)
     summary["seconds"] = round(time.time() - t0, 1)
     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
           f"failed, {summary['unreached']} not reached before the build budget)"
-          + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
+          + (f"; failures by kind {summary['failures']}" if summary["failures"] else "")
+          + (f"; ended {summary['ended']}" if summary["ended"] != "drained" else ""))
     if summary["failure_reasons"]:
         print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)
     return summary
@@ -3607,13 +3841,8 @@ def main():
     blocked_build: list[dict] = list(_modifier_blocked)
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
-    try:
-        import time as _t
-        for _f in CACHE_DIR.glob("*.npz"):
-            if _t.time() - _f.stat().st_mtime > 3 * 86400:
-                _f.unlink(missing_ok=True)
-    except OSError:
-        pass
+    # BOUNDED (judge P0, 2026-11-25): see `_bounded_cache_prune`.
+    _bounded_cache_prune()
     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
     # rebuilds residuals and rolling correlations against EVERY other registry instrument, and it
     # is memoised only two entries deep because the full universe for one symbol is hundreds of
@@ -3838,6 +4067,8 @@ def main():
         # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
         # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
         _built_syms |= set(_prewarm.get("built_symbols") or ())
+        _PLAN_DATA_DAYS.clear()
+        _PLAN_DATA_DAYS.update(_prewarm.get("data_days") or {})
     # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
     # a spec carries no return stream, and the cells that do (cached series) have already paid
     # their build. It judges every cached series on the loop's cached branch below, counts what
@@ -4596,6 +4827,8 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
     if not 0 <= k < n:
         raise ValueError(f"shard {k} outside 0..{n - 1}")
     meta = plan["meta"]
+    _PLAN_DATA_DAYS.clear()
+    _PLAN_DATA_DAYS.update(plan.get("data_days") or {})
     if phase == "rule":
         return _shard_rule(shard_dir, plan, k, meta, t0)
     if phase != "build":
@@ -4786,7 +5019,7 @@ def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
     _lock_frac = float(constitution_thresholds(LOCKBOX_FRAC)["lockbox_min_fraction"])
     plan = {"protocol": SHARD_PROTOCOL, "n": n, "token": token, "build_t0": float(build_t0),
             "owner_pid": os.getpid(), "meta": meta, "specs": list(eligible_specs),
-            "lockbox_frac": _lock_frac}
+            "lockbox_frac": _lock_frac, "data_days": dict(_PLAN_DATA_DAYS)}
     _pickle_atomic(shard_dir / "plan.pkl", plan)
     print(f"SHARDED SWEEP: {len(eligible_specs)} planned cell(s) across {n} shard(s)")
     t0 = time.time()
@@ -4878,6 +5111,12 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
         ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
                           spec_tf)
         cached = cache_load(ckey)
+        if cached is None:
+            _planned = _planned_cache_hit(spec["sym"], spec["family"], spec["params"] or {},
+                                          spec_tf, str(last_day.date()))
+            if _planned is not None:
+                ckey, _p1, _p3, _pday = _planned
+                cached, last_day = (_p1, _p3), pd.Timestamp(_pday, tz=last_day.tz)
         if cached is not None:
             ds1, ds3 = cached
             stage0_record(_stage0, _stage0_verdicts, spec, spec_tf, ds1)
