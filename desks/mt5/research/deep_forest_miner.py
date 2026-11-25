@@ -196,6 +196,40 @@ REGION_WALL_MARKERS: tuple[str, ...] = ("当前地区暂不支持访问",
                                         "does not support access from IP addresses outside")
 
 
+#: THE GROUND-LEVEL REFUSAL'S MISSED-GROWTH LINE. A ground whose own address sits on a host in
+#: `TERMS_REFUSED` is not worked on ANY route -- not its page, not a search for `site:` it, not its
+#: sitemap -- because every one of those routes reads the same publisher's content around the
+#: same terms. Before this, such a ground (BigQuant) stayed registered with no named refusal: its
+#: page fetch was refused per URL, the route fell back to the engines, and the frontier recorded
+#: an ordinary EMPTY or BLOCKED attempt every hour, so the refusal was invisible on every ledger.
+TERMS_REFUSED_MISSED_GROWTH = (
+    "missed_growth: this community's strategy write-ups and factor posts are not read on any "
+    "route until the publisher grants written consent; mechanisms that live only there are a "
+    "gap in the CN practitioner forest, not a zero. Reopens the day the host leaves "
+    "TERMS_REFUSED.")
+
+
+def ground_refusal(g: dict[str, Any]) -> str | None:
+    """The NAMED refusal that stops a whole ground before any route runs, or None.
+
+    Read from the ground's own addresses (`url`, `site`, `alt`) against `TERMS_REFUSED`, so a
+    host added to that table refuses every ground on it with no edit to the grounds registry
+    (which the box writes). Never a reason to drop the ground: it stays registered, scheduled
+    and reported, and its row says why it is not read.
+    """
+    addrs = [str(g.get("url") or ""), str(g.get("site") or ""),
+             *[str(x) for x in (g.get("alt") or []) if x]]
+    for a in addrs:
+        a = a.strip()
+        if not a:
+            continue
+        host = _host_of(a if "://" in a else f"https://{a}")
+        for h, why in TERMS_REFUSED.items():
+            if host == h or host.endswith("." + h):
+                return f"TERMS_REFUSED: {host}: {why}"
+    return None
+
+
 class RobotsRefused(OSError):
     """robots.txt (or a host's own terms) says no; the fetch never happens."""
 
@@ -1240,11 +1274,23 @@ class _Run:
                 break
             page = self.page(u)
             text = html_text(page)
+            rendered_ok = False
             if (len(text) < MIN_PAGE_TEXT or render_first) and self._net_ok():
                 rp = self.rendered(u)
                 if rp:
                     page, text = rp, html_text(rp)
+                    rendered_ok = True
             if not text:
+                continue
+            # A JS SHELL IS NOT A REACHED GROUND (2026-11-17). The render-route communities
+            # (JoinQuant, RiceQuant, Uqer) serve a script shell to a plain GET; when the renderer
+            # is absent or fails, that shell's few hundred characters used to count as `fetched`,
+            # so the ground was filed EMPTY ("reached, no claims") with no error, hundreds of
+            # times. It is a wall with a name, and the ground's row now says which.
+            if render_first and not rendered_ok and len(text) < MIN_PAGE_TEXT:
+                self.status.append({"url": u, "blocked": (
+                    f"JS_SHELL_UNRENDERED: {len(text)} chars of script shell and no "
+                    "rendered page (renderer absent, refused or failed on this host)")})
                 continue
             got += 1
             claims += self._read_page(g, page, u, _title(page) or u, str(g.get("route", "http")))
@@ -1679,6 +1725,13 @@ class _Run:
         if route == "unreachable":
             self.status.append({**row, "status": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
+            return
+        # A NAMED REFUSAL, BEFORE ANY ROUTE. No request is built for a ground whose publisher's
+        # terms forbid automated reading; the row says so and carries its missed-growth line.
+        refusal = ground_refusal(g)
+        if refusal:
+            self.status.append({**row, "status": "BLOCKED_ON_TERMS", "why": refusal,
+                                "missed_growth": TERMS_REFUSED_MISSED_GROWTH})
             return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
@@ -2317,6 +2370,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
+           # THE NAMED REFUSALS: registered, scheduled, never requested -- each with its reason
+           # and its missed-growth line, so a refusal is on the report rather than in a silence.
+           "refused": [{"ground": s.get("ground"), "why": s.get("why"),
+                        "missed_growth": s.get("missed_growth")}
+                       for s in grounds_status if s.get("status") == "BLOCKED_ON_TERMS"
+                       and str(s.get("why") or "").startswith("TERMS_REFUSED")],
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,
@@ -2494,7 +2553,10 @@ def _checkpoint(r: _Run, f: _Run, ckpt: dict[str, Any]) -> None:
                         fh.write(json.dumps(row, ensure_ascii=False) + "\n")
         # A ground the box could not reach because the BOX had no network was not attempted;
         # recording it BLOCKED would move it out of NAMED_ONLY without anyone having tried it.
-        sts = [s for s in f.status if "ground" in s and s.get("status") != "NO_NETWORK"]
+        # A ground refused on terms was not attempted either: no request was built for it, so it is
+        # neither an attempt in the counters nor a move out of NAMED_ONLY.
+        sts = [s for s in f.status if "ground" in s
+               and s.get("status") not in ("NO_NETWORK", "BLOCKED_ON_TERMS")]
         if sts:
             with _xlock("deep_forest_frontier"):
                 _record_frontier(sts, [])
