@@ -556,7 +556,9 @@ def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
         assert FS.judged_quality(row["family"], row["params"]) == FS.EXECUTABLE, row
     stated = [r for r in desk["donated"] if r["symbol"] == "EURUSD"
               and r["family"] == "asia_momentum"]
-    assert stated and all(r["params"].get("mom_thresh") == 0.6 for r in stated)
+    # every one carries the stated setting -- as stated, or its declared x0.5 / x2 neighbour
+    assert stated and all(r["params"].get("mom_thresh") in (0.6, 0.3, 1.2) for r in stated)
+    assert any(r["params"].get("mom_thresh") == 0.6 for r in stated)
     assert not any(r["family"] == "level_breakout" for r in desk["donated"])
     reasons = report["blocked"]["by_reason"]
     assert reasons.get("spec:defaults_only", 0) > 0
