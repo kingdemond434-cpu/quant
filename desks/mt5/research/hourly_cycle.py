@@ -1247,6 +1247,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # contracts leg reads every leg's declared experiment against its own report, and the health
     # board rolls every organ into one verdict. It runs last so it reads this pass.
     "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
+    "source_conversion",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -1567,6 +1568,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # WHY CELLS NEVER BUILT, WHAT EACH LEG CLAIMS, AND ONE HEALTH VERDICT: the
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
+                     "source_conversion",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
@@ -2536,6 +2538,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "trade_pathology": 120,
     "experiment_contracts": 240,
     "health_board": 180,
+    "source_conversion": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -6550,6 +6553,11 @@ def main() -> None:
         "trade_pathology", "research/trade_pathology.py", "--once"))
     exc_ = _costed("experiment_contracts", lambda: _producer(
         "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    # PER-SOURCE CONVERSION (principal 2026-11): mined -> judged -> certified -> live for every data
+    # source, reach against the eligible non-exotic universe; a source with mined > 0 and zero
+    # judged is a FAULT. Before the board, which reads it as a reader row.
+    scv = _costed("source_conversion", lambda: _producer(
+        "source_conversion", "research/source_conversion.py", "--once"))
     hbd = _costed("health_board", lambda: _producer(
         "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
@@ -6949,7 +6957,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cro_noon_freshness": cnf, "six_event_trace": sxt,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
-                    "experiment_contracts": exc_, "health_board": hbd,
+                    "experiment_contracts": exc_, "health_board": hbd, "source_conversion": scv,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
