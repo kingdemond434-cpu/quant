@@ -303,7 +303,7 @@ def coverage(cat: Mapping[str, Any], rows: Iterable[Mapping[str, Any]], *,
         e = per[s]
         e["rows"] += 1
         q = _quality(row)
-        if q == "EXECUTABLE":
+        if q in ("EXECUTABLE", "EXECUTABLE_VARIANT"):          # family_spec.TESTABLE
             e["testable_rows"] += 1
         elif q == UNMEASURED:
             e["quality_unmeasured"] += 1

@@ -8,9 +8,12 @@ rem    It first runs box_headroom (disk/RAM/CPU/terminals/quotas, invariants I6/
 rem    and compressed, derived caches cleared past the 75% line; evidence is never deleted.
 rem    And last, box_pass: the hourly pass on the box (principal 11-25 03:11Z), read-only ->
 rem    desks\mt5\reports\PASS_FINDINGS.json.
+rem 3. scripts\delivery_guard.py (zuck 11-25 20:00Z, rule E34): every Audit CLEAR live within 1h,
+rem    live never 24h behind the newest CLEAR; starts the adopter/forge loop when stalled, pages.
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Guardian.log"
 set "PY=C:\Program Files\Python314\python.exe"
 "%PY%" -u "C:\opt\quant\ops\alert_feed.py" >>"%LOG%" 2>&1
+"%PY%" -u "C:\opt\quant\scripts\delivery_guard.py" --once >>"%LOG%" 2>&1
 "%PY%" -u "C:\opt\quant\desks\mt5\research\run_desk_self_heal.py" --apply >>"%LOG%" 2>&1
 exit /b %ERRORLEVEL%

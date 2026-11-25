@@ -75,8 +75,8 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             horizon=bundle.horizons[-1], source=SYSTEM,
             # the arm IS the cross's two windows, under the family's own argument names, so the
             # gauntlet judges this pair and not trend_ma_cross's defaults (family_spec).
-            evidence={"parameters": {"fast_ema": int(best["arm"][0]),
-                                     "slow_ema": int(best["arm"][1])},
+            evidence={"parameters": {"fast_ema": int(best["arm"][0]),  # type: ignore[index]
+                                     "slow_ema": int(best["arm"][1])},  # type: ignore[index]
                       "arm": best["arm"], "visits": best["visits"], "total_visits": sum(visits),
                       "mean_objective_return": best["mean_objective_return"],
                       "method": "UCB1 allocation over a parameter arena, seeded windows"}))

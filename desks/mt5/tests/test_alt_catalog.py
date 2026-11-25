@@ -152,18 +152,18 @@ def test_a_donated_alt_cell_compiles_as_an_exact_testable_recipe(tmp_path: Path)
     cands, disp = mcc.compile_row("kimi_k3_deep_forest", rows[0], {"AUDUSD"})
     assert disp == "EXACT_RECIPE"
     assert cands[0]["params"]["conditioner"] == "alt:ks_bok__exports:surprise_z:gt:0"
-    assert fs.is_testable(cands[0]["family"], cands[0]["params"])
+    assert fs.is_testable(fs.to_executable(cands[0]["family"], cands[0]["params"])["status"])
 
 
 # ------------------------------------------------------------------------ family_spec -----
 def test_an_alt_conditioner_on_family_defaults_is_executable_and_kept() -> None:
     got = fs.to_executable("session_range_breakout",
                            {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"})
-    assert got["status"] == fs.EXECUTABLE
-    assert got["params"] == {"conditioner": "alt:ks_bok__exports:surprise_z:gt:0"}
+    assert got["status"] == fs.EXECUTABLE_VARIANT
+    assert got["params"]["conditioner"] == "alt:ks_bok__exports:surprise_z:gt:0"
     # a prose axis is still refused by the gauntlet, so it is still not a rule
-    assert fs.to_executable("session_range_breakout",
-                            {"conditioner": "macro"})["status"] == fs.DEFAULTS_ONLY
+    assert not fs.is_testable(fs.to_executable("session_range_breakout",
+                                               {"conditioner": "macro"})["status"])
     both = fs.to_executable("trend_ma_cross", {"fast": 8, "conditioner": "alt:x:z:lt:0"})
     assert both["status"] == fs.EXECUTABLE and both["params"]["conditioner"] == "alt:x:z:lt:0"
 
