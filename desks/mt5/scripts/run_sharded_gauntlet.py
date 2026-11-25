@@ -810,7 +810,10 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
            "shard": shard,
            "last_progress": {k: hb.get(k) for k in (
                "beat_utc", "phase", "phase_elapsed_s", "shards", "tree", "last_progress_utc",
-               "idle_s") if k in hb},
+               "idle_s", "stacks_at_breach") if k in hb},
+           # The stalled phase's own wall profile, kept HERE: JUDGE_SWEEP_PHASE.json is
+           # rewritten by the next sweep, and this record is the one that outlives it.
+           "wall_profile": _stalled_wall_profile(hb.get("phase") or _PHASE_DOC.get("phase")),
            "counts_toward_widening": counts, "lost_s": lost_s,
            "kill": kill, "restored_from_merge_snapshot": restored or []}
     history = [*_list_field(prev, "history"), row][-STALL_HISTORY:]
@@ -1914,6 +1917,32 @@ def _stack_signature(frame: Any, depth: int = WALL_STACK_DEPTH) -> str:
     return " < ".join(parts)
 
 
+BREACH_STACK_DEPTH = 14
+
+
+def _stalled_wall_profile(phase: str | None) -> dict[str, Any] | None:
+    """The in-process wall profile of `phase`, if the sampler published one. Never raises."""
+    try:
+        prof = (_PHASE_DOC.get("wall_profile") or {}).get("phases") or {}
+        return prof.get(phase) if phase else None
+    except Exception:
+        return None
+
+
+def _thread_stacks(depth: int = BREACH_STACK_DEPTH) -> dict[str, str]:
+    """Every live thread's innermost `depth` frames, by thread name. Never raises."""
+    names = {t.ident: t.name for t in threading.enumerate()}
+    out: dict[str, str] = {}
+    try:
+        frames = sys._current_frames()
+    except Exception:
+        return out
+    for ident, frame in frames.items():
+        with contextlib.suppress(Exception):
+            out[f"{names.get(ident, 'thread')}:{ident}"] = _stack_signature(frame, depth)[:1200]
+    return out
+
+
 def _proc_counters() -> dict[str, float] | None:
     try:
         import psutil
@@ -2851,7 +2880,7 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     finally:
         stop.set()
         beat.join(timeout=5)
-        if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF"):
+        if state.get("status") in ("RUNNING", "SWEEPING", "BACKOFF", "YIELDING"):
             # Anything that ends the loop without naming why (an exception, an interrupt) still
             # leaves an EXITED record rather than a SWEEPING one.
             state["status"], state["why"] = "EXITED", "the resident loop ended unexpectedly"
@@ -3062,6 +3091,29 @@ def _read_state() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+def _yield_to_certifier(sleep: Callable[[float], Any], clock: Callable[[], float],
+                        state: dict[str, Any]) -> dict[str, Any] | None:
+    """Hold off the next sweep while a certifier waits for the lane. Never raises."""
+    try:
+        from research import lane_turn
+        if lane_turn.waiting() is None:
+            return None
+        state.update(status="YIELDING", yielding_since_utc=datetime.now(UTC).isoformat(
+            timespec="seconds"))
+        _write_state(state)
+        turn = lane_turn.yield_to_waiter(sleep=sleep, clock=clock)
+    except Exception as exc:
+        state["yield_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        return None
+    if turn is not None:
+        state["certifier_turns"] = int(state.get("certifier_turns") or 0) + 1
+        state["certifier_yield_s"] = round(float(state.get("certifier_yield_s") or 0.0)
+                                           + float(turn.get("held_s") or 0.0), 1)
+        state["last_certifier_turn"] = {**turn, "at_utc": datetime.now(UTC).isoformat(
+            timespec="seconds")}
+    return turn
+
+
 def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
                    sleep: Callable[[float], Any], clock: Callable[[], float], started: float,
                    limit_s: float | None, max_sweeps: int | None) -> int:
@@ -3083,6 +3135,11 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
         if max_sweeps is not None and n >= max_sweeps:
             state["status"], state["why"] = "DONE", f"max_sweeps={max_sweeps}"
             break
+        # A WAITING CERTIFIER GETS THE LANE AT THE SWEEP BOUNDARY (research/lane_turn.py). With
+        # zero cadence the lane was free for milliseconds between sweeps and QQuant's hourly
+        # certifier never landed in that gap. Bounded (lane_turn.YIELD_MAX_S); a dead or stale
+        # waiter is ignored; no sweep is ever interrupted for one.
+        _yield_to_certifier(sleep, clock, state)
         t0 = clock()
         state.update(status="SWEEPING", sweep_started_utc=datetime.now(UTC).isoformat(
             timespec="seconds"))
@@ -3212,6 +3269,20 @@ def _holds_lane() -> bool:
         return False
     doc = _read_json(root / "certification_lane.json")
     return doc.get("pid") == os.getpid() and str(doc.get("host") or "") == socket.gethostname()
+
+
+def _beat_sweep_locks() -> list[str]:
+    """Stamp `heartbeat_at` on the sweep locks THIS process holds. Never raises."""
+    out: list[str] = []
+    try:
+        from research import job_lock
+    except Exception:
+        return out
+    for name in SWEEP_LOCKS:
+        with contextlib.suppress(Exception):
+            if job_lock.heartbeat(name):
+                out.append(name)
+    return out
 
 
 def _release_own_locks() -> list[str]:
@@ -3528,6 +3599,12 @@ class SweepWatchdog:
         m = self.mono()
         self.progress.update(sample, m)
         self._idle = self.progress.idle_s(m)
+        # THE LANE LOCK BEATS ONLY WHILE THE TREE WORKS (2026-11-25). The box's lock carried no
+        # heartbeat at all, so a held lane read the same whether the sweep judged or sat idle.
+        # Stamped only on measured progress: an idle sweep's lock ages, and anything reading it
+        # (job_lock.orphan_stale, the guardian) sees the stall without trusting this thread.
+        if self.progress.measured and self._idle <= 2 * self.beat_s:
+            _beat_sweep_locks()
         phase = _PHASE_DOC.get("phase")
         since = _PHASE_DOC.get("_t")
         phase_el = now - since if isinstance(since, float) else None
@@ -3562,6 +3639,12 @@ class SweepWatchdog:
         return doc
 
     def breach(self, reason: str, detail: str, doc: dict[str, Any]) -> None:
+        # WHAT IT WAS WAITING ON, TAKEN BEFORE THE KILL (2026-11-25). The 11-25 04:09Z stall
+        # killed a merge_and_publish idle for 1,827 s after 15/15 shards and lost 63,787 s of
+        # judging; the wall profile of that phase was overwritten by the next sweep, so nothing
+        # named the wait. Every thread's stack now rides in the stall record itself.
+        with contextlib.suppress(Exception):
+            doc = {**doc, "stacks_at_breach": _thread_stacks()}
         _ABORT.set()
         prog = _progress_snapshot()
         shard = ({k: prog.get(k) for k in ("phase", "total", "done", "running", "failed",
