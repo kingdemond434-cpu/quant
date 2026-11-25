@@ -1,5 +1,5 @@
 {
- "at": "2026-11-25T05:26:39+00:00",
+ "at": "2026-11-25T06:39:27+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -37,11 +37,11 @@
   "status": "MEASURED",
   "counts": {
    "24h": 10598,
-   "7d": 124181
+   "7d": 124202
   },
   "per_hour": {
    "24h": 441.583,
-   "7d": 739.173
+   "7d": 739.298
   }
  },
  "verdicts_per_hour": 643.75,
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-25T05:26:27+00:00",
-  "pid": 25668
+  "started_at": "2026-11-25T06:39:10+00:00",
+  "pid": 22060
  }
 }
