@@ -633,7 +633,7 @@
     "certificate_at_revival": null
   },
   "last_run": "2026-11-25",
-  "updated_at": "2026-11-25T14:02:05+00:00",
+  "updated_at": "2026-11-25T14:20:57+00:00",
   "configured_sleeves": 1018,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -56094,14 +56094,14 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:42:41+00:00",
     "sleeve_id": "a42fda3de0bc70fbec9b",
-    "last_attempt_at": "2026-11-25T12:20:55+00:00",
+    "last_attempt_at": "2026-11-25T14:20:55+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
     "exp_r": 0.2378228120775994,
-    "days_active": 48,
+    "days_active": 49,
     "forward_t": 0.541,
     "e_value": 0.4317,
     "e_crossed_at": null,
@@ -56156,7 +56156,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-25T12:20:56+00:00"
+      "at": "2026-11-25T14:20:57+00:00"
     },
     "revived_from": "RETIRED_ORPHAN",
     "retire_reason_before_revival": "no engine enrols this row; its day count and trade count are FROZEN. A stopped clock counted as forward evidence would take a day-14 verdict on stale trades. Evidence preserved; revive only through a fresh certificate and a new pre-registered window.",
@@ -60595,30 +60595,30 @@
   },
   "engine_pass": {
     "started_at": "2026-11-25T12:55:45+00:00",
-    "rows_reached": 984,
+    "rows_reached": 985,
     "rows": 1018,
     "complete": false,
     "profile": {
-      "seconds": 4016.4,
-      "rows_timed": 984,
+      "seconds": 5147.8,
+      "rows_timed": 985,
       "phase_seconds": {
-        "backtest": 172.8,
+        "backtest": 182.6,
         "fetch": 2720.6,
         "resolve": 74.7,
-        "signals": 565.1
+        "signals": 1521.1
       },
       "phase_calls": {
-        "backtest": 917,
+        "backtest": 918,
         "fetch": 156,
-        "resolve": 984,
-        "signals": 911
+        "resolve": 985,
+        "signals": 912
       },
       "reused": {
         "backtest": 67,
         "signals": 73
       },
       "family_seconds": {
-        "cross_asset_residual": 1712.2,
+        "cross_asset_residual": 2843.6,
         "carry": 1079.2,
         "macro_conditional": 549.2,
         "clock_transition": 247.1,
@@ -60631,12 +60631,20 @@
         "overnight_drift": 0.3
       },
       "chart_seconds": {
-        "M15": 1415.6,
+        "M15": 2547.0,
         "M30": 1079.1,
         "M5": 1001.2,
         "H1": 484.1
       },
       "slowest_rows": [
+        {
+          "key": "GBPAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=asia_side_mode=revert_ttl_bars=36",
+          "seconds": 1004.19
+        },
+        {
+          "key": "GBPAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=asia_side_mode=revert_ttl_bars=144",
+          "seconds": 327.09
+        },
         {
           "key": "CHFNOK.carry.asia@M30#input_symbol=CHFNOK_session=ny",
           "seconds": 283.42
@@ -60644,10 +60652,6 @@
         {
           "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
           "seconds": 232.74
-        },
-        {
-          "key": "GBPAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=asia_side_mode=revert_ttl_bars=144",
-          "seconds": 199.87
         },
         {
           "key": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_session=ny_ttl_bars=6",
@@ -60692,10 +60696,6 @@
         {
           "key": "AUDNZD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
           "seconds": 45.01
-        },
-        {
-          "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-          "seconds": 43.92
         }
       ]
     }
