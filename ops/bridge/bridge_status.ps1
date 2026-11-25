@@ -69,7 +69,9 @@ function Get-AclProblem([string] $path, [int64] $mask, [string[]] $owners = $Adm
 # and the bridge stayed down. Exactly one shape is exempt, identically in the watchdog, its status
 # reader and the installer: a SymbolicLink (never a junction or mount point) named `latest` directly
 # in the log folder, whose single target is a regular, non-reparse file directly in that same folder
-# named rc_debug_YYYYMMDD_HHMMSS.log. Anything else, or anything that cannot be read, stays a refusal.
+# named rc_debug_YYYYMMDD_HHMMSS.log, or rc_debug_YYYYMMDD_HHMMSS-cse_<session id>.log (the CLI
+# repoints `latest` per remote session since 2026-11; box 11-17..11-20 the old pattern made every
+# watchdog re-arm exit 4 and the bridge went unwatched for three days). Anything else, or anything that cannot be read, stays a refusal.
 function Test-DebugLatestLink($c, [string] $logDir) {
     try {
         if ($c.Name -cne 'latest') { return $false }
@@ -80,7 +82,7 @@ function Test-DebugLatestLink($c, [string] $logDir) {
         if ($t.Count -ne 1 -or -not $t[0]) { return $false }
         $tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))
         if ((Split-Path -Parent $tp) -ne $ld) { return $false }
-        if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\d{8}_\d{6}\.log$') { return $false }
+        if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\d{8}_\d{6}(-cse_[A-Za-z0-9]{1,64})?\.log$') { return $false }
         $f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop
         if ($f.PSIsContainer) { return $false }
         if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }
