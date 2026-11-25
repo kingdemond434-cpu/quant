@@ -3962,6 +3962,13 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # THE FIRM ROLE MAP (zuck 2026-11-18): a human-readable view of libs/research/
+    # firm_lanes_roster.json. Terminal: the roster JSON is the declaration, and the hourly leg
+    # `firm_lanes` measures every lane in desks/mt5/reports/FIRM_LANES.json, so the table cannot
+    # rot unseen -- a lane that stops running shows there, not here.
+    "docs/research/FIRM_ROLE_MAP.md":
+        "VIEW OF libs/research/firm_lanes_roster.json; live verdicts are FIRM_LANES.json (leg "
+        "firm_lanes)",
     # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
     # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
     # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL
@@ -4313,6 +4320,14 @@ _TERMINAL_ARTIFACTS = {
         "standing addendum to the DeepSeek second-flywheel mandate, subordinate to it by its own "
         "header -- scopes the DeepSeek seat's residual work and creates no second authority, "
         "amended by decision only, never a cadence or an inventory",
+    # Classified 2026-11-17 (Governance, #1270): the two rulings LAWS §5e's permission route cites,
+    # vendored so a clone can open them.
+    "docs/policy/llm-relays-terms-ruling-2026-11-17.md":
+        "standing terms ruling cited by LAWS 5e's permission route (relay refusal plus the owner's "
+        "override and its conditions) -- amended by a later ruling only, never a cadence or an inventory",
+    "docs/policy/owner-permission-attestation-2026-11-17.md":
+        "standing owner attestation cited by LAWS 5e's permission route, source by source with its "
+        "conditions -- amended by a later ruling only, never a cadence or an inventory",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",
@@ -8814,6 +8829,12 @@ def check_unwired_modules(defects) -> None:
     # batteries.py lists more. Its tests are not invokers.
     invoker_files += [p for p in (ROOT / "desks").rglob("*.py")
                       if "tests" not in p.parts and "__pycache__" not in p.parts]
+    # The box's scheduled-task manifest is the scheduler for Windows tasks: a script it names in
+    # `runs=` is invoked every trigger (MT5-ReapGitWriters runs scripts/reap_hung_git_writers.py,
+    # the sole importer of libs.ops.process_supervisor). Its installers are .ps1, not .py.
+    manifest = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+    if manifest.is_file():
+        invoker_files.append(manifest)
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
     # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise

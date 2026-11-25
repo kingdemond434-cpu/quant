@@ -13,7 +13,10 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record
      (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
-     totals stamped at their release). Every other
+     totals stamped at their release), and the EVENT STATES of `research/event_states.py`
+     (backlog ideas N4..N12: TIC flows, SLOOS, Treasury buybacks, EIA gas storage against its
+     five-year norm, JOLTS quits; the BoJ, SNB, USDA and Chicago Fed rows are fenced by their
+     terms or access and named in the gaps). Every other
      venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
@@ -40,7 +43,7 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      spread or z-gap (copper vs gold managed money, crude curve vs speculative length, ...).
 
   5. CELLS. Each feature series lands in `data/lake/series/<id>.parquet`, the id prefixed by
-     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`), and every
+     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`, `evt_`), and every
      (column x transform x target x chart) becomes ONE `exogenous_conditioner` candidate through
      `libs.moat.registry.enqueue_candidate`, the same door `pack_cells` uses. A cell is enqueued
      ONCE in its life (state keeps the hash), so a pass never bumps another search_count: trials
@@ -140,6 +143,18 @@ def _polite(url: str, accept: str, timeout: float) -> str:
     if not r.ok:
         raise FetchError(r.status, url, r.error or f"HTTP {r.status}")
     return r.text
+
+
+def fetch_bytes(url: str, timeout: float = 60.0) -> bytes:
+    """One honest GET of a binary file (a zip package). Same rules: no retry, hard stop."""
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, headers={"User-Agent": UA, "Accept": "application/zip,*/*;q=0.8"},
+                         timeout=timeout, retries=0, leg="futures_state")
+    if r.status in HARD_STOP:
+        raise HardStop(int(r.status or 0), url)
+    if not r.ok:
+        raise FetchError(r.status, url, r.error or f"HTTP {r.status}")
+    return gzip.decompress(r.body) if r.body[:2] == b"\x1f\x8b" else r.body
 
 
 def fetch_json(url: str, timeout: float = 40.0) -> Any:
@@ -512,6 +527,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
             proxy), with the targets named for that series.
+    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly;
+              `pairs` add one bank's distance minus another's for the pair between them.
     """
     mode = str(cv.get("mode") or "curve")
     out: list[tuple[str, pd.DataFrame, pd.DatetimeIndex, list[str], str]] = []
@@ -544,7 +561,89 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             out.append((f"fred_{cv['id']}_{ser.lower()}",
                         dynamics(f, ["level", "log_chg"], window=int(cv.get("window", 60))),
                         pd.DatetimeIndex(v.index), list(targets), "fred_level"))
+    elif mode == "reaction":
+        for bk in cv.get("banks") or []:
+            if not bk.get("targets"):
+                continue                      # a bank listed only as a leg of `pairs` below
+            if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
+                continue
+            u = yc[bk["unemployment"]] if bk.get("unemployment") in yc.columns else None
+            f = reaction_residual(yc[bk["rate"]], yc[bk["inflation"]], u,
+                                  target=float(bk.get("target", 2.0)))
+            if len(f) < MIN_ROWS:
+                continue
+            out.append((f"fred_{cv['id']}_{str(bk['id']).lower()}",
+                        dynamics(f, list(f.columns), window=int(cv.get("window", 60))),
+                        pd.DatetimeIndex(f.index), list(bk.get("targets") or []),
+                        "fred_cb_reaction"))
+        # RELATIVE STANCE: one bank's residual minus another's, for the currency pair between
+        # them. Both legs use the inflation-only rule (no unemployment term), because only some
+        # banks have a labour series and a difference of unlike rules would measure the missing
+        # term, not the banks.
+        by_id = {str(b.get("id")): b for b in cv.get("banks") or []}
+        plain: dict[str, pd.DataFrame] = {}
+        for pr in cv.get("pairs") or []:
+            legs = []
+            for side in ("base", "quote"):
+                bk = by_id.get(str(pr.get(side))) or {}
+                bid = str(bk.get("id"))
+                if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
+                    break
+                if bid not in plain:
+                    plain[bid] = reaction_residual(yc[bk["rate"]], yc[bk["inflation"]], None,
+                                                   target=float(bk.get("target", 2.0)))
+                legs.append(plain[bid])
+            if len(legs) < 2:
+                continue
+            d = (legs[0][["resid", "real_rate"]] - legs[1][["resid", "real_rate"]]).dropna()
+            d.columns = ["rel_resid", "rel_real_rate"]
+            if len(d) < MIN_ROWS:
+                continue
+            out.append((f"fred_{cv['id']}_{str(pr['id']).lower()}",
+                        dynamics(d, list(d.columns), window=int(cv.get("window", 60))),
+                        pd.DatetimeIndex(d.index), list(pr.get("targets") or []),
+                        "fred_cb_relative"))
     return out
+
+
+#: Months of history the neutral real rate and the unemployment norm are averaged over, and the
+#: fewest months each needs. Both averages stop the month BEFORE the one they are used in.
+RSTAR_MONTHS, RSTAR_MIN = 120, 36
+UNORM_MONTHS, UNORM_MIN = 60, 24
+
+
+def reaction_residual(rate: pd.Series, price_index: pd.Series,
+                      unemployment: pd.Series | None = None, *, target: float = 2.0
+                      ) -> pd.DataFrame:
+    """A central bank's distance from a Taylor (1993) rule, monthly, strictly causal.
+
+        inflation  12-month % change of the price index
+        r*         the bank's own average real policy rate over the prior RSTAR_MONTHS
+        gap        -2 * (unemployment - its prior UNORM_MONTHS average)   (Okun; 0 when absent)
+        rule       r* + inflation + 0.5 * (inflation - target) + 0.5 * gap
+        resid      policy rate - rule: above zero the bank is TIGHTER than its own rule implies,
+                   below zero it is behind it
+
+    The coefficients are Taylor's, fixed, so nothing is fitted and nothing can be fitted to the
+    future. The residual is a QUESTION for the gauntlet (does a bank far behind its rule see
+    its currency weaken, or catch up?), not a forecast. Indexed by the month's first day; the
+    caller stamps availability after that month's releases.
+    """
+    r = pd.to_numeric(rate, errors="coerce").dropna().resample("MS").mean()
+    px = pd.to_numeric(price_index, errors="coerce").dropna().resample("MS").last()
+    infl = 100.0 * (px / px.shift(12) - 1.0)
+    f = pd.DataFrame({"rate": r, "infl": infl}).dropna()
+    real = f["rate"] - f["infl"]
+    rstar = real.rolling(RSTAR_MONTHS, min_periods=RSTAR_MIN).mean().shift(1)
+    gap = pd.Series(0.0, index=f.index)
+    if unemployment is not None:
+        u = pd.to_numeric(unemployment, errors="coerce").dropna().resample("MS").last()
+        norm = u.rolling(UNORM_MONTHS, min_periods=UNORM_MIN).mean().shift(1)
+        gap = (-2.0 * (u - norm)).reindex(f.index)
+    rule = rstar + f["infl"] + 0.5 * (f["infl"] - target) + 0.5 * gap
+    out = pd.DataFrame({"resid": f["rate"] - rule, "real_rate": real,
+                        "infl_gap": f["infl"] - target}, index=f.index)
+    return out.dropna(subset=["resid"])
 
 
 def fred_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) -> pd.DataFrame:
@@ -634,10 +733,7 @@ def release_shock(prints: pd.DataFrame, transform: str = "diff",
     """
     v = prints["value"].astype(float).reset_index(drop=True)
     per = pd.to_datetime(prints["period"]).reset_index(drop=True)
-    if transform == "logdiff":
-        chg = np.log(v.where(v > 0)).diff() * 100.0
-    else:
-        chg = v.diff()
+    chg = np.log(v.where(v > 0)).diff() * 100.0 if transform == "logdiff" else v.diff()
     step = per.diff()
     typical = step.median() if step.notna().any() else pd.NaT
     if pd.notna(typical):
@@ -939,10 +1035,148 @@ def _feature_cols(frame: pd.DataFrame) -> list[str]:
     return cols
 
 
+# --------------------------------------------------------------- BIS policy rates and prices
+
+#: A reply this close to the polite fetcher's 2 MB cap may have been cut, and a cut reply loses
+#: its NEWEST rows: it is refused rather than stored.
+BIS_MAX_CHARS = 1_900_000
+#: BIS refreshes these monthly tables every few days; one read a day is plenty.
+BIS_REFETCH_H = 20
+
+
+def parse_bis_csv(text: str, unit: str | None = None) -> pd.DataFrame:
+    """BIS SDMX CSV -> one column per REF_AREA, indexed by period (a month is its first day).
+
+    Columns are read by NAME (FREQ, REF_AREA, TIME_PERIOD, OBS_VALUE, and UNIT_MEASURE when
+    `unit` filters on it), because the policy-rate table carries long quoted notes with commas.
+    Anything else, a page of HTML included, parses to nothing."""
+    import csv
+    import io
+    cols: dict[str, dict[pd.Timestamp, float]] = {}
+    try:
+        rows = csv.DictReader(io.StringIO(text))
+        if not {"REF_AREA", "TIME_PERIOD", "OBS_VALUE"} <= set(rows.fieldnames or []):
+            return pd.DataFrame()
+        for r in rows:
+            if unit is not None and str(r.get("UNIT_MEASURE")) != unit:
+                continue
+            t = pd.to_datetime(str(r.get("TIME_PERIOD")), utc=True, errors="coerce")
+            v = pd.to_numeric(r.get("OBS_VALUE"), errors="coerce")
+            if pd.notna(t) and pd.notna(v):
+                cols.setdefault(str(r["REF_AREA"]), {})[t] = float(v)
+    except csv.Error:
+        return pd.DataFrame()
+    return pd.DataFrame(cols).sort_index()
+
+
+def drop_carried_tail(df: pd.DataFrame) -> pd.DataFrame:
+    """Blank a series' LAST value when it repeats the one before it exactly. A price index
+    printing the same six decimals two months running is the publisher carrying the old value
+    forward until the real one arrives (seen for Japan, 2026-09, on the box read of
+    2026-11-11); the month is re-read on a later pass. Earlier repeats are left alone."""
+    out = df.copy()
+    for c in out.columns:
+        v = out[c].dropna()
+        if len(v) >= 2 and v.iloc[-1] == v.iloc[-2]:
+            out.loc[v.index[-1], c] = np.nan
+    return out
+
+
+def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
+                state: dict[str, Any], notes: list[dict[str, Any]],
+                now: datetime | None = None) -> pd.DataFrame:
+    """Monthly policy rates (WS_CBPOL) and consumer price indices (WS_LONG_CPI, unit 628) for
+    the row's areas -> columns BIS_CBPOL_<area> and BIS_CPI_<area>.
+
+    One request per area for rates (each row repeats a long note, so areas are never batched)
+    and one for all the price indices; each `probe_areas` code is asked for alone in both
+    tables. An area not yet held is asked for from `history_start`, the rest for the last two
+    years, and what is held is kept under what is newly read.
+    Fetches at most every BIS_REFETCH_H hours, and only what the host's robots.txt allows;
+    offline, stopped or disallowed, it returns what is held."""
+    sid = str(src.get("id") or "bis_stats")
+    now = now or datetime.now(UTC)
+    paths = {"CBPOL": RAW / "bis_cbpol.parquet", "CPI": RAW / "bis_cpi.parquet"}
+    held = {k: (pd.read_parquet(p) if p.exists() else pd.DataFrame()) for k, p in paths.items()}
+    areas = [str(a) for a in src.get("areas") or []]
+    last = pd.to_datetime(state.get("bis_last_fetch"), utc=True, errors="coerce")
+    due = pd.isna(last) or (pd.Timestamp(now) - last) >= pd.Timedelta(hours=BIS_REFETCH_H)
+    if get_text is not None and src.get("terms") == "OPEN" and areas and due and \
+            sid not in state.get("hard_stops", {}):
+        probe = [str(a) for a in src.get("probe_areas") or [] if str(a) not in areas]
+
+        def start(key: str, want: list[str]) -> str:
+            # History for any area not yet held (a newly listed one included), else two years.
+            return (str(src.get("history_start", "2000-01"))
+                    if any(a not in held[key].columns for a in want)
+                    else f"{now.year - 2}-{now.month:02d}")
+        try:
+            got: dict[str, list[pd.DataFrame]] = {"CBPOL": [], "CPI": []}
+            jobs: list[tuple[str, str, str | None]] = [
+                ("CBPOL", str(src["rate_url"]).format(area=a, start=start("CBPOL", [a])), None)
+                for a in [*areas, *probe]]
+            # A probe area is a code not yet seen in a reply: it is asked for alone, so a
+            # refusal of that one key cannot cost the confirmed areas their reply.
+            for group in [areas, *([a] for a in probe)]:
+                jobs.append(("CPI", str(src["cpi_url"]).format(
+                    areas="+".join(group), start=start("CPI", group)), "628"))
+            # Open terms are not a robots yes: the host's robots.txt is read once per pass and
+            # every URL is asked of it before the first data request.
+            seen: dict[str, str | Exception] = {}
+
+            def robots_text(u: str) -> str:
+                if u not in seen:
+                    try:
+                        seen[u] = get_text(u)
+                    except (urllib.error.HTTPError, FetchError) as exc:
+                        seen[u] = exc
+                got_ = seen[u]
+                if isinstance(got_, Exception):
+                    raise got_
+                return got_
+
+            if not all(robots_allow(url, robots_text) for _k, url, _u in jobs):
+                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+                jobs = []
+            for key, url, unit in jobs:
+                try:
+                    text = get_text(url)
+                except FetchError as exc:
+                    # One key the server does not serve (a 404) is that key's gap, not the
+                    # pass's: note it and keep the others. A refusal is a HardStop, below.
+                    notes.append({"source": sid, "status": "NO_REPLY", "table": key,
+                                  "code": exc.code})
+                    continue
+                if len(text) >= BIS_MAX_CHARS:
+                    notes.append({"source": sid, "status": "TRUNCATED", "table": key})
+                    continue
+                df = parse_bis_csv(text, unit)
+                if df.empty:
+                    notes.append({"source": sid, "status": "UNPARSED", "table": key})
+                    continue
+                got[key].append(df)
+            for key, parts in got.items():
+                if parts:
+                    new = pd.concat(parts, axis=1)
+                    new = new.loc[:, ~new.columns.duplicated()]
+                    held[key] = new.combine_first(held[key]).sort_index()
+                    _atomic_parquet(paths[key], held[key])
+            state["bis_last_fetch"] = now.isoformat(timespec="seconds")
+        except HardStop as hs:
+            state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+        except Exception as exc:
+            notes.append({"source": sid, "error": f"{type(exc).__name__}"})
+    out = [held["CBPOL"].add_prefix("BIS_CBPOL_"),
+           drop_carried_tail(held["CPI"]).add_prefix("BIS_CPI_")]
+    out = [f for f in out if not f.empty]
+    return pd.concat(out, axis=1).sort_index() if out else pd.DataFrame()
+
+
 def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any] | None,
                         state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None],
                         get_text: Callable[[str], str] | None = None,
-                        now: datetime | None = None, budget: float | None = None
+                        now: datetime | None = None, budget: float | None = None,
+                        get_bytes: Callable[[str], bytes] | None = None
                         ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame],
                                     list[dict[str, Any]]]:
     """Every OPEN source -> stamped feature frames. `get=None` means offline (held raw only)."""
@@ -1020,6 +1254,7 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
 
     fred = sources.get("fred_rates") or {}
     fkey = next((os.environ.get(k) for k in fred.get("key_env") or [] if os.environ.get(k)), "")
+    bis: pd.DataFrame | None = None
     for cv in [*(registry.get("fred_curves") or []), *(registry.get("fred_sets") or [])]:
         if cv.get("mode") == "first_release":
             live = (get if fred.get("terms") == "OPEN" and
@@ -1034,12 +1269,17 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             except HardStop as hs:
                 state.setdefault("hard_stops", {})["fred_rates"] = {"code": hs.code, "at": _now()}
             continue
-        cv = {**cv, "series": cv.get("series") or sorted(
+        # A BIS set that names no FRED series is built from the BIS alone: no FRED request is
+        # made for it and no key is asked for.
+        bis_only = bool(cv.get("bis")) and not cv.get("series")
+        cv = {**cv, "series": [] if bis_only else cv.get("series") or sorted(
             {str(p[k]) for p in cv.get("pairs") or [] for k in ("base", "quote")})}
         sid = f"fred_{cv['id']}"
         raw_path = RAW / f"{sid}.parquet"
         yc = pd.DataFrame()
-        if get is not None and fred.get("terms") == "OPEN" and fkey and \
+        if bis_only:
+            pass
+        elif get is not None and fred.get("terms") == "OPEN" and fkey and \
                 "fred_rates" not in state.get("hard_stops", {}):
             try:
                 yc = fred_curve(cv, fkey, get)
@@ -1051,9 +1291,15 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
                 notes.append({"source": sid, "error": f"{type(exc).__name__}"})
         elif not fkey:
             notes.append({"source": sid, "status": "NEEDS_KEY", "key_env": fred.get("key_env")})
-        if yc.empty and raw_path.exists():
+        if yc.empty and raw_path.exists() and not bis_only:
             yc = pd.read_parquet(raw_path)
         yc = yc[[c for c in cv["series"] if c in yc.columns]].dropna(how="all") if len(yc) else yc
+        if cv.get("bis"):
+            # This set's rates and prices come from the BIS; FRED adds unemployment where held.
+            if bis is None:
+                bis = bis_collect(sources.get("bis_stats") or {}, get_text, state, notes, now)
+            if not bis.empty:
+                yc = bis.join(yc, how="outer") if len(yc) else bis
         if yc.empty or len(yc) < MIN_ROWS:
             continue
         lag = cv.get("avail_lag_days")
@@ -1091,6 +1337,18 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
         if "mof_jpy_q" not in built:
             notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
                           "why": "no historical CSV held yet"})
+
+    # Event and regime states (backlog ideas N4..N12): rows under `event_states`, read through
+    # this organ's fetch door and robots check, stamped and minted like every series above.
+    if registry.get("event_states"):
+        from research import event_states
+        late = budget is not None and time.monotonic() > budget   # past it, serve what is held
+        ev_built, ev_frames = event_states.build(
+            sys.modules[__name__], registry, state, notes, now=now,
+            get_text=None if late else get_text, get=None if late else get,
+            get_bytes=None if late else get_bytes)
+        built.update(ev_built)
+        frames.update(ev_frames)
 
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
@@ -1130,7 +1388,9 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
+             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross",
+             "tic_vs_med12", "sloos_ci_shock", "bb_takeup", "bb_accepted", "ng_stor_vs5y",
+             "jolts_quits_vs3m", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 
@@ -1223,6 +1483,10 @@ def gaps(registry: Mapping[str, Any], built: Mapping[str, Any],
     held = [{"id": s["id"], "terms": s.get("terms"), "note": s.get("note", "")}
             for s in registry.get("sources") or []
             if s.get("terms") != "OPEN" or s.get("adapter") == "none"]
+    held += [{"id": s["id"], "idea": s.get("idea"), "terms": s.get("terms"),
+              "note": s.get("terms_clause") or s.get("note", "")}
+             for s in registry.get("event_states") or []
+             if s.get("terms") != "OPEN" or s.get("adapter") == "none"]
     missed = [s["id"] for s in registry.get("sources") or [] if s.get("missed_growth")]
     missing = [n.get("market") for n in notes if n.get("market") and
                f"cot_{n['market']}" not in built]
@@ -1294,6 +1558,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     built, frames, notes = build_market_series(
         registry, get=None if offline else fetch_json, state=state, bars=bars,
         get_text=None if offline else fetch_text, now=now,
+        get_bytes=None if offline else fetch_bytes,
         budget=time.monotonic() + FETCH_BUDGET_S)
     for sid, why in stale_series(built, frames, registry, now).items():
         built.pop(sid, None)

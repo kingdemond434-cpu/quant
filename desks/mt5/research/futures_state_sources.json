@@ -122,16 +122,27 @@
   {
    "id": "yahoo_futures",
    "adapter": "none",
-   "terms": "IDEAS_ONLY",
+   "terms": "REFUSED",
+   "terms_evidence": {
+    "ruled_at": "2026-11-14",
+    "recorded_in": "Audit HOLD on PR #898 (2026-11-14T03:39:48Z); same standard as the FRED ruling applied in #1177",
+    "reading": "Yahoo's terms refuse automated fetches on every route, so ideas-only use does not make the fetch lawful: the collector opens no socket."
+   },
    "url": "https://query1.finance.yahoo.com/",
-   "note": "fetch_futures_curves.py source; IDEAS_ONLY, not a live input"
+   "note": "former fetch_futures_curves.py source; REFUSED on terms, nothing is fetched. Held data/futures_curves panels stay, labelled"
   },
   {
    "id": "cn_exchanges",
    "adapter": "none",
-   "terms": "OWNED_ELSEWHERE",
+   "terms": "REFUSED",
+   "terms_evidence": {
+    "terms_url": "https://www.shfe.com.cn/disclaimer/",
+    "checked_at": "2026-10-06",
+    "recorded_in": "desks/mt5/data/free_stack_sources.json rows cnx_shfe and cnx_ine (both refused; audit of #224)",
+    "reading": "SHFE grants non-commercial browse and download only (基于非商业目的浏览、下载); trading use is commercial and needs SHFE's written permission (书面许可). INE's own page was unreadable (captcha) and inherits the parent's grant. Re-read 2026-11-11 from the build sandbox: host refused by the sandbox proxy (CONNECT 403), not worked around. Robots ABSENT never overrides this page (Governance 2026-11-11 00:49Z)."
+   },
    "url": "https://www.shfe.com.cn/",
-   "note": "SHFE/DCE/CZCE/INE member positioning and curves are the asia lane's (asia-cn-futures-positioning); not duplicated here"
+   "note": "SHFE/INE terms REFUSED for commercial use, so the SHFE gold/silver and INE crude basis cells against XAUUSD/XAGUSD/XTIUSD/XBRUSD stay unbuilt and UNMEASURED. DCE/CZCE carry no terms verdict yet (to_confirm in free_stack_sources.json): nothing is minted from them before a one-time read"
   },
   {
    "id": "oecd_rates_on_fred",
@@ -194,6 +205,214 @@
    "adapter": "none",
    "terms": "OWNED_ELSEWHERE",
    "note": "tick moat recorder and tape families (LCR, Breadth, Judge); not duplicated here"
+  },
+  {
+   "id": "bis_stats",
+   "adapter": "bis_sdmx",
+   "terms": "OPEN",
+   "url": "https://data.bis.org",
+   "rate_url": "https://stats.bis.org/api/v1/data/WS_CBPOL/M.{area}?format=csv&startPeriod={start}",
+   "cpi_url": "https://stats.bis.org/api/v1/data/WS_LONG_CPI/M.{areas}.628?format=csv&startPeriod={start}",
+   "areas": [
+    "GB",
+    "JP",
+    "CH",
+    "CA",
+    "AU",
+    "NZ",
+    "MX",
+    "ZA",
+    "TR",
+    "US"
+   ],
+   "probe_areas": [
+    "XM"
+   ],
+   "history_start": "2000-01",
+   "citation": "Source: Bank for International Settlements, central bank policy rates (WS_CBPOL) and consumer prices (WS_LONG_CPI), BIS Data Portal, https://data.bis.org",
+   "note": "BIS statistics. Terms read from the box 2026-11-11 (data.bis.org/help/legal, 'Terms of permitted use of BIS statistics'): use is unrestricted provided the BIS is cited as the source when the statistics are reproduced, and the BIS offers the SDMX API itself. No published rate limit; the BIS may suspend an IP, so this reads at most once every 20 hours. Both key forms were confirmed on the box the same day (WS_CBPOL M.GB; WS_LONG_CPI M.GB+JP.628, unit 628 = index level). Monthly policy rates carry a long note on every row, so each area is one request and history starts in 2000 to stay under the fetcher's 2 MB reply cap. The euro-area code has not been seen in a reply (FR3 box read, 2026-11-11), so XM is listed under probe_areas: it is asked for alone in both tables, a missing reply is noted as NO_REPLY and leaves the euro pairs UNMEASURED, and nothing is filled from another feed. An area the monthly price table does not carry (quarterly reporters) simply yields no bank: UNMEASURED, never filled."
+  }
+ ],
+ "event_states": [
+  {
+   "id": "boj_rinban",
+   "idea": "N4",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "copying or reproduction of the content for commercial purposes requires the Bank's prior permission (Public Relations Department)",
+   "terms_url": "https://www.boj.or.jp/en/copyright.htm",
+   "terms_read": "2026-11-17",
+   "url": "https://www.boj.or.jp/en/statistics/boj/fm/ope/index.htm",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "JP225"
+   ],
+   "why": "Idea N4 (noon CRO 2026-11-11): size of each BoJ JGB outright purchase (rinban) against its pre-announced plan as a same-day state for USDJPY, EURJPY and JP225.",
+   "note": "FENCED, not built. Terms read 2026-11-17 by WebFetch (this container's proxy refuses boj.or.jp to curl): information may be copied with credit EXCEPT for commercial purposes, which need prior permission; trading is commercial use (same standard as the SNB ruling on #1087). robots.txt could not be read from here (WebFetch client_error), so it is unverified too. Data format seen: per-operation-day XLSX ope<YYYYMMDD>.xlsx and monthly ope<YYYYMM>.xlsx under /en/statistics/boj/fm/ope/. Unblocks only with the Bank's written permission recorded here. JP225 is not in the universe registry yet."
+  },
+  {
+   "id": "snb_sight_deposits_n5",
+   "idea": "N5",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "non-commercial clause; SNB data not intended for use in connection with financial transactions",
+   "terms_url": "https://www.snb.ch/en/srv/disclaimer_copyright",
+   "terms_read": "2026-11-13",
+   "url": "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
+   "targets": [
+    "EURCHF",
+    "USDCHF",
+    "XAUUSD"
+   ],
+   "why": "Idea N5: weekly change in SNB sight deposits as the footprint of FX intervention.",
+   "note": "FENCED. The adapter itself is PR #1087 (snb_cube, TERMS_BLOCKED: no read, no lake series, no cell). This row only names the fence in the event-state gap list so N5 is never re-proposed as unbuilt."
+  },
+  {
+   "id": "tic_net_foreign_purchases",
+   "idea": "N6",
+   "adapter": "tic_slt",
+   "terms": "OPEN",
+   "terms_clause": "US government work, public domain",
+   "terms_url": "https://home.treasury.gov/data/treasury-international-capital-tic-system",
+   "terms_read": "2026-11-17",
+   "url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table1.txt",
+   "total_code": "99996",
+   "value_col": 4,
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 55,
+    "hour": 21,
+    "why": "month M is released mid-month M+2 at 16:00 ET (about day 45-50 after month end); +55 days 21:00 UTC is after every scheduled date"
+   },
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "US500"
+   ],
+   "why": "Idea N6 (noon CRO 2026-11-13): monthly TIC net foreign purchases of US long-term securities against the median of the prior twelve months, a state for USDJPY, EURUSD and US500 after the release.",
+   "note": "slt_table1.txt is tab-delimited, millions of USD, one row per country and month from 2023-02 (Country, Country Code, Date YYYY-MM, then Holdings / Net U.S. Sales / Valuation Change per class; read 2026-11-17 by WebFetch). Grand Total row code 99996 (confirm_on_box: the WebFetch excerpt did not show it). TIC books from the US reporter's side, so net U.S. sales = net foreign purchases (positive = inflow). The legacy snetus.txt history (to 2023-01) is not read yet: a named gap. Robots re-checked with our UA before every read."
+  },
+  {
+   "id": "usda_export_sales",
+   "idea": "N7",
+   "adapter": "none",
+   "terms": "BLOCKED_AUTH",
+   "terms_clause": "US government work, public domain; but the FAS OpenData ESR API is key-gated (API_KEY header) and env_keys_catalog.json holds no FAS key, and the ESRQS API (launched 2026-03-26, no login) has no confirmed endpoint paths",
+   "terms_url": "https://www.fas.usda.gov/newsroom/usda-will-launch-new-export-sales-reporting-and-query-system-esrqs-thursday-march-26-2026",
+   "terms_read": "2026-11-17",
+   "url": "https://apps.fas.usda.gov/OpenData/api/esr/",
+   "targets": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ],
+   "why": "Idea N7 (noon CRO 2026-11-13): Thursday 08:30 ET net export sales for corn, wheat and soybeans against their 4-week average, an event state for the soft CFDs.",
+   "note": "FENCED on ACCESS, not terms. Unblocks with either a free FAS OpenData key added to libs/ops/env_keys_catalog.json (read through env_keys.read_key in the keyed_sources roster) or one box read of the ESRQS API paths. apps.fas.usda.gov robots.txt could not be read from this container."
+  },
+  {
+   "id": "eia_gas_storage_vs5y",
+   "idea": "N8",
+   "adapter": "keyed_store",
+   "terms": "OPEN",
+   "derive": "gas_storage_vs5y",
+   "terms_clause": "US government work, public domain (EIA)",
+   "terms_url": "https://www.eia.gov/about/copyrights_reuse.php",
+   "terms_read": "inherited from the keyed_sources roster row eia_natgas_storage",
+   "keyed_source": "eia_natgas_storage",
+   "keyed_series": "ng_storage_l48",
+   "url": "keyed_sources:eia_natgas_storage",
+   "targets": [
+    "XNGUSD"
+   ],
+   "why": "Idea N8 (noon CRO 2026-11-13): the Thursday 10:30 ET weekly working-gas change against the five-year average change for that week, an event state for XNGUSD.",
+   "note": "No new fetch and no key here: the keyed_sources leg reads EIA with EIA_API_KEY through env_keys.read_key and keeps a first-value PIT store; this row derives the change and its gap to the prior five years' same-ISO-week mean (at least three years), stamped at the store's own availability (week end + 7 days 17:00 UTC, or first seen live)."
+  },
+  {
+   "id": "nfci_weekly",
+   "idea": "N9",
+   "adapter": "none",
+   "terms": "TERMS_BLOCKED",
+   "terms_clause": "permission to reproduce only where 'reproduction is not for the purpose of private and/or commercial gain'; otherwise written permission from the Federal Reserve Bank of Chicago",
+   "terms_url": "https://www.chicagofed.org/utilities/legal-notices",
+   "terms_read": "2026-11-17",
+   "url": "https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv",
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY"
+   ],
+   "why": "Idea N9 (noon CRO 2026-11-14): the weekly change in the Chicago Fed NFCI and ANFCI as a regime state for US500, NAS100, XAUUSD and the JPY crosses.",
+   "note": "FENCED on terms. The Chicago Fed's legal notices grant reproduction only when not for private or commercial gain; trading is commercial gain (same standard as SNB #1087), and FRED is refused for every automated fetch (2026-11-13 ruling). robots.txt on chicagofed.org is empty (read 2026-11-17), so robots is not the block. The file is ready the day permission is recorded: CSV header Friday_of_Week,NFCI,ANFCI,Risk,Credit,Leverage,Nonfinancial_Leverage (MM/DD/YYYY), updated Wednesday 08:30 ET (Thursday in holiday weeks), revised weekly."
+  },
+  {
+   "id": "fed_sloos_ci",
+   "idea": "N10",
+   "adapter": "frb_ddp_zip",
+   "terms": "OPEN",
+   "terms_clause": "information on the Board's website is in the public domain and may be copied and distributed without permission; cite the Board",
+   "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+   "terms_read": "2026-11-17",
+   "url": "https://www.federalreserve.gov/datadownload/Output.aspx?rel=sloos&filetype=zip",
+   "series_name": "SUBLPDCILS_N.Q",
+   "column": "sloos_ci_tight",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 45,
+    "hour": 20,
+    "why": "a survey dated to its quarter's first day (FRED convention) is released early in the quarter's second month at 14:00 ET; +45 days 20:00 UTC is after every release; a quarter-end dating would only make it later"
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "US30",
+    "EURUSD",
+    "USDJPY",
+    "USDX"
+   ],
+   "why": "Idea N10 (noon CRO 2026-11-14): Senior Loan Officer Survey net % of banks tightening C&I standards (large and middle-market firms) against the prior survey, a slow state for US index CFDs and USD crosses.",
+   "note": "Data Download Program XML package (SDMX-style Series SERIES_NAME / Obs TIME_PERIOD, OBS_VALUE). SERIES_NAME SUBLPDCILS_N.Q is the DDP mnemonic behind FRED DRTSCILM as best known from a container that cannot reach federalreserve.gov (confirm_on_box): a wrong name reads UNPARSED, never zero. The DDP preformatted packages retire 2027-03-31 and the DDP page 2027-07-01: re-point before then. federalreserve.gov robots.txt could not be read from here; it is checked with our UA before every read."
+  },
+  {
+   "id": "jolts_quits_vs3m",
+   "idea": "N11",
+   "adapter": "keyed_store",
+   "terms": "OPEN",
+   "derive": "quits_vs3m",
+   "terms_clause": "BLS material is in the public domain; cite the Bureau of Labor Statistics",
+   "terms_url": "https://www.bls.gov/bls/linksite.htm",
+   "terms_read": "2026-11-17",
+   "keyed_source": "bls_components",
+   "keyed_series": "jolts_quits_rate",
+   "url": "keyed_sources:bls_components",
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "US500",
+    "NAS100"
+   ],
+   "why": "Idea N11 (noon CRO 2026-11-17): the monthly JOLTS quits rate against its prior three-month average, a slow state for USD crosses and US index CFDs after the release.",
+   "note": "Sourced from the BLS API (JTS000000000000000QUR, total nonfarm quits rate SA) through the keyed_sources roster row bls_components, which reads BLS_API_KEY through env_keys.read_key; FRED (JTSQUR) is refused. Stamped at the store's availability: month end + 42 days 14:00 UTC (JOLTS prints about five weeks after the month at 10:00 ET), or first seen live."
+  },
+  {
+   "id": "ust_buybacks",
+   "idea": "N12",
+   "adapter": "fiscaldata_buybacks",
+   "terms": "OPEN",
+   "terms_clause": "available to copy, adapt, redistribute, or otherwise use for non-commercial or commercial purposes; open API, no key",
+   "terms_url": "https://fiscaldata.treasury.gov/api-documentation/",
+   "terms_read": "2026-11-17",
+   "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/buybacks_operations?sort=-operation_date&page[size]=10000",
+   "results_after_min": 60,
+   "targets": [
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "why": "Idea N12 (noon CRO 2026-11-17): size and acceptance of US Treasury buyback operations as a liquidity-support state for USDJPY, XAUUSD and US500 in the days around each operation.",
+   "note": "Fields read 2026-11-17 (234 operations then): operation_date, operation_close_time_est, operation_type, total_par_amt_offered, total_par_amt_accepted, max_par_amt_redeemed. One row per operation day (summed); stamped at the operation's ET close + 60 minutes (results post shortly after the close), 23:00 UTC when the time is unreadable. Robots on api.fiscaldata.treasury.gov is checked with our UA before every read."
   }
  ],
  "cftc_markets": [
@@ -1452,6 +1671,312 @@
      "transform": "diff",
      "why": "JOLTS job openings",
      "title": "JOLTS Job Openings"
+    }
+   ]
+  },
+  {
+   "id": "cb_reaction",
+   "mode": "reaction",
+   "avail_lag_days": 55,
+   "window": 120,
+   "note": "Central-bank reaction functions: each bank's policy rate minus a fixed-coefficient Taylor (1993) rule built from its own inflation, its own trailing average real rate and (where a series is held) its unemployment gap. Monthly, indexed by the month's first day and available 55 days later: after that month's CPI or HICP and labour releases. FRED serves the current vintage, so a seasonally revised index can differ slightly from the first print; the 12-month change keeps that small and the row says so instead of hiding it. THE ECB ROW IS INFLATION-ONLY: no euro-area unemployment series is held, so its gap term is zero and its residual is not comparable one-for-one with the Fed's. The other banks are in cb_reaction_bis (BIS rates and prices): the OECD ids FRED once carried for them were read on the box 2026-11-11 and are discontinued.",
+   "series": [
+    "DFF",
+    "CPIAUCSL",
+    "UNRATE",
+    "ECBDFR",
+    "CP0000EZ19M086NEST"
+   ],
+   "banks": [
+    {
+     "id": "fed",
+     "rate": "DFF",
+     "inflation": "CPIAUCSL",
+     "unemployment": "UNRATE",
+     "target": 2.0,
+     "targets": [
+      "USDX",
+      "EURUSD",
+      "USDJPY",
+      "XAUUSD",
+      "UST10Y",
+      "US500"
+     ]
+    },
+    {
+     "id": "ecb",
+     "rate": "ECBDFR",
+     "inflation": "CP0000EZ19M086NEST",
+     "target": 2.0,
+     "targets": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURCHF"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cb_reaction_bis",
+   "mode": "reaction",
+   "bis": true,
+   "avail_lag_days": 75,
+   "window": 120,
+   "note": "The same Taylor-rule residual as cb_reaction for nine more central banks, with the policy rate and the price index from the BIS (source bis_stats) and unemployment from FRED where a live series was confirmed on the box 2026-11-11 (Japan, Canada, Australia, Mexico); the others are inflation-only, gap term zero, and not comparable one-for-one. Available 75 days after the month's first day: the national CPI prints within about seven weeks and the BIS table carried September 2026 on 11 November, so 75 days is after both. The inflation targets are each bank's published one (Switzerland's is the middle of its 0-2% range; South Africa's 4.5% was the midpoint in force over the history). A fixed target only shifts the residual's level.",
+   "series": [
+    "LRHUTTTTJPM156S",
+    "LRHUTTTTCAM156S",
+    "LRHUTTTTAUM156S",
+    "LRHUTTTTMXM156S"
+   ],
+   "banks": [
+    {
+     "id": "boe",
+     "rate": "BIS_CBPOL_GB",
+     "inflation": "BIS_CPI_GB",
+     "target": 2.0,
+     "targets": [
+      "GBPUSD",
+      "EURGBP",
+      "GBPJPY"
+     ]
+    },
+    {
+     "id": "boj",
+     "rate": "BIS_CBPOL_JP",
+     "inflation": "BIS_CPI_JP",
+     "unemployment": "LRHUTTTTJPM156S",
+     "target": 2.0,
+     "targets": [
+      "USDJPY",
+      "EURJPY",
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "snb",
+     "rate": "BIS_CBPOL_CH",
+     "inflation": "BIS_CPI_CH",
+     "target": 1.0,
+     "targets": [
+      "USDCHF",
+      "EURCHF"
+     ]
+    },
+    {
+     "id": "boc",
+     "rate": "BIS_CBPOL_CA",
+     "inflation": "BIS_CPI_CA",
+     "unemployment": "LRHUTTTTCAM156S",
+     "target": 2.0,
+     "targets": [
+      "USDCAD"
+     ]
+    },
+    {
+     "id": "rba",
+     "rate": "BIS_CBPOL_AU",
+     "inflation": "BIS_CPI_AU",
+     "unemployment": "LRHUTTTTAUM156S",
+     "target": 2.5,
+     "targets": [
+      "AUDUSD",
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "rbnz",
+     "rate": "BIS_CBPOL_NZ",
+     "inflation": "BIS_CPI_NZ",
+     "target": 2.0,
+     "targets": [
+      "NZDUSD"
+     ]
+    },
+    {
+     "id": "banxico",
+     "rate": "BIS_CBPOL_MX",
+     "inflation": "BIS_CPI_MX",
+     "unemployment": "LRHUTTTTMXM156S",
+     "target": 3.0,
+     "targets": [
+      "USDMXN"
+     ]
+    },
+    {
+     "id": "sarb",
+     "rate": "BIS_CBPOL_ZA",
+     "inflation": "BIS_CPI_ZA",
+     "target": 4.5,
+     "targets": [
+      "USDZAR"
+     ]
+    },
+    {
+     "id": "cbrt",
+     "rate": "BIS_CBPOL_TR",
+     "inflation": "BIS_CPI_TR",
+     "target": 5.0,
+     "targets": [
+      "USDTRY"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cb_relative_stance",
+   "mode": "reaction",
+   "bis": true,
+   "avail_lag_days": 75,
+   "window": 120,
+   "note": "Relative policy stance for the major pairs and crosses: the base currency's central bank's Taylor-rule residual minus the quote currency's, and the same difference of their real policy rates. Both legs use the inflation-only rule so the difference compares like with like (cb_reaction's Fed series carries an unemployment term the others lack). Every leg comes from the BIS (source bis_stats: policy rates and consumer price indices), the Fed and ECB legs included: no FRED series is read for this row, because FRED is refused for automated fetches (ruling of 2026-11-13). The euro-area legs use the probe code XM; until a reply carries it the five euro pairs are UNMEASURED. Available 75 days after the month's first day. Current vintage, so first prints are required before any certificate. No exotic pair is listed (breadth order of 2026-11-13). Australia and New Zealand publish CPI quarterly, so their pairs stay UNMEASURED until the monthly table carries them. Question for the gauntlet: does the currency of the bank that is tighter relative to its own rule keep appreciating, or does the gap close?",
+   "banks": [
+    {
+     "id": "fed",
+     "rate": "BIS_CBPOL_US",
+     "inflation": "BIS_CPI_US",
+     "target": 2.0
+    },
+    {
+     "id": "ecb",
+     "rate": "BIS_CBPOL_XM",
+     "inflation": "BIS_CPI_XM",
+     "target": 2.0
+    },
+    {
+     "id": "boe",
+     "rate": "BIS_CBPOL_GB",
+     "inflation": "BIS_CPI_GB",
+     "target": 2.0
+    },
+    {
+     "id": "boj",
+     "rate": "BIS_CBPOL_JP",
+     "inflation": "BIS_CPI_JP",
+     "target": 2.0
+    },
+    {
+     "id": "snb",
+     "rate": "BIS_CBPOL_CH",
+     "inflation": "BIS_CPI_CH",
+     "target": 1.0
+    },
+    {
+     "id": "boc",
+     "rate": "BIS_CBPOL_CA",
+     "inflation": "BIS_CPI_CA",
+     "target": 2.0
+    },
+    {
+     "id": "rba",
+     "rate": "BIS_CBPOL_AU",
+     "inflation": "BIS_CPI_AU",
+     "target": 2.5
+    },
+    {
+     "id": "rbnz",
+     "rate": "BIS_CBPOL_NZ",
+     "inflation": "BIS_CPI_NZ",
+     "target": 2.0
+    }
+   ],
+   "pairs": [
+    {
+     "id": "eurusd",
+     "base": "ecb",
+     "quote": "fed",
+     "targets": [
+      "EURUSD"
+     ]
+    },
+    {
+     "id": "gbpusd",
+     "base": "boe",
+     "quote": "fed",
+     "targets": [
+      "GBPUSD"
+     ]
+    },
+    {
+     "id": "usdjpy",
+     "base": "fed",
+     "quote": "boj",
+     "targets": [
+      "USDJPY"
+     ]
+    },
+    {
+     "id": "usdchf",
+     "base": "fed",
+     "quote": "snb",
+     "targets": [
+      "USDCHF"
+     ]
+    },
+    {
+     "id": "usdcad",
+     "base": "fed",
+     "quote": "boc",
+     "targets": [
+      "USDCAD"
+     ]
+    },
+    {
+     "id": "audusd",
+     "base": "rba",
+     "quote": "fed",
+     "targets": [
+      "AUDUSD"
+     ]
+    },
+    {
+     "id": "nzdusd",
+     "base": "rbnz",
+     "quote": "fed",
+     "targets": [
+      "NZDUSD"
+     ]
+    },
+    {
+     "id": "eurjpy",
+     "base": "ecb",
+     "quote": "boj",
+     "targets": [
+      "EURJPY"
+     ]
+    },
+    {
+     "id": "eurgbp",
+     "base": "ecb",
+     "quote": "boe",
+     "targets": [
+      "EURGBP"
+     ]
+    },
+    {
+     "id": "gbpjpy",
+     "base": "boe",
+     "quote": "boj",
+     "targets": [
+      "GBPJPY"
+     ]
+    },
+    {
+     "id": "audjpy",
+     "base": "rba",
+     "quote": "boj",
+     "targets": [
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "eurchf",
+     "base": "ecb",
+     "quote": "snb",
+     "targets": [
+      "EURCHF"
+     ]
     }
    ]
   }

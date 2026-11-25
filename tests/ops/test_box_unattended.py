@@ -111,3 +111,32 @@ def test_the_workflow_gate_runs_the_trusted_gate_in_box_mode_with_zucks_login_on
 def test_the_gate_script_the_box_runs_has_the_box_mode() -> None:
     gate = (ROOT / ".github" / "scripts" / "audit_gate.py").read_text(encoding="utf-8")
     assert '"--sweep"' in gate and '"--box"' in gate
+
+
+def test_the_sweep_runs_first_and_every_phase_says_where_a_killed_run_died() -> None:
+    """2026-11-17: Quant-WorkflowGate was killed at its 30-min limit every run (267014) before the
+    sweep merged anything, and MERGE_PIPELINE.json froze at the last run that finished."""
+    wg = CODE["workflow_gate"]
+    order = [
+        'Mark "clone"',
+        'Mark "identity"',
+        'Mark "sweep"',
+        "--sweep --box",
+        'Mark "live-first"',
+        "--budget-s $budget",
+        'Mark "adopt-rows"',
+        'Mark "memecoin"',
+        'Mark "watch"',
+    ]
+    at = [wg.index(o) for o in order]
+    assert at == sorted(at), dict(zip(order, at, strict=True))
+    # the public copy: numbers, booleans, a phase and an exception TYPE, never a message
+    pub = wg.split("function Publish(", 1)[1].split("\n}", 1)[0]
+    keys = re.findall(r"(\w+) = ", pub.split("[ordered]@{", 1)[1].split("}", 1)[0])
+    assert keys == ["at", "phase", "finished", "rc", "merged", "workflow_scope",
+                    "mutex_held_runs", "error_type"]  # fmt: skip
+    assert "note" not in pub and "Message" not in pub
+    assert "desks\\mt5\\reports\\WORKFLOW_GATE.json" in wg
+    assert "GetType().Name" in wg.split("} catch {", 2)[-1]
+    for phase in ("adopt-rows", "memecoin"):
+        assert f'Say "{phase} skipped: $(Left)s left"' in wg

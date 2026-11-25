@@ -1,0 +1,7 @@
+Country	Country Code	Date	Total U.S. Securities			U.S. Treasuries
+			Holdings	Net U.S. Sales	Valuation Change	Holdings
+"Austria"	10189	2026-08	53,564	189	1,694	3,881
+"Austria"	10189	2026-07	51,567	469	-817	3,958
+"Grand Total"	99996	2026-08	33,912,345	-12,345	101,000	9,100,000
+"Grand Total"	99996	2026-07	33,800,000	45,678	-55,000	9,050,000
+"Grand Total"	99996	2026-06	33,700,000	n.a.	0	9,000,000

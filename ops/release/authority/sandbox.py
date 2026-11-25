@@ -78,6 +78,8 @@ class FakeGitHub:
         }]  # fmt: skip
         self.conclusion = dict.fromkeys((*ag.GATING_JOBS, *ag.AUTO_JOBS), "success")
         self.trusted_eval: str | None = "success"
+        # replay-shadow's report artifact (MATCHES_DECLARED tests); None: no artifact
+        self.replay_report: dict[str, Any] | None = None
         self.writes: list[tuple[str, str, dict[str, Any]]] = []
 
     @property
@@ -103,6 +105,14 @@ class FakeGitHub:
             return [self.board]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
+        if "/actions/jobs/" in path:
+            return {"id": int(path.rsplit("/", 1)[1]), "run_id": 2, "run_attempt": 1}
+        if path.endswith("/actions/runs/2"):
+            return {"id": 2, "head_sha": self.head, "path": ".github/workflows/release-gates.yml"}
+        if "/actions/runs/2/artifacts" in path:
+            if self.replay_report is None:
+                return {"artifacts": []}
+            return {"artifacts": [{"id": 77, "name": "replay-shadow-report-1", "expired": False}]}
         if "/annotations" in path:
             return []
         if "/check-runs" in path:
@@ -198,6 +208,18 @@ class Sandbox:
         old_env = {k: os.environ.get(k) for k in env}
         os.environ.update(env)
         saved_bytes = self.auth._git_bytes
+        saved_zip = self.auth._artifact_zip
+
+        def artifact_zip(repo: str, artifact_id: int) -> bytes | None:
+            import io
+            import zipfile
+
+            if self.gh.replay_report is None or artifact_id != 77:
+                return None
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as z:
+                z.writestr("replay_shadow.json", json.dumps(self.gh.replay_report))
+            return buf.getvalue()
 
         def git_bytes(*args: str) -> bytes | None:
             if args and args[0] == "show":
@@ -219,12 +241,14 @@ class Sandbox:
         ag.datetime = fake_datetime(self.clock)
         ag.run_notify = notify
         self.auth._git_bytes = git_bytes
+        self.auth._artifact_zip = artifact_zip
         try:
             yield
         finally:
             for k, v in saved.items():
                 setattr(ag, k, v)
             self.auth._git_bytes = saved_bytes
+            self.auth._artifact_zip = saved_zip
             for k, v in old_env.items():
                 if v is None:
                     os.environ.pop(k, None)
