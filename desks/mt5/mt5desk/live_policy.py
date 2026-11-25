@@ -242,6 +242,86 @@ def _exotic_bar(cfg: Any) -> tuple[bool, frozenset[str], frozenset[str], str]:
     return True, exo, frozenset(str(n) for n in (doc.get("pass") or [])), ""
 
 
+#: EXIT-POLICY LIVE PARITY (Audit HOLD MF1 on #628 exit-policy-trials, 2026-11-24).
+#:
+#: `family_session_exit_overlay` puts in-trade management policies in front of the gauntlet as
+#: charged trials. The ENGINE walks every one of them; the LIVE gateway executes only the stop,
+#: the target, the ttl (its TTL housekeeping) and the trail (`trail_k`, sent as TRADE_ACTION_SLTP
+#: by `position_manager.ratchet`). It has no code for a `bank_frac` partial, a `reversal_level`
+#: exit or a `liquidity_*` exit (grepped: gateway, position_manager, executables, family_call).
+#: A survivor certified on one of those exits would therefore go live as a ratchet-only
+#: LOOKALIKE -- capital under a certificate earned by a different exit, the desk's own
+#: 2026-09-16 failure class (the backtest and the account running different strategies).
+#:
+#: So the policy is refused LIVE CAPITAL BY NAME, here, where every door already asks: the
+#: promoter's `save_sleeves` retires such a row (`retired_by` live_policy, the reason on it), the
+#: gateway's roster drops it, the allocator's `live_policy_zero` binds its column to 0, and the
+#: E8 book names it blocked. The trials themselves keep running as research: nothing here touches
+#: the gauntlet, a certificate, a gate or the trial count.
+#:
+#: TWO-SIDED, AND IT LIFTS ITSELF. The refusal is a parity fact, not a verdict on the evidence.
+#: The day a mechanic is implemented live (with an engine-vs-live parity test on the same bars),
+#: add it to LIVE_EXIT_MECHANICS; `refuse` then admits the policy and the promoter's
+#: `restore_lifted_policy_retirements` returns its rows to STANDBY for the allocator to weigh.
+#: What the refusal costs and saves is published by `research/missed_growth.py`
+#: (`exit_policy_live_parity`): the certified survivors it holds out of the book, both sides
+#: UNMEASURED until a live implementation can be measured.
+LIVE_EXIT_MECHANICS: frozenset[str] = frozenset({"stop", "target", "ttl", "trail_k"})
+#: Each exit policy -> the engine mechanics its exit is made of (mt5desk/families._exit_rewrite).
+EXIT_POLICY_MECHANICS: dict[str, frozenset[str]] = {
+    "ratchet": frozenset({"stop", "target", "ttl", "trail_k"}),
+    "time_4": frozenset({"stop", "target", "ttl", "trail_k"}),
+    "time_8": frozenset({"stop", "target", "ttl", "trail_k"}),
+    "partial_1r": frozenset({"stop", "target", "ttl", "trail_k", "bank_frac"}),
+    "partial_2r": frozenset({"stop", "target", "ttl", "trail_k", "bank_frac"}),
+    # hot tape: the ratchet; quiet tape: bank half at +1R -- the policy needs both branches
+    "regime": frozenset({"stop", "target", "ttl", "trail_k", "bank_frac"}),
+    "reversal": frozenset({"stop", "target", "ttl", "trail_k", "reversal_level"}),
+    "liquidity": frozenset({"stop", "target", "ttl", "trail_k", "liquidity_exit"}),
+}
+#: The prefix every parity refusal carries, so the missed-growth line can count them.
+EXIT_PARITY_TAG = "EXIT_PARITY"
+EXIT_PARITY_ORDER = ("Audit HOLD MF1 on #628 (2026-11-24): a certified exit the live gateway "
+                     "cannot execute would trade as a ratchet-only lookalike; it stays a "
+                     "research trial until the mechanic is implemented live")
+
+
+def exit_policy_of(row: Mapping[str, Any]) -> str | None:
+    """The exit policy a row or certificate spec carries, wherever it is nested, or None."""
+    seen: list[Mapping[str, Any]] = [row]
+    for _ in range(3):
+        nxt: list[Mapping[str, Any]] = []
+        for m in seen:
+            v = m.get("exit_policy")
+            if v not in (None, ""):
+                return str(v).strip().lower()
+            for k in ("params", "shadow_spec", "spec"):
+                if isinstance(m.get(k), Mapping):
+                    nxt.append(m[k])
+        seen = nxt
+    return None
+
+
+def exit_parity_refusal(row: Mapping[str, Any]) -> str | None:
+    """Why this row's EXIT cannot be executed by the live gateway, or None when it can (or the
+    row carries no exit policy, which is every row written before #628). An exit policy this file
+    has no mechanics for is refused too: unknown parity is unmeasured parity (fail closed)."""
+    pol = exit_policy_of(row)
+    if pol is None:
+        return None
+    need = EXIT_POLICY_MECHANICS.get(pol)
+    if need is None:
+        return (f"{EXIT_PARITY_TAG}: exit policy {pol!r} declares no mechanics the live gateway "
+                f"is known to execute (parity UNMEASURED) -- {EXIT_PARITY_ORDER}")
+    missing = sorted(need - LIVE_EXIT_MECHANICS)
+    if not missing:
+        return None
+    return (f"{EXIT_PARITY_TAG}: exit policy {pol!r} needs {', '.join(missing)}, which the live "
+            f"gateway does not execute (it runs {', '.join(sorted(LIVE_EXIT_MECHANICS))} only); "
+            f"live it would be a ratchet-only lookalike of its certificate -- "
+            f"{EXIT_PARITY_ORDER}")
+
+
 def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     """The reason this sleeve may not hold live capital, or None when it may.
 
@@ -252,6 +332,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
+    parity = exit_parity_refusal(row)
+    if parity:
+        return parity
     name_q = str(row.get("name") or "").strip()
     if name_q and name_q in p.quarantined_sleeves:
         return f"{name_q!r} is quarantined from live capital by name -- {p.by}"
