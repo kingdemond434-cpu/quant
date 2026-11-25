@@ -412,6 +412,14 @@ PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
                                "seen; trailing windows over strictly earlier rows only "
                                "(tick_features.KNOWLEDGE_RULE)",
                       "knowledge_column": "available_time", "readers": ()},
+    # THE EXOTIC FIRING STATE (2026-11-25): desks/mt5/research/exotic_state_features.py
+    # publishes data/lake/series/exo_state__<SYM>.csv. Row D is the certified rule's net firing
+    # side on broker day D, computed from bars <= D's last close (look-ahead probed), written only
+    # for completed post-sample days and stamped available_time = the start of broker day D+1.
+    "exotic_state_features": {"lag_s": 0, "valid": "the broker day whose signals are summed",
+                              "basis": "stamped the start of the next broker day, after every "
+                                       "close it sums; post-sample days only (gated_at + 3h)",
+                              "knowledge_column": "available_time", "readers": ()},
     "microstructure_surface": {
         "lag_s": 0, "valid": "the surface report's build time",
         "basis": "assumed, conservative: a per-symbol spread/activity surface summarised from the "

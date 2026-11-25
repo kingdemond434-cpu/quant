@@ -416,6 +416,21 @@
     "after": "48h on the trading box: no non-exotic symbol has a published hour, so the tape never reached the lake and the conditioners do not exist"
    }
   },
+  "exotic_state_features": {
+   "hypothesis": "Publishing the post-sample firing state of the banned exotics' certified rules as point-in-time lake series, and conditioning certified non-exotic parents in the same macro bloc on it as a fixed, declared trial set, adds independent breadth from 12,730 certificates the book can never trade, without trading an exotic.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "features_valid",
+    "better": "up",
+    "organ": "report:EXOTIC_STATE_FEATURES.json"
+   },
+   "falsifier": {
+    "metric": "features_valid",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no exotic certificate yields a look-ahead-clean post-sample feature, so no conditioner exists to mint on"
+   }
+  },
   "dataset_translator": {
    "hypothesis": "Translating every dataset the desk holds -- free stack, deep forest, axes, keyed roster, key catalogue and unclaimed lake series -- to the FX pairs, index CFDs, commodity CFDs and metals its country, central bank, commodity or sector bears on, and minting one exogenous_conditioner cell per dataset with a series, puts information in front of the gauntlet that no roster had connected to a tradable.",
    "metric": {

@@ -670,6 +670,8 @@ LEG_LAYER: dict[str, str] = {
     # An exotic certificate's exact spec re-minted on tradable instruments sharing its driver is
     # a claim about returns on those instruments: prediction, like the chart fanout.
     "exotic_transplant": "prediction",
+    # An exotic rule's firing state published as a conditioning series is information.
+    "exotic_state_features": "information",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
