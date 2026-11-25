@@ -20,7 +20,8 @@ def test_each_shipped_feed_and_arxiv_gets_a_row_with_a_region():
     rows: dict = {}
     n = sr._paper_rows(rows)
     names = [f["name"] for f in doc["feeds"]]
-    assert n == len(names) + 1
+    harvesters = [h["name"] for h in doc.get("harvesters") or []]
+    assert n == len(names) + len(harvesters) + 1
     for name in [*names, "arxiv_qfin"]:
         row = rows[f"src:paper:{name}"]
         assert row["region"], name

@@ -717,6 +717,20 @@ def mine_research_feeds() -> list[dict]:
     return out
 
 
+def mine_global_journals() -> list[dict]:
+    """Non-English scholarship through OAI-PMH and official APIs: KCI, the SciELO country
+    nodes, RePEc, and OpenAlex by language. Sources live in research_feeds.json `harvesters`;
+    a source whose terms were read and bar this desk stays closed there."""
+    try:
+        from side_channels import journal_harvesters as jh
+    except ModuleNotFoundError:
+        import journal_harvesters as jh  # type: ignore[no-redef]
+    st = _state()
+    out = jh.harvest(st, jh.data_text, row, jh.robots_gate_for_pass())
+    _merge_state({k: st[k] for k in ("jh_seen", "jh_status", "jh_cursor") if k in st})
+    return out
+
+
 def mine_github_depth() -> list[dict]:
     """README, code changes, issues, starred forks and discussions of the trading repos
     github_topics found, inside GitHub's published rate limit."""
@@ -777,6 +791,7 @@ MINERS = {
     "bis_speeches": mine_bis_speeches, "broker_swaps": mine_broker_swaps,
     "github_topics": mine_github_topics, "propfirm_boards": mine_propfirm_boards,
     "research_feeds": mine_research_feeds, "github_depth": mine_github_depth,
+    "global_journals": mine_global_journals,
 }
 
 
