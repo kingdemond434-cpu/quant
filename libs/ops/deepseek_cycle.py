@@ -675,7 +675,7 @@ def _alt_slice(root: Path) -> tuple[Any, Any, str]:
         for p in (str(desk), str(desk / "research")):
             if p not in _sys.path:
                 _sys.path.insert(0, p)
-        from research import alt_catalog as ac
+        from research import alt_catalog as ac  # type: ignore[import-not-found,unused-ignore]
         cat = ac.catalog(desk / "data" / "lake" / "series")
         return ac, cat, ac.prompt_block("deepseek", cat=cat)
     except Exception:  # blind-except intentional (BLE001): a slice never costs the cycle
@@ -691,7 +691,7 @@ def _data_discovery(root: Path) -> tuple[Any, list[str], set[str]]:
         for p in (str(desk), str(desk / "research")):
             if p not in _sys.path:
                 _sys.path.insert(0, p)
-        from research import data_discovery as dd
+        from research import data_discovery as dd  # type: ignore[import-not-found,unused-ignore]
         labels, full = dd.known(desk / "data" / "source_rosters" / "keyed_sources.json",
                                 roots=(root / "data" / "intelligence",
                                        desk / "data" / "intelligence"))
@@ -778,7 +778,9 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
     fb_block = ""
     try:
         if alt_ac is not None:
-            from research import conversion_lanes as _cl
+            from research import (
+                conversion_lanes as _cl,  # type: ignore[import-not-found,unused-ignore]
+            )
             fb_block = _cl.feedback_block("deepseek")
     except Exception:  # blind-except intentional (BLE001): feedback never costs the cycle
         fb_block = ""
