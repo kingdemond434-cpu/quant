@@ -3219,6 +3219,34 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     return out
 
 
+def _judged_by_exoticness(judged_cells: Any) -> dict[str, Any]:
+    try:
+        from research import judge_exotic_exclusion as jee
+        return jee.judged_split(judged_cells)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+
+
+def _source_floor_block(mined: dict[str, int], judged_total: dict[str, int],
+                        banned: frozenset[str], unknown: dict[str, Any], probe_census: Any,
+                        slots_per_pass: Any,
+                        backlog: dict[str, int] | None = None) -> dict[str, Any]:
+    """The `source_floor` block of JUDGE_COVERAGE; UNMEASURED (never a clean verdict) on failure."""
+    try:
+        from research import judge_source_floor as jsf
+        causes = (unknown or {}).get("causes") or {}
+        never_fires = dict(((causes.get("never_fires_days_0") or {}).get("by_family")) or {})
+        missing = dict((probe_census or {}).get("by_family") or {}) if isinstance(
+            probe_census, dict) else {}
+        state = jsf.source_state(mined, judged_total, banned=banned, never_fires=never_fires,
+                                 backlog=backlog)
+        slots = float(slots_per_pass) if isinstance(slots_per_pass, (int, float)) else None
+        return jsf.publish(state, slots_per_pass=slots, missing_inputs=missing,
+                           enforced=jsf.sealed_applies(BASE / "scripts" / "external_gauntlet.py"))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": type(exc).__name__}
+
+
 def allocate(backlog: dict[str, int], capacity: int,
              floor_share: float = FLOOR_SHARE,
              ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
@@ -4054,6 +4082,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     hours_to_drain = drain_eta.get("hours")
     _h_gross = drain_eta.get("hours_at_zero_creation")
     forgone_per_hour = (value_deferred / max(_h_gross or 1.0, 1.0) if _h_gross else 0.0)
+    source_floor = _source_floor_block(mined, judged_total, banned, unknown, probe_census,
+                                       rate.get("per_hour_24h"), backlog)
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)
@@ -4183,6 +4213,14 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
             for f, r in sorted(realised_seen.items(),
                                key=lambda kv: (-float(kv[1]["pass_rate"]),
                                                -float(kv[1]["judged"]), kv[0]))],
+        # THE ALT-DATA SOURCE FLOOR (research/judge_source_floor.py): per source family its
+        # floor share, whether it is active, judged/mined against the desk, slots granted, and
+        # which members are blocked by an absent input. Published decision; `enforced` says
+        # whether the sealed judge's build order applies it yet.
+        "source_floor": source_floor,
+        # JUDGED CELLS, EXOTIC AND NOT (the exotic ban, zuck 2026-11-24): distinct cells with a
+        # real verdict split by the cell's symbol under universe_policy.is_exotic_symbol.
+        "judged_by_exoticness": _judged_by_exoticness(judged_cells),
         "realised_pass_rate_rule": (
             "counted from gate_verdict_ledger.jsonl every pass, so no cursor can make it stale; "
             "terminal_gate UNKNOWN is the sealed judge's UNMEASURED path and counts toward "
@@ -4330,7 +4368,9 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
-                 now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+                 now: datetime | None = None,
+                 exclusions: dict[str, Any] | None = None
+                 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
 
     `merge_hypotheses` calls this as the last thing it does before writing the file the sealed
@@ -4339,12 +4379,17 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     the same candidates, all of them, in an order where every prefix carries every family holding
     backlog. A failure here returns the rows untouched, because an ordering organ must never be
     able to cost the desk a docket (L1.28a).
+
+    `exclusions` is what the caller set aside BEFORE this door (merge_hypotheses: the exotic
+    set-aside, `judge_exotic_exclusion`); it is published as `exotic_excluded`, by name and
+    count, so a row kept from the judge is never a silent absence.
     """
     with _pass_memo():
-        return _order_docket(rows, publish=publish, now=now)
+        return _order_docket(rows, publish=publish, now=now, exclusions=exclusions)
 
 
-def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
+def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None,
+                  exclusions: dict[str, Any] | None = None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
     # THE ROWS AS THEY ARRIVED (audit of v1.2, MF2): any failure returns these, unfiltered, so a
@@ -4361,6 +4406,9 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         rows = [r for r in rows if isinstance(r, dict)]
     try:
         doc = build(rows, now=now, defer=publish)
+        doc["exotic_excluded"] = (exclusions if isinstance(exclusions, dict) else
+                                  {"status": "UNMEASURED",
+                                   "why": "the caller passed no exclusion report"})
         if bad:
             doc["non_object_rows_carried"] = len(bad)
         if not doc.get("families"):
