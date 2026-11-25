@@ -1409,7 +1409,7 @@
     "en"
    ],
    "market": "AI",
-   "grounds": 1
+   "grounds": 2
   },
   "aw": {
    "name": "Aruba",
@@ -1568,7 +1568,7 @@
     "en"
    ],
    "market": "FM",
-   "grounds": 2
+   "grounds": 3
   },
   "fo": {
    "name": "Faroe Islands",
@@ -1586,7 +1586,7 @@
     "en"
    ],
    "market": "GD",
-   "grounds": 1
+   "grounds": 2
   },
   "gi": {
    "name": "Gibraltar",
@@ -1680,7 +1680,7 @@
     "en"
    ],
    "market": "KN",
-   "grounds": 1
+   "grounds": 2
   },
   "kp": {
    "name": "Korea, Democratic People's Republic of",
@@ -1707,7 +1707,7 @@
     "en"
    ],
    "market": "LC",
-   "grounds": 1
+   "grounds": 2
   },
   "lr": {
    "name": "Liberia",
@@ -1773,7 +1773,7 @@
     "en"
    ],
    "market": "MS",
-   "grounds": 1
+   "grounds": 2
   },
   "mv": {
    "name": "Maldives",
@@ -1829,7 +1829,7 @@
     "na"
    ],
    "market": "NR",
-   "grounds": 2
+   "grounds": 3
   },
   "pf": {
    "name": "French Polynesia",
@@ -1857,7 +1857,7 @@
     "pau"
    ],
    "market": "PW",
-   "grounds": 2
+   "grounds": 3
   },
   "rw": {
    "name": "Rwanda",
@@ -1962,7 +1962,7 @@
     "en"
    ],
    "market": "TC",
-   "grounds": 2
+   "grounds": 3
   },
   "td": {
    "name": "Chad",
@@ -2031,7 +2031,7 @@
     "la"
    ],
    "market": "VA",
-   "grounds": 3
+   "grounds": 4
   },
   "vc": {
    "name": "Saint Vincent and the Grenadines",
@@ -2040,7 +2040,7 @@
     "en"
    ],
    "market": "VC",
-   "grounds": 1
+   "grounds": 2
   },
   "vu": {
    "name": "Vanuatu",
@@ -15491,6 +15491,182 @@
    "weight": 0.3,
    "why": "official statistics releases for Falkland Islands, tier 3: a small economy, kept so no country is left unhunted. Proposed 2026-11-25 from the institution's published address and NOT YET READ: the cloud session has no egress to it, so robots.txt and terms are read on the box's first pass and the ground fails closed until they are",
    "url": "https://www.falklands.gov.fk/policy/",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Anguilla in ECCB reports (search)",
+   "region": "ai",
+   "language": "en",
+   "route": "search",
+   "kind": "macro",
+   "weight": 0.3,
+   "why": "the Eastern Caribbean Central Bank is Anguilla's monetary authority (XCD peg); its country reviews, found by site search. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "eccb-centralbank.org",
+   "queries": [
+    "Anguilla economic review",
+    "Anguilla monetary and financial statistics"
+   ],
+   "market": "AI",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Micronesia, Federated States of government statistics and budget (search)",
+   "region": "fm",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on fsmgov.org, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "fsmgov.org",
+   "queries": [
+    "Micronesia, Federated States of statistics",
+    "Micronesia, Federated States of budget address economy"
+   ],
+   "market": "FM",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Grenada government statistics and budget (search)",
+   "region": "gd",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on gov.gd, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "gov.gd",
+   "queries": [
+    "Grenada statistics",
+    "Grenada budget address economy"
+   ],
+   "market": "GD",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Saint Kitts and Nevis government statistics and budget (search)",
+   "region": "kn",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on gov.kn, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "gov.kn",
+   "queries": [
+    "Saint Kitts and Nevis statistics",
+    "Saint Kitts and Nevis budget address economy"
+   ],
+   "market": "KN",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Saint Lucia government statistics and budget (search)",
+   "region": "lc",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on govt.lc, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "govt.lc",
+   "queries": [
+    "Saint Lucia statistics",
+    "Saint Lucia budget address economy"
+   ],
+   "market": "LC",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Montserrat government statistics and budget (search)",
+   "region": "ms",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on gov.ms, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "gov.ms",
+   "queries": [
+    "Montserrat statistics",
+    "Montserrat budget address economy"
+   ],
+   "market": "MS",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Nauru government statistics and budget (search)",
+   "region": "nr",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on naurugov.nr, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "naurugov.nr",
+   "queries": [
+    "Nauru statistics",
+    "Nauru budget address economy"
+   ],
+   "market": "NR",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Palau government statistics and budget (search)",
+   "region": "pw",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on palaugov.pw, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "palaugov.pw",
+   "queries": [
+    "Palau statistics",
+    "Palau budget address economy"
+   ],
+   "market": "PW",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Turks and Caicos Islands government statistics and budget (search)",
+   "region": "tc",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on gov.tc, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "gov.tc",
+   "queries": [
+    "Turks and Caicos Islands statistics",
+    "Turks and Caicos Islands budget address economy"
+   ],
+   "market": "TC",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Holy See government statistics and budget (search)",
+   "region": "va",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on vaticanstate.va, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "vaticanstate.va",
+   "queries": [
+    "Holy See statistics",
+    "Holy See budget address economy"
+   ],
+   "market": "VA",
+   "read_status": "PROPOSED_UNREAD"
+  },
+  {
+   "name": "Saint Vincent and the Grenadines government statistics and budget (search)",
+   "region": "vc",
+   "language": "en",
+   "route": "search",
+   "kind": "official",
+   "weight": 0.3,
+   "why": "official statistics, budget and economic-review pages on gov.vc, found by site search because the government has no separate statistics office ground. Proposed 2026-11-25 and NOT YET READ: a search-route ground, so every result page passes the miner's own robots gate on the box before it is read",
+   "site": "gov.vc",
+   "queries": [
+    "Saint Vincent and the Grenadines statistics",
+    "Saint Vincent and the Grenadines budget address economy"
+   ],
+   "market": "VC",
    "read_status": "PROPOSED_UNREAD"
   }
  ],
