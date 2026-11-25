@@ -1,5 +1,5 @@
 {
- "at": "2026-11-25T22:37:22+00:00",
+ "at": "2026-11-25T23:37:26+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -27,9 +27,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=bdf90415b1b06e1d",
-   "certificate": "external.EURCHF.formula.p=bdf90415b1b06e1d",
-   "fp": "44fe3c2352ea774c",
+   "key": "EURCHF.formula.p=23e9e3b7cb5f5a43",
+   "certificate": "external.EURCHF.formula.p=23e9e3b7cb5f5a43",
+   "fp": "8394122d13914a25",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,9 +41,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=388124fb646a1f5d",
-   "certificate": "external.EURCHF.formula.p=388124fb646a1f5d",
-   "fp": "8940db3d9d436ac2",
+   "key": "EURCHF.formula.p=23e618b5a8f07e89",
+   "certificate": "external.EURCHF.formula.p=23e618b5a8f07e89",
+   "fp": "ebe9cdcf183298ad",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -55,9 +55,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=034f49b168d23ed0",
-   "certificate": "external.EURCHF.formula.p=034f49b168d23ed0",
-   "fp": "b5a5eae19627b0f0",
+   "key": "EURCHF.formula.p=be7a732a0c124bd7",
+   "certificate": "external.EURCHF.formula.p=be7a732a0c124bd7",
+   "fp": "2a58074f589fb62d",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -69,9 +69,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=39ec91a72be93fc1",
-   "certificate": "external.EURCHF.formula.p=39ec91a72be93fc1",
-   "fp": "d69ef599d21a5cf5",
+   "key": "EURCHF.formula.p=a44d510be7d7bc86",
+   "certificate": "external.EURCHF.formula.p=a44d510be7d7bc86",
+   "fp": "262fac8f70895b97",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -83,9 +83,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=131fb872662699e4",
-   "certificate": "external.EURCHF.formula.p=131fb872662699e4",
-   "fp": "7ed8c75bb832d6c1",
+   "key": "EURCHF.formula.p=c296a8621f2d9dfd",
+   "certificate": "external.EURCHF.formula.p=c296a8621f2d9dfd",
+   "fp": "adb103e041c074b0",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -97,9 +97,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=420fbc59846657d4",
-   "certificate": "external.EURCHF.formula.p=420fbc59846657d4",
-   "fp": "b709c02988392fbf",
+   "key": "EURCHF.formula.p=8cc78a875890eb1f",
+   "certificate": "external.EURCHF.formula.p=8cc78a875890eb1f",
+   "fp": "2751eef610a3ac94",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -111,9 +111,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=efe71454c2d42b0b",
-   "certificate": "external.EURCHF.formula.p=efe71454c2d42b0b",
-   "fp": "3bb959b9803996cc",
+   "key": "EURCHF.formula.p=4af93bcf9d4a8f10",
+   "certificate": "external.EURCHF.formula.p=4af93bcf9d4a8f10",
+   "fp": "29a37de1a1646ade",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -125,9 +125,9 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCHF.formula.p=6aad22e6d25cfe18",
-   "certificate": "external.EURCHF.formula.p=6aad22e6d25cfe18",
-   "fp": "7ad6873cbd542db0",
+   "key": "EURCHF.formula.p=5ce398122f476252",
+   "certificate": "external.EURCHF.formula.p=5ce398122f476252",
+   "fp": "56cebad0497bf4b6",
    "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -139,85 +139,7 @@
   },
   {
    "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
-   "symbol": "EURCHF",
-   "family": "discovered",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'discovered'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+   "key": "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1",
    "symbol": "EURGBP",
    "family": "discovered",
    "verdict": "UNMEASURED",
@@ -230,8 +152,86 @@
   },
   {
    "lane": "forward",
-   "key": "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1",
-   "symbol": "EURCHF",
+   "key": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1",
+   "symbol": "AUDCAD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1",
+   "symbol": "AUDNZD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'discovered'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1",
+   "symbol": "EURUSD",
    "family": "discovered",
    "verdict": "UNMEASURED",
    "why": [
@@ -245,67 +245,67 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "EURCHF.formula.p=bdf90415b1b06e1d",
+   "what": "EURCHF.formula.p=23e9e3b7cb5f5a43",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=388124fb646a1f5d",
+   "what": "EURCHF.formula.p=23e618b5a8f07e89",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=034f49b168d23ed0",
+   "what": "EURCHF.formula.p=be7a732a0c124bd7",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=39ec91a72be93fc1",
+   "what": "EURCHF.formula.p=a44d510be7d7bc86",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=131fb872662699e4",
+   "what": "EURCHF.formula.p=c296a8621f2d9dfd",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=420fbc59846657d4",
+   "what": "EURCHF.formula.p=8cc78a875890eb1f",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=efe71454c2d42b0b",
+   "what": "EURCHF.formula.p=4af93bcf9d4a8f10",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.formula.p=6aad22e6d25cfe18",
+   "what": "EURCHF.formula.p=5ce398122f476252",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1",
+   "what": "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1",
+   "what": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
+   "what": "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
+   "what": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+   "what": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
+   "what": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+   "what": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1",
    "why": "no written specification in the spec book for family 'discovered'"
   },
   {
-   "what": "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1",
+   "what": "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1",
    "why": "no written specification in the spec book for family 'discovered'"
   }
  ],
@@ -315,8 +315,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 37,
-  "at": "2026-11-25T21:43:53+00:00",
+  "forward": 45,
+  "at": "2026-11-25T22:37:22+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -342,16 +342,16 @@
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURGBP_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 6.79
+ "seconds": 7.75
 }
