@@ -347,6 +347,14 @@ RUN_DEADLINE_FLOOR_S = 4 * 3600.0
 #: The tree burned under this many cores in every heartbeat interval for this long: stalled.
 NO_PROGRESS_S = 1800.0
 NO_PROGRESS_CORES = 0.02
+#: ...PER PROCESS IN THE TREE, capped (judge P0, 2026-11-25). Sweep pid 18528's 16-19-process tree
+#: sat idle for 6 h burning 0.1 s CPU per 5 s -- 0.02 core, exactly the flat threshold, which the
+#: `>=` read as progress -- so neither the sweep's watchdog nor the resident ever saw it idle. The
+#: idle baseline of a tree grows with its process count (every idle worker polls a little), so
+#: the threshold is NO_PROGRESS_CORES x processes, never under NO_PROGRESS_CORES and never over
+#: NO_PROGRESS_TREE_CAP_CORES: a one-process tree reads exactly as before, and a tree doing real
+#: work (one busy core in the merge, a shard wave) stays far above the cap.
+NO_PROGRESS_TREE_CAP_CORES = 0.5
 #: ...AND moved under this many bytes of real I/O per second (psutil io_counters, read + write,
 #: where the platform exposes them). Heartbeat-sized writes are a few KB a beat, far under it.
 NO_PROGRESS_IO_BPS = 65536.0
@@ -456,7 +464,7 @@ class _TreeProgress:
         # PROGRESS IS CPU OR I/O (audit of 7cf2ece90): a process blocked on a disk it is
         # streaming through burns little CPU and is still working. Heartbeat-sized writes stay
         # under NO_PROGRESS_IO_BPS, so the watchdog's own beat never reads as work.
-        progressing = (dt <= 0 or delta / dt >= self.cores
+        progressing = (dt <= 0 or delta / dt >= self.threshold(len(cpu))
                        or (bool(io) and io_delta / dt >= NO_PROGRESS_IO_BPS))
         if progressing:
             self.last_progress = now
@@ -465,6 +473,11 @@ class _TreeProgress:
 
     def idle_s(self, now: float) -> float:
         return max(0.0, now - self.last_progress)
+
+    def threshold(self, procs: int) -> float:
+        """Cores the tree must burn to count as progressing: `cores` per process, capped."""
+        return max(self.cores, min(self.cores * max(1, int(procs)),
+                                   max(self.cores, NO_PROGRESS_TREE_CAP_CORES)))
 
 
 def _env_seconds(name: str) -> float | None:
@@ -2509,6 +2522,75 @@ def _child_slow(pid: int, now: float) -> tuple[str, str] | None:
     return None
 
 
+#: THE CHILD'S OWN HEARTBEAT IS A HANG SIGNAL TOO (judge P0, 2026-11-25). Sweep pid 18528's
+#: GAUNTLET_HEARTBEAT.json and JUDGE_SWEEP_PHASE.json stopped at 12:56:39Z (beat every 30 s) and
+#: the resident only wrote an amber `quiet_heartbeat` note: its one kill rule was measured tree
+#: idleness, which the idle tree's baseline burn defeated. A RUNNING heartbeat for THIS child
+#: older than `heartbeat_hang_s` means the child's watchdog thread -- the one thing inside it
+#: that can end a stuck sweep -- is itself wedged, so the resident kills through the same path
+#: as an idle tree. And a child whose heartbeat says it FINISHED (or stalled and was exiting)
+#: but which is still alive EXIT_HANG_S later is hung on its way out (a pool or thread joined at
+#: interpreter exit); its outputs are already written, so it is killed too.
+HEARTBEAT_HANG_MULT = 3.0
+HEARTBEAT_HANG_BEATS = 10
+HEARTBEAT_HANG_SLACK_S = 300.0
+EXIT_HANG_S = 900.0
+
+
+def heartbeat_hang_s(beat_every_s: object = None) -> float:
+    """max(HEARTBEAT_STALE_S x MULT, BEATS beat intervals + SLACK): 1,800 s at a 30 s beat."""
+    try:
+        beat = float(beat_every_s) if beat_every_s is not None else WATCHDOG_BEAT_S
+    except (TypeError, ValueError):
+        beat = WATCHDOG_BEAT_S
+    beat = max(0.01, min(60.0, beat))
+    return max(HEARTBEAT_STALE_S * HEARTBEAT_HANG_MULT,
+               HEARTBEAT_HANG_BEATS * beat + HEARTBEAT_HANG_SLACK_S)
+
+
+def _child_heartbeat_hang(pid: int, now: float) -> str | None:
+    """Why sweep `pid` is hung by ITS OWN heartbeat, or None. Only that pid's heartbeat counts;
+    a child that never wrote one (it never held the lane) is never judged by this rule."""
+    hb = _read_json(HEARTBEAT)
+    if hb.get("pid") != pid:
+        return None
+    beat = _ts(hb.get("beat_utc"))
+    if beat is None:
+        return None
+    age = now - beat
+    status = str(hb.get("status") or "")
+    limit = heartbeat_hang_s(hb.get("beat_every_s"))
+    if status == "RUNNING" and age > limit:
+        return (f"its own heartbeat is {age:.0f}s old (> {limit:.0f}s) in phase "
+                f"{hb.get('phase')}: the sweep's watchdog is wedged")
+    if status and status != "RUNNING" and age > EXIT_HANG_S:
+        return (f"its heartbeat reads {status} {age:.0f}s ago (> {EXIT_HANG_S:.0f}s) and the "
+                "process has not exited")
+    return None
+
+
+def _release_locks_of(pid: int) -> list[str]:
+    """Remove the sweep locks a KILLED child held, so the next sweep does not wait behind it.
+
+    MEASURED 2026-11-25: after the 04:18Z kill the next child logged `certification_lane:
+    REFUSED duplicate writer; active lock` eight times to 04:26Z before it got the lane. Only a
+    lock stamped with exactly this pid on this host is removed. Never raises."""
+    import socket
+
+    root = _lock_root()
+    out: list[str] = []
+    if root is None:
+        return out
+    for name in SWEEP_LOCKS:
+        path = root / f"{name}.json"
+        doc = _read_json(path)
+        if doc.get("pid") == pid and str(doc.get("host") or "") == socket.gethostname():
+            with contextlib.suppress(OSError):
+                path.unlink()
+                out.append(name)
+    return out
+
+
 def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
                      clock: Callable[[], float] = time.monotonic,
                      wall: Callable[[], float] = time.time,
@@ -2540,6 +2622,7 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     tracker = _TreeProgress(t0, max_gap_s=(3.0 * poll_s) if poll_s > 0 else None)
     idle_kill_s = no_progress_s() + HEARTBEAT_STALE_S
     noted: set[str] = set()
+    hung: str | None = None
     while True:
         try:
             return int(child.wait(timeout=poll_s))
@@ -2548,6 +2631,9 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
         now = clock()
         tracker.update(sample(child.pid), now)
         if tracker.measured and tracker.idle_s(now) > idle_kill_s:
+            break
+        hung = _child_heartbeat_hang(child.pid, wall())
+        if hung is not None:
             break
         slow = _child_slow(child.pid, wall())
         if slow is None and hang_s is not None and now - t0 >= float(hang_s):
@@ -2559,12 +2645,14 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
                 f"sweep pid {child.pid}: {slow[1]}; its tree is "
                 + (f"progressing (last {tracker.idle_s(now):.0f}s ago)" if tracker.measured
                    else "UNMEASURED (no psutil)") + ": left running"), pid=child.pid)
-    why = (f"its whole tree burned < {NO_PROGRESS_CORES} core for {tracker.idle_s(now):.0f}s "
-           f"(> {idle_kill_s:.0f}s), measured by the resident")
+    why = hung or (f"its whole tree burned < {NO_PROGRESS_CORES} core per process for "
+                   f"{tracker.idle_s(now):.0f}s (> {idle_kill_s:.0f}s), measured by the resident")
     hb = _read_json(HEARTBEAT)
     kill = _kill_report(_kill_sweep_tree(child.pid))
     with contextlib.suppress(subprocess.TimeoutExpired):
         child.wait(timeout=30)
+    with contextlib.suppress(Exception):
+        kill["locks_released"] = _release_locks_of(child.pid)
     restored = restore_merge_outputs(
         pid=child.pid, since=_ts(hb.get("started_utc")) if hb.get("pid") == child.pid else None)
     record_stall("resident_kill", detail=f"sweep pid {child.pid}: {why}", pid=child.pid,
@@ -3458,7 +3546,8 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
     elif now_cpu < float(then_cpu):
         reasons.append("the tree's CPU total fell since the last beat (processes exited): "
                        "activity, not idleness")
-    elif (now_cpu - float(then_cpu)) / age >= NO_PROGRESS_CORES:
+    elif (now_cpu - float(then_cpu)) / age >= _TreeProgress(0.0).threshold(
+            int((first or {}).get("procs") or 1)):
         reasons.append(f"the tree burned {now_cpu - float(then_cpu):.0f} cpu-s since its last "
                        f"beat {age:.0f}s ago: it is progressing")
     else:

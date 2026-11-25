@@ -685,6 +685,18 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "sees removes an in-memory door note, not evidence.",
     ),
     DestructivePath(
+        path_id="external_gauntlet.bounded_cache_prune",
+        module="desks/mt5/scripts/external_gauntlet.py",
+        function="_bounded_cache_prune",
+        removes="gauntlet_cache cell files older than the prune age (3 days by mtime) -- a "
+                "rebuildable cache of built cells, never a verdict, certificate or ledger row",
+        reference="each file's own mtime, read by os.stat at removal time",
+        status="positive",
+        guard_site="_bounded_cache_prune",
+        note="POSITIVE EVIDENCE ONLY: a file leaves on its own measured age; an unreadable stat "
+             "removes nothing. Same rule as the unbounded prune it replaced (judge P0 "
+             "2026-11-25), now time-budgeted with a resume cursor."),
+    DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
         module="desks/mt5/scripts/run_sharded_gauntlet.py",
         function="_drop_merge_snapshot",
