@@ -34,10 +34,14 @@ WHY THE 75% CAP IS DECLARED HERE. A search of the tree on 2026-11-25 (`grep` for
 research cap across scripts, research, libs, ops and data) found no existing constant; the cap
 is the owner's figure from the decision above. `data/JUDGE_ELASTIC_CORES.json` may set
 `{"research_cap_share": x}` (0 < x <= 0.75 only: the switch can lower the ceiling, never raise it
-past the owner's cap) or `{"enabled": false}` (back to the fixed six, no push needed).
+past the owner's cap) or `{"enabled": false}` (back to the fixed six, no push needed: the next
+pass confines every judge pid to the reserved cores, so borrowed cores are given back, never
+kept; a malformed switch reads OFF and does the same).
 
-UNMEASURED IS A REAL ANSWER (L1.28a): no CPU sample, no memory reading, or no reservation in
-force means no borrowing; the judge keeps exactly the cores the sweep child confined it to.
+UNMEASURED IS A REAL ANSWER (L1.28a): no CPU sample or no memory reading means no borrowing --
+the judge is confined back to the floor (a failed reading re-enumerates the judge pids by a cheap
+census to do it; if even that fails the report says status UNMEASURED, shed_not_applied). No
+reservation in force means no floor exists: affinity is left exactly as the sweep child set it.
 
     python desks/mt5/scripts/judge_elastic_cores.py            # measure + apply + report
     python desks/mt5/scripts/judge_elastic_cores.py --dry-run  # measure + report only
@@ -213,35 +217,79 @@ def _confine_checked(row: dict[str, Any], cpus: list[int]) -> dict[str, Any]:
         return {"pid": row.get("pid"), "applied": False, "error": f"{type(exc).__name__}: {exc}"}
 
 
+def _judge_rows(m: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
+    """The judge pids to confine: the reading's own rows, or -- when the reading FAILED (audit
+    HOLD 2026-11-25, defect 2) -- a fresh cheap census (`classify(snapshot(0))`, no CPU sample).
+    Returns `(judge rows, census error or None)`. Never raises."""
+    rows: Any = m.get("rows") or []
+    if m.get("error"):
+        try:
+            rows = jp.classify(jp.snapshot(0.0))
+        except Exception as exc:
+            return [], f"{type(exc).__name__}: {exc}"
+    return [r for r in rows if r.get("cls") == "judge" and r.get("pid") is not None], None
+
+
 def run_pass(*, apply: bool = True, write: bool = True, reading: dict[str, Any] | None = None,
              now: datetime | None = None) -> dict[str, Any]:
-    """Measure, plan, apply the affinity to every judge pid, publish. Never raises."""
+    """Measure, plan, apply the affinity to every judge pid, publish. Never raises.
+
+    AUDIT HOLD 2026-11-25, both defects fail CLOSED now:
+      1. the switch OFF (enabled=false or malformed) while the reservation is in force CONFINES
+         every judge pid back to the reserved cores -- a judge that borrowed up to the ceiling
+         gives them back on the next pass, as the docstring promises;
+      2. a failed measurement sheds to the floor and still finds the judge pids by a cheap
+         census; if even that fails the report says UNMEASURED with `shed_not_applied`.
+    """
     at = (now or datetime.now(UTC)).isoformat(timespec="seconds")
     sw = switch()
     m = reading if reading is not None else measure()
     n = int(m.get("n_cpus") or 0)
     res = jp.reserved_cores(n or None)
     workers_planned = os.environ.get("GAUNTLET_WORKERS") or UNMEASURED
-    if not sw["enabled"] or not res.get("enabled"):
-        why = sw["why"] if not sw["enabled"] else f"reservation not in force: {res.get('why')}"
-        p = {"floor": len(res.get("cpus") or []), "ceiling": len(res.get("cpus") or []),
-             "workers_now": len(res.get("cpus") or []), "cpus": list(res.get("cpus") or []),
-             "borrowed": 0, "shed": False, "reason": f"OFF -- {why}; affinity left untouched"}
+    measure_error = m.get("error")
+    floor_cpus = sorted(res.get("cpus") or [])
+    target: list[int] | None = None   # the cpus every judge pid is set to, None = untouched
+
+    def _floor(reason: str) -> dict[str, Any]:
+        return {"floor": len(floor_cpus), "ceiling": len(floor_cpus),
+                "workers_now": len(floor_cpus), "cpus": list(floor_cpus), "borrowed": 0,
+                "shed": True, "reason": reason}
+
+    if not res.get("enabled"):
+        why = f"{sw['why']}; " if not sw["enabled"] else ""
+        p = {**_floor(f"OFF -- {why}reservation not in force ({res.get('why')}): no floor to "
+                      "confine to, affinity left untouched"), "shed": False}
         mode = "off"
+    elif not sw["enabled"]:
+        p = _floor(f"OFF -- {sw['why']}; every judge pid confined back to the reserved floor "
+                   f"({len(floor_cpus)} cores)")
+        mode, target = "off", list(floor_cpus)
+    elif measure_error:
+        p = _floor(f"UNMEASURED (measure failed: {measure_error}): shed to the floor")
+        mode, target = ("apply" if apply else "dry-run"), list(floor_cpus)
     else:
         p = plan(n_cpus=n, floor_cpus=list(res["cpus"]), percpu_busy=m.get("percpu_busy"),
                  judge_cores=m.get("judge_cores"), live_cores=m.get("live_cores"),
                  other_cores=m.get("other_cores"), free_mb=m.get("free_mb"),
                  total_mb=m.get("total_mb"), unreadable=int(m.get("unreadable") or 0),
                  previous=_previous(), cap_share=float(sw["cap_share"]))
-        mode = "apply" if apply else "dry-run"
+        mode, target = ("apply" if apply else "dry-run"), list(p["cpus"])
     applied: list[dict[str, Any]] = []
-    if mode == "apply":
-        for r in m.get("rows") or []:
-            if r.get("cls") == "judge" and r.get("pid") is not None:
-                applied.append(_confine_checked(r, list(p["cpus"])))
+    census_error: str | None = None
+    if apply and target is not None:
+        judge_rows, census_error = _judge_rows(m)
+        for r in judge_rows:
+            applied.append(_confine_checked(r, target))
+    status = UNMEASURED if (measure_error or census_error) else "MEASURED"
+    # The floor was wanted but could not be reached: no reservation known while the reading
+    # failed, or no judge pid could be enumerated. Said loudly, never silently "fine".
+    shed_not_applied = bool(apply and ((target is not None and census_error)
+                                       or (target is None and measure_error)))
     doc = {
-        "at": at, "mode": mode, "switch": sw,
+        "at": at, "mode": mode, "switch": sw, "status": status,
+        "shed_not_applied": shed_not_applied,
+        "measure_error": measure_error, "census_error": census_error,
         "workers_now": p["workers_now"], "floor": p["floor"], "ceiling": p["ceiling"],
         "research_cap_share": sw.get("cap_share"), "cpus": p["cpus"],
         "borrowed": p.get("borrowed", 0), "shed": p.get("shed", False), "reason": p["reason"],

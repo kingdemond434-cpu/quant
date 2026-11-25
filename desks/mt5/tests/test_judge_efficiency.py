@@ -286,6 +286,90 @@ def test_off_or_no_reservation_leaves_affinity_untouched(tmp_path, monkeypatch) 
     assert doc["mode"] == "off"
 
 
+def _reserved(monkeypatch, tmp_path, switch_text: str | None) -> list:
+    monkeypatch.setattr(ec, "REPORT", tmp_path / "r.json")
+    sw = tmp_path / "JUDGE_ELASTIC_CORES.json"
+    if switch_text is not None:
+        sw.write_text(switch_text, "utf-8")
+    monkeypatch.setattr(ec, "SWITCH", sw)
+    monkeypatch.setattr(ec.jp, "reserved_cores",
+                        lambda n=None, path=None: {"enabled": True, "cpus": FLOOR, "why": "t"})
+    touched: list[tuple[int, list[int]]] = []
+    monkeypatch.setattr(ec, "_confine_checked",
+                        lambda row, cpus: touched.append((row["pid"], cpus)) or {"applied": True})
+    return touched
+
+
+def test_the_off_switch_gives_borrowed_cores_back_to_the_floor(tmp_path, monkeypatch) -> None:
+    """AUDIT HOLD defect 1: OFF (enabled=false, or a malformed switch, which also reads OFF) with
+    the reservation in force confines every judge pid -- and only judge pids -- to the reserved
+    cores; a dry run still touches nothing."""
+    rows = [{"pid": 1, "cls": "judge"}, {"pid": 2, "cls": "miner"}, {"pid": 3, "cls": "live"},
+            {"pid": 5, "cls": "judge"}]
+    reading = {"n_cpus": 18, "percpu_busy": [0.0] * 18, "judge_cores": 12.0, "live_cores": 0.0,
+               "other_cores": 0.0, "free_mb": 60 * GB, "total_mb": 96 * GB, "unreadable": 0,
+               "rows": rows}
+    for text in (json.dumps({"enabled": False}), "{not json",
+                 json.dumps({"research_cap_share": 0.9})):
+        touched = _reserved(monkeypatch, tmp_path, text)
+        doc = ec.run_pass(reading=reading)
+        assert doc["mode"] == "off" and doc["workers_now"] == 6 and doc["borrowed"] == 0
+        assert touched == [(1, FLOOR), (5, FLOOR)], text
+        assert doc["applied"]["judge_pids"] == 2 and not doc["shed_not_applied"]
+        touched.clear()
+        ec.run_pass(reading=reading, apply=False)
+        assert touched == []
+
+
+def test_a_failed_measurement_still_sheds_every_judge_pid_to_the_floor(tmp_path,
+                                                                        monkeypatch) -> None:
+    """AUDIT HOLD defect 2: measure() failed (rows=[]), so the pass re-enumerates the judge pids
+    by a cheap census and confines them to the floor; if the census fails too, the report says
+    UNMEASURED with shed_not_applied -- never a silent 'fine'."""
+    touched = _reserved(monkeypatch, tmp_path, None)
+    calls: list[float] = []
+
+    def snap(s=0.0):
+        calls.append(s)
+        return [{"pid": 7, "ppid": 0, "name": "python.exe",
+                 "cmdline": ["python", "external_gauntlet.py"], "nice": 0x20, "cpu_cores": None,
+                 "create_time": 1.0},
+                {"pid": 8, "ppid": 0, "name": "terminal64.exe", "cmdline": ["terminal64.exe"],
+                 "nice": 0x8000, "cpu_cores": None, "create_time": 1.0}]
+
+    monkeypatch.setattr(ec.jp, "snapshot", snap)
+    failed = {"n_cpus": 18, "percpu_busy": None, "judge_cores": None, "live_cores": None,
+              "other_cores": None, "free_mb": None, "total_mb": None, "unreadable": 0,
+              "rows": [], "error": "RuntimeError: boom"}
+    doc = ec.run_pass(reading=failed)
+    assert calls == [0.0], "a cheap census, no CPU sample"
+    assert touched == [(7, FLOOR)]
+    assert doc["shed"] and doc["workers_now"] == 6 and doc["status"] == "UNMEASURED"
+    assert not doc["shed_not_applied"] and "UNMEASURED" in doc["reason"]
+
+    touched.clear()
+    monkeypatch.setattr(ec.jp, "snapshot",
+                        lambda s=0.0: (_ for _ in ()).throw(RuntimeError("census down")))
+    doc = ec.run_pass(reading=failed)
+    assert touched == []
+    assert doc["status"] == "UNMEASURED" and doc["shed_not_applied"] is True
+    assert "census down" in doc["census_error"]
+    on_disk = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert on_disk["shed_not_applied"] is True and on_disk["status"] == "UNMEASURED"
+
+    # The real measure() failing feeds the same path: a raising snapshot, end to end.
+    import types
+
+    fake = types.SimpleNamespace(
+        cpu_count=lambda: 18,
+        virtual_memory=lambda: types.SimpleNamespace(available=60 * 2**30, total=96 * 2**30),
+        cpu_percent=lambda *a, **k: [10.0] * 18)
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    m = ec.measure(0.0)
+    assert m["rows"] == [] and "census down" in m["error"]
+    assert ec.run_pass(reading=m)["shed_not_applied"] is True
+
+
 def test_measure_uses_psutil_and_never_raises(monkeypatch) -> None:
     import types
 
