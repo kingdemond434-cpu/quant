@@ -285,3 +285,14 @@ def test_the_file_inventory_imports_the_env_registry_one_source_each() -> None:
     assert rep["registry_error"] is None
     src = Path(cc_files.__file__).read_text("utf-8")
     assert "EIA_API_KEY" not in src          # the env half is never restated in the script
+
+
+def test_clock_keys_are_posix_on_a_windows_path() -> None:
+    """The box is Windows: `str(p.relative_to(root))` gave `desks\\mt5\\research\\...`, so no
+    clock ever matched a consumer path there (the two asserts on ks["clocks"] were red on the
+    box only). Keys are POSIX on every OS."""
+    from pathlib import PureWindowsPath
+
+    root = PureWindowsPath(r"C:\opt\quant")
+    p = PureWindowsPath(r"C:\opt\quant\desks\mt5\research\hourly_cycle.py")
+    assert _cc().clock_key(p, root) == "desks/mt5/research/hourly_cycle.py"
