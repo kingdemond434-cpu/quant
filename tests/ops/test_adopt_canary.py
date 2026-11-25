@@ -160,12 +160,19 @@ def _journal(root, rows):
     f.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
 
 
+def _ceiling(root, v=0.006):
+    f = root / ac.CEILING_SRC_REL
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(f"E8_CERT_CEILING = {v}\n", encoding="utf-8")
+
+
 def _run(cli, root, *args):
     return cli.main(["--root", str(root), *args])
 
 
 def test_cli_pass_lifts_and_records(tmp_path, monkeypatch, capsys):
     cli = _cli()
+    _ceiling(tmp_path, 0.01)
     monkeypatch.setattr(ag, "page", lambda *a, **k: None)
     nrh.place_canary("t", release_id=B, allow=["asia"], prev_head=A,
                      deadline=datetime.now(UTC) + timedelta(hours=24), root=tmp_path)
@@ -197,28 +204,90 @@ def test_cli_fail_asks_for_the_rollback_and_keeps_the_hold(tmp_path, monkeypatch
     assert nrh.canary(tmp_path) is None
 
 
-def test_cli_expired_pages_and_keeps(tmp_path, monkeypatch, capsys):
+def test_cli_expired_lifts_into_the_watch_and_pages(tmp_path, monkeypatch, capsys):
     cli = _cli()
     pages = []
     monkeypatch.setattr(ag, "page", lambda root, m: pages.append(m))
     nrh.place_canary("t", release_id=B, allow=["asia"], prev_head=A,
                      deadline=datetime.now(UTC) - timedelta(seconds=1), root=tmp_path)
     assert _run(cli, tmp_path, "canary") == 0
-    assert json.loads(capsys.readouterr().out)["decision"] == "CANARY_EXPIRED"
-    assert nrh.canary(tmp_path) and pages
+    assert json.loads(capsys.readouterr().out)["decision"] == "CANARY_EXPIRED_WATCH"
+    assert nrh.canary(tmp_path) is None and pages
+    st = ac.load_state(tmp_path)
+    assert st["mode"] == "expired_watch" and st["prev_head"] == A
+    # the watch then rolls back on a bound failure on any window
+    _journal(tmp_path, [_row(at=(datetime.now(UTC) + timedelta(seconds=1)).isoformat(),
+                             window="london_am", lot=0.9)])
+    assert _run(cli, tmp_path, "canary") == ag.ROLLBACK_FAILED
+    assert json.loads(capsys.readouterr().out)["rollback_to"] == A
+
+
+def _recent(root):
+    _journal(root, [_row(at=(datetime.now(UTC) - timedelta(days=2)).isoformat())])
 
 
 def test_cli_arm_writes_the_canary_with_policy(tmp_path):
     cli = _cli()
+    _recent(tmp_path)
     code, doc = cli._arm(tmp_path, B, A, {"decision": "HEALTHY"})
     assert code == ag.GO and doc["canary_armed"]
     h = nrh.canary(tmp_path)
     assert h["allow"] == ["asia"] and h["prev_head"] == A and h["release_id"] == B
 
 
+def test_a_canary_window_that_never_trades_armed_goes_straight_to_the_watch(tmp_path,
+                                                                            monkeypatch):
+    cli = _cli()
+    pages = []
+    monkeypatch.setattr(ag, "page", lambda root, m: pages.append(m))
+    _journal(tmp_path, [_row(armed=False), _row(at="2026-01-01T07:00:00+00:00")])
+    code, doc = cli._arm(tmp_path, B, A, {})
+    assert code == ag.GO and doc["canary_mode"] == "watch_only" and pages
+    assert nrh.canary(tmp_path) is None
+    assert ac.load_state(tmp_path)["prev_head"] == A
+
+
+def test_a_canary_error_pages_and_adopts_nothing(tmp_path, monkeypatch, capsys):
+    cli = _cli()
+    pages = []
+    monkeypatch.setattr(ag, "page", lambda root, m: pages.append(m))
+    monkeypatch.setattr(nrh, "canary", lambda root: 1 / 0)
+    assert _run(cli, tmp_path, "canary") == ag.ERROR and pages
+
+
+# --------------------------------------------------------- the published budget, the window
+def test_published_budget_comes_from_the_files(tmp_path):
+    src = tmp_path / ac.CEILING_SRC_REL
+    src.parent.mkdir(parents=True)
+    assert ac.published_frac(tmp_path, "asia")[0] is None
+    src.write_text("X = 1\nE8_CERT_CEILING = 0.006\n", encoding="utf-8")
+    assert ac.published_frac(tmp_path, "asia") == (0.006, "e8_code_ceiling")
+    book = tmp_path / ac.CERT_BOOK_REL
+    book.parent.mkdir(parents=True)
+    book.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.004}}), encoding="utf-8")
+    assert ac.published_frac(tmp_path, "asia") == (0.004, "cert_book")
+    book.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.02}}), encoding="utf-8")
+    assert ac.published_frac(tmp_path, "asia")[0] == 0.006  # never above the ceiling
+
+
+def test_the_lane_cannot_vouch_for_its_own_budget():
+    assert ac.problems(_row(), cap=0.01) == []
+    assert any("published budget" in p for p in ac.problems(_row(), cap=0.0005))
+    assert any("could not be read" in p for p in ac.problems(_row(), cap=None))
+
+
+def test_both_legs_of_a_window_must_fit_the_room():
+    legs = [_row(), _row(side="sell_stop", price=2640.0, sl=2645.0, tp=2630.0)]
+    assert ac.window_sums(legs) == []
+    tight = [dict(r, room_to_floor=150.0) for r in legs]  # each leg 100 fits, both 200 do not
+    assert all(ac.problems(r) == [] for r in tight)
+    assert ac.window_sums(tight) and ac.judge(_hold(), tight, NOW)["verdict"] == ac.FAIL
+
+
 def test_arm_failure_is_unhealthy(tmp_path, monkeypatch):
     cli = _cli()
     monkeypatch.setattr(nrh, "place_canary", lambda *a, **k: False)
+    _recent(tmp_path)
     code, _ = cli._arm(tmp_path, B, A, {})
     assert code == ag.UNHEALTHY
 

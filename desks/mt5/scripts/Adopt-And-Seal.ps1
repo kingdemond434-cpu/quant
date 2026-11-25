@@ -528,6 +528,7 @@ if ($script:GuardHead) {
 # or a post-lift SPIKE -- exits 12: the code goes back to the last head that traded cleanly under
 # the guard's own hold, the restored release must pass health (which lifts that hold), and only
 # then does the canary hold for the bad release come down. A failed rollback leaves both up, paged.
+# A canary check that errors adopts nothing this run.
 $can = Invoke-AdoptGuard @("canary")
 if ($can.Code -eq 12) {
     $to = [string]$can.Doc.rollback_to; $bad = [string]$can.Doc.bad
@@ -542,9 +543,22 @@ if ($can.Code -eq 12) {
     Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
     $after = Invoke-AdoptGuard @("health", "--sealed-at", "HEAD", "--since", $rbAt, "--gateway-expected", $script:GatewayExpected, "--page-on-fail")
     if ($after.Code -ne 0) { Done 12 "canary-rolled-back-unhealthy" }
-    $null = Invoke-AdoptGuard @("canary-clear", "--release", $bad)
+    # NATIVE, NOT THE GUARD (Audit should-fix 2): the tree is now the pre-canary code, whose
+    # adopt_guard has no canary-clear. Only the canary hold for THIS bad release is removed.
+    $cf = Join-Path $desk "data\new_risk_holds\adopt_canary.json"
+    $cleared = $false
+    try {
+        $ch = Get-Content -Raw -LiteralPath $cf | ConvertFrom-Json
+        if ([string]$ch.release_id -eq $bad) { Remove-Item -LiteralPath $cf -ErrorAction Stop }
+        $cleared = $true  # removed, or a newer release's canary: not ours to clear
+    } catch { $cleared = -not (Test-Path -LiteralPath $cf) }
+    if (-not $cleared) {
+        Log "the canary hold for rolled-back $($bad.Substring(0, 12)) could not be cleared; every lane stays held" | Out-Host
+        Done 12 "canary-clear-failed"
+    }
     Done 0 "canary-rolled-back"
 }
+if ($can.Code -ne 0) { Log "canary check failed; not adopting this run (paged)" | Out-Host; Done 8 "canary-error" }
 $pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget)
 if ($pre.Code -eq 10) {
     $held = switch ($pre.Decision) {

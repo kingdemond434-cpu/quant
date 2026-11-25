@@ -24,7 +24,8 @@ own. See `libs.ops.adopt_guard` for the rules; Adopt-And-Seal.ps1 is the only sc
 THE ADOPT CANARY (libs/ops/adopt_canary). `health --arm-canary --release <sha> --prev <sha>` puts
 the canary hold up BEFORE it lifts the guard's own hold, so new code never opens a position
 outside the canary window(s) until one has sent a clean order on it. `canary` (first thing in
-every Adopt-And-Seal run) lifts it on PASS, keeps it on WAIT, keeps it and pages on EXPIRED, and on
+every Adopt-And-Seal run) lifts it on PASS, keeps it on WAIT, lifts it into the watch and pages on
+EXPIRED (a window with no armed send in 7 days is never armed: straight to the watch), and on
 FAIL -- or a post-lift SPIKE -- exits 12 with `rollback_to` and `bad`; the caller rolls back with
 the hold standing and then calls `canary-clear`.
 
@@ -63,9 +64,27 @@ def _since(v: str) -> datetime:
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
+#: e8_gold's windows (GOLD_WINDOWS): the published budget is read for each.
+WINDOWS = ("asia", "london_am", "afternoon")
+
+
+def _caps(root: Path) -> dict[str, float | None]:
+    return {w: adopt_canary.published_frac(root, w)[0] for w in WINDOWS}
+
+
 def _arm(root: Path, release: str, prev: str, doc: dict) -> tuple[int, dict]:
     pol = ag.load_policy(root)
-    deadline = datetime.now(UTC) + timedelta(hours=float(pol["canary_deadline_h"]))
+    now = datetime.now(UTC)
+    # A CANARY THAT CANNOT SING (Audit should-fix 1): a window with no armed send in 7 days would
+    # hold every lane until someone noticed. Then the new code goes straight to the watch.
+    if not adopt_canary.recently_armed(adopt_canary.rows(root), pol["canary_allow"], now):
+        adopt_canary.save_state(root, {"lifted_at": now.isoformat(), "release_id": release,
+                                       "prev_head": prev, "mode": "watch_only"})
+        ag.page(root, f"canary windows {pol['canary_allow']} sent nothing armed in "
+                      f"{adopt_canary.RECENT_DAYS} days: {release[:12]} goes straight to the "
+                      f"{pol['canary_watch_h']}h post-adoption watch")
+        return ag.GO, {**doc, "canary_armed": False, "canary_mode": "watch_only"}
+    deadline = now + timedelta(hours=float(pol["canary_deadline_h"]))
     ok = new_risk_hold.place_canary(
         f"new code {release[:12]} trades only the canary window(s) until one sends cleanly",
         release_id=release, allow=list(pol["canary_allow"]), deadline=deadline,
@@ -99,7 +118,8 @@ def _canary(root: Path) -> int:
             if lifted is None or not st.get("prev_head"):
                 return _emit(root, "canary", ag.GO, {"decision": "NO_CANARY"})
             hours = float(ag.load_policy(root)["canary_watch_h"])
-            w = adopt_canary.watch(lifted, adopt_canary.rows(root), now, hours)
+            w = adopt_canary.watch(lifted, adopt_canary.rows(root), now, hours,
+                                   caps=_caps(root))
             if w["verdict"] != "SPIKE":
                 return _emit(root, "canary", ag.GO, {"decision": f"WATCH_{w['verdict']}", **w})
             ag.page(root, f"after the canary lift, {st.get('release_id', '?')[:12]} shows "
@@ -108,7 +128,7 @@ def _canary(root: Path) -> int:
             return _emit(root, "canary", ag.ROLLBACK_FAILED,
                          {"decision": "CANARY_SPIKE", "rollback_to": st["prev_head"],
                           "bad": st.get("release_id"), **w})
-        v = adopt_canary.judge(hold, adopt_canary.rows(root), now)
+        v = adopt_canary.judge(hold, adopt_canary.rows(root), now, caps=_caps(root))
         if v["verdict"] == adopt_canary.PASS:
             lifted = new_risk_hold.lift(by=new_risk_hold.CANARY_BY, root=root)
             if lifted:
@@ -124,11 +144,22 @@ def _canary(root: Path) -> int:
                          {"decision": "CANARY_FAIL", "rollback_to": hold.get("prev_head"),
                           "bad": hold.get("release_id"), **v})
         if v["verdict"] == adopt_canary.EXPIRED:
+            # silence proves nothing either way: lift into the watch, which still rolls back
+            lifted = new_risk_hold.lift(by=new_risk_hold.CANARY_BY, root=root)
+            if lifted:
+                adopt_canary.save_state(root, {"lifted_at": now.isoformat(),
+                                               "release_id": hold.get("release_id"),
+                                               "prev_head": hold.get("prev_head"),
+                                               "mode": "expired_watch"})
             ag.page(root, f"no canary send on {str(hold.get('release_id'))[:12]} by its deadline; "
-                          "new risk stays held on every lane")
-            return _emit(root, "canary", ag.GO, {"decision": "CANARY_EXPIRED", **v})
+                          + ("lifted into the post-adoption watch" if lifted
+                             else "the canary hold could NOT be lifted; every lane held"))
+            return _emit(root, "canary", ag.GO if lifted else ag.ROLLBACK_FAILED,
+                         {"decision": "CANARY_EXPIRED_WATCH" if lifted
+                          else "CANARY_EXPIRED_LIFT_FAILED", **v})
         return _emit(root, "canary", ag.GO, {"decision": "CANARY_WAIT", **v})
-    except Exception as exc:  # fail closed: the hold stays, and say why
+    except Exception as exc:  # fail closed: the hold stays, nothing is adopted, and say why
+        ag.page(root, f"the canary check failed ({type(exc).__name__}: {exc}); not adopting")
         return _emit(root, "canary", ag.ERROR,
                      {"decision": "ERROR", "reason": f"{type(exc).__name__}: {exc}"})
 
@@ -139,6 +170,9 @@ def _canary_clear(root: Path, release: str) -> int:
     if hold and hold.get("release_id") == release:
         ok = new_risk_hold.lift(by=new_risk_hold.CANARY_BY, root=root)
         decision = "CANARY_CLEARED" if ok else "CANARY_CLEAR_FAILED"
+        if not ok:
+            ag.page(root, f"the canary hold for rolled-back {release[:12]} could not be lifted; "
+                          "every lane stays held")
     else:
         ok, decision = True, "NOT_THIS_RELEASE"
     adopt_canary.save_state(root, {"cleared_at": datetime.now(UTC).isoformat(),
@@ -242,6 +276,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif a.cmd == "drift":
             code, doc = ag.drift_evidence(root, a.run)
+            if code != ag.GO:
+                ag.page(root, f"box code drift could not be saved as evidence; not adopting: "
+                              f"{doc.get('reason')}")
         elif a.cmd == "state-apply":
             from libs.ops import desired_state
 
