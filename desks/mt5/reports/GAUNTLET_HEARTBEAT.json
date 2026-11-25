@@ -1,62 +1,34 @@
 {
- "pid": 15964,
- "create_time": 1795516531.3132753,
- "status": "STALLED",
- "started_utc": "2026-11-24T10:35:31+00:00",
- "beat_utc": "2026-11-25T04:09:06+00:00",
- "beats": 1565,
+ "pid": 18528,
+ "create_time": 1795580823.7648816,
+ "status": "RUNNING",
+ "started_utc": "2026-11-25T04:27:04+00:00",
+ "beat_utc": "2026-11-25T04:35:06+00:00",
+ "beats": 16,
  "beat_every_s": 30.0,
- "phase": "merge_and_publish",
- "phase_started_utc": "2026-11-25T01:09:19+00:00",
- "phase_elapsed_s": 10787.2,
- "phases_done": {
-  "plan": 3767.5,
-  "prewarm": 42398.2,
-  "plan_handoff": 2767.6,
-  "build_shards": 1289.4,
-  "collect_and_cut": 2107.8,
-  "rule_shards": 89.6
- },
+ "phase": "plan",
+ "phase_started_utc": "2026-11-25T04:27:14+00:00",
+ "phase_elapsed_s": 472.5,
+ "phases_done": {},
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
-  "run_s": 129422.8,
-  "run_deadline_utc": "2026-11-25T22:32:34+00:00",
-  "phase_s": 153594.0,
-  "phase_deadline_utc": "2026-11-26T19:49:13+00:00",
-  "no_progress_s": 1800.0,
-  "consecutive_stalls": 0
+  "run_s": 172800.0,
+  "run_deadline_utc": "2026-11-27T04:27:04+00:00",
+  "phase_s": 128470.8,
+  "phase_deadline_utc": "2026-11-26T16:08:25+00:00",
+  "no_progress_s": 7200.0,
+  "consecutive_stalls": 2
  },
- "run_deadline_utc": "2026-11-25T22:32:34+00:00",
+ "run_deadline_utc": "2026-11-27T04:27:04+00:00",
  "slow": [],
- "shards": {
-  "phase": "rule",
-  "total": 15,
-  "done": 15,
-  "failed": 0,
-  "running": 0,
-  "stalled": 0,
-  "slow": 0,
-  "retrying": 0,
-  "shard_slow_s": 1800.0,
-  "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-11-25T01:07:49+00:00"
- },
+ "shards": {},
  "tree": {
   "procs": 1,
-  "rss_mb": 120.6,
-  "cpu_s": 5268.1
+  "rss_mb": 3157.5,
+  "cpu_s": 281.2
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-25T03:38:39+00:00",
- "idle_s": 1826.7,
- "progress_gaps": 12,
- "reason": "no_progress",
- "detail": "the whole process tree burned < 0.02 core for 1827s in phase merge_and_publish (deadlocked, or paging instead of computing)",
- "killed": 0,
- "orphans": [],
- "locks_released": [
-  "certification_lane",
-  "external_gauntlet"
- ],
- "restored_from_merge_snapshot": []
+ "last_progress_utc": "2026-11-25T04:35:06+00:00",
+ "idle_s": 0.0,
+ "progress_gaps": 0
 }
