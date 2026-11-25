@@ -530,8 +530,21 @@ def authorized_runs(base: Path = BASE,
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
-    universal, canon_from = _canon(base)
+    universal, _canon_from = _canon(base)
     evicted = _evicted_keys(base)
+    return runs_from_canon(universal, evicted=evicted, lanes=lanes)
+
+
+def runs_from_canon(universal: dict, *, evicted: set[str] | frozenset[str] = frozenset(),
+                    lanes: tuple[str, ...] = ("h1", "scalp")) -> list[dict]:
+    """`authorized_runs` over a canon document already IN MEMORY (2026-11-25, invariant I1).
+
+    The body of `authorized_runs`, unchanged, split out so the certification transaction
+    (`research/clock_coverage.certify_with_clocks`) can derive the clocks a canon it is ABOUT TO
+    WRITE owes, before the write, from the same door the engine walks through. One derivation:
+    a second reading of the canon is how two organs came to disagree about which clock is which.
+    The caller owns clearing `DROPPED_CERTIFICATES` / `EVICTED_CERTIFICATES`.
+    """
     if not is_exact_policy(universal.get("gate_policy")):
         # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
         # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk

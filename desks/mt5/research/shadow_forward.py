@@ -21,6 +21,7 @@ import os
 import stat
 import sys
 import time
+import time as _wall  # the state lock's clock: tests replace `time` with a fake monotonic
 import traceback
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -59,6 +60,68 @@ def _write_state(path: Path, state: dict) -> None:
     _persist_state(path, state, final=True)
 
 
+def new_clock_record(stamp: str, hold: str = "") -> dict:
+    """THE ONE SHAPE OF A NEW FORWARD CLOCK (2026-11-25, invariant I1). Written by this engine's
+    enrolment checkpoint, by the certification transaction and by the coverage backfill
+    (`research/clock_coverage.py`), so a clock opened at certification time is byte-for-byte the
+    clock the engine would have opened on its next pass. Zero capital, no authority: promotion
+    stays the promoter's certificate-gated act, and the replay starts at the next pass that
+    reaches it (never-evaluated clocks go early in the rotation)."""
+    row = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+           "first_entry": None, "last_entry": None, "status": "ACTIVE",
+           "enrolled_at": stamp, "promotion_authority": False,
+           "order_authority": False,
+           "evidence_note": "clock enrolled; forward replay pending"}
+    stamp_hold(row, hold)
+    return row
+
+
+@contextlib.contextmanager
+def state_lock(path: Path, timeout_s: float = 30.0, stale_s: float = 300.0) -> Iterator[bool]:
+    """One writer at a time on a forward ledger's read-merge-write (2026-11-25, invariant I1).
+
+    The certification transaction and the coverage backfill ADD clock rows to shadow_state.json
+    while this engine may be mid-pass; `_persist_state` merges on write, but a read taken before
+    another organ's write and replaced after it would drop that organ's rows. Both sides take
+    this lock around read-merge-write only (never around a replay). Yields whether it was
+    acquired: a lock that cannot be had in `timeout_s` is logged and the write proceeds, because
+    an unwritten state file froze the forward book before (a lost row is re-opened by the
+    hourly backfill and shows RED on CLOCK_COVERAGE.json until it is). A lock older than
+    `stale_s` belongs to a dead writer and is broken."""
+    lock = path.with_name(f".{path.name}.lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = _wall.monotonic() + timeout_s
+    fd: int | None = None
+    while True:
+        try:
+            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, f"{os.getpid()} {datetime.now(UTC).isoformat()}".encode())
+            break
+        except FileExistsError:
+            try:
+                age = _wall.time() - lock.stat().st_mtime
+            except OSError:
+                continue                  # released between the two calls: try again
+            if age > stale_s:
+                with contextlib.suppress(OSError):
+                    lock.unlink()
+                continue
+            if _wall.monotonic() >= deadline:
+                slog(f"state lock {lock.name} not acquired in {timeout_s:.0f}s; writing unlocked")
+                break
+            _wall.sleep(0.05)
+        except OSError as exc:
+            slog(f"state lock {lock.name} unavailable ({type(exc).__name__}); writing unlocked")
+            break
+    try:
+        yield fd is not None
+    finally:
+        if fd is not None:
+            os.close(fd)
+            with contextlib.suppress(OSError):
+                lock.unlink()
+
+
 def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
     """Persist every new certified clock before expensive evidence replay begins."""
     seen: set[str] = set()
@@ -89,12 +152,7 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                 stamp_hold(state[key], hold)
                 changed += 1
             continue
-        state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
-                      "first_entry": None, "last_entry": None, "status": "ACTIVE",
-                      "enrolled_at": stamp, "promotion_authority": False,
-                      "order_authority": False,
-                      "evidence_note": "clock enrolled; forward replay pending"}
-        stamp_hold(state[key], hold)
+        state[key] = new_clock_record(stamp, hold)
         added += 1
     if added or changed:
         state["configured_sleeves"] = len(seen)
@@ -325,8 +383,19 @@ def record_restamp_missed_growth(key: str, st: dict, now: datetime | None = None
     return True
 
 
-def certified_sleeves() -> list[tuple[str, str, dict]]:
+#: certificate name -> {"key": clock key it enrols under} or {"why": why it gets none}, from the
+#: LAST `certified_sleeves()` pass (2026-11-25, invariant I1). `research/clock_coverage.py` reads
+#: it to say, per certificate, which clock owns it -- after the identity and cell collapses, so
+#: an alias names its survivor -- without re-deriving a key the engine already minted.
+CERT_DISPOSITION: dict[str, dict[str, str]] = {}
+
+
+def certified_sleeves(runs: list[dict] | None = None) -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
+
+    `runs` (2026-11-25): the authorized runs to derive from; None reads them from the canon on
+    disk (`shadow_admission.authorized_runs`), which is every production caller. The
+    certification transaction passes the runs of the canon it is about to write.
 
     Authority AND parameters come from `shadow_admission.authorized_runs` -- the same fail-closed
     door, now carrying the parameterization that actually passed the gauntlet. One clock per
@@ -340,6 +409,8 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     rows: list[tuple[str, str, dict, str]] = []
     HELD_AT_INTEGRITY.clear()
     RESTAMP_HELD.clear()
+    CERT_DISPOSITION.clear()
+    _cert_of_row: dict[int, str] = {}
     restamped = restamped_certificates()
     # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
     # when the placebo audit shows the certifier caught every planted trap and an independent
@@ -347,9 +418,14 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     # already runs is never held. Not a quota: no count, no slot, no ranking.
     gate, clocked, gate_why = _integrity_door()
     try:
-        from shadow_admission import authorized_runs
-        for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
+        if runs is None:
+            from shadow_admission import authorized_runs
+            runs = authorized_runs(BASE)
+        for run in sorted(runs, key=lambda r: (r["symbol"], r["selector"])):
             fam = run["family"]
+            _cert = str(run.get("certificate") or "")
+            CERT_DISPOSITION[_cert] = {"why": "ENROL-GAP: refused at enrolment (logs/shadow.log)"}
+            _cert_of_row[len(rows)] = _cert
             if fam == "session_range_breakout":
                 if run["selector"] not in WINDOWS:
                     slog(f"ENROL-GAP: certified {run['symbol']}.{run['selector']} has no window "
@@ -413,7 +489,19 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
-    return _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+        for _c, _d in CERT_DISPOSITION.items():
+            if "key" not in _d:
+                _d["why"] = f"UNMEASURED: certified_sleeves failed ({type(exc).__name__})"
+    out = _one_clock_per_identity(rows, frozen_params=_frozen_clock_params())
+    for _i, _c in _cert_of_row.items():
+        if _i < len(rows):
+            _r = rows[_i]
+            try:
+                _k = sleeve_key(_r[0], _r[1], dict(_r[2] or {}), _r[3], _r[4])
+            except Exception:
+                continue
+            CERT_DISPOSITION[_c] = {"key": ALIAS_MERGED.get(_k, _k)}
+    return out
 
 
 def _frozen_clock_params() -> dict[str, dict]:
@@ -1129,18 +1217,19 @@ def _persist_state(path: Path, state: dict, *, final: bool) -> int:
     rows this pass evaluated.
     """
     touched = getattr(state, "touched", None)
-    disk = _read_state(path) if touched is not None else None
-    if disk is None:
-        doc = dict(state)
-    else:
-        doc = dict(disk)
-        for key in touched:
-            if key in state:
-                doc[key] = state[key]
-        for key in _META_KEYS:
-            if key in state:
-                doc[key] = state[key]
-    _atomic_write_text(path, json.dumps(doc, indent=2, default=str))
+    with state_lock(path):
+        disk = _read_state(path) if touched is not None else None
+        if disk is None:
+            doc = dict(state)
+        else:
+            doc = dict(disk)
+            for key in touched:
+                if key in state:
+                    doc[key] = state[key]
+            for key in _META_KEYS:
+                if key in state:
+                    doc[key] = state[key]
+        _atomic_write_text(path, json.dumps(doc, indent=2, default=str))
     if not final:
         slog(f"shadow state checkpoint: {len(touched or ())} row(s) of this pass written")
     return len(doc)
@@ -1185,8 +1274,45 @@ def _stalest_symbols_first(enrolled: list, state: dict,
         return min((ranks.get(_row_key(row) or "", _UNRANKED) for row in rows),
                    default=_UNRANKED)
 
-    order = sorted(groups, key=lambda sym: (_age(groups[sym]), _best(groups[sym]), sym))
+    now = datetime.now(UTC)
+
+    def _tier(rows: list) -> int:
+        """0: holds a STALE certified clock (repair first); 1: holds a never-evaluated clock;
+        2: everything else. Terminal rows are decided, never stale."""
+        tier = 2
+        for row in rows:
+            st = state.get(_row_key(row) or "")
+            st = st if isinstance(st, dict) else {}
+            if _is_terminal(st.get("status")):
+                continue
+            if _clock_is_stale(st, now):
+                return 0
+            if not st.get("last_attempt_at"):
+                tier = 1
+        return tier
+
+    order = sorted(groups, key=lambda sym: (_tier(groups[sym]), _age(groups[sym]),
+                                            _best(groups[sym]), sym))
     return [row for sym in order for row in groups[sym]]
+
+
+#: A certified clock not reached for this many hours is STALE (2026-11-25, invariant I1: every
+#: certified survivor on a FRESH forward clock). A stale clock is REPAIRED BY ORDER: its symbol
+#: goes first in the next pass's rotation, ahead of never-evaluated clocks, so a backlog of new
+#: certificates can never starve a running clock past the threshold. A never-evaluated clock
+#: ages from its `enrolled_at`, so the reverse starvation cannot happen either.
+CLOCK_STALE_H = float(os.environ.get("QUANT_CLOCK_STALE_H", "24") or 24.0)
+
+
+def _clock_is_stale(st: dict, now: datetime | None = None) -> bool:
+    """True when this (non-terminal) clock waited longer than CLOCK_STALE_H since it was last
+    reached -- or, never reached, since it was enrolled. A row with neither stamp is not called
+    stale (there is no measured age; the never-evaluated tier already puts it early)."""
+    stamp = st.get("last_attempt_at") or st.get("enrolled_at")
+    if not stamp:
+        return False
+    age = _age_h(stamp, now or datetime.now(UTC))
+    return age is not None and age > CLOCK_STALE_H
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1339,6 +1465,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json",
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / ledger
+    if rows is None:
+        # A CERTIFICATION TRANSACTION THAT CRASHED IS COMPLETED BEFORE THE PASS READS THE BOOK
+        # (invariant I1, research/clock_coverage.py): its clocks were journalled first.
+        try:
+            import clock_coverage as _cc
+            _cc.recover(state_path)
+        except Exception as exc:
+            slog(f"clock_coverage.recover failed ({type(exc).__name__}: {exc}); pass continues")
     state = _TouchedState(_read_state(state_path) or {})
     today = datetime.now(UTC).date().isoformat()
 

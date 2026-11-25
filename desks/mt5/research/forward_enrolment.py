@@ -542,10 +542,28 @@ def repair(missing: list[dict[str, Any]], deadline: float,
             "n_missing": len(missing), "tail": tail}
 
 
+def _clock_coverage(write: bool = True) -> dict[str, Any]:
+    """`research/clock_coverage.run` (backfill, then the I1 census); its summary, or why not."""
+    try:
+        try:
+            import clock_coverage
+        except ImportError:
+            from research import clock_coverage  # type: ignore[no-redef]
+        return dict(clock_coverage.summary(clock_coverage.run(write=write)))
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"clock_coverage failed: {type(exc).__name__}: {exc}"}
+
+
 def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0,
         do_repair: bool = True) -> dict[str, Any]:
     """Census every certificate against every clock, repair the gap, publish the evidence."""
     deadline = time.monotonic() + max(0.0, float(budget_s))
+    # INVARIANT I1 FIRST (2026-11-25): the bounded backfill opens the clock record of every
+    # certified non-exotic spec that has none, and the census writes CLOCK_COVERAGE.json -- RED
+    # with the missing list on any gap. It runs before this organ's own census so the gap it
+    # reports is the one left AFTER the backfill, and the engine subprocess below is only asked
+    # to repair what the backfill could not open.
+    coverage = _clock_coverage(write=write)
     runs, dropped, why = certificates()
     clocks = clock_rows()
     stamps = certification_stamps()
@@ -587,6 +605,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         "integrity": (gate.summary() if gate is not None
                       else {"status": UNMEASURED, "why": gate_why}),
         "cycle_hours": CYCLE_HOURS,
+        "clock_coverage": coverage,
     }
     payload.update(body)
     if write:
@@ -599,7 +618,9 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
                        enrolled=payload["n_enrolled"], missing=payload["n_missing"],
                        overdue=payload["n_overdue"], held=payload.get("n_held"),
-                       accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
+                       accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"),
+                       clock_coverage=(coverage or {}).get("status"),
+                       clock_coverage_missing=(coverage or {}).get("n_missing"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
     return payload

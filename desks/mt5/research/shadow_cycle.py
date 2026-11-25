@@ -423,6 +423,15 @@ def _clock_rotation_summary() -> dict | None:
     return summ if isinstance(summ, dict) else None
 
 
+def _clock_coverage_summary() -> dict | None:
+    """reports/shadow/CLOCK_COVERAGE.json's verdict and counts (not its per-certificate list)."""
+    doc = _read(BASE / "reports" / "shadow" / "CLOCK_COVERAGE.json")
+    if not isinstance(doc, dict) or not doc:
+        return None
+    return {k: doc.get(k) for k in ("at", "status", "n_certified", "n_owed", "n_clocked",
+                                    "n_missing", "missing_by_reason")}
+
+
 def run() -> tuple[dict, int]:
     import external_shadow
     import promoter
@@ -590,6 +599,9 @@ def run() -> tuple[dict, int]:
         "certified_canon_total": None if census is None else census["all"],
         "certified_excluded": None if census is None else census["excluded"],
         "clock_rotation": _clock_rotation_summary(),
+        # INVARIANT I1's verdict (research/clock_coverage.py, hourly in `forward_enrolment`):
+        # certified non-exotic specs minus clocked specs, which must be 0.
+        "clock_coverage": _clock_coverage_summary(),
         "forward_clocks_total": len(active_rows),
         "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
         # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
