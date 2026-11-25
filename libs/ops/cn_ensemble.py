@@ -78,6 +78,38 @@ class Provider:
     relay: bool                  # True: a free-credit relay (its own allowance, public prompt)
     models_env: str = ""         # optional comma-separated model override
     key_aliases: tuple[str, ...] = ()   # other names the same key may be saved under
+    # A relay whose allowance is a fixed model list (not "every Chinese-lab id it serves"):
+    # the seat uses these ids that /models also lists, with no CN_FAMILY filter.
+    default_models: tuple[str, ...] = ()
+    # The relay's own calls/day ceiling (0: the shared CN_ENSEMBLE_RELAY_DAILY); `daily_env`
+    # overrides it on the box.
+    daily_cap: int = 0
+    daily_env: str = ""
+    # A base URL carrying "{account}" takes it from this env var (DARK while it is unset).
+    account_env: str = ""
+    # False: the relay has no OpenAI-style /models list, so `default_models` are used as given.
+    lists_models: bool = True
+    # Other bases to try, in order, when the default base's /models cannot be read (a key is
+    # tied to one region's site). Only used when `base_env` is not set.
+    alt_bases: tuple[str, ...] = ()
+
+
+#: Groq's free models for the swarm; the seat drops any id Groq's /models no longer lists.
+GROQ_MODELS: tuple[str, ...] = ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3-32b")
+#: Calls/day across Groq's models (token-bound: 3 models x ~30 calls x ~6K tokens < 200K each).
+GROQ_DAILY = 90
+#: Workers AI models for the swarm (override with CLOUDFLARE_AI_MODELS on the box).
+CLOUDFLARE_MODELS: tuple[str, ...] = ("@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b")
+#: Calls/day inside 10,000 free Neurons: a gpt-oss-120b call (~2K in, 4K out) is ~340 Neurons,
+#: so 20 calls is ~6,800, leaving headroom for prompt growth.
+CLOUDFLARE_DAILY = 20
+#: SiliconFlow's free (0-price) models. Free models are rate-limited, not metered, so the cap
+#: is the shared relay pace; nothing paid is ever named here.
+SILICONFLOW_FREE_MODELS: tuple[str, ...] = (
+    "Qwen/Qwen3-8B", "Qwen/Qwen2.5-7B-Instruct", "THUDM/GLM-4-9B-0414", "THUDM/glm-4-9b-chat",
+    "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+    "internlm/internlm2_5-7b-chat")
+SILICONFLOW_DAILY = 240
 
 
 PROVIDERS: tuple[Provider, ...] = (
@@ -95,6 +127,28 @@ PROVIDERS: tuple[Provider, ...] = (
     # The principal saved this key as YJSS on the box (2026-11-17); both names are read.
     Provider("yjs", "YJS", "YJS_BASE_URL", "https://api.yjs.im/v1", relay=True,
              models_env="YJS_MODELS", key_aliases=("YJSS",)),
+    # Groq (api.groq.com, OpenAI-compatible), the principal's own free key (zuck 2026-11-25
+    # 02:27Z "groq api use it" / "On me"). Free tier per model: 30 RPM, 1000 RPD, 200K tokens/day.
+    # One call is ~6K tokens (4K max out + prompt), so tokens bind first: ~30 calls/model/day,
+    # 90/day across three models, paced per hour (a handful per hour, far under 30 RPM).
+    Provider("groq", "GROQ", "GROQ_BASE_URL", "https://api.groq.com/openai/v1", relay=True,
+             models_env="GROQ_MODELS", key_aliases=("GROQ_API_KEY",),
+             default_models=GROQ_MODELS, daily_cap=GROQ_DAILY, daily_env="GROQ_DAILY"),
+    # Cloudflare Workers AI (OpenAI-compatible /ai/v1), the principal's own free token (zuck
+    # 2026-11-25 02:30Z). Free allowance 10,000 Neurons/day; DARK until both the token and the
+    # account id exist on the box. Workers AI serves no /models list at /ai/v1.
+    Provider("cloudflare", "CLOUDFLARE_AI", "CLOUDFLARE_AI_BASE",
+             "https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1", relay=True,
+             models_env="CLOUDFLARE_AI_MODELS", default_models=CLOUDFLARE_MODELS,
+             daily_cap=CLOUDFLARE_DAILY, daily_env="CLOUDFLARE_AI_DAILY",
+             account_env="CLOUDFLARE_ACCOUNT_ID", lists_models=False),
+    # SiliconFlow (OpenAI-compatible), the principal's own key (zuck 2026-11-25 02:35Z). The
+    # key belongs to one site, so .com is tried first and .cn second. Only its permanently free
+    # Chinese-lab models are used; any id the account's /models no longer lists drops out.
+    Provider("siliconflow", "SILICONFLOW", "SILICONFLOW_BASE_URL",
+             "https://api.siliconflow.com/v1", relay=True, models_env="SILICONFLOW_MODELS",
+             default_models=SILICONFLOW_FREE_MODELS, daily_cap=SILICONFLOW_DAILY,
+             daily_env="SILICONFLOW_DAILY", alt_bases=("https://api.siliconflow.cn/v1",)),
 )
 
 #: PLUG-IN PROVIDERS (principal 2026-11-20: "I even have 2 more things I'll login n give u api
@@ -238,6 +292,13 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
         except Exception:
             key = ""
     base = str(e.get(p.base_env, "") or p.default_base).rstrip("/")
+    if "{account}" in base:
+        account = str(e.get(p.account_env, "") or "").strip() if p.account_env else ""
+        if not account and p.account_env and env is None:
+            account = _read(p.account_env, None)
+        if not re.fullmatch(r"[0-9a-f]{32}", account):
+            return Seat(p, base, "", why=f"DARK: {p.account_env or 'account id'} is not set")
+        base = base.replace("{account}", account)
     if not key:
         return Seat(p, base, "", why=f"DARK: {p.key_env} is not set")
     if not base.startswith("https://"):
@@ -254,12 +315,27 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
             listed = []
         live = [m for m in listed if m.endswith(":free") and CN_FAMILY.search(m)]
         models = live or list(OPENROUTER_CN_MODELS)
+    elif not p.lists_models:
+        models = list(p.default_models)
     else:
-        try:
-            listed = (list_models or _list_models)(base, key)
-        except Exception as exc:
-            return Seat(p, base, "", why=f"DARK: /models unreachable ({type(exc).__name__})")
-        models = [m for m in listed if CN_FAMILY.search(m)]
+        bases = [base] + ([] if e.get(p.base_env) else [b.rstrip("/") for b in p.alt_bases])
+        listed, err = [], ""
+        for cand in bases:
+            try:
+                listed = (list_models or _list_models)(cand, key)
+            except Exception as exc:
+                err = type(exc).__name__
+                continue
+            base = cand
+            break
+        else:
+            return Seat(p, base, "", why=f"DARK: /models unreachable ({err})")
+        if p.default_models:
+            models = [m for m in p.default_models if m in set(listed)]
+            if not models:
+                return Seat(p, base, "", why="DARK: /models lists none of the configured models")
+        else:
+            models = [m for m in listed if CN_FAMILY.search(m)]
         if not models:
             return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
     if not p.relay:
@@ -414,7 +490,10 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             if not s.lit:
                 continue
             if s.provider.relay:
-                left = relay_daily - _relay_calls_today(base, s.provider.name, now)
+                cap = relay_daily
+                if s.provider.daily_cap:
+                    cap = _env_int(e, s.provider.daily_env, s.provider.daily_cap)
+                left = cap - _relay_calls_today(base, s.provider.name, now)
                 q[s.provider.name] = max(0, -(-left // max(1, 24 - now.hour)))
             else:
                 try:
