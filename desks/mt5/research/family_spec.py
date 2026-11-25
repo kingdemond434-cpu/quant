@@ -95,6 +95,10 @@ ALIASES["mean_reversion_bollinger"].setdefault("period", "bb_n")
 GEOMETRY_ONLY: frozenset[str] = frozenset({"atr_n", "rr", "ttl_bars", "stop_atr"})
 
 
+#: Required keywords the replay supplies itself: the cell's own instrument.
+_REPLAY_SUPPLIED: frozenset[str] = frozenset({"symbol"})
+
+
 @lru_cache(maxsize=256)
 def _signature(family: str) -> tuple[tuple[str, Any], ...] | None:
     try:
@@ -114,9 +118,43 @@ def _signature(family: str) -> tuple[tuple[str, Any], ...] | None:
         params = list(inspect.signature(entry).parameters.values())
     except (TypeError, ValueError):
         return None
-    return tuple((p.name, p.default) for p in params
+    # A REQUIRED KEYWORD IS STILL AN ARGUMENT (2026-11-25 producer triage). Only keywords WITH a
+    # default were read, so a family whose rule lives in required keywords -- calendar_month
+    # (active_month, side_bias), seasonal_window, the five mass_screen_* families (feat, op, thr,
+    # direction, hold), alt_release_drift -- read every exact recipe as "none of [...] is an
+    # argument", i.e. DEFAULTS_ONLY waste, and no reader ever sent one to the judge. A required
+    # keyword is listed with default None (any value supplied differs from it, exactly as for
+    # an optional None such as relative_value's `peer`); `symbol` is the replay's own and is not
+    # a rule setting, so it stays out.
+    return tuple((p.name, None if p.default is inspect.Parameter.empty else p.default)
+                 for p in params
                  if p.kind is inspect.Parameter.KEYWORD_ONLY
-                 and p.default is not inspect.Parameter.empty)
+                 and not (p.default is inspect.Parameter.empty and p.name in _REPLAY_SUPPLIED))
+
+
+@lru_cache(maxsize=256)
+def _required(family: str) -> frozenset[str]:
+    """The family's required keywords that a recipe must state (never the replay's own)."""
+    try:
+        from mt5desk import families as fam
+        from mt5desk import families_orthogonal as fo
+    except Exception:
+        return frozenset()
+    entry: Any = getattr(fo, "ORTHOGONAL_FAMILIES", {}).get(family)
+    if entry is None:
+        entry = getattr(fam, "FAMILY_REGISTRY", {}).get(family)
+        entry = entry.get("func") if isinstance(entry, dict) else entry
+    if entry is None:
+        entry = getattr(fam, f"family_{family}", None)
+    if not callable(entry):
+        return frozenset()
+    try:
+        params = inspect.signature(entry).parameters.values()
+    except (TypeError, ValueError):
+        return frozenset()
+    return frozenset(p.name for p in params if p.kind is inspect.Parameter.KEYWORD_ONLY
+                     and p.default is inspect.Parameter.empty
+                     and p.name not in _REPLAY_SUPPLIED)
 
 
 def signature(family: str) -> dict[str, Any] | None:
@@ -300,6 +338,16 @@ def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
                    reason=f"the replay refuses {refused}; the gauntlet records it NOT_RUN")
         return out
     differs = {k for k, v in params.items() if v != sig[k]}
+    # A required keyword the recipe leaves out cannot be run at all (TypeError at the call), so
+    # it is never testable -- named here rather than spending a judge slot to learn it. A required
+    # keyword that names an INPUT (an identity key such as `peer_symbols`) is carried beside the
+    # rule by `translate`, so it is not demanded of the rule.
+    missing = sorted(_required(family) - set(params) - set(variants) - carried_keys())
+    if missing:
+        out.update(status=DEFAULTS_ONLY, params=full,
+                   reason=f"{family} requires {missing}, which the recipe does not state: the "
+                          "family cannot run without them")
+        return out
     if differs and not differs <= GEOMETRY_ONLY:
         out["params"] = full
         return out

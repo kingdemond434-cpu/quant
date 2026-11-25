@@ -89,8 +89,20 @@ def run_step(name: str, fn) -> dict:
         dlog(f"{name}: FAILED -- {out['error']}")
         dlog(traceback.format_exc().rstrip())
     out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
-    _woe_after(name, _woe, out, raised=_raised, wall_s=float(out["seconds"]))
+    _beat(name, started, out, _woe_after(name, _woe, out, raised=_raised,
+                                         wall_s=float(out["seconds"])))
     return out
+
+
+def _beat(name: str, started: datetime, out: object, woe: dict | None = None) -> None:
+    """THE PRODUCER HEARTBEAT (libs/ops/producer_heartbeat.py, 2026-11-25): one run row per
+    step and per proposer -- start, end, status, rows_out -- so a producer the daily chain runs
+    is never UNMEASURED off the box. Never fails the step."""
+    try:
+        from libs.ops.producer_heartbeat import beat
+        beat(name, started=started, result=out, woe=woe or {})
+    except Exception as exc:
+        dlog(f"  heartbeat for {name} not recorded: {type(exc).__name__}: {exc}")
 
 
 #: A WALL BUDGET FOR THE STEPS THAT HAVE HUNG (box 2026-11-22..24). The chain runs in one process
@@ -137,15 +149,17 @@ def _woe_before(name: str) -> dict:
 
 
 def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
-               wall_s: float | None = None) -> None:
+               wall_s: float | None = None) -> dict:
     """Did the step write what it declared, or say why not? Prints the defect; never raises."""
     try:
         from libs.ops.write_or_explain import DEFECTS, observe
         rec = observe(name, before, out, raised=raised, wall_s=wall_s)
         if str(rec.get("verdict")) in DEFECTS:
             dlog(f"  {rec['verdict']} {rec.get('detail', '')}")
+        return rec if isinstance(rec, dict) else {}
     except Exception as exc:
         dlog(f"  write-or-explain not recorded for {name}: {type(exc).__name__}: {exc}")
+        return {}
 
 
 def _scalp_gauntlet() -> None:
@@ -316,7 +330,7 @@ def _markout() -> None:
     try:
         from research import markout_v2
         markout_v2.main([])
-    except Exception as exc:  # noqa: BLE001 -- a report leg, never fatal
+    except Exception as exc:  # a report leg, never fatal
         dlog(f"  markout_v2 skipped: {type(exc).__name__}")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
@@ -505,6 +519,7 @@ def _proposers() -> None:
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
                  "book_forensics"):
+        _t0 = datetime.now(UTC)
         try:
             mod = __import__(name)
             kwargs = {}
@@ -512,6 +527,7 @@ def _proposers() -> None:
                 base = float(inspect.signature(mod.run).parameters["budget_s"].default or 1200.0)
                 kwargs["budget_s"] = float(min(3600.0, max(300.0, base * arm_weight(name))))
             rep = mod.run(**kwargs)
+            _beat(name, _t0, rep if isinstance(rep, dict) else {"status": "OK"})
             dlog(f"{name}: " + (f"{rep.get('tests_run', '?')} tests, "
                                  f"{rep.get('cells_proposed', rep.get('donated_rows', '?'))} "
                                  "proposed" + (f" (budget {kwargs['budget_s']:.0f}s)"
@@ -520,6 +536,7 @@ def _proposers() -> None:
         except ModuleNotFoundError:
             dlog(f"{name}: not present on this tree")
         except Exception as exc:
+            _beat(name, _t0, {"error": f"{type(exc).__name__}: {exc}"[:300]})
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
 
 

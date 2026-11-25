@@ -696,3 +696,5 @@ desks/mt5/data/counterparty_accounts.local*.tmp
 !desks/mt5/reports/DESK_SELF_HEAL.json
 # THE END-TO-END FUNNEL (2026-11-25, research/funnel.py): published by sync_shadow_to_git $reportPaths.
 !desks/mt5/reports/FUNNEL.json
+# THE PRODUCER HEARTBEAT (2026-11-25, libs/ops/producer_heartbeat.py): published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/PRODUCER_HEARTBEAT.json
