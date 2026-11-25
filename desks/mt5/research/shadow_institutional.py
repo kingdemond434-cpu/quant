@@ -25,8 +25,11 @@ FOR EVERY SENSOR OFF THE FIVE REFUSED ACTS: a publisher's terms are a ROUTING LA
 `terms_note` and `licence`, they bound what the desk may REDISTRIBUTE, and they have never bound
 what it may read. The old "CATALOGUED AND NEVER FETCHED" disposition was a discovery brake the
 desk imposed on itself and is deleted; the notes survive as provenance, and no access control or
-paywall is ever bypassed. A robots "no" (disallowed, UNREAD or hard stop) STOPS every automated
-wire fetch, whatever the sensor's `robots` field says (Auditor ruling 2026-11-18, #1335).
+paywall is ever bypassed. ROBOTS IS DIFFERENT: a robots "no" (a Disallow on the exact path, a
+hard stop -- 401/403/429/451 -- or an UNREAD robots.txt: 5xx, HTML, transport failure) STOPS
+every automated wire fetch, whatever the sensor's `robots` field says (ruling of 2026-11-10, PR
+#819; Auditor ruling 2026-11-18, #1335). The sensor is reported set aside with its missed-growth
+line and what reopens it; a missing robots.txt (404/410) or an allow fetches as before.
 
 THE DISAGREEMENT DATASET. D_t = [retail, institutional (COT), derivatives, options, news, macro]
 is a feature series in its own right, because the market's own factions disagreeing is an
@@ -71,7 +74,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.robotparser
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, date, datetime, timedelta
@@ -525,12 +527,14 @@ def check_sensors(rows: Iterable[Sensor]) -> list[str]:
 class Guard:
     """THE ONE NETWORK DOOR: a timeout, a wall-clock budget and a polite User-Agent.
 
-    LAWS 5e (2026-09-23): this door used to consult the terms first and the robots file second,
-    and refuse on either. The terms refusal is narrowed to the five acts of the hard boundary,
-    which no sensor in this table carries. The robots verdict STOPS the fetch on a "no"
-    (disallowed, UNREAD or hard stop; Auditor ruling 2026-11-18, #1335) and the reason is kept
-    in `robots_refused`. `no_fetch` turns the door into a fixture reader under
-    `data/shadow_fixtures/<sensor_id>.json`, which is how the tests and an egress-less box
+    LAWS 5e (2026-09-23) narrowed the TERMS refusal to the five acts of the hard boundary,
+    which no sensor in this table carries. ROBOTS STOPS THE FETCH (ruling of 2026-11-10, PR
+    #819; Auditor ruling 2026-11-18, #1335): on EVERY wire fetch, whatever `sensor.robots`
+    declares, a robots "no" from the desk's one gate (`research/robots_gate.py`, reading through
+    `libs/data/robots_body.py`) returns (None, why), keeps the reason in `robots_refused` and
+    appends a billed `set_aside` row -- a two-sided missed-growth line and the events that reopen
+    it -- so the ground is never lost silently. `no_fetch` turns the door into a fixture reader
+    under `data/shadow_fixtures/<sensor_id>.json`, which is how the tests and an egress-less box
     exercise every parse path.
     """
 
@@ -545,6 +549,7 @@ class Guard:
         self.refused: list[dict[str, str]] = []
         self.notes: list[dict[str, str]] = []
         self.robots_refused: list[dict[str, str]] = []
+        self.set_aside: list[dict[str, Any]] = []
         self._robots: dict[str, Any] = {}
 
     def over(self) -> bool:
@@ -553,41 +558,55 @@ class Guard:
     def left(self) -> float:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
+    def robots_verdict(self, url: str) -> tuple[str, str]:
+        """(label, why) for this exact URL from the desk's one robots gate
+        (`research/robots_gate.py`), one robots.txt read per host per pass (per Guard)."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
+
+        def opener(robots_url: str, agent: str, timeout: float) -> Any:
+            self.calls += 1
+            return RG._open(robots_url, agent, timeout)
+
+        return RG.read(url, UA, opener=opener, timeout=min(12.0, max(1.0, self.left())),
+                       cache=self._robots)
+
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """Group-scoped robots verdict: False STOPS the automated fetch (Auditor, 2026-11-18).
+        """(may fetch, why): False exactly when the robots gate says the label stops.
 
         A disallowed path, a hard stop (401/403/429/451) and an UNREAD robots.txt (5xx, HTML,
-        transport failure) are all a "no"; only real rules that allow the path, or a 404/410
-        (no file), are a "yes". Unread robots are not permission.
+        non-text, transport failure) are all a "no"; only real rules that allow the path, or a
+        404/410 (no file), are a "yes". Unread robots are not permission (Auditor, 2026-11-18).
         """
-        parts = urllib.parse.urlsplit(url)
-        root = f"{parts.scheme}://{parts.netloc}"
-        if root not in self._robots:
-            from libs.data import robots_body as rb
-            self.calls += 1
-            # Read by hand, not `RobotFileParser.read()`: that parses an HTML page served 200 as
-            # allow-all and reads 429/451 as allow-all, so the LABEL would claim a yes.
-            req = urllib.request.Request(f"{root}/robots.txt", headers={"User-Agent": UA})
-            try:
-                with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
-                    got_ = rb.robots_rules_or_refusal(getattr(r, "status", 200),
-                                                      r.headers.get("Content-Type"),
-                                                      r.read(500_000))
-            except urllib.error.HTTPError as exc:
-                got_ = rb.robots_rules_or_refusal(int(exc.code), None, "")
-                exc.close()
-            except (OSError, urllib.error.URLError, ValueError) as exc:
-                got_ = f"unreadable: {type(exc).__name__}"
-            self._robots[root] = got_
-        got = self._robots[root]
-        if isinstance(got, str) and got.startswith("ROBOTS_HARD_STOP"):
-            return False, f"{got}: a hard stop for this host; the fetch stops"
-        if isinstance(got, str):
-            return False, (f"robots.txt {got} -- UNMEASURED, and unread robots are not "
-                           "permission; the fetch stops")
-        ok = bool(got.can_fetch(UA, url))
-        return ok, ("robots allows this path for our agent" if ok
-                    else "robots disallows this path for our agent; the fetch stops")
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
+        label, why = self.robots_verdict(url)
+        return not RG.stops(label), why
+
+    @staticmethod
+    def _robots_stops(label: str) -> bool:
+        """The gate's one stop test (`robots_gate.stops`); no list is kept here."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
+        return bool(RG.stops(label))
+
+    def _set_aside(self, sensor_id: str, url: str, label: str, why: str) -> dict[str, Any]:
+        """The row for a sensor NOT fetched on its robots verdict, built and BILLED by the
+        desk's one robots gate (`research/robots_gate.py`): the label, the reopen, the two-sided
+        missed-growth line, and a line in the daily count."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
+        row = {"sensor": sensor_id, **RG.refuse("shadow_institutional", sensor_id, url, label, why)}
+        self.set_aside.append(row)
+        return row
 
     def fixture(self, sensor_id: str) -> tuple[Any, str]:
         p = self.fixtures / f"{sensor_id}.json"
@@ -615,13 +634,16 @@ class Guard:
             return None, "refused: only http(s) grounds are fetched"
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
-        # A robots "no" (disallowed, UNREAD or hard stop) STOPS EVERY automated fetch: Auditor
-        # ruling 2026-11-18 on #1335, whatever LAWS 5e's routing-label text says. Read on every
-        # wire fetch, whatever `sensor.robots` declares -- an "api" sensor is no exemption.
-        ok, why = self.robots_ok(url)
-        if not ok:
-            why = f"refused by robots: {why}"
+        # A robots "no" (disallowed, UNREAD or hard stop) STOPS EVERY automated fetch: rulings of
+        # 2026-11-10 (PR #819) and the Auditor's of 2026-11-18 on #1335, whatever LAWS 5e's
+        # routing-label text says. Read on every wire fetch, whatever `sensor.robots` declares --
+        # an "api" sensor is no exemption. It is never silent: the reason is kept and the sensor
+        # is set aside with its missed-growth line and its reopen, re-argued every pass.
+        label, robots_why = self.robots_verdict(url)
+        if self._robots_stops(label):
+            why = f"refused by robots: SET_ASIDE ({label}): {robots_why}"
             self.robots_refused.append({"sensor": sensor.sensor_id, "why": why})
+            self._set_aside(sensor.sensor_id, url, label, robots_why)
             return None, why
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
@@ -1376,9 +1398,11 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
         "refused_for_terms": guard.refused,
         "terms_labels": guard.notes,
         "refused_for_robots": guard.robots_refused,
+        "robots_set_aside": guard.set_aside,
         "access_rule": ("every sensor off the five refused acts is MINED; licence and terms "
                         "notes are routing labels that withhold redistribution; a robots "
-                        "'no' stops the fetch"),
+                        "'no' (a Disallow on the exact path, a hard stop or an unreadable "
+                        "robots.txt) stops that fetch and is listed under robots_set_aside"),
         "disagreement": {k: v for k, v in dis.items() if k not in ("points", "series")},
         "vault_manifest": vault,
         "gap_map": gap_map(latents, vault, all_sensors),
