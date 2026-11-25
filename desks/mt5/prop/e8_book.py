@@ -879,7 +879,9 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
         col_of=lambda r: f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}",
-        fixed={"gold_asia": gold})
+        fixed={"gold_asia": gold},
+        set_risk=lambda r, v: r.update(risk_frac=float(v), risk_source=(
+            f"{r.get('risk_source')}; scaled by the stress cap")))
     chosen = stressed.pop("kept")
 
     fams: dict[str, int] = {}
