@@ -476,3 +476,25 @@ def test_s1_the_mt5_source_reads_a_robust_clock() -> None:
     src._mt5 = lambda: fake                                         # type: ignore[method-assign]
     assert src.server_now_ms(list(stamps)) == 1_000_500
     assert tick_source._robust_clock([5]) == 5 and tick_source._robust_clock([]) is None
+
+
+def test_a_hung_recorder_writes_every_thread_stack_before_it_exits(tmp_path: Path,
+                                                                   capfd) -> None:
+    """Box 2026-11-25: 16 HUNG exits in 4 h with no stack (py-spy cannot read 3.14). The exit
+    now names the call that never returned: the blocked frame is in the log."""
+    release = threading.Event()
+    rec = _Scripted(tmp_path, [1], block=release)
+    codes: list[int] = []
+
+    def fake_exit(code: int) -> None:
+        codes.append(code)
+        release.set()
+
+    t = threading.Thread(target=rec.run_forever,
+                         kwargs={"max_cycles": 1, "sleep": lambda s: None, "hang_s": 0.2,
+                                 "exit_fn": fake_exit})
+    t.start()
+    t.join(10)
+    out = capfd.readouterr().out
+    assert codes == [EXIT_HUNG]
+    assert "HUNG: no cycle" in out and "run_once" in out
