@@ -104,7 +104,14 @@ def _seat(desk: dict[str, Path], name: str, *, pit: bool) -> None:
 
 
 def _build(**kw: Any) -> dict[str, Any]:
-    return G.build(now=NOW, conn=_conn(), budget_s=120, **kw)
+    # The organ closes only a registry connection it OPENED; one handed in is the caller's to
+    # close. Leaving it to the garbage collector made the failing set vary run to run as
+    # sqlite ResourceWarnings landed in whichever test happened to be running (Audit, 11-25).
+    conn = _conn()
+    try:
+        return G.build(now=NOW, conn=conn, budget_s=120, **kw)
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------- the CRO contract
