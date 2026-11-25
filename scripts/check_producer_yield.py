@@ -48,6 +48,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -261,6 +262,28 @@ REPLACEMENTS: dict[str, str] = {
 }
 
 
+_SOURCE_RE = re.compile(r'^SOURCE\s*=\s*"([A-Za-z0-9_.:-]+)"', re.MULTILINE)
+
+
+def declared_seats(producers: list[str] | set[str],
+                   research: Path | None = None) -> dict[str, str]:
+    """producer -> the seat directory its module declares (`SOURCE = "..."`), where it differs.
+
+    A module that declares no SOURCE, or one equal to its own name, maps to nothing: there is no
+    alias to resolve. Never raises -- an unreadable module simply declares no seat."""
+    base = research or (DESK / "research")
+    out: dict[str, str] = {}
+    for name in sorted(set(producers)):
+        try:
+            text = (base / f"{name}.py").read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        m = _SOURCE_RE.search(text)
+        if m and m.group(1) != name:
+            out[name] = m.group(1)
+    return out
+
+
 def replacement_target(text: Any) -> str:
     """The producer a free-text replacement names first (`"mathlab -- the ..."` -> mathlab)."""
     head = str(text or "").split("--", 1)[0].strip()
@@ -330,6 +353,15 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     # exists to avoid making about anything else.
     for producer, seat in (("asia_plane", "asia"), ("asia_transmission", "asia_transmission"),
                            ("deep_forest_miner", "deep_forest")):
+        if producer not in seats and seat in seats:
+            seats[producer] = seats[seat]
+    # AND THE ALIAS IS READ FROM THE PRODUCER ITSELF (2026-11-25 producer triage). Nine daily
+    # proposers read UNMEASURED on the box census because each donates under its module's own
+    # `SOURCE` constant -- plumbing_miner as `plumbing`, microstructure_miner as `microstructure`,
+    # style_premia_sweep as `style_premia`, tail_alpha_search as `tail_alpha`,
+    # weak_signal_compiler as `weak_signal_ensemble` -- and a hand list of three could never keep
+    # up. The constant is the producer's own declaration of its seat, so it is read, not copied.
+    for producer, seat in declared_seats(proposers).items():
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
 

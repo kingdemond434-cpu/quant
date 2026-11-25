@@ -231,6 +231,42 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # report's `last_decided_utc`, which moves only on a run that decided a queue row.
     "MT5-ConvertSwarm":   ("desks/mt5/reports/CONVERT_SWARM.json", 360,
                            "deepening-queue rows the free-model swarm actually decided"),
+    # THE 2026-11-25 PRODUCER TRIAGE: fifteen research tasks were NO_CONTRACT, so the census could
+    # only read them UNMEASURED -- the eleven forest residents and the mathlab resident report
+    # 0x800710E0 ("still running", IgnoreNew) on every pass, which proves the process and never
+    # the work. A resident's PROGRESS WATERMARK (department_resident.heartbeat, done_inc=1)
+    # advances only when a pass COMPLETES, so its `at` is the proof of produced work; it is
+    # judged by that internal stamp (INTERNAL_STAMPS below), never by mtime.
+    "MT5-Forest-Africa": ("desks/mt5/data/watermarks/resident__dept_africa.json", 720,
+                          "the africa forest resident's completed-pass watermark"),
+    "MT5-Forest-Asean": ("desks/mt5/data/watermarks/resident__dept_asean.json", 720,
+                         "the asean forest resident's completed-pass watermark"),
+    "MT5-Forest-China": ("desks/mt5/data/watermarks/resident__dept_china.json", 720,
+                         "the china forest resident's completed-pass watermark"),
+    "MT5-Forest-Europe": ("desks/mt5/data/watermarks/resident__dept_europe.json", 720,
+                          "the europe forest resident's completed-pass watermark"),
+    "MT5-Forest-Korea": ("desks/mt5/data/watermarks/resident__dept_korea.json", 720,
+                         "the korea forest resident's completed-pass watermark"),
+    "MT5-Forest-Latam": ("desks/mt5/data/watermarks/resident__dept_latam.json", 720,
+                         "the latam forest resident's completed-pass watermark"),
+    "MT5-Forest-Mena": ("desks/mt5/data/watermarks/resident__dept_mena.json", 720,
+                        "the mena forest resident's completed-pass watermark"),
+    "MT5-Forest-NorthAmerica": ("desks/mt5/data/watermarks/resident__dept_north_america.json", 720,
+                                "the north_america forest resident's completed-pass watermark"),
+    "MT5-Forest-Oceania": ("desks/mt5/data/watermarks/resident__dept_oceania.json", 720,
+                           "the oceania forest resident's completed-pass watermark"),
+    "MT5-Forest-RussiaCis": ("desks/mt5/data/watermarks/resident__dept_russia_cis.json", 720,
+                             "the russia_cis forest resident's completed-pass watermark"),
+    "MT5-Forest-SouthAsia": ("desks/mt5/data/watermarks/resident__dept_south_asia.json", 720,
+                             "the south_asia forest resident's completed-pass watermark"),
+    "MT5-Dept-Mathlab":   ("desks/mt5/data/watermarks/resident__dept_mathlab.json", 720,
+                           "the mathlab resident's completed-pass watermark"),
+    "MT5-DeepSeek":       ("desks/mt5/reports/DEEPSEEK_RESEARCH.json", 180,
+                           "the hourly DeepSeek research cycle's report"),
+    "Quant-SideChannelMiners": ("desks/mt5/data/intelligence/latest_discoveries.json", 300,
+                                "every side channel's discoveries from the two-hourly runner"),
+    "MT5-ResearchSupervisor": ("desks/mt5/logs/supervisor.log", 60,
+                               "the research watchdog's log, appended on every five-minute pass"),
     "MT5-QQuantGatesCertify": ("desks/mt5/reports/QQUANT_GATES.json", 180,
                                "the qquant lane's gate verdicts"),
     "MT5-QQuantShadow":   ("desks/mt5/reports/shadow/qquant_shadow_state.json", 180,
@@ -471,6 +507,18 @@ INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
     "desks/mt5/reports/CONVERT_SWARM.json": "last_decided_utc",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json": "generated_utc",
+    "desks/mt5/data/watermarks/resident__dept_africa.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_asean.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_china.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_europe.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_korea.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_latam.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mena.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_north_america.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_oceania.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_russia_cis.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_south_asia.json": "at",
+    "desks/mt5/data/watermarks/resident__dept_mathlab.json": "at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.
