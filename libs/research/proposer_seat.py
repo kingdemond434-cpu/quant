@@ -458,11 +458,14 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
     monthly cap, the daily free-request budget, the observed ceiling -- that a third transport
     here would drift from on exactly the properties that must not drift.
     """
+    # THE TIMEOUT BOUNDS THE WHOLE ASK, both transports together (box 2026-11-25: the panel's
+    # rotation had no overall bound, so a 120 s ask could hold a lab past its leg cap).
+    deadline = time.monotonic() + max(1.0, float(timeout))
     panel = _panel_module()
     if panel is not None:
         try:
             reply = panel.ask(role, "Propose candidates. Shapes and names only.", prompt,
-                              max_tokens=1600, temperature=0.9)
+                              max_tokens=1600, temperature=0.9, deadline=deadline)
             text = str(getattr(reply, "text", "") or "")
             if text.strip():
                 return text, str(getattr(reply, "model", "") or "free_panel"), None
@@ -475,9 +478,12 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
     seat = _seat_module()
     if seat is None:
         return "", "", last
+    left = deadline - time.monotonic()
+    if left < 1.0:
+        return "", "", f"{last}; llm_seat: not asked, the ask's {timeout:.0f}s deadline passed"
     try:
         text, err = seat.chat(prompt, system="Propose candidates. Shapes and names only.",
-                              max_tokens=1600, timeout=timeout, temperature=0.8)
+                              max_tokens=1600, timeout=left, temperature=0.8)
     except Exception as exc:                              # pragma: no cover - defensive
         return "", "", f"{last}; llm_seat: {type(exc).__name__}: {str(exc)[:160]}"
     if err:
@@ -765,8 +771,8 @@ def _log_inline(factory: str, props: Sequence[Proposal]) -> None:
         pass                    # a log write must never take down the factory that made it
 
 
-def names_for(factory: str, records: Sequence[dict[str, Any]], *, n: int = 6
-              ) -> dict[str, dict[str, Any]]:
+def names_for(factory: str, records: Sequence[dict[str, Any]], *, n: int = 6,
+              timeout: float = 120.0) -> dict[str, dict[str, Any]]:
     """{key: {mechanism, falsifier, by}} for the records the seat could name. {} when dark.
 
     THE FACTORY'S OWN CALL SITE. A lab holds objects whose interpretation status is already
@@ -777,7 +783,7 @@ def names_for(factory: str, records: Sequence[dict[str, Any]], *, n: int = 6
     """
     if not records:
         return {}
-    props = name_mechanisms(factory, records, n=n)
+    props = name_mechanisms(factory, records, n=n, timeout=timeout)
     if props:
         _log_inline(factory, props)
     out: dict[str, dict[str, Any]] = {}
@@ -878,7 +884,7 @@ def ask(organ: str, kind: str, *, options: Sequence[str] = (),
                          why=str(hint.get("why") or ""))
 
     if kind == "names":
-        got = names_for(organ, records, n=n)
+        got = names_for(organ, records, n=n, timeout=timeout)
         return SeatReply(organ, kind, "RAN" if got else UNMEASURED, ordered=opts, names=got,
                          trials_charged=float(len(got)),
                          why="" if got else "the seat named nothing this pass")

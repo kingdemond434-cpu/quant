@@ -50,6 +50,17 @@ RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
 # the terminal, gateway, gauntlet and core loop headroom.  A crashed process releases its byte
 # lock in the kernel, so there is no stale-file recovery path.
 CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
+# DEPARTMENTS WITH A RESERVED SLOT OF THEIR OWN (2026-11-25). The mathlab department is declared
+# 24/7 ("its own 24/7 resident", hourly_cycle LEG_DEPARTMENT) and was measured on the box running
+# ~2 passes a day: MT5-Dept-Mathlab sat in the FIFO behind twenty-odd departments for three shared
+# slots, so 08:05Z -> 17:12Z passed between its passes and nothing it minted reached the judge for
+# hours. A department named here never queues for a shared slot: it holds its own reserved lock
+# (one pass at a time, the singleton already guarantees that), still waits on the memory guard
+# before and after admission, and still runs BELOW_NORMAL -- so the live terminal and the gateway
+# keep their priority and the box can never run more than len(RESERVED_DEPTS) passes above the
+# shared bound. DEPT_RESERVED="" restores the old behaviour without a push.
+RESERVED_DEPTS: frozenset[str] = frozenset(
+    d.strip().lower() for d in os.environ.get("DEPT_RESERVED", "mathlab").split(",") if d.strip())
 # A department child still has a hard timeout.  Plan strictly inside it so every admitted
 # oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
 PASS_BUDGET_FILL = min(
@@ -146,6 +157,40 @@ def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
     return None
 
 
+def claim_reserved_slot(dept: str):
+    """The reserved department's own slot lock; None only when another process holds it."""
+    LOCKS.mkdir(parents=True, exist_ok=True)
+    path = LOCKS / f"dept_reserved_{dept}.lock"
+    try:
+        fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
+    except OSError:
+        return None
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
+def admit(dept: str, *, slots: int = CONCURRENT_PASSES, poll_s: int = PAUSE_S):
+    """The pass's admission: the department's reserved slot when it has one, else the FIFO."""
+    if dept in RESERVED_DEPTS:
+        while True:
+            handle = claim_reserved_slot(dept)
+            if handle is not None:
+                return handle
+            log(dept, "waiting: the reserved slot is held by another process")
+            time.sleep(max(1, int(poll_s)))
+    return wait_for_capacity(dept, slots=slots, poll_s=poll_s)
+
+
 def _wait_ticket(dept: str) -> Path:
     """An OS-visible FIFO ticket; the department singleton permits only one per department."""
     LOCKS.mkdir(parents=True, exist_ok=True)
@@ -165,9 +210,7 @@ def _ticket_alive(path: Path, pid: int) -> bool:
     except (OSError, ValueError):
         return False
     except Exception as exc:
-        if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
-            return False
-        return True
+        return type(exc).__name__ not in ("NoSuchProcess", "ZombieProcess")
 
 
 def _oldest_waiter() -> Path | None:
@@ -199,7 +242,8 @@ def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
                 handle = claim_capacity_slot(slots)
                 if handle is not None:
                     if announced:
-                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                        log(dept, f"capacity available: admitted to one of {slots} "
+                                  f"department slots")
                     return handle
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
@@ -369,7 +413,7 @@ def main(argv: list[str] | None = None) -> int:
         while True:
             passes += 1
             wait_for_memory(dept)
-            capacity = wait_for_capacity(dept)
+            capacity = admit(dept)
             started = time.monotonic()
             heartbeat(dept, passes)
             try:

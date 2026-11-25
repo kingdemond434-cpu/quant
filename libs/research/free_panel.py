@@ -209,16 +209,27 @@ class Reply:
 
 
 def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
-        temperature: float = 0.9) -> Reply:
+        temperature: float = 0.9, deadline: float | None = None) -> Reply:
     """Ask the free panel, rotating on rate limits. Never charges the account.
 
     Rotation is the whole design. A single free model is a single point of failure with a rate
     limit attached; thirteen rotated by least-used is a research capacity that runs all day.
+
+    `deadline` (a `time.monotonic()` instant) BOUNDS THE WHOLE ROTATION, not one call. Without it
+    the worst case is every model in the tier at TIMEOUT_S each -- thirteen x 180 s = 39 minutes
+    -- inside a caller that believed it had asked for one completion with a 120 s timeout. That
+    is how math_lab and physics_lab, which ask the seat for mechanism names mid-pass, ran past
+    their 720 s / 700 s leg caps on the box 2026-11-25 with 0 artifacts moved. Each call's
+    timeout is the smaller of TIMEOUT_S and what is left, and the rotation stops at the deadline.
     """
     tier = ROLE_TIER.get(role, LIGHT)
     key = _load_key()
     tried: list[str] = []
     for model in available(tier) or list(tier):
+        left = None if deadline is None else deadline - time.monotonic()
+        if left is not None and left < 1.0:
+            raise PanelExhausted(f"the caller's deadline passed after trying {tried}; a bounded "
+                                 f"ask, not a capacity state")
         body = json.dumps({
             "model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "system", "content": system},
@@ -232,7 +243,8 @@ def ask(role: str, system: str, user: str, *, max_tokens: int = 2000,
             from libs.ops import openrouter_guard
             openrouter_guard.check_request(req)
             from libs.data.keyed_sources import keyed_urlopen
-            with keyed_urlopen(req, timeout=TIMEOUT_S) as r:
+            with keyed_urlopen(req, timeout=TIMEOUT_S if left is None
+                               else max(1.0, min(TIMEOUT_S, left))) as r:
                 out = json.loads(r.read())
             msg = out["choices"][0]["message"]
             text = str(msg.get("content") or msg.get("reasoning") or "").strip()

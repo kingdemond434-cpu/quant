@@ -524,9 +524,14 @@ def to_alpha_grammar(node: Expr) -> Expr | None:
     """The same law in `libs.research.alpha_grammar`, or None when it cannot be said there.
 
     `curv(x, k)` has no single counterpart and is rewritten EXACTLY as
-    `delta(x, k) - delay(delta(x, k), k)` = x_t - 2 x_{t-k} + x_{t-2k}, which is the curvature the
-    principal's example names. Every other windowed operator is a rename. A constant leaf, a
-    threshold, a log or a square root cannot be said there at all, and None is the honest answer.
+    `delta(delta(x, k), k)` = (x_t - x_{t-k}) - (x_{t-k} - x_{t-2k}) = x_t - 2 x_{t-k} + x_{t-2k},
+    which is the curvature the principal's example names, with the same warm-up (NaN for the
+    first 2k bars). It used to be written `delta(x, k) - delay(delta(x, k), k)`: the same law one
+    level DEEPER, so any curvature over a depth-3 subtree crossed alpha_grammar's MAX_DEPTH and
+    was refused as untradeable -- measured 2026-11-25 on the synthetic lab pass, part of the 35 of
+    95 admitted objects that never became a cell. Every other windowed operator is a rename. A
+    constant leaf, a threshold, a log or a square root cannot be said there at all, and None is
+    the honest answer.
     """
     if is_constant(node):
         return None
@@ -542,8 +547,7 @@ def to_alpha_grammar(node: Expr) -> Expr | None:
         k = int(node[2])
         if inner is None or k not in WINDOWS:
             return None
-        delta = ["delta", inner, k]
-        return ["sub", delta, ["delay", delta, k]]
+        return ["delta", ["delta", inner, k], k]
     mapped = _ALPHA_OPS.get(op)
     if mapped is None:
         return None
@@ -570,9 +574,12 @@ def tradeable(node: Expr) -> tuple[Expr | None, str]:
     translated = to_alpha_grammar(node)
     if translated is None:
         used = sorted({o for o in UNTRANSLATABLE if f"{o}(" in to_str(node)})
+        foreign = sorted(v for v in variables_in(node) if v not in BAR_VARIABLES)
         why = (f"uses {', '.join(used)}, which libs/research/alpha_grammar has no operator for"
-               if used else "a leaf is a constant or a non-bar variable the formula family "
-                            "cannot supply as a frame")
+               if used else
+               f"reads {', '.join(foreign[:4])}, a non-bar series (a minted representation or "
+               f"a dataset column) the formula family cannot supply as a frame" if foreign else
+               "a leaf is a constant the formula family cannot supply as a frame")
         return None, why
     try:
         from libs.research.alpha_grammar import is_valid
