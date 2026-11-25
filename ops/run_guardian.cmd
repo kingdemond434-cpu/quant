@@ -12,11 +12,14 @@ rem 3. scripts\delivery_guard.py (zuck 11-25 20:00Z, rule E34): every Audit CLEA
 rem    live never 24h behind the newest CLEAR; starts the adopter/forge loop when stalled, pages.
 rem 4. scripts\output_watch.py (zuck 11-25 21:41Z): every producer/lab/leg judged on OUTPUT (compute
 rem    ledger OK finishes, process_health); restarts safe stale tasks, pages on 24h silence.
+rem 5. scripts\backup_watch.py (rule E40, 11-25): pages when the encrypted backup is stale, unarmed,
+rem    unverified or box-local; starts (or re-registers) MT5-OffsiteBackup, which arms itself.
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Guardian.log"
 set "PY=C:\Program Files\Python314\python.exe"
 "%PY%" -u "C:\opt\quant\ops\alert_feed.py" >>"%LOG%" 2>&1
 "%PY%" -u "C:\opt\quant\scripts\delivery_guard.py" --once >>"%LOG%" 2>&1
 "%PY%" -u "C:\opt\quant\scripts\output_watch.py" --once >>"%LOG%" 2>&1
+"%PY%" -u "C:\opt\quant\scripts\backup_watch.py" --once >>"%LOG%" 2>&1
 "%PY%" -u "C:\opt\quant\desks\mt5\research\run_desk_self_heal.py" --apply >>"%LOG%" 2>&1
 exit /b %ERRORLEVEL%
