@@ -61,9 +61,10 @@ def test_relay_needs_https_and_a_chinese_model() -> None:
     env = {"HCNSEC": "k", "HCNSEC_BASE_URL": "http://api.hcnsec.cn/v1"}
     assert "https" in cn.seat_for(HC, env, _no_list).why
     env = {"HCNSEC": "k"}
-    assert not cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "claude-x"]).lit
+    # hcnsec serves every model it lists, like any lane (principal 2026-11-25 21:58Z)
     s = cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "deepseek-ai/DeepSeek-R1-0528"])
-    assert s.lit and s.models == ("deepseek-ai/DeepSeek-R1-0528",)
+    assert s.lit and s.models == ("gpt-4o", "deepseek-ai/DeepSeek-R1-0528")
+    assert HC.private_ok and YJ.private_ok and not cn.public_only(HC) and cn.public_only(GQ)
 
 
 def test_openrouter_takes_only_free_chinese_ids() -> None:

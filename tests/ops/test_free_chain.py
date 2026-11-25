@@ -88,7 +88,8 @@ def test_cerebras_github_and_cloudflare_alias_are_dark_without_keys_and_lit_with
 
 def _route(name: str, *, relay: bool = False, kind: str = "owner", **kw: Any) -> fc.Route:
     return fc.Route(name, kind, f"https://{name}.example/v1", FAKE + name, ("m",),
-                    relay=relay, lit=True, weekly_name=name, **kw)
+                    relay=relay, public_only=kw.pop("public_only", relay), lit=True,
+                    weekly_name=name, **kw)
 
 
 def test_rotation_spreads_calls_over_every_lit_route(tmp_path: Path,
@@ -225,7 +226,9 @@ def test_the_report_lists_every_provider_and_never_a_key(tmp_path: Path) -> None
     assert rows["cerebras"]["by_job"] == {"translator": {"calls": 1, "ok": 1},
                                           "kimi_hunt": {"calls": 1, "ok": 0}}
     assert rows["hcnsec"]["status"] == "CAPPED" and rows["hcnsec"]["reset_at"]
-    assert rows["hcnsec"]["public_prompts_only"] is True
+    # the principal's call (21:58Z): hcnsec takes every prompt like any lane; groq stays public
+    assert rows["hcnsec"]["public_prompts_only"] is False
+    assert rows["groq"]["public_prompts_only"] is True
     assert rows["github_models"]["status"] == "DARK"
     assert rows["acme"]["status"] == "LIT"
     assert doc["summary"]["lit"] >= 2 and doc["summary"]["capped"] == 1
