@@ -93,6 +93,8 @@ DATA = BASE / "data"
 REPORTS = BASE / "reports"
 OUT = REPORTS / "GLOBAL_COVERAGE_TENSOR.json"
 ROI_OUT = REPORTS / "SOURCE_ROI.json"
+#: Rule E25 reads this name: every host the desk contacts with its terms/robots/paid verdict.
+TERMS_OUT_NAME = "SOURCE_TERMS_AUDIT.json"
 STATE = DATA / "global_coverage" / "state.json"
 MISSIONS_DIR = DATA / "intelligence" / "global_coverage"
 GRAPH = DATA / "hypothesis_graph.jsonl"
@@ -485,6 +487,14 @@ def _country_census() -> dict[str, Any]:
         now["ratchet_breach"] = breach
     return {k: v for k, v in now.items() if k != "rows"} | {
         "rows": [r for r in now.get("rows", []) if r.get("status") != "COVERED"]}
+
+
+def _source_terms_audit() -> dict[str, Any]:
+    try:
+        from libs.research import source_terms_audit as sta
+    except ImportError as e:
+        return {"status": "UNMEASURED", "why": f"libs.research.source_terms_audit: {e}"}
+    return sta.current()
 
 
 def mechanism_actor() -> dict[str, str]:
@@ -2060,6 +2070,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, now: datetime | 
             doc["state"]["persisted_cells"] = len(state["cells"])
             _write_atomic(OUT, doc)
             _write_atomic(ROI_OUT, roi_doc)
+            _write_atomic(OUT.with_name(TERMS_OUT_NAME), _source_terms_audit())
             _write_atomic(STATE, state)
         doc["_roi"] = roi_doc
         return doc
