@@ -17,8 +17,9 @@ from pathlib import Path
 
 import pytest
 
-# The box runs Windows PowerShell 5.1 (powershell.exe), not pwsh 7; a skip there is not a test.
-PS = shutil.which("pwsh") or shutil.which("powershell")
+# The box runs Windows PowerShell 5.1 (powershell.exe), not pwsh 7: prefer it.
+# A skip on the box is not a test.
+PS = shutil.which("powershell") or shutil.which("pwsh")
 
 REPO = Path(__file__).resolve().parents[2]
 #: `$env:X`, `$script:x` and the like are real scopes/drives; `${py}:` and `` `$py: `` are fine.
