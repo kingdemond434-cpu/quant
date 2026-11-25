@@ -110,6 +110,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's funnel, the stage it dies at, its remedy and two-sided compute weight
     # (research/producer_loop.py): the machine measuring and steering its own producers -- meta.
     "producer_loop": "meta",
+    # Every producer's emitted > received > judged, and whether its judged rows carried its own
+    # rule (research/judge_reach.py): the machine auditing its own handoffs -- meta.
+    "judge_reach": "meta",
     # Every producer's docket share, class/exotic split, saturation and frontier, plus the
     # advisory steer (rules-compliance row 13): the machine measuring its own breadth -- meta.
     "breadth_controller": "meta",

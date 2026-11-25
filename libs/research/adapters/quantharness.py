@@ -74,7 +74,9 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
             f"(stability {stability:.2f}) with a mean out-of-sample objective return of "
             f"{np.mean(oos_vals):+.4f} at the bundle's own spread",
             horizon=bundle.horizons[-1], source=SYSTEM,
-            evidence={"pair": list(modal), "parameter_stability": stability,
+            # the modal pair IS the cross's two windows, named as the family reads them.
+            evidence={"parameters": {"fast_ema": int(modal[0]), "slow_ema": int(modal[1])},
+                      "pair": list(modal), "parameter_stability": stability,
                       "oos_mean": float(np.mean(oos_vals)), "folds": len(folds),
                       "method": "contiguous walk-forward, in-sample choice, out-of-sample "
                                 "measurement"}))

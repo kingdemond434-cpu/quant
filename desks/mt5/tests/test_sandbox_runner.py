@@ -157,13 +157,69 @@ def test_ingest_enqueues_candidates_with_provenance_and_charges_trials(
         lineage = json.loads(row["lineage_json"])
         assert lineage["disposition"] == "REBUILT" and lineage["licence"] == "desk (own code)"
         assert lineage["run_id"] == pkt.run_id and lineage["trials_charged"] == 40
-        assert json.loads(row["params_json"]) == {"fast": 5, "slow": 20}
+        # the engine's own names are translated to the family's arguments (family_spec)
+        assert json.loads(row["params_json"]) == {"fast_ema": 5, "slow_ema": 20}
         assert row["trial_family"] == "ext:cell:test:trend_ma_cross"
     finally:
         conn.close()
     census = SR.charge_trials(first["trials"], apply=True)
     assert census["n_raw"] == 1 and census["n_effective"] >= 40
     assert SR.TRIALS.exists()
+
+
+def test_an_executable_sandbox_row_reaches_the_docket_with_its_own_rule(
+        desk: dict[str, Path]) -> None:
+    """A registered family with symbols and a structured rule is enqueued in the family's own
+    argument names and carried by the registry's docket lane (libs/moat/docket_feed) -- the
+    rule the system proposed, never the family's defaults."""
+    from libs.moat import docket_feed as DF
+    bundle = A.synthetic_bundle(seed=3, n=400)
+    pkt = A.packet("cell:reach", bundle, trials=10, candidates=[A.candidate(
+        "mean_reversion_bollinger", ["EURUSD", "XAUUSD"], "a z-score band", horizon="24h",
+        evidence={"parameters": {"window": 48, "k": 2.5}}, source="cell:reach")])
+    plan = SR.Plan("cell:reach", "cell", "RUNNABLE", "REBUILT", "desk (own code)", "desk:abc", "")
+    conn = R.connect()
+    try:
+        ing = SR.ingest(pkt, plan, compute_s=1.0, conn=conn, apply=True)
+        assert ing["created"] == 2 and ing["not_executable"] == 0 and not ing.get("errors")
+        rows = [r for r in DF.candidate_rows(conn) if r["family"] == "mean_reversion_bollinger"]
+    finally:
+        conn.close()
+    assert {r["symbol"] for r in rows} == {"EURUSD", "XAUUSD"}
+    assert all(r["params"] == {"bb_n": 48, "bb_k": 2.5} for r in rows)
+    assert all(r["origin"] == "EXTERNAL" for r in rows)
+
+
+def test_a_non_executable_row_is_counted_by_reason_and_never_enqueued(
+        desk: dict[str, Path]) -> None:
+    bundle = A.synthetic_bundle(seed=4, n=400)
+    cands = [
+        # prose only: the rule is text, no structured parameter -> the judge would score defaults
+        A.candidate("trend_ma_cross", ["EURUSD"], "fast EMA crosses slow EMA", horizon="24h",
+                    evidence={"ic_rank": 0.03}, source="cell:ne"),
+        # structured, but nothing the family reads -> defaults only
+        A.candidate("vol_mean_reversion", ["EURUSD"], "vol ratio", horizon="24h",
+                    evidence={"parameters": {"w1": 12, "w2": 96}}, source="cell:ne"),
+        # the family's defaults restated -> defaults only
+        A.candidate("mean_reversion_rsi", ["XAUUSD"], "rsi 14", horizon="24h",
+                    evidence={"parameters": {"rsi_n": 14}}, source="cell:ne"),
+    ]
+    bad = dict(cands[0], family="not_a_family")
+    pkt = A.packet("cell:ne", bundle, trials=12, candidates=[*cands, bad])
+    plan = SR.Plan("cell:ne", "cell", "RUNNABLE", "REBUILT", "desk (own code)", "desk:abc", "")
+    conn = R.connect()
+    try:
+        ing = SR.ingest(pkt, plan, compute_s=1.0, conn=conn, apply=True)
+        n = conn.execute("SELECT count(*) FROM research_candidates").fetchone()[0]
+    finally:
+        conn.close()
+    assert n == 0 and ing["created"] == 0 and ing["candidates"] == 0
+    assert ing["not_executable"] == 4
+    assert ing["not_executable_by_reason"] == {"PROSE_ONLY": 1, "DEFAULTS_ONLY": 2,
+                                               "UNREGISTERED_FAMILY": 1}
+    assert all(e["reason"] for e in ing["not_executable_examples"])
+    # the search still happened: the registered rows' trials are charged, never deflated
+    assert len(ing["trials"]) == 3
 
 
 def test_text_only_is_never_a_resting_state_and_verdicts_are_refused() -> None:
