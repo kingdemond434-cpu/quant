@@ -185,7 +185,7 @@ def parse_lines(text: str) -> list[dict[str, Any]]:
         if not LINE.match(ln):
             continue
         p = [x.strip() for x in ln.split("|")]
-        if len(p) < 9:
+        if len(p) < 8:
             out.append({"_malformed": ln[:160]})
             continue
         out.append({"provider": p[1], "dataflow": p[2], "key": p[3], "freq": p[4],
