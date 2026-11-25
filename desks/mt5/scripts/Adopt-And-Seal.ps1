@@ -336,10 +336,13 @@ if ($GuardRoot) {
     # run from here before the release gate, so the checkout must already be inside production
     # (the ref ci.yml's promote job fast-forwards), which adopt_once fetches into the checkout.
     # A pinned checkout is the owner's own install (install_guard.ps1), which is the stronger
-    # warrant: it need not sit inside production.
-    if (-not $Pinned) { & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null }
+    # warrant: it need not sit inside any remote ref. AUDIT-CLEAR AUTHORITY (zuck 2026-11-25
+    # 18:53Z): an unpinned guard root must be inside the LIVE branch, where only Audit-CLEAR heads
+    # merge; QUANT_ADOPT_AUTHORITY=release restores the production rule.
+    $guardRef = if ($env:QUANT_ADOPT_AUTHORITY -eq "release") { "refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }
+    if (-not $Pinned) { & git -C $guardDir merge-base --is-ancestor $script:GuardHead $guardRef 2>$null }
     if (-not $Pinned -and $LASTEXITCODE -ne 0) {
-        Log ("GUARD ROOT head {0} is not inside origin/production in {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardDir)
+        Log ("GUARD ROOT head {0} is not inside {1} in {2}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardRef, $guardDir)
         Done 8 "guard-root-not-released"
     }
     $script:GuardScript = Join-Path $guardDir "scripts\adopt_guard.py"
@@ -482,7 +485,7 @@ if (Test-Path $gateScript) {
                  ((@($gate.unreleased_code) | Select-Object -First 6) -join ', '))
             Done 0 "held-awaiting-release"
         }
-        if ($gate.decision -notin @("ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
+        if ($gate.decision -notin @("ADOPT_CLEAR", "ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
             Log "release gate returned no recognised adoption authority; keeping the running release"
             Done 8 "release-gate-invalid"
         }

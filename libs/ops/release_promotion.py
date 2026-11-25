@@ -64,6 +64,20 @@ TAG_RE = re.compile(r"^release/(\d{8}T\d{6}Z)-([0-9a-f]{12})$")
 #: The box's escape hatch. Untracked by construction (the state sync publishes an allowlist).
 OVERRIDE_FLAG_REL = "desks/mt5/data/ADOPT_UNRELEASED"
 OVERRIDE_ENV = "QUANT_ADOPT_UNRELEASED"
+#: WHO AUTHORISES A RELEASE (zuck 2026-11-25 18:49-18:53Z: "remove every single one ... except
+#: these", the money rules). The authority is an Audit CLEAR at the exact sha, enforced box-side by
+#: adopt_guard `pre` (an ADOPT_CLEARS row must vouch for every governed path the target changes),
+#: then smoke, seal, health and automatic rollback. A green CI `production` pointer is no longer
+#: required: it never once moved (0 of 75 forge PRs merged by 11-25) and held every release.
+#: `release` restores the old CI-pointer rule without a code change.
+AUTHORITY_ENV = "QUANT_ADOPT_AUTHORITY"
+AUTHORITY_AUDIT_CLEAR = "audit_clear"
+AUTHORITY_RELEASE = "release"
+
+
+def authority() -> str:
+    v = os.environ.get(AUTHORITY_ENV, "").strip().lower()
+    return AUTHORITY_RELEASE if v == AUTHORITY_RELEASE else AUTHORITY_AUDIT_CLEAR
 
 #: Private ref namespace the box fetches into, so no other fetcher's tracking ref is raced.
 GATE_REF_TIP = "refs/quant/release-gate/tip"
@@ -351,7 +365,8 @@ def promote(root: Path, target: str, ev: Evidence, *, remote: str = "origin",
 # ------------------------------------------------------------------------- box adoption
 @dataclass
 class AdoptionDecision:
-    decision: str            # ADOPT_TIP | ADOPT_RELEASE | HOLD | LEGACY_TIP | OVERRIDE_TIP
+    # ADOPT_CLEAR | ADOPT_TIP | ADOPT_RELEASE | HOLD | LEGACY_TIP | OVERRIDE_TIP
+    decision: str
     target: str | None
     reason: str
     tip: str | None = None
@@ -382,8 +397,14 @@ def override_requested(root: Path, flag: bool = False) -> str | None:
 
 
 def adoption_decision(git: Git, *, tip: str, release_sha: str | None, release_ref: str | None,
-                      head: str | None, override: str | None = None) -> AdoptionDecision:
-    """Which commit may this box adopt? Pure over git's answers; never fetches."""
+                      head: str | None, override: str | None = None,
+                      authority: str = AUTHORITY_RELEASE) -> AdoptionDecision:
+    """Which commit may this box adopt? Pure over git's answers; never fetches.
+
+    Under AUTHORITY_AUDIT_CLEAR the tip is the target and the AUDIT decides, not CI: Adopt-And-Seal
+    runs adopt_guard `pre` on it next, which refuses unless an auditor CLEAR row covers every
+    governed path the tip changes. A missing CLEAR therefore still holds; a missing CI run does
+    not."""
     def mk(decision: str, target: str | None, reason: str,
            unreleased: list[str] | None = None) -> AdoptionDecision:
         return AdoptionDecision(decision, target, reason, tip=tip, release_ref=release_ref,
@@ -393,6 +414,10 @@ def adoption_decision(git: Git, *, tip: str, release_sha: str | None, release_re
     if override:
         return mk("OVERRIDE_TIP", tip, f"override: {override}; adopting the branch tip whether "
                   "or not CI has released it")
+    if authority == AUTHORITY_AUDIT_CLEAR:
+        return mk("ADOPT_CLEAR", tip, f"authority audit_clear: tip {tip[:12]} adopts if "
+                  "adopt_guard pre finds an auditor CLEAR for every governed path it changes; "
+                  "CI is advisory")
     if release_sha is None:
         return mk("HOLD", None, "no production pointer and no release/* tag exists yet; "
                   "holding until a tested release is published")
@@ -479,7 +504,8 @@ def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",
             prod, ref = git.rev(newest), newest
     head = git.rev("HEAD")
     return adoption_decision(git, tip=tip, release_sha=prod, release_ref=ref, head=head,
-                             override=override_requested(root, allow_unreleased))
+                             override=override_requested(root, allow_unreleased),
+                             authority=authority())
 
 
 def dumps(d: dict[str, Any]) -> str:
