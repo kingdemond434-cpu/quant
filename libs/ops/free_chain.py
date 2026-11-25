@@ -154,6 +154,11 @@ def _iso(t: datetime) -> str:
     return t.isoformat(timespec="seconds")
 
 
+#: calls a day one metered failover-tail route (a direct DeepSeek / OpenAI / XAI seat) may take
+#: when the free routes are dark; env FREE_CHAIN_PAID_DAILY on the box overrides it.
+PAID_TAIL_DAILY = 40
+
+
 def _env_int(env: Mapping[str, str], name: str, default: int) -> int:
     try:
         return int(str(env.get(name, "") or default))
@@ -315,18 +320,23 @@ def discover(*, env: Mapping[str, str] | None = None, root: Path | None = None,
                 # model is a free id: it is the chain's failover TAIL, never rotated onto.
                 paid = "openrouter.ai" not in str(st.base_url) and \
                     not llm_seat.is_free_model(str(st.model or ""))
+                # A METERED TAIL IS CAPPED BY DEFAULT (Audit 2026-11-25): with every free route
+                # dark, an uncapped tail would take every hourly call at metered prices.
+                # FREE_CHAIN_PAID_DAILY overrides it on the box; 0 there lifts the cap.
                 out.append(Route(str(st.name), "seat", str(st.base_url).rstrip("/"), st.key,
                                  (st.model,) if st.model else (), lit=bool(st.key),
                                  key_envs=(st.source.split(":", 1)[-1],), paid=paid,
+                                 daily_cap=(_env_int(e, "FREE_CHAIN_PAID_DAILY",
+                                                     PAID_TAIL_DAILY) if paid else 0),
                                  handle=st))
     # 3. the free roster file
     with contextlib.suppress(Exception):
         from libs.ops import llm_seat
         from libs.ops.llm_route import load_seats
-        for p in load_seats(base_root / FREE_ROSTER):
-            st = llm_seat.Seat(name=str(p.get("name") or "free"),
-                               base_url=str(p.get("base_url")).rstrip("/"),
-                               key=str(p.get("key")), model=str(p.get("model") or ""),
+        for row in load_seats(base_root / FREE_ROSTER):
+            st = llm_seat.Seat(name=str(row.get("name") or "free"),
+                               base_url=str(row.get("base_url")).rstrip("/"),
+                               key=str(row.get("key")), model=str(row.get("model") or ""),
                                source="file:llm_panel_free.json")
             out.append(Route(st.name, "panel_free", st.base_url, st.key,
                              (st.model,) if st.model else (), lit=True,
@@ -345,7 +355,7 @@ def discover(*, env: Mapping[str, str] | None = None, root: Path | None = None,
                     cn.seat_for(p, cn_env)
             except Exception as exc:
                 seat = cn.Seat(p, p.default_base, "", why=f"DARK: {type(exc).__name__}")
-            names = (p.key_env, *p.key_aliases) + ((p.account_env,) if p.account_env else ())
+            key_names = (p.key_env, *p.key_aliases) + ((p.account_env,) if p.account_env else ())
             why = seat.why
             if not seat.lit and env is None and "is not set" in why:
                 bad = _refused_alias((p.key_env, *p.key_aliases))
@@ -354,19 +364,19 @@ def discover(*, env: Mapping[str, str] | None = None, root: Path | None = None,
             out.append(Route(p.name, "cn", str(seat.base_url).rstrip("/"), seat.key if seat.lit
                              else "", tuple(seat.models), relay=bool(p.relay),
                              public_only=cn.public_only(p), lit=seat.lit,
-                             why=why, key_envs=names,
+                             why=why, key_envs=key_names,
                              daily_cap=(cn.relay_daily_cap(p, e) if p.relay else 0),
                              weekly_cap=cn.weekly_cap_of(p, e), weekly_name=p.name,
                              handle=seat))
     # 5 + 6. the principal's own keys, built in and by the env convention
     envp = env_providers(env)
     oenv = _env_overlay(env, envp)
-    for p in OWNER_PROVIDERS:
-        out.append(_owner_route(p, "owner", oenv if env is None else env, list_models))
-    for p in envp:
-        r = _owner_route(p, "env", oenv if env is None else env, list_models)
-        if r.lit is False and not p.default_base:
-            r.why = f"DARK: {ENV_PREFIX}{p.name.upper()}_BASE is not set"
+    for op in OWNER_PROVIDERS:
+        out.append(_owner_route(op, "owner", oenv if env is None else env, list_models))
+    for ep in envp:
+        r = _owner_route(ep, "env", oenv if env is None else env, list_models)
+        if r.lit is False and not ep.default_base:
+            r.why = f"DARK: {ENV_PREFIX}{ep.name.upper()}_BASE is not set"
         out.append(r)
     # OFFICIAL PROVIDERS ONLY: an unofficial key-resale relay is dark from every source
     # (panel files, plug-ins and the env convention included), never just from cn_ensemble.

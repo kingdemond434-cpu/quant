@@ -275,3 +275,22 @@ def test_a_denied_relay_is_dark_from_every_source(monkeypatch: Any) -> None:
         if name in rs:
             assert not rs[name].lit and "DENIED" in rs[name].why and rs[name].key == ""
     assert not any(r.lit and r.name in ("agentrouter", "freegg", "acme") for r in rs.values())
+
+
+def test_a_metered_tail_seat_carries_a_default_daily_cap(monkeypatch: pytest.MonkeyPatch,
+                                                          tmp_path: Path) -> None:
+    """A direct vendor seat is metered: with every free route dark it must not take every hourly
+    call uncapped (Audit 2026-11-25). FREE_CHAIN_PAID_DAILY overrides the default."""
+    from libs.ops import llm_seat
+
+    class _S:
+        name, base_url, key, model, source = ("deepseek", "https://api.deepseek.com/v1", FAKE,
+                                              "deepseek-chat", "env:DEEPSEEK_API_KEY")
+    monkeypatch.setattr(llm_seat, "seats", lambda: [_S()])
+    monkeypatch.setattr(llm_seat, "is_free_model", lambda m: False)
+    monkeypatch.delenv("FREE_CHAIN_PAID_DAILY", raising=False)
+    tail = [r for r in fc.discover(root=tmp_path) if r.name == "deepseek" and r.paid]
+    assert tail and tail[0].daily_cap == fc.PAID_TAIL_DAILY > 0
+    monkeypatch.setenv("FREE_CHAIN_PAID_DAILY", "7")
+    tail = [r for r in fc.discover(root=tmp_path) if r.name == "deepseek" and r.paid]
+    assert tail and tail[0].daily_cap == 7
