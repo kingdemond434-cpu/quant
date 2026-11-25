@@ -100,7 +100,15 @@ def run_step(name: str, fn) -> dict:
 #: step runs as its own `--step` child; past its budget the child is stopped, the step is recorded
 #: as FAILED with TIMEOUT, and the chain goes on. Unbudgeted steps run in process exactly as before.
 STEP_WALL_S: dict[str, float] = {"research_bandit": 2 * 3600.0, "futures_curves": 90 * 60.0,
-                                 "curve_strategies": 90 * 60.0}
+                                 "curve_strategies": 90 * 60.0,
+                                 # The two cache-only fill probes (2026-11-25). Their OWN process
+                                 # is also what lets them refuse the terminal: each exits if the
+                                 # real MetaTrader5 is already imported, which the chain's shadow
+                                 # step does in this process. Script budget 900 s, wall 1,200 s.
+                                 "entry_timing_probe": 1200.0, "asia_bracket_refill": 1200.0}
+
+#: The script budget each fill probe is given (its own `--budget-s`), inside its wall above.
+PROBE_BUDGET_S = 900.0
 
 
 def run_step_isolated(name: str, wall_s: float) -> dict:
@@ -169,6 +177,42 @@ def _shadow() -> None:
 def _qquant_shadow() -> None:
     import qquant_shadow
     qquant_shadow.main()
+
+
+def _run_root_script(stem: str, args: list[str]) -> int:
+    """`scripts/<stem>.py`'s `main(args)`, loaded by path so the repository's `scripts/` dir is
+    never put ahead of the desk's own modules on `sys.path`."""
+    import importlib.util
+    path = BASE.parent.parent / "scripts" / f"{stem}.py"
+    spec = importlib.util.spec_from_file_location(f"_daily_{stem}", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"{path} is not loadable")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return int(mod.main(args))
+
+
+def _entry_timing_probe() -> None:
+    """THE JUDGE'S FILL MECHANICS, MEASURED ONCE A DAY (2026-11-25). scripts/entry_timing_probe.py
+    replays sampled forward clocks through the judge's engine, an independent bid/ask reference
+    fill and a close-fill counterfactual, from the parquet CACHE ONLY (it refuses MetaTrader5 and
+    h1_source.from_mt5 before any desk import), and writes reports/ENTRY_TIMING_PROBE.json. Read
+    only: no certificate, clock or ledger is touched. A standing daily series lets the effect of
+    engine FILL_RULES changes be tracked over time."""
+    rc = _run_root_script("entry_timing_probe", ["--budget-s", f"{PROBE_BUDGET_S:.0f}"])
+    if rc != 0:
+        raise RuntimeError(f"entry_timing_probe returned {rc}")
+
+
+def _asia_bracket_refill() -> None:
+    """THE GOLD ASIA BRACKET CLOCKS UNDER THE OLD AND FIXED ENGINE, ONCE A DAY (2026-11-25).
+    scripts/asia_bracket_refill.py re-runs every XAUUSD.asia clock's exact spec over its forward
+    window through the engine before fill-2026-11-25-a (read from git) and the engine in this
+    tree, from the parquet CACHE ONLY, and writes reports/ASIA_BRACKET_REFILL.json (n, exp_r, t
+    and gap days per clock). Read only."""
+    rc = _run_root_script("asia_bracket_refill", ["--budget-s", f"{PROBE_BUDGET_S:.0f}"])
+    if rc != 0:
+        raise RuntimeError(f"asia_bracket_refill returned {rc}")
 
 
 def _execution() -> None:
@@ -981,7 +1025,10 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("state_admission", _state_admission),
          ("reconcile", _reconcile), ("scalp_gauntlet", _scalp_gauntlet),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
-         ("execution", _execution), ("recertify", _recertify),
+         ("execution", _execution),
+         ("entry_timing_probe", _entry_timing_probe),
+         ("asia_bracket_refill", _asia_bracket_refill),
+         ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("loss_replace", _loss_replace),

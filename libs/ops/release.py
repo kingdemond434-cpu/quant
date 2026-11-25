@@ -163,6 +163,10 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/TAPE_FRESHNESS.json",
     # The certificate lineage of every live window (scripts/check_cert_lineage.py, 2026-10-20).
     "desks/mt5/reports/CERT_LINEAGE.json",
+    # The two cache-only fill probes (daily_cycle steps, 2026-11-25): the judge's fill mechanics
+    # and the gold Asia clocks under the old and fixed engine. Reports, never inputs.
+    "desks/mt5/reports/ENTRY_TIMING_PROBE.json",
+    "desks/mt5/reports/ASIA_BRACKET_REFILL.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
