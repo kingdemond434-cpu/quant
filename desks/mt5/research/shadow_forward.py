@@ -1229,14 +1229,14 @@ EXOTIC_EXCLUSION_WHY = ("exotic FX is banned from mining, judging and trading (z
 
 def _is_exotic(symbol: str) -> bool:
     try:
-        from universe_policy import is_exotic_symbol
+        import universe_policy as _up
     except ImportError:
         try:
-            from research.universe_policy import is_exotic_symbol  # type: ignore[no-redef]
+            from research import universe_policy as _up  # type: ignore[no-redef]
         except Exception:
-            return False
+            return False                    # no policy module: nothing is excluded
     try:
-        return bool(is_exotic_symbol(str(symbol)))
+        return bool(_up.is_exotic_symbol(str(symbol)))
     except Exception:
         return False
 
