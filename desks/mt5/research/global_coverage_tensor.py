@@ -490,11 +490,14 @@ def _country_census() -> dict[str, Any]:
 
 
 def _source_terms_audit() -> dict[str, Any]:
+    # It runs BEFORE this pass's STATE write, so any failure here must never propagate: a raise would
+    # skip STATE every hour. Whatever goes wrong is published as UNMEASURED with its reason.
     try:
         from libs.research import source_terms_audit as sta
-    except ImportError as e:
-        return {"status": "UNMEASURED", "why": f"libs.research.source_terms_audit: {e}"}
-    return sta.current()
+        return sta.current()
+    except Exception as e:
+        return {"status": "UNMEASURED",
+                "why": f"libs.research.source_terms_audit: {type(e).__name__}: {e}"}
 
 
 def mechanism_actor() -> dict[str, str]:

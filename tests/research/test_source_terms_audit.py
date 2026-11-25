@@ -50,3 +50,16 @@ def test_the_real_grounds_file_is_audited_without_error() -> None:
     out = sta.current()
     assert out["status"] == "MEASURED" and out["n_hosts"] > 100
     assert sum(out["counts"].values()) == out["n_hosts"]
+
+
+def test_a_failing_audit_publishes_unmeasured_and_never_raises(monkeypatch) -> None:
+    import sys
+    sys.path.insert(0, str(sta.ROOT / "desks" / "mt5"))
+    from research import global_coverage_tensor as G
+
+    def boom() -> None:
+        raise ValueError("bad grounds")
+
+    monkeypatch.setattr(sta, "current", boom)
+    out = G._source_terms_audit()
+    assert out["status"] == "UNMEASURED" and "ValueError" in out["why"]
