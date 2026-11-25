@@ -90,7 +90,7 @@ for _names, _kind in (
     (("amarkets broker_swaps collective2 darwinex duplitrade equiti_copy fbs_tape fxblue "
       "followme_cn fxmerge hfm_pamm instaforex_copy litefinance mylivefx_br myfxbook_outlook "
       "octa_masters roboforex_copyfx share4you swap_table"), "broker"),
-    ("academic arxiv_qfin literature", "scholarly"),
+    ("academic arxiv_qfin literature research_feeds", "scholarly"),
     ("bis_speeches central_banks sec_edgar cot ff_calendar_vintage", "official"),
     (("github github_topics quantconnect mql5 mql5_catalog mql5_prospector mql5_signals "
       "mql5_reputation mql5_survivors tradingview_scripts"), "code"),
@@ -120,6 +120,9 @@ ROUTE_COST: dict[str, float | None] = {
 #: `deep_forest`, `world_crawler`, `mine`; `repo_miner` runs from the daily cycle only.
 CLOCK_DEEP_FOREST, CLOCK_SEAT, CLOCK_REPO, UNSCHEDULED = (
     "hourly:deep_forest", "hourly:mine", "daily:repo_miner", "UNSCHEDULED")
+#: The paper feeds' own box task (desks/mt5/ops/box_tasks.manifest Quant-ResearchFeeds).
+CLOCK_PAPERS = "box:Quant-ResearchFeeds"
+PAPER_FEEDS = DESK / "side_channels" / "research_feeds.json"
 
 WILSON_Z = 1.96
 #: Pseudo-leads added at the desk's POOLED yield before the bound is taken, so a source with almost
@@ -423,8 +426,48 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
                              aliases=[p.name, f"miner:{p.name}", sid])
             files, first, last = _seat_activity(p)
             rows[sid]["n_donation_files"], rows[sid]["_seen"] = files, (first, last)
+    n_papers = _paper_rows(rows)
     return rows, {"n_grounds": len(grounds), "n_clusters": len(clusters),
-                  "n_regions": len(regions), "n_seat_roots": len(SEAT_ROOTS)}
+                  "n_regions": len(regions), "n_seat_roots": len(SEAT_ROOTS),
+                  "n_paper_feeds": n_papers}
+
+
+def _paper_rows(rows: dict[str, dict[str, Any]], path: Path | None = None) -> int:
+    """THE PUBLISHED-PAPER MINERS AS REGISTRY ROWS (coordinator/Data, 2026-11-25): every feed in
+    side_channels/research_feeds.json and the arXiv q-fin block gets its own row with its own
+    route, kind and REGION, so the yield rule and its per-region floor see each one. A paper miner
+    that runs outside this registry bypasses the rule. Feeds are fetched by the box task
+    Quant-ResearchFeeds; each donated row carries `feed=<name>`, aliased here. A closed feed
+    (terms not `open`) is registered with its terms state and costs nothing. Returns the count."""
+    doc = _read_json(path or PAPER_FEEDS, {}) or {}
+    n = 0
+    for f in doc.get("feeds") or []:
+        name = str(f.get("name") or "").strip()
+        if not name:
+            continue
+        sid = f"src:paper:{name}"
+        kind = "official" if str(f.get("kind")) in ("speech", "statistics") else "scholarly"
+        terms = str(f.get("terms") or "unrecorded")
+        rows[sid] = _row(
+            sid, name=name, kind=kind, region=f.get("region"), route="rss", url=f.get("url"),
+            ground=f"{f.get('institution') or name} ({PAPER_FEEDS.name})",
+            arm_source="research_feeds", fetch_clock=CLOCK_PAPERS,
+            licence_note=(f"terms {terms}: {f.get('terms_note') or 'no note'}"
+                          if terms == "open" else f"CLOSED (terms {terms}) -- not fetched"),
+            aliases=[name, f"research_feeds:{name}"])
+        rows[sid]["paper_terms"] = terms
+        n += 1
+    ax = doc.get("arxiv")
+    if isinstance(ax, dict):
+        sid = "src:paper:arxiv_qfin"
+        rows[sid] = _row(
+            sid, name="arxiv_qfin", kind="scholarly", region=ax.get("region") or "global",
+            route="rss", url=ax.get("url") or ax.get("base"),
+            ground=f"arXiv q-fin ({PAPER_FEEDS.name})", arm_source="arxiv_qfin",
+            fetch_clock=CLOCK_PAPERS, licence_note="arXiv API terms: metadata, rate-limited",
+            aliases=["research_feeds:arxiv_qfin"])
+        n += 1
+    return n
 
 
 
