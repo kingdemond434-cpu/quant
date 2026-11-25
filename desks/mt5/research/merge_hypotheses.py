@@ -751,6 +751,50 @@ def _reoffer_unbuildable() -> list[dict[str, Any]]:
     return rows
 
 
+def _exotic_path() -> Path:
+    from research.judge_exotic_exclusion import SET_ASIDE_NAME
+    return HYP / SET_ASIDE_NAME
+
+
+def _reoffer_exotic() -> list[dict[str, Any]]:
+    """The rows the last merge set aside as EXOTIC_BANNED, stamps removed. Never raises."""
+    try:
+        from research.judge_exotic_exclusion import read_set_aside
+        return read_set_aside(_exotic_path())
+    except Exception as exc:
+        print(f"   exotic set-aside unreadable ({type(exc).__name__}: {exc}); not re-offered")
+        return []
+
+
+def _set_aside_exotic(rows: list[dict[str, Any]], stamp: str
+                      ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """`(docket rows, exotic rows, report)`: exotics get no judge slot (judge_exotic_exclusion).
+    Fails open: a fault keeps every row."""
+    try:
+        from research.judge_exotic_exclusion import split
+    except Exception as exc:
+        return rows, [], {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300], "count": 0}
+    keep, aside, report = split(rows, stamp)
+    report["path"] = str(_exotic_path())
+    if aside:
+        print(f"   exotic: {len(aside)} row(s) set aside as EXOTIC_BANNED, kept -> "
+              f"{_exotic_path().name} (no judge slot, no trial charge)")
+    return keep, aside, report
+
+
+def _bank_exotic(rows: list[dict[str, Any]], report: dict[str, Any]) -> bool:
+    """Write the exotic bank (also when empty) only when the split ran. Never raises."""
+    if report.get("status") != "APPLIED":
+        return False
+    try:
+        from research.judge_exotic_exclusion import write_set_aside
+        write_set_aside(_exotic_path(), rows)
+        return True
+    except Exception as exc:
+        print(f"   exotic set-aside unwritten ({type(exc).__name__}: {exc})")
+        return False
+
+
 def _set_aside_unbuildable(rows: list[dict[str, Any]], stamp: str
                            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """`(docket rows, set-aside rows, report)`. Fails open: a fault keeps every row."""
@@ -1027,6 +1071,11 @@ def main() -> int:
     _aside_offer = _reoffer_unbuildable()
     if _aside_offer:
         banked = (banked if isinstance(banked, list) else []) + _aside_offer
+    # THE EXOTIC SET-ASIDE IS RE-OFFERED THE SAME WAY (judge_exotic_exclusion): kept, re-split
+    # before ordering, never lost; a symbol the registry re-classifies returns on this merge.
+    _exotic_offer = _reoffer_exotic()
+    if _exotic_offer:
+        banked = (banked if isinstance(banked, list) else []) + _exotic_offer
     readmitted = 0
     # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
     # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
@@ -1223,6 +1272,9 @@ def main() -> int:
     # into `unbuildable_set_aside.json`, never dropped. Runs after every row-minting step above so
     # a re-aimed descendant is checked too, and before ordering. A fault costs the filter only.
     rows_out, unbuildable, unbuildable_report = _set_aside_unbuildable(rows_out, stamp)
+    # EXOTICS GET NO JUDGE SLOT (zuck 2026-11-24 18:06Z): set aside by name before ordering, so
+    # the judge's budget reaches the non-exotic rows instead. Not a verdict, not a trial charge.
+    rows_out, exotic_rows, exotic_report = _set_aside_exotic(rows_out, stamp)
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
@@ -1234,7 +1286,7 @@ def main() -> int:
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
-        rows_out, coverage = order_docket(rows_out)
+        rows_out, coverage = order_docket(rows_out, exclusions=exotic_report)
     except Exception as exc:
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")
@@ -1372,6 +1424,7 @@ def main() -> int:
     _write_docket_atomically(TARGET, rows_out)
     # Only after the docket is durable: the set-aside rows are then held in exactly one place.
     unbuildable_report["written"] = _bank_unbuildable(unbuildable, unbuildable_report)
+    exotic_report["written"] = _bank_exotic(exotic_rows, exotic_report)
     _lease(TARGET)
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
@@ -1440,6 +1493,7 @@ def main() -> int:
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
         "unbuildable_set_aside": unbuildable_report,
+        "exotic_set_aside": exotic_report,
         "preregistration": prereg,
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",
