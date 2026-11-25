@@ -569,6 +569,10 @@ desks/mt5/data/hypotheses/conversion_handoff.json
 # The handoff converter's append-only resolution ledger (~125k rows once drained): box state,
 # read on the box only; its counts are published in reports/CONVERSION_HANDOFF.json.
 desks/mt5/data/hypotheses/conversion_handoff_resolved.jsonl
+# The cell-conversion audit's converted-cell ledger (one row per cell identity, so a cell is
+# charged one trial once): box state, read on the box only; its counts are published in
+# reports/CELL_CONVERSION_AUDIT.json.
+desks/mt5/data/hypotheses/cell_conversion_ledger.jsonl
 # judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
 # copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,
 # a set-aside unreadable manifest, and the atomic-write siblings. Transient box state, written
