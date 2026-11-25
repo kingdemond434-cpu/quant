@@ -262,7 +262,9 @@ def run_once(root: Path, *, quantbox: Path = QUANTBOX, now: datetime | None = No
     todo = repairs(doc.get("breach") or [], state, now, running=running, paused=paused)
     done = {t: start(t) for t in todo}
     if done:
-        state.setdefault("started", {}).update({t: now.isoformat() for t in done})
+        raw = state.get("started")
+        prev: dict[str, Any] = raw if isinstance(raw, dict) else {}
+        state["started"] = {**prev, **{t: now.isoformat() for t in done}}
     doc["repaired"] = done
     shape = "|".join(doc.get("breach") or [])
     try:
