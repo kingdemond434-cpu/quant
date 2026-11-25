@@ -133,6 +133,13 @@ class Paths:
     def allocation(self) -> Path:
         return self.desk / "reports" / "KEYED_SOURCES_ALLOCATION_INTEL.json"
 
+    @property
+    def intelligence(self) -> tuple[Path, ...]:
+        """Seat output roots the data-discovery intake reads (the repo root's tree only for the
+        live desk, so a test desk never sees the real queue)."""
+        own = self.desk / "data" / "intelligence"
+        return (ROOT / "data" / "intelligence", own) if self.desk == DESK else (own,)
+
 
 class Blocked(Exception):
     """A named state (BLOCKED_AUTH:<VAR>, BLOCKED_DEPENDENCY:<x>, BLOCKED_SESSION ...)."""
@@ -544,10 +551,27 @@ def credential_of(row: Mapping[str, Any]) -> str:
 
 def _base(row: Mapping[str, Any], sym: str, series: str, now: datetime) -> dict[str, Any]:
     stamp = now.isoformat(timespec="seconds")
-    return {"symbols": [sym], "available_time": stamp, "event_time": stamp,
-            **{k: row.get(k, UNMEASURED) for k in CULTURE_KEYS},
-            "uses": row.get("uses"), "credential_var": credential_of(row),
-            "required_data": [f"desks/mt5/data/lake/series/{lake_name(row['id'], series)}.csv"]}
+    out = {"symbols": [sym], "available_time": stamp, "event_time": stamp,
+           **{k: row.get(k, UNMEASURED) for k in CULTURE_KEYS},
+           "uses": row.get("uses"), "credential_var": credential_of(row),
+           "required_data": [f"desks/mt5/data/lake/series/{lake_name(row['id'], series)}.csv"]}
+    # A source a free model proposed (research/data_discovery.py) carries who found the data.
+    if row.get("discovered_by"):
+        out.update(discovered_by=row["discovered_by"], method=row.get("method"),
+                   lane=row.get("lane"))
+    return out
+
+
+def discovered(paths: Paths, roster: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                                     str | None]:
+    """Roster rows for the accepted free-model data-source proposals (research/data_discovery.py,
+    re-vetted on read), or ([], reason). Each is an ordinary keyless `kind: sdmx` row: it passes
+    every fence below exactly as a hand-written one does."""
+    try:
+        from research import data_discovery as dd
+        return dd.discovered_rows(roster, roots=paths.intelligence), None
+    except Exception as exc:  # blind-except intentional (BLE001): intake never costs the pass
+        return [], f"{type(exc).__name__}: {exc}"[:200]
 
 
 def build_grid(paths: Paths, roster: list[dict[str, Any]], pts_by: Mapping[str, Any],
@@ -655,6 +679,8 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
     t0 = time.monotonic()
     deadline = t0 + budget_s * 0.7
     roster, bad = load_roster(paths.roster)
+    disc, disc_err = discovered(paths, roster)
+    roster = roster + disc
     state = _read(paths.state, {}) or {}
     sst: dict[str, Any] = state.setdefault("sources", {})
     order = sorted(roster, key=lambda r: str((sst.get(r["id"]) or {}).get("last_attempt") or ""))
@@ -668,6 +694,8 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
         rec: dict[str, Any] = {"kind": row["kind"],
                                "credential_vars": row.get("key_env") or [credential_of(row)],
                                "store_rows": len(store)}
+        if row.get("discovered_by"):
+            rec.update(discovered_by=row["discovered_by"], method=row.get("method"))
         if not machine_use_allowed(row):
             # Not fetched, not stored, not in the lake: the terms fence is upstream of all three.
             rec["status"] = "BLOCKED_TERMS"
@@ -734,6 +762,12 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
            # CRO duty D18 (#121): every dataset feeds direct, indirect and allocation uses.
            "cro_duty": "D18",
            "roster_complaints": bad, "sources": recs,
+           "discovered_sources": {"rows": [r["id"] for r in disc], "error": disc_err,
+                                  "by_organ": {o: sum(1 for r in disc
+                                                      if r.get("discovered_by") == o)
+                                               for o in sorted({str(r.get("discovered_by"))
+                                                                for r in disc})},
+                                  "method": "llm_data_discovery"},
            "registry_error": cred.load_error(),
            "status_counts": _counts(recs),
            "cells": {"grid_direct": len(direct), "grid_indirect": len(indirect),

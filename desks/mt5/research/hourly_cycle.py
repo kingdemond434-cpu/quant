@@ -1220,6 +1220,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # non-exotic -> clocked -> promoted -> fill-proven -> live -> live profit, per producer,
     # class and family, with depth, the weakest stage and ratcheting floors. Artifact joins.
     "funnel",
+    # THE FREE-MODEL CONVERSION LANES (2026-11-25): translator / judge feedback / near-miss /
+    # redundancy critic, each a job in data/free_model_jobs.json weighted by the funnel's by_lane.
+    "conversion_lanes",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
     # and dead-replacement RED checks, and the weights the free panel spends its calls by.
@@ -1408,7 +1411,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "occupancy_map", "dsr_inputs",
                      # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
                      # and the ledger of which keys are set (#144, 2026-09-30)
-                     "keyed_sources", "credential_coverage",
+                     "keyed_sources", "credential_coverage", "data_discovery",
                      # primary-publisher first prints for release_vintages (BLS first)
                      "first_print_capture"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
@@ -1442,7 +1445,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
                      "intake_catchup", "compile_candidates", "merge_docket",
-                     "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
+                     "deepen", "conversion_lanes",
+                     "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
@@ -2279,6 +2283,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
     # cursor after every source; the cap sits above so the report and the donation are written.
     "keyed_sources": 420,
+    # One free-chain completion (failover stops at --budget-s 300) and a queue-file write.
+    "data_discovery": 420,
     # One robots read and one BLS POST (30 s timeouts each) plus a CSV append: well under this.
     "first_print_capture": 180,
     # A registry read, a glob over clock files and the last 24h of donation files: seconds.
@@ -2600,6 +2606,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE END-TO-END FUNNEL: artifact joins plus one bounded stream of the compiler's rows
     # (~3 s per 70 MB measured in a cloud container), under 80% of its --budget-s 240.
     "funnel": 300,
+    # THE CONVERSION LANES: one compiler stream plus at most CONVERSION_LANES_CALLS free-model
+    # calls, under 85% of its --budget-s 300.
+    "conversion_lanes": 360,
     # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
     # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
     # cap sits above so both of its files are written rather than cut. A priced-down cap reaches
@@ -4557,6 +4566,11 @@ def main() -> None:
     # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
     # direct exogenous_conditioner cells, indirect conditioned parents and
     # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    # FREE-MODEL DATA DISCOVERY (2026-11-25): one pass of the `data_discovery` job on the shared
+    # free chain (every seat, failover) proposes keyless official SDMX series; BEFORE the keyed
+    # sources, which union the vetted proposals into their roster and fetch them PIT this hour.
+    ddj = _costed("data_discovery", lambda: _producer(
+        "data_discovery", "research/data_discovery.py", "--once", "--budget-s", "300"))
     kys = _costed("keyed_sources", lambda: _producer(
         "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
     # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
@@ -7007,6 +7021,13 @@ def main() -> None:
     # family, the desk's attack order and ratcheting floors (data/funnel_floors.json).
     fnl = _costed("funnel", lambda: _producer(
         "funnel", "research/funnel.py", "--once", "--budget-s", "240"))
+    # THE FREE-MODEL CONVERSION LANES (owner 2026-11-25: "use the free models for conversion"):
+    # prose rows translated into exact settings with no invented number, a deterministic judge
+    # feedback block for kimi/deepseek, lineage-charged near-miss mutants, and the redundancy
+    # critic; every lane a job in data/free_model_jobs.json, re-weighted from the funnel's
+    # by_lane just written. Donates through data/intelligence/conversion_<lane>/.
+    cvl = _costed("conversion_lanes", lambda: _producer(
+        "conversion_lanes", "research/conversion_lanes.py", "--once", "--budget-s", "300"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -7259,6 +7280,7 @@ def main() -> None:
                     "producer_loop": plp,
                     "judge_reach": jrc,
                     "funnel": fnl,
+                    "conversion_lanes": cvl,
                     "breadth_controller": bcl,
                     "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
@@ -7289,6 +7311,7 @@ def main() -> None:
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
                     "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
+                    "data_discovery": ddj,
                     "first_print_capture": fpc,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,

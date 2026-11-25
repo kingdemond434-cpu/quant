@@ -736,7 +736,9 @@ def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
             probe[k] = row[k]
     if not cs.stamp(probe):
         return {}
-    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
+    # A LINEAGE claim family (a near-miss mutant's) leaves `breadth_unit` unset by design.
+    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")
+            if k in probe}
 
 
 #: (family:key) -> cells refused this pass for minting a param the family never reads.
@@ -815,6 +817,14 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and
         # it must reach certification and sizing marked as such, never as an anonymous cell.
         **{k: row[k] for k in ("campaign_id", "source_id", "validation_lane") if row.get(k)},
+        # AND THE CONVERSION LANE (research/conversion_lanes.py, 2026-11-25): the lane that made
+        # the row, what it was translated or mutated from, and -- for a near-miss mutant only --
+        # the parent cell's breadth unit (a lineage groups trials, so claim_selection leaves the
+        # unit to the row; a variant of a cell is that cell's breadth, never a new bet).
+        **{k: row[k] for k in ("lane", "translated_from", "mutation_of", "lineage_root",
+                               "translation_mode") if row.get(k)},
+        **({"breadth_unit": row["breadth_unit"]} if row.get("breadth_unit") and str(
+            row.get("claim_family") or "").startswith("lineage:") else {}),
     }
 
 

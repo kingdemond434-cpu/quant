@@ -113,6 +113,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's emitted > received > judged, and whether its judged rows carried its own
     # rule (research/judge_reach.py): the machine auditing its own handoffs -- meta.
     "judge_reach": "meta",
+    # research/conversion_lanes.py: free models turn held prose and near-misses into exact,
+    # judge-testable cells -- the conversion half of prediction, beside `deepen`.
+    "conversion_lanes": "prediction",
     # Every conversion from raw info to live profit per producer, class and family, its depth,
     # weakest stage and ratcheting floors (research/funnel.py): measurement -- meta.
     "funnel": "meta",
@@ -734,6 +737,7 @@ LEG_LAYER: dict[str, str] = {
     # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
     # ledger of which keys are set measures the desk itself: meta
     "keyed_sources": "information", "credential_coverage": "meta",
+    "data_discovery": "information",
     "first_print_capture": "information",
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",

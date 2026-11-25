@@ -667,6 +667,50 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
     return system, user
 
 
+def _alt_slice(root: Path) -> tuple[Any, Any, str]:
+    """(alt_catalog module, catalog, prompt block) -- (None, None, "") when unavailable."""
+    try:
+        import sys as _sys
+        desk = root / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
+        from research import alt_catalog as ac  # type: ignore[import-not-found]
+        cat = ac.catalog(desk / "data" / "lake" / "series")
+        return ac, cat, ac.prompt_block("deepseek", cat=cat)
+    except Exception:  # blind-except intentional (BLE001): a slice never costs the cycle
+        return None, None, ""
+
+
+def _data_discovery(root: Path) -> tuple[Any, list[str], set[str]]:
+    """(research.data_discovery, labels already fetched, their full URLs) -- (None, [], set())
+    when the desk tree is unavailable; the cycle never depends on it."""
+    try:
+        import sys as _sys
+        desk = root / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
+        from research import data_discovery as dd
+        labels, full = dd.known(desk / "data" / "source_rosters" / "keyed_sources.json",
+                                roots=(root / "data" / "intelligence",
+                                       desk / "data" / "intelligence"))
+        return dd, labels, full
+    except Exception:  # blind-except intentional (BLE001): the task never costs the cycle
+        return None, [], set()
+
+
+def _alt_conditioner(ac: Any, cat: Any, value: Any) -> str | None:
+    """The finding's `alt:` spec when it parses and names a catalog series and column."""
+    if ac is None or not isinstance(cat, dict) or not value:
+        return None
+    got = ac.parse_spec(value)
+    if got is None:
+        return None
+    cols = {str(r["series"]): set(r.get("columns") or []) for r in cat.get("series") or []}
+    return ac.spec(*got) if got[1] in cols.get(got[0], set()) else None
+
+
 def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
@@ -714,6 +758,32 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                                    "fields_stripped": len(cold["blinded_fields"]),
                                    "keys": {}}}})
     system, user = _build_prompt(role_name, role_brief, cold)
+    # THE ALT CATALOG (desks/mt5/research/alt_catalog.py): measured lake series the gauntlet
+    # applies as `alt:` conditioners -- raw inventory, not another agent's conclusion, so the
+    # cold phase may see it. Empty on a host with no lake, and then nothing changes.
+    alt_ac, alt_cat, alt_block = _alt_slice(base)
+    if alt_block:
+        user += ("\n\n" + alt_block + "\nIn this JSON contract, put such a spec in an extra "
+                 '"conditioner" field of the finding (with its "family" and "symbols"), '
+                 "instead of an ALT_CELL line; null when the finding is not alt-conditioned.")
+    # FIND DATA YOURSELF (research/data_discovery.py): a small "propose a keyless official
+    # series" task each pass, vetted into data/intelligence/deepseek/data_source_proposals.json,
+    # which research/keyed_sources.py on the box fetches point-in-time.
+    dd, dd_labels, dd_full = _data_discovery(base)
+    if dd is not None:
+        user += "\n\n" + dd.prompt_block(json_contract=True, existing=dd_labels)
+
+    # JUDGE FEEDBACK (research/conversion_lanes.py): deterministic aggregates of what became of
+    # this seat's earlier rows -- graveyard evidence, never a held-out gate (Tier S layer 4).
+    fb_block = ""
+    try:
+        if alt_ac is not None:
+            from research import conversion_lanes as _cl
+            fb_block = _cl.feedback_block("deepseek")
+    except Exception:  # blind-except intentional (BLE001): feedback never costs the cycle
+        fb_block = ""
+    if fb_block:
+        user += "\n\n" + fb_block
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
@@ -735,7 +805,15 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         findings = parsed.get("findings") if isinstance(parsed, dict) else None
         findings = findings if isinstance(findings, list) else []
     except ValueError:
-        findings = []
+        parsed, findings = None, []
+    data_sources: dict[str, Any] | None = None
+    props = parsed.get("data_sources") if isinstance(parsed, dict) else None
+    if dd is not None and isinstance(props, list) and props:
+        data_sources = dd.record(
+            "deepseek", [p if isinstance(p, dict) else {"_malformed": str(p)[:160]}
+                         for p in props],
+            organ="deepseek", model=model, root=base / "data" / "intelligence",
+            known_paths=dd_full)
 
     routed: list[str] = []
     donated: list[dict[str, Any]] = []
@@ -760,6 +838,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         declared_disposition = str(f.get("disposition") or "").strip().upper()
         if declared_disposition in DISPOSITIONS:
             disposition = declared_disposition
+        cond = _alt_conditioner(alt_ac, alt_cat, f.get("conditioner"))
         row = {"ts": _now(), "role": role_name, "model": model, "deep": deep,
               "seal_path": sealed.get("path"), "title": str(f.get("title"))[:300],
               "type": declared, "disposition": disposition,
@@ -768,6 +847,8 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
               "capability_source": f.get("capability_source"),
               "symbols": syms, "family": fam,
               "evidence_grade": f.get("evidence_grade"), "authority": check["verdict"]}
+        if cond and fam and syms:
+            row["params"] = {"conditioner": cond}
         _append_jsonl(base / EVIDENCE, row)
         donated.append(row)
         routed.append(row["title"])
@@ -794,6 +875,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                             for d in sorted({r["disposition"] for r in donated})},
            "capability_walks_proposed": len(capability_walks),
            "donated_to": str(donated_path) if donated_path else None,
+           "data_sources": data_sources,
            "packet_status": packet.get("status"), "packet_hash": packet.get("packet_hash"),
            "packet_sections": packet.get("sections_measured"),
            "cold_context_removed_keys": cold["removed_keys"]}
@@ -837,6 +919,8 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
         "testable_claim": r.get("testable_claim"),
         "mechanism_tags": [t for t in [r.get("family")] if t], "kind": "hypothesis",
         "url": f"deepseek://{role_name}/{r['ts']}",
+        # An alt-conditioned finding is an EXACT recipe (family + params + symbols).
+        **({"params": dict(r["params"])} if isinstance(r.get("params"), dict) else {}),
     }, ground=f"deepseek:{role_name}", retrieved_at=generated) for r in rows], "deepseek")
     if refused:
         raise ValueError(f"DeepSeek refused {len(refused)} unstamped discoveries")
