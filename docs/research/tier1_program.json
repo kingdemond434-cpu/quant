@@ -9365,6 +9365,22 @@
    "landed": [
     "cell conversion audit 2026-11-11"
    ]
+  },
+  {
+   "id": "ASCORE1",
+   "item": "Allocator scorecard: one unified allocator scored on Fusion, E8 and FTMO every pass (growth vs Kelly, risk utilisation, idle proven sleeves, correlation fit), each pass's improvement aimed at the weakest (zuck 2026-11-24 18:09Z)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:allocator_scorecard",
+   "artifact": "desks/mt5/reports/ALLOCATOR_SCORECARD.json",
+   "consumer": "the Hourly pass reads ALLOCATOR_SCORECARD.json and picks its one allocator improvement from the weakest account; data/allocator_scorecard_events.jsonl feeds the box alerts",
+   "evidence": [
+    "desks/mt5/research/allocator_scorecard.py:2-33 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
