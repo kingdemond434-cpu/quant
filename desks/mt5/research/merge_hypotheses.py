@@ -1313,6 +1313,25 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # THE PRODUCER LOOP'S TWO-SIDED WEIGHTS (research/producer_loop.py, 2026-11-25): inside each
+    # family's own slots, rows go by their producer's measured yield weight (independent,
+    # non-exotic, forward-kept edges per CPU-hour; par when unmeasured, 0 when retired). Same
+    # rows, same family interleave, so the sealed judge's family shares and exploration floor are
+    # untouched. A fault costs the reorder, never a row.
+    producer_weights: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.producer_loop import reweight_rows as _reweight
+        rows_out, producer_weights = _reweight(rows_out)
+        producer_weights["status"] = "APPLIED"
+        if producer_weights.get("moved"):
+            print(f"   producer weights: {producer_weights['moved']} position(s) changed within "
+                  f"their family, 0 removed")
+    except Exception as exc:
+        producer_weights = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   producer weights unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # BREADTH FENCE (research/breadth_fence.py, principal 2026-11-20): the family-balanced,
     # keff-ordered prefix may still be one symbol or one asset class (98% of certificates were
     # FX on 2026-11-19). Every producer's rows pass here, so this one call hooks them all. It
@@ -1492,6 +1511,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "producer_weights": producer_weights,
         "unbuildable_set_aside": unbuildable_report,
         "exotic_set_aside": exotic_report,
         "preregistration": prereg,
