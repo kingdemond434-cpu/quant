@@ -366,6 +366,9 @@ LEG_LAYER: dict[str, str] = {
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
     "moat_series": "information", "scout_roster": "information",
+    # the tape as point-in-time conditioners for the generators (spread regime, liquidity by
+    # hour, post-news response): what the market IS this hour, before anything predicts it
+    "tick_features": "information",
     "descendants": "prediction", "forward_slot_ranker": "portfolio",
     # META, both of them, and deliberately: neither buys the desk a prediction. One sizes the
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
