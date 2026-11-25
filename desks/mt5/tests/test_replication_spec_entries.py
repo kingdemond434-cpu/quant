@@ -68,7 +68,16 @@ def test_rulespec_kwargs_fit_the_lanes_rulespec() -> None:
         # wiring change adds (APPLY.md). Everything else must already fit.
         older = {"external_cell", "native", "peers_key"}
         assert set(kw) - older <= fields, fam
-        assert fam not in rc.SPEC_BOOK, f"{fam} is already in the live spec book"
+        # A written family the live book has since taken up (formula, cross_asset_residual) is
+        # not a second contract: on every default both name, the live value must equal the
+        # written one (live may add fields of its own), and selector_params must match.
+        live = rc.SPEC_BOOK.get(fam)
+        if live is not None:
+            for key, value in kw["defaults"].items():
+                if key in live.defaults:
+                    assert live.defaults[key] == value, f"{fam}.{key}: written != live"
+            assert kw["selector_params"] == live.selector_params, \
+                f"{fam}: written selector_params differ from live"
 
 
 @pytest.mark.parametrize("status", ["REPLICATED", "MISMATCH", "UNMEASURED", ""])
