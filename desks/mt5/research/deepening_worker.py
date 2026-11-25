@@ -1934,6 +1934,34 @@ def _release(lock) -> None:
             pass
 
 
+#: THE HOLDER ENFORCES ITS OWN CEILING (2026-11-25, Autonomy box read). `_holder_alive` keeps a
+#: lock while its pid lives "however old the stamp", so a holder that HANGS -- alive, past its
+#: budget, doing nothing -- refused every caller: 03:38Z..15:38Z every hourly ConvertSwarm lane
+#: exited "another deepening run holds the lock", twelve hours dark, until the holder finally died
+#: and a lane took a 4,681 s lock at 16:38Z. Taking a lock from a LIVE process would let two
+#: writers race, so the fix is on the holder's side: past the same `2 x RUN_BUDGET_SEC` the
+#: callers use as stale, the holder exits itself. Its pid is then dead, so the next caller takes
+#: the lock at once by the existing rule. A healthy run stops at RUN_BUDGET_SEC and never meets it.
+HOLDER_CEILING_FACTOR = 2.0
+HOLDER_EXIT_RC = 75
+
+
+def arm_holder_ceiling(budget_s: float = RUN_BUDGET_SEC, *,
+                       exit_fn=os._exit, factor: float = HOLDER_CEILING_FACTOR):  # type: ignore[no-untyped-def]
+    """Start a daemon timer that ends THIS process at `factor x budget_s`. Returns the timer."""
+    import threading
+
+    def _fire() -> None:
+        dlog(f"holder ceiling: still running at {factor * budget_s:.0f}s "
+             f"({factor:g} x the {budget_s:.0f}s budget) -- exiting so the lock frees")
+        exit_fn(HOLDER_EXIT_RC)
+
+    t = threading.Timer(factor * float(budget_s), _fire)
+    t.daemon = True
+    t.start()
+    return t
+
+
 def main(argv: list[str] | None = None) -> int:
     """Acquire the run lock, work the queue, and ALWAYS release -- including on a crash.
 
@@ -1944,9 +1972,11 @@ def main(argv: list[str] | None = None) -> int:
     lock = _single_flight()
     if lock is None:
         return 0
+    ceiling = arm_holder_ceiling()
     try:
         return _work(argv)
     finally:
+        ceiling.cancel()
         _release(lock)
 
 

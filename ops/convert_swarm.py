@@ -113,16 +113,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"   {m}")
 
     before = _snapshot()
+    # ONE WORKER, ITS SEAT CALLS IN PARALLEL (2026-11-25). deepening_worker is SINGLE-FLIGHT
+    # (`_single_flight`, .deepening.lock): of the N processes this used to launch, one took the
+    # lock and N-1 exited at once with "another deepening run holds the lock" -- the swarm was one
+    # lane wearing N log files. The worker already fans its seat calls across threads
+    # (DEEPEN_SEAT_WORKERS) and walks the free model chain itself (llm_seat, panel), so the
+    # parallelism belongs there: one process, as many seat threads as the panel has models.
     procs: list[tuple[str, subprocess.Popen]] = []
-    for model in models:
+    for model in models[:1]:
         env = dict(os.environ)
-        # env-seat path in libs.ops.llm_seat: <NAME>_API_KEY plus <NAME>_MODEL
+        # env-seat path in libs.ops.llm_seat: <NAME>_API_KEY; the model chain is the worker's own
         env["OPENROUTER_API_KEY"] = key
-        env["OPENROUTER_MODEL"] = model
+        env["DEEPEN_SEAT_WORKERS"] = str(max(1, len(models)))
         env["DEEPEN_RUN_BUDGET_SEC"] = str(a.budget_sec)
         env["PYTHONPATH"] = f"{ROOT};{DESK}"
         env["PYTHONUNBUFFERED"] = "1"
-        log = DESK / "logs" / f"convert_lane_{model.replace('/', '_').replace(':', '_')}.log"
+        log = DESK / "logs" / "convert_lane_swarm.log"
         log.parent.mkdir(parents=True, exist_ok=True)
         fh = log.open("a", encoding="utf-8")
         p = subprocess.Popen(
