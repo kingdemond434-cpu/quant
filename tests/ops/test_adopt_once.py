@@ -79,11 +79,24 @@ def test_the_adopt_log_lands_in_the_box_tree() -> None:
 
 
 def test_a_guard_root_must_be_released_before_it_runs_anything() -> None:
-    """Audit SF1: inside production before heal; adopt_once checks the same."""
-    rel = ADOPT.index('merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production"')
+    """Audit SF1: inside the released line before heal. Under the Audit-CLEAR authority (zuck
+    2026-11-25 18:53Z) that line is LIVE; QUANT_ADOPT_AUTHORITY=release keeps production."""
+    rel = ADOPT.index("merge-base --is-ancestor $script:GuardHead $guardRef")
     assert (
         rel < ADOPT.index('Invoke-AdoptGuard @("heal"')
         and 'Done 8 "guard-root-not-released"' in ADOPT
     )
+    assert '"refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }' in ADOPT
+    assert ADOPT.index("$script:AdoptAuthority = ") < ADOPT.index("if ($GuardRoot) {")
     assert "+refs/heads/production:refs/remotes/origin/production" in ONCE
     assert 'merge-base --is-ancestor $sha "refs/remotes/origin/production"' in ONCE
+
+
+def test_the_audit_clear_bootstrap_runs_the_targets_own_adopter_with_every_check() -> None:
+    clear = (ROOT / "ops/box/adopt_clear_once.ps1").read_text(encoding="utf-8")
+    assert "github.com" not in clear and "remote get-url origin" in clear
+    assert "'^[0-9a-f]{40}$'" in clear
+    assert 'merge-base --is-ancestor $Sha "refs/remotes/origin/$Live"' in clear
+    assert "-RepoRoot $QuantRoot -GuardRoot $stage" in clear
+    assert "AllowUnreleased" not in clear.split("#>", 1)[1]
+    assert '"ADOPT_CLEAR"' in clear and '[string] $GuardRoot' in clear

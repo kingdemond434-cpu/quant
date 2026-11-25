@@ -274,6 +274,9 @@ $script:GuardScript = Join-Path $RepoRoot "scripts\adopt_guard.py"
 $script:GuardRootArgs = @()
 $script:GuardHead = $null
 $script:DeciderRoot = $RepoRoot
+# THE RELEASE AUTHORITY (zuck 2026-11-25 18:53Z): audit_clear unless QUANT_ADOPT_AUTHORITY=release.
+# Read once, here, so the guard-root block below takes nothing from the environment.
+$script:AdoptAuthority = if ($env:QUANT_ADOPT_AUTHORITY -eq "release") { "release" } else { "audit_clear" }
 if ($GuardRoot) {
     $guardDir = $null
     try { $guardDir = (Resolve-Path -LiteralPath $GuardRoot -ErrorAction Stop).Path } catch { }
@@ -290,9 +293,13 @@ if ($GuardRoot) {
     # RELEASED CODE ONLY, BEFORE IT RUNS ANYTHING (adopt_once audit SF1): heal and state-verify
     # run from here before the release gate, so the checkout must already be inside production
     # (the ref ci.yml's promote job fast-forwards), which adopt_once fetches into the checkout.
-    & git -C $guardDir merge-base --is-ancestor $script:GuardHead "refs/remotes/origin/production" 2>$null
+    # AUDIT-CLEAR AUTHORITY (zuck 2026-11-25 18:53Z): the guard root must be inside the LIVE
+    # branch, where only Audit-CLEAR heads merge; the CI `production` pointer no longer gates.
+    # QUANT_ADOPT_AUTHORITY=release restores the production rule.
+    $guardRef = if ($script:AdoptAuthority -eq "release") { "refs/remotes/origin/production" } else { "refs/remotes/origin/$Branch" }
+    & git -C $guardDir merge-base --is-ancestor $script:GuardHead $guardRef 2>$null
     if ($LASTEXITCODE -ne 0) {
-        Log ("GUARD ROOT head {0} is not inside origin/production in {1}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardDir)
+        Log ("GUARD ROOT head {0} is not inside {1} in {2}; not adopting" -f $script:GuardHead.Substring(0, 12), $guardRef, $guardDir)
         Done 8 "guard-root-not-released"
     }
     $script:GuardScript = Join-Path $guardDir "scripts\adopt_guard.py"
@@ -470,7 +477,7 @@ if (Test-Path $gateScript) {
             Invoke-EnsureManifestTasks
             Done 0 "held-awaiting-release"
         }
-        if ($gate.decision -notin @("ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
+        if ($gate.decision -notin @("ADOPT_CLEAR", "ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
             Log "release gate returned no recognised adoption authority; keeping the running release"
             Done 8 "release-gate-invalid"
         }
