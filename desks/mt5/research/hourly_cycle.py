@@ -1433,7 +1433,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "strategy_builder", "generator_coverage",
                      # the four model generators (2026-11-24)
                      "hypgen_knn_analog", "hypgen_rank_learner", "hypgen_neat_evolver",
-                     "hypgen_ge_builder",
+                     "hypgen_ge_builder", "hypgen_gbm_learner",
                      # the world-practice methods (2026-11-25): class LambdaRank, the
                      # intraday realised-moment class book, market-profile value areas
                      "global_xs_ltr", "global_hf_moment", "global_value_area",
@@ -2525,7 +2525,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "strategy_builder": 900,
     # THE FOUR MODEL GENERATORS (hypgen_engine), each inside its own --budget-s (base 180 s).
     "hypgen_knn_analog": 600, "hypgen_rank_learner": 600, "hypgen_neat_evolver": 600,
-    "hypgen_ge_builder": 600,
+    "hypgen_ge_builder": 600, "hypgen_gbm_learner": 600,
     # THE WORLD-PRACTICE METHODS (global_methods): each enumerates a few hundred cells and
     # donates a judge-sized slice; no family is run, so seconds -- the cap is the registry write.
     "global_xs_ltr": 300, "global_hf_moment": 300, "global_value_area": 300,
@@ -4840,7 +4840,7 @@ def main() -> None:
     # THE FOUR MODEL GENERATORS (2026-11-24): analog/kNN, learning-to-rank, NEAT, grammatical
     # evolution -- the strategy builder's rails via `hypgen_engine`, bandit-scaled seconds each.
     hyp = {}
-    for _seat in ("knn_analog", "rank_learner", "neat_evolver", "ge_builder"):
+    for _seat in ("knn_analog", "rank_learner", "neat_evolver", "ge_builder", "gbm_learner"):
         _leg = f"hypgen_{_seat}"
         _hs, _hrec = _bandit_budget(_leg, 180)
         hyp[_leg] = _costed(_leg, lambda _seat=_seat, _leg=_leg, _hs=_hs: _producer(
