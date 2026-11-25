@@ -11,8 +11,9 @@ n>=10, 80 negative, and the rest too thin to judge.
 WHAT IT WRITES. `reports/FILL_PROVEN.json`, each pass:
 
     sleeves  -- the admitted list, [{sleeve, n_out, adjR_out, lcb95_out, p_out}]: n_out >= MIN_N,
-                adjR_out > 0 AND the sleeve survives Benjamini-Hochberg at FDR_Q across every
-                sleeve tested (a positive mean out of ~168 tries is not evidence on its own)
+                adjR_out > 0 and a testable (non-degenerate) series. Benjamini-Hochberg at FDR_Q
+                is REPORTED per sleeve (fdr_pass), never a gate: the consumer also requires a
+                gauntlet certificate (597 trials) and sizes by n/(n+50)
     table    -- every sleeve read, with n/adjR for all trades, outside rollover and inside it,
                 and how many trades had no measured spread (UNMEASURED, never charged zero)
 
@@ -260,7 +261,11 @@ def eligible(row: dict[str, Any]) -> bool:
 
 
 def admitted(row: dict[str, Any]) -> bool:
-    return eligible(row) and bool(row.get("fdr_pass"))
+    """Eligible and testable. FDR is reported, not gated (zuck 11-19: Tier S is not a gate;
+    size n/(n+50)). The consumer admits only sleeves that also hold a gauntlet certificate charged
+    at 597 trials, so a second multiple-testing gate on this cost check double-charges one search
+    (zuck 11-24 18:14Z: gates that cost more than they save go). The consumer sizes by n."""
+    return eligible(row) and row.get("p_out") is not None
 
 
 def build(shadow: Path = SHADOW, ticks: Path = TICKS,
@@ -295,13 +300,14 @@ def build(shadow: Path = SHADOW, ticks: Path = TICKS,
         r["fdr_pass"] = r["sleeve"] in passed
     table.sort(key=lambda r: (not admitted(r), not eligible(r), -(r["adjR_out"] or -9e9)))
     sleeves = [{"sleeve": r["sleeve"], "n_out": r["n_out"], "adjR_out": r["adjR_out"],
-                "lcb95_out": r["lcb95_out"], "p_out": r["p_out"]}
+                "lcb95_out": r["lcb95_out"], "p_out": r["p_out"], "fdr_pass": r["fdr_pass"]}
                for r in table if admitted(r)]
     return {
         "schema": SCHEMA, "generated_at": now.isoformat(timespec="seconds"),
         "rule": {"rollover_hours_venue": sorted(ROLLOVER_HOURS), "min_n_out": MIN_N,
                  "adjR_out": "> 0", "tape_days": TAPE_DAYS,
-                 "fdr": f"Benjamini-Hochberg q={FDR_Q} on one-sided t over n_out >= {MIN_N}",
+                 "fdr": (f"Benjamini-Hochberg q={FDR_Q} on one-sided t over n_out >= {MIN_N}; "
+                         "reported per sleeve as fdr_pass, never a gate"),
                  "n_tested": len(tested)},
         "method": ("forward-phase ledger R minus the median tape (ask-bid)/mid at the entry hour "
                    "x entry / stop distance, once per round trip; hours on the venue clock"),
@@ -311,7 +317,7 @@ def build(shadow: Path = SHADOW, ticks: Path = TICKS,
             "a trade with no measured spread for its hour is UNMEASURED and not counted",
         ],
         "n_sleeves_read": len(table), "n_admitted": len(sleeves),
-        "n_positive_failing_fdr": sum(1 for r in table if eligible(r) and not admitted(r)),
+        "n_positive_failing_fdr": sum(1 for r in table if admitted(r) and not r["fdr_pass"]),
         "tape_days_read": dict(sorted(days_read.items())),
         "symbols_without_tape": sorted(s for s, v in spread_cache.items() if not v),
         "unreadable_ledgers": unread,
