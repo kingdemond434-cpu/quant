@@ -121,9 +121,10 @@ def test_both_probes_are_daily_steps_with_their_own_process() -> None:
 
 
 def _gapped_asia() -> tuple[pd.DataFrame, list[Signal]]:
-    """A buy stop at 2010 that the next bar OPENS above (2015), then a drift to the time exit."""
+    """A buy stop at 2010 that the next bar OPENS above (2015) and then trades back through (low
+    2008), then a drift to the time exit. The old rule read it as a limit and bought 2010."""
     idx = pd.date_range("2026-10-01 06:00", periods=12, freq="1h", tz="UTC")
-    rows = ([(2000.0, 2001.0, 1999.0, 2000.0)] * 2 + [(2015.0, 2016.0, 2012.0, 2014.0)]
+    rows = ([(2000.0, 2001.0, 1999.0, 2000.0)] * 2 + [(2015.0, 2016.0, 2008.0, 2014.0)]
             + [(2014.0, 2015.0, 2013.0, 2014.0)] * 9)
     df = pd.DataFrame(rows, columns=["open", "high", "low", "close"], index=idx)
     sig = Signal(time=idx[1], side=1, stop=1990.0, target=2050.0, ttl_bars=4, tag="asia",
