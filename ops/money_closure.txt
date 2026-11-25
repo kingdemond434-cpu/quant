@@ -361,3 +361,5 @@ libs/ops/token_refresh.py
 libs/research/forward_ledger.py
 libs/regime/disagreement.py
 desks/mt5/research/decay_backtest.py
+libs/research/formula_catalog.py
+libs/research/formula_ops.py

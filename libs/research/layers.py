@@ -340,6 +340,9 @@ LEG_LAYER: dict[str, str] = {
     # THE EXPRESSION FACTORY (2026-09-22): every cell it screens is a claim about returns from
     # a formula on the desk's own bars -- prediction, beside math_lab whose department it shares.
     "expression_factory": "prediction",
+    # THE PUBLISHED FORMULA LIBRARIES: GTJA-191 / Alpha158 cells, each a claim about returns from
+    # a published formula on the desk's own bars -- prediction, like the factory.
+    "formula_library": "prediction",
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
