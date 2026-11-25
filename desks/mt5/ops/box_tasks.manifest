@@ -278,6 +278,12 @@ TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/
 # loss rails and the cross-account opposite-side fence. Standby until data/FTMO_EXECUTOR_ARMED exists.
 # The FTMO book's solve on its own clock (2026-11-05): it never fit HourlyCore's rotation. Writes the
 # CERT_BOOK_LIVE ftmo block only when data/FTMO_ALLOCATOR_ARMED exists.
+# THE FOUR LEGS TAKEN OFF MT5-HourlyCore (2026-11-25): killed at PT55M on 5 of 5 box runs; each is
+# in hourly_cycle.OWN_CLOCK_LEGS and runs `hourly_cycle.py --lane <lane>` under its own limit.
+TASK name="MT5-Compiler" trigger="every 1 hour, at :28" runs="desks/mt5/research/hourly_cycle.py" installer="desks/mt5/scripts/install_lane_tasks.ps1" lane="research"
+TASK name="MT5-TapeRecord" trigger="every 1 hour, at :08" runs="desks/mt5/research/hourly_cycle.py" installer="desks/mt5/scripts/install_lane_tasks.ps1" lane="data"
+TASK name="MT5-TierS" trigger="every 1 hour, at :18" runs="desks/mt5/research/hourly_cycle.py" installer="desks/mt5/scripts/install_lane_tasks.ps1" lane="research"
+TASK name="MT5-Replication" trigger="every 1 hour, at :48" runs="desks/mt5/research/hourly_cycle.py" installer="desks/mt5/scripts/install_lane_tasks.ps1" lane="research"
 TASK name="MT5-FTMO-Allocator" trigger="every 1 hour, at :50" runs="desks/mt5/research/prop_challenge_allocator.py" installer="desks/mt5/scripts/install_ftmo_allocator_task.ps1" lane="prop"
 TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"

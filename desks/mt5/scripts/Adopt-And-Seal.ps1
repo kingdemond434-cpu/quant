@@ -615,6 +615,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # the book's solve on its own clock and the sleeve executor, which stays STANDBY until
 # data\FTMO_EXECUTOR_ARMED exists. Registering either arms nothing.
 foreach ($ensure in @(
+        # The four legs taken off MT5-HourlyCore (2026-11-25). One installer registers the set;
+        # it is re-run while ANY of the four is missing, and -IfMissing leaves live ones alone.
+        @{ Task = "MT5-Compiler"; Installer = "install_lane_tasks.ps1" },
+        @{ Task = "MT5-TapeRecord"; Installer = "install_lane_tasks.ps1" },
+        @{ Task = "MT5-TierS"; Installer = "install_lane_tasks.ps1" },
+        @{ Task = "MT5-Replication"; Installer = "install_lane_tasks.ps1" },
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
