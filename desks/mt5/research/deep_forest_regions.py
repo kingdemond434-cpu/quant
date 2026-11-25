@@ -16,7 +16,12 @@ WHAT THIS DOES, as the MT5-DeepForestRegions task (hourly, one instance at a tim
     produced claims in the last 48 h, 6 h for a zero-yield one -- yielding first, Asia first;
   * up to PARALLEL regions at once (the claims ledger and seen-set are cross-process locked by
     the miner; politeness stays per host), each its own subprocess with its own log;
-  * a pass stops launching at PASS_BUDGET_S so the next hourly pass starts clean;
+  * ONE POLITENESS GATE ACROSS THE PROCESSES: every miner subprocess books its per-host slots in
+    the same folder (polite_fetch.SharedHostGate via QUANT_HOST_GATE_DIR), so 4 processes never
+    hit a shared host faster than one would (Audit H1);
+  * a pass stops launching at PASS_BUDGET_S (40 min), so the last region's 1,000 s timeout still
+    ends inside the task's 58-minute limit, and each finished region is appended and published
+    AS IT COMPLETES -- a killed pass loses nothing already done (Audit H2);
   * every region's result is appended to data/deep_forest_region_runs.jsonl and the rolling view
     is published to reports/DEEP_FOREST_REGIONS.json (per region: last start/end, rc, new claims,
     24 h claims and passes, cadence, floor), which the guardian reads (check_deep_forest_regions:
@@ -35,7 +40,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Sequence
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -66,7 +71,8 @@ REGION_BUDGET_S = 900
 REGION_TIMEOUT_S = 1000
 WORKERS = 4
 PARALLEL = int(os.environ.get("QUANT_DEEP_FOREST_PARALLEL", "4") or 4)
-PASS_BUDGET_S = 3300        # stop launching new regions after 55 min; the next pass continues
+PASS_BUDGET_S = 2400        # last launch at 40 min + 1,000 s timeout < the 58-minute task limit
+HOST_GATE = DESK / "data" / ".host_gate"
 _CLAIMS = re.compile(r"claims_new=(\d+)\b.*?total=(\d+)")
 
 Runner = Callable[[str], dict[str, Any]]
@@ -145,7 +151,10 @@ def run_region(region: str) -> dict[str, Any]:
     argv = [sys.executable, str(MINER), "--region", region, "--budget-s", str(REGION_BUDGET_S),
             "--workers", str(WORKERS)]
     try:
+        HOST_GATE.mkdir(parents=True, exist_ok=True)
+        env = {**os.environ, "QUANT_HOST_GATE_DIR": str(HOST_GATE)}
         p = subprocess.run(argv, cwd=str(DESK / "research"), capture_output=True, text=True,
+                           env=env,
                            encoding="utf-8", errors="replace", timeout=REGION_TIMEOUT_S)
         rc, out = p.returncode, (p.stdout or "") + (p.stderr or "")
     except subprocess.TimeoutExpired as exc:
@@ -221,13 +230,17 @@ def run_pass(now: datetime | None = None, *, runner: Runner = run_region,
         return runner(r)
 
     with ThreadPoolExecutor(max_workers=max(1, PARALLEL)) as pool:
-        for res in pool.map(launch, queue):
+        futures = [pool.submit(launch, r) for r in queue]
+        for fut in as_completed(futures):
+            res = fut.result()
             if res is None:
                 continue
             done.append(res)
             RUNS.parent.mkdir(parents=True, exist_ok=True)
             with RUNS.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(res) + "\n")
+            # publish after EVERY region: a pass killed at the task limit keeps what it finished
+            publish(names, _rows(t - timedelta(days=3)), _now() if now is None else t)
     _write_atomic(STATE, {"last_pass": t.isoformat(timespec="seconds"), "queued": len(queue),
                           "ran": len(done)})
     doc = publish(names, _rows(t - timedelta(days=3)), _now() if now is None else t)

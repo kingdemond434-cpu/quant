@@ -107,3 +107,54 @@ def test_the_task_is_declared_with_its_installer():
     man = (root / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
     assert 'TASK name="MT5-DeepForestRegions"' in man
     assert (root / "desks/mt5/scripts/install_deep_forest_regions_task.ps1").exists()
+
+
+def test_two_processes_share_one_host_spacing(tmp_path, monkeypatch):
+    """Audit H1: two gates (two miner processes) book the SAME host slots through the folder."""
+    from libs.data import polite_fetch as pf
+    clock = [1000.0]
+    monkeypatch.setattr(pf.time, "time", lambda: clock[0])
+    a = pf.SharedHostGate(tmp_path, default_s=5.0)
+    b = pf.SharedHostGate(tmp_path, default_s=5.0)
+    assert a.reserve("api.example") == 0.0
+    assert b.reserve("api.example") == 5.0       # a per-process gate would have said 0
+    assert b.reserve("other.example") == 0.0
+    b.penalise("api.example", 60.0)
+    assert a.reserve("api.example") >= 59.0
+
+
+def test_the_shared_gate_is_chosen_by_the_environment(tmp_path, monkeypatch):
+    from libs.data import polite_fetch as pf
+    monkeypatch.setenv(pf.SHARED_GATE_ENV, str(tmp_path))
+    assert isinstance(pf._gate_from_env(), pf.SharedHostGate)
+    monkeypatch.delenv(pf.SHARED_GATE_ENV)
+    assert type(pf._gate_from_env()) is pf.HostGate
+
+
+def test_each_miner_process_gets_the_shared_gate_and_the_pass_ends_inside_the_task_limit(
+        tmp_path, monkeypatch):
+    _paths(tmp_path, monkeypatch)
+    monkeypatch.setattr(dfr, "HOST_GATE", tmp_path / "gate")
+    seen = {}
+
+    class P:
+        returncode, stdout, stderr = 0, "DEEP FOREST claims_new=4 total=10", ""
+
+    def fake_run(argv, **kw):
+        seen.update(kw)
+        return P()
+
+    monkeypatch.setattr(dfr.subprocess, "run", fake_run)
+    r = dfr.run_region("cn")
+    assert seen["env"]["QUANT_HOST_GATE_DIR"] == str(tmp_path / "gate") and r["claims_new"] == 4
+    assert dfr.PASS_BUDGET_S + dfr.REGION_TIMEOUT_S < 58 * 60
+
+
+def test_each_finished_region_is_published_before_the_pass_ends(tmp_path, monkeypatch):
+    """Audit H2: a pass killed at the task limit keeps every region it finished."""
+    _paths(tmp_path, monkeypatch)
+    calls = []
+    real = dfr.publish
+    monkeypatch.setattr(dfr, "publish", lambda *a, **k: calls.append(1) or real(*a, **k))
+    out = dfr.run_pass(NOW, runner=_runner(1), clock=lambda: 0.0)
+    assert len(out["ran"]) == 5 and len(calls) == 5 + 1      # once per region, once at the end
