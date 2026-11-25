@@ -35,7 +35,7 @@ import re
 import sys
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
@@ -50,15 +50,22 @@ UNMEASURED = cred.UNMEASURED
 _STAMP = re.compile(r"discoveries_(\d{8})_(\d{4})")
 
 
+def clock_key(p: PurePath, root: PurePath) -> str:
+    """A clock's key: its path relative to `root`, ALWAYS with forward slashes. `str()` of a
+    relative path is backslashed on Windows, so on the box every key read
+    `desks\\mt5\\research\\hourly_cycle.py` and no consumer path or test could match it."""
+    return p.relative_to(root).as_posix()
+
+
 def clock_files(root: Path = ROOT) -> dict[str, str]:
-    """Every file that schedules work, by relative path -> its text."""
+    """Every file that schedules work, by relative path (POSIX separators) -> its text."""
     pats = ("desks/mt5/research/hourly_cycle.py", "ops/*.sh", "ops/*.service",
             "desks/mt5/scripts/*.ps1")
     out: dict[str, str] = {}
     for pat in pats:
         for p in sorted(root.glob(pat)):
             try:
-                out[str(p.relative_to(root))] = p.read_text("utf-8", errors="replace")
+                out[clock_key(p, root)] = p.read_text("utf-8", errors="replace")
             except OSError:
                 continue
     return out
@@ -232,8 +239,9 @@ def markdown(doc: Mapping[str, Any]) -> str:
         lines.append(f"| {r['rank']} | {r['provider']} | `{r['env']}` | {r['signup_url']} | "
                      f"{r['unlocks']} | {est if est is not None else 'UNMEASURED'} | {cons} | "
                      f"{r['status']} |")
-    lines += ["", "## Set commands (placeholders only; run in an admin PowerShell on the trading box; "
-              "readers see the registry directly via libs.ops.env_keys, so nothing restarts)", "", "```"]
+    lines += ["", "## Set commands (placeholders only; run in an admin PowerShell on the "
+              "trading box; readers see the registry directly via libs.ops.env_keys, so "
+              "nothing restarts)", "", "```"]
     lines += [r["setx"] for r in doc["vars"] if r["actionable"]]
     lines += ["```", "", "## Considered and not built", "",
               "| Env var | Provider | Signup | Why not |", "|---|---|---|---|"]
