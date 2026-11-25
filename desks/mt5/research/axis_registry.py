@@ -174,7 +174,9 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
-                                                     " cross_sectional_class_low_vol",
+                                                     " cross_sectional_class_low_vol"
+                                                     " coint_pairs cross_sectional_class_ltr"
+                                                     " cross_sectional_class_hf_moment",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "weekend_crypto_gap equity_gap_breadth"
                                             " gold_dxy_shock lead_lag lead_lag_class_catchup"
@@ -211,10 +213,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion hunt16_cell",
-    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
+    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal value_area_rule",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
-                                          " session_range_breakout session_exit_overlay",
+                                          " session_range_breakout session_exit_overlay"
+                                          " volatility_breakout_kr",
     "breakout_liquidity price_only limit": "failed_breakout",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
@@ -231,7 +234,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
-    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh"
+                                    " rule_builder analog_knn ranked_linear neural_policy"
+                                    " ge_strategy gbm_classifier",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
                                        " alt_conditioned entry_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
@@ -251,6 +256,16 @@ _FAMILY_GROUPS: dict[str, str] = {
     # (another market's price leading the instrument), holiday_drift (the calendar's flow). The
     # implied-minus-realised gap reprices a volatility premium on a public implied series.
     "volatility_shock macro market": "implied_realised_gap",
+    # Registered 2026-11-20..25 (2026-11-25 mapping). coint_pairs is relative_value with an
+    # Engle-Granger gate, so it sits with it. The two class books (ltr: a learned blend of the
+    # momentum/reversal/value/low-vol ranks; hf_moment: the lottery premium ranked in-class) rank
+    # each leg against its peer class like the other class books. value_area_rule's default
+    # `eighty` rule fades a failed open outside yesterday's value area (range_reversion; its
+    # `acceptance` variant follows, and a cell-level override is the follow-up if it certifies).
+    # volatility_breakout_kr rests a stop at open +/- k x range (breakout_liquidity, stop).
+    # rule_builder and the five hypgen_engine model families are SEARCHED statistical rules on
+    # price and tick volume: they name no payer, so the mechanism is UNKNOWN and counted, the
+    # same call as `discovered` and the mass screen; all enter at the next bar's open (market).
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

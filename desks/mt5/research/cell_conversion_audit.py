@@ -257,7 +257,15 @@ def merge_sources(path: Path | None = None) -> list[str]:
 def hourly_legs() -> dict[str, Path | None]:
     """Every costed hourly leg -> the code that runs it (producer script, else its own module)."""
     try:
-        from ops import components
+        # BY FILE PATH, NEVER `from ops import`: the repo root has its own ops/ directory, so a
+        # bare `ops` resolves to whichever comes first on sys.path (test_gateway_loop_finds_libs).
+        import importlib.util
+        path = DESK / "ops" / "components.py"
+        spec = importlib.util.spec_from_file_location("_cca_components", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"cannot load the component registry from {path}")
+        components = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(components)
         names = components.leg_names()
         calls = components._producer_calls()
     except Exception:
