@@ -96,6 +96,16 @@ class Provider:
     # credit unless the row carries the provider's own `credits`. `weekly_env` overrides it.
     weekly_cap: int = 0
     weekly_env: str = ""
+    # The principal's own call (2026-11-25 21:58Z, "give it same treatment as rest no
+    # discrimination ... It's on me"): a relay that takes PRIVATE prompts too and serves every
+    # model it lists (no Chinese-lab filter), like any other lane. Its allowance and ledger stay.
+    private_ok: bool = False
+
+
+def public_only(p: Any) -> bool:
+    """True when this provider may only receive public prompts (a relay, unless the principal
+    lifted it with `private_ok`)."""
+    return bool(getattr(p, "relay", False)) and not bool(getattr(p, "private_ok", False))
 
 
 #: Groq's free models for the swarm; the seat drops any id Groq's /models no longer lists.
@@ -127,14 +137,15 @@ PROVIDERS: tuple[Provider, ...] = (
     # hcnsec's allowance is ~500 credits a WEEK (owner, 2026-11-25): a rolling 7-day cap, read
     # CAPPED (with its reset time) once spent, never an error.
     Provider("hcnsec", "HCNSEC", "HCNSEC_BASE_URL", "https://api.hcnsec.cn/v1", relay=True,
-             models_env="HCNSEC_MODELS", weekly_cap=HCNSEC_WEEKLY, weekly_env="HCNSEC_WEEKLY"),
+             models_env="HCNSEC_MODELS", weekly_cap=HCNSEC_WEEKLY, weekly_env="HCNSEC_WEEKLY",
+             private_ok=True),
     Provider("agentrouter", "AGENTROUTER", "AGENTROUTER_BASE_URL", "https://agentrouter.org/v1",
              relay=True, models_env="AGENTROUTER_MODELS"),
     # yjs (api.yjs.im), the principal's third relay (2026-11-17). Same contract: DARK until the
     # `YJS` key exists, https only, Chinese-lab models only, public prompts only.
     # The principal saved this key as YJSS on the box (2026-11-17); both names are read.
     Provider("yjs", "YJS", "YJS_BASE_URL", "https://api.yjs.im/v1", relay=True,
-             models_env="YJS_MODELS", key_aliases=("YJSS",)),
+             models_env="YJS_MODELS", key_aliases=("YJSS",), private_ok=True),
     # Groq (api.groq.com, OpenAI-compatible), the principal's own free key (zuck 2026-11-25
     # 02:27Z "groq api use it" / "On me"). Free tier per model: 30 RPM, 1000 RPD, 200K tokens/day.
     # One call is ~6K tokens (4K max out + prompt), so tokens bind first: ~30 calls/model/day,
@@ -289,15 +300,13 @@ def _read(name: str, env: Mapping[str, str] | None) -> str:
 #: unofficial key-resale relays never serve this desk, whatever key or ruling exists for them.
 #: Matched on the provider NAME and on the base URL's host, so a plug-in entry in
 #: data/secrets/cn_providers.json or a FREE_LLM_<NAME> env key cannot route around it.
-#: hcnsec and yjs are "new-api" resale gateways of the same kind as AgentRouter, so they are denied
-#: under the same ruling (coordinator 2026-11-25 21:56Z). Their keys stay stored on the box, unused:
-#: reversing this is deleting the two names here (and their hosts), nothing else.
+#: hcnsec and yjs are NOT on this list: the coordinator denied them at 21:56Z and the principal
+#: overruled within minutes ("Mate stop do it", 2026-11-25 21:58Z) -- both stay ON, public prompts
+#: only (their relay flag) as the leakage guard, hcnsec within its 500/week cap.
 DENIED_RELAY_NAMES: frozenset[str] = frozenset({"agentrouter", "freegg", "codex_relay",
-                                                "codexrelay", "telegram", "tg_bot", "tgbot",
-                                                "hcnsec", "yjs"})
+                                                "codexrelay", "telegram", "tg_bot", "tgbot"})
 DENIED_RELAY_HOSTS: tuple[str, ...] = ("agentrouter.", "freegg", "codex-relay", "codexrelay",
-                                       "t.me", "telegram.", "api.telegram", "hcnsec.",
-                                       "yjs.im")
+                                       "t.me", "telegram.", "api.telegram")
 
 
 def denied(name: str, base_url: str = "") -> str | None:
@@ -375,7 +384,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
             if not models:
                 return Seat(p, base, "", why="DARK: /models lists none of the configured models")
         else:
-            models = [m for m in listed if CN_FAMILY.search(m)]
+            models = (list(listed) if p.private_ok
+                      else [m for m in listed if CN_FAMILY.search(m)])
         if not models:
             return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
     if not p.relay:

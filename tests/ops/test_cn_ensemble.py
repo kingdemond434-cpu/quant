@@ -581,7 +581,7 @@ def test_siliconflow_tries_com_then_cn_and_uses_free_models_only() -> None:
 def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25): AgentRouter and its kind stay dark even
-    with a key set and an ALLOWED ruling; hcnsec and yjs (new-api resale gateways) are denied too.
+    with a key set and an ALLOWED ruling; hcnsec and yjs stay on (principal's call).
     """
     from libs.ops import cn_ensemble as cn
     ar = next(p for p in cn.PROVIDERS if p.name == "agentrouter")
@@ -590,8 +590,10 @@ def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling(
     assert cn.denied("freegg") and cn.denied("codex-relay") and cn.denied("tg_quantbot")
     assert cn.denied("acme", "https://api.agentrouter.org/v1")
     assert cn.denied("groq", "https://api.groq.com/openai/v1") is None
-    monkeypatch.undo()                     # the production list: hcnsec and yjs are denied too
+    monkeypatch.undo()          # the production list: hcnsec and yjs stay ON (principal 21:58Z)
     for p in (HC, YJ):
-        assert not cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"]).lit
-        assert "DENIED" in cn.seat_for(p, {p.key_env: "k"}, _no_list).why
+        assert cn.denied(p.name, p.default_base) is None
+        assert cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"]).lit
+        assert p.relay                                   # public prompts only: the leakage guard
+    assert cn.weekly_cap_of(HC, {}) == 500
     assert cn.denied("groq", "https://api.groq.com/openai/v1") is None

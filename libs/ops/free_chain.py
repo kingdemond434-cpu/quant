@@ -123,7 +123,8 @@ class Route:
     base_url: str
     key: str = field(repr=False)
     models: tuple[str, ...] = ()
-    relay: bool = False               # public prompts only
+    relay: bool = False               # a relay: its own allowance and the relay ledger
+    public_only: bool = False         # may only receive public prompts
     lit: bool = False
     why: str = ""
     key_envs: tuple[str, ...] = ()    # NAMES only
@@ -218,7 +219,8 @@ def _owner_route(p: OwnerProvider, kind: str, env: Mapping[str, str] | None,
         else p.default_base.rstrip("/")
     daily = _env_int(e, p.daily_env, p.daily_cap) if p.daily_env else p.daily_cap
     weekly = _env_int(e, p.weekly_env, p.weekly_cap) if p.weekly_env else p.weekly_cap
-    r = Route(p.name, kind, base, "", relay=p.relay, key_envs=names, daily_cap=daily,
+    r = Route(p.name, kind, base, "", relay=p.relay, public_only=p.relay,
+              key_envs=names, daily_cap=daily,
               weekly_cap=weekly, weekly_name=p.name, handle=p)
     if not key:
         bad = _refused_alias(names) if env is None else ""
@@ -350,7 +352,8 @@ def discover(*, env: Mapping[str, str] | None = None, root: Path | None = None,
                 if bad:
                     why += f"; {bad} is refused by env_keys_catalog"
             out.append(Route(p.name, "cn", str(seat.base_url).rstrip("/"), seat.key if seat.lit
-                             else "", tuple(seat.models), relay=bool(p.relay), lit=seat.lit,
+                             else "", tuple(seat.models), relay=bool(p.relay),
+                             public_only=cn.public_only(p), lit=seat.lit,
                              why=why, key_envs=names,
                              daily_cap=(cn.relay_daily_cap(p, e) if p.relay else 0),
                              weekly_cap=cn.weekly_cap_of(p, e), weekly_name=p.name,
@@ -444,7 +447,7 @@ def routes(organ: str = "", *, public: bool, root: Path | None = None,
     """Every LIT route this host has for a prompt of this publicity (relays need public)."""
     rs = discover(env=env, root=root, list_models=list_models) \
         if (env is not None or list_models is not None) else _cached(root)
-    return [r for r in rs if r.lit and (public or not r.relay)]
+    return [r for r in rs if r.lit and (public or not r.public_only)]
 
 
 # ------------------------------------------------------------------------------ caps --------
@@ -550,7 +553,7 @@ def ask(organ: str, system: str, user: str, *, max_tokens: int = 4000,
     pub = is_public(system, user) and (public is not False)
     try:
         rs = [r for r in (chain if chain is not None else routes(organ, public=pub, root=root))
-              if r.lit and (pub or not r.relay)]
+              if r.lit and (pub or not r.public_only)]
     except Exception as exc:
         return "", "", f"free chain: {type(exc).__name__}"
     stamp = now or _now()
@@ -655,7 +658,7 @@ def build_report(*, now: datetime | None = None, root: Path | None = None,
         u = use.get(r.name, {})
         rows.append({
             "provider": r.name, "kind": r.kind, "key_envs": list(r.key_envs),
-            "public_prompts_only": r.relay, "paid_tail": r.paid, "status": status,
+            "public_prompts_only": r.public_only, "paid_tail": r.paid, "status": status,
             "why": why or None,
             "reset_at": reset, "models": list(r.models)[:12], "n_models": len(r.models),
             "daily_cap": r.daily_cap or None, "weekly_cap": r.weekly_cap or None,
