@@ -353,3 +353,56 @@ def peer_classes() -> dict[str, list[str]]:
 def class_members(klass: str) -> list[str]:
     """Every registry symbol whose peer class is `klass`, sorted."""
     return list(peer_classes().get(str(klass), []))
+
+
+# ---------------------------------------------------------------------------------------------
+# THE ONE EXOTIC DEFINITION (Auditor follow-up SF2, 2026-11-24). Under the exotic ban (zuck,
+# 2026-11-24 18:06Z: no mining, judging or trading of exotic FX) every producer must agree on
+# what an exotic IS. The registry's class name alone misses a NOK/SEK pair the broker files as
+# plain "Forex"; a G10 leg list alone calls BTCUSD exotic. So the rule is the union of the two,
+# with the leg test restricted to pairs whose BOTH legs are known fiat codes.
+#
+# MAJORS8, EXOTIC_FIAT and `_majors_exotic` are copied VERBATIM from the Audit-CLEARed
+# `research/breadth_controller.py` (claude/breadth-controller @ 9e9ff8ac1a). That module keeps
+# its own copy until its branch lands; switching it to `is_exotic_symbol` is a later packet.
+# ---------------------------------------------------------------------------------------------
+
+#: The eight majors (the e8_book.is_exotic_pair basis): an FX pair with any other leg is exotic.
+#: Inline so the ban holds on a tree without live_policy.is_exotic; G10 alone misses NOK/SEK.
+MAJORS8 = frozenset({"USD", "EUR", "JPY", "GBP", "CHF", "AUD", "NZD", "CAD"})
+_METALS = ("XAU", "XAG", "XPT", "XPD")
+#: Non-major FIAT legs an MT5 FX pair can carry. The other leg must be one of these for the pair
+#: to read exotic, so a crypto CFD (BTCUSD, ETHUSD: allowed, not exotic) never trips the check.
+EXOTIC_FIAT = frozenset({
+    "NOK", "SEK", "DKK", "PLN", "HUF", "CZK", "TRY", "ZAR", "MXN", "SGD", "HKD", "CNH", "CNY",
+    "ILS", "RUB", "THB", "INR", "KRW", "TWD", "BRL", "CLP", "COP", "PEN", "ARS", "IDR", "MYR",
+    "PHP", "AED", "SAR", "QAR", "KWD", "BHD", "OMR", "EGP", "NGN", "KES", "GHS", "MAD", "RON",
+    "BGN", "HRK", "ISK", "UAH", "KZT", "VND", "PKR", "LKR", "BDT", "JOD", "TND"})
+
+
+def _majors_exotic(sym: str) -> bool:
+    core = "".join(ch for ch in str(sym).upper() if "A" <= ch <= "Z")[:6]
+    if len(core) != 6 or core.startswith(_METALS):
+        return False
+    a, b = core[:3], core[3:]
+    known = MAJORS8 | EXOTIC_FIAT
+    if a not in known or b not in known:
+        return False  # not an FX pair (an index, energy, a crypto CFD): the registry decides
+    return a in EXOTIC_FIAT or b in EXOTIC_FIAT
+
+
+def is_exotic_symbol(symbol: str, asset_class: str | None = None) -> bool:
+    """True when `symbol` is an exotic: its registry class names one (`asset_class`, or
+    `asset_class_of(symbol)` when None), OR it is an FX pair of two known fiat legs with at least
+    one outside the eight majors. Crypto CFDs, metals, indices, energy and shares never read
+    exotic (their legs are not both fiat). Never raises; an unreadable registry falls back to the
+    leg test alone."""
+    klass = asset_class
+    if klass is None:
+        try:
+            klass = asset_class_of(symbol)
+        except Exception:
+            klass = ""
+    if "exotic" in str(klass or "").lower():
+        return True
+    return _majors_exotic(symbol)
