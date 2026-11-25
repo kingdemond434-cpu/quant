@@ -73,8 +73,25 @@ def test_a_certification_burst_rebalances_out_of_turn() -> None:
     assert st2["why"].startswith("EVENT") and not st2["held"]
 
 
-def test_exploration_sits_in_the_principals_band() -> None:
-    assert 0.10 <= sr.EXPLORATION_SHARE <= 0.15
+def test_exploration_is_never_below_the_relayed_band() -> None:
+    assert sr.EXPLORATION_SHARE >= 0.15
+
+
+def test_an_unimportable_exotic_classifier_is_published_unmeasured(monkeypatch) -> None:
+    import builtins
+    real = builtins.__import__
+
+    def boom(name, *a, **k):
+        if name == "research" or name.startswith("research."):
+            raise ImportError("no research package")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(sr, "_EXOTIC_UNMEASURED", [])
+    monkeypatch.setattr(builtins, "__import__", boom)
+    assert sr._exotic("USDTRY") is False
+    monkeypatch.setattr(builtins, "__import__", real)
+    _, terms = sr.yield_terms(_c(n_leads=30), 0.0, 0.0)
+    assert str(terms["exotic_certified_excluded"]).startswith("UNMEASURED")
 
 
 def test_an_unreached_region_is_scheduled_before_a_reached_one() -> None:

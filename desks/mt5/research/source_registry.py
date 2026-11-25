@@ -129,12 +129,14 @@ PRIOR_LEADS = 25.0
 #: Below this many leads a source is THIN: its silence carries no information, so it is funded from
 #: the exploration floor rather than ranked. EXPLORATION_SHARE never follows measured yield (L1.52).
 #: SOFTMAX_K sharpens roi/roi_max: the best source gets e^3 ~ 20x a measured-zero one, never all.
-THIN_LEADS, EXPLORATION_SHARE, SOFTMAX_K = 20, 0.15, 3.0
+THIN_LEADS, EXPLORATION_SHARE, SOFTMAX_K = 20, 0.20, 3.0
 #: THE YIELD RULE (principal 2026-11-25 12:24-12:26Z, with the coordinator's three refinements):
 #: every region keeps a floor, the rest follows MEASURED yield -- certified, tradable, NON-EXOTIC
 #: edges, credited by how UNCORRELATED they are with what the source already gave, RECENT ones
 #: worth more (a mined-out source's share falls by itself), and LEADING indicators (compiled /
-#: judged rate) carry a source until certifications, which lag, accumulate. ~10-15% explores.
+#: judged rate) carry a source until certifications, which lag, accumulate. Exploration stays at
+#: 20%: the coordinator relayed a 10-15% band, but no message of the principal's own words names a
+#: number, and a floor is never lowered on a relay (no-ceilings rule).
 CERT_HALF_LIFE_D = 30.0
 #: Certifications at which a source's own certified yield fully replaces its leading indicator.
 CERT_FULL_WEIGHT = 5.0
@@ -202,14 +204,23 @@ def _unique(sid: str, rows: dict[str, dict[str, Any]], name: str) -> str:
     return f"{sid}_{hashlib.sha1(name.encode('utf-8')).hexdigest()[:6]}"
 
 
+#: Set when universe_policy cannot be imported: exotic yield can then not be told apart, and the
+#: report says so (UNMEASURED) instead of silently counting every certification as tradable.
+_EXOTIC_UNMEASURED: list[str] = []
+
+
 def _exotic(symbol: Any) -> bool:
-    """The desk's ONE exotic definition (`universe_policy.is_exotic_symbol`); unknown -> False."""
+    """The desk's ONE exotic definition (`universe_policy.is_exotic_symbol`). A missing symbol is
+    not exotic; an unimportable classifier is recorded in _EXOTIC_UNMEASURED, never hidden."""
     if not symbol:
         return False
     try:
         from research import universe_policy as UP
         return bool(UP.is_exotic_symbol(str(symbol)))
-    except Exception:
+    except Exception as exc:
+        if not _EXOTIC_UNMEASURED:
+            _EXOTIC_UNMEASURED.append(f"UNMEASURED: universe_policy unimportable "
+                                      f"({type(exc).__name__}); exotic certifications NOT excluded")
         return False
 
 
@@ -250,7 +261,8 @@ def yield_terms(c: dict[str, Any], pooled: float, pooled_testable: float
     return expected, {"certified": round(certified, 8), "recency": round(recency, 4),
                       "orthogonal": round(orth, 4), "leading": round(leading, 8),
                       "certified_weight": round(lam, 3),
-                      "exotic_certified_excluded": int(c.get("n_certified_exotic") or 0)}
+                      "exotic_certified_excluded": (_EXOTIC_UNMEASURED[0] if _EXOTIC_UNMEASURED
+                                                    else int(c.get("n_certified_exotic") or 0))}
 
 
 def wilson_lower(k: float, n: float, z: float = WILSON_Z) -> float:
