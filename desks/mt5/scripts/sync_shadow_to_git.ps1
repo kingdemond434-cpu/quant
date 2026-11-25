@@ -867,6 +867,9 @@ $reportPaths = @(
     "desks/mt5/reports/CONVERSION_LANES.json",
     "desks/mt5/reports/JUDGE_FEEDBACK.json",
     "desks/mt5/data/free_model_jobs.json",
+    # the shared free chain (libs/ops/free_chain.py, written by leg conversion_lanes): every LLM
+    # key on the box LIT / DARK / CAPPED, its calls and successes per job over 24h -- no key value
+    "desks/mt5/reports/FREE_MODEL_ROUTES.json",
     # the judge calibration loop (LOOP_COVERAGE L2): the judge against matured forward clocks,
     # and the priors and gate moves it proposes to the sealed judge (before/after values)
     "desks/mt5/reports/JUDGE_CALIBRATION.json",

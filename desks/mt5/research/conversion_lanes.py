@@ -52,10 +52,12 @@ THE LANES (each one a job kind in `data/free_model_jobs.json`):
   data_discovery     placeholder for the data-source discovery job (branch
                      claude/llm-data-discovery); registered, never executed here until wired.
 
-PROVIDER-AGNOSTIC. Every model call goes through `route_ask`: OpenRouter's free rotation
-(libs/ops/openrouter_free) and then every lit cn_ensemble seat (Groq, SiliconFlow, hcnsec,
-AgentRouter, yjs, Cloudflare and any box-file provider), with failover. A relay receives a prompt
-only when `cn_ensemble.assert_public` passes on it, and only inside its own daily allowance.
+PROVIDER-AGNOSTIC. Every model call goes through `route_ask`, which is the SHARED free chain
+(libs/ops/free_chain): every LLM key on the host -- OpenRouter's free rotation, the llm_seat seats,
+the free roster, every cn_ensemble seat (Groq, SiliconFlow, hcnsec, AgentRouter, yjs, Cloudflare,
+any box-file provider), Cerebras, GitHub Models and any FREE_LLM_<NAME>_KEY -- with a rotating
+start and failover. A relay receives a prompt only when `cn_ensemble.assert_public` passes on it
+(never a near-miss prompt), and only inside its own daily / weekly allowance.
 
 THE REGISTRY IS DATA, NEVER CODE. A job is {name, kind, template, status, weight, added_by,
 added_at}; `validate_job` refuses an unknown kind or template, a template of another kind, a bad
@@ -352,63 +354,21 @@ def write_jobs(jobs: list[dict[str, Any]], path: Path | None = None) -> None:
 Asker = Callable[[str, str], tuple[str, str, str | None]]
 
 
-def route_ask(system: str, user: str, *, organ: str = SEAT,
-              max_tokens: int = 4000) -> tuple[str, str, str | None]:
-    """(text, "provider/model", error). OpenRouter's free rotation first, then every lit
-    cn_ensemble seat (relays only on a public prompt, inside their daily allowance)."""
-    errors: list[str] = []
+def route_ask(system: str, user: str, *, organ: str = SEAT, max_tokens: int = 4000,
+              job: str | None = None, public: bool | None = None
+              ) -> tuple[str, str, str | None]:
+    """(text, "provider/model", error) from the SHARED free chain (libs/ops/free_chain): every
+    lit key on this host -- OpenRouter's free rotation, the llm_seat seats, the free roster,
+    every cn_ensemble provider, Cerebras, GitHub Models, any FREE_LLM_<NAME>_KEY -- with a
+    rotating start and failover. Relays only on a public prompt, inside their daily / weekly
+    allowance. `public=False` keeps a prompt off every relay whatever its wording (near-miss
+    mutation carries the desk's own rules: the relay rulings' second condition)."""
     try:
-        from libs.ops import llm_seat
-        left = llm_seat.lane_budget_left(organ)
-    except Exception:
-        left = None
-    if left is None or left > 0:
-        try:
-            from libs.ops import openrouter_free as orf
-            key, _src = orf.resolve_key()
-            if key:
-                models, _b = orf.free_models(key)
-                st = orf.load_state()
-                text, model, err = orf.complete(
-                    [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                    key=key, models=models, state=st, max_tokens=max_tokens)
-                if text.strip() and not err:
-                    return text, f"openrouter/{model}", None
-                errors.append(f"openrouter: {err or 'empty'}"[:160])
-        except Exception as exc:
-            errors.append(f"openrouter: {type(exc).__name__}"[:160])
-    try:
-        from libs.ops import cn_ensemble as cn
-        public = True
-        try:
-            cn.assert_public(system, user)
-        except ValueError:
-            public = False
-        extra, overlay = cn.extra_providers(ROOT, os.environ)
-        env = {**os.environ, **overlay}
-        now = _now()
-        for p in (*cn.PROVIDERS, *extra):
-            if p.name == "openrouter" or (p.relay and not public):
-                continue
-            seat = cn.seat_for(p, env)
-            if not seat.lit:
-                continue
-            cap = getattr(p, "daily_cap", None)
-            if p.relay and cap and cn._relay_calls_today(ROOT, p.name, now) >= int(cap):
-                continue
-            for model in seat.models[:3]:
-                text, err = cn._chat(seat, model, system, user)
-                if p.relay:
-                    with contextlib.suppress(Exception):
-                        cn._append(ROOT / cn.RELAY_LEDGER,
-                                   {"at": _iso(now), "provider": p.name, "model": model,
-                                    "organ": organ, "ok": not err})
-                if text and text.strip() and not err:
-                    return text, f"{p.name}/{model}", None
-                errors.append(f"{p.name}/{model}: {err or 'empty'}"[:160])
+        from libs.ops import free_chain
+        return free_chain.ask(organ, system, user, max_tokens=max_tokens, job=job,
+                              public=public)
     except Exception as exc:
-        errors.append(f"cn_ensemble: {type(exc).__name__}"[:160])
-    return "", "", "; ".join(errors[-4:]) or "no free provider lit"
+        return "", "", f"free_chain: {type(exc).__name__}"[:160]
 
 
 def _json_of(text: str) -> Any:
@@ -1229,9 +1189,13 @@ def run_pass(*, now: datetime | None = None, budget_s: float = DEFAULT_BUDGET_S,
     jobs = rescore(jobs, (fdoc or {}).get("by_lane") if isinstance(fdoc, dict) else None, now)
     shares = call_shares(jobs)
     asker: Asker | None = ask
+    nm_asker: Asker | None = ask
     if asker is None and use_llm:
         def asker(system: str, user: str) -> tuple[str, str, str | None]:
-            return route_ask(system, user)
+            return route_ask(system, user, job="translator")
+
+        def nm_asker(system: str, user: str) -> tuple[str, str, str | None]:
+            return route_ask(system, user, job="near_miss", public=False)
     lpath = ledger_path or LEDGER
     ledger = _read(lpath) if isinstance(_read(lpath), dict) else {}
     lanes_led = ledger.setdefault("lanes", {})
@@ -1280,7 +1244,7 @@ def run_pass(*, now: datetime | None = None, budget_s: float = DEFAULT_BUDGET_S,
         rdoc = _read(roster or CURE_ROSTER) or _read(CURE_SNAPSHOT)
         parents = near_miss_parents(rdoc) if rdoc is not None else []
         nm = run_near_miss(parents, ledger=ledger.setdefault("near_miss", {}), cat=cat,
-                           ask=asker if use_llm else None, calls=shares.get("near_miss", 0),
+                           ask=nm_asker if use_llm else None, calls=shares.get("near_miss", 0),
                            deadline=deadline)
         nm_rows = nm.pop("rows")
         nm["roster"] = "READ" if rdoc is not None else f"{UNMEASURED}: no cure roster"
@@ -1403,6 +1367,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     rep = run_pass(budget_s=a.budget_s, use_llm=not a.no_llm, write=not a.dry_run)
+    # THE SHARED FREE CHAIN'S EVIDENCE (libs/ops/free_chain): every known key LIT / DARK / CAPPED
+    # with its calls and successes per job over 24h -> reports/FREE_MODEL_ROUTES.json.
+    if not a.dry_run:
+        try:
+            from libs.ops import free_chain
+            fc = free_chain.write_report()["summary"]
+            print(f"free chain: {fc['lit']} lit / {fc['capped']} capped / {fc['dark']} dark; "
+                  f"{fc['ok_24h']}/{fc['calls_24h']} ok calls in 24h")
+        except Exception as exc:  # blind-except intentional (BLE001): evidence never costs a pass
+            print(f"free chain report failed: {type(exc).__name__}")
     tr = rep["lanes"].get("translator") or {}
     nm = rep["lanes"].get("near_miss") or {}
     print(f"conversion lanes: translator pending {tr.get('pending')} calls {tr.get('calls')} "

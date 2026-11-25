@@ -53,6 +53,7 @@ import os
 import re
 import ssl
 import sys
+import threading
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -801,6 +802,7 @@ def chat(
     if err:
         return "", f"model discovery failed: {err}"
 
+    _LAST_CALL.credits = None            # a stale count never rides onto this call
     msgs: list[dict[str, str]] = []
     if system:
         msgs.append({"role": "system", "content": system})
@@ -1081,6 +1083,24 @@ def calling_organ() -> str:
     return "unattributed"
 
 
+_LAST_CALL = threading.local()
+
+
+def last_reported_credits() -> float | None:
+    """The credits the provider itself reported for THIS thread's last successful call
+    (`usage.credits` or a top-level `credits`), or None when it reported none. A weekly-credit
+    relay (libs/ops/cn_ensemble.weekly_left) counts that instead of one call = one credit."""
+    c = getattr(_LAST_CALL, "credits", None)
+    return float(c) if isinstance(c, (int, float)) and not isinstance(c, bool) and c > 0 \
+        else None
+
+
+def _note_credits(body: dict[str, Any]) -> None:
+    usage = body.get("usage") if isinstance(body.get("usage"), dict) else {}
+    c = usage.get("credits") if isinstance(usage, dict) else None
+    _LAST_CALL.credits = c if c is not None else body.get("credits")
+
+
 def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
     """Append-only, and it records what the PROVIDER reported rather than what we guessed.
 
@@ -1103,6 +1123,8 @@ def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
     Truncation and refusal are indistinguishable downstream; `finish_reason` distinguishes them at
     the source, so the next pass measures the cause instead of inferring it.
     """
+    with contextlib.suppress(Exception):
+        _note_credits(body)
     raw_usage = body.get("usage")
     usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
     tok = int(usage.get("total_tokens") or 0)

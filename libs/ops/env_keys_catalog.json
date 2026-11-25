@@ -330,7 +330,8 @@
    "readers": [
     "desks/mt5/research/repo_miner.py",
     "libs/data/papers.py",
-    "desks/mt5/side_channels/github_miner.py"
+    "desks/mt5/side_channels/github_miner.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Mine the EliteQuant list",
    "note": "fine-grained token, only kingdemond434-cpu/quant, Contents: Read and write; public repos stay readable",
@@ -347,7 +348,8 @@
     "libs/ops/llm_seat.py",
     "libs/research/proposer_seat.py",
     "libs/research/event_factors_llm.py",
-    "ops/convert_swarm.py"
+    "ops/convert_swarm.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Finish the old committees work",
    "file_fallback": "data/secrets/llm_panel.json"
@@ -423,7 +425,8 @@
    "signup": "https://platform.deepseek.com/api_keys",
    "unlocks": "optional extra LLM seat",
    "readers": [
-    "libs/ops/llm_seat.py"
+    "libs/ops/llm_seat.py",
+    "libs/ops/free_chain.py"
    ],
    "owner": "Finish the old committees work"
   },
@@ -1211,6 +1214,33 @@
    ],
    "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
    "file_fallback": "none"
+  },
+  {
+   "name": "CEREBRAS",
+   "aliases": [
+    "CEREBRAS_API_KEY"
+   ],
+   "group": "free_llm",
+   "cost": "free tier (~1M tokens/day, 30 RPM)",
+   "machine": "box",
+   "signup": "https://cloud.cerebras.ai (API keys)",
+   "unlocks": "cerebras route of the shared free LLM chain (libs/ops/free_chain; gpt-oss-120b, qwen-3, llama-3.3; 150 calls/day, CEREBRAS_DAILY)",
+   "readers": [
+    "libs/ops/free_chain.py"
+   ],
+   "owner": "principal's own key (2026-11-25)"
+  },
+  {
+   "name": "GITHUB_MODELS_TOKEN",
+   "group": "free_llm",
+   "cost": "free tier (50-150 requests/day by model tier)",
+   "machine": "box",
+   "signup": "https://github.com/settings/personal-access-tokens/new (fine-grained, Models: read)",
+   "unlocks": "github_models route of the shared free LLM chain (models.github.ai/inference); GITHUB_TOKEN is read when this name is unset",
+   "readers": [
+    "libs/ops/free_chain.py"
+   ],
+   "owner": "principal's own key (2026-11-25)"
   }
  ],
  "config": [

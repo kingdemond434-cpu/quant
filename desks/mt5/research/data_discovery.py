@@ -149,7 +149,7 @@ def prompt_block(*, json_contract: bool = False, existing: Iterable[str] = ()) -
         "real-economy shock that reaches FX / gold / indices / energy with a lag). Only these "
         "keyless SDMX providers: " + ", ".join(sorted(PROVIDERS)) + ". Name the dataflow and ONE "
         "series key exactly as the provider's SDMX API spells it (dot-separated, every dimension "
-        "filled: no wildcard, no '+'); never a key, token, paid feed, scraped page or any "
+        "filled: no wildcard, no '+'); never a credentialed API, paid feed, scraped page or any "
         "crypto-exchange data. Frequency is one of D, W, M, Q and must appear as a segment of "
         "the key; the lag is the days after period end the value is PUBLISHED.",
     ]
@@ -538,63 +538,63 @@ def stage_counts(alt_cov: Mapping[str, Any] | None = None, *,
 #: roster. Keys stay inside the Seat objects; only provider NAMES are ever recorded.
 FREE_ROSTER = ROOT / "data" / "secrets" / "llm_panel_free.json"
 REPORT = DESK / "reports" / "DATA_DISCOVERY.json"
+#: Worded to pass `cn_ensemble.assert_public` (no broker name, no credential word), so every
+#: route of the shared free chain -- relays included -- may serve this job.
 SYSTEM = ("You find free, keyless, official statistical data for a quant desk trading the "
-          "MT5/Fusion universe (FX, gold, metals, indices, energy). You never propose crypto-"
+          "MT5 CFD universe (FX, gold, metals, indices, energy). You never propose crypto-"
           "exchange data, paid data, keyed APIs or scraping. Output ONLY the requested lines.")
 
 
 def seat_chain() -> list[Any]:
-    """The shared free-model chain, deduped by route (the deepening worker's construction)."""
-    out: list[Any] = []
+    """The SHARED free chain's lit routes (libs/ops/free_chain: OpenRouter, llm_seat seats, the
+    free roster, every cn_ensemble provider, Cerebras, GitHub Models and any FREE_LLM_<NAME>_KEY),
+    deduplicated there. Relays are included when this job's prompt is public, which it is."""
     try:
-        from libs.ops import llm_seat
-        cands = list(llm_seat.seats())
+        from libs.ops import free_chain
+        return free_chain.routes(LANE, public=free_chain.is_public(SYSTEM, prompt_block()))
     except Exception:
-        return out
-    with contextlib.suppress(Exception):
-        from libs.ops.llm_route import load_seats
-        for p in load_seats(FREE_ROSTER):
-            cands.append(llm_seat.Seat(name=str(p.get("name") or "free"),
-                                       base_url=str(p.get("base_url")), key=str(p.get("key")),
-                                       model=str(p.get("model") or ""),
-                                       source="file:llm_panel_free.json"))
-    seen: set[tuple[str, str]] = set()
-    for st in cands:
-        route = (str(st.base_url).rstrip("/"),
-                 hashlib.sha256(str(st.key).encode()).hexdigest()[:12] + "|" + str(st.model))
-        if route not in seen:
-            seen.add(route)
-            out.append(st)
-    return out
+        return []
 
 
 def run_job(*, chat: Any = None, chain: list[Any] | None = None, root: Path | None = None,
             budget_s: float = 300.0, now: datetime | None = None) -> dict[str, Any]:
-    """One `data_discovery` pass: ask the first free route that answers (failover across the
-    whole chain), vet the DATA_SOURCE lines into `data/intelligence/data_discovery/`. Never
-    raises; a pass with no route is a named state, not 0."""
+    """One `data_discovery` pass: ask the shared free chain (rotating start, failover across
+    every lit key), vet the DATA_SOURCE lines into `data/intelligence/data_discovery/`. An
+    explicit `chat` / `chain` walks that chain in order instead (tests, callers with their own
+    seats). Never raises; a pass with no route is a named state, not 0."""
     import time
     t0 = time.monotonic()
     os.environ.setdefault("QUANT_LLM_ORGAN", LANE)          # the lane's budget attribution
-    if chat is None:
-        from libs.ops import llm_seat
-        chat = llm_seat.chat
-    routes = seat_chain() if chain is None else chain
     labels, full = known()
     prompt = prompt_block(existing=labels)
     tried: list[dict[str, str]] = []
     text, served = "", ""
-    for st in routes:
-        if time.monotonic() - t0 > budget_s:
-            tried.append({"seat": str(st.name), "error": "pass budget reached"})
-            break
-        txt, err = chat(prompt, system=SYSTEM, seat=st, max_tokens=3000, temperature=0.5)
-        if not err and txt.strip():
-            text, served = txt, f"{st.name}:{st.model or 'discovered'}"
-            break
-        tried.append({"seat": str(st.name), "error": str(err or "empty response")[:200]})
-        if err and "daily" in str(err).lower() and "budget" in str(err).lower():
-            break                                   # the shared allowance: every seat refuses
+    if chat is None and chain is None:
+        routes = seat_chain()
+        if routes:
+            from libs.ops import free_chain
+            text, who, err = free_chain.ask(LANE, SYSTEM, prompt, max_tokens=3000,
+                                            temperature=0.5, chain=routes, budget_s=budget_s)
+            if text:
+                served = who.replace("/", ":", 1)
+            else:
+                tried = [{"seat": "free_chain", "error": str(err or "empty response")[:400]}]
+    else:
+        if chat is None:
+            from libs.ops import llm_seat
+            chat = llm_seat.chat
+        routes = list(chain or [])
+        for st in routes:
+            if time.monotonic() - t0 > budget_s:
+                tried.append({"seat": str(st.name), "error": "pass budget reached"})
+                break
+            txt, err = chat(prompt, system=SYSTEM, seat=st, max_tokens=3000, temperature=0.5)
+            if not err and txt.strip():
+                text, served = txt, f"{st.name}:{st.model or 'discovered'}"
+                break
+            tried.append({"seat": str(st.name), "error": str(err or "empty response")[:200]})
+            if err and "daily" in str(err).lower() and "budget" in str(err).lower():
+                break                               # the shared allowance: every seat refuses
     doc: dict[str, Any] = {"generated_at": (now or _now()).isoformat(timespec="seconds"),
                            "writer": "research/data_discovery.py", "lane": LANE,
                            "method": METHOD, "routes": len(routes), "tried": tried,

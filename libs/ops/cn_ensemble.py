@@ -38,7 +38,7 @@ import re
 import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -92,6 +92,20 @@ class Provider:
     # Other bases to try, in order, when the default base's /models cannot be read (a key is
     # tied to one region's site). Only used when `base_env` is not set.
     alt_bases: tuple[str, ...] = ()
+    # A ROLLING 7-DAY credit allowance (0: none), counted from the relay ledger: one call is one
+    # credit unless the row carries the provider's own `credits`. `weekly_env` overrides it.
+    weekly_cap: int = 0
+    weekly_env: str = ""
+    # The principal's own call (2026-11-25 21:58Z, "give it same treatment as rest no
+    # discrimination ... It's on me"): a relay that takes PRIVATE prompts too and serves every
+    # model it lists (no Chinese-lab filter), like any other lane. Its allowance and ledger stay.
+    private_ok: bool = False
+
+
+def public_only(p: Any) -> bool:
+    """True when this provider may only receive public prompts (a relay, unless the principal
+    lifted it with `private_ok`)."""
+    return bool(getattr(p, "relay", False)) and not bool(getattr(p, "private_ok", False))
 
 
 #: Groq's free models for the swarm; the seat drops any id Groq's /models no longer lists.
@@ -110,6 +124,8 @@ SILICONFLOW_FREE_MODELS: tuple[str, ...] = (
     "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
     "internlm/internlm2_5-7b-chat")
 SILICONFLOW_DAILY = 240
+#: hcnsec's credits per rolling 7 days (override with HCNSEC_WEEKLY on the box).
+HCNSEC_WEEKLY = 500
 
 
 PROVIDERS: tuple[Provider, ...] = (
@@ -118,15 +134,18 @@ PROVIDERS: tuple[Provider, ...] = (
              models_env="CN_ENSEMBLE_OPENROUTER_MODELS"),
     # Both relays run the "new-api" gateway: OpenAI chat/completions at /v1, Bearer auth. The
     # base is an env override because neither publishes it in a page this desk could verify.
+    # hcnsec's allowance is ~500 credits a WEEK (owner, 2026-11-25): a rolling 7-day cap, read
+    # CAPPED (with its reset time) once spent, never an error.
     Provider("hcnsec", "HCNSEC", "HCNSEC_BASE_URL", "https://api.hcnsec.cn/v1", relay=True,
-             models_env="HCNSEC_MODELS"),
+             models_env="HCNSEC_MODELS", weekly_cap=HCNSEC_WEEKLY, weekly_env="HCNSEC_WEEKLY",
+             private_ok=True),
     Provider("agentrouter", "AGENTROUTER", "AGENTROUTER_BASE_URL", "https://agentrouter.org/v1",
              relay=True, models_env="AGENTROUTER_MODELS"),
     # yjs (api.yjs.im), the principal's third relay (2026-11-17). Same contract: DARK until the
     # `YJS` key exists, https only, Chinese-lab models only, public prompts only.
     # The principal saved this key as YJSS on the box (2026-11-17); both names are read.
     Provider("yjs", "YJS", "YJS_BASE_URL", "https://api.yjs.im/v1", relay=True,
-             models_env="YJS_MODELS", key_aliases=("YJSS",)),
+             models_env="YJS_MODELS", key_aliases=("YJSS",), private_ok=True),
     # Groq (api.groq.com, OpenAI-compatible), the principal's own free key (zuck 2026-11-25
     # 02:27Z "groq api use it" / "On me"). Free tier per model: 30 RPM, 1000 RPD, 200K tokens/day.
     # One call is ~6K tokens (4K max out + prompt), so tokens bind first: ~30 calls/model/day,
@@ -136,12 +155,15 @@ PROVIDERS: tuple[Provider, ...] = (
              default_models=GROQ_MODELS, daily_cap=GROQ_DAILY, daily_env="GROQ_DAILY"),
     # Cloudflare Workers AI (OpenAI-compatible /ai/v1), the principal's own free token (zuck
     # 2026-11-25 02:30Z). Free allowance 10,000 Neurons/day; DARK until both the token and the
-    # account id exist on the box. Workers AI serves no /models list at /ai/v1.
+    # account id exist on the box. Workers AI serves no /models list at /ai/v1. The box also
+    # holds the token as CLOUDFLARE_API_TOKEN (read as an alias; the key catalog decides whether
+    # that name may be handed out).
     Provider("cloudflare", "CLOUDFLARE_AI", "CLOUDFLARE_AI_BASE",
              "https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1", relay=True,
              models_env="CLOUDFLARE_AI_MODELS", default_models=CLOUDFLARE_MODELS,
              daily_cap=CLOUDFLARE_DAILY, daily_env="CLOUDFLARE_AI_DAILY",
-             account_env="CLOUDFLARE_ACCOUNT_ID", lists_models=False),
+             account_env="CLOUDFLARE_ACCOUNT_ID", lists_models=False,
+             key_aliases=("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_WORKERS_AI")),
     # SiliconFlow (OpenAI-compatible), the principal's own key (zuck 2026-11-25 02:35Z). The
     # key belongs to one site, so .com is tried first and .cn second. Only its permanently free
     # Chinese-lab models are used; any id the account's /models no longer lists drops out.
@@ -274,10 +296,37 @@ def _read(name: str, env: Mapping[str, str] | None) -> str:
     return str(read_key(name) or "").strip()
 
 
+#: OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25 21:54Z, on provider terms and edge leakage):
+#: unofficial key-resale relays never serve this desk, whatever key or ruling exists for them.
+#: Matched on the provider NAME and on the base URL's host, so a plug-in entry in
+#: data/secrets/cn_providers.json or a FREE_LLM_<NAME> env key cannot route around it.
+#: hcnsec and yjs are NOT on this list: the coordinator denied them at 21:56Z and the principal
+#: overruled within minutes ("Mate stop do it", 2026-11-25 21:58Z) -- both stay ON, public prompts
+#: only (their relay flag) as the leakage guard, hcnsec within its 500/week cap.
+DENIED_RELAY_NAMES: frozenset[str] = frozenset({"agentrouter", "freegg", "codex_relay",
+                                                "codexrelay", "telegram", "tg_bot", "tgbot"})
+DENIED_RELAY_HOSTS: tuple[str, ...] = ("agentrouter.", "freegg", "codex-relay", "codexrelay",
+                                       "t.me", "telegram.", "api.telegram")
+
+
+def denied(name: str, base_url: str = "") -> str | None:
+    """Why this provider is refused outright (an unofficial key-resale relay), else None."""
+    n = str(name or "").strip().lower().replace("-", "_")
+    host = re.sub(r"^https?://", "", str(base_url or "").strip().lower()).split("/", 1)[0]
+    if n in DENIED_RELAY_NAMES or n.startswith(("tg_", "telegram")):
+        return f"DARK: DENIED {n}: unofficial key-resale relay (official providers only)"
+    if host and any(h in host for h in DENIED_RELAY_HOSTS):
+        return f"DARK: DENIED host {host}: unofficial key-resale relay (official providers only)"
+    return None
+
+
 def seat_for(p: Provider, env: Mapping[str, str] | None = None,
              list_models: Callable[[str, str], list[str]] | None = None) -> Seat:
     """The provider's seat, or a DARK seat saying why. Never raises, never prints a key."""
     e = os.environ if env is None else env
+    refused = denied(p.name, str(e.get(p.base_env, "") or p.default_base))
+    if refused:
+        return Seat(p, p.default_base, "", why=refused)
     if p.relay and relay_ruling(p.name) != "ALLOWED":
         return Seat(p, p.default_base, "",
                     why=f"DARK: no ALLOWED terms ruling ({RULINGS} says "
@@ -335,7 +384,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
             if not models:
                 return Seat(p, base, "", why="DARK: /models lists none of the configured models")
         else:
-            models = [m for m in listed if CN_FAMILY.search(m)]
+            models = (list(listed) if p.private_ok
+                      else [m for m in listed if CN_FAMILY.search(m)])
         if not models:
             return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
     if not p.relay:
@@ -401,6 +451,87 @@ def _relay_calls_today(root: Path, name: str, now: datetime) -> int:
     except OSError:
         return 0
     return sum(1 for ln in lines if f'"{name}"' in ln and stamp in ln)
+
+
+def relay_daily_cap(p: Provider, env: Mapping[str, str]) -> int:
+    """A relay's calls/day ceiling: its own (env-overridable) or the shared relay pace."""
+    if p.daily_cap:
+        return _env_int(env, p.daily_env, p.daily_cap) if p.daily_env else p.daily_cap
+    return _env_int(env, "CN_ENSEMBLE_RELAY_DAILY", 240)
+
+
+def weekly_cap_of(p: Any, env: Mapping[str, str]) -> int:
+    """A provider's rolling 7-day credit cap (0: none). Any provider object with `weekly_cap`
+    / `weekly_env` attributes qualifies, so a future weekly-credit key needs no code."""
+    cap = int(getattr(p, "weekly_cap", 0) or 0)
+    wenv = str(getattr(p, "weekly_env", "") or "")
+    return _env_int(env, wenv, cap) if wenv else cap
+
+
+def ledger_credits(path: Path, name: str, since: datetime) -> tuple[float, list[datetime]]:
+    """(credits spent by `name` since `since`, the stamps of the rows counted) from a ledger
+    of JSON lines naming the provider under `relay` or `provider` and the time under `utc` or
+    `at`. A row's own `credits` is used when positive, otherwise one call is one credit."""
+    used, stamps = 0.0, []
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return 0.0, []
+    for ln in lines:
+        if f'"{name}"' not in ln:
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or (row.get("relay") or row.get("provider")) != name:
+            continue
+        try:
+            t = datetime.fromisoformat(str(row.get("utc") or row.get("at") or ""))
+        except ValueError:
+            continue
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=UTC)
+        if t < since:
+            continue
+        c = row.get("credits")
+        used += float(c) if isinstance(c, (int, float)) and c > 0 else 1.0
+        stamps.append(t)
+    return used, stamps
+
+
+def weekly_left(root: Path, p: Any, env: Mapping[str, str], now: datetime
+                ) -> tuple[int | None, str | None]:
+    """(credits left in the rolling week or None when the provider has no weekly cap, the
+    ISO time the oldest counted credit leaves the window)."""
+    cap = weekly_cap_of(p, env)
+    if cap <= 0:
+        return None, None
+    used, stamps = ledger_credits(root / RELAY_LEDGER, p.name, now - timedelta(days=7))
+    reset = _iso(min(stamps) + timedelta(days=7)) if stamps else None
+    return max(0, int(cap - used)), reset
+
+
+def credits_of_last_call(cap: int = 0) -> float | None:
+    """The credits the provider itself reported for this thread's last call (None: it
+    reported none, so the call counts as one). Never more than `cap` when a cap is given."""
+    from libs.ops import llm_seat
+    c = llm_seat.last_reported_credits()
+    if c is None:
+        return None
+    return min(c, float(cap)) if cap > 0 else c
+
+
+def _credits_field(p: Any, env: Mapping[str, str], err: Any) -> dict[str, float]:
+    """{"credits": n} when the provider reported this call's credits, else {} (one call is one
+    credit). Never raises."""
+    if err:
+        return {}
+    try:
+        c = credits_of_last_call(weekly_cap_of(p, env))
+    except Exception:
+        return {}
+    return {"credits": c} if c is not None and c > 0 else {}
 
 
 def _parse(text: str) -> list[dict[str, Any]]:
@@ -495,6 +626,9 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                     cap = _env_int(e, s.provider.daily_env, s.provider.daily_cap)
                 left = cap - _relay_calls_today(base, s.provider.name, now)
                 q[s.provider.name] = max(0, -(-left // max(1, 24 - now.hour)))
+                wk, _reset = weekly_left(base, s.provider, e, now)
+                if wk is not None:          # a weekly allowance binds too, paced over the week
+                    q[s.provider.name] = min(q[s.provider.name], wk)
             else:
                 try:
                     q[s.provider.name] = openrouter_quota(now, share)
@@ -576,7 +710,8 @@ def run(now: datetime | None = None, *, root: Path | None = None,
             text, err = "", f"{type(exc).__name__}: {exc}"
         if seat.provider.relay:
             _append(base / RELAY_LEDGER, {"utc": _iso(_now()), "relay": seat.provider.name,
-                                          "model": model, "ok": not err})
+                                          "model": model, "ok": not err,
+                                          **_credits_field(seat.provider, e, err)})
         if err:
             return {**head, "status": "CALL_FAILED", "why": str(err)[:300]}, []
         if lens == cn_swarm.SCOUT_LENS:
@@ -690,7 +825,8 @@ def run(now: datetime | None = None, *, root: Path | None = None,
                 text, err = "", str(exc)
             if cseat.provider.relay:
                 _append(base / RELAY_LEDGER, {"utc": _iso(_now()), "relay": cseat.provider.name,
-                                              "model": cmodel, "ok": not err})
+                                              "model": cmodel, "ok": not err,
+                                              **_credits_field(cseat.provider, e, err)})
             if err:
                 crit["failed_calls"] += 1
                 continue

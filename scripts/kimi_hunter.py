@@ -458,6 +458,34 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
 
 
 
+def _shared_chain_lit() -> int:
+    """How many routes the shared free chain has lit on this host (0 on any error)."""
+    try:
+        from libs.ops import free_chain
+        return len(free_chain.routes(ALT_ORGAN, public=True))
+    except Exception:  # blind-except intentional (BLE001)
+        return 0
+
+
+def _shared_chain_ask(wave: int, system: str, user: str, attempts: list[dict]
+                      ) -> tuple[str, str]:
+    """(text, "provider/model") from the shared free chain, or ("", "") with the refusal
+    recorded in `attempts`. Never raises."""
+    try:
+        from libs.ops import free_chain
+        txt, who, err = free_chain.ask(
+            ALT_ORGAN, OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n" + _doctrine("kimi_hunter")
+            + system, user, max_tokens=8000, temperature=1.0)
+    except Exception as e:  # blind-except intentional (BLE001)
+        txt, who, err = "", "", f"{type(e).__name__}"
+    if txt.strip():
+        print(f"    shared free chain served wave {wave}: {who}")
+        return txt, who
+    attempts.append({"wave": wave, "model": "(shared free chain)",
+                     "error": str(err or "empty response")[:300]})
+    return "", ""
+
+
 def _admit(line: str, wave: int, wave_text: str = "") -> tuple[bool, str, str, list[str]]:
     """SINGLE SOURCE OF TRUTH for admission. Returns (keep, reason, claim_class, fields).
 
@@ -798,7 +826,7 @@ def main() -> None:
     # is unfunded" from "the hunter was never built", which is the difference between a bill to
     # pay and a thing to build.
     chain = _providers(deep=deep)
-    if not chain:
+    if not chain and not _shared_chain_lit():
         _blocked("no usable credential: data/secrets/llm_panel.json is absent or holds no seat "
                  "with both a base_url and a key. The Deep Forest protocol is INTACT and unrun -- "
                  "this is a funding/credential blocker, not a defect in the hunt.")
@@ -890,8 +918,7 @@ def main() -> None:
                   f"budget resets at 00:00 UTC and the next cadence picks it up.")
             attempts.append({"wave": w, "model": "(none tried)",
                              "error": "free daily allowance spent before the walk"})
-            break
-        for model, base, key in chain:
+        for model, base, key in (chain if _left is None or _left > 0 else []):
             try:
                 txt = _ask(base, key, CHARTER, user, model=model)
             except Exception as e:  # blind-except intentional (BLE001)
@@ -910,6 +937,11 @@ def main() -> None:
                 break
             attempts.append({"wave": w, "model": model, "error": "empty response"})
             print(f"    {model}: empty response")
+        if not used:
+            # THE SHARED FREE CHAIN (libs/ops/free_chain): every other lit key on the host --
+            # Groq, Cerebras, GitHub Models, SiliconFlow, the relays (public prompts only), any
+            # FREE_LLM_<NAME>_KEY -- gets the wave before it is given up.
+            txt, used = _shared_chain_ask(w, CHARTER, user, attempts)
         if not used:
             # EVERY door on this wave is shut. Keep whatever the earlier waves produced -- a
             # completed Wave 1 map is worth having and re-deriving it costs a full run.

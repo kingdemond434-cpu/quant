@@ -10,6 +10,18 @@ import pytest
 from libs.ops import cn_ensemble as cn
 from libs.ops import llm_seat
 
+
+@pytest.fixture(autouse=True)
+def _relay_mechanics_on_an_undenied_gateway(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the RELAY MECHANICS (rulings, caps, ledgers, public-only) on hcnsec and
+    yjs as the example gateways. Both are denied in production (coordinator 2026-11-25 21:56Z);
+    the denial itself is pinned by its own test below, so here it is lifted for the two names."""
+    from libs.ops import cn_ensemble as _cn
+    monkeypatch.setattr(_cn, "DENIED_RELAY_NAMES", _cn.DENIED_RELAY_NAMES - {"hcnsec", "yjs"})
+    monkeypatch.setattr(_cn, "DENIED_RELAY_HOSTS",
+                        tuple(h for h in _cn.DENIED_RELAY_HOSTS if h not in ("hcnsec.", "yjs.im")))
+
+
 NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
 OR, HC, AR, YJ, GQ, CF, SF = cn.PROVIDERS
 
@@ -29,7 +41,8 @@ def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
     for p in (GQ, CF, SF):
         assert cn.relay_ruling(p.name) == "ALLOWED"
         assert not cn.seat_for(p, {}, _no_list).lit
-    for p in (HC, AR, YJ):
+    assert cn.relay_ruling(AR.name) == "ALLOWED"   # the ruling stands; the denylist darkens it
+    for p in (HC, YJ):
         assert cn.relay_ruling(p.name) == "ALLOWED"
         s = cn.seat_for(p, {}, _no_list)
         assert not s.lit and p.key_env in s.why          # still dark until the key exists
@@ -38,7 +51,8 @@ def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
 
 
 def test_every_provider_is_dark_without_its_key() -> None:
-    for p in (HC, AR, YJ):
+    assert not cn.seat_for(AR, {}, _no_list).lit                 # denied outright
+    for p in (HC, YJ):
         s = cn.seat_for(p, {}, _no_list)
         assert not s.lit and s.key == "" and p.key_env in s.why
 
@@ -47,9 +61,10 @@ def test_relay_needs_https_and_a_chinese_model() -> None:
     env = {"HCNSEC": "k", "HCNSEC_BASE_URL": "http://api.hcnsec.cn/v1"}
     assert "https" in cn.seat_for(HC, env, _no_list).why
     env = {"HCNSEC": "k"}
-    assert not cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "claude-x"]).lit
+    # hcnsec serves every model it lists, like any lane (principal 2026-11-25 21:58Z)
     s = cn.seat_for(HC, env, lambda b, k: ["gpt-4o", "deepseek-ai/DeepSeek-R1-0528"])
-    assert s.lit and s.models == ("deepseek-ai/DeepSeek-R1-0528",)
+    assert s.lit and s.models == ("gpt-4o", "deepseek-ai/DeepSeek-R1-0528")
+    assert HC.private_ok and YJ.private_ok and not cn.public_only(HC) and cn.public_only(GQ)
 
 
 def test_openrouter_takes_only_free_chinese_ids() -> None:
@@ -562,3 +577,24 @@ def test_siliconflow_tries_com_then_cn_and_uses_free_models_only() -> None:
                               "https://api.siliconflow.com/v1"}, lister)
     assert not pinned.lit                                   # an explicit base is not second-guessed
     assert not cn.seat_for(SF, {"SILICONFLOW": "k"}, _no_list).lit
+
+
+def test_unofficial_key_resale_relays_are_denied_whatever_key_or_ruling(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """OFFICIAL PROVIDERS ONLY (coordinator 2026-11-25): AgentRouter and its kind stay dark even
+    with a key set and an ALLOWED ruling; hcnsec and yjs stay on (principal's call).
+    """
+    from libs.ops import cn_ensemble as cn
+    ar = next(p for p in cn.PROVIDERS if p.name == "agentrouter")
+    seat = cn.seat_for(ar, {"AGENTROUTER": "sk-test-not-a-key"})
+    assert not seat.lit and "DENIED" in seat.why
+    assert cn.denied("freegg") and cn.denied("codex-relay") and cn.denied("tg_quantbot")
+    assert cn.denied("acme", "https://api.agentrouter.org/v1")
+    assert cn.denied("groq", "https://api.groq.com/openai/v1") is None
+    monkeypatch.undo()          # the production list: hcnsec and yjs stay ON (principal 21:58Z)
+    for p in (HC, YJ):
+        assert cn.denied(p.name, p.default_base) is None
+        assert cn.seat_for(p, {p.key_env: "k"}, lambda b, k: ["deepseek-chat"]).lit
+        assert p.relay                                   # public prompts only: the leakage guard
+    assert cn.weekly_cap_of(HC, {}) == 500
+    assert cn.denied("groq", "https://api.groq.com/openai/v1") is None
