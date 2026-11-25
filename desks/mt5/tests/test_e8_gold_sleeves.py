@@ -68,7 +68,7 @@ def test_the_flag_is_on_and_the_revert_is_the_old_refusal() -> None:
     assert '"OWNED_BY_GOLD_LANE"' in src
 
 
-def test_a_clean_account_is_judged_by_the_direction_lock_on_the_e8_server_day(wired) -> None:
+def test_a_clean_account_is_judged_by_the_direction_lock_on_the_e8_server_day(wired: dict[str, Any]) -> None:
     why, ctx = ex._gold_sleeve_refusal(Venue(), "buy", now=NOW, holder="e8_executor:s")
     assert why is None
     assert ctx == ("tl:key", e8_guard.server_day(NOW))
@@ -76,13 +76,13 @@ def test_a_clean_account_is_judged_by_the_direction_lock_on_the_e8_server_day(wi
     assert wired["gate"] == [("e8", "buy", "tl:key", e8_guard.server_day(NOW))]
 
 
-def test_the_direction_lock_refusal_is_returned(wired) -> None:
+def test_the_direction_lock_refusal_is_returned(wired: dict[str, Any]) -> None:
     wired["allow"] = False
     why, _ = ex._gold_sleeve_refusal(Venue(), "sell", now=NOW, holder="h")
     assert why == "gold OCO: refused"
 
 
-def test_a_resting_gold_entry_on_the_other_side_keeps_the_window_slot(wired) -> None:
+def test_a_resting_gold_entry_on_the_other_side_keeps_the_window_slot(wired: dict[str, Any]) -> None:
     bracket = [{"id": 1, "side": "buy", "type": "stop", "tradableInstrumentId": IID},
                {"id": 2, "side": "sell", "type": "stop", "tradableInstrumentId": IID}]
     why, _ = ex._gold_sleeve_refusal(Venue(bracket), "buy", now=NOW, holder="h")
@@ -90,7 +90,7 @@ def test_a_resting_gold_entry_on_the_other_side_keeps_the_window_slot(wired) -> 
     assert wired["gate"] == []
 
 
-def test_a_resting_gold_entry_on_the_same_side_does_not_refuse(wired) -> None:
+def test_a_resting_gold_entry_on_the_same_side_does_not_refuse(wired: dict[str, Any]) -> None:
     same = [{"id": 7, "side": "buy", "type": "stop", "tradableInstrumentId": IID}]
     why, _ = ex._gold_sleeve_refusal(Venue(same), "buy", now=NOW, holder="h")
     assert why is None
@@ -113,6 +113,6 @@ def test_an_unpublished_gold_state_fails_closed(monkeypatch: pytest.MonkeyPatch)
     assert why is not None and "not republished" in why and "fail closed" in why
 
 
-def test_the_republish_after_a_send_reports_what_happened(wired) -> None:
+def test_the_republish_after_a_send_reports_what_happened(wired: dict[str, Any]) -> None:
     out = ex._gold_republish(Venue(), ("tl:key", "2026-11-25"), holder="h")
     assert out["published"] is True and wired["sync"][:3] == ("e8", "tl:key", "2026-11-25")

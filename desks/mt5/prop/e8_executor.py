@@ -72,9 +72,9 @@ ARMED_MARKER = DESK / "data" / "E8_ARMED"
 #: it, so an order without it is not this lane's and is never closed or counted here.
 TAG = "E8"
 #: CERTIFIED XAUUSD SLEEVES TRADE HERE (2026-11-25, the approved order: every standby sleeve
-#: trades on FTMO and E8). Until now every XAUUSD sleeve was refused as OWNED_BY_GOLD_LANE, so 18 certified gold
-#: sleeves (session_range_breakout, cross_asset_residual, macro_conditional, range_reversion) had
-#: no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS stay E8-Gold's: a sleeve
+#: trades on FTMO and E8). Until now every XAUUSD sleeve was refused as OWNED_BY_GOLD_LANE, so
+#: 18 certified gold sleeves (session_range_breakout, cross_asset_residual, macro_conditional,
+#: range_reversion) had no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS stay E8-Gold's: a sleeve
 #: leg is placed only under the cross-account gold direction lock (mt5desk.gold_oco), never while
 #: this account rests a gold entry on the other side (a window bracket that would fill against it),
 #: and never beside an open XAU position (ONE POSITION PER INSTRUMENT, below). False is the revert.
@@ -925,6 +925,7 @@ def _gold_sleeve_refusal(venue: Any, side: str, *, now: datetime, holder: str
     (E8-Gold's window bracket, which would fill against the sleeve) and otherwise judged by the
     cross-account gold direction lock. Fails closed on anything it cannot read; never raises."""
     from mt5desk import gold_oco as _oco
+
     from prop import e8_guard
     try:
         key = _oco.tradelocker_oco_key(venue)
