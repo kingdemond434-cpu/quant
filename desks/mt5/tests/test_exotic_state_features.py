@@ -180,7 +180,15 @@ def test_no_emitted_cell_trades_an_exotic(tmp_path: Path, monkeypatch: Any) -> N
 
 
 def test_an_exotic_in_the_plan_mints_nothing_and_fails(tmp_path: Path, monkeypatch: Any) -> None:
+    # Defence in depth: even if a mapping AND a parent list ever named an exotic, nothing mints.
+    orig = M.parents_by_target
+
+    def leaky(surv: Any, elig: Any, applies: Any = M.conditioner_applies) -> Any:
+        got = orig(surv, elig, applies)
+        return {**got, "USDMXN": got["XAUUSD"]}
+
     monkeypatch.setattr(M, "bloc_targets", lambda sym, elig: ["USDMXN", "XAUUSD"])
+    monkeypatch.setattr(M, "parents_by_target", leaky)
     doc, door = _run(tmp_path, monkeypatch)
     assert doc["status"] == "FAIL" and door.calls == []
     assert "USDMXN" in doc["exotic_traded_symbols"]
