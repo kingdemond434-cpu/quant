@@ -67,8 +67,9 @@ NOVELTY = DESK / "reports" / "NOVELTY_GATE.json"
 UNSEEN = DESK / "reports" / "UNSEEN_FRONTIER.json"
 REGISTRY = DESK / "data" / "source_registry.json"
 REPORT = DESK / "reports" / "SOURCE_REGISTRY.json"
-#: The last SETTLED budget: what the crawlers spend between daily recomputes.
-SETTLED = DESK / "data" / "source_shares_settled.json"
+#: The last SETTLED budget (what the crawlers spend between daily recomputes) sits beside the
+#: registry, read at call time, so whatever redirects REGISTRY redirects it too.
+SETTLED_NAME = "source_shares_settled.json"
 SEAT_ROOTS = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 
 #: THE TRACKED NATIVE LANGUAGES. One with no ground on file is a COVERAGE GAP the crawler can act
@@ -917,7 +918,7 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
     q_cov = {f: round(sum(1 for r in rows.values()
                           if not isinstance((r.get("source_quality") or {}).get(f), dict))
                       / max(1, len(rows)), 4) for f in q_fields}
-    sh, settled = settle(shares(rows), rows, _read_json(SETTLED, None),
+    sh, settled = settle(shares(rows), rows, _read_json(REGISTRY.with_name(SETTLED_NAME), None),
                          datetime.fromisoformat(now))
     by_kind: dict[str, int] = {}
     for sid, r in rows.items():
@@ -1013,7 +1014,7 @@ def main(argv: list[str] | None = None) -> int:
         _atomic(REGISTRY, registry)
         _atomic(REPORT, report)
         if isinstance(settled, dict) and not settled.get("held"):
-            _atomic(SETTLED, settled)
+            _atomic(REGISTRY.with_name(SETTLED_NAME), settled)
     for line in _summary(registry, report, not args.dry_run):
         print(line)
     return 0
