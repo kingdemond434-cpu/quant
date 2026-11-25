@@ -17,6 +17,10 @@ from pathlib import Path
 
 import pytest
 
+# The box runs Windows PowerShell 5.1 (powershell.exe), not pwsh 7: prefer it.
+# A skip on the box is not a test.
+PS = shutil.which("powershell") or shutil.which("pwsh")
+
 REPO = Path(__file__).resolve().parents[2]
 #: `$env:X`, `$script:x` and the like are real scopes/drives; `${py}:` and `` `$py: `` are fine.
 _DRIVE_VAR = re.compile(
@@ -44,13 +48,13 @@ def test_the_pattern_catches_the_bug_and_spares_real_drives() -> None:
     assert not _DRIVE_VAR.search('"[$t] ok"')
 
 
-@pytest.mark.skipif(not shutil.which("pwsh"), reason="pwsh not installed")
+@pytest.mark.skipif(PS is None, reason="no PowerShell (pwsh or powershell.exe)")
 def test_every_script_parses_in_powershell() -> None:
     files = [str(p) for p in _scripts()]
     cmd = ("$bad=@(); foreach($f in (ConvertFrom-Json $env:PS_FILES)){$e=$null;"
            "[void][System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$null,[ref]$e);"
            "if($e){$bad+=\"${f}: $($e[0].Message)\"}}; $bad -join \"`n\"")
-    r = subprocess.run(["pwsh", "-NoProfile", "-Command", cmd], capture_output=True, text=True,
+    r = subprocess.run([PS, "-NoProfile", "-Command", cmd], capture_output=True, text=True,
                        env={**os.environ, "PS_FILES": json.dumps(files)},
                        timeout=300)
     assert r.returncode == 0 and not r.stdout.strip(), r.stdout + r.stderr

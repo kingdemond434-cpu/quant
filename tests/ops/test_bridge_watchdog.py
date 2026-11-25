@@ -11,6 +11,10 @@ from pathlib import Path
 
 import pytest
 
+# The box runs Windows PowerShell 5.1 (powershell.exe), not pwsh 7: prefer it.
+# A skip on the box is not a test.
+PS = shutil.which("powershell") or shutil.which("pwsh")
+
 ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = ROOT / "ops" / "bridge"
 WATCHDOG = (BRIDGE / "bridge_watchdog.ps1").read_text(encoding="utf-8")
@@ -682,14 +686,14 @@ $out | ConvertTo-Json -Compress
 """
 
 
-@pytest.mark.skipif(not shutil.which("pwsh"), reason="pwsh not installed")
+@pytest.mark.skipif(PS is None, reason="no PowerShell (pwsh or powershell.exe)")
 def test_the_latest_link_exemption_accepts_one_shape_and_refuses_the_rest() -> None:
     """Runs the function as shipped. A junction cannot be made off Windows; its refusal is the
     pinned LinkType line above (a junction's LinkType is 'Junction', never 'SymbolicLink')."""
     fn_src = WATCHDOG.split(LATEST_FN_HEAD, 1)[1]
     fn_src = LATEST_FN_HEAD + fn_src.split("\n}\n", 1)[0].replace("\r", "") + "\n}\n"
     r = subprocess.run(
-        ["pwsh", "-NoProfile", "-NonInteractive", "-Command", fn_src + _PWSH_CASES],
+        [PS, "-NoProfile", "-NonInteractive", "-Command", fn_src + _PWSH_CASES],
         capture_output=True,
         text=True,
         timeout=120,

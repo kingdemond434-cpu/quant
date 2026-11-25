@@ -7,7 +7,7 @@ import pytest
 
 
 def test_shard_wrapper_ancestry_and_true_duplicate_controls():
-    shell = shutil.which("pwsh") or shutil.which("powershell")
+    shell = shutil.which("powershell") or shutil.which("pwsh")
     if shell is None:
         pytest.skip("PowerShell runtime unavailable")
     root = Path(__file__).resolve().parents[2]

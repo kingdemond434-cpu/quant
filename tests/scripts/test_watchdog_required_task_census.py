@@ -7,7 +7,7 @@ import pytest
 
 
 def test_required_task_census_native_controls():
-    shell = shutil.which("pwsh") or shutil.which("powershell")
+    shell = shutil.which("powershell") or shutil.which("pwsh")
     if shell is None:
         pytest.skip("PowerShell runtime unavailable")
     root = Path(__file__).resolve().parents[2]

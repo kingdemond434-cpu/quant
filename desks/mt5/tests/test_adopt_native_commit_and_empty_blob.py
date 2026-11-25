@@ -11,7 +11,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "desks/mt5/scripts/Adopt-Release.ps1"
-SHELL = shutil.which("pwsh") or shutil.which("powershell")
+SHELL = shutil.which("powershell") or shutil.which("pwsh")
 
 
 def git(repo: Path, *args: str) -> str:
