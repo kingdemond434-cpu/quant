@@ -113,6 +113,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's emitted > received > judged, and whether its judged rows carried its own
     # rule (research/judge_reach.py): the machine auditing its own handoffs -- meta.
     "judge_reach": "meta",
+    # Every conversion from raw info to live profit per producer, class and family, its depth,
+    # weakest stage and ratcheting floors (research/funnel.py): measurement -- meta.
+    "funnel": "meta",
     # Every producer's docket share, class/exotic split, saturation and frontier, plus the
     # advisory steer (rules-compliance row 13): the machine measuring its own breadth -- meta.
     "breadth_controller": "meta",

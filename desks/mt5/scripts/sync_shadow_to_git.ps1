@@ -858,6 +858,10 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the end-to-end funnel (research/funnel.py, leg funnel): raw info -> live profit per
+    # producer, class and family, the weakest stage and the floors; and the floors themselves
+    "desks/mt5/reports/FUNNEL.json",
+    "desks/mt5/data/funnel_floors.json",
     # the judge calibration loop (LOOP_COVERAGE L2): the judge against matured forward clocks,
     # and the priors and gate moves it proposes to the sealed judge (before/after values)
     "desks/mt5/reports/JUDGE_CALIBRATION.json",

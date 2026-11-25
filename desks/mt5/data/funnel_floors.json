@@ -1,0 +1,93 @@
+{
+ "law": "Per-stage count floors and per-transition rate floors of the end-to-end funnel (research/funnel.py). A floor met lifts to RATCHET_SHARE of the measured value when that is higher; it never falls, and there are no ceilings. Seeded unset: the box sets each on its first measured pass.",
+ "ratchet_share": 0.9,
+ "updated_at": null,
+ "stages": {
+  "RAW": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "ROWS": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "TESTABLE": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "JUDGED": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "CERTIFIED": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "NON_EXOTIC_CERTIFIED": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "FORWARD_CLOCKED": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "PROMOTED": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "FILL_PROVEN": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "LIVE": {
+   "count_floor": null,
+   "raised_at": null
+  },
+  "LIVE_PROFIT": {
+   "count_floor": null,
+   "raised_at": null
+  }
+ },
+ "transitions": {
+  "RAW->ROWS": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "ROWS->TESTABLE": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "TESTABLE->JUDGED": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "JUDGED->CERTIFIED": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "CERTIFIED->NON_EXOTIC_CERTIFIED": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "NON_EXOTIC_CERTIFIED->FORWARD_CLOCKED": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "FORWARD_CLOCKED->PROMOTED": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "PROMOTED->FILL_PROVEN": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "FILL_PROVEN->LIVE": {
+   "rate_floor": null,
+   "raised_at": null
+  },
+  "LIVE->LIVE_PROFIT": {
+   "rate_floor": null,
+   "raised_at": null
+  }
+ }
+}

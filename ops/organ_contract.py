@@ -121,6 +121,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-HourlyCore (pr blockers)": (
         "desks/mt5/reports/PR_BLOCKERS.json", 180,
         "one named blocker for every open PR into LIVE, so no PR waits unexplained"),
+    "MT5-HourlyCore (funnel)": (
+        "desks/mt5/reports/FUNNEL.json", 180,
+        "every conversion from raw info to live profit per producer, class and family, with "
+        "depth, the weakest stage, the desk's attack order and ratcheting floors"),
     "MT5-HourlyCore (judge reach)": (
         "desks/mt5/reports/JUDGE_REACH.json", 180,
         "every producer's emitted > received > judged with named losses, and whether its "

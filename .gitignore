@@ -691,3 +691,5 @@ desks/mt5/data/counterparty_accounts.local*.tmp
 !desks/mt5/reports/BOX_HEADROOM.json
 !desks/mt5/reports/PASS_FINDINGS.json
 !desks/mt5/reports/DESK_SELF_HEAL.json
+# THE END-TO-END FUNNEL (2026-11-25, research/funnel.py): published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/FUNNEL.json

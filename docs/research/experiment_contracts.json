@@ -356,6 +356,21 @@
     "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
    }
   },
+  "funnel": {
+   "hypothesis": "Publishing every conversion from raw info to live profit per producer, class and family -- with its depth in independent units, the weakest stage against the median, an attack order naming the owning organ, and floors that only ratchet up -- lets the desk attack its thinnest conversion first, so no measured floor stays violated, without changing a gate, a trial count or the judge's bars.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.n_violated",
+    "better": "down",
+    "organ": "report:FUNNEL.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_violated",
+    "op": ">",
+    "threshold": 3,
+    "after": "30 days on the trading box: more than three stages or transitions still read VIOLATED, so naming the weakest conversion and its owner moved none of them back above its floor"
+   }
+  },
   "judge_reach": {
    "hypothesis": "Naming every producer whose rows are emitted but never judged, or judged only as prose or family defaults, and paging it to Claude, raises the share of producers whose own executable rules actually reach the judge, without changing a gate, a trial count or the judge's bars.",
    "metric": {
