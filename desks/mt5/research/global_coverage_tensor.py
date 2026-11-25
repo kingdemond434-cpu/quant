@@ -95,6 +95,10 @@ OUT = REPORTS / "GLOBAL_COVERAGE_TENSOR.json"
 ROI_OUT = REPORTS / "SOURCE_ROI.json"
 #: Rule E25 reads this name: every host the desk contacts with its terms/robots/paid verdict.
 TERMS_OUT_NAME = "SOURCE_TERMS_AUDIT.json"
+#: zuck 2026-11-25 "do we maximise clean data": one score per series, a quarantine list, a floor
+#: that only rises. The report is published beside the tensor; the quarantine is READ by
+#: `universe()` so a quarantined series never becomes a cell.
+QUALITY_OUT_NAME = "DATA_QUALITY.json"
 STATE = DATA / "global_coverage" / "state.json"
 MISSIONS_DIR = DATA / "intelligence" / "global_coverage"
 GRAPH = DATA / "hypothesis_graph.jsonl"
@@ -500,6 +504,29 @@ def _source_terms_audit() -> dict[str, Any]:
                 "why": f"libs.research.source_terms_audit: {type(e).__name__}: {e}"}
 
 
+def _data_quality(prev: Any) -> dict[str, Any]:
+    """Score every series; never raises (it runs before the STATE write)."""
+    try:
+        from libs.research import data_quality as dq
+        doc = dq.run()
+        best = prev.get("best") if isinstance(prev, dict) else None
+        breach = dq.check_ratchet(doc, best)
+        if breach:
+            doc["ratchet_breach"] = breach
+        doc["best"] = dq.merge_best(best, doc)
+        return doc
+    except Exception as e:
+        return {"status": "UNMEASURED", "why": f"libs.research.data_quality: {type(e).__name__}: {e}"}
+
+
+def _quarantined() -> set[str]:
+    try:
+        from libs.research import data_quality as dq
+        return dq.quarantined_symbols(_read_json(OUT.with_name(QUALITY_OUT_NAME)))
+    except Exception:
+        return set()
+
+
 def mechanism_actor() -> dict[str, str]:
     """mechanism -> the payer, from `axis_registry` (the desk's one declared table)."""
     try:
@@ -563,8 +590,13 @@ def universe(absent: Absent) -> dict[str, str]:
         absent.note("research.universe_policy", "lane routing unavailable: no symbol is admitted")
         return {}
     out: dict[str, str] = {}
+    held = _quarantined()
     for sym, row in doc.items():
         if not isinstance(row, Mapping):
+            continue
+        if str(sym).upper() in held:
+            absent.note(f"quarantine:{str(sym).upper()}",
+                        "DATA_QUALITY quarantined this series: no cell is built on it")
             continue
         try:
             if lane(str(sym)) != "hypothesis":
@@ -2074,6 +2106,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, now: datetime | 
             _write_atomic(OUT, doc)
             _write_atomic(ROI_OUT, roi_doc)
             _write_atomic(OUT.with_name(TERMS_OUT_NAME), _source_terms_audit())
+            _write_atomic(OUT.with_name(QUALITY_OUT_NAME),
+                          _data_quality(_read_json(OUT.with_name(QUALITY_OUT_NAME))))
             _write_atomic(STATE, state)
         doc["_roi"] = roi_doc
         return doc
