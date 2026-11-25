@@ -4853,16 +4853,16 @@ def main() -> None:
     # Each donates its (symbol x grid) cells through family_donation, every cell a charged trial,
     # and writes reports/GLOBAL_METHOD_<METHOD>.json, which generator_coverage reads.
     gxl = _costed("global_xs_ltr", lambda: _producer(
-        "global_xs_ltr", "research/global_methods.py", "--method", "xs_ltr", "--once",
+        "global_xs_ltr", "research/global_method_xs_ltr.py", "--once",
         "--budget-s", "240"))
     ghm = _costed("global_hf_moment", lambda: _producer(
-        "global_hf_moment", "research/global_methods.py", "--method", "hf_moment", "--once",
+        "global_hf_moment", "research/global_method_hf_moment.py", "--once",
         "--budget-s", "240"))
     gva = _costed("global_value_area", lambda: _producer(
-        "global_value_area", "research/global_methods.py", "--method", "value_area", "--once",
+        "global_value_area", "research/global_method_value_area.py", "--once",
         "--budget-s", "240"))
     gvb = _costed("global_vol_breakout", lambda: _producer(
-        "global_vol_breakout", "research/global_methods.py", "--method", "vol_breakout",
+        "global_vol_breakout", "research/global_method_vol_breakout.py",
         "--once", "--budget-s", "240"))
     # Every known generator method against what ran this day: LIVE / PARTIAL / MISSING.
     gcv = _costed("generator_coverage", lambda: _producer("generator_coverage",

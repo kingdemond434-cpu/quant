@@ -290,3 +290,13 @@ def test_every_leg_has_a_layer_and_the_map_points_at_the_reports():
     from research import global_methods as gmp
     for m in gmp.METHODS.values():
         assert f"desks/mt5/reports/{m.report_name}" in reports
+
+
+def test_each_leg_script_declares_its_own_report():
+    """One leg, one producer file, one artifact: the component registry reads REPORT unimported,
+    and it must be the report the method writes."""
+    from desks.mt5.ops.components import own_artifact
+    from research import global_methods as gmp
+    for name, m in gmp.METHODS.items():
+        rel = f"desks/mt5/research/global_method_{name}.py"
+        assert own_artifact(rel) == (f"desks/mt5/reports/{m.report_name}",), name
