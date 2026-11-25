@@ -133,3 +133,54 @@ def test_live_terminals_below_raised_priority_break_i7(tmp_path):
     assert not t["ok"] and len(t["below_priority"]) == 3 and "NORMAL_PRIORITY_CLASS" in t["why"]
     ok = bh.terminals(_PS())
     assert ok["ok"] and ok["count"] == 3 and ok["live_rss_gb"] == 3.0
+
+
+def test_a_log_that_grows_after_the_copy_is_never_truncated(tmp_path, monkeypatch):
+    """Audit MF1: lines appended between the archive and the truncate must survive."""
+    logs = tmp_path / "desks/mt5/logs"
+    logs.mkdir(parents=True)
+    big = logs / "big.log"
+    n = bh.LOG_CAP_MB * 1024 * 1024 + 10
+    big.write_bytes(b"x" * n)
+    real = bh._gzip_verified
+
+    def copy_then_append(src, dst, size):
+        ok = real(src, dst, size)
+        with src.open("ab") as fh:
+            fh.write(b"late line\n")
+        return ok
+
+    monkeypatch.setattr(bh, "_gzip_verified", copy_then_append)
+    out = bh.reclaim(tmp_path, NOW, past_line=False, apply=True)
+    row = next(a for a in out["actions"] if a["kind"] == "roll")
+    assert row["done"] is False and row["why"] == "grew_after_copy"
+    assert big.stat().st_size == n + 10 and big.read_bytes().endswith(b"late line\n")
+    assert not list(logs.glob("big.log.*.gz*"))
+
+
+def test_gzip_copies_exactly_n_bytes(tmp_path):
+    src = tmp_path / "a.log"
+    src.write_bytes(b"0123456789")
+    assert bh._gzip_verified(src, tmp_path / "a.gz", 6)
+    assert gzip.decompress((tmp_path / "a.gz").read_bytes()) == b"012345"
+
+
+def test_the_walk_never_enters_the_tape(tmp_path, monkeypatch):
+    """Audit SF: protected dirs are pruned before descending, not filtered after an rglob."""
+    tape = tmp_path / "desks/mt5/data/tape/ticks/EURUSD/__pycache__"
+    tape.mkdir(parents=True)
+    (tape / "x.pyc").write_bytes(b"c")
+    pyc = tmp_path / "libs/__pycache__"
+    pyc.mkdir(parents=True)
+    seen: list[str] = []
+    real = os.walk
+
+    def spy(top, *a, **k):
+        for row in real(top, *a, **k):
+            seen.append(row[0])
+            yield row
+
+    monkeypatch.setattr(bh.os, "walk", spy)
+    bh.reclaim(tmp_path, NOW, past_line=True, apply=True)
+    assert seen and not any("tape" in Path(p).parts for p in seen)
+    assert tape.exists() and not pyc.exists()

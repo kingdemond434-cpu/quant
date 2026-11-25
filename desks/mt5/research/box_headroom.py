@@ -244,28 +244,51 @@ def quotas(root: Path, now: datetime) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- reclaim (disk only)
 
+def _walk_dirs(top: Path, *, stop: tuple[str, ...] = ()):
+    """Yield every directory under top, pruning protected dirs BEFORE descending, so the walk
+    never enters the tape, .git or the venv (Audit SF 11-25). A dir named in stop is yielded
+    and not descended into (a derived cache is removed whole, its insides need no walk)."""
+    for dirpath, dirnames, _files in os.walk(top, onerror=lambda _e: None):
+        keep = []
+        for name in dirnames:
+            if name.lower() in PROTECTED_PARTS:
+                continue
+            if name in stop:
+                yield Path(dirpath) / name
+                continue
+            keep.append(name)
+        dirnames[:] = keep
+        yield Path(dirpath)
+
+
 def _log_files(root: Path) -> list[Path]:
     out: list[Path] = []
     for d in (*(root / x for x in LOG_DIRS), *(Path(x) for x in EXTRA_LOG_DIRS)):
         if not d.is_dir() or _protected(d):
             continue
         with contextlib.suppress(OSError):
-            for f in d.rglob("*"):
-                if f.is_file() and f.suffix.lower() in LOG_SUFFIXES and not _protected(f):
-                    out.append(f)
+            for sub in _walk_dirs(d):
+                for f in sub.iterdir():
+                    if f.is_file() and f.suffix.lower() in LOG_SUFFIXES and not _protected(f):
+                        out.append(f)
     return out
 
 
-def _gzip_verified(src: Path, dst: Path) -> bool:
-    """Write src to dst.gz and prove the archive reads back to the same length."""
+def _gzip_verified(src: Path, dst: Path, n: int) -> bool:
+    """Write exactly the first n bytes of src to dst and prove the archive reads back to n.
+    Bytes a writer appends after the stat are not in the archive, so the caller may only drop
+    the source if it is still exactly n bytes (Audit MF1 11-25)."""
     tmp = dst.with_suffix(dst.suffix + ".tmp")
+    left = n
     with src.open("rb") as fi, gzip.open(tmp, "wb", compresslevel=6) as fo:
-        shutil.copyfileobj(fi, fo, 1 << 20)
-    n = 0
+        while left > 0 and (chunk := fi.read(min(left, 1 << 20))):
+            fo.write(chunk)
+            left -= len(chunk)
+    got = 0
     with gzip.open(tmp, "rb") as fr:
         while chunk := fr.read(1 << 20):
-            n += len(chunk)
-    if n != src.stat().st_size:
+            got += len(chunk)
+    if left or got != n:
         tmp.unlink(missing_ok=True)
         return False
     os.replace(tmp, dst)
@@ -294,17 +317,29 @@ def reclaim(root: Path, now: datetime, *, past_line: bool, apply: bool) -> dict[
                else str(f), "mb": round(st.st_size / 1048576, 1)}
         if apply:
             try:
-                if dst.exists() or not _gzip_verified(f, dst):
+                if dst.exists() or not _gzip_verified(f, dst, st.st_size):
                     row["done"] = False
                 else:
                     after = dst.stat().st_size
                     if kind == "roll":
                         with f.open("r+b") as fh:     # the writer keeps its handle
-                            fh.truncate(0)
+                            # re-stat on the open handle: only a file still exactly the
+                            # archived size may be emptied, else appended lines would be lost
+                            grew = os.fstat(fh.fileno()).st_size != st.st_size
+                            if not grew:
+                                fh.truncate(0)
                     else:
-                        f.unlink()
-                    freed += st.st_size - after
-                    row["done"] = True
+                        now_st = f.stat()
+                        grew = (now_st.st_size, now_st.st_mtime) != (st.st_size, st.st_mtime)
+                        if not grew:
+                            f.unlink()
+                    if grew:
+                        dst.unlink()                  # a partial copy; the source is intact
+                        row["done"] = False
+                        row["why"] = "grew_after_copy"
+                    else:
+                        freed += st.st_size - after
+                        row["done"] = True
             except OSError as exc:
                 row["done"] = False
                 row["why"] = type(exc).__name__
@@ -314,10 +349,10 @@ def reclaim(root: Path, now: datetime, *, past_line: bool, apply: bool) -> dict[
             if len(acts) >= MAX_ACTIONS:
                 break
             with contextlib.suppress(OSError):
-                for d in root.rglob(name):
+                for d in _walk_dirs(root, stop=(name,)):
                     if len(acts) >= MAX_ACTIONS:
                         break
-                    if not d.is_dir() or _protected(d.relative_to(root)):
+                    if d.name != name or not d.is_dir() or _protected(d.relative_to(root)):
                         continue
                     size = sum(x.stat().st_size for x in d.rglob("*") if x.is_file())
                     row = {"kind": "derived_cache", "path": str(d.relative_to(root)),
