@@ -313,3 +313,15 @@ def test_the_job_is_an_hourly_leg_in_the_information_layer() -> None:
     assert "data_discovery" in layers.__dict__["LEG_LAYER"] if "LEG_LAYER" in \
         layers.__dict__ else '"data_discovery": "information"' in (
             _ROOT / "libs" / "research" / "layers.py").read_text("utf-8")
+
+
+def test_by_lane_data_discovery_takes_its_stages_from_by_method() -> None:
+    from research import funnel as fn
+    lane = {"data_discovery": {"weight": 1.0, "inputs": "UNMEASURED", "outputs": "UNMEASURED",
+                               "testable": "UNMEASURED", "judged": "UNMEASURED"}}
+    view = {"llm_data_discovery": {"proposals": 9, "accepted": 4, "landed": 2, "offered": 2,
+                                   "testable": 3, "judged": "UNMEASURED"}}
+    fn._discovery_into_lane(lane, view)
+    d = lane["data_discovery"]
+    assert (d["inputs"], d["outputs"], d["landed"], d["testable"]) == (9, 4, 2, 3)
+    assert d["judged"] == "UNMEASURED" and d["weight"] == 1.0       # unread stays unread
