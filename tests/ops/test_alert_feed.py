@@ -21,7 +21,8 @@ def _msgs(*ids: str, titled: bool = True) -> list[dict]:
 
 
 def _paths(tmp: Path) -> dict[str, Path]:
-    return {"feed": tmp / "feed.jsonl", "status": tmp / "status.json", "cursor": tmp / "cur.json"}
+    return {"feed": tmp / "feed.jsonl", "status": tmp / "status.json", "cursor": tmp / "cur.json",
+            "bodies": tmp / "bodies.jsonl"}
 
 
 def test_new_pages_land_once_with_cut_bodies_and_a_cursor(tmp_path):
@@ -35,7 +36,9 @@ def test_new_pages_land_once_with_cut_bodies_and_a_cursor(tmp_path):
     st = af.poll(fetch=fetch, topic="t", now=NOW, **p)
     assert st["ok"] and st["new"] == 2 and st["pages"] == 2
     rows = [json.loads(x) for x in p["feed"].read_text().splitlines()]
-    assert [r["id"] for r in rows] == ["a", "b"] and len(rows[0]["message"]) == af.BODY_MAX
+    assert [r["id"] for r in rows] == ["a", "b"] and "message" not in rows[0]
+    body = [json.loads(x) for x in p["bodies"].read_text().splitlines()]
+    assert [b["id"] for b in body] == ["a", "b"] and len(body[0]["message"]) == af.BODY_MAX
     assert seen_since == [af.FIRST_SINCE]
     st2 = af.poll(fetch=fetch, topic="t", now=NOW, **p)     # same messages again: no duplicates
     assert st2["new"] == 0 and len(p["feed"].read_text().splitlines()) == 2
@@ -94,3 +97,25 @@ def test_routing_with_no_publish_is_never_all_routed(tmp_path):
     doc = af.routing(now=NOW, feed=feed, events=tmp_path / "none", flow=tmp_path / "none",
                      out=tmp_path / "o.json")
     assert doc["all_routed"] is False and doc["last_published_at"] == "UNMEASURED"
+
+
+def test_the_public_feed_carries_no_figure_host_account_or_reply_body(tmp_path):
+    """Audit MF1: the feed is synced to a public origin; bodies stay box-local."""
+    p = _paths(tmp_path)
+    page = {"id": "x1", "event": "message", "time": 1795000000, "priority": 5,
+            "title": "E8 daily loss -846.12 USD, equity 99331.72 on 1.2.3.4 box.example.com",
+            "message": "account 12345678 at https://vmi.example/x mail a@b.co",
+            "tags": ["warning", "acct-12345678"]}
+    reply = {"id": "x2", "event": "message", "time": 1795000001, "message": "my pin is 4321"}
+    af.poll(fetch=lambda *a: [page, reply], topic="t", now=NOW, **p)
+    wire = p["feed"].read_text()
+    for bad in ("846", "99331", "1.2.3.4", "example", "12345678", "4321", "@", "http",
+                "message", "equity 9"):
+        assert bad not in wire, bad
+    rows = [json.loads(x) for x in wire.splitlines()]
+    assert rows[0]["title_class"] == "daily loss usd equity on"
+    assert rows[0]["tags"] == ["warning"] and rows[0]["priority"] == 5
+    local = p["bodies"].read_text()
+    assert "846.12" in local and "4321" in local          # the evidence stays on the box
+    sync = (Path(af.ROOT) / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8")
+    assert "alert_feed_bodies" not in sync and "CLAUDE_ALERT_FEED.jsonl" in sync

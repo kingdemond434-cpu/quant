@@ -21,6 +21,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,9 +35,20 @@ STATUS = ROOT / "desks" / "mt5" / "reports" / "alerts" / "CLAUDE_ALERT_FEED_STAT
 CURSOR = ROOT / "data" / ".alert_feed_cursor.json"
 #: First poll with no cursor reaches back this far (ntfy keeps 12h of messages).
 FIRST_SINCE = "12h"
-#: The feed is a pointer to a fault, not an archive: bodies are cut, and the file keeps its tail.
+#: THE PUBLIC WIRE CARRIES NO BODIES (Audit MF1, 2026-11-25). The feed is published by the
+#: box-state sync to a public origin, and page text carries money figures (daily loss, equity),
+#: hosts and human replies. So the feed row holds structured fields only (id, at, priority,
+#: tags, kind, title_class: the title's plain words with every number, host, URL and email
+#: removed), and the full title/body go to BODIES, a box-local file under data/ that no sync
+#: path names. A reader on the box joins the two by id.
+BODIES = ROOT / "data" / "alert_feed_bodies.jsonl"
 BODY_MAX = 400
+#: The feed and the bodies file keep their last FEED_KEEP rows. The trim is not a loss of
+#: evidence: every published feed revision stays in the box-state sync's git history, and the
+#: pages themselves stay with their senders' own logs.
 FEED_KEEP = 2000
+_WORD = re.compile(r"[A-Za-z]{2,}")
+_DROP = re.compile(r"\S*(?:@|://|\d|\.[A-Za-z])\S*")
 TIMEOUT_S = 20.0
 #: INVARIANT I5 (principal 2026-11-25 01:55Z, PERMANENT: every box alert reaches Claude). An
 #: alert counts as ROUTED only once the box-state publish that carries the feed has landed after
@@ -70,15 +82,33 @@ def _fetch(topic: str, since: str) -> list[dict[str, Any]]:
     return out
 
 
+def title_class(text: str) -> str:
+    """The plain words of a title: any token carrying a digit, a host/URL or an email is gone,
+    so no amount, account, IP or host can reach the public wire."""
+    kept = _DROP.sub(" ", str(text or ""))
+    return " ".join(_WORD.findall(kept)).lower()[:80]
+
+
+def _tags(raw: Any) -> list[str]:
+    return [t for t in (title_class(str(x)) for x in (raw if isinstance(raw, list) else [])) if t]
+
+
 def _row(m: dict[str, Any]) -> dict[str, Any]:
+    """The PUBLIC feed row: structured fields only, never a body (Audit MF1)."""
     t = m.get("time")
     at = datetime.fromtimestamp(t, tz=UTC).isoformat() if isinstance(t, int | float) else None
     return {"id": str(m.get("id") or ""), "at": at,
-            "title": str(m.get("title") or "")[:200],
-            "message": str(m.get("message") or "")[:BODY_MAX],
-            "priority": m.get("priority"), "tags": m.get("tags") or [],
+            "title_class": title_class(str(m.get("title") or "")),
+            "priority": m.get("priority") if isinstance(m.get("priority"), int) else None,
+            "tags": _tags(m.get("tags")),
             # a titled message is a desk page; an untitled one is a human reply (run_alerts)
             "kind": "page" if m.get("title") else "reply"}
+
+
+def _body(m: dict[str, Any]) -> dict[str, Any]:
+    """The BOX-LOCAL row: the full title and body, joined to the feed by id."""
+    return {"id": str(m.get("id") or ""), "title": str(m.get("title") or "")[:200],
+            "message": str(m.get("message") or "")[:BODY_MAX]}
 
 
 def _write_atomic(p: Path, text: str) -> None:
@@ -89,7 +119,8 @@ def _write_atomic(p: Path, text: str) -> None:
 
 
 def poll(*, fetch: Any = None, topic: str | None = None, now: datetime | None = None,
-         feed: Path = FEED, status: Path = STATUS, cursor: Path = CURSOR) -> dict[str, Any]:
+         feed: Path = FEED, status: Path = STATUS, cursor: Path = CURSOR,
+         bodies: Path = BODIES) -> dict[str, Any]:
     t_now = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     topic = topic if topic is not None else _topic()
     st: dict[str, Any] = {"at": t_now, "ok": False, "new": 0}
@@ -116,8 +147,15 @@ def poll(*, fetch: Any = None, topic: str | None = None, now: datetime | None = 
     for ln in old[-FEED_KEEP:]:
         with contextlib.suppress(ValueError):
             seen.add(str(json.loads(ln).get("id")))
-    new = [_row(m) for m in msgs if str(m.get("id") or "") not in seen]
+    fresh = [m for m in msgs if str(m.get("id") or "") not in seen]
+    new = [_row(m) for m in fresh]
     if new:
+        old_b: list[str] = []
+        with contextlib.suppress(OSError):
+            old_b = bodies.read_text("utf-8").splitlines()
+        kept_b = old_b[-max(0, FEED_KEEP - len(fresh)):] + [
+            json.dumps(_body(m), separators=(",", ":")) for m in fresh]
+        _write_atomic(bodies, "\n".join(kept_b) + "\n")
         kept = old[-max(0, FEED_KEEP - len(new)):] + [json.dumps(r, separators=(",", ":"))
                                                       for r in new]
         _write_atomic(feed, "\n".join(kept) + "\n")
@@ -157,7 +195,11 @@ def routing(*, now: datetime | None = None, feed: Path = FEED, events: Path = EV
                 at = _iso(r.get("at") or r.get("ts"))
                 if at and (t_now - at).total_seconds() <= ROUTING_WINDOW_H * 3600:
                     alerts.append({"source": src, "at": at.isoformat(timespec="seconds"),
-                                   "what": str(r.get("title") or r.get("organ") or "")[:160]})
+                                   # a page's words only (no figures/hosts); a guardian
+                                   # row names the desk's own organ (a task name)
+                                   "what": title_class(str(r.get("title_class")
+                                                           or r.get("title") or ""))
+                                   or str(r.get("organ") or "")[:160]})
     flow_doc: Any = {}
     with contextlib.suppress(OSError, ValueError):
         flow_doc = json.loads(flow.read_text("utf-8-sig"))
