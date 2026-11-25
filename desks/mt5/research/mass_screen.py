@@ -261,12 +261,17 @@ class Prepared:
             for vi, (d, k) in enumerate(VARIANTS):
                 stop = c[:m] - d * k * atr[:m]
                 sd = np.abs(entry - stop)
-                hit = (win_lo <= stop) if d > 0 else (win_hi >= stop)
-                px = np.where(hit, stop, exitp)
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    gross = d * (px - entry) / sd
-                    r1[vi, :m] = gross - (spread_x1[:m] + cm["comm_price"] + fin) / sd
-                    r3[vi, :m] = gross - (spread_x3[:m] + cm["comm_price"] + fin) / sd
+                # A SHORT'S STOP TRIGGERS ON THE ASK, bid + the spread it is charged, and exits at
+                # the stop's bid equivalent -- `engine.FILL_RULES` fill-2026-11-25-a. So a short's
+                # path differs between the 1x and the 3x arm; a long's does not.
+                for arr, spr in ((r1, spread_x1[:m]), (r3, spread_x3[:m])):
+                    if d > 0:
+                        px = np.where(win_lo <= stop, stop, exitp)
+                    else:
+                        px = np.where(win_hi + spr >= stop, stop - spr, exitp)
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        gross = d * (px - entry) / sd
+                        arr[vi, :m] = gross - (spr + cm["comm_price"] + fin) / sd
                 bad = ~(sd > 0) | ~np.isfinite(entry) | ~np.isfinite(exitp)
                 r1[vi, :m][bad] = np.nan
                 r3[vi, :m][bad] = np.nan
