@@ -52,10 +52,13 @@ OPENROUTER_CN_MODELS: tuple[str, ...] = (
     "deepseek/deepseek-r1:free",
     "qwen/qwen3-235b-a22b:free",
     "moonshotai/kimi-k2:free",
-    "minimax/minimax-m3:free",
     "z-ai/glm-4.5-air:free",
     "z-ai/glm-5.2:free",
 )
+
+#: Families the principal took OFF the OpenRouter lane (2026-11-24: "on openrouter use alternative
+#: fr minimax"). Their turns go to the other live free Chinese-lab ids; relays are unaffected.
+OPENROUTER_EXCLUDED = re.compile(r"(?i)minimax|abab")
 
 #: Model-family words that mark an id as Chinese-lab on a relay's /models list.
 CN_FAMILY = re.compile(
@@ -84,6 +87,52 @@ PROVIDERS: tuple[Provider, ...] = (
     Provider("agentrouter", "AGENTROUTER", "AGENTROUTER_BASE_URL", "https://agentrouter.org/v1",
              relay=True, models_env="AGENTROUTER_MODELS"),
 )
+
+#: PLUG-IN PROVIDERS (principal 2026-11-20: "I even have 2 more things I'll login n give u api
+#: of soon"). A new key is ONE box-local file entry, no code change and no release:
+#:   data/secrets/cn_providers.json  ->  [{"name": "acme", "base_url": "https://api.acme.cn/v1",
+#:                                        "key": "<secret>", "models": ["qwen-max"]}, ...]
+#: `key` may be replaced by `key_env` (the name of a box environment variable). `models` is
+#: optional: without it the provider's /models list is read and every Chinese-lab id is used.
+#: Every entry is treated as a RELAY: its own allowance (`CN_ENSEMBLE_RELAY_DAILY`), the same
+#: public-only prompt, and fail-closed DARK on any defect. The file lives with the other secrets
+#: on the box and is never printed or reported; only the provider NAME appears in the report.
+EXTRA_PROVIDERS_FILE = "data/secrets/cn_providers.json"
+_PROVIDER_NAME = re.compile(r"[a-z][a-z0-9_]{1,31}")
+
+
+def extra_providers(root: Path, env: Mapping[str, str]) -> tuple[list[Provider], dict[str, str]]:
+    """The box file's providers and an env overlay carrying their keys/models. Bad entries are
+    skipped; a missing or unreadable file means no extras. Never raises, never prints a key."""
+    try:
+        raw = json.loads((root / EXTRA_PROVIDERS_FILE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return [], {}
+    entries = raw.get("providers", []) if isinstance(raw, dict) else raw
+    taken = {p.name for p in PROVIDERS}
+    out: list[Provider] = []
+    overlay: dict[str, str] = {}
+    for ent in entries if isinstance(entries, list) else []:
+        if not isinstance(ent, dict):
+            continue
+        name = str(ent.get("name") or "").strip().lower()
+        base = str(ent.get("base_url") or "").strip()
+        if not _PROVIDER_NAME.fullmatch(name) or name in taken or not base.startswith("https://"):
+            continue
+        tag = name.upper()
+        p = Provider(name, f"CN_EXTRA_{tag}_KEY", f"CN_EXTRA_{tag}_BASE", base, relay=True,
+                     models_env=f"CN_EXTRA_{tag}_MODELS")
+        key_env = str(ent.get("key_env") or "").strip()
+        key = str(ent.get("key") or (env.get(key_env, "") if key_env else "") or "").strip()
+        if key:
+            overlay[p.key_env] = key
+        models = ent.get("models")
+        if isinstance(models, list):
+            overlay[p.models_env] = ",".join(str(m).strip() for m in models if str(m).strip())
+        taken.add(name)
+        out.append(p)
+    return out, overlay
+
 
 #: The research questions, chosen for what feeds the judge: new hypotheses, repairs of near
 #: misses, recombinations, and what the public literature and filings say. Public briefs only.
@@ -199,7 +248,8 @@ def seat_for(p: Provider, env: Mapping[str, str] | None = None,
         if not models:
             return Seat(p, base, "", why="DARK: the relay lists no Chinese-lab model")
     if not p.relay:
-        models = [m for m in models if m.endswith(":free")]     # no paid id, ever
+        models = [m for m in models if m.endswith(":free")     # no paid id, ever
+                  and not OPENROUTER_EXCLUDED.search(m)]
         if not models:
             return Seat(p, base, "", why="DARK: no :free model configured")
     return Seat(p, base, key, tuple(dict.fromkeys(models)), lit=True)
@@ -225,7 +275,7 @@ def openrouter_quota(now: datetime, share: float) -> int:
     """This run's slice of OpenRouter's free day: `share` of the daily ceiling, spread over the
     hours left today, and never more than what is actually left after the other organs."""
     from libs.ops import llm_seat
-    left = llm_seat.free_budget_left(now)
+    left = llm_seat.lane_budget_left(now=now)        # never the other lanes' reservations
     if not llm_seat.free_tier_only():
         left = max(left, 0)
     daily = llm_seat.free_daily_max()
@@ -320,7 +370,9 @@ def run(now: datetime | None = None, *, root: Path | None = None,
     now = now or _now()
     base = root or _ROOT
     e = os.environ if env is None else env
-    seats = [seat_for(p, e, list_models) for p in PROVIDERS]
+    extras, overlay = extra_providers(base, e)
+    e_all: Mapping[str, str] = {**e, **overlay} if overlay else e
+    seats = [seat_for(p, e_all, list_models) for p in (*PROVIDERS, *extras)]
     if quotas is None:
         share = float(e.get("CN_ENSEMBLE_OPENROUTER_SHARE", "0.35") or 0.35)
         relay_daily = int(e.get("CN_ENSEMBLE_RELAY_DAILY", "240") or 240)

@@ -634,6 +634,85 @@ def free_budget_left(now: datetime | None = None) -> int:
     return max(0, free_daily_max() - calls_today(now))
 
 
+#: LANE RESERVATIONS: a protected slice of the free day for the organs that bring breadth.
+#:
+#: WHY (principal 2026-11-20: "all Chinese models run 24/7 ... the weak isn't supposed to be
+#: weak"). The day's allowance is first-come-first-served, and on 2026-11-20 one organ
+#: (deepening_worker) made 218 of 237 completions while the DeepSeek lane made 3. An organ listed
+#: here keeps `share x daily ceiling` requests that NO OTHER organ may spend before the release
+#: hour, so a busy organ can never starve the Chinese-model lanes again. Unspent reservations are
+#: released at `RESERVE_RELEASE_HOUR_UTC`, so the day's allowance is never wasted.
+#: The box can override the table with `data/llm_lane_reserve.json`: {"organ": share, ...}.
+DEFAULT_LANE_RESERVE: dict[str, float] = {
+    "run_cn_ensemble": 0.30,
+    "run_deepseek_cycle": 0.05,
+    "scientist_tournament": 0.05,
+}
+LANE_RESERVE_FILE = _ROOT / "data" / "llm_lane_reserve.json"
+RESERVE_RELEASE_HOUR_UTC = 21
+_MAX_TOTAL_RESERVE = 0.8
+
+
+def lane_reserve() -> dict[str, float]:
+    """The reservation table: the box file when it is valid, else the default. Shares are
+    clipped to [0, 1] and scaled down together if they sum past `_MAX_TOTAL_RESERVE`, so a typo
+    can never reserve the whole day away from everyone else."""
+    table = dict(DEFAULT_LANE_RESERVE)
+    with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
+        raw = json.loads(LANE_RESERVE_FILE.read_text("utf-8"))
+        if isinstance(raw, dict):
+            table = {str(k)[:64]: min(1.0, max(0.0, float(v))) for k, v in raw.items()}
+    total = sum(table.values())
+    if total > _MAX_TOTAL_RESERVE:
+        table = {k: v * _MAX_TOTAL_RESERVE / total for k, v in table.items()}
+    return table
+
+
+def calls_today_by_organ(now: datetime | None = None) -> dict[str, int]:
+    """Today's provider requests per organ, from the same ledger `calls_today` counts."""
+    stamp = (now or datetime.now(UTC)).strftime("%Y-%m-%d")
+    out: dict[str, int] = {}
+    try:
+        lines = SPEND_LEDGER.read_text("utf-8").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (isinstance(row, dict) and str(row.get("utc", "")).startswith(stamp)
+                and row.get("provider") != FREE_RELAY):
+            organ = str(row.get("organ") or "unattributed")
+            out[organ] = out.get(organ, 0) + 1
+    return out
+
+
+def reserved_for_others(organ: str, now: datetime | None = None) -> int:
+    """Requests still held back today for reserved organs other than `organ`. Zero after the
+    release hour."""
+    now = now or datetime.now(UTC)
+    if now.hour >= RESERVE_RELEASE_HOUR_UTC:
+        return 0
+    daily = free_daily_max()
+    used = calls_today_by_organ(now)
+    return sum(max(0, int(daily * share) - used.get(name, 0))
+               for name, share in lane_reserve().items() if name != organ)
+
+
+def lane_budget_left(organ: str | None = None, now: datetime | None = None) -> int:
+    """What `organ` may still spend today: the day's free budget minus what is held for the
+    other reserved lanes. A reserved organ can always reach its own slice."""
+    return max(0, free_budget_left(now) - reserved_for_others(organ or calling_organ(), now))
+
+
+def _lane_refusal(organ: str) -> str:
+    return (f"free-tier lane budget held: {organ} has spent its open share and the rest of "
+            f"today's {free_daily_max()} requests is reserved for other research lanes "
+            f"({', '.join(sorted(lane_reserve()))}) until {RESERVE_RELEASE_HOUR_UTC}:00 UTC. "
+            f"This is a SKIP, not a failure.")
+
+
 def monthly_cap_usd() -> float:
     raw = os.environ.get("LLM_MONTHLY_CAP_USD", "").strip()
     try:
@@ -705,6 +784,8 @@ def chat(
     # account takes EVERY organ with it, not just the one that spent the last request.
     if free_tier_only() and getattr(s, "source", "") != FREE_RELAY:
         left = free_budget_left()
+        if left > 0 and lane_budget_left(calling_organ()) <= 0:
+            return "", _lane_refusal(calling_organ())
         if left <= 0:
             return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
                         f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
@@ -771,6 +852,8 @@ def chat_messages(
     # account takes EVERY organ with it, not just the one that spent the last request.
     if free_tier_only():
         left = free_budget_left()
+        if left > 0 and lane_budget_left(calling_organ()) <= 0:
+            return "", _lane_refusal(calling_organ())
         if left <= 0:
             return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
                         f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "

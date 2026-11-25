@@ -135,7 +135,7 @@ SYSTEM = (
 #: more than 402 does, and every one still faces the identical gauntlet -- so the downside is
 #: wasted trials on weaker ideas, while the upside is the role existing at all.
 _FREE_FALLBACK = (
-    "minimax/minimax-m3:free",
+    "qwen/qwen3-235b-a22b:free",                  # replaces minimax-m3 (principal 2026-11-24)
     "nvidia/nemotron-3-ultra-550b-a55b:free",
     "poolside/laguna-s-2.1:free",
     "inclusionai/ling-3.0-flash-fin:free",

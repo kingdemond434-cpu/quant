@@ -57,7 +57,7 @@ CTX = ssl.create_default_context()
 
 LEAD_SEAT = "openai/gpt-5.6-terra-pro"
 DIVERSITY_POOL = ["x-ai/grok-4.3", "google/gemini-3.1-pro-preview", "deepseek/deepseek-v4-pro",
-                  "qwen/qwen3.7-max", "z-ai/glm-5.2", "moonshotai/kimi-k3", "minimax/minimax-m3",
+                  "qwen/qwen3.7-max", "z-ai/glm-5.2", "moonshotai/kimi-k3", "tencent/hy3",  # was minimax-m3 (11-24)
                   "google/gemini-3.6-flash", "meituan/longcat-2.0",
                   "nvidia/nemotron-3-ultra-550b-a55b"]
 
