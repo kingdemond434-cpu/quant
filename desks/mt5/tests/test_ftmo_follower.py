@@ -114,6 +114,9 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
                                 "initial_balance": 100_000.0, "account_type": "2-step"}),
                     "utf-8")
     monkeypatch.setattr(ff, "ACCOUNT_FILE", acct)
+    from mt5desk import account_divergence as _ad
+    monkeypatch.setattr(_ad, "LEDGERS", (tmp_path / "prop_ledger.jsonl",
+                                         tmp_path / "live_ledger.jsonl"))
     marker = tmp_path / "FTMO_FOLLOWER_ARMED"
     marker.write_text("", "utf-8")
     monkeypatch.setattr(ff, "ARMED_MARKER", marker)
@@ -165,11 +168,37 @@ def test_an_e8_long_fill_is_followed_by_exactly_one_long_order(world) -> None:
     assert len(sent) == 1 and sent[0]["side"] == "long"
 
 
-def test_a_price_already_through_the_level_rests_a_limit_at_it_never_a_chase(world) -> None:
+def test_a_price_far_through_the_level_places_nothing_never_a_pullback_limit(world) -> None:
+    """2026-11-20: a limit back at E8's level fills only when the breakout fails and returns --
+    adverse selection (FTMO -0.073R over 8 vs E8 +0.164R). Past the late bound: no order, billed."""
+    mt5 = _MT5(bid=4344.8, ask=4345.0)                 # 5.0 through a 20-point stop = 0.25 R
+    _pass(mt5)
+    assert not _entries(mt5) and not mt5.sent
+    (row,) = [r for r in _rows() if r.get("reason") == "late_beyond_bound"]
+    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == 900.0
+
+
+def test_the_old_pullback_limit_is_one_reversible_constant(world, monkeypatch) -> None:
+    monkeypatch.setattr(ff, "PULLBACK_LIMIT", True)
     mt5 = _MT5(bid=4344.8, ask=4345.0)
     _pass(mt5)
     (req,) = _entries(mt5)
     assert req["type"] == mt5.ORDER_TYPE_BUY_LIMIT and req["price"] == 4340.0
+
+
+def test_a_diverged_copy_is_sized_down_by_its_own_fills(world) -> None:
+    """FTMO's own gold_asia fills against E8's on the same signal: n=8 at -0.073R vs 30 at
+    +0.164R shrinks to +0.059R, x0.36 of the allocator's fraction."""
+    ftmo = [{"book": "ftmo", "sleeve": "gold_asia", "r_multiple": -0.073}] * 8
+    e8 = [{"book": "e8", "sleeve": "gold_asia", "r_multiple": 0.164}] * 30
+    (world.tmp / "prop_ledger.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in ftmo + e8) + "\n", "utf-8")
+    mt5 = _MT5(bid=4340.8, ask=4341.0)
+    doc = _pass(mt5)
+    (req,) = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    # 0.009 x 0.3587 x 100k / (21 x 100) = 0.1537 -> 0.15
+    assert req["volume"] == pytest.approx(0.15)
+    assert doc["divergence"]["multiplier"] == pytest.approx(0.3587, abs=1e-3)
 
 
 def test_a_follow_just_through_the_level_enters_at_market_with_e8s_stop_and_target(
@@ -197,9 +226,22 @@ class _RequotingMT5(_MT5):
         return super().order_send(req)
 
 
-def test_a_rejected_market_follow_falls_back_to_the_limit_the_old_path_placed(world) -> None:
-    """Auditor HOLD on #746: a requoted market follow must never lose the trade the old limit
-    at E8's level would have kept -- same pass, same write-ahead, sized on E8's distance."""
+def test_a_rejected_market_follow_never_falls_back_to_a_pullback_limit(world) -> None:
+    """A requoted market follow with the price through E8's level would fall back to a limit
+    behind the price -- the adversely selected order this change removes. Nothing rests."""
+    mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    assert not _entries(mt5)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "REJECTED" and "pullback" in row["why"]
+    assert row["market_attempt"]["retcode"] == 10004
+
+
+def test_a_rejected_market_follow_falls_back_to_the_limit_when_pullback_limit_is_on(
+        world, monkeypatch) -> None:
+    """Auditor HOLD on #746 (the old behaviour, behind PULLBACK_LIMIT): same pass, same
+    write-ahead, sized on E8's distance."""
+    monkeypatch.setattr(ff, "PULLBACK_LIMIT", True)
     mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
     _pass(mt5)
     deal, pend = (r for r in mt5.sent if r["action"] in (mt5.TRADE_ACTION_DEAL,
@@ -238,9 +280,9 @@ def test_a_partly_filled_market_follow_is_a_fill_and_places_no_limit(world) -> N
 def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
     assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
     assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)
-    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("buy_limit", 4340.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("skip_late", 4340.0)
     assert ff.entry_plan("short", 4300.0, 4320.0, 4299.0, 4299.2) == ("sell_market", 4299.0)
-    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("sell_limit", 4300.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("skip_late", 4300.0)
 
 
 def test_gold_is_selected_into_market_watch_before_the_tick_is_read(world) -> None:
@@ -1205,3 +1247,120 @@ def test_the_clock_is_read_off_the_freshest_liquid_tick() -> None:
     # and still count; the freshest tick gives +3 and the same answer, with no hour's shift
     assert ff.day_start_balance(mt5, 98_000.0, midnight, NOW, server_epoch=stale) == \
         pytest.approx(100_000.0)
+
+
+# ------------------------------------------------------------------ the native bracket (11-20)
+
+@pytest.fixture
+def bracket_world(world):
+    """E8's asia bracket RESTS (both stops, no fill), no direction is set, and FTMO is in "oco"
+    mode: the same two legs, natively, at the same moment (zuck 2026-11-20)."""
+    oco.direction_path().unlink()                 # no fill anywhere yet: no direction
+    world.report.write_text(json.dumps(_e8_report(position_id=None)), "utf-8")
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback", "ftmo": "oco"}}))
+    oco.publish_lane("e8", world.e8_key, positions=[],
+                     orders=[{"id": 501, "side": "buy"}, {"id": 502, "side": "sell"}], date=DAY)
+    return world
+
+
+def _pending(mt5: _MT5) -> list[dict]:
+    return [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_PENDING]
+
+
+def test_bracket_decision_reads_e8s_two_resting_legs() -> None:
+    legs, _why = ff.bracket_decision(_e8_report(position_id=None), None, None, today=DAY, now=NOW)
+    assert [(lg["side"], lg["price"], lg["sl"], lg["tp"]) for lg in legs] == [
+        ("long", 4340.0, 4320.0, 4380.0), ("short", 4300.0, 4320.0, 4260.0)]
+    assert ff.bracket_decision(_e8_report(), None, None, today=DAY, now=NOW)[0] is None
+    assert ff.bracket_decision(_e8_report(position_id=None), {"direction": "buy"}, None,
+                               today=DAY, now=NOW)[0] is None
+    assert ff.bracket_decision(_e8_report(position_id=None, guard="halt"), None, None,
+                               today=DAY, now=NOW)[0] is None
+
+
+def test_the_native_bracket_rests_e8s_two_stops_on_ftmo_before_any_fill(bracket_world) -> None:
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    doc = _pass(mt5)
+    buy, sell = _pending(mt5)
+    assert (buy["type"], buy["price"], buy["sl"], buy["tp"]) == (
+        mt5.ORDER_TYPE_BUY_STOP, 4340.0, 4320.0, 4380.0)
+    assert (sell["type"], sell["price"], sell["sl"], sell["tp"]) == (
+        mt5.ORDER_TYPE_SELL_STOP, 4300.0, 4320.0, 4260.0)
+    assert buy["volume"] == pytest.approx(0.45) and sell["volume"] == pytest.approx(0.45)
+    assert doc["bracket"]["native"] and len(doc["placed"]) == 2
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_pending(mt5)) == 2 and len(mt5.orders) == 2    # rests, never re-sent
+
+
+def test_fallback_mode_keeps_the_follow_and_places_no_bracket(bracket_world) -> None:
+    oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"],
+                                         "modes": {"fusion": "fallback", "ftmo": "fallback"}}))
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    doc = _pass(mt5)
+    assert not _pending(mt5) and not doc["bracket"]["native"]
+
+
+def test_a_leg_the_price_has_passed_is_not_placed_never_a_limit(bracket_world) -> None:
+    mt5 = _MT5(bid=4299.0, ask=4299.2)          # already below the sell stop's level
+    _pass(mt5)
+    (only,) = _pending(mt5)
+    assert only["type"] == mt5.ORDER_TYPE_BUY_STOP
+
+
+def test_an_own_fill_cancels_its_own_opposite_leg(bracket_world) -> None:
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    _pass(mt5)
+    buy = next(o for o in mt5.orders if o.type == mt5.ORDER_TYPE_BUY_STOP)
+    mt5.orders.remove(buy)
+    mt5.positions.append(SimpleNamespace(ticket=buy.ticket, symbol="XAUUSD", type=0,
+                                         magic=ff.MAGIC, volume=0.45, price_open=4340.0,
+                                         sl=4320.0, tp=4380.0, time=TICK))
+    mt5.bid, mt5.ask = 4341.0, 4341.2
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert not mt5.orders                      # the sell stop is gone
+    assert any(a.get("act") == "cancel" and a.get("ok") for a in doc["actions"])
+
+
+def test_a_native_leg_never_outlives_its_ttl_while_e8_holds_its_fill(bracket_world) -> None:
+    """Audit HOLD MF-1 on 28916fc26: the session/TTL check runs before the native-bracket keep, so
+    an untriggered FTMO leg is cancelled at its TTL even while E8 holds its fill ("follow")."""
+    mt5 = _MT5(bid=4319.8, ask=4320.0)
+    _pass(mt5)
+    assert len(mt5.orders) == 2
+    # E8's buy stop fills and E8 holds it: the day is long, FTMO's sell stop goes, its buy rests.
+    bracket_world.report.write_text(json.dumps(_e8_report()), "utf-8")
+    oco.publish_lane("e8", bracket_world.e8_key,
+                     positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}],
+                     orders=[], date=DAY)
+    assert oco.claim_fill("e8", bracket_world.e8_key, "buy", date=DAY)["won"]
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert [o.type for o in mt5.orders] == [mt5.ORDER_TYPE_BUY_STOP]
+    later = NOW + timedelta(hours=ff.BRACKET_TTL_HOURS + 0.1)
+    mt5.tick = int((later + timedelta(hours=3)).timestamp())
+    bracket_world.report.write_text(json.dumps(_e8_report(at=later)), "utf-8")
+    oco.publish_lane("e8", bracket_world.e8_key,
+                     positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}],
+                     orders=[], date=DAY, now=later)
+    doc = _pass(mt5, now=later)
+    assert not mt5.orders
+    assert any(a.get("why") == "the asia window's session is over" and a.get("ok")
+               for a in doc["actions"])
+
+
+def test_bracket_fit_guards_the_sum_of_both_legs_not_the_larger_one() -> None:
+    """Audit HOLD MF-2 on 28916fc26: both legs can fill and stop out in one spike, so their SUM
+    (each with the measured slip) must fit FTMO's daily limit; a plan whose larger leg fits but
+    whose sum does not is SHRUNK, both legs alike."""
+    plan = [{"side": "long", "price": 4340.0, "sl": 4320.0, "tp": 4380.0, "lot": 1.5},
+            {"side": "short", "price": 4300.0, "sl": 4320.0, "tp": 4260.0, "lot": 1.5}]
+    one = ff.trade_risk(1.5, 20.0, 100.0)                  # 44.13 x 150 = 6,619.50
+    assert ff.loss_guard(100_000.0, 100_000.0, 100_000.0, one, daily_frac=0.10)[0]
+    assert not ff.loss_guard(100_000.0, 100_000.0, 100_000.0, 2 * one, daily_frac=0.10)[0]
+    fit, ok, why = ff.bracket_fit(plan, initial=100_000.0, start=100_000.0, equity=100_000.0,
+                                  contract=100.0, vmin=0.01, vstep=0.01, daily_frac=0.10)
+    assert ok and "shrunk" in why
+    assert fit[0]["lot"] == fit[1]["lot"] < 1.5
+    assert sum(x["risk"] for x in fit) < 10_000.0
+    assert ff.bracket_fit(plan, initial=100_000.0, start=100_000.0, equity=100_000.0,
+                          contract=100.0, vmin=1.49, vstep=0.01, daily_frac=0.10)[1] is False
