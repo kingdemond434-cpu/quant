@@ -46,3 +46,21 @@ def test_the_swarm_launches_one_single_flight_worker_with_parallel_seats() -> No
     assert "for model in models[:1]:" in src
     assert 'env["DEEPEN_SEAT_WORKERS"] = str(max(1, len(models)))' in src
     assert 'env["OPENROUTER_MODEL"]' not in src
+
+
+def test_an_unreadable_history_is_moved_aside_never_overwritten_as_empty(tmp_path: Path) -> None:
+    out = tmp_path / "deepened_candidates.json"
+    out.write_text('{"candidates": [{"id": 1}, {"id"', encoding="utf-8")   # truncated mid-write
+    assert dw.read_prior_candidates(out) == []
+    aside = list(tmp_path.glob("deepened_candidates.json.corrupt-*"))
+    assert len(aside) == 1 and aside[0].read_text("utf-8").startswith('{"candidates"')
+    assert not out.exists()
+
+
+def test_the_history_is_written_atomically_and_read_back(tmp_path: Path) -> None:
+    out = tmp_path / "deepened_candidates.json"
+    dw.write_candidates_atomic(out, {"candidates": [{"id": 1}]})
+    assert dw.read_prior_candidates(out) == [{"id": 1}]
+    assert list(tmp_path.glob("*.tmp")) == []
+    src = (DESK / "research" / "deepening_worker.py").read_text("utf-8")
+    assert "OUT.write_text(" not in src

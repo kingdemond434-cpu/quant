@@ -20,3 +20,12 @@ def test_every_partner_is_callable_under_the_paid_guard() -> None:
     for pin in ("openai/gpt-5.6-sol-pro", "anthropic/x", "z:free"):
         got = sf.partner_model(pin, FREE)
         assert got is not None and got.endswith(":free")
+
+
+def test_the_partner_avoids_the_callers_own_vendor_while_another_exists() -> None:
+    got = sf.partner_model("openai/gpt-5.6-sol-pro", FREE, avoid_vendors=("openai",))
+    assert got == "google/gemma-3-27b-it:free"
+    assert sf.partner_model("openai/x:free", FREE, avoid_vendors=("openai",)) != "openai/x:free"
+    # only the caller's vendor is free: still answer, and the vendor is recorded on the opinion
+    assert sf.partner_model("p", ["openai/a:free"], avoid_vendors=("openai",)) == "openai/a:free"
+    assert sf.SecondOpinion(True, model="openai/a:free").to_dict()["partner_vendor"] == "openai"
