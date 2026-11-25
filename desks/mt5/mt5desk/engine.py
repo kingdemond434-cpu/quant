@@ -44,6 +44,15 @@ SWAP_DAY_COUNT = 360.0
 _SWAP_MODE_SOURCE = Path(__file__).resolve().parent.parent / "data" / "carry_state.json"
 
 
+#: THE FILL RULES THIS ENGINE APPLIES, versioned so a verdict built on them can say which.
+#: fill-2026-11-25-a: a resting STOP entry the market gaps through fills at the gapping bar's
+#: open (stop vs limit read against the signal bar's close, never the fill bar's open), and a
+#: short's stop/target/bank/trail trigger on the ASK (bid + the cost model's spread) with the
+#: round-trip charge unchanged. Before it (unversioned): stop vs limit inferred from the next
+#: open, a gapped stop filled at its trigger, short exits triggered on the bid.
+FILL_RULES = "fill-2026-11-25-a"
+
+
 @dataclass(frozen=True)
 class Costs:
     """Round-trip cost in ACCOUNT CURRENCY PER LOT, not per unit.
@@ -459,6 +468,7 @@ class BacktestResult:
     signal_count: int
     equity: float = 0.0
     geometry_rejections: list[dict[str, Any]] = field(default_factory=list)
+    fill_rules: str = FILL_RULES
 
     @property
     def n(self) -> int:
@@ -699,6 +709,12 @@ def run_backtest(
     Entries fill at the open of the first bar strictly after the signal time.
     Stops checked intrabar via low/high; targets similarly. TTL and max-hold
     force exits. Position closed at next bar open if no stop/target hit.
+
+    Bars are BID. A trigger entry is a STOP or a LIMIT by where it sits against the signal
+    bar's close; a stop the market gaps through fills at the open, a limit at its level. A
+    long exits on the bid bars; a short's stop/target trigger on the ask (bid + the cost
+    model's spread) and record the bid equivalent, so `per_oz_roundtrip` is charged once,
+    unchanged. See `FILL_RULES`.
     """
     memo_on = _leg_memo_on()
     o = df["open"].to_numpy()
@@ -727,7 +743,16 @@ def run_backtest(
     # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
     # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
     idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
-    walked = (str(getattr(idx, "tz", None)), o, h, lows, idx_ns)
+    # THE ASK A SHORT EXITS ON (2026-11-25). Bars are BID. A long sells at the bid, so its stop
+    # and target are read straight off the bars; a short BUYS BACK at the ask, so its stop and
+    # target trigger when bid + spread reaches them. The spread is the cost model's own (the
+    # one `per_oz_roundtrip` charges), in price units. The path now reads it for shorts, so it
+    # is part of what `_LegMemo` compares: a cost arm with a different spread re-walks a list
+    # that holds a short, and a long-only list still shares its walk across arms.
+    ask_px = float(costs.spread_per_lot) / float(costs.contract_oz)
+    has_short = any(getattr(s, "side", 0) < 0 for s in signals)
+    walked = ((str(getattr(idx, "tz", None)), ask_px if has_short else None),
+              o, h, lows, idx_ns)
     memo_hit = _LEGS.lookup(df, signals, max_hold_bars, walked) if memo_on else None
     # A HIT WALKS NOTHING: the legs below were walked on this exact frame and signal list by the
     # previous call (`_LegMemo`), so the loop is given no signals and only the pricing runs.
@@ -743,7 +768,7 @@ def run_backtest(
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
-    for sig, i0 in zip(walk, locs, strict=True):
+    for n_sig, (sig, i0) in enumerate(zip(walk, locs, strict=True)):
         i = i0 + 1
         if i <= 0 or i >= len(idx) - 1:
             continue
@@ -752,26 +777,46 @@ def run_backtest(
         entry = float(o[i])
         if entry != entry or not (entry > 0):
             continue
-        # intrabar trigger fill: a resting stop order that lives `wait_bars` bars
+        # intrabar trigger fill: a resting order that lives `wait_bars` bars
         fill_bar = i
         limit_entry = False
         if sig.trigger is not None:
-            tgt = sig.trigger
-            # A LIMIT entry sits on the far side of the market from the trade's
-            # direction (buy below, sell above); a STOP entry sits beyond it.
-            # The distinction is inferred rather than declared so it also covers
-            # the families that predate this field.
-            limit_entry = ((sig.side > 0 and tgt < entry)
-                           or (sig.side < 0 and tgt > entry))
+            tgt = float(sig.trigger)
+            # STOP OR LIMIT IS DECIDED WHEN THE ORDER IS PLACED, NOT WHERE THE FILL BAR OPENS
+            # (2026-11-25). No family declares the order type on `Signal`, so it is derived from
+            # the side and where the trigger sits against the price known at placement: the
+            # SIGNAL bar's close. A buy at or above it is a buy STOP, below it a buy LIMIT (a sell
+            # mirrors). This used to compare the trigger with the NEXT bar's open, so a buy stop
+            # the market gapped OVER read as a "limit" and filled at the trigger -- a price that
+            # was never offered, in the trade's favour, on exactly the breakout days that matter.
+            ref_bar = int(i0) if idx_ns[int(i0)] == sig_ns[n_sig] else max(int(i0) - 1, 0)
+            ref_px = float(close_px[ref_bar])
+            if ref_px != ref_px:
+                ref_px = entry
+            limit_entry = ((sig.side > 0 and tgt < ref_px)
+                           or (sig.side < 0 and tgt > ref_px))
             hit = -1
+            px = tgt
             for j in range(i, min(i + sig.wait_bars, len(idx))):
-                if float(h[j]) >= tgt >= float(lows[j]):
-                    hit = j
+                oj, hj, lj = float(o[j]), float(h[j]), float(lows[j])
+                if limit_entry:
+                    # A LIMIT keeps its rule: touched inside the bar, filled at the limit.
+                    if hj >= tgt >= lj:
+                        hit = j
+                        break
+                elif sig.side > 0:
+                    # A BUY STOP is a market order once touched: a bar that OPENS above it fills
+                    # at that open (worse than the trigger); otherwise at the trigger.
+                    if hj >= tgt:
+                        hit, px = j, max(oj, tgt)
+                        break
+                elif lj <= tgt:
+                    hit, px = j, min(oj, tgt)          # a SELL STOP, mirrored
                     break
             if hit < 0:
                 continue
             fill_bar = hit
-            entry = float(tgt)
+            entry = float(px)
         side = sig.side
         stop = sig.stop
         target = sig.target
@@ -803,7 +848,8 @@ def run_backtest(
         liq_ticks = sig.liquidity_ticks_min
         banked = False
         banked_at = 0.0
-        trail_ext = entry
+        # A short's trail runs on the ASK series it exits on, from the ask at its fill.
+        trail_ext = entry if side > 0 else entry + ask_px
         stall = 0
         exit_price: float | None = None
         reason = "ttl"
@@ -902,25 +948,34 @@ def run_backtest(
                     exit_price, reason = target, "target"
                     break
             else:
-                if gap_open is not None and gap_open >= stop:     # gap through -- see long side
+                # A SHORT'S EXITS TRADE AT THE ASK (2026-11-25): bid + `ask_px`. Every level a
+                # short exits on -- stop, target, bank, trail -- is compared with the ASK bar, and
+                # the price recorded is that level's BID equivalent (level - ask_px). The spread
+                # charge below is unchanged, so the round trip still pays it exactly once: a short
+                # stopped at its stop now loses one R plus commission, the same distance a long
+                # loses at its stop, instead of one R plus a spread it was charged twice for by
+                # being triggered on the bid and then debited the spread again.
+                hi_a, lo_a = hi + ask_px, lo + ask_px
+                gap_a = None if gap_open is None else gap_open + ask_px
+                if gap_a is not None and gap_a >= stop:           # gap through -- see long side
                     exit_price, reason = gap_open, "bank" if banked else "stop"
                     break
-                if hi >= stop:            # stop first, before any bank -- see the long side
-                    exit_price, reason = stop, "bank" if banked else "stop"
+                if hi_a >= stop:          # stop first, before any bank -- see the long side
+                    exit_price, reason = stop - ask_px, "bank" if banked else "stop"
                     break
-                if (not banked and bank_frac > 0 and lo <= target
+                if (not banked and bank_frac > 0 and lo_a <= target
                         and not (limit_entry and j == fill_bar)):
                     banked = True
-                    banked_at = target
+                    banked_at = target - ask_px
                     stop = min(stop, entry - sd0 * bank_protect_k)
                 # The ratcheted stop is re-tested on the bar that banked, as on the long side:
                 # after the bank the intrabar path is unknown, so the runner is not let run.
-                if hi >= stop:
-                    exit_price, reason = stop, "bank" if banked else "stop"
+                if hi_a >= stop:
+                    exit_price, reason = stop - ask_px, "bank" if banked else "stop"
                     break
                 if banked or bank_frac <= 0:
-                    if lo < trail_ext:
-                        trail_ext, stall = lo, 0
+                    if lo_a < trail_ext:
+                        trail_ext, stall = lo_a, 0
                     else:
                         stall += 1
                     k = runner_trail_k
@@ -937,8 +992,8 @@ def run_backtest(
                         if sig.add_ratchets_stop:
                             prev = entry - sd0 * add_every_r * (len(adds) - 1)
                             stop = min(stop, prev)
-                if not banked and lo <= target and not (limit_entry and j == fill_bar):
-                    exit_price, reason = target, "target"
+                if not banked and lo_a <= target and not (limit_entry and j == fill_bar):
+                    exit_price, reason = target - ask_px, "target"
                     break
             if (rev_level is not None and bars_held >= rev_after and j + 1 < len(idx)
                     and side * (float(close_px[j]) - rev_level) < 0):
