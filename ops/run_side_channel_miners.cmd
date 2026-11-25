@@ -14,14 +14,17 @@ rem One miner is killed after QUANT_MINER_TIMEOUT_S (180 s) so a hung channel ne
 rem rest; the suite exits 0 when it finished, whatever each channel returned, and the per-seat
 rem counts land in latest_discoveries.json and PRODUCER_YIELD.
 rem
-rem CLEAR-ACCESS CHANNELS ONLY (Auditor HOLD on #773). The box runs only channels that use an
-rem official API, open data or local computation: cot (CFTC), central_bank (central-bank RSS),
-rem weather (Open-Meteo, NOAA, Drought Monitor), github (GitHub API), seasonality and
-rem correlations (local), and sec_edgar when QUANT_EDGAR_UA is set. Every other channel, the web
-rem scrapers and youtube among them, is reported SET_ASIDE by name in latest_discoveries.json.
-rem The box never contacts YouTube.
+rem ALL CHANNELS ON, LAWFULLY (principal, 2026-11-19: all 25 run, none is ever switched off).
+rem All 25 channels are allowed. Eight run on their own official API, open data or local
+rem computation (cot, central_bank, weather, github, seasonality, correlations, aaii, and youtube
+rem on the YouTube Data API key: the principal lifted the YouTube ban on 2026-11-19).
+rem The other 17 have a
+rem site that bans automated access or whose terms were not confirmed, so they run on a keyless
+rem official API with its terms on record, in desks\mt5\side_channels\lawful_substitutes.py
+rem (GitHub, GDELT, Wikimedia, arXiv, EDGAR, IMF PortWatch). aaii also goes through its gate. sec_edgar
+rem and earnings need the EDGAR contact string, read from QUANT_EDGAR_UA or EDGAR_UA.
 setlocal
-set "QUANT_MINERS_ALLOW=cot,central_bank,weather,github,seasonality,correlations,sec_edgar"
+set "QUANT_MINERS_ALLOW=youtube,github,mql5_codebase,mql5_articles,mql5_signals,mql5_forum,tradingview,quantconnect,reddit,central_bank,forexfactory,cot,sec_edgar,earnings,aaii,fear_greed,investing,google_trends,academic,correlations,seasonality,weather,shipping,china,korea"
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\Quant-SideChannelMiners.log"
 set "PY=C:\Program Files\Python314\python.exe"

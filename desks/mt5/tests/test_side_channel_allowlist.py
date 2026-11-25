@@ -1,4 +1,5 @@
-"""The box runs clear-access side channels only; every other channel is SET_ASIDE by name."""
+"""Every side channel runs on the box (principal, 2026-11-19, YouTube ban lifted the same day);
+a channel whose own site may not be fetched runs on its lawful feed, never on that site."""
 from __future__ import annotations
 
 import json
@@ -6,6 +7,8 @@ import os
 import stat
 import sys
 from pathlib import Path
+
+import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 for _p in (str(_DESK), str(_DESK / "side_channels"), str(_DESK.parent.parent)):
@@ -41,12 +44,50 @@ def test_sec_edgar_without_a_declared_user_agent_is_set_aside(monkeypatch) -> No
     assert ram.run_all_miners()["sec_edgar"]["count"] == 1
 
 
-def test_the_box_runner_allows_no_scraper_and_no_youtube() -> None:
-    text = RUNNER.read_text("utf-8")
-    line = next(x for x in text.splitlines() if "QUANT_MINERS_ALLOW=" in x)
-    allowed = set(line.split("=", 1)[1].strip('"').split(","))
-    assert allowed == {"cot", "central_bank", "weather", "github", "seasonality",
-                       "correlations", "sec_edgar"}
+#: Channels that run their own module: an official API, open data, local computation, or a
+#: host whose robots allows the path and whose terms are silent on automation (aaii).
+OWN_ROUTE = {"cot", "central_bank", "weather", "github", "seasonality", "correlations", "aaii",
+             "youtube"}
+
+
+def _allowed() -> set[str]:
+    line = next(x for x in RUNNER.read_text("utf-8").splitlines() if "QUANT_MINERS_ALLOW=" in x)
+    return set(line.split("=", 1)[1].strip('"').split(","))
+
+
+def test_the_box_runner_runs_every_channel() -> None:
+    names = {n for n, _ in ram.ALL_MINERS}
+    assert len(names) == 25
+    assert _allowed() == names
+
+
+def test_every_allowed_channel_runs_its_own_lawful_route_or_its_substitute() -> None:
+    import functools
+    for name, fn in ram.ALL_MINERS:
+        if name not in _allowed():
+            continue
+        if name in OWN_ROUTE:
+            assert not isinstance(fn, functools.partial), name
+        else:
+            assert name in ram.SUBSTITUTES, f"{name} would fetch an unconfirmed or refused site"
+            assert isinstance(fn, functools.partial) and fn.args == (name,), name
+
+
+@pytest.mark.parametrize("key", ["QUANT_EDGAR_UA", "EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                 "SEC_EDGAR_UA"])
+def test_every_edgar_key_name_configures_sec_edgar_and_earnings(monkeypatch, key) -> None:
+    import sec_edgar_miner
+    _fake(monkeypatch, ["sec_edgar", "earnings"])
+    monkeypatch.delenv("QUANT_MINERS_ALLOW", raising=False)
+    for n in sec_edgar_miner.EDGAR_UA_NAMES:
+        monkeypatch.delenv(n, raising=False)
+    monkeypatch.setattr("libs.ops.env_keys.read_key", lambda n: os.environ.get(n, ""),
+                        raising=False)
+    r = ram.run_all_miners()
+    assert r["sec_edgar"]["status"] == "SET_ASIDE" and r["earnings"]["status"] == "SET_ASIDE"
+    monkeypatch.setenv(key, "desk research contact@example.org")
+    r = ram.run_all_miners()
+    assert r["sec_edgar"]["count"] == 1 and r["earnings"]["count"] == 1
 
 
 def test_latest_discoveries_is_written_atomically_even_over_a_read_only_file(tmp_path) -> None:
