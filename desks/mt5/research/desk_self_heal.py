@@ -908,6 +908,19 @@ def board_rerunnable(task: object) -> bool:
             and not task.startswith(("E8-", "Memecoin")))
 
 
+#: 0x800710E0 ERROR_REQUEST_REFUSED as Task Scheduler reports it (unsigned, signed, or text).
+_REFUSED_CODES = frozenset({0x800710E0, 0x800710E0 - (1 << 32)})
+
+
+def _refused(code: object) -> bool:
+    if isinstance(code, str):
+        try:
+            code = int(code, 16) if code.lower().startswith("0x") else int(code)
+        except ValueError:
+            return False
+    return isinstance(code, int) and not isinstance(code, bool) and code in _REFUSED_CODES
+
+
 def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[str, Any]]:
     """One Finding per faulted board row, plus the board's census (counts, uncontracted)."""
     p = root / BOARD_FILE
@@ -931,6 +944,17 @@ def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[
         if not isinstance(row, dict):
             continue
         name, verdict = str(row.get("name") or ""), str(row.get("verdict") or "")
+        if name and _refused(row.get("last_result_code")) and verdict not in BOARD_RERUN:
+            # TASK_REFUSED (red team 2026-11-25: 33 tasks read UNCONTRACTED while every run
+            # returned 0x800710E0). The scheduler refused to start the run, so no re-run can
+            # cure it: the cause is the task's own settings (an IgnoreNew overlap with a hung
+            # instance, a logon type with no session). It pages whatever its verdict says.
+            census["refused"] = int(census.get("refused") or 0) + 1
+            out.append(Finding(f"{'moneypath ' if name in MONEY_PATH_TASKS else ''}board {name}",
+                               False, f"TASK_REFUSED: last run 0x800710E0 (the scheduler "
+                               f"refused to start it); board verdict {verdict or 'none'}",
+                               fixable=False))
+            continue
         if verdict not in BOARD_RERUN | BOARD_ALERT or not name:
             continue
         if name in GATEWAY_TASKS and (root / GATEWAY_PAUSED).exists():

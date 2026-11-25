@@ -168,3 +168,19 @@ def test_invariants_hold_when_the_box_matches_the_design(tmp_path):
     doc, _ = _run(tmp_path)
     assert all(_inv(doc, k)["holds"] for k in ("I3", "I4", "I5"))
     assert _inv(doc, "I2")["holds"] is False and "invariant I2" in doc["moneypath_paged"]
+
+
+def test_a_refused_task_pages_whatever_its_verdict_and_is_never_rerun(tmp_path):
+    _board(tmp_path, [_row("MT5-Dept-Macro", "UNCONTRACTED", code=2147946720),
+                      _row("MT5-Forest-Grounds", "OK", code="0x800710E0"),
+                      _row("MT5-HourlyCore", "UNCONTRACTED", code=-2147020576),
+                      _row("MT5-Fine", "UNCONTRACTED", code=0)])
+    found, census = heal.check_process_board(tmp_path, NOW)
+    refused = [f for f in found if f.detail.startswith("TASK_REFUSED")]
+    assert {f.check for f in refused} == {"board MT5-Dept-Macro", "board MT5-Forest-Grounds",
+                                          "board MT5-HourlyCore"}
+    assert all(not f.ok and not f.fixable and f.task is None for f in refused)
+    assert census["refused"] == 3
+    doc, calls = _run(tmp_path)
+    assert calls == [] and {a["organ"] for a in doc["moneypath_alerts"]} >= {
+        "board MT5-Dept-Macro"}
