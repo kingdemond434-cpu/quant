@@ -114,3 +114,17 @@ def test_the_census_names_countries_below_the_daily_floor() -> None:
                                  "b": {"outcome": "EMPTY", "last_attempt": old}}})
     assert out["floor_breach_list"] == ["VN"] and out["floor_breaches"] == 1
     assert cc.census({"countries": []}, grounds, None)["floor_breaches"] is None
+
+
+def test_yield_allocation_is_a_view_of_the_same_pass_and_says_what_is_declared() -> None:
+    reg = {"sources": {"a": {"share": 0.6, "kind": "paper", "n_certified": 3, "n_leads": 40,
+                             "yield_terms": {"lam": 0.6}, "cost": 2.0},
+                       "b": {"share": 0.4, "kind": "forest"},
+                       "c": {"share": 0.0, "kind": "forest"}}}
+    rep = {"at": "t", "exploration_floor": 0.2, "roi_regime": "PRIOR_AND_PRICE",
+           "cadence": {"held": True}, "rule": "r"}
+    out = sr.yield_allocation(reg, rep)
+    assert out["n_sources"] == 3 and out["n_funded"] == 2
+    assert out["sum_of_shares"] == 1.0 and out["exploration_share"] == 0.2
+    assert list(out["sources"]) == ["a", "b"]
+    assert "DECLARED" in out["cost_basis"] and "UNMEASURED" in out["cost_basis"]
