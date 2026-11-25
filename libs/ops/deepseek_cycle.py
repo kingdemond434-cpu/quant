@@ -691,7 +691,7 @@ def _data_discovery(root: Path) -> tuple[Any, list[str], set[str]]:
         for p in (str(desk), str(desk / "research")):
             if p not in _sys.path:
                 _sys.path.insert(0, p)
-        from research import data_discovery as dd  # type: ignore[import-not-found]
+        from research import data_discovery as dd
         labels, full = dd.known(desk / "data" / "source_rosters" / "keyed_sources.json",
                                 roots=(root / "data" / "intelligence",
                                        desk / "data" / "intelligence"))
@@ -778,7 +778,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
     fb_block = ""
     try:
         if alt_ac is not None:
-            from research import conversion_lanes as _cl  # type: ignore[import-not-found]
+            from research import conversion_lanes as _cl
             fb_block = _cl.feedback_block("deepseek")
     except Exception:  # blind-except intentional (BLE001): feedback never costs the cycle
         fb_block = ""
