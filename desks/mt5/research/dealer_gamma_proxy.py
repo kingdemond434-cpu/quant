@@ -64,6 +64,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data.robots_body import robots_rules_or_refusal  # noqa: E402
+
 SOURCE = "dealer_gamma_proxy"
 DATA = DESK / "data"
 SNAPSHOT = DATA / "dealer_gamma_proxy.json"
@@ -135,17 +137,16 @@ class Feed:
                 resp = self.get(f"{parts.scheme}://{host}/robots.txt",
                                 headers={"User-Agent": HONEST_UA}, timeout=TIMEOUT_S)
                 status = getattr(resp, "status_code", None)
+                ctype = (getattr(resp, "headers", None) or {}).get("Content-Type")
                 body = str(getattr(resp, "text", "") or "")
-                if status in (404, 410):
-                    self._robots[host] = None
-                elif status != 200:
-                    self._robots[host] = f"ROBOTS_REFUSED: robots.txt answered {status}"
-                elif body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
-                    self._robots[host] = "ROBOTS_REFUSED: robots.txt answered HTML"
+                # The shared reader: 404/410 = no rules, HTML or a non-200 = refusal.
+                got = robots_rules_or_refusal(status, ctype, body if status == 200 else "")
+                if isinstance(got, str):
+                    why = (f"robots.txt answered {status}" if status != 200
+                           else got.split(": ", 1)[-1])
+                    self._robots[host] = f"ROBOTS_REFUSED: {why}"
                 else:
-                    rp = urllib.robotparser.RobotFileParser()
-                    rp.parse(body.splitlines())
-                    self._robots[host] = rp
+                    self._robots[host] = got
             except Exception as exc:                        # an unreadable gate refuses
                 self._robots[host] = f"ROBOTS_REFUSED: robots.txt unreadable ({type(exc).__name__})"
         rule = self._robots[host]
