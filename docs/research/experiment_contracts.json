@@ -281,6 +281,21 @@
     "after": "any pass: a decay report judging no sleeve has lost the roster and every lane state file"
    }
   },
+  "judge_calibration": {
+   "hypothesis": "Measuring the sealed judge against matured forward clocks -- forward-over-backtest per family, leaks per gate, false kills where a rejected cell has a clock -- and proposing two-sided family priors and gate moves only when they beat the current judge leave-one-family-out, names the families whose certificates do not survive forward (F2) before more capital or clock capacity is spent on them.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "summary.n_matured_certified",
+    "better": "up",
+    "organ": "report:JUDGE_CALIBRATION.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_matured_joined",
+    "op": "==",
+    "threshold": 0,
+    "after": "30 days on the trading box: no matured clock joins its certificate's backtest edge, so not one forward-over-backtest ratio, prior or gate move can be measured"
+   }
+  },
   "cluster_judge": {
    "hypothesis": "Judging the forward clocks at the Tier S bar as ONE hypothesis, with their pairwise correlation and eigenvalue N_eff measured from each clock's own per-key ledger, shows how many independent bets they really are before any promotion reads them, and the share of cluster clocks it can measure rises as per-key ledgers accrue.",
    "metric": {

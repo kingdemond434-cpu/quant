@@ -1250,6 +1250,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # ZERO LIVE ON A MARKET DAY IS A MONEY-PATH PAGE (pass rule I2, 2026-11-25): each account's
     # own book read, a page to Claude when a funded account trades nothing. Reads only, ~0.1 s.
     "zero_live_page",
+    # THE JUDGE CALIBRATION LOOP (LOOP_COVERAGE L2, 2026-11-25): matured forward clocks against
+    # the certificates' backtest edge, per family and per gate. Artifact reads; it recomputes only
+    # when a clock matured or the last build is a week old, and re-stamps itself otherwise.
+    "judge_calibration",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1472,6 +1476,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "attestation_remint",
                      "lockbox_recert",
+                     # the judge measured against matured forward clocks: leaks, false kills,
+                     # two-sided family priors and gate moves, PROPOSED to the sealed judge
+                     "judge_calibration",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
                      "null_lab",
@@ -2607,6 +2614,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # `enrol_clocks` was raised -- a cap below an organ's budget truncates it at the same prefix.
     "experiment_spine": 700,
     "certificate_truth": 150,
+    # THE JUDGE CALIBRATION LOOP reads the shadow states, the canon and two small reports; its
+    # LOFO fits are a few hundred rows. Measured 0.4 s on this tree; generous for the box's canon.
+    "judge_calibration": 180,
     # Each standing battery stops itself at --budget-s 600 (it starts no organ it cannot finish
     # inside what is left); the cap sits above that so a rotation is never cut at the same prefix
     # every hour, which would starve the tail of the roster permanently.
@@ -6351,6 +6361,14 @@ def main() -> None:
     # ~3 s measured, one run_gauntlet call.
     pla = _costed("placebo_audit", lambda: _producer(
         "placebo_audit", "research/placebo_audit.py"))
+    # THE JUDGE CALIBRATION LOOP (principal 2026-11-25, LOOP_COVERAGE L2). Matured forward clocks
+    # against the certificates' own backtest edge: forward-over-backtest per family, leaks
+    # (certified, then KILL) per gate, false kills (rejected near-misses that work forward, or
+    # UNMEASURED with the missing input). Two-sided family priors and gate moves, each validated
+    # leave-one-family-out, go to data/JUDGE_CALIBRATION_PROPOSALS.json for the SEALED judge; every
+    # candidate bar is charged to the lifetime trial count. Weekly, or when a clock matures.
+    jcal = _costed("judge_calibration", lambda: _producer(
+        "judge_calibration", "research/judge_calibration.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     # INDEX-DRIVEN DISCOVERY (seat data/intelligence/index_discovery/): addresses, never page
@@ -7111,7 +7129,7 @@ def main() -> None:
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
-                    "placebo_audit": pla,
+                    "placebo_audit": pla, "judge_calibration": jcal,
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,

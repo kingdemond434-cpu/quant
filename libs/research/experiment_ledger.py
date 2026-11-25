@@ -418,6 +418,35 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+#: THE JUDGE CALIBRATION LOOP'S CANDIDATE BARS (desks/mt5/research/judge_calibration.py, LOOP
+#: L2). Every threshold it evaluates against the forward record is a variant of the judge tried
+#: on that family's evidence, so each row's `trials` joins the screened count here, per family --
+#: the one budget, never a second. The judge's fixed campaign charge is untouched.
+JUDGE_CALIBRATION_TRIALS = DESK / "data" / "judge_calibration_trials.jsonl"
+
+
+def _judge_calibration_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(trials, per family) from the calibration loop's ledger; absent -> (0, {})."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    try:
+        lines = (path or JUDGE_CALIBRATION_TRIALS).read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}
+    for ln in lines:
+        try:
+            row = json.loads(ln)
+            k = int(row.get("trials") or 0) if isinstance(row, dict) else 0
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if k <= 0:
+            continue
+        fam = str(row.get("family") or "judge_calibration")
+        total += k
+        by_fam[fam] = by_fam.get(fam, 0) + k
+    return total, by_fam
+
+
 def _prescreen_counts() -> tuple[int, dict[str, int]]:
     """CELLS THE JUDGE'S PRE-BUILD SCREEN KILLED ARE TRIALS, ONE EACH (research/judge_prescreen,
     2026-10-28). A canon kill takes a cell away from the sealed judge before its build; the judge
@@ -473,6 +502,11 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
+    c_total, c_fam = _judge_calibration_counts()
+    for fam, k in c_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += c_total
+
     s_total, s_fam = _claim_selection_counts()
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
@@ -496,6 +530,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
                "legacy_rollup_suspected_reappends": p_stats.get(
                    "legacy_suspected_reappends",
                    {"documents": 0, "tests_run": 0, "by_seat": {}, "subtracted": False})},
+           # inside screened_cells, named so the loop's own charge is readable on its own
+           "judge_calibration_trials": c_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph, plus each standing pre-build "
                     "prescreen kill as the one fate the judge would have recorded) + "

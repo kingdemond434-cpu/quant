@@ -684,6 +684,9 @@ LEG_LAYER: dict[str, str] = {
     # The identity chain grades the joins between the desk's own records and the placebo audit
     # grades its own gates against planted defects: the machine measuring the machine.
     "identity_chain": "meta", "placebo_audit": "meta",
+    # The judge calibration loop grades the sealed judge against matured forward clocks and
+    # proposes its priors and bars: the machine measuring the machine.
+    "judge_calibration": "meta",
     # The null lab grades each family's own gates on data with no edge in it, and the
     # research-live identity join grades whether the live book trades what research certified:
     # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
