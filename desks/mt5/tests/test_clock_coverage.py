@@ -104,8 +104,9 @@ def test_a_crash_between_the_writes_is_completed_by_the_next_reader(desk, crash_
     assert rec and rec["canon"] == "WRITTEN"
     assert "external.EURUSD.session_range_breakout" in \
         json.loads(desk["canon"].read_text("utf-8"))["survivors"]
-    assert {"AUDUSD.asia", "EURUSD.asia"} <= _clock_keys(desk)
+    assert _clock_keys(desk) == {"EURUSD.asia"}, "the fresh certificate's clock is missing"
     assert not journal.exists()
+    assert not list(desk["shadow"].glob(".*.lock")), "the ledger lock outlived the crash"
 
 
 def test_recovery_never_rolls_an_older_canon_over_a_newer_one(desk) -> None:
