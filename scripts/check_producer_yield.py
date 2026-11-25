@@ -123,6 +123,30 @@ RETIRED_SEATS: dict[str, str] = {
     "statarb": ("box-only seat directory with no writer anywhere in the code (last file "
                 "2026-09-25); its stat-arb cluster was donated once through firm_mining "
                 "(statarb_multistrat) and is mined live by the pair families"),
+    # THE 2026-11-25 TRIAGE (6h pass I11, PRODUCER_YIELD of 11-24 21:40Z): seats that cannot write
+    # again by design -- exhausted once-per-identity grids, maps rather than donors, and seats
+    # whose output goes elsewhere. Each reason cites the line that makes it so.
+    "alpha_periodic_table": ("white-space map, not a donor: elements.json is one json.dump line "
+                             "per run (alpha_periodic_table.py:292); STARVED(1) is the format"),
+    "specialist_cell": ("static SPECIALISTS grid x universe donated once per identity "
+                        "(specialist_cell.py:529); exhausted, wakes only when universe.json "
+                        "adds a symbol"),
+    "culture_gap": ("fixed session-clock gap list, minted once per gap (culture_gap_cells.py:709); "
+                    "exhausted after its first pass"),
+    "missed_trade_archaeologist": ("non-fired cells keyed family/symbol/session donated once "
+                                   "(missed_trade_archaeologist.py:854); saturated on the sleeve "
+                                   "set; its frozen hypotheses go to the registry"),
+    "conversion_maximiser": ("its repaired rows re-enqueue through registry.enqueue_candidate; "
+                             "this seat carries only PROSE_ONLY/NO_DATA requests "
+                             "(conversion_maximiser.py:1744)"),
+    "recombinants": ("legacy VPS side channel (side_channels/alpha_recombination.py) superseded "
+                     "by research/alpha_recombination.py; no box clock"),
+    "mechanism_genome": ("children carry only provenance params, stripped at "
+                         "hypothesis_families.py:241; each is its parent family at defaults -- "
+                         "no new executable rule"),
+    "srb_uncorrelated_sweep": ("one-off box sweep 2026-09-24; the scheduled sweep publishes "
+                               "reports/SRB_UNCORRELATED_SWEEP.json for srb_basket_judge, not a "
+                               "seat"),
 }
 
 #: producer -> the alternative that inherits its budget if it is ever declared DEAD. Declared in
@@ -176,10 +200,12 @@ REPLACEMENTS: dict[str, str] = {
                       "is an unscheduled box process with no tracked code",
     "lab_microstructure": "feed_clock_lab -- the live tape/impact lab on the desk's own ticks "
                           "and fills (its impact pass donates seeds)",
-    "mathlab": "alpha_recombination -- the live expression search over measured parents, while "
-               "MATH_LAB.json's donation block says why mathlab gave nothing new",
-    "physics_lab": "alpha_recombination -- as mathlab: physics_lab donates through the same "
-                   "donated-once filter (math_lab.donation_rows)",
+    # mathlab/physics_lab named alpha_recombination, which was itself DEAD on 2026-11-24 (a dead
+    # inheritor is no inheritor); descendants is the live survivor-parented search (35 certs).
+    "mathlab": "descendants -- the live survivor-parented expression search (35 certs); mathlab "
+               "re-derives the same objects and donates each once (math_lab.py:1251)",
+    "physics_lab": "descendants -- as mathlab: physics_lab shares math_lab.donation_rows' "
+                   "donated-once filter",
     "world_lab": "dislocation_lab -- the macro department's cross-asset shock ground; world_lab "
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
@@ -209,6 +235,29 @@ REPLACEMENTS: dict[str, str] = {
     "tradingview": "github -- published Pine strategies live on GitHub, the lawful route",
     "youtube": "github -- the practitioner-code ground; video cells also arrive through "
                "Quant-VideoCells from transcripts captured off the box",
+    # THE 2026-11-25 TRIAGE: every inheritor below was PRODUCING in PRODUCER_YIELD of 11-24.
+    "factor_residual": "residual_search -- the same residual ground, BH-corrected, PRODUCING; "
+                       "factor_residual donates only a cell past PROPOSE_T "
+                       "(factor_residual_engine.py:627)",
+    "residual_queue": "residual_search -- it donates its own BH-corrected cells; residual_queue "
+                      "relays only OPEN rows with a registered family and drains to zero "
+                      "(residual_queue.py:557)",
+    "joint_evolution": "descendants -- the live neighbour search (35 certs); joint_evolution "
+                       "donates only an out-of-sample winner (joint_evolution.py:526)",
+    "cell_emitter": "github_topics -- repo_miner's watched GitHub/Gitee repos, PRODUCING; "
+                    "cell_emitter's fixed grounds are digest-deduped (cell_emitter.py:917)",
+    "frontier": "global_frontier -- seed_miners.mine_global_frontier, the same locale source "
+                "discovery on the box; frontier was the VPS world_frontier, cut off 2026-09-11",
+    "equiti_copy": "roboforex_copyfx -- the same broker copy-ratings ground from the same hunter; "
+                   "equiti is a client-rendered app (blocked_sources JS_APP_NEEDS_API)",
+    "hfm_pamm": "amarkets -- the same PAMM/copy-ratings ground from the same hunter; hfm_pamm "
+                "403s from the box range (blocked_sources HTTP_BLOCKED)",
+    "octa_masters": "instaforex_copy -- the same copy-trading ratings ground from the same hunter; "
+                    "octa's page carries no rendered rows (UNKNOWN_SHAPE)",
+    "followme_cn": "regional_survivors -- the hunter's live regional seats; followme 403s from "
+                   "the box range (blocked_sources HTTP_BLOCKED)",
+    "minfx_jp": "regional_survivors -- the hunter's live regional seats; minfx_jp's listing "
+                "404s (blocked_sources); the JP ground is also mined by MT5-Dept-Japan",
 }
 
 
