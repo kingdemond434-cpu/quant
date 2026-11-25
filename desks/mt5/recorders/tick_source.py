@@ -171,7 +171,18 @@ class Mt5TickSource:
         if mt5.terminal_info() is not None:
             self._initialised = self._venue_ok(mt5)
             return self._initialised
-        ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000)
+        # require_path: THIS RECORDER IS THE OWN-OBSERVATION MOAT (constitution §18) AND ITS
+        # QUOTES ARE ATTRIBUTED TO A VENUE. MT5's bridge answers from whichever terminal owns the
+        # machine's IPC pipe, and on 2026-11-12 two were up (Fusion in Session 0, FTMO in Session
+        # 1) with the pinned Fusion path returning (-10005, 'IPC timeout'). An attach that lands
+        # on the other broker would write ITS spreads and ticks into this one's tape -- and a
+        # missing observation can be collected later while a wrong one poisons the cost surface
+        # for ever. So this caller takes UNAVAILABLE over a substitute.
+        # The venue proof (venue_refusal: Fusion server + configured terminal) still runs on
+        # top, so both fences hold: the pin refuses a substitute, the proof refuses a wrong
+        # account behind the right path.
+        ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000,
+                                  require_path=True)
         self._initialised = ok and self._venue_ok(mt5)
         return self._initialised
 

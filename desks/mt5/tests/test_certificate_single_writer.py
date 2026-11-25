@@ -60,7 +60,12 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     assert 'exclusive_job("fusion_terminal_research_lane"' in downloader
     assert "from research.expand_universe import _pull_bars" in downloader
     assert "_hydration_retried" in downloader
-    assert "attach_or_initialize(mt5, path=terminal_path(), timeout=30_000)" in downloader
+    # `require_path` added 2026-11-12: the downloader writes bars PER VENUE, and MT5's bridge
+    # answers from whichever terminal owns the machine's IPC pipe, so an attach that landed on
+    # another broker would file its prices under this one. The pin still requires the attach to
+    # go through the session guard; it now also requires the venue to be the one asked for.
+    assert ("attach_or_initialize(mt5, path=terminal_path(), timeout=30_000, require_path=True)"
+            in downloader)
     assert "mt5.shutdown()\ntime.sleep(1)\nmt5.initialize()" not in downloader
     assert "pq.ParquetFile(pq_path).metadata" in downloader
     assert "pd.read_parquet(pq_path)" not in downloader
