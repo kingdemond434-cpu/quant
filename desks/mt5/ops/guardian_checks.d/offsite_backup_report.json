@@ -1,0 +1,1 @@
+{"id": "offsite_backup_report", "path": "desks/mt5/reports/OFFSITE_BACKUP.json", "max_age_h": 13, "min_bytes": 100, "json_key": "status", "why": "E40 2026-11-25: box never backed up; report sat at NOT_ARMED for 8 weeks unread"}

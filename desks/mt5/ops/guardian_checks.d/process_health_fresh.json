@@ -1,0 +1,1 @@
+{"id": "process_health_fresh", "path": "desks/mt5/reports/process_health.json", "max_age_h": 2, "min_bytes": 500, "json_key": "processes", "why": "2026-11-25: math lab stalled unnoticed; every task verdict depends on this view"}
