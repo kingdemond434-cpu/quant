@@ -1119,8 +1119,7 @@
    "signup": "https://dash.cloudflare.com/profile/api-tokens",
    "unlocks": "cloudflare Workers AI seat of the LLM idea swarm (gpt-oss-120b/20b; public prompts only, 20 calls/day); needs CLOUDFLARE_ACCOUNT_ID too; ALLOWED by the principal (zuck 2026-11-25T02:30Z)",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal's token, installed on the box as CLOUDFLARE_AI (Machine env); LLM research lab (swarm) reads it",
    "file_fallback": "none"
@@ -1133,8 +1132,7 @@
    "signup": "https://dash.cloudflare.com (Account ID on the account home page)",
    "unlocks": "the account part of the Workers AI base URL for the cloudflare swarm seat",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal",
    "file_fallback": "none"
@@ -1147,8 +1145,7 @@
    "signup": "https://console.groq.com/keys",
    "unlocks": "groq seat of the LLM idea swarm (gpt-oss-120b, gpt-oss-20b, qwen3-32b; public prompts only, 90 calls/day); ALLOWED by the principal (zuck 2026-11-25T02:27Z)",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal's key, installed on the box as GROQ (Machine env); LLM research lab (swarm) reads it",
    "file_fallback": "none"
@@ -1161,8 +1158,7 @@
    "signup": "https://cloud.siliconflow.com/account/ak",
    "unlocks": "siliconflow seat of the LLM idea swarm (its permanently free Qwen/GLM/DeepSeek-distill models; public prompts only); ALLOWED by the principal (zuck 2026-11-25T02:35Z)",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal's key, installed on the box as SILICONFLOW (Machine env); LLM research lab (swarm) reads it",
    "file_fallback": "none"
@@ -1175,8 +1171,7 @@
    "signup": "https://api.hcnsec.cn",
    "unlocks": "hcnsec relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
    "file_fallback": "none"
@@ -1189,8 +1184,7 @@
    "signup": "https://agentrouter.org",
    "unlocks": "AgentRouter relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
    "file_fallback": "none"
@@ -1203,8 +1197,7 @@
    "signup": "https://api.yjs.im",
    "unlocks": "yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
    "file_fallback": "none"
@@ -1217,8 +1210,7 @@
    "signup": "https://api.yjs.im",
    "unlocks": "alias of YJS (the principal saved the yjs key under this name, 2026-11-17); yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
    "readers": [
-    "libs/ops/cn_ensemble.py",
-    "libs/ops/free_chain.py"
+    "libs/ops/cn_ensemble.py"
    ],
    "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
    "file_fallback": "none"
