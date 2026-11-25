@@ -1,0 +1,35 @@
+{
+ "organ": "leg:zero_live_page",
+ "kind": "leg",
+ "code": [
+  "desks/mt5/prop/zero_live_page.py"
+ ],
+ "clock": "hourly_cycle:zero_live_page",
+ "cadence_s": 3600,
+ "max_silence_s": 7200,
+ "state": "NEVER",
+ "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+ "last_run_at": "UNMEASURED",
+ "last_run_outcome": "UNMEASURED",
+ "last_run_source": "UNMEASURED",
+ "artifact": "desks/mt5/reports/ZERO_LIVE_PAGE.json",
+ "artifact_declared": "desks/mt5/reports/ZERO_LIVE_PAGE.json",
+ "artifact_resolved_by": "absent",
+ "artifact_declared_n": 1,
+ "artifact_age_s": null,
+ "artifact_bytes": 0,
+ "artifact_sha256": "UNMEASURED",
+ "summary": {},
+ "progress_metric": "leg_completions",
+ "consumer": "the Hourly pass reads ZERO_LIVE_PAGE.json",
+ "measured_on": "vm",
+ "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+ "measured_at": "2026-11-25T02:56:08+00:00",
+ "only_missing": {
+  "at": "2026-11-25T02:56:08+00:00",
+  "host": "vm",
+  "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+  "on_attesting_host": false,
+  "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm"
+ }
+}

@@ -9381,6 +9381,22 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "ZLIVE1",
+   "item": "Zero live on a market day is a money-path page: each funded account's own book (E8_BOOK sleeves, FTMO_ALLOCATOR executable, Fusion sleeves.json LIVE) read hourly, a page to Claude with the stop reason when one trades nothing (pass rule I2, 2026-11-25)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:zero_live_page",
+   "artifact": "desks/mt5/reports/ZERO_LIVE_PAGE.json",
+   "consumer": "the Hourly pass reads ZERO_LIVE_PAGE.json",
+   "evidence": [
+    "desks/mt5/prop/zero_live_page.py:1-20 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
