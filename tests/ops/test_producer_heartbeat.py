@@ -171,7 +171,8 @@ def test_the_residents_and_research_tasks_are_contracted() -> None:
     sys.modules[name] = comp            # dataclasses resolve their module by name
     spec.loader.exec_module(comp)
     for task, rel in ((t, oc.CONTRACTS[t][0]) for t in oc.CONTRACTS
-                      if t.startswith(("MT5-Forest-", "MT5-Dept-Mathlab"))):
+                      if t.startswith(("MT5-Forest-", "MT5-Dept-Mathlab"))
+                      and " (" not in t):     # "Task (organ)" rows contract an artifact, not a task
         # the contract names exactly the file the resident's watermark writes
         cid = comp.TASK_CANONICAL[task]
         assert (ROOT / rel) == wm.path_for(cid), task
