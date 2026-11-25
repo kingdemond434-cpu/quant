@@ -598,7 +598,9 @@ def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
     assert all(FS.judged_quality("level_breakout", r["params"]) == FS.EXECUTABLE_VARIANT
                for r in bare)
     reasons = report["blocked"]["by_reason"]
-    assert any(k.startswith("spec:") for k in reasons), reasons
+    # every refusal is named (here the replay's own modifier refusals come first); the SPEC
+    # gate's own names are pinned by the unit tests above
+    assert reasons and all(":" in k for k in reasons), reasons
     assert report["compiled"] + report["blocked"]["n"] == report["possible_cells"]
     assert report["conversion_debt"]["unexplained_missing_cells"] == 0
     assert R.memories(kind="blocked_cell")
