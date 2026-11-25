@@ -453,6 +453,34 @@ def _claim_selection_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+#: THE PRODUCER LOOP'S REMEDY ATTEMPTS (desks/mt5/research/producer_loop.py, 2026-11-25). A
+#: remedy tried on a producer is a trial of the desk's search, so each attempt's trial ids join
+#: the lifetime count here, per the family the attempt names -- the one budget, never a second.
+LOOP_ATTEMPTS = DESK / "data" / "producer_loop_attempts.jsonl"
+
+
+def _loop_attempt_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(trials, per family) from the producer loop's attempt ledger; absent -> (0, {})."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    try:
+        lines = (path or LOOP_ATTEMPTS).read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}
+    for ln in lines:
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        k = len(row.get("trial_ids") or [])
+        fam = str(row.get("family") or "producer_loop")
+        total += k
+        by_fam[fam] = by_fam.get(fam, 0) + k
+    return total, by_fam
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -474,14 +502,17 @@ def lifetime(write: bool = True) -> dict[str, Any]:
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += m_total
     s_total, s_fam = _claim_selection_counts()
+    l_total, l_fam = _loop_attempt_counts()
     prereg = _prereg_counts()
-    fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
-    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0)) for f in fams}
+    fams = sorted(set(g_fam) | set(p_fam) | set(s_fam) | set(l_fam))
+    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0) + l_fam.get(f, 0))
+              for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
-           "lifetime_trials": int(g_total + p_total + s_total),
+           "lifetime_trials": int(g_total + p_total + s_total + l_total),
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total, "prescreen_killed_cells": k_total,
+           "loop_attempt_trials": l_total,
            "proposer_sources": {
                "live_documents": p_stats.get("live_documents", 0),
                "rollup_documents": p_stats.get("rollup_documents", 0),
@@ -501,7 +532,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
                     "prescreen kill as the one fate the judge would have recorded) + "
                     "screened (every proposer's tests_run, plus every mass-screen cell in "
                     "MASS_SCREEN_TRIALS.jsonl) + "
-                    "each claim family's stated source selection, once; "
+                    "each claim family's stated source selection, once, + "
+                    "each producer-loop remedy attempt's trial ids; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)

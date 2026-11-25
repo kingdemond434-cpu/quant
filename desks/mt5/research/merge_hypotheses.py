@@ -1292,6 +1292,28 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # THE PRODUCER LOOP'S TWO-SIDED WEIGHTS (research/producer_loop.py, 2026-11-25): inside each
+    # family's own slots, rows go by their producer's measured yield weight (independent,
+    # non-exotic, forward-kept edges per CPU-hour; par when unmeasured, 0 when retired). Same
+    # rows, same family interleave, so the sealed judge's family shares and exploration floor are
+    # untouched. Weight now OVERRIDES order_docket's within-family order except on ties (the sort
+    # is stable). It runs BEFORE the pre-judge screen, and reweight_rows itself sorts by
+    # (flagged, -weight), so a flagged row from a high-weight producer can never jump ahead of
+    # its family's clean rows. A fault costs the reorder, never a row.
+    producer_weights: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.producer_loop import reweight_rows as _reweight
+        rows_out, producer_weights = _reweight(rows_out)
+        producer_weights["status"] = "APPLIED"
+        if producer_weights.get("moved"):
+            print(f"   producer weights: {producer_weights['moved']} position(s) changed within "
+                  f"their family, 0 removed")
+    except Exception as exc:
+        producer_weights = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   producer weights unavailable ({type(exc).__name__}: {exc}); order unchanged")
     # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
     # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
@@ -1492,6 +1514,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "producer_weights": producer_weights,
         "unbuildable_set_aside": unbuildable_report,
         "exotic_set_aside": exotic_report,
         "preregistration": prereg,

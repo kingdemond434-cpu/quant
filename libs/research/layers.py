@@ -107,6 +107,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
+    # Every producer's funnel, the stage it dies at, its remedy and two-sided compute weight
+    # (research/producer_loop.py): the machine measuring and steering its own producers -- meta.
+    "producer_loop": "meta",
     # Every producer's docket share, class/exotic split, saturation and frontier, plus the
     # advisory steer (rules-compliance row 13): the machine measuring its own breadth -- meta.
     "breadth_controller": "meta",

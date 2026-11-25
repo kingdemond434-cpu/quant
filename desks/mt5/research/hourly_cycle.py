@@ -1210,6 +1210,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # network, two small reads; the cloud hourly pass runs the full GitHub half.
     "arch_health",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # THE PRODUCER LOOP (LOOP_COVERAGE L1, 2026-11-25): dead detection, funnel and weights every
+    # pass from artifacts; its registry + verdict-ledger diagnosis recomputes itself only daily.
+    "producer_loop",
     # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
     # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
     # and dead-replacement RED checks, and the weights the free panel spends its calls by.
@@ -1550,6 +1553,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # THE PRODUCER LOOP: every producer's funnel, the stage it dies at, the
+                     # fixed remedy and its two-sided compute weight -- measurement, so meta.
+                     "producer_loop",
                      # THE ALL-PRODUCER BREADTH CONTROLLER (rules-compliance row 13): every
                      # producer's docket share, class/exotic split, saturation and frontier,
                      # and the advisory steer producers read -- measurement, so meta.
@@ -2556,6 +2562,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    # THE PRODUCER LOOP: artifact reads every pass (seconds); once a day its diagnosis streams the
+    # verdict ledger under its own deadline (85% of QUANT_LEG_BUDGET_S), so the cap sits above it.
+    "producer_loop": 480,
     # THE BREADTH CONTROLLER streams the docket once (2,470 ms per 76 MB measured here, so ~1 min
     # for the box's ~2 GB) and stops itself at --budget-s 420 with the counts marked partial; the
     # cap sits above so both of its files are written rather than cut. A priced-down cap reaches
@@ -6917,6 +6926,14 @@ def main() -> None:
     # ADVISORY data/breadth_controller_steer.json. Changes no producer, gate or trial count.
     bcl = _costed("breadth_controller", lambda: _producer(
         "breadth_controller", "research/breadth_controller.py", "--budget-s", "420"))
+    # THE PRODUCER LOOP (principal 2026-11-25, LOOP_COVERAGE L1). Per producer: the funnel
+    # emitted > compiled > judged > certified > forward-kept, the stage where it dies, the fixed
+    # remedy for that stage (config-level ones applied via data/PRODUCER_PRESCRIPTIONS.json,
+    # code-level ones CODE_FIX_NEEDED), and a two-sided compute weight from independent,
+    # non-exotic, forward-kept edges per CPU-hour (data/PRODUCER_WEIGHTS.json, read by
+    # merge_hypotheses). Attempts are charged to the lifetime trial ledger; no model call.
+    plp = _costed("producer_loop", lambda: _producer(
+        "producer_loop", "research/producer_loop.py"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -7164,6 +7181,7 @@ def main() -> None:
                     "arch_health": ahl,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "producer_loop": plp,
                     "breadth_controller": bcl,
                     "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
