@@ -595,6 +595,16 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The world-practice methods (mt5desk/family_global_methods.py): the class LambdaRank
+    # learner, the intraday realised-moment class book, the market-profile value-area rules and
+    # the Korean volatility breakout.
+    # research/global_methods enumerates (symbol x params) once, exotics excluded, and charges
+    # every cell through family_donation; sweeping them here would charge the same trials twice.
+    **dict.fromkeys(("cross_sectional_class_ltr", "cross_sectional_class_hf_moment",
+                     "value_area_rule", "volatility_breakout_kr"),
+                    "research/global_methods enumerates the symbol x params grid once (exotics "
+                    "excluded), and charges every cell through family_donation; sweeping it here "
+                    "would charge the same trials twice"),
     # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
     # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
     # entry filter's conditions are named by research/residual_search from the book's residual.

@@ -2599,6 +2599,28 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
 
+# FOUR METHODS FROM WORLD PRACTICE (2026-11-25), minted by `research/global_methods.py`: the
+# cross-sectional LambdaRank learner over the class panel, the Chinese high-frequency factor
+# school's intraday realised moments ranked within the class, the market-profile value-area rules
+# and the Korean volatility breakout. The two class books load their own exotic-free class panel
+# from the bar store given only `symbol` (required, so no sweep calls them blind); the other two
+# read the bars in hand.
+from mt5desk.family_global_methods import GLOBAL_METHOD_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(GLOBAL_METHOD_FAMILIES)
+for _gm_name in ("cross_sectional_class_ltr", "cross_sectional_class_hf_moment"):
+    FAMILY_INPUTS[_gm_name] = ("the symbol's exotic-free peer class "
+                               "(research.universe_policy.peer_class), read as of each decision "
+                               "bar from the bar store", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_gm_name] = (
+        ("H1",),
+        "ranks the class once a day at a broker decision HOUR from the H1 store, exactly like the "
+        "families_cross_sectional books; the intraday moments are measured on H1 returns, so a "
+        "finer or coarser chart would join the panel to a clock it does not carry")
+FAMILY_INPUTS["value_area_rule"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["volatility_breakout_kr"] = ("price only", "data/universe/*_H1.parquet")
+del _gm_name
+
 
 # A HUNT16 CELL, JUDGEABLE BY THE ONE DOOR THAT MINTS (2026-09-30). The hunt16 population
 # (`research/run_hunt16.FAMILIES`) is resolved by the forward engine (`executables.resolve_family`

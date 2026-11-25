@@ -1434,6 +1434,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the four model generators (2026-11-24)
                      "hypgen_knn_analog", "hypgen_rank_learner", "hypgen_neat_evolver",
                      "hypgen_ge_builder",
+                     # the world-practice methods (2026-11-25): class LambdaRank, the
+                     # intraday realised-moment class book, market-profile value areas
+                     "global_xs_ltr", "global_hf_moment", "global_value_area",
+                     "global_vol_breakout",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
@@ -2522,6 +2526,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE FOUR MODEL GENERATORS (hypgen_engine), each inside its own --budget-s (base 180 s).
     "hypgen_knn_analog": 600, "hypgen_rank_learner": 600, "hypgen_neat_evolver": 600,
     "hypgen_ge_builder": 600,
+    # THE WORLD-PRACTICE METHODS (global_methods): each enumerates a few hundred cells and
+    # donates a judge-sized slice; no family is run, so seconds -- the cap is the registry write.
+    "global_xs_ltr": 300, "global_hf_moment": 300, "global_value_area": 300,
+    "global_vol_breakout": 300,
     # The generator coverage map reads a few report mtimes; seconds.
     "generator_coverage": 120,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
@@ -4838,6 +4846,24 @@ def main() -> None:
         hyp[_leg] = _costed(_leg, lambda _seat=_seat, _leg=_leg, _hs=_hs: _producer(
             _leg, "research/hypgen_engine.py", "--space", _seat, "--budget-s", str(_hs)))
         _bandit_observe(_leg, _hrec)
+    # THE WORLD-PRACTICE METHODS (2026-11-25, mt5desk/family_global_methods.py): cross-sectional
+    # LambdaRank over the exotic-free class panel, the Chinese high-frequency factor school's
+    # intraday realised moments ranked in the class, the market-profile value-area rules and the
+    # Korean volatility breakout (변동성 돌파).
+    # Each donates its (symbol x grid) cells through family_donation, every cell a charged trial,
+    # and writes reports/GLOBAL_METHOD_<METHOD>.json, which generator_coverage reads.
+    gxl = _costed("global_xs_ltr", lambda: _producer(
+        "global_xs_ltr", "research/global_methods.py", "--method", "xs_ltr", "--once",
+        "--budget-s", "240"))
+    ghm = _costed("global_hf_moment", lambda: _producer(
+        "global_hf_moment", "research/global_methods.py", "--method", "hf_moment", "--once",
+        "--budget-s", "240"))
+    gva = _costed("global_value_area", lambda: _producer(
+        "global_value_area", "research/global_methods.py", "--method", "value_area", "--once",
+        "--budget-s", "240"))
+    gvb = _costed("global_vol_breakout", lambda: _producer(
+        "global_vol_breakout", "research/global_methods.py", "--method", "vol_breakout",
+        "--once", "--budget-s", "240"))
     # Every known generator method against what ran this day: LIVE / PARTIAL / MISSING.
     gcv = _costed("generator_coverage", lambda: _producer("generator_coverage",
                                                            "research/generator_coverage.py"))
@@ -6825,6 +6851,8 @@ def main() -> None:
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf, "strategy_builder": sbd,
                     "generator_coverage": gcv, **hyp,
+                    "global_xs_ltr": gxl, "global_hf_moment": ghm, "global_value_area": gva,
+                    "global_vol_breakout": gvb,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
