@@ -128,14 +128,24 @@ def _discovery_docs(stats: dict[str, Any] | None = None) -> Any:
         once per such live document. A live file of any other day is never matched, and the
         live file itself is always counted, so the result is never below the live-only count.
     A document is the unit disk_guard writes, so a live list file is read element by element
-    exactly as its rollup lines will be (its count is the same before and after)."""
+    exactly as its rollup lines will be (its count is the same before and after).
+
+    STAMPED LINES (Audit ruling C, ledger-rollups 5a7ba77eb). disk_guard now writes each line as
+    {"src": <file stem>, "i": <row>, "sha": <canonical sha>, "doc": <document>} and never
+    re-appends a row already present. Only a stamped line is ever deduped on rollup content, on
+    (resolved seat dir, src, row, sha); an unstamped legacy line is charged exactly as before,
+    and the suspected legacy re-appends are REPORTED in `legacy_suspected_reappends`, never
+    subtracted."""
     import gzip
     import zlib
     from collections import Counter
 
     st = stats if stats is not None else {}
     st.update({"live_documents": 0, "rollup_documents": 0, "same_path_skipped": 0,
-               "rollup_lines_matched_to_live": 0, "matched_by_rollup": {}, "torn_archives": []})
+               "rollup_lines_matched_to_live": 0, "matched_by_rollup": {}, "torn_archives": [],
+               "stamped_documents": 0, "stamped_duplicates_skipped": 0,
+               "legacy_suspected_reappends": {"documents": 0, "tests_run": 0, "by_seat": {},
+                                              "subtracted": False}})
     seen_paths: set[str] = set()
     live_unmatched: Counter[tuple[str, str, str]] = Counter()
 
@@ -170,6 +180,7 @@ def _discovery_docs(stats: dict[str, Any] | None = None) -> Any:
                     live_unmatched[(seat_dir, day, _doc_key(doc))] += 1
                     st["live_documents"] += 1
                     yield p.parent.name, doc, f"{p.parent.name}/{p.stem}"
+    stamped_seen: set[tuple[str, str, int, str]] = set()
     for i, base in enumerate(roots):
         for f in sorted(glob.glob(str(base / "*" / "rollup_*.jsonl.gz"))):
             if not _first_visit(f, i == 0):
@@ -179,30 +190,93 @@ def _discovery_docs(stats: dict[str, Any] | None = None) -> Any:
             seat_dir = os.path.realpath(p.parent)
             day = p.name[len("rollup_"):].split(".", 1)[0]
             tag = f"{seat}/rollup_{day}"
+            lines: list[str] = []
             try:
                 with gzip.open(f, "rt", encoding="utf-8") as fh:
-                    for lineno, ln in enumerate(fh, 1):
-                        if '"tests_run"' not in ln:
-                            continue
-                        try:
-                            doc = json.loads(ln)
-                        except ValueError:
-                            continue
-                        if not _charge(doc):
-                            continue
-                        k = (seat_dir, day, _doc_key(doc))
-                        if live_unmatched[k] > 0:
-                            live_unmatched[k] -= 1
-                            st["rollup_lines_matched_to_live"] += 1
-                            st["matched_by_rollup"][tag] = st["matched_by_rollup"].get(tag, 0) + 1
-                            continue
-                        st["rollup_documents"] += 1
-                        yield seat, doc, f"{tag}#{lineno}"
+                    for ln in fh:
+                        lines.append(ln)
             except (OSError, EOFError, zlib.error):
                 # a torn archive keeps every line read before the tear: never a smaller count
                 # than what was readable
                 st["torn_archives"].append(tag)
-                continue
+            _legacy_reappends(lines, seat, tag, st)
+            for lineno, ln in enumerate(lines, 1):
+                if '"tests_run"' not in ln:
+                    continue
+                try:
+                    obj = json.loads(ln)
+                except ValueError:
+                    continue
+                src = obj.get("src") if isinstance(obj, dict) else None
+                if isinstance(src, str) and src and "doc" in obj:
+                    # STAMPED LINE (disk_guard after 2026-11-25): {"src", "i", "sha", "doc"}.
+                    # The ONLY dedupe on rollup content: the same (seat, src, row, sha) twice
+                    # is one source row appended twice. Unstamped lines are never deduped.
+                    doc = obj["doc"]
+                    if not _charge(doc):
+                        continue
+                    row = obj.get("i")
+                    sk = (seat_dir, src, int(row) if isinstance(row, int) else -1, _doc_key(doc))
+                    if sk in stamped_seen:
+                        st["stamped_duplicates_skipped"] += 1
+                        continue
+                    stamped_seen.add(sk)
+                    st["stamped_documents"] += 1
+                else:
+                    doc = obj
+                    if not _charge(doc):
+                        continue
+                k = (seat_dir, day, _doc_key(doc))
+                if live_unmatched[k] > 0:
+                    live_unmatched[k] -= 1
+                    st["rollup_lines_matched_to_live"] += 1
+                    st["matched_by_rollup"][tag] = st["matched_by_rollup"].get(tag, 0) + 1
+                    continue
+                st["rollup_documents"] += 1
+                yield seat, doc, f"{tag}#{lineno}"
+
+
+def _legacy_reappends(lines: list[str], seat: str, tag: str, st: dict[str, Any]) -> None:
+    """REPORT ONLY, NEVER SUBTRACTED (Audit ruling C, ledger-rollups 5a7ba77eb). Before the
+    src stamp, disk_guard's unlink-retry re-appended a whole day batch, so a legacy archive whose
+    unstamped lines are one block B repeated r >= 2 times in order is a suspected re-append of
+    (r - 1) copies of B's charges. The lines are still charged exactly as before -- more trials
+    is the strict side -- and this only publishes how many of them are suspected."""
+    legacy: list[str] = []
+    for ln in lines:
+        if ln.startswith('{"src"'):
+            break                          # stamped appends follow the legacy body
+        legacy.append(ln)
+    n = len(legacy)
+    period = n
+    for q in range(1, n // 2 + 1):
+        if n % q == 0 and legacy[:q] * (n // q) == legacy:
+            period = q
+            break
+    reps = n // period if n else 0
+    if reps < 2:
+        return
+    docs = 0
+    trials = 0
+    for ln in legacy[:period]:
+        if '"tests_run"' not in ln:
+            continue
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(d, dict) and isinstance(d.get("tests_run"), (int, float)):
+            docs += 1
+            trials += int(d["tests_run"])
+    if not docs:
+        return
+    rep = st["legacy_suspected_reappends"]
+    by = rep["by_seat"].setdefault(seat, {"documents": 0, "tests_run": 0, "archives": []})
+    by["documents"] += docs * (reps - 1)
+    by["tests_run"] += trials * (reps - 1)
+    by["archives"].append(tag)
+    rep["documents"] += docs * (reps - 1)
+    rep["tests_run"] += trials * (reps - 1)
 
 
 def _proposer_counts(stats: dict[str, Any] | None = None) -> tuple[int, dict[str, int]]:
@@ -415,7 +489,13 @@ def lifetime(write: bool = True) -> dict[str, Any]:
                "rollup_lines_matched_to_live": p_stats.get("rollup_lines_matched_to_live", 0),
                "matched_by_rollup": dict(sorted((p_stats.get("matched_by_rollup") or {})
                                                 .items())[:50]),
-               "torn_archives": (p_stats.get("torn_archives") or [])[:50]},
+               "torn_archives": (p_stats.get("torn_archives") or [])[:50],
+               "stamped_documents": p_stats.get("stamped_documents", 0),
+               "stamped_duplicates_skipped": p_stats.get("stamped_duplicates_skipped", 0),
+               # REPORTED, NEVER SUBTRACTED from lifetime_trials (Audit ruling C)
+               "legacy_rollup_suspected_reappends": p_stats.get(
+                   "legacy_suspected_reappends",
+                   {"documents": 0, "tests_run": 0, "by_seat": {}, "subtracted": False})},
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph, plus each standing pre-build "
                     "prescreen kill as the one fate the judge would have recorded) + "
