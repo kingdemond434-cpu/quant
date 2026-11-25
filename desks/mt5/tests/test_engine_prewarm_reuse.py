@@ -92,10 +92,14 @@ def _bits(res) -> list[tuple]:
             rows]
 
 
-def _walked(df) -> tuple:
+def _walked(df, sigs=(), costs=None) -> tuple:
+    # The engine's own key: the zone and, when the list holds a short, the ask offset a short's
+    # exits trigger on (fill-2026-11-25-a) -- the path depends on it, so the memo compares it.
+    c = Costs() if costs is None else costs
+    ask = c.spread_per_lot / c.contract_oz if any(s.side < 0 for s in sigs) else None
     idx_ns = np.asarray(pd.DatetimeIndex(df.index).as_unit("ns").asi8, dtype="int64")
-    return (str(getattr(df.index, "tz", None)), df["open"].to_numpy(), df["high"].to_numpy(),
-            df["low"].to_numpy(), idx_ns)
+    return ((str(getattr(df.index, "tz", None)), ask), df["open"].to_numpy(),
+            df["high"].to_numpy(), df["low"].to_numpy(), idx_ns)
 
 
 def _fresh(df, sigs, costs, monkeypatch) -> list:
@@ -129,8 +133,10 @@ def test_the_second_cost_arm_is_byte_identical_to_a_fresh_walk(tz, seed, monkeyp
 _GOLD_META = {"contract_size": 100.0, "tick_size": 0.01, "median_spread_pts": 16.0}
 
 def test_the_memo_actually_skips_the_walk(monkeypatch):
+    # LONG-ONLY: a long's path reads no cost, so the 3x arm reuses the 1x walk. A list holding a
+    # short re-walks under another spread, because its exits trigger on the ask (next test).
     df = _frame(2_000, 9, "UTC")
-    sigs = _signals(df, 9, 200)
+    sigs = [s for s in _signals(df, 9, 400) if s.side > 0]
     engine._LEGS.slot = None
     run_backtest(df, sigs, Costs())
     calls = []
@@ -144,22 +150,34 @@ def test_the_memo_actually_skips_the_walk(monkeypatch):
     assert calls and calls[0] == 0          # no signal located: the loop never ran
 
 
+def test_a_list_with_a_short_walks_again_under_another_spread(monkeypatch):
+    df = _frame(2_000, 9, "UTC")
+    sigs = _signals(df, 9, 200)
+    assert any(s.side < 0 for s in sigs)
+    engine._LEGS.slot = None
+    run_backtest(df, sigs, Costs())
+    stressed = Costs.from_symbol(_GOLD_META, mult=3.0)
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs, stressed)) is None
+    assert _bits(run_backtest(df, sigs, stressed)) == _fresh(df, sigs, stressed, monkeypatch)
+
+
 def test_a_mutated_signal_or_another_list_or_frame_walks_again(monkeypatch):
     df = _frame(2_000, 4, None)
     sigs = _signals(df, 4, 200)
     c = Costs()
     engine._LEGS.slot = None
     run_backtest(df, sigs, c)
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs)) is not None   # the key fits
     sigs[5].stop = sigs[5].stop * 0.99                  # mutated in place: same list object
-    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs)) is None
     assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
     twin = list(sigs)                                   # equal content, another list
-    assert engine._LEGS.lookup(df, twin, None, _walked(df)) is None
+    assert engine._LEGS.lookup(df, twin, None, _walked(df, twin)) is None
     df2 = df.copy()
-    assert engine._LEGS.lookup(df2, sigs, None, _walked(df2)) is None
-    assert engine._LEGS.lookup(df, sigs, 10, _walked(df)) is None    # another max_hold_bars
+    assert engine._LEGS.lookup(df2, sigs, None, _walked(df2, sigs)) is None
+    assert engine._LEGS.lookup(df, sigs, 10, _walked(df, sigs)) is None    # another max_hold_bars
     sigs.append(sigs[-1])                               # grown in place
-    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs)) is None
 
 
 @pytest.mark.parametrize("edit", ["loc_ohlc", "replace_column", "new_index", "new_zone"])
@@ -180,7 +198,7 @@ def test_the_same_frame_edited_in_place_walks_again(edit, monkeypatch):
         df.index = df.index + pd.Timedelta(hours=3)
     else:
         df.index = df.index.tz_convert("Asia/Tokyo")
-    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs)) is None
     assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
 
 
@@ -194,7 +212,7 @@ def test_a_signal_restamped_in_another_zone_walks_again(monkeypatch):
     run_backtest(df, sigs, c)
     for s in sigs:
         s.time = s.time.tz_convert("America/New_York")
-    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df, sigs)) is None
     assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
 
 
