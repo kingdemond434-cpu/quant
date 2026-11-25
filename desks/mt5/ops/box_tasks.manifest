@@ -367,3 +367,10 @@ TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run
 
 # Desk log rotation (ops/rotate_logs.py): whole-file gzip archive, verified, never discards (2026-11-13).
 TASK name="MT5-RotateLogs" trigger="daily 03:40" runs="ops/rotate_logs.py" installer="desks/mt5/scripts/install_rotate_logs_task.ps1" lane="ops"
+
+# MT5-LivePriority (2026-11-25, train 1b): judge-reserved-cores shipped live_priority.py and its
+# installer but no manifest line, so check_birth_obligations read it as an executable with no
+# clock. The trigger below is the installer's own (-RepetitionInterval 1 minute, 1-minute limit,
+# Interactive principal at Highest so it can raise the MT5 terminals). It only RAISES live
+# processes to ABOVE_NORMAL, never lowers, never past it.
+TASK name="MT5-LivePriority"       trigger="every 1 minute (repeating; 1-minute limit; interactive session, RunLevel Highest)" runs="desks/mt5/scripts/live_priority.py" installer="desks/mt5/scripts/install_live_priority_task.ps1" lane="ops"
