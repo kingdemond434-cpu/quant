@@ -246,7 +246,8 @@ def estimate_after(m: dict[str, Any]) -> dict[str, Any]:
     sweep_s, plan_s = m.get("last_sweep_s"), m["time_split"].get("plan_s")
     stat_share = m["time_split"].get("plan_stat_share") or 0.0
     cores = m["cores"]
-    n, jb, ob = cores.get("n_cpus"), cores.get("judge_busy_sampled"), cores.get("others_busy_sampled")
+    n, jb = cores.get("n_cpus"), cores.get("judge_busy_sampled")
+    ob = cores.get("others_busy_sampled")
     out: dict[str, Any] = {}
     if sweep_s and plan_s:
         saved = stat_share * plan_s

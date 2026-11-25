@@ -107,7 +107,7 @@ def plan(*, n_cpus: int, floor_cpus: list[int], percpu_busy: list[float] | None,
          previous: int | None = None, cap_share: float = RESEARCH_CAP_SHARE) -> dict[str, Any]:
     """THE RULE (module docstring), pure. Returns workers_now, floor, ceiling, cpus and reason."""
     floor_n = len(floor_cpus)
-    ceiling = max(floor_n, int(math.floor(cap_share * max(n_cpus, 0))))
+    ceiling = max(floor_n, math.floor(cap_share * max(n_cpus, 0)))
     base = {"floor": floor_n, "ceiling": ceiling, "n_cpus": n_cpus}
 
     def _at_floor(reason: str, shed: bool) -> dict[str, Any]:
@@ -149,7 +149,8 @@ def plan(*, n_cpus: int, floor_cpus: list[int], percpu_busy: list[float] | None,
             "shed": False, "live_reserve": live_reserve, "spare": spare,
             "mem_reserve_mb": round(mem_reserve, 1),
             "reason": (f"{len(borrowed)} idle core(s) borrowed: {n_cpus} cores - live reserve "
-                       f"{live_reserve} - others {other_cores:.2f} busy = {spare} spare, clamped to "
+                       f"{live_reserve} - others {other_cores:.2f} busy = {spare} spare, "
+                       "clamped to "
                        f"[{floor_n}, {ceiling}]" + (f", grown at most {BORROW_STEP}/pass"
                                                      if grown else ""))}
 

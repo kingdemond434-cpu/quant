@@ -180,7 +180,6 @@ def test_the_same_cells_give_the_same_verdicts_in_either_order(tmp_path, monkeyp
     of cells it rules, never on their order. Run the real `run_gauntlet` on one set in the
     family-block order and in the restored order: every verdict is byte-identical."""
     from conftest import write_measured_dsr_inputs
-
     from libs.research import dsr_inputs
 
     monkeypatch.setattr(dsr_inputs, "REPORT", write_measured_dsr_inputs(tmp_path / "dsr"))
@@ -330,7 +329,8 @@ def test_publish_reads_the_judges_own_reports_and_writes_the_ladder(tmp_path) ->
     for k in ("floor_now", "next_floor", "measured_rate_24h", "per_core"):
         assert k in lad
     assert lad["floor_now"] >= 100_000
-    assert json.loads((tmp_path / "ladder.json").read_text("utf-8"))["floor_now"] == lad["floor_now"]
+    on_disk = json.loads((tmp_path / "ladder.json").read_text("utf-8"))
+    assert on_disk["floor_now"] == lad["floor_now"]
     assert json.loads((tmp_path / "eff.json").read_text("utf-8"))["ladder"] == lad
 
 
