@@ -15,7 +15,7 @@ def _run(tmp_path, age_s):
     f = tmp_path / "miner_candidates.json"
     if age_s is not None:
         stamp = (datetime.now(UTC) - timedelta(seconds=age_s)).isoformat(timespec="seconds")
-        f.write_text('{"compiled_at": "%s", "hypotheses": []}' % stamp)
+        f.write_text(f'{{"compiled_at": "{stamp}", "hypotheses": []}}')
     dh._FINDINGS.clear()
     dh.check_compiler_fresh(f)
     return [x["level"] for x in dh._FINDINGS]

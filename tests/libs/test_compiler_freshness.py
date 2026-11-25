@@ -8,8 +8,8 @@ NOW = datetime(2026, 11, 25, 12, 0, tzinfo=UTC)
 
 def _write(path, age_s, tail=""):
     stamp = (NOW - timedelta(seconds=age_s)).isoformat(timespec="seconds")
-    path.write_text('{\n "compiled_at": "%s",\n "freshness": {},\n "hypotheses": [%s]\n}'
-                    % (stamp, tail))
+    path.write_text(f'{{\n "compiled_at": "{stamp}",\n "freshness": {{}},\n '
+                    f'"hypotheses": [{tail}]\n}}')
     return path
 
 

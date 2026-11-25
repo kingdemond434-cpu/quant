@@ -25,7 +25,7 @@ def _artifact(monkeypatch, tmp_path, age_s):
     if age_s is not None:
         stamp = (datetime.now(UTC) - timedelta(seconds=age_s)).isoformat(timespec="seconds")
         (tmp_path / "data" / "hypotheses" / "miner_candidates.json").write_text(
-            '{\n "compiled_at": "%s",\n "hypotheses": []\n}' % stamp)
+            f'{{\n "compiled_at": "{stamp}",\n "hypotheses": []\n}}')
     monkeypatch.setattr(hourly_cycle, "BASE", tmp_path)
 
 
@@ -94,6 +94,24 @@ def test_busy_lane_never_runs_second_compiler(monkeypatch):
     monkeypatch.setattr(hourly_cycle, "compile_candidates", lambda b=0: calls.append("compile"))
     assert hourly_cycle.compiler_lane()["status"] == "SKIPPED"
     assert calls == []
+
+
+def test_compiler_lane_leaves_merger_lock_to_its_child(monkeypatch):
+    """Ported from catch_up_intake (train 1b): the lane holds ONLY the compiler's lock and leaves
+    merge_hypotheses' lock to the child; holding it would make the merger defer against its own
+    caller and exit 75, which must read FAILED, never OK."""
+    locks = []
+
+    @contextmanager
+    def acquire(name, **kwargs):
+        locks.append(name)
+        yield True
+
+    monkeypatch.setattr(job_lock, "exclusive_job", acquire)
+    monkeypatch.setattr(hourly_cycle, "compile_candidates", lambda b=0: {"exit_code": 0})
+    monkeypatch.setattr(hourly_cycle, "_producer", lambda *args: {"exit_code": 75})
+    assert hourly_cycle.compiler_lane()["status"] == "FAILED"
+    assert locks == ["miner_candidate_compiler"]
 
 
 def test_lane_legs_run_only_inside_their_lane_and_no_plan_runs_them(monkeypatch):
