@@ -125,6 +125,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/JUDGE_REACH.json", 180,
         "every producer's emitted > received > judged with named losses, and whether its "
         "judged rows carried an executable rule; LEAKING / PROSE_ONLY / DEFAULTS_ONLY paged"),
+    "MT5-HourlyCore (effective breadth)": (
+        "desks/mt5/reports/EFFECTIVE_BREADTH.json", 180,
+        "independent bets in the book (research/alpha_breadth.py); judged by its own "
+        "generated_utc, so a republished stale file still reads stale"),
     "MT5-HourlyCore (producer loop)": (
         "desks/mt5/reports/PRODUCER_LOOP.json", 180,
         "every producer's funnel, the stage it dies at, its remedy and two-sided compute "
@@ -462,6 +466,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
     "desks/mt5/reports/CONVERT_SWARM.json": "last_decided_utc",
+    "desks/mt5/reports/EFFECTIVE_BREADTH.json": "generated_utc",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.

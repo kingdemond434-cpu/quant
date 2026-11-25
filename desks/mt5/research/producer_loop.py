@@ -1445,6 +1445,27 @@ def coverage_gaps(live_sl: dict[str, dict[str, Any]] | None,
             "families": sorted(fams - have[3])}
 
 
+def withdraw_prescription(prescriptions: dict[str, Any], name: str, now: datetime,
+                          why: str) -> bool:
+    """Withdraw a producer's prescription WITHOUT deleting it: the entry stays, marked
+    `withdrawn` with when and why, and the withdrawn remedy kept under `previous`. A reader acts
+    only on entries without `withdrawn` (`active_prescription`). Never on absence: called only on
+    a measured FAILED_REVERTED outcome or a PARK whose evidence was just archived."""
+    cur = prescriptions.get(name)
+    if not isinstance(cur, dict) or cur.get("withdrawn"):
+        return False
+    prescriptions[name] = {"withdrawn": True, "withdrawn_at": _iso(now), "why": why,
+                           "previous": cur}
+    return True
+
+
+def active_prescription(prescriptions: dict[str, Any], name: str) -> dict[str, Any] | None:
+    """The prescription a seat runner should apply, or None when there is none or it was
+    withdrawn."""
+    cur = prescriptions.get(name)
+    return cur if isinstance(cur, dict) and not cur.get("withdrawn") else None
+
+
 def gap_target(dg: dict[str, Any] | None, gaps: dict[str, Any]) -> dict[str, Any]:
     """The gaps inside a producer's own reach (what it has emitted before), and GAP_SHARE."""
     if not dg:
@@ -1796,7 +1817,7 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
             if ev is not None:
                 outcomes.setdefault(name, []).append(ev)
                 if ev["outcome"] == "FAILED_REVERTED":
-                    prescriptions.pop(name, None)
+                    withdraw_prescription(prescriptions, name, now, "FAILED_REVERTED")
         evals = [o for o in outcomes.get(name, [])
                  if any(o.get("at") == a.get("at") for a in prior)]
         failed = [o for o in evals if str(o.get("outcome")).startswith("FAILED")]
@@ -1856,7 +1877,7 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
             retest = _iso(now + timedelta(days=RETEST_AFTER_DAYS))
             arch = _archive(name, {**r, "generated_at": _iso(now)}, prior, evals, retest)
             retired[name] = {"retired_at": _iso(now), "retest_at": retest, "archive": arch}
-            prescriptions.pop(name, None)
+            withdraw_prescription(prescriptions, name, now, "PARKED")
             r.update({"retest_at": retest, "archive": arch,
                       "reason": f"{len(failed)} failed remedies: parked at the floor "
                                 f"weight, evidence archived, re-test {retest[:10]}"})
