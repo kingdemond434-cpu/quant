@@ -50,6 +50,7 @@ READERS = {
     "build_failure_bank": DESK / "reports" / "BUILD_FAILURE_BANK.json",
     "trade_pathology": DESK / "reports" / "TRADE_PATHOLOGY.json",
     "experiment_contracts": DESK / "reports" / "EXPERIMENT_CONTRACTS.json",
+    "source_conversion": DESK / "reports" / "SOURCE_CONVERSION.json",
 }
 OUT = DESK / "reports" / "HEALTH_BOARD.json"
 OUT_MD = DESK / "reports" / "HEALTH_BOARD.md"
@@ -236,9 +237,22 @@ def build(runtime: Path | None = None, events: Path | None = None,
             if p.is_relative_to(ROOT) else str(p),
             "state": "LIVE" if isinstance(d, dict) else "NEVER",
             "last_reading": st or None,
-            "verdict": (UNMEASURED if not isinstance(d, dict) or st == UNMEASURED else GREEN),
+            "verdict": (UNMEASURED if not isinstance(d, dict) or st == UNMEASURED
+                        else RED if st == "FAULT" else GREEN),
             "verdict_why": (f"{p.name} absent on this host" if not isinstance(d, dict)
-                            else f"its own status is {st or 'unstated'}")})
+                            else f"its own status is {st or 'unstated'}" + (
+                                f": {d.get('n_faults')} source(s) with ZERO_JUDGED / NEVER_MINED"
+                                if st == "FAULT" else ""))})
+    sc = _json((readers or READERS).get("source_conversion", Path("/nonexistent")))
+    hl = (sc or {}).get("headline") if isinstance(sc, dict) else None
+    if isinstance(hl, dict):
+        n = hl.get("non_exotic_certified")
+        organs.append({
+            "organ": "headline:non_exotic_certified", "kind": "headline", "state": "LIVE",
+            "last_reading": f"{n} of {hl.get('total_certified')} (exotic share "
+                            f"{hl.get('exotic_share')})",
+            "verdict": GREEN if n is not None else UNMEASURED,
+            "verdict_why": "non-exotic certified count, from SOURCE_CONVERSION.json headline"})
     counts = Counter(o["verdict"] for o in organs)
     reported_failing = [a for a in ((sw or {}).get("actions") or [])
                         if isinstance(a, str) and a.upper().startswith(("FAILING", "TASK MISSING",

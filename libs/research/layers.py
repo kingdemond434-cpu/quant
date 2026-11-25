@@ -672,6 +672,7 @@ LEG_LAYER: dict[str, str] = {
     # itself: META.
     "trade_pathology": "execution",
     "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
+    "source_conversion": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",

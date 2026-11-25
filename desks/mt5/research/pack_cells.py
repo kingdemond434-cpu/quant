@@ -503,6 +503,35 @@ def universe_symbols() -> frozenset[str]:
     return _UNIVERSE
 
 
+#: Instruments added to a pack's DECLARED targets each pass, rotated from a saved cursor so that
+#: over successive passes every source reaches every eligible non-exotic instrument (principal
+#: 2026-11: maximum indirect conversion, not just the source's own instrument). A rotation
+#: budget, not a filter: the declared targets are always kept, every cell minted is a charged
+#: trial exactly as before, and no gate, FDR or certificate rule is touched.
+EXTRA_TARGETS_PER_PASS = 6
+
+
+def eligible_targets() -> list[str]:
+    """Statistical-lane, non-exotic instruments of the broker's universe, sorted."""
+    try:
+        from research import universe_policy as up
+        return sorted(s for s in universe_symbols()
+                      if up.lane(s) == up.HYPOTHESIS and not up.is_exotic_symbol(s))
+    except Exception:
+        return []
+
+
+def widen_targets(declared: list[str], offset: int,
+                  k: int = EXTRA_TARGETS_PER_PASS) -> list[str]:
+    """`declared` plus the next `k` eligible instruments after `offset` (round robin)."""
+    pool = [s for s in eligible_targets() if s not in declared]
+    if not pool or k <= 0:
+        return list(declared)
+    off = offset % len(pool)
+    extra = (pool[off:] + pool[:off])[:k]
+    return list(declared) + extra
+
+
 def _host_of(url: str) -> str:
     raw = str(url or "").strip()
     if "://" in raw:
@@ -985,8 +1014,11 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     for p, sigs, targets, off in order:
         if time.monotonic() - t0 > budget_s * PACK_LANE_SHARE:
             break
-        res = emit_for(p, sigs, targets, dry_run=dry_run, offset=off)
+        tkey = f"{p.get('id')}#targets"
+        toff = offsets.get(tkey, 0)
+        res = emit_for(p, sigs, widen_targets(targets, toff), dry_run=dry_run, offset=off)
         pid = res["id"]
+        offsets[tkey] = toff + EXTRA_TARGETS_PER_PASS
         reached.append(pid)
         emitted_this_pass += int(res.get("emitted") or 0)
         created_this_pass += int(res.get("created") or 0)
