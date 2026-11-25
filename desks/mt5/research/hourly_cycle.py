@@ -2192,6 +2192,10 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The exotic transplant stops itself at --budget-s 300; declared here (300 + 15%) so the core
+    # plan's kill margin can yield it -- an undeclared leg has cap 0 and is never yielded (Audit
+    # HOLD 8044d9b16, 2026-11-25: the core pass was killed at its limit on 5 of 5 runs).
+    "exotic_transplant": 345,
     # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
     # margin, when priced lower) and saves its state after every symbol turn.
     "tape_deepen": 420,

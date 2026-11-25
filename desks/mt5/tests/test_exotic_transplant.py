@@ -206,3 +206,13 @@ def test_no_exotic_target_ever_across_every_family(tmp_path: Path) -> None:
 def test_dry_run_writes_no_cursor(tmp_path: Path) -> None:
     _run(tmp_path, _surv(_cert("USDZAR", "overnight_gap_decay", {})), dry_run=True)
     assert not (tmp_path / "cursor.json").exists()
+
+
+def test_leg_is_on_core_with_a_declared_budget_the_kill_margin_can_see() -> None:
+    """Pinned placement (Audit HOLD 8044d9b16): the leg stays on the core clock, and it declares a
+    cycle budget >= its own --budget-s 300 + 15%, so the core plan's kill margin yields it rather
+    than starting it into a pass that would overrun the task limit."""
+    import hourly_cycle as hc
+
+    assert "exotic_transplant" in hc.CORE_LEGS
+    assert hc.LEG_BUDGET_SEC.get("exotic_transplant", 0) >= 345
