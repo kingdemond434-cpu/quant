@@ -363,3 +363,9 @@ libs/regime/disagreement.py
 desks/mt5/research/decay_backtest.py
 libs/research/formula_catalog.py
 libs/research/formula_ops.py
+desks/mt5/mt5desk/family_tier1_ideas.py
+desks/mt5/mt5desk/account_divergence.py
+desks/mt5/mt5desk/family_hypgen_models.py
+desks/mt5/mt5desk/family_rule_builder.py
+desks/mt5/mt5desk/hypgen_features.py
+desks/mt5/prop/e8_fills.py
