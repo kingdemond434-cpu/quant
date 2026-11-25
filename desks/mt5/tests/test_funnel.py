@@ -219,7 +219,7 @@ def test_the_leg_is_wired_on_the_hourly_clock() -> None:
     assert LEG_LAYER["funnel"] == "meta"
     contracts = json.loads((_ROOT / "docs" / "research" / "experiment_contracts.json")
                            .read_text("utf-8"))
-    assert contracts["funnel"]["metric"]["organ"] == "report:FUNNEL.json"
+    assert contracts["legs"]["funnel"]["metric"]["organ"] == "report:FUNNEL.json"
     from ops.organ_contract import CONTRACTS
     assert any(v[0] == "desks/mt5/reports/FUNNEL.json" for v in CONTRACTS.values())
     sync = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
