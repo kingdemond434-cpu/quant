@@ -5,6 +5,7 @@ import json
 import sys
 import types
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -111,7 +112,8 @@ def test_the_perturbation_test_can_fail(_panel):
     def peek(df):
         c = df["close"].to_numpy()
         return [types.SimpleNamespace(time=df.index[i], side=1 if c[i + 24] > c[i] else -1,
-                                      stop=0.0, target=0.0, tag="peek", trigger=None)
+                                      stop=float(c[i + 24]), target=0.0, tag="peek",
+                                      trigger=None)
                 for i in range(0, len(df) - 24, 24)]
     a = [s for s in peek(own) if pd.Timestamp(s.time) <= cutoff]
     b = [s for s in peek(_corrupt(own, split, 1)) if pd.Timestamp(s.time) <= cutoff]
@@ -186,7 +188,7 @@ def test_value_area_holds_seventy_percent_around_the_poc():
 # ----------------------------------------------------------------------------- the producer ---
 class _Policy:
     """A registry stand-in: two FX classes (one with an exotic), a share, an unclassified."""
-    CLASS = {"EURUSD": "fx_usd", "GBPUSD": "fx_usd", "AUDUSD": "fx_usd", "NZDUSD": "fx_usd",
+    CLASS: ClassVar[dict[str, str]] = {"EURUSD": "fx_usd", "GBPUSD": "fx_usd", "AUDUSD": "fx_usd", "NZDUSD": "fx_usd",
              "USDJPY": "fx_usd", "USDTRY": "fx_usd", "USDCAD": "fx_usd"}
 
     def may_hypothesise(self, s, family=None):
@@ -270,6 +272,7 @@ def test_producer_holds_a_symbol_without_the_history(tmp_path):
 
 def test_the_families_are_registered_and_not_swept_twice():
     from mt5desk import families_orthogonal as fo
+
     from research import orthogonal_sweep as osw
     for fam in gm.GLOBAL_METHOD_FAMILIES:
         assert fo.ORTHOGONAL_FAMILIES[fam] is gm.GLOBAL_METHOD_FAMILIES[fam]
@@ -277,8 +280,9 @@ def test_the_families_are_registered_and_not_swept_twice():
 
 
 def test_every_leg_has_a_layer_and_the_map_points_at_the_reports():
-    from libs.research import layers
     import generator_coverage as gc
+
+    from libs.research import layers
     for leg in ("global_xs_ltr", "global_hf_moment", "global_value_area", "global_vol_breakout"):
         assert layers.LEG_LAYER[leg] == "prediction"
         assert leg in layers.scheduled_legs()

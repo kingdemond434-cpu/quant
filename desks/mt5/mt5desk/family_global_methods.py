@@ -432,7 +432,7 @@ def family_value_area_rule(
     day = idx.normalize().asi8
     starts = np.flatnonzero(np.r_[True, day[1:] != day[:-1]])
     ends = np.r_[starts[1:], len(d)]
-    win_bars = max(1, int(round(int(entry_window_h) * bars_per_day(d) / 24.0)))
+    win_bars = max(1, round(int(entry_window_h) * bars_per_day(d) / 24.0))
     k = int(confirm_bars)
     out: list[Signal] = []
     for n in range(1, starts.size):
