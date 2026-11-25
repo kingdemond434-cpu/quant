@@ -701,6 +701,8 @@ $relPaths = @(
     # fence below still refuses any file carrying an account-shaped value.
     "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
     "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
     "desks/mt5/reports/DESK_SELF_HEAL.json",
     # IS THE BOX BACKED UP, AND WAS A RESTORE EVER REHEARSED (v5f). ops/backup_state.py, on
     # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
