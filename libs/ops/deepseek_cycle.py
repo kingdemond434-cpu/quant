@@ -682,6 +682,24 @@ def _alt_slice(root: Path) -> tuple[Any, Any, str]:
         return None, None, ""
 
 
+def _data_discovery(root: Path) -> tuple[Any, list[str], set[str]]:
+    """(research.data_discovery, labels already fetched, their full URLs) -- (None, [], set())
+    when the desk tree is unavailable; the cycle never depends on it."""
+    try:
+        import sys as _sys
+        desk = root / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
+        from research import data_discovery as dd
+        labels, full = dd.known(desk / "data" / "source_rosters" / "keyed_sources.json",
+                                roots=(root / "data" / "intelligence",
+                                       desk / "data" / "intelligence"))
+        return dd, labels, full
+    except Exception:  # blind-except intentional (BLE001): the task never costs the cycle
+        return None, [], set()
+
+
 def _alt_conditioner(ac: Any, cat: Any, value: Any) -> str | None:
     """The finding's `alt:` spec when it parses and names a catalog series and column."""
     if ac is None or not isinstance(cat, dict) or not value:
@@ -748,6 +766,12 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         user += ("\n\n" + alt_block + "\nIn this JSON contract, put such a spec in an extra "
                  '"conditioner" field of the finding (with its "family" and "symbols"), '
                  "instead of an ALT_CELL line; null when the finding is not alt-conditioned.")
+    # FIND DATA YOURSELF (research/data_discovery.py): a small "propose a keyless official
+    # series" task each pass, vetted into data/intelligence/deepseek/data_source_proposals.json,
+    # which research/keyed_sources.py on the box fetches point-in-time.
+    dd, dd_labels, dd_full = _data_discovery(base)
+    if dd is not None:
+        user += "\n\n" + dd.prompt_block(json_contract=True, existing=dd_labels)
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
@@ -769,7 +793,15 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         findings = parsed.get("findings") if isinstance(parsed, dict) else None
         findings = findings if isinstance(findings, list) else []
     except ValueError:
-        findings = []
+        parsed, findings = None, []
+    data_sources: dict[str, Any] | None = None
+    props = parsed.get("data_sources") if isinstance(parsed, dict) else None
+    if dd is not None and isinstance(props, list) and props:
+        data_sources = dd.record(
+            "deepseek", [p if isinstance(p, dict) else {"_malformed": str(p)[:160]}
+                         for p in props],
+            organ="deepseek", model=model, root=base / "data" / "intelligence",
+            known_paths=dd_full)
 
     routed: list[str] = []
     donated: list[dict[str, Any]] = []
@@ -831,6 +863,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                             for d in sorted({r["disposition"] for r in donated})},
            "capability_walks_proposed": len(capability_walks),
            "donated_to": str(donated_path) if donated_path else None,
+           "data_sources": data_sources,
            "packet_status": packet.get("status"), "packet_hash": packet.get("packet_hash"),
            "packet_sections": packet.get("sections_measured"),
            "cold_context_removed_keys": cold["removed_keys"]}

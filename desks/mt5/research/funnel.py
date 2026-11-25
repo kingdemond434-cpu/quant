@@ -289,6 +289,8 @@ class Paths:
     lake: Path | None = None
     alt_exposure: Path | None = None
     digest: Path | None = None
+    #: Seat output roots holding `data_source_proposals.json` (research/data_discovery.py).
+    intelligence: tuple[Path, ...] | None = None
 
     @classmethod
     def at(cls, desk: Path) -> Paths:
@@ -306,7 +308,10 @@ class Paths:
                    out=desk / "reports" / "FUNNEL.json",
                    lake=desk / "data" / "lake" / "series",
                    alt_exposure=desk / "data" / "alt_catalog" / "exposure.json",
-                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json")
+                   digest=desk / "reports" / "GATE_VERDICT_DIGEST.json",
+                   intelligence=((ROOT / "data" / "intelligence",
+                                  desk / "data" / "intelligence") if desk == DESK
+                                 else (desk / "data" / "intelligence",)))
 
 
 def _blank() -> dict[str, Any]:
@@ -660,6 +665,23 @@ def alt_block(paths: Paths, rows: list[Mapping[str, Any]] | None,
     return cov
 
 
+def method_block(paths: Paths, by_alt: Mapping[str, Any]) -> dict[str, Any]:
+    """`by_method`: the alt series' funnel split by HOW the data reached the lake -- proposed by
+    a free model (`llm_data_discovery`, per discovering organ: proposals -> accepted -> landed ->
+    offered -> rows -> testable -> judged -> certified) beside every registered source. Each
+    discovered series in `by_alt_source.series` is also tagged with its `discovered_by`."""
+    from research import data_discovery as dd
+
+    roots = paths.intelligence if paths.intelligence is not None else ()
+    ser = by_alt.get("series") if isinstance(by_alt, Mapping) else None
+    if isinstance(ser, dict):
+        for name, tag in dd.provenance(roots).items():
+            if isinstance(ser.get(name), dict):
+                ser[name].update(tag)
+    return dd.method_view(by_alt if isinstance(ser, dict) else None, roots=roots,
+                          lake=paths.lake)
+
+
 def build(paths: Paths | None = None, *, now: datetime | None = None,
           budget_s: float | None = None, is_exotic: Callable[[str], bool] | None = None,
           trades_of: Callable[[str], list[dict[str, Any]]] | None = None) -> dict[str, Any]:
@@ -912,6 +934,10 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
         by_alt = alt_block(paths, comp.get("rows") if comp.get("available") else None, seen)
     except Exception as exc:                       # a report section never costs the funnel
         by_alt = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+    try:
+        by_method = method_block(paths, by_alt)
+    except Exception as exc:                       # a report section never costs the funnel
+        by_method = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -944,6 +970,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                     "live_profit": d["stages"]["LIVE_PROFIT"]},
         "producers": rows_p, "asset_classes": rows_c, "families": rows_f,
         "by_alt_source": by_alt,
+        "by_method": by_method,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,

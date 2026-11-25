@@ -685,6 +685,18 @@ def _alt_catalog():
         return None
 
 
+def _data_discovery():
+    """research/data_discovery (the "find data yourself" task), or None when the desk tree is
+    absent -- the hunt never depends on it."""
+    try:
+        if _alt_catalog() is None:
+            return None
+        from research import data_discovery
+        return data_discovery
+    except Exception:  # blind-except intentional (BLE001)
+        return None
+
+
 def _donate_alt(rows: list[dict]) -> Path | None:
     """ALT_CELL rows, in the compiler's EXACT_RECIPE shape, where the compiler reads."""
     if not rows:
@@ -825,6 +837,13 @@ def main() -> None:
         except Exception:  # blind-except intentional (BLE001)
             alt_cat = None
     alt_cells: list[dict] = []
+    # FIND DATA YOURSELF (2026-11-25): wave 2 also asks for keyless official series the desk
+    # does not hold; DATA_SOURCE lines from waves 2/3 are vetted into the seat's queue
+    # (data/intelligence/kimi/data_source_proposals.json), which research/keyed_sources.py on the
+    # box fetches point-in-time and alt_catalog then offers back as testable series.
+    dd = _data_discovery()
+    dd_labels, dd_full = (dd.known() if dd is not None else ([], set()))
+    data_sources: list[dict] = []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
@@ -835,6 +854,8 @@ def main() -> None:
             _alt = ac.prompt_block(ALT_ORGAN, cat=alt_cat)
             if _alt:
                 user += f"\n\n{_alt}"
+        if w == 2 and dd is not None:
+            user += "\n\n" + dd.prompt_block(existing=dd_labels)
         print(f"  WAVE {w} -- {name}")
         # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
@@ -926,11 +947,25 @@ def main() -> None:
             if _cells:
                 _p = _donate_alt(_cells)
                 print(f"    wave {w}: {len(_cells)} alt-conditioned cell(s) -> {_p}")
+        if dd is not None:
+            _props = []
+            for _p in dd.parse_lines(txt):
+                _z = _forbidden(str(_p.get("mechanism") or _p.get("_malformed") or ""))
+                _props.append(dict(_p, _reject=f"forbidden_zone:{_z}") if _z else _p)
+            if _props:
+                _got = dd.record("kimi", _props, organ=ALT_ORGAN, model=used,
+                                 root=DONATE_DIR.parent, known_paths=dd_full)
+                _got["wave"] = w
+                data_sources.append(_got)
+                print(f"    wave {w}: {_got['proposed']} data source(s) proposed, "
+                      f"{_got['accepted']} accepted -> {dd.queue_path('kimi', DONATE_DIR.parent)}")
         for ln in txt.splitlines():
             if ln.count("|") < 3:
                 continue
             if ac is not None and ac.CELL_LINE.match(ln):
                 continue                   # an ALT_CELL line is a recipe, handled above
+            if dd is not None and dd.LINE.match(ln):
+                continue                   # a DATA_SOURCE line is a data proposal, handled above
             keep, reason, cls, parts = _admit(ln, w, txt)
             if reason:
                 dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
@@ -996,7 +1031,8 @@ def main() -> None:
                                "donated_to": str(donated) if donated else None,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
                                "findings": findings, "dropped": dropped,
-                               "alt_cells": alt_cells}, indent=1), "utf-8")
+                               "alt_cells": alt_cells,
+                               "data_sources": data_sources}, indent=1), "utf-8")
     print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
     print(f"  -> {OUT}")
 
