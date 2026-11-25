@@ -1980,11 +1980,13 @@ def main(argv: list[str] | None = None) -> int:
         _release(lock)
 
 
-def read_prior_candidates(path: Path) -> list:
+def read_prior_candidates(path: Path) -> list | None:
     """The candidate history to append to. AN UNREADABLE FILE IS NEVER AN EMPTY HISTORY
     (Audit, 2026-11-25): reading it as [] and writing back this run's rows alone would erase
     every earlier candidate. It is moved aside to `<name>.corrupt-<utc>` -- kept, never
-    deleted -- and this run starts a fresh file beside it, saying so."""
+    deleted -- and this run starts a fresh file beside it, saying so. If the move itself fails
+    (Windows refuses os.replace while another process holds the file open) the answer is None:
+    the caller must NOT write over it this run."""
     if not path.exists():
         return []
     try:
@@ -1994,8 +1996,13 @@ def read_prior_candidates(path: Path) -> list:
     except (OSError, ValueError) as exc:
         stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
         aside = path.with_name(f"{path.name}.corrupt-{stamp}")
-        with contextlib.suppress(OSError):
+        try:
             os.replace(path, aside)
+        except OSError as mv:
+            dlog(f"CANDIDATE HISTORY UNREADABLE ({type(exc).__name__}) AND COULD NOT BE MOVED "
+                 f"ASIDE ({type(mv).__name__}: {mv}): NOT writing {path.name} this run, so the "
+                 "original stays byte-identical for recovery")
+            return None
         dlog(f"candidate history unreadable ({type(exc).__name__}); preserved as {aside.name}, "
              "never overwritten as empty")
         return []
@@ -2351,13 +2358,14 @@ def _work(argv: list[str] | None = None) -> int:
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prior = read_prior_candidates(OUT)
-    write_candidates_atomic(OUT, {
-        "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        "candidates": prior + recovered,
-        "recovered_this_run": len(recovered),
-        "dispositions": counts,
-        **({"memory_guard": mem_stop} if mem_stop else {}),
-    })
+    if prior is not None:
+        write_candidates_atomic(OUT, {
+            "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "candidates": prior + recovered,
+            "recovered_this_run": len(recovered),
+            "dispositions": counts,
+            **({"memory_guard": mem_stop} if mem_stop else {}),
+        })
     publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)

@@ -64,3 +64,20 @@ def test_the_history_is_written_atomically_and_read_back(tmp_path: Path) -> None
     assert list(tmp_path.glob("*.tmp")) == []
     src = (DESK / "research" / "deepening_worker.py").read_text("utf-8")
     assert "OUT.write_text(" not in src
+
+
+def test_a_history_that_cannot_be_moved_aside_is_left_byte_identical(
+        tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    out = tmp_path / "deepened_candidates.json"
+    raw = b'{"candidates": [{"id": 1}, {"id"'
+    out.write_bytes(raw)
+
+    def _locked(src, dst):  # type: ignore[no-untyped-def]
+        raise PermissionError(32, "The process cannot access the file")
+
+    monkeypatch.setattr(dw.os, "replace", _locked)
+    assert dw.read_prior_candidates(out) is None          # the caller writes nothing this run
+    monkeypatch.undo()
+    assert out.read_bytes() == raw
+    src = (DESK / "research" / "deepening_worker.py").read_text("utf-8")
+    assert "if prior is not None:\n        write_candidates_atomic(OUT" in src
