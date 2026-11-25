@@ -557,7 +557,8 @@ def _base(row: Mapping[str, Any], sym: str, series: str, now: datetime) -> dict[
            "required_data": [f"desks/mt5/data/lake/series/{lake_name(row['id'], series)}.csv"]}
     # A source a free model proposed (research/data_discovery.py) carries who found the data.
     if row.get("discovered_by"):
-        out.update(discovered_by=row["discovered_by"], method=row.get("method"))
+        out.update(discovered_by=row["discovered_by"], method=row.get("method"),
+                   lane=row.get("lane"))
     return out
 
 

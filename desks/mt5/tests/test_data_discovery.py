@@ -263,3 +263,52 @@ def test_prompt_blocks_name_the_line_and_the_json_contract() -> None:
     txt = dd.prompt_block(existing=["WS_CBPOL/M.US/all"])
     assert "DATA_SOURCE |" in txt and "WS_CBPOL/M.US/all" in txt and "ECB" in txt
     assert '"data_sources"' in dd.prompt_block(json_contract=True)
+
+
+# ------------------------------------------------ the data_discovery job on the free chain --
+class _Seat:
+    def __init__(self, name: str) -> None:
+        self.name, self.model = name, "m"
+
+
+def test_the_job_fails_over_across_every_free_route_and_tags_the_lane(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(dd, "_universe", lambda: (UNI, _may))
+    asked: list[str] = []
+
+    def chat(prompt: str, *, seat: Any, **kw: Any) -> tuple[str, str | None]:
+        asked.append(seat.name)
+        assert "DATA_SOURCE |" in prompt
+        if seat.name == "groq":
+            return "", "HTTP 503 overloaded"
+        return f"thinking...\n{GOOD}\n", None
+
+    doc = dd.run_job(chat=chat, chain=[_Seat("groq"), _Seat("siliconflow"), _Seat("kimi")],
+                     root=tmp_path, now=NOW)
+    assert asked == ["groq", "siliconflow"]                 # failover, first answer serves
+    assert doc["status"] == "RAN" and doc["served_by"] == "siliconflow:m"
+    assert (doc["proposed"], doc["accepted"]) == (1, 1)
+    (row,) = json.loads(dd.queue_path(dd.LANE, tmp_path).read_text("utf-8"))[
+        "accepted"].values()
+    assert row["lane"] == dd.LANE and row["discovered_by"] == dd.LANE
+    assert row["method"] == dd.METHOD
+    assert dd.roster_row(row, discovered_by=dd.LANE)["lane"] == dd.LANE
+    counts = dd.stage_counts(roots=[tmp_path], lake=tmp_path / "nolake")
+    assert counts["proposals"] == 1 and counts["accepted"] == 1
+    assert counts["landed"] == dd.UNMEASURED and counts["rows"] == dd.UNMEASURED
+
+
+def test_the_job_with_no_route_is_a_named_state(tmp_path: Path) -> None:
+    doc = dd.run_job(chat=lambda *a, **k: ("", None), chain=[], root=tmp_path, now=NOW)
+    assert doc["status"] == "NO_ROUTE"
+    assert not dd.queue_path(dd.LANE, tmp_path).exists()
+
+
+def test_the_job_is_an_hourly_leg_in_the_information_layer() -> None:
+    src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"data_discovery", "research/data_discovery.py", "--once"' in src
+    assert src.index('_costed("data_discovery"') < src.index('_costed("keyed_sources"')
+    from libs.research import layers
+    assert "data_discovery" in layers.__dict__["LEG_LAYER"] if "LEG_LAYER" in \
+        layers.__dict__ else '"data_discovery": "information"' in (
+            _ROOT / "libs" / "research" / "layers.py").read_text("utf-8")

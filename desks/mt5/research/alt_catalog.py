@@ -253,7 +253,8 @@ def catalog(lake: Path | None = None, *, thresholds: bool = False) -> dict[str, 
                      "symbol": (stem[len(p):].upper() if (p := next(
                          (x for x in PER_SYMBOL_PREFIXES if stem.startswith(x)), "")) else ""),
                      **({"discovered_by": found[stem]["discovered_by"],
-                         "method": found[stem]["method"]} if stem in found else {})})
+                         "method": found[stem]["method"],
+                         "lane": found[stem].get("lane")} if stem in found else {})})
     return {"status": "READ", "series": rows, "refused": refused,
             "n_series": len(rows), "n_sources": len({r["source"] for r in rows})}
 
@@ -548,5 +549,6 @@ def parse_cells(text: str, *, cat: Mapping[str, Any] | None = None, organ: str =
                      "alt_catalog_organ": organ,
                      # The series' DATA was found by a free model: credit it per method.
                      **({"discovered_by": found[got[0]]["discovered_by"],
-                         "method": found[got[0]]["method"]} if got[0] in found else {})})
+                         "method": found[got[0]]["method"],
+                         "lane": found[got[0]].get("lane")} if got[0] in found else {})})
     return rows, why

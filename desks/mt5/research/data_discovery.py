@@ -61,6 +61,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 UNMEASURED = "UNMEASURED"
 METHOD = "llm_data_discovery"
+#: The free-model JOB name (the shared job registry / FUNNEL `by_lane` key) and its own seat.
+LANE = "data_discovery"
 QUEUE_NAME = "data_source_proposals.json"
 #: Where seat output lives (the compiler reads both roots; so does this intake).
 INTEL_ROOTS: tuple[Path, ...] = (ROOT / "data" / "intelligence", DESK / "data" / "intelligence")
@@ -307,7 +309,7 @@ def roster_row(p: Mapping[str, Any], *, discovered_by: str) -> dict[str, Any]:
         "source_culture": prov["region"], "participant_structure": "policy_driven",
         "failure_mode_hypothesis": "UNMEASURED: proposed by a free model; the gauntlet decides",
         "crowding_prior": "unknown",
-        "discovered_by": discovered_by, "method": METHOD,
+        "discovered_by": discovered_by, "method": METHOD, "lane": LANE,
         "uses": {"direct": {"families": ["exogenous_conditioner"],
                             "organ": "research/keyed_sources.py"},
                  "indirect": {"families": ["<certified parent> + params.conditioner alt:"],
@@ -379,7 +381,8 @@ def record(seat: str, raws: Iterable[Mapping[str, Any]], *, organ: str, model: s
             continue
         got["accepted"] += 1
         known.add(PROVIDERS[p["provider"]]["base"] + p["path"])
-        acc[p["id"]] = {**p, "discovered_by": organ, "method": METHOD, "model": model,
+        acc[p["id"]] = {**p, "discovered_by": organ, "method": METHOD, "lane": LANE,
+                        "model": model,
                         "proposed_at": at, "lake_series": lake_series(p)}
     for k in ("proposed", "accepted", "rejected"):
         counts[k] = int(counts.get(k) or 0) + got[k]
@@ -445,7 +448,7 @@ def discovered_rows(existing: Iterable[Mapping[str, Any]],
 def provenance(roots: Iterable[Path] | None = None) -> dict[str, dict[str, Any]]:
     """lake series -> {discovered_by, method, source_row, provider} for every accepted proposal."""
     return {lake_series(p): {"discovered_by": p["discovered_by"], "method": METHOD,
-                             "source_row": p["id"], "provider": p["provider"]}
+                             "lane": LANE, "source_row": p["id"], "provider": p["provider"]}
             for p in accepted(roots)}
 
 
@@ -503,7 +506,7 @@ def method_view(alt_cov: Mapping[str, Any] | None, *, roots: Iterable[Path] | No
     mine = {lake_series(r) for r in acc}
     other = [e for n, e in (series or {}).items() if n not in mine and isinstance(e, Mapping)]
     return {
-        METHOD: {**disc, "by_organ": organs},
+        METHOD: {**disc, "lane": LANE, "by_organ": organs},
         "registered_sources": ({"series": len(other),
                                 **{k: _sum([e.get(src) for e in other])
                                    for k, src in (("rows", "rows"),
@@ -517,3 +520,111 @@ def method_view(alt_cov: Mapping[str, Any] | None, *, roots: Iterable[Path] | No
                  "on this host; offered = alt_catalog showed it to >= 1 generator; rows .. "
                  "certified = the by_alt_source counts on those series"),
     }
+
+
+def stage_counts(alt_cov: Mapping[str, Any] | None = None, *,
+                 roots: Iterable[Path] | None = None, lake: Path | None = None
+                 ) -> dict[str, Any]:
+    """The `data_discovery` lane's stage counts alone (proposals .. certified), for a caller such
+    as the funnel's `by_lane` block; the same numbers `method_view` publishes."""
+    v = method_view(alt_cov, roots=roots, lake=lake)[METHOD]
+    return {k: v.get(k, UNMEASURED) for k in ("proposals", "accepted", "landed", "offered",
+                                               "rows", "testable", "judged", "certified")}
+
+
+# --------------------------------------------------------------------- the job on its clock --
+#: Every free route this host can reach (OpenRouter, Groq, SiliconFlow, DeepSeek, Kimi, any
+#: future seat): the environment and `llm_panel.json` through `llm_seat.seats()`, then the free
+#: roster. Keys stay inside the Seat objects; only provider NAMES are ever recorded.
+FREE_ROSTER = ROOT / "data" / "secrets" / "llm_panel_free.json"
+REPORT = DESK / "reports" / "DATA_DISCOVERY.json"
+SYSTEM = ("You find free, keyless, official statistical data for a quant desk trading the "
+          "MT5/Fusion universe (FX, gold, metals, indices, energy). You never propose crypto-"
+          "exchange data, paid data, keyed APIs or scraping. Output ONLY the requested lines.")
+
+
+def seat_chain() -> list[Any]:
+    """The shared free-model chain, deduped by route (the deepening worker's construction)."""
+    out: list[Any] = []
+    try:
+        from libs.ops import llm_seat
+        cands = list(llm_seat.seats())
+    except Exception:
+        return out
+    with contextlib.suppress(Exception):
+        from libs.ops.llm_route import load_seats
+        for p in load_seats(FREE_ROSTER):
+            cands.append(llm_seat.Seat(name=str(p.get("name") or "free"),
+                                       base_url=str(p.get("base_url")), key=str(p.get("key")),
+                                       model=str(p.get("model") or ""),
+                                       source="file:llm_panel_free.json"))
+    seen: set[tuple[str, str]] = set()
+    for st in cands:
+        route = (str(st.base_url).rstrip("/"),
+                 hashlib.sha256(str(st.key).encode()).hexdigest()[:12] + "|" + str(st.model))
+        if route not in seen:
+            seen.add(route)
+            out.append(st)
+    return out
+
+
+def run_job(*, chat: Any = None, chain: list[Any] | None = None, root: Path | None = None,
+            budget_s: float = 300.0, now: datetime | None = None) -> dict[str, Any]:
+    """One `data_discovery` pass: ask the first free route that answers (failover across the
+    whole chain), vet the DATA_SOURCE lines into `data/intelligence/data_discovery/`. Never
+    raises; a pass with no route is a named state, not 0."""
+    import time
+    t0 = time.monotonic()
+    os.environ.setdefault("QUANT_LLM_ORGAN", LANE)          # the lane's budget attribution
+    if chat is None:
+        from libs.ops import llm_seat
+        chat = llm_seat.chat
+    routes = seat_chain() if chain is None else chain
+    labels, full = known()
+    prompt = prompt_block(existing=labels)
+    tried: list[dict[str, str]] = []
+    text, served = "", ""
+    for st in routes:
+        if time.monotonic() - t0 > budget_s:
+            tried.append({"seat": str(st.name), "error": "pass budget reached"})
+            break
+        txt, err = chat(prompt, system=SYSTEM, seat=st, max_tokens=3000, temperature=0.5)
+        if not err and txt.strip():
+            text, served = txt, f"{st.name}:{st.model or 'discovered'}"
+            break
+        tried.append({"seat": str(st.name), "error": str(err or "empty response")[:200]})
+        if err and "daily" in str(err).lower() and "budget" in str(err).lower():
+            break                                   # the shared allowance: every seat refuses
+    doc: dict[str, Any] = {"generated_at": (now or _now()).isoformat(timespec="seconds"),
+                           "writer": "research/data_discovery.py", "lane": LANE,
+                           "method": METHOD, "routes": len(routes), "tried": tried,
+                           "served_by": served or None}
+    if not routes:
+        doc.update(status="NO_ROUTE", why="no free seat configured on this host")
+    elif not text:
+        doc.update(status="NO_ANSWER", why="every route failed or was refused this pass")
+    else:
+        got = record(LANE, parse_lines(text), organ=LANE, model=served,
+                     root=root, known_paths=full, now=now)
+        doc.update(status="RAN", **{k: got[k] for k in ("proposed", "accepted", "rejected",
+                                                         "reasons")})
+    doc["seconds"] = round(time.monotonic() - t0, 1)
+    return doc
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(description="free-model data discovery (one pass)")
+    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--budget-s", type=float, default=300.0)
+    a = ap.parse_args(argv)
+    doc = run_job(budget_s=a.budget_s)
+    with contextlib.suppress(OSError):
+        _atomic(REPORT, doc)
+    print(f"data_discovery: {doc['status']} served_by={doc.get('served_by')} "
+          f"accepted={doc.get('accepted', 0)}/{doc.get('proposed', 0)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
