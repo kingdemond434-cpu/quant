@@ -71,6 +71,15 @@ ARMED_MARKER = DESK / "data" / "E8_ARMED"
 #: The comment written on every order this lane sends. Positions are matched back to a sleeve by
 #: it, so an order without it is not this lane's and is never closed or counted here.
 TAG = "E8"
+#: CERTIFIED XAUUSD SLEEVES TRADE HERE (2026-11-25, the approved order: every standby sleeve
+#: trades on FTMO and E8). Until now every XAUUSD sleeve was refused as OWNED_BY_GOLD_LANE, so
+#: 18 certified gold sleeves (session_range_breakout, cross_asset_residual, macro_conditional,
+#: range_reversion) had no E8 route at all; FTMO already trades them (#1323). The gold WINDOWS
+#: stay E8-Gold's: a sleeve leg is placed only under the cross-account gold direction lock
+#: (mt5desk.gold_oco), never while this account rests any gold entry (a window bracket keeps its
+#: slot) or holds any XAU position in the locked reading (ONE POSITION PER INSTRUMENT), and a
+#: banned XAU sleeve never closes by instrument (E8-Gold's positions share it). False reverts.
+GOLD_SLEEVES = True
 
 #: Per-position basis for the break-even floor: initial stop distance, and the high-water mark.
 #: Keyed by venue position id. See `manage_breakeven` for why this lane needs a file where the
@@ -904,6 +913,69 @@ def entry_doors(sym: str, book_key: str, cert: Mapping[str, float],
     return "", "", [t for _, t in doubts], mult
 
 
+def _gold_rail() -> str:
+    from mt5desk import gold_oco as _oco
+    return _oco.RAIL
+
+
+def _gold_sleeve_refusal(venue: Any, side: str, *, now: datetime, holder: str
+                         ) -> tuple[str | None, tuple[str, str] | None]:
+    """(why refused, (account key, trading date)) for a certified XAUUSD sleeve leg, called UNDER
+    the placement lock. The account's gold state is republished first (as E8-Gold and FTMO's
+    `_gold_lock_refusal` do), then refused when this account rests a gold ENTRY on the other side
+    (E8-Gold's window bracket, which would fill against the sleeve) and otherwise judged by the
+    cross-account gold direction lock. Fails closed on anything it cannot read; never raises."""
+    from mt5desk import gold_oco as _oco
+
+    from prop import e8_guard
+    try:
+        key = _oco.tradelocker_oco_key(venue)
+    except _oco.IdentityUnavailable as exc:
+        return f"gold OCO identity: {exc}; fail closed", None
+    except Exception as exc:
+        return f"gold OCO identity unreadable ({type(exc).__name__}); fail closed", None
+    date = e8_guard.server_day(now)
+    want = _oco.side_of(side)
+    seen: dict[str, Any] = {}
+
+    def rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        pos, ords = _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                               venue.instrument_id(_oco.SYMBOL))
+        seen["positions"], seen["entries"] = pos, ords
+        return pos, ords
+
+    sync = _oco.sync_lane("e8", key, rows, date=date, holder=holder)
+    if not sync.get("published") or "entries" not in seen:
+        return (f"gold OCO: this account's gold state was not republished under the lock "
+                f"({sync.get('why')}); fail closed"), (key, date)
+    if want is None:
+        return f"gold OCO: unreadable leg side {side!r}; fail closed", (key, date)
+    # FRESH, UNDER THE LOCK (audit MF2): an E8-Gold fill or another sleeve's send since the pass
+    # began is an open XAU position the pass-start snapshot does not show.
+    if seen.get("positions"):
+        ids = ", ".join(str(p.get("id")) for p in seen["positions"])
+        return (f"this E8 account already holds XAU ({ids}) in the locked reading: one position "
+                f"per instrument"), (key, date)
+    # ANY RESTING GOLD ENTRY KEEPS THE WINDOW'S SLOT (audit SF1): an opposite leg would fill
+    # against the sleeve and a same-side leg would stack beside it.
+    if seen["entries"]:
+        ids = ", ".join(str(o.get("id")) for o in seen["entries"])
+        return (f"this E8 account rests a gold entry ({ids}): E8-Gold's window bracket keeps the "
+                f"slot until it fills or is cancelled"), (key, date)
+    v = _oco.gate("e8", side, key=key, date=date)
+    return (None if v.allowed else v.why), (key, date)
+
+
+def _gold_republish(venue: Any, ctx: tuple[str, str], *, holder: str) -> dict[str, Any]:
+    from mt5desk import gold_oco as _oco
+    key, date = ctx
+    out = _oco.sync_lane(
+        "e8", key, lambda: _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                                      venue.instrument_id(_oco.SYMBOL)),
+        date=date, holder=holder)
+    return {k: out.get(k) for k in ("published", "why", "claims")}
+
+
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
     from mt5desk import order_door
@@ -1088,7 +1160,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
-        if str(sym).upper() == "XAUUSD":
+        if str(sym).upper() == "XAUUSD" and not GOLD_SLEEVES:
             row["status"] = "OWNED_BY_GOLD_LANE"
             row["why"] = "E8-Gold is the single authoritative gold entry and management writer"
             doc["sleeves"].append(row)
@@ -1101,6 +1173,17 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             row["status"] = "BANNED_FAMILY"
             row["why"] = _ban_reason(fam)
             closed: list[int] = []
+            if str(sym).upper() == "XAUUSD":
+                # E8-GOLD'S POSITIONS SHARE THIS INSTRUMENT (audit MF1 on 4cf2c82fa): a close by
+                # instrument would flatten the gold windows' book, which is not this sleeve's.
+                # An alert row only; nothing is closed here.
+                row["why"] += ("; XAUUSD is shared with E8-Gold, so no position is closed by "
+                               "instrument here (alert only)")
+                row["alert"] = "banned XAU sleeve: review any position it may still hold"
+                row["closed_positions"] = closed
+                doc["sleeves"].append(row)
+                _record(row, now, armed)
+                continue
             for p in open_positions:
                 _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
                 if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
@@ -1380,6 +1463,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                     _xwhy = _xa.opposite_block(_fbook, sym, side, account="fusion",
                                                why_absent=_fwhy) \
                         or _xa.ftmo_block(sym, side)
+                _gold_ctx: tuple[str, str] | None = None
+                if _xwhy is None and str(sym).upper() == "XAUUSD":
+                    _gwhy, _gold_ctx = _gold_sleeve_refusal(
+                        venue, side, now=now, holder=f"e8_executor:{row.get('sleeve') or sym}")
+                    if _gwhy is not None:
+                        _xwhy, row["rail"] = _gwhy, _gold_rail()
                 if _xwhy is None:
                     # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it
                     # a prop order carried no latency at all, so the shortfall model had nothing
@@ -1399,6 +1488,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         row["acked_at"] = datetime.now(tz=UTC).isoformat()
                         row["latency_send_to_ack_ms"] = round(
                             (time.perf_counter() - _t0) * 1000.0, 3)
+                        # ONE POSITION PER INSTRUMENT HOLDS WITHIN THE PASS (audit MF2): the
+                        # next sleeve on this instrument reads ALREADY_OPEN.
+                        open_keys.add((int(iid), side))
                         _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
                                               + (1.0 if side == "buy" else -1.0) * float(lot))
                     except Exception as exc:
@@ -1408,9 +1500,14 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         _xa.bounded(
                             lambda: _xa.publish_tradelocker(venue, source="e8_executor"),
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what="e8_executor publish")
+                    if _gold_ctx is not None:
+                        # A FILL HERE CLAIMS THE DAY'S GOLD DIRECTION for every lane, so the
+                        # account's gold state is republished under the same lock (never raises).
+                        row["gold_oco_republish"] = _gold_republish(
+                            venue, _gold_ctx, holder=f"e8_executor:{row.get('sleeve') or sym}")
             if _xwhy is not None:
                 row["status"] = "RAIL_BLOCKED"
-                row["rail"] = "cross_account_opposite"
+                if "rail" not in row: row["rail"] = "cross_account_opposite"
                 row["why"] = _xwhy
                 row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
                 doc["sleeves"].append(row)
