@@ -129,6 +129,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
         "detect missed hourly refreshes before its six-hour evidence expiry"),
+    "MT5-HourlyCore (judge calibration)": (
+        "desks/mt5/reports/JUDGE_CALIBRATION.json", 180,
+        "the judge against matured forward clocks: forward-over-backtest, leaks and false kills "
+        "per family and gate; re-stamped every pass, rebuilt weekly or on a clock maturity"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # THE FTMO LANE (2026-11-13). Its three box tasks ran every pass and read UNCONTRACTED in

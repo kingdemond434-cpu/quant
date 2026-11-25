@@ -9397,6 +9397,22 @@
    ],
    "gap": "none",
    "next_step": "none"
+  },
+  {
+   "id": "JCAL1",
+   "item": "Judge calibration loop (LOOP_COVERAGE L2): matured forward clocks against the certificates' backtest edge -- forward-over-backtest, leaks and false kills per family and per gate; two-sided family priors and gate moves validated leave-one-family-out, charged to the lifetime trial count, proposed to the sealed judge; join families PROVISIONAL until their PIT join is audited (2026-11-25)",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:judge_calibration",
+   "artifact": "desks/mt5/reports/JUDGE_CALIBRATION.json",
+   "consumer": "the daily brain and the L3 loop scorecard read JUDGE_CALIBRATION.json; a principal-approved re-seal of research/gate_policy.py reads data/JUDGE_CALIBRATION_PROPOSALS.json",
+   "evidence": [
+    "desks/mt5/research/judge_calibration.py:1-30 why it exists (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
