@@ -150,7 +150,7 @@ def test_the_free_panel_rotation_is_bounded_by_the_callers_deadline(tmp_path, mo
 
 def test_the_theorem_memory_reads_its_tail_not_its_file(tmp_path, monkeypatch):
     from research.mathlab import institution as I
-    monkeypatch.setattr(I, "TAIL_BYTES_PER_ROW", 64)
+    monkeypatch.setattr(I, "TAIL_BYTES_PER_ROW", 200)
     mem = I.TheoremMemory(tmp_path)
     for i in range(500):
         mem.append("failed", {"canonical": f"c{i}", "pad": "x" * 20})

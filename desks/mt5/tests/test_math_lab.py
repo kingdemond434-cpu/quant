@@ -204,8 +204,15 @@ def test_the_judge_deadline_costs_an_object_its_score_never_its_donation(lab, mo
     unranked = [u for u in report["unmeasured"] if "carry no internal burden score" in u]
     if unranked:
         assert "donated unranked anyway" in unranked[0], unranked[0]
-    assert report["registry"]["discoveries"] == report["objects"]["admitted"], (
-        "an object the clock reached first must still be QUEUED in the registry")
+    # NOT DELETED: written QUEUED this pass, or -- when the clock has also passed the registry's
+    # own deadline, as this one has -- carried in the registry cursor and written first next
+    # pass (math_lab.record_registry, anytime since 2026-11-25). Never neither.
+    reg = report["registry"]
+    assert reg["discoveries"] + reg["pending_for_next_pass"] == report["objects"]["admitted"], (
+        "an object the clock reached first must still reach the registry", reg)
+    if reg["pending_for_next_pass"]:
+        again = ML.record_registry([], {}, {})
+        assert again["discoveries"] == reg["pending_for_next_pass"]
 
 
 def _clock_that_expires_after(n_ok: int, real):
