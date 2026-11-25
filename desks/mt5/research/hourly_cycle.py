@@ -1635,6 +1635,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
     # a global layer, like the forests above; its proposer mints their direct/indirect cells.
     "free_stack_hunt": "regions", "free_stack_proposer": "regions",
+    # THE TRANSLATION RULE (principal, 2026-11-18): every dataset the desk holds, mapped to the
+    # FX / index / commodity / metal tradables it bears on; a global layer like the free stack.
+    "dataset_translator": "regions",
     # the factory's own throughput benchmark sits with the factory it measures
     "factory_throughput": "mathlab",
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
@@ -2665,6 +2668,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_hunt": 720,
     # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
     "free_stack_proposer": 900,
+    # The dataset translator reads rosters and lake headers and donates at most PER_PASS (400)
+    # cells; the registry write is the long part, the cap sits above it so the report is written.
+    "dataset_translator": 420,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
@@ -5571,6 +5577,12 @@ def main() -> None:
     # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
     fsp = _costed("free_stack_proposer", lambda: _producer(
         "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
+    # THE DATASET TRANSLATOR (TRANSLATION RULE, principal 2026-11-18): every dataset from every
+    # ground -- free stack, deep forest, axes, keyed roster, key catalogue, unclaimed lake series
+    # -- mapped via data/translation_ontology.json to registry tradables; one cell per dataset
+    # with a series, MAPPED_AWAITING_SERIES otherwise. Writes reports/DATASET_TRANSLATION.json.
+    dtr = _costed("dataset_translator", lambda: _producer(
+        "dataset_translator", "research/dataset_translator.py", "--once"))
     # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
@@ -7102,7 +7114,8 @@ def main() -> None:
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "paid_substitute_engine": pse, "free_stack_hunt": fsh,
-                    "free_stack_proposer": fsp, "factory_throughput": fxt,
+                    "free_stack_proposer": fsp, "dataset_translator": dtr,
+                    "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "tier1_idea_proposer": t1p,

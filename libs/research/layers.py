@@ -735,6 +735,7 @@ LEG_LAYER: dict[str, str] = {
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    "dataset_translator": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",

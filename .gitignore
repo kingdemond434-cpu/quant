@@ -672,6 +672,8 @@ desks/mt5/data/donation_ledgers/
 desks/mt5/data/pnl_explain_daily.jsonl
 # Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
 desks/mt5/data/tier_s/emitted_cells.json
+# dataset translator ring cursor (2026-11-18): box-local rotation state, rewritten every pass.
+desks/mt5/data/dataset_translation/cursor.json
 # Operator-entered money and account state read by report organs (Auditor MF3/MF4, 2026-11-14).
 # Hand-entered FTMO balance/equity (research/combined_prop_risk.py) and the counterparty
 # register's owner/accounts file (research/counterparty_register.py), plus every temp or backup
