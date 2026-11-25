@@ -659,3 +659,16 @@ def test_a_lineage_groups_trials_but_breadth_counts_per_parent_cell(monkeypatch:
     assert cs.breadth(parents + variants + fresh)["breadth_units"] == 4   # fresh adds 1
     groups = {tl.trial_from_record(r).group for r in parents + variants + fresh}
     assert groups == {"lineage:dud"}                                  # one trial lineage
+
+
+def test_exotic_check_fails_closed_when_the_policy_is_unreadable(monkeypatch: Any) -> None:
+    """Audit should-fix 2026-11-25: an import fault must never let an exotic symbol through."""
+    import builtins
+    real = builtins.__import__
+
+    def boom(name: str, *a: Any, **k: Any) -> Any:
+        if name == "research.universe_policy":
+            raise ImportError("policy unreadable")
+        return real(name, *a, **k)
+    monkeypatch.setattr(builtins, "__import__", boom)
+    assert pl._is_exotic("EURUSD") is True
