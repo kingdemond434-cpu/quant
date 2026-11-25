@@ -87,11 +87,13 @@ def blocked_reason(fam: str, judged_total: Mapping[str, int],
 def source_state(mined: Mapping[str, int], judged_total: Mapping[str, int], *,
                  banned: Iterable[str] = (),
                  never_fires: Mapping[str, int] | None = None,
+                 backlog: Mapping[str, int] | None = None,
                  table: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """Per source family: judged/mined against the desk-wide ratio, active, eligible members.
 
     The desk-wide ratio excludes banned families (they are not judge work). A source with nothing
-    mined is inactive: there is nothing for a floor to reach.
+    mined is inactive: there is nothing for a floor to reach. With `backlog` (unjudged cells per
+    family), a member holding none is not eligible either -- it has nothing to be given a slot.
     """
     tbl = table or SOURCE_FAMILY_FLOOR
     ban = set(banned)
@@ -108,14 +110,17 @@ def source_state(mined: Mapping[str, int], judged_total: Mapping[str, int], *,
         active = bool(ratio is not None and desk_ratio is not None and ratio < desk_ratio)
         blocked = {f: r for f in members
                    if (r := blocked_reason(f, judged_total, nf)) is not None}
+        empty = ({f for f in members if f not in blocked and int(backlog.get(f, 0) or 0) <= 0}
+                 if backlog is not None else set())
         groups[str(src)] = {
             "members": members,
             "min_share": float(spec.get("min_share") or 0.0),
             "mined": m, "judged": j,
             "judged_mined_ratio": round(ratio, 6) if ratio is not None else None,
             "active": active,
-            "eligible_members": [f for f in members if f not in blocked],
+            "eligible_members": [f for f in members if f not in blocked and f not in empty],
             "blocked_members": blocked,
+            "no_backlog_members": sorted(empty),
         }
     return {"desk_judged_mined_ratio": (round(desk_ratio, 6) if desk_ratio is not None
                                         else None),

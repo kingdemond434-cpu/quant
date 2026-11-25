@@ -3229,7 +3229,8 @@ def _judged_by_exoticness(judged_cells: Any) -> dict[str, Any]:
 
 def _source_floor_block(mined: dict[str, int], judged_total: dict[str, int],
                         banned: frozenset[str], unknown: dict[str, Any], probe_census: Any,
-                        slots_per_pass: Any) -> dict[str, Any]:
+                        slots_per_pass: Any,
+                        backlog: dict[str, int] | None = None) -> dict[str, Any]:
     """The `source_floor` block of JUDGE_COVERAGE; UNMEASURED (never a clean verdict) on failure."""
     try:
         from research import judge_source_floor as jsf
@@ -3237,7 +3238,8 @@ def _source_floor_block(mined: dict[str, int], judged_total: dict[str, int],
         never_fires = dict(((causes.get("never_fires_days_0") or {}).get("by_family")) or {})
         missing = dict((probe_census or {}).get("by_family") or {}) if isinstance(
             probe_census, dict) else {}
-        state = jsf.source_state(mined, judged_total, banned=banned, never_fires=never_fires)
+        state = jsf.source_state(mined, judged_total, banned=banned, never_fires=never_fires,
+                                 backlog=backlog)
         slots = float(slots_per_pass) if isinstance(slots_per_pass, (int, float)) else None
         return jsf.publish(state, slots_per_pass=slots, missing_inputs=missing,
                            enforced=jsf.sealed_applies(BASE / "scripts" / "external_gauntlet.py"))
@@ -4081,7 +4083,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     _h_gross = drain_eta.get("hours_at_zero_creation")
     forgone_per_hour = (value_deferred / max(_h_gross or 1.0, 1.0) if _h_gross else 0.0)
     source_floor = _source_floor_block(mined, judged_total, banned, unknown, probe_census,
-                                       rate.get("per_hour_24h"))
+                                       rate.get("per_hour_24h"), backlog)
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)

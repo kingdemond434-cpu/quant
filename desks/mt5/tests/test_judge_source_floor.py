@@ -129,3 +129,12 @@ def test_default_table_names_the_three_alt_sources():
     assert "orderflow_imbalance" in t["tick_tape"]["members"]
     assert "cot_net_fade" in t["cot"]["members"]
     assert "event_reaction" in t["event_analyst"]["members"]
+
+
+def test_member_without_backlog_is_not_granted_slots():
+    st = jsf.source_state({"carry": 1000, "tape_a": 100}, {"carry": 900, "tape_a": 3},
+                          backlog={"carry": 50, "tape_a": 0}, table=TABLE)
+    g = st["groups"]["tape"]
+    assert g["active"] is True and g["eligible_members"] == []
+    assert g["no_backlog_members"] == ["tape_a"]
+    assert jsf.publish(st, slots_per_pass=250.0)["groups"]["tape"]["slots_granted"] == 0
