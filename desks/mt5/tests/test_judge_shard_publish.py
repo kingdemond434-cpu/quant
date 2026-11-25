@@ -103,17 +103,22 @@ def _dispatch(*, kill_after: int | None = None):
     """In-process launcher: every shard in order; in `rule`, the launcher's hook after each
     clean exit. `kill_after=k` dies (SystemExit) once k rule shards have finished and been
     published -- the drain is disabled by the caller to make it a hard kill."""
+    def die() -> None:
+        pub = eg._PUBLISHER
+        end = time.monotonic() + 30
+        while pub is not None and len(pub.done) < (kill_after or 0) and time.monotonic() < end:
+            time.sleep(0.02)
+        raise SystemExit("killed")
+
     def dispatch(shard_dir, n, phase):
         for k in range(n):
             if phase == "rule" and kill_after is not None and k >= kill_after:
-                pub = eg._PUBLISHER
-                end = time.monotonic() + 30
-                while pub is not None and len(pub.done) < kill_after and time.monotonic() < end:
-                    time.sleep(0.02)
-                raise SystemExit("killed")
+                die()
             eg.shard_worker(shard_dir, k, phase)
             if phase == "rule":
-                assert eg.publish_finished_shard(shard_dir, k, phase)
+                eg.publish_finished_shard(shard_dir, k, phase)
+        if phase == "rule" and kill_after is not None:
+            die()                           # killed after the last shard, before the merge
     return dispatch
 
 
@@ -169,7 +174,7 @@ def _shard_of_cell(specs, n):
 def test_a_sweep_killed_after_shard_k_leaves_k_shards_final_verdicts_in_the_ledger(
         env, monkeypatch) -> None:
     k = 2
-    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: {"shards_published": []})
+    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: self.report)
     seen, merged = _sweep(env, monkeypatch, kill_after=k)
     assert merged is None, "the sweep was killed before its merge"
     eg._PUBLISHER = None
@@ -194,7 +199,7 @@ def test_a_sweep_killed_after_shard_k_leaves_k_shards_final_verdicts_in_the_ledg
 
 def test_a_rerun_after_the_kill_records_each_verdict_once(env, monkeypatch) -> None:
     real_drain = eg._ShardPublisher.drain
-    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: {"shards_published": []})
+    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: self.report)
     seen, _ = _sweep(env, monkeypatch, kill_after=2, tag="a")
     eg._PUBLISHER = None
     first = _ledger(env)
@@ -260,7 +265,7 @@ def test_a_failed_wave_still_publishes_the_shards_that_finished(env, monkeypatch
 
 
 def test_no_staged_row_passes_and_no_pending_cell_reaches_the_record(env, monkeypatch) -> None:
-    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: {"shards_published": []})
+    monkeypatch.setattr(eg._ShardPublisher, "drain", lambda self: self.report)
     _sweep(env, monkeypatch, kill_after=N_SHARDS)
     eg._PUBLISHER = None
     plan = next(d for d in env["pub"].iterdir() if d.is_dir())
