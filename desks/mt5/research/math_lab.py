@@ -63,6 +63,7 @@ from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
 from research.mathlab import hypothesis_router as HR  # noqa: E402
 from research.mathlab import institution as I  # noqa: E402
+from research.mathlab import llm_proposer as LLMP  # noqa: E402
 from research.mathlab import scientists as S  # noqa: E402
 from research.mathlab.objects import REGISTRY_KIND, MathObject, Panel, Variable  # noqa: E402
 from research.mathlab.physics import PHYSICS_CORE_REGISTRY  # noqa: E402
@@ -551,6 +552,8 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
                                  if v.source == "axis"})
     status["representations"] = sorted({v.dataset for p in panels for v in p.meta.values()
                                         if v.source == "representation"})
+    # Column NAMES only (no value): the vocabulary the math_proposer job shows a free model.
+    status["columns"] = sorted({c for p in panels for c in p.columns})
     return panels, status
 
 
@@ -671,8 +674,11 @@ def read_allocation() -> dict[str, Any]:
 
 
 def all_traditions() -> tuple[str, ...]:
-    """Every tradition this leg runs: the mathematical cohorts, then the physics wing."""
-    return (*S.TRADITIONS, *[t for t in PHYSICS_TRADITIONS if t not in S.TRADITIONS])
+    """Every tradition this leg runs: the mathematical cohorts, the free models' proposals
+    (`math:llm_proposer`, a mathematics tradition fed by the conversion_lanes `math_proposer`
+    job), then the physics wing."""
+    return (*S.TRADITIONS, *LLMP.LLM_TRADITIONS,
+            *[t for t in PHYSICS_TRADITIONS if t not in S.TRADITIONS])
 
 
 def department_of(tradition: str) -> str:
@@ -1373,6 +1379,8 @@ def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[di
         row["kind"] = "hypothesis"
         row["symbols"] = [obj.target]
         row["mathlab_object_id"] = obj.object_id
+        if obj.tradition == LLMP.TRADITION:
+            row["lane"] = LLMP.LANE          # FUNNEL by_lane scores the free-model job by it
         rows.append(row)
     return rows, refused
 
@@ -1598,6 +1606,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     started = time.monotonic()
     budget_s = effective_budget(budget_s)
     hard_deadline = started + budget_s
+    LLMP.CONSUME = not dry_run         # a dry run reads the proposal queue, never consumes it
     chosen = [t for t in (traditions or list(all_traditions())) if t in S.REGISTRY]
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
     cursor = read_cursor()
