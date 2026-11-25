@@ -9375,7 +9375,7 @@
    "gate": "none",
    "scheduled_by": "hourly_cycle:allocator_scorecard",
    "artifact": "desks/mt5/reports/ALLOCATOR_SCORECARD.json",
-   "consumer": "the Hourly pass reads ALLOCATOR_SCORECARD.json and picks its one allocator improvement from the weakest account; data/allocator_scorecard_events.jsonl feeds the box alerts",
+   "consumer": "the Hourly pass reads ALLOCATOR_SCORECARD.json",
    "evidence": [
     "desks/mt5/research/allocator_scorecard.py:2-33 why it exists (MEASURED)"
    ],

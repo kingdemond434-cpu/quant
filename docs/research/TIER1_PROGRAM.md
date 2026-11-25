@@ -290,7 +290,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 - **ASCORE1 Allocator scorecard: one unified allocator scored on Fusion, E8 and FTMO every pass (growth vs Kelly, risk utilisation, idle proven sleeves, correlation fit), each pass's improvement aimed at the weakest (zuck 2026-11-24 18:09Z)** — LANDED
   - gap: none
   - desks/mt5/research/allocator_scorecard.py:2-33 why it exists (MEASURED)
-  - clock: hourly_cycle:allocator_scorecard · artifact: desks/mt5/reports/ALLOCATOR_SCORECARD.json · consumer: the Hourly pass reads ALLOCATOR_SCORECARD.json and picks its one allocator improvement from the weakest account; data/allocator_scorecard_events.jsonl feeds the box alerts
+  - clock: hourly_cycle:allocator_scorecard · artifact: desks/mt5/reports/ALLOCATOR_SCORECARD.json · consumer: the Hourly pass reads ALLOCATOR_SCORECARD.json
   - next: none
 
 ### Phase 1 — Remove the research throughput ceiling: worker queue, multi-fidelity screening, EVSI scheduler, research DAG, scalable forward clocks, content-addressed cache, experiment DB
