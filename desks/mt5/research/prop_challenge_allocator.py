@@ -109,6 +109,13 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "FTMO_ALLOCATOR.json"
+#: E8 JOINS THE ONE SOLVE (one-pipe step 1, zuck 2026-11-19 + 11-24 "one unified allocator"):
+#: the same universe, worlds (regime-conditioned), objective and margin, under E8 Pro's rules and
+#: E8's own account state; prop/e8_book sizes from this file when it is fresh and deployable.
+E8_OUT = BASE / "reports" / "E8_ALLOCATOR.json"
+E8_GUARD = BASE / "reports" / "E8_GUARD.json"
+E8_BOOK_REPORT = BASE / "reports" / "E8_BOOK.json"
+OUT_BY_VENUE = {"ftmo": OUT, "e8": E8_OUT}
 ACCOUNT_STATE = BASE / "reports" / "FTMO_ACCOUNT_STATE.json"
 FTMO_REGISTRY = BASE / "data" / "ftmo_registry.json"
 FTMO_QUOTES = BASE / "data" / "cost_truth_quotes.json"
@@ -260,6 +267,54 @@ def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = Non
     else:
         st.why = f"state {age:.0f}s old"
     return st
+
+
+def read_e8_state(path: Path = E8_GUARD, *, now: datetime | None = None) -> AccountState:
+    """E8's account from prop/e8_guard's report ({generated_utc, account, decision}), as fractions
+    of E8's START_BALANCE. EQUITY OR NOTHING, the e8_gold rule: a missing, non-positive or
+    balance-derived equity is no equity and is never deployable. E8 Pro is one phase; PASSED
+    reads as funded, BREACHED is never deployable, and a report older than STATE_MAX_AGE_S is
+    STALE."""
+    now = now or datetime.now(tz=UTC)
+    doc = _read_json(path)
+    dec = doc.get("decision") if isinstance(doc, dict) else None
+    if not isinstance(dec, dict):
+        return AccountState(why="no E8 guard report: solved from a fresh account; not deployable")
+    try:
+        from prop.e8_guard import START_BALANCE
+        initial = float(START_BALANCE)
+        eq, start = float(dec["equity"]), float(dec["day_start"])
+        at = datetime.fromisoformat(str(doc["generated_utc"]).replace("Z", "+00:00"))
+    except (ImportError, KeyError, TypeError, ValueError) as exc:
+        return AccountState(why=f"E8 guard unreadable ({type(exc).__name__}); not deployable")
+    if not (math.isfinite(eq) and eq > 0 and math.isfinite(start) and start > 0) \
+            or dec.get("equity_from_balance"):
+        return AccountState(why="E8 equity unmeasured or balance-derived: equity or nothing; "
+                                "not deployable")
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    verdict = str(dec.get("verdict") or "").upper()
+    st = AccountState(phase="funded" if verdict == "PASSED" else "phase1",
+                      balance=eq / initial, equity=eq / initial, day_start=start / initial,
+                      status="MEASURED",
+                      detail={"verdict": verdict, "generated_utc": str(doc["generated_utc"])})
+    if verdict == "BREACHED":
+        st.status, st.why = "BREACHED", "E8 guard reports a breach; not deployable"
+        return st
+    age = (now - at).total_seconds()
+    if age > STATE_MAX_AGE_S:
+        st.status = "STALE"
+        st.why = f"E8 guard is {age / 3600:.1f}h old; solved from it, not deployable"
+    else:
+        st.why = f"E8 guard {age:.0f}s old"
+    return st
+
+
+def e8_venue_blocked(path: Path = E8_BOOK_REPORT) -> set[str]:
+    """Symbols the E8 book found unlisted on E8's venue (E8_BOOK.json blocked_by_venue)."""
+    doc = _read_json(path)
+    return ({str(x).upper() for x in doc.get("blocked_by_venue") or []}
+            if isinstance(doc, dict) else set())
 
 
 # ===================================================================== the barrier simulation
@@ -909,7 +964,8 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     from libs.portfolio.posterior_growth import EPS_STOP as EPS_DEATH
     rules = RULES[venue]
     now = datetime.now(tz=UTC)
-    st = state or read_account_state(rules=rules, now=now)
+    st = state or (read_e8_state(now=now) if venue == "e8"
+                   else read_account_state(rules=rules, now=now))
     doc: dict[str, Any] = {
         "generated_at": now.isoformat(timespec="seconds"), "venue": venue, "rules": rules.name,
         "rules_source": rules.source,
@@ -945,7 +1001,18 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     # of the joint worlds IS the executable solve's input: adding a column with no executor can
     # never move the deployed book. The joint solve is published beside it (`joint_book`) as the
     # missed-growth view of the executors that do not exist yet.
-    exec_idx = [k for k, c in enumerate(all_cols) if c in executable_columns(all_cols, uni)]
+    runnable = executable_columns(all_cols, uni)
+    if venue == "e8":
+        # E8's sleeve executor trades every certified non-gold spec E8 lists; gold is e8_gold's
+        # own fixed-risk lane (the stress cap charges it), never a column of this solve.
+        blocked = e8_venue_blocked()
+        specs = uni.get("specs") or {}
+        runnable = {c for c in runnable if c not in FTMO_EXECUTABLE
+                    and str((specs.get(c) or {}).get("symbol") or _symbol_of(c)).upper()
+                    not in blocked}
+        doc["venue_note"] = ("E8 columns: certified non-gold specs E8 lists; costs are the "
+                             "universe's FTMO-measured hour costs until an E8 cost surface exists")
+    exec_idx = [k for k, c in enumerate(all_cols) if c in runnable]
     if not exec_idx:
         doc["status"] = "NO_EXECUTABLE_SLEEVE"
         doc["validation_score"] = 0.0
@@ -954,6 +1021,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
     cols = [all_cols[k] for k in exec_idx]
+    doc["solved_columns"] = list(cols)
     solve_w = World(full_w.est[:, :, exec_idx], full_w.halved[:, :, exec_idx])
     valid_w = World(full_valid.est[:, :, exec_idx], full_valid.halved[:, :, exec_idx])
     rng = np.random.default_rng(seed)
@@ -1188,11 +1256,28 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--venue", choices=sorted(RULES), default="ftmo")
+    ap.add_argument("--venue", choices=[*sorted(RULES), "all"], default="all",
+                    help="one venue, or every venue in turn (the hourly task runs all)")
     ap.add_argument("--paths", type=int, default=N_PATHS)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
+    venues = sorted(RULES, key=lambda v: v != "ftmo") if a.venue == "all" else [a.venue]
+    rc = 0
+    for venue in venues:
+        out = a.out if (a.out is not None and len(venues) == 1) else OUT_BY_VENUE[venue]
+        try:
+            rc |= _run_venue(venue, a.paths, a.seed, out)
+        except Exception as exc:   # one venue's failure never costs the other its solve
+            print(f"prop_challenge_allocator[{venue}]: FAILED {type(exc).__name__}: {exc}",
+                  file=sys.stderr)
+            rc = 1
+    return rc
+
+
+def _run_venue(venue: str, paths: int, seed: int, out: Path) -> int:
+    from types import SimpleNamespace
+    a = SimpleNamespace(venue=venue, paths=paths, seed=seed, out=out)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
     mark_defect(doc, _read_json(a.out))
     if doc.get("red"):

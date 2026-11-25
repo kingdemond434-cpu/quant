@@ -379,6 +379,89 @@ def evidence_mult(proven: Mapping[str, float] | None, family: str,
         m *= DOUBT_MULT
         notes.append(f"{d}: x{DOUBT_MULT}")
     return m, notes
+#: THE ONE ALLOCATOR'S E8 BOOK (research/prop_challenge_allocator.py --venue e8, hourly).
+E8_ALLOCATOR = DESK / "reports" / "E8_ALLOCATOR.json"
+E8_ALLOCATOR_MAX_AGE_S = 2 * 3600
+
+
+def _e8_ceiling() -> float:
+    """E8's per-sleeve risk ceiling (mt5desk.decision_core.E8_CERT_CEILING, the executor's cap);
+    0.006 if that module cannot be read, so the clip never loosens on an import failure."""
+    try:
+        from mt5desk.decision_core import E8_CERT_CEILING
+        return float(min(E8_CERT_CEILING, 0.006))
+    except Exception:
+        return 0.006
+
+
+def e8_solved_book(path: Path | None = None, now: datetime | None = None
+                   ) -> tuple[dict[str, float], str]:
+    """{column: equity fraction} for EVERY column E8's solve priced (0.0 where it chose not to
+    fund), or ({}, why) when the solve is absent, stale, not deployable or malformed."""
+    p = path or E8_ALLOCATOR
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable: evidence rule"
+    if not isinstance(doc, dict) or doc.get("venue") != "e8":
+        return {}, f"{p.name} is not an E8 solve: evidence rule"
+    if doc.get("deployable") is not True:
+        return {}, f"{p.name} not deployable ({doc.get('status')}): evidence rule"
+    try:
+        at = datetime.fromisoformat(str(doc["generated_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError):
+        return {}, f"{p.name} undated: evidence rule"
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age = ((now or datetime.now(UTC)) - at).total_seconds()
+    if not 0 <= age <= E8_ALLOCATOR_MAX_AGE_S:
+        return {}, f"{p.name} is {age / 3600:.1f}h old: evidence rule"
+    cols, ex = doc.get("solved_columns"), doc.get("executable")
+    if not isinstance(cols, list) or not isinstance(ex, dict):
+        return {}, f"{p.name} carries no solved_columns/executable: evidence rule"
+    ceiling = _e8_ceiling()
+    out: dict[str, float] = {}
+    for c in cols:
+        v = ex.get(c, 0.0)
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+            out[str(c)] = float(min(max(v, 0.0), ceiling))
+    return out, f"{p.name} {age:.0f}s old: {sum(1 for v in out.values() if v > 0)} funded"
+
+
+def apply_solved(chosen: list[dict[str, Any]], solved: Mapping[str, float]
+                 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Size each chosen row by the solve where it priced the row's column; drop the rows it
+    zeroed (sovereignty: zero sends no order). Returns (kept rows, zeroed columns)."""
+    ceiling = _e8_ceiling()
+    zeroed: list[dict[str, Any]] = []
+    for r in chosen:
+        col = f"{r['symbol']}_{r['family']}_{r.get('selector') or 'asia'}"
+        if col in solved and r.get("principal_funded"):
+            # THE PRINCIPAL'S NUMBER STANDS (Audit MF-3 on eb3134ee2): a principal-funded key is
+            # sized by the principal; the solve's view is journaled beside it, never applied.
+            r["solve_risk_frac"] = round(float(solved[col]), 6)
+            continue
+        if col in solved:
+            before = float(r.get("risk_frac") or 0.0)
+            frac = min(float(solved[col]), ceiling)
+            # THE DOUBTS STAY PRICED (Audit MF-2/MF-2b): the solve prices returns, not a placebo
+            # alarm, a replication miss or thin fills. A row the admission door sized by
+            # `evidence_mult` is capped at that multiple of E8's per-sleeve ceiling
+            # (E8_CERT_CEILING, the executor's own cap), so the solve can never lift a doubted
+            # sleeve to the full ceiling.
+            if "evidence_mult" in r:
+                cap = float(r["evidence_mult"]) * ceiling
+                if frac > cap:
+                    r["evidence_capped_from"] = round(frac, 6)
+                    frac = cap
+            r["risk_frac"] = round(frac, 6)
+            r["risk_source"] = "one allocator (E8_ALLOCATOR.json)"
+            if solved[col] <= 0:
+                # A SOLVE ZERO IS SIZING, AND VISIBLE (Audit should-fix 1): the risk the evidence
+                # rule would have carried is its missed-growth line.
+                zeroed.append({"column": col, "missed_growth_risk_frac": round(before, 6),
+                               "rail": "e8_one_allocator_zero"})
+    return [r for r in chosen if r["risk_frac"] > 0], zeroed
 
 
 #: TIER S IS A SIZE MULTIPLIER, NOT A GATE (zuck 2026-11-19 19:23Z: "ur bigger size one is the
@@ -493,6 +576,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
                 row = {**row, "doubt_codes": codes}
             if principal_book.get(book_key, 0) > 0:
                 # The principal's own number sizes it; a doubt is journaled, never applied.
+                row = {**row, "principal_funded": True}
                 if doubts:
                     row = {**row, "evidence_notes": [f"{d} (journaled; principal-funded)"
                                                      for d in doubts]}
@@ -764,6 +848,13 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
     # SIZE BY EVIDENCE (`sleeve_risk`): fill-proven depth, then Tier S as a multiplier.
     for r in chosen:
         r["risk_frac"] = sleeve_risk(r)
+        r["risk_source"] = "evidence rule (sleeve_risk)"
+    # THEN BY THE ONE ALLOCATOR (one-pipe step 1): where E8's own solve priced the sleeve, its
+    # fraction IS the size -- larger or smaller than the evidence rule, and zero sends no order
+    # (ALLOCATOR SOVEREIGNTY). A sleeve the solve did not price keeps the evidence rule; a stale,
+    # undeployable or unreadable solve changes nothing. The stress cap below still binds.
+    solved, solved_why = e8_solved_book()
+    chosen, zeroed = apply_solved(chosen, solved)
     stressed = stress.cap_book(
         chosen, risk_of=lambda r: r["risk_frac"], family_of=lambda r: r["family"],
         daily_limit=DAILY_DRAWDOWN, days=days,
@@ -805,6 +896,8 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES,
         "gross_exposure_if_all_fire": round(len(chosen) * RISK_FRAC, 5),
         "by_mechanism": fams,
         "stress": stressed,
+        "allocator": {"source": solved_why, "n_priced": len(solved),
+                      "zeroed_by_allocator": zeroed},
         "mean_ev": None if not evs else round(sum(evs) / len(evs), 4),
         "sleeves": chosen,
         "blocked_by_venue": sorted({r["symbol"] for r in blocked}),
