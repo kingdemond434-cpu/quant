@@ -1934,6 +1934,34 @@ def _release(lock) -> None:
             pass
 
 
+#: THE HOLDER ENFORCES ITS OWN CEILING (2026-11-25, Autonomy box read). `_holder_alive` keeps a
+#: lock while its pid lives "however old the stamp", so a holder that HANGS -- alive, past its
+#: budget, doing nothing -- refused every caller: 03:38Z..15:38Z every hourly ConvertSwarm lane
+#: exited "another deepening run holds the lock", twelve hours dark, until the holder finally died
+#: and a lane took a 4,681 s lock at 16:38Z. Taking a lock from a LIVE process would let two
+#: writers race, so the fix is on the holder's side: past the same `2 x RUN_BUDGET_SEC` the
+#: callers use as stale, the holder exits itself. Its pid is then dead, so the next caller takes
+#: the lock at once by the existing rule. A healthy run stops at RUN_BUDGET_SEC and never meets it.
+HOLDER_CEILING_FACTOR = 2.0
+HOLDER_EXIT_RC = 75
+
+
+def arm_holder_ceiling(budget_s: float = RUN_BUDGET_SEC, *,
+                       exit_fn=os._exit, factor: float = HOLDER_CEILING_FACTOR):  # type: ignore[no-untyped-def]
+    """Start a daemon timer that ends THIS process at `factor x budget_s`. Returns the timer."""
+    import threading
+
+    def _fire() -> None:
+        dlog(f"holder ceiling: still running at {factor * budget_s:.0f}s "
+             f"({factor:g} x the {budget_s:.0f}s budget) -- exiting so the lock frees")
+        exit_fn(HOLDER_EXIT_RC)
+
+    t = threading.Timer(factor * float(budget_s), _fire)
+    t.daemon = True
+    t.start()
+    return t
+
+
 def main(argv: list[str] | None = None) -> int:
     """Acquire the run lock, work the queue, and ALWAYS release -- including on a crash.
 
@@ -1944,10 +1972,52 @@ def main(argv: list[str] | None = None) -> int:
     lock = _single_flight()
     if lock is None:
         return 0
+    ceiling = arm_holder_ceiling()
     try:
         return _work(argv)
     finally:
+        ceiling.cancel()
         _release(lock)
+
+
+def read_prior_candidates(path: Path) -> list | None:
+    """The candidate history to append to. AN UNREADABLE FILE IS NEVER AN EMPTY HISTORY
+    (Audit, 2026-11-25): reading it as [] and writing back this run's rows alone would erase
+    every earlier candidate. It is moved aside to `<name>.corrupt-<utc>` -- kept, never
+    deleted -- and this run starts a fresh file beside it, saying so. If the move itself fails
+    (Windows refuses os.replace while another process holds the file open) the answer is None:
+    the caller must NOT write over it this run."""
+    if not path.exists():
+        return []
+    try:
+        doc = json.loads(path.read_text("utf-8")) or {}
+        got = doc.get("candidates") if isinstance(doc, dict) else None
+        return list(got or [])
+    except (OSError, ValueError) as exc:
+        stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
+        aside = path.with_name(f"{path.name}.corrupt-{stamp}")
+        try:
+            os.replace(path, aside)
+        except OSError as mv:
+            dlog(f"CANDIDATE HISTORY UNREADABLE ({type(exc).__name__}) AND COULD NOT BE MOVED "
+                 f"ASIDE ({type(mv).__name__}: {mv}): NOT writing {path.name} this run, so the "
+                 "original stays byte-identical for recovery")
+            return None
+        dlog(f"candidate history unreadable ({type(exc).__name__}); preserved as {aside.name}, "
+             "never overwritten as empty")
+        return []
+
+
+def write_candidates_atomic(path: Path, doc: dict) -> None:
+    """tmp + os.replace, so a process ended mid-write (the holder ceiling's os._exit, a task
+    kill) leaves the previous complete file, never a truncated one."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
 
 
 def _work(argv: list[str] | None = None) -> int:
@@ -2287,19 +2357,15 @@ def _work(argv: list[str] | None = None) -> int:
                             datetime.now(tz=UTC))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    prior = []
-    if OUT.exists():
-        try:
-            prior = (json.loads(OUT.read_text("utf-8")) or {}).get("candidates") or []
-        except ValueError:
-            prior = []
-    OUT.write_text(json.dumps({
-        "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        "candidates": prior + recovered,
-        "recovered_this_run": len(recovered),
-        "dispositions": counts,
-        **({"memory_guard": mem_stop} if mem_stop else {}),
-    }, indent=1), encoding="utf-8")
+    prior = read_prior_candidates(OUT)
+    if prior is not None:
+        write_candidates_atomic(OUT, {
+            "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "candidates": prior + recovered,
+            "recovered_this_run": len(recovered),
+            "dispositions": counts,
+            **({"memory_guard": mem_stop} if mem_stop else {}),
+        })
     publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)
