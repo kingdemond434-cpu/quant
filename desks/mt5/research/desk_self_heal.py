@@ -536,15 +536,15 @@ def check_deepening_lock(root: Path, now: datetime, *,
 
 #: DEEP FOREST REGIONS (zuck 2026-11-25 17:48Z: the deep forest runs on the box, at least as good
 #: as the cloud pass). deep_forest_regions.py publishes reports/DEEP_FOREST_REGIONS.json each pass
-#: with every region's last finished pass and its cadence; a region with nothing inside twice its
-#: cadence is DARK. Pages only: the hourly task is the producer and re-runs itself.
+#: with every region's last finished pass (every region in the grounds file, derived); a region with
+#: nothing inside the 24 h floor (deep_forest_miner.REGION_FLOOR_H) is DARK. Pages only.
 DEEP_FOREST_REGIONS = "desks/mt5/reports/DEEP_FOREST_REGIONS.json"
-DEEP_FOREST_DARK_FACTOR = 2.0
+DEEP_FOREST_FLOOR_H = 24.0
 DEEP_FOREST_REPORT_MAX_H = 3.0
 
 
 def check_deep_forest_regions(root: Path, now: datetime) -> Finding:
-    """Is every one of the 53 regions still getting a finished pass on the box?"""
+    """Is every region in the grounds file still getting a finished pass on the box?"""
     f = root / DEEP_FOREST_REGIONS
     if not f.exists():
         return _absent("deep_forest_regions", DEEP_FOREST_REGIONS.rsplit("/", 1)[0], root,
@@ -562,15 +562,15 @@ def check_deep_forest_regions(root: Path, now: datetime) -> Finding:
                        f"MT5-DeepForestRegions pass is not finishing")
     dark = []
     for reg, g in sorted((doc.get("regions") or {}).items()):
-        cad = _num((g or {}).get("cadence_h")) or 6.0
+        floor = _num((g or {}).get("floor_h")) or DEEP_FOREST_FLOOR_H
         end = _ts((g or {}).get("last_end"))
-        if end is None or (now - end).total_seconds() / 3600 > DEEP_FOREST_DARK_FACTOR * cad:
+        if end is None or (now - end).total_seconds() / 3600 > floor:
             gap = "never" if end is None else f"{(now - end).total_seconds() / 3600:.0f}h"
             dark.append(f"{reg} ({gap})")
     if dark:
         return Finding("deep_forest_regions", False,
-                       f"REGION_DARK: {len(dark)} region(s) with no finished pass inside "
-                       f"{DEEP_FOREST_DARK_FACTOR:g}x cadence: {', '.join(dark[:12])}")
+                       f"REGION_DARK: {len(dark)} region(s) with no finished pass inside the "
+                       f"{DEEP_FOREST_FLOOR_H:g}h floor: {', '.join(dark[:12])}")
     n = len(doc.get("regions") or {})
     return Finding("deep_forest_regions", True,
                    f"{n} regions passing; {doc.get('claims_24h')} claims in 24h")

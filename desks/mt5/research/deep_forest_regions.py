@@ -10,17 +10,17 @@ per-region schedule and published nothing per region since 10-28.
 WHAT THIS DOES, as the MT5-DeepForestRegions task (hourly, one instance at a time):
   * the SAME miner, the same defaults (robots gate, honest UA), the same per-region budget and hard
     timeout -- nothing about how a ground is fetched changes here;
-  * a ROTATION that never restarts at the top: a cursor in data/deep_forest_regions_state.json
-    carries the next producing region across passes, so all 33 are reached in turn (Asia first
-    in the order), and the 20 always-zero regions are queued FIRST in any pass that starts in a
-    UTC hour divisible by 6 (once per 6-hour window);
+  * EVERY REGION IN THE GROUNDS FILE, derived at run time (222 on 11-25), never a fixed list;
+  * a priority queue rebuilt from the run ledger each pass: first every region past the 24 h floor
+    (or never run), oldest first; then regions due by their own cadence -- 3 h for a region that
+    produced claims in the last 48 h, 6 h for a zero-yield one -- yielding first, Asia first;
   * up to PARALLEL regions at once (the claims ledger and seen-set are cross-process locked by
     the miner; politeness stays per host), each its own subprocess with its own log;
   * a pass stops launching at PASS_BUDGET_S so the next hourly pass starts clean;
   * every region's result is appended to data/deep_forest_region_runs.jsonl and the rolling view
     is published to reports/DEEP_FOREST_REGIONS.json (per region: last start/end, rc, new claims,
-    24 h claims and passes, kind, cadence), which the guardian reads (check_deep_forest_regions:
-    a region with no finished pass inside twice its cadence is DARK and paged).
+    24 h claims and passes, cadence, floor), which the guardian reads (check_deep_forest_regions:
+    a region with no finished pass inside the 24 h floor is DARK and paged).
 
     python desks/mt5/research/deep_forest_regions.py             # one pass
     python desks/mt5/research/deep_forest_regions.py --dry-run   # print the plan only
@@ -47,22 +47,26 @@ REPORT = DESK / "reports" / "DEEP_FOREST_REGIONS.json"
 LOGS = DESK / "logs" / "deep_forest"
 MINER = DESK / "research" / "deep_forest_miner.py"
 
-#: The cloud pass's lists, verbatim (handoff/deep-forest-box-parity.md), Asia first.
-PRODUCING = (
-    "cn", "jp", "kr", "tw", "hk", "my", "id", "th", "vn", "ph", "in", "pk", "au", "global",
-    "institutional", "us", "de", "ru", "tr", "ng", "ma", "fr", "nl", "es", "pl", "se", "dk", "fi",
-    "br", "ar", "cl", "co", "ch",
-)
-ZERO = (
-    "mx", "eg", "hu", "ca", "it", "nz", "ea", "bd", "sa", "ke", "lk", "ua", "za", "ae", "gb", "cz",
-    "il", "no", "pe", "sg",
-)
+#: THE REGIONS ARE DERIVED, NEVER LISTED (Data 2026-11-25 17:53Z): every distinct `region` in the
+#: grounds file (desks/mt5/data/deep_forest_sources.json: 222 on 11-25, the ISO countries of the
+#: global-grounds packet plus `global` and `institutional`). A ground added later is picked up
+#: with no code change. A ground with no region is the founding Chinese forest (miner.cluster_of).
+SOURCES = DESK / "data" / "deep_forest_sources.json"
+#: Asia first (the cloud pass's order), as a tie-break inside each priority band.
+ASIA_FIRST = ("cn", "jp", "kr", "tw", "hk", "my", "id", "th", "vn", "ph", "in", "pk", "au")
+#: Every region is attempted at least once per REGION_FLOOR_H (= deep_forest_miner.REGION_FLOOR_H,
+#: the floor country_census.floor_breaches checks). Regions that produced claims in the last
+#: YIELD_LOOKBACK_H come back every YIELD_CADENCE_H (compute follows measured yield); zero-yield
+#: regions every ZERO_CADENCE_H when capacity is left, and never later than the floor.
+REGION_FLOOR_H = 24.0
+YIELD_LOOKBACK_H = 48.0
+YIELD_CADENCE_H = 3.0
+ZERO_CADENCE_H = 6.0
 REGION_BUDGET_S = 900
 REGION_TIMEOUT_S = 1000
 WORKERS = 4
 PARALLEL = int(os.environ.get("QUANT_DEEP_FOREST_PARALLEL", "4") or 4)
 PASS_BUDGET_S = 3300        # stop launching new regions after 55 min; the next pass continues
-ZERO_EVERY_H = 6
 _CLAIMS = re.compile(r"claims_new=(\d+)\b.*?total=(\d+)")
 
 Runner = Callable[[str], dict[str, Any]]
@@ -86,16 +90,52 @@ def _write_atomic(p: Path, doc: Any) -> None:
     os.replace(tmp, p)
 
 
-def plan(state: dict[str, Any], now: datetime) -> list[str]:
-    """This pass's queue: zero regions first when a 6-hour window opens, then the producing
-    regions from the saved cursor round the ring (each once)."""
-    window = f"{now:%Y-%m-%d}T{now.hour - now.hour % ZERO_EVERY_H:02d}"
-    q: list[str] = []
-    if now.hour % ZERO_EVERY_H == 0 and state.get("zero_window") != window:
-        q += ZERO
-    i = int(state.get("cursor") or 0) % len(PRODUCING)
-    q += [*PRODUCING[i:], *PRODUCING[:i]]
-    return q
+def regions(sources: Path | None = None) -> list[str]:
+    try:
+        cfg = json.loads((sources or SOURCES).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return sorted({str(g.get("region") or "cn") for g in cfg.get("grounds") or []
+                   if isinstance(g, dict)})
+
+
+def _history(rows: Sequence[dict[str, Any]], now: datetime) -> dict[str, dict[str, Any]]:
+    since = now - timedelta(hours=YIELD_LOOKBACK_H)
+    h: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        try:
+            end = datetime.fromisoformat(str(r.get("end")))
+        except ValueError:
+            continue
+        g = h.setdefault(str(r.get("region")), {"last_end": None, "claims_lookback": 0})
+        if g["last_end"] is None or end > g["last_end"]:
+            g["last_end"] = end
+        if end >= since:
+            g["claims_lookback"] += int(r.get("claims_new") or 0)
+    return h
+
+
+def cadence_h(hist: dict[str, Any] | None) -> float:
+    return YIELD_CADENCE_H if (hist or {}).get("claims_lookback") else ZERO_CADENCE_H
+
+
+def plan(names: Sequence[str], rows: Sequence[dict[str, Any]], now: datetime) -> list[str]:
+    """This pass's queue, most urgent first: (1) regions past the 24 h floor or never run, oldest
+    first; (2) regions due by their own cadence, yielding before zero, most overdue first. Asia
+    leads inside each band. Regions not yet due are left for a later pass."""
+    hist = _history(rows, now)
+    asia = {r: i for i, r in enumerate(ASIA_FIRST)}
+
+    def age_h(r: str) -> float:
+        end = (hist.get(r) or {}).get("last_end")
+        return float("inf") if end is None else (now - end).total_seconds() / 3600
+
+    floor = [r for r in names if age_h(r) >= REGION_FLOOR_H]
+    floor.sort(key=lambda r: (-min(age_h(r), 1e9), asia.get(r, 99), r))
+    due = [r for r in names if r not in floor and age_h(r) >= cadence_h(hist.get(r))]
+    due.sort(key=lambda r: (cadence_h(hist.get(r)), asia.get(r, 99),
+                            -age_h(r) / cadence_h(hist.get(r)), r))
+    return floor + due
 
 
 def run_region(region: str) -> dict[str, Any]:
@@ -117,19 +157,20 @@ def run_region(region: str) -> dict[str, Any]:
     return {"region": region, "start": start.isoformat(timespec="seconds"),
             "end": _now().isoformat(timespec="seconds"), "rc": rc,
             "claims_new": int(m.group(1)) if m else None,
-            "claims_total": int(m.group(2)) if m else None,
-            "kind": "zero" if region in ZERO else "producing"}
+            "claims_total": int(m.group(2)) if m else None}
 
 
-def publish(rows: Sequence[dict[str, Any]], now: datetime) -> dict[str, Any]:
-    """Per region: the newest finished pass, and the last 24 hours' claims and passes."""
+def publish(names: Sequence[str], rows: Sequence[dict[str, Any]],
+            now: datetime) -> dict[str, Any]:
+    """Per region: the newest finished pass, its cadence and the floor, and the last 24 hours."""
     since = now - timedelta(hours=24)
-    regions: dict[str, dict[str, Any]] = {
-        r: {"kind": "zero" if r in ZERO else "producing", "last_end": None, "last_start": None,
-            "last_rc": None, "last_claims_new": None, "claims_24h": 0, "passes_24h": 0}
-        for r in (*PRODUCING, *ZERO)}
-    for row in rows:
-        g = regions.get(str(row.get("region")))
+    hist = _history(rows, now)
+    regs: dict[str, dict[str, Any]] = {
+        r: {"last_end": None, "last_start": None, "last_rc": None, "last_claims_new": None,
+            "claims_24h": 0, "passes_24h": 0, "cadence_h": cadence_h(hist.get(r)),
+            "floor_h": REGION_FLOOR_H} for r in names}
+    for row in sorted(rows, key=lambda x: str(x.get("end"))):
+        g = regs.get(str(row.get("region")))
         try:
             end = datetime.fromisoformat(str(row.get("end")))
         except ValueError:
@@ -139,18 +180,13 @@ def publish(rows: Sequence[dict[str, Any]], now: datetime) -> dict[str, Any]:
         if end >= since:
             g["passes_24h"] += 1
             g["claims_24h"] += int(row.get("claims_new") or 0)
-        if g["last_end"] is None or end > datetime.fromisoformat(g["last_end"]):
-            g.update(last_end=row.get("end"), last_start=row.get("start"), last_rc=row.get("rc"),
-                     last_claims_new=row.get("claims_new"))
-    # Cadence: a full producing rotation at PARALLEL regions per ~REGION_TIMEOUT_S, and 6 h for
-    # the zero regions; the guardian calls a region dark past twice its cadence.
-    rotation_h = round(len(PRODUCING) / max(1, PARALLEL) * REGION_TIMEOUT_S / 3600 + 1, 2)
-    for g in regions.values():
-        g["cadence_h"] = float(ZERO_EVERY_H) if g["kind"] == "zero" else rotation_h
-    doc = {"schema": "deep_forest_regions/1", "at": now.isoformat(timespec="seconds"),
-           "parallel": PARALLEL, "region_budget_s": REGION_BUDGET_S,
-           "claims_24h": sum(g["claims_24h"] for g in regions.values()),
-           "regions": regions}
+        g.update(last_end=row.get("end"), last_start=row.get("start"), last_rc=row.get("rc"),
+                 last_claims_new=row.get("claims_new"))
+    doc = {"schema": "deep_forest_regions/2", "at": now.isoformat(timespec="seconds"),
+           "regions_from": str(SOURCES.name), "n_regions": len(names), "parallel": PARALLEL,
+           "region_budget_s": REGION_BUDGET_S, "floor_h": REGION_FLOOR_H,
+           "claims_24h": sum(g["claims_24h"] for g in regs.values()),
+           "regions": regs}
     _write_atomic(REPORT, doc)
     return doc
 
@@ -174,11 +210,10 @@ def _rows(since: datetime) -> list[dict[str, Any]]:
 def run_pass(now: datetime | None = None, *, runner: Runner = run_region,
              clock: Callable[[], float] = time.monotonic) -> dict[str, Any]:
     t = now or _now()
-    state = _read(STATE) or {}
-    queue = plan(state, t)
+    names = regions()
+    queue = plan(names, _rows(t - timedelta(days=3)), t)
     started = clock()
     done: list[dict[str, Any]] = []
-    zero_left = set(ZERO) if queue and queue[0] in ZERO else set()
 
     def launch(r: str) -> dict[str, Any] | None:
         if clock() - started > PASS_BUDGET_S:
@@ -193,18 +228,12 @@ def run_pass(now: datetime | None = None, *, runner: Runner = run_region,
             RUNS.parent.mkdir(parents=True, exist_ok=True)
             with RUNS.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(res) + "\n")
-            zero_left.discard(res["region"])
-    ran_producing = [r["region"] for r in done if r["region"] in PRODUCING]
-    if ran_producing:
-        state["cursor"] = (PRODUCING.index(ran_producing[-1]) + 1) % len(PRODUCING)
-    if queue and queue[0] in ZERO and not zero_left:
-        state["zero_window"] = f"{t:%Y-%m-%d}T{t.hour - t.hour % ZERO_EVERY_H:02d}"
-    state["last_pass"] = t.isoformat(timespec="seconds")
-    _write_atomic(STATE, state)
-    doc = publish(_rows(t - timedelta(days=2)), _now() if now is None else t)
-    return {"ran": [r["region"] for r in done], "claims_new": sum(int(r.get("claims_new") or 0)
-                                                                   for r in done),
-            "report": str(REPORT), "claims_24h": doc["claims_24h"]}
+    _write_atomic(STATE, {"last_pass": t.isoformat(timespec="seconds"), "queued": len(queue),
+                          "ran": len(done)})
+    doc = publish(names, _rows(t - timedelta(days=3)), _now() if now is None else t)
+    return {"ran": [r["region"] for r in done],
+            "claims_new": sum(int(r.get("claims_new") or 0) for r in done),
+            "queued": len(queue), "regions": len(names), "claims_24h": doc["claims_24h"]}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -212,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     if a.dry_run:
-        print(" ".join(plan(_read(STATE) or {}, _now())))
+        print(" ".join(plan(regions(), _rows(_now() - timedelta(days=3)), _now())))
         return 0
     print(json.dumps(run_pass()))
     return 0

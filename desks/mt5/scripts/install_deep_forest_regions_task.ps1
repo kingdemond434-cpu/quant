@@ -4,9 +4,8 @@
 
 .DESCRIPTION
     research\deep_forest_regions.py every hour (zuck 2026-11-25 17:48Z: the deep forest runs on
-    the box, at least as good as the cloud pass). One pass works the regions round a saved cursor
-    (Asia first; the 20 always-zero regions first in any pass that opens a 6-hour UTC window), up
-    to 4 regions at once with the cloud's exact miner command line, and publishes
+    the box, at least as good as the cloud pass). One pass works every region in the grounds file
+    (past the 24 h floor first, then by yield cadence, Asia first), up to 4 regions at once with the cloud's exact miner command line, and publishes
     desks\mt5\reports\DEEP_FOREST_REGIONS.json. SYSTEM, BELOW_NORMAL (research class: Priority 7),
     one instance at a time, 58-minute limit.
 

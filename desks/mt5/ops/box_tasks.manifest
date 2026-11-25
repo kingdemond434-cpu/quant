@@ -388,9 +388,10 @@ TASK name="MT5-LivePriority"       trigger="every 1 minute (repeating; 1-minute 
 
 # MT5-DeepForestRegions (2026-11-25, zuck 17:48Z: the deep forest runs on the box only, at least as
 # good as the cloud pass; the cloud pass then shuts off). Hourly, SYSTEM, one instance, 58-minute
-# limit: research/deep_forest_regions.py works every region round a saved cursor (Asia first; the
-# always-zero regions each 6-hour UTC window) with the cloud's exact miner command line and publishes
-# reports/DEEP_FOREST_REGIONS.json; desk_self_heal.check_deep_forest_regions pages a dark region.
+# limit: research/deep_forest_regions.py works EVERY region in the grounds file (derived, 222 on
+# 11-25): past-floor regions first, then by yield cadence (3 h yielding, 6 h zero), Asia first, with
+# the cloud's exact miner command line, and publishes reports/DEEP_FOREST_REGIONS.json;
+# desk_self_heal.check_deep_forest_regions pages any region past the 24 h floor.
 TASK name="MT5-DeepForestRegions"  trigger="hourly (repeating; 58-minute limit; SYSTEM)" runs="desks/mt5/research/deep_forest_regions.py" installer="desks/mt5/scripts/install_deep_forest_regions_task.ps1" lane="research"
 
 # MT5-Guardian (2026-11-25, principal 01:47Z "every broken component known and fixed" + 11-20 "all
