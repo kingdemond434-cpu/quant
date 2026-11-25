@@ -355,3 +355,29 @@ def test_the_client_name_publishes_nothing_about_the_owner() -> None:
     assert "github.com" not in rdm.HONEST_UA and "Mozilla" not in rdm.HONEST_UA
     assert all(f.get("terms_url") and f.get("terms_recorded")
                for f in rdm.load_feed_config()["feeds"])
+
+
+def test_each_feed_stamps_its_own_registry_source_never_the_pool() -> None:
+    """Rows stamped `research_feeds` all resolved to ONE seat, so the per-feed `src:paper:<name>`
+    rows the yield rule and its region floor allocate by never earned a cert (2026-11-25). Each
+    feed's rows -- papers and fetch errors -- carry their own source, and the two arXiv pages
+    share `src:paper:arxiv_qfin`."""
+    out = rdm.mine_research_feeds({}, _get, _row, _cfg(), sleep=lambda s: None)
+    by_feed = {r["feed"]: r["source"] for r in out}
+    assert by_feed["nber_new"] == "src:paper:nber_new"
+    assert by_feed["dead"] == "src:paper:dead"                      # the error row too
+    assert {s for f, s in by_feed.items() if f.startswith("arxiv")} == {"src:paper:arxiv_qfin"}
+    assert all(r["source"] != "research_feeds" and r["miner"] == "research_feeds" for r in out)
+
+
+def test_every_configured_feed_resolves_to_its_own_registry_row() -> None:
+    """The stamp only pays if the registry resolves it to that feed's row, not to the seat."""
+    from research import source_registry as sr
+
+    rows: dict[str, dict[str, Any]] = {}
+    sr._paper_rows(rows)
+    idx = sr._index(rows)
+    names = [f["name"] for f in rdm.load_feed_config().get("feeds", [])] + ["arxiv_qfin_head"]
+    got = {n: sr._resolve(rdm.paper_source(n), rows, idx) for n in names}
+    assert len(set(got.values())) == len(names), got                # one row per feed, no pool
+    assert all(sid.startswith("src:paper:") for sid in got.values()), got
