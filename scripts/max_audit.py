@@ -4182,6 +4182,12 @@ _TERMINAL_ARTIFACTS = {
         "instrument as RECORDER_DEPLOY.md. Executed, not converted; the desk-not-running gap it "
         "closes is the operator-side blocker the ceiling report names. Grows only when bringup "
         "itself changes, which is a repair event with its own commit.",
+    "docs/research/USDJPY_ASIA_BREAKOUT_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-10-20) of the USDJPY session_range_breakout (asia) cost-aware "
+        "variant study, committed BEFORE any variant was run. Same instrument and immutability "
+        "rationale as FAILED_BREAKOUT_PREREGISTRATION.md: thresholds fixed before data are the "
+        "only kind that constrain anything. Its results are published by the hourly report step "
+        "usdjpy_asia_breakout_study (reports/), never written back into this file.",
     "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md":
         "PRE-REGISTRATION, dated 2026-08-04 and written before data or analysis code existed -- "
         "immutability is the entire point: thresholds chosen before any backtest are the only "
