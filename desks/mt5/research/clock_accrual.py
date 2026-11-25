@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import statistics
 import sys
 from collections.abc import Mapping
@@ -380,6 +381,31 @@ def _status_reason(status: str) -> str | None:
     return BLOCKED_UNNAMED
 
 
+_FACTOR_KEY = re.compile(r"factor_symbols=\[([^\]]*)\]")
+
+
+def factor_legs(run: Mapping[str, Any], key: str | None = None) -> list[str]:
+    """The factor charts a clock reads besides its own symbol, in the order it names them.
+
+    A BLOCKED_NO_BARS cross_asset_residual clock on XAUUSD is blocked by its FACTOR charts as
+    often as by its own (the 10-14 CLOCK_LAW rows read `factor_symbols=['USDX', 'UST10Y']`), so
+    requesting the traded chart alone leaves it blocked (Breadth port #2, 2026-11-17). Read from
+    the certificate's params first, then from the clock key; the traded symbol is never a leg.
+    """
+    params = run.get("params")
+    raw: Any = params.get("factor_symbols") if isinstance(params, Mapping) else None
+    if not isinstance(raw, (list, tuple)):
+        m = _FACTOR_KEY.search(str(key or ""))
+        raw = m.group(1).split(",") if m else []
+    own = str(run.get("symbol") or "").strip().upper()
+    out: list[str] = []
+    for tok in raw:
+        s = str(tok).strip(" '\"").upper()
+        if s and s != own and s not in out:
+            out.append(s)
+    return out
+
+
 def judge(run: Mapping[str, Any], lane: str, key: str | None, row: Mapping[str, Any] | None,
           lane_row_map: Mapping[str, Any] | None, *, ref: datetime, lane_age_h: float | None,
           host_live: bool, gaps: Mapping[str, float], universe: set[str] | None
@@ -437,6 +463,9 @@ def judge(run: Mapping[str, Any], lane: str, key: str | None, row: Mapping[str, 
         present = _bar_file(symbol, tf)
         entry["bar_file_present"] = present
         entry["bars_wanted"] = {"symbol": symbol, "timeframe": tf}
+        legs = factor_legs(run, key)
+        if legs:
+            entry["factor_bars_wanted"] = [{"symbol": s, "timeframe": tf} for s in legs]
         return done(NO_BARS if present else BAR_FILE_MISSING,
                     (f"no usable {tf} bars; the parquet exists, so it is stale or short"
                      if present else f"no usable {tf} bars and {symbol}_{tf}.parquet is absent "
@@ -637,10 +666,13 @@ def build(now: datetime | None = None, shadow_dir: Path | None = None,
     measured = not why and bool(meta.get(H1_LANE, {}).get("readable"))
     wanted: dict[tuple[str, str], int] = {}
     for e in entries:
-        w = e.get("bars_wanted")
-        if isinstance(w, dict):
-            cell = (str(w.get("symbol")), str(w.get("timeframe")))
-            wanted[cell] = wanted.get(cell, 0) + 1
+        own = e.get("bars_wanted")
+        legs = e.get("factor_bars_wanted")
+        cells = [own] if isinstance(own, dict) else []
+        for w in cells + (legs if isinstance(legs, list) else []):
+            if isinstance(w, dict):
+                cell = (str(w.get("symbol")), str(w.get("timeframe")))
+                wanted[cell] = wanted.get(cell, 0) + 1
 
     roster = ({key for _run, lane, key in addresses if key and lane == H1_LANE}
               if not why else None)

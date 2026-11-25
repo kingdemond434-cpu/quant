@@ -666,11 +666,14 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         every = [c.key for c in CLUSTERS]
     except Exception:
         every = []
+    fam_blocked: dict[str, str] = {}
     try:
-        from research.gauntlet_buildability import census
+        from research.gauntlet_buildability import TABLE_BLOCKED, census
         fam_census = census()
-    except Exception:
+        fam_blocked = dict(TABLE_BLOCKED)
+    except Exception as exc:
         fam_census = {}
+        fam_blocked = {"research.gauntlet_buildability": type(exc).__name__}
     by_cluster: dict[str, dict[str, list[str]]] = {}
     for fam, v in fam_census.items():
         c = _cluster(fam)
@@ -707,6 +710,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "clusters_fed_by": {c: sorted(v) for c, v in sorted(fed_by.items())},
         "empty_clusters_unfed": unfed,
         "family_buildability": fam_census,
+        "family_buildability_blocked": fam_blocked,
     }
     return {
         "generated_at": now.isoformat(timespec="seconds"),
