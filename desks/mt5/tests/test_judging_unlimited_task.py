@@ -10,6 +10,17 @@ from research import judging_throughput as jt
 
 
 @pytest.fixture(autouse=True)
+def _small_measured_overhead(monkeypatch, tmp_path):
+    """The step logic is tested under a MEASURED E10 cap of 21,100 s (100 s per non-build phase),
+    so the budgets these tests walk (8,640 -> 19,440 s) sit under it; the cap itself is pinned
+    in test_judge_p0_budget.py."""
+    import json
+    f = tmp_path / "judge_phase_times.json"
+    f.write_text(json.dumps({"phases": {p: [100.0] for p in jt.NON_BUILD_PHASES}}), "utf-8")
+    monkeypatch.setattr(jt, "PHASE_TIMES", f)
+
+
+@pytest.fixture(autouse=True)
 def _no_armed_apply_deadline():
     """Another test in the same worker may have run `measure`; start and end disarmed."""
     jt._APPLY_DEADLINE[:] = []
@@ -143,13 +154,14 @@ def test_unmeasured_rows_never_step():
 
 
 def test_the_step_never_passes_the_cap_or_the_sealed_floor():
-    st = {"budget_s": jt.RESIDENT_BUILD_CAP_S, "phase": "measure", "changed_at": T0.isoformat(),
+    cap = jt.build_cap_s()[0]
+    st = {"budget_s": cap, "phase": "measure", "changed_at": T0.isoformat(),
           "regime_start": T0.isoformat(),
           "sweep_ends": [(T0 + 20 * H).isoformat(), (T0 + 40 * H).isoformat()]}
     st, b, why = jt.step_build_budget(st, T0 + 41 * H, 8640.0, 4000)
-    assert b == jt.RESIDENT_BUILD_CAP_S and "cap" in why and st["phase"] == "hold"
+    assert b == cap and "cap" in why and st["phase"] == "hold"
     assert st["regime_start"] is None                      # the next window starts at a sweep end
-    assert jt.fresh_budget_s(0, 8640, (1e9, "x"))[0] == jt.RESIDENT_BUILD_CAP_S
+    assert jt.fresh_budget_s(0, 8640, (1e9, "x"))[0] == cap <= jt.RESIDENT_BUILD_CAP_S
     assert jt.fresh_budget_s(0, 8640, (100.0, "x"))[0] is None
 
 
