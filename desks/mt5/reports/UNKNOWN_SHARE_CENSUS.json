@@ -9,9 +9,9 @@
   "stage": "building",
   "utc_day": "2026-11-25",
   "started_at": "2026-11-25T17:19:02+00:00",
-  "written_at": "2026-11-25T17:34:35+00:00",
+  "written_at": "2026-11-25T17:48:11+00:00",
   "cells_planned": 6000,
-  "cells_visited": 1910,
+  "cells_visited": 3298,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 63991,
     "rss_cap_mb": 15998,
-    "peak_rss_mb": 1009
+    "peak_rss_mb": 1098
   },
-  "lockbox_cut": "2022-07-14",
+  "lockbox_cut": "2022-05-04",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 347,
-  "elapsed_s": 929.4,
+  "cells_carved_at_own_tail": 628,
+  "elapsed_s": 1745.7,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 21,
@@ -39,125 +39,125 @@
     }
   },
   "sampled_cells": {
-    "cells": 1910,
+    "cells": 3298,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 868,
-    "build_failed": 1,
+    "preflight_refused": 1505,
+    "build_failed": 2,
     "build_failed_by_reason": {
-      "family_raised:TypeError": 1
+      "family_raised:TypeError": 2
     },
     "deferred": 0,
-    "judged_built": 1000,
-    "unknown": 112,
-    "unknown_share_of_judged": 0.112,
+    "judged_built": 1750,
+    "unknown": 192,
+    "unknown_share_of_judged": 0.1097,
     "wilson95": [
-      0.0939,
-      0.1331
+      0.0959,
+      0.1252
     ],
     "unknown_by_reason": {
-      "no_signals": 77,
-      "too_rare": 20,
-      "lockbox_consumed_history": 11,
-      "short_history_after_cut": 4
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 19,
+      "short_history_after_cut": 9
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 43,
-      "session_range_breakout": 15,
-      "overnight_drift": 6,
-      "htf_anchor_trend": 5,
+      "formula": 69,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
       "comex_settlement": 4,
-      "regime_split": 3,
+      "session_handoff": 4,
+      "asia_momentum": 3,
       "hedging_demand_close": 3,
       "london_close_momentum": 3,
-      "session_handoff": 3,
-      "execution_state": 3,
-      "jump": 3,
       "dow_effect": 3,
       "vol_transition": 3,
-      "asia_momentum": 2,
       "pca_residual": 2
     },
     "unknown_by_chart": {
-      "H1": 51,
-      "M30": 17,
-      "M5": 13,
-      "M15": 10,
-      "H4": 10,
-      "D1": 6,
-      "M1": 5
+      "H1": 91,
+      "M30": 34,
+      "M5": 17,
+      "M15": 16,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
     },
     "judged_by_chart": {
-      "H1": 438,
-      "M30": 185,
-      "M15": 167,
-      "M5": 130,
-      "H4": 36,
-      "M1": 32,
-      "D1": 12
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
     }
   },
   "sampled_plus_siblings": {
-    "cells": 1910,
+    "cells": 3298,
     "gate0_rejected": {
       "symbol_eligibility": 41
     },
-    "preflight_refused": 868,
-    "build_failed": 1,
+    "preflight_refused": 1505,
+    "build_failed": 2,
     "build_failed_by_reason": {
-      "family_raised:TypeError": 1
+      "family_raised:TypeError": 2
     },
     "deferred": 0,
-    "judged_built": 1000,
-    "unknown": 112,
-    "unknown_share_of_judged": 0.112,
+    "judged_built": 1750,
+    "unknown": 192,
+    "unknown_share_of_judged": 0.1097,
     "wilson95": [
-      0.0939,
-      0.1331
+      0.0959,
+      0.1252
     ],
     "unknown_by_reason": {
-      "no_signals": 77,
-      "too_rare": 20,
-      "lockbox_consumed_history": 11,
-      "short_history_after_cut": 4
+      "no_signals": 130,
+      "too_rare": 34,
+      "lockbox_consumed_history": 19,
+      "short_history_after_cut": 9
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 43,
-      "session_range_breakout": 15,
-      "overnight_drift": 6,
-      "htf_anchor_trend": 5,
+      "formula": 69,
+      "session_range_breakout": 33,
+      "overnight_drift": 15,
+      "htf_anchor_trend": 13,
+      "execution_state": 5,
+      "jump": 5,
+      "regime_split": 4,
       "comex_settlement": 4,
-      "regime_split": 3,
+      "session_handoff": 4,
+      "asia_momentum": 3,
       "hedging_demand_close": 3,
       "london_close_momentum": 3,
-      "session_handoff": 3,
-      "execution_state": 3,
-      "jump": 3,
       "dow_effect": 3,
       "vol_transition": 3,
-      "asia_momentum": 2,
       "pca_residual": 2
     },
     "unknown_by_chart": {
-      "H1": 51,
-      "M30": 17,
-      "M5": 13,
-      "M15": 10,
-      "H4": 10,
-      "D1": 6,
-      "M1": 5
+      "H1": 91,
+      "M30": 34,
+      "M5": 17,
+      "M15": 16,
+      "H4": 15,
+      "D1": 13,
+      "M1": 6
     },
     "judged_by_chart": {
-      "H1": 438,
-      "M30": 185,
-      "M15": 167,
-      "M5": 130,
-      "H4": 36,
-      "M1": 32,
-      "D1": 12
+      "H1": 751,
+      "M30": 353,
+      "M15": 291,
+      "M5": 222,
+      "H4": 60,
+      "M1": 49,
+      "D1": 24
     }
   },
   "siblings_only": {
