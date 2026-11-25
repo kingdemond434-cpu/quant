@@ -672,3 +672,16 @@ def test_exotic_check_fails_closed_when_the_policy_is_unreadable(monkeypatch: An
         return real(name, *a, **k)
     monkeypatch.setattr(builtins, "__import__", boom)
     assert pl._is_exotic("EURUSD") is True
+
+
+def test_a_withdrawn_prescription_is_marked_never_deleted() -> None:
+    """Law gate L1.50 (2026-11-25): parking or reverting withdraws a prescription by mark."""
+    rx = {"p": {"remedy": pl.GRID_NARROW, "applied_at": "2026-11-01T00:00:00+00:00"}}
+    assert pl.withdraw_prescription(rx, "p", NOW, "PARKED") is True
+    assert rx["p"]["withdrawn"] and rx["p"]["previous"]["remedy"] == pl.GRID_NARROW
+    assert pl.active_prescription(rx, "p") is None
+    assert pl.withdraw_prescription(rx, "p", NOW, "PARKED") is False      # idempotent
+    assert pl.withdraw_prescription(rx, "absent", NOW, "PARKED") is False  # never on absence
+    assert "absent" not in rx
+    src = (_DESK / "research" / "producer_loop.py").read_text("utf-8")
+    assert "prescriptions.pop(" not in src
