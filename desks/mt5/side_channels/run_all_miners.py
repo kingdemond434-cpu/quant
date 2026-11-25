@@ -16,6 +16,15 @@ from pathlib import Path
 # so one hung channel can never stall the hourly pipeline. 2026-08-31: academic
 # miner was observed spinning CPU for 20+ min and never returning.
 MINER_TIMEOUT_S = int(os.environ.get("QUANT_MINER_TIMEOUT_S", "180"))
+#: MEASURED OVERRUNS GET THEIR OWN WALL (2026-11-25). The box's 11:45Z pass: seasonality saved
+#: 416 rows and was then killed at 180 s, every pass. A per-miner wall is still a hard wall; the
+#: rest keep the default. Each value is the measured need with headroom, never "unlimited".
+MINER_TIMEOUT_OVERRIDES_S: dict[str, int] = {"seasonality": 600}
+
+
+def miner_timeout_s(name: str) -> int:
+    """The wall for `name`: its measured override, else the default (env-tunable)."""
+    return int(MINER_TIMEOUT_OVERRIDES_S.get(name, MINER_TIMEOUT_S))
 process_ctx = multiprocessing.get_context("spawn")
 
 
@@ -38,15 +47,16 @@ def _run_miner(name, fn):
     q = process_ctx.Queue()
     p = process_ctx.Process(target=_run_miner_inner, args=(name, fn, q), daemon=True)
     p.start()
-    p.join(timeout=MINER_TIMEOUT_S)
+    wall = miner_timeout_s(name)
+    p.join(timeout=wall)
     if p.is_alive():
         p.terminate()
         p.join(5)
         if p.is_alive():
             p.kill()
             p.join()
-        print(f"  {name}: TIMED OUT after {MINER_TIMEOUT_S}s (killed)")
-        return ("timeout", f"killed after {MINER_TIMEOUT_S}s")
+        print(f"  {name}: TIMED OUT after {wall}s (killed)")
+        return ("timeout", f"killed after {wall}s")
     try:
         return q.get(timeout=5)
     except Exception:

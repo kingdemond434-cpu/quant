@@ -43,4 +43,4 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Description "Paper feeds: working papers, arXiv q-fin, BIS speeches, every 6 hours; research only." | Out-Null
 
 $t = Get-ScheduledTask -TaskName $TaskName
-"installed {0}: state={1} first={2:HH:mm} every 2h runs={3}" -f $t.TaskName, $t.State, $start, $Runner
+"installed {0}: state={1} first={2:HH:mm} every 6h runs={3}" -f $t.TaskName, $t.State, $start, $Runner
