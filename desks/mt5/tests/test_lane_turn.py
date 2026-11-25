@@ -134,3 +134,17 @@ def test_the_lane_lock_beats_only_on_measured_progress():
     tick = tick[:tick.index("\n    def ", 10)]
     assert "_beat_sweep_locks()" in tick
     assert "self.progress.measured and self._idle <=" in tick
+
+
+def test_a_stall_record_names_what_every_thread_was_waiting_on():
+    sys.path.insert(0, str(DESK / "scripts"))
+    import run_sharded_gauntlet as rsg
+
+    stacks = rsg._thread_stacks()
+    assert any("test_a_stall_record_names" in v for v in stacks.values())
+    src = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8")
+    breach = src[src.index("    def breach(self"):]
+    taken = breach.index('"stacks_at_breach": _thread_stacks()')
+    assert taken < breach.index("_kill_descendants(")
+    assert '"idle_s", "stacks_at_breach")' in src
+    assert '"wall_profile": _stalled_wall_profile(' in src

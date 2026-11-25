@@ -810,7 +810,10 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
            "shard": shard,
            "last_progress": {k: hb.get(k) for k in (
                "beat_utc", "phase", "phase_elapsed_s", "shards", "tree", "last_progress_utc",
-               "idle_s") if k in hb},
+               "idle_s", "stacks_at_breach") if k in hb},
+           # The stalled phase's own wall profile, kept HERE: JUDGE_SWEEP_PHASE.json is
+           # rewritten by the next sweep, and this record is the one that outlives it.
+           "wall_profile": _stalled_wall_profile(hb.get("phase") or _PHASE_DOC.get("phase")),
            "counts_toward_widening": counts, "lost_s": lost_s,
            "kill": kill, "restored_from_merge_snapshot": restored or []}
     history = [*_list_field(prev, "history"), row][-STALL_HISTORY:]
@@ -1912,6 +1915,32 @@ def _stack_signature(frame: Any, depth: int = WALL_STACK_DEPTH) -> str:
         parts.append(f"{Path(code.co_filename).name}:{code.co_name}:{frame.f_lineno}")
         frame = frame.f_back
     return " < ".join(parts)
+
+
+BREACH_STACK_DEPTH = 14
+
+
+def _stalled_wall_profile(phase: str | None) -> dict[str, Any] | None:
+    """The in-process wall profile of `phase`, if the sampler published one. Never raises."""
+    try:
+        prof = (_PHASE_DOC.get("wall_profile") or {}).get("phases") or {}
+        return prof.get(phase) if phase else None
+    except Exception:
+        return None
+
+
+def _thread_stacks(depth: int = BREACH_STACK_DEPTH) -> dict[str, str]:
+    """Every live thread's innermost `depth` frames, by thread name. Never raises."""
+    names = {t.ident: t.name for t in threading.enumerate()}
+    out: dict[str, str] = {}
+    try:
+        frames = sys._current_frames()
+    except Exception:
+        return out
+    for ident, frame in frames.items():
+        with contextlib.suppress(Exception):
+            out[f"{names.get(ident, 'thread')}:{ident}"] = _stack_signature(frame, depth)[:1200]
+    return out
 
 
 def _proc_counters() -> dict[str, float] | None:
@@ -3610,6 +3639,12 @@ class SweepWatchdog:
         return doc
 
     def breach(self, reason: str, detail: str, doc: dict[str, Any]) -> None:
+        # WHAT IT WAS WAITING ON, TAKEN BEFORE THE KILL (2026-11-25). The 11-25 04:09Z stall
+        # killed a merge_and_publish idle for 1,827 s after 15/15 shards and lost 63,787 s of
+        # judging; the wall profile of that phase was overwritten by the next sweep, so nothing
+        # named the wait. Every thread's stack now rides in the stall record itself.
+        with contextlib.suppress(Exception):
+            doc = {**doc, "stacks_at_breach": _thread_stacks()}
         _ABORT.set()
         prog = _progress_snapshot()
         shard = ({k: prog.get(k) for k in ("phase", "total", "done", "running", "failed",
