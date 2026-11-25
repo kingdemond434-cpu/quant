@@ -1369,7 +1369,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "occupancy_map", "dsr_inputs",
                      # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
                      # and the ledger of which keys are set (#144, 2026-09-30)
-                     "keyed_sources", "credential_coverage"), "data"),
+                     "keyed_sources", "credential_coverage",
+                     # primary-publisher first prints for release_vintages (BLS first)
+                     "first_print_capture"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
                      "market_intel", "mine",
@@ -2130,6 +2132,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
     # cursor after every source; the cap sits above so the report and the donation are written.
     "keyed_sources": 420,
+    # One robots read and one BLS POST (30 s timeouts each) plus a CSV append: well under this.
+    "first_print_capture": 180,
     # A registry read, a glob over clock files and the last 24h of donation files: seconds.
     "credential_coverage": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
@@ -4322,6 +4326,10 @@ def main() -> None:
     # the consumers' own donation files. Writes reports/CREDENTIAL_COVERAGE.json.
     crv = _costed("credential_coverage", lambda: _producer(
         "credential_coverage", "research/credential_coverage.py", "--once"))
+    # FIRST PRINTS FROM THE PUBLISHER (World sensor #204): BLS first prints and revisions into
+    # data/lake/first_prints/, the one store release_vintages reads actuals from (FRED refused).
+    fpc = _costed("first_print_capture", lambda: _producer(
+        "first_print_capture", "research/first_print_capture.py", "--once"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -6830,6 +6838,7 @@ def main() -> None:
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
                     "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
+                    "first_print_capture": fpc,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

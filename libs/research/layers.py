@@ -691,6 +691,7 @@ LEG_LAYER: dict[str, str] = {
     # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
     # ledger of which keys are set measures the desk itself: meta
     "keyed_sources": "information", "credential_coverage": "meta",
+    "first_print_capture": "information",
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
