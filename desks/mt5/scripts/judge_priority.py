@@ -19,7 +19,8 @@ WHAT THE REPOSITORY SAYS THE CLASSES RUN AT (read 2026-10-20, every installer an
             BELOW_NORMAL; a child of a BELOW_NORMAL parent inherits BELOW_NORMAL on Windows.
     audit   MT5-FrontierAudit: SYSTEM, scheduler default Priority 7 = BELOW_NORMAL.
     live    E8-Executor / E8-Gold Priority 4 = NORMAL (install_e8_tasks.ps1). terminal64.exe was
-            measured BELOW_NORMAL on 2026-09-24 and is nobody's to change from here.
+            measured BELOW_NORMAL on 2026-09-24; since 2026-11-20
+            scripts/live_priority.py keeps every live process at ABOVE_NORMAL.
 
 So on paper the judge is ALREADY level with the miners, and a single-threaded merge competing
 with ~60 runnable equal-priority threads on 18 cores gets 18/60 ~= 0.3 of a core -- which is
@@ -80,6 +81,96 @@ DEFAULT_RANK = CLASS_RANK[BELOW_NORMAL]
 #: 0 realtime, 1 high, 2-3 above normal, 4-6 normal, 7-8 below normal, 9-10 idle.
 E8_INSTALLER = DESK / "scripts" / "install_e8_tasks.ps1"
 
+#: THE JUDGE'S RESERVED CORES (principal, 2026-10-29 "u can do this too as base" for 8 cores;
+#: 2026-11-20 "We made it 6 cores ... it gives more compute to what I use, but it's fair enough").
+#: MEASURED WHY (published 2026-11-18): the judge tree held 1.56 of 18 cores against 13.9 for
+#: everything else, all at BELOW_NORMAL, and its prewarm -- the only phase that builds a cell
+#: for the first time -- ran 5 h a sweep at about one core. Equal priority among ~100 python
+#: processes cannot give it six.
+#:
+#: WHAT IT DOES, ONLY WHILE THIS IS IN FORCE: the judge's sweep tree runs ONE class above the
+#: miners (NORMAL, never higher) and is CONFINED by CPU affinity to RESERVED_CORES_DEFAULT
+#: logical cores. So the judge can never take more than its six; on its six it goes first; when
+#: it is not runnable there, miners still use them (priority is work-conserving -- nothing is
+#: idled). Every other core is exactly as it was: the judge cannot run on it at all, so the live
+#: clocks (E8 registered NORMAL, terminal64) keep every core the judge is barred from, at the
+#: same standing against the miners they had before. No miner is lowered, capped or confined.
+#:
+#: REVERT WITHOUT A PUSH: write `{"enabled": false}` to RESERVED_CORES_SWITCH and the next sweep
+#: is back to the 2026-10-20 rule (equal to the miners, strictly below live, no affinity).
+#: `{"cores": k}` or `{"cpus": [i, ...]}` resizes or places the reservation.
+RESERVED_CORES_SWITCH = DESK / "data" / "JUDGE_RESERVED_CORES.json"
+RESERVED_CORES_DEFAULT = 6
+#: Cores below this index are left to the box-local shaper's pf_allocator pin (0-7), and the top
+#: two to its memecoin pin (16-17): measured 2026-11-03 from C:\ProgramData\QuantBox\cpu_shaper.ps1.
+RESERVED_CORES_FIRST = 8
+#: The reservation never leaves the rest of the box fewer cores than this.
+RESERVED_CORES_MIN_LEFT = 8
+
+
+def reserved_cores(n_cpus: int | None = None, path: Path | None = None) -> dict[str, Any]:
+    """The judge's core reservation in force: `{"enabled", "cpus", "why"}`. Never raises.
+
+    Absent switch file = in force at the default (the principal's standing order); a switch that
+    is unreadable or says anything but a well-formed reservation is NOT in force (fail closed to
+    the old rule)."""
+    if n_cpus is None:
+        try:
+            import psutil  # type: ignore[import-untyped,unused-ignore]
+
+            n_cpus = int(psutil.cpu_count() or 0)
+        except Exception:
+            n_cpus = 0
+    p = Path(path or RESERVED_CORES_SWITCH)
+    doc: Any = {}
+    if p.exists():
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+        except (OSError, ValueError):
+            return {"enabled": False, "cpus": [], "why": f"{p.name} unreadable: old rule"}
+        if not isinstance(doc, dict):
+            return {"enabled": False, "cpus": [], "why": f"{p.name} is not an object: old rule"}
+    if doc.get("enabled", True) is not True:
+        return {"enabled": False, "cpus": [], "why": f"{p.name} says enabled=false: old rule"}
+    if n_cpus <= 0:
+        return {"enabled": False, "cpus": [], "why": "core count unmeasured: old rule"}
+    cpus = doc.get("cpus")
+    if cpus is not None:
+        ok = (isinstance(cpus, list) and cpus and len(set(cpus)) == len(cpus)
+              and all(isinstance(c, int) and not isinstance(c, bool) and 0 <= c < n_cpus
+                      for c in cpus))
+        if not ok:
+            return {"enabled": False, "cpus": [], "why": f"{p.name} cpus malformed: old rule"}
+        cpus = sorted(cpus)
+    else:
+        k = doc.get("cores", RESERVED_CORES_DEFAULT)
+        if not isinstance(k, int) or isinstance(k, bool) or k <= 0:
+            return {"enabled": False, "cpus": [], "why": f"{p.name} cores malformed: old rule"}
+        start = max(0, min(RESERVED_CORES_FIRST, n_cpus - k - 2))
+        cpus = list(range(start, min(n_cpus, start + k)))
+    if n_cpus - len(cpus) < RESERVED_CORES_MIN_LEFT:
+        return {"enabled": False, "cpus": [], "why": (
+            f"{len(cpus)} of {n_cpus} cores would leave fewer than {RESERVED_CORES_MIN_LEFT} "
+            "for everything else: old rule")}
+    return {"enabled": True, "cpus": cpus, "n_cpus": n_cpus,
+            "why": f"judge confined to cores {cpus[0]}..{cpus[-1]} of {n_cpus}, one class above "
+                   "the miners there"}
+
+
+def confine(pid: int, cpus: list[int], process: Any = None) -> dict[str, Any]:
+    """Set `pid`'s CPU affinity to `cpus` and read it back. Children started afterwards inherit
+    it. Never raises; `applied` is True only when the read-back equals the request."""
+    try:
+        if process is None:
+            import psutil  # type: ignore[import-untyped,unused-ignore]
+
+            process = psutil.Process(int(pid))
+        process.cpu_affinity(list(cpus))
+        got = sorted(process.cpu_affinity())
+        return {"applied": got == sorted(cpus), "cpus": got}
+    except Exception as exc:
+        return {"applied": False, "error": f"{type(exc).__name__}: {exc}"}
+
 
 def _task_level_rank(level: int) -> int:
     if level <= 0:
@@ -110,8 +201,11 @@ def registered_live_rank(path: Path | None = None) -> int | None:
 _JUDGE_SCRIPTS = frozenset({"external_gauntlet.py", "run_sharded_gauntlet.py", "rungauntlet.cmd"})
 _WARM_SCRIPTS = frozenset({"warm_gauntlet_cache.py"})
 _AUDIT_MARK = "run_frontier_audit.cmd"
+# The FTMO executor, follower and venue reader are live lanes too (registered Priority 4 =
+# NORMAL): read as miners, a NORMAL one blocked every raise as "a miner already at NORMAL".
 _LIVE_SCRIPTS = frozenset(
-    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py"}
+    {"gateway_resident.py", "run_gateway_loop.py", "e8_executor.py", "e8_gold.py",
+     "ftmo_executor.py", "ftmo_follower.py", "ftmo_venue_reader.py"}
 )
 _LIVE_NAMES = frozenset({"terminal64.exe"})
 
@@ -225,6 +319,7 @@ def judge_target(
     *,
     registered_live: int | str | None = "READ",
     unreadable: int = 0,
+    reserved: dict[str, Any] | str | None = "READ",
 ) -> dict[str, Any]:
     """THE RULE, in one place, and it FAILS CLOSED (audit HOLD of be6a305b7).
 
@@ -256,6 +351,30 @@ def judge_target(
             "idle_miners": idle_miners,
             "why": "no miner measured at BELOW_NORMAL or above: the judge keeps the "
             "launcher default (BELOW_NORMAL)",
+        }
+    res = reserved_cores() if reserved == "READ" else (reserved or {})
+    if (res.get("enabled") and not unreadable and isinstance(reg, int)
+            and reg >= CLASS_RANK[NORMAL] and lives and lives[0] >= CLASS_RANK[NORMAL]
+            and miners[-1] < CLASS_RANK[NORMAL]):
+        # Never above ANY observed live process (terminal64, gateway, E8): equal is the most
+        # the judge takes, and no observed live process at all means no raise (Audit MF-1).
+        # THE RESERVATION (see RESERVED_CORES_SWITCH): one class above every miner, never above
+        # NORMAL nor above the registered live class, and only together with the affinity that
+        # keeps the judge off every other core. Fails closed exactly as the old rule does.
+        return {
+            "status": "MEASURED",
+            "rank": CLASS_RANK[NORMAL],
+            "class": RANK_NAME[CLASS_RANK[NORMAL]],
+            "lowest_miner": RANK_NAME[miners[0]],
+            "highest_miner": RANK_NAME[miners[-1]],
+            "idle_miners": idle_miners,
+            "unreadable_rows": int(unreadable),
+            "registered_live": RANK_NAME[reg],
+            "lowest_live": RANK_NAME[lives[0]] if lives else None,
+            "bound": "reserved cores: one class above the miners, confined by affinity",
+            "above_any_miner": True,
+            "cpus": list(res.get("cpus") or []),
+            "reservation": res.get("why"),
         }
     rank, bound = miners[0], "equal to the lowest-priority miner"
     if rank > JUDGE_CEILING_RANK:
@@ -787,6 +906,11 @@ def sweep_creationflags(rows: list[dict[str, Any]] | None = None) -> tuple[int, 
         c = census(snapshot() if rows is None else rows)
         t = c["target"]
         rank = t["rank"] if t.get("status") == "MEASURED" else DEFAULT_RANK
+        if t.get("cpus"):
+            # A RESERVED-CORES raise is taken by the sweep child itself, AFTER it has confined
+            # itself to its cores (run_sharded_gauntlet._equalise_self): the child is never born
+            # above the miners unconfined.
+            rank = min(rank, DEFAULT_RANK)
         return RANK_CLASS[rank], {
             "target": t,
             "verdict_before": c["verdict"],

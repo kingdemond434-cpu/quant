@@ -183,7 +183,10 @@ UNMEASURED_PAGE_MIN = 30.0
 UNMEASURED_SHARE = 0.5
 #: Readings a window must hold before it can page.
 UNMEASURED_MIN_READS = 2
-UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0}
+UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0,
+                                           # the rate is republished hourly; its own staleness
+                                           # bound (FIRST_VERDICTS_STALE_H) already waits 6 h
+                                           "first_verdicts_low": 120.0}
 #: Bytes of the sweep result read from each end: its top-level counts sit near the head and its
 #: `swept_at` near the tail, so the ~88 MB body is never parsed.
 RESULT_HEAD_BYTES = 1024 * 1024
@@ -194,7 +197,8 @@ INFLIGHT_RETRY_MIN = 30.0
 #: The desk's reminder convention (state_publication.REPAGE_H, run_alerts._DEDUPE_S).
 REPAGE_H = 6.0
 INCIDENTS = ("no_verdict", "resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
-             "zero_judged_sweep", "cores_idle", "inputs_unmeasured", "host_unreadable")
+             "zero_judged_sweep", "cores_idle", "inputs_unmeasured", "host_unreadable",
+             "first_verdicts_low")
 #: Bytes read from the ledger's end. Rows are a few hundred bytes; the newest stamp is in here.
 TAIL_BYTES = 256 * 1024
 #: Statuses in which the resident has stopped ON PURPOSE and its heartbeat is expected to stop.
@@ -639,6 +643,37 @@ def _cores_verdict(prev: object, row: dict[str, Any] | None,
     return inc, state
 
 
+#: FIRST VERDICTS PER DAY BELOW THE PRINCIPAL'S FLOOR (2026-11-20: "make sure it clears like 100k
+#: plus 150k plus cells a day"; the coordinator's order: a permanent check, alerted to Claude,
+#: never to zuck). Read from JUDGING_THROUGHPUT.json's `rate.verdicts.first_terminal_counts.24h`
+#: -- cells given their FIRST terminal verdict in the last 24h, never repeated changed verdicts.
+#: Measured 2026-11-18: 1,552 (24h) and 75,236 (7d). A rate older than FIRST_VERDICTS_STALE_H
+#: or absent is UNMEASURED, never a pass.
+FIRST_VERDICTS_FLOOR_PER_DAY = 100_000
+FIRST_VERDICTS_STALE_H = 6.0
+
+
+def _first_verdicts(at: datetime, throughput: Path) -> dict[str, Any]:
+    doc = _read_json(throughput)
+    rate = doc.get("rate") if isinstance(doc, dict) else None
+    v = rate.get("verdicts") if isinstance(rate, dict) else None
+    counts = v.get("first_terminal_counts") if isinstance(v, dict) else None
+    n = counts.get("24h") if isinstance(counts, dict) else None
+    stamp = _stamp(rate.get("at")) if isinstance(rate, dict) else None
+    if not isinstance(n, (int, float)) or isinstance(n, bool) or stamp is None:
+        return {"open": None, "floor": FIRST_VERDICTS_FLOOR_PER_DAY,
+                "why": f"{UNMEASURED}: {throughput.name} names no 24h first-verdict count"}
+    age_h = (at - stamp).total_seconds() / 3600.0
+    if age_h > FIRST_VERDICTS_STALE_H or age_h < -FUTURE_SKEW_S / 3600.0:
+        return {"open": None, "floor": FIRST_VERDICTS_FLOOR_PER_DAY, "age_h": round(age_h, 2),
+                "why": f"{UNMEASURED}: the rate in {throughput.name} is {age_h:.1f}h old "
+                       f"(limit {FIRST_VERDICTS_STALE_H:g}h)"}
+    return {"open": n < FIRST_VERDICTS_FLOOR_PER_DAY, "first_verdicts_24h": int(n),
+            "floor": FIRST_VERDICTS_FLOOR_PER_DAY, "age_h": round(age_h, 2),
+            "why": (f"{int(n):,} cells got their first verdict in the last 24h "
+                    f"(floor {FIRST_VERDICTS_FLOOR_PER_DAY:,})")}
+
+
 def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
             throughput: Path = THROUGHPUT, resident: Path = RESIDENT,
             sweep_result: Path = SWEEP_RESULT, env_file: Path = ENV_FILE,
@@ -680,6 +715,8 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         inc["no_verdict"] = {"open": h > NO_VERDICT_H, "hours": round(h, 2),
                              "why": (f"no new verdict for {h:.1f}h (last {lv['at']}, "
                                      f"{lv['source']}); limit {NO_VERDICT_H:g}h")}
+
+    inc["first_verdicts_low"] = _first_verdicts(at, throughput)
 
     doc = _read_json(resident)
     if not isinstance(doc, dict) or not doc:
