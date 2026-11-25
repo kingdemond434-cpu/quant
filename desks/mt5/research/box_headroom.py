@@ -190,6 +190,27 @@ def _priority_name(ps: Any, value: Any) -> str:
     return str(value)
 
 
+#: The live recorders, by the script or module on their own command line.
+LIVE_RECORDER_MARKS = (("tick_recorder", "recorders.tick_recorder"),
+                       ("e8_spread_sampler", "e8_spread_sampler.py"),
+                       ("moat_recorder", "moat_recorder.py"))
+
+
+def _live_recorder(p: Any) -> str | None:
+    """The recorder a python process is, by its own command line; None for anything else."""
+    name = str(p.info.get("name") or "").lower()
+    if not (name.startswith("python") or name.startswith("py")):
+        return None
+    try:
+        args = [str(a).replace("\\", "/").lower() for a in (p.cmdline() or [])]
+    except Exception:
+        return None
+    for label, mark in LIVE_RECORDER_MARKS:
+        if any(a == mark or a.endswith("/" + mark) for a in args):
+            return label
+    return None
+
+
 def terminals(ps: Any = None) -> dict[str, Any]:
     """MT5 terminal count against its cap, and every live process at raised priority."""
     ps = ps or _psutil()
@@ -197,9 +218,17 @@ def terminals(ps: Any = None) -> dict[str, Any]:
         return {"ok": True, "why": "UNMEASURED: psutil not installed here"}
     n, live_mem = 0, 0
     low: list[str] = []
+    rec_low: list[str] = []
     for p in ps.process_iter(["name", "pid"]):
         with contextlib.suppress(Exception):
             if str(p.info.get("name") or "").lower() not in LIVE_NAMES:
+                # A LIVE RECORDER (tick tape, E8 spread sampler, moat recorder) must sit strictly
+                # above every research class (Audit 2026-11-25 13:09Z), read by its command line.
+                rec = _live_recorder(p)
+                if rec and hasattr(ps, "ABOVE_NORMAL_PRIORITY_CLASS"):
+                    prio = _priority_name(ps, p.nice())
+                    if prio not in _LIVE_OK_PRIORITIES:
+                        rec_low.append(f"{rec} pid {p.info.get('pid')} {prio}")
                 continue
             n += 1
             prio = _priority_name(ps, p.nice())
@@ -213,7 +242,11 @@ def terminals(ps: Any = None) -> dict[str, Any]:
     if low:
         why.append(f"live terminal(s) not at raised priority: {', '.join(low[:4])} "
                    "(MT5-LivePriority should hold them ABOVE_NORMAL)")
+    if rec_low:
+        why.append(f"live recorder(s) in a research priority class: {', '.join(rec_low[:4])} "
+                   "(MT5-LivePriority should hold them ABOVE_NORMAL)")
     return {"count": n, "cap": TERMINAL_CAP, "below_priority": low,
+            "recorders_below_priority": rec_low,
             "live_rss_gb": _gb(live_mem), "research_share_line": RESEARCH_SHARE,
             "ok": not why, "why": "; ".join(why) or "holds"}
 

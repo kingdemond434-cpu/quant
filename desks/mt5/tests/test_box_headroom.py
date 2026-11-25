@@ -184,3 +184,44 @@ def test_the_walk_never_enters_the_tape(tmp_path, monkeypatch):
     bh.reclaim(tmp_path, NOW, past_line=True, apply=True)
     assert seen and not any("tape" in Path(p).parts for p in seen)
     assert tape.exists() and not pyc.exists()
+
+
+class _RecPS(_PS):
+    BELOW_NORMAL_PRIORITY_CLASS = 16384
+    rec_priority = 16384
+
+    def process_iter(self, attrs):
+        ps = self
+
+        class R:
+            def __init__(self, name, pid, cmd):
+                self.info = {"name": name, "pid": pid}
+                self._cmd = cmd
+
+            def nice(self):
+                return ps.rec_priority
+
+            def cmdline(self):
+                return self._cmd
+
+            def memory_info(self):
+                return namedtuple("M", "rss")(GB)
+
+        return [*_PS.process_iter(self, attrs),
+                R("python.exe", 40, ["python.exe", "-u", "-m", "recorders.tick_recorder"]),
+                R("python.exe", 41, ["python.exe", "C:\\q\\prop\\e8_spread_sampler.py"]),
+                R("python.exe", 42, ["python.exe", "C:\\q\\research\\some_miner.py"])]
+
+
+def test_a_live_recorder_in_a_research_priority_class_breaks_i7():
+    """Audit 2026-11-25 13:09Z: a live recorder sharing a class with research is a fault the
+    guardian pages to Claude (box 11-25: tick_recorder gap 474 s at BELOW_NORMAL)."""
+    ps = _RecPS()
+    t = bh.terminals(ps)
+    assert not t["ok"]
+    assert [r.split(" ")[0] for r in t["recorders_below_priority"]] == [
+        "tick_recorder", "e8_spread_sampler"]
+    assert "live recorder(s) in a research priority class" in t["why"]
+    ps.rec_priority = ps.ABOVE_NORMAL_PRIORITY_CLASS
+    ok = bh.terminals(ps)
+    assert ok["ok"] and ok["recorders_below_priority"] == [] and ok["count"] == 3
