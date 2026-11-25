@@ -148,6 +148,10 @@ for _p in (str(ROOT), str(DESK)):
         sys.path.insert(0, _p)
 
 OUT = DESK / "reports" / "PRODUCER_LOOP.json"
+#: research/funnel.py's artifact; its `by_alt_source` names the alt series no row has tested.
+FUNNEL_REPORT = DESK / "reports" / "FUNNEL.json"
+#: Alt gap targets carried per producer (bounded: the seat reads a slice, not the list).
+MAX_ALT_GAPS = 200
 LEDGER = DESK / "data" / "producer_loop_ledger.jsonl"
 #: The attempt ledger: appended to ONLY by `record_attempt`; joined by experiment_ledger (R2).
 ATTEMPTS = DESK / "data" / "producer_loop_attempts.jsonl"
@@ -1411,13 +1415,24 @@ SESSIONS = ("asia", "london", "ny")
 BASE_TIMEFRAMES = ("M5", "M15", "H1", "H4", "D1")
 
 
+def alt_gaps(path: Path | None = None) -> list[str] | str:
+    """Executable alt series (`alt:<series>` conditioners) with ZERO testable rows, from the
+    funnel's `by_alt_source`; UNMEASURED when the funnel has not measured them."""
+    d = _read(path or FUNNEL_REPORT, {}) or {}
+    b = d.get("by_alt_source") if isinstance(d, dict) else None
+    z = b.get("zero_coverage_series") if isinstance(b, dict) else None
+    return sorted(str(x) for x in z)[:MAX_ALT_GAPS] if isinstance(z, list) else UNMEASURED
+
+
 def coverage_gaps(live_sl: dict[str, dict[str, Any]] | None,
                   clocks: dict[tuple[str, str], str] | None,
                   certs_of: dict[str, list[dict[str, Any]]] | None,
-                  diag_p: dict[str, Any]) -> dict[str, Any]:
+                  diag_p: dict[str, Any], *,
+                  alt_sources: list[str] | str | None = None) -> dict[str, Any]:
     """Desk-level gaps: non-exotic asset classes, sessions, timeframes and families with ZERO
     live edges; while live is empty, zero forward-kept; then zero certificates. A dimension the
-    basis cannot see (the session of a certificate) is UNMEASURED, never a gap."""
+    basis cannot see (the session of a certificate) is UNMEASURED, never a gap. `alt_sources`
+    are the executable alt series no row has tested yet (`alt_gaps`), carried as they are."""
     cells = [str(r["cell"]) for recs in (certs_of or {}).values() for r in recs]
     covered: list[tuple[str, str, str, str]] = []
     if live_sl:
@@ -1442,7 +1457,8 @@ def coverage_gaps(live_sl: dict[str, dict[str, Any]] | None,
             "classes": sorted(set(classes) - have[0]),
             "timeframes": sorted(tfs - have[1]),
             "sessions": (sorted(set(SESSIONS) - have[2]) if basis == "LIVE" else UNMEASURED),
-            "families": sorted(fams - have[3])}
+            "families": sorted(fams - have[3]),
+            "alt_sources": alt_sources if alt_sources is not None else UNMEASURED}
 
 
 def withdraw_prescription(prescriptions: dict[str, Any], name: str, now: datetime,
@@ -1468,9 +1484,11 @@ def active_prescription(prescriptions: dict[str, Any], name: str) -> dict[str, A
 
 def gap_target(dg: dict[str, Any] | None, gaps: dict[str, Any]) -> dict[str, Any]:
     """The gaps inside a producer's own reach (what it has emitted before), and GAP_SHARE."""
+    a = gaps.get("alt_sources")
     if not dg:
         return {"status": UNMEASURED, "why": "no diagnosis sample: its reach is unknown",
-                "gap_share": GAP_SHARE}
+                "gap_share": GAP_SHARE,
+                "alt_sources": list(a) if isinstance(a, list) else UNMEASURED}
     b = dg.get("buckets") or {}
     reach = {"classes": {x[6:] for x in b if x.startswith("class:")},
              "timeframes": {x[3:] for x in b if x.startswith("tf:")},
@@ -1480,6 +1498,9 @@ def gap_target(dg: dict[str, Any] | None, gaps: dict[str, Any]) -> dict[str, Any
     for k, r in reach.items():
         g = gaps.get(k)
         out[k] = sorted(r & set(g)) if isinstance(g, list) else UNMEASURED
+    # AN ALT SERIES IS IN EVERY PRODUCER'S REACH: any row can carry an `alt:` conditioner on a
+    # family it already emits, so the desk list is the target (research/alt_catalog weights it).
+    out["alt_sources"] = list(a) if isinstance(a, list) else UNMEASURED
     return out
 
 
@@ -1967,7 +1988,7 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
     # STANDING BREADTH PRESSURE on every producer (the judge-side reorder is breadth_fence's, in
     # merge_hypotheses, over all rows): desk gaps, each producer's reachable gap target, and how
     # much of its recent output already lands there.
-    gaps = coverage_gaps(lsl, clocks, certs_of, diag_p)
+    gaps = coverage_gaps(lsl, clocks, certs_of, diag_p, alt_sources=alt_gaps())
     gap_targets = {x["producer"]: gap_target(diag_p.get(x["producer"]), gaps) for x in rows}
     gap_cov = {x["producer"]: gap_coverage(diag_p.get(x["producer"]), gaps, live,
                                            x["yield"].get("independence_credit"))

@@ -667,6 +667,32 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
     return system, user
 
 
+def _alt_slice(root: Path) -> tuple[Any, Any, str]:
+    """(alt_catalog module, catalog, prompt block) -- (None, None, "") when unavailable."""
+    try:
+        import sys as _sys
+        desk = root / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
+        from research import alt_catalog as ac
+        cat = ac.catalog(desk / "data" / "lake" / "series", thresholds=True)
+        return ac, cat, ac.prompt_block("deepseek", cat=cat)
+    except Exception:  # blind-except intentional (BLE001): a slice never costs the cycle
+        return None, None, ""
+
+
+def _alt_conditioner(ac: Any, cat: Any, value: Any) -> str | None:
+    """The finding's `alt:` spec when it parses and names a catalog series and column."""
+    if ac is None or not isinstance(cat, dict) or not value:
+        return None
+    got = ac.parse_spec(value)
+    if got is None:
+        return None
+    cols = {str(r["series"]): set(r.get("columns") or []) for r in cat.get("series") or []}
+    return ac.spec(*got) if got[1] in cols.get(got[0], set()) else None
+
+
 def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
@@ -714,6 +740,14 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                                    "fields_stripped": len(cold["blinded_fields"]),
                                    "keys": {}}}})
     system, user = _build_prompt(role_name, role_brief, cold)
+    # THE ALT CATALOG (desks/mt5/research/alt_catalog.py): measured lake series the gauntlet
+    # applies as `alt:` conditioners -- raw inventory, not another agent's conclusion, so the
+    # cold phase may see it. Empty on a host with no lake, and then nothing changes.
+    alt_ac, alt_cat, alt_block = _alt_slice(base)
+    if alt_block:
+        user += ("\n\n" + alt_block + "\nIn this JSON contract, put such a spec in an extra "
+                 '"conditioner" field of the finding (with its "family" and "symbols"), '
+                 "instead of an ALT_CELL line; null when the finding is not alt-conditioned.")
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
@@ -760,6 +794,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         declared_disposition = str(f.get("disposition") or "").strip().upper()
         if declared_disposition in DISPOSITIONS:
             disposition = declared_disposition
+        cond = _alt_conditioner(alt_ac, alt_cat, f.get("conditioner"))
         row = {"ts": _now(), "role": role_name, "model": model, "deep": deep,
               "seal_path": sealed.get("path"), "title": str(f.get("title"))[:300],
               "type": declared, "disposition": disposition,
@@ -768,6 +803,8 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
               "capability_source": f.get("capability_source"),
               "symbols": syms, "family": fam,
               "evidence_grade": f.get("evidence_grade"), "authority": check["verdict"]}
+        if cond and fam and syms:
+            row["params"] = {"conditioner": cond}
         _append_jsonl(base / EVIDENCE, row)
         donated.append(row)
         routed.append(row["title"])
@@ -837,6 +874,8 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
         "testable_claim": r.get("testable_claim"),
         "mechanism_tags": [t for t in [r.get("family")] if t], "kind": "hypothesis",
         "url": f"deepseek://{role_name}/{r['ts']}",
+        # An alt-conditioned finding is an EXACT recipe (family + params + symbols).
+        **({"params": dict(r["params"])} if isinstance(r.get("params"), dict) else {}),
     }, ground=f"deepseek:{role_name}", retrieved_at=generated) for r in rows], "deepseek")
     if refused:
         raise ValueError(f"DeepSeek refused {len(refused)} unstamped discoveries")

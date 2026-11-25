@@ -664,6 +664,53 @@ def _donate(findings: list[dict]) -> Path | None:
     return path
 
 
+#: THE ALT CATALOG REACHES THIS HUNTER (2026-11-25). Waves 2 and 3 are shown a rotating,
+#: gap-weighted slice of the lake series the gauntlet applies as `alt:` conditioners
+#: (desks/mt5/research/alt_catalog.py), and an `ALT_CELL | family | SYMBOL | alt:... | why` line
+#: is donated as an EXACT recipe (family + params.conditioner + symbols) instead of prose. Before
+#: this, no free-model prompt named a single lake series and no seat row carried a testable one.
+ALT_ORGAN = "kimi_hunt"
+
+
+def _alt_catalog():
+    """The alt_catalog module, or None (an absent desk tree never costs the hunt)."""
+    try:
+        desk = ROOT / "desks" / "mt5"
+        for p in (str(desk), str(desk / "research")):
+            if p not in sys.path:
+                sys.path.insert(0, p)
+        from research import alt_catalog
+        return alt_catalog
+    except Exception:  # blind-except intentional (BLE001): the hunt runs without the slice
+        return None
+
+
+def _donate_alt(rows: list[dict]) -> Path | None:
+    """ALT_CELL rows, in the compiler's EXACT_RECIPE shape, where the compiler reads."""
+    if not rows:
+        return None
+    DONATE_DIR.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(tz=UTC)
+    from libs.research.source_provenance import stamp_row
+    out = []
+    for r in rows:
+        row = dict(r, source="kimi_k3_deep_forest", date=now.date().isoformat(),
+                   url=f"kimi://{now.date().isoformat()}/alt/"
+                       + hashlib.sha256(json.dumps([r.get("family"), r.get("symbols"),
+                                                    r.get("params")], sort_keys=True)
+                                        .encode("utf-8")).hexdigest()[:12])
+        stamp_row(row, ground="kimi", retrieved_at=now.isoformat(timespec="seconds"))
+        out.append(row)
+    from libs.data.pit import stamp_or_refuse
+    out, refused = stamp_or_refuse(out, "kimi_k3_deep_forest")
+    if refused:
+        raise ValueError(f"Kimi refused {len(refused)} unstamped alt cells")
+    path = DONATE_DIR / f"discoveries_alt_{now.strftime('%Y%m%d_%H%M%S')}.json"
+    path.write_text(json.dumps({"source": "kimi_k3_deep_forest", "generated_at": now.isoformat(),
+                                "discoveries": out}, indent=1), "utf-8")
+    return path
+
+
 def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
     """Record a hunt that could not run, as an ARTIFACT rather than as a log line and an exit code.
 
@@ -770,12 +817,24 @@ def main() -> None:
     # donated only after Wave 3 returned, so a pass the hourly leg's cap cut during Wave 3 (each
     # ask may wait 240 s and walk the chain) lost Wave 2's findings with it -- every hour.
     donated_upto, donated = 0, None
+    ac = _alt_catalog()
+    alt_cat = None
+    if ac is not None:
+        try:
+            alt_cat = ac.catalog(thresholds=True)
+        except Exception:  # blind-except intentional (BLE001)
+            alt_cat = None
+    alt_cells: list[dict] = []
     for w in (1, 2, 3):
         name, brief = WAVES[w]
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
         _sec = hf.prompt_sections(state, cooldown_d=_VECTOR_COOLDOWN_D)
         _cover = _sec["priority"] + (f"\n\n{_sec['exclude']}" if _sec["exclude"] else "")
         user = f"{brief}\n\n{_cover}" + (f"\n\n{prior}" if prior else "")
+        if w > 1 and ac is not None and alt_cat is not None:
+            _alt = ac.prompt_block(ALT_ORGAN, cat=alt_cat)
+            if _alt:
+                user += f"\n\n{_alt}"
         print(f"  WAVE {w} -- {name}")
         # WALK THE CHAIN. One model being unavailable, rate-limited or out of credit ends that
         # ATTEMPT, never the hunt. Failures accumulate into the artifact so a run that ends
@@ -849,9 +908,29 @@ def main() -> None:
 
         if w == 1:
             continue                       # Wave 1 is mapping only; findings are not permitted
+        if ac is not None and alt_cat is not None:
+            _cells, _why = ac.parse_cells(txt, cat=alt_cat, organ=ALT_ORGAN)
+            # THE FORBIDDEN ZONES HOLD FOR A RECIPE TOO, read on what it claims (the mechanism
+            # and the series), never on the family's own name.
+            _kept = []
+            for _c in _cells:
+                _z = _forbidden(f"{_c.get('mechanism', '')} {_c.get('alt_series', '')}")
+                if _z:
+                    _why.append(f"forbidden zone ({_z})")
+                    continue
+                _c.update(wave=w, model=used)
+                _kept.append(_c)
+            _cells = _kept
+            alt_cells += _cells
+            dropped += [{"wave": w, "reason": f"alt cell: {r}", "line": ""} for r in _why]
+            if _cells:
+                _p = _donate_alt(_cells)
+                print(f"    wave {w}: {len(_cells)} alt-conditioned cell(s) -> {_p}")
         for ln in txt.splitlines():
             if ln.count("|") < 3:
                 continue
+            if ac is not None and ac.CELL_LINE.match(ln):
+                continue                   # an ALT_CELL line is a recipe, handled above
             keep, reason, cls, parts = _admit(ln, w, txt)
             if reason:
                 dropped.append({"wave": w, "reason": reason, "line": ln[:120]})
@@ -916,7 +995,8 @@ def main() -> None:
                                "territories_hunted": n_terr,
                                "donated_to": str(donated) if donated else None,
                                "waves": {str(k): v[:4000] for k, v in transcript.items()},
-                               "findings": findings, "dropped": dropped}, indent=1), "utf-8")
+                               "findings": findings, "dropped": dropped,
+                               "alt_cells": alt_cells}, indent=1), "utf-8")
     print(f"  status {status} | waves {sorted(transcript)} | models {models_used}")
     print(f"  -> {OUT}")
 

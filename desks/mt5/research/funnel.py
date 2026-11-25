@@ -282,6 +282,8 @@ class Paths:
     source_registry: Path
     floors: Path
     out: Path
+    lake: Path | None = None
+    alt_exposure: Path | None = None
 
     @classmethod
     def at(cls, desk: Path) -> Paths:
@@ -296,7 +298,9 @@ class Paths:
                    fills=desk / "data" / "fill_corpus.jsonl",
                    source_registry=desk / "data" / "source_registry.json",
                    floors=desk / "data" / "funnel_floors.json",
-                   out=desk / "reports" / "FUNNEL.json")
+                   out=desk / "reports" / "FUNNEL.json",
+                   lake=desk / "data" / "lake" / "series",
+                   alt_exposure=desk / "data" / "alt_catalog" / "exposure.json")
 
 
 def _blank() -> dict[str, Any]:
@@ -597,6 +601,35 @@ def merge_up(disk: Mapping[str, Any], new: Mapping[str, Any]) -> dict[str, Any]:
 
 # ------------------------------------------------------------------------------------- the build
 
+def alt_block(paths: Paths, rows: list[Mapping[str, Any]] | None,
+              seen: list[Any] | None) -> dict[str, Any]:
+    """`by_alt_source`: per executable lake series, which generators were shown it, how many
+    compiled rows carry it as an `alt:` conditioner, how many are testable, judged and certified;
+    and the series and sources with no testable row (producer_loop's alt gap targets). Every
+    count whose input is unreadable is UNMEASURED, never 0."""
+    from research import alt_catalog as ac
+
+    cat = ac.catalog(paths.lake or ac.LAKE)
+    exposure = ac.read_exposure(paths.alt_exposure) if paths.alt_exposure \
+        and paths.alt_exposure.exists() else None
+    cov = ac.coverage(cat, rows if rows is not None else [],
+                      judged={str(c) for c in seen} if seen is not None else None,
+                      certified=ac.read_certified(paths.provenance), exposure=exposure)
+    if rows is None:
+        for e in cov["series"].values():
+            e["rows"] = e["testable_rows"] = UNMEASURED
+        cov["n_series_with_testable_rows"] = UNMEASURED
+        cov["zero_coverage_series"] = cov["zero_coverage_sources"] = UNMEASURED
+        cov["why_rows"] = f"{UNMEASURED}: compiler rows unreadable"
+    if exposure is None:
+        for e in cov["series"].values():
+            e["generators_seeing"] = UNMEASURED
+        cov["why_generators"] = (f"{UNMEASURED}: no exposure log yet (research/alt_catalog "
+                                 "record_exposure writes it when a generator is shown a slice)")
+    cov["refused_series"] = cat.get("refused") or {}
+    return cov
+
+
 def build(paths: Paths | None = None, *, now: datetime | None = None,
           budget_s: float | None = None, is_exotic: Callable[[str], bool] | None = None,
           trades_of: Callable[[str], list[dict[str, Any]]] | None = None) -> dict[str, Any]:
@@ -815,6 +848,10 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                           else {"status": UNMEASURED})
     violated = sorted(k for k, v in verdicts.items()
                       if "VIOLATED" in (v.get("count_status"), v.get("rate_status")))
+    try:
+        by_alt = alt_block(paths, comp.get("rows") if comp.get("available") else None, seen)
+    except Exception as exc:                       # a report section never costs the funnel
+        by_alt = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
     src_reg = _read(paths.source_registry)
     src_rows = (src_reg or {}).get("sources") if isinstance(src_reg, dict) else None
     raw_sources = ({"n_sources": len(src_rows),
@@ -845,6 +882,7 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                     "weakest_transition": d["weakest_stage"].get("transition"),
                     "live_profit": d["stages"]["LIVE_PROFIT"]},
         "producers": rows_p, "asset_classes": rows_c, "families": rows_f,
+        "by_alt_source": by_alt,
         "notes": notes, "min_n": MIN_N,
         "budget_s": budget, "elapsed_s": round(time.monotonic() - t0, 2),
         "_floors": floors_new,

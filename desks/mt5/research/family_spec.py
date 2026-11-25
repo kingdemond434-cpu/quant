@@ -122,6 +122,24 @@ def _coerce(value: Any, default: Any) -> tuple[bool, Any]:
     return True, value
 
 
+def alt_spec(value: Any) -> str | None:
+    """The canonical `alt:<series>:<column>:<op>:<threshold>` when `value` is one the gauntlet
+    applies (`mt5desk.cell_modifiers.alt_conditioner`, the one parser), else None."""
+    try:
+        from mt5desk.cell_modifiers import alt_conditioner
+    except Exception:
+        return None
+    got = alt_conditioner(value)
+    if got is None:
+        return None
+    return f"alt:{got[0]}:{got[1]}:{got[2]}:{got[3]:.6g}"
+
+
+def is_testable(family: str, raw: Any, *, prose: str = "") -> bool:
+    """True when the row's params are an EXECUTABLE spec of a family the desk can build."""
+    return to_executable(family, raw, prose=prose)["status"] == EXECUTABLE
+
+
 def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
     """The family's executable params from a producer's structured `raw`, with the verdict.
 
@@ -140,6 +158,20 @@ def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
                    reason=f"{family!r} is not a family the desk can build")
         return out
     src = dict(raw) if isinstance(raw, dict) else {}
+    # A WELL-FORMED `alt:` CONDITIONER IS A REAL RULE (2026-11-25). `mt5desk.cell_modifiers`
+    # APPLIES it in the gauntlet and the forward clock (the signal survives only where the PIT
+    # series condition held), so a family on its defaults gated by one is a different cell from
+    # the defaults -- not DEFAULTS_ONLY. It rides in params under its own key (cell_modifiers
+    # moves it out of the family call). Any other conditioner value is refused there and stays
+    # unread here.
+    # The value is kept EXACTLY as written: it is part of the cell's identity digest.
+    alt = None
+    if "conditioner" in src and "conditioner" not in sig \
+            and alt_spec(src.get("conditioner")) is not None:
+        alt = src.pop("conditioner")
+    if not src and alt is not None:
+        out["params"] = {"conditioner": alt}
+        return out
     if not src:
         out.update(status=PROSE_ONLY if prose.strip() else DEFAULTS_ONLY,
                    reason=("the rule exists only as text: no structured parameter was emitted"
@@ -164,6 +196,10 @@ def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
         if key != k:
             out["mapped"][str(k)] = key
     out["unread"] = unread
+    if alt is not None:
+        params["conditioner"] = alt
+        out["params"] = params
+        return out
     differs = {k for k, v in params.items() if v != sig[k]}
     if not differs:
         out.update(status=DEFAULTS_ONLY, params=params,
