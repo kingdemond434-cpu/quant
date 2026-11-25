@@ -944,6 +944,12 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # `gap_weight` -- gold, index, USD/JPY/EUR-cross and 02-09 UTC session grounds first --
     # then culture gap, then least-recently-attempted. A ground naming none of them weighs 0
     # and keeps its place; nothing is dropped, and the other buckets are untouched.
+    # THE REGION FLOOR FIRST (principal 2026-11-25 12:24Z: compute follows yield, never equal,
+    # but every region is covered). Inside every bucket a ground whose REGION no ground has been
+    # attempted for in REGION_FLOOR_H goes before any ground of a region already reached, so a
+    # low-yield country is starved of share, never of its daily turn. A reorder only: with no
+    # frontier state every region counts as unreached and the historic order is unchanged.
+    reached = _regions_reached(picked, frontier_state, now)
     gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
     for i, bucket in enumerate(buckets):
@@ -952,6 +958,7 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
             out.extend(sorted(rotated, key=lambda g, first=(i == 0): (
+                str(g.get("region") or "").lower() in reached,
                 -gap_weight(g) if first else 0.0,
                 str(g.get("region") or "").lower() not in gap,
                 _last_attempt(g, frontier_state))))
@@ -990,6 +997,30 @@ def gap_weight(g: dict[str, Any]) -> float:
     if score and str(g.get("region") or "").lower() in SESSION_REGIONS:
         score += GAP_TERMS["session_02_09"][0]
     return score
+
+
+REGION_FLOOR_H = 24.0
+
+
+def _regions_reached(grounds: list[dict[str, Any]], frontier_state: Any | None,
+                     now: datetime) -> frozenset[str]:
+    """Regions with at least one ground attempted inside REGION_FLOOR_H."""
+    if frontier_state is None:
+        return frozenset()
+    out: set[str] = set()
+    for g in grounds:
+        st = _last_attempt(g, frontier_state)
+        if not st:
+            continue
+        try:
+            t = datetime.fromisoformat(st.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=UTC)
+        if (now - t).total_seconds() <= REGION_FLOOR_H * 3600:
+            out.add(str(g.get("region") or "").lower())
+    return frozenset(out)
 
 
 def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:

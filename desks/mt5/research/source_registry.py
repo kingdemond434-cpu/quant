@@ -67,6 +67,9 @@ NOVELTY = DESK / "reports" / "NOVELTY_GATE.json"
 UNSEEN = DESK / "reports" / "UNSEEN_FRONTIER.json"
 REGISTRY = DESK / "data" / "source_registry.json"
 REPORT = DESK / "reports" / "SOURCE_REGISTRY.json"
+#: The last SETTLED budget (what the crawlers spend between daily recomputes) sits beside the
+#: registry, read at call time, so whatever redirects REGISTRY redirects it too.
+SETTLED_NAME = "source_shares_settled.json"
 SEAT_ROOTS = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 
 #: THE TRACKED NATIVE LANGUAGES. One with no ground on file is a COVERAGE GAP the crawler can act
@@ -127,6 +130,20 @@ PRIOR_LEADS = 25.0
 #: the exploration floor rather than ranked. EXPLORATION_SHARE never follows measured yield (L1.52).
 #: SOFTMAX_K sharpens roi/roi_max: the best source gets e^3 ~ 20x a measured-zero one, never all.
 THIN_LEADS, EXPLORATION_SHARE, SOFTMAX_K = 20, 0.20, 3.0
+#: THE YIELD RULE (principal 2026-11-25 12:24-12:26Z, with the coordinator's three refinements):
+#: every region keeps a floor, the rest follows MEASURED yield -- certified, tradable, NON-EXOTIC
+#: edges, credited by how UNCORRELATED they are with what the source already gave, RECENT ones
+#: worth more (a mined-out source's share falls by itself), and LEADING indicators (compiled /
+#: judged rate) carry a source until certifications, which lag, accumulate. Exploration stays at
+#: 20%: the coordinator relayed a 10-15% band, but no message of the principal's own words names a
+#: number, and a floor is never lowered on a relay (no-ceilings rule).
+CERT_HALF_LIFE_D = 30.0
+#: Certifications at which a source's own certified yield fully replaces its leading indicator.
+CERT_FULL_WEIGHT = 5.0
+#: THE CADENCE: budgets are recomputed once a day, each source's share moves at most this
+#: fraction of itself per recompute, and an EVENT (a certification burst or a source gone dead)
+#: forces a recompute out of turn. Hourly re-scoring chased noise: certifications arrive slowly.
+RECOMPUTE_H, MAX_DAILY_MOVE, BURST_CERTS = 24.0, 0.5, 3
 CREDIT_CLIP = (0.5, 2.0)
 #: Unicode-aware: an ASCII-only slug collapsed every CJK-named ground onto one id.
 _SLUG = re.compile(r"\W+", re.UNICODE)
@@ -185,6 +202,67 @@ def _unique(sid: str, rows: dict[str, dict[str, Any]], name: str) -> str:
     if sid not in rows or rows[sid].get("name") == name:
         return sid
     return f"{sid}_{hashlib.sha1(name.encode('utf-8')).hexdigest()[:6]}"
+
+
+#: Set when universe_policy cannot be imported: exotic yield can then not be told apart, and the
+#: report says so (UNMEASURED) instead of silently counting every certification as tradable.
+_EXOTIC_UNMEASURED: list[str] = []
+
+
+def _exotic(symbol: Any) -> bool:
+    """The desk's ONE exotic definition (`universe_policy.is_exotic_symbol`). A missing symbol is
+    not exotic; an unimportable classifier is recorded in _EXOTIC_UNMEASURED, never hidden."""
+    if not symbol:
+        return False
+    try:
+        from research import universe_policy as UP
+        return bool(UP.is_exotic_symbol(str(symbol)))
+    except Exception as exc:
+        if not _EXOTIC_UNMEASURED:
+            _EXOTIC_UNMEASURED.append(f"UNMEASURED: universe_policy unimportable "
+                                      f"({type(exc).__name__}); exotic certifications NOT excluded")
+        return False
+
+
+def _recency(at: Any, now: datetime | None = None) -> float:
+    """Half-life weight of an outcome by its age; an unstamped outcome counts in full."""
+    try:
+        t = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return 1.0
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    age_d = max(0.0, ((now or datetime.now(tz=UTC)) - t).total_seconds() / 86400.0)
+    return float(0.5 ** (age_d / CERT_HALF_LIFE_D))
+
+
+def yield_terms(c: dict[str, Any], pooled: float, pooled_testable: float
+                ) -> tuple[float, dict[str, Any]]:
+    """Expected marginal yield per lead, and the terms that made it.
+
+    certified  Wilson LB of independent certified per lead, shrunk to the pooled rate
+    recency    recency-weighted certifications / certifications (1.0 with none)
+    orthogonal distinct (family, symbol) certified / certified: ten re-findings of one timing
+               edge credit as one, one uncorrelated edge credits in full
+    leading    while certifications are fewer than CERT_FULL_WEIGHT, the compiled-per-lead rate
+               times the desk's pooled certified-per-compiled rate carries the source
+    """
+    n_cert = int(c.get("n_certified") or 0)
+    ind = c.get("n_independent_certified")
+    ind = n_cert if ind is None else ind
+    recency = (float(c.get("_cert_w") or 0.0) / n_cert) if n_cert else 1.0
+    keys = c.get("_cert_keys") or set()
+    orth = (len(keys) / n_cert) if n_cert and keys else 1.0
+    certified = wilson_lower(ind * recency * orth + PRIOR_LEADS * pooled,
+                             c["n_leads"] + PRIOR_LEADS)
+    leading = wilson_lower(float(c.get("n_testable") or 0), c["n_leads"]) * pooled_testable
+    lam = min(1.0, n_cert / CERT_FULL_WEIGHT)
+    expected = lam * certified + (1.0 - lam) * max(certified, leading)
+    return expected, {"certified": round(certified, 8), "recency": round(recency, 4),
+                      "orthogonal": round(orth, 4), "leading": round(leading, 8),
+                      "certified_weight": round(lam, 3),
+                      "exotic_certified_excluded": (_EXOTIC_UNMEASURED[0] if _EXOTIC_UNMEASURED
+                                                    else int(c.get("n_certified_exotic") or 0))}
 
 
 def wilson_lower(k: float, n: float, z: float = WILSON_Z) -> float:
@@ -394,7 +472,8 @@ def _resolve(raw: Any, rows: dict[str, dict[str, Any]], idx: dict[str, str]) -> 
 
 
 def _blank() -> dict[str, Any]:
-    return {"n_leads": 0, "n_novel": None, "n_testable": 0, "n_certified": 0,
+    return {"_cert_w": 0.0, "_cert_keys": set(), "n_certified_exotic": 0,
+            "n_leads": 0, "n_novel": None, "n_testable": 0, "n_certified": 0,
             "n_independent_certified": None, "realised_r": None, "n_trades": 0,
             "n_certificates": 0, "first_seen": None, "last_seen": None}
 
@@ -494,7 +573,14 @@ def census(rows: dict[str, dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], 
         c = get(r.get("source"))
         c["n_leads"] += 1
         _touch(c, r.get("at"))
-        c["n_certified"] += 1 if str(r.get("fate")).upper() == "CERTIFIED" else 0
+        if str(r.get("fate")).upper() == "CERTIFIED":
+            # EXOTICS ARE BANNED (zuck 2026-11-24): an exotic certification is not tradable yield.
+            if _exotic(r.get("symbol")):
+                c["n_certified_exotic"] += 1
+            else:
+                c["n_certified"] += 1
+                c["_cert_w"] += _recency(r.get("at"))
+                c["_cert_keys"].add((str(r.get("family") or ""), str(r.get("symbol") or "")))
         q = _q(c)
         q["lineage"] += 1 if (r.get("parent") or r.get("seed_key")) else 0
         if r.get("family"):
@@ -542,6 +628,9 @@ def score(rows: dict[str, dict[str, Any]], counts: dict[str, dict[str, Any]],
     leads = sum(c["n_leads"] for c in counts.values())
     pooled = (sum(c["n_independent_certified"] or c["n_certified"]
                   for c in counts.values()) / leads) if leads else 0.0
+    testable = sum(int(c.get("n_testable") or 0) for c in counts.values())
+    pooled_testable = (sum(int(c["n_certified"]) for c in counts.values()) / testable
+                       if testable else 0.0)
     for sid, row in rows.items():
         c = counts.get(sid) or _blank()
         row.update({k: c[k] for k in ("n_leads", "n_novel", "n_testable", "n_certified",
@@ -559,10 +648,12 @@ def score(rows: dict[str, dict[str, Any]], counts: dict[str, dict[str, Any]],
                                 if c["realised_r"] is not None and c["n_leads"] else None),
         }
         row["unseen_estimate"] = unseen.get(sid)
-        ind, basis = c["n_independent_certified"], "independent survivors per lead"
-        if ind is None:
-            ind, basis = c["n_certified"], "certified per lead (independence UNMEASURED)"
-        expected = wilson_lower(ind + PRIOR_LEADS * pooled, c["n_leads"] + PRIOR_LEADS)
+        basis = ("independent survivors per lead" if c["n_independent_certified"] is not None
+                 else "certified per lead (independence UNMEASURED)")
+        expected, terms = yield_terms(c, pooled, pooled_testable)
+        row["yield_terms"] = terms
+        basis += (f", non-exotic, recency x{terms['recency']}, orthogonal x{terms['orthogonal']}, "
+                  f"leading-indicator weight {1 - terms['certified_weight']:.2f}")
         cred = (_credit_factor(float(c["realised_r"]), c["n_trades"])
                 if c["realised_r"] is not None else 1.0)
         cost = row.get("cost")
@@ -727,6 +818,52 @@ def shares(rows: dict[str, dict[str, Any]]) -> dict[str, float]:
     return out
 
 
+def settle(fresh: dict[str, float], rows: dict[str, dict[str, Any]],
+           prior: dict[str, Any] | None, now: datetime) -> tuple[dict[str, float], dict[str, Any]]:
+    """THE CADENCE. Between daily recomputes the crawlers keep the settled budget; on a recompute
+    each source moves at most MAX_DAILY_MOVE of its settled share toward the fresh one (a new
+    source enters at its fresh share), then all renormalise. An EVENT recomputes out of turn: a
+    source whose non-exotic certifications rose by >= BURST_CERTS, or one that went unreachable.
+    Returns (shares to publish, the state to persist)."""
+    certs = {s: int(r.get("n_certified") or 0) for s, r in rows.items()}
+    dead = sorted(s for s, r in rows.items() if str(r.get("route")) == "unreachable")
+    if not isinstance(prior, dict) or not isinstance(prior.get("shares"), dict):
+        why, prev = "FIRST: no settled budget on file", None
+    else:
+        prev = {str(k): float(v) for k, v in prior["shares"].items()}
+        try:
+            age_h = (now - datetime.fromisoformat(str(prior.get("at")))).total_seconds() / 3600
+        except (TypeError, ValueError):
+            age_h = RECOMPUTE_H
+        pc = prior.get("certified") or {}
+        burst = sorted(s for s, n in certs.items() if n - int(pc.get(s) or 0) >= BURST_CERTS)
+        died = sorted(set(dead) - set(prior.get("dead") or []))
+        if burst or died:
+            why = f"EVENT: certification burst {burst[:5]} / gone dead {died[:5]}"
+        elif age_h >= RECOMPUTE_H:
+            why = f"DAILY: {age_h:.1f}h since the last recompute"
+        else:
+            kept = {s: prev.get(s, fresh[s]) for s in fresh}
+            tot = sum(kept.values()) or 1.0
+            return ({s: round(v / tot, 8) for s, v in kept.items()},
+                    {**prior, "held": True,
+                     "why": f"HELD: {age_h:.1f}h < {RECOMPUTE_H:.0f}h and no event"})
+    if prev is None:
+        out = dict(fresh)
+    else:
+        out = {}
+        for s, v in fresh.items():
+            p0 = prev.get(s)
+            out[s] = v if not p0 else min(max(v, p0 * (1 - MAX_DAILY_MOVE)),
+                                          p0 * (1 + MAX_DAILY_MOVE))
+    tot = sum(out.values()) or 1.0
+    out = {s: round(v / tot, 8) for s, v in out.items()}
+    return out, {"at": now.isoformat(timespec="seconds"), "shares": out, "certified": certs,
+                 "dead": dead, "held": False, "why": why,
+                 "rule": (f"recompute every {RECOMPUTE_H:.0f}h or on an event; a source's share "
+                          f"moves at most {MAX_DAILY_MOVE:.0%} of itself per recompute")}
+
+
 def language_map(rows: dict[str, dict[str, Any]]) -> tuple[dict[str, int], list[str]]:
     """Which tracked native languages have at least one GROUND on file, and which have none."""
     by_lang: dict[str, int] = {}
@@ -793,7 +930,8 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
     q_cov = {f: round(sum(1 for r in rows.values()
                           if not isinstance((r.get("source_quality") or {}).get(f), dict))
                       / max(1, len(rows)), 4) for f in q_fields}
-    sh = shares(rows)
+    sh, settled = settle(shares(rows), rows, _read_json(REGISTRY.with_name(SETTLED_NAME), None),
+                         datetime.fromisoformat(now))
     by_kind: dict[str, int] = {}
     for sid, r in rows.items():
         r["share"], r["last_registered"] = sh.get(sid, 0.0), now
@@ -813,6 +951,8 @@ def build() -> tuple[dict[str, Any], dict[str, Any]]:
         "top_by_reputation": [_brief(r) for r in by_rep[:12]],
         "shares": {s: round(v, 6) for s, v in sorted(sh.items(), key=lambda t: -t[1])[:40]},
         "exploration_floor": EXPLORATION_SHARE,
+        "cadence": {k: settled.get(k) for k in ("at", "held", "why", "rule")},
+        "_settled": settled,
         "roi_regime": ("EVIDENCE" if has_evidence(rows) else "PRIOR_AND_PRICE"),
         "roi_regime_note": ("EVIDENCE: at least one costed source has produced a survivor, so the "
                             "softmax sharpens toward measured yield. PRIOR_AND_PRICE: none has, so "
@@ -881,9 +1021,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure and print, write nothing")
     args = ap.parse_args(argv)
     registry, report = build()
+    settled = report.pop("_settled", None)
     if not args.dry_run:
         _atomic(REGISTRY, registry)
         _atomic(REPORT, report)
+        if isinstance(settled, dict) and not settled.get("held"):
+            _atomic(REGISTRY.with_name(SETTLED_NAME), settled)
     for line in _summary(registry, report, not args.dry_run):
         print(line)
     return 0

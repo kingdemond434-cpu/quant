@@ -39,6 +39,9 @@ GROUNDS_FILE = ROOT / "desks" / "mt5" / "data" / "deep_forest_sources.json"
 #: once a box pass reached it (YIELDED or EMPTY); NAMED_ONLY and BLOCKED are not reads.
 FRONTIER_FILE = ROOT / "desks" / "mt5" / "data" / "deep_forest_frontier.json"
 READ_OUTCOMES = frozenset({"YIELDED", "EMPTY"})
+#: THE REGION FLOOR (principal 2026-11-25 12:24Z): compute follows yield, but every country with a
+#: ground is ATTEMPTED at least once in this window -- the floor below which no share may fall.
+FLOOR_H = 24.0
 
 OFFICIAL_KINDS = frozenset({"official", "macro", "dataset", "rates_credit", "regulatory_filing",
                             "exchange_rulebook", "local_market_mechanics"})
@@ -51,6 +54,44 @@ def _read(path: Path) -> Any:
         return json.loads(Path(path).read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return None
+
+
+def _attempts(frontier_doc: Any) -> dict[str, str]:
+    """ground name -> last_attempt stamp ('' when never attempted)."""
+    vecs = frontier_doc.get("vectors") if isinstance(frontier_doc, Mapping) else None
+    if not isinstance(vecs, Mapping):
+        return {}
+    return {str(k): str(v.get("last_attempt") or "") for k, v in vecs.items()
+            if isinstance(v, Mapping)}
+
+
+def floor_breaches(rows: list[dict[str, Any]], per: Mapping[str, list[Mapping[str, Any]]],
+                   frontier_doc: Any, now: Any = None) -> list[str] | None:
+    """Countries with grounds of which NONE was attempted inside FLOOR_H. None = UNMEASURED."""
+    from datetime import UTC, datetime
+    att = _attempts(frontier_doc)
+    if not att:
+        return None
+    t_now = now or datetime.now(tz=UTC)
+    out = []
+    for r in rows:
+        stamps = [att.get(str(g.get("name") or ""), "") for g in per.get(r["alpha2"], [])]
+        if not stamps:
+            continue
+        recent = False
+        for st in stamps:
+            try:
+                t = datetime.fromisoformat(st.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=UTC)
+            if (t_now - t).total_seconds() <= FLOOR_H * 3600:
+                recent = True
+                break
+        if not recent:
+            out.append(r["alpha2"])
+    return sorted(out)
 
 
 def _outcomes(frontier_doc: Any) -> dict[str, str] | None:
@@ -114,6 +155,7 @@ def census(iso_doc: Mapping[str, Any] | None, grounds_doc: Mapping[str, Any] | N
                          **({"served_by": parent, "why": c.get("served_by_why")}
                             if parent else {})})
     hist = Counter(r["status"] for r in rows_out)
+    floor = floor_breaches(rows_out, per, frontier_doc)
     return {"status": "MEASURED", "total": len(rows_out),
             **{s.lower(): hist.get(s, 0) for s in STATUSES},
             "missing_list": sorted(r["alpha2"] for r in rows_out if r["status"] == "MISSING"),
@@ -123,6 +165,9 @@ def census(iso_doc: Mapping[str, Any] | None, grounds_doc: Mapping[str, Any] | N
                 1 for r in rows_out if r["grounds"] and not r["grounds_read"])),
             "unread_list": (None if outcomes is None else sorted(
                 r["alpha2"] for r in rows_out if r["grounds"] and not r["grounds_read"])),
+            # THE FLOOR: countries no box pass attempted in FLOOR_H. None = frontier unreadable.
+            "floor_breaches": None if floor is None else len(floor),
+            "floor_breach_list": floor,
             "rule": (f"COVERED = >= {COVERED_MIN_GROUNDS} grounds incl. an official-data ground; "
                      "PARTIAL = >= 1 ground; SERVED_BY_PARENT = no own body and the parent has "
                      "a ground; MISSING = none. MISSING only falls."),
