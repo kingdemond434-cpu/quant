@@ -378,7 +378,7 @@ def _safe(fn, fam: str) -> bool:
         return False
 
 
-def run(apply: bool, *, starts: "_Starts | None" = None) -> dict:
+def run(apply: bool, *, starts: _Starts | None = None) -> dict:
     starts = starts or _Starts()
     age = _age_min(HEALTH)
     doc = _read(HEALTH)
