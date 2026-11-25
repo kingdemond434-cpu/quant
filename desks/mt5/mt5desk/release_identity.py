@@ -95,6 +95,9 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/process_health.json",
     "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
     "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
+    "desks/mt5/reports/PASS_FINDINGS.json",
     "desks/mt5/reports/DESK_SELF_HEAL.json",
     # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
     "desks/mt5/reports/BACKUP_STATE.json",

@@ -822,7 +822,13 @@ INVARIANTS: tuple[tuple[str, str, str], ...] = (
     ("I3", "no task reports OK while its output is stale", "Autonomy"),
     ("I4", "cleared code reaches the box within 6h", "Autonomy"),
     ("I5", "every box alert reaches Claude", "Autonomy"),
+    # principal 2026-11-25 02:49Z, PERMANENT: the box never fills up; caps without ever
+    # reducing research or healing. Measured and reclaimed by box_headroom each guardian pass.
+    ("I6", "the disk stays under its 75% line with 14+ days to the recorder pause", "Autonomy"),
+    ("I7", "RAM, CPU, MT5 terminals and LLM relay quotas stay inside their lines", "Autonomy"),
 )
+HEADROOM_FILE = "desks/mt5/reports/BOX_HEADROOM.json"
+HEADROOM_MAX_H = 1.0
 RELEASE_FILE = "desks/mt5/data/release_identity.json"
 ROUTING_FILE = "desks/mt5/reports/ALERT_ROUTING.json"
 INVARIANT_FILES = {"I1": "desks/mt5/reports/INVARIANT_I1.json",
@@ -870,6 +876,27 @@ def check_invariants(root: Path, now: datetime,
                 out.append(Finding(label, bool(doc["all_routed"]),
                                    f"{text}: {doc.get('routed_24h')}/{doc.get('alerts_24h')} "
                                    f"routed in 24h (last publish {doc.get('last_published_at')})"))
+        elif key in ("I6", "I7"):
+            doc = _read_json(root / HEADROOM_FILE)
+            at = _ts(doc.get("at")) if isinstance(doc, dict) else None
+            if at is None:
+                out.append(_absent(label, HEADROOM_FILE.rsplit("/", 1)[0], root,
+                                   f"{text}: VIOLATED -- {HEADROOM_FILE} absent, so nothing "
+                                   "measures the box's headroom", fixable=False))
+                continue
+            age = (now - at).total_seconds() / 3600
+            if age > HEADROOM_MAX_H:
+                out.append(Finding(label, False, f"{text}: VIOLATED -- {HEADROOM_FILE} is "
+                                   f"{age:.1f}h old (max {HEADROOM_MAX_H:.0f}h)", fixable=False))
+                continue
+            parts = ("disk",) if key == "I6" else ("ram", "cpu", "terminals", "quotas")
+            bad = [f"{k}: {(doc.get(k) or {}).get('why')}" for k in parts
+                   if not (doc.get(k) or {}).get("ok", True)]
+            d = doc.get("disk") or {}
+            detail = (f"{d.get('free_gb')}GB free of {d.get('total_gb')}GB, "
+                      f"{d.get('days_to_pause')} days to pause" if key == "I6" else "holds")
+            out.append(Finding(label, not bad, f"{text}: " + ("; ".join(bad)[:300] if bad
+                                                              else detail)))
     return out
 
 
@@ -879,6 +906,19 @@ def board_rerunnable(task: object) -> bool:
     return (isinstance(task, str) and task.startswith("MT5-") and " " not in task
             and task not in MONEY_PATH_TASKS and not _BOARD_NEVER.search(task)
             and not task.startswith(("E8-", "Memecoin")))
+
+
+#: 0x800710E0 ERROR_REQUEST_REFUSED as Task Scheduler reports it (unsigned, signed, or text).
+_REFUSED_CODES = frozenset({0x800710E0, 0x800710E0 - (1 << 32)})
+
+
+def _refused(code: object) -> bool:
+    if isinstance(code, str):
+        try:
+            code = int(code, 16) if code.lower().startswith("0x") else int(code)
+        except ValueError:
+            return False
+    return isinstance(code, int) and not isinstance(code, bool) and code in _REFUSED_CODES
 
 
 def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[str, Any]]:
@@ -904,6 +944,23 @@ def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[
         if not isinstance(row, dict):
             continue
         name, verdict = str(row.get("name") or ""), str(row.get("verdict") or "")
+        # A refused launch while an instance is RUNNING is the IgnoreNew overlap of a resident
+        # (box RC 2026-11-25 03:45Z: all Dept-*, Forest-*, Moat-* -- event 322, never 332/329):
+        # the work is being done, so it is not a refusal to page on.
+        resident = str(row.get("state") or "").lower() == "running"
+        if (name and _refused(row.get("last_result_code")) and verdict not in BOARD_RERUN
+                and not resident):
+            # TASK_REFUSED (red team 2026-11-25: 33 tasks read UNCONTRACTED while every run
+            # returned 0x800710E0). The scheduler refused to start the run and nothing of the
+            # task is running, so no re-run can cure it: the cause is the task's own settings
+            # (a logon type with no session, a dead instance holding IgnoreNew). It pages
+            # whatever its verdict says.
+            census["refused"] = int(census.get("refused") or 0) + 1
+            out.append(Finding(f"{'moneypath ' if name in MONEY_PATH_TASKS else ''}board {name}",
+                               False, f"TASK_REFUSED: last run 0x800710E0 (the scheduler "
+                               f"refused to start it); board verdict {verdict or 'none'}",
+                               fixable=False))
+            continue
         if verdict not in BOARD_RERUN | BOARD_ALERT or not name:
             continue
         if name in GATEWAY_TASKS and (root / GATEWAY_PAUSED).exists():
