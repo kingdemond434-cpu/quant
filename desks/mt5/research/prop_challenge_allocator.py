@@ -916,6 +916,27 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
 
 # ===================================================================== the solve
 
+PF_ALLOCATION = BASE / "reports" / "pf_allocation.json"
+
+
+def regime_block(unpriced: Any = None, path: Path | None = None) -> dict[str, Any]:
+    """What regime the worlds this solve sized on were drawn for (zuck 2026-11-19: regime sizing
+    FULL, reported every pass). The priced columns come from the Fusion allocator's world
+    population, drawn from its forward regime mix; the newcomers' note says whether they were
+    conditioned too. Reporting only: the conditioning lives in the worlds themselves."""
+    pf = _read_json(path or PF_ALLOCATION) or {}
+    reg = pf.get("regime") if isinstance(pf, dict) else None
+    if not isinstance(reg, dict):
+        return {"status": "UNMEASURED", "why": "pf_allocation.json has no regime block",
+                "newcomers": unpriced}
+    return {"status": "CONDITIONED" if reg.get("conditioned") else "UNCONDITIONED",
+            "forward_mix": reg.get("probabilities"),
+            "source": "pf_allocator worlds (data/pf_allocator_cache/worlds.npz)",
+            "allocator_at": pf.get("generated_at") or pf.get("at"),
+            "newcomers": unpriced}
+
+
+
 @dataclass
 class World:
     est: np.ndarray
@@ -1213,6 +1234,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["executable"] = {c: math.floor(v * k * 1e5) / 1e5 for c, v in ex.items()}
     doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
     doc["sized_no_executor"] = {}
+    doc["regime"] = regime_block(uni.get("unpriced"))
     # Missed growth (Rule 1): the joint solve over every admitted column, from the same account
     # and the same continuation, against the deployed book -- what the missing executors cost.
     if len(cols) < len(all_cols) and now_block["status"] == "OK":
