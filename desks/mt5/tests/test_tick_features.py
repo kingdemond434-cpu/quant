@@ -324,3 +324,13 @@ def test_it_is_an_hourly_leg_in_every_registry() -> None:
     assert "desks/mt5/research/tick_features.py" in data_os.READER_ROUTES
     lag = data_os.PUBLICATION_LAGS["tick_features"]
     assert lag["knowledge_column"] == "available_time" and lag["lag_s"] == 0
+
+
+def test_a_tick_source_below_the_utc_floor_is_raised_to_it() -> None:
+    """Audit HOLD 2026-11-25: lag 0 on a UTC tape source would look ahead into broker-time bars."""
+    from mt5desk import family_exogenous_conditioner as fx
+    assert fx.effective_lag_hours("tick_features_EURUSD", 0) == fx.UTC_TAPE_MIN_LAG_HOURS
+    assert fx.effective_lag_hours("tick_news_XAUUSD", 1) == fx.UTC_TAPE_MIN_LAG_HOURS
+    assert fx.effective_lag_hours("tick_features_EURUSD", 24) == 24
+    assert fx.effective_lag_hours("fred_DGS10", 0) == 0          # other sources unchanged
+    assert fx.UTC_TAPE_MIN_LAG_HOURS == tf.MIN_CONDITIONER_LAG_HOURS

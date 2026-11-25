@@ -77,6 +77,21 @@ def _load(path: Path) -> pd.DataFrame | None:
         return None
 
 
+#: Sources stamped on the UTC tick tape (research/tick_features.py). The bar clock is broker time,
+#: 2-3h AHEAD of UTC, so a lag under this is a same-symbol look-ahead (Audit HOLD 2026-11-25).
+UTC_TAPE_PREFIXES: tuple[str, ...] = ("tick_features_", "tick_news_")
+UTC_TAPE_MIN_LAG_HOURS = 4
+
+
+def effective_lag_hours(source: str, lag_hours: int) -> int:
+    """The lag actually applied: never negative, and never under the UTC-tape floor for a tape
+    source. A cell asking for less is RAISED, never refused -- it is judged at the safe lag."""
+    lag = max(0, int(lag_hours))
+    if str(source or "").startswith(UTC_TAPE_PREFIXES):
+        lag = max(lag, UTC_TAPE_MIN_LAG_HOURS)
+    return lag
+
+
 def conditioner(source: str, signal: str, transform: str, *, lag_hours: int = DEFAULT_LAG_HOURS,
                 z_window: int = DEFAULT_Z_WINDOW, root: Path | None = None) -> pd.Series | None:
     """The pack's column as a lagged, transformed series on its own `available_time` clock.
@@ -118,7 +133,7 @@ def conditioner(source: str, signal: str, transform: str, *, lag_hours: int = DE
         return None
     # THE LAG, BEFORE ANY ALIGNMENT. See the module docstring: the bar clock is broker time and
     # this series is UTC, so the offset is absorbed by holding the value back a publication day.
-    return s.shift(freq=pd.Timedelta(hours=max(0, int(lag_hours))))
+    return s.shift(freq=pd.Timedelta(hours=effective_lag_hours(source, lag_hours)))
 
 
 def family_exogenous_conditioner(
