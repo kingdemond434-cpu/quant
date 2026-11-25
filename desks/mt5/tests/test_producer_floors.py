@@ -170,3 +170,22 @@ def test_a_ledger_read_stops_at_the_soft_deadline(tmp_path: Path, monkeypatch) -
     note = {}
     rows = ar._read_jsonl(p, note)
     assert len(rows) == 5_000 and note[p.name] == "DEADLINE_TRUNCATED(5000)"
+
+
+def test_a_producer_sharing_a_seat_is_counted_by_its_own_files(tmp_path: Path,
+                                                               monkeypatch) -> None:
+    import check_producer_yield as cpy
+    world = tmp_path / "desks" / "mt5" / "data" / "intelligence" / "world"
+    world.mkdir(parents=True)
+    (world / "discoveries_deepforest_1.json").write_text("[\n{}\n]\n", encoding="utf-8")
+    (world / "discoveries_crawler_1.json").write_text("[\n{}\n{}\n{}\n]\n", encoding="utf-8")
+    monkeypatch.setattr(cpy, "DESK", tmp_path / "desks" / "mt5")
+    monkeypatch.setattr(cpy, "ROOT", tmp_path)
+    assert cpy._prefixed_output(3.0, "world", "discoveries_deepforest_") == 3
+    assert cpy._prefixed_output(3.0, "world", "discoveries_nothing_") is None
+    assert cpy.SHARED_SEAT_PREFIXES["deep_forest_miner"] == ("world", "discoveries_deepforest_")
+
+
+def test_local_convert_output_rides_the_box_state_sync() -> None:
+    sync = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    assert '"desks/mt5/data/hypotheses/local_candidates.json"' in sync
