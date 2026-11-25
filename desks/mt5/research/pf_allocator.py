@@ -426,6 +426,7 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
         law = {}
     clocks = {str(r.get("certificate")): r for v in (law.values() if isinstance(law, dict) else [])
               if isinstance(v, list) for r in v if isinstance(r, dict) and r.get("certificate")}
+    by_key = {str(r["key"]): cert for cert, r in clocks.items() if r.get("key")}
     try:
         from research.frontier_identity import cell_id
     except ImportError:                                   # pragma: no cover - box path only
@@ -435,7 +436,23 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     for r in rows:
         if not isinstance(r, dict) or str(r.get("status") or "").upper() != "STANDBY":
             continue
-        cell, name = str((r.get("certificate") or {}).get("cell") or ""), str(r.get("name") or "")
+        name = str(r.get("name") or "")
+        cert = r.get("certificate")
+        # ONE ROW MUST NEVER KILL THE PASS (box 2026-11-24: 440 consecutive "ALLOCATOR FAILED:
+        # 'str' object has no attribute 'get'" since 11-21, the whole book frozen on a 3-day-old
+        # reading). The promoter writes the certificate as a {"cell": ...} dict on survivor rows
+        # but as the bare clock key (`SYM.family.selector@TF#k=v`) on clock-promoted rows. A bare
+        # key is mapped back to its cell through the clock table; anything else is UNMEASURED.
+        if isinstance(cert, dict):
+            cell = str(cert.get("cell") or "")
+        elif isinstance(cert, str) and cert:
+            cell = cert if cert.startswith("external.") else by_key.get(cert, "")
+            if not cell and name:
+                unmeasured[name] = (f"certificate is the bare clock key {cert!r} and no forward "
+                                    f"clock maps it to a cell")
+                continue
+        else:
+            cell = ""
         if not cell or not name:
             continue
         if cell in owner:
