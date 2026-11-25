@@ -328,3 +328,13 @@ def test_a_pass_donates_through_the_intelligence_root(tmp_path):
     row = json.loads(files[0].read_text())["discoveries"][0]
     assert row["lane"] == "translator" and row["params"]["bb_n"] == 30
     assert json.loads((tmp_path / "jobs.json").read_text())["jobs"]
+
+
+def test_sandbox_rules_set_aside_reach_the_translator_queue(tmp_path):
+    from research import sandbox_runner as SR
+    q = tmp_path / "conversion_lanes" / "translate_queue.jsonl"
+    assert SR.queue_for_translation("mean_reversion_bollinger", ["EURUSD"], {},
+                                    "fade a 30 bar band", "alpha101", path=q)
+    got = cl.queue_inputs(q)
+    assert len(got) == 1 and got[0]["source"] == "sandbox:alpha101"
+    assert cl.translated_row(got[0], {"bb_n": 30}, mode="llm")["source_id"] == "sandbox:alpha101"
