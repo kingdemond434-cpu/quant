@@ -50,3 +50,19 @@ def test_missing_may_only_fall() -> None:
 def test_the_live_census_measures() -> None:
     out = cc.current()
     assert out["status"] == "MEASURED" and out["total"] == 249
+
+
+def test_a_proposed_ground_is_partial_until_a_box_pass_reads_it() -> None:
+    grounds = {"grounds": [{"region": "ml", "kind": k, "name": f"g{i}",
+                            "read_status": "PROPOSED_UNREAD"}
+                           for i, k in enumerate(("macro", "official", "macro"))]}
+    iso = _iso({"alpha2": "ML"}, {"alpha2": "AQ", "no_economy": True})
+    unread = cc.census(iso, grounds, {"vectors": {"g0": {"outcome": "NAMED_ONLY"}}})
+    assert unread["rows"][0]["status"] == "PARTIAL" and unread["unread_list"] == ["ML"]
+    assert unread["rows"][1]["status"] == "NO_ECONOMY" and unread["missing"] == 0
+    read = cc.census(iso, grounds, {"vectors": {f"g{i}": {"outcome": "YIELDED"} for i in range(3)}})
+    assert read["rows"][0]["status"] == "COVERED" and read["unread"] == 0
+
+
+def test_no_iso_country_is_missing_on_this_tree() -> None:
+    assert cc.current()["missing"] == 0

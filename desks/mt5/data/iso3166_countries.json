@@ -29,7 +29,9 @@
    "alpha2": "AS",
    "name": "American Samoa",
    "region": "Oceania",
-   "sub_region": "Polynesia"
+   "sub_region": "Polynesia",
+   "served_by": "US",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "AD",
@@ -53,7 +55,9 @@
    "alpha2": "AQ",
    "name": "Antarctica",
    "region": "",
-   "sub_region": ""
+   "sub_region": "",
+   "no_economy": true,
+   "no_economy_why": "Antarctic Treaty territory, no government, no monetary authority or statistics office"
   },
   {
    "alpha2": "AG",
@@ -167,7 +171,9 @@
    "alpha2": "BQ",
    "name": "Bonaire, Sint Eustatius and Saba",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "NL",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "BA",
@@ -185,7 +191,9 @@
    "alpha2": "BV",
    "name": "Bouvet Island",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "NO",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "BR",
@@ -197,7 +205,9 @@
    "alpha2": "IO",
    "name": "British Indian Ocean Territory",
    "region": "Africa",
-   "sub_region": "Sub-Saharan Africa"
+   "sub_region": "Sub-Saharan Africa",
+   "served_by": "GB",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "BN",
@@ -281,13 +291,17 @@
    "alpha2": "CX",
    "name": "Christmas Island",
    "region": "Oceania",
-   "sub_region": "Australia and New Zealand"
+   "sub_region": "Australia and New Zealand",
+   "served_by": "AU",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "CC",
    "name": "Cocos (Keeling) Islands",
    "region": "Oceania",
-   "sub_region": "Australia and New Zealand"
+   "sub_region": "Australia and New Zealand",
+   "served_by": "AU",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "CO",
@@ -467,7 +481,9 @@
    "alpha2": "GF",
    "name": "French Guiana",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "PF",
@@ -479,7 +495,9 @@
    "alpha2": "TF",
    "name": "French Southern Territories",
    "region": "Africa",
-   "sub_region": "Sub-Saharan Africa"
+   "sub_region": "Sub-Saharan Africa",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "GA",
@@ -539,13 +557,17 @@
    "alpha2": "GP",
    "name": "Guadeloupe",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "GU",
    "name": "Guam",
    "region": "Oceania",
-   "sub_region": "Micronesia"
+   "sub_region": "Micronesia",
+   "served_by": "US",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "GT",
@@ -587,7 +609,9 @@
    "alpha2": "HM",
    "name": "Heard Island and McDonald Islands",
    "region": "Oceania",
-   "sub_region": "Australia and New Zealand"
+   "sub_region": "Australia and New Zealand",
+   "served_by": "AU",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "VA",
@@ -839,7 +863,9 @@
    "alpha2": "MQ",
    "name": "Martinique",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "MR",
@@ -857,7 +883,9 @@
    "alpha2": "YT",
    "name": "Mayotte",
    "region": "Africa",
-   "sub_region": "Sub-Saharan Africa"
+   "sub_region": "Sub-Saharan Africa",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "MX",
@@ -977,13 +1005,17 @@
    "alpha2": "NU",
    "name": "Niue",
    "region": "Oceania",
-   "sub_region": "Polynesia"
+   "sub_region": "Polynesia",
+   "served_by": "NZ",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "NF",
    "name": "Norfolk Island",
    "region": "Oceania",
-   "sub_region": "Australia and New Zealand"
+   "sub_region": "Australia and New Zealand",
+   "served_by": "AU",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "MK",
@@ -995,7 +1027,9 @@
    "alpha2": "MP",
    "name": "Northern Mariana Islands",
    "region": "Oceania",
-   "sub_region": "Micronesia"
+   "sub_region": "Micronesia",
+   "served_by": "US",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "NO",
@@ -1061,7 +1095,9 @@
    "alpha2": "PN",
    "name": "Pitcairn",
    "region": "Oceania",
-   "sub_region": "Polynesia"
+   "sub_region": "Polynesia",
+   "served_by": "GB",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "PL",
@@ -1091,7 +1127,9 @@
    "alpha2": "RE",
    "name": "Réunion",
    "region": "Africa",
-   "sub_region": "Sub-Saharan Africa"
+   "sub_region": "Sub-Saharan Africa",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "RO",
@@ -1115,13 +1153,17 @@
    "alpha2": "BL",
    "name": "Saint Barthélemy",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "SH",
    "name": "Saint Helena, Ascension and Tristan da Cunha",
    "region": "Africa",
-   "sub_region": "Sub-Saharan Africa"
+   "sub_region": "Sub-Saharan Africa",
+   "served_by": "GB",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "KN",
@@ -1139,13 +1181,17 @@
    "alpha2": "MF",
    "name": "Saint Martin (French part)",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "PM",
    "name": "Saint Pierre and Miquelon",
    "region": "Americas",
-   "sub_region": "Northern America"
+   "sub_region": "Northern America",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "VC",
@@ -1247,7 +1293,9 @@
    "alpha2": "GS",
    "name": "South Georgia and the South Sandwich Islands",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "GB",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "SS",
@@ -1283,7 +1331,9 @@
    "alpha2": "SJ",
    "name": "Svalbard and Jan Mayen",
    "region": "Europe",
-   "sub_region": "Northern Europe"
+   "sub_region": "Northern Europe",
+   "served_by": "NO",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "SE",
@@ -1343,7 +1393,9 @@
    "alpha2": "TK",
    "name": "Tokelau",
    "region": "Oceania",
-   "sub_region": "Polynesia"
+   "sub_region": "Polynesia",
+   "served_by": "NZ",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "TO",
@@ -1421,7 +1473,9 @@
    "alpha2": "UM",
    "name": "United States Minor Outlying Islands",
    "region": "Oceania",
-   "sub_region": "Micronesia"
+   "sub_region": "Micronesia",
+   "served_by": "US",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "UY",
@@ -1463,19 +1517,25 @@
    "alpha2": "VI",
    "name": "Virgin Islands (U.S.)",
    "region": "Americas",
-   "sub_region": "Latin America and the Caribbean"
+   "sub_region": "Latin America and the Caribbean",
+   "served_by": "US",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "WF",
    "name": "Wallis and Futuna",
    "region": "Oceania",
-   "sub_region": "Polynesia"
+   "sub_region": "Polynesia",
+   "served_by": "FR",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "EH",
    "name": "Western Sahara",
    "region": "Africa",
-   "sub_region": "Northern Africa"
+   "sub_region": "Northern Africa",
+   "served_by": "MA",
+   "served_by_why": "No monetary authority or statistics office of its own"
   },
   {
    "alpha2": "YE",
