@@ -18,7 +18,9 @@ THE STAGES, AND WHERE EACH COUNT COMES FROM
     ROWS                  hypothesis / candidate rows emitted: compiler `per_source[*].candidates`
                           + registry `candidates`; by class / family from the compiler's rows.
     TESTABLE              rows whose params are a REAL executable family spec
-                          (research/family_spec.to_executable == EXECUTABLE). DEFAULTS_ONLY and
+                          (research/family_spec.is_testable: EXECUTABLE, or EXECUTABLE_VARIANT --
+                          the family's defaults under a variant the replay applies). DEFAULTS_ONLY,
+                          UNHONOURED_VARIANT and
                           PROSE_ONLY rows are counted as WASTE, never as testable. Compiler rows
                           are read one by one; registry-lane rows are estimated from judge
                           reach's judged-row quality sample (basis says so). A row whose family
@@ -678,13 +680,14 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
                 if i:          # producers take ROWS from per_source; the instrument cuts count rows
                     c.add("ROWS", 1, "compiler:rows")
                 c.units["ROWS"].add(unit)
-                if q == FS.EXECUTABLE:
+                if FS.is_testable(q):
                     c.add("TESTABLE", 1, "compiler:family_spec")
                     c.units["TESTABLE"].add(unit)
                     c.testable_cells.add((sym, fam, json.dumps(row.get("params"), sort_keys=True,
                                                                default=str)))
                     c.quality_measured_rows += 1
-                elif q in (FS.DEFAULTS_ONLY, FS.PROSE_ONLY, FS.NO_SYMBOLS):
+                elif q in (FS.DEFAULTS_ONLY, FS.PROSE_ONLY, FS.NO_SYMBOLS,
+                           FS.UNHONOURED_VARIANT):
                     c.waste[q] = c.waste.get(q, 0) + 1
                     c.quality_measured_rows += 1
                     c.n["TESTABLE"] = c.n["TESTABLE"] or 0
@@ -705,15 +708,19 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
         p.add("JUDGED", _int(r.get("judged")), "registry:verdict_ledger_by_identity")
         q = (reach.get(name) or {}).get("judged_quality")
         if cand and isinstance(q, dict):
-            ex_, d_, pr_ = (int(q.get(FS.EXECUTABLE) or 0), int(q.get(FS.DEFAULTS_ONLY) or 0),
-                            int(q.get(FS.PROSE_ONLY) or 0))
-            meas = ex_ + d_ + pr_
+            ex_ = sum(int(q.get(k) or 0) for k in FS.TESTABLE)
+            d_, pr_ = int(q.get(FS.DEFAULTS_ONLY) or 0), int(q.get(FS.PROSE_ONLY) or 0)
+            uv_ = int(q.get(FS.UNHONOURED_VARIANT) or 0)
+            meas = ex_ + d_ + pr_ + uv_
             if meas:
                 est = round(cand * ex_ / meas)
                 p.add("TESTABLE", est, "registry:estimated_from_judge_reach_sample")
                 p.waste[FS.DEFAULTS_ONLY] = p.waste.get(FS.DEFAULTS_ONLY, 0) \
                     + round(cand * d_ / meas)
                 p.waste[FS.PROSE_ONLY] = p.waste.get(FS.PROSE_ONLY, 0) + round(cand * pr_ / meas)
+                if uv_:
+                    p.waste[FS.UNHONOURED_VARIANT] = (p.waste.get(FS.UNHONOURED_VARIANT, 0)
+                                                      + round(cand * uv_ / meas))
                 p.quality_measured_rows += cand
     # The desk's RAW / ROWS are the producers' sums (both lanes); its TESTABLE / waste likewise.
     desk.n["RAW"] = desk.n["ROWS"] = None
@@ -908,8 +915,9 @@ def build(paths: Paths | None = None, *, now: datetime | None = None,
 STAGE_DEFINITIONS = {
     "RAW": "compiler intake rows per source + registry discoveries; UNMEASURED by class/family",
     "ROWS": "compiler candidates per source + registry candidates; compiler rows by instrument",
-    "TESTABLE": "family_spec EXECUTABLE (compiler rows exact; registry lane estimated from the "
-                "judge_reach judged-row sample); DEFAULTS_ONLY / PROSE_ONLY are waste",
+    "TESTABLE": "family_spec EXECUTABLE or EXECUTABLE_VARIANT (compiler rows exact; registry "
+                "lane estimated from the judge_reach judged-row sample); DEFAULTS_ONLY / "
+                "PROSE_ONLY / UNHONOURED_VARIANT are waste",
     "JUDGED": "registry judged by exact cell identity; the judge's seen cells by instrument; "
               "by family the larger of the seen cells and the verdict digest's newest sweep",
     "CERTIFIED": "certificate_provenance records in the canon",

@@ -279,3 +279,22 @@ def test_a_fresh_seen_set_keeps_a_measured_zero(tmp_path: Path) -> None:
     _w(p.compiler, hyps)
     fam = {r["family"]: r for r in _build(p)["families"]}
     assert fam["jump"]["stages"]["JUDGED"] == 0
+
+
+def test_an_applied_variant_at_the_defaults_is_testable_and_a_refused_one_is_waste(
+        tmp_path: Path) -> None:
+    """The funnel reads the same family_spec verdict the compiler's gate uses: a family at its
+    defaults under a session window the replay applies is TESTABLE (EXECUTABLE_VARIANT); one
+    under a variant the replay refuses is waste, never testable."""
+    assert fn.row_quality({"family": "trend_ma_cross",
+                           "params": {"session": "london"}}) == fs.EXECUTABLE_VARIANT
+    assert fn.row_quality({"family": "trend_ma_cross",
+                           "params": {"residual": "usd"}}) == fs.UNHONOURED_VARIANT
+    p = _desk(tmp_path)
+    hyps = json.loads(p.compiler.read_text("utf-8"))
+    hyps["hypotheses"] = [_hyp("miner:gamma", "EURUSD", {"session": "london"}),
+                          _hyp("miner:gamma", "EURUSD", {"residual": "usd"})]
+    _w(p.compiler, hyps)
+    fam = {r["family"]: r for r in _build(p)["families"]}["trend_ma_cross"]
+    assert fam["stages"]["TESTABLE"] == 1
+    assert fam["waste"]["other_not_executable"] == {fs.UNHONOURED_VARIANT: 1}

@@ -920,7 +920,11 @@ def translate_params(child: Mapping[str, Any], *, prose: str = "") -> dict[str, 
     parent's settings arrive under the SOURCE's names (`lookback`, `window`, `w`) -- or not at
     all -- and nothing ever mapped them onto the family that was finally picked."""
     from research import family_spec as FS
-    got = FS.translate(str(child.get("family") or ""), child.get("params") or {}, prose=prose)
+    # The child's own session window rides IN its params, where the docket and the replay read
+    # it (`family_spec.with_cell_axes`); as a top-level field it was fanned out to all four.
+    params = FS.with_cell_axes(child.get("params") or {}, session=child.get("session"),
+                               chart=child.get("chart"))
+    got = FS.translate(str(child.get("family") or ""), params, prose=prose)
     out = dict(child)
     out["spec_status"], out["spec_reason"] = got["status"], got.get("reason") or ""
     if got["status"] == FS.SIGNATURE_UNREADABLE:
@@ -938,8 +942,11 @@ def translate_params(child: Mapping[str, Any], *, prose: str = "") -> dict[str, 
 def gate_spec(child: Mapping[str, Any]) -> tuple[bool, str]:
     """GATE -- does the child carry a REAL setting of its family, or only the family's defaults?
 
-    A child whose family keywords are all defaults (a session / regime / conditioner variant of a
-    family at its defaults, or a parent whose rule exists only as prose) is NOT donated: the judge
+    TESTABLE (`family_spec.TESTABLE`) is a family keyword off its default (EXECUTABLE) or the
+    family's defaults under a variant the replay APPLIES -- a session window, a volatility or
+    calendar regime, a side, a delayed entry (EXECUTABLE_VARIANT): a London-only breakout is a
+    different rule from the all-hours one. A child with nothing but a label, a variant the replay
+    refuses, or prose is NOT donated: the judge
     would score the family's defaults, a cell this discovery never proposed, and spend a slot on
     it. It is BLOCKED with the verdict as its named, counted reason -- `spec:defaults_only`,
     `spec:prose_only` -- exactly as `sandbox_runner` counts its `not_executable` rows. The trial
@@ -948,10 +955,13 @@ def gate_spec(child: Mapping[str, Any]) -> tuple[bool, str]:
     status = child.get("spec_status")
     reason = str(child.get("spec_reason") or "")
     if not status:
-        got = FS.translate(str(child.get("family") or ""), child.get("params") or {})
+        got = FS.translate(str(child.get("family") or ""),
+                           FS.with_cell_axes(child.get("params") or {},
+                                             session=child.get("session"),
+                                             chart=child.get("chart")))
         status, reason = got["status"], str(got.get("reason") or "")
-    if status == FS.EXECUTABLE:
-        return True, "spec:executable"
+    if FS.is_testable(status):
+        return True, f"spec:{str(status).lower()}"
     return False, f"spec:{str(status).lower()} ({reason[:160]})"
 
 

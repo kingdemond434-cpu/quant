@@ -334,13 +334,16 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
         # THE STRUCTURED RULE, OR A NAMED REASON (funnel, 2026-11-25: 0 of this door's 608
         # docket rows were EXECUTABLE). The registry's queue holds every compiler's cells,
         # including the defaults-only variants `discovery_compiler` minted before its SPEC
-        # gate: a family at its defaults with a session / regime / representation label. Such
-        # a claim is NOT donated -- the judge would score the family's defaults, a cell nobody
+        # gate: a family at its defaults with only a label (`representation`) or a variant the
+        # replay refuses. A family at its defaults under a variant the replay APPLIES (a session
+        # window, a vol regime) is EXECUTABLE_VARIANT and IS donated. A non-testable claim is NOT
+        # donated -- the judge would score the family's defaults, a cell nobody
         # proposed. It is counted by verdict and marked `not_executable` with the reason, so it
         # leaves the queue with a disposition instead of being re-claimed every hour. The
         # registry's search_count is untouched: no trial is deflated.
+        params = FS.with_cell_axes(params, session=r.get("session"), chart=r.get("chart"))
         spec = FS.translate(fam, params, prose=str(r.get("exact_rule") or ""))
-        if spec["status"] not in (FS.EXECUTABLE, FS.SIGNATURE_UNREADABLE):
+        if not FS.is_testable(spec["status"]) and spec["status"] != FS.SIGNATURE_UNREADABLE:
             not_exec[str(spec["status"])] += 1
             if len(examples) < MAX_NOT_EXECUTABLE_EXAMPLES:
                 examples.append({"id": r.get("id"), "family": fam, "symbol": sym,
@@ -351,7 +354,7 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
                           f"spec:{str(spec['status']).lower()} "
                           f"({str(spec.get('reason') or '')[:160]})"))
             continue
-        if spec["status"] == FS.EXECUTABLE:
+        if FS.is_testable(spec["status"]):
             params = dict(spec["call"])
         mark = provenance_mark(r)
         cand = pc.candidate(

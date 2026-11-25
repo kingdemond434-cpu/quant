@@ -19,6 +19,16 @@ the family does not read is reported by name, never silently dropped.
 THE VERDICTS (`to_executable`), and every one but EXECUTABLE is a NAMED non-executable:
 
     EXECUTABLE            at least one family argument differs from its default
+    EXECUTABLE_VARIANT    the family's arguments are its defaults, but a variant the replay
+                          really APPLIES around it is set to a non-neutral value: a session
+                          window (asia / london / ny), a volatility or calendar regime, a side
+                          (revert / long / short), a delayed entry, a session selector, a wired
+                          `alt:` conditioner. A London-only breakout is a different, testable rule
+                          from the all-hours one. TESTABLE, exactly like EXECUTABLE.
+    UNHONOURED_VARIANT    a variant the replay REFUSES (`cell_modifiers.refusal`: residual,
+                          a macro state, a publication-lagged transform, a regime or conditioner
+                          with no desk definition, a non-market fill): the gauntlet records the
+                          cell NOT_RUN whatever else it carries
     DEFAULTS_ONLY         nothing the family reads, or only its defaults restated: the judge
                           would score the family's defaults, not the system's rule
     PROSE_ONLY            no structured parameters at all; the rule exists only as text
@@ -41,8 +51,17 @@ PROSE_ONLY = "PROSE_ONLY"
 UNREGISTERED_FAMILY = "UNREGISTERED_FAMILY"
 SIGNATURE_UNREADABLE = "SIGNATURE_UNREADABLE"
 NO_SYMBOLS = "NO_SYMBOLS"
+EXECUTABLE_VARIANT = "EXECUTABLE_VARIANT"
+UNHONOURED_VARIANT = "UNHONOURED_VARIANT"
 NOT_EXECUTABLE = (DEFAULTS_ONLY, PROSE_ONLY, UNREGISTERED_FAMILY, SIGNATURE_UNREADABLE,
-                  NO_SYMBOLS)
+                  NO_SYMBOLS, UNHONOURED_VARIANT)
+#: The verdicts a judge slot should be spent on. Every reader (funnel, judge_reach,
+#: sandbox_runner, discovery_compiler, moat_candidate_compiler) tests membership HERE.
+TESTABLE: tuple[str, ...] = (EXECUTABLE, EXECUTABLE_VARIANT)
+
+
+def is_testable(status: Any) -> bool:
+    return str(status or "") in TESTABLE
 
 #: THE DECLARED TRANSLATION, per family: a producer's parameter name -> the family's keyword.
 #: Only names whose MEANING is that keyword are listed (an EMA/SMA pair's two windows are the
@@ -132,6 +151,97 @@ def _coerce(value: Any, default: Any) -> tuple[bool, Any]:
     return True, value
 
 
+#: The replay's own vocabulary (`mt5desk.cell_modifiers`, `mt5desk.family_call.SESSIONS`),
+#: copied here only as the fallback for a host where those modules cannot import.
+_FALLBACK = {
+    "MODIFIER_KEYS": frozenset({"regime", "side_mode", "entry_timing", "execution_style",
+                                "entry_style", "representation", "cost_aware", "residual",
+                                "residual_tag", "conditioner", "macro_axis", "macro_state",
+                                "publication_lag_d", "transform", "selector"}),
+    "NO_OP_REGIMES": frozenset({"", "unconditional", "all", "any"}),
+    "APPLIED_REGIMES": frozenset({"high_vol", "high_volatility", "low_vol", "month_end",
+                                  "quarter_end"}),
+    "SESSIONS": frozenset({"asia", "london", "ny", "all"}),
+}
+
+
+@lru_cache(maxsize=1)
+def _replay_vocab() -> dict[str, Any]:
+    try:
+        from mt5desk import cell_modifiers as cm
+        from mt5desk.family_call import SESSIONS
+    except Exception:
+        return dict(_FALLBACK)
+    return {"MODIFIER_KEYS": frozenset(cm.MODIFIER_KEYS),
+            "NO_OP_REGIMES": frozenset(cm.NO_OP_REGIMES),
+            "APPLIED_REGIMES": frozenset(set(cm.VOL_REGIMES) | set(cm.CALENDAR_REGIMES)),
+            "SESSIONS": frozenset(SESSIONS), "alt": cm.alt_conditioner}
+
+
+def read_variants(variants: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+    """({key: value} the replay APPLIES with a non-neutral effect, refusal-or-None).
+
+    Mirrors `cell_modifiers.refusal` / `apply` and the gauntlet's `session_filter` key by key,
+    WITHOUT touching disk: an `alt:` conditioner is honoured when it parses (whether its series is
+    on THIS host is the compiler's `gate_executability`, a host fact, not the row's verdict).
+    A neutral value (`regime=unconditional`, `side_mode=follow`, `session=all`, a label such as
+    `representation`) changes nothing and is never a variant; a session name the filter does not
+    know is IGNORED by it (every hour kept), so it is neutral too."""
+    v = _replay_vocab()
+
+    def low(x: Any) -> str:
+        return str(x if x is not None else "").strip().lower()
+
+    applied: dict[str, Any] = {}
+    for key in ("residual", "residual_tag"):
+        if key in variants:
+            return applied, f"{key}={variants[key]!r}: the replay does not residualise"
+    if "macro_axis" in variants or "macro_state" in variants:
+        return applied, "a macro state: no point-in-time macro series is wired into the replay"
+    if "publication_lag_d" in variants or "transform" in variants:
+        return applied, "a publication-lagged transform: no PIT input series is wired for it"
+    if "conditioner" in variants:
+        alt = v.get("alt")
+        text = str(variants["conditioner"] or "")
+        ok = alt(text) is not None if alt else text.startswith("alt:")
+        if not ok:
+            return applied, (f"conditioner={variants['conditioner']!r}: no conditioning series "
+                             "is wired for it")
+        applied["conditioner"] = variants["conditioner"]
+    if "selector" in variants:
+        sel = low(variants["selector"])
+        if sel not in v["SESSIONS"]:
+            return applied, f"selector={variants['selector']!r}: no declared session window"
+        if sel != "all":
+            applied["selector"] = variants["selector"]
+    if "regime" in variants:
+        reg = low(variants["regime"])
+        if reg in v["APPLIED_REGIMES"]:
+            applied["regime"] = variants["regime"]
+        elif reg not in v["NO_OP_REGIMES"]:
+            return applied, f"regime={variants['regime']!r} has no desk definition"
+    if "side_mode" in variants:
+        side = low(variants["side_mode"])
+        if side in ("revert", "long", "short"):
+            applied["side_mode"] = variants["side_mode"]
+        elif side not in ("", "follow"):
+            return applied, f"side_mode={variants['side_mode']!r} has no declared meaning"
+    if "entry_timing" in variants:
+        timing = low(variants["entry_timing"])
+        if timing == "delayed":
+            applied["entry_timing"] = variants["entry_timing"]
+        elif timing not in ("", "instant"):
+            return applied, f"entry_timing={variants['entry_timing']!r} has no declared meaning"
+    for key in ("execution_style", "entry_style"):
+        if key in variants and low(variants[key]) not in ("", "market"):
+            return applied, f"{key}={variants[key]!r}: the replay has no fill model for it"
+    if "session" in variants:
+        sess = low(variants["session"])
+        if sess in v["SESSIONS"] and sess != "all":
+            applied["session"] = variants["session"]
+    return applied, None
+
+
 def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
     """The family's executable params from a producer's structured `raw`, with the verdict.
 
@@ -155,10 +265,19 @@ def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
                    reason=("the rule exists only as text: no structured parameter was emitted"
                            if prose.strip() else "no parameter was emitted at all"))
         return out
+    # THE VARIANTS, read the way the replay reads them: `session` is always popped and applied
+    # as a window (never a family keyword), and a modifier key goes around the family only when
+    # the family does not take it itself (`cell_modifiers.split`).
+    mod_keys = _replay_vocab()["MODIFIER_KEYS"]
+    variants = {k: v for k, v in src.items()
+                if k == "session" or (k in mod_keys and k not in sig)}
+    applied, refused = read_variants(variants)
     alias = ALIASES.get(family, {})
     params: dict[str, Any] = {}
     unread: list[str] = []
     for k, v in src.items():
+        if k in variants:
+            continue
         key = k if k in sig else alias.get(k, "")
         if not key or key not in sig:
             unread.append(str(k))
@@ -174,19 +293,30 @@ def to_executable(family: str, raw: Any, *, prose: str = "") -> dict[str, Any]:
         if key != k:
             out["mapped"][str(k)] = key
     out["unread"] = unread
+    out["variants"] = dict(applied)
+    full = {**params, **variants}         # the variants ride with the rule: the replay reads them
+    if refused:
+        out.update(status=UNHONOURED_VARIANT, params=full,
+                   reason=f"the replay refuses {refused}; the gauntlet records it NOT_RUN")
+        return out
     differs = {k for k, v in params.items() if v != sig[k]}
+    if differs and not differs <= GEOMETRY_ONLY:
+        out["params"] = full
+        return out
+    if applied:
+        out.update(status=EXECUTABLE_VARIANT, params=full,
+                   reason=f"{family} at its defaults under the applied variant "
+                          f"{sorted(applied.items())}")
+        return out
     if not differs:
-        out.update(status=DEFAULTS_ONLY, params=params,
-                   reason=(f"none of {sorted(src)} is an argument of {family}"
-                           if not params else
+        out.update(status=DEFAULTS_ONLY, params=full,
+                   reason=(f"none of {sorted(src)} is an argument of {family} or an applied "
+                           f"variant" if not params else
                            f"the declared {sorted(params)} restate {family}'s defaults"))
         return out
-    if differs <= GEOMETRY_ONLY:
-        out.update(status=DEFAULTS_ONLY, params=params,
-                   reason=f"only risk geometry {sorted(differs)} differs from {family}'s "
-                          f"defaults; its signal is the default one")
-        return out
-    out["params"] = params
+    out.update(status=DEFAULTS_ONLY, params=full,
+               reason=f"only risk geometry {sorted(differs)} differs from {family}'s "
+                      f"defaults; its signal is the default one")
     return out
 
 
@@ -211,47 +341,59 @@ def judged_quality(family: Any, params_json: Any, prose: Any = "") -> str:
 
 
 def carried_keys() -> frozenset[str]:
-    """Keys a cell carries that are NOT the family's rule and must survive a translation: the
-    transformation miners' variant keys (applied around the family by `cell_modifiers`) and the
-    identity keys that name an input or a chart (`family_inputs.IDENTITY_KEYS`)."""
+    """Keys that NAME an input or a chart (`family_inputs.IDENTITY_KEYS`, minus `session`, which
+    is a variant `to_executable` reads): carried into the call unchanged, never the rule."""
     try:
-        from mt5desk.cell_modifiers import MODIFIER_KEYS
         from mt5desk.family_inputs import IDENTITY_KEYS
     except Exception:
-        return frozenset({"session", "timeframe", "regime", "side_mode", "conditioner",
-                          "representation", "residual", "residual_tag", "entry_timing",
-                          "execution_style", "macro_axis", "macro_state", "peer_symbol",
-                          "factor_symbols", "input_symbol", "input_source", "cost_aware"})
-    return frozenset(MODIFIER_KEYS | IDENTITY_KEYS)
+        return frozenset({"timeframe", "peer_symbol", "factor_symbols", "input_symbol",
+                          "input_source", "surface_generated_at", "fx_symbol"})
+    return frozenset(IDENTITY_KEYS) - {"session"}
+
+
+def with_cell_axes(params: Any, *, session: Any = "", chart: Any = "") -> dict[str, Any]:
+    """The params a cell must carry for ITS OWN session window (and then its chart) to reach the
+    replay. `miner_candidate_compiler.expand_axes` keeps a row whose params name `session` or
+    `timeframe` exactly as given and fans every other row out over every session and chart -- so
+    a child proposed for London, with London only in a top-level field, was judged in all four
+    windows and its London variant never existed as such. Only a real window (asia / london /
+    ny) is folded in; `all` leaves the fan-out exactly as it was. The chart rides along only with
+    a folded session (H1 is the docket's unkeyed default), so nothing else loses its fan-out."""
+    out = dict(params) if isinstance(params, dict) else {}
+    sess = str(session or "").strip().lower()
+    if sess in _replay_vocab()["SESSIONS"] and sess != "all" and "session" not in out:
+        out["session"] = sess
+        tf = str(chart or "").strip().upper()
+        if tf and tf != "H1":
+            out.setdefault("timeframe", tf)
+    return out
 
 
 def translate(family: str, params: Any, *, prose: str = "") -> dict[str, Any]:
     """`to_executable` plus the cell's CALL params: the family's own keywords (producer names
-    renamed through ALIASES) with the variant and identity keys carried unchanged. A key that is
-    neither is dropped from the call and named in `unread` -- the gauntlet refuses an unknown
-    keyword as NOT_RUN, so carrying it would only spend a judge slot to learn that.
+    renamed through ALIASES), the variants, and the identity keys carried unchanged. A key that is
+    none of these is dropped from the call and named in `unread` -- the gauntlet refuses an
+    unknown keyword as NOT_RUN, so carrying it would only spend a judge slot to learn that.
 
-    Returns the `to_executable` dict with `call` added. On an unreadable signature `call` is the
-    params exactly as given: nothing is renamed or dropped on a host that cannot read the family."""
+    THE SAME VERDICT as `to_executable` on the same params (the funnel's, judge_reach's and
+    sandbox_runner's reading): identity keys are not arguments, so setting them aside changes
+    nothing but the `unread` list. On an unreadable signature `call` is the params as given."""
     src = dict(params) if isinstance(params, dict) else {}
     sig = signature(family)
-    if sig is None:
+    if not sig:            # unreadable (None) or not a family ({}): the verdict says which
         got = to_executable(family, src, prose=prose)
         got["call"] = src
         return got
     keep = carried_keys()
-    # A keyword the family itself reads stays in the rule even when it is also a variant key
-    # (`side_mode` is an argument of cross_asset_residual): the family, not this module, owns it.
-    rule = {k: v for k, v in src.items() if k in sig or k not in keep}
+    ident = {k: v for k, v in src.items() if k in keep and k not in sig}
+    rule = {k: v for k, v in src.items() if k not in ident}
     got = to_executable(family, rule, prose=prose)
     if src and not rule and got["status"] in (PROSE_ONLY, DEFAULTS_ONLY):
-        # Params WERE emitted, just none of the family's: DEFAULTS_ONLY, as `to_executable`
-        # reads the same row (the funnel's verdict), whatever prose rides beside it.
         got.update(status=DEFAULTS_ONLY,
-                   reason=f"only variant / identity keys {sorted(src)} were emitted, so the "
-                          "family would run at its defaults")
+                   reason=f"only identity keys {sorted(src)} were emitted, so the family "
+                          "would run at its defaults")
     call = dict(got["params"])
-    call.update({k: v for k, v in src.items() if k in keep and k not in rule})
+    call.update(ident)
     got["call"] = call
     return got
 

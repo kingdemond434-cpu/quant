@@ -527,13 +527,44 @@ def test_a_child_with_stated_numbers_becomes_executable_under_the_familys_names(
     assert ok and why == "spec:executable"
 
 
-def test_a_child_with_only_variant_keys_is_refused_by_name():
-    for params in ({"session": "asia", "conditioner": "carry"}, {"rr": 1.0, "ttl_bars": 6},
-                   {}):
-        out = dc.translate_params(_child(params=params), prose="asia handover")
+def test_a_child_with_nothing_the_replay_applies_is_refused_by_name():
+    """Blocked: nothing differs from the defaults, only a label, only geometry, a variant the
+    replay REFUSES (residual, an undefined conditioner or regime, a limit fill), or prose."""
+    cases = (({"representation": "external_engine"}, "spec:defaults_only"),
+             ({"rr": 1.0, "ttl_bars": 6}, "spec:defaults_only"),
+             ({"regime": "unconditional", "side_mode": "follow"}, "spec:defaults_only"),
+             ({"residual": "usd", "residual_tag": "residual"}, "spec:unhonoured_variant"),
+             ({"conditioner": "carry"}, "spec:unhonoured_variant"),
+             ({"regime": "risk_off"}, "spec:unhonoured_variant"),
+             ({"execution_style": "limit"}, "spec:unhonoured_variant"),
+             ({}, "spec:prose_only"))
+    for params, expect in cases:
+        out = dc.translate_params(_child(params=params, session="all"), prose="asia handover")
         ok, why = dc.gate_spec(out)
-        assert not ok
-        assert why.startswith(("spec:defaults_only", "spec:prose_only")), why
+        assert not ok and why.startswith(expect), (params, why)
+    # an applied session does not rescue a refused variant: the gauntlet NOT_RUNs the cell
+    out = dc.translate_params(_child(params={"residual": "usd"}, session="london"))
+    assert out["spec_status"] == FS.UNHONOURED_VARIANT
+
+
+def test_a_session_filtered_child_at_the_defaults_is_an_executable_variant():
+    """A family at its defaults traded only in London (or only in high vol) is a DIFFERENT
+    rule the replay really applies -- breadth, not waste. Its window rides IN its params, where
+    the docket keeps it instead of fanning the row out over every session."""
+    out = dc.translate_params(_child(params={"representation": "price_only"},
+                                     session="london", chart="M15"))
+    assert out["spec_status"] == FS.EXECUTABLE_VARIANT
+    assert out["params"] == {"representation": "price_only", "session": "london",
+                             "timeframe": "M15"}
+    assert dc.gate_spec(out) == (True, "spec:executable_variant")
+    assert FS.judged_quality("asia_momentum", out["params"]) == FS.EXECUTABLE_VARIANT
+    for params in ({"regime": "high_vol"}, {"side_mode": "revert"},
+                   {"entry_timing": "delayed"}):
+        got = dc.translate_params(_child(params=params, session="all"))
+        assert got["spec_status"] == FS.EXECUTABLE_VARIANT, params
+    # session "all" is the fan-out's own slot: nothing is folded in
+    assert "session" not in dc.translate_params(_child(params={"regime": "high_vol"},
+                                                       session="all"))["params"]
 
 
 def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
@@ -553,15 +584,21 @@ def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
                     out=desk["paths"]["OUT"], ctx=ctx)
     assert desk["donated"], "the stated rule produced nothing"
     for row in desk["donated"]:
-        assert FS.judged_quality(row["family"], row["params"]) == FS.EXECUTABLE, row
+        q = FS.judged_quality(row["family"], row["params"])
+        assert FS.is_testable(q), row
+        if q == FS.EXECUTABLE_VARIANT:          # the variant rides in the params it needs
+            assert FS.to_executable(row["family"], row["params"])["variants"], row
     stated = [r for r in desk["donated"] if r["symbol"] == "EURUSD"
               and r["family"] == "asia_momentum"]
     # every one carries the stated setting -- as stated, or its declared x0.5 / x2 neighbour
     assert stated and all(r["params"].get("mom_thresh") in (0.6, 0.3, 1.2) for r in stated)
     assert any(r["params"].get("mom_thresh") == 0.6 for r in stated)
-    assert not any(r["family"] == "level_breakout" for r in desk["donated"])
+    # the parent with no setting reaches the docket ONLY as variants the replay applies
+    bare = [r for r in desk["donated"] if r["family"] == "level_breakout"]
+    assert all(FS.judged_quality("level_breakout", r["params"]) == FS.EXECUTABLE_VARIANT
+               for r in bare)
     reasons = report["blocked"]["by_reason"]
-    assert reasons.get("spec:defaults_only", 0) > 0
+    assert any(k.startswith("spec:") for k in reasons), reasons
     assert report["compiled"] + report["blocked"]["n"] == report["possible_cells"]
     assert report["conversion_debt"]["unexplained_missing_cells"] == 0
     assert R.memories(kind="blocked_cell")
@@ -570,7 +607,8 @@ def test_a_run_donates_only_executable_rows_and_counts_the_rest(desk, ctx):
 def test_the_moat_exchange_donates_only_executable_claims_and_marks_the_rest(
         tmp_path, monkeypatch):
     """moat_factory (0 of 608 docket rows testable, 2026-11-25) forwards the registry's queue,
-    which holds the compiler's older defaults-only variants. A claim with no real setting is
+    which holds the compiler's older defaults-only variants. A claim with no real setting (only a
+    label, or a variant the replay refuses) is
     counted by verdict and marked `not_executable` with its reason -- never donated, never left
     to be re-claimed; one with a stated setting is donated under the family's keyword."""
     pytest.importorskip("pandas")
@@ -588,24 +626,37 @@ def test_the_moat_exchange_donates_only_executable_claims_and_marks_the_rest(
     try:
         bare, _ = R.enqueue_candidate(
             family="range_reversion", symbol="AUDCAD", status="queued", origin="DESK",
-            params={"representation": "external_engine", "session": "asia"},
+            params={"representation": "external_engine"}, mechanism="m" * 20, conn=conn)
+        refused, _ = R.enqueue_candidate(
+            family="range_reversion", symbol="AUDCAD", status="queued", origin="DESK",
+            params={"residual": "usd", "residual_tag": "residual"}, mechanism="m" * 20,
+            conn=conn)
+        variant, _ = R.enqueue_candidate(
+            family="range_reversion", symbol="EURGBP", status="queued", origin="DESK",
+            params={"representation": "external_engine"}, session="london",
             mechanism="m" * 20, conn=conn)
         real, _ = R.enqueue_candidate(
             family="range_reversion", symbol="AUDCAD", status="queued", origin="DESK",
             params={"lookback": 40, "session": "asia"}, mechanism="m" * 20, conn=conn)
         out = mcc.claim_and_donate(conn, per_department=50)
         assert out["status"] == "CLAIMED", out
-        assert out["not_executable"]["rows"] == 1
-        assert out["not_executable"]["by_reason"] == {FS.DEFAULTS_ONLY: 1}
+        assert out["not_executable"]["rows"] == 2
+        assert out["not_executable"]["by_reason"] == {FS.DEFAULTS_ONLY: 1,
+                                                      FS.UNHONOURED_VARIANT: 1}
         files = list((tmp_path / "intel" / mcc.SOURCE).glob("discoveries_*.json"))
         rows = json.loads(files[0].read_text("utf-8"))["discoveries"]
-        assert [r["params"] for r in rows] == [{"range_n": 40, "session": "asia"}]
+        assert sorted((r["symbol"], json.dumps(r["params"], sort_keys=True)) for r in rows) == [
+            ("AUDCAD", json.dumps({"range_n": 40, "session": "asia"}, sort_keys=True)),
+            ("EURGBP", json.dumps({"representation": "external_engine", "session": "london"},
+                                  sort_keys=True))]
         got = {r["id"]: (r["status"], r["rejection_reason"]) for r in conn.execute(
-            "SELECT id, status, rejection_reason FROM research_candidates WHERE id IN (?, ?)",
-            (bare, real))}
+            "SELECT id, status, rejection_reason FROM research_candidates "
+            "WHERE id IN (?, ?, ?, ?)", (bare, refused, variant, real))}
         assert got[bare][0] == mcc.NOT_EXECUTABLE_STATUS
         assert str(got[bare][1]).startswith("spec:defaults_only")
+        assert str(got[refused][1]).startswith("spec:unhonoured_variant")
         assert got[real][0] != mcc.NOT_EXECUTABLE_STATUS
+        assert got[variant][0] != mcc.NOT_EXECUTABLE_STATUS
     finally:
         conn.close()
         R.set_path(None)
