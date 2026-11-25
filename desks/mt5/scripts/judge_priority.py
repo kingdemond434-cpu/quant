@@ -208,6 +208,19 @@ _LIVE_SCRIPTS = frozenset(
      "ftmo_executor.py", "ftmo_follower.py", "ftmo_venue_reader.py"}
 )
 _LIVE_NAMES = frozenset({"terminal64.exe"})
+#: THE LIVE RECORDERS ARE LIVE (Audit 2026-11-25 13:09Z). The tick tape, the E8 spread sampler and
+#: the moat recorder were registered at the task default (Priority 7 = BELOW_NORMAL), the SAME
+#: class as a research load: box 11-25 13:02Z a BELOW_NORMAL test suite on 4 pinned cores pushed
+#: the tick_recorder heartbeat gap to 474 s. Read as live, MT5-LivePriority raises them to
+#: ABOVE_NORMAL every minute (raise only) and every research class stays strictly below them.
+#: tick_recorder runs as a MODULE (`python -m recorders.tick_recorder`), so modules count too.
+_LIVE_RECORDER_SCRIPTS = frozenset({"e8_spread_sampler.py", "moat_recorder.py"})
+_LIVE_MODULES = frozenset({"recorders.tick_recorder", "desks.mt5.recorders.tick_recorder"})
+
+
+def _modules(cmdline: Iterable[Any]) -> set[str]:
+    args = [str(a).strip('"') for a in (cmdline or [])]
+    return {args[i + 1].lower() for i, a in enumerate(args[:-1]) if a == "-m"}
 
 
 def rank_of(nice: Any) -> int | None:
@@ -257,7 +270,7 @@ def own_class(name: str, cmdline: Iterable[Any]) -> str | None:
             or "from scripts.external_gauntlet import shard_worker" in joined
         ):
             return "judge"
-        if scripts & _LIVE_SCRIPTS:
+        if scripts & (_LIVE_SCRIPTS | _LIVE_RECORDER_SCRIPTS) or _modules(args) & _LIVE_MODULES:
             return "live"
         return None
     if n == "cmd.exe":

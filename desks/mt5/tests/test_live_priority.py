@@ -80,3 +80,24 @@ def test_the_installer_registers_one_minute_task_running_this_script() -> None:
     ps = (Path(lp.__file__).parent / "install_live_priority_task.ps1").read_text("utf-8")
     assert "scripts\\live_priority.py" in ps and "-Minutes 1" in ps
     assert "MT5-LivePriority" in ps
+
+
+def test_live_recorders_are_live_and_raised_never_lowered() -> None:
+    """Audit 2026-11-25 13:09Z: the tick tape (a MODULE), the E8 spread sampler and the moat
+    recorder sit strictly above every research class. Box 11-25: at BELOW_NORMAL beside a
+    BELOW_NORMAL test suite, the tick_recorder heartbeat gap reached 474 s."""
+    rec = [
+        _row(30, "python.exe", ["python.exe", "-u", "-m", "recorders.tick_recorder"], BN),
+        _row(31, "python.exe", ["python.exe", "C:\\q\\desks\\mt5\\prop\\e8_spread_sampler.py"], BN),
+        _row(32, "py.exe", ["py.exe", "-3", "C:\\q\\desks\\mt5\\moat\\moat_recorder.py"], N),
+        _row(33, "python.exe", ["python.exe", "-m", "recorders.tick_integrity", "--days", "1"], BN),
+        _row(34, "python.exe", ["python.exe", "-c", "import recorders.tick_recorder"], BN),
+        _row(35, "notepad.exe", ["notepad.exe", "tick_recorder.py"], BN),
+    ]
+    assert [jp.own_class(r["name"], r["cmdline"]) for r in rec] == [
+        "live", "live", "live", None, None, None]
+    items = {i["pid"]: i["action"] for i in lp.plan(rec)}
+    assert items == {30: "raise", 31: "raise", 32: "raise"}
+    calls = []
+    lp.apply(lp.plan(rec), setter=lambda pid, cls, row: calls.append((pid, cls)))
+    assert sorted(calls) == [(30, AN), (31, AN), (32, AN)]
