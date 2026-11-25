@@ -160,18 +160,33 @@ def test_yield_is_k_eff_times_keep_rate_per_cpu_hour_and_weights_are_two_sided(
     _sandbox(tmp_path, monkeypatch, provenance=prov, shadow=shadow, yield_doc=ydoc,
              conversion=_conv(alpha=(1000, 900, 3), beta=(1000, 900, 2), gamma=(1000, 900, 0)))
     monkeypatch.setattr(pl, "_tradable", lambda s, f: True)
+    # no live sleeve yet: the live stage is MEASURED (an empty book), not unreadable
+    (tmp_path / "data").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": []}), "utf-8")
+    (tmp_path / "data" / "fill_corpus.jsonl").write_text("", "utf-8")
     doc = pl.build(now=NOW, apply=False)
     by = {x["producer"]: x for x in doc["producers"]}
     ya, yb = by["alpha"]["yield"], by["beta"]["yield"]
     assert 2.0 <= ya["k_eff_edges"] < 3.0          # the two carry clones are not two edges
     assert ya["forward_keep_rate_used"] == 1.0 and yb["forward_keep_rate_used"] == 0.0
     assert ya["cpu_hours_window"] == 30.0
-    assert ya["edges_per_cpu_hour"] > 0 and yb["edges_per_cpu_hour"] == 0.0
-    assert by["alpha"]["weight"] == 1.0            # the median of the positive yields
-    assert by["beta"]["weight"] == pl.WEIGHT_MIN and by["gamma"]["weight"] == pl.WEIGHT_MIN
+    # EXPECTED live edges: k_eff x shrunk p(cert->kept) x shrunk p(kept->live); no live edge
+    # desk-wide still ranks producers (the smoothed pooled prior), and alpha outranks beta
+    assert ya["edges_per_cpu_hour"] > yb["edges_per_cpu_hour"] > 0
+    assert ya["live_edges_realised"] == 0 and ya["half_life_source"] == "default"
+    assert by["gamma"]["yield"]["edges_per_cpu_hour"] == 0.0
+    assert by["alpha"]["weight"] > by["beta"]["weight"] >= pl.WEIGHT_MIN
+    assert by["gamma"]["weight"] == pl.WEIGHT_MIN
+    # an unreadable live input is UNMEASURED, never zero
+    (tmp_path / "data" / "sleeves.json").unlink()
+    doc_u = pl.build(now=NOW, apply=False)
+    assert {x["producer"]: x for x in doc_u["producers"]}["alpha"]["yield"][
+        "edges_per_cpu_hour"] == pl.UNMEASURED
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": []}), "utf-8")
+    doc = pl.build(now=NOW, apply=False)
     assert by["beta"]["stage_of_death"] == "FORWARD"
     w = json.loads(pl.write(doc) and pl.WEIGHTS.read_text())
-    assert w["producers"]["beta"]["weight"] == pl.WEIGHT_MIN
+    assert w["producers"]["gamma"]["weight"] == pl.WEIGHT_MIN
 
 
 def test_reweight_rows_moves_inside_family_slots_and_removes_nothing() -> None:
