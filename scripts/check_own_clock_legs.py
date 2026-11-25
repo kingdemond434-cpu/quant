@@ -38,6 +38,11 @@ OWN_CLOCK_TASKS: dict[str, tuple[str, str]] = {
     "state_vector": ("MT5-StateVector", "data/state_vector.json"),
     "external_gauntlet": ("MT5-Gauntlet", "reports/UNIVERSAL_SURVIVORS.json"),
     "prop_challenge_allocator": ("MT5-FTMO-Allocator", "reports/FTMO_ALLOCATOR.json"),
+    # The four legs taken off MT5-HourlyCore 2026-11-25 (scripts/install_lane_tasks.ps1).
+    "compile_candidates": ("MT5-Compiler", "data/hypotheses/miner_candidates.json"),
+    "record_tape": ("MT5-TapeRecord", "data/tape/tape_state.json"),
+    "tier_s": ("MT5-TierS", "reports/tier_s/ONLINE_FDR_ROWS.json"),
+    "replication_civilization": ("MT5-Replication", "reports/REPLICATION.json"),
 }
 
 
