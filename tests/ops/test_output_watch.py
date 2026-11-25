@@ -44,10 +44,29 @@ def test_tasks_and_restarts_never_touch_the_money_path():
     bad, unwatched = ow.tasks(health)
     assert unwatched == ["MT5-Dept-Mathlab"]
     assert {b["task"] for b in bad} == {"MT5-Compiler", "MT5-Deepening", "MT5-GatewayResident"}
-    assert ow.restarts(bad, {}, NOW) == ["MT5-Compiler"]
+    lanes = {"MT5-Compiler": "research", "MT5-Deepening": "research",
+             "MT5-GatewayResident": "research"}
+    assert ow.restarts(bad, {}, NOW, lanes) == ["MT5-Compiler"]
     recent = {"started": {"MT5-Compiler": (NOW - timedelta(minutes=30)).isoformat()}}
-    assert ow.restarts(bad, recent, NOW) == []
-    assert ow.restarts(bad, {"started": "junk"}, NOW) == ["MT5-Compiler"]
+    assert ow.restarts(bad, recent, NOW, lanes) == []
+    assert ow.restarts(bad, {"started": "junk"}, NOW, lanes) == ["MT5-Compiler"]
+    assert ow.restarts(bad, {}, NOW, {"MT5-Compiler": "ops"}) == []
+    assert ow.restarts(bad, {}, NOW, {}) == []  # not in the manifest: page only
+
+
+def test_real_manifest_never_restarts_ops_money_or_prop():
+    root = Path(__file__).resolve().parents[2]
+    lanes = ow.manifest_lanes((root / ow.MANIFEST_REL).read_text(encoding="utf-8"))
+    assert lanes.get("MT5-RebootDrill") == "ops"
+    assert len(lanes) >= 120
+    bad = [{"task": n, "verdict": v, "state": "Ready", "money_path": bool(ow.MONEY.search(n))}
+           for n in lanes for v in ow.RESTARTABLE]
+    got = set(ow.restarts(bad, {}, NOW, lanes))
+    for name in ("MT5-RebootDrill", "MT5-ReapGitWriters", "MT5-SshGuard", "MT5-OffsiteBackup"):
+        assert name not in got
+    assert all(lanes[n] in ("research", "data") for n in got)
+    assert not {n for n, ln in lanes.items() if ln in ("ops", "money", "prop")} & got
+    assert got  # research/data tasks are still restartable
 
 
 def test_run_once_pages_once_per_shape_and_again_after_6h(tmp_path: Path):
@@ -60,13 +79,22 @@ def test_run_once_pages_once_per_shape_and_again_after_6h(tmp_path: Path):
     hp = tmp_path / ow.HEALTH_REL
     hp.parent.mkdir(parents=True)
     hp.write_text(json.dumps({"at": NOW.isoformat(), "processes": [
-        {"name": "MT5-Compiler", "verdict": "STALE", "state": "Ready"}]}), encoding="utf-8")
+        {"name": "MT5-Compiler", "verdict": "STALE", "state": "Ready"},
+        {"name": "MT5-RebootDrill", "verdict": "STALE", "state": "Ready"}]}), encoding="utf-8")
+    mf = tmp_path / ow.MANIFEST_REL
+    mf.parent.mkdir(parents=True)
+    mf.write_text('TASK name="MT5-Compiler" trigger="hourly" lane="research"\n'
+                  'TASK name="MT5-RebootDrill" trigger="daily" lane="ops"\n'
+                  'TASK name="MT5-X" lane="research"\nTASK name="MT5-X" lane="ops"\n',
+                  encoding="utf-8")
+    assert ow.manifest_lanes(mf.read_text(encoding="utf-8"))["MT5-X"] == "CONFLICT"
     pages, started = [], []
     doc = ow.run_once(tmp_path, now=NOW, start=lambda t: started.append(t) or True,
                       page=pages.append)
     assert "FAILING_24H:math_lab" in doc["flagged"]
     assert "TASK_STALE:MT5-Compiler" in doc["flagged"]
     assert started == ["MT5-Compiler"] and len(pages) == 1
+    assert {b["task"]: b["lane"] for b in doc["tasks_flagged"]}["MT5-RebootDrill"] == "ops"
     ow.run_once(tmp_path, now=NOW + timedelta(minutes=15), start=lambda t: True,
                 page=pages.append)
     assert len(pages) == 1

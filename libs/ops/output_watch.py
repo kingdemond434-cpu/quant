@@ -48,6 +48,12 @@ REPAGE_EVERY = timedelta(hours=6)
 OK = frozenset({"ok", "success", "done", "completed", "pass", "passed"})
 BAD_TASK = ("NOT_SCHEDULED", "FAILING", "STALE", "NO_ARTIFACT")
 RESTARTABLE = ("STALE", "FAILING")
+MANIFEST_REL = "desks/mt5/ops/box_tasks.manifest"
+# ALLOW-LIST, not deny-list (Audit HOLD 272a90494): only tasks whose manifest lane is research or
+# data are ever restarted. ops/money/prop lanes and tasks absent from the manifest are paged only:
+# a RebootDrill, a git reaper or a backup started at the wrong moment is a fault of its own.
+RESTART_LANES = frozenset({"research", "data"})
+_TASK_LANE = re.compile(r'^TASK\s+name="([^"]+)".*?\slane="?([A-Za-z_]+)"?', re.M)
 MONEY = re.compile(r"(?i)gateway|allocator|terminal|shadow|promot|ftmo|e8|fusion|sleeve|fill|"
                    r"exec|adopt|account|deadman")
 
@@ -131,13 +137,27 @@ def tasks(health: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
     return bad, sorted(unwatched)
 
 
+def manifest_lanes(text: str) -> dict[str, str]:
+    """{task name: lane} from box_tasks.manifest text; a name declared twice with different lanes
+    reads as CONFLICT (never restartable). Pure."""
+    out: dict[str, str] = {}
+    for m in _TASK_LANE.finditer(text):
+        n, ln = m.group(1), m.group(2).lower()
+        out[n] = ln if out.get(n, ln) == ln else "CONFLICT"
+    return out
+
+
 def restarts(bad: Iterable[Mapping[str, Any]], state: Mapping[str, Any],
-             now: datetime) -> list[str]:
-    """Non-money STALE/FAILING tasks not Running and not started in the last 2h. Pure."""
+             now: datetime, lanes: Mapping[str, str]) -> list[str]:
+    """STALE/FAILING tasks in a research/data manifest lane, not money-named, not Running and not
+    started in the last 2h. Anything else (ops/money/prop lane, or not in the manifest) is
+    page-only. Pure."""
     raw = state.get("started")
     started: dict[str, Any] = raw if isinstance(raw, dict) else {}
     out = []
     for b in bad:
+        if lanes.get(str(b["task"])) not in RESTART_LANES:
+            continue
         if b["money_path"] or b["verdict"] not in RESTARTABLE or b.get("state") == "Running":
             continue
         t = _ts(started.get(b["task"]))
@@ -172,7 +192,13 @@ def run_once(root: Path, *, now: datetime | None = None,
     bad, unwatched = tasks(health)
     st_path = root / STATE_REL
     state = _read(st_path)
-    todo = restarts(bad, state, now)
+    try:
+        lanes = manifest_lanes((root / MANIFEST_REL).read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        lanes = {}
+    for b in bad:
+        b["lane"] = lanes.get(str(b["task"]), "NOT_IN_MANIFEST")
+    todo = restarts(bad, state, now, lanes)
     done = {t: start(t) for t in todo}
     if done:
         raw = state.get("started")
