@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-24T23:45:03.503903+00:00",
+  "swept_at": "2026-11-25T00:00:03.814305+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -152,7 +152,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0103,
+      "shadow_exp_r": -0.324,
       "woke_on_shadow": false
     },
     "AUDSGD|macro_conditional_asia": {
@@ -163,7 +163,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2652,
+      "shadow_exp_r": -0.2706,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -184,8 +184,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 87,
-      "shadow_exp_r": -0.2148,
+      "shadow_n": 60,
+      "shadow_exp_r": 0.389,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_asia": {
@@ -361,7 +361,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0318,
+      "shadow_exp_r": 0.0355,
       "woke_on_shadow": false
     },
     "CHFNOK|spread_state_asia": {
@@ -878,7 +878,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5869,
+      "shadow_exp_r": -0.6179,
       "woke_on_shadow": false
     },
     "GBPMXN|clock_transition_asia": {
@@ -922,7 +922,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 23,
-      "shadow_exp_r": -1.3147,
+      "shadow_exp_r": -1.3027,
       "woke_on_shadow": false
     },
     "GBPMXN|spread_state_asia": {
@@ -1296,7 +1296,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2169,
+      "shadow_exp_r": -0.2235,
       "woke_on_shadow": false
     },
     "NZDSGD|overnight_gap_decay_asia": {
@@ -1758,7 +1758,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2437,
+      "shadow_exp_r": 0.2127,
       "woke_on_shadow": false
     },
     "XAUEUR|cross_asset_residual_asia": {

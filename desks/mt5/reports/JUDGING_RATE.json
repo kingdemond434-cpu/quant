@@ -1,21 +1,21 @@
 {
- "at": "2026-11-24T23:18:56+00:00",
+ "at": "2026-11-24T23:57:13+00:00",
  "status": "UNMEASURED",
- "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 786,432 rows (153 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+ "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,478,656 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
  "verdicts": {
   "status": "UNMEASURED",
-  "rows_read": 786432,
-  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 786,432 rows (153 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+  "rows_read": 1478656,
+  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,478,656 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
  },
  "created": {
   "status": "MEASURED",
   "counts": {
    "24h": 10619,
-   "7d": 130281
+   "7d": 130280
   },
   "per_hour": {
    "24h": 442.458,
-   "7d": 775.482
+   "7d": 775.476
   }
  },
  "verdicts_per_hour": "UNMEASURED",
@@ -36,7 +36,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-24T23:18:49+00:00",
-  "pid": 19148
+  "started_at": "2026-11-24T23:57:03+00:00",
+  "pid": 26144
  }
 }
