@@ -1107,6 +1107,58 @@
     "desks/mt5/research/alt_proxies.py"
    ],
    "owner": "Tier S research institution build"
+  },
+  {
+   "name": "HCNSEC",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.hcnsec.cn",
+   "unlocks": "hcnsec relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "AGENTROUTER",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://agentrouter.org",
+   "unlocks": "AgentRouter relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "YJS",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.yjs.im",
+   "unlocks": "yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
+  },
+  {
+   "name": "YJSS",
+   "group": "free_llm",
+   "cost": "free credits (relay)",
+   "machine": "box",
+   "signup": "https://api.yjs.im",
+   "unlocks": "alias of YJS (the principal saved the yjs key under this name, 2026-11-17); yjs relay seat of the Chinese-model swarm (public prompts only); ALLOWED by the principal's override (governance/llm-relays-terms-ruling-2026-11-17.md), lit once the key exists",
+   "readers": [
+    "libs/ops/cn_ensemble.py"
+   ],
+   "owner": "principal adds the key; LLM research lab (Chinese-model swarm) reads it",
+   "file_fallback": "none"
   }
  ],
  "config": [
