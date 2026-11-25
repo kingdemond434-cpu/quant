@@ -1,6 +1,6 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-24T16:39:03+00:00",
+ "generated_at": "2026-11-25T12:20:44+00:00",
  "producer": "desks/mt5/research/judge_prescreen.py (hourly leg judge_prescreen)",
  "mode": "SHADOW",
  "canon_switch": "the code constant judge_prescreen.CANON (a reviewed commit flips it)",
@@ -51,31 +51,31 @@
    "cleared_in_sample": 102665,
    "true_survivor": 13586
   },
-  "true_survivors_unprotected": 3460,
+  "true_survivors_unprotected": 3461,
   "true_survivors_reached_by_k": {
    "5": {
-    "reached": 2928,
+    "reached": 2929,
     "reached_by_half": {
      "select": 1464,
-     "confirm": 1464
+     "confirm": 1465
     },
     "exposed_uncleared": 33,
     "floor_met": true
    },
    "10": {
-    "reached": 2594,
+    "reached": 2595,
     "reached_by_half": {
      "select": 1297,
-     "confirm": 1297
+     "confirm": 1298
     },
     "exposed_uncleared": 18,
     "floor_met": true
    },
    "20": {
-    "reached": 2160,
+    "reached": 2161,
     "reached_by_half": {
      "select": 1080,
-     "confirm": 1080
+     "confirm": 1081
     },
     "exposed_uncleared": 11,
     "floor_met": true
@@ -118,10 +118,10 @@
      "true_survivor": 0.002429
     },
     "true_survivors_reached": {
-     "reached": 2928,
+     "reached": 2929,
      "reached_by_half": {
       "select": 1464,
-      "confirm": 1464
+      "confirm": 1465
      },
      "exposed_uncleared": 33,
      "floor_met": true
@@ -178,10 +178,10 @@
      "true_survivor": 0.001325
     },
     "true_survivors_reached": {
-     "reached": 2594,
+     "reached": 2595,
      "reached_by_half": {
       "select": 1297,
-      "confirm": 1297
+      "confirm": 1298
      },
      "exposed_uncleared": 18,
      "floor_met": true
@@ -238,10 +238,10 @@
      "true_survivor": 0.00081
     },
     "true_survivors_reached": {
-     "reached": 2160,
+     "reached": 2161,
      "reached_by_half": {
       "select": 1080,
-      "confirm": 1080
+      "confirm": 1081
      },
      "exposed_uncleared": 11,
      "floor_met": true
@@ -473,9 +473,9 @@
   "bytes": 587656387
  },
  "timing_s": {
-  "charts": 36.75,
-  "replay": 43.069,
-  "total": 110.674
+  "charts": 65.243,
+  "replay": 41.386,
+  "total": 141.055
  },
  "priority": {
   "applied": true,
@@ -490,8 +490,8 @@
    "status": "MEASURED",
    "provisional": false,
    "cells": 1727096,
-   "both": 1621112,
-   "gate_ruled_not_graph_counted": 103623,
+   "both": 1621099,
+   "gate_ruled_not_graph_counted": 103636,
    "graph_counted_not_gate_ruled": 0,
    "neither": 2361,
    "pending_graph_read": 0,
@@ -501,8 +501,8 @@
    "coverage": {
     "gate_bytes_read": 587656387,
     "gate_bytes": 587656387,
-    "graph_bytes_read": 4807612758,
-    "graph_bytes": 4807612758,
+    "graph_bytes_read": 4807751883,
+    "graph_bytes": 4807751883,
     "backfill_ids_waiting": 0,
     "backfill_cursor": null,
     "backfill_end": null,
@@ -524,13 +524,13 @@
    ],
    "sample_graph_only": [],
    "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
-   "seconds": 22.795
+   "seconds": 30.415
   }
  },
  "missed_growth": [
   {
-   "day": "2026-11-24",
-   "at": "2026-11-24T16:39:03+00:00",
+   "day": "2026-11-25",
+   "at": "2026-11-25T12:20:44+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -550,8 +550,8 @@
    }
   },
   {
-   "day": "2026-11-24",
-   "at": "2026-11-24T16:39:03+00:00",
+   "day": "2026-11-25",
+   "at": "2026-11-25T12:20:44+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
