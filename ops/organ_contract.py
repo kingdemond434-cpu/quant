@@ -125,6 +125,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/FUNNEL.json", 180,
         "every conversion from raw info to live profit per producer, class and family, with "
         "depth, the weakest stage, the desk's attack order and ratcheting floors"),
+    "MT5-HourlyCore (free model routes)": (
+        "desks/mt5/reports/FREE_MODEL_ROUTES.json", 180,
+        "every LLM key on the box LIT / DARK / CAPPED in the one shared free chain, with its calls "
+        "and successes per job over 24h (written by leg conversion_lanes)"),
     "MT5-HourlyCore (judge reach)": (
         "desks/mt5/reports/JUDGE_REACH.json", 180,
         "every producer's emitted > received > judged with named losses, and whether its "

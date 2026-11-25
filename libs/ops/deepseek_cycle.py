@@ -790,12 +790,25 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                             key=resolve_key(e)[0], model=model)
     text, err = llm_seat.chat(user, system=system, seat=ls_seat,
                               max_tokens=(16000 if deep else 4000))
+    provider = "openrouter"
     if err:
-        return {"status": "CALL_FAILED", "role": role_name, "model": model, "why": err}
+        # THE SHARED FREE CHAIN (libs/ops/free_chain) when this seat's own call is refused:
+        # every other lit key on the host (relays only if the prompt is public) gets the turn.
+        try:
+            from libs.ops import free_chain
+            text2, who, err2 = free_chain.ask("deepseek", system, user,
+                                              max_tokens=(16000 if deep else 4000))
+        except Exception as exc:  # blind-except intentional (BLE001): never costs the cycle
+            text2, who, err2 = "", "", f"{type(exc).__name__}"
+        if not text2:
+            return {"status": "CALL_FAILED", "role": role_name, "model": model,
+                    "why": f"{err}; shared free chain: {err2}"[:600]}
+        text, err = text2, None
+        provider, _, model = who.partition("/")
 
     rid = run_id or f"{role_name}_{_now()}"
     sealed = seal(rid, role=role_name, phase_a_output=text, policy_hash=str(gate["policy_hash"]),
-                 cold_context_hash=cold["cold_context_hash"], provider="openrouter", model=model,
+                 cold_context_hash=cold["cold_context_hash"], provider=provider, model=model,
                  root=base)
     if not sealed["ok"]:
         return {"status": "SEAL_CONFLICT", "role": role_name, "why": sealed["why"]}
