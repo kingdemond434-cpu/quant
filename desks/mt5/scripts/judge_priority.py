@@ -215,6 +215,12 @@ _LIVE_NAMES = frozenset({"terminal64.exe"})
 #: ABOVE_NORMAL every minute (raise only) and every research class stays strictly below them.
 #: tick_recorder runs as a MODULE (`python -m recorders.tick_recorder`), so modules count too.
 _LIVE_RECORDER_SCRIPTS = frozenset({"e8_spread_sampler.py", "moat_recorder.py"})
+#: THE GUARDIAN IS LIVE-SIDE TOO (coordinator for zuck 2026-11-25 17:36Z: every money-path and
+#: data-capture task, guardian included, sits in a higher class than research). It is what pages
+#: a starved recorder; starved itself behind the same research load, it pages nothing. Its two
+#: python legs (ops/run_guardian.cmd) are short and read-mostly, so ABOVE_NORMAL costs research
+#: nothing measurable.
+_LIVE_OPS_SCRIPTS = frozenset({"run_desk_self_heal.py", "alert_feed.py"})
 _LIVE_MODULES = frozenset({"recorders.tick_recorder", "desks.mt5.recorders.tick_recorder"})
 
 
@@ -270,7 +276,8 @@ def own_class(name: str, cmdline: Iterable[Any]) -> str | None:
             or "from scripts.external_gauntlet import shard_worker" in joined
         ):
             return "judge"
-        if scripts & (_LIVE_SCRIPTS | _LIVE_RECORDER_SCRIPTS) or _modules(args) & _LIVE_MODULES:
+        if (scripts & (_LIVE_SCRIPTS | _LIVE_RECORDER_SCRIPTS | _LIVE_OPS_SCRIPTS)
+                or _modules(args) & _LIVE_MODULES):
             return "live"
         return None
     if n == "cmd.exe":

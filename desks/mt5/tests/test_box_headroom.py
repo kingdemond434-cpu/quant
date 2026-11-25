@@ -38,6 +38,7 @@ class _PS:
         return 18
 
     NORMAL_PRIORITY_CLASS, ABOVE_NORMAL_PRIORITY_CLASS = 32, 32768
+    BELOW_NORMAL_PRIORITY_CLASS = 16384
     live_priority = 32768
 
     def process_iter(self, attrs):
@@ -48,6 +49,8 @@ class _PS:
                 self.info = {"name": name, "pid": pid}
 
             def nice(self):
+                if self.info["name"] == "python.exe":  # a research process, below live
+                    return ps.BELOW_NORMAL_PRIORITY_CLASS
                 return ps.live_priority
 
             def memory_info(self):
@@ -225,3 +228,77 @@ def test_a_live_recorder_in_a_research_priority_class_breaks_i7():
     ps.rec_priority = ps.ABOVE_NORMAL_PRIORITY_CLASS
     ok = bh.terminals(ps)
     assert ok["ok"] and ok["recorders_below_priority"] == [] and ok["count"] == 3
+
+
+# --- I8: live outranks research (coordinator for zuck 2026-11-25 17:36Z, PERMANENT) -------------
+
+class _PrioPS(_PS):
+    """Terminals, live organs and research, each with its own class and CPU."""
+
+    def __init__(self, classes):
+        self.classes = classes  # pid -> priority constant
+
+    def process_iter(self, attrs):
+        ps = self
+
+        class R:
+            def __init__(self, name, pid, cmd, cpu):
+                self.info = {"name": name, "pid": pid}
+                self._cmd, self._cpu = cmd, cpu
+
+            def nice(self):
+                return ps.classes[self.info["pid"]]
+
+            def cmdline(self):
+                return self._cmd
+
+            def cpu_percent(self, _interval=None):
+                return self._cpu
+
+        return [R("terminal64.exe", 1, ["terminal64.exe"], 5.0),
+                R("python.exe", 2, ["python.exe", "-u", "-m", "recorders.tick_recorder"], 3.0),
+                R("python.exe", 3, ["python.exe", "C:\\q\\gateway_resident.py"], 2.0),
+                R("python.exe", 4, ["python.exe", "C:\\q\\research\\run_desk_self_heal.py"], 1.0),
+                R("python.exe", 5, ["python.exe", "C:\\q\\research\\pf_allocator.py"], 1400.0),
+                R("python.exe", 6, ["python.exe", "C:\\q\\research\\miner.py"], 100.0)]
+
+
+AN, N, BN = 32768, 32, 16384
+
+
+def test_live_above_research_holds_and_research_share_is_measured():
+    p = bh.priority(_PrioPS({1: AN, 2: AN, 3: AN, 4: AN, 5: BN, 6: BN}), sleep=lambda s: None)
+    assert p["ok"] and p["live"] == 4 and p["research"] == 2
+    assert p["research_share"] == round(1500.0 / 1800.0, 4)
+
+
+def test_a_live_organ_left_at_the_task_default_is_a_priority_inversion():
+    """Box 11-25: the tick recorder and gateway_resident ran BELOW_NORMAL beside research."""
+    p = bh.priority(_PrioPS({1: AN, 2: BN, 3: BN, 4: AN, 5: BN, 6: BN}), sleep=lambda s: None)
+    assert not p["ok"] and "PRIORITY_INVERSION: live below ABOVE_NORMAL" in p["why"]
+    assert [x.split(" ")[0] for x in p["live_below"]] == ["recorders.tick_recorder",
+                                                          "gateway_resident.py"]
+    assert len(p["research_at_or_above_live"]) == 2      # research ties the starved live floor
+    assert "research holds 83% of the box" in p["why"]
+
+
+def test_research_raised_to_the_live_class_is_an_inversion_even_when_live_is_raised():
+    p = bh.priority(_PrioPS({1: AN, 2: AN, 3: AN, 4: AN, 5: AN, 6: N}), sleep=lambda s: None)
+    assert not p["ok"]
+    assert p["research_at_or_above_live"] == ["pf_allocator.py pid 5 ABOVE_NORMAL_PRIORITY_CLASS"]
+
+
+def test_the_guardian_counts_as_live():
+    jp = bh._jp()
+    assert jp.own_class("python.exe", ["python.exe", "x/run_desk_self_heal.py"]) == "live"
+    assert jp.own_class("python.exe", ["python.exe", "x/alert_feed.py"]) == "live"
+
+
+def test_i8_pages_an_inversion_and_reads_unmeasured_off_windows(tmp_path):
+    bh.run(tmp_path, NOW, usage=_usage(0.5),
+           ps=_PrioPS({1: AN, 2: BN, 3: AN, 4: AN, 5: BN, 6: BN}))
+    inv = {f.check: f for f in heal.check_invariants(tmp_path, NOW)}
+    assert inv["invariant I8"].ok is False and "PRIORITY_INVERSION" in inv["invariant I8"].detail
+    bh.run(tmp_path, NOW, usage=_usage(0.5), ps=_PrioPS({1: AN, 2: AN, 3: AN, 4: AN, 5: BN, 6: BN}))
+    assert {f.check: f for f in heal.check_invariants(tmp_path, NOW)}["invariant I8"].ok
+    assert bh.priority(object())["why"].startswith("UNMEASURED")

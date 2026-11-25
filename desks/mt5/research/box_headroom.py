@@ -251,6 +251,85 @@ def terminals(ps: Any = None) -> dict[str, Any]:
             "ok": not why, "why": "; ".join(why) or "holds"}
 
 
+#: LIVE OUTRANKS RESEARCH (coordinator for zuck 2026-11-25 17:36Z, PERMANENT). Box 11-25: the tick
+#: tape went dark 12:54Z while the recorder ran BELOW_NORMAL beside ~60 research threads on an
+#: ~85%-busy box, and MT5-LivePriority was never registered, so nothing noticed the inversion.
+#: The rule: every live process (judge_priority.own_class == "live": terminals, gateway,
+#: executors, recorders, guardian) runs at ABOVE_NORMAL, and no other python process sits at or
+#: above the lowest live one. research_share is MEASURED (non-live python CPU over a short sample,
+#: as a share of the whole box) and published against RESEARCH_SHARE; the scheduler, not a cut to
+#: research, is what keeps live first, so the share alone is reported, and it is a fault only
+#: when it coincides with a live process that has lost its class.
+PRIORITY_SAMPLE_S = 1.0
+
+
+def _jp() -> Any:
+    desk = Path(__file__).resolve().parents[1]
+    if str(desk) not in sys.path:
+        sys.path.insert(0, str(desk))
+    from scripts import judge_priority  # the one classifier of live vs research
+    return judge_priority
+
+
+def _label(jp: Any, name: str, cmd: list[Any]) -> str:
+    named = sorted(jp._modules(cmd) | {a for a in jp._script_names(cmd)
+                                       if a.endswith((".py", ".cmd"))})
+    return named[0] if named else name.lower()
+
+
+def priority(ps: Any = None, *, sample_s: float = PRIORITY_SAMPLE_S,
+             sleep: Callable[[float], Any] | None = None) -> dict[str, Any]:
+    """Every live process above every research process; research CPU share measured."""
+    ps = ps or _psutil()
+    if ps is None or not hasattr(ps, "ABOVE_NORMAL_PRIORITY_CLASS"):
+        return {"ok": True, "why": "UNMEASURED: no Windows priority classes here"}
+    jp = _jp()
+    rows: list[tuple[Any, str, str, int | None, str]] = []
+    for p in ps.process_iter(["name", "pid"]):
+        with contextlib.suppress(Exception):
+            name = str(p.info.get("name") or "")
+            if not (jp._is_python(name) or name.lower() in jp._LIVE_NAMES):
+                continue
+            try:
+                cmd = list(p.cmdline() or [])
+            except Exception:
+                cmd = []
+            cls = jp.own_class(name, cmd) or "research"
+            nice = p.nice()
+            rows.append((p, cls, _priority_name(ps, nice), jp.rank_of(nice),
+                         _label(jp, name, cmd)))
+    target = jp.CLASS_RANK[jp.ABOVE_NORMAL]
+    live = [r for r in rows if r[1] == "live"]
+    others = [r for r in rows if r[1] != "live"]
+    below = [f"{r[4]} pid {r[0].info.get('pid')} {r[2]}" for r in live
+             if r[3] is not None and r[3] < target]
+    floor = min((r[3] for r in live if r[3] is not None), default=None)
+    inverted = [f"{r[4]} pid {r[0].info.get('pid')} {r[2]}" for r in others
+                if floor is not None and r[3] is not None and r[3] >= floor]
+    share = None
+    with contextlib.suppress(Exception):
+        for r in others:
+            with contextlib.suppress(Exception):
+                r[0].cpu_percent(None)
+        (sleep or __import__("time").sleep)(sample_s)
+        busy = 0.0
+        for r in others:
+            with contextlib.suppress(Exception):
+                busy += float(r[0].cpu_percent(None))
+        share = round(busy / (100.0 * max(1, int(ps.cpu_count() or 1))), 4)
+    why = []
+    if below:
+        why.append(f"PRIORITY_INVERSION: live below ABOVE_NORMAL: {', '.join(below[:4])}")
+    if inverted:
+        why.append(f"PRIORITY_INVERSION: research at or above live: {', '.join(inverted[:4])}")
+    if why and share is not None and share > RESEARCH_SHARE:
+        why.append(f"research holds {share:.0%} of the box (line {RESEARCH_SHARE:.0%})")
+    return {"live": len(live), "research": len(others), "live_below": below,
+            "research_at_or_above_live": inverted, "research_share": share,
+            "research_share_line": RESEARCH_SHARE, "ok": not why,
+            "why": "; ".join(why) or "holds"}
+
+
 def quotas(root: Path, now: datetime) -> dict[str, Any]:
     """Each LLM relay's calls today against its own daily cap (cn_ensemble's ledger)."""
     if str(root) not in sys.path:
@@ -422,6 +501,7 @@ def run(root: Path = ROOT, now: datetime | None = None, *, apply: bool = False,
         d = disk(root, t, usage=usage)
     doc = {"schema": "box_headroom/1", "at": t.isoformat(timespec="seconds"), "disk": d,
            "ram": ram(ps), "cpu": c, "terminals": terminals(ps), "quotas": quotas(root, t),
+           "priority": priority(ps),
            # the public file carries counts only; the per-file list stays box-local
            "reclaim": {"applied": rec["applied"], "freed_gb": rec["freed_gb"],
                        "done": _count(rec["actions"], True),
@@ -431,7 +511,7 @@ def run(root: Path = ROOT, now: datetime | None = None, *, apply: bool = False,
            "if_still_growing": "more storage (Contabo disk upgrade) or cold evidence to a "
                                "second volume: an ops action, named here with the days left"}
     doc["holds"] = all(bool(doc[k].get("ok", True)) for k in
-                       ("disk", "ram", "cpu", "terminals", "quotas"))
+                       ("disk", "ram", "cpu", "terminals", "quotas", "priority"))
     d_pub = {k: d[k] for k in ("free_gb", "total_gb", "used_frac", "days_to_pause",
                                "growth_gb_per_day", "warn_frac", "ok", "why")}
     with contextlib.suppress(OSError):
@@ -454,7 +534,8 @@ def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     doc = run(apply="--apply" in args)
     print(json.dumps({k: doc[k] for k in ("at", "holds")} |
-                     {k: doc[k].get("why") for k in ("disk", "ram", "cpu", "terminals", "quotas")}
+                     {k: doc[k].get("why") for k in ("disk", "ram", "cpu", "terminals", "quotas",
+                                                     "priority")}
                      | {"freed_gb": doc["reclaim"]["freed_gb"]}, indent=1))
     return 0
 

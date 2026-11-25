@@ -914,6 +914,8 @@ INVARIANTS: tuple[tuple[str, str, str], ...] = (
     # reducing research or healing. Measured and reclaimed by box_headroom each guardian pass.
     ("I6", "the disk stays under its 75% line with 14+ days to the recorder pause", "Autonomy"),
     ("I7", "RAM, CPU, MT5 terminals and LLM relay quotas stay inside their lines", "Autonomy"),
+    # coordinator for zuck 2026-11-25 17:36Z, PERMANENT: live trading always has priority.
+    ("I8", "every live process outranks every research process", "Autonomy"),
 )
 HEADROOM_FILE = "desks/mt5/reports/BOX_HEADROOM.json"
 HEADROOM_MAX_H = 1.0
@@ -964,7 +966,7 @@ def check_invariants(root: Path, now: datetime,
                 out.append(Finding(label, bool(doc["all_routed"]),
                                    f"{text}: {doc.get('routed_24h')}/{doc.get('alerts_24h')} "
                                    f"routed in 24h (last publish {doc.get('last_published_at')})"))
-        elif key in ("I6", "I7"):
+        elif key in ("I6", "I7", "I8"):
             doc = _read_json(root / HEADROOM_FILE)
             at = _ts(doc.get("at")) if isinstance(doc, dict) else None
             if at is None:
@@ -977,7 +979,8 @@ def check_invariants(root: Path, now: datetime,
                 out.append(Finding(label, False, f"{text}: VIOLATED -- {HEADROOM_FILE} is "
                                    f"{age:.1f}h old (max {HEADROOM_MAX_H:.0f}h)", fixable=False))
                 continue
-            parts = ("disk",) if key == "I6" else ("ram", "cpu", "terminals", "quotas")
+            parts = {"I6": ("disk",), "I7": ("ram", "cpu", "terminals", "quotas"),
+                     "I8": ("priority",)}[key]
             bad = [f"{k}: {(doc.get(k) or {}).get('why')}" for k in parts
                    if not (doc.get(k) or {}).get("ok", True)]
             d = doc.get("disk") or {}
