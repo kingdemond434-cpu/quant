@@ -61,6 +61,7 @@ __all__ = [
     "camel",
     "forest",
     "forest_of_country",
+    "mission_log",
     "pack_paths",
     "role_plan",
     "task_for",
@@ -139,6 +140,18 @@ class Forest:
     grounds: tuple[str, ...] = ()
     mission: str = ""
     notes: str = ""
+    #: OPT-IN EVOLVING MISSION (2026-11-17, principal 20:32Z): the forest's mission and query
+    #: terms are rewritten every pass from its own yield by `libs/research/mission_evolution`,
+    #: every version appended to `mission_log(id)`. False leaves a forest exactly as it was.
+    evolving: bool = False
+    #: The organ that MINES this forest's ground, repo-relative module path under
+    #: `desks/mt5/research/`, when it is not `deep_forest_miner` (the onion lane's ground is an
+    #: allowlisted roster reached through Tor, not a deep-forest ground).
+    miner: str = ""
+    #: The forest's OWN claims ledger, desk-relative, read by the practitioner role INSTEAD of the
+    #: shared deep-forest ledger -- so a forest whose language list is broad does not sweep up
+    #: every other forest's claims by language.
+    claims_ledger: str = ""
 
     @property
     def task(self) -> str:
@@ -345,7 +358,7 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                "agriculture and the frontier-FX ecology"),
 )
 
-#: THE FIVE GLOBAL CIVILIZATIONS. They carry no country list on purpose: their ground is a LAYER
+#: THE SIX GLOBAL CIVILIZATIONS. They carry no country list on purpose: their ground is a LAYER
 #: of the world rather than a place, and giving them a country list would make them compete with
 #: the twelve for the same sources.
 GLOBAL_FORESTS: tuple[Forest, ...] = (
@@ -370,6 +383,21 @@ GLOBAL_FORESTS: tuple[Forest, ...] = (
        grounds=("institutional",),
        mission="exchange, clearer and broker data: contract terms, margin, settlement, swap "
                "tables and the venue microstructure the regional forests all trade through"),
+    # THE ONION LAYER (principal 2026-11-17 20:31-20:35Z: "tor is legal", "continue the darkweb
+    # tor onion civilisations as intended", "insider claimed is hunted"). A LAYER of the web,
+    # not a place, so it is global and rides the regions resident. Its ground is an ALLOWLIST of
+    # official onion mirrors and individually reviewed sources (`data/onion_sources.json`),
+    # never a crawl, never a market, forum like Dread, leak/ransomware or carding site; its
+    # miner is `onion_forest`, and its mission EVOLVES every pass from what it yielded.
+    _f("onion", "Onion Layer", "global", languages=("en", "ru", "de", "fa", "zh", "ar"),
+       grounds=("onion",), evolving=True, miner="research/onion_forest.py",
+       claims_ledger="data/onion_claims.jsonl",
+       mission="public text from the onion layer -- official .onion mirrors of public outlets "
+               "and institutions and reviewed onion sources -- that names a testable market "
+               "mechanism for MT5 instruments: policy, supply, flow and rumour claims, with "
+               "first-seen, corroboration and lag to confirmation",
+       notes="Tor carries .onion hosts only (libs/data/onion_fetch); a mirror inherits its "
+             "publisher's terms; TOR_ABSENT is a normal, reported state"),
 )
 
 FORESTS: dict[str, Forest] = {f.id: f for f in (*REGIONAL_FORESTS, *GLOBAL_FORESTS)}
@@ -381,14 +409,20 @@ FOREST_TASKS: dict[str, str] = {fid: task_for(fid) for fid in FORESTS}
 #: before the federation was written (Japan as its own department, global macro as `macro`), and
 #: the four global-LAYER forests ride the `regions` resident beside the country research OS --
 #: a layer of the world is not a place, and giving each one a region resident would have them
-#: competing with the twelve for the same sources. Those six therefore keep the task that
-#: already runs them; only the eleven regional forests below get a task of their own, and
-#: `desks/mt5/ops/box_tasks.manifest` declares exactly those eleven.
+#: competing with the twelve for the same sources. Those six (and the onion layer, 2026-11-17)
+#: therefore keep the task that already runs them; only the eleven regional forests below get a
+#: task of their own, and `desks/mt5/ops/box_tasks.manifest` declares exactly those eleven.
 RIDES: dict[str, str] = {
     "japan": "MT5-Dept-Japan", "global_macro": "MT5-Dept-Macro",
     "global_web": "MT5-Dept-Regions", "global_academic_code": "MT5-Dept-Regions",
     "global_physical_data": "MT5-Dept-Regions", "global_market_data": "MT5-Dept-Regions",
+    "onion": "MT5-Dept-Regions",
 }
+
+
+def mission_log(forest_id: str, desk: Path | None = None) -> Path:
+    """Where an EVOLVING forest's mission versions are appended (one JSONL per forest)."""
+    return (desk or DESK) / "data" / "forest_missions" / f"{forest(forest_id).id}.jsonl"
 
 
 def resident_task(forest_id: str) -> str:
