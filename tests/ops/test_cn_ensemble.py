@@ -11,7 +11,7 @@ from libs.ops import cn_ensemble as cn
 from libs.ops import llm_seat
 
 NOW = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
-OR, HC, AR, YJ = cn.PROVIDERS
+OR, HC, AR, YJ, GQ, CF, SF = cn.PROVIDERS
 
 
 def _no_list(base: str, key: str) -> list[str]:
@@ -26,6 +26,9 @@ def _relays_ruled_allowed(monkeypatch: pytest.MonkeyPatch, request: pytest.Fixtu
 
 
 def test_shipped_rulings_allow_the_relays_on_the_principals_override() -> None:
+    for p in (GQ, CF, SF):
+        assert cn.relay_ruling(p.name) == "ALLOWED"
+        assert not cn.seat_for(p, {}, _no_list).lit
     for p in (HC, AR, YJ):
         assert cn.relay_ruling(p.name) == "ALLOWED"
         s = cn.seat_for(p, {}, _no_list)
@@ -485,3 +488,77 @@ def test_science_lens_donates_a_formula_recipe(tmp_path: Path,
     assert rep["runnable_recipes"] >= 1
     pops = {r["params"]["population"] for r in donated if r.get("family") == "formula"}
     assert pops and all(p.startswith("llm_science_") for p in pops)
+
+
+def test_groq_seat_uses_its_free_models_only_and_needs_no_cn_family() -> None:
+    listed = ["openai/gpt-oss-120b", "qwen/qwen3-32b", "llama-3.3-70b-versatile"]
+    seat = cn.seat_for(GQ, {"GROQ": "k"}, lambda b, k: listed)
+    assert seat.lit and seat.base_url == "https://api.groq.com/openai/v1"
+    assert seat.models == ("openai/gpt-oss-120b", "qwen/qwen3-32b")
+    assert not cn.seat_for(GQ, {}, lambda b, k: listed).lit            # DARK without the key
+    assert cn.seat_for(GQ, {"GROQ_API_KEY": "k"}, lambda b, k: listed).lit
+    dark = cn.seat_for(GQ, {"GROQ": "k"}, lambda b, k: ["llama-3.3-70b-versatile"])
+    assert not dark.lit and "none of the configured" in dark.why
+    assert not cn.seat_for(GQ, {"GROQ": "k"}, _no_list).lit            # fail closed offline
+
+
+def test_groq_stays_inside_its_free_tier(tmp_path: Path) -> None:
+    """90 calls/day across 3 models (~30 x ~6K tokens < 200K tokens/model/day), paced over the
+    hours left, so an hour asks a handful of calls: far below 30 RPM and 1000 RPD."""
+    assert GQ.relay and GQ.daily_cap * 6000 <= 200_000 * len(cn.GROQ_MODELS)
+    asked: dict[str, int] = {}
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        asked[seat.provider.name] = asked.get(seat.provider.name, 0) + 1
+        return '{"findings": []}', None
+
+    env = {"GROQ": "k"}
+    cn.run(NOW, root=tmp_path, env=env, chat=chat,
+           list_models=lambda b, k: list(cn.GROQ_MODELS))
+    assert 0 < asked.get("groq", 0) <= -(-cn.GROQ_DAILY // 12)
+
+
+ACCT = "0123456789abcdef0123456789abcdef"
+
+
+def test_cloudflare_seat_needs_token_and_account_and_uses_its_models() -> None:
+    assert not cn.seat_for(CF, {"CLOUDFLARE_AI": "k"}, _no_list).lit        # no account id
+    assert "CLOUDFLARE_ACCOUNT_ID" in cn.seat_for(CF, {"CLOUDFLARE_AI": "k"}, _no_list).why
+    assert not cn.seat_for(CF, {"CLOUDFLARE_ACCOUNT_ID": ACCT}, _no_list).lit   # no token
+    seat = cn.seat_for(CF, {"CLOUDFLARE_AI": "k", "CLOUDFLARE_ACCOUNT_ID": ACCT}, _no_list)
+    assert seat.lit and seat.models == cn.CLOUDFLARE_MODELS
+    assert seat.base_url == f"https://api.cloudflare.com/client/v4/accounts/{ACCT}/ai/v1"
+    bad = cn.seat_for(CF, {"CLOUDFLARE_AI": "k", "CLOUDFLARE_ACCOUNT_ID": "x/../y"}, _no_list)
+    assert not bad.lit
+
+
+def test_cloudflare_stays_inside_10k_free_neurons(tmp_path: Path) -> None:
+    assert CF.relay and CF.daily_cap * 340 <= 10_000
+    asked: dict[str, int] = {}
+
+    def chat(seat: cn.Seat, model: str, system: str, user: str) -> tuple[str, str | None]:
+        asked[seat.provider.name] = asked.get(seat.provider.name, 0) + 1
+        return '{"findings": []}', None
+
+    cn.run(NOW, root=tmp_path, env={"CLOUDFLARE_AI": "k", "CLOUDFLARE_ACCOUNT_ID": ACCT},
+           chat=chat, list_models=_no_list)
+    assert 0 < asked.get("cloudflare", 0) <= -(-cn.CLOUDFLARE_DAILY // 12)
+
+
+def test_siliconflow_tries_com_then_cn_and_uses_free_models_only() -> None:
+    tried: list[str] = []
+
+    def lister(base: str, key: str) -> list[str]:
+        tried.append(base)
+        if ".com" in base:
+            raise RuntimeError("401")
+        return ["Qwen/Qwen3-8B", "Qwen/Qwen3-235B-A22B", "THUDM/GLM-4-9B-0414"]
+
+    seat = cn.seat_for(SF, {"SILICONFLOW": "k"}, lister)
+    assert tried == ["https://api.siliconflow.com/v1", "https://api.siliconflow.cn/v1"]
+    assert seat.lit and seat.base_url == "https://api.siliconflow.cn/v1"
+    assert seat.models == ("Qwen/Qwen3-8B", "THUDM/GLM-4-9B-0414")    # the paid 235B is out
+    pinned = cn.seat_for(SF, {"SILICONFLOW": "k", "SILICONFLOW_BASE_URL":
+                              "https://api.siliconflow.com/v1"}, lister)
+    assert not pinned.lit                                   # an explicit base is not second-guessed
+    assert not cn.seat_for(SF, {"SILICONFLOW": "k"}, _no_list).lit

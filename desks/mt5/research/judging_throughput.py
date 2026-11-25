@@ -1612,6 +1612,17 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                        limiting=decision["limiting_resource"], queue_depth=queue.get("depth"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {_why(exc)}"
+        # THE VERDICT LADDER AND THE PER-VERDICT BREAKDOWN (owner, 2026-11-25), read from the
+        # reports this pass just refreshed: reports/JUDGE_EFFICIENCY.json. Best effort.
+        # Only beside the real report: a run whose OUT was redirected (a test) writes nothing.
+        try:
+            if Path(OUT).resolve() != (BASE / "reports" / "JUDGING_THROUGHPUT.json").resolve():
+                payload["efficiency"] = "NOT_ATTEMPTED (output redirected)"
+            else:
+                from research import judge_efficiency
+                payload["efficiency"] = judge_efficiency.publish(now=now)["ladder"]
+        except Exception as exc:
+            payload["efficiency"] = f"UNMEASURED: {_why(exc)}"
     return payload
 
 

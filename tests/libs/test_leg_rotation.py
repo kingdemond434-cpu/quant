@@ -349,3 +349,19 @@ def test_the_certificate_clock_chain_is_forced_inside_its_two_hour_sla() -> None
         soft, hard = LR.DUE_BY_AGE_H[leg]
         assert soft <= 1.0 and hard <= 2.0, leg
         assert LR.DUE_ARTIFACTS[leg] == ((rel, "at"),), leg
+
+
+def test_kill_margin_never_starts_a_leg_whose_cap_passes_the_task_limit():
+    """2026-11-25: tier_s started with 150-1,832 s left against a 1,500 s cap and was killed."""
+    att = _att({"x": 5, "pc": 5, "record_tape": 5})
+    dec = LR.plan_pass(["x", "pc", "record_tape"], att, plan="core", budget_s=2640.0)
+    assert dec.limit_s == 3300.0
+    ok, why = dec.should_run("x", att, elapsed_s=1900.0, cap_s=1500.0)   # 3400 > 3300 - 120
+    assert not ok and "kill margin" in why
+    assert dec.should_run("x", att, elapsed_s=1600.0, cap_s=1500.0)[0]    # 3100 <= 3180
+    # an undeclared cap (0) is never blocked, and always-run legs are exempt
+    assert dec.should_run("x", att, elapsed_s=1000.0, cap_s=0.0)[0]
+    assert dec.should_run("record_tape", att, elapsed_s=3299.0, cap_s=1500.0)[0]
+    # an unbounded plan has no limit to respect
+    un = LR.plan_pass(["x"], att, plan="dept:x", budget_s=0.0)
+    assert un.limit_s == 0.0 and un.should_run("x", att, 99999.0, cap_s=5000.0)[0]

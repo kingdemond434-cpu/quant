@@ -151,7 +151,9 @@ def _refresh_scalp_bars() -> None:
         if not Path(terminal).exists():
             continue
         from mt5_session import attach_or_initialize
-        if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+        # require_path: same as h1_source -- the loop names the candidate, so the bars it then
+        # reads must come from THAT terminal, not from whichever one holds the IPC pipe.
+        if not attach_or_initialize(mt5, path=terminal, timeout=15_000, require_path=True):
             failures.append(f"{terminal}: initialize failed: {mt5.last_error()}")
             continue
         try:

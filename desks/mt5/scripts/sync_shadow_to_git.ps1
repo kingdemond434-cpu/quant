@@ -695,6 +695,16 @@ $relPaths = @(
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
     # counted stayed on the box, so no reader on this branch could say WHICH eleven.
     "desks/mt5/reports/process_health.json",
+    # BOX ALERTS REACH CLAUDE (2026-11-25, principal 11-20 "all box alerts go to Claude"): every
+    # page read back off the ntfy topic (ops/alert_feed.py, MT5-Guardian), the feed's own status,
+    # and what the guardian did about the process board. Bodies are cut to 400 chars; the login
+    # fence below still refuses any file carrying an account-shaped value.
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED.jsonl",
+    "desks/mt5/reports/alerts/CLAUDE_ALERT_FEED_STATUS.json",
+    "desks/mt5/reports/DISK_HEADROOM.json",
+    "desks/mt5/reports/BOX_HEADROOM.json",
+    "desks/mt5/reports/PASS_FINDINGS.json",
+    "desks/mt5/reports/DESK_SELF_HEAL.json",
     # IS THE BOX BACKED UP, AND WAS A RESTORE EVER REHEARSED (v5f). ops/backup_state.py, on
     # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
     # the key backup's present/size/match. Scheme only: no path, repository, password or hash.

@@ -267,6 +267,21 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
         "transmission": "valuation", "entry": "limit_on_reversal", "exit": "target",
         "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
+    # A boosted tree classifier over causal price features: what it trades against is the
+    # behavioural pattern a past window labelled, exited on its own horizon (the time stop).
+    "gbm_classifier": {
+        "actor": "systematic_pattern_traders", "constraint": "model_horizon",
+        "observable": "learned_feature_state", "trigger": "price_pattern",
+        "catalyst": "pattern_recurrence", "transmission": "behavioural",
+        "entry": "market_on_signal", "exit": "time_stop", "holding": "intraday",
+        "capacity": "spread_bound", "decay_risk": "crowding"},
+    # The Engle-Granger tested pair: the same desks and spread as relative_value, triggered only
+    # while the residual is measured stationary and exited on a half-life time stop.
+    "coint_pairs": {
+        "actor": "relative_value_desks", "constraint": "balance_sheet",
+        "observable": "pair_spread", "trigger": "valuation_gap", "catalyst": "spread_widening",
+        "transmission": "valuation", "entry": "limit_on_reversal", "exit": "time_stop",
+        "holding": "multiday", "capacity": "depth_bound", "decay_risk": "factor_change"},
     "pca_residual": {
         "actor": "factor_investors", "constraint": "factor_mandate",
         "observable": "principal_component_residual", "trigger": "valuation_gap",

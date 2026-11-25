@@ -365,6 +365,21 @@ def _set_budget(budget_s: float | None) -> None:
                        "compile_by": t0 + COMPILE_SHARE * budget_s, "budget_s": budget_s})
 
 
+#: WHERE THE PASS SPENT ITS SECONDS, published in the artifact's `freshness` block. The leg was
+#: killed at 720 s on the box with `--budget-s 600` -- the intake and compile loops obey the
+#: budget, so the overrun was in a phase nothing timed (setup before the loop, or the graph /
+#: steer / write tail after it). The next artifact now says which. Monotonic seconds since start.
+_PHASES: dict[str, float] = {}
+_T0 = time.monotonic()
+#: How old `compiled_at` may be before the desk reads the compiler as DEAD. `check_desk_health`
+#: raises a PROBLEM past this; an artifact that old must never read as current.
+FRESH_MAX_AGE_S = 7200
+
+
+def _mark(phase: str) -> None:
+    _PHASES[phase] = round(time.monotonic() - _T0, 1)
+
+
 def _past(key: str) -> bool:
     by = _CLOCK.get(key)
     return by is not None and time.monotonic() >= by
@@ -1676,7 +1691,9 @@ def main() -> int:
     # AND a crawler all name is a different object from one a single crawler named, and the
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
+    _mark("setup_s")
     rows = recent_rows(now)
+    _mark("intake_s")
     # THE BLINDING COUNTER IS PUBLISHED BEFORE ANY ROW IS COMPILED: organ_market reads the ledger
     # and withholds a seat whose output carried outcomes from the independent-discovery count.
     # (the ledger sits beside OUT's data/ tree: desks/mt5/data/tier_s/blinding_runtime.jsonl)
@@ -1894,6 +1911,7 @@ def main() -> int:
                 "that their clocks ran.")
         except Exception as exc:      # a missing actuator must not take the compiler down
             print(f"  (repair not requested: {type(exc).__name__}: {exc})", flush=True)
+    _mark("compile_s")
     agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
     # DISAGREEMENT IS A SIGNAL TOO (Tier-1 item G20, 2026-09-09). Two engines naming the same
     # symbol under DIFFERENT families is not a tie to discard: it is the cell whose test settles
@@ -1994,6 +2012,7 @@ def main() -> int:
         graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
         print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
 
+    _mark("graph_s")
     # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
     # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
     # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
@@ -2068,6 +2087,7 @@ def main() -> int:
               f"(fail closed: {_rep['fail_closed']})")
     except Exception as exc:
         steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+    _mark("steer_s")
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
@@ -2082,8 +2102,22 @@ def main() -> int:
          for task in deepening.values()], "miner_deepening_queue")
     if refused_tasks:
         raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+    _mark("stamp_s")
     _atomic_json(OUT, {
         "compiled_at": now.isoformat(timespec="seconds"),
+        # SECOND KEY ON PURPOSE: `check_desk_health` reads only the head of this 40 MB file, and
+        # a stale compiler must never pass as current (it sat unwritten from 2026-10-03).
+        "freshness": {
+            "written_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "max_age_s": FRESH_MAX_AGE_S,
+            "budget_s": _CLOCK.get("budget_s"),
+            "elapsed_s": round(time.monotonic() - _T0, 1),
+            "phase_s": dict(_PHASES),
+            "partial": bool(_LAST_INTAKE.get("bound_hit")
+                            or _LAST_INTAKE.get("rows_deferred_uncompiled")),
+            "rows_deferred_uncompiled": int(_LAST_INTAKE.get("rows_deferred_uncompiled") or 0),
+            "rule": "RED when now - compiled_at > max_age_s; scripts/check_desk_health.py",
+        },
         "hypotheses": emitted,
         "net_ranking": net_note,
         "per_source": per_source,
@@ -2150,10 +2184,36 @@ def main() -> int:
     return 0
 
 
+def _record_own_peak() -> None:
+    """Put THIS process's high-water RSS in the `miner_candidate_compiler` admission ledger.
+
+    The lane is held by `hourly_cycle.catch_up_intake`, which then launches this file as a
+    SUBPROCESS -- so `exclusive_job`'s meter was recording the hourly cycle's footprint
+    (381-384MB, eight runs running) under this job's name, and the admission line read
+    "declared 14000MB (p75 of 8 runs: 384MB)" against a declaration that is CORRECT: this
+    organ charges BYTES_PER_ROW=32768 over FREE_MEMORY_SHARE=0.25 of free physical memory and
+    has already been OS-killed twice on a smaller estimate. Only the process that does the work
+    can measure the work, so it measures itself here; the launcher now records nothing.
+    """
+    try:
+        from research.job_lock import peak_rss_mb, record_peak
+
+        peak = peak_rss_mb()
+        if peak:
+            record_peak("miner_candidate_compiler", peak)
+            print(f"compiler: peak {peak}MB recorded for lane admission")
+    except Exception as exc:          # a ledger write never costs the run that was writing it
+        print(f"compiler: peak not recorded ({type(exc).__name__}: {exc})")
+
+
 if __name__ == "__main__":
     import argparse
     _ap = argparse.ArgumentParser()
     _ap.add_argument("--budget-s", type=float, default=None,
                      help="stop reading at 35%% and compiling at 85%% of this, then resume")
     _set_budget(_ap.parse_args().budget_s)
-    raise SystemExit(main())
+    try:
+        _rc = main()
+    finally:
+        _record_own_peak()
+    raise SystemExit(_rc)

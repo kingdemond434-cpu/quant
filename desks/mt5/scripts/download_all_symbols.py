@@ -156,7 +156,7 @@ if not _terminal_lane.__enter__():
     raise SystemExit(0)
 atexit.register(lambda: _terminal_lane.__exit__(None, None, None))
 
-if not attach_or_initialize(mt5, path=terminal_path(), timeout=30_000):
+if not attach_or_initialize(mt5, path=terminal_path(), timeout=30_000, require_path=True):
     print(f"UNMEASURED: authenticated Fusion terminal is unavailable ({mt5.last_error()}); "
           "no broker chart was relabelled as missing")
     raise SystemExit(2)

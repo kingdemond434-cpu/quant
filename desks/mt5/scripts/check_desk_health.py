@@ -285,6 +285,37 @@ def check_artifacts() -> None:
     print()
 
 
+def check_compiler_fresh(path: Path | None = None, now: datetime | None = None) -> None:
+    """RED when the compiled candidate file's `compiled_at` is over 2 h old (2026-11-25).
+
+    `miner_candidates.json` sat unwritten from 2026-10-03 while the LLM seats kept donating, and
+    nothing said so: the old file reads exactly like a current one. Its own `compiled_at` is
+    the truth (not the mtime, which a copy or a restore moves). Absent / unstamped is UNKNOWN,
+    which is a finding too, never OK.
+    """
+    _section("THE CANDIDATE COMPILER (data/intelligence -> candidates)")
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research import compiler_freshness as cf
+    target = path or DESK / "data" / "hypotheses" / "miner_candidates.json"
+    if not target.exists():
+        _bad("data/hypotheses/miner_candidates.json does not exist -- the compiler has never "
+             "written it here")
+        print()
+        return
+    age = cf.age_s(target, now)
+    if age is None:
+        _unknown("miner_candidates.json carries no readable compiled_at; its age is UNMEASURED")
+    elif age <= cf.MAX_AGE_S:
+        _ok(f"miner_candidates.json compiled {age / 3600.0:.1f}h ago (under "
+            f"{cf.MAX_AGE_S / 3600.0:.0f}h)")
+    else:
+        _bad(f"miner_candidates.json was compiled {age / 3600.0:.1f}h ago (limit "
+             f"{cf.MAX_AGE_S / 3600.0:.0f}h) -- MT5-Compiler has stopped producing; every "
+             f"donation since is unread")
+    print()
+
+
 #: BARS_STATE.json (research/bars_state.py, core leg `bars_state`, run just before this one).
 BARS_STATE = DESK / "data" / "BARS_STATE.json"
 #: Hours after which the newest bar / newest tick on the box is a finding while the market is open,
@@ -540,6 +571,7 @@ def main(argv: list[str] | None = None) -> int:
     check_tasks()
     check_processes()
     check_artifacts()
+    check_compiler_fresh()
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()

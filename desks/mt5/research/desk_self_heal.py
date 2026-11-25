@@ -198,6 +198,28 @@ def check_certification(root: Path, now: datetime) -> Finding:
         passed = [v for v in d.get("verdicts", []) if v.get("passed") is True]
     except Exception as e:
         return Finding("certification", False, f"unreadable ({e})")
+    # THE FILE'S MTIME IS NOT THE SWEEP'S AGE (2026-11-25). A git checkout, an adoption or a state
+    # sync rewrites the file and refreshes its mtime while the content stays the last real sweep:
+    # the box carried swept_at 2026-09-12 under a fresh mtime and this check read PASS. qquant_gates
+    # stamps swept_at on every run it writes, so swept_at is the age; absent or unparseable is
+    # UNMEASURED, never fresh.
+    swept = d.get("swept_at") if isinstance(d, dict) else None
+    try:
+        sw = datetime.fromisoformat(str(swept).replace("Z", "+00:00"))
+        if sw.tzinfo is None:
+            sw = sw.replace(tzinfo=UTC)
+        swept_age = (now - sw).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        return Finding("certification", False,
+                       f"swept_at unreadable ({swept!r}): the sweep's age is UNMEASURED, "
+                       "and a fresh mtime is not a fresh sweep", fixable=True)
+    if swept_age > CERT_STALE_H:
+        return Finding("certification", False,
+                       f"swept_at {swept} is {swept_age:.1f}h old (limit {CERT_STALE_H:.0f}h) "
+                       f"although the file was written {age if age is not None else -1:.1f}h "
+                       "ago: the certifier is not sweeping (DEFERRED on the lane, or "
+                       "UNANSWERED with no hunt report) and something re-saves the old result",
+                       fixable=True)
     return Finding("certification", True,
                    f"{len(passed)} of {len(d.get('verdicts', []))} cells cleared "
                    f"the battery")
@@ -777,6 +799,214 @@ def check_lanes_idle(root: Path, now: datetime) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------
+# THE PROCESS BOARD (principal 2026-11-25 01:47Z: know every broken component and fix it
+# immediately, box-natively). ops/process_health.py already gives every scheduled task a verdict
+# against its artifact contract; this reads that board and turns each fault into a Finding the
+# actuator can act on, inside the same bounds as every other re-run here.
+# --------------------------------------------------------------------------
+BOARD_FILE = "desks/mt5/reports/process_health.json"
+#: The board is written every 30 minutes (MT5-ProcessHealth). Older than this, its verdicts are
+#: not today's and nothing is acted on from it.
+BOARD_STALE_H = 2.0
+BOARD_TASK = "MT5-ProcessHealth"
+#: Verdicts that mean "this task is not producing": re-run when the task may be re-run.
+BOARD_RERUN = frozenset({"FAILING", "STALE"})
+#: Verdicts no re-run can cure (no task on the box, or a contract naming a file nothing writes):
+#: alert only. Registering a task is an installer's act, which this actuator does not run.
+BOARD_ALERT = frozenset({"NOT_SCHEDULED", "NO_ARTIFACT"})
+#: NEVER re-run or ended from the board, whatever its verdict: the money path, the box's own
+#: release/sign/forge chain and the bridge. A fault in one of these is PAGED, never touched.
+#: Names are matched case-insensitively anywhere in the task name; the explicit list below is
+#: the operator's never-stop list (memory 11-19 KEPT RULES), kept literal so a rename cannot
+#: silently move a money task onto the re-run side.
+_BOARD_NEVER = re.compile(
+    r"(?i)executor|follower|follow|gateway|adopt|release|bridge|e8|ftmo|fusion|live|"
+    r"allocator|account|clock|terminal|tick|memecoin|seal|sign|trust|forge|workflow|deadman|"
+    r"window|order|quant-")
+MONEY_PATH_TASKS: frozenset[str] = frozenset({
+    "MT5-GatewayResident", "MT5-Gateway", "MT5-AccountState", "MT5-ClockFixer",
+    "MT5-E8WindowGuard", "MT5-TerminalBoot", "MT5-TickRecorder", "MT5-LivePriority",
+    "MT5-FusionDeadmanLive", "MT5-FusionDeadmanDryRun"})
+
+
+GATEWAY_TASKS = frozenset({"MT5-GatewayResident", "MT5-Gateway"})
+GATEWAY_PAUSED = "desks/mt5/data/GATEWAY_PAUSED"
+
+#: THE DESIGN INVARIANTS (principal 2026-11-25 01:55Z, PERMANENT: the box always matches the
+#: design). Each is checked here every guardian pass, box-natively, so it holds without Claude.
+#: A violation pages; where a fixer exists the board's own re-run is that fixer (I3). I1 and I2
+#: are measured by their owners' organs and only READ here (UNMEASURED until those artifacts
+#: exist on the box): this module never computes a certification or a promotion itself.
+INVARIANTS: tuple[tuple[str, str, str], ...] = (
+    ("I1", "every certified survivor is on a fresh forward clock", "Research"),
+    ("I2", "every fill-proven candidate is live on E8, FTMO and Fusion", "One pipe"),
+    ("I3", "no task reports OK while its output is stale", "Autonomy"),
+    ("I4", "cleared code reaches the box within 6h", "Autonomy"),
+    ("I5", "every box alert reaches Claude", "Autonomy"),
+    # principal 2026-11-25 02:49Z, PERMANENT: the box never fills up; caps without ever
+    # reducing research or healing. Measured and reclaimed by box_headroom each guardian pass.
+    ("I6", "the disk stays under its 75% line with 14+ days to the recorder pause", "Autonomy"),
+    ("I7", "RAM, CPU, MT5 terminals and LLM relay quotas stay inside their lines", "Autonomy"),
+)
+HEADROOM_FILE = "desks/mt5/reports/BOX_HEADROOM.json"
+HEADROOM_MAX_H = 1.0
+RELEASE_FILE = "desks/mt5/data/release_identity.json"
+ROUTING_FILE = "desks/mt5/reports/ALERT_ROUTING.json"
+INVARIANT_FILES = {"I1": "desks/mt5/reports/INVARIANT_I1.json",
+                   "I2": "desks/mt5/reports/INVARIANT_I2.json"}
+RELEASE_MAX_H = 6.0
+
+
+def check_invariants(root: Path, now: datetime,
+                     board: Sequence[Finding] = ()) -> list[Finding]:
+    """One Finding per invariant; violated -> not ok (paged), unmeasured -> ok with UNMEASURED."""
+    out: list[Finding] = []
+    for key, text, owner in INVARIANTS:
+        label = f"invariant {key}"
+        if key in INVARIANT_FILES:
+            doc = _read_json(root / INVARIANT_FILES[key])
+            if not isinstance(doc, dict) or "holds" not in doc:
+                out.append(Finding(label, True, f"UNMEASURED: {text} -- {owner}'s organ has not "
+                                   f"written {INVARIANT_FILES[key]} on this box"))
+            else:
+                out.append(Finding(label, bool(doc["holds"]),
+                                   f"{text}: {str(doc.get('why') or '')[:240]}"))
+        elif key == "I3":
+            bad = [f.check.split("board ", 1)[1] for f in board
+                   if not f.ok and f.detail.startswith("STALE_OUTPUT")]
+            out.append(Finding(label, not bad, f"{text}: " + (
+                f"VIOLATED by {', '.join(bad[:8])}" if bad else "holds")))
+        elif key == "I4":
+            doc = _read_json(root / RELEASE_FILE)
+            if not isinstance(doc, dict) or not doc.get("measured"):
+                out.append(Finding(label, True, f"UNMEASURED: {text} -- {RELEASE_FILE} absent "
+                                   "or unmeasured"))
+                continue
+            age = _num(doc.get("age_h"))
+            holds = bool(doc.get("ok")) and age is not None and age <= RELEASE_MAX_H
+            out.append(Finding(label, holds, f"{text}: running "
+                               f"{str(doc.get('running_sha'))[:9]}, seal {age}h old, "
+                               f"ok={doc.get('ok')} ({str(doc.get('reason') or '')[:160]})"))
+        elif key == "I5":
+            doc = _read_json(root / ROUTING_FILE)
+            if not isinstance(doc, dict) or "all_routed" not in doc:
+                out.append(_absent(label, ROUTING_FILE.rsplit("/", 1)[0], root,
+                                   f"{text}: VIOLATED -- {ROUTING_FILE} absent, so no box "
+                                   "artifact proves an alert reached Claude", fixable=False))
+            else:
+                out.append(Finding(label, bool(doc["all_routed"]),
+                                   f"{text}: {doc.get('routed_24h')}/{doc.get('alerts_24h')} "
+                                   f"routed in 24h (last publish {doc.get('last_published_at')})"))
+        elif key in ("I6", "I7"):
+            doc = _read_json(root / HEADROOM_FILE)
+            at = _ts(doc.get("at")) if isinstance(doc, dict) else None
+            if at is None:
+                out.append(_absent(label, HEADROOM_FILE.rsplit("/", 1)[0], root,
+                                   f"{text}: VIOLATED -- {HEADROOM_FILE} absent, so nothing "
+                                   "measures the box's headroom", fixable=False))
+                continue
+            age = (now - at).total_seconds() / 3600
+            if age > HEADROOM_MAX_H:
+                out.append(Finding(label, False, f"{text}: VIOLATED -- {HEADROOM_FILE} is "
+                                   f"{age:.1f}h old (max {HEADROOM_MAX_H:.0f}h)", fixable=False))
+                continue
+            parts = ("disk",) if key == "I6" else ("ram", "cpu", "terminals", "quotas")
+            bad = [f"{k}: {(doc.get(k) or {}).get('why')}" for k in parts
+                   if not (doc.get(k) or {}).get("ok", True)]
+            d = doc.get("disk") or {}
+            detail = (f"{d.get('free_gb')}GB free of {d.get('total_gb')}GB, "
+                      f"{d.get('days_to_pause')} days to pause" if key == "I6" else "holds")
+            out.append(Finding(label, not bad, f"{text}: " + ("; ".join(bad)[:300] if bad
+                                                              else detail)))
+    return out
+
+
+def board_rerunnable(task: object) -> bool:
+    """A board task the actuator may re-run (and end when hung): a real scheduled task, not a
+    component row, and nothing on the never list."""
+    return (isinstance(task, str) and task.startswith("MT5-") and " " not in task
+            and task not in MONEY_PATH_TASKS and not _BOARD_NEVER.search(task)
+            and not task.startswith(("E8-", "Memecoin")))
+
+
+#: 0x800710E0 ERROR_REQUEST_REFUSED as Task Scheduler reports it (unsigned, signed, or text).
+_REFUSED_CODES = frozenset({0x800710E0, 0x800710E0 - (1 << 32)})
+
+
+def _refused(code: object) -> bool:
+    if isinstance(code, str):
+        try:
+            code = int(code, 16) if code.lower().startswith("0x") else int(code)
+        except ValueError:
+            return False
+    return isinstance(code, int) and not isinstance(code, bool) and code in _REFUSED_CODES
+
+
+def check_process_board(root: Path, now: datetime) -> tuple[list[Finding], dict[str, Any]]:
+    """One Finding per faulted board row, plus the board's census (counts, uncontracted)."""
+    p = root / BOARD_FILE
+    doc = _read_json(p)
+    if not isinstance(doc, dict) or not isinstance(doc.get("processes"), list):
+        return ([_absent("board", BOARD_FILE.rsplit("/", 1)[0], root,
+                         f"{BOARD_FILE} absent or unreadable: no task verdicts to act on",
+                         fixable=False)], {"measured": False})
+    at = _ts(doc.get("at"))
+    age = None if at is None else (now - at).total_seconds() / 3600
+    census = {"measured": True, "at": doc.get("at"), "counts": doc.get("counts") or {},
+              "uncontracted": int((doc.get("counts") or {}).get("UNCONTRACTED") or 0)}
+    if age is None or age > BOARD_STALE_H:
+        census["measured"] = False
+        return ([Finding("board", False,
+                         f"{BOARD_FILE} is {'undated' if age is None else f'{age:.1f}h'} old "
+                         f"(limit {BOARD_STALE_H:.0f}h): its verdicts are not acted on",
+                         fixable=True, task=BOARD_TASK)], census)
+    out: list[Finding] = []
+    for row in doc["processes"]:
+        if not isinstance(row, dict):
+            continue
+        name, verdict = str(row.get("name") or ""), str(row.get("verdict") or "")
+        # A refused launch while an instance is RUNNING is the IgnoreNew overlap of a resident
+        # (box RC 2026-11-25 03:45Z: all Dept-*, Forest-*, Moat-* -- event 322, never 332/329):
+        # the work is being done, so it is not a refusal to page on.
+        resident = str(row.get("state") or "").lower() == "running"
+        if (name and _refused(row.get("last_result_code")) and verdict not in BOARD_RERUN
+                and not resident):
+            # TASK_REFUSED (red team 2026-11-25: 33 tasks read UNCONTRACTED while every run
+            # returned 0x800710E0). The scheduler refused to start the run and nothing of the
+            # task is running, so no re-run can cure it: the cause is the task's own settings
+            # (a logon type with no session, a dead instance holding IgnoreNew). It pages
+            # whatever its verdict says.
+            census["refused"] = int(census.get("refused") or 0) + 1
+            out.append(Finding(f"{'moneypath ' if name in MONEY_PATH_TASKS else ''}board {name}",
+                               False, f"TASK_REFUSED: last run 0x800710E0 (the scheduler "
+                               f"refused to start it); board verdict {verdict or 'none'}",
+                               fixable=False))
+            continue
+        if verdict not in BOARD_RERUN | BOARD_ALERT or not name:
+            continue
+        if name in GATEWAY_TASKS and (root / GATEWAY_PAUSED).exists():
+            # A gateway the Fusion deadman paused writes no state BY DESIGN (principal 11-24
+            # 18:02Z: Fusion balance 0, auto-resume on deposit) -- the same reading as
+            # check_gateway_publication. Paused is not stale output.
+            out.append(Finding(f"board {name}", True, f"{verdict} while GATEWAY_PAUSED: "
+                               "paused by the Fusion deadman, not stale"))
+            continue
+        why = str(row.get("why") or "")[:200]
+        reports_ok = row.get("last_result_code") == 0 and str(row.get("state")) != "COMPONENT"
+        # STALE_OUTPUT: the scheduler reads the task green while its artifact is older than the
+        # contract -- the worst class, because nothing else on the box looks wrong.
+        kind = "STALE_OUTPUT" if verdict == "STALE" and reports_ok else verdict
+        money = name in MONEY_PATH_TASKS or not board_rerunnable(name)
+        can_rerun = verdict in BOARD_RERUN and board_rerunnable(name)
+        limit, age_min = _num(row.get("contract_max_age_min")), _num(row.get("artifact_age_min"))
+        hung = bool(limit and age_min and age_min > HUNG_FACTOR * limit)
+        label = f"{'moneypath ' if money and verdict in BOARD_RERUN else ''}board {name}"
+        out.append(Finding(label, False, f"{kind}: {why}", fixable=can_rerun,
+                           task=name if can_rerun else None, hung=hung and can_rerun))
+    return out, census
+
+
 def audit(root: Path, now: datetime | None = None) -> list[Finding]:
     now = now or datetime.now(UTC)
     return [check_lifted_rules(root, now),
@@ -802,7 +1032,10 @@ def audit(root: Path, now: datetime | None = None) -> list[Finding]:
             check_allocator_crash(root, now),
             check_gateway_publication(root, now),
             check_daily_chain(root, now),
-            *check_lanes_idle(root, now)]
+            *check_lanes_idle(root, now),
+            # ADDED 2026-11-25 (principal: every broken component found and fixed): the board.
+            *(board := check_process_board(root, now)[0]),
+            *check_invariants(root, now, board)]
 
 
 # --------------------------------------------------------------------------

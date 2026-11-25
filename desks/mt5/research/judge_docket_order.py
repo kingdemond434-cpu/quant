@@ -358,8 +358,15 @@ def drop_redundant(G: Any, specs: list[dict]) -> tuple[list[dict], int]:
     return [sp for i, sp in enumerate(specs) if i not in drop], len(drop)
 
 
-def allocate(G: Any, specs: list[dict]) -> list[dict]:
-    """`external_gauntlet.allocate_by_yield`'s `keep`, computed identically and WRITING NOTHING."""
+def allocate(G: Any, specs: list[dict], is_new: Any = None, protect: Any = None,
+             record: dict | None = None) -> list[dict]:
+    """`external_gauntlet.allocate_by_yield`'s `keep`, computed identically and WRITING NOTHING.
+
+    `is_new` / `protect` mirror the sealed signature once its SEAL_CLEAR H3 lands: the never-judged
+    exemption runs only when the sealed file sets `JUDGE_NEVER_JUDGED_EXEMPT` (so the warmer never
+    walks a docket the judge does not), at the same point -- after the family trim, before the
+    exploration and orthogonality floors. Its record goes into `record` when one is passed.
+    """
     if not specs:
         return []
     yields = G._family_yield()
@@ -377,6 +384,11 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
         share = min(share, G.YIELD_MAX_SHARE)
         want = max(round(share * len(specs)), int(G.YIELD_MIN_SHARE * len(rows)), 1)
         keep.extend(rows[:want])
+    if getattr(G, "JUDGE_NEVER_JUDGED_EXEMPT", False) is True and is_new is not None:
+        from research.judge_efficiency import exempt_never_judged
+        keep, rec = exempt_never_judged(specs, keep, is_new, protect)
+        if record is not None:
+            record.update(rec)
     explored, _axes = G._explore_unmeasured_axes(specs, keep)
     keep.extend(explored)
     orthogonal, _rec = G._orthogonality_floor(specs, keep)
@@ -396,10 +408,22 @@ def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True) -> tuple[lis
     n_redundant = 0
     if novelty:
         ordered, n_redundant = drop_redundant(G, ordered)
-    keep = allocate(G, ordered)
+    # THE NEVER-JUDGED EXEMPTION (SEAL_CLEAR H3), on the `_never_judged` stamps -- the sealed
+    # `_is_new(sp) == 0` restated by `stamp_new` above. Dormant until the sealed file sets
+    # `JUDGE_NEVER_JUDGED_EXEMPT`; a spec with no stamp is not exempted.
+    exempt: dict = {}
+    keep = allocate(G, ordered, is_new=lambda sp: sp.get("_never_judged") is True, record=exempt)
+    # THE SEALED SWEEP'S GLOBAL ORDER, RESTORED AFTER THE TRIM -- only once the sealed file does it
+    # too (its SEAL_CLEAR patch sets `JUDGE_KEEP_REORDER`), so the warmer never reads an order the
+    # judge does not walk. A permutation of `keep` (research/judge_efficiency.reorder_keep).
+    if getattr(G, "JUDGE_KEEP_REORDER", False) is True:
+        from research.judge_efficiency import reorder_keep
+        keep = reorder_keep(ordered, keep)
     return keep, {"eligible": len(specs), "never_judged": n_new, "banned_set_aside": n_banned,
                   "novelty_set_aside": n_redundant, "keep": len(keep),
                   "keep_never_judged": sum(1 for sp in keep if sp.get("_never_judged")),
+                  "exempted_never_judged": int(exempt.get("exempted_never_judged", 0)),
+                  "never_judged_exemption": exempt or None,
                   "outside_keep": len(ordered) - len(keep) if len(ordered) >= len(keep) else 0,
                   "order": "sealed: never-judged, intraday, CEO family, least-covered bucket, "
                            "symbol rotation; then ban set-aside, novelty head, yield trim"}

@@ -1145,7 +1145,9 @@ def _exit_outcome(name: str, code: int) -> str:
 #: meta-controller's epoch read the truth (it did not run here) rather than a phantom run.
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
-    "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    "smoke_release", "health", "release_identity", "input_identity", "burn_in",
+    # `record_tape`, `tier_s` and `replication_civilization` LEFT THIS SET 2026-11-25: each is in
+    # OWN_CLOCK_LEGS and runs on its own task (MT5-TapeRecord / MT5-TierS / MT5-Replication).
     # Whether either tick tape has moved within 2 h of open market, read by each tape's own
     # newest-tick stamp right after `record_tape`: two small JSON reads, every hour (2026-10-14).
     "tape_fresh",
@@ -1226,7 +1228,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
-    "tier_s", "tier_s_door", "replication_civilization",
+    "tier_s_door",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -1433,7 +1435,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "strategy_builder", "generator_coverage",
                      # the four model generators (2026-11-24)
                      "hypgen_knn_analog", "hypgen_rank_learner", "hypgen_neat_evolver",
-                     "hypgen_ge_builder",
+                     "hypgen_ge_builder", "hypgen_gbm_learner",
+                     # the world-practice methods (2026-11-25): class LambdaRank, the
+                     # intraday realised-moment class book, market-profile value areas
+                     "global_xs_ltr", "global_hf_moment", "global_value_area",
+                     "global_vol_breakout",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
@@ -1654,7 +1660,30 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
     # deferred every pass and never ran after 2026-10-29 -- seven days of FTMO trading only the gold
     # fallback. Its own hourly task (scripts/install_ftmo_allocator_task.ps1) is the only clock.
     "prop_challenge_allocator",  # MT5-FTMO-Allocator
+    # THE FOUR LEGS THAT STARVED THE CORE PASS (2026-11-25). MT5-HourlyCore was killed at its
+    # PT55M limit on 5 of 5 box runs: plan 2,640 s, actual 3,092-4,597 s, `tier_s` the killed leg
+    # every time (it started with 150-1,832 s left against its own 1,500 s cap),
+    # `replication_civilization` ~1,035 s hitting its cap with 0 of 1 artifacts, `record_tape`
+    # 41-1,594 s. And `compile_candidates` (720 s cap, killed 8 of 8 times 11-20..11-24) left
+    # `miner_candidates.json` unwritten since 2026-10-03. Each now has its own scheduled task
+    # that runs `hourly_cycle.py --lane <lane>` (see LANE_LEGS); nothing was dropped.
+    "compile_candidates",           # MT5-Compiler
+    "record_tape",                  # MT5-TapeRecord
+    "tier_s",                       # MT5-TierS
+    "replication_civilization",     # MT5-Replication
 })
+
+#: lane -> the legs its own task runs, in order. `python hourly_cycle.py --lane <lane>` runs
+#: them under `_costed` (ledger rows, write-or-explain) with no rotation and no pass epilogue, so
+#: the lane's task limit -- not the shared core budget -- is the only clock on them.
+LANE_LEGS: dict[str, tuple[str, ...]] = {
+    "compiler": ("compile_candidates",),
+    "tape": ("record_tape",),
+    "tier_s": ("tier_s",),
+    "replication": ("replication_civilization",),
+}
+#: The lane this process is running, or None. Set only by `run_lane`.
+_LANE: str | None = None
 
 
 def in_plan(name: str, plan: str | None = None) -> bool:
@@ -1666,7 +1695,8 @@ def in_plan(name: str, plan: str | None = None) -> bool:
     if name.startswith("auto_"):
         return True
     if name in OWN_CLOCK_LEGS:
-        return False
+        # Only its own lane's process runs it; every plan skips it (no phantom ledger row).
+        return _LANE is not None and name in LANE_LEGS.get(_LANE, ())
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":
@@ -1704,6 +1734,10 @@ def _rotation() -> Any:
         return _ROTATION.get("decision")
     _ROTATION["built"] = True
     _ROTATION["decision"] = None
+    if _LANE is not None:
+        # A lane is its own task with its own limit: no shared budget to rotate against, and it
+        # must not overwrite the core plan's LEG_ROTATION.json.
+        return None
     try:
         from libs.ops import leg_rotation as _lr
         full = _lr.legs_in_order(Path(__file__).resolve())
@@ -1907,7 +1941,8 @@ def _costed(name: str, fn):
     _rot = _rotation()
     if _rot is not None:
         _elapsed = (datetime.now(UTC) - _ROTATION["started"]).total_seconds()
-        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed)
+        _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed,
+                                    cap_s=_leg_cap_s(name))
         if not _ok:
             return {"status": "ROTATED_OUT", "plan": HOURLY_PLAN, "why": _why,
                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -2521,7 +2556,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "strategy_builder": 900,
     # THE FOUR MODEL GENERATORS (hypgen_engine), each inside its own --budget-s (base 180 s).
     "hypgen_knn_analog": 600, "hypgen_rank_learner": 600, "hypgen_neat_evolver": 600,
-    "hypgen_ge_builder": 600,
+    "hypgen_ge_builder": 600, "hypgen_gbm_learner": 600,
+    # THE WORLD-PRACTICE METHODS (global_methods): each enumerates a few hundred cells and
+    # donates a judge-sized slice; no family is run, so seconds -- the cap is the registry write.
+    "global_xs_ltr": 300, "global_hf_moment": 300, "global_value_area": 300,
+    "global_vol_breakout": 300,
     # The generator coverage map reads a few report mtimes; seconds.
     "generator_coverage": 120,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
@@ -2654,6 +2693,13 @@ def _leg_floor_s(name: str) -> int:
 #: middle of its write -- `probation` carried cap 1,800 against its own 1,800 and moved nothing.
 WRITE_MARGIN_FRAC = 0.15
 WRITE_MARGIN_MIN_S = 60
+
+
+def _leg_cap_s(name: str) -> float:
+    """The DECLARED cap of leg `name` for the kill-margin check: its `LEG_BUDGET_SEC` entry or
+    floor, whichever is larger. 0 = undeclared (cheap in-process legs), which is never blocked."""
+    declared = int(LEG_BUDGET_SEC.get(name, 0) or 0)
+    return float(max(declared, _leg_floor_s(name))) if declared else 0.0
 
 
 def _self_budget_s(args: tuple[str, ...]) -> float | None:
@@ -2991,6 +3037,18 @@ def tier_s() -> dict:
     is read by sizing, certificates or order flow.
     """
     return _producer("tier_s", "research/tier_s.py")
+
+
+#: Replication's own-clock budget. At 900 s it was killed at its 1,035 s cap on every box run with
+#: 0 of 1 artifacts; on MT5-Replication (PT45M) it gets room to finish and write.
+REPLICATION_LANE_BUDGET_S = 1500
+
+
+def replication_civilization() -> dict:
+    """`replication_civilization`: reports/REPLICATION.json, the promotion door's fourth input
+    (6 h expiry). Own task `MT5-Replication`, hourly."""
+    return _producer("replication_civilization", "research/replication_civilization.py",
+                     "--once", "--budget-s", str(REPLICATION_LANE_BUDGET_S))
 
 
 def tier_s_door() -> dict:
@@ -3463,7 +3521,7 @@ def alpha_rl() -> dict:
     return _producer("alpha_rl", "research/alpha_rl_run.py")
 
 
-def compile_candidates() -> dict:
+def compile_candidates(budget_s: int = 600) -> dict:
     """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
 
     NOTHING SCHEDULED IT. Measured 2026-09-05 by cross-referencing the capability graph against
@@ -3487,28 +3545,61 @@ def compile_candidates() -> dict:
     hand in between.
     """
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
-                     "--budget-s", "600")
+                     "--budget-s", str(int(budget_s)))
+
+
+#: The compiler's own-clock budget (MT5-Compiler, `--lane compiler`). The compiler stops READING at
+#: 35% and COMPILING at 85% of it and then writes; the tail (graph, steer, 40 MB write) is
+#: untimed, so the cap `_producer` derives (budget + 15%) plus one merge (720 s) must stay under
+#: the task's PT60M limit: 2100 -> 2415 + 720 = 3135 s.
+COMPILER_LANE_BUDGET_S = 2100
 
 
 def catch_up_intake() -> dict:
     """Publish already waiting discoveries before spending the pass on new searches.
 
-    The normal mine/compile/deepen/merge chain still runs later for this pass's new
-    production. This bounded catch-up uses the same compiler cursor and merger, so
-    existing discoveries need not wait behind hours of generation to reach the judge.
-    Never merge an old compiler artifact after a failed compilation.
+    THE COMPILE IS NO LONGER HERE (2026-11-25). This leg compiled with a 600 s budget inside a
+    720 s cap, was killed at the cap on every pass (8 of 8, 11-20..11-24) and so wrote nothing:
+    `miner_candidates.json` stayed at 2026-10-03 while the seats' donations went unread. The
+    compile now runs on its own task (MT5-Compiler, `--lane compiler`, `compiler_lane`). What is
+    left is the merge, and only over a FRESH compile: merging an old compiler artifact is
+    exactly the "republish an old docket as fresh intake" defect this leg's tests pin.
+    """
+    from libs.research import compiler_freshness as cf
+    age = cf.age_s(BASE / "data" / "hypotheses" / "miner_candidates.json")
+    if age is None or age > cf.MAX_AGE_S:
+        return {"status": "SKIPPED",
+                "why": ("compiler artifact UNMEASURED" if age is None else
+                        f"compiler artifact is {age / 3600.0:.1f}h old (limit "
+                        f"{cf.MAX_AGE_S / 3600.0:.0f}h); MT5-Compiler owns the compile and a "
+                        "stale compile is never merged as fresh intake"),
+                "compiler_age_s": age}
+    # The child owns the writer lock for EVERY entry point, including Scheduler.
+    merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
+    return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
+            "merge": merged, "compiler_age_s": round(age, 1)}
+
+
+def compiler_lane() -> dict:
+    """The compiler's own clock: compile under a real budget, then merge (MT5-Compiler, hourly).
+
+    Same shape `catch_up_intake` had -- one writer lock, a failed compile withholds the merge --
+    but on a task whose limit is its own, so a slow core pass can never starve it.
     """
     from research.job_lock import exclusive_job
 
-    with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
+    # peak_measured_by_child: the compiler runs as a SUBPROCESS below, so this process's
+    # high-water RSS is the hourly cycle's footprint, not the compiler's. Recording it put
+    # 381-384MB in the compiler's peak ledger eight runs running and made the admission line
+    # read like a 36x over-declaration against a floor that is correct. The child records its own.
+    with exclusive_job("miner_candidate_compiler", need_mb=14000,
+                       peak_measured_by_child=True) as acquired:
         if not acquired:
             return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
-        compiled = compile_candidates()
+        compiled = compile_candidates(COMPILER_LANE_BUDGET_S)
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
-                "why": "fresh compilation failed; catch-up merge withheld"}
-    # The child now owns the same writer lock for EVERY entry point, including Scheduler.
-    # Holding it in this parent would make that child correctly defer against its own caller.
+                "why": "fresh compilation failed; merge withheld"}
     merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
     return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
             "compile": compiled, "merge": merged}
@@ -4343,9 +4434,7 @@ def main() -> None:
     # writer late in the validation department let E8's entry door go stale even
     # while core passes ran. Refresh it on the existing core clock, before the door
     # and long research work; the same bounded rotation and independent replay apply.
-    rpc = _costed("replication_civilization", lambda: _producer(
-        "replication_civilization", "research/replication_civilization.py",
-        "--once", "--budget-s", "900"))
+    rpc = _costed("replication_civilization", replication_civilization)
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
     tdoor = _costed("tier_s_door", tier_s_door)
@@ -4832,12 +4921,30 @@ def main() -> None:
     # THE FOUR MODEL GENERATORS (2026-11-24): analog/kNN, learning-to-rank, NEAT, grammatical
     # evolution -- the strategy builder's rails via `hypgen_engine`, bandit-scaled seconds each.
     hyp = {}
-    for _seat in ("knn_analog", "rank_learner", "neat_evolver", "ge_builder"):
+    for _seat in ("knn_analog", "rank_learner", "neat_evolver", "ge_builder", "gbm_learner"):
         _leg = f"hypgen_{_seat}"
         _hs, _hrec = _bandit_budget(_leg, 180)
         hyp[_leg] = _costed(_leg, lambda _seat=_seat, _leg=_leg, _hs=_hs: _producer(
             _leg, "research/hypgen_engine.py", "--space", _seat, "--budget-s", str(_hs)))
         _bandit_observe(_leg, _hrec)
+    # THE WORLD-PRACTICE METHODS (2026-11-25, mt5desk/family_global_methods.py): cross-sectional
+    # LambdaRank over the exotic-free class panel, the Chinese high-frequency factor school's
+    # intraday realised moments ranked in the class, the market-profile value-area rules and the
+    # Korean volatility breakout (변동성 돌파).
+    # Each donates its (symbol x grid) cells through family_donation, every cell a charged trial,
+    # and writes reports/GLOBAL_METHOD_<METHOD>.json, which generator_coverage reads.
+    gxl = _costed("global_xs_ltr", lambda: _producer(
+        "global_xs_ltr", "research/global_method_xs_ltr.py", "--once",
+        "--budget-s", "240"))
+    ghm = _costed("global_hf_moment", lambda: _producer(
+        "global_hf_moment", "research/global_method_hf_moment.py", "--once",
+        "--budget-s", "240"))
+    gva = _costed("global_value_area", lambda: _producer(
+        "global_value_area", "research/global_method_value_area.py", "--once",
+        "--budget-s", "240"))
+    gvb = _costed("global_vol_breakout", lambda: _producer(
+        "global_vol_breakout", "research/global_method_vol_breakout.py",
+        "--once", "--budget-s", "240"))
     # Every known generator method against what ran this day: LIVE / PARTIAL / MISSING.
     gcv = _costed("generator_coverage", lambda: _producer("generator_coverage",
                                                            "research/generator_coverage.py"))
@@ -5102,10 +5209,36 @@ def main() -> None:
     # information layer.
     jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",
                                                        "research/judge_prescreen.py", "--once"))
+    # REUSE_STALE MUST FALL BACK TO COMPUTING, OR THE ARTIFACT NEVER REFRESHES AGAIN
+    # (measured 2026-11-12). `--reuse-fresh` computes nothing: it verifies that
+    # `merge_hypotheses` published this cycle's coverage and exits 4 otherwise, leaving the
+    # report untouched -- which is right, because restamping a stale table as fresh would be
+    # the worse failure. But nothing else recomputes it, so when merge stops publishing the
+    # table simply stops existing in any current form. `JUDGE_COVERAGE_REUSE.json` had been
+    # saying so, correctly and uselessly, for two days:
+    #
+    #     verdict STALE, report_untouched true, report_at 2026-11-10T07:59:10Z,
+    #     report_age_s 203899.5, why ["report predates this cycle",
+    #                                 "merge_report.json is not this cycle's"]
+    #
+    # `JUDGE_COVERAGE.json` was 52h old and FOUR DUTIES read UNMEASURED off it (D4 backlog
+    # guard, D38 judge efficiency, D39 effective breadth, and judging-sweep items b and e),
+    # while `tier1_gap` quoted its two-day-old backlog as current -- 1,021,315 against the
+    # 937,600 a fresh pass measures, and an oldest cell of 1,446h against 1,506h.
+    #
+    # The compute pass itself was never the problem: run by hand on this box it finished and
+    # COMMITTED in ~180 s, inside the leg's own 300 s cap. It had simply never been asked.
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--reuse-fresh",
                                                       "--budget-s", "120"))
+    if isinstance(jcv, dict) and jcv.get("exit_code") == 4:
+        # The declared budget rises with the work: 120 s is what the REUSE check needs, and a
+        # compute pass measured ~180 s here (its own build_input_probe phase alone took 166 s
+        # on the run that found this). 240 s keeps the cap's commit margin intact.
+        jcv = _costed("judge_coverage_compute",
+                      lambda: _producer("judge_coverage", "research/judge_coverage.py",
+                                        "--once", "--budget-s", "240"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign
@@ -6825,6 +6958,8 @@ def main() -> None:
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf, "strategy_builder": sbd,
                     "generator_coverage": gcv, **hyp,
+                    "global_xs_ltr": gxl, "global_hf_moment": ghm, "global_value_area": gva,
+                    "global_vol_breakout": gvb,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
@@ -7031,5 +7166,47 @@ def main() -> None:
     print("cycle done", flush=True)
 
 
+def _lane_calls() -> dict[str, list[tuple[str, Any]]]:
+    return {"compiler": [("compile_candidates", compiler_lane)],
+            "tape": [("record_tape", record_tape)],
+            "tier_s": [("tier_s", tier_s)],
+            "replication": [("replication_civilization", replication_civilization)]}
+
+
+def _lane_leg_ok(out: object) -> bool:
+    """A lane leg's verdict for the task's exit code: a failure must be visible in the
+    scheduler's last result, not only in the ledger."""
+    if not isinstance(out, dict):
+        return True
+    if out.get("error") or out.get("timeout_s"):
+        return False
+    status = str(out.get("status") or "").upper()
+    if status in {"FAILED", "LEG_FAILED", "TIMEOUT", "MISSING"}:
+        return False
+    return out.get("exit_code") in (None, 0)
+
+
+def run_lane(lane: str) -> int:
+    """Run one own-clock lane's legs. Exit 0 only when every leg succeeded."""
+    global _LANE
+    if lane not in LANE_LEGS:
+        print(f"unknown lane {lane!r}; lanes: {', '.join(sorted(LANE_LEGS))}", flush=True)
+        return 2
+    _LANE = lane
+    print(f"hourly cycle lane={lane} legs={','.join(LANE_LEGS[lane])}", flush=True)
+    worst = 0
+    for leg, fn in _lane_calls()[lane]:
+        out = _costed(leg, fn)
+        ok = _lane_leg_ok(out)
+        print(f"lane {lane}: {leg} -> {'ok' if ok else 'FAILED'} "
+              f"{json.dumps(out, default=str)[:400]}", flush=True)
+        if not ok:
+            worst = 1
+    return worst
+
+
 if __name__ == "__main__":
+    if "--lane" in sys.argv[1:]:
+        _i = sys.argv.index("--lane")
+        raise SystemExit(run_lane(sys.argv[_i + 1] if _i + 1 < len(sys.argv) else ""))
     main()

@@ -135,6 +135,7 @@ class _Gate:
         self.cache: dict[str, urllib.robotparser.RobotFileParser | None | str] = {}
 
     def refusal(self, url: str) -> str | None:
+        from libs.data.robots_body import robots_rules_or_refusal
         parts = urllib.parse.urlsplit(url)
         host = parts.netloc
         if host in REFUSED_HOSTS:
@@ -147,16 +148,21 @@ class _Gate:
                                 headers={"User-Agent": self.ua(host)}, timeout=TIMEOUT_S)
                 status = getattr(resp, "status_code", None)
                 body = str(getattr(resp, "text", "") or "")
-                if status in (404, 410):
+                hdrs = getattr(resp, "headers", None)
+                ctype = hdrs.get("Content-Type") if hasattr(hdrs, "get") else None
+                # One reader for every robots read (libs.data.robots_body): 404/410 = no rules,
+                # 401/403/429/451 hard stop, any markup or non-text body or other status unread.
+                got = robots_rules_or_refusal(status, ctype if isinstance(ctype, str) else None,
+                                              body if status == 200 else "")
+                if isinstance(got, str):
+                    # The ledger's wording stays: the status, or the reader's own reason.
+                    why = (f"robots.txt answered {status}" if status != 200
+                           else got.split(": ", 1)[-1])
+                    self.cache[host] = f"ROBOTS_REFUSED: {why}"
+                elif status in (404, 410):
                     self.cache[host] = None
-                elif status != 200:
-                    self.cache[host] = f"ROBOTS_REFUSED: robots.txt answered {status}"
-                elif body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
-                    self.cache[host] = "ROBOTS_REFUSED: robots.txt answered HTML"
                 else:
-                    rp = urllib.robotparser.RobotFileParser()
-                    rp.parse(body.splitlines())
-                    self.cache[host] = rp
+                    self.cache[host] = got
             except Exception as exc:                    # an unreadable gate refuses
                 self.cache[host] = f"ROBOTS_REFUSED: robots.txt unreadable ({type(exc).__name__})"
         rule = self.cache[host]

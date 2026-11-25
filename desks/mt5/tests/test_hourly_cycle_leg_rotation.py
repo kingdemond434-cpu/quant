@@ -117,13 +117,14 @@ def test_promotion_door_refresh_precedes_long_research_work(monkeypatch) -> None
     assert calls == [("tier_s_door", "research/tier_s.py", "--only", "review,door")]
 
 
-def test_replication_writer_is_reached_by_core_before_its_live_consumer() -> None:
-    """A heavy-only writer left E8 withheld while hourly core remained alive."""
+def test_replication_writer_runs_on_its_own_hourly_task_not_the_core_pass() -> None:
+    """2026-11-25: it timed out at its cap inside the core pass on every box run (0 of 1
+    artifacts) and starved the tail; the door's input now has its own task and no phantom row."""
     roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
     assert roster.count("replication_civilization") == 1
-    assert roster.index("replication_civilization") < roster.index("tier_s_door")
-    assert roster.index("replication_civilization") < roster.index("intake_catchup")
-    assert hourly_cycle.in_plan("replication_civilization", "core")
+    assert "replication_civilization" in hourly_cycle.OWN_CLOCK_LEGS
+    assert "replication_civilization" in hourly_cycle.LANE_LEGS["replication"]
+    assert not hourly_cycle.in_plan("replication_civilization", "core")
     assert not hourly_cycle.in_plan("replication_civilization", "dept:validate")
     soft_h, hard_h = LR.DUE_BY_AGE_H["replication_civilization"]
     from libs.tiers.promotion_authority import MAX_AGE_H
@@ -144,6 +145,8 @@ def test_a_due_leg_lands_inside_the_door_expiry_after_its_worst_start_and_runtim
     """Auditor MF2: forced at an age in [hard, hard + period), output one cap later."""
     from libs.tiers.promotion_authority import MAX_AGE_H
     for leg, (_soft, hard) in LR.DUE_BY_AGE_H.items():
+        if leg in hourly_cycle.OWN_CLOCK_LEGS:
+            continue        # own hourly task (2026-11-25): not on the core clock this bounds
         assert hourly_cycle.in_plan(leg, "core"), f"{leg}: the bound assumes the hourly core"
         cap_h = hourly_cycle.LEG_BUDGET_SEC[leg] / 3600.0
         assert hard + LR.CORE_PERIOD_H + cap_h < MAX_AGE_H, leg

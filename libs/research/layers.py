@@ -348,6 +348,11 @@ LEG_LAYER: dict[str, str] = {
     # rules: prediction, like alpha_evolution. The generator census measures which
     # generator methods ran this day, not any strategy: meta.
     "strategy_builder": "prediction", "generator_coverage": "meta",
+    # THE WORLD-PRACTICE METHODS (2026-11-25): each mints claims about returns (a class rank
+    # learned by LambdaRank, an intraday-moment rank, a value-area rule, a volatility
+    # breakout) -- prediction.
+    "global_xs_ltr": "prediction", "global_hf_moment": "prediction",
+    "global_value_area": "prediction", "global_vol_breakout": "prediction",
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
@@ -432,6 +437,11 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # The same leg's COMPUTE path, costed separately so the ledger shows how often the cheap
+    # `--reuse-fresh` check has to fall back to recomputing. Added 2026-11-12, when the reuse
+    # check had been correctly reporting the table STALE -- and touching nothing -- for 52h,
+    # leaving four duties UNMEASURED off a two-day-old artifact.
+    "judge_coverage_compute": "information",
     # What the judge's pre-build screen WOULD remove from the docket, and the measured cost of
     # that (true survivors a sibling rule would have taken, by a time-ordered ledger replay). It
     # buys INFORMATION about the docket before any signal is built.
