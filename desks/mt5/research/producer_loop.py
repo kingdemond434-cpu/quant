@@ -1025,8 +1025,8 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
             retired[name] = {"retired_at": _iso(now), "retest_at": retest, "archive": arch}
             prescriptions.pop(name, None)
             r.update({"retest_at": retest, "archive": arch,
-                      "reason": f"{len(failed)} failed remedies: parked at the floor weight, evidence archived, "
-                                f"re-test {retest[:10]}"})
+                      "reason": f"{len(failed)} failed remedies: parked at the floor "
+                                f"weight, evidence archived, re-test {retest[:10]}"})
         elif not c and not av:
             status = UNMEASURED
         elif stage is None:
@@ -1106,7 +1106,8 @@ def build(*, force: bool = False, now: datetime | None = None, budget_s: float |
                 "is measured, the stage where it dies is named, and it gets a remedy from a "
                 "fixed menu -- never a parameter tweak; remedies are charged to the lifetime "
                 "trial ledger, judged held-out or forward only, one at a time against untouched "
-                f"controls, reverted when worse, and parked at the floor weight after {MAX_ATTEMPTS} failures. "
+                f"controls, reverted when worse, and parked at the floor weight after "
+                f"{MAX_ATTEMPTS} failures. "
                 "Compute weight follows independent, non-exotic, forward-kept edges per "
                 "CPU-hour, two-sided. A missing input is UNMEASURED, never zero."),
         "cadence": {"detection": "every pass",
