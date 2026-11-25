@@ -279,6 +279,18 @@ def test_an_ftmo_position_against_e8_refuses_and_alerts(world) -> None:
     assert any(r.get("reason") == "opposite_exposure" for r in _rows())
 
 
+def test_a_same_side_gold_position_from_the_sleeve_executor_is_never_stacked(world) -> None:
+    """Audit MF2 on #1323: one gold position per account. A same-side XAUUSD position of the
+    sleeve executor (its own magic) refuses the copy, billed as a refusal."""
+    mt5 = _MT5()
+    mt5.positions = [SimpleNamespace(ticket=43, symbol="XAUUSD", type=0, magic=341956,
+                                     volume=0.1, sl=1.0, tp=0.0, time=TICK)]  # executor's long
+    _pass(mt5)
+    assert _entries(mt5) == []
+    rows = [r for r in _rows() if r.get("reason") == "gold_already_open"]
+    assert rows and rows[0]["status"] == "RAIL_BLOCKED"
+
+
 def test_the_adopters_new_risk_hold_places_nothing_and_alerts(world, monkeypatch) -> None:
     """libs/ops/new_risk_hold: while a failed release is rolled back, the follow is not sent."""
     from libs.ops import new_risk_hold
