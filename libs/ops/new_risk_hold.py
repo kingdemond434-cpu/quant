@@ -43,6 +43,7 @@ import os
 import re
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 HOLD_REL = "desks/mt5/data/ADOPT_NEW_RISK_HOLD.json"
@@ -141,7 +142,7 @@ def place_canary(why: str, *, release_id: str, allow: list[str], deadline: datet
     return True
 
 
-def canary(root: Path | None = None) -> dict | None:
+def canary(root: Path | None = None) -> dict[str, Any] | None:
     """The standing canary hold's record, or None. An unreadable one reads as {} (still a hold)."""
     f = hold_file(CANARY_BY, root)
     if not f.exists():

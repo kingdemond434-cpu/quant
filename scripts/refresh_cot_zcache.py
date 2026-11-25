@@ -30,15 +30,14 @@ forward-fill (the cache is daily-indexed; the sweep resamples to W-FRI itself).
 """
 from __future__ import annotations
 
+import importlib.util
 import json
+import math
 import sys
 import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
-
-import importlib.util  # noqa: E402
-import math  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 

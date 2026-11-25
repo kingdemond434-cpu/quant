@@ -234,7 +234,9 @@ def judge(hold: Mapping[str, Any] | None, journal: Iterable[Mapping[str, Any]],
     allow = {str(a) for a in (hold.get("allow") or [])}
     if since is None or deadline is None or not allow:
         return {"verdict": FAIL, "why": "the canary hold is unreadable or names no window"}
-    clean, failed, sent = [], [], []
+    clean: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    sent: list[Mapping[str, Any]] = []
     for r in journal:
         t = _ts(r.get("at"))
         if t is None or t < since or str(r.get("window")) not in allow:

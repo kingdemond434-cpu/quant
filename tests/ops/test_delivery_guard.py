@@ -100,3 +100,34 @@ def test_run_once_end_to_end(tmp_path):
 def test_the_guardian_runs_it():
     src = (Path(__file__).resolve().parents[2] / "ops" / "run_guardian.cmd").read_text()
     assert "scripts\\delivery_guard.py\" --once" in src
+
+
+def test_waivers_and_the_split(tmp_path):
+    w = tmp_path / dg.WAIVED_REL
+    w.parent.mkdir(parents=True)
+    w.write_text(json.dumps({"sha": "a" * 40, "why": "recut as r2", "by": "Audit"}) + "\n"
+                 + json.dumps({"sha": "b" * 40, "why": ""}) + "\nnot json\n", encoding="utf-8")
+    assert dg.waived(tmp_path) == {"a" * 40: "recut as r2"}
+    r = dg.assess([_c("c" * 40, 3), _c("d" * 40, 2)], has=lambda s: s == "c" * 40,
+                  live=lambda s: False, now=NOW)
+    assert r["pending_not_adopted"] == 1 and r["pending_not_on_box"] == 1
+
+
+def test_maintenance_pauses_the_restart_but_never_for_long(tmp_path):
+    m = tmp_path / dg.MAINT_REL
+    m.parent.mkdir(parents=True)
+    m.write_text(json.dumps({"tasks": ["QuantForge-Loop"], "why": "boot move",
+                             "until": (NOW + timedelta(hours=1)).isoformat()}), encoding="utf-8")
+    assert dg.in_maintenance(tmp_path, NOW) == {"QuantForge-Loop"}
+    assert dg.in_maintenance(tmp_path, NOW + timedelta(hours=2)) == set()
+    m.write_text(json.dumps({"tasks": ["QuantForge-Loop"],
+                             "until": (NOW + timedelta(days=3)).isoformat()}), encoding="utf-8")
+    assert dg.in_maintenance(tmp_path, NOW) == set()  # beyond 6h: not honoured
+    got = dg.repairs(["X"], {}, NOW, running=lambda t: False, paused={"QuantForge-Loop"})
+    assert got == ["MT5-AdoptRelease"]
+
+
+def test_a_garbled_repair_record_does_not_crash():
+    assert dg.repairs(["X"], {"started": {"MT5-AdoptRelease": 5}}, NOW,
+                      running=lambda t: False) == list(dg.REPAIR_TASKS)
+    assert dg.repairs(["X"], {"started": "junk"}, NOW, running=lambda t: False)

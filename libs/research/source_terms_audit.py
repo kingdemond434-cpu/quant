@@ -54,7 +54,7 @@ def _terms_tables() -> tuple[Mapping[str, Any], Mapping[str, str]]:
         for p in (str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "side_channels")):
             if p not in sys.path:
                 sys.path.insert(0, p)
-        from side_channels import lawful_substitutes as ls
+        from side_channels import lawful_substitutes as ls  # type: ignore[import-not-found]
         return ls.TERMS, ls.REFUSED_HOSTS
     except Exception:
         return {}, {}
@@ -88,7 +88,8 @@ def audit(grounds_doc: Any, frontier_doc: Any, terms: Mapping[str, Any],
         if not isinstance(g, Mapping):
             continue
         name = str(g.get("name") or "")
-        v = vecs.get(name) if isinstance(vecs.get(name), Mapping) else {}
+        vv = vecs.get(name)
+        v: Mapping[str, Any] = vv if isinstance(vv, Mapping) else {}
         for h in _hosts_of(g):
             r = row(h)
             r["grounds"].append(name)
