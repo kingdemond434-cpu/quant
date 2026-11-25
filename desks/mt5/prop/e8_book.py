@@ -535,6 +535,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     if not isinstance(excluded, dict):
         raise ValueError("CERT_BOOK_LIVE.json has no principal exclusion map")
     from mt5desk.kelly_sizing import load_cert_book
+    from mt5desk.live_policy import exit_parity_refusal
     principal_book = principal_e8_book(load_cert_book(CERT_BOOK, "e8"))
     proven = load_fill_proven()
     losers = load_fill_losers()
@@ -559,8 +560,13 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         # named exclusions still stand (his own words, per sleeve); the terms fence stands (the
         # data's own licence). Fill evidence, forward-failing families, replication and the
         # placebo alarm SIZE the sleeve (`evidence_mult`) and never refuse it.
+        # EXIT-POLICY LIVE PARITY (Audit HOLD MF1 on #628): a certificate earned with an exit the
+        # live executors cannot run is a research trial, never an E8 sleeve. Named, never silent.
+        parity = exit_parity_refusal(row)
         if is_exotic_pair(sym):
             reason = "exotic FX pair: exotics are banned (principal 2026-11-24 18:04Z)"
+        elif parity:
+            reason = parity
         elif book_key in principal_book and not principal_book[book_key] > 0:
             reason = "principal zero in the E8 principal book"
         elif book_key in excluded and book_key not in SUPERSEDED_EXCLUSIONS:

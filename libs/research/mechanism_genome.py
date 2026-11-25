@@ -89,6 +89,14 @@ FAMILY_GENOME: dict[str, dict[str, str]] = {
         "catalyst": "session_open", "transmission": "flow", "entry": "stop_through_level",
         "exit": "session_close", "holding": "intraday", "capacity": "spread_bound",
         "decay_risk": "crowding"},
+    # The live gold session breakout with its exit replaced by a managed one (trail, partial,
+    # time, regime, reversal, liquidity); same participants and entry, a managed stop as exit.
+    "session_exit_overlay": {
+        "actor": "session_participants", "constraint": "session_open_inventory",
+        "observable": "prior_session_range", "trigger": "time_of_day",
+        "catalyst": "session_open", "transmission": "flow", "entry": "stop_through_level",
+        "exit": "stop", "holding": "intraday", "capacity": "spread_bound",
+        "decay_risk": "crowding"},
     "level_breakout": {
         "actor": "stop_holders", "constraint": "protective_stop_placement",
         "observable": "swing_level", "trigger": "price_level", "catalyst": "level_touch",
